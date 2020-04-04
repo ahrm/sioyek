@@ -1,0 +1,10 @@
+#version 400 core
+
+out vec3 color;
+in vec2 screen_pos;
+in vec2 uvs;
+uniform sampler2D pdf_texture;
+
+void main(){
+    color = texture(pdf_texture, uvs).rgb;
+}

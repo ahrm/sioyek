@@ -1,0 +1,12 @@
+#version 400 core
+
+out vec2 screen_pos;
+out vec2 uvs;
+layout (location=0) in vec2 vertex_pos;
+layout (location=1) in vec2 vertex_uvs;
+
+void main(){
+    screen_pos = vertex_pos;
+    uvs = vertex_uvs;
+    gl_Position = vec4(vertex_pos, 0.0, 1.0);
+}
