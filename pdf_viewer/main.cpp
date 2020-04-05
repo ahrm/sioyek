@@ -13,6 +13,9 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
+#include <thread>
+#include <mutex>
 
 #include <SDL.h>
 #include <gl/glew.h>
@@ -42,6 +45,18 @@ const char* select_opened_books_sql = ""\
 "SELECT zoom_level, offset_x, offset_y FROM opened_books WHERE (path=";
 
 using namespace std;
+
+mutex mupdf_mutexes[FZ_LOCK_MAX];
+
+void lock_mutex(void* user, int lock) {
+	mutex* mut = (mutex*)user;
+	(mut + lock)->lock();
+}
+
+void unlock_mutex(void* user, int lock) {
+	mutex* mut = (mutex*)user;
+	(mut + lock)->unlock();
+}
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -155,6 +170,298 @@ void window_to_uv_scale(int window_width, int window_height, int document_width,
 	*uv_y = ((float)(window_height)) / document_height;
 }
 
+struct SearchResult {
+	fz_quad quad;
+	int page;
+};
+
+struct RenderRequest {
+	fz_document* doc;
+	int page;
+	float zoom_level;
+};
+
+struct RenderResponse {
+	RenderRequest request;
+	unsigned int last_access_time;
+	fz_pixmap* pixmap;
+	GLuint texture;
+};
+
+bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
+	if (rhs.doc != lhs.doc) {
+		return false;
+	}
+	if (rhs.page != lhs.page) {
+		return false;
+	}
+	if (rhs.zoom_level != lhs.zoom_level) {
+		return false;
+	}
+	return true;
+}
+
+class PdfRenderer {
+	fz_context* context_to_clone;
+	fz_context* mupdf_context;
+	vector<fz_pixmap*> pixmaps_to_drop;
+	unordered_map<string, fz_document*> opened_documents;
+	vector<RenderRequest> pending_requests;
+	vector<RenderResponse> cached_responses;
+	mutex pending_requests_mutex;
+	mutex cached_response_mutex;
+	mutex pixmap_drop_mutex;
+	bool* invalidate_pointer;
+
+public:
+
+	PdfRenderer(fz_context* context_to_clone) : context_to_clone(context_to_clone){
+		invalidate_pointer = nullptr;
+		mupdf_context = nullptr;
+	}
+
+	void init_context() {
+		if (mupdf_context == nullptr) {
+			mupdf_context = fz_clone_context(context_to_clone);
+			context_to_clone = nullptr;
+		}
+	}
+
+
+
+	void set_invalidate_pointer(bool* inv_p) {
+		invalidate_pointer = inv_p;
+	}
+
+	//void init() {
+	//	//locks.user = mupdf_mutexes;
+	//	//locks.lock = lock_mutex;
+	//	//locks.unlock = unlock_mutex;
+	//	mupdf_context = fz_new_context(nullptr, nullptr, FZ_STORE_UNLIMITED);
+
+	//	fz_try(mupdf_context) {
+	//		fz_register_document_handlers(mupdf_context);
+	//	}
+	//	fz_catch(mupdf_context) {
+	//		cout << "Error: could not registerr documet handlers" << endl;
+	//	}
+	//}
+
+
+	fz_document* get_document_with_path(string path) {
+		if (opened_documents.find(path) != opened_documents.end()) {
+			return opened_documents.at(path);
+		}
+		fz_document* ret_val = nullptr;
+		fz_try(mupdf_context) {
+			ret_val = fz_open_document(mupdf_context, path.c_str());
+			opened_documents[path] = ret_val;
+		}
+		fz_catch(mupdf_context) {
+			cout << "Error: could not open document" << endl;
+		}
+
+		return ret_val;
+	}
+	//should only be called from the main thread
+	void add_request(string document_path, int page, float zoom_level) {
+		fz_document* doc = get_document_with_path(document_path);
+		if (doc != nullptr){
+			RenderRequest req;
+			req.doc = doc;
+			req.page = page;
+			req.zoom_level = zoom_level;
+
+			pending_requests_mutex.lock();
+			pending_requests.push_back(req);
+			req.zoom_level /= 8.0f;
+			pending_requests.push_back(req);
+			pending_requests_mutex.unlock();
+		}
+		else {
+			cout << "Error: could not find documnet" << endl;
+		}
+	}
+
+	//should only be called from the main thread
+	GLuint find_rendered_page(string path, int page, float zoom_level, int *page_width, int* page_height) {
+		fz_document* doc = get_document_with_path(path);
+		if (doc != nullptr) {
+			RenderRequest req;
+			req.doc = doc;
+			req.page = page;
+			req.zoom_level = zoom_level;
+			cached_response_mutex.lock();
+			GLuint result = 0;
+			for (auto& cached_resp : cached_responses) {
+				if (cached_resp.request == req) {
+					cached_resp.last_access_time = SDL_GetTicks();
+
+					*page_width = cached_resp.pixmap->w;
+					*page_height = cached_resp.pixmap->h;
+
+					if (cached_resp.texture != 0) {
+						result = cached_resp.texture;
+					}
+					else {
+						glGenTextures(1, &result);
+						glBindTexture(GL_TEXTURE_2D, result);
+
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+
+						glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+						glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+						glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+						glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cached_resp.pixmap->w, cached_resp.pixmap->h, 0, GL_RGB, GL_UNSIGNED_BYTE, cached_resp.pixmap->samples);
+						cout << "texture: " << result << endl;
+						cached_resp.texture = result;
+					}
+					break;
+				}
+			}
+			cached_response_mutex.unlock();
+			if (result == 0) {
+				add_request(path, page, zoom_level);
+				return try_closest_rendered_page(doc, page, zoom_level, page_width, page_height);
+			}
+			return result;
+		}
+		return 0;
+	}
+
+	GLuint try_closest_rendered_page(fz_document* doc, int page, float zoom_level, int* page_width, int* page_height) {
+		cached_response_mutex.lock();
+
+		float min_diff = 10000.0f;
+		GLuint best_texture = 0;
+
+		for (const auto& cached_resp : cached_responses) {
+			if ((cached_resp.request.doc == doc) && (cached_resp.request.page == page) && (cached_resp.texture != 0)) {
+				float diff = cached_resp.request.zoom_level - zoom_level;
+				if (diff < min_diff) {
+					min_diff = diff;
+					best_texture = cached_resp.texture;
+					*page_width = static_cast<int>(cached_resp.pixmap->w * zoom_level / cached_resp.request.zoom_level);
+					*page_height = static_cast<int>(cached_resp.pixmap->h * zoom_level / cached_resp.request.zoom_level);
+				}
+			}
+		}
+		cached_response_mutex.unlock();
+		return best_texture;
+	}
+
+	//should only be called from main thread
+	void delete_old_pages() {
+		cached_response_mutex.lock();
+		vector<int> indices_to_delete;
+		unsigned int now = SDL_GetTicks();
+
+		for (int i = 0; i < cached_responses.size(); i++) {
+			if ((now - cached_responses[i].last_access_time) > cache_invalid_milies) {
+				cout << "deleting cached texture ... " << endl;
+				indices_to_delete.push_back(i);
+			}
+		}
+
+		for (int j = indices_to_delete.size() - 1; j >= 0; j--) {
+			int index_to_delete = indices_to_delete[j];
+			RenderResponse resp = cached_responses[index_to_delete];
+			//fz_try(mupdf_context) {
+			//	fz_drop_pixmap(mupdf_context, resp.pixmap);
+			//}
+			//fz_catch(mupdf_context) {
+			//	cout << "Error: could not free pixmap" << endl;
+			//}
+			pixmap_drop_mutex.lock();
+			pixmaps_to_drop.push_back(resp.pixmap);
+			pixmap_drop_mutex.unlock();
+
+			if (resp.texture != 0) {
+				glDeleteTextures(1, &resp.texture);
+			}
+
+			cached_responses.erase(cached_responses.begin() + index_to_delete);
+		}
+		cached_response_mutex.unlock();
+	}
+
+	void run() {
+		init_context();
+
+		while (true) {
+			pending_requests_mutex.lock();
+
+			while (pending_requests.size() == 0) {
+				pending_requests_mutex.unlock();
+
+				pixmap_drop_mutex.lock();
+				for (int i = 0; i < pixmaps_to_drop.size(); i++) {
+					fz_try(mupdf_context) {
+						fz_drop_pixmap(mupdf_context, pixmaps_to_drop[i]);
+					}
+					fz_catch(mupdf_context) {
+						cout << "Error: could not drop pixmap" << endl;
+					}
+				}
+				pixmaps_to_drop.clear();
+				pixmap_drop_mutex.unlock();
+
+				Sleep(100);
+				pending_requests_mutex.lock();
+			}
+			cout << "worker thread running ... " << endl;
+
+			RenderRequest req = pending_requests[pending_requests.size() - 1];
+			cached_response_mutex.lock();
+			bool is_already_rendered = false;
+			for (const auto& cached_rep : cached_responses) {
+				if (cached_rep.request == req) is_already_rendered = true;
+			}
+			cached_response_mutex.unlock();
+			pending_requests.pop_back();
+			pending_requests_mutex.unlock();
+			cout << "user: " << mupdf_context->locks.user << endl;
+
+			if (!is_already_rendered) {
+
+				fz_try(mupdf_context) {
+					fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level, req.zoom_level);
+					fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, req.doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+					RenderResponse resp;
+					resp.request = req;
+					resp.last_access_time = SDL_GetTicks();
+					resp.pixmap = rendered_pixmap;
+					resp.texture = 0;
+
+					cached_response_mutex.lock();
+					cached_responses.push_back(resp);
+					cached_response_mutex.unlock();
+					if (invalidate_pointer != nullptr) {
+						//todo: there might be a race condition here
+						*invalidate_pointer = true;
+					}
+
+				}
+				fz_catch(mupdf_context) {
+					cout << "Error: could not render page" << endl;
+				}
+			}
+
+		}
+	}
+
+	~PdfRenderer() {
+	}
+
+};
+
+PdfRenderer* global_pdf_renderer;
+
 class Document {
 public:
 	fz_context* context;
@@ -259,10 +566,9 @@ static int opened_book_callback(void* res_vector, int argc, char** argv, char** 
 	return 0;
 }
 
-struct SearchResult {
-	fz_quad quad;
-	int page;
-};
+
+
+
 
 class WindowState {
 private:
@@ -297,7 +603,6 @@ private:
 
 	vector<CachedPage> cached_pages;
 
-	bool render_is_invalid;
 	bool is_showing_ui;
 	bool is_showing_searchbar;
 	vector<SearchResult> search_results;
@@ -329,7 +634,7 @@ private:
 		}
 	}
 
-	CachedPage get_page_rendered(int page, float zoom_level, Document* doc=nullptr) {
+	CachedPage get_page_rendered2(int page, float zoom_level, Document* doc=nullptr) {
 		if (doc == nullptr) {
 			doc = current_document;
 		}
@@ -365,9 +670,9 @@ private:
 		return cached_page;
 	}
 
-	CachedPage get_current_rendered_page() {
+	CachedPage get_current_rendered_page2() {
 		cout << cached_pages.size() << endl;
-		return get_page_rendered(current_page, zoom_level, current_document);
+		return get_page_rendered2(current_page, zoom_level, current_document);
 	}
 
 	inline void set_offsets(float new_offset_x, float new_offset_y) {
@@ -385,6 +690,7 @@ private:
 	}
 
 public:
+	bool render_is_invalid;
 	WindowState(SDL_Window* main_window,
 		SDL_Window* helper_window,
 		fz_context* mupdf_context,
@@ -720,25 +1026,33 @@ public:
 		int window_width, window_height;
 		SDL_GetWindowSize(main_window, &window_width, &window_height);
 
-		CachedPage current_cached_page = get_page_rendered(page_number, zoom_level);
 
-		int page_width = current_cached_page.cached_page_pixmap->w;
-		int page_height = current_cached_page.cached_page_pixmap->h;
+		int page_width, page_height;
+		GLuint texture = global_pdf_renderer->find_rendered_page(current_document_path, page_number, zoom_level, &page_width, &page_height);
+		//if (texture == 0) {
+		//	global_pdf_renderer->add_request(current_document_path, page_number, zoom_level);
+		//}
+
+		//CachedPage current_cached_page = get_page_rendered(page_number, zoom_level);
+		//int page_width = current_cached_page.cached_page_pixmap->w;
+		//int page_height = current_cached_page.cached_page_pixmap->h;
 
 		int additional_offset = get_page_additional_offset(page_number);
 		float page_vertices[4 * 2];
 		get_relative_rect(main_window, page_width, page_height, page_vertices, additional_offset);
 
-		glUseProgram(gl_program);
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-		glBindVertexArray(vertex_array_object);
-		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+		if (texture != 0) {
+			glUseProgram(gl_program);
+			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(1);
+			glBindVertexArray(vertex_array_object);
+			glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
 
-		glBindTexture(GL_TEXTURE_2D, current_cached_page.cached_page_texture);
+			glBindTexture(GL_TEXTURE_2D, texture);
 
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		}
 	}
 
 	void tick(bool force=false) {
@@ -914,6 +1228,7 @@ public:
 			glClear(GL_COLOR_BUFFER_BIT);
 			SDL_GL_SwapWindow(helper_window);
 			delete_old_cached_pages();
+			global_pdf_renderer->delete_old_pages();
 		}
 	}
 };
@@ -989,7 +1304,10 @@ bool select_pdf_file_name(char* out_file_name, int max_length) {
 	return false;
 }
 
+
 int main(int argc, char* args[]) {
+
+
 
 	sqlite3* db;
 	char* error_message = nullptr;
@@ -1007,7 +1325,13 @@ int main(int argc, char* args[]) {
 		sqlite3_free(error_message);
 	}
 
-	fz_context* mupdf_context = fz_new_context(nullptr, nullptr, FZ_STORE_UNLIMITED);
+	fz_locks_context locks;
+	locks.user = mupdf_mutexes;
+	locks.lock = lock_mutex;
+	locks.unlock = unlock_mutex;
+
+	fz_context* mupdf_context = fz_new_context(nullptr, &locks, FZ_STORE_UNLIMITED);
+	//fz_context* mupdf_context = fz_new_context(nullptr, nullptr, FZ_STORE_UNLIMITED);
 	if (!mupdf_context) {
 		cout << "could not create mupdf context" << endl;
 		return -1;
@@ -1024,6 +1348,14 @@ int main(int argc, char* args[]) {
 	if (fail) {
 		return -1;
 	}
+
+	global_pdf_renderer = new PdfRenderer(mupdf_context);
+	//global_pdf_renderer = new PdfRenderer();
+	//global_pdf_renderer->init();
+
+	thread worker([]() {
+		global_pdf_renderer->run();
+		});
 
 
 	SDL_Window* window = nullptr;
@@ -1080,6 +1412,8 @@ int main(int argc, char* args[]) {
 	window_state.open_document("data\\test.pdf");
 
 	bool quit = false;
+
+	global_pdf_renderer->set_invalidate_pointer(&window_state.render_is_invalid);
 
 	while (!quit) {
 		SDL_Event event;
@@ -1177,6 +1511,7 @@ int main(int argc, char* args[]) {
 
 	//glVertexAttrib2fv(0, )
 	sqlite3_close(db);
+	worker.join();
 
 
 
