@@ -1,8 +1,10 @@
-//todo: cleanup the code
+//todo: cleanup the code considerably!
 //todo: do sth with the second window
 //todo: toc
 //todo: visibility test is still buggy??
 //todo: threading
+//todo: add mouse wheel support
+//todo: number inputs
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -27,16 +29,26 @@
 #include "sqlite3.h"
 #include <filesystem>
 
+#include "input.h"
 const float ZOOM_INC_FACTOR = 1.2f;
 const unsigned int cache_invalid_milies = 1000;
 const int page_paddings = 0;
+const int max_pending_requests = 30;
+const char* last_path_file_absolute_location = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\last_document_path.txt";
 
 const char* create_opened_books_sql = "CREATE TABLE IF NOT EXISTS opened_books ("\
-	"id INTEGER PRIMARY KEY AUTOINCREMENT,"\
-	"path TEXT UNIQUE,"\
-	"zoom_level REAL,"\
-	"offset_x REAL,"\
-	"offset_y REAL);";
+"id INTEGER PRIMARY KEY AUTOINCREMENT,"\
+"path TEXT UNIQUE,"\
+"zoom_level REAL,"\
+"offset_x REAL,"\
+"offset_y REAL);";
+
+const char* create_marks_sql = "CREATE TABLE IF NOT EXISTS marks ("\
+"id INTEGER PRIMARY KEY AUTOINCREMENT," \
+"document_path TEXT,"\
+"symbol CHAR,"\
+"offset_y real,"\
+"UNIQUE(document_path, symbol));";
 
 const char* insert_books_sql = ""\
 "INSERT INTO opened_books (PATH, zoom_level, offset_x, offset_y) VALUES ";
@@ -93,7 +105,6 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	}
 	else {
 		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
-		getchar();
 		return 0;
 	}
 
@@ -105,6 +116,10 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 		sstr << FragmentShaderStream.rdbuf();
 		FragmentShaderCode = sstr.str();
 		FragmentShaderStream.close();
+	}
+	else {
+		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", fragment_file_path);
+		return 0;
 	}
 
 	GLint Result = GL_FALSE;
@@ -215,7 +230,7 @@ class PdfRenderer {
 
 public:
 
-	PdfRenderer(fz_context* context_to_clone) : context_to_clone(context_to_clone){
+	PdfRenderer(fz_context* context_to_clone) : context_to_clone(context_to_clone) {
 		invalidate_pointer = nullptr;
 		mupdf_context = nullptr;
 	}
@@ -266,7 +281,7 @@ public:
 	//should only be called from the main thread
 	void add_request(string document_path, int page, float zoom_level) {
 		fz_document* doc = get_document_with_path(document_path);
-		if (doc != nullptr){
+		if (doc != nullptr) {
 			RenderRequest req;
 			req.doc = doc;
 			req.page = page;
@@ -274,8 +289,9 @@ public:
 
 			pending_requests_mutex.lock();
 			pending_requests.push_back(req);
-			req.zoom_level /= 8.0f;
-			pending_requests.push_back(req);
+			if (pending_requests.size() > max_pending_requests) {
+				pending_requests.erase(pending_requests.begin());
+			}
 			pending_requests_mutex.unlock();
 		}
 		else {
@@ -284,7 +300,7 @@ public:
 	}
 
 	//should only be called from the main thread
-	GLuint find_rendered_page(string path, int page, float zoom_level, int *page_width, int* page_height) {
+	GLuint find_rendered_page(string path, int page, float zoom_level, int* page_width, int* page_height) {
 		fz_document* doc = get_document_with_path(path);
 		if (doc != nullptr) {
 			RenderRequest req;
@@ -414,7 +430,7 @@ public:
 				Sleep(100);
 				pending_requests_mutex.lock();
 			}
-			cout << "worker thread running ... " << endl;
+			cout << "worker thread running ... pending requests: " << pending_requests.size() << endl;
 
 			RenderRequest req = pending_requests[pending_requests.size() - 1];
 			cached_response_mutex.lock();
@@ -462,15 +478,139 @@ public:
 
 PdfRenderer* global_pdf_renderer;
 
+struct Mark {
+	float y_offset;
+	char symbol;
+};
+
+static int mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+
+	vector<Mark>* res = (vector<Mark>*)res_vector;
+	assert(argc == 2);
+
+	char symbol = argv[0][0];
+	float offset_y = atof(argv[1]);
+
+	res->push_back({ offset_y, symbol });
+	return 0;
+}
+
+struct TocNode {
+	vector<TocNode*> children;
+	string title;
+	int page;
+	float y;
+	float x;
+};
+
+void convert_toc_tree(fz_outline* root, vector<TocNode*>& output) {
+
+	do {
+		if (root == nullptr) {
+			break;
+		}
+
+		TocNode* current_node = new TocNode;
+		current_node->title = root->title;
+		current_node->page = root->page;
+		current_node->x = root->x;
+		current_node->y = root->y;
+		convert_toc_tree(root->down, current_node->children);
+		output.push_back(current_node);
+	} while (root = root->next);
+
+}
+
+void get_flat_toc(const vector<TocNode*>& roots, vector<string>& output, vector<int>& pages) {
+	for (const auto& root : roots) {
+		output.push_back(root->title);
+		pages.push_back(root->page);
+		get_flat_toc(root->children, output, pages);
+	}
+}
+
 class Document {
+private:
+	vector<Mark> marks;
+	sqlite3* db;
+	vector<TocNode*> top_level_toc_nodes;
+
+	int get_mark_index(char symbol) {
+		for (int i = 0; i < marks.size(); i++) {
+			if (marks[i].symbol == symbol) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
 public:
 	fz_context* context;
 	string file_name;
 	fz_document* doc;
 	vector<fz_rect> page_rects;
 
-	Document(fz_context* context, string file_name) : context(context), file_name(file_name), doc(nullptr) {
+	void add_mark(char symbol, float y_offset) {
+		int current_mark_index = get_mark_index(symbol);
+		if (current_mark_index == -1) {
+			marks.push_back({ y_offset, symbol });
+			stringstream ss;
+			ss << "INSERT INTO marks (document_path, symbol, offset_y) VALUES ('" << file_name << "', '" << symbol << "', " << y_offset << ");";
+			char* error_message;
+
+			int rc = sqlite3_exec(db, ss.str().c_str(), null_callback, nullptr, &error_message);
+			if (rc != SQLITE_OK) {
+				cout << "Error: Could not insert mark into database: " << error_message << endl;
+				sqlite3_free(error_message);
+			}
+		}
+		else {
+			marks[current_mark_index].y_offset = y_offset;
+			stringstream ss;
+			ss << "UPDATE marks set offset_y=" << y_offset << " where document_path='" << file_name << "' AND symbol='" << symbol << "';";
+
+			char* error_message;
+			int rc = sqlite3_exec(db, ss.str().c_str(), null_callback, nullptr, &error_message);
+			if (rc != SQLITE_OK) {
+				cout << "Error: Could not update mark: " << error_message << endl;
+				sqlite3_free(error_message);
+			}
+		}
 	}
+	void create_toc_tree(vector<TocNode*>& toc) {
+		fz_try(context) {
+			fz_outline* outline = fz_load_outline(context, doc);
+			convert_toc_tree(outline, toc);
+
+		}
+		fz_catch(context) {
+			cout << "Error: Could not load outline ... " << endl;
+		}
+	}
+
+	void load_marks_from_database() {
+		marks.clear();
+		string select_query = "select symbol, offset_y from marks where document_path='" + file_name + "';";
+		char* error_message;
+		int rc = sqlite3_exec(db, select_query.c_str(), mark_select_callback, &marks, &error_message);
+
+		if (rc != SQLITE_OK) {
+			cout << "Error: Could not load marks from database: " << error_message << endl;
+			sqlite3_free(error_message);
+		}
+	}
+
+	bool get_mark_location_if_exists(char symbol, float* y_offset) {
+		int mark_index = get_mark_index(symbol);
+		if (mark_index == -1) {
+			return false;
+		}
+		*y_offset = marks[mark_index].y_offset;
+	}
+
+	Document(fz_context* context, string file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
+	}
+
 
 	~Document() {
 		if (doc != nullptr) {
@@ -483,6 +623,10 @@ public:
 		}
 	}
 
+	const vector<TocNode*>& get_toc() {
+		return top_level_toc_nodes;
+	}
+
 	bool open() {
 		if (doc == nullptr) {
 			fz_try(context) {
@@ -492,8 +636,14 @@ public:
 				cout << "could not open " << file_name << endl;
 			}
 			if (doc != nullptr) {
+
+				load_marks_from_database();
+				create_toc_tree(top_level_toc_nodes);
+
 				return true;
 			}
+
+
 			return false;
 		}
 		else {
@@ -570,6 +720,124 @@ static int opened_book_callback(void* res_vector, int argc, char** argv, char** 
 
 
 
+int mod(int a, int b)
+{
+	return (a % b + b) % b;
+}
+
+const int max_select_size = 100;
+
+template<typename T>
+class FilteredSelect {
+private:
+	vector<string> options;
+	vector<T> values;
+	int current_index;
+	bool is_done;
+	char select_string[max_select_size];
+
+public:
+	FilteredSelect(vector<string> options, vector<T> values) : options(options), values(values), current_index(0), is_done(false) {
+		ZeroMemory(select_string, sizeof(select_string));
+	}
+
+	T get_value() {
+		return values[get_selected_index()];
+	}
+
+	bool is_string_comppatible(string incomplete_string, string option_string) {
+		return option_string.find(incomplete_string) < option_string.size();
+	}
+
+	int get_selected_index() {
+		int index = -1;
+		for (int i = 0; i < options.size(); i++) {
+			if (is_string_comppatible(select_string, options[i])) {
+				index += 1;
+			}
+			if (index == current_index) {
+				return i;
+			}
+		}
+		return index;
+	}
+
+	string get_selected_option() {
+		return options[get_selected_index()];
+	}
+
+	int get_max_index() {
+		int max_index = -1;
+		for (int i = 0; i < options.size(); i++) {
+			if (is_string_comppatible(select_string, options[i])) {
+				max_index += 1;
+			}
+		}
+		return max_index;
+	}
+
+	void move_item(int offset) {
+		int new_index = offset + current_index;
+		if (new_index < 0) {
+			new_index = 0;
+		}
+		int max_index = get_max_index();
+		if (new_index > max_index) {
+			new_index = max_index;
+		}
+		current_index = new_index;
+	}
+
+	void next_item() {
+		move_item(1);
+	}
+
+	void prev_item() {
+		move_item(-1);
+	}
+
+	bool render() {
+		ImGui::Begin("Select");
+
+		ImGui::SetKeyboardFocusHere();
+		if (ImGui::InputText("search string", select_string, sizeof(select_string), ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_EnterReturnsTrue,
+			[](ImGuiInputTextCallbackData* data) {
+				FilteredSelect* filtered_select = (FilteredSelect*)data->UserData;
+
+				if (data->EventKey == ImGuiKey_UpArrow) {
+					filtered_select->prev_item();
+				}
+				if (data->EventKey == ImGuiKey_DownArrow) {
+					filtered_select->next_item();
+				}
+
+				return 0;
+			}, this)) {
+			is_done = true;
+		}
+		//ImGui::InputText("search", text_buffer, 100, ImGuiInputTextFlags_CallbackHistory, [&](ImGuiInputTextCallbackData* data) {
+
+		int index = 0;
+		for (int i = 0; i < options.size(); i++) {
+			//if (options[i].find(select_string) == 0) {
+			if (is_string_comppatible(select_string, options[i])) {
+
+				if (current_index == index) {
+					ImGui::SetScrollHere();
+				}
+
+				ImGui::Selectable(options[i].c_str(), current_index == index);
+				index += 1;
+			}
+		}
+
+		ImGui::End();
+		return is_done;
+	}
+
+
+};
+
 class WindowState {
 private:
 	Document* current_document;
@@ -578,6 +846,8 @@ private:
 	SDL_GLContext* opengl_context;
 	fz_context* mupdf_context;
 	sqlite3* database;
+	const Command* pending_text_command;
+	FilteredSelect<int>* current_toc_select;
 
 	int current_page;
 	float zoom_level;
@@ -586,6 +856,7 @@ private:
 	GLuint uv_buffer_object;
 	GLuint gl_program;
 	GLuint gl_debug_program;
+	GLuint gl_unrendered_program;
 	vector<float> page_heights;
 	vector<float> page_widths;
 
@@ -604,10 +875,11 @@ private:
 	vector<CachedPage> cached_pages;
 
 	bool is_showing_ui;
-	bool is_showing_searchbar;
+	bool is_showing_textbar;
 	vector<SearchResult> search_results;
 	int current_search_result_index;
-	char search_string[100];
+	char text_command_buffer[100];
+	//bool showing_select;
 
 	void delete_old_cached_pages() {
 		unsigned int now_milies = SDL_GetTicks();
@@ -634,7 +906,7 @@ private:
 		}
 	}
 
-	CachedPage get_page_rendered2(int page, float zoom_level, Document* doc=nullptr) {
+	CachedPage get_page_rendered2(int page, float zoom_level, Document* doc = nullptr) {
 		if (doc == nullptr) {
 			doc = current_document;
 		}
@@ -709,8 +981,10 @@ public:
 		database(database),
 		render_is_invalid(true),
 		is_showing_ui(false),
-		is_showing_searchbar(false),
-		current_search_result_index(0)
+		is_showing_textbar(false),
+		current_search_result_index(0),
+		pending_text_command(nullptr),
+		current_toc_select(nullptr)
 	{
 
 		gl_program = LoadShaders("shaders\\simple.vertex", "shaders\\simple.fragment");
@@ -719,7 +993,12 @@ public:
 		}
 
 		gl_debug_program = LoadShaders("shaders\\simple.vertex", "shaders\\debug.fragment");
-		if (gl_program == 0) {
+		if (gl_debug_program == 0) {
+			cout << "Error: could not compile debug shaders" << endl;
+		}
+
+		gl_unrendered_program = LoadShaders("shaders\\simple.vertex", "shaders\\unrendered_page.fragment");
+		if (gl_unrendered_program == 0) {
 			cout << "Error: could not compile debug shaders" << endl;
 		}
 
@@ -751,6 +1030,169 @@ public:
 		last_tick_time = SDL_GetTicks();
 	}
 
+	void handle_command_with_symbol(const Command* command, char symbol) {
+		assert(symbol);
+		assert(command->requires_symbol);
+		if (command->name == "set_mark") {
+			assert(current_document);
+			current_document->add_mark(symbol, offset_y);
+		}
+		else if (command->name == "goto_mark") {
+			assert(current_document);
+			float new_y_offset = 0.0f;
+			if (current_document->get_mark_location_if_exists(symbol, &new_y_offset)) {
+				set_offset_y(new_y_offset);
+			}
+		}
+	}
+
+	void handle_command_with_file_name(const Command* command, string file_name) {
+		assert(command->requires_file_name);
+		//cout << "handling " << command->name << " with file " << file_name << endl;
+		if (command->name == "open_document") {
+			open_document(file_name);
+		}
+	}
+
+
+	//void handle_command_with_text(const Command* command, string text) {
+	//	assert(command->requires_text);
+	//	pending_text_command = command;
+	//	is_showing_textbar = true;
+	//	is_showing_ui = true;
+	//}
+
+
+	void handle_command(const Command* command, int num_repeats) {
+		if (command->requires_text) {
+			pending_text_command = command;
+			show_textbar();
+			return;
+		}
+		if (command->name == "goto_begining") {
+			if (num_repeats) {
+				goto_page(num_repeats);
+			}
+			else {
+				set_offset_y(0.0f);
+			}
+		}
+
+		if (command->name == "goto_end") {
+			float cum_offset_y = 0.0f;
+			for (auto height : page_heights) {
+				cum_offset_y += height;
+			}
+
+			set_offset_y(cum_offset_y);
+		}
+		//if (command->name == "search") {
+		//	show_searchbar();
+		//}
+		int rp = max(num_repeats, 1);
+
+		if (command->name == "move_down") {
+			move(0.0f, 72.0f * rp);
+		}
+		else if (command->name == "move_up") {
+			move(0.0f, -72.0f * rp);
+		}
+
+		else if (command->name == "move_right") {
+			move(72.0f * rp, 0.0f);
+		}
+
+		else if (command->name == "move_left") {
+			move(-72.0f * rp, 0.0f);
+		}
+
+		else if (command->name == "zoom_in") {
+			zoom_in();
+		}
+
+		else if (command->name == "zoom_out") {
+			zoom_out();
+		}
+
+		else if (command->name == "next_item") {
+			goto_search_result(1 + num_repeats);
+		}
+
+		else if (command->name == "previous_item") {
+			goto_search_result(-1 - num_repeats);
+		}
+
+		else if (command->name == "open_document") {
+			cout << "can not open document right now!" << endl;
+		}
+		else if (command->name == "next_page") {
+			move_pages(1 + num_repeats);
+		}
+		else if (command->name == "previous_page") {
+			move_pages(-1 - num_repeats);
+		}
+		else if (command->name == "debug") {
+			is_showing_ui = true;
+			vector<string> flat_toc;
+
+			vector<int> current_document_toc_pages;
+			get_flat_toc(current_document->get_toc(), flat_toc, current_document_toc_pages);
+			current_toc_select = new FilteredSelect<int>(flat_toc, current_document_toc_pages);
+			//cu = true;
+			//current_select = new FilteredSelect({
+			//	"ali",
+			//	"alo",
+			//	"mos",
+			//	"tafavi",
+			//	"alex"
+			//	});
+			//const vector<TocNode*>& toc_roots = current_document->get_toc();
+			//cout << "something" << endl;
+
+			//current_document->
+		}
+
+	}
+
+	//void render_select(const vector<string>& items, void callback(int)) {
+	//	{
+	//		char text_buffer[100] = {0};
+	//		int selection_index = 0;
+
+	//		ImGui::Begin("Select");
+
+	//		ImGui::SetKeyboardFocusHere();
+	//		ImGui::InputText("search", text_buffer, 100, ImGuiInputTextFlags_CallbackHistory, [&](ImGuiInputTextCallbackData* data) {
+	//			cout << "callback called" << endl;
+	//			if (data->EventKey == ImGuiKey_UpArrow) {
+	//				if (selection_index > 0) {
+	//					selection_index--;
+	//				}
+	//			}
+	//			if (data->EventKey == ImGuiKey_DownArrow) {
+	//				selection_index++;
+	//			}
+	//			
+	//			return 0;
+	//			});
+
+	//		static const char* current_item = nullptr;
+	//		int index = 0;
+
+	//		for (int i = 0; i < items.size(); i++) {
+	//			//ImGui::TreeNode(items[i].c_str());
+	//			if (items[i].find(text_buffer) == 0) {
+	//				ImGui::Selectable(items[i].c_str(), selection_index == index);
+	//				index += 1;
+	//			}
+	//		}
+	//		if (selection_index >= index) {
+	//			selection_index = index-1;
+	//		}
+	//		ImGui::End();
+	//	}
+	//}
+
 	bool should_render() {
 		if (render_is_invalid) {
 			return true;
@@ -762,10 +1204,11 @@ public:
 	}
 
 	void handle_return() {
-		is_showing_searchbar = false;
+		is_showing_textbar = false;
 		is_showing_ui = false;
 		render_is_invalid = true;
 		current_search_result_index = 0;
+		pending_text_command = nullptr;
 	}
 
 	float zoom_in() {
@@ -796,6 +1239,20 @@ public:
 		move_absolute(abs_dx, abs_dy);
 	}
 
+	void goto_page(int page) {
+		int max_page = current_document->num_pages();
+		if (page > max_page) {
+			page = max_page;
+		}
+		float new_offset_y = 0.0f;
+
+		for (int i = 0; i < page; i++) {
+
+			new_offset_y += page_heights[i];
+		}
+
+		set_offset_y(new_offset_y);
+	}
 	void move_pages(int num_pages) {
 		int current_page = get_current_page_number();
 		if (current_page == -1) {
@@ -828,7 +1285,7 @@ public:
 		}
 		if (prev_state.size() > 1) {
 			cout << "more than one file with one path, this should not happen!" << endl;
-	 	}
+		}
 
 
 
@@ -836,8 +1293,16 @@ public:
 			delete current_document;
 		}
 
-		current_document = new Document(mupdf_context, doc_path);
-		current_document->open();
+		ofstream last_path_file(last_path_file_absolute_location);
+		cout << "!!! " << last_path_file.is_open() << endl;
+		last_path_file << doc_path << endl;
+		last_path_file.close();
+
+		current_document = new Document(mupdf_context, doc_path, database);
+		if (!current_document->open()) {
+			delete current_document;
+			current_document = nullptr;
+		}
 		reset_doc_state();
 		if (prev_state.size() > 0) {
 			OpenedBookState previous_state = prev_state[0];
@@ -850,23 +1315,34 @@ public:
 		page_heights.clear();
 		page_widths.clear();
 
-		int page_count = current_document->num_pages();
+		if (current_document) {
 
-		//todo: better (or any!) error handling
-		for (int i = 0; i < page_count; i++) {
-			fz_page* page = fz_load_page(mupdf_context, current_document->doc, i);
-			fz_rect page_rect = fz_bound_page(mupdf_context, page);
-			page_heights.push_back(page_rect.y1 - page_rect.y0);
-			page_widths.push_back(page_rect.x1 - page_rect.x0);
-			fz_drop_page(mupdf_context, page);
+			int page_count = current_document->num_pages();
+
+			//todo: better (or any!) error handling
+			for (int i = 0; i < page_count; i++) {
+				fz_page* page = fz_load_page(mupdf_context, current_document->doc, i);
+				fz_rect page_rect = fz_bound_page(mupdf_context, page);
+				page_heights.push_back(page_rect.y1 - page_rect.y0);
+				page_widths.push_back(page_rect.x1 - page_rect.x0);
+				fz_drop_page(mupdf_context, page);
+			}
+
+			SDL_SetWindowTitle(main_window, current_document_path.c_str());
 		}
 
-		int window_width, window_height;
-		SDL_GetWindowSize(main_window, &window_width, &window_height);
+		//int window_width, window_height;
+		//SDL_GetWindowSize(main_window, &window_width, &window_height);
 		//offset_x = window_width / (2*zoom_level);
 		//offset_y = window_height / zoom_level;
-		SDL_SetWindowTitle(main_window, current_document_path.c_str());
 
+	}
+
+	void handle_pending_text_command(string text) {
+		if (pending_text_command->name == "search") {
+			search_results.clear();
+			search_text(text.c_str(), search_results);
+		}
 	}
 
 
@@ -908,7 +1384,7 @@ public:
 		render_is_invalid = true;
 	}
 
-	void get_visible_pages(int window_height, vector<int> &visible_pages) {
+	void get_visible_pages(int window_height, vector<int>& visible_pages) {
 		//int current_y_offset = offset_y * zoom_level;
 		//for (int i = 0; i < page_heights.size(); i++) {
 		//	bool is_visible = false;
@@ -935,7 +1411,7 @@ public:
 		for (int i = 0; i < page_heights.size(); i++) {
 			float page_end = page_begin + page_heights[i];
 
-			if (intersects(window_y_range_begin, window_y_range_end, page_begin, page_end)){
+			if (intersects(window_y_range_begin, window_y_range_end, page_begin, page_end)) {
 				visible_pages.push_back(i);
 			}
 			page_begin = page_end;
@@ -952,10 +1428,10 @@ public:
 	void get_relative_rect(SDL_Window* window, int page_width, int page_height, float output_vertices[8], int additional_offset) {
 		int window_width, window_height;
 		SDL_GetWindowSize(window, &window_width, &window_height);
-		float x0 = 2 * static_cast<float>(offset_x * zoom_level - page_width  / 2) / window_width;
-		float x1 = 2 * static_cast<float>(offset_x * zoom_level + page_width  /2) / window_width;
-		float y0 = 2 * static_cast<float>(offset_y * zoom_level + additional_offset) / window_height ;
-		float y1 = 2 * static_cast<float>(offset_y * zoom_level + additional_offset - page_height ) / window_height;
+		float x0 = 2 * static_cast<float>(offset_x * zoom_level - page_width / 2) / window_width;
+		float x1 = 2 * static_cast<float>(offset_x * zoom_level + page_width / 2) / window_width;
+		float y0 = 2 * static_cast<float>(offset_y * zoom_level + additional_offset) / window_height;
+		float y1 = 2 * static_cast<float>(offset_y * zoom_level + additional_offset - page_height) / window_height;
 
 		//y0 = y0 * 2 - 1;
 		//y1 = y1 * 2 - 1;
@@ -1029,6 +1505,10 @@ public:
 
 		int page_width, page_height;
 		GLuint texture = global_pdf_renderer->find_rendered_page(current_document_path, page_number, zoom_level, &page_width, &page_height);
+		if (texture == 0) {
+			page_width = static_cast<int>(page_widths[page_number] * zoom_level);
+			page_height = static_cast<int>(page_heights[page_number] * zoom_level);
+		}
 		//if (texture == 0) {
 		//	global_pdf_renderer->add_request(current_document_path, page_number, zoom_level);
 		//}
@@ -1053,9 +1533,18 @@ public:
 
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		}
+		else {
+			glUseProgram(gl_unrendered_program);
+			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(1);
+			glBindVertexArray(vertex_array_object);
+			glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		}
 	}
 
-	void tick(bool force=false) {
+	void tick(bool force = false) {
 		unsigned int now = SDL_GetTicks();
 		if (force || (now - last_tick_time) > 1000) {
 			last_tick_time = now;
@@ -1066,7 +1555,7 @@ public:
 				current_document_path << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ");";
 
 			char* error_message;
-			
+
 			int rc = sqlite3_exec(database, update_book_state_sql.str().c_str(), null_callback, 0, &error_message);
 
 			if (rc != SQLITE_OK) {
@@ -1077,12 +1566,17 @@ public:
 	}
 
 	void update_window_title() {
-		stringstream title;
-		title << current_document_path << " ( page " << get_current_page_number() << " / " << current_document->num_pages() <<  " )";
-		SDL_SetWindowTitle(main_window, title.str().c_str());
+		if (current_document) {
+			stringstream title;
+			title << current_document_path << " ( page " << get_current_page_number() << " / " << current_document->num_pages() << " )";
+			if (search_results.size() > 0) {
+				title << " [Showing result " << current_search_result_index + 1 << " / " << search_results.size() << " ]";
+			}
+			SDL_SetWindowTitle(main_window, title.str().c_str());
+		}
 	}
 
-	int search_text(const char* text, vector<SearchResult> &results) {
+	int search_text(const char* text, vector<SearchResult>& results) {
 
 		int num_pages = current_document->num_pages();
 		int total_results = 0;
@@ -1105,10 +1599,10 @@ public:
 		return total_results;
 	}
 
-	void show_searchbar() {
+	void show_textbar() {
 		is_showing_ui = true;
-		is_showing_searchbar = true;
-		ZeroMemory(search_string, sizeof(search_string));
+		is_showing_textbar = true;
+		ZeroMemory(text_command_buffer, sizeof(text_command_buffer));
 	}
 
 	void goto_search_result(int offset) {
@@ -1116,9 +1610,12 @@ public:
 			return;
 		}
 
-		int target_index = (current_search_result_index + offset) % search_results.size();
+		//int target_index = 0;
+		//target_index = (current_search_result_index + offset) % search_results.size();
+
+		int target_index = mod(current_search_result_index + offset, search_results.size());
 		current_search_result_index = target_index;
-		
+
 		int target_page = search_results[target_index].page;
 
 		fz_quad quad = search_results[target_index].quad;
@@ -1136,7 +1633,7 @@ public:
 	void render() {
 		if (should_render()) {
 			render_is_invalid = false;
-			cout << "rendering ..." << endl;
+			//cout << "rendering ..." << endl;
 
 
 			ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -1164,20 +1661,41 @@ public:
 				ImGui_ImplSDL2_NewFrame(main_window);
 				ImGui::NewFrame();
 
-				if (is_showing_searchbar) {
+				if (is_showing_textbar) {
 
 					ImGui::SetNextWindowPos(ImVec2(0, 0));
 					ImGui::SetNextWindowSize(ImVec2(window_width, 60));
-					ImGui::Begin("Search");
+					ImGui::Begin(pending_text_command->name.c_str());
 					//ImGui::SetKeyboardFocusHere();
 					ImGui::SetKeyboardFocusHere();
-					if (ImGui::InputText("Search Text", search_string, sizeof(search_string), ImGuiInputTextFlags_EnterReturnsTrue)) {
-						search_results.clear();
-						search_text(search_string, search_results);
+					if (ImGui::InputText(
+						pending_text_command->name.c_str(),
+						text_command_buffer,
+						sizeof(text_command_buffer),
+						ImGuiInputTextFlags_EnterReturnsTrue)
+						) {
+						//search_results.clear();
+						//search_text(search_string, search_results);
+						//handle_return();
+						handle_pending_text_command(text_command_buffer);
+						goto_search_result(0);
 						handle_return();
 						io.WantCaptureKeyboard = false;
 					}
 					ImGui::End();
+				}
+				if (current_toc_select) {
+					//vector<string> select_items = { "ali", "alo", "mos", "tafavi" };
+					//render_select(select_items, nullptr);
+					if (current_toc_select->render()) {
+						//cout << "selected option " << current_select->get_selected_option() << endl;
+						//int selected_index = current_toc_select->get_selected_index();
+						//goto_page(current_document_toc_pages[selected_index]);
+						goto_page(current_toc_select->get_value());
+						delete current_toc_select;
+						current_toc_select = nullptr;
+						is_showing_ui = false;
+					}
 				}
 
 				ImGui::Render();
@@ -1296,14 +1814,26 @@ bool select_pdf_file_name(char* out_file_name, int max_length) {
 	ofn.nMaxFile = max_length;
 	ofn.lpstrTitle = "Select a document";
 	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
-	
-	
+
+
 	if (GetOpenFileNameA(&ofn)) {
 		return true;
 	}
 	return false;
 }
 
+char get_symbol(SDL_Scancode scancode, bool is_shift_pressed) {
+	char key = SDL_GetKeyFromScancode(scancode);
+	if (key >= 'a' && key <= 'z') {
+		if (is_shift_pressed) {
+			return key + 'A' - 'a';
+		}
+		else {
+			return key;
+		}
+	}
+	return 0;
+}
 
 int main(int argc, char* args[]) {
 
@@ -1322,6 +1852,12 @@ int main(int argc, char* args[]) {
 	rc = sqlite3_exec(db, create_opened_books_sql, null_callback, 0, &error_message);
 	if (rc != SQLITE_OK) {
 		cout << "could not create opened books table: " << error_message << endl;
+		sqlite3_free(error_message);
+	}
+
+	rc = sqlite3_exec(db, create_marks_sql, null_callback, 0, &error_message);
+	if (rc != SQLITE_OK) {
+		cout << "could not create opened marks table: " << error_message << endl;
 		sqlite3_free(error_message);
 	}
 
@@ -1383,7 +1919,7 @@ int main(int argc, char* args[]) {
 
 	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
-	if (gl_context == nullptr){
+	if (gl_context == nullptr) {
 		cout << SDL_GetError() << endl;
 		cout << "could not create opengl context" << endl;
 		return -1;
@@ -1409,12 +1945,24 @@ int main(int argc, char* args[]) {
 	ImGui_ImplOpenGL3_Init("#version 400");
 
 	WindowState window_state(window, window2, mupdf_context, &gl_context, db);
-	window_state.open_document("data\\test.pdf");
+
+	//char file_path[MAX_PATH] = { 0 };
+	string file_path;
+	ifstream last_state_file(last_path_file_absolute_location);
+	//last_state_file.read(file_path, MAX_PATH);
+	getline(last_state_file, file_path);
+	//last_state_file >> initial_document;
+	last_state_file.close();
+
+	window_state.open_document(file_path);
 
 	bool quit = false;
 
 	global_pdf_renderer->set_invalidate_pointer(&window_state.render_is_invalid);
+	InputHandler input_handler("keys.config");
 
+	bool is_waiting_for_symbol = false;
+	const Command* current_pending_command = nullptr;
 	while (!quit) {
 		SDL_Event event;
 
@@ -1437,83 +1985,59 @@ int main(int argc, char* args[]) {
 				window_state.on_main_window_size_changed();
 			}
 			if (event.type == SDL_KEYDOWN) {
-				if (event.key.keysym.sym == SDLK_EQUALS) {
-					window_state.zoom_in();
+				vector<SDL_Scancode> ignored_codes = {
+					SDL_SCANCODE_LSHIFT,
+					SDL_SCANCODE_RSHIFT,
+					SDL_SCANCODE_LCTRL,
+					SDL_SCANCODE_RCTRL
+				};
+				if (find(ignored_codes.begin(), ignored_codes.end(), event.key.keysym.scancode) != ignored_codes.end()) {
+					continue;
 				}
-				if (event.key.keysym.sym == SDLK_MINUS) {
-					window_state.zoom_out();
+				if (is_waiting_for_symbol) {
+					char symb = get_symbol(event.key.keysym.scancode, (event.key.keysym.mod & KMOD_SHIFT != 0));
+					if (symb) {
+						window_state.handle_command_with_symbol(current_pending_command, symb);
+						current_pending_command = nullptr;
+						is_waiting_for_symbol = false;
+					}
+					continue;
 				}
-
-				if (event.key.keysym.sym == SDLK_LEFT) {
-					window_state.move(72, 0);
-				}
-				if (event.key.keysym.sym == SDLK_RIGHT) {
-					window_state.move(-72, 0);
-				}
-
-				if (event.key.keysym.sym == SDLK_DOWN) {
-					window_state.move(0, 72);
-				}
-				if (event.key.keysym.sym == SDLK_UP) {
-					window_state.move(0, -72);
-				}
-
-				if (event.key.keysym.sym == SDLK_COMMA) {
-					window_state.move_pages(-1);
-				}
-				if (event.key.keysym.sym == SDLK_PERIOD) {
-					window_state.move_pages(1);
-				}
-
-				if (event.key.keysym.sym == SDLK_n) {
-					window_state.goto_search_result(1);
-				}
-
-				if (event.key.keysym.sym == SDLK_p) {
-					window_state.goto_search_result(-1);
-				}
-
-				if (event.key.keysym.sym == SDLK_SLASH) {
-					//vector<SearchResult> results;
-					//window_state.search_text("machine", results);
-					//cout << results.size() << endl;
-					window_state.show_searchbar();
-				}
-				
-				if (event.key.keysym.sym == SDLK_o) {
-					char file_name[MAX_PATH];
-					if (select_pdf_file_name(file_name, MAX_PATH)) {
-						window_state.open_document(file_name);
+				int num_repeats = 0;
+				const Command* command = input_handler.handle_key(
+					SDL_GetKeyFromScancode(event.key.keysym.scancode),
+					(event.key.keysym.mod & KMOD_SHIFT) != 0,
+					(event.key.keysym.mod & KMOD_CTRL) != 0, &num_repeats);
+				if (command) {
+					if (command->requires_symbol) {
+						is_waiting_for_symbol = true;
+						current_pending_command = command;
+						continue;
+					}
+					if (command->requires_file_name) {
+						char file_name[MAX_PATH];
+						if (select_pdf_file_name(file_name, MAX_PATH)) {
+							window_state.handle_command_with_file_name(command, file_name);
+						}
+						else {
+							cout << "File select failed" << endl;
+						}
+						continue;
+					}
+					else {
+						window_state.handle_command(command, num_repeats);
 					}
 				}
-				//if (zoom_level_changed) {
-				//	fz_drop_pixmap(mupdf_context, pixmap);
-				//	pixmap = window_state.get_current_pixmap();
-
-				//	glBindTexture(GL_TEXTURE_2D, pdf_texture);
-				//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, pixmap->w, pixmap->h, 0, GL_RGB, GL_UNSIGNED_BYTE, pixmap->samples);
-
-				//}
 			}
 
 		}
-
-		//if (render_invalidated) {
 		window_state.render();
-		//}
 
 		SDL_Delay(16);
 		window_state.tick();
 	}
 
-	//glUseProgram(gl_program);
-	//glEnableVertexAttribArray(0);
-
-	//glVertexAttrib2fv(0, )
 	sqlite3_close(db);
 	worker.join();
-
-
-
 	return 0;
 }

@@ -1,0 +1,16 @@
+#version 400 core
+
+out vec4 color;
+in vec2 screen_pos;
+in vec2 uvs;
+
+void main(){
+    int x = int(uvs.x / 0.1);
+    int y = int(uvs.y / 0.1);
+    if ((x+y)% 2 == 0){
+        color = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+    else{
+        color = vec4(0.1, 0.1, 0.1, 1.0);
+    }
+}
