@@ -3,8 +3,7 @@
 //todo: toc
 //todo: visibility test is still buggy??
 //todo: threading
-//todo: add mouse wheel support
-//todo: number inputs
+//todo: remove some O(n) things from page height computations
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -30,31 +29,15 @@
 #include <filesystem>
 
 #include "input.h"
+#include "database.h"
+#include "book.h"
+
 const float ZOOM_INC_FACTOR = 1.2f;
 const unsigned int cache_invalid_milies = 1000;
 const int page_paddings = 0;
 const int max_pending_requests = 30;
 const char* last_path_file_absolute_location = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\last_document_path.txt";
 
-const char* create_opened_books_sql = "CREATE TABLE IF NOT EXISTS opened_books ("\
-"id INTEGER PRIMARY KEY AUTOINCREMENT,"\
-"path TEXT UNIQUE,"\
-"zoom_level REAL,"\
-"offset_x REAL,"\
-"offset_y REAL);";
-
-const char* create_marks_sql = "CREATE TABLE IF NOT EXISTS marks ("\
-"id INTEGER PRIMARY KEY AUTOINCREMENT," \
-"document_path TEXT,"\
-"symbol CHAR,"\
-"offset_y real,"\
-"UNIQUE(document_path, symbol));";
-
-const char* insert_books_sql = ""\
-"INSERT INTO opened_books (PATH, zoom_level, offset_x, offset_y) VALUES ";
-
-const char* select_opened_books_sql = ""\
-"SELECT zoom_level, offset_x, offset_y FROM opened_books WHERE (path=";
 
 using namespace std;
 
@@ -85,9 +68,6 @@ GLfloat g_quad_uvs[] = {
 };
 
 
-static int null_callback(void* notused, int argc, char** argv, char** col_name) {
-	return 0;
-}
 GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path) {
 
 	// Create the shaders
@@ -478,22 +458,8 @@ public:
 
 PdfRenderer* global_pdf_renderer;
 
-struct Mark {
-	float y_offset;
-	char symbol;
-};
 
-static int mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
-	vector<Mark>* res = (vector<Mark>*)res_vector;
-	assert(argc == 2);
-
-	char symbol = argv[0][0];
-	float offset_y = atof(argv[1]);
-
-	res->push_back({ offset_y, symbol });
-	return 0;
-}
 
 struct TocNode {
 	vector<TocNode*> children;
@@ -532,6 +498,7 @@ void get_flat_toc(const vector<TocNode*>& roots, vector<string>& output, vector<
 class Document {
 private:
 	vector<Mark> marks;
+	vector<BookMark> bookmarks;
 	sqlite3* db;
 	vector<TocNode*> top_level_toc_nodes;
 
@@ -550,33 +517,30 @@ public:
 	fz_document* doc;
 	vector<fz_rect> page_rects;
 
+	void add_bookmark(string desc, float y_offset) {
+		BookMark res;
+		res.description = desc;
+		res.y_offset = y_offset;
+		bookmarks.push_back(res);
+		insert_bookmark(db, file_name, desc, y_offset);
+	}
+
+	const vector<BookMark>& get_bookmarks() const {
+		return bookmarks;
+	}
+
 	void add_mark(char symbol, float y_offset) {
 		int current_mark_index = get_mark_index(symbol);
 		if (current_mark_index == -1) {
 			marks.push_back({ y_offset, symbol });
-			stringstream ss;
-			ss << "INSERT INTO marks (document_path, symbol, offset_y) VALUES ('" << file_name << "', '" << symbol << "', " << y_offset << ");";
-			char* error_message;
-
-			int rc = sqlite3_exec(db, ss.str().c_str(), null_callback, nullptr, &error_message);
-			if (rc != SQLITE_OK) {
-				cout << "Error: Could not insert mark into database: " << error_message << endl;
-				sqlite3_free(error_message);
-			}
+			insert_mark(db, file_name, symbol, y_offset);
 		}
 		else {
 			marks[current_mark_index].y_offset = y_offset;
-			stringstream ss;
-			ss << "UPDATE marks set offset_y=" << y_offset << " where document_path='" << file_name << "' AND symbol='" << symbol << "';";
-
-			char* error_message;
-			int rc = sqlite3_exec(db, ss.str().c_str(), null_callback, nullptr, &error_message);
-			if (rc != SQLITE_OK) {
-				cout << "Error: Could not update mark: " << error_message << endl;
-				sqlite3_free(error_message);
-			}
+			update_mark(db, file_name, symbol, y_offset);
 		}
 	}
+
 	void create_toc_tree(vector<TocNode*>& toc) {
 		fz_try(context) {
 			fz_outline* outline = fz_load_outline(context, doc);
@@ -590,14 +554,9 @@ public:
 
 	void load_marks_from_database() {
 		marks.clear();
-		string select_query = "select symbol, offset_y from marks where document_path='" + file_name + "';";
-		char* error_message;
-		int rc = sqlite3_exec(db, select_query.c_str(), mark_select_callback, &marks, &error_message);
-
-		if (rc != SQLITE_OK) {
-			cout << "Error: Could not load marks from database: " << error_message << endl;
-			sqlite3_free(error_message);
-		}
+		bookmarks.clear();
+		select_mark(db, file_name, marks);
+		select_bookmark(db, file_name, bookmarks);
 	}
 
 	bool get_mark_location_if_exists(char symbol, float* y_offset) {
@@ -695,28 +654,6 @@ bool operator==(const CachedPageData& lhs, const CachedPageData& rhs) {
 	return true;
 }
 
-struct OpenedBookState {
-	float zoom_level;
-	float offset_x;
-	float offset_y;
-};
-
-static int opened_book_callback(void* res_vector, int argc, char** argv, char** col_name) {
-	vector<OpenedBookState>* res = (vector<OpenedBookState>*) res_vector;
-
-	if (argc != 3) {
-		cout << "this should not happen!" << endl;
-	}
-	float zoom_level = atof(argv[0]);
-	float offset_x = atof(argv[1]);
-	float offset_y = atof(argv[2]);
-
-	res->push_back(OpenedBookState{ zoom_level, offset_x, offset_y });
-
-	return 0;
-}
-
-
 
 
 
@@ -741,8 +678,12 @@ public:
 		ZeroMemory(select_string, sizeof(select_string));
 	}
 
-	T get_value() {
-		return values[get_selected_index()];
+	T* get_value() {
+		int index = get_selected_index();
+		if (index >= 0 && index < values.size()) {
+			return &values[get_selected_index()];
+		}
+		return nullptr;
 	}
 
 	bool is_string_comppatible(string incomplete_string, string option_string) {
@@ -848,6 +789,7 @@ private:
 	sqlite3* database;
 	const Command* pending_text_command;
 	FilteredSelect<int>* current_toc_select;
+	FilteredSelect<float>* current_bookmark_select;
 
 	int current_page;
 	float zoom_level;
@@ -984,7 +926,8 @@ public:
 		is_showing_textbar(false),
 		current_search_result_index(0),
 		pending_text_command(nullptr),
-		current_toc_select(nullptr)
+		current_toc_select(nullptr),
+		current_bookmark_select(nullptr)
 	{
 
 		gl_program = LoadShaders("shaders\\simple.vertex", "shaders\\simple.fragment");
@@ -1131,25 +1074,26 @@ public:
 		else if (command->name == "previous_page") {
 			move_pages(-1 - num_repeats);
 		}
-		else if (command->name == "debug") {
-			is_showing_ui = true;
+		else if (command->name == "goto_toc") {
 			vector<string> flat_toc;
-
 			vector<int> current_document_toc_pages;
 			get_flat_toc(current_document->get_toc(), flat_toc, current_document_toc_pages);
 			current_toc_select = new FilteredSelect<int>(flat_toc, current_document_toc_pages);
-			//cu = true;
-			//current_select = new FilteredSelect({
-			//	"ali",
-			//	"alo",
-			//	"mos",
-			//	"tafavi",
-			//	"alex"
-			//	});
-			//const vector<TocNode*>& toc_roots = current_document->get_toc();
-			//cout << "something" << endl;
-
-			//current_document->
+			is_showing_ui = true;
+		}
+		else if (command->name == "goto_bookmark") {
+			is_showing_ui = true;
+			vector<string> option_names;
+			vector<float> option_locations;
+			for (int i = 0; i < current_document->get_bookmarks().size(); i++) {
+				option_names.push_back(current_document->get_bookmarks()[i].description);
+				option_locations.push_back(current_document->get_bookmarks()[i].y_offset);
+			}
+			current_bookmark_select = new FilteredSelect<float>(option_names, option_locations);
+			cout << "bookmark" << endl;
+		}
+		else if (command->name == "debug") {
+			cout << "debug" << endl;
 		}
 
 	}
@@ -1271,20 +1215,12 @@ public:
 
 		string cannonical_path = std::filesystem::canonical(doc_path).string();
 		current_document_path = cannonical_path;
-		stringstream document_query_ss;
-		document_query_ss << "select zoom_level, offset_x, offset_y from opened_books where path='" << cannonical_path << "'";
-		char* error_message;
-		int rc;
-
 		vector<OpenedBookState> prev_state;
-		rc = sqlite3_exec(database, document_query_ss.str().c_str(), opened_book_callback, &prev_state, &error_message);
 
-		if (rc != SQLITE_OK) {
-			cout << "there was an error in finding open file state: " << error_message << endl;
-			sqlite3_free(error_message);
-		}
-		if (prev_state.size() > 1) {
-			cout << "more than one file with one path, this should not happen!" << endl;
+		if (select_opened_book(database, cannonical_path, prev_state)) {
+			if (prev_state.size() > 1) {
+				cout << "more than one file with one path, this should not happen!" << endl;
+			}
 		}
 
 
@@ -1342,6 +1278,10 @@ public:
 		if (pending_text_command->name == "search") {
 			search_results.clear();
 			search_text(text.c_str(), search_results);
+		}
+
+		if (pending_text_command->name == "add_bookmark") {
+			current_document->add_bookmark(text, offset_y);
 		}
 	}
 
@@ -1548,20 +1488,7 @@ public:
 		unsigned int now = SDL_GetTicks();
 		if (force || (now - last_tick_time) > 1000) {
 			last_tick_time = now;
-			stringstream update_book_state_sql;
-			//update_book_state_sql << "update opened_books set zoom_level=" << zoom_level << " , offset_x="
-			//	<< offset_x << ", offset_y=" << offset_y << " where path='" << current_document_path << "';";
-			update_book_state_sql << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y) values ('" <<
-				current_document_path << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ");";
-
-			char* error_message;
-
-			int rc = sqlite3_exec(database, update_book_state_sql.str().c_str(), null_callback, 0, &error_message);
-
-			if (rc != SQLITE_OK) {
-				cout << "could not update opened document: " << error_message << endl;
-				sqlite3_free(error_message);
-			}
+			update_book(database, current_document_path, zoom_level, offset_x, offset_y);
 		}
 	}
 
@@ -1691,10 +1618,25 @@ public:
 						//cout << "selected option " << current_select->get_selected_option() << endl;
 						//int selected_index = current_toc_select->get_selected_index();
 						//goto_page(current_document_toc_pages[selected_index]);
-						goto_page(current_toc_select->get_value());
+						int* page_value = current_toc_select->get_value();
+						if (page_value) {
+							goto_page(*page_value);
+						}
 						delete current_toc_select;
 						current_toc_select = nullptr;
 						is_showing_ui = false;
+					}
+				}
+				if (current_bookmark_select) {
+					if (current_bookmark_select->render()) {
+						float* offset_value = current_bookmark_select->get_value();
+						if (offset_value) {
+							set_offset_y(*offset_value);
+						}
+						delete current_bookmark_select;
+						current_bookmark_select = nullptr;
+						is_showing_ui = false;
+						render_is_invalid = true;
 					}
 				}
 
@@ -1766,40 +1708,6 @@ static int callback(void* notused, int argc, char** argv, char** col_name) {
 }
 
 
-//int main(int argc, char* args[]) {
-//	sqlite3* db;
-//	char* zErrMsg = nullptr;
-//	int rc;
-//	rc = sqlite3_open("test.db", &db);
-//
-//	if (rc) {
-//		cout << "could not open database: " << sqlite3_errmsg(db) << endl;
-//		return -1;
-//	}
-
-	//string create_table_sql = "CREATE TABLE opened_books("\
-	//	"ID INT PRIMARY KEY NOT NULL,"\
-	//	"PATH TEXT NOT NULL UNIQUE);";
-
-	//rc = sqlite3_exec(db, create_table_sql.c_str(), callback, 0, &zErrMsg);
-	//if (rc != SQLITE_OK) {
-	//	cout << "could not create table: " << sqlite3_errmsg(db) << endl;
-	//}
-	//string insert_sql = ""\
-	//	"INSERT INTO opened_books (ID, PATH) VALUES (1, 'C:\\somepath\\somefile.pdf');"\
-	//	"INSERT INTO opened_books (ID, PATH) VALUES (2, 'C:\\anotherpath\\anotherfile.pdf');";
-
-	//rc = sqlite3_exec(db, insert_sql.c_str(), callback, 0, &zErrMsg);
-	//if (rc != SQLITE_OK) {
-	//	cout << "could not insert into table: " << zErrMsg << endl;
-	//	sqlite3_free(zErrMsg);
-	//}
-
-
-//	sqlite3_close(db);
-//
-//	return 0;
-//}
 
 
 bool select_pdf_file_name(char* out_file_name, int max_length) {
@@ -1848,18 +1756,10 @@ int main(int argc, char* args[]) {
 		cout << "could not open database" << sqlite3_errmsg(db) << endl;
 	}
 
+	create_opened_books_table(db);
+	create_marks_table(db);
+	create_bookmarks_table(db);
 
-	rc = sqlite3_exec(db, create_opened_books_sql, null_callback, 0, &error_message);
-	if (rc != SQLITE_OK) {
-		cout << "could not create opened books table: " << error_message << endl;
-		sqlite3_free(error_message);
-	}
-
-	rc = sqlite3_exec(db, create_marks_sql, null_callback, 0, &error_message);
-	if (rc != SQLITE_OK) {
-		cout << "could not create opened marks table: " << error_message << endl;
-		sqlite3_free(error_message);
-	}
 
 	fz_locks_context locks;
 	locks.user = mupdf_mutexes;
@@ -2028,6 +1928,18 @@ int main(int argc, char* args[]) {
 						window_state.handle_command(command, num_repeats);
 					}
 				}
+			}
+			if (event.type == SDL_MOUSEWHEEL) {
+				int num_repeats = 1;
+				const Command* command;
+				if (event.wheel.y > 0) {
+					command = input_handler.handle_key(SDLK_UP, false, false, &num_repeats);
+				}
+				if (event.wheel.y < 0) {
+					command = input_handler.handle_key(SDLK_DOWN, false, false, &num_repeats);
+				}
+				
+				window_state.handle_command(command, abs(event.wheel.y));
 			}
 
 		}

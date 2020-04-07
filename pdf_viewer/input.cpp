@@ -29,6 +29,9 @@ CommandManager::CommandManager() {
 	commands.push_back({ "previous_page", false, false , false});
 	commands.push_back({ "open_document", false, false , true});
 	commands.push_back({ "debug", false, false , false});
+	commands.push_back({ "add_bookmark", true, false , false});
+	commands.push_back({ "goto_toc", false, false , false});
+	commands.push_back({ "goto_bookmark", false, false , false});
 }
 const Command* CommandManager::get_command_with_name(string name) {
 	for (const auto &com : commands) {
