@@ -1198,6 +1198,8 @@ public:
 
 class WindowState {
 private:
+	DocumentView* main_document_view;
+	DocumentView* helper_document_view;
 	DocumentView* current_document_view;
 	//Document* current_document;
 	SDL_Window* main_window;
@@ -1226,8 +1228,8 @@ private:
 	//float offset_y;
 
 
-	int main_window_prev_width;
-	int main_window_prev_height;
+	//int main_window_prev_width;
+	//int main_window_prev_height;
 
 	unsigned int last_tick_time;
 
@@ -1249,7 +1251,6 @@ public:
 		opengl_context(opengl_context),
 		main_window(main_window),
 		helper_window(helper_window),
-		current_document_view(new DocumentView(mupdf_context, database)),
 		database(database),
 		render_is_invalid(true),
 		is_showing_ui(false),
@@ -1258,6 +1259,10 @@ public:
 		current_toc_select(nullptr),
 		current_bookmark_select(nullptr)
 	{
+
+		main_document_view = new DocumentView(mupdf_context, database);
+		helper_document_view = new DocumentView(mupdf_context, database);
+		current_document_view = main_document_view;
 
 		gl_program = LoadShaders("shaders\\simple.vertex", "shaders\\simple.fragment");
 		if (gl_program == 0) {
@@ -1298,9 +1303,24 @@ public:
 		glDisable(GL_CULL_FACE);
 
 
-		SDL_GetWindowSize(main_window, &main_window_prev_width, &main_window_prev_height);
-		current_document_view->on_view_size_change(main_window_prev_width, main_window_prev_height);
+		int main_window_width, main_window_height;
+		SDL_GetWindowSize(main_window, &main_window_width, &main_window_height);
+		main_document_view->on_view_size_change(main_window_width, main_window_height);
+
+		int helper_window_width, helper_window_height;
+		SDL_GetWindowSize(helper_window, &helper_window_width, &helper_window_height);
+		helper_document_view->on_view_size_change(helper_window_width, helper_window_height);
+
 		last_tick_time = SDL_GetTicks();
+	}
+
+	void on_focus_gained(Uint32 window_id) {
+		if (window_id == SDL_GetWindowID(main_window)) {
+			current_document_view = main_document_view;
+		}
+		if (window_id == SDL_GetWindowID(helper_window)) {
+			current_document_view = helper_document_view;
+		}
 	}
 
 	void handle_command_with_symbol(const Command* command, char symbol) {
@@ -1459,15 +1479,23 @@ public:
 
 
 
-	void on_main_window_size_changed() {
-		int new_width, new_height;
-		SDL_GetWindowSize(main_window, &new_width, &new_height);
-		current_document_view->on_view_size_change(new_width, new_height);
-
-		if ((new_width != main_window_prev_width) || (new_height != main_window_prev_height)) {
-			main_window_prev_width = new_width;
-			main_window_prev_height = new_height;
+	void on_window_size_changed(Uint32 window_id) {
+		if (window_id == SDL_GetWindowID(main_window)) {
+			int new_width, new_height;
+			SDL_GetWindowSize(main_window, &new_width, &new_height);
+			main_document_view->on_view_size_change(new_width, new_height);
 		}
+
+		if (window_id == SDL_GetWindowID(helper_window)) {
+			int new_width, new_height;
+			SDL_GetWindowSize(helper_window, &new_width, &new_height);
+			helper_document_view->on_view_size_change(new_width, new_height);
+		}
+
+		//if ((new_width != main_window_prev_width) || (new_height != main_window_prev_height)) {
+		//	main_window_prev_width = new_width;
+		//	main_window_prev_height = new_height;
+		//}
 		render_is_invalid = true;
 	}
 
@@ -1522,7 +1550,7 @@ public:
 			glBindVertexArray(vertex_array_object);
 			glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
 
-			current_document_view->render(gl_program, gl_unrendered_program, gl_debug_program);
+			main_document_view->render(gl_program, gl_unrendered_program, gl_debug_program);
 
 			{
 				ImGui_ImplOpenGL3_NewFrame();
@@ -1595,6 +1623,7 @@ public:
 
 			glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+			helper_document_view->render(gl_program, gl_unrendered_program, gl_debug_program);
 			SDL_GL_SwapWindow(helper_window);
 			global_pdf_renderer->delete_old_pages();
 		}
@@ -1790,7 +1819,10 @@ int main(int argc, char* args[]) {
 			}
 			if (event.type == SDL_WINDOWEVENT && ((event.window.event == SDL_WINDOWEVENT_RESIZED)
 				|| (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED))) {
-				window_state.on_main_window_size_changed();
+				window_state.on_window_size_changed(event.window.windowID);
+			}
+			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+				window_state.on_focus_gained(event.window.windowID);
 			}
 			if (event.type == SDL_KEYDOWN) {
 				vector<SDL_Scancode> ignored_codes = {
