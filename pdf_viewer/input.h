@@ -15,6 +15,7 @@ struct Command {
 	bool requires_text;
 	bool requires_symbol;
 	bool requires_file_name;
+	bool pushes_state;
 };
 
 

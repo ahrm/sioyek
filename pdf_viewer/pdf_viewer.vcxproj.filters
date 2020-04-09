@@ -83,5 +83,8 @@
     <ClInclude Include="book.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="fts_fuzzy_match.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

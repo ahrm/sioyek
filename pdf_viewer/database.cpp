@@ -48,6 +48,26 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 	return 0;
 }
 
+static int link_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+
+	vector<Link>* res = (vector<Link>*)res_vector;
+	assert(argc == 4);
+
+	string dst_path = argv[0];
+	float src_offset_y = atof(argv[1]);
+	float dst_offset_x = atof(argv[2]);
+	float dst_offset_y = atof(argv[3]);
+
+	Link link;
+	link.document_path = dst_path;
+	link.src_offset_y = src_offset_y;
+	link.dest_offset_x = dst_offset_x;
+	link.dest_offset_y = dst_offset_y;
+
+	res->push_back(link);
+	return 0;
+}
+
 bool handle_error(int error_code, char* error_message) {
 	if (error_code != SQLITE_OK) {
 		cout << "SQL Error: " << error_message << endl;
@@ -92,6 +112,21 @@ bool create_bookmarks_table(sqlite3* db) {
 		"document_path TEXT,"\
 		"desc TEXT,"\
 		"offset_y real);";
+
+	char* error_message = nullptr;
+	return handle_error(
+		sqlite3_exec(db, create_marks_sql, null_callback, 0, &error_message),
+		error_message);
+}
+
+bool create_links_table(sqlite3* db) {
+	const char* create_marks_sql = "CREATE TABLE IF NOT EXISTS links ("\
+		"id INTEGER PRIMARY KEY AUTOINCREMENT," \
+		"src_document TEXT,"\
+		"dst_document TEXT,"\
+		"src_offset_y REAL,"\
+		"dst_offset_x REAL,"\
+		"dst_offset_y REAL);";
 
 	char* error_message = nullptr;
 	return handle_error(
@@ -147,6 +182,18 @@ bool insert_bookmark(sqlite3* db, string document_path, string desc, float offse
 		error_message);
 }
 
+bool insert_link(sqlite3* db, string src_document_path, string dst_document_path, float dst_offset_x, float dst_offset_y, float src_offset_y) {
+
+	stringstream ss;
+	ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y) VALUES ('" <<
+		src_document_path << "', '" << dst_document_path << "', " << src_offset_y << ", " << dst_offset_x << ", " << dst_offset_y << ");";
+	char* error_message = nullptr;
+
+	return handle_error(
+		sqlite3_exec(db, ss.str().c_str(), null_callback, 0, &error_message),
+		error_message);
+}
+
 bool update_mark(sqlite3* db, string document_path, char symbol, float offset_y) {
 
 	stringstream ss;
@@ -185,5 +232,15 @@ bool select_bookmark(sqlite3* db, string book_path, vector<BookMark> &out_result
 		char* error_message = nullptr;
 		return handle_error(
 			sqlite3_exec(db, ss.str().c_str(), bookmark_select_callback, &out_result, &error_message),
+			error_message);
+}
+
+bool select_links(sqlite3* db, string src_document_path, vector<Link> &out_result) {
+		stringstream ss;
+		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y from links where src_document='" << src_document_path << "';";
+
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, ss.str().c_str(), link_select_callback, &out_result, &error_message),
 			error_message);
 }

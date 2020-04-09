@@ -159,6 +159,7 @@
   <ItemGroup>
     <ClInclude Include="book.h" />
     <ClInclude Include="database.h" />
+    <ClInclude Include="fts_fuzzy_match.h" />
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="imgui.h" />
     <ClInclude Include="imgui_impl_opengl3.h" />

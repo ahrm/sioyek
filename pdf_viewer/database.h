@@ -19,3 +19,6 @@ bool select_mark(sqlite3* db, string book_path, vector<Mark>& out_result);
 bool create_bookmarks_table(sqlite3* db);
 bool insert_bookmark(sqlite3* db, string document_path, string desc, float offset_y);
 bool select_bookmark(sqlite3* db, string book_path, vector<BookMark>& out_result);
+bool create_links_table(sqlite3* db);
+bool insert_link(sqlite3* db, string src_document_path, string dst_document_path, float dst_offset_y, float dst_offset_x, float src_offset_y);
+bool select_links(sqlite3* db, string src_document_path, vector<Link>& out_result);

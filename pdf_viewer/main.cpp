@@ -1,9 +1,14 @@
-//todo: cleanup the code considerably!
-//todo: do sth with the second window
-//todo: toc
+//todo: cleanup the code
 //todo: visibility test is still buggy??
 //todo: threading
 //todo: remove some O(n) things from page height computations
+//todo: add fuzzy search
+//todo: improve speed and code of document change (cache documents?)
+//todo: add ability to delete stuff
+//todo: copy
+//todo: (actual) links
+//todo: handle document memory leak (because documents are not deleted since adding state history)
+//todo: handle control+arrow keys
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -31,6 +36,11 @@
 #include "input.h"
 #include "database.h"
 #include "book.h"
+
+#define FTS_FUZZY_MATCH_IMPLEMENTATION
+#include "fts_fuzzy_match.h"
+#undef FTS_FUZZY_MATCH_IMPLEMENTATION
+
 
 const float ZOOM_INC_FACTOR = 1.2f;
 const unsigned int cache_invalid_milies = 1000;
@@ -158,6 +168,14 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	glDeleteShader(FragmentShaderID);
 
 	return ProgramID;
+}
+
+string to_lower(const string& inp) {
+	string res;
+	for (char c : inp) {
+		res.push_back(::tolower(c));
+	}
+	return res;
 }
 
 void window_to_uv_scale(int window_width, int window_height, int document_width, int document_height, float* uv_x, float* uv_y) {
@@ -484,6 +502,7 @@ class Document {
 private:
 	vector<Mark> marks;
 	vector<BookMark> bookmarks;
+	vector<Link> links;
 	sqlite3* db;
 	vector<TocNode*> top_level_toc_nodes;
 
@@ -508,6 +527,42 @@ public:
 		res.y_offset = y_offset;
 		bookmarks.push_back(res);
 		insert_bookmark(db, file_name, desc, y_offset);
+	}
+
+	string get_path() {
+		return file_name;
+	}
+
+
+	void add_link(Document* dst_document, float dst_y_offset, float dst_x_offset, float src_y_offset) {
+		Link link;
+		link.document_path = dst_document->get_path();
+		link.dest_offset_x = dst_x_offset;
+		link.dest_offset_y = dst_y_offset;
+		link.src_offset_y = src_y_offset;
+		add_link(link);
+	}
+	void add_link(Link link) {
+		links.push_back(link);
+		insert_link(db, get_path(), link.document_path, link.dest_offset_y, link.dest_offset_x, link.src_offset_y);
+	}
+
+
+	Link* find_closest_link(float to_offset_y) {
+		float min_diff = 1000000.0f;
+		int min_index = -1;
+
+		for (int i = 0; i < links.size(); i++) {
+			float diff = abs(links[i].src_offset_y - to_offset_y);
+			if (diff < min_diff) {
+				min_diff = diff;
+				min_index = i;
+			}
+		}
+		if (min_index >= 0) {
+			return &links[min_index];
+		}
+		return nullptr;
 	}
 
 	const vector<BookMark>& get_bookmarks() const {
@@ -542,6 +597,7 @@ public:
 		bookmarks.clear();
 		select_mark(db, file_name, marks);
 		select_bookmark(db, file_name, bookmarks);
+		select_links(db, file_name, links);
 	}
 
 	bool get_mark_location_if_exists(char symbol, float* y_offset) {
@@ -625,6 +681,7 @@ struct CachedPageData {
 	int page;
 	float zoom_level;
 };
+
 struct CachedPage {
 	CachedPageData cached_page_data;
 	fz_pixmap* cached_page_pixmap;
@@ -670,6 +727,8 @@ public:
 	}
 
 	bool is_string_comppatible(string incomplete_string, string option_string) {
+		incomplete_string = to_lower(incomplete_string);
+		option_string = to_lower(option_string);
 		return option_string.find(incomplete_string) < option_string.size();
 	}
 
@@ -791,11 +850,6 @@ class DocumentView {
 	vector<SearchResult> search_results;
 	int current_search_result_index;
 
-	inline void set_offsets(float new_offset_x, float new_offset_y) {
-		offset_x = new_offset_x;
-		offset_y = new_offset_y;
-		render_is_invalid = true;
-	}
 public:
 	DocumentView(fz_context* mupdf_context, sqlite3* db) : 
 		mupdf_context(mupdf_context),
@@ -803,11 +857,53 @@ public:
 	{
 
 	}
+
+	float get_zoom_level() {
+		return zoom_level;
+	}
+
+	DocumentViewState get_state() {
+		DocumentViewState res;
+		res.document_view = this;
+		res.offset_x = get_offset_x();
+		res.offset_y = get_offset_y();
+		res.zoom_level = get_zoom_level();
+		return res;
+	}
+
+	void handle_escape() {
+		search_results.clear();
+		current_search_result_index = 0;
+	}
+	inline void set_offsets(float new_offset_x, float new_offset_y) {
+		offset_x = new_offset_x;
+		offset_y = new_offset_y;
+		render_is_invalid = true;
+	}
 	
 	Document* get_document() {
 		return current_document;
 	}
 
+	int get_num_search_results() {
+		return search_results.size();
+	}
+
+	int get_current_search_result_index() {
+		return current_search_result_index;
+	}
+
+	Link* find_closest_link() {
+		return current_document->find_closest_link(offset_y);
+	}
+
+	float get_offset_x() {
+		return offset_x;
+	}
+
+	float get_offset_y() {
+		return offset_y;
+	}
 
 	inline void set_offset_x(float new_offset_x) {
 		set_offsets(new_offset_x, offset_y);
@@ -920,20 +1016,18 @@ public:
 		set_offset_y(cum_offset_y);
 	}
 
-	float zoom_in() {
-		float old_zoom = zoom_level;
-		zoom_level *= ZOOM_INC_FACTOR;
-		float new_zoom = zoom_level;
+	float set_zoom_level(float zl) {
+		zoom_level = zl;
 		render_is_invalid = true;
 		return zoom_level;
 	}
 
+	float zoom_in() {
+		return set_zoom_level(zoom_level * ZOOM_INC_FACTOR);
+	}
+
 	float zoom_out() {
-		float old_zoom = zoom_level;
-		zoom_level /= ZOOM_INC_FACTOR;
-		float new_zoom = zoom_level;
-		render_is_invalid = true;
-		return zoom_level;
+		return set_zoom_level(zoom_level / ZOOM_INC_FACTOR);
 	}
 
 	void move_absolute(float dx, float dy) {
@@ -1046,7 +1140,9 @@ public:
 
 
 		if (current_document != nullptr) {
-			delete current_document;
+			//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//todo: not doing this is a memory leak
+			//delete current_document;
 		}
 
 		// this part should be moved to WindowState
@@ -1059,7 +1155,9 @@ public:
 
 		current_document = new Document(mupdf_context, doc_path, database);
 		if (!current_document->open()) {
-			delete current_document;
+			//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//todo: not doing this is a memory leak
+			//delete current_document;
 			current_document = nullptr;
 		}
 		reset_doc_state();
@@ -1196,6 +1294,7 @@ public:
 	}
 };
 
+
 class WindowState {
 private:
 	DocumentView* main_document_view;
@@ -1218,6 +1317,79 @@ private:
 	GLuint gl_program;
 	GLuint gl_debug_program;
 	GLuint gl_unrendered_program;
+
+	string pending_link_source_document_path;
+	Link pending_link;
+	bool pending_link_source_filled;
+
+	int current_history_index;
+	vector<DocumentViewState> history;
+
+	void set_main_document_view_state(DocumentViewState new_view_state) {
+		main_document_view = new_view_state.document_view;
+		int window_width, window_height;
+		SDL_GetWindowSize(main_window, &window_width, &window_height);
+		main_document_view->on_view_size_change(window_width, window_height);
+		main_document_view->set_offsets(new_view_state.offset_x, new_view_state.offset_y);
+		main_document_view->set_zoom_level(new_view_state.zoom_level);
+		current_document_view = main_document_view;
+	}
+
+
+	//void pop_state() {
+	//	if (history.size() > 0) {
+	//		DocumentViewState new_state = history[history.size() - 1];
+	//		history.pop_back();
+	//		set_main_document_view_state(new_state);
+	//	}
+	//}
+
+	void prev_state() {
+		if (current_history_index > 0) {
+			if (current_history_index == history.size()) {
+				push_state();
+				current_history_index = history.size()-1;
+			}
+			current_history_index--;
+			set_main_document_view_state(history[current_history_index]);
+		}
+	}
+
+	void next_state() {
+		if (current_history_index < history.size()-1) {
+			current_history_index++;
+			set_main_document_view_state(history[current_history_index]);
+		}
+	}
+
+	void push_state() {
+		DocumentViewState dvs;
+		dvs.document_view = main_document_view;
+		dvs.offset_x = main_document_view->get_offset_x();
+		dvs.offset_y = main_document_view->get_offset_y();
+		dvs.zoom_level = main_document_view->get_zoom_level();
+
+
+		if (history.size() > 0) {
+			DocumentViewState last_history = history[history.size() - 1];
+			if (last_history.document_view == main_document_view && last_history.offset_x == dvs.offset_x && last_history.offset_y == dvs.offset_y) {
+				return;
+			}
+		}
+
+		if (current_history_index == history.size()) {
+			history.push_back(dvs);
+			current_history_index = history.size();
+		}
+		else {
+			//todo: should probably do some reference counting garbage collection here
+
+			history.erase(history.begin() + current_history_index, history.end());
+			history.push_back(dvs);
+			current_history_index = history.size();
+		}
+	}
+
 	//vector<float> page_heights;
 	//vector<float> page_widths;
 
@@ -1314,6 +1486,32 @@ public:
 		last_tick_time = SDL_GetTicks();
 	}
 
+	void handle_link() {
+		if (pending_link_source_filled) {
+			pending_link.dest_offset_x = main_document_view->get_offset_x();
+			pending_link.dest_offset_y = main_document_view->get_offset_y();
+			pending_link.document_path = main_document_view->get_document()->get_path();
+			if (pending_link_source_document_path == main_document_view->get_document()->get_path()) {
+				main_document_view->get_document()->add_link(pending_link);
+			}
+			else {
+				insert_link(database,
+					pending_link_source_document_path,
+					pending_link.document_path,
+					pending_link.dest_offset_x,
+					pending_link.dest_offset_y,
+					pending_link.src_offset_y);
+			}
+			render_is_invalid = true;
+			pending_link_source_filled = false;
+		}
+		else {
+			pending_link.src_offset_y = main_document_view->get_offset_y();
+			pending_link_source_document_path = main_document_view->get_document()->get_path();
+			pending_link_source_filled = true;
+		}
+	}
+
 	void on_focus_gained(Uint32 window_id) {
 		if (window_id == SDL_GetWindowID(main_window)) {
 			current_document_view = main_document_view;
@@ -1329,6 +1527,7 @@ public:
 		if (command->name == "set_mark") {
 			assert(current_document_view);
 			current_document_view->add_mark(symbol);
+			invalidate_render();
 		}
 		else if (command->name == "goto_mark") {
 			assert(current_document_view);
@@ -1340,7 +1539,8 @@ public:
 		assert(command->requires_file_name);
 		//cout << "handling " << command->name << " with file " << file_name << endl;
 		if (command->name == "open_document") {
-			current_document_view->open_document(file_name);
+			//current_document_view->open_document(file_name);
+			open_document(file_name);
 		}
 	}
 
@@ -1358,6 +1558,9 @@ public:
 			pending_text_command = command;
 			show_textbar();
 			return;
+		}
+		if (command->pushes_state) {
+			push_state();
 		}
 		if (command->name == "goto_begining") {
 			if (num_repeats) {
@@ -1386,6 +1589,9 @@ public:
 		else if (command->name == "move_right") {
 			current_document_view->move(72.0f * rp, 0.0f);
 		}
+		else if (command->name == "link") {
+			handle_link();
+		}
 
 		else if (command->name == "move_left") {
 			current_document_view->move(-72.0f * rp, 0.0f);
@@ -1399,12 +1605,27 @@ public:
 			current_document_view->zoom_out();
 		}
 
+		else if (command->name == "next_state") {
+			next_state();
+			cout << "next state" << endl;
+		}
+		else if (command->name == "prev_state") {
+			prev_state();
+			cout << "prev state" << endl;
+		}
+
 		else if (command->name == "next_item") {
 			current_document_view->goto_search_result(1 + num_repeats);
 		}
 
 		else if (command->name == "previous_item") {
 			current_document_view->goto_search_result(-1 - num_repeats);
+		}
+		else if (command->name == "push_state") {
+			push_state();
+		}
+		else if (command->name == "pop_state") {
+			prev_state();
 		}
 
 		else if (command->name == "open_document") {
@@ -1420,8 +1641,10 @@ public:
 			vector<string> flat_toc;
 			vector<int> current_document_toc_pages;
 			get_flat_toc(current_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
-			current_toc_select = new FilteredSelect<int>(flat_toc, current_document_toc_pages);
-			is_showing_ui = true;
+			if (current_document_toc_pages.size() > 0) {
+				current_toc_select = new FilteredSelect<int>(flat_toc, current_document_toc_pages);
+				is_showing_ui = true;
+			}
 		}
 		else if (command->name == "goto_bookmark") {
 			is_showing_ui = true;
@@ -1506,7 +1729,7 @@ public:
 		if (force || (now - last_tick_time) > 1000) {
 			last_tick_time = now;
 			//update_book(database, current_document_path, zoom_level, offset_x, offset_y);
-			current_document_view->persist();
+			main_document_view->persist();
 		}
 	}
 
@@ -1521,6 +1744,23 @@ public:
 		//}
 	}
 
+	string get_status_string(const Command* pending_command) {
+		stringstream ss;
+		ss << "Page " << main_document_view->get_current_page_number() << " / " << main_document_view->get_document()->num_pages();
+		int num_search_results = main_document_view->get_num_search_results();
+		if (num_search_results > 0) {
+			ss << " | showing result " << main_document_view->get_current_search_result_index() + 1 << " / " << num_search_results;
+		}
+		if (pending_command && pending_command->requires_symbol) {
+			ss << " | " << pending_command->name <<" waiting for symbol";
+		}
+		return ss.str();
+	}
+
+	void invalidate_render() {
+		render_is_invalid = true;
+	}
+
 
 	void show_textbar() {
 		is_showing_ui = true;
@@ -1529,14 +1769,69 @@ public:
 	}
 
 	void open_document(string path) {
-		current_document_view->open_document(path);
+		//current_document_view->open_document(path);
+		int window_width, window_height;
+		SDL_GetWindowSize(main_window, &window_width, &window_height);
+
+		main_document_view = new DocumentView(mupdf_context, database);
+		main_document_view->open_document(path);
+		main_document_view->on_view_size_change(window_width, window_height);
+		current_document_view = main_document_view;
+	}
+
+	void handle_escape() {
+		is_showing_ui = false;
+		is_showing_textbar = false;
+		ZeroMemory(text_command_buffer, sizeof(text_command_buffer));
+		pending_link_source_document_path = "";
+		pending_link_source_filled = false;
+		pending_text_command = nullptr;
+		if (current_toc_select) {
+			delete current_toc_select;
+			current_toc_select = nullptr;
+		}
+		if (current_bookmark_select) {
+			delete current_bookmark_select;
+			current_bookmark_select = nullptr;
+		}
+		if (main_document_view) {
+			main_document_view->handle_escape();
+		}
+
+		if (helper_document_view) {
+			helper_document_view->handle_escape();
+		}
+		invalidate_render();
 	}
 
 
-	void render() {
+	void render(const Command* pending_command) {
 		if (should_render()) {
-			render_is_invalid = false;
 			cout << "rendering ..." << endl;
+
+			//current_document_view->get_document()->find_closest_link(current_document_view->)
+			Link* link = main_document_view->find_closest_link();
+			if (link) {
+				string helper_document_path = link->document_path;
+				float helper_document_offset_x = link->dest_offset_x;
+				float helper_document_offset_y = link->dest_offset_y;
+
+				if (helper_document_view->get_document() && 
+					helper_document_view->get_document()->get_path() == helper_document_path) {
+					helper_document_view->set_offsets(helper_document_offset_x, helper_document_offset_y);
+				}
+				else {
+					delete helper_document_view;
+					int helper_window_width, helper_window_height;
+					SDL_GetWindowSize(helper_window, &helper_window_width, &helper_window_height);
+
+					helper_document_view = new DocumentView(mupdf_context, database);
+					helper_document_view->on_view_size_change(helper_window_width, helper_window_height);
+					helper_document_view->open_document(helper_document_path);
+					helper_document_view->set_offsets(helper_document_offset_x, helper_document_offset_y);
+				}
+			}
+			render_is_invalid = false;
 
 
 			ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -1546,6 +1841,7 @@ public:
 			SDL_GL_MakeCurrent(main_window, *opengl_context);
 			int window_width, window_height;
 			SDL_GetWindowSize(main_window, &window_width, &window_height);
+
 			glViewport(0, 0, window_width, window_height);
 			glBindVertexArray(vertex_array_object);
 			glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
@@ -1589,6 +1885,7 @@ public:
 						//goto_page(current_document_toc_pages[selected_index]);
 						int* page_value = current_toc_select->get_value();
 						if (page_value) {
+							push_state();
 							current_document_view->goto_page(*page_value);
 						}
 						delete current_toc_select;
@@ -1600,6 +1897,7 @@ public:
 					if (current_bookmark_select->render()) {
 						float* offset_value = current_bookmark_select->get_value();
 						if (offset_value) {
+							push_state();
 							current_document_view->set_offset_y(*offset_value);
 						}
 						delete current_bookmark_select;
@@ -1608,6 +1906,14 @@ public:
 						render_is_invalid = true;
 					}
 				}
+
+				ImGui::GetStyle().WindowRounding = 0.0f;
+				ImGui::GetStyle().WindowBorderSize = 0.0f;
+				ImGui::SetNextWindowSize(ImVec2(window_width, 20));
+				ImGui::SetNextWindowPos(ImVec2(0, window_height - 25));
+				ImGui::Begin("some test", 0, ImGuiWindowFlags_NoDecoration);
+				ImGui::Text(get_status_string(pending_command).c_str());
+				ImGui::End();
 
 				ImGui::Render();
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -1696,6 +2002,7 @@ int main(int argc, char* args[]) {
 	create_opened_books_table(db);
 	create_marks_table(db);
 	create_bookmarks_table(db);
+	create_links_table(db);
 
 
 	fz_locks_context locks;
@@ -1806,7 +2113,14 @@ int main(int argc, char* args[]) {
 		while (SDL_PollEvent(&event)) {
 			ImGui_ImplSDL2_ProcessEvent(&event);
 
-			if ((event.key.type == SDL_KEYDOWN) && io.WantCaptureKeyboard) {
+			// retarded hack to deal with imgui one frame lag
+			if ((event.key.type == SDL_KEYDOWN || event.key.type == SDL_KEYUP) && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+				current_pending_command = nullptr;
+				is_waiting_for_symbol = false;
+				window_state.handle_escape();
+			}
+
+			else if ((event.key.type == SDL_KEYDOWN) && io.WantCaptureKeyboard) {
 				continue;
 			}
 
@@ -1852,6 +2166,7 @@ int main(int argc, char* args[]) {
 					if (command->requires_symbol) {
 						is_waiting_for_symbol = true;
 						current_pending_command = command;
+						window_state.invalidate_render();
 						continue;
 					}
 					if (command->requires_file_name) {
@@ -1883,7 +2198,7 @@ int main(int argc, char* args[]) {
 			}
 
 		}
-		window_state.render();
+		window_state.render(current_pending_command);
 
 		SDL_Delay(16);
 		window_state.tick();
