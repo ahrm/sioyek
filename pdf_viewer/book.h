@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <mupdf/fitz.h>
+
 using namespace std;
 
 class DocumentView;
@@ -26,6 +28,11 @@ struct Link {
 	float dest_offset_x;
 	float dest_offset_y;
 	float src_offset_y;
+};
+
+struct PdfLink {
+	fz_rect rect;
+	string uri;
 };
 
 struct DocumentViewState {

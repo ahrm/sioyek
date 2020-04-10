@@ -4,11 +4,11 @@
 //todo: remove some O(n) things from page height computations
 //todo: add fuzzy search
 //todo: improve speed and code of document change (cache documents?)
-//todo: add ability to delete stuff
 //todo: copy
-//todo: (actual) links
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: handle control+arrow keys
+//todo: next_state with empty history crashes
+//todo: be able to move link
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <thread>
 #include <mutex>
+#include <optional>
 
 #include <SDL.h>
 #include <gl/glew.h>
@@ -544,13 +545,49 @@ public:
 	}
 	void add_link(Link link) {
 		links.push_back(link);
-		insert_link(db, get_path(), link.document_path, link.dest_offset_y, link.dest_offset_x, link.src_offset_y);
+		insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.src_offset_y);
 	}
 
 
-	Link* find_closest_link(float to_offset_y) {
+	BookMark* find_closest_bookmark(float to_offset_y, int* index=nullptr) {
 		float min_diff = 1000000.0f;
 		int min_index = -1;
+		if (index != nullptr) {
+			*index = min_index;
+		}
+
+		for (int i = 0; i < bookmarks.size(); i++) {
+			float diff = abs(bookmarks[i].y_offset - to_offset_y);
+			if (diff < min_diff) {
+				min_diff = diff;
+				min_index = i;
+			}
+		}
+		if (min_index >= 0) {
+			if (index != nullptr) {
+				*index = min_index;
+			}
+			return &bookmarks[min_index];
+		}
+		return nullptr;
+	}
+
+	void delete_closest_bookmark(float to_y_offset) {
+		int closest_index = -1;
+		find_closest_bookmark(to_y_offset, &closest_index);
+		if (closest_index != -1) {
+			delete_bookmark(db, get_path(), bookmarks[closest_index].y_offset);
+			bookmarks.erase(bookmarks.begin() + closest_index);
+		}
+	}
+
+
+	Link* find_closest_link(float to_offset_y, int* index=nullptr) {
+		float min_diff = 1000000.0f;
+		int min_index = -1;
+		if (index != nullptr) {
+			*index = min_index;
+		}
 
 		for (int i = 0; i < links.size(); i++) {
 			float diff = abs(links[i].src_offset_y - to_offset_y);
@@ -560,13 +597,40 @@ public:
 			}
 		}
 		if (min_index >= 0) {
+			if (index != nullptr) {
+				*index = min_index;
+			}
 			return &links[min_index];
 		}
 		return nullptr;
 	}
 
+	void delete_closest_link(float to_offset_y) {
+		int closest_index = -1;
+		find_closest_link(to_offset_y, &closest_index);
+		if (closest_index != -1) {
+			delete_link(db, get_path(), links[closest_index].src_offset_y);
+			links.erase(links.begin() + closest_index);
+		}
+
+	}
+
 	const vector<BookMark>& get_bookmarks() const {
 		return bookmarks;
+	}
+
+	fz_link* get_page_links(int page_number) {
+		fz_link* res = nullptr;
+		fz_try(context) {
+			fz_page* page = fz_load_page(context, doc, page_number);
+			res = fz_load_links(context, page);
+			fz_drop_page(context, page);
+		}
+		fz_catch(context) {
+			cout << "Error: Could not load links" << endl;
+			res = nullptr;
+		}
+		return res;
 	}
 
 	void add_mark(char symbol, float y_offset) {
@@ -828,6 +892,21 @@ bool intersects(float range1_start, float range1_end, float range2_start, float 
 	return true;
 }
 
+void parse_uri(string uri, int* page, float* offset_x, float* offset_y) {
+	int comma_index = -1;
+
+	uri = uri.substr(1, uri.size() - 1);
+	comma_index = uri.find(",");
+	*page = atoi(uri.substr(0, comma_index ).c_str());
+
+	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
+	comma_index = uri.find(",");
+	*offset_x = atof(uri.substr(0, comma_index ).c_str());
+
+	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
+	*offset_y = atof(uri.c_str());
+}
+
 class DocumentView {
 	fz_context* mupdf_context;
 	sqlite3* database;
@@ -893,8 +972,17 @@ public:
 		return current_search_result_index;
 	}
 
+
 	Link* find_closest_link() {
 		return current_document->find_closest_link(offset_y);
+	}
+
+	void delete_closest_link() {
+		current_document->delete_closest_link(offset_y);
+	}
+
+	void delete_closest_bookmark() {
+		current_document->delete_closest_bookmark(offset_y);
 	}
 
 	float get_offset_x() {
@@ -908,6 +996,40 @@ public:
 	inline void set_offset_x(float new_offset_x) {
 		set_offsets(new_offset_x, offset_y);
 	}
+
+	optional<PdfLink> get_link_in_pos(int view_x, int view_y) {
+		float doc_x, doc_y;
+		int page;
+		window_to_document_pos(view_x, view_y, &doc_x, &doc_y, &page);
+		fz_link* links = current_document->get_page_links(page);
+		fz_link* links_root = links;
+
+		fz_point point;
+		point.x = doc_x;
+		point.y = doc_y;
+
+		PdfLink res;
+		bool found = false;
+		while (links != nullptr) {
+			if (fz_is_point_inside_rect(point, links->rect)) {
+				res = { links->rect, links->uri };
+				found = true;
+				break;
+			}
+			links = links->next;
+		}
+
+		fz_try(mupdf_context) {
+			//todo: maybe we should loop and drop links?
+			fz_drop_link(mupdf_context, links_root);
+		}
+		fz_catch(mupdf_context) {
+			cout << "Error: Could not drop link" << endl;
+		}
+		if (found) return res;
+		return {};
+	}
+
 
 	inline void set_offset_y(float new_offset_y) {
 		set_offsets(offset_x, new_offset_y);
@@ -987,6 +1109,29 @@ public:
 		transformed_doc_rect.y1 /= (window_rect.y1 - offset_y);
 
 		return transformed_doc_rect;
+	}
+
+	void window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page) {
+		// bottom being the highest widnow_y
+		float test_y = (window_y - view_height / 2) / zoom_level + offset_y;
+		float remaining_y = test_y;
+		int page = 0;
+		int i = 0;
+		for (i = 0; i < page_heights.size(); i++) {
+			if ((remaining_y - page_heights[i]) < 0) {
+				break;
+			}
+			remaining_y -= page_heights[i];
+		}
+
+		float page_width = page_widths[i];
+		float document_x = page_width / 2 + offset_x + (window_x - view_width / 2) / zoom_level;
+		//float document_y = page_heights[i] - remaining_y;
+		float document_y = remaining_y;
+
+		*doc_x = document_x;
+		*doc_y = document_y;
+		*doc_page = i;
 	}
 
 	float get_page_additional_offset(int page_number) {
@@ -1194,7 +1339,8 @@ public:
 
 	}
 
-	void goto_page(int page) {
+	float get_page_offset(int page) {
+
 		int max_page = current_document->num_pages();
 		if (page > max_page) {
 			page = max_page;
@@ -1205,8 +1351,15 @@ public:
 
 			new_offset_y += page_heights[i];
 		}
+		return new_offset_y;
+	}
 
-		set_offset_y(new_offset_y);
+	void goto_offset_within_page(int page, float offset_x, float offset_y) {
+		set_offsets(offset_x, get_page_offset(page-1) + offset_y);
+	}
+
+	void goto_page(int page) {
+		set_offset_y(get_page_offset(page));
 	}
 
 	void render_page(int page_number, GLuint rendered_program, GLuint unrendered_program) {
@@ -1254,9 +1407,56 @@ public:
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+
 		for (int j = 0; j < visible_pages.size(); j++) {
 			render_page(visible_pages[j], rendered_program, unrendered_program);
+			fz_link* links = current_document->get_page_links(visible_pages[j]);
+			while (links != nullptr) {
+				fz_rect window_rect = document_to_window_rect(visible_pages[j], links->rect);
+				float quad_vertex_data[] = {
+					window_rect.x0, window_rect.y1,
+					window_rect.x1, window_rect.y1,
+					window_rect.x0, window_rect.y0,
+					window_rect.x1, window_rect.y0
+				};
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+				glUseProgram(highlight_program);
+				glEnableVertexAttribArray(0);
+				glEnableVertexAttribArray(1);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+				glDisable(GL_BLEND);
+
+				links = links->next;
+			}
 		}
+		//if (page_heights.size() > 0){
+		//	fz_rect debug_document_rect;
+		//	float doc_pos_x, doc_pos_y;
+		//	int clicked_page;
+		//	window_to_document_pos(debug_last_clicked_x, debug_last_clicked_y, &doc_pos_x, &doc_pos_y, &clicked_page);
+		//	debug_document_rect.x0 = doc_pos_x - 50;
+		//	debug_document_rect.x1 = doc_pos_x + 50;
+		//	debug_document_rect.y0 = doc_pos_y - 50;
+		//	debug_document_rect.y1 = doc_pos_y + 50;
+		//	fz_rect debug_window_rect = document_to_window_rect(clicked_page, debug_document_rect);
+		//	float quad_vertex_data[] = {
+		//		debug_window_rect.x0, debug_window_rect.y1,
+		//		debug_window_rect.x1, debug_window_rect.y1,
+		//		debug_window_rect.x0, debug_window_rect.y0,
+		//		debug_window_rect.x1, debug_window_rect.y0
+		//	};
+		//	glEnable(GL_BLEND);
+		//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//	glUseProgram(highlight_program);
+		//	glEnableVertexAttribArray(0);
+		//	glEnableVertexAttribArray(1);
+		//	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
+		//	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		//	glDisable(GL_BLEND);
+		//}
+
 		if (search_results.size() > 0) {
 			SearchResult current_search_result = search_results[current_search_result_index];
 			fz_quad result_quad = current_search_result.quad;
@@ -1510,7 +1710,9 @@ public:
 			pending_link_source_document_path = main_document_view->get_document()->get_path();
 			pending_link_source_filled = true;
 		}
+		invalidate_render();
 	}
+
 
 	void on_focus_gained(Uint32 window_id) {
 		if (window_id == SDL_GetWindowID(main_window)) {
@@ -1532,6 +1734,16 @@ public:
 		else if (command->name == "goto_mark") {
 			assert(current_document_view);
 			current_document_view->goto_mark(symbol);
+		}
+		else if (command->name == "delete") {
+			if (symbol == 'y') {
+				main_document_view->delete_closest_link();
+				invalidate_render();
+			}
+			else if (symbol == 'b') {
+				main_document_view->delete_closest_bookmark();
+				invalidate_render();
+			}
 		}
 	}
 
@@ -1751,6 +1963,9 @@ public:
 		if (num_search_results > 0) {
 			ss << " | showing result " << main_document_view->get_current_search_result_index() + 1 << " / " << num_search_results;
 		}
+		if (pending_link_source_filled) {
+			ss << " | linking ...";
+		}
 		if (pending_command && pending_command->requires_symbol) {
 			ss << " | " << pending_command->name <<" waiting for symbol";
 		}
@@ -1802,6 +2017,29 @@ public:
 			helper_document_view->handle_escape();
 		}
 		invalidate_render();
+	}
+
+	void handle_click(int pos_x, int pos_y) {
+		auto link_ = main_document_view->get_link_in_pos(pos_x, pos_y);
+		if (link_.has_value()) {
+			PdfLink link = link_.value();
+			int page;
+			float offset_x, offset_y;
+			parse_uri(link.uri, &page, &offset_x, &offset_y);
+			if (!pending_link_source_filled) {
+				push_state();
+				main_document_view->goto_offset_within_page(page, offset_x, offset_y);
+			}
+			else {
+				pending_link.dest_offset_x = offset_x;
+				pending_link.dest_offset_y = main_document_view->get_page_offset(page-1) + offset_y;
+				pending_link.document_path = main_document_view->get_document()->get_path();
+				main_document_view->get_document()->add_link(pending_link);
+				render_is_invalid = true;
+				pending_link_source_filled = false;
+			}
+
+		}
 	}
 
 
@@ -1988,8 +2226,6 @@ char get_symbol(SDL_Scancode scancode, bool is_shift_pressed) {
 
 int main(int argc, char* args[]) {
 
-
-
 	sqlite3* db;
 	char* error_message = nullptr;
 	int rc;
@@ -2122,6 +2358,11 @@ int main(int argc, char* args[]) {
 
 			else if ((event.key.type == SDL_KEYDOWN) && io.WantCaptureKeyboard) {
 				continue;
+			}
+			if (event.type == SDL_MOUSEBUTTONDOWN) {
+				if (event.button.button == SDL_BUTTON_LEFT) {
+					window_state.handle_click(event.button.x, event.button.y);
+				}
 			}
 
 			//render_invalidated = true;

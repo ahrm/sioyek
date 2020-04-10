@@ -37,6 +37,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "prev_state", false, false , false, false});
 	commands.push_back({ "pop_state", false, false , false, false});
 	commands.push_back({ "test_command", false, false , false, false});
+	commands.push_back({ "delete", false, true , false, false});
 }
 const Command* CommandManager::get_command_with_name(string name) {
 	for (const auto &com : commands) {

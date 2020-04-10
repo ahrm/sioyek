@@ -194,6 +194,28 @@ bool insert_link(sqlite3* db, string src_document_path, string dst_document_path
 		error_message);
 }
 
+bool delete_link(sqlite3* db, string src_document_path, float src_offset_y) {
+
+	stringstream ss;
+	ss << "DELETE FROM links where src_document='" << src_document_path << "'AND src_offset_y=" << src_offset_y << ";";
+	char* error_message = nullptr;
+
+	return handle_error(
+		sqlite3_exec(db, ss.str().c_str(), null_callback, 0, &error_message),
+		error_message);
+}
+
+bool delete_bookmark(sqlite3* db, string src_document_path, float src_offset_y) {
+
+	stringstream ss;
+	ss << "DELETE FROM bookmarks where document_path='" << src_document_path << "'AND offset_y=" << src_offset_y << ";";
+	char* error_message = nullptr;
+
+	return handle_error(
+		sqlite3_exec(db, ss.str().c_str(), null_callback, 0, &error_message),
+		error_message);
+}
+
 bool update_mark(sqlite3* db, string document_path, char symbol, float offset_y) {
 
 	stringstream ss;
