@@ -211,6 +211,18 @@ bool insert_link(sqlite3* db, string src_document_path, string dst_document_path
 		error_message);
 }
 
+bool update_link(sqlite3* db, string src_document_path, float dst_offset_x, float dst_offset_y, float src_offset_y) {
+
+	stringstream ss;
+	ss << "UPDATE links SET dst_offset_x=" << dst_offset_x << ", dst_offset_y=" << dst_offset_y << " WHERE src_document='" <<
+		src_document_path << "' AND src_offset_y=" << src_offset_y << ";";
+	char* error_message = nullptr;
+
+	return handle_error(
+		sqlite3_exec(db, ss.str().c_str(), null_callback, 0, &error_message),
+		error_message);
+}
+
 bool delete_link(sqlite3* db, string src_document_path, float src_offset_y) {
 
 	stringstream ss;

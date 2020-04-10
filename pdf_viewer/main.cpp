@@ -6,10 +6,9 @@
 //todo: improve speed and code of document change (cache documents?)
 //todo: copy
 //todo: handle document memory leak (because documents are not deleted since adding state history)
-//todo: handle control+arrow keys
-//todo: back is buggy again
-//todo: be able to move link
 //todo: tests!
+//todo: handle mouse in menues
+//todo: stop creating DocumentViews!
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -287,6 +286,7 @@ public:
 
 	//should only be called from the main thread
 	GLuint find_rendered_page(string path, int page, float zoom_level, int* page_width, int* page_height) {
+		cout << "path: " << path << endl;
 		fz_document* doc = get_document_with_path(path);
 		if (doc != nullptr) {
 			RenderRequest req;
@@ -978,7 +978,10 @@ public:
 
 
 	Link* find_closest_link() {
-		return current_document->find_closest_link(offset_y);
+		if (current_document) {
+			return current_document->find_closest_link(offset_y);
+		}
+		return nullptr;
 	}
 
 	void delete_closest_link() {
@@ -1524,6 +1527,8 @@ private:
 	vector<DocumentViewState> history;
 	vector<DocumentView*> cached_document_views;
 
+	Link* link_to_edit;
+
 	void set_main_document_view_state(DocumentViewState new_view_state) {
 		main_document_view = new_view_state.document_view;
 		int window_width, window_height;
@@ -1550,6 +1555,17 @@ private:
 				current_history_index = history.size()-1;
 			}
 			current_history_index--;
+
+			if (link_to_edit) {
+				float link_new_offset_x = current_document_view->get_offset_x();
+				float link_new_offset_y = current_document_view->get_offset_y();
+				link_to_edit->dest_offset_x = link_new_offset_x;
+				link_to_edit->dest_offset_y = link_new_offset_y;
+				update_link(database, history[current_history_index].document_view->get_document()->get_path(),
+					link_new_offset_x, link_new_offset_y, link_to_edit->src_offset_y);
+				link_to_edit = nullptr;
+			}
+
 			set_main_document_view_state(history[current_history_index]);
 		}
 	}
@@ -1818,6 +1834,36 @@ public:
 			current_document_view->move(-72.0f * rp, 0.0f);
 		}
 
+		else if (command->name == "goto_link") {
+			Link* link = main_document_view->find_closest_link();
+			if (link) {
+				push_state();
+				main_document_view = new DocumentView(mupdf_context, database);
+				current_document_view = main_document_view;
+				int window_width, window_height;
+				SDL_GetWindowSize(main_window, &window_width, &window_height);
+				main_document_view->on_view_size_change(window_width, window_height);
+				main_document_view->open_document(link->document_path);
+				main_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
+				invalidate_render();
+			}
+		}
+		else if (command->name == "edit_link") {
+			Link* link = main_document_view->find_closest_link();
+			if (link) {
+				push_state();
+				link_to_edit = link;
+				main_document_view = new DocumentView(mupdf_context, database);
+				current_document_view = main_document_view;
+				int window_width, window_height;
+				SDL_GetWindowSize(main_window, &window_width, &window_height);
+				main_document_view->on_view_size_change(window_width, window_height);
+				main_document_view->open_document(link->document_path);
+				main_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
+				invalidate_render();
+			}
+		}
+
 		else if (command->name == "zoom_in") {
 			current_document_view->zoom_in();
 		}
@@ -1983,6 +2029,7 @@ public:
 
 	string get_status_string(const Command* pending_command) {
 		stringstream ss;
+		if (main_document_view->get_document() == nullptr) return "";
 		ss << "Page " << main_document_view->get_current_page_number() << " / " << main_document_view->get_document()->num_pages();
 		int num_search_results = main_document_view->get_num_search_results();
 		if (num_search_results > 0) {
@@ -1990,6 +2037,9 @@ public:
 		}
 		if (pending_link_source_filled) {
 			ss << " | linking ...";
+		}
+		if (link_to_edit) {
+			ss << " | editing link ...";
 		}
 		if (pending_command && pending_command->requires_symbol) {
 			ss << " | " << pending_command->name <<" waiting for symbol";
@@ -2342,8 +2392,13 @@ int main(int argc, char* args[]) {
 		return -1;
 	}
 
-	window = SDL_CreateWindow("Pdf Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-	SDL_Window* window2 = SDL_CreateWindow("Pdf Viewer2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+	CommandManager command_manager;
+
+	SDL_Rect display_rect;
+	SDL_GetDisplayBounds(0, &display_rect);
+
+	SDL_Window* window2 = SDL_CreateWindow("Pdf Viewer2", display_rect.w, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
+	window = SDL_CreateWindow("Pdf Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
 
 	if (window == nullptr) {
 		cout << "could not create SDL window" << endl;
@@ -2424,6 +2479,15 @@ int main(int argc, char* args[]) {
 				if (event.button.button == SDL_BUTTON_LEFT) {
 					window_state.handle_click(event.button.x, event.button.y);
 				}
+
+				if (event.button.button == SDL_BUTTON_X1) {
+					window_state.handle_command(command_manager.get_command_with_name("next_state"), 0);
+				}
+
+				if (event.button.button == SDL_BUTTON_X2) {
+					window_state.handle_command(command_manager.get_command_with_name("prev_state"), 0);
+				}
+
 			}
 
 			//render_invalidated = true;

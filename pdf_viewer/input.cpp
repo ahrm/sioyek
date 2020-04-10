@@ -39,6 +39,8 @@ CommandManager::CommandManager() {
 	commands.push_back({ "pop_state", false, false , false, false});
 	commands.push_back({ "test_command", false, false , false, false});
 	commands.push_back({ "delete", false, true , false, false});
+	commands.push_back({ "goto_link", false, false , false, false});
+	commands.push_back({ "edit_link", false, false , false, false});
 }
 const Command* CommandManager::get_command_with_name(string name) {
 	for (const auto &com : commands) {
@@ -122,6 +124,22 @@ InputParseTreeNode parse_token(string token) {
 		if (command_string == "right") {
 			res.command = SDLK_RIGHT;
 		}
+
+		if (command_string == "<up>") {
+			res.command = SDLK_UP;
+		}
+
+		if (command_string == "<down>") {
+			res.command = SDLK_DOWN;
+		}
+
+		if (command_string == "<left>") {
+			res.command = SDLK_LEFT;
+		}
+
+		if (command_string == "<right>") {
+			res.command = SDLK_RIGHT;
+		}
 	}
 
 
@@ -137,19 +155,47 @@ InputParseTreeNode* parse_lines(vector<string> lines, vector<string> command_nam
 
 		vector<string> tokens;
 		string stack;
-		bool is_stack_mode = false;
+		//bool is_stack_mode = false;
+
+		//for (char c : line) {
+		//	if (is_stack_mode && (c != '>')) {
+		//		stack.push_back(c);
+		//	}
+		//	else if (is_stack_mode && (c == '>')) {
+		//		tokens.push_back(stack);
+		//		stack.clear();
+		//		is_stack_mode = false;
+		//	}
+		//	else if (c == '<') {
+		//		is_stack_mode = true;
+		//	}
+		//	else {
+		//		tokens.push_back(string(1, c));
+		//	}
+
+		//}
+
+		int stack_depth = 0;
 
 		for (char c : line) {
-			if (is_stack_mode && (c != '>')) {
+			if (stack_depth && (c != '>') && (c!='<')) {
 				stack.push_back(c);
 			}
-			else if (is_stack_mode && (c == '>')) {
-				tokens.push_back(stack);
-				stack.clear();
-				is_stack_mode = false;
+			else if ((c == '>')) {
+				stack_depth--;
+				if (stack_depth == 0) {
+					tokens.push_back(stack);
+					stack.clear();
+				}
+				else {
+					stack.push_back(c);
+				}
 			}
 			else if (c == '<') {
-				is_stack_mode = true;
+				if (stack_depth) {
+					stack.push_back(c);
+				}
+				stack_depth++;
 			}
 			else {
 				tokens.push_back(string(1, c));
