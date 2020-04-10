@@ -1,6 +1,7 @@
 #include "database.h"
 #include <sstream>
 #include <cassert>
+#include <utility>
 
 
 using namespace std;
@@ -33,6 +34,22 @@ static int mark_select_callback(void* res_vector, int argc, char** argv, char** 
 	float offset_y = atof(argv[1]);
 
 	res->push_back({ offset_y, symbol });
+	return 0;
+}
+
+static int global_bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+
+	vector<pair<string, BookMark>>* res = (vector<pair<string, BookMark>>*)res_vector;
+	assert(argc == 3);
+
+	string path = argv[0];
+	string desc = argv[1];
+	float offset_y = atof(argv[2]);
+
+	BookMark bm;
+	bm.description = desc;
+	bm.y_offset = offset_y;
+	res->push_back(make_pair(path, bm));
 	return 0;
 }
 
@@ -254,6 +271,16 @@ bool select_bookmark(sqlite3* db, string book_path, vector<BookMark> &out_result
 		char* error_message = nullptr;
 		return handle_error(
 			sqlite3_exec(db, ss.str().c_str(), bookmark_select_callback, &out_result, &error_message),
+			error_message);
+}
+
+bool global_select_bookmark(sqlite3* db,  vector<pair<string, BookMark>> &out_result) {
+		stringstream ss;
+		ss << "select document_path, desc, offset_y from bookmarks;";
+
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, ss.str().c_str(), global_bookmark_select_callback, &out_result, &error_message),
 			error_message);
 }
 

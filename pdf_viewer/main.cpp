@@ -7,8 +7,9 @@
 //todo: copy
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: handle control+arrow keys
-//todo: next_state with empty history crashes
+//todo: back is buggy again
 //todo: be able to move link
+//todo: tests!
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -23,6 +24,7 @@
 #include <thread>
 #include <mutex>
 #include <optional>
+#include <utility>
 
 #include <SDL.h>
 #include <gl/glew.h>
@@ -543,9 +545,11 @@ public:
 		link.src_offset_y = src_y_offset;
 		add_link(link);
 	}
-	void add_link(Link link) {
+	void add_link(Link link, bool insert_into_database=true) {
 		links.push_back(link);
-		insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.src_offset_y);
+		if (insert_into_database) {
+			insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.src_offset_y);
+		}
 	}
 
 
@@ -1290,13 +1294,6 @@ public:
 			//delete current_document;
 		}
 
-		// this part should be moved to WindowState
-		// ------------------------------------------
-		ofstream last_path_file(last_path_file_absolute_location);
-		cout << "!!! " << last_path_file.is_open() << endl;
-		last_path_file << doc_path << endl;
-		last_path_file.close();
-		// ------------------------------------------
 
 		current_document = new Document(mupdf_context, doc_path, database);
 		if (!current_document->open()) {
@@ -1509,6 +1506,7 @@ private:
 	const Command* pending_text_command;
 	FilteredSelect<int>* current_toc_select;
 	FilteredSelect<float>* current_bookmark_select;
+	FilteredSelect<BookState>* current_global_bookmark_select;
 
 	//float zoom_level;
 	GLuint vertex_array_object;
@@ -1524,6 +1522,7 @@ private:
 
 	int current_history_index;
 	vector<DocumentViewState> history;
+	vector<DocumentView*> cached_document_views;
 
 	void set_main_document_view_state(DocumentViewState new_view_state) {
 		main_document_view = new_view_state.document_view;
@@ -1556,7 +1555,7 @@ private:
 	}
 
 	void next_state() {
-		if (current_history_index < history.size()-1) {
+		if (current_history_index+1 < history.size()) {
 			current_history_index++;
 			set_main_document_view_state(history[current_history_index]);
 		}
@@ -1634,6 +1633,9 @@ public:
 
 		main_document_view = new DocumentView(mupdf_context, database);
 		helper_document_view = new DocumentView(mupdf_context, database);
+
+		cached_document_views.push_back(main_document_view);
+
 		current_document_view = main_document_view;
 
 		gl_program = LoadShaders("shaders\\simple.vertex", "shaders\\simple.fragment");
@@ -1695,6 +1697,13 @@ public:
 				main_document_view->get_document()->add_link(pending_link);
 			}
 			else {
+				for (int i = 0; i < cached_document_views.size(); i++) {
+					if (cached_document_views[i]->get_document()) {
+						if (cached_document_views[i]->get_document()->get_path() == pending_link_source_document_path) {
+							cached_document_views[i]->get_document()->add_link(pending_link, false);
+						}
+					}
+				}
 				insert_link(database,
 					pending_link_source_document_path,
 					pending_link.document_path,
@@ -1869,6 +1878,22 @@ public:
 			current_bookmark_select = new FilteredSelect<float>(option_names, option_locations);
 			cout << "bookmark" << endl;
 		}
+		else if (command->name == "goto_bookmark_g") {
+			is_showing_ui = true;
+			vector<pair<string, BookMark>> global_bookmarks;
+			global_select_bookmark(database, global_bookmarks);
+			vector<string> descs;
+			vector<BookState> book_states;
+
+			for (const auto& desc_bm_pair : global_bookmarks) {
+				string path = desc_bm_pair.first;
+				BookMark bm = desc_bm_pair.second;
+				descs.push_back(bm.description);
+				book_states.push_back({ path, bm.y_offset });
+			}
+			current_global_bookmark_select = new FilteredSelect<BookState>(descs, book_states);
+
+		}
 		else if (command->name == "debug") {
 			cout << "debug" << endl;
 		}
@@ -1992,6 +2017,17 @@ public:
 		main_document_view->open_document(path);
 		main_document_view->on_view_size_change(window_width, window_height);
 		current_document_view = main_document_view;
+		cached_document_views.push_back(main_document_view);
+
+		if (path.size() > 0) {
+			// this part should be moved to WindowState
+			// ------------------------------------------
+			ofstream last_path_file(last_path_file_absolute_location);
+			//cout << "!!! " << last_path_file.is_open() << endl;
+			last_path_file << path << endl;
+			last_path_file.close();
+			// ------------------------------------------
+		}
 	}
 
 	void handle_escape() {
@@ -2008,6 +2044,10 @@ public:
 		if (current_bookmark_select) {
 			delete current_bookmark_select;
 			current_bookmark_select = nullptr;
+		}
+		if (current_global_bookmark_select) {
+			delete current_global_bookmark_select;
+			current_global_bookmark_select = nullptr;
 		}
 		if (main_document_view) {
 			main_document_view->handle_escape();
@@ -2067,6 +2107,7 @@ public:
 					helper_document_view->on_view_size_change(helper_window_width, helper_window_height);
 					helper_document_view->open_document(helper_document_path);
 					helper_document_view->set_offsets(helper_document_offset_x, helper_document_offset_y);
+					cached_document_views.push_back(main_document_view);
 				}
 			}
 			render_is_invalid = false;
@@ -2140,6 +2181,26 @@ public:
 						}
 						delete current_bookmark_select;
 						current_bookmark_select = nullptr;
+						is_showing_ui = false;
+						render_is_invalid = true;
+					}
+				}
+				if (current_global_bookmark_select) {
+					if (current_global_bookmark_select->render()) {
+						BookState* offset_value = current_global_bookmark_select->get_value();
+						if (offset_value) {
+							push_state();
+							main_document_view = new DocumentView(mupdf_context, database);
+							main_document_view->open_document(offset_value->document_path);
+							main_document_view->set_offset_y(offset_value->offset_y);
+							int window_width, window_height;
+							SDL_GetWindowSize(main_window, &window_width, &window_height);
+							main_document_view->on_view_size_change(window_width, window_height);
+							cached_document_views.push_back(main_document_view);
+
+						}
+						delete current_global_bookmark_select;
+						current_global_bookmark_select = nullptr;
 						is_showing_ui = false;
 						render_is_invalid = true;
 					}

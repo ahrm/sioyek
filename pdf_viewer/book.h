@@ -7,6 +7,11 @@ using namespace std;
 
 class DocumentView;
 
+struct BookState {
+	string document_path;
+	float offset_y;
+};
+
 struct OpenedBookState {
 	float zoom_level;
 	float offset_x;

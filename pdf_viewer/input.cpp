@@ -32,6 +32,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "add_bookmark", true, false , false, false});
 	commands.push_back({ "goto_toc", false, false , false, false});
 	commands.push_back({ "goto_bookmark", false, false , false, false});
+	commands.push_back({ "goto_bookmark_g", false, false , false, false});
 	commands.push_back({ "link", false, false , false, false});
 	commands.push_back({ "next_state", false, false , false, false});
 	commands.push_back({ "prev_state", false, false , false, false});

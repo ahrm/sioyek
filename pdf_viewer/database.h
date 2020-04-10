@@ -24,3 +24,4 @@ bool insert_link(sqlite3* db, string src_document_path, string dst_document_path
 bool select_links(sqlite3* db, string src_document_path, vector<Link>& out_result);
 bool delete_link(sqlite3* db, string src_document_path, float src_offset_y);
 bool delete_bookmark(sqlite3* db, string src_document_path, float src_offset_y);
+bool global_select_bookmark(sqlite3* db,  vector<pair<string, BookMark>>& out_result);
