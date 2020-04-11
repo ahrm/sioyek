@@ -191,7 +191,8 @@ struct SearchResult {
 };
 
 struct RenderRequest {
-	fz_document* doc;
+	//fz_document* doc;
+	string path;
 	int page;
 	float zoom_level;
 };
@@ -204,7 +205,7 @@ struct RenderResponse {
 };
 
 bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
-	if (rhs.doc != lhs.doc) {
+	if (rhs.path != lhs.path) {
 		return false;
 	}
 	if (rhs.page != lhs.page) {
@@ -265,10 +266,10 @@ public:
 	}
 	//should only be called from the main thread
 	void add_request(string document_path, int page, float zoom_level) {
-		fz_document* doc = get_document_with_path(document_path);
-		if (doc != nullptr) {
+		//fz_document* doc = get_document_with_path(document_path);
+		if (document_path.size() > 0) {
 			RenderRequest req;
-			req.doc = doc;
+			req.path = document_path;
 			req.page = page;
 			req.zoom_level = zoom_level;
 
@@ -286,11 +287,10 @@ public:
 
 	//should only be called from the main thread
 	GLuint find_rendered_page(string path, int page, float zoom_level, int* page_width, int* page_height) {
-		cout << "path: " << path << endl;
-		fz_document* doc = get_document_with_path(path);
-		if (doc != nullptr) {
+		//fz_document* doc = get_document_with_path(path);
+		if (path.size() > 0) {
 			RenderRequest req;
-			req.doc = doc;
+			req.path = path;
 			req.page = page;
 			req.zoom_level = zoom_level;
 			cached_response_mutex.lock();
@@ -329,33 +329,33 @@ public:
 			cached_response_mutex.unlock();
 			if (result == 0) {
 				add_request(path, page, zoom_level);
-				return try_closest_rendered_page(doc, page, zoom_level, page_width, page_height);
+				//return try_closest_rendered_page(doc, page, zoom_level, page_width, page_height);
 			}
 			return result;
 		}
 		return 0;
 	}
 
-	GLuint try_closest_rendered_page(fz_document* doc, int page, float zoom_level, int* page_width, int* page_height) {
-		cached_response_mutex.lock();
+	//GLuint try_closest_rendered_page(fz_document* doc, int page, float zoom_level, int* page_width, int* page_height) {
+	//	cached_response_mutex.lock();
 
-		float min_diff = 10000.0f;
-		GLuint best_texture = 0;
+	//	float min_diff = 10000.0f;
+	//	GLuint best_texture = 0;
 
-		for (const auto& cached_resp : cached_responses) {
-			if ((cached_resp.request.doc == doc) && (cached_resp.request.page == page) && (cached_resp.texture != 0)) {
-				float diff = cached_resp.request.zoom_level - zoom_level;
-				if (diff < min_diff) {
-					min_diff = diff;
-					best_texture = cached_resp.texture;
-					*page_width = static_cast<int>(cached_resp.pixmap->w * zoom_level / cached_resp.request.zoom_level);
-					*page_height = static_cast<int>(cached_resp.pixmap->h * zoom_level / cached_resp.request.zoom_level);
-				}
-			}
-		}
-		cached_response_mutex.unlock();
-		return best_texture;
-	}
+	//	for (const auto& cached_resp : cached_responses) {
+	//		if ((cached_resp.request.doc == doc) && (cached_resp.request.page == page) && (cached_resp.texture != 0)) {
+	//			float diff = cached_resp.request.zoom_level - zoom_level;
+	//			if (diff < min_diff) {
+	//				min_diff = diff;
+	//				best_texture = cached_resp.texture;
+	//				*page_width = static_cast<int>(cached_resp.pixmap->w * zoom_level / cached_resp.request.zoom_level);
+	//				*page_height = static_cast<int>(cached_resp.pixmap->h * zoom_level / cached_resp.request.zoom_level);
+	//			}
+	//		}
+	//	}
+	//	cached_response_mutex.unlock();
+	//	return best_texture;
+	//}
 
 	//should only be called from main thread
 	void delete_old_pages() {
@@ -433,7 +433,8 @@ public:
 
 				fz_try(mupdf_context) {
 					fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level, req.zoom_level);
-					fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, req.doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+					fz_document* doc = get_document_with_path(req.path);
+					fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
 					RenderResponse resp;
 					resp.request = req;
 					resp.last_access_time = SDL_GetTicks();
@@ -911,6 +912,15 @@ void parse_uri(string uri, int* page, float* offset_x, float* offset_y) {
 	*offset_y = atof(uri.c_str());
 }
 
+bool includes_rect(fz_rect includer, fz_rect includee) {
+	fz_rect intersection = fz_intersect_rect(includer, includee);
+	if (intersection.x0 == includee.x0 && intersection.x1 == includee.x1 &&
+		intersection.y0 == includee.y0 && intersection.y1 == includee.y1) {
+		return true;
+	}
+	return false;
+}
+
 class DocumentView {
 	fz_context* mupdf_context;
 	sqlite3* database;
@@ -1004,6 +1014,24 @@ public:
 		set_offsets(new_offset_x, offset_y);
 	}
 
+	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect) {
+		fz_rect window_rect = document_to_window_rect_absolute(absolute_document_rect);
+		float quad_vertex_data[] = {
+			window_rect.x0, window_rect.y1,
+			window_rect.x1, window_rect.y1,
+			window_rect.x0, window_rect.y0,
+			window_rect.x1, window_rect.y0
+		};
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glUseProgram(program);
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glDisable(GL_BLEND);
+	}
+
 	optional<PdfLink> get_link_in_pos(int view_x, int view_y) {
 		float doc_x, doc_y;
 		int page;
@@ -1040,6 +1068,68 @@ public:
 
 	inline void set_offset_y(float new_offset_y) {
 		set_offsets(offset_x, new_offset_y);
+	}
+
+	void get_text_selection(fz_rect document_space_rect, vector<fz_rect> &selected_characters) {
+		float bottom_y, top_y, left_x, right_x;
+		int page1, page2;
+		absolute_to_page_pos(document_space_rect.x0, document_space_rect.y0, &left_x, &bottom_y, &page1);
+		absolute_to_page_pos(document_space_rect.x1, document_space_rect.y1, &right_x, &top_y, &page2);
+		fz_rect page_rect;
+
+		page_rect.x0 = left_x;
+		page_rect.x1 = right_x;
+		page_rect.y0 = bottom_y;
+		page_rect.y1 = top_y;
+
+		fz_page* page = nullptr;
+		fz_stext_page* stext_page = nullptr;
+
+		string selected_text;
+		for (int i = page1; i <= page2; i++) {
+			fz_try(mupdf_context) {
+				page = fz_load_page(mupdf_context, current_document->doc, i);
+				stext_page = fz_new_stext_page_from_page(mupdf_context, page, nullptr);
+			}
+			fz_catch(mupdf_context) {
+				cout << "Error: could not load page for selection" << endl;
+			}
+
+
+			fz_stext_block* current_block = stext_page->first_block;
+			while (current_block) {
+
+				if (current_block->type != FZ_STEXT_BLOCK_TEXT) {
+					continue;
+				}
+
+				fz_stext_line* current_line = current_block->u.t.first_line;
+				while (current_line) {
+					fz_stext_char* current_char = current_line->first_char;
+					while (current_char) {
+						fz_rect charrect = page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
+						//if (includes_rect(document_space_rect, charrect)) {
+						if ((document_space_rect.y0 <= charrect.y0 && document_space_rect.y1 >= charrect.y1) || 
+							(document_space_rect.y1 <= charrect.y1 && document_space_rect.y1 >= charrect.y0 && document_space_rect.x1 >= charrect.x1) || 
+							(document_space_rect.y0 <= charrect.y1 && document_space_rect.y0 >= charrect.y0 && document_space_rect.x0 <= charrect.x0)
+							) {
+							selected_text.push_back(current_char->c);
+							selected_characters.push_back(charrect);
+						}
+						current_char = current_char->next;
+					}
+					//some_text.push_back('\n');
+					current_line = current_line->next;
+				}
+
+				current_block = current_block->next;
+			}
+
+			fz_drop_stext_page(mupdf_context, stext_page);
+			fz_drop_page(mupdf_context, page);
+		}
+
+		cout << "selecting pages " << selected_text << page1 << " " << page2 << endl;
 	}
 
 	void add_mark(char symbol) {
@@ -1081,26 +1171,43 @@ public:
 		return render_is_invalid;
 	}
 
+	fz_rect document_to_window_rect_absolute(fz_rect doc_rect) {
+
+
+		float half_width = static_cast<float>(view_width) / zoom_level / 2;
+		float half_height = static_cast<float>(view_height) / zoom_level / 2;
+
+		fz_rect transformed_doc_rect;
+		transformed_doc_rect.x0 = doc_rect.x0 + offset_x;
+		transformed_doc_rect.x1 = doc_rect.x1 + offset_x;
+
+		transformed_doc_rect.y0 = -doc_rect.y0 + offset_y;
+		transformed_doc_rect.y1 = -doc_rect.y1 + offset_y;
+
+		transformed_doc_rect.x0 /= half_width;
+		transformed_doc_rect.x1 /= half_width;
+
+		transformed_doc_rect.y0 /= half_height;
+		transformed_doc_rect.y1 /= half_height;
+
+		return transformed_doc_rect;
+	}
+
 	fz_rect document_to_window_rect(int page, fz_rect doc_rect) {
+
 		double doc_rect_y_offset = 0.0f;
 		for (int i = 0; i < page; i++) {
 			doc_rect_y_offset -= page_heights[i];
 		}
+
 		doc_rect.y0 = page_heights[page] - doc_rect.y0;
 		doc_rect.y1 = page_heights[page] - doc_rect.y1;
 
 		doc_rect.y0 += doc_rect_y_offset;
 		doc_rect.y1 += doc_rect_y_offset;
 
-		fz_rect window_rect;
-		float window_width_in_doc_space = static_cast<float>(view_width) / zoom_level;
-		float window_height_in_doc_space = static_cast<float>(view_height) / zoom_level;
-
-		window_rect.x0 = offset_x - window_width_in_doc_space / 2;
-		window_rect.x1 = offset_x + window_width_in_doc_space / 2;
-
-		window_rect.y0 = offset_y - window_height_in_doc_space / 2;
-		window_rect.y1 = offset_y + window_height_in_doc_space / 2;
+		float half_width = static_cast<float>(view_width) / zoom_level / 2;
+		float half_height = static_cast<float>(view_height) / zoom_level / 2;
 
 		fz_rect transformed_doc_rect;
 		transformed_doc_rect.x0 = doc_rect.x0 + offset_x - page_widths[page] / 2;
@@ -1109,18 +1216,18 @@ public:
 		transformed_doc_rect.y0 = doc_rect.y0 + offset_y - page_heights[page];
 		transformed_doc_rect.y1 = doc_rect.y1 + offset_y - page_heights[page];
 
-		transformed_doc_rect.x0 /= (window_rect.x1 - offset_x);
-		transformed_doc_rect.x1 /= (window_rect.x1 - offset_x);
+		transformed_doc_rect.x0 /= half_width;
+		transformed_doc_rect.x1 /= half_width;
 
-		transformed_doc_rect.y0 /= (window_rect.y1 - offset_y);
-		transformed_doc_rect.y1 /= (window_rect.y1 - offset_y);
+		transformed_doc_rect.y0 /= half_height;
+		transformed_doc_rect.y1 /= half_height;
 
 		return transformed_doc_rect;
 	}
 
-	void window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page) {
+	void absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
 		// bottom being the highest widnow_y
-		float test_y = (window_y - view_height / 2) / zoom_level + offset_y;
+		float test_y = absolute_y;
 		float remaining_y = test_y;
 		int page = 0;
 		int i = 0;
@@ -1132,7 +1239,7 @@ public:
 		}
 
 		float page_width = page_widths[i];
-		float document_x = page_width / 2 + offset_x + (window_x - view_width / 2) / zoom_level;
+		float document_x = page_width / 2 + absolute_x;
 		//float document_y = page_heights[i] - remaining_y;
 		float document_y = remaining_y;
 
@@ -1140,6 +1247,61 @@ public:
 		*doc_y = document_y;
 		*doc_page = i;
 	}
+
+	void window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page) {
+		absolute_to_page_pos(
+			(window_x - view_width/2) / zoom_level + offset_x,
+			(window_y - view_height/2) / zoom_level + offset_y, doc_x, doc_y, doc_page);
+	}
+
+	void window_to_absolute_document_pos(float window_x, float window_y, float* doc_x, float* doc_y) {
+		*doc_x = (window_x - view_width / 2) / zoom_level + offset_x;
+		*doc_y = (window_y - view_height / 2) / zoom_level + offset_y;
+	}
+
+	void page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
+		for (int i = 0; i < page; i++) {
+			page_y += page_heights[i];
+		}
+		*abs_x = page_x - page_widths[page]/2;
+		*abs_y = page_y;
+	}
+
+	fz_rect page_rect_to_absolute_rect(int page, fz_rect page_rect) {
+		float new_x0, new_x1, new_y0, new_y1;
+		page_pos_to_absolute_pos(page, page_rect.x0, page_rect.y0, &new_x0, &new_y0);
+		page_pos_to_absolute_pos(page, page_rect.x1, page_rect.y1, &new_x1, &new_y1);
+		fz_rect res;
+		res.x0 = new_x0;
+		res.x1 = new_x1;
+		res.y0 = new_y0;
+		res.y1 = new_y1;
+		return res;
+	}
+
+
+	//void window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page) {
+	//	// bottom being the highest widnow_y
+	//	float test_y = (window_y - view_height / 2) / zoom_level + offset_y;
+	//	float remaining_y = test_y;
+	//	int page = 0;
+	//	int i = 0;
+	//	for (i = 0; i < page_heights.size(); i++) {
+	//		if ((remaining_y - page_heights[i]) < 0) {
+	//			break;
+	//		}
+	//		remaining_y -= page_heights[i];
+	//	}
+
+	//	float page_width = page_widths[i];
+	//	float document_x = page_width / 2 + offset_x + (window_x - view_width / 2) / zoom_level;
+	//	//float document_y = page_heights[i] - remaining_y;
+	//	float document_y = remaining_y;
+
+	//	*doc_x = document_x;
+	//	*doc_y = document_y;
+	//	*doc_page = i;
+	//}
 
 	float get_page_additional_offset(int page_number) {
 		double offset = 0;
@@ -1529,6 +1691,10 @@ private:
 
 	Link* link_to_edit;
 
+	float last_mouse_down_x;
+	float last_mouse_down_y;
+	optional<fz_rect> selected_rect;
+
 	void set_main_document_view_state(DocumentViewState new_view_state) {
 		main_document_view = new_view_state.document_view;
 		int window_width, window_height;
@@ -1625,6 +1791,7 @@ private:
 	bool is_showing_ui;
 	bool is_showing_textbar;
 	char text_command_buffer[100];
+	vector<fz_rect> selected_character_rects;
 
 public:
 	bool render_is_invalid;
@@ -2132,6 +2299,35 @@ public:
 		}
 	}
 
+	void handle_left_click(float x, float y, bool down) {
+		float x_, y_;
+		main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
+
+		if (down == true) {
+			last_mouse_down_x = x_;
+			last_mouse_down_y = y_;
+		}
+		else {
+			if ((abs(last_mouse_down_x - x_) + abs(last_mouse_down_y - y_)) > 20) {
+				fz_rect sr;
+				sr.x0 = min(last_mouse_down_x, x_);
+				sr.x1 = max(last_mouse_down_x, x_);
+
+				sr.y0 = min(last_mouse_down_y, y_);
+				sr.y1 = max(last_mouse_down_y, y_);
+				selected_rect = sr;
+
+				main_document_view->get_text_selection(sr, selected_character_rects);
+				invalidate_render();
+			}
+			else {
+				selected_rect = {};
+				handle_click(x, y);
+				selected_character_rects.clear();
+				invalidate_render();
+			}
+		}
+	}
 
 	void render(const Command* pending_command) {
 		if (should_render()) {
@@ -2266,6 +2462,38 @@ public:
 
 				ImGui::Render();
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+			}
+			for (auto rect : selected_character_rects) {
+				main_document_view->render_highlight_absolute(gl_debug_program, rect);
+			}
+
+			if (selected_rect.has_value()) {
+				fz_rect sr = selected_rect.value();
+				//main_document_view->render_highlight_absolute(gl_debug_program, sr);
+				//int window_width, window_height;
+				//SDL_GetWindowSize(main_window, &window_width, &window_height);
+
+				//sr.x0 = (sr.x0 - window_width / 2) / (window_width / 2);
+				//sr.x1 = (sr.x1 - window_width / 2) / (window_width / 2);
+
+				//sr.y0 = -(sr.y0 - window_height / 2) / (window_height / 2);
+				//sr.y1 = -(sr.y1 - window_height / 2) / (window_height / 2);
+
+				//float quad_vertex_data[] = {
+				//	sr.x0, sr.y1,
+				//	sr.x1, sr.y1,
+				//	sr.x0, sr.y0,
+				//	sr.x1, sr.y0
+				//};
+				//glEnable(GL_BLEND);
+				//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+				//glUseProgram(gl_debug_program);
+				//glEnableVertexAttribArray(0);
+				//glEnableVertexAttribArray(1);
+				//glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
+				//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+				//glDisable(GL_BLEND);
 
 			}
 
@@ -2477,7 +2705,8 @@ int main(int argc, char* args[]) {
 			}
 			if (event.type == SDL_MOUSEBUTTONDOWN) {
 				if (event.button.button == SDL_BUTTON_LEFT) {
-					window_state.handle_click(event.button.x, event.button.y);
+					//window_state.handle_click(event.button.x, event.button.y);
+					window_state.handle_left_click(event.button.x, event.button.y, true);
 				}
 
 				if (event.button.button == SDL_BUTTON_X1) {
@@ -2486,6 +2715,14 @@ int main(int argc, char* args[]) {
 
 				if (event.button.button == SDL_BUTTON_X2) {
 					window_state.handle_command(command_manager.get_command_with_name("prev_state"), 0);
+				}
+
+			}
+
+			if (event.type == SDL_MOUSEBUTTONUP) {
+				if (event.button.button == SDL_BUTTON_LEFT) {
+					//window_state.handle_click(event.button.x, event.button.y);
+					window_state.handle_left_click(event.button.x, event.button.y, false);
 				}
 
 			}
