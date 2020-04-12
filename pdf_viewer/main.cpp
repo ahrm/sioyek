@@ -9,6 +9,7 @@
 //todo: tests!
 //todo: handle mouse in menues
 //todo: stop creating DocumentViews!
+//todo: bug: last documnet path is not updated
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -41,6 +42,7 @@
 #include "utils.h"
 #include "ui.h"
 #include "pdf_renderer.h"
+#include "document.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -82,248 +84,227 @@ GLfloat g_quad_uvs[] = {
 	1.0f, 1.0f
 };
 
-class Document {
-private:
-	vector<Mark> marks;
-	vector<BookMark> bookmarks;
-	vector<Link> links;
-	sqlite3* db;
-	vector<TocNode*> top_level_toc_nodes;
-
-	int get_mark_index(char symbol) {
-		for (int i = 0; i < marks.size(); i++) {
-			if (marks[i].symbol == symbol) {
-				return i;
-			}
-		}
-		return -1;
-	}
-
-public:
-	fz_context* context;
-	string file_name;
-	fz_document* doc;
-	vector<fz_rect> page_rects;
-
-	void add_bookmark(string desc, float y_offset) {
-		BookMark res;
-		res.description = desc;
-		res.y_offset = y_offset;
-		bookmarks.push_back(res);
-		insert_bookmark(db, file_name, desc, y_offset);
-	}
-
-	string get_path() {
-		return file_name;
-	}
-
-
-	void add_link(Document* dst_document, float dst_y_offset, float dst_x_offset, float src_y_offset) {
-		Link link;
-		link.document_path = dst_document->get_path();
-		link.dest_offset_x = dst_x_offset;
-		link.dest_offset_y = dst_y_offset;
-		link.src_offset_y = src_y_offset;
-		add_link(link);
-	}
-	void add_link(Link link, bool insert_into_database=true) {
-		links.push_back(link);
-		if (insert_into_database) {
-			insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.src_offset_y);
-		}
-	}
-
-
-	BookMark* find_closest_bookmark(float to_offset_y, int* index=nullptr) {
-		float min_diff = 1000000.0f;
-		int min_index = -1;
-		if (index != nullptr) {
-			*index = min_index;
-		}
-
-		for (int i = 0; i < bookmarks.size(); i++) {
-			float diff = abs(bookmarks[i].y_offset - to_offset_y);
-			if (diff < min_diff) {
-				min_diff = diff;
-				min_index = i;
-			}
-		}
-		if (min_index >= 0) {
-			if (index != nullptr) {
-				*index = min_index;
-			}
-			return &bookmarks[min_index];
-		}
-		return nullptr;
-	}
-
-	void delete_closest_bookmark(float to_y_offset) {
-		int closest_index = -1;
-		find_closest_bookmark(to_y_offset, &closest_index);
-		if (closest_index != -1) {
-			delete_bookmark(db, get_path(), bookmarks[closest_index].y_offset);
-			bookmarks.erase(bookmarks.begin() + closest_index);
-		}
-	}
-
-
-	Link* find_closest_link(float to_offset_y, int* index=nullptr) {
-		float min_diff = 1000000.0f;
-		int min_index = -1;
-		if (index != nullptr) {
-			*index = min_index;
-		}
-
-		for (int i = 0; i < links.size(); i++) {
-			float diff = abs(links[i].src_offset_y - to_offset_y);
-			if (diff < min_diff) {
-				min_diff = diff;
-				min_index = i;
-			}
-		}
-		if (min_index >= 0) {
-			if (index != nullptr) {
-				*index = min_index;
-			}
-			return &links[min_index];
-		}
-		return nullptr;
-	}
-
-	void delete_closest_link(float to_offset_y) {
-		int closest_index = -1;
-		find_closest_link(to_offset_y, &closest_index);
-		if (closest_index != -1) {
-			delete_link(db, get_path(), links[closest_index].src_offset_y);
-			links.erase(links.begin() + closest_index);
-		}
-
-	}
-
-	const vector<BookMark>& get_bookmarks() const {
-		return bookmarks;
-	}
-
-	fz_link* get_page_links(int page_number) {
-		fz_link* res = nullptr;
-		fz_try(context) {
-			fz_page* page = fz_load_page(context, doc, page_number);
-			res = fz_load_links(context, page);
-			fz_drop_page(context, page);
-		}
-		fz_catch(context) {
-			cout << "Error: Could not load links" << endl;
-			res = nullptr;
-		}
-		return res;
-	}
-
-	void add_mark(char symbol, float y_offset) {
-		int current_mark_index = get_mark_index(symbol);
-		if (current_mark_index == -1) {
-			marks.push_back({ y_offset, symbol });
-			insert_mark(db, file_name, symbol, y_offset);
-		}
-		else {
-			marks[current_mark_index].y_offset = y_offset;
-			update_mark(db, file_name, symbol, y_offset);
-		}
-	}
-
-	void create_toc_tree(vector<TocNode*>& toc) {
-		fz_try(context) {
-			fz_outline* outline = fz_load_outline(context, doc);
-			convert_toc_tree(outline, toc);
-
-		}
-		fz_catch(context) {
-			cout << "Error: Could not load outline ... " << endl;
-		}
-	}
-
-	void load_marks_from_database() {
-		marks.clear();
-		bookmarks.clear();
-		select_mark(db, file_name, marks);
-		select_bookmark(db, file_name, bookmarks);
-		select_links(db, file_name, links);
-	}
-
-	bool get_mark_location_if_exists(char symbol, float* y_offset) {
-		int mark_index = get_mark_index(symbol);
-		if (mark_index == -1) {
-			return false;
-		}
-		*y_offset = marks[mark_index].y_offset;
-	}
-
-	Document(fz_context* context, string file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
-	}
-
-
-	~Document() {
-		if (doc != nullptr) {
-			fz_try(context) {
-				fz_drop_document(context, doc);
-			}
-			fz_catch(context) {
-				cout << "Error: could not drop documnet" << endl;
-			}
-		}
-	}
-
-	const vector<TocNode*>& get_toc() {
-		return top_level_toc_nodes;
-	}
-
-	bool open() {
-		if (doc == nullptr) {
-			fz_try(context) {
-				doc = fz_open_document(context, file_name.c_str());
-			}
-			fz_catch(context) {
-				cout << "could not open " << file_name << endl;
-			}
-			if (doc != nullptr) {
-
-				load_marks_from_database();
-				create_toc_tree(top_level_toc_nodes);
-
-				return true;
-			}
-
-
-			return false;
-		}
-		else {
-			cout << "warning! calling open() on an open document" << endl;
-			return false;
-		}
-	}
-
-	int num_pages() {
-		int pages = -1;
-		fz_try(context) {
-			pages = fz_count_pages(context, doc);
-		}
-		fz_catch(context) {
-			cout << "could not count pages" << endl;
-		}
-		return pages;
-	}
-
-	fz_pixmap* get_page_pixmap(int page, float zoom_level = 1.0f) {
-		fz_pixmap* res = nullptr;
-		fz_try(context) {
-			fz_matrix transform_matrix = fz_pre_scale(fz_identity, zoom_level, zoom_level);
-			res = fz_new_pixmap_from_page_number(context, doc, page, transform_matrix, fz_device_rgb(context), 0);
-		}
-		fz_catch(context) {
-			cout << "could not render pixmap for page " << page << endl;
-		}
-		return res;
-	}
-};
+//class Document {
+//private:
+//	vector<Mark> marks;
+//	vector<BookMark> bookmarks;
+//	vector<Link> links;
+//	sqlite3* db;
+//	vector<TocNode*> top_level_toc_nodes;
+//	optional<int> cached_num_pages;
+//	fz_context* context;
+//	string file_name;
+//	vector<fz_rect> page_rects;
+//	unordered_map<int, fz_link*> cached_page_links;
+//	fz_outline* cached_outline;
+//
+//	int get_mark_index(char symbol) {
+//		for (int i = 0; i < marks.size(); i++) {
+//			if (marks[i].symbol == symbol) {
+//				return i;
+//			}
+//		}
+//		return -1;
+//	}
+//
+//	fz_outline* get_toc_outline() {
+//		if (cached_outline) return cached_outline;
+//		fz_try(context) {
+//			cached_outline = fz_load_outline(context, doc);
+//		}
+//		fz_catch(context) {
+//			cout << "Error: Could not load outline ... " << endl;
+//		}
+//		return cached_outline;
+//	}
+//
+//	void load_document_metadata_from_db() {
+//		marks.clear();
+//		bookmarks.clear();
+//		select_mark(db, file_name, marks);
+//		select_bookmark(db, file_name, bookmarks);
+//		select_links(db, file_name, links);
+//	}
+//
+//	void create_toc_tree(vector<TocNode*>& toc) {
+//		fz_try(context) {
+//			fz_outline* outline = get_toc_outline();
+//			convert_toc_tree(outline, toc);
+//		}
+//		fz_catch(context) {
+//			cout << "Error: Could not load outline ... " << endl;
+//		}
+//	}
+//
+//public:
+//	fz_document* doc;
+//
+//	void add_bookmark(string desc, float y_offset) {
+//		BookMark res;
+//		res.description = desc;
+//		res.y_offset = y_offset;
+//		bookmarks.push_back(res);
+//		insert_bookmark(db, file_name, desc, y_offset);
+//	}
+//
+//	void add_link(Link link, bool insert_into_database=true) {
+//		links.push_back(link);
+//		if (insert_into_database) {
+//			insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.src_offset_y);
+//		}
+//	}
+//
+//	string get_path() {
+//		return file_name;
+//	}
+//
+//	BookMark* find_closest_bookmark(float to_offset_y, int* index=nullptr) {
+//
+//		int min_index = argminf<BookMark>(bookmarks, [to_offset_y](BookMark bm) {
+//			return abs(bm.y_offset - to_offset_y);
+//			});
+//
+//		if (min_index >= 0) {
+//			if (index) *index = min_index;
+//			return &bookmarks[min_index];
+//		}
+//		return nullptr;
+//	}
+//
+//	void delete_closest_bookmark(float to_y_offset) {
+//		int closest_index = -1;
+//		if (find_closest_bookmark(to_y_offset, &closest_index)) {
+//			delete_bookmark(db, get_path(), bookmarks[closest_index].y_offset);
+//			bookmarks.erase(bookmarks.begin() + closest_index);
+//		}
+//	}
+//
+//
+//	Link* find_closest_link(float to_offset_y, int* index=nullptr) {
+//		int min_index = argminf<Link>(links, [to_offset_y](Link l) {
+//			return abs(l.src_offset_y - to_offset_y);
+//			});
+//
+//		if (min_index >= 0) {
+//			if (index) *index = min_index;
+//			return &links[min_index];
+//		}
+//		return nullptr;
+//	}
+//
+//	void delete_closest_link(float to_offset_y) {
+//		int closest_index = -1;
+//		if (find_closest_link(to_offset_y, &closest_index)){
+//			delete_link(db, get_path(), links[closest_index].src_offset_y);
+//			links.erase(links.begin() + closest_index);
+//		}
+//	}
+//
+//	const vector<BookMark>& get_bookmarks() const {
+//		return bookmarks;
+//	}
+//
+//	fz_link* get_page_links(int page_number) {
+//		if (cached_page_links.find(page_number) != cached_page_links.end()) {
+//			return cached_page_links.at(page_number);
+//		}
+//		cout << "getting links .... for " << page_number << endl;
+//
+//		fz_link* res = nullptr;
+//		fz_try(context) {
+//			fz_page* page = fz_load_page(context, doc, page_number);
+//			res = fz_load_links(context, page);
+//			cached_page_links[page_number] = res;
+//			fz_drop_page(context, page);
+//		}
+//
+//		fz_catch(context) {
+//			cout << "Error: Could not load links" << endl;
+//			res = nullptr;
+//		}
+//		return res;
+//	}
+//
+//	void add_mark(char symbol, float y_offset) {
+//		int current_mark_index = get_mark_index(symbol);
+//		if (current_mark_index == -1) {
+//			marks.push_back({ y_offset, symbol });
+//			insert_mark(db, file_name, symbol, y_offset);
+//		}
+//		else {
+//			marks[current_mark_index].y_offset = y_offset;
+//			update_mark(db, file_name, symbol, y_offset);
+//		}
+//	}
+//
+//	bool get_mark_location_if_exists(char symbol, float* y_offset) {
+//		int mark_index = get_mark_index(symbol);
+//		if (mark_index == -1) {
+//			return false;
+//		}
+//		*y_offset = marks[mark_index].y_offset;
+//	}
+//
+//	Document(fz_context* context, string file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
+//	}
+//
+//
+//	~Document() {
+//		if (doc != nullptr) {
+//			fz_try(context) {
+//				fz_drop_document(context, doc);
+//				//todo: implement rest of destructor
+//			}
+//			fz_catch(context) {
+//				cout << "Error: could not drop documnet" << endl;
+//			}
+//		}
+//	}
+//
+//	const vector<TocNode*>& get_toc() {
+//		return top_level_toc_nodes;
+//	}
+//
+//	bool open() {
+//		if (doc == nullptr) {
+//			fz_try(context) {
+//				doc = fz_open_document(context, file_name.c_str());
+//			}
+//			fz_catch(context) {
+//				cout << "could not open " << file_name << endl;
+//			}
+//			if (doc != nullptr) {
+//				load_document_metadata_from_db();
+//				create_toc_tree(top_level_toc_nodes);
+//				return true;
+//			}
+//
+//
+//			return false;
+//		}
+//		else {
+//			cout << "warning! calling open() on an open document" << endl;
+//			return false;
+//		}
+//	}
+//
+//	int num_pages() {
+//		if (cached_num_pages.has_value()) {
+//			return cached_num_pages.value();
+//		}
+//
+//		int pages = -1;
+//		fz_try(context) {
+//			pages = fz_count_pages(context, doc);
+//			cached_num_pages = pages;
+//		}
+//		fz_catch(context) {
+//			cout << "could not count pages" << endl;
+//		}
+//		return pages;
+//	}
+//
+//};
 
 
 class DocumentView {
@@ -461,13 +442,13 @@ public:
 			links = links->next;
 		}
 
-		fz_try(mupdf_context) {
-			//todo: maybe we should loop and drop links?
-			fz_drop_link(mupdf_context, links_root);
-		}
-		fz_catch(mupdf_context) {
-			cout << "Error: Could not drop link" << endl;
-		}
+		//fz_try(mupdf_context) {
+		//	//todo: maybe we should loop and drop links?
+		//	fz_drop_link(mupdf_context, links_root);
+		//}
+		//fz_catch(mupdf_context) {
+		//	cout << "Error: Could not drop link" << endl;
+		//}
 		if (found) return res;
 		return {};
 	}
@@ -857,8 +838,6 @@ public:
 				cout << "more than one file with one path, this should not happen!" << endl;
 			}
 		}
-
-
 
 		if (current_document != nullptr) {
 			//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -7,6 +7,7 @@
 #include <sstream>
 #include <fstream>
 #include <gl/glew.h>
+#include <functional>
 #include <mupdf/fitz.h>
 
 using namespace std;
@@ -20,3 +21,18 @@ void parse_uri(string uri, int* page, float* offset_x, float* offset_y);
 bool includes_rect(fz_rect includer, fz_rect includee);
 char get_symbol(SDL_Scancode scancode, bool is_shift_pressed);
 GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path);
+
+template<typename T>
+int argminf(const vector<T> &collection, function<float(T)> f) {
+
+	float min = std::numeric_limits<float>::infinity();
+	int min_index = -1;
+	for (int i = 0; i < collection.size(); i++) {
+		float element_value = f(collection[i]);
+		if (element_value < min){
+			min = element_value;
+			min_index = i;
+		}
+	}
+	return min_index;
+}
