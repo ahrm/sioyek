@@ -146,6 +146,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="book.cpp" />
     <ClCompile Include="database.cpp" />
     <ClCompile Include="imgui.cpp" />
     <ClCompile Include="imgui_draw.cpp" />
@@ -155,6 +156,8 @@
     <ClCompile Include="input.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="sqlite3.c" />
+    <ClCompile Include="ui.cpp" />
+    <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="book.h" />
@@ -171,6 +174,8 @@
     <ClInclude Include="input.h" />
     <ClInclude Include="sqlite3.h" />
     <ClInclude Include="sqlite3ext.h" />
+    <ClInclude Include="ui.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

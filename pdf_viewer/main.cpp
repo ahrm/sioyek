@@ -38,6 +38,8 @@
 #include "input.h"
 #include "database.h"
 #include "book.h"
+#include "utils.h"
+#include "ui.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -172,49 +174,9 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	return ProgramID;
 }
 
-string to_lower(const string& inp) {
-	string res;
-	for (char c : inp) {
-		res.push_back(::tolower(c));
-	}
-	return res;
-}
-
 void window_to_uv_scale(int window_width, int window_height, int document_width, int document_height, float* uv_x, float* uv_y) {
 	*uv_x = ((float)(window_width)) / document_width;
 	*uv_y = ((float)(window_height)) / document_height;
-}
-
-struct SearchResult {
-	fz_quad quad;
-	int page;
-};
-
-struct RenderRequest {
-	//fz_document* doc;
-	string path;
-	int page;
-	float zoom_level;
-};
-
-struct RenderResponse {
-	RenderRequest request;
-	unsigned int last_access_time;
-	fz_pixmap* pixmap;
-	GLuint texture;
-};
-
-bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
-	if (rhs.path != lhs.path) {
-		return false;
-	}
-	if (rhs.page != lhs.page) {
-		return false;
-	}
-	if (rhs.zoom_level != lhs.zoom_level) {
-		return false;
-	}
-	return true;
 }
 
 class PdfRenderer {
@@ -466,42 +428,6 @@ public:
 PdfRenderer* global_pdf_renderer;
 
 
-
-
-struct TocNode {
-	vector<TocNode*> children;
-	string title;
-	int page;
-	float y;
-	float x;
-};
-
-void convert_toc_tree(fz_outline* root, vector<TocNode*>& output) {
-
-	do {
-		if (root == nullptr) {
-			break;
-		}
-
-		TocNode* current_node = new TocNode;
-		current_node->title = root->title;
-		current_node->page = root->page;
-		current_node->x = root->x;
-		current_node->y = root->y;
-		convert_toc_tree(root->down, current_node->children);
-		output.push_back(current_node);
-	} while (root = root->next);
-
-}
-
-void get_flat_toc(const vector<TocNode*>& roots, vector<string>& output, vector<int>& pages) {
-	for (const auto& root : roots) {
-		output.push_back(root->title);
-		pages.push_back(root->page);
-		get_flat_toc(root->children, output, pages);
-	}
-}
-
 class Document {
 private:
 	vector<Mark> marks;
@@ -745,181 +671,6 @@ public:
 	}
 };
 
-struct CachedPageData {
-	Document* doc;
-	int page;
-	float zoom_level;
-};
-
-struct CachedPage {
-	CachedPageData cached_page_data;
-	fz_pixmap* cached_page_pixmap;
-	unsigned int last_access_time;
-	GLuint cached_page_texture;
-};
-
-bool operator==(const CachedPageData& lhs, const CachedPageData& rhs) {
-	if (lhs.doc != rhs.doc) return false;
-	if (lhs.page != rhs.page) return false;
-	if (lhs.zoom_level != rhs.zoom_level) return false;
-	return true;
-}
-
-
-int mod(int a, int b)
-{
-	return (a % b + b) % b;
-}
-
-const int max_select_size = 100;
-
-template<typename T>
-class FilteredSelect {
-private:
-	vector<string> options;
-	vector<T> values;
-	int current_index;
-	bool is_done;
-	char select_string[max_select_size];
-
-public:
-	FilteredSelect(vector<string> options, vector<T> values) : options(options), values(values), current_index(0), is_done(false) {
-		ZeroMemory(select_string, sizeof(select_string));
-	}
-
-	T* get_value() {
-		int index = get_selected_index();
-		if (index >= 0 && index < values.size()) {
-			return &values[get_selected_index()];
-		}
-		return nullptr;
-	}
-
-	bool is_string_comppatible(string incomplete_string, string option_string) {
-		incomplete_string = to_lower(incomplete_string);
-		option_string = to_lower(option_string);
-		return option_string.find(incomplete_string) < option_string.size();
-	}
-
-	int get_selected_index() {
-		int index = -1;
-		for (int i = 0; i < options.size(); i++) {
-			if (is_string_comppatible(select_string, options[i])) {
-				index += 1;
-			}
-			if (index == current_index) {
-				return i;
-			}
-		}
-		return index;
-	}
-
-	string get_selected_option() {
-		return options[get_selected_index()];
-	}
-
-	int get_max_index() {
-		int max_index = -1;
-		for (int i = 0; i < options.size(); i++) {
-			if (is_string_comppatible(select_string, options[i])) {
-				max_index += 1;
-			}
-		}
-		return max_index;
-	}
-
-	void move_item(int offset) {
-		int new_index = offset + current_index;
-		if (new_index < 0) {
-			new_index = 0;
-		}
-		int max_index = get_max_index();
-		if (new_index > max_index) {
-			new_index = max_index;
-		}
-		current_index = new_index;
-	}
-
-	void next_item() {
-		move_item(1);
-	}
-
-	void prev_item() {
-		move_item(-1);
-	}
-
-	bool render() {
-		ImGui::Begin("Select");
-
-		ImGui::SetKeyboardFocusHere();
-		if (ImGui::InputText("search string", select_string, sizeof(select_string), ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_EnterReturnsTrue,
-			[](ImGuiInputTextCallbackData* data) {
-				FilteredSelect* filtered_select = (FilteredSelect*)data->UserData;
-
-				if (data->EventKey == ImGuiKey_UpArrow) {
-					filtered_select->prev_item();
-				}
-				if (data->EventKey == ImGuiKey_DownArrow) {
-					filtered_select->next_item();
-				}
-
-				return 0;
-			}, this)) {
-			is_done = true;
-		}
-		//ImGui::InputText("search", text_buffer, 100, ImGuiInputTextFlags_CallbackHistory, [&](ImGuiInputTextCallbackData* data) {
-
-		int index = 0;
-		for (int i = 0; i < options.size(); i++) {
-			//if (options[i].find(select_string) == 0) {
-			if (is_string_comppatible(select_string, options[i])) {
-
-				if (current_index == index) {
-					ImGui::SetScrollHere();
-				}
-
-				ImGui::Selectable(options[i].c_str(), current_index == index);
-				index += 1;
-			}
-		}
-
-		ImGui::End();
-		return is_done;
-	}
-
-
-};
-
-bool intersects(float range1_start, float range1_end, float range2_start, float range2_end) {
-	if (range2_start > range1_end || range1_start > range2_end) {
-		return false;
-	}
-	return true;
-}
-
-void parse_uri(string uri, int* page, float* offset_x, float* offset_y) {
-	int comma_index = -1;
-
-	uri = uri.substr(1, uri.size() - 1);
-	comma_index = uri.find(",");
-	*page = atoi(uri.substr(0, comma_index ).c_str());
-
-	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
-	comma_index = uri.find(",");
-	*offset_x = atof(uri.substr(0, comma_index ).c_str());
-
-	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
-	*offset_y = atof(uri.c_str());
-}
-
-bool includes_rect(fz_rect includer, fz_rect includee) {
-	fz_rect intersection = fz_intersect_rect(includer, includee);
-	if (intersection.x0 == includee.x0 && intersection.x1 == includee.x1 &&
-		intersection.y0 == includee.y0 && intersection.y1 == includee.y1) {
-		return true;
-	}
-	return false;
-}
 
 class DocumentView {
 	fz_context* mupdf_context;
@@ -2566,55 +2317,6 @@ public:
 	}
 };
 
-
-void hanle_keys(unsigned char key, int x, int y) {
-	if (key == 'q') {
-
-	}
-}
-
-static int callback(void* notused, int argc, char** argv, char** col_name) {
-	for (int i = 0; i < argc; i++) {
-		cout << col_name[i] << " " << argv[i] << endl;
-	}
-	return 0;
-}
-
-
-
-
-bool select_pdf_file_name(char* out_file_name, int max_length) {
-
-	OPENFILENAMEA ofn;
-	ZeroMemory(out_file_name, max_length);
-	ZeroMemory(&ofn, sizeof(ofn));
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = nullptr;
-	ofn.lpstrFilter = "Pdf Files\0*.pdf\0Any File\0*.*\0";
-	ofn.lpstrFile = out_file_name;
-	ofn.nMaxFile = max_length;
-	ofn.lpstrTitle = "Select a document";
-	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
-
-
-	if (GetOpenFileNameA(&ofn)) {
-		return true;
-	}
-	return false;
-}
-
-char get_symbol(SDL_Scancode scancode, bool is_shift_pressed) {
-	char key = SDL_GetKeyFromScancode(scancode);
-	if (key >= 'a' && key <= 'z') {
-		if (is_shift_pressed) {
-			return key + 'A' - 'a';
-		}
-		else {
-			return key;
-		}
-	}
-	return 0;
-}
 
 int main(int argc, char* args[]) {
 
