@@ -82,16 +82,6 @@ GLfloat g_quad_uvs[] = {
 	1.0f, 1.0f
 };
 
-
-void window_to_uv_scale(int window_width, int window_height, int document_width, int document_height, float* uv_x, float* uv_y) {
-	*uv_x = ((float)(window_width)) / document_width;
-	*uv_y = ((float)(window_height)) / document_height;
-}
-
-
-PdfRenderer* global_pdf_renderer;
-
-
 class Document {
 private:
 	vector<Mark> marks;
@@ -339,6 +329,7 @@ public:
 class DocumentView {
 	fz_context* mupdf_context;
 	sqlite3* database;
+	PdfRenderer* pdf_renderer;
 
 	Document* current_document;
 	string document_path;
@@ -359,9 +350,10 @@ class DocumentView {
 	int current_search_result_index;
 
 public:
-	DocumentView(fz_context* mupdf_context, sqlite3* db) : 
+	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer) : 
 		mupdf_context(mupdf_context),
-		database(db)
+		database(db),
+		pdf_renderer(pdf_renderer)
 	{
 
 	}
@@ -942,7 +934,7 @@ public:
 	void render_page(int page_number, GLuint rendered_program, GLuint unrendered_program) {
 
 		int page_width, page_height;
-		GLuint texture = global_pdf_renderer->find_rendered_page(document_path, page_number, zoom_level, &page_width, &page_height);
+		GLuint texture = pdf_renderer->find_rendered_page(document_path, page_number, zoom_level, &page_width, &page_height);
 		if (texture == 0) {
 			page_width = static_cast<int>(page_widths[page_number] * zoom_level);
 			page_height = static_cast<int>(page_heights[page_number] * zoom_level);
@@ -1074,6 +1066,7 @@ public:
 
 class WindowState {
 private:
+	PdfRenderer* pdf_renderer;
 	DocumentView* main_document_view;
 	DocumentView* helper_document_view;
 	DocumentView* current_document_view;
@@ -1215,7 +1208,8 @@ public:
 		SDL_Window* helper_window,
 		fz_context* mupdf_context,
 		SDL_GLContext* opengl_context,
-		sqlite3* database
+		sqlite3* database,
+		PdfRenderer* pdf_renderer
 	) :
 		mupdf_context(mupdf_context),
 		opengl_context(opengl_context),
@@ -1227,11 +1221,12 @@ public:
 		is_showing_textbar(false),
 		pending_text_command(nullptr),
 		current_toc_select(nullptr),
-		current_bookmark_select(nullptr)
+		current_bookmark_select(nullptr),
+		pdf_renderer(pdf_renderer)
 	{
 
-		main_document_view = new DocumentView(mupdf_context, database);
-		helper_document_view = new DocumentView(mupdf_context, database);
+		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
+		helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
 
 		cached_document_views.push_back(main_document_view);
 
@@ -1432,7 +1427,7 @@ public:
 				}
 				else {
 					push_state();
-					main_document_view = new DocumentView(mupdf_context, database);
+					main_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
 					current_document_view = main_document_view;
 					int window_width, window_height;
 					SDL_GetWindowSize(main_window, &window_width, &window_height);
@@ -1448,7 +1443,7 @@ public:
 			if (link) {
 				push_state();
 				link_to_edit = link;
-				main_document_view = new DocumentView(mupdf_context, database);
+				main_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
 				current_document_view = main_document_view;
 				int window_width, window_height;
 				SDL_GetWindowSize(main_window, &window_width, &window_height);
@@ -1672,7 +1667,7 @@ public:
 		int window_width, window_height;
 		SDL_GetWindowSize(main_window, &window_width, &window_height);
 
-		main_document_view = new DocumentView(mupdf_context, database);
+		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
 		main_document_view->open_document(path);
 		main_document_view->on_view_size_change(window_width, window_height);
 		current_document_view = main_document_view;
@@ -1795,7 +1790,7 @@ public:
 					int helper_window_width, helper_window_height;
 					SDL_GetWindowSize(helper_window, &helper_window_width, &helper_window_height);
 
-					helper_document_view = new DocumentView(mupdf_context, database);
+					helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
 					helper_document_view->on_view_size_change(helper_window_width, helper_window_height);
 					helper_document_view->open_document(helper_document_path);
 					helper_document_view->set_offsets(helper_document_offset_x, helper_document_offset_y);
@@ -1875,7 +1870,7 @@ public:
 							push_state();
 							//current_document_view->goto_page(*page_value);
 
-							main_document_view = new DocumentView(mupdf_context, database);
+							main_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
 							main_document_view->open_document(doc_path);
 							int window_width, window_height;
 							SDL_GetWindowSize(main_window, &window_width, &window_height);
@@ -1904,7 +1899,7 @@ public:
 						BookState* offset_value = current_global_bookmark_select->get_value();
 						if (offset_value) {
 							push_state();
-							main_document_view = new DocumentView(mupdf_context, database);
+							main_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
 							main_document_view->open_document(offset_value->document_path);
 							main_document_view->set_offset_y(offset_value->offset_y);
 							int window_width, window_height;
@@ -1976,7 +1971,7 @@ public:
 			glClear(GL_COLOR_BUFFER_BIT);
 			helper_document_view->render(gl_program, gl_unrendered_program, gl_debug_program);
 			SDL_GL_SwapWindow(helper_window);
-			global_pdf_renderer->delete_old_pages();
+			pdf_renderer->delete_old_pages();
 		}
 	}
 };
@@ -2023,12 +2018,12 @@ int main(int argc, char* args[]) {
 		return -1;
 	}
 
-	global_pdf_renderer = new PdfRenderer(mupdf_context);
+	PdfRenderer* pdf_renderer = new PdfRenderer(mupdf_context);
 	//global_pdf_renderer = new PdfRenderer();
 	//global_pdf_renderer->init();
 
-	thread worker([]() {
-		global_pdf_renderer->run();
+	thread worker([pdf_renderer]() {
+		pdf_renderer->run();
 		});
 
 
@@ -2087,7 +2082,7 @@ int main(int argc, char* args[]) {
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 	ImGui_ImplOpenGL3_Init("#version 400");
 
-	WindowState window_state(window, window2, mupdf_context, &gl_context, db);
+	WindowState window_state(window, window2, mupdf_context, &gl_context, db, pdf_renderer);
 
 	//char file_path[MAX_PATH] = { 0 };
 	string file_path;
@@ -2101,7 +2096,7 @@ int main(int argc, char* args[]) {
 
 	bool quit = false;
 
-	global_pdf_renderer->set_invalidate_pointer(&window_state.render_is_invalid);
+	pdf_renderer->set_invalidate_pointer(&window_state.render_is_invalid);
 	InputHandler input_handler("keys.config");
 
 	bool is_waiting_for_symbol = false;
