@@ -23,6 +23,7 @@ public:
 		options(options), values(values), current_index(0), is_done(false) {
 		ZeroMemory(select_string, sizeof(select_string));
 	}
+
 	T* get_value() {
 		int index = get_selected_index();
 		if (index >= 0 && index < values.size()) {
@@ -30,11 +31,13 @@ public:
 		}
 		return nullptr;
 	}
+
 	bool is_string_comppatible(string incomplete_string, string option_string) {
 		incomplete_string = to_lower(incomplete_string);
 		option_string = to_lower(option_string);
 		return option_string.find(incomplete_string) < option_string.size();
 	}
+
 	int get_selected_index() {
 		int index = -1;
 		for (int i = 0; i < options.size(); i++) {
@@ -47,9 +50,11 @@ public:
 		}
 		return index;
 	}
+
 	string get_selected_option() {
 		return options[get_selected_index()];
 	}
+
 	int get_max_index() {
 		int max_index = -1;
 		for (int i = 0; i < options.size(); i++) {
@@ -59,6 +64,7 @@ public:
 		}
 		return max_index;
 	}
+
 	void move_item(int offset) {
 		int new_index = offset + current_index;
 		if (new_index < 0) {
@@ -70,12 +76,15 @@ public:
 		}
 		current_index = new_index;
 	}
+
 	void next_item() {
 		move_item(1);
 	}
+
 	void prev_item() {
 		move_item(-1);
 	}
+
 	bool render() {
 		ImGui::Begin("Select");
 

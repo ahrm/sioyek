@@ -51,6 +51,9 @@
     <ClCompile Include="ui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="pdf_renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite3.h">
@@ -100,6 +103,9 @@
     </ClInclude>
     <ClInclude Include="ui.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pdf_renderer.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

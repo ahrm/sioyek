@@ -155,6 +155,7 @@
     <ClCompile Include="imgui_widgets.cpp" />
     <ClCompile Include="input.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="pdf_renderer.cpp" />
     <ClCompile Include="sqlite3.c" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="utils.cpp" />
@@ -172,6 +173,7 @@
     <ClInclude Include="imstb_textedit.h" />
     <ClInclude Include="imstb_truetype.h" />
     <ClInclude Include="input.h" />
+    <ClInclude Include="pdf_renderer.h" />
     <ClInclude Include="sqlite3.h" />
     <ClInclude Include="sqlite3ext.h" />
     <ClInclude Include="ui.h" />
