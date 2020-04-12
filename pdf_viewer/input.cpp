@@ -41,6 +41,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "delete", false, true , false, false});
 	commands.push_back({ "goto_link", false, false , false, false});
 	commands.push_back({ "edit_link", false, false , false, false});
+	commands.push_back({ "open_prev_doc", false, false , false, false});
 }
 const Command* CommandManager::get_command_with_name(string name) {
 	for (const auto &com : commands) {
@@ -117,6 +118,10 @@ InputParseTreeNode parse_token(string token) {
 			res.command = SDLK_DOWN;
 		}
 
+		if (command_string == "tab") {
+			res.command = SDLK_TAB;
+		}
+
 		if (command_string == "left") {
 			res.command = SDLK_LEFT;
 		}
@@ -139,6 +144,10 @@ InputParseTreeNode parse_token(string token) {
 
 		if (command_string == "<right>") {
 			res.command = SDLK_RIGHT;
+		}
+
+		if (command_string == "<tab>") {
+			res.command = SDLK_TAB;
 		}
 	}
 

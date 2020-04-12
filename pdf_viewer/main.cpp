@@ -1670,6 +1670,7 @@ private:
 	sqlite3* database;
 	const Command* pending_text_command;
 	FilteredSelect<int>* current_toc_select;
+	FilteredSelect<string>* current_opened_doc_select;
 	FilteredSelect<float>* current_bookmark_select;
 	FilteredSelect<BookState>* current_global_bookmark_select;
 
@@ -2004,15 +2005,27 @@ public:
 		else if (command->name == "goto_link") {
 			Link* link = main_document_view->find_closest_link();
 			if (link) {
-				push_state();
-				main_document_view = new DocumentView(mupdf_context, database);
-				current_document_view = main_document_view;
-				int window_width, window_height;
-				SDL_GetWindowSize(main_window, &window_width, &window_height);
-				main_document_view->on_view_size_change(window_width, window_height);
-				main_document_view->open_document(link->document_path);
-				main_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
-				invalidate_render();
+
+				//if trying to go to the link we are currently viewing, go back to the previous state instead
+				//this is so that the user can tap tab button to quickly change between the main view and the link
+
+				if (link->dest_offset_x == main_document_view->get_offset_x() &&
+					link->dest_offset_y == main_document_view->get_offset_y() &&
+					link->document_path == main_document_view->get_document()->get_path()
+					) {
+					prev_state();
+				}
+				else {
+					push_state();
+					main_document_view = new DocumentView(mupdf_context, database);
+					current_document_view = main_document_view;
+					int window_width, window_height;
+					SDL_GetWindowSize(main_window, &window_width, &window_height);
+					main_document_view->on_view_size_change(window_width, window_height);
+					main_document_view->open_document(link->document_path);
+					main_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
+					invalidate_render();
+				}
 			}
 		}
 		else if (command->name == "edit_link") {
@@ -2077,6 +2090,20 @@ public:
 			get_flat_toc(current_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
 			if (current_document_toc_pages.size() > 0) {
 				current_toc_select = new FilteredSelect<int>(flat_toc, current_document_toc_pages);
+				is_showing_ui = true;
+			}
+		}
+		else if (command->name == "open_prev_doc") {
+			vector<string> opened_docs_paths;
+			vector<string> opened_docs_names;
+			select_prev_docs(database, opened_docs_paths);
+
+			for (const auto& p : opened_docs_paths) {
+				opened_docs_names.push_back(std::filesystem::path(p).filename().string());
+			}
+
+			if (opened_docs_paths.size() > 0) {
+				current_opened_doc_select = new FilteredSelect<string>(opened_docs_names, opened_docs_paths);
 				is_showing_ui = true;
 			}
 		}
@@ -2258,6 +2285,10 @@ public:
 			delete current_toc_select;
 			current_toc_select = nullptr;
 		}
+		if (current_opened_doc_select) {
+			delete current_opened_doc_select;
+			current_opened_doc_select = nullptr;
+		}
 		if (current_bookmark_select) {
 			delete current_bookmark_select;
 			current_bookmark_select = nullptr;
@@ -2416,6 +2447,28 @@ public:
 						delete current_toc_select;
 						current_toc_select = nullptr;
 						is_showing_ui = false;
+					}
+				}
+				if (current_opened_doc_select) {
+					if (current_opened_doc_select->render()) {
+						string doc_path = *current_opened_doc_select->get_value();
+						delete current_opened_doc_select;
+						current_opened_doc_select = nullptr;
+						is_showing_ui = false;
+
+						if (doc_path.size() > 0) {
+							push_state();
+							//current_document_view->goto_page(*page_value);
+
+							main_document_view = new DocumentView(mupdf_context, database);
+							main_document_view->open_document(doc_path);
+							int window_width, window_height;
+							SDL_GetWindowSize(main_window, &window_width, &window_height);
+							main_document_view->on_view_size_change(window_width, window_height);
+							current_document_view = main_document_view;
+							cached_document_views.push_back(main_document_view);
+							invalidate_render();
+						}
 					}
 				}
 				if (current_bookmark_select) {

@@ -26,3 +26,4 @@ bool delete_link(sqlite3* db, string src_document_path, float src_offset_y);
 bool delete_bookmark(sqlite3* db, string src_document_path, float src_offset_y);
 bool global_select_bookmark(sqlite3* db,  vector<pair<string, BookMark>>& out_result);
 bool update_link(sqlite3* db, string src_document_path, float dst_offset_x, float dst_offset_y, float src_offset_y);
+bool select_prev_docs(sqlite3* db,  vector<string>& out_result);

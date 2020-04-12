@@ -25,6 +25,17 @@ static int opened_book_callback(void* res_vector, int argc, char** argv, char** 
 	return 0;
 }
 
+static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col_name) {
+	vector<string>* res = (vector<string>*) res_vector;
+
+	if (argc != 1) {
+		cout << "this should not happen!" << endl;
+	}
+	string path = argv[0];
+	res->push_back(path);
+	return 0;
+}
+
 static int mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	vector<Mark>* res = (vector<Mark>*)res_vector;
@@ -263,6 +274,15 @@ bool select_opened_book(sqlite3* db, string book_path, vector<OpenedBookState> &
 		char* error_message = nullptr;
 		return handle_error(
 			sqlite3_exec(db, ss.str().c_str(), opened_book_callback, &out_result, &error_message),
+			error_message);
+}
+
+bool select_prev_docs(sqlite3* db,  vector<string> &out_result) {
+		stringstream ss;
+		ss << "SELECT path FROM opened_books;";
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, ss.str().c_str(), prev_doc_callback, &out_result, &error_message),
 			error_message);
 }
 
