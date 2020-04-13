@@ -178,4 +178,13 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 	return ProgramID;
 }
 
-
+void rect_to_quad(fz_rect rect, float quad[8]) {
+	quad[0] = rect.x0;
+	quad[1] = rect.y0;
+	quad[2] = rect.x1;
+	quad[3] = rect.y0;
+	quad[4] = rect.x0;
+	quad[5] = rect.y1;
+	quad[6] = rect.x1;
+	quad[7] = rect.y1;
+}

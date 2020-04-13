@@ -36,3 +36,4 @@ int argminf(const vector<T> &collection, function<float(T)> f) {
 	}
 	return min_index;
 }
+void rect_to_quad(fz_rect rect, float quad[8]);

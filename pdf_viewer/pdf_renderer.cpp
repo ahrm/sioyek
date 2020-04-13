@@ -62,8 +62,8 @@ GLuint PdfRenderer::find_rendered_page(string path, int page, float zoom_level, 
 			if (cached_resp.request == req) {
 				cached_resp.last_access_time = SDL_GetTicks();
 
-				*page_width = cached_resp.pixmap->w;
-				*page_height = cached_resp.pixmap->h;
+				if (page_width) *page_width = cached_resp.pixmap->w;
+				if (page_height) *page_height = cached_resp.pixmap->h;
 
 				// We can only use OpenGL in the main thread, so we can not upload the rendered
 				// pixmap into a texture in the worker thread, so whenever we get a rendered page
@@ -120,8 +120,8 @@ GLuint PdfRenderer::try_closest_rendered_page(string doc_path, int page, float z
 			if (diff < min_diff) {
 				min_diff = diff;
 				best_texture = cached_resp.texture;
-				*page_width = static_cast<int>(cached_resp.pixmap->w * zoom_level / cached_resp.request.zoom_level);
-				*page_height = static_cast<int>(cached_resp.pixmap->h * zoom_level / cached_resp.request.zoom_level);
+				if (page_width) *page_width = static_cast<int>(cached_resp.pixmap->w * zoom_level / cached_resp.request.zoom_level);
+				if (page_height) *page_height = static_cast<int>(cached_resp.pixmap->h * zoom_level / cached_resp.request.zoom_level);
 			}
 		}
 	}

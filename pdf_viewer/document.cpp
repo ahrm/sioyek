@@ -57,6 +57,7 @@ void Document::delete_closest_bookmark(float to_y_offset) {
 	}
 }
 
+//todo: sort the lins and perform a binary search
 Link* Document::find_closest_link(float to_offset_y, int* index) {
 	int min_index = argminf<Link>(links, [to_offset_y](Link l) {
 		return abs(l.src_offset_y - to_offset_y);

@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <functional>
+
 #include <Windows.h>
 #include "utils.h"
 #include "imgui.h"
@@ -9,18 +11,24 @@ using namespace std;
 
 const int max_select_size = 100;
 
+class UIWidget {
+public:
+	virtual bool render() = 0;
+};
+
 template<typename T>
-class FilteredSelect {
+class FilteredSelect : public UIWidget{
 private:
 	vector<string> options;
 	vector<T> values;
+	function<void(void*)> on_done;
 	int current_index;
 	bool is_done;
 	char select_string[max_select_size];
 
 public:
-	FilteredSelect(vector<string> options, vector<T> values) :
-		options(options), values(values), current_index(0), is_done(false) {
+	FilteredSelect(vector<string> options, vector<T> values, function<void(void*)> on_done) :
+		options(options), values(values), current_index(0), is_done(false), on_done(on_done) {
 		ZeroMemory(select_string, sizeof(select_string));
 	}
 
@@ -102,6 +110,9 @@ public:
 
 				return 0;
 			}, this)) {
+			if (is_done == false) {
+				on_done(get_value());
+			}
 			is_done = true;
 		}
 		//ImGui::InputText("search", text_buffer, 100, ImGuiInputTextFlags_CallbackHistory, [&](ImGuiInputTextCallbackData* data) {

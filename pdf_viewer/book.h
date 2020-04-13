@@ -50,7 +50,7 @@ struct DocumentViewState {
 };
 
 struct SearchResult {
-	fz_quad quad;
+	fz_rect rect;
 	int page;
 };
 
