@@ -1,7 +1,6 @@
 //todo: cleanup the code
 //todo: visibility test is still buggy??
 //todo: threading
-//todo: remove some O(n) things from page height computations
 //todo: add fuzzy search
 //todo: improve speed and code of document change (cache documents?)
 //todo: copy
@@ -10,6 +9,7 @@
 //todo: handle mouse in menues
 //todo: stop creating DocumentViews!
 //todo: bug: last documnet path is not updated
+//todo: sort opened documents by last access
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -91,8 +91,7 @@ private:
 	PdfRenderer* pdf_renderer;
 	DocumentView* main_document_view;
 	DocumentView* helper_document_view;
-	DocumentView* current_document_view;
-	//Document* current_document;
+
 	SDL_Window* main_window;
 	SDL_Window* helper_window;
 	SDL_GLContext* opengl_context;
@@ -140,7 +139,6 @@ private:
 		main_document_view->on_view_size_change(main_window_width, main_window_height);
 		main_document_view->set_offsets(new_view_state.offset_x, new_view_state.offset_y);
 		main_document_view->set_zoom_level(new_view_state.zoom_level);
-		current_document_view = main_document_view;
 	}
 
 	void prev_state() {
@@ -159,8 +157,8 @@ private:
 			current_history_index--;
 
 			if (link_to_edit) {
-				float link_new_offset_x = current_document_view->get_offset_x();
-				float link_new_offset_y = current_document_view->get_offset_y();
+				float link_new_offset_x = main_document_view->get_offset_x();
+				float link_new_offset_y = main_document_view->get_offset_y();
 				link_to_edit->dest_offset_x = link_new_offset_x;
 				link_to_edit->dest_offset_y = link_new_offset_y;
 				update_link(database, history[current_history_index].document_view->get_document()->get_path(),
@@ -231,8 +229,6 @@ public:
 		helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
 
 		cached_document_views.push_back(main_document_view);
-
-		current_document_view = main_document_view;
 
 		gl_program = LoadShaders("shaders\\simple.vertex", "shaders\\simple.fragment");
 		if (gl_program == 0) {
@@ -310,10 +306,8 @@ public:
 
 	void on_focus_gained(Uint32 window_id) {
 		if (window_id == SDL_GetWindowID(main_window)) {
-			current_document_view = main_document_view;
 		}
 		if (window_id == SDL_GetWindowID(helper_window)) {
-			current_document_view = helper_document_view;
 		}
 	}
 
@@ -321,13 +315,13 @@ public:
 		assert(symbol);
 		assert(command->requires_symbol);
 		if (command->name == "set_mark") {
-			assert(current_document_view);
-			current_document_view->add_mark(symbol);
+			assert(main_document_view);
+			main_document_view->add_mark(symbol);
 			invalidate_render();
 		}
 		else if (command->name == "goto_mark") {
-			assert(current_document_view);
-			current_document_view->goto_mark(symbol);
+			assert(main_document_view);
+			main_document_view->goto_mark(symbol);
 		}
 		else if (command->name == "delete") {
 			if (symbol == 'y') {
@@ -351,14 +345,6 @@ public:
 	}
 
 
-	//void handle_command_with_text(const Command* command, string text) {
-	//	assert(command->requires_text);
-	//	pending_text_command = command;
-	//	is_showing_textbar = true;
-	//	is_showing_ui = true;
-	//}
-
-
 	void handle_command(const Command* command, int num_repeats) {
 		if (command->requires_text) {
 			pending_text_command = command;
@@ -370,15 +356,15 @@ public:
 		}
 		if (command->name == "goto_begining") {
 			if (num_repeats) {
-				current_document_view->goto_page(num_repeats);
+				main_document_view->goto_page(num_repeats);
 			}
 			else {
-				current_document_view->set_offset_y(0.0f);
+				main_document_view->set_offset_y(0.0f);
 			}
 		}
 
 		if (command->name == "goto_end") {
-			current_document_view->goto_end();
+			main_document_view->goto_end();
 		}
 		//if (command->name == "search") {
 		//	show_searchbar();
@@ -386,21 +372,21 @@ public:
 		int rp = max(num_repeats, 1);
 
 		if (command->name == "move_down") {
-			current_document_view->move(0.0f, 72.0f * rp);
+			main_document_view->move(0.0f, 72.0f * rp);
 		}
 		else if (command->name == "move_up") {
-			current_document_view->move(0.0f, -72.0f * rp);
+			main_document_view->move(0.0f, -72.0f * rp);
 		}
 
 		else if (command->name == "move_right") {
-			current_document_view->move(72.0f * rp, 0.0f);
+			main_document_view->move(72.0f * rp, 0.0f);
 		}
 		else if (command->name == "link") {
 			handle_link();
 		}
 
 		else if (command->name == "move_left") {
-			current_document_view->move(-72.0f * rp, 0.0f);
+			main_document_view->move(-72.0f * rp, 0.0f);
 		}
 
 		else if (command->name == "goto_link") {
@@ -424,11 +410,11 @@ public:
 		}
 
 		else if (command->name == "zoom_in") {
-			current_document_view->zoom_in();
+			main_document_view->zoom_in();
 		}
 
 		else if (command->name == "zoom_out") {
-			current_document_view->zoom_out();
+			main_document_view->zoom_out();
 		}
 
 		else if (command->name == "next_state") {
@@ -439,11 +425,11 @@ public:
 		}
 
 		else if (command->name == "next_item") {
-			current_document_view->goto_search_result(1 + num_repeats);
+			main_document_view->goto_search_result(1 + num_repeats);
 		}
 
 		else if (command->name == "previous_item") {
-			current_document_view->goto_search_result(-1 - num_repeats);
+			main_document_view->goto_search_result(-1 - num_repeats);
 		}
 		else if (command->name == "push_state") {
 			push_state();
@@ -453,21 +439,21 @@ public:
 		}
 
 		else if (command->name == "next_page") {
-			current_document_view->move_pages(1 + num_repeats);
+			main_document_view->move_pages(1 + num_repeats);
 		}
 		else if (command->name == "previous_page") {
-			current_document_view->move_pages(-1 - num_repeats);
+			main_document_view->move_pages(-1 - num_repeats);
 		}
 		else if (command->name == "goto_toc") {
 			vector<string> flat_toc;
 			vector<int> current_document_toc_pages;
-			get_flat_toc(current_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
+			get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
 			if (current_document_toc_pages.size() > 0) {
 				current_widget = new FilteredSelect<int>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
 					int* page_value = (int*)page_pointer;
 					if (page_value) {
 						push_state();
-						current_document_view->goto_page(*page_value);
+						main_document_view->goto_page(*page_value);
 					}
 					});
 				is_showing_ui = true;
@@ -497,16 +483,16 @@ public:
 			is_showing_ui = true;
 			vector<string> option_names;
 			vector<float> option_locations;
-			for (int i = 0; i < current_document_view->get_document()->get_bookmarks().size(); i++) {
-				option_names.push_back(current_document_view->get_document()->get_bookmarks()[i].description);
-				option_locations.push_back(current_document_view->get_document()->get_bookmarks()[i].y_offset);
+			for (int i = 0; i < main_document_view->get_document()->get_bookmarks().size(); i++) {
+				option_names.push_back(main_document_view->get_document()->get_bookmarks()[i].description);
+				option_locations.push_back(main_document_view->get_document()->get_bookmarks()[i].y_offset);
 			}
 			current_widget = new FilteredSelect<float>(option_names, option_locations, [&](void* float_pointer) {
 
 				float* offset_value = (float*)float_pointer;
 				if (offset_value) {
 					push_state();
-					current_document_view->set_offset_y(*offset_value);
+					main_document_view->set_offset_y(*offset_value);
 				}
 				});
 		}
@@ -546,7 +532,7 @@ public:
 		if (is_showing_ui) {
 			return true;
 		}
-		if (current_document_view->should_rerender()) {
+		if (main_document_view->should_rerender()) {
 			return true;
 		}
 		return false;
@@ -565,11 +551,11 @@ public:
 		if (pending_text_command->name == "search") {
 			//search_results.clear();
 			//search_text(text.c_str(), search_results);
-			current_document_view->search_text(text.c_str());
+			main_document_view->search_text(text.c_str());
 		}
 
 		if (pending_text_command->name == "add_bookmark") {
-			current_document_view->add_bookmark(text);
+			main_document_view->add_bookmark(text);
 		}
 	}
 
@@ -655,7 +641,6 @@ public:
 		if (offset_y) {
 			main_document_view->set_offset_y(offset_y.value());
 		}
-		current_document_view = main_document_view;
 		cached_document_views.push_back(main_document_view);
 
 		if (path.size() > 0) {
@@ -795,7 +780,7 @@ public:
 						//search_text(search_string, search_results);
 						//handle_return();
 						handle_pending_text_command(text_command_buffer);
-						current_document_view->goto_search_result(0);
+						main_document_view->goto_search_result(0);
 						handle_return();
 						io.WantCaptureKeyboard = false;
 					}
