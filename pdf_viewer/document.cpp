@@ -101,6 +101,7 @@ bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
 		return false;
 	}
 	*y_offset = marks[mark_index].y_offset;
+	return true;
 }
 
 Document::Document(fz_context* context, string file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
@@ -108,6 +109,36 @@ Document::Document(fz_context* context, string file_name, sqlite3* db) : context
 
 const vector<TocNode*>& Document::get_toc() {
 	return top_level_toc_nodes;
+}
+
+float Document::get_page_height(int page_index)
+{
+	return page_heights[page_index];
+}
+
+float Document::get_page_width(int page_index)
+{
+	return page_widths[page_index];
+}
+
+float Document::get_accum_page_height(int page_index)
+{
+	return accum_page_heights[page_index];
+}
+
+const vector<float>& Document::get_page_heights()
+{
+	return page_heights;
+}
+
+const vector<float>& Document::get_page_widths()
+{
+	return page_widths;
+}
+
+const vector<float>& Document::get_accum_page_heights()
+{
+	return accum_page_heights;
 }
 
 fz_outline* Document::get_toc_outline() {
@@ -171,6 +202,7 @@ bool Document::open() {
 			cout << "could not open " << file_name << endl;
 		}
 		if (doc != nullptr) {
+			load_page_dimensions();
 			load_document_metadata_from_db();
 			create_toc_tree(top_level_toc_nodes);
 			return true;
@@ -184,6 +216,28 @@ bool Document::open() {
 		return false;
 	}
 }
+
+void Document::load_page_dimensions() {
+	page_heights.clear();
+	accum_page_heights.clear();
+	page_widths.clear();
+
+	int n = num_pages();
+	float acc_height = 0.0f;
+	for (int i = 0; i < n; i++) {
+		fz_page* page = fz_load_page(context, doc, i);
+		fz_rect page_rect = fz_bound_page(context, page);
+		float page_height = page_rect.y1 - page_rect.y0;
+		float page_width = page_rect.x1 - page_rect.x0;
+
+		accum_page_heights.push_back(acc_height);
+		page_heights.push_back(page_height);
+		page_widths.push_back(page_width);
+		acc_height += page_height;
+		fz_drop_page(context, page);
+	}
+}
+
 int Document::num_pages() {
 	if (cached_num_pages.has_value()) {
 		return cached_num_pages.value();

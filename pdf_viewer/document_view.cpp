@@ -163,13 +163,13 @@ fz_rect DocumentView::absolute_to_window_rect(fz_rect doc_rect) {
 }
 void DocumentView::document_to_window_pos(int page, float doc_x, float doc_y, float* window_x, float* window_y) {
 
-	double doc_rect_y_offset = -accum_page_heights[page];
+	double doc_rect_y_offset = -current_document->get_accum_page_height(page);
 
 	float half_width = static_cast<float>(view_width) / zoom_level / 2;
 	float half_height = static_cast<float>(view_height) / zoom_level / 2;
 
 	*window_y = (doc_rect_y_offset + offset_y - doc_y) / half_height;
-	*window_x = (doc_x + offset_x - page_widths[page] / 2) / half_width;
+	*window_x = (doc_x + offset_x - current_document->get_page_width(page) / 2) / half_width;
 }
 fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
 	fz_rect res;
@@ -180,10 +180,12 @@ fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
 }
 void DocumentView::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
 
-	int i = std::lower_bound(accum_page_heights.begin(), accum_page_heights.end(), absolute_y) - 1 - accum_page_heights.begin();
+	int i = std::lower_bound(
+		current_document->get_accum_page_heights().begin(),
+		current_document->get_accum_page_heights().end(), absolute_y) - 1 - current_document->get_accum_page_heights().begin();
 
-	float remaining_y = absolute_y - accum_page_heights[i];
-	float page_width = page_widths[i];
+	float remaining_y = absolute_y - current_document->get_accum_page_height(i);
+	float page_width = current_document->get_page_width(i);
 
 	*doc_x = page_width / 2 + absolute_x;
 	*doc_y = remaining_y;
@@ -199,8 +201,8 @@ void DocumentView::window_to_absolute_document_pos(float window_x, float window_
 	*doc_y = (window_y - view_height / 2) / zoom_level + offset_y;
 }
 void DocumentView::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
-	*abs_x = page_x - page_widths[page] / 2;
-	*abs_y = page_y + accum_page_heights[page];
+	*abs_x = page_x - current_document->get_page_width(page) / 2;
+	*abs_y = page_y + current_document->get_accum_page_height(page);
 }
 fz_rect DocumentView::page_rect_to_absolute_rect(int page, fz_rect page_rect) {
 	fz_rect res;
@@ -217,6 +219,7 @@ void DocumentView::goto_mark(char symbol) {
 	}
 }
 void DocumentView::goto_end() {
+	const vector<float>& accum_page_heights = current_document->get_accum_page_heights();
 	set_offset_y(accum_page_heights[accum_page_heights.size() - 1]);
 }
 float DocumentView::set_zoom_level(float zl) {
@@ -282,7 +285,7 @@ void DocumentView::goto_search_result(int offset) {
 
 	fz_rect rect = search_results[target_index].rect;
 
-	float new_offset_y = rect.y0 + accum_page_heights[target_page];
+	float new_offset_y = rect.y0 + current_document->get_accum_page_height(target_page);
 
 	set_offset_y(new_offset_y);
 }
@@ -294,6 +297,7 @@ void DocumentView::get_visible_pages(int window_height, vector<int>& visible_pag
 
 	float page_begin = 0.0f;
 
+	const vector<float>& page_heights = current_document->get_page_heights();
 	for (int i = 0; i < page_heights.size(); i++) {
 		float page_end = page_begin + page_heights[i];
 
@@ -308,7 +312,7 @@ void DocumentView::move_pages(int num_pages) {
 	if (current_page == -1) {
 		current_page = 0;
 	}
-	move_absolute(0, num_pages * (page_heights[current_page] + page_paddings));
+	move_absolute(0, num_pages * (current_document->get_page_height(current_page) + page_paddings));
 }
 void DocumentView::reset_doc_state() {
 	zoom_level = 1.0f;
@@ -339,29 +343,26 @@ void DocumentView::open_document(string doc_path) {
 		set_offsets(previous_state.offset_x, previous_state.offset_y);
 	}
 
-	page_heights.clear();
-	page_widths.clear();
+	//if (current_document) {
 
-	if (current_document) {
+	//	int page_count = current_document->num_pages();
 
-		int page_count = current_document->num_pages();
+	//	float acc_height = 0.0f;
+	//	//todo: better (or any!) error handling
+	//	for (int i = 0; i < page_count; i++) {
+	//		fz_page* page = fz_load_page(mupdf_context, current_document->doc, i);
+	//		fz_rect page_rect = fz_bound_page(mupdf_context, page);
+	//		float page_height = page_rect.y1 - page_rect.y0;
+	//		float page_width = page_rect.x1 - page_rect.x0;
 
-		float acc_height = 0.0f;
-		//todo: better (or any!) error handling
-		for (int i = 0; i < page_count; i++) {
-			fz_page* page = fz_load_page(mupdf_context, current_document->doc, i);
-			fz_rect page_rect = fz_bound_page(mupdf_context, page);
-			float page_height = page_rect.y1 - page_rect.y0;
-			float page_width = page_rect.x1 - page_rect.x0;
+	//		accum_page_heights.push_back(acc_height);
+	//		page_heights.push_back(page_height);
+	//		page_widths.push_back(page_width);
+	//		acc_height += page_height;
+	//		fz_drop_page(mupdf_context, page);
+	//	}
 
-			accum_page_heights.push_back(acc_height);
-			page_heights.push_back(page_height);
-			page_widths.push_back(page_width);
-			acc_height += page_height;
-			fz_drop_page(mupdf_context, page);
-		}
-
-	}
+	//}
 
 	//int window_width, window_height;
 	//SDL_GetWindowSize(main_window, &window_width, &window_height);
@@ -375,7 +376,7 @@ float DocumentView::get_page_offset(int page) {
 	if (page > max_page) {
 		page = max_page;
 	}
-	return accum_page_heights[page];
+	return current_document->get_accum_page_height(page);
 }
 void DocumentView::goto_offset_within_page(int page, float offset_x, float offset_y) {
 	set_offsets(offset_x, get_page_offset(page - 1) + offset_y);
@@ -388,7 +389,7 @@ void DocumentView::render_page(int page_number, GLuint rendered_program, GLuint 
 	GLuint texture = pdf_renderer->find_rendered_page(current_document->get_path(), page_number, zoom_level, nullptr, nullptr);
 
 	float page_vertices[4 * 2];
-	fz_rect page_rect = { 0, 0, page_widths[page_number], page_heights[page_number] };
+	fz_rect page_rect = { 0, 0, current_document->get_page_width(page_number), current_document->get_page_height(page_number) };
 	fz_rect window_rect = document_to_window_rect(page_number, page_rect);
 	rect_to_quad(window_rect, page_vertices);
 

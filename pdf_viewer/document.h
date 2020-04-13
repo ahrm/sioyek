@@ -23,9 +23,12 @@ private:
 	optional<int> cached_num_pages;
 	fz_context* context;
 	string file_name;
-	vector<fz_rect> page_rects;
 	unordered_map<int, fz_link*> cached_page_links;
 	fz_outline* cached_outline;
+
+	vector<float> accum_page_heights;
+	vector<float> page_heights;
+	vector<float> page_widths;
 
 	int get_mark_index(char symbol);
 	fz_outline* get_toc_outline();
@@ -50,6 +53,13 @@ public:
 	~Document();
 	const vector<TocNode*>& get_toc();
 	bool open();
+	float get_page_height(int page_index);
+	float get_page_width(int page_index);
+	float get_accum_page_height(int page_index);
+	const vector<float>& get_page_heights();
+	const vector<float>& get_page_widths();
+	const vector<float>& get_accum_page_heights();
+	void load_page_dimensions();
 	int num_pages();
 	friend class DocumentManager;
 };

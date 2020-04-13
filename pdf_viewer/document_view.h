@@ -25,9 +25,9 @@ class DocumentView {
 
 	Document* current_document;
 
-	vector<float> accum_page_heights;
-	vector<float> page_heights;
-	vector<float> page_widths;
+	//vector<float> accum_page_heights;
+	//vector<float> page_heights;
+	//vector<float> page_widths;
 
 	float zoom_level;
 	float offset_x;

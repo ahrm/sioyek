@@ -2,14 +2,14 @@
 //todo: visibility test is still buggy??
 //todo: threading
 //todo: add fuzzy search
-//todo: improve speed and code of document change (cache documents?)
 //todo: copy
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: tests!
 //todo: handle mouse in menues
-//todo: stop creating DocumentViews!
 //todo: bug: last documnet path is not updated
 //todo: sort opened documents by last access
+//todo: handle portals by saving a document as a vector of (absolute rect, pointer to document) which specify pages
+// for example in a simple document, rach rect is just the absolute rect of that page
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
