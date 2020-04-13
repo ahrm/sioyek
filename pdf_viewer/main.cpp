@@ -100,10 +100,7 @@ private:
 	sqlite3* database;
 	const Command* pending_text_command;
 
-	FilteredSelect<int>* current_toc_select;
-	FilteredSelect<string>* current_opened_doc_select;
-	FilteredSelect<float>* current_bookmark_select;
-	FilteredSelect<BookState>* current_global_bookmark_select;
+	UIWidget* current_widget;
 
 	//float zoom_level;
 	GLuint vertex_array_object;
@@ -226,8 +223,7 @@ public:
 		is_showing_ui(false),
 		is_showing_textbar(false),
 		pending_text_command(nullptr),
-		current_toc_select(nullptr),
-		current_bookmark_select(nullptr),
+		current_widget(nullptr),
 		pdf_renderer(pdf_renderer)
 	{
 
@@ -467,7 +463,13 @@ public:
 			vector<int> current_document_toc_pages;
 			get_flat_toc(current_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
 			if (current_document_toc_pages.size() > 0) {
-				current_toc_select = new FilteredSelect<int>(flat_toc, current_document_toc_pages, [](void* a) {});
+				current_widget = new FilteredSelect<int>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
+					int* page_value = (int*)page_pointer;
+					if (page_value) {
+						push_state();
+						current_document_view->goto_page(*page_value);
+					}
+					});
 				is_showing_ui = true;
 			}
 		}
@@ -481,7 +483,13 @@ public:
 			}
 
 			if (opened_docs_paths.size() > 0) {
-				current_opened_doc_select = new FilteredSelect<string>(opened_docs_names, opened_docs_paths, [](void* a) {});
+				current_widget = new FilteredSelect<string>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
+					string doc_path = *(string*)string_pointer;
+					if (doc_path.size() > 0) {
+						push_state();
+						open_document(doc_path);
+					}
+					});
 				is_showing_ui = true;
 			}
 		}
@@ -493,7 +501,14 @@ public:
 				option_names.push_back(current_document_view->get_document()->get_bookmarks()[i].description);
 				option_locations.push_back(current_document_view->get_document()->get_bookmarks()[i].y_offset);
 			}
-			current_bookmark_select = new FilteredSelect<float>(option_names, option_locations, [](void* a) {});
+			current_widget = new FilteredSelect<float>(option_names, option_locations, [&](void* float_pointer) {
+
+				float* offset_value = (float*)float_pointer;
+				if (offset_value) {
+					push_state();
+					current_document_view->set_offset_y(*offset_value);
+				}
+				});
 		}
 		else if (command->name == "goto_bookmark_g") {
 			is_showing_ui = true;
@@ -508,7 +523,13 @@ public:
 				descs.push_back(bm.description);
 				book_states.push_back({ path, bm.y_offset });
 			}
-			current_global_bookmark_select = new FilteredSelect<BookState>(descs, book_states, [](void* a) {});
+			current_widget = new FilteredSelect<BookState>(descs, book_states, [&](void* book_p) {
+				BookState* offset_value = (BookState*)book_p;
+				if (offset_value) {
+					push_state();
+					open_document(offset_value->document_path, 0.0f, offset_value->offset_y);
+				}
+				});
 
 		}
 		else if (command->name == "debug") {
@@ -651,21 +672,9 @@ public:
 		pending_link_source_document_path = "";
 		pending_link_source_filled = false;
 		pending_text_command = nullptr;
-		if (current_toc_select) {
-			delete current_toc_select;
-			current_toc_select = nullptr;
-		}
-		if (current_opened_doc_select) {
-			delete current_opened_doc_select;
-			current_opened_doc_select = nullptr;
-		}
-		if (current_bookmark_select) {
-			delete current_bookmark_select;
-			current_bookmark_select = nullptr;
-		}
-		if (current_global_bookmark_select) {
-			delete current_global_bookmark_select;
-			current_global_bookmark_select = nullptr;
+		if (current_widget) {
+			delete current_widget;
+			current_widget = nullptr;
 		}
 		if (main_document_view) {
 			main_document_view->handle_escape();
@@ -792,65 +801,10 @@ public:
 					}
 					ImGui::End();
 				}
-				if (current_toc_select) {
-					//vector<string> select_items = { "ali", "alo", "mos", "tafavi" };
-					//render_select(select_items, nullptr);
-					if (current_toc_select->render()) {
-						//cout << "selected option " << current_select->get_selected_option() << endl;
-						//int selected_index = current_toc_select->get_selected_index();
-						//goto_page(current_document_toc_pages[selected_index]);
-						int* page_value = current_toc_select->get_value();
-						if (page_value) {
-							push_state();
-							current_document_view->goto_page(*page_value);
-						}
-						delete current_toc_select;
-						current_toc_select = nullptr;
-						is_showing_ui = false;
-					}
-				}
-				if (current_opened_doc_select) {
-					if (current_opened_doc_select->render()) {
-						string doc_path = *current_opened_doc_select->get_value();
-						delete current_opened_doc_select;
-						current_opened_doc_select = nullptr;
-						is_showing_ui = false;
-
-						if (doc_path.size() > 0) {
-							push_state();
-							open_document(doc_path);
-						}
-					}
-				}
-				if (current_bookmark_select) {
-					if (current_bookmark_select->render()) {
-						float* offset_value = current_bookmark_select->get_value();
-						if (offset_value) {
-							push_state();
-							current_document_view->set_offset_y(*offset_value);
-						}
-						delete current_bookmark_select;
-						current_bookmark_select = nullptr;
-						is_showing_ui = false;
-						render_is_invalid = true;
-					}
-				}
-				if (current_global_bookmark_select) {
-					if (current_global_bookmark_select->render()) {
-						BookState* offset_value = current_global_bookmark_select->get_value();
-						if (offset_value) {
-							push_state();
-							main_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
-							main_document_view->open_document(offset_value->document_path);
-							main_document_view->set_offset_y(offset_value->offset_y);
-							int window_width, window_height;
-							SDL_GetWindowSize(main_window, &window_width, &window_height);
-							main_document_view->on_view_size_change(window_width, window_height);
-							cached_document_views.push_back(main_document_view);
-
-						}
-						delete current_global_bookmark_select;
-						current_global_bookmark_select = nullptr;
+				if (current_widget) {
+					if (current_widget->render()) {
+						delete current_widget;
+						current_widget = nullptr;
 						is_showing_ui = false;
 						render_is_invalid = true;
 					}
