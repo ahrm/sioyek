@@ -89,6 +89,7 @@ GLfloat g_quad_uvs[] = {
 class WindowState {
 private:
 	PdfRenderer* pdf_renderer;
+	DocumentManager* document_manager;
 	DocumentView* main_document_view;
 	DocumentView* helper_document_view;
 
@@ -222,11 +223,12 @@ public:
 		is_showing_textbar(false),
 		pending_text_command(nullptr),
 		current_widget(nullptr),
-		pdf_renderer(pdf_renderer)
+		pdf_renderer(pdf_renderer),
+		document_manager(new DocumentManager(mupdf_context, database))
 	{
 
-		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
-		helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
+		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager);
+		helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager);
 
 		cached_document_views.push_back(main_document_view);
 
@@ -632,7 +634,7 @@ public:
 
 	void open_document(string path, optional<float> offset_x = {}, optional<float> offset_y = {}) {
 
-		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer);
+		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager);
 		main_document_view->open_document(path);
 		main_document_view->on_view_size_change(main_window_width, main_window_height);
 		if (offset_x) {
@@ -736,11 +738,12 @@ public:
 			if (link) {
 				if (helper_document_view->get_document() && 
 					helper_document_view->get_document()->get_path() == link->document_path) {
+
 					helper_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
 				}
 				else {
 					delete helper_document_view;
-					helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, link->document_path,
+					helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, link->document_path,
 						helper_window_width, helper_window_height, link->dest_offset_x, link->dest_offset_y);
 				}
 			}

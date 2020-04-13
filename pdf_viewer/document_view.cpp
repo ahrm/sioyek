@@ -1,15 +1,16 @@
 #include "document_view.h"
 
-DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer) :
+DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager) :
 	mupdf_context(mupdf_context),
 	database(db),
-	pdf_renderer(pdf_renderer)
+	pdf_renderer(pdf_renderer),
+	document_manager(document_manager)
 {
 
 }
 
-DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, string path, int view_width, int view_height, float offset_x, float offset_y) :
-	DocumentView(mupdf_context, db, pdf_renderer)
+DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, string path, int view_width, int view_height, float offset_x, float offset_y) :
+	DocumentView(mupdf_context, db, pdf_renderer, document_manager)
 {
 	on_view_size_change(view_width, view_height);
 	open_document(path);
@@ -325,13 +326,10 @@ void DocumentView::open_document(string doc_path) {
 		}
 	}
 
-	current_document = new Document(mupdf_context, doc_path, database);
-	if (!current_document->open()) {
-		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		//todo: not doing this is a memory leak
-		//delete current_document;
-		current_document = nullptr;
-	}
+	//current_document = new Document(mupdf_context, doc_path, database);
+	current_document = document_manager->get_document(doc_path);
+	current_document->open();
+
 	reset_doc_state();
 	if (prev_state.size() > 0) {
 		OpenedBookState previous_state = prev_state[0];

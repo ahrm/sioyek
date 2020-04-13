@@ -21,6 +21,7 @@ class DocumentView {
 	fz_context* mupdf_context;
 	sqlite3* database;
 	PdfRenderer* pdf_renderer;
+	DocumentManager* document_manager;
 
 	Document* current_document;
 
@@ -41,8 +42,8 @@ class DocumentView {
 	int current_search_result_index;
 
 public:
-	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer);
-	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer,
+	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager);
+	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager,
 		string path, int view_width, int view_height, float offset_x, float offset_y);
 	float get_zoom_level();
 	DocumentViewState get_state();

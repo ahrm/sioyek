@@ -17,6 +17,7 @@ int Document::get_mark_index(char symbol) {
 	select_links(db, file_name, links);
 }
 
+
  void Document::add_bookmark(string desc, float y_offset) {
 	 BookMark res;
 	 res.description = desc;
@@ -197,4 +198,17 @@ int Document::num_pages() {
 		cout << "could not count pages" << endl;
 	}
 	return pages;
+}
+
+DocumentManager::DocumentManager(fz_context* mupdf_context, sqlite3* database) : mupdf_context(mupdf_context), database(database)
+{
+}
+
+Document* DocumentManager::get_document(string path) {
+	if (cached_documents.find(path) != cached_documents.end()) {
+		return cached_documents.at(path);
+	}
+	Document* new_doc = new Document(mupdf_context, path, database);
+	cached_documents[path] = new_doc;
+	return new_doc;
 }

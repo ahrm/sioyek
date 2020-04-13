@@ -32,6 +32,7 @@ private:
 	void load_document_metadata_from_db();
 	void create_toc_tree(vector<TocNode*>& toc);
 
+	Document(fz_context* context, string file_name, sqlite3* db);
 public:
 	fz_document* doc;
 
@@ -46,9 +47,21 @@ public:
 	fz_link* get_page_links(int page_number);
 	void add_mark(char symbol, float y_offset);
 	bool get_mark_location_if_exists(char symbol, float* y_offset);
-	Document(fz_context* context, string file_name, sqlite3* db);
 	~Document();
 	const vector<TocNode*>& get_toc();
 	bool open();
 	int num_pages();
+	friend class DocumentManager;
+};
+
+class DocumentManager {
+private:
+	fz_context* mupdf_context;
+	sqlite3* database;
+	unordered_map<string, Document*> cached_documents;
+public:
+
+	DocumentManager(fz_context* mupdf_context, sqlite3* database);
+
+	Document* get_document(string path);
 };
