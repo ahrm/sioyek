@@ -178,38 +178,14 @@ fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
 
 	return res;
 }
-void DocumentView::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
-
-	int i = std::lower_bound(
-		current_document->get_accum_page_heights().begin(),
-		current_document->get_accum_page_heights().end(), absolute_y) - 1 - current_document->get_accum_page_heights().begin();
-
-	float remaining_y = absolute_y - current_document->get_accum_page_height(i);
-	float page_width = current_document->get_page_width(i);
-
-	*doc_x = page_width / 2 + absolute_x;
-	*doc_y = remaining_y;
-	*doc_page = i;
-}
 void DocumentView::window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page) {
-	absolute_to_page_pos(
+	current_document->absolute_to_page_pos(
 		(window_x - view_width / 2) / zoom_level + offset_x,
 		(window_y - view_height / 2) / zoom_level + offset_y, doc_x, doc_y, doc_page);
 }
 void DocumentView::window_to_absolute_document_pos(float window_x, float window_y, float* doc_x, float* doc_y) {
 	*doc_x = (window_x - view_width / 2) / zoom_level + offset_x;
 	*doc_y = (window_y - view_height / 2) / zoom_level + offset_y;
-}
-void DocumentView::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
-	*abs_x = page_x - current_document->get_page_width(page) / 2;
-	*abs_y = page_y + current_document->get_accum_page_height(page);
-}
-fz_rect DocumentView::page_rect_to_absolute_rect(int page, fz_rect page_rect) {
-	fz_rect res;
-	page_pos_to_absolute_pos(page, page_rect.x0, page_rect.y0, &res.x0, &res.y0);
-	page_pos_to_absolute_pos(page, page_rect.x1, page_rect.y1, &res.x1, &res.y1);
-
-	return res;
 }
 void DocumentView::goto_mark(char symbol) {
 	assert(current_document);
@@ -342,33 +318,6 @@ void DocumentView::open_document(string doc_path) {
 		offset_y = previous_state.offset_y;
 		set_offsets(previous_state.offset_x, previous_state.offset_y);
 	}
-
-	//if (current_document) {
-
-	//	int page_count = current_document->num_pages();
-
-	//	float acc_height = 0.0f;
-	//	//todo: better (or any!) error handling
-	//	for (int i = 0; i < page_count; i++) {
-	//		fz_page* page = fz_load_page(mupdf_context, current_document->doc, i);
-	//		fz_rect page_rect = fz_bound_page(mupdf_context, page);
-	//		float page_height = page_rect.y1 - page_rect.y0;
-	//		float page_width = page_rect.x1 - page_rect.x0;
-
-	//		accum_page_heights.push_back(acc_height);
-	//		page_heights.push_back(page_height);
-	//		page_widths.push_back(page_width);
-	//		acc_height += page_height;
-	//		fz_drop_page(mupdf_context, page);
-	//	}
-
-	//}
-
-	//int window_width, window_height;
-	//SDL_GetWindowSize(main_window, &window_width, &window_height);
-	//offset_x = window_width / (2*zoom_level);
-	//offset_y = window_height / zoom_level;
-
 }
 float DocumentView::get_page_offset(int page) {
 
@@ -437,8 +386,8 @@ void DocumentView::get_text_selection(fz_rect abs_docspace_rect, vector<fz_rect>
 	int page_begin, page_end;
 	fz_rect page_rect;
 
-	absolute_to_page_pos(abs_docspace_rect.x0, abs_docspace_rect.y0, &page_rect.x0, &page_rect.y0, &page_begin);
-	absolute_to_page_pos(abs_docspace_rect.x1, abs_docspace_rect.y1, &page_rect.x1, &page_rect.y1, &page_end);
+	current_document->absolute_to_page_pos(abs_docspace_rect.x0, abs_docspace_rect.y0, &page_rect.x0, &page_rect.y0, &page_begin);
+	current_document->absolute_to_page_pos(abs_docspace_rect.x1, abs_docspace_rect.y1, &page_rect.x1, &page_rect.y1, &page_end);
 
 	fz_page* page = nullptr;
 	fz_stext_page* stext_page = nullptr;
@@ -465,7 +414,7 @@ void DocumentView::get_text_selection(fz_rect abs_docspace_rect, vector<fz_rect>
 			while (current_line) {
 				fz_stext_char* current_char = current_line->first_char;
 				while (current_char) {
-					fz_rect charrect = page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
+					fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
 					//if (includes_rect(document_space_rect, charrect)) {
 					if ((abs_docspace_rect.y0 <= charrect.y0 && abs_docspace_rect.y1 >= charrect.y1) ||
 						(abs_docspace_rect.y1 <= charrect.y1 && abs_docspace_rect.y1 >= charrect.y0 && abs_docspace_rect.x1 >= charrect.x1) ||

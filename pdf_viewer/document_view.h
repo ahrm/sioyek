@@ -25,10 +25,6 @@ class DocumentView {
 
 	Document* current_document;
 
-	//vector<float> accum_page_heights;
-	//vector<float> page_heights;
-	//vector<float> page_widths;
-
 	float zoom_level;
 	float offset_x;
 	float offset_y;
@@ -68,15 +64,14 @@ public:
 	void add_bookmark(string desc);
 	void on_view_size_change(int new_width, int new_height);
 	bool should_rerender();
+
 	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
 	fz_rect absolute_to_window_rect(fz_rect doc_rect);
 	void document_to_window_pos(int page, float doc_x, float doc_y, float* window_x, float* window_y);
 	fz_rect document_to_window_rect(int page, fz_rect doc_rect);
-	void absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page);
 	void window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page);
 	void window_to_absolute_document_pos(float window_x, float window_y, float* doc_x, float* doc_y);
-	void page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y);
-	fz_rect page_rect_to_absolute_rect(int page, fz_rect page_rect);
+
 	void goto_mark(char symbol);
 	void goto_end();
 	float set_zoom_level(float zl);

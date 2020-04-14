@@ -93,3 +93,9 @@ struct CachedPage {
 	GLuint cached_page_texture;
 };
 bool operator==(const CachedPageData& lhs, const CachedPageData& rhs);
+
+
+struct PdfPortal {
+	fz_rect absolute_document_rect;
+	Document* doc;
+};

@@ -1,4 +1,5 @@
 #include "document.h"
+#include <algorithm>
 
 int Document::get_mark_index(char symbol) {
 	for (int i = 0; i < marks.size(); i++) {
@@ -238,6 +239,17 @@ void Document::load_page_dimensions() {
 	}
 }
 
+fz_rect Document::get_page_absolute_rect(int page)
+{
+	fz_rect res;
+	res.x0 = -page_widths[page] / 2;
+	res.x1 = page_widths[page] / 2;
+
+	res.y0 = accum_page_heights[page];
+	res.y1 = accum_page_heights[page] + page_heights[page];
+	return res;
+}
+
 int Document::num_pages() {
 	if (cached_num_pages.has_value()) {
 		return cached_num_pages.value();
@@ -265,4 +277,49 @@ Document* DocumentManager::get_document(string path) {
 	Document* new_doc = new Document(mupdf_context, path, database);
 	cached_documents[path] = new_doc;
 	return new_doc;
+}
+
+void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
+
+	int i = std::lower_bound(
+		accum_page_heights.begin(),
+		accum_page_heights.end(), absolute_y) - 1 - accum_page_heights.begin();
+
+	float remaining_y = absolute_y - accum_page_heights[i];
+	float page_width = page_widths[i];
+
+	*doc_x = page_width / 2 + absolute_x;
+	*doc_y = remaining_y;
+	*doc_page = i;
+}
+
+void Document::absolute_to_page_rects(fz_rect absolute_rect, vector<fz_rect>& resulting_rects, vector<int>& resulting_pages)
+{
+	fz_rect res;
+	int page_begin, page_end;
+	absolute_to_page_pos(absolute_rect.x0, absolute_rect.y0, &res.x0, &res.y0, &page_begin);
+	absolute_to_page_pos(absolute_rect.x1, absolute_rect.y1, &res.x1, &res.y1, &page_end);
+
+	for (int i = page_begin; i <= page_end; i++) {
+		fz_rect page_absolute_rect = get_page_absolute_rect(i);
+		fz_rect intersection = fz_intersect_rect(absolute_rect, page_absolute_rect);
+		intersection.y0 -= page_absolute_rect.y0;
+		intersection.y1 -= page_absolute_rect.y0;
+
+		resulting_rects.push_back(intersection);
+		resulting_pages.push_back(i);
+	}
+}
+
+void Document::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
+	*abs_x = page_x - page_widths[page] / 2;
+	*abs_y = page_y + accum_page_heights[page];
+}
+
+fz_rect Document::page_rect_to_absolute_rect(int page, fz_rect page_rect) {
+	fz_rect res;
+	page_pos_to_absolute_pos(page, page_rect.x0, page_rect.y0, &res.x0, &res.y0);
+	page_pos_to_absolute_pos(page, page_rect.x1, page_rect.y1, &res.x1, &res.y1);
+
+	return res;
 }
