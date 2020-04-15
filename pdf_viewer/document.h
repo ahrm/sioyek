@@ -62,37 +62,15 @@ public:
 	void load_page_dimensions();
 	int num_pages();
 	fz_rect get_page_absolute_rect(int page);
-
 	void absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page);
-	void absolute_to_page_rects(fz_rect absolute_rect, vector<fz_rect>& resulting_rects, vector<int>& resulting_pages);
+	void absolute_to_page_rects(fz_rect absolute_rect,
+		vector<fz_rect>& resulting_rects,
+		vector<int>& resulting_pages,
+		vector<fz_rect>* complete_rects);
 	void page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y);
 	fz_rect page_rect_to_absolute_rect(int page, fz_rect page_rect);
-
 	friend class DocumentManager;
 };
-
-//class PortaledDocument {
-//private:
-//	vector<PdfPortal> pages;
-//	Document* doc;
-//public:
-//	PortaledDocument(Document* doc) : doc(doc) {
-//		int num_pages = doc->num_pages();
-//		for (int i = 0; i < num_pages; i++) {
-			////this is wrong! (x should be from -w/2 to w/2)
-//			fz_rect absolute_rect = { 0,
-//				doc->get_accum_page_height(i),
-//				doc->get_page_width(i),
-//				doc->get_accum_page_height(i) + doc->get_page_height(i)
-//			};
-//			pages.push_back({ absolute_rect, doc });
-//		}
-//	}
-//
-//	Document* get_document() {
-//		return doc;
-//	}
-//};
 
 class DocumentManager {
 private:
