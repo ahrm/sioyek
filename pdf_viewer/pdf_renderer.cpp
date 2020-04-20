@@ -23,6 +23,7 @@ void PdfRenderer::add_request(string document_path, int page, float zoom_level) 
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
 		RenderRequest req;
+		req.type = REQUEST_RENDER;
 		req.path = document_path;
 		req.page = page;
 		req.zoom_level = zoom_level;
@@ -44,6 +45,31 @@ void PdfRenderer::add_request(string document_path, int page, float zoom_level) 
 	}
 	else {
 		cout << "Error: could not find documnet" << endl;
+	}
+}
+void PdfRenderer::add_request(string document_path, int page, string term, vector<SearchResult>* out,float* percent_done, bool* is_searching, mutex* mut) {
+	//fz_document* doc = get_document_with_path(document_path);
+	if (document_path.size() > 0) {
+
+		RenderRequest req;
+		req.type = REQUEST_SEARCH;
+		req.path = document_path;
+		req.page = page;
+		req.search_term = term;
+		req.search_results_mutex = mut;
+		req.search_results = out;
+		req.percent_done = percent_done;
+		req.is_searching = is_searching;
+
+		pending_requests_mutex.lock();
+		pending_requests.push_back(req);
+		if (pending_requests.size() > max_pending_requests) {
+			pending_requests.erase(pending_requests.begin());
+		}
+		pending_requests_mutex.unlock();
+	}
+	else {
+		cout << "Error: could not find document" << endl;
 	}
 }
 
@@ -199,57 +225,105 @@ void PdfRenderer::delete_old_pixmaps() {
 	pixmap_drop_mutex.unlock();
 }
 
-void PdfRenderer::run() {
+void PdfRenderer::run(bool* should_quit) {
 	init_context();
 
-	while (true) {
+	while (!(*should_quit)) {
 		pending_requests_mutex.lock();
 
 		while (pending_requests.size() == 0) {
 			pending_requests_mutex.unlock();
 			delete_old_pixmaps();
+			if (*should_quit) break;
 
 			Sleep(100);
 			pending_requests_mutex.lock();
 		}
+		if (*should_quit) break;
 		cout << "worker thread running ... pending requests: " << pending_requests.size() << endl;
 
 		RenderRequest req = pending_requests[pending_requests.size() - 1];
 
-		// if the request is already rendered, just return the previous result
-		cached_response_mutex.lock();
-		bool is_already_rendered = false;
-		for (const auto& cached_rep : cached_responses) {
-			if (cached_rep.request == req) is_already_rendered = true;
+		if (req.type == REQUEST_RENDER) {
+			// if the request is already rendered, just return the previous result
+			cached_response_mutex.lock();
+			bool is_already_rendered = false;
+			for (const auto& cached_rep : cached_responses) {
+				if (cached_rep.request == req) is_already_rendered = true;
+			}
+			cached_response_mutex.unlock();
+			pending_requests.pop_back();
+			pending_requests_mutex.unlock();
+
+			if (!is_already_rendered) {
+
+				fz_try(mupdf_context) {
+					fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level, req.zoom_level);
+					fz_document* doc = get_document_with_path(req.path);
+					fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+					RenderResponse resp;
+					resp.request = req;
+					resp.last_access_time = SDL_GetTicks();
+					resp.pixmap = rendered_pixmap;
+					resp.texture = 0;
+
+					cached_response_mutex.lock();
+					cached_responses.push_back(resp);
+					cached_response_mutex.unlock();
+					if (invalidate_pointer != nullptr) {
+						//todo: there might be a race condition here
+						*invalidate_pointer = true;
+					}
+
+				}
+				fz_catch(mupdf_context) {
+					cout << "Error: could not render page" << endl;
+				}
+			}
 		}
-		cached_response_mutex.unlock();
-		pending_requests.pop_back();
-		pending_requests_mutex.unlock();
+		else if (req.type == REQUEST_SEARCH){
+			pending_requests.pop_back();
+			pending_requests_mutex.unlock();
+			fz_document* doc = get_document_with_path(req.path);
 
-		if (!is_already_rendered) {
+			int num_pages = fz_count_pages(mupdf_context, doc);
 
-			fz_try(mupdf_context) {
-				fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level, req.zoom_level);
-				fz_document* doc = get_document_with_path(req.path);
-				fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
-				RenderResponse resp;
-				resp.request = req;
-				resp.last_access_time = SDL_GetTicks();
-				resp.pixmap = rendered_pixmap;
-				resp.texture = 0;
+			int total_results = 0;
 
-				cached_response_mutex.lock();
-				cached_responses.push_back(resp);
-				cached_response_mutex.unlock();
-				if (invalidate_pointer != nullptr) {
-					//todo: there might be a race condition here
+
+			int num_handled_pages = 0;
+			int i = req.page;
+			while(num_handled_pages < num_pages){
+				num_handled_pages++;
+				fz_page* page = fz_load_page(mupdf_context, doc, i);
+
+				const int max_hits_per_page = 20;
+				fz_quad hitboxes[max_hits_per_page];
+				int num_results = fz_search_page(mupdf_context, page, req.search_term.c_str(), hitboxes, max_hits_per_page);
+
+				for (int j = 0; j < num_results; j++) {
+					req.search_results_mutex->lock();
+					req.search_results->push_back(SearchResult{ fz_rect_from_quad(hitboxes[j]), i });
+					req.search_results_mutex->unlock();
 					*invalidate_pointer = true;
 				}
+				if (i % 10 == 0) {
+					req.search_results_mutex->lock();
+					*req.percent_done = (float)num_handled_pages / num_pages;
+					*invalidate_pointer = true;
+					req.search_results_mutex->unlock();
+				}
 
+				total_results += num_results;
+
+				fz_drop_page(mupdf_context, page);
+
+				i = (i + 1) % num_pages;
 			}
-			fz_catch(mupdf_context) {
-				cout << "Error: could not render page" << endl;
-			}
+			req.search_results_mutex->lock();
+			*req.is_searching = false;
+			*invalidate_pointer = true;
+			req.search_results_mutex->unlock();
 		}
 
 	}

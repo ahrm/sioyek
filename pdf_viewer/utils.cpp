@@ -86,8 +86,10 @@ char get_symbol(SDL_Scancode scancode, bool is_shift_pressed) {
 	return 0;
 }
 
-GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path) {
+GLuint LoadShaders(filesystem::path vertex_file_path_, filesystem::path fragment_file_path_) {
 
+	const wchar_t* vertex_file_path = vertex_file_path_.c_str();
+	const wchar_t* fragment_file_path = fragment_file_path_.c_str();
 	// Create the shaders
 	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
@@ -102,7 +104,7 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 		VertexShaderStream.close();
 	}
 	else {
-		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
+		wprintf(L"Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
 		return 0;
 	}
 
@@ -116,7 +118,7 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 		FragmentShaderStream.close();
 	}
 	else {
-		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", fragment_file_path);
+		wprintf(L"Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", fragment_file_path);
 		return 0;
 	}
 
@@ -187,4 +189,107 @@ void rect_to_quad(fz_rect rect, float quad[8]) {
 	quad[5] = rect.y1;
 	quad[6] = rect.x1;
 	quad[7] = rect.y1;
+}
+
+fz_rect corners_to_rect(fz_point corner1, fz_point corner2) {
+	fz_rect res;
+	res.x0 = min(corner1.x, corner2.x);
+	res.x1 = max(corner1.x, corner2.x);
+
+	res.y0 = min(corner1.y, corner2.y);
+	res.y1 = max(corner1.y, corner2.y);
+	return res;
+}
+
+bool should_select_char(fz_point selection_begin, fz_point selection_end, fz_rect character_rect) {
+	fz_rect selection_rect = corners_to_rect(selection_begin, selection_end);
+	fz_point top_point = selection_begin.y > selection_end.y ? selection_end : selection_begin;
+	fz_point bottom_point = selection_begin.y > selection_end.y ? selection_begin : selection_end;
+
+	// if character is included in the selection y range, then it is selected
+	if (selection_rect.y1 >= character_rect.y1 && selection_rect.y0 <= character_rect.y0) {
+		return true;
+	}
+
+	else if (character_rect.y1 >= selection_rect.y1 && character_rect.y0 <= selection_rect.y0) {
+		if (selection_rect.x1 >= character_rect.x1 && selection_rect.x0 <= character_rect.x0) {
+			return true;
+		}
+	}
+	else if (character_rect.y1 >= selection_rect.y1 && character_rect.y0 <= selection_rect.y1) {
+		if (character_rect.x0 <= bottom_point.x) {
+			return true;
+		}
+	}
+	else if (character_rect.y1 >= selection_rect.y0 && character_rect.y0 <= selection_rect.y0) {
+		if (character_rect.x1 >= top_point.x) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void copy_to_clipboard(const string& text) {
+	const size_t len = text.size() + 1;
+	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len);
+	memcpy(GlobalLock(hMem), text.c_str(), len);
+	GlobalUnlock(hMem);
+	OpenClipboard(0);
+	EmptyClipboard();
+	SetClipboardData(CF_TEXT, hMem);
+	CloseClipboard();
+}
+
+#define OPEN_KEY(parent, name, ptr) \
+	RegCreateKeyExA(parent, name, 0, 0, 0, KEY_WRITE, 0, &ptr, 0)
+
+#define SET_KEY(parent, name, value) \
+	RegSetValueExA(parent, name, 0, REG_SZ, (const BYTE *)(value), (DWORD)strlen(value) + 1)
+
+void install_app(char *argv0)
+{
+	char buf[512];
+	HKEY software, classes, testpdf, dotpdf;
+	HKEY shell, open, command, supported_types;
+	HKEY pdf_progids;
+
+	OPEN_KEY(HKEY_CURRENT_USER, "Software", software);
+	OPEN_KEY(software, "Classes", classes);
+	OPEN_KEY(classes, ".pdf", dotpdf);
+	OPEN_KEY(dotpdf, "OpenWithProgids", pdf_progids);
+	OPEN_KEY(classes, "TestPdf", testpdf);
+	OPEN_KEY(testpdf, "SupportedTypes", supported_types);
+	OPEN_KEY(testpdf, "shell", shell);
+	OPEN_KEY(shell, "open", open);
+	OPEN_KEY(open, "command", command);
+
+	sprintf(buf, "\"%s\" \"%%1\"", argv0);
+
+	SET_KEY(open, "FriendlyAppName", "TestPdf");
+	SET_KEY(command, "", buf);
+	SET_KEY(supported_types, ".pdf", "");
+	SET_KEY(pdf_progids, "TestPdf", "");
+
+	RegCloseKey(dotpdf);
+	RegCloseKey(testpdf);
+	RegCloseKey(classes);
+	RegCloseKey(software);
+}
+
+int get_f_key(string name) {
+	if (name[0] == '<') {
+		name = name.substr(1, name.size() - 2);
+	}
+	if (name[0] != 'f') {
+		return 0;
+	}
+	name = name.substr(1, name.size() - 1);
+	if (!isdigit(name[0])) {
+		return 0;
+	}
+
+	int num;
+	stringstream ss(name);
+	ss >> num;
+	return  num;
 }

@@ -32,7 +32,9 @@ DocumentViewState DocumentView::get_state() {
 }
 
 void DocumentView::handle_escape() {
+	search_results_mutex.lock();
 	search_results.clear();
+	search_results_mutex.unlock();
 	current_search_result_index = 0;
 }
 
@@ -47,7 +49,10 @@ Document* DocumentView::get_document() {
 }
 
 int DocumentView::get_num_search_results() {
-	return search_results.size();
+	search_results_mutex.lock();
+	int num = search_results.size();
+	search_results_mutex.unlock();
+	return num;
 }
 
 int DocumentView::get_current_search_result_index() {
@@ -147,6 +152,16 @@ void DocumentView::on_view_size_change(int new_width, int new_height) {
 bool DocumentView::should_rerender() {
 	return render_is_invalid;
 }
+bool DocumentView::get_is_searching(float* prog)
+{
+	search_results_mutex.lock();
+	bool res = is_searching;
+	if (is_searching) {
+		*prog = percent_done;
+	}
+	search_results_mutex.unlock();
+	return res;
+}
 void DocumentView::absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y) {
 	float half_width = static_cast<float>(view_width) / zoom_level / 2;
 	float half_height = static_cast<float>(view_height) / zoom_level / 2;
@@ -180,11 +195,11 @@ fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
 }
 void DocumentView::window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page) {
 	current_document->absolute_to_page_pos(
-		(window_x - view_width / 2) / zoom_level + offset_x,
+		(window_x - view_width / 2) / zoom_level - offset_x,
 		(window_y - view_height / 2) / zoom_level + offset_y, doc_x, doc_y, doc_page);
 }
 void DocumentView::window_to_absolute_document_pos(float window_x, float window_y, float* doc_x, float* doc_y) {
-	*doc_x = (window_x - view_width / 2) / zoom_level + offset_x;
+	*doc_x = (window_x - view_width / 2) / zoom_level - offset_x;
 	*doc_y = (window_y - view_height / 2) / zoom_level + offset_y;
 }
 void DocumentView::goto_mark(char symbol) {
@@ -226,7 +241,40 @@ int DocumentView::get_current_page_number() {
 	}
 	return -1;
 }
-int DocumentView::search_text(const char* text) {
+
+void DocumentView::search_text(const char* text) {
+	search_results_mutex.lock();
+	search_results.clear();
+	search_results_mutex.unlock();
+
+	is_searching = true;
+	pdf_renderer->add_request(current_document->get_path(), 
+		get_current_page_number(), text, &search_results, &percent_done, &is_searching, &search_results_mutex);
+
+	//todo: return value is unused, convert to void
+
+	//int num_pages = current_document->num_pages();
+	//int total_results = 0;
+
+	//for (int i = 0; i < num_pages; i++) {
+	//	fz_page* page = fz_load_page(mupdf_context, current_document->doc, i);
+
+	//	const int max_hits_per_page = 20;
+	//	fz_quad hitboxes[max_hits_per_page];
+	//	int num_results = fz_search_page(mupdf_context, page, text, hitboxes, max_hits_per_page);
+
+	//	for (int j = 0; j < num_results; j++) {
+	//		search_results.push_back(SearchResult{ fz_rect_from_quad(hitboxes[j]), i });
+	//	}
+
+	//	total_results += num_results;
+
+	//	fz_drop_page(mupdf_context, page);
+	//}
+	//return total_results;
+}
+
+int DocumentView::search_text2(const char* text) {
 	search_results.clear();
 
 	int num_pages = current_document->num_pages();
@@ -250,7 +298,9 @@ int DocumentView::search_text(const char* text) {
 	return total_results;
 }
 void DocumentView::goto_search_result(int offset) {
+	search_results_mutex.lock();
 	if (search_results.size() == 0) {
+		search_results_mutex.unlock();
 		return;
 	}
 
@@ -264,6 +314,7 @@ void DocumentView::goto_search_result(int offset) {
 	float new_offset_y = rect.y0 + current_document->get_accum_page_height(target_page);
 
 	set_offset_y(new_offset_y);
+	search_results_mutex.unlock();
 }
 void DocumentView::get_visible_pages(int window_height, vector<int>& visible_pages) {
 	float window_y_range_begin = offset_y - window_height / (zoom_level);
@@ -302,7 +353,7 @@ void DocumentView::open_document(string doc_path) {
 
 	if (select_opened_book(database, cannonical_path, prev_state)) {
 		if (prev_state.size() > 1) {
-			cout << "more than one file with one path, this should not happen!" << endl;
+			cerr << "more than one file with one path, this should not happen!" << endl;
 		}
 	}
 
@@ -355,12 +406,17 @@ void DocumentView::render_page(int page_number, GLuint rendered_program, GLuint 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GLuint highlight_program) {
+	if (current_document == nullptr) {
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		return;
+	}
 
 	vector<int> visible_pages;
 	get_visible_pages(view_height, visible_pages);
 	render_is_invalid = false;
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 
@@ -373,33 +429,40 @@ void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GL
 		}
 	}
 
+	search_results_mutex.lock();
 	if (search_results.size() > 0) {
 		SearchResult current_search_result = search_results[current_search_result_index];
 		render_highlight_document(highlight_program, current_search_result.page, current_search_result.rect);
 	}
+	search_results_mutex.unlock();
 }
 void DocumentView::persist() {
 	update_book(database, current_document->get_path(), zoom_level, offset_x, offset_y);
 }
-void DocumentView::get_text_selection(fz_rect abs_docspace_rect, vector<fz_rect>& selected_characters) {
+void DocumentView::get_text_selection(fz_point selection_begin, fz_point selection_end, vector<fz_rect>& selected_characters, string& selected_text) {
 
 	int page_begin, page_end;
 	fz_rect page_rect;
 
-	current_document->absolute_to_page_pos(abs_docspace_rect.x0, abs_docspace_rect.y0, &page_rect.x0, &page_rect.y0, &page_begin);
-	current_document->absolute_to_page_pos(abs_docspace_rect.x1, abs_docspace_rect.y1, &page_rect.x1, &page_rect.y1, &page_end);
+	selected_characters.clear();
+	selected_text.clear();
+
+	fz_rect abs_rect = corners_to_rect(selection_begin, selection_end);
+
+	current_document->absolute_to_page_pos(abs_rect.x0, abs_rect.y0, &page_rect.x0, &page_rect.y0, &page_begin);
+	current_document->absolute_to_page_pos(abs_rect.x1, abs_rect.y1, &page_rect.x1, &page_rect.y1, &page_end);
 
 	fz_page* page = nullptr;
 	fz_stext_page* stext_page = nullptr;
+	selected_text.clear();
 
-	string selected_text;
 	for (int i = page_begin; i <= page_end; i++) {
 		fz_try(mupdf_context) {
 			page = fz_load_page(mupdf_context, current_document->doc, i);
 			stext_page = fz_new_stext_page_from_page(mupdf_context, page, nullptr);
 		}
 		fz_catch(mupdf_context) {
-			cout << "Error: could not load page for selection" << endl;
+			cerr << "Error: could not load page for selection" << endl;
 		}
 
 
@@ -415,11 +478,8 @@ void DocumentView::get_text_selection(fz_rect abs_docspace_rect, vector<fz_rect>
 				fz_stext_char* current_char = current_line->first_char;
 				while (current_char) {
 					fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
-					//if (includes_rect(document_space_rect, charrect)) {
-					if ((abs_docspace_rect.y0 <= charrect.y0 && abs_docspace_rect.y1 >= charrect.y1) ||
-						(abs_docspace_rect.y1 <= charrect.y1 && abs_docspace_rect.y1 >= charrect.y0 && abs_docspace_rect.x1 >= charrect.x1) ||
-						(abs_docspace_rect.y0 <= charrect.y1 && abs_docspace_rect.y0 >= charrect.y0 && abs_docspace_rect.x0 <= charrect.x0)
-						) {
+
+					if (should_select_char(selection_begin, selection_end, charrect)){
 						selected_text.push_back(current_char->c);
 						selected_characters.push_back(charrect);
 					}
@@ -436,5 +496,58 @@ void DocumentView::get_text_selection(fz_rect abs_docspace_rect, vector<fz_rect>
 		fz_drop_page(mupdf_context, page);
 	}
 
-	cout << "selecting pages " << selected_text << page_begin << " " << page_end << endl;
 }
+//void DocumentView::get_text_selection(fz_rect abs_docspace_rect, vector<fz_rect>& selected_characters, string& selected_text) {
+//
+//	int page_begin, page_end;
+//	fz_rect page_rect;
+//
+//	current_document->absolute_to_page_pos(abs_docspace_rect.x0, abs_docspace_rect.y0, &page_rect.x0, &page_rect.y0, &page_begin);
+//	current_document->absolute_to_page_pos(abs_docspace_rect.x1, abs_docspace_rect.y1, &page_rect.x1, &page_rect.y1, &page_end);
+//
+//	fz_page* page = nullptr;
+//	fz_stext_page* stext_page = nullptr;
+//	selected_text.clear();
+//
+//	for (int i = page_begin; i <= page_end; i++) {
+//		fz_try(mupdf_context) {
+//			page = fz_load_page(mupdf_context, current_document->doc, i);
+//			stext_page = fz_new_stext_page_from_page(mupdf_context, page, nullptr);
+//		}
+//		fz_catch(mupdf_context) {
+//			cout << "Error: could not load page for selection" << endl;
+//		}
+//
+//
+//		fz_stext_block* current_block = stext_page->first_block;
+//		while (current_block) {
+//
+//			if (current_block->type != FZ_STEXT_BLOCK_TEXT) {
+//				continue;
+//			}
+//
+//			fz_stext_line* current_line = current_block->u.t.first_line;
+//			while (current_line) {
+//				fz_stext_char* current_char = current_line->first_char;
+//				while (current_char) {
+//					fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
+//
+//					if (should_select_char(abs_docspace_rect, charrect)){
+//						selected_text.push_back(current_char->c);
+//						selected_characters.push_back(charrect);
+//					}
+//					current_char = current_char->next;
+//				}
+//				//some_text.push_back('\n');
+//				current_line = current_line->next;
+//			}
+//
+//			current_block = current_block->next;
+//		}
+//
+//		fz_drop_stext_page(mupdf_context, stext_page);
+//		fz_drop_page(mupdf_context, page);
+//	}
+//
+//	cout << "selecting pages " << selected_text << page_begin << " " << page_end << endl;
+//}

@@ -4,6 +4,7 @@
 #include <string>
 #include <mupdf/fitz.h>
 #include <gl/glew.h>
+#include <mutex>
 
 using namespace std;
 
@@ -54,11 +55,22 @@ struct SearchResult {
 	int page;
 };
 
+enum RenderRequestType {
+	REQUEST_RENDER,
+	REQUEST_SEARCH
+};
+
 struct RenderRequest {
 	//fz_document* doc;
+	RenderRequestType type;
 	string path;
 	int page;
 	float zoom_level;
+	string search_term;
+	vector<SearchResult>* search_results;
+	mutex* search_results_mutex;
+	float* percent_done;
+	bool* is_searching;
 };
 
 struct RenderResponse {

@@ -53,6 +53,7 @@ public:
 
 	//should only be called from the main thread
 	void add_request(string document_path, int page, float zoom_level);
+	void add_request(string document_path, int page, string term, vector<SearchResult>* out, float* percent_done, bool* is_searching, mutex* mut);
 
 	//should only be called from the main thread
 	GLuint find_rendered_page(string path, int page, float zoom_level, int* page_width, int* page_height);
@@ -63,7 +64,7 @@ public:
 
 	void delete_old_pixmaps();
 
-	void run();
+	void run(bool* should_quit);
 
 	~PdfRenderer();
 

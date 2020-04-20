@@ -10,7 +10,7 @@ int Document::get_mark_index(char symbol) {
 	return -1;
 }
 
- void Document::load_document_metadata_from_db() {
+void Document::load_document_metadata_from_db() {
 	marks.clear();
 	bookmarks.clear();
 	select_mark(db, file_name, marks);
@@ -19,37 +19,37 @@ int Document::get_mark_index(char symbol) {
 }
 
 
- void Document::add_bookmark(string desc, float y_offset) {
-	 BookMark res;
-	 res.description = desc;
-	 res.y_offset = y_offset;
-	 bookmarks.push_back(res);
-	 insert_bookmark(db, file_name, desc, y_offset);
- }
+void Document::add_bookmark(string desc, float y_offset) {
+	BookMark res;
+	res.description = desc;
+	res.y_offset = y_offset;
+	bookmarks.push_back(res);
+	insert_bookmark(db, file_name, desc, y_offset);
+}
 
- void Document::add_link(Link link, bool insert_into_database) {
-	 links.push_back(link);
-	 if (insert_into_database) {
-		 insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.src_offset_y);
-	 }
- }
+void Document::add_link(Link link, bool insert_into_database) {
+	links.push_back(link);
+	if (insert_into_database) {
+		insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.src_offset_y);
+	}
+}
 
- string Document::get_path() {
-	 return file_name;
- }
+string Document::get_path() {
+	return file_name;
+}
 
 BookMark* Document::find_closest_bookmark(float to_offset_y, int* index) {
 
-	 int min_index = argminf<BookMark>(bookmarks, [to_offset_y](BookMark bm) {
-		 return abs(bm.y_offset - to_offset_y);
-		 });
+	int min_index = argminf<BookMark>(bookmarks, [to_offset_y](BookMark bm) {
+		return abs(bm.y_offset - to_offset_y);
+		});
 
-	 if (min_index >= 0) {
-		 if (index) *index = min_index;
-		 return &bookmarks[min_index];
-	 }
-	 return nullptr;
- }
+	if (min_index >= 0) {
+		if (index) *index = min_index;
+		return &bookmarks[min_index];
+	}
+	return nullptr;
+}
 
 void Document::delete_closest_bookmark(float to_y_offset) {
 	int closest_index = -1;
@@ -148,7 +148,7 @@ fz_outline* Document::get_toc_outline() {
 		cached_outline = fz_load_outline(context, doc);
 	}
 	fz_catch(context) {
-		cout << "Error: Could not load outline ... " << endl;
+		cerr << "Error: Could not load outline ... " << endl;
 	}
 	return cached_outline;
 }
@@ -159,14 +159,14 @@ void Document::create_toc_tree(vector<TocNode*>& toc) {
 		convert_toc_tree(outline, toc);
 	}
 	fz_catch(context) {
-		cout << "Error: Could not load outline ... " << endl;
+		cerr << "Error: Could not load outline ... " << endl;
 	}
 }
 fz_link* Document::get_page_links(int page_number) {
 	if (cached_page_links.find(page_number) != cached_page_links.end()) {
 		return cached_page_links.at(page_number);
 	}
-	cout << "getting links .... for " << page_number << endl;
+	cerr << "getting links .... for " << page_number << endl;
 
 	fz_link* res = nullptr;
 	fz_try(context) {
@@ -177,7 +177,7 @@ fz_link* Document::get_page_links(int page_number) {
 	}
 
 	fz_catch(context) {
-		cout << "Error: Could not load links" << endl;
+		cerr << "Error: Could not load links" << endl;
 		res = nullptr;
 	}
 	return res;
@@ -190,7 +190,7 @@ Document::~Document() {
 			//todo: implement rest of destructor
 		}
 		fz_catch(context) {
-			cout << "Error: could not drop documnet" << endl;
+			cerr << "Error: could not drop documnet" << endl;
 		}
 	}
 }
@@ -200,7 +200,7 @@ bool Document::open() {
 			doc = fz_open_document(context, file_name.c_str());
 		}
 		fz_catch(context) {
-			cout << "could not open " << file_name << endl;
+			cerr << "could not open " << file_name << endl;
 		}
 		if (doc != nullptr) {
 			load_page_dimensions();
@@ -213,7 +213,7 @@ bool Document::open() {
 		return false;
 	}
 	else {
-		cout << "warning! calling open() on an open document" << endl;
+		cerr << "warning! calling open() on an open document" << endl;
 		return false;
 	}
 }
@@ -261,7 +261,7 @@ int Document::num_pages() {
 		cached_num_pages = pages;
 	}
 	fz_catch(context) {
-		cout << "could not count pages" << endl;
+		cerr << "could not count pages" << endl;
 	}
 	return pages;
 }
@@ -283,7 +283,8 @@ void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* d
 
 	int i = std::lower_bound(
 		accum_page_heights.begin(),
-		accum_page_heights.end(), absolute_y) - 1 - accum_page_heights.begin();
+		accum_page_heights.end(), absolute_y) -  accum_page_heights.begin() - 1;
+	i = max(0, i);
 
 	float remaining_y = absolute_y - accum_page_heights[i];
 	float page_width = page_widths[i];
@@ -293,23 +294,23 @@ void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* d
 	*doc_page = i;
 }
 
-void Document::absolute_to_page_rects(fz_rect absolute_rect, vector<fz_rect>& resulting_rects, vector<int>& resulting_pages)
-{
-	fz_rect res;
-	int page_begin, page_end;
-	absolute_to_page_pos(absolute_rect.x0, absolute_rect.y0, &res.x0, &res.y0, &page_begin);
-	absolute_to_page_pos(absolute_rect.x1, absolute_rect.y1, &res.x1, &res.y1, &page_end);
-
-	for (int i = page_begin; i <= page_end; i++) {
-		fz_rect page_absolute_rect = get_page_absolute_rect(i);
-		fz_rect intersection = fz_intersect_rect(absolute_rect, page_absolute_rect);
-		intersection.y0 -= page_absolute_rect.y0;
-		intersection.y1 -= page_absolute_rect.y0;
-
-		resulting_rects.push_back(intersection);
-		resulting_pages.push_back(i);
-	}
-}
+//void Document::absolute_to_page_rects(fz_rect absolute_rect, vector<fz_rect>& resulting_rects, vector<int>& resulting_pages)
+//{
+//	fz_rect res;
+//	int page_begin, page_end;
+//	absolute_to_page_pos(absolute_rect.x0, absolute_rect.y0, &res.x0, &res.y0, &page_begin);
+//	absolute_to_page_pos(absolute_rect.x1, absolute_rect.y1, &res.x1, &res.y1, &page_end);
+//
+//	for (int i = page_begin; i <= page_end; i++) {
+//		fz_rect page_absolute_rect = get_page_absolute_rect(i);
+//		fz_rect intersection = fz_intersect_rect(absolute_rect, page_absolute_rect);
+//		intersection.y0 -= page_absolute_rect.y0;
+//		intersection.y1 -= page_absolute_rect.y0;
+//
+//		resulting_rects.push_back(intersection);
+//		resulting_pages.push_back(i);
+//	}
+//}
 
 void Document::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
 	*abs_x = page_x - page_widths[page] / 2;

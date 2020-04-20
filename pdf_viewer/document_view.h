@@ -34,6 +34,9 @@ class DocumentView {
 	int view_width;
 	int view_height;
 
+	mutex search_results_mutex;
+	float percent_done;
+	bool is_searching;
 	vector<SearchResult> search_results;
 	int current_search_result_index;
 
@@ -59,11 +62,13 @@ public:
 	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect);
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
 	optional<PdfLink> get_link_in_pos(int view_x, int view_y);
-	void get_text_selection(fz_rect abs_docspace_rect, vector<fz_rect>& selected_characters);
+	void get_text_selection(fz_point selection_begin, fz_point selection_end, vector<fz_rect>& selected_characters, string& text_selection);
 	void add_mark(char symbol);
 	void add_bookmark(string desc);
 	void on_view_size_change(int new_width, int new_height);
 	bool should_rerender();
+	bool get_is_searching(float* prog);
+
 
 	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
 	fz_rect absolute_to_window_rect(fz_rect doc_rect);
@@ -80,7 +85,8 @@ public:
 	void move_absolute(float dx, float dy);
 	void move(float dx, float dy);
 	int get_current_page_number();
-	int search_text(const char* text);
+	void search_text(const char* text);
+	int search_text2(const char* text);
 	void goto_search_result(int offset);
 	void get_visible_pages(int window_height, vector<int>& visible_pages);
 	void move_pages(int num_pages);

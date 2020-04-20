@@ -42,6 +42,9 @@ CommandManager::CommandManager() {
 	commands.push_back({ "goto_link", false, false , false, false});
 	commands.push_back({ "edit_link", false, false , false, false});
 	commands.push_back({ "open_prev_doc", false, false , false, false});
+	commands.push_back({ "copy", false, false , false, false});
+	commands.push_back({ "toggle_fullscreen", false, false , false, false});
+	commands.push_back({ "toggle_one_window", false, false , false, false});
 }
 const Command* CommandManager::get_command_with_name(string name) {
 	for (const auto &com : commands) {
@@ -110,10 +113,16 @@ InputParseTreeNode parse_token(string token) {
 		res.command = subcommands[subcommands.size() - 1][0];
 	}
 	else {
+		if (int f_key = get_f_key(command_string)) {
+			res.command = SDLK_F1 - 1 + f_key;
+		}
 		if (command_string == "up") {
 			res.command = SDLK_UP;
 		}
 
+		if (command_string == "backspace") {
+			res.command = SDLK_BACKSPACE;
+		}
 		if (command_string == "down") {
 			res.command = SDLK_DOWN;
 		}
@@ -148,6 +157,9 @@ InputParseTreeNode parse_token(string token) {
 
 		if (command_string == "<tab>") {
 			res.command = SDLK_TAB;
+		}
+		if (command_string == "<backspace>") {
+			res.command = SDLK_BACKSPACE;
 		}
 	}
 
@@ -265,7 +277,7 @@ InputParseTreeNode* parse_lines(vector<string> lines, vector<string> command_nam
 
 }
 
-InputParseTreeNode* parse_key_config_file(string file_path) {
+InputParseTreeNode* parse_key_config_file(wstring file_path) {
 	ifstream infile(file_path);
 
 	vector<string> command_names;
@@ -281,7 +293,7 @@ InputParseTreeNode* parse_key_config_file(string file_path) {
 }
 
 
-InputHandler::InputHandler(string file_path) {
+InputHandler::InputHandler(wstring file_path) {
 	root = parse_key_config_file(file_path);
 	current_node = root;
 }

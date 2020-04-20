@@ -2,14 +2,10 @@
 //todo: visibility test is still buggy??
 //todo: threading
 //todo: add fuzzy search
-//todo: copy
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: tests!
 //todo: handle mouse in menues
-//todo: bug: last documnet path is not updated
 //todo: sort opened documents by last access
-//todo: handle portals by saving a document as a vector of (absolute rect, pointer to document) which specify pages
-// for example in a simple document, rach rect is just the absolute rect of that page
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -52,9 +48,12 @@
 
 extern const float ZOOM_INC_FACTOR = 1.2f;
 extern const unsigned int cache_invalid_milies = 1000;
+extern const int persist_milies = 1000 * 60;
 extern const int page_paddings = 0;
 extern const int max_pending_requests = 31;
-extern const char* last_path_file_absolute_location = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\last_document_path.txt";
+//extern const char* last_path_file_absolute_location = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\last_document_path.txt";
+string last_path_file_absolute_location;
+filesystem::path parent_path;
 
 
 using namespace std;
@@ -123,6 +122,7 @@ private:
 	// last position when mouse was clicked in absolute document space
 	float last_mouse_down_x;
 	float last_mouse_down_y;
+	bool is_selecting;
 	optional<fz_rect> selected_rect;
 
 	unsigned int last_tick_time;
@@ -134,6 +134,8 @@ private:
 
 	int main_window_width, main_window_height;
 	int helper_window_width, helper_window_height;
+
+	string selected_text;
 
 	void set_main_document_view_state(DocumentViewState new_view_state) {
 		main_document_view = new_view_state.document_view;
@@ -224,6 +226,7 @@ public:
 		pending_text_command(nullptr),
 		current_widget(nullptr),
 		pdf_renderer(pdf_renderer),
+		is_selecting(false),
 		document_manager(new DocumentManager(mupdf_context, database))
 	{
 
@@ -232,19 +235,19 @@ public:
 
 		cached_document_views.push_back(main_document_view);
 
-		gl_program = LoadShaders("shaders\\simple.vertex", "shaders\\simple.fragment");
+		gl_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\simple.fragment");
 		if (gl_program == 0) {
-			cout << "Error: could not compile shaders" << endl;
+			cerr << "Error: could not compile shaders" << endl;
 		}
 
-		gl_debug_program = LoadShaders("shaders\\simple.vertex", "shaders\\debug.fragment");
+		gl_debug_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\debug.fragment");
 		if (gl_debug_program == 0) {
-			cout << "Error: could not compile debug shaders" << endl;
+			cerr << "Error: could not compile debug shaders" << endl;
 		}
 
-		gl_unrendered_program = LoadShaders("shaders\\simple.vertex", "shaders\\unrendered_page.fragment");
+		gl_unrendered_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\unrendered_page.fragment");
 		if (gl_unrendered_program == 0) {
-			cout << "Error: could not compile debug shaders" << endl;
+			cerr << "Error: could not compile debug shaders" << endl;
 		}
 
 		glGenVertexArrays(1, &vertex_array_object);
@@ -265,8 +268,10 @@ public:
 		SDL_GetWindowSize(main_window, &main_window_width, &main_window_height);
 		main_document_view->on_view_size_change(main_window_width, main_window_height);
 
-		SDL_GetWindowSize(helper_window, &helper_window_width, &helper_window_height);
-		helper_document_view->on_view_size_change(helper_window_width, helper_window_height);
+		if (helper_window) {
+			SDL_GetWindowSize(helper_window, &helper_window_width, &helper_window_height);
+			helper_document_view->on_view_size_change(helper_window_width, helper_window_height);
+		}
 
 		last_tick_time = SDL_GetTicks();
 	}
@@ -339,7 +344,6 @@ public:
 
 	void handle_command_with_file_name(const Command* command, string file_name) {
 		assert(command->requires_file_name);
-		//cout << "handling " << command->name << " with file " << file_name << endl;
 		if (command->name == "open_document") {
 			//current_document_view->open_document(file_name);
 			open_document(file_name);
@@ -367,6 +371,9 @@ public:
 
 		if (command->name == "goto_end") {
 			main_document_view->goto_end();
+		}
+		if (command->name == "copy") {
+			copy_to_clipboard(selected_text);
 		}
 		//if (command->name == "search") {
 		//	show_searchbar();
@@ -520,7 +527,16 @@ public:
 				});
 
 		}
+
+		else if (command->name == "toggle_fullscreen") {
+			toggle_fullscreen();
+		}
+		else if (command->name == "toggle_one_window") {
+			toggle_two_window_mode();
+		}
+
 		else if (command->name == "debug") {
+			//toggle_two_window_mode();
 			cout << "debug" << endl;
 		}
 
@@ -529,6 +545,9 @@ public:
 
 	bool should_render() {
 		if (render_is_invalid) {
+			return true;
+		}
+		if (is_selecting) {
 			return true;
 		}
 		if (is_showing_ui) {
@@ -551,8 +570,6 @@ public:
 
 	void handle_pending_text_command(string text) {
 		if (pending_text_command->name == "search") {
-			//search_results.clear();
-			//search_text(text.c_str(), search_results);
 			main_document_view->search_text(text.c_str());
 		}
 
@@ -571,7 +588,7 @@ public:
 			main_document_view->on_view_size_change(main_window_width, main_window_height);
 		}
 
-		if (window_id == SDL_GetWindowID(helper_window)) {
+		if (helper_window != nullptr && window_id == SDL_GetWindowID(helper_window)) {
 			SDL_GetWindowSize(helper_window, &helper_window_width, &helper_window_height);
 			helper_document_view->on_view_size_change(helper_window_width, helper_window_height);
 		}
@@ -583,7 +600,7 @@ public:
 
 	void tick(bool force = false) {
 		unsigned int now = SDL_GetTicks();
-		if (force || (now - last_tick_time) > 1000) {
+		if (force || (now - last_tick_time) > persist_milies) {
 			last_tick_time = now;
 			//update_book(database, current_document_path, zoom_level, offset_x, offset_y);
 			main_document_view->persist();
@@ -604,10 +621,18 @@ public:
 	string get_status_string(const Command* pending_command) {
 		stringstream ss;
 		if (main_document_view->get_document() == nullptr) return "";
-		ss << "Page " << main_document_view->get_current_page_number() << " / " << main_document_view->get_document()->num_pages();
+		ss << "Page " << main_document_view->get_current_page_number()+1 << " / " << main_document_view->get_document()->num_pages();
 		int num_search_results = main_document_view->get_num_search_results();
-		if (num_search_results > 0) {
-			ss << " | showing result " << main_document_view->get_current_search_result_index() + 1 << " / " << num_search_results;
+		float progress = -1;
+		if (num_search_results > 0 || main_document_view->get_is_searching(&progress)) {
+			main_document_view->get_is_searching(&progress);
+
+			// show the 0th result if there are no results and the index + 1 otherwise
+			int result_index = main_document_view->get_num_search_results() > 0 ? main_document_view->get_current_search_result_index() + 1 : 0;
+			ss << " | showing result " << result_index << " / " << num_search_results;
+			if (progress > 0) {
+				ss << " (" << ((int)(progress * 100)) << "%%" << ")";
+			}
 		}
 		if (pending_link_source_filled) {
 			ss << " | linking ...";
@@ -649,6 +674,31 @@ public:
 			ofstream last_path_file(last_path_file_absolute_location);
 			last_path_file << path << endl;
 			last_path_file.close();
+		}
+	}
+	void toggle_two_window_mode() {
+		if (helper_window == nullptr) {
+			SDL_Rect first_display_rect;
+			SDL_GetDisplayBounds(0, &first_display_rect);
+			helper_window = SDL_CreateWindow("Pdf Viewer2", first_display_rect.w, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
+			SDL_SetWindowInputFocus(main_window);
+		}
+		else{
+			SDL_DestroyWindow(helper_window);
+			helper_window = nullptr;
+		}
+	}
+
+	void toggle_fullscreen() {
+		bool is_fullscreen = SDL_GetWindowFlags(main_window) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+		auto new_flag = is_fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+		if (helper_window == nullptr) {
+			SDL_SetWindowFullscreen(main_window, new_flag);
+		}
+		else{
+			SDL_SetWindowFullscreen(main_window, new_flag);
+			SDL_SetWindowFullscreen(helper_window, new_flag);
 		}
 	}
 
@@ -700,24 +750,32 @@ public:
 	}
 
 	void handle_left_click(float x, float y, bool down) {
+		if (ImGui::GetIO().WantCaptureMouse) {
+			return;
+		}
 		float x_, y_;
 		main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
 
 		if (down == true) {
 			last_mouse_down_x = x_;
 			last_mouse_down_y = y_;
+			selected_character_rects.clear();
+			is_selecting = true;
 		}
 		else {
+			is_selecting = false;
 			if ((abs(last_mouse_down_x - x_) + abs(last_mouse_down_y - y_)) > 20) {
-				fz_rect sr;
-				sr.x0 = min(last_mouse_down_x, x_);
-				sr.x1 = max(last_mouse_down_x, x_);
+				//fz_rect sr;
+				//sr.x0 = min(last_mouse_down_x, x_);
+				//sr.x1 = max(last_mouse_down_x, x_);
 
-				sr.y0 = min(last_mouse_down_y, y_);
-				sr.y1 = max(last_mouse_down_y, y_);
-				selected_rect = sr;
+				//sr.y0 = min(last_mouse_down_y, y_);
+				//sr.y1 = max(last_mouse_down_y, y_);
+				//selected_rect = sr;
+				fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
+				fz_point selection_end = { x_, y_ };
 
-				main_document_view->get_text_selection(sr, selected_character_rects);
+				main_document_view->get_text_selection(selection_begin, selection_end, selected_character_rects, selected_text);
 				invalidate_render();
 			}
 			else {
@@ -729,13 +787,31 @@ public:
 		}
 	}
 
+	void handle_mouse_move(float x, float y) {
+		float x_, y_;
+		main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
+
+		fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
+		fz_point selection_end = { x_, y_ };
+		vector<fz_rect> selected_characters;
+		string text;
+		main_document_view->get_text_selection(selection_begin, selection_end, selected_characters, text);
+		for (const auto& r : selected_characters) {
+			main_document_view->render_highlight_absolute(gl_debug_program, r);
+		}
+		//main_document_view->render_highlight_absolute(gl_debug_program, sr);
+	}
+
 	void render(const Command* pending_command) {
 		if (should_render()) {
+			int mouse_x, mouse_y;
+			SDL_GetMouseState(&mouse_x, &mouse_y);
+
 			cout << "rendering ..." << endl;
 
 			//current_document_view->get_document()->find_closest_link(current_document_view->)
 			Link* link = main_document_view->find_closest_link();
-			if (link) {
+			if (link ) {
 				if (helper_document_view->get_document() && 
 					helper_document_view->get_document()->get_path() == link->document_path) {
 
@@ -765,6 +841,7 @@ public:
 				ImGui_ImplOpenGL3_NewFrame();
 				ImGui_ImplSDL2_NewFrame(main_window);
 				ImGui::NewFrame();
+
 
 				if (is_showing_textbar) {
 
@@ -813,22 +890,28 @@ public:
 			for (auto rect : selected_character_rects) {
 				main_document_view->render_highlight_absolute(gl_debug_program, rect);
 			}
-
-			if (selected_rect.has_value()) {
-				fz_rect sr = selected_rect.value();
-				main_document_view->render_highlight_absolute(gl_debug_program, sr);
+			if (is_selecting) {
+				handle_mouse_move(mouse_x, mouse_y);
 			}
+
+			//if (selected_rect.has_value()) {
+			//	fz_rect sr = selected_rect.value();
+			//	main_document_view->render_highlight_absolute(gl_debug_program, sr);
+			//}
 
 			SDL_GL_SwapWindow(main_window);
 
-			SDL_GL_MakeCurrent(helper_window, *opengl_context);
+			if (helper_window != nullptr) {
+				SDL_GL_MakeCurrent(helper_window, *opengl_context);
 
-			glViewport(0, 0, helper_window_width, helper_window_height);
+				glViewport(0, 0, helper_window_width, helper_window_height);
 
-			glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
-			helper_document_view->render(gl_program, gl_unrendered_program, gl_debug_program);
-			SDL_GL_SwapWindow(helper_window);
+				glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+				glClear(GL_COLOR_BUFFER_BIT);
+				helper_document_view->render(gl_program, gl_unrendered_program, gl_debug_program);
+				SDL_GL_SwapWindow(helper_window);
+			}
+
 			pdf_renderer->delete_old_pages();
 		}
 	}
@@ -837,13 +920,30 @@ public:
 
 int main(int argc, char* args[]) {
 
+
+	bool quit = false;
+		
+	char exe_file_name[MAX_PATH];
+	GetModuleFileNameA(NULL, exe_file_name, sizeof(exe_file_name));
+	cout << exe_file_name << endl;
+	install_app(exe_file_name);
+
+	filesystem::path exe_path = exe_file_name;
+	parent_path = exe_path.parent_path();
+	last_path_file_absolute_location = (parent_path / "last_document_path.txt").string();
+
+
+	//comment this is release mode
+	parent_path = "";
+
+
 	sqlite3* db;
 	char* error_message = nullptr;
 	int rc;
 
-	rc = sqlite3_open("test.db", &db);
+	rc = sqlite3_open((parent_path / "test.db").string().c_str(), &db);
 	if (rc) {
-		cout << "could not open database" << sqlite3_errmsg(db) << endl;
+		cerr << "could not open database" << sqlite3_errmsg(db) << endl;
 	}
 
 	create_opened_books_table(db);
@@ -860,7 +960,7 @@ int main(int argc, char* args[]) {
 	fz_context* mupdf_context = fz_new_context(nullptr, &locks, FZ_STORE_UNLIMITED);
 	//fz_context* mupdf_context = fz_new_context(nullptr, nullptr, FZ_STORE_UNLIMITED);
 	if (!mupdf_context) {
-		cout << "could not create mupdf context" << endl;
+		cerr << "could not create mupdf context" << endl;
 		return -1;
 	}
 	bool fail = false;
@@ -868,7 +968,7 @@ int main(int argc, char* args[]) {
 		fz_register_document_handlers(mupdf_context);
 	}
 	fz_catch(mupdf_context) {
-		cout << "could not register document handlers" << endl;
+		cerr << "could not register document handlers" << endl;
 		fail = true;
 	}
 
@@ -880,32 +980,41 @@ int main(int argc, char* args[]) {
 	//global_pdf_renderer = new PdfRenderer();
 	//global_pdf_renderer->init();
 
-	thread worker([pdf_renderer]() {
-		pdf_renderer->run();
+	thread worker([pdf_renderer, &quit]() {
+		pdf_renderer->run(&quit);
 		});
 
 
 	SDL_Window* window = nullptr;
+	SDL_Window* window2 = nullptr;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		cout << "could not initialize SDL" << endl;
+		cerr << "could not initialize SDL" << endl;
 		return -1;
 	}
 
 	CommandManager command_manager;
 
+	bool one_window_mode = false;
+	int num_displays = SDL_GetNumVideoDisplays();
+	if (num_displays == 1) {
+		one_window_mode = true;
+	}
+
 	SDL_Rect display_rect;
 	SDL_GetDisplayBounds(0, &display_rect);
 
-	SDL_Window* window2 = SDL_CreateWindow("Pdf Viewer2", display_rect.w, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
+	if (!one_window_mode) {
+		window2 = SDL_CreateWindow("Pdf Viewer2", display_rect.w, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
+	}
 	window = SDL_CreateWindow("Pdf Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 500, 500, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
 
 	if (window == nullptr) {
-		cout << "could not create SDL window" << endl;
+		cerr << "could not create SDL window" << endl;
 		return -1;
 	}
-	if (window2 == nullptr) {
-		cout << "could not create the second window" << endl;
+	if (window2 == nullptr && !one_window_mode) {
+		cerr << "could not create the second window" << endl;
 		return -1;
 	}
 
@@ -916,20 +1025,20 @@ int main(int argc, char* args[]) {
 	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
 	if (gl_context == nullptr) {
-		cout << SDL_GetError() << endl;
-		cout << "could not create opengl context" << endl;
+		cerr << SDL_GetError() << endl;
+		cerr << "could not create opengl context" << endl;
 		return -1;
 	}
 
 	glewExperimental = true;
 	GLenum glew_error = glewInit();
 	if (glew_error != GLEW_OK) {
-		cout << "could not initialize glew" << endl;
+		cerr << "could not initialize glew" << endl;
 		return -1;
 	}
 
 	if (SDL_GL_SetSwapInterval(1) < 0) {
-		cout << "could not enable vsync" << endl;
+		cerr << "could not enable vsync" << endl;
 		return -1;
 	}
 
@@ -941,6 +1050,9 @@ int main(int argc, char* args[]) {
 	ImGui_ImplOpenGL3_Init("#version 400");
 
 	WindowState window_state(window, window2, mupdf_context, &gl_context, db, pdf_renderer);
+	if (argc > 1) {
+		window_state.open_document(args[1]);
+	}
 
 	//char file_path[MAX_PATH] = { 0 };
 	string file_path;
@@ -952,17 +1064,17 @@ int main(int argc, char* args[]) {
 
 	window_state.open_document(file_path);
 
-	bool quit = false;
 
 	pdf_renderer->set_invalidate_pointer(&window_state.render_is_invalid);
-	InputHandler input_handler("keys.config");
+	InputHandler input_handler((parent_path / "keys.config").wstring());
 
 	bool is_waiting_for_symbol = false;
 	const Command* current_pending_command = nullptr;
 	while (!quit) {
 		SDL_Event event;
 
-		while (SDL_PollEvent(&event)) {
+		//while (SDL_PollEvent(&event)) {
+		while (SDL_WaitEventTimeout(&event, 2)) {
 			ImGui_ImplSDL2_ProcessEvent(&event);
 
 			// retarded hack to deal with imgui one frame lag
@@ -1050,7 +1162,7 @@ int main(int argc, char* args[]) {
 							window_state.handle_command_with_file_name(command, file_name);
 						}
 						else {
-							cout << "File select failed" << endl;
+							cerr << "File select failed" << endl;
 						}
 						continue;
 					}
@@ -1075,9 +1187,10 @@ int main(int argc, char* args[]) {
 		}
 		window_state.render(current_pending_command);
 
-		SDL_Delay(16);
+		//SDL_Delay(100);
 		window_state.tick();
 	}
+	window_state.tick(true);
 
 	sqlite3_close(db);
 	worker.join();

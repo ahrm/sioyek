@@ -8,6 +8,7 @@
 
 #include <SDL.h>
 
+#include "utils.h"
 using namespace std;
 
 struct Command {
@@ -52,7 +53,7 @@ private:
 	string number_stack;
 
 public:
-	InputHandler(string file_path);
+	InputHandler(wstring file_path);
 	const Command* handle_key(SDL_Keycode key, bool shift_pressed, bool control_pressed, int* num_repeats);
 };
 

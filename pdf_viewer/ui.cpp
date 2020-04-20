@@ -2,6 +2,7 @@
 
 bool select_pdf_file_name(char* out_file_name, int max_length) {
 
+	cout << filesystem::current_path().string() << endl;
 	OPENFILENAMEA ofn;
 	ZeroMemory(out_file_name, max_length);
 	ZeroMemory(&ofn, sizeof(ofn));
@@ -11,10 +12,11 @@ bool select_pdf_file_name(char* out_file_name, int max_length) {
 	ofn.lpstrFile = out_file_name;
 	ofn.nMaxFile = max_length;
 	ofn.lpstrTitle = "Select a document";
-	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
+	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
 
 	if (GetOpenFileNameA(&ofn)) {
+		cout << filesystem::current_path().string() << endl;
 		return true;
 	}
 	return false;

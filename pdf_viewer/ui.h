@@ -1,7 +1,9 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <iostream>
 #include <functional>
+#include <filesystem>
 
 #include <Windows.h>
 #include "utils.h"
@@ -126,7 +128,9 @@ public:
 					ImGui::SetScrollHere();
 				}
 
-				ImGui::Selectable(options[i].c_str(), current_index == index);
+				if (ImGui::Selectable(options[i].c_str(), current_index == index)) {
+					cout << "selected_something" << endl;
+				}
 				index += 1;
 			}
 		}

@@ -14,7 +14,7 @@ static int opened_book_callback(void* res_vector, int argc, char** argv, char** 
 	vector<OpenedBookState>* res = (vector<OpenedBookState>*) res_vector;
 
 	if (argc != 3) {
-		cout << "this should not happen!" << endl;
+		cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << endl;
 	}
 
 	float zoom_level = atof(argv[0]);
@@ -29,7 +29,7 @@ static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col
 	vector<string>* res = (vector<string>*) res_vector;
 
 	if (argc != 1) {
-		cout << "this should not happen!" << endl;
+		cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << endl;
 	}
 	string path = argv[0];
 	res->push_back(path);
@@ -98,7 +98,7 @@ static int link_select_callback(void* res_vector, int argc, char** argv, char** 
 
 bool handle_error(int error_code, char* error_message) {
 	if (error_code != SQLITE_OK) {
-		cout << "SQL Error: " << error_message << endl;
+		cerr << "SQL Error: " << error_message << endl;
 		sqlite3_free(error_message);
 		return false;
 	}
