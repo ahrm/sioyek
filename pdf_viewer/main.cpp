@@ -670,7 +670,7 @@ public:
 		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager);
 		main_document_view->open_document(path);
 		if (path.size() > 0 && main_document_view->get_document() == nullptr) {
-			show_error_message("Could not open file");
+			show_error_message("Could not open file: " + path);
 		}
 		main_document_view->on_view_size_change(main_window_width, main_window_height);
 		if (offset_x) {

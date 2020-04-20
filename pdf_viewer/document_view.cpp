@@ -330,7 +330,16 @@ void DocumentView::reset_doc_state() {
 }
 void DocumentView::open_document(string doc_path) {
 
-	string cannonical_path = std::filesystem::canonical(doc_path).string();
+	error_code error_code;
+	filesystem::path cannonical_path_ = std::filesystem::canonical(doc_path, error_code);
+
+	if (error_code) {
+		current_document = nullptr;
+		return;
+	}
+
+	string cannonical_path = cannonical_path_.string();
+
 	//document_path = cannonical_path;
 	vector<OpenedBookState> prev_state;
 
