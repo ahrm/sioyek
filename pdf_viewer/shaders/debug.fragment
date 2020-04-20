@@ -5,5 +5,5 @@ in vec2 screen_pos;
 in vec2 uvs;
 
 void main(){
-    color = vec4(1.0, 1.0, 0.0, 0.5);
+    color = vec4(1.0, 1.0, 0.0, 0.3);
 }

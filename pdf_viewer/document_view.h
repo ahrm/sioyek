@@ -39,6 +39,7 @@ class DocumentView {
 	bool is_searching;
 	vector<SearchResult> search_results;
 	int current_search_result_index;
+	bool should_highlight_links;
 
 public:
 	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager);
@@ -68,6 +69,7 @@ public:
 	void on_view_size_change(int new_width, int new_height);
 	bool should_rerender();
 	bool get_is_searching(float* prog);
+	void toggle_highlight();
 
 
 	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
@@ -86,7 +88,6 @@ public:
 	void move(float dx, float dy);
 	int get_current_page_number();
 	void search_text(const char* text);
-	int search_text2(const char* text);
 	void goto_search_result(int offset);
 	void get_visible_pages(int window_height, vector<int>& visible_pages);
 	void move_pages(int num_pages);

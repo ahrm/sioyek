@@ -535,6 +535,11 @@ public:
 			toggle_two_window_mode();
 		}
 
+		else if (command->name == "toggle_highlight") {
+			main_document_view->toggle_highlight();
+			invalidate_render();
+		}
+
 		else if (command->name == "debug") {
 			//toggle_two_window_mode();
 			cout << "debug" << endl;
@@ -575,6 +580,9 @@ public:
 
 		if (pending_text_command->name == "add_bookmark") {
 			main_document_view->add_bookmark(text);
+		}
+		if (pending_text_command->name == "command") {
+			cout << text << endl;
 		}
 	}
 
@@ -661,6 +669,9 @@ public:
 
 		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager);
 		main_document_view->open_document(path);
+		if (path.size() > 0 && main_document_view->get_document() == nullptr) {
+			show_error_message("Could not open file");
+		}
 		main_document_view->on_view_size_change(main_window_width, main_window_height);
 		if (offset_x) {
 			main_document_view->set_offset_x(offset_x.value());
@@ -930,12 +941,11 @@ int main(int argc, char* args[]) {
 
 	filesystem::path exe_path = exe_file_name;
 	parent_path = exe_path.parent_path();
-	last_path_file_absolute_location = (parent_path / "last_document_path.txt").string();
-
 
 	//comment this is release mode
 	parent_path = "";
 
+	last_path_file_absolute_location = (parent_path / "last_document_path.txt").string();
 
 	sqlite3* db;
 	char* error_message = nullptr;
@@ -946,11 +956,7 @@ int main(int argc, char* args[]) {
 		cerr << "could not open database" << sqlite3_errmsg(db) << endl;
 	}
 
-	create_opened_books_table(db);
-	create_marks_table(db);
-	create_bookmarks_table(db);
-	create_links_table(db);
-
+	create_tables(db);
 
 	fz_locks_context locks;
 	locks.user = mupdf_mutexes;

@@ -45,6 +45,8 @@ CommandManager::CommandManager() {
 	commands.push_back({ "copy", false, false , false, false});
 	commands.push_back({ "toggle_fullscreen", false, false , false, false});
 	commands.push_back({ "toggle_one_window", false, false , false, false});
+	commands.push_back({ "toggle_highlight", false, false , false, false});
+	commands.push_back({ "command", true, false , false, false});
 }
 const Command* CommandManager::get_command_with_name(string name) {
 	for (const auto &com : commands) {

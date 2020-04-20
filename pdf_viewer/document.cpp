@@ -214,7 +214,7 @@ bool Document::open() {
 	}
 	else {
 		cerr << "warning! calling open() on an open document" << endl;
-		return false;
+		return true;
 	}
 }
 

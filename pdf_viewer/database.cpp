@@ -325,3 +325,10 @@ bool select_links(sqlite3* db, string src_document_path, vector<Link> &out_resul
 			sqlite3_exec(db, ss.str().c_str(), link_select_callback, &out_result, &error_message),
 			error_message);
 }
+
+void create_tables(sqlite3* db) {
+	create_opened_books_table(db);
+	create_marks_table(db);
+	create_bookmarks_table(db);
+	create_links_table(db);
+}

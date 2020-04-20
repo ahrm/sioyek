@@ -212,7 +212,7 @@ bool should_select_char(fz_point selection_begin, fz_point selection_end, fz_rec
 	}
 
 	else if (character_rect.y1 >= selection_rect.y1 && character_rect.y0 <= selection_rect.y0) {
-		if (selection_rect.x1 >= character_rect.x1 && selection_rect.x0 <= character_rect.x0) {
+		if (selection_rect.x1 >= character_rect.x0 && selection_rect.x0 <= character_rect.x1) {
 			return true;
 		}
 	}
@@ -292,4 +292,8 @@ int get_f_key(string name) {
 	stringstream ss(name);
 	ss >> num;
 	return  num;
+}
+
+void show_error_message(string error_message) {
+	MessageBoxA(nullptr, error_message.c_str(), "Error", MB_OK);
 }
