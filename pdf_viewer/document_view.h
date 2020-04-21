@@ -13,6 +13,7 @@
 #include "pdf_renderer.h"
 #include "document.h"
 #include "utils.h"
+#include "config.h"
 
 extern const float ZOOM_INC_FACTOR;
 extern const int page_paddings;
@@ -21,6 +22,7 @@ class DocumentView {
 	fz_context* mupdf_context;
 	sqlite3* database;
 	PdfRenderer* pdf_renderer;
+	ConfigManager* config_manager;
 	DocumentManager* document_manager;
 
 	Document* current_document;
@@ -42,8 +44,8 @@ class DocumentView {
 	bool should_highlight_links;
 
 public:
-	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager);
-	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager,
+	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, ConfigManager* config_manager);
+	DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, ConfigManager* config_manager,
 		string path, int view_width, int view_height, float offset_x, float offset_y);
 	float get_zoom_level();
 	DocumentViewState get_state();
@@ -97,6 +99,6 @@ public:
 	void goto_offset_within_page(int page, float offset_x, float offset_y);
 	void goto_page(int page);
 	void render_page(int page_number, GLuint rendered_program, GLuint unrendered_program);
-	void render(GLuint rendered_program, GLuint unrendered_program, GLuint highlight_program);
+	void render(GLuint rendered_program, GLuint unrendered_program, GLuint highlight_program, GLint highlight_color_uniform_location);
 	void persist();
 };

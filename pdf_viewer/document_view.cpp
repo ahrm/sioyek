@@ -1,17 +1,18 @@
 #include "document_view.h"
 
-DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager) :
+DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, ConfigManager* config_manager) :
 	mupdf_context(mupdf_context),
 	database(db),
 	pdf_renderer(pdf_renderer),
 	document_manager(document_manager),
+	config_manager(config_manager),
 	should_highlight_links(false)
 {
 
 }
 
-DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, string path, int view_width, int view_height, float offset_x, float offset_y) :
-	DocumentView(mupdf_context, db, pdf_renderer, document_manager)
+DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, ConfigManager* config_manager, string path, int view_width, int view_height, float offset_x, float offset_y) :
+	DocumentView(mupdf_context, db, pdf_renderer, document_manager, config_manager)
 {
 	on_view_size_change(view_width, view_height);
 	open_document(path);
@@ -407,7 +408,7 @@ void DocumentView::render_page(int page_number, GLuint rendered_program, GLuint 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
-void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GLuint highlight_program) {
+void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GLuint highlight_program, GLint highlight_color_uniform_location) {
 	if (current_document == nullptr) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -426,6 +427,8 @@ void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GL
 		render_page(page, rendered_program, unrendered_program);
 
 		if (should_highlight_links) {
+			glUseProgram(highlight_program);
+			glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>("link_highlight_color"));
 			fz_link* links = current_document->get_page_links(page);
 			while (links != nullptr) {
 				render_highlight_document(highlight_program, page, links->rect);
@@ -437,6 +440,8 @@ void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GL
 	search_results_mutex.lock();
 	if (search_results.size() > 0) {
 		SearchResult current_search_result = search_results[current_search_result_index];
+		glUseProgram(highlight_program);
+		glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>("search_highlight_color"));
 		render_highlight_document(highlight_program, current_search_result.page, current_search_result.rect);
 	}
 	search_results_mutex.unlock();

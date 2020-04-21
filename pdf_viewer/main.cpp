@@ -40,6 +40,7 @@
 #include "pdf_renderer.h"
 #include "document.h"
 #include "document_view.h"
+#include "config.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -88,6 +89,7 @@ GLfloat g_quad_uvs[] = {
 class WindowState {
 private:
 	PdfRenderer* pdf_renderer;
+	ConfigManager* config_manager;
 	DocumentManager* document_manager;
 	DocumentView* main_document_view;
 	DocumentView* helper_document_view;
@@ -108,6 +110,7 @@ private:
 	GLuint gl_program;
 	GLuint gl_debug_program;
 	GLuint gl_unrendered_program;
+	GLint highlight_color_uniform_location;
 
 	string pending_link_source_document_path;
 	Link pending_link;
@@ -213,7 +216,8 @@ public:
 		fz_context* mupdf_context,
 		SDL_GLContext* opengl_context,
 		sqlite3* database,
-		PdfRenderer* pdf_renderer
+		PdfRenderer* pdf_renderer,
+		ConfigManager* config_manager
 	) :
 		mupdf_context(mupdf_context),
 		opengl_context(opengl_context),
@@ -226,12 +230,13 @@ public:
 		pending_text_command(nullptr),
 		current_widget(nullptr),
 		pdf_renderer(pdf_renderer),
+		config_manager(config_manager),
 		is_selecting(false),
 		document_manager(new DocumentManager(mupdf_context, database))
 	{
 
-		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager);
-		helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager);
+		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, config_manager);
+		helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, config_manager);
 
 		cached_document_views.push_back(main_document_view);
 
@@ -240,10 +245,14 @@ public:
 			cerr << "Error: could not compile shaders" << endl;
 		}
 
-		gl_debug_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\debug.fragment");
+		//gl_debug_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\debug.fragment");
+		gl_debug_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\highlight.fragment");
 		if (gl_debug_program == 0) {
 			cerr << "Error: could not compile debug shaders" << endl;
 		}
+
+		highlight_color_uniform_location = glGetUniformLocation(gl_debug_program, "highlight_color");
+		assert(highlight_color_uniform_location >= 0);
 
 		gl_unrendered_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\unrendered_page.fragment");
 		if (gl_unrendered_program == 0) {
@@ -667,7 +676,7 @@ public:
 
 	void open_document(string path, optional<float> offset_x = {}, optional<float> offset_y = {}) {
 
-		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager);
+		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, config_manager);
 		main_document_view->open_document(path);
 		if (path.size() > 0 && main_document_view->get_document() == nullptr) {
 			show_error_message("Could not open file: " + path);
@@ -830,7 +839,7 @@ public:
 				}
 				else {
 					delete helper_document_view;
-					helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, link->document_path,
+					helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, config_manager, link->document_path,
 						helper_window_width, helper_window_height, link->dest_offset_x, link->dest_offset_y);
 				}
 			}
@@ -846,7 +855,7 @@ public:
 			glBindVertexArray(vertex_array_object);
 			glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
 
-			main_document_view->render(gl_program, gl_unrendered_program, gl_debug_program);
+			main_document_view->render(gl_program, gl_unrendered_program, gl_debug_program, highlight_color_uniform_location);
 
 			{
 				ImGui_ImplOpenGL3_NewFrame();
@@ -898,6 +907,10 @@ public:
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 			}
+
+			glUseProgram(gl_debug_program);
+			glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>("text_highlight_color"));
+
 			for (auto rect : selected_character_rects) {
 				main_document_view->render_highlight_absolute(gl_debug_program, rect);
 			}
@@ -919,7 +932,7 @@ public:
 
 				glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT);
-				helper_document_view->render(gl_program, gl_unrendered_program, gl_debug_program);
+				helper_document_view->render(gl_program, gl_unrendered_program, gl_debug_program, highlight_color_uniform_location);
 				SDL_GL_SwapWindow(helper_window);
 			}
 
@@ -943,9 +956,23 @@ int main(int argc, char* args[]) {
 	parent_path = exe_path.parent_path();
 
 	//comment this is release mode
-	parent_path = "";
+	parent_path = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer";
+
+	HANDLE directory_handle = CreateFileA(parent_path.string().c_str(),
+		GENERIC_READ,
+		FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
+		nullptr);
 
 	last_path_file_absolute_location = (parent_path / "last_document_path.txt").string();
+
+	filesystem::path config_path = parent_path / "prefs.config";
+	ConfigManager config_manager(config_path.string());
+	auto last_config_write_time = std::filesystem::last_write_time(config_path);
+
+	float* text_h = config_manager.get_config<float>("text_highlight_color");
 
 	sqlite3* db;
 	char* error_message = nullptr;
@@ -1055,7 +1082,7 @@ int main(int argc, char* args[]) {
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 	ImGui_ImplOpenGL3_Init("#version 400");
 
-	WindowState window_state(window, window2, mupdf_context, &gl_context, db, pdf_renderer);
+	WindowState window_state(window, window2, mupdf_context, &gl_context, db, pdf_renderer, &config_manager);
 	if (argc > 1) {
 		window_state.open_document(args[1]);
 	}
@@ -1076,7 +1103,18 @@ int main(int argc, char* args[]) {
 
 	bool is_waiting_for_symbol = false;
 	const Command* current_pending_command = nullptr;
+
 	while (!quit) {
+
+		auto current_last_write_time = filesystem::last_write_time(config_path);
+		if (current_last_write_time != last_config_write_time) {
+			last_config_write_time = current_last_write_time;
+			ifstream config_file(config_path);
+			config_manager.deserialize(config_file);
+			config_file.close();
+			window_state.invalidate_render();
+		}
+
 		SDL_Event event;
 
 		//while (SDL_PollEvent(&event)) {
@@ -1202,3 +1240,30 @@ int main(int argc, char* args[]) {
 	worker.join();
 	return 0;
 }
+
+//int main(int argc, char* args[]) {
+//
+//	//HANDLE file_change_handle = FindFirstChangeNotificationA("C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer", false, FILE_NOTIFY_CHANGE_LAST_WRITE);
+//	//while (true) {
+//	//	FindNextChangeNotification(file_change_handle);
+//	//	if (WaitForSingleObject(file_change_handle, 0) == WAIT_OBJECT_0) {
+//	//	}
+//	//}
+//
+//	while (true) {
+//		int size = sizeof(FILE_NOTIFY_INFORMATION) + MAX_PATH;
+//		FILE_NOTIFY_INFORMATION* fni = (FILE_NOTIFY_INFORMATION*)new char[size];
+//		ZeroMemory(fni, size);
+//
+//		DWORD bytes_returned;
+//		if (ReadDirectoryChangesW(directory_handle, fni, size, false, FILE_NOTIFY_CHANGE_LAST_WRITE, &bytes_returned, nullptr, nullptr)) {
+//			wprintf(L"%s\n", fni->FileName);
+//			if (lstrcmpW(fni->FileName, L"keys.config") == 0) {
+//				cout << "keys.config changed" << endl;
+//			}
+//		}
+//	}
+//
+//
+//	return 0;
+//}

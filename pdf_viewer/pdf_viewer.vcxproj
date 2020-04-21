@@ -147,6 +147,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="book.cpp" />
+    <ClCompile Include="config.cpp" />
     <ClCompile Include="database.cpp" />
     <ClCompile Include="document.cpp" />
     <ClCompile Include="document_view.cpp" />
@@ -164,6 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="book.h" />
+    <ClInclude Include="config.h" />
     <ClInclude Include="database.h" />
     <ClInclude Include="document.h" />
     <ClInclude Include="document_view.h" />
