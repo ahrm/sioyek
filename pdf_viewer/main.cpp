@@ -549,8 +549,13 @@ public:
 			invalidate_render();
 		}
 
+		else if (command->name == "search_selected_text_in_google_scholar") {
+			ShellExecuteA(0, 0, ("https://scholar.google.com/scholar?q=" + (selected_text)).c_str() , 0, 0, SW_SHOW);
+		}
+		else if (command->name == "search_selected_text_in_libgen") {
+			ShellExecuteA(0, 0, ("http://gen.lib.rus.ec/scimag/?q=" + (selected_text)).c_str() , 0, 0, SW_SHOW);
+		}
 		else if (command->name == "debug") {
-			//toggle_two_window_mode();
 			cout << "debug" << endl;
 		}
 
@@ -949,14 +954,18 @@ int main(int argc, char* args[]) {
 		
 	char exe_file_name[MAX_PATH];
 	GetModuleFileNameA(NULL, exe_file_name, sizeof(exe_file_name));
-	cout << exe_file_name << endl;
+
+#ifdef NDEBUG
 	install_app(exe_file_name);
+#endif
 
 	filesystem::path exe_path = exe_file_name;
 	parent_path = exe_path.parent_path();
 
 	//comment this is release mode
+#ifdef _DEBUG
 	parent_path = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer";
+#endif
 
 	HANDLE directory_handle = CreateFileA(parent_path.string().c_str(),
 		GENERIC_READ,

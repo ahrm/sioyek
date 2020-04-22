@@ -47,6 +47,8 @@ CommandManager::CommandManager() {
 	commands.push_back({ "toggle_one_window", false, false , false, false});
 	commands.push_back({ "toggle_highlight", false, false , false, false});
 	commands.push_back({ "command", true, false , false, false});
+	commands.push_back({ "search_selected_text_in_google_scholar", false, false , false, false});
+	commands.push_back({ "search_selected_text_in_libgen", false, false , false, false});
 }
 const Command* CommandManager::get_command_with_name(string name) {
 	for (const auto &com : commands) {

@@ -488,20 +488,29 @@ void DocumentView::get_text_selection(fz_point selection_begin, fz_point selecti
 			fz_stext_line* current_line = current_block->u.t.first_line;
 			while (current_line) {
 				fz_stext_char* current_char = current_line->first_char;
+				bool has_char_in_line = false;
 				while (current_char) {
 					fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
 
 					if (should_select_char(selection_begin, selection_end, charrect)){
+						has_char_in_line = true;
 						selected_text.push_back(current_char->c);
 						selected_characters.push_back(charrect);
 					}
 					current_char = current_char->next;
 				}
-				//some_text.push_back('\n');
+				if (has_char_in_line) {
+					selected_text.push_back(' ');
+				}
 				current_line = current_line->next;
 			}
 
 			current_block = current_block->next;
+		}
+
+		// there is one extra space character, we append a space for each line
+		if (selected_text.size() > 0) {
+			selected_text.pop_back();
 		}
 
 		fz_drop_stext_page(mupdf_context, stext_page);

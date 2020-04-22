@@ -46,3 +46,4 @@ fz_rect corners_to_rect(fz_point corner1, fz_point corner2);
 void install_app(char* argv0);
 int get_f_key(string name);
 void show_error_message(string error_message);
+string url_encode(const string& value);
