@@ -1,5 +1,7 @@
 #include "document_view.h"
 
+extern float background_color[3];
+
 DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, ConfigManager* config_manager) :
 	mupdf_context(mupdf_context),
 	database(db),
@@ -419,7 +421,7 @@ void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GL
 	get_visible_pages(view_height, visible_pages);
 	render_is_invalid = false;
 
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(background_color[0], background_color[1], background_color[2], 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 

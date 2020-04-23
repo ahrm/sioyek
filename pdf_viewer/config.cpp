@@ -1,7 +1,16 @@
 #include "config.h"
 
+extern float ZOOM_INC_FACTOR;
+extern float vertical_move_amount;
+extern float horizontal_move_amount;
+extern float background_color[3];
+
 void int_serializer(void* int_pointer, stringstream& stream) {
 	stream << *(int*)int_pointer;
+}
+
+void string_serializer(void* string_pointer, stringstream& stream) {
+	stream << *(string*)string_pointer;
 }
 
 void* int_deserializer(stringstream& stream, void* res_ = nullptr) {
@@ -11,6 +20,14 @@ void* int_deserializer(stringstream& stream, void* res_ = nullptr) {
 	}
 	stream >> *res;
 	return res;
+}
+
+void* string_deserializer(stringstream& stream, void* res_ = nullptr) {
+	delete res_;
+	
+	string res;
+	stream >> res;
+	return new string(res);
 }
 
 void* vec3_deserializer(stringstream& stream, void* res_ = nullptr) {
@@ -59,6 +76,12 @@ ConfigManager::ConfigManager(string path) {
 	configs.push_back({ "text_highlight_color", nullptr, vec3_serializer, vec3_deserializer });
 	configs.push_back({ "search_highlight_color", nullptr, vec3_serializer, vec3_deserializer });
 	configs.push_back({ "link_highlight_color", nullptr, vec3_serializer, vec3_deserializer });
+	configs.push_back({ "background_color", background_color, vec3_serializer, vec3_deserializer });
+	configs.push_back({ "google_scholar_address", nullptr, string_serializer, string_deserializer });
+	configs.push_back({ "libgen_address", nullptr, string_serializer, string_deserializer });
+	configs.push_back({ "zoom_inc_factor", &ZOOM_INC_FACTOR, float_serializer, float_deserializer });
+	configs.push_back({ "vertical_move_amount", &vertical_move_amount, float_serializer, float_deserializer });
+	configs.push_back({ "horizontal_move_amount", &horizontal_move_amount, float_serializer, float_deserializer });
 	ifstream infile(path);
 	deserialize(infile);
 	infile.close();

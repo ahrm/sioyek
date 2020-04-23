@@ -47,7 +47,10 @@
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
 
 
-extern const float ZOOM_INC_FACTOR = 1.2f;
+extern float background_color[3] = { 1.0f, 1.0f, 1.0f };
+extern float ZOOM_INC_FACTOR = 1.2f;
+extern float vertical_move_amount = 1.0f;
+extern float horizontal_move_amount = 1.0f;
 extern const unsigned int cache_invalid_milies = 1000;
 extern const int persist_milies = 1000 * 60;
 extern const int page_paddings = 0;
@@ -390,21 +393,22 @@ public:
 		int rp = max(num_repeats, 1);
 
 		if (command->name == "move_down") {
-			main_document_view->move(0.0f, 72.0f * rp);
+			main_document_view->move(0.0f, 72.0f * rp * vertical_move_amount);
 		}
 		else if (command->name == "move_up") {
-			main_document_view->move(0.0f, -72.0f * rp);
+			main_document_view->move(0.0f, -72.0f * rp * vertical_move_amount);
 		}
 
 		else if (command->name == "move_right") {
-			main_document_view->move(72.0f * rp, 0.0f);
-		}
-		else if (command->name == "link") {
-			handle_link();
+			main_document_view->move(72.0f * rp * horizontal_move_amount, 0.0f);
 		}
 
 		else if (command->name == "move_left") {
-			main_document_view->move(-72.0f * rp, 0.0f);
+			main_document_view->move(-72.0f * rp * horizontal_move_amount, 0.0f);
+		}
+
+		else if (command->name == "link") {
+			handle_link();
 		}
 
 		else if (command->name == "goto_link") {
@@ -550,10 +554,10 @@ public:
 		}
 
 		else if (command->name == "search_selected_text_in_google_scholar") {
-			ShellExecuteA(0, 0, ("https://scholar.google.com/scholar?q=" + (selected_text)).c_str() , 0, 0, SW_SHOW);
+			ShellExecuteA(0, 0, (*config_manager->get_config<string>("google_scholar_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
 		}
 		else if (command->name == "search_selected_text_in_libgen") {
-			ShellExecuteA(0, 0, ("http://gen.lib.rus.ec/scimag/?q=" + (selected_text)).c_str() , 0, 0, SW_SHOW);
+			ShellExecuteA(0, 0, (*config_manager->get_config<string>("libgen_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
 		}
 		else if (command->name == "debug") {
 			cout << "debug" << endl;
