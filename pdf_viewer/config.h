@@ -39,7 +39,7 @@ public:
 	void serialize(ofstream& file);
 	void deserialize(ifstream& file);
 	template<typename T>
-	T* get_config(string name) {
+	const T* get_config(string name) {
 		return (T*)get_mut_config_with_name(name)->get_value();
 	}
 };

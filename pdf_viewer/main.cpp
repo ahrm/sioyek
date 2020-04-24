@@ -953,7 +953,6 @@ public:
 
 int main(int argc, char* args[]) {
 
-
 	bool quit = false;
 		
 	char exe_file_name[MAX_PATH];
@@ -971,21 +970,13 @@ int main(int argc, char* args[]) {
 	parent_path = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer";
 #endif
 
-	HANDLE directory_handle = CreateFileA(parent_path.string().c_str(),
-		GENERIC_READ,
-		FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-		nullptr,
-		OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-		nullptr);
-
 	last_path_file_absolute_location = (parent_path / "last_document_path.txt").string();
 
 	filesystem::path config_path = parent_path / "prefs.config";
 	ConfigManager config_manager(config_path.string());
 	auto last_config_write_time = std::filesystem::last_write_time(config_path);
 
-	float* text_h = config_manager.get_config<float>("text_highlight_color");
+	const float* text_h = config_manager.get_config<float>("text_highlight_color");
 
 	sqlite3* db;
 	char* error_message = nullptr;
@@ -1253,30 +1244,3 @@ int main(int argc, char* args[]) {
 	worker.join();
 	return 0;
 }
-
-//int main(int argc, char* args[]) {
-//
-//	//HANDLE file_change_handle = FindFirstChangeNotificationA("C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer", false, FILE_NOTIFY_CHANGE_LAST_WRITE);
-//	//while (true) {
-//	//	FindNextChangeNotification(file_change_handle);
-//	//	if (WaitForSingleObject(file_change_handle, 0) == WAIT_OBJECT_0) {
-//	//	}
-//	//}
-//
-//	while (true) {
-//		int size = sizeof(FILE_NOTIFY_INFORMATION) + MAX_PATH;
-//		FILE_NOTIFY_INFORMATION* fni = (FILE_NOTIFY_INFORMATION*)new char[size];
-//		ZeroMemory(fni, size);
-//
-//		DWORD bytes_returned;
-//		if (ReadDirectoryChangesW(directory_handle, fni, size, false, FILE_NOTIFY_CHANGE_LAST_WRITE, &bytes_returned, nullptr, nullptr)) {
-//			wprintf(L"%s\n", fni->FileName);
-//			if (lstrcmpW(fni->FileName, L"keys.config") == 0) {
-//				cout << "keys.config changed" << endl;
-//			}
-//		}
-//	}
-//
-//
-//	return 0;
-//}
