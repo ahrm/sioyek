@@ -5,6 +5,7 @@
 #include <string>
 #include <SDL.h>
 #include "book.h"
+#include "utf8.h"
 #include <sstream>
 #include <fstream>
 #include <filesystem>
@@ -15,9 +16,9 @@
 
 using namespace std;
 
-string to_lower(const string& inp);
+wstring to_lower(const wstring& inp);
 void convert_toc_tree(fz_outline* root, vector<TocNode*>& output);
-void get_flat_toc(const vector<TocNode*>& roots, vector<string>& output, vector<int>& pages);
+void get_flat_toc(const vector<TocNode*>& roots, vector<wstring>& output, vector<int>& pages);
 int mod(int a, int b);
 bool intersects(float range1_start, float range1_end, float range2_start, float range2_end);
 void parse_uri(string uri, int* page, float* offset_x, float* offset_y);
@@ -41,8 +42,10 @@ int argminf(const vector<T> &collection, function<float(T)> f) {
 }
 void rect_to_quad(fz_rect rect, float quad[8]);
 bool should_select_char(fz_point selection_begin,fz_point selection_end , fz_rect character_rect);
-void copy_to_clipboard(const string& text);
+void copy_to_clipboard(const wstring& text);
 fz_rect corners_to_rect(fz_point corner1, fz_point corner2);
 void install_app(char* argv0);
 int get_f_key(string name);
-void show_error_message(string error_message);
+void show_error_message(wstring error_message);
+wstring utf8_decode(string encoded_str);
+string utf8_encode(wstring decoded_str);

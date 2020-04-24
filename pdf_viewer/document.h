@@ -22,7 +22,7 @@ private:
 	vector<TocNode*> top_level_toc_nodes;
 	optional<int> cached_num_pages;
 	fz_context* context;
-	string file_name;
+	wstring file_name;
 	unordered_map<int, fz_link*> cached_page_links;
 	fz_outline* cached_outline;
 
@@ -35,13 +35,13 @@ private:
 	void load_document_metadata_from_db();
 	void create_toc_tree(vector<TocNode*>& toc);
 
-	Document(fz_context* context, string file_name, sqlite3* db);
+	Document(fz_context* context, wstring file_name, sqlite3* db);
 public:
 	fz_document* doc;
 
-	void add_bookmark(string desc, float y_offset);
+	void add_bookmark(wstring desc, float y_offset);
 	void add_link(Link link, bool insert_into_database = true);
-	string get_path();
+	wstring get_path();
 	BookMark* find_closest_bookmark(float to_offset_y, int* index = nullptr);
 	void delete_closest_bookmark(float to_y_offset);
 	Link* find_closest_link(float to_offset_y, int* index = nullptr);
@@ -76,10 +76,10 @@ class DocumentManager {
 private:
 	fz_context* mupdf_context;
 	sqlite3* database;
-	unordered_map<string, Document*> cached_documents;
+	unordered_map<wstring, Document*> cached_documents;
 public:
 
 	DocumentManager(fz_context* mupdf_context, sqlite3* database);
 
-	Document* get_document(string path);
+	Document* get_document(wstring path);
 };

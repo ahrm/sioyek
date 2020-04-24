@@ -1,5 +1,6 @@
 #include "document.h"
 #include <algorithm>
+#include "utf8.h"
 
 int Document::get_mark_index(char symbol) {
 	for (int i = 0; i < marks.size(); i++) {
@@ -19,7 +20,7 @@ void Document::load_document_metadata_from_db() {
 }
 
 
-void Document::add_bookmark(string desc, float y_offset) {
+void Document::add_bookmark(wstring desc, float y_offset) {
 	BookMark res;
 	res.description = desc;
 	res.y_offset = y_offset;
@@ -34,7 +35,7 @@ void Document::add_link(Link link, bool insert_into_database) {
 	}
 }
 
-string Document::get_path() {
+wstring Document::get_path() {
 	return file_name;
 }
 
@@ -105,7 +106,7 @@ bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
 	return true;
 }
 
-Document::Document(fz_context* context, string file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
+Document::Document(fz_context* context, wstring file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
 }
 
 const vector<TocNode*>& Document::get_toc() {
@@ -197,10 +198,10 @@ Document::~Document() {
 bool Document::open() {
 	if (doc == nullptr) {
 		fz_try(context) {
-			doc = fz_open_document(context, file_name.c_str());
+			doc = fz_open_document(context, utf8_encode(file_name).c_str());
 		}
 		fz_catch(context) {
-			cerr << "could not open " << file_name << endl;
+			wcerr << "could not open " << file_name << endl;
 		}
 		if (doc != nullptr) {
 			load_page_dimensions();
@@ -270,7 +271,7 @@ DocumentManager::DocumentManager(fz_context* mupdf_context, sqlite3* database) :
 {
 }
 
-Document* DocumentManager::get_document(string path) {
+Document* DocumentManager::get_document(wstring path) {
 	if (cached_documents.find(path) != cached_documents.end()) {
 		return cached_documents.at(path);
 	}

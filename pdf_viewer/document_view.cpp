@@ -13,7 +13,7 @@ DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* 
 
 }
 
-DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, ConfigManager* config_manager, string path, int view_width, int view_height, float offset_x, float offset_y) :
+DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, ConfigManager* config_manager, wstring path, int view_width, int view_height, float offset_x, float offset_y) :
 	DocumentView(mupdf_context, db, pdf_renderer, document_manager, config_manager)
 {
 	on_view_size_change(view_width, view_height);
@@ -152,7 +152,7 @@ void DocumentView::add_mark(char symbol) {
 		current_document->add_mark(symbol, offset_y);
 	}
 }
-void DocumentView::add_bookmark(string desc) {
+void DocumentView::add_bookmark(wstring desc) {
 	//assert(current_document);
 	if (current_document) {
 		current_document->add_bookmark(desc, offset_y);
@@ -267,7 +267,7 @@ int DocumentView::get_current_page_number() {
 	return -1;
 }
 
-void DocumentView::search_text(const char* text) {
+void DocumentView::search_text(const wchar_t* text) {
 	if (!current_document) return;
 
 	search_results_mutex.lock();
@@ -331,7 +331,7 @@ void DocumentView::reset_doc_state() {
 	zoom_level = 1.0f;
 	set_offsets(0.0f, 0.0f);
 }
-void DocumentView::open_document(string doc_path) {
+void DocumentView::open_document(wstring doc_path) {
 
 	error_code error_code;
 	filesystem::path cannonical_path_ = std::filesystem::canonical(doc_path, error_code);
@@ -341,7 +341,7 @@ void DocumentView::open_document(string doc_path) {
 		return;
 	}
 
-	string cannonical_path = cannonical_path_.string();
+	wstring cannonical_path = cannonical_path_.wstring();
 
 	//document_path = cannonical_path;
 	vector<OpenedBookState> prev_state;
@@ -430,7 +430,7 @@ void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GL
 
 		if (should_highlight_links) {
 			glUseProgram(highlight_program);
-			glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>("link_highlight_color"));
+			glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>(L"link_highlight_color"));
 			fz_link* links = current_document->get_page_links(page);
 			while (links != nullptr) {
 				render_highlight_document(highlight_program, page, links->rect);
@@ -443,7 +443,7 @@ void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GL
 	if (search_results.size() > 0) {
 		SearchResult current_search_result = search_results[current_search_result_index];
 		glUseProgram(highlight_program);
-		glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>("search_highlight_color"));
+		glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
 		render_highlight_document(highlight_program, current_search_result.page, current_search_result.rect);
 	}
 	search_results_mutex.unlock();
@@ -452,7 +452,7 @@ void DocumentView::persist() {
 	if (!current_document) return;
 	update_book(database, current_document->get_path(), zoom_level, offset_x, offset_y);
 }
-void DocumentView::get_text_selection(fz_point selection_begin, fz_point selection_end, vector<fz_rect>& selected_characters, string& selected_text) {
+void DocumentView::get_text_selection(fz_point selection_begin, fz_point selection_end, vector<fz_rect>& selected_characters, wstring& selected_text) {
 
 	if (!current_document) return;
 	int page_begin, page_end;

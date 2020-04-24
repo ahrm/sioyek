@@ -6,6 +6,7 @@
 //todo: tests!
 //todo: handle mouse in menues
 //todo: sort opened documents by last access
+//todo: handle right to left documents
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -41,6 +42,7 @@
 #include "document.h"
 #include "document_view.h"
 #include "config.h"
+#include "utf8.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -56,7 +58,7 @@ extern const int persist_milies = 1000 * 60;
 extern const int page_paddings = 0;
 extern const int max_pending_requests = 31;
 //extern const char* last_path_file_absolute_location = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\last_document_path.txt";
-string last_path_file_absolute_location;
+wstring last_path_file_absolute_location;
 filesystem::path parent_path;
 
 
@@ -115,7 +117,7 @@ private:
 	GLuint gl_unrendered_program;
 	GLint highlight_color_uniform_location;
 
-	string pending_link_source_document_path;
+	wstring pending_link_source_document_path;
 	Link pending_link;
 	bool pending_link_source_filled;
 
@@ -135,13 +137,14 @@ private:
 
 	bool is_showing_ui;
 	bool is_showing_textbar;
+	//this is utf8-encoded bytes
 	char text_command_buffer[100];
 	vector<fz_rect> selected_character_rects;
 
 	int main_window_width, main_window_height;
 	int helper_window_width, helper_window_height;
 
-	string selected_text;
+	wstring selected_text;
 
 	void set_main_document_view_state(DocumentViewState new_view_state) {
 		main_document_view = new_view_state.document_view;
@@ -354,7 +357,7 @@ public:
 		}
 	}
 
-	void handle_command_with_file_name(const Command* command, string file_name) {
+	void handle_command_with_file_name(const Command* command, wstring file_name) {
 		assert(command->requires_file_name);
 		if (command->name == "open_document") {
 			//current_document_view->open_document(file_name);
@@ -467,7 +470,7 @@ public:
 			main_document_view->move_pages(-1 - num_repeats);
 		}
 		else if (command->name == "goto_toc") {
-			vector<string> flat_toc;
+			vector<wstring> flat_toc;
 			vector<int> current_document_toc_pages;
 			get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
 			if (current_document_toc_pages.size() > 0) {
@@ -482,17 +485,17 @@ public:
 			}
 		}
 		else if (command->name == "open_prev_doc") {
-			vector<string> opened_docs_paths;
-			vector<string> opened_docs_names;
+			vector<wstring> opened_docs_paths;
+			vector<wstring> opened_docs_names;
 			select_prev_docs(database, opened_docs_paths);
 
 			for (const auto& p : opened_docs_paths) {
-				opened_docs_names.push_back(std::filesystem::path(p).filename().string());
+				opened_docs_names.push_back(std::filesystem::path(p).filename().wstring());
 			}
 
 			if (opened_docs_paths.size() > 0) {
-				current_widget = new FilteredSelect<string>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
-					string doc_path = *(string*)string_pointer;
+				current_widget = new FilteredSelect<wstring>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
+					wstring doc_path = *(wstring*)string_pointer;
 					if (doc_path.size() > 0) {
 						push_state();
 						open_document(doc_path);
@@ -503,7 +506,7 @@ public:
 		}
 		else if (command->name == "goto_bookmark") {
 			is_showing_ui = true;
-			vector<string> option_names;
+			vector<wstring> option_names;
 			vector<float> option_locations;
 			for (int i = 0; i < main_document_view->get_document()->get_bookmarks().size(); i++) {
 				option_names.push_back(main_document_view->get_document()->get_bookmarks()[i].description);
@@ -520,13 +523,13 @@ public:
 		}
 		else if (command->name == "goto_bookmark_g") {
 			is_showing_ui = true;
-			vector<pair<string, BookMark>> global_bookmarks;
+			vector<pair<wstring, BookMark>> global_bookmarks;
 			global_select_bookmark(database, global_bookmarks);
-			vector<string> descs;
+			vector<wstring> descs;
 			vector<BookState> book_states;
 
 			for (const auto& desc_bm_pair : global_bookmarks) {
-				string path = desc_bm_pair.first;
+				wstring path = desc_bm_pair.first;
 				BookMark bm = desc_bm_pair.second;
 				descs.push_back(bm.description);
 				book_states.push_back({ path, bm.y_offset });
@@ -553,11 +556,13 @@ public:
 			invalidate_render();
 		}
 
+		//todo: check if still works after wstring
 		else if (command->name == "search_selected_text_in_google_scholar") {
-			ShellExecuteA(0, 0, (*config_manager->get_config<string>("google_scholar_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
+
+			ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"google_scholar_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
 		}
 		else if (command->name == "search_selected_text_in_libgen") {
-			ShellExecuteA(0, 0, (*config_manager->get_config<string>("libgen_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
+			ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"libgen_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
 		}
 		else if (command->name == "debug") {
 			cout << "debug" << endl;
@@ -591,7 +596,7 @@ public:
 	}
 
 
-	void handle_pending_text_command(string text) {
+	void handle_pending_text_command(wstring text) {
 		if (pending_text_command->name == "search") {
 			main_document_view->search_text(text.c_str());
 		}
@@ -600,7 +605,7 @@ public:
 			main_document_view->add_bookmark(text);
 		}
 		if (pending_text_command->name == "command") {
-			cout << text << endl;
+			wcout << text << endl;
 		}
 	}
 
@@ -683,12 +688,12 @@ public:
 		ZeroMemory(text_command_buffer, sizeof(text_command_buffer));
 	}
 
-	void open_document(string path, optional<float> offset_x = {}, optional<float> offset_y = {}) {
+	void open_document(wstring path, optional<float> offset_x = {}, optional<float> offset_y = {}) {
 
 		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, config_manager);
 		main_document_view->open_document(path);
 		if (path.size() > 0 && main_document_view->get_document() == nullptr) {
-			show_error_message("Could not open file: " + path);
+			show_error_message(L"Could not open file: " + path);
 		}
 		main_document_view->on_view_size_change(main_window_width, main_window_height);
 		if (offset_x) {
@@ -701,7 +706,7 @@ public:
 
 		if (path.size() > 0) {
 			ofstream last_path_file(last_path_file_absolute_location);
-			last_path_file << path << endl;
+			last_path_file << utf8_encode(path) << endl;
 			last_path_file.close();
 		}
 	}
@@ -735,7 +740,7 @@ public:
 		is_showing_ui = false;
 		is_showing_textbar = false;
 		ZeroMemory(text_command_buffer, sizeof(text_command_buffer));
-		pending_link_source_document_path = "";
+		pending_link_source_document_path = L"";
 		pending_link_source_filled = false;
 		pending_text_command = nullptr;
 		if (current_widget) {
@@ -823,7 +828,7 @@ public:
 		fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
 		fz_point selection_end = { x_, y_ };
 		vector<fz_rect> selected_characters;
-		string text;
+		wstring text;
 		main_document_view->get_text_selection(selection_begin, selection_end, selected_characters, text);
 		for (const auto& r : selected_characters) {
 			main_document_view->render_highlight_absolute(gl_debug_program, r);
@@ -888,7 +893,7 @@ public:
 						//search_results.clear();
 						//search_text(search_string, search_results);
 						//handle_return();
-						handle_pending_text_command(text_command_buffer);
+						handle_pending_text_command(utf8_decode(text_command_buffer));
 						main_document_view->goto_search_result(0);
 						handle_return();
 						io.WantCaptureKeyboard = false;
@@ -918,7 +923,7 @@ public:
 			}
 
 			glUseProgram(gl_debug_program);
-			glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>("text_highlight_color"));
+			glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>(L"text_highlight_color"));
 
 			for (auto rect : selected_character_rects) {
 				main_document_view->render_highlight_absolute(gl_debug_program, rect);
@@ -970,13 +975,13 @@ int main(int argc, char* args[]) {
 	parent_path = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer";
 #endif
 
-	last_path_file_absolute_location = (parent_path / "last_document_path.txt").string();
+	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
 
 	filesystem::path config_path = parent_path / "prefs.config";
-	ConfigManager config_manager(config_path.string());
+	ConfigManager config_manager(config_path.wstring());
 	auto last_config_write_time = std::filesystem::last_write_time(config_path);
 
-	const float* text_h = config_manager.get_config<float>("text_highlight_color");
+	const float* text_h = config_manager.get_config<float>(L"text_highlight_color");
 
 	sqlite3* db;
 	char* error_message = nullptr;
@@ -1088,14 +1093,16 @@ int main(int argc, char* args[]) {
 
 	WindowState window_state(window, window2, mupdf_context, &gl_context, db, pdf_renderer, &config_manager);
 	if (argc > 1) {
-		window_state.open_document(args[1]);
+		window_state.open_document(utf8_decode(args[1]));
 	}
 
 	//char file_path[MAX_PATH] = { 0 };
-	string file_path;
+	wstring file_path;
+	string file_path_;
 	ifstream last_state_file(last_path_file_absolute_location);
 	//last_state_file.read(file_path, MAX_PATH);
-	getline(last_state_file, file_path);
+	getline(last_state_file, file_path_);
+	file_path = utf8_decode(file_path_);
 	//last_state_file >> initial_document;
 	last_state_file.close();
 
@@ -1113,7 +1120,7 @@ int main(int argc, char* args[]) {
 		auto current_last_write_time = filesystem::last_write_time(config_path);
 		if (current_last_write_time != last_config_write_time) {
 			last_config_write_time = current_last_write_time;
-			ifstream config_file(config_path);
+			wifstream config_file(config_path);
 			config_manager.deserialize(config_file);
 			config_file.close();
 			window_state.invalidate_render();
@@ -1205,7 +1212,7 @@ int main(int argc, char* args[]) {
 						continue;
 					}
 					if (command->requires_file_name) {
-						char file_name[MAX_PATH];
+						wchar_t file_name[MAX_PATH];
 						if (select_pdf_file_name(file_name, MAX_PATH)) {
 							window_state.handle_command_with_file_name(command, file_name);
 						}

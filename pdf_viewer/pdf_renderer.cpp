@@ -1,4 +1,5 @@
 #include "pdf_renderer.h"
+#include "utils.h"
 
 PdfRenderer::PdfRenderer(fz_context* context_to_clone) : context_to_clone(context_to_clone) {
 	invalidate_pointer = nullptr;
@@ -19,7 +20,7 @@ void PdfRenderer::set_invalidate_pointer(bool* inv_p) {
 
 //should only be called from the main thread
 
-void PdfRenderer::add_request(string document_path, int page, float zoom_level) {
+void PdfRenderer::add_request(wstring document_path, int page, float zoom_level) {
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
 		RenderRequest req;
@@ -47,7 +48,7 @@ void PdfRenderer::add_request(string document_path, int page, float zoom_level) 
 		cout << "Error: could not find documnet" << endl;
 	}
 }
-void PdfRenderer::add_request(string document_path, int page, string term, vector<SearchResult>* out,float* percent_done, bool* is_searching, mutex* mut) {
+void PdfRenderer::add_request(wstring document_path, int page, wstring term, vector<SearchResult>* out,float* percent_done, bool* is_searching, mutex* mut) {
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
 
@@ -75,7 +76,7 @@ void PdfRenderer::add_request(string document_path, int page, string term, vecto
 
 //should only be called from the main thread
 
-GLuint PdfRenderer::find_rendered_page(string path, int page, float zoom_level, int* page_width, int* page_height) {
+GLuint PdfRenderer::find_rendered_page(wstring path, int page, float zoom_level, int* page_width, int* page_height) {
 	//fz_document* doc = get_document_with_path(path);
 	if (path.size() > 0) {
 		RenderRequest req;
@@ -130,7 +131,7 @@ GLuint PdfRenderer::find_rendered_page(string path, int page, float zoom_level, 
 	return 0;
 }
 
-GLuint PdfRenderer::try_closest_rendered_page(string doc_path, int page, float zoom_level, int* page_width, int* page_height) {
+GLuint PdfRenderer::try_closest_rendered_page(wstring doc_path, int page, float zoom_level, int* page_width, int* page_height) {
 	/*
 	If the requested page is not available, we try to find the rendered page with the closest
 	possible zoom level to our request and return that instead
@@ -194,13 +195,13 @@ void PdfRenderer::delete_old_pages() {
 PdfRenderer::~PdfRenderer() {
 }
 
-fz_document* PdfRenderer::get_document_with_path(string path) {
+fz_document* PdfRenderer::get_document_with_path(wstring path) {
 	if (opened_documents.find(path) != opened_documents.end()) {
 		return opened_documents.at(path);
 	}
 	fz_document* ret_val = nullptr;
 	fz_try(mupdf_context) {
-		ret_val = fz_open_document(mupdf_context, path.c_str());
+		ret_val = fz_open_document(mupdf_context, utf8_encode(path).c_str());
 		opened_documents[path] = ret_val;
 	}
 	fz_catch(mupdf_context) {
@@ -299,7 +300,7 @@ void PdfRenderer::run(bool* should_quit) {
 
 				const int max_hits_per_page = 20;
 				fz_quad hitboxes[max_hits_per_page];
-				int num_results = fz_search_page(mupdf_context, page, req.search_term.c_str(), hitboxes, max_hits_per_page);
+				int num_results = fz_search_page(mupdf_context, page, utf8_encode(req.search_term).c_str(), hitboxes, max_hits_per_page);
 
 				for (int j = 0; j < num_results; j++) {
 					req.search_results_mutex->lock();

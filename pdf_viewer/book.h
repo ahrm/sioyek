@@ -11,7 +11,7 @@ using namespace std;
 class DocumentView;
 
 struct BookState {
-	string document_path;
+	wstring document_path;
 	float offset_y;
 };
 
@@ -28,11 +28,11 @@ struct Mark {
 
 struct BookMark {
 	float y_offset;
-	string description;
+	wstring description;
 };
 
 struct Link {
-	string document_path;
+	wstring document_path;
 	float dest_offset_x;
 	float dest_offset_y;
 	float src_offset_y;
@@ -63,10 +63,10 @@ enum RenderRequestType {
 struct RenderRequest {
 	//fz_document* doc;
 	RenderRequestType type;
-	string path;
+	wstring path;
 	int page;
 	float zoom_level;
-	string search_term;
+	wstring search_term;
 	vector<SearchResult>* search_results;
 	mutex* search_results_mutex;
 	float* percent_done;
@@ -82,7 +82,7 @@ struct RenderResponse {
 
 struct TocNode {
 	vector<TocNode*> children;
-	string title;
+	wstring title;
 	int page;
 	float y;
 	float x;

@@ -1,7 +1,7 @@
 #include "utils.h"
 
-string to_lower(const string& inp) {
-	string res;
+wstring to_lower(const wstring& inp) {
+	wstring res;
 	for (char c : inp) {
 		res.push_back(::tolower(c));
 	}
@@ -17,7 +17,7 @@ void convert_toc_tree(fz_outline* root, vector<TocNode*>& output) {
 		}
 
 		TocNode* current_node = new TocNode;
-		current_node->title = root->title;
+		current_node->title = utf8_decode(root->title);
 		current_node->page = root->page;
 		current_node->x = root->x;
 		current_node->y = root->y;
@@ -26,7 +26,7 @@ void convert_toc_tree(fz_outline* root, vector<TocNode*>& output) {
 	} while (root = root->next);
 }
 
-void get_flat_toc(const vector<TocNode*>& roots, vector<string>& output, vector<int>& pages) {
+void get_flat_toc(const vector<TocNode*>& roots, vector<wstring>& output, vector<int>& pages) {
 	// Enumerate ToC nodes in the DFS order
 
 	for (const auto& root : roots) {
@@ -229,15 +229,20 @@ bool should_select_char(fz_point selection_begin, fz_point selection_end, fz_rec
 	return false;
 }
 
-void copy_to_clipboard(const string& text) {
-	const size_t len = text.size() + 1;
-	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len);
-	memcpy(GlobalLock(hMem), text.c_str(), len);
-	GlobalUnlock(hMem);
-	OpenClipboard(0);
-	EmptyClipboard();
-	SetClipboardData(CF_TEXT, hMem);
-	CloseClipboard();
+//todo: see if it still works after wstring
+//todo: free the memory!
+void copy_to_clipboard(const wstring& text) {
+	if (text.size() > 0) {
+		const size_t len = text.size() + 1;
+		const size_t size = len * sizeof(text[0]);
+		HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, size);
+		memcpy(GlobalLock(hMem), text.c_str(), size);
+		GlobalUnlock(hMem);
+		OpenClipboard(0);
+		EmptyClipboard();
+		SetClipboardData(CF_UNICODETEXT, hMem);
+		CloseClipboard();
+	}
 }
 
 #define OPEN_KEY(parent, name, ptr) \
@@ -294,7 +299,19 @@ int get_f_key(string name) {
 	return  num;
 }
 
-void show_error_message(string error_message) {
-	MessageBoxA(nullptr, error_message.c_str(), "Error", MB_OK);
+void show_error_message(wstring error_message) {
+	MessageBoxW(nullptr, error_message.c_str(), L"Error", MB_OK);
+}
+
+wstring utf8_decode(string encoded_str) {
+	wstring res;
+	utf8::utf8to32(encoded_str.begin(), encoded_str.end(), std::back_inserter(res));
+	return res;
+}
+
+string utf8_encode(wstring decoded_str) {
+	string res;
+	utf8::utf32to8(decoded_str.begin(), decoded_str.end(), std::back_inserter(res));
+	return res;
 }
 

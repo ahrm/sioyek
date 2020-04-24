@@ -21,7 +21,7 @@ public:
 template<typename T>
 class FilteredSelect : public UIWidget{
 private:
-	vector<string> options;
+	vector<wstring> options;
 	vector<T> values;
 	function<void(void*)> on_done;
 	int current_index;
@@ -29,7 +29,7 @@ private:
 	char select_string[max_select_size];
 
 public:
-	FilteredSelect(vector<string> options, vector<T> values, function<void(void*)> on_done) :
+	FilteredSelect(vector<wstring> options, vector<T> values, function<void(void*)> on_done) :
 		options(options), values(values), current_index(0), is_done(false), on_done(on_done) {
 		ZeroMemory(select_string, sizeof(select_string));
 	}
@@ -42,7 +42,7 @@ public:
 		return nullptr;
 	}
 
-	bool is_string_comppatible(string incomplete_string, string option_string) {
+	bool is_string_comppatible(wstring incomplete_string, wstring option_string) {
 		incomplete_string = to_lower(incomplete_string);
 		option_string = to_lower(option_string);
 		return option_string.find(incomplete_string) < option_string.size();
@@ -51,7 +51,7 @@ public:
 	int get_selected_index() {
 		int index = -1;
 		for (int i = 0; i < options.size(); i++) {
-			if (is_string_comppatible(select_string, options[i])) {
+			if (is_string_comppatible(utf8_decode(select_string), options[i])) {
 				index += 1;
 			}
 			if (index == current_index) {
@@ -61,14 +61,14 @@ public:
 		return index;
 	}
 
-	string get_selected_option() {
+	wstring get_selected_option() {
 		return options[get_selected_index()];
 	}
 
 	int get_max_index() {
 		int max_index = -1;
 		for (int i = 0; i < options.size(); i++) {
-			if (is_string_comppatible(select_string, options[i])) {
+			if (is_string_comppatible(utf8_decode(select_string), options[i])) {
 				max_index += 1;
 			}
 		}
@@ -122,13 +122,13 @@ public:
 		int index = 0;
 		for (int i = 0; i < options.size(); i++) {
 			//if (options[i].find(select_string) == 0) {
-			if (is_string_comppatible(select_string, options[i])) {
+			if (is_string_comppatible(utf8_decode(select_string), options[i])) {
 
 				if (current_index == index) {
 					ImGui::SetScrollHere();
 				}
 
-				if (ImGui::Selectable(options[i].c_str(), current_index == index)) {
+				if (ImGui::Selectable(utf8_encode(options[i]).c_str(), current_index == index)) {
 					cout << "selected_something" << endl;
 				}
 				index += 1;
@@ -140,4 +140,4 @@ public:
 	}
 };
 
-bool select_pdf_file_name(char* out_file_name, int max_length);
+bool select_pdf_file_name(wchar_t* out_file_name, int max_length);

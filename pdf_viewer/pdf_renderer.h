@@ -28,7 +28,7 @@ class PdfRenderer {
 	fz_context* mupdf_context;
 
 	vector<fz_pixmap*> pixmaps_to_drop;
-	unordered_map<string, fz_document*> opened_documents;
+	unordered_map<wstring, fz_document*> opened_documents;
 	vector<RenderRequest> pending_requests;
 	vector<RenderResponse> cached_responses;
 	mutex pending_requests_mutex;
@@ -49,16 +49,16 @@ public:
 
 	void set_invalidate_pointer(bool* inv_p);
 
-	fz_document* get_document_with_path(string path);
+	fz_document* get_document_with_path(wstring path);
 
 	//should only be called from the main thread
-	void add_request(string document_path, int page, float zoom_level);
-	void add_request(string document_path, int page, string term, vector<SearchResult>* out, float* percent_done, bool* is_searching, mutex* mut);
+	void add_request(wstring document_path, int page, float zoom_level);
+	void add_request(wstring document_path, int page, wstring term, vector<SearchResult>* out, float* percent_done, bool* is_searching, mutex* mut);
 
 	//should only be called from the main thread
-	GLuint find_rendered_page(string path, int page, float zoom_level, int* page_width, int* page_height);
+	GLuint find_rendered_page(wstring path, int page, float zoom_level, int* page_width, int* page_height);
 
-	GLuint try_closest_rendered_page(string doc_path, int page, float zoom_level, int* page_width, int* page_height);
+	GLuint try_closest_rendered_page(wstring doc_path, int page, float zoom_level, int* page_width, int* page_height);
 
 	void delete_old_pages();
 
