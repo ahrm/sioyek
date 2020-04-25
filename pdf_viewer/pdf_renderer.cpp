@@ -1,7 +1,10 @@
 #include "pdf_renderer.h"
 #include "utils.h"
 
-PdfRenderer::PdfRenderer(fz_context* context_to_clone) : context_to_clone(context_to_clone) {
+PdfRenderer::PdfRenderer(int num_threads, fz_context* context_to_clone) : context_to_clone(context_to_clone),
+num_threads(num_threads),
+pixmaps_to_drop(num_threads),
+pixmap_drop_mutex(num_threads) {
 	invalidate_pointer = nullptr;
 }
 
@@ -174,9 +177,9 @@ void PdfRenderer::delete_old_pages() {
 		int index_to_delete = indices_to_delete[j];
 		RenderResponse resp = cached_responses[index_to_delete];
 
-		pixmap_drop_mutex.lock();
-		pixmaps_to_drop.push_back(resp.pixmap);
-		pixmap_drop_mutex.unlock();
+		pixmap_drop_mutex[resp.thread].lock();
+		pixmaps_to_drop[resp.thread].push_back(resp.pixmap);
+		pixmap_drop_mutex[resp.thread].unlock();
 
 		if (resp.texture != 0) {
 			glDeleteTextures(1, &resp.texture);
@@ -190,14 +193,17 @@ void PdfRenderer::delete_old_pages() {
 PdfRenderer::~PdfRenderer() {
 }
 
-fz_document* PdfRenderer::get_document_with_path(fz_context* mupdf_context, wstring path) {
-	if (opened_documents.find(path) != opened_documents.end()) {
-		return opened_documents.at(path);
+fz_document* PdfRenderer::get_document_with_path(int thread_index, fz_context* mupdf_context, wstring path) {
+	pair<int, wstring> document_id = make_pair(thread_index, path);
+
+	if (opened_documents.find(document_id) != opened_documents.end()) {
+		return opened_documents.at(document_id);
 	}
+
 	fz_document* ret_val = nullptr;
 	fz_try(mupdf_context) {
 		ret_val = fz_open_document(mupdf_context, utf8_encode(path).c_str());
-		opened_documents[path] = ret_val;
+		opened_documents[make_pair(thread_index, path)] = ret_val;
 	}
 	fz_catch(mupdf_context) {
 		cout << "Error: could not open document" << endl;
@@ -206,22 +212,22 @@ fz_document* PdfRenderer::get_document_with_path(fz_context* mupdf_context, wstr
 	return ret_val;
 }
 
-void PdfRenderer::delete_old_pixmaps(fz_context* mupdf_context) {
+void PdfRenderer::delete_old_pixmaps(int thread_index, fz_context* mupdf_context) {
 	// this function should only be called from the worker thread
-	pixmap_drop_mutex.lock();
-	for (int i = 0; i < pixmaps_to_drop.size(); i++) {
+	pixmap_drop_mutex[thread_index].lock();
+	for (int i = 0; i < pixmaps_to_drop[thread_index].size(); i++) {
 		fz_try(mupdf_context) {
-			fz_drop_pixmap(mupdf_context, pixmaps_to_drop[i]);
+			fz_drop_pixmap(mupdf_context, pixmaps_to_drop[thread_index][i]);
 		}
 		fz_catch(mupdf_context) {
 			cout << "Error: could not drop pixmap" << endl;
 		}
 	}
-	pixmaps_to_drop.clear();
-	pixmap_drop_mutex.unlock();
+	pixmaps_to_drop[thread_index].clear();
+	pixmap_drop_mutex[thread_index].unlock();
 }
 
-void PdfRenderer::run(bool* should_quit) {
+void PdfRenderer::run(int thread_index, bool* should_quit) {
 	fz_context* mupdf_context  = init_context();
 
 	while (!(*should_quit)) {
@@ -229,7 +235,7 @@ void PdfRenderer::run(bool* should_quit) {
 
 		while (pending_requests.size() == 0) {
 			pending_requests_mutex.unlock();
-			delete_old_pixmaps(mupdf_context);
+			delete_old_pixmaps(thread_index, mupdf_context);
 			if (*should_quit) break;
 
 			Sleep(100);
@@ -256,9 +262,10 @@ void PdfRenderer::run(bool* should_quit) {
 
 				fz_try(mupdf_context) {
 					fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level, req.zoom_level);
-					fz_document* doc = get_document_with_path(mupdf_context, req.path);
+					fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
 					fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
 					RenderResponse resp;
+					resp.thread = thread_index;
 					resp.request = req;
 					resp.last_access_time = SDL_GetTicks();
 					resp.pixmap = rendered_pixmap;
@@ -282,7 +289,7 @@ void PdfRenderer::run(bool* should_quit) {
 			SearchRequest req = get<SearchRequest>(req_);
 			pending_requests.pop_back();
 			pending_requests_mutex.unlock();
-			fz_document* doc = get_document_with_path(mupdf_context, req.path);
+			fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
 
 			int num_pages = fz_count_pages(mupdf_context, doc);
 

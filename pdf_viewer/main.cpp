@@ -7,6 +7,7 @@
 //todo: handle mouse in menues
 //todo: sort opened documents by last access
 //todo: handle right to left documents
+//todo: handle multithreading issues with search (probably using a different class than PdfRenderer) 
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
@@ -1025,13 +1026,17 @@ int main(int argc, char* args[]) {
 		return -1;
 	}
 
-	PdfRenderer* pdf_renderer = new PdfRenderer(mupdf_context);
+	int num_worker_threads = 4;
+	PdfRenderer* pdf_renderer = new PdfRenderer(num_worker_threads, mupdf_context);
+	vector<thread> worker_threads;
 	//global_pdf_renderer = new PdfRenderer();
 	//global_pdf_renderer->init();
 
-	thread worker([pdf_renderer, &quit]() {
-		pdf_renderer->run(&quit);
-		});
+	for (int i = 0; i < num_worker_threads; i++) {
+		worker_threads.push_back(thread([i, pdf_renderer, &quit]() {
+			pdf_renderer->run(i, &quit);
+			}));
+	}
 
 
 	SDL_Window* window = nullptr;
@@ -1263,6 +1268,10 @@ int main(int argc, char* args[]) {
 
 
 	sqlite3_close(db);
-	worker.join();
+
+	for (auto& worker : worker_threads) {
+		worker.join();
+	}
+
 	return 0;
 }
