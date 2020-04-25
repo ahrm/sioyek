@@ -3,15 +3,10 @@
 
 PdfRenderer::PdfRenderer(fz_context* context_to_clone) : context_to_clone(context_to_clone) {
 	invalidate_pointer = nullptr;
-	mupdf_context = nullptr;
 }
 
-void PdfRenderer::init_context() {
-	//should only be called from the worker thread
-	if (mupdf_context == nullptr) {
-		mupdf_context = fz_clone_context(context_to_clone);
-		context_to_clone = nullptr;
-	}
+fz_context* PdfRenderer::init_context() {
+	return fz_clone_context(context_to_clone);
 }
 
 void PdfRenderer::set_invalidate_pointer(bool* inv_p) {
@@ -195,7 +190,7 @@ void PdfRenderer::delete_old_pages() {
 PdfRenderer::~PdfRenderer() {
 }
 
-fz_document* PdfRenderer::get_document_with_path(wstring path) {
+fz_document* PdfRenderer::get_document_with_path(fz_context* mupdf_context, wstring path) {
 	if (opened_documents.find(path) != opened_documents.end()) {
 		return opened_documents.at(path);
 	}
@@ -211,7 +206,7 @@ fz_document* PdfRenderer::get_document_with_path(wstring path) {
 	return ret_val;
 }
 
-void PdfRenderer::delete_old_pixmaps() {
+void PdfRenderer::delete_old_pixmaps(fz_context* mupdf_context) {
 	// this function should only be called from the worker thread
 	pixmap_drop_mutex.lock();
 	for (int i = 0; i < pixmaps_to_drop.size(); i++) {
@@ -227,14 +222,14 @@ void PdfRenderer::delete_old_pixmaps() {
 }
 
 void PdfRenderer::run(bool* should_quit) {
-	init_context();
+	fz_context* mupdf_context  = init_context();
 
 	while (!(*should_quit)) {
 		pending_requests_mutex.lock();
 
 		while (pending_requests.size() == 0) {
 			pending_requests_mutex.unlock();
-			delete_old_pixmaps();
+			delete_old_pixmaps(mupdf_context);
 			if (*should_quit) break;
 
 			Sleep(100);
@@ -261,7 +256,7 @@ void PdfRenderer::run(bool* should_quit) {
 
 				fz_try(mupdf_context) {
 					fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level, req.zoom_level);
-					fz_document* doc = get_document_with_path(req.path);
+					fz_document* doc = get_document_with_path(mupdf_context, req.path);
 					fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
 					RenderResponse resp;
 					resp.request = req;
@@ -279,7 +274,7 @@ void PdfRenderer::run(bool* should_quit) {
 
 				}
 				fz_catch(mupdf_context) {
-					cout << "Error: could not render page" << endl;
+					cerr << "Error: could not render page" << endl;
 				}
 			}
 		}
@@ -287,7 +282,7 @@ void PdfRenderer::run(bool* should_quit) {
 			SearchRequest req = get<SearchRequest>(req_);
 			pending_requests.pop_back();
 			pending_requests_mutex.unlock();
-			fz_document* doc = get_document_with_path(req.path);
+			fz_document* doc = get_document_with_path(mupdf_context, req.path);
 
 			int num_pages = fz_count_pages(mupdf_context, doc);
 

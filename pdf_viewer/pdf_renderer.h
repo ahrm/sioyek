@@ -16,11 +16,6 @@
 extern const int max_pending_requests;
 extern const unsigned int cache_invalid_milies;
 
-enum RenderRequestType {
-	REQUEST_RENDER,
-	REQUEST_SEARCH
-};
-
 struct RenderRequest {
 	wstring path;
 	int page;
@@ -55,8 +50,8 @@ class PdfRenderer {
 	//thread.
 	fz_context* context_to_clone;
 
-	//cloned mupdf context to use in the worker thread
-	fz_context* mupdf_context;
+	////cloned mupdf context to use in the worker thread
+	//fz_context* mupdf_context;
 
 	vector<fz_pixmap*> pixmaps_to_drop;
 	unordered_map<wstring, fz_document*> opened_documents;
@@ -75,12 +70,12 @@ public:
 
 	PdfRenderer(fz_context* context_to_clone);
 
-	void init_context();
+	fz_context* init_context();
 
 
 	void set_invalidate_pointer(bool* inv_p);
 
-	fz_document* get_document_with_path(wstring path);
+	fz_document* get_document_with_path(fz_context* mupdf_context, wstring path);
 
 	//should only be called from the main thread
 	void add_request(wstring document_path, int page, float zoom_level);
@@ -93,7 +88,7 @@ public:
 
 	void delete_old_pages();
 
-	void delete_old_pixmaps();
+	void delete_old_pixmaps(fz_context* mupdf_context);
 
 	void run(bool* should_quit);
 
