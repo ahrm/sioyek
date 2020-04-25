@@ -4,6 +4,7 @@
 #include <string>
 #include <mupdf/fitz.h>
 #include <mutex>
+#include <variant>
 #include <unordered_map>
 #include <SDL.h>
 #include <iostream>
@@ -14,6 +15,36 @@
 
 extern const int max_pending_requests;
 extern const unsigned int cache_invalid_milies;
+
+enum RenderRequestType {
+	REQUEST_RENDER,
+	REQUEST_SEARCH
+};
+
+struct RenderRequest {
+	wstring path;
+	int page;
+	float zoom_level;
+};
+
+struct SearchRequest {
+	wstring path;
+	int start_page;
+	wstring search_term;
+	vector<SearchResult>* search_results;
+	mutex* search_results_mutex;
+	float* percent_done;
+	bool* is_searching;
+};
+
+struct RenderResponse {
+	RenderRequest request;
+	unsigned int last_access_time;
+	fz_pixmap* pixmap;
+	GLuint texture;
+};
+
+bool operator==(const RenderRequest& lhs, const RenderRequest& rhs);
 
 class PdfRenderer {
 	// A pointer to the mupdf context to clone.
@@ -29,7 +60,7 @@ class PdfRenderer {
 
 	vector<fz_pixmap*> pixmaps_to_drop;
 	unordered_map<wstring, fz_document*> opened_documents;
-	vector<RenderRequest> pending_requests;
+	vector<variant<RenderRequest, SearchRequest>> pending_requests;
 	vector<RenderResponse> cached_responses;
 	mutex pending_requests_mutex;
 	mutex cached_response_mutex;

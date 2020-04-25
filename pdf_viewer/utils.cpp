@@ -315,3 +315,44 @@ string utf8_encode(wstring decoded_str) {
 	return res;
 }
 
+bool is_rtl(int c){
+  if (
+    (c==0x05BE)||(c==0x05C0)||(c==0x05C3)||(c==0x05C6)||
+    ((c>=0x05D0)&&(c<=0x05F4))||
+    (c==0x0608)||(c==0x060B)||(c==0x060D)||
+    ((c>=0x061B)&&(c<=0x064A))||
+    ((c>=0x066D)&&(c<=0x066F))||
+    ((c>=0x0671)&&(c<=0x06D5))||
+    ((c>=0x06E5)&&(c<=0x06E6))||
+    ((c>=0x06EE)&&(c<=0x06EF))||
+    ((c>=0x06FA)&&(c<=0x0710))||
+    ((c>=0x0712)&&(c<=0x072F))||
+    ((c>=0x074D)&&(c<=0x07A5))||
+    ((c>=0x07B1)&&(c<=0x07EA))||
+    ((c>=0x07F4)&&(c<=0x07F5))||
+    ((c>=0x07FA)&&(c<=0x0815))||
+    (c==0x081A)||(c==0x0824)||(c==0x0828)||
+    ((c>=0x0830)&&(c<=0x0858))||
+    ((c>=0x085E)&&(c<=0x08AC))||
+    (c==0x200F)||(c==0xFB1D)||
+    ((c>=0xFB1F)&&(c<=0xFB28))||
+    ((c>=0xFB2A)&&(c<=0xFD3D))||
+    ((c>=0xFD50)&&(c<=0xFDFC))||
+    ((c>=0xFE70)&&(c<=0xFEFC))||
+    ((c>=0x10800)&&(c<=0x1091B))||
+    ((c>=0x10920)&&(c<=0x10A00))||
+    ((c>=0x10A10)&&(c<=0x10A33))||
+    ((c>=0x10A40)&&(c<=0x10B35))||
+    ((c>=0x10B40)&&(c<=0x10C48))||
+    ((c>=0x1EE00)&&(c<=0x1EEBB))
+  ) return true;
+  return false;
+}
+
+wstring reverse_wstring(const wstring& inp) {
+	wstring res;
+	for (int i = inp.size() - 1; i >= 0; i--) {
+		res.push_back(inp[i]);
+	}
+	return res;
+}

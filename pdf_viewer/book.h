@@ -55,30 +55,6 @@ struct SearchResult {
 	int page;
 };
 
-enum RenderRequestType {
-	REQUEST_RENDER,
-	REQUEST_SEARCH
-};
-
-struct RenderRequest {
-	//fz_document* doc;
-	RenderRequestType type;
-	wstring path;
-	int page;
-	float zoom_level;
-	wstring search_term;
-	vector<SearchResult>* search_results;
-	mutex* search_results_mutex;
-	float* percent_done;
-	bool* is_searching;
-};
-
-struct RenderResponse {
-	RenderRequest request;
-	unsigned int last_access_time;
-	fz_pixmap* pixmap;
-	GLuint texture;
-};
 
 struct TocNode {
 	vector<TocNode*> children;
@@ -88,7 +64,6 @@ struct TocNode {
 	float x;
 };
 
-bool operator==(const RenderRequest& lhs, const RenderRequest& rhs);
 
 class Document;
 

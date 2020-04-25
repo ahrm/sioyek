@@ -24,7 +24,6 @@ void PdfRenderer::add_request(wstring document_path, int page, float zoom_level)
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
 		RenderRequest req;
-		req.type = REQUEST_RENDER;
 		req.path = document_path;
 		req.page = page;
 		req.zoom_level = zoom_level;
@@ -32,8 +31,10 @@ void PdfRenderer::add_request(wstring document_path, int page, float zoom_level)
 		pending_requests_mutex.lock();
 		bool should_add = true;
 		for (int i = 0; i < pending_requests.size(); i++) {
-			if (pending_requests[i] == req) {
-				should_add = false;
+			if (holds_alternative<RenderRequest>(pending_requests[i])) {
+				if (get<RenderRequest>(pending_requests[i]) == req) {
+					should_add = false;
+				}
 			}
 		}
 		if (should_add) {
@@ -52,10 +53,9 @@ void PdfRenderer::add_request(wstring document_path, int page, wstring term, vec
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
 
-		RenderRequest req;
-		req.type = REQUEST_SEARCH;
+		SearchRequest req;
 		req.path = document_path;
-		req.page = page;
+		req.start_page = page;
 		req.search_term = term;
 		req.search_results_mutex = mut;
 		req.search_results = out;
@@ -243,9 +243,10 @@ void PdfRenderer::run(bool* should_quit) {
 		if (*should_quit) break;
 		cout << "worker thread running ... pending requests: " << pending_requests.size() << endl;
 
-		RenderRequest req = pending_requests[pending_requests.size() - 1];
+		auto req_ = pending_requests[pending_requests.size() - 1];
 
-		if (req.type == REQUEST_RENDER) {
+		if (holds_alternative<RenderRequest>(req_)) {
+			RenderRequest req = get<RenderRequest>(req_);
 			// if the request is already rendered, just return the previous result
 			cached_response_mutex.lock();
 			bool is_already_rendered = false;
@@ -282,7 +283,8 @@ void PdfRenderer::run(bool* should_quit) {
 				}
 			}
 		}
-		else if (req.type == REQUEST_SEARCH){
+		else if (holds_alternative<SearchRequest>(req_)){
+			SearchRequest req = get<SearchRequest>(req_);
 			pending_requests.pop_back();
 			pending_requests_mutex.unlock();
 			fz_document* doc = get_document_with_path(req.path);
@@ -293,7 +295,7 @@ void PdfRenderer::run(bool* should_quit) {
 
 
 			int num_handled_pages = 0;
-			int i = req.page;
+			int i = req.start_page;
 			while(num_handled_pages < num_pages){
 				num_handled_pages++;
 				fz_page* page = fz_load_page(mupdf_context, doc, i);
@@ -328,4 +330,17 @@ void PdfRenderer::run(bool* should_quit) {
 		}
 
 	}
+}
+
+bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
+	if (rhs.path != lhs.path) {
+		return false;
+	}
+	if (rhs.page != lhs.page) {
+		return false;
+	}
+	if (rhs.zoom_level != lhs.zoom_level) {
+		return false;
+	}
+	return true;
 }

@@ -49,3 +49,5 @@ int get_f_key(string name);
 void show_error_message(wstring error_message);
 wstring utf8_decode(string encoded_str);
 string utf8_encode(wstring decoded_str);
+bool is_rtl(int c);
+wstring reverse_wstring(const wstring& inp);

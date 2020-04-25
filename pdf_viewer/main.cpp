@@ -60,6 +60,7 @@ extern const int max_pending_requests = 31;
 //extern const char* last_path_file_absolute_location = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\last_document_path.txt";
 wstring last_path_file_absolute_location;
 filesystem::path parent_path;
+//ImFont* g_font;
 
 
 using namespace std;
@@ -876,6 +877,7 @@ public:
 				ImGui_ImplSDL2_NewFrame(main_window);
 				ImGui::NewFrame();
 
+				//ImGui::PushFont(g_font);
 
 				if (is_showing_textbar) {
 
@@ -890,10 +892,15 @@ public:
 						sizeof(text_command_buffer),
 						ImGuiInputTextFlags_EnterReturnsTrue)
 						) {
-						//search_results.clear();
-						//search_text(search_string, search_results);
-						//handle_return();
-						handle_pending_text_command(utf8_decode(text_command_buffer));
+
+						// in mupdf RTL documents are reversed, so we reverse the search string
+						//todo: better (or any!) handling of mixed RTL and LTR text
+						wstring decoded_text_command_buffer = utf8_decode(text_command_buffer);
+						if (is_rtl(decoded_text_command_buffer[0])) {
+							decoded_text_command_buffer = reverse_wstring(decoded_text_command_buffer);
+						}
+
+						handle_pending_text_command(decoded_text_command_buffer);
 						main_document_view->goto_search_result(0);
 						handle_return();
 						io.WantCaptureKeyboard = false;
@@ -1086,10 +1093,17 @@ int main(int argc, char* args[]) {
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
 	ImGui::StyleColorsDark();
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 	ImGui_ImplOpenGL3_Init("#version 400");
+
+	//ImFont* font = io.Fonts->AddFontFromFileTTF(utf8_encode((parent_path / "fonts" /"msuighur.ttf").wstring()).c_str(), 15);
+	//g_font = font;
+	//io.Fonts->Build();
+
 
 	WindowState window_state(window, window2, mupdf_context, &gl_context, db, pdf_renderer, &config_manager);
 	if (argc > 1) {
@@ -1246,6 +1260,7 @@ int main(int argc, char* args[]) {
 		window_state.tick();
 	}
 	window_state.tick(true);
+
 
 	sqlite3_close(db);
 	worker.join();
