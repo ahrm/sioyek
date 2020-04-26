@@ -64,7 +64,9 @@ class PdfRenderer {
 	vector<RenderResponse> cached_responses;
 	vector<thread> worker_threads;
 	thread search_thread;
+	//mutex for pending render requests
 	mutex pending_requests_mutex;
+	mutex search_request_mutex;
 	mutex cached_response_mutex;
 	//mutex pixmap_drop_mutex;
 	vector<mutex> pixmap_drop_mutex;

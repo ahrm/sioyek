@@ -80,9 +80,9 @@ void PdfRenderer::add_request(wstring document_path, int page, wstring term, vec
 		req.percent_done = percent_done;
 		req.is_searching = is_searching;
 
-		pending_requests_mutex.lock();
+		search_request_mutex.lock();
 		pending_search_request = req;
-		pending_requests_mutex.unlock();
+		search_request_mutex.unlock();
 	}
 	else {
 		cout << "Error: could not find document" << endl;
@@ -214,8 +214,11 @@ void PdfRenderer::run_search(int thread_index)
 	while (!(*should_quit_pointer)) {
 		if (pending_search_request.has_value()) {
 
+			search_request_mutex.lock();
 			SearchRequest req = pending_search_request.value();
 			pending_search_request = {};
+			search_request_mutex.unlock();
+
 			fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
 
 			int num_pages = fz_count_pages(mupdf_context, doc);

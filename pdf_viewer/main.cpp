@@ -7,7 +7,6 @@
 //todo: handle mouse in menues
 //todo: sort opened documents by last access
 //todo: handle right to left documents
-//todo: handle multithreading issues with search (probably using a different class than PdfRenderer) 
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
