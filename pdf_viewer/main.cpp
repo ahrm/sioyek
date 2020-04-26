@@ -691,6 +691,11 @@ public:
 
 	void open_document(wstring path, optional<float> offset_x = {}, optional<float> offset_y = {}) {
 
+		//save the previous document state
+		if (main_document_view) {
+			main_document_view->persist();
+		}
+
 		main_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, config_manager);
 		main_document_view->open_document(path);
 		if (path.size() > 0 && main_document_view->get_document() == nullptr) {

@@ -112,7 +112,8 @@ bool create_opened_books_table(sqlite3* db) {
 	"path TEXT UNIQUE,"\
 	"zoom_level REAL,"\
 	"offset_x REAL,"\
-	"offset_y REAL);";
+	"offset_y REAL,"\
+	"last_access_time TEXT);";
 
 	char* error_message = nullptr;
 	return handle_error(
@@ -164,10 +165,10 @@ bool create_links_table(sqlite3* db) {
 
 bool insert_book(sqlite3* db, wstring path, float zoom_level, float offset_x, float offset_y) {
 	const char* insert_books_sql = ""\
-		"INSERT INTO opened_books (PATH, zoom_level, offset_x, offset_y) VALUES ";
+		"INSERT INTO opened_books (PATH, zoom_level, offset_x, offset_y, last_access_time) VALUES ";
 
 	wstringstream ss;
-	ss << insert_books_sql << "'" << path << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ";";
+	ss << insert_books_sql << "'" << path << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now');";
 	
 	char* error_message = nullptr;
 	return handle_error(
@@ -178,10 +179,9 @@ bool insert_book(sqlite3* db, wstring path, float zoom_level, float offset_x, fl
 bool update_book(sqlite3* db, wstring path, float zoom_level, float offset_x, float offset_y) {
 
 	wstringstream ss;
-	ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y) values ('" <<
-		path << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ");";
+	ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time) values ('" <<
+		path << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'));";
 
-	
 	char* error_message = nullptr;
 	return handle_error(
 		sqlite3_exec(db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message),
@@ -279,7 +279,7 @@ bool select_opened_book(sqlite3* db, wstring book_path, vector<OpenedBookState> 
 
 bool select_prev_docs(sqlite3* db,  vector<wstring> &out_result) {
 		wstringstream ss;
-		ss << "SELECT path FROM opened_books;";
+		ss << "SELECT path FROM opened_books order by datetime(last_access_time) desc;";
 		char* error_message = nullptr;
 		return handle_error(
 			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), prev_doc_callback, &out_result, &error_message),
