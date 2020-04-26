@@ -272,6 +272,7 @@ void DocumentView::search_text(const wchar_t* text) {
 
 	search_results_mutex.lock();
 	search_results.clear();
+	current_search_result_index = 0;
 	search_results_mutex.unlock();
 
 	is_searching = true;

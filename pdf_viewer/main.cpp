@@ -1026,18 +1026,8 @@ int main(int argc, char* args[]) {
 		return -1;
 	}
 
-	int num_worker_threads = 4;
-	PdfRenderer* pdf_renderer = new PdfRenderer(num_worker_threads, mupdf_context);
-	vector<thread> worker_threads;
-	//global_pdf_renderer = new PdfRenderer();
-	//global_pdf_renderer->init();
-
-	for (int i = 0; i < num_worker_threads; i++) {
-		worker_threads.push_back(thread([i, pdf_renderer, &quit]() {
-			pdf_renderer->run(i, &quit);
-			}));
-	}
-
+	PdfRenderer* pdf_renderer = new PdfRenderer(4, &quit, mupdf_context);
+	pdf_renderer->start_threads();
 
 	SDL_Window* window = nullptr;
 	SDL_Window* window2 = nullptr;
@@ -1107,7 +1097,7 @@ int main(int argc, char* args[]) {
 
 	//ImFont* font = io.Fonts->AddFontFromFileTTF(utf8_encode((parent_path / "fonts" /"msuighur.ttf").wstring()).c_str(), 15);
 	//g_font = font;
-	//io.Fonts->Build();
+	//io.Fonts->Build();, bool* should_quit
 
 
 	WindowState window_state(window, window2, mupdf_context, &gl_context, db, pdf_renderer, &config_manager);
@@ -1269,9 +1259,6 @@ int main(int argc, char* args[]) {
 
 	sqlite3_close(db);
 
-	for (auto& worker : worker_threads) {
-		worker.join();
-	}
-
+	pdf_renderer->join_threads();
 	return 0;
 }

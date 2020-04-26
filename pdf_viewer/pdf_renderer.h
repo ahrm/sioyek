@@ -7,6 +7,7 @@
 #include <variant>
 #include <unordered_map>
 #include <map>
+#include <optional>
 #include <SDL.h>
 #include <iostream>
 #include <gl/glew.h>
@@ -57,8 +58,12 @@ class PdfRenderer {
 
 	vector<vector<fz_pixmap*>> pixmaps_to_drop;
 	map<pair<int, wstring>, fz_document*> opened_documents;
-	vector<variant<RenderRequest, SearchRequest>> pending_requests;
+	//vector<variant<RenderRequest, SearchRequest>> pending_requests;
+	vector<RenderRequest> pending_render_requests;
+	optional<SearchRequest> pending_search_request;
 	vector<RenderResponse> cached_responses;
+	vector<thread> worker_threads;
+	thread search_thread;
 	mutex pending_requests_mutex;
 	mutex cached_response_mutex;
 	//mutex pixmap_drop_mutex;
@@ -68,15 +73,18 @@ class PdfRenderer {
 	// this is so that we can initiate a rerender when worker thread has rendered
 	// a new page. (todo: this is very hacky, should be handled more elegantly)
 	bool* invalidate_pointer;
+	bool* should_quit_pointer;
 
 	int num_threads;
 
 public:
 
-	PdfRenderer(int num_threads, fz_context* context_to_clone);
+	PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone);
 
 	fz_context* init_context();
 
+	void start_threads();
+	void join_threads();
 
 	void set_invalidate_pointer(bool* inv_p);
 
@@ -95,7 +103,8 @@ public:
 
 	void delete_old_pixmaps(int thread_index, fz_context* mupdf_context);
 
-	void run(int thread_index, bool* should_quit);
+	void run(int thread_index);
+	void run_search(int thread_index);
 
 	~PdfRenderer();
 

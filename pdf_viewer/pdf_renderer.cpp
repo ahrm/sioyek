@@ -1,7 +1,8 @@
 #include "pdf_renderer.h"
 #include "utils.h"
 
-PdfRenderer::PdfRenderer(int num_threads, fz_context* context_to_clone) : context_to_clone(context_to_clone),
+PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone) : context_to_clone(context_to_clone),
+should_quit_pointer(should_quit_pointer),
 num_threads(num_threads),
 pixmaps_to_drop(num_threads),
 pixmap_drop_mutex(num_threads) {
@@ -10,6 +11,27 @@ pixmap_drop_mutex(num_threads) {
 
 fz_context* PdfRenderer::init_context() {
 	return fz_clone_context(context_to_clone);
+}
+
+
+void PdfRenderer::start_threads() {
+
+	for (int i = 0; i < num_threads; i++) {
+		worker_threads.push_back(thread([&, i]() {
+				run(i);
+			}));
+	}
+	search_thread = thread([&]() {
+		run_search(num_threads);
+		});
+}
+
+void PdfRenderer::join_threads()
+{
+	for (auto& worker : worker_threads) {
+		worker.join();
+	}
+	search_thread.join();
 }
 
 void PdfRenderer::set_invalidate_pointer(bool* inv_p) {
@@ -28,18 +50,16 @@ void PdfRenderer::add_request(wstring document_path, int page, float zoom_level)
 
 		pending_requests_mutex.lock();
 		bool should_add = true;
-		for (int i = 0; i < pending_requests.size(); i++) {
-			if (holds_alternative<RenderRequest>(pending_requests[i])) {
-				if (get<RenderRequest>(pending_requests[i]) == req) {
-					should_add = false;
-				}
+		for (int i = 0; i < pending_render_requests.size(); i++) {
+			if (pending_render_requests[i] == req) {
+				should_add = false;
 			}
 		}
 		if (should_add) {
-			pending_requests.push_back(req);
+			pending_render_requests.push_back(req);
 		}
-		if (pending_requests.size() > max_pending_requests) {
-			pending_requests.erase(pending_requests.begin());
+		if (pending_render_requests.size() > max_pending_requests) {
+			pending_render_requests.erase(pending_render_requests.begin());
 		}
 		pending_requests_mutex.unlock();
 	}
@@ -61,10 +81,7 @@ void PdfRenderer::add_request(wstring document_path, int page, wstring term, vec
 		req.is_searching = is_searching;
 
 		pending_requests_mutex.lock();
-		pending_requests.push_back(req);
-		if (pending_requests.size() > max_pending_requests) {
-			pending_requests.erase(pending_requests.begin());
-		}
+		pending_search_request = req;
 		pending_requests_mutex.unlock();
 	}
 	else {
@@ -190,6 +207,65 @@ void PdfRenderer::delete_old_pages() {
 	cached_response_mutex.unlock();
 }
 
+void PdfRenderer::run_search(int thread_index)
+{
+	fz_context* mupdf_context  = init_context();
+
+	while (!(*should_quit_pointer)) {
+		if (pending_search_request.has_value()) {
+
+			SearchRequest req = pending_search_request.value();
+			pending_search_request = {};
+			fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
+
+			int num_pages = fz_count_pages(mupdf_context, doc);
+
+			req.search_results_mutex->lock();
+			req.search_results->clear();
+			*req.is_searching = true;
+			req.search_results_mutex->unlock();
+
+			int total_results = 0;
+			int num_handled_pages = 0;
+			int i = req.start_page;
+			while (num_handled_pages < num_pages && (!pending_search_request.has_value()) && (!(*should_quit_pointer))) {
+				num_handled_pages++;
+				fz_page* page = fz_load_page(mupdf_context, doc, i);
+
+				const int max_hits_per_page = 20;
+				fz_quad hitboxes[max_hits_per_page];
+				int num_results = fz_search_page(mupdf_context, page, utf8_encode(req.search_term).c_str(), hitboxes, max_hits_per_page);
+
+				if (num_results > 0) {
+					req.search_results_mutex->lock();
+					for (int j = 0; j < num_results; j++) {
+						req.search_results->push_back(SearchResult{ fz_rect_from_quad(hitboxes[j]), i });
+					}
+					req.search_results_mutex->unlock();
+				}
+
+				if (num_handled_pages % 16 == 0) {
+					*req.percent_done = (float)num_handled_pages / num_pages;
+					*invalidate_pointer = true;
+				}
+
+				total_results += num_results;
+
+				fz_drop_page(mupdf_context, page);
+
+				i = (i + 1) % num_pages;
+			}
+			req.search_results_mutex->lock();
+			*req.is_searching = false;
+			*invalidate_pointer = true;
+			req.search_results_mutex->unlock();
+		}
+		else{
+			Sleep(100);
+		}
+	}
+}
+
 PdfRenderer::~PdfRenderer() {
 }
 
@@ -227,108 +303,60 @@ void PdfRenderer::delete_old_pixmaps(int thread_index, fz_context* mupdf_context
 	pixmap_drop_mutex[thread_index].unlock();
 }
 
-void PdfRenderer::run(int thread_index, bool* should_quit) {
+void PdfRenderer::run(int thread_index) {
 	fz_context* mupdf_context  = init_context();
 
-	while (!(*should_quit)) {
+	while (!(*should_quit_pointer)) {
 		pending_requests_mutex.lock();
 
-		while (pending_requests.size() == 0) {
+		while (pending_render_requests.size() == 0) {
 			pending_requests_mutex.unlock();
 			delete_old_pixmaps(thread_index, mupdf_context);
-			if (*should_quit) break;
+			if (*should_quit_pointer) break;
 
 			Sleep(100);
 			pending_requests_mutex.lock();
 		}
-		if (*should_quit) break;
-		cout << "worker thread running ... pending requests: " << pending_requests.size() << endl;
+		if (*should_quit_pointer) break;
+		//cout << "worker thread running ... pending requests: " << pending_render_requests.size() << endl;
 
-		auto req_ = pending_requests[pending_requests.size() - 1];
+		RenderRequest req = pending_render_requests[pending_render_requests.size() - 1];
 
-		if (holds_alternative<RenderRequest>(req_)) {
-			RenderRequest req = get<RenderRequest>(req_);
-			// if the request is already rendered, just return the previous result
-			cached_response_mutex.lock();
-			bool is_already_rendered = false;
-			for (const auto& cached_rep : cached_responses) {
-				if (cached_rep.request == req) is_already_rendered = true;
-			}
-			cached_response_mutex.unlock();
-			pending_requests.pop_back();
-			pending_requests_mutex.unlock();
-
-			if (!is_already_rendered) {
-
-				fz_try(mupdf_context) {
-					fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level, req.zoom_level);
-					fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
-					fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
-					RenderResponse resp;
-					resp.thread = thread_index;
-					resp.request = req;
-					resp.last_access_time = SDL_GetTicks();
-					resp.pixmap = rendered_pixmap;
-					resp.texture = 0;
-
-					cached_response_mutex.lock();
-					cached_responses.push_back(resp);
-					cached_response_mutex.unlock();
-					if (invalidate_pointer != nullptr) {
-						//todo: there might be a race condition here
-						*invalidate_pointer = true;
-					}
-
-				}
-				fz_catch(mupdf_context) {
-					cerr << "Error: could not render page" << endl;
-				}
-			}
+		// if the request is already rendered, just return the previous result
+		cached_response_mutex.lock();
+		bool is_already_rendered = false;
+		for (const auto& cached_rep : cached_responses) {
+			if (cached_rep.request == req) is_already_rendered = true;
 		}
-		else if (holds_alternative<SearchRequest>(req_)){
-			SearchRequest req = get<SearchRequest>(req_);
-			pending_requests.pop_back();
-			pending_requests_mutex.unlock();
-			fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
+		cached_response_mutex.unlock();
+		pending_render_requests.pop_back();
+		pending_requests_mutex.unlock();
 
-			int num_pages = fz_count_pages(mupdf_context, doc);
+		if (!is_already_rendered) {
 
-			int total_results = 0;
+			fz_try(mupdf_context) {
+				fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level, req.zoom_level);
+				fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
+				fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+				RenderResponse resp;
+				resp.thread = thread_index;
+				resp.request = req;
+				resp.last_access_time = SDL_GetTicks();
+				resp.pixmap = rendered_pixmap;
+				resp.texture = 0;
 
-
-			int num_handled_pages = 0;
-			int i = req.start_page;
-			while(num_handled_pages < num_pages){
-				num_handled_pages++;
-				fz_page* page = fz_load_page(mupdf_context, doc, i);
-
-				const int max_hits_per_page = 20;
-				fz_quad hitboxes[max_hits_per_page];
-				int num_results = fz_search_page(mupdf_context, page, utf8_encode(req.search_term).c_str(), hitboxes, max_hits_per_page);
-
-				for (int j = 0; j < num_results; j++) {
-					req.search_results_mutex->lock();
-					req.search_results->push_back(SearchResult{ fz_rect_from_quad(hitboxes[j]), i });
-					req.search_results_mutex->unlock();
+				cached_response_mutex.lock();
+				cached_responses.push_back(resp);
+				cached_response_mutex.unlock();
+				if (invalidate_pointer != nullptr) {
+					//todo: there might be a race condition here
 					*invalidate_pointer = true;
 				}
-				if (i % 10 == 0) {
-					req.search_results_mutex->lock();
-					*req.percent_done = (float)num_handled_pages / num_pages;
-					*invalidate_pointer = true;
-					req.search_results_mutex->unlock();
-				}
 
-				total_results += num_results;
-
-				fz_drop_page(mupdf_context, page);
-
-				i = (i + 1) % num_pages;
 			}
-			req.search_results_mutex->lock();
-			*req.is_searching = false;
-			*invalidate_pointer = true;
-			req.search_results_mutex->unlock();
+			fz_catch(mupdf_context) {
+				cerr << "Error: could not render page" << endl;
+			}
 		}
 
 	}
