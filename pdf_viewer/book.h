@@ -3,7 +3,8 @@
 #include <vector>
 #include <string>
 #include <mupdf/fitz.h>
-#include <gl/glew.h>
+//#include <gl/glew.h>
+#include <qopengl.h>
 #include <mutex>
 
 using namespace std;

@@ -10,7 +10,7 @@
 #include <optional>
 #include <SDL.h>
 #include <iostream>
-#include <gl/glew.h>
+//#include <gl/glew.h>
 #include <Windows.h>
 
 #include "book.h"

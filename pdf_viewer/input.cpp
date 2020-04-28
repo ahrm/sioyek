@@ -4,7 +4,8 @@
 #include <fstream>
 #include <sstream>
 
-#include <SDL.h>
+#include <qkeyevent.h>
+//#include <SDL.h>
 #include "input.h"
 
 using namespace std;
@@ -118,52 +119,52 @@ InputParseTreeNode parse_token(string token) {
 	}
 	else {
 		if (int f_key = get_f_key(command_string)) {
-			res.command = SDLK_F1 - 1 + f_key;
+			res.command = Qt::Key::Key_F1 - 1 + f_key;
 		}
 		if (command_string == "up") {
-			res.command = SDLK_UP;
+			res.command = Qt::Key::Key_Up;
 		}
 
 		if (command_string == "backspace") {
-			res.command = SDLK_BACKSPACE;
+			res.command = Qt::Key::Key_Backspace;
 		}
 		if (command_string == "down") {
-			res.command = SDLK_DOWN;
+			res.command = Qt::Key::Key_Down;
 		}
 
 		if (command_string == "tab") {
-			res.command = SDLK_TAB;
+			res.command = Qt::Key::Key_Tab;
 		}
 
 		if (command_string == "left") {
-			res.command = SDLK_LEFT;
+			res.command = Qt::Key::Key_Left;
 		}
 
 		if (command_string == "right") {
-			res.command = SDLK_RIGHT;
+			res.command = Qt::Key::Key_Right;
 		}
 
 		if (command_string == "<up>") {
-			res.command = SDLK_UP;
+			res.command = Qt::Key::Key_Up;
 		}
 
 		if (command_string == "<down>") {
-			res.command = SDLK_DOWN;
+			res.command = Qt::Key::Key_Down;
 		}
 
 		if (command_string == "<left>") {
-			res.command = SDLK_LEFT;
+			res.command = Qt::Key::Key_Left;
 		}
 
 		if (command_string == "<right>") {
-			res.command = SDLK_RIGHT;
+			res.command = Qt::Key::Key_Right;
 		}
 
 		if (command_string == "<tab>") {
-			res.command = SDLK_TAB;
+			res.command = Qt::Key::Key_Tab;
 		}
 		if (command_string == "<backspace>") {
-			res.command = SDLK_BACKSPACE;
+			res.command = Qt::Key::Key_Backspace;
 		}
 	}
 
@@ -302,14 +303,17 @@ InputHandler::InputHandler(wstring file_path) {
 	current_node = root;
 }
 
-bool is_digit(SDL_Keycode key) {
-	return key >= SDLK_0 && key <= SDLK_9;
+bool is_digit(int key) {
+	return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-const Command* InputHandler::handle_key(SDL_Keycode key, bool shift_pressed, bool control_pressed, int* num_repeats) {
+const Command* InputHandler::handle_key(int key, bool shift_pressed, bool control_pressed, int* num_repeats) {
+	if (key >= 'A' && key <= 'Z') {
+		key = key - 'A' + 'a';
+	}
 
 	if (current_node == root && is_digit(key)) {
-		number_stack.push_back('0' + key - SDLK_0);
+		number_stack.push_back('0' + key - Qt::Key::Key_0);
 		return nullptr;
 	}
 

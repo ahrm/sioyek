@@ -2,24 +2,50 @@
 
 extern float background_color[3];
 
-DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, ConfigManager* config_manager) :
+//void DocumentView::initializeGL() {
+//	initializeOpenGLFunctions();
+//}
+//
+//void DocumentView::resizeGL(int w, int h)
+//{
+//	on_view_size_change(w, h);
+//}
+//
+//void DocumentView::paintGL() {
+//	glBindVertexArray(vertex_array_object);
+//	render();
+//}
+
+DocumentView::DocumentView( fz_context* mupdf_context,
+	sqlite3* db,
+	DocumentManager* document_manager,
+	ConfigManager* config_manager) :
 	mupdf_context(mupdf_context),
 	database(db),
-	pdf_renderer(pdf_renderer),
 	document_manager(document_manager),
-	config_manager(config_manager),
-	should_highlight_links(false)
+	config_manager(config_manager)
 {
 
 }
 
-DocumentView::DocumentView(fz_context* mupdf_context, sqlite3* db, PdfRenderer* pdf_renderer, DocumentManager* document_manager, ConfigManager* config_manager, wstring path, int view_width, int view_height, float offset_x, float offset_y) :
-	DocumentView(mupdf_context, db, pdf_renderer, document_manager, config_manager)
+DocumentView::DocumentView(fz_context* mupdf_context,
+	sqlite3* db,
+	DocumentManager* document_manager,
+	ConfigManager* config_manager,
+	wstring path,
+	int view_width,
+	int view_height,
+	float offset_x,
+	float offset_y) :
+	DocumentView(mupdf_context,
+		db,
+		document_manager,
+		config_manager)
+
 {
 	on_view_size_change(view_width, view_height);
 	open_document(path);
 	set_offsets(offset_x, offset_y);
-
 }
 
 float DocumentView::get_zoom_level() {
@@ -36,32 +62,27 @@ DocumentViewState DocumentView::get_state() {
 }
 
 void DocumentView::handle_escape() {
-	search_results_mutex.lock();
-	search_results.clear();
-	search_results_mutex.unlock();
-	current_search_result_index = 0;
 }
 
 void DocumentView::set_offsets(float new_offset_x, float new_offset_y) {
 	offset_x = new_offset_x;
 	offset_y = new_offset_y;
-	render_is_invalid = true;
 }
 
 Document* DocumentView::get_document() {
 	return current_document;
 }
 
-int DocumentView::get_num_search_results() {
-	search_results_mutex.lock();
-	int num = search_results.size();
-	search_results_mutex.unlock();
-	return num;
-}
-
-int DocumentView::get_current_search_result_index() {
-	return current_search_result_index;
-}
+//int DocumentView::get_num_search_results() {
+//	search_results_mutex.lock();
+//	int num = search_results.size();
+//	search_results_mutex.unlock();
+//	return num;
+//}
+//
+//int DocumentView::get_current_search_result_index() {
+//	return current_search_result_index;
+//}
 
 Link* DocumentView::find_closest_link() {
 	if (current_document) {
@@ -90,6 +111,16 @@ float DocumentView::get_offset_y() {
 	return offset_y;
 }
 
+int DocumentView::get_view_height()
+{
+	return view_height;
+}
+
+int DocumentView::get_view_width()
+{
+	return view_width;
+}
+
 void DocumentView::set_offset_x(float new_offset_x) {
 	set_offsets(new_offset_x, offset_y);
 }
@@ -98,32 +129,32 @@ void DocumentView::set_offset_y(float new_offset_y) {
 	set_offsets(offset_x, new_offset_y);
 }
 
-void DocumentView::render_highlight_window(GLuint program, fz_rect window_rect) {
-	float quad_vertex_data[] = {
-		window_rect.x0, window_rect.y1,
-		window_rect.x1, window_rect.y1,
-		window_rect.x0, window_rect.y0,
-		window_rect.x1, window_rect.y0
-	};
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glUseProgram(program);
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glDisable(GL_BLEND);
-}
+//void DocumentView::render_highlight_window( GLuint program, fz_rect window_rect) {
+//	float quad_vertex_data[] = {
+//		window_rect.x0, window_rect.y1,
+//		window_rect.x1, window_rect.y1,
+//		window_rect.x0, window_rect.y0,
+//		window_rect.x1, window_rect.y0
+//	};
+//	glEnable(GL_BLEND);
+//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//	glUseProgram(program);
+//	glEnableVertexAttribArray(0);
+//	glEnableVertexAttribArray(1);
+//	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
+//	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+//	glDisable(GL_BLEND);
+//}
 
-void DocumentView::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect) {
-	fz_rect window_rect = absolute_to_window_rect(absolute_document_rect);
-	render_highlight_window(program, window_rect);
-}
-
-void DocumentView::render_highlight_document(GLuint program, int page, fz_rect doc_rect) {
-	fz_rect window_rect = document_to_window_rect(page, doc_rect);
-	render_highlight_window(program, window_rect);
-}
+//void DocumentView::render_highlight_absolute( GLuint program, fz_rect absolute_document_rect) {
+//	fz_rect window_rect = absolute_to_window_rect(absolute_document_rect);
+//	render_highlight_window(program, window_rect);
+//}
+//
+//void DocumentView::render_highlight_document( GLuint program, int page, fz_rect doc_rect) {
+//	fz_rect window_rect = document_to_window_rect(page, doc_rect);
+//	render_highlight_window(program, window_rect);
+//}
 
 optional<PdfLink> DocumentView::get_link_in_pos(int view_x, int view_y) {
 	if (!current_document) return {};
@@ -161,25 +192,8 @@ void DocumentView::add_bookmark(wstring desc) {
 void DocumentView::on_view_size_change(int new_width, int new_height) {
 	view_width = new_width;
 	view_height = new_height;
-	render_is_invalid = true;
 }
-bool DocumentView::should_rerender() {
-	return render_is_invalid;
-}
-bool DocumentView::get_is_searching(float* prog)
-{
-	search_results_mutex.lock();
-	bool res = is_searching;
-	if (is_searching) {
-		*prog = percent_done;
-	}
-	search_results_mutex.unlock();
-	return res;
-}
-void DocumentView::toggle_highlight()
-{
-	should_highlight_links = !should_highlight_links;
-}
+
 void DocumentView::absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y) {
 	float half_width = static_cast<float>(view_width) / zoom_level / 2;
 	float half_height = static_cast<float>(view_height) / zoom_level / 2;
@@ -240,7 +254,6 @@ void DocumentView::goto_end() {
 }
 float DocumentView::set_zoom_level(float zl) {
 	zoom_level = zl;
-	render_is_invalid = true;
 	return zoom_level;
 }
 float DocumentView::zoom_in() {
@@ -267,40 +280,40 @@ int DocumentView::get_current_page_number() {
 	return -1;
 }
 
-void DocumentView::search_text(const wchar_t* text) {
-	if (!current_document) return;
+//void DocumentView::search_text(const wchar_t* text) {
+//	if (!current_document) return;
+//
+//	search_results_mutex.lock();
+//	search_results.clear();
+//	current_search_result_index = 0;
+//	search_results_mutex.unlock();
+//
+//	is_searching = true;
+//	pdf_renderer->add_request(current_document->get_path(), 
+//		get_current_page_number(), text, &search_results, &percent_done, &is_searching, &search_results_mutex);
+//}
 
-	search_results_mutex.lock();
-	search_results.clear();
-	current_search_result_index = 0;
-	search_results_mutex.unlock();
-
-	is_searching = true;
-	pdf_renderer->add_request(current_document->get_path(), 
-		get_current_page_number(), text, &search_results, &percent_done, &is_searching, &search_results_mutex);
-}
-
-void DocumentView::goto_search_result(int offset) {
-	if (!current_document) return;
-
-	search_results_mutex.lock();
-	if (search_results.size() == 0) {
-		search_results_mutex.unlock();
-		return;
-	}
-
-	int target_index = mod(current_search_result_index + offset, search_results.size());
-	current_search_result_index = target_index;
-
-	int target_page = search_results[target_index].page;
-
-	fz_rect rect = search_results[target_index].rect;
-
-	float new_offset_y = rect.y0 + current_document->get_accum_page_height(target_page);
-
-	set_offset_y(new_offset_y);
-	search_results_mutex.unlock();
-}
+//void DocumentView::goto_search_result(int offset) {
+//	if (!current_document) return;
+//
+//	search_results_mutex.lock();
+//	if (search_results.size() == 0) {
+//		search_results_mutex.unlock();
+//		return;
+//	}
+//
+//	int target_index = mod(current_search_result_index + offset, search_results.size());
+//	current_search_result_index = target_index;
+//
+//	int target_page = search_results[target_index].page;
+//
+//	fz_rect rect = search_results[target_index].rect;
+//
+//	float new_offset_y = rect.y0 + current_document->get_accum_page_height(target_page);
+//
+//	set_offset_y(new_offset_y);
+//	search_results_mutex.unlock();
+//}
 void DocumentView::get_visible_pages(int window_height, vector<int>& visible_pages) {
 	if (!current_document) return;
 	float window_y_range_begin = offset_y - window_height / (zoom_level);
@@ -388,67 +401,69 @@ void DocumentView::goto_page(int page) {
 	set_offset_y(get_page_offset(page));
 }
 
-void DocumentView::render_page(int page_number, GLuint rendered_program, GLuint unrendered_program) {
-
-	if (!current_document) return;
-
-	GLuint texture = pdf_renderer->find_rendered_page(current_document->get_path(), page_number, zoom_level, nullptr, nullptr);
-
-	float page_vertices[4 * 2];
-	fz_rect page_rect = { 0, 0, current_document->get_page_width(page_number), current_document->get_page_height(page_number) };
-	fz_rect window_rect = document_to_window_rect(page_number, page_rect);
-	rect_to_quad(window_rect, page_vertices);
-
-	if (texture != 0) {
-		glUseProgram(rendered_program);
-		glBindTexture(GL_TEXTURE_2D, texture);
-	}
-	else {
-		glUseProgram(unrendered_program);
-	}
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-void DocumentView::render(GLuint rendered_program, GLuint unrendered_program, GLuint highlight_program, GLint highlight_color_uniform_location) {
-	if (current_document == nullptr) {
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		return;
-	}
-
-	vector<int> visible_pages;
-	get_visible_pages(view_height, visible_pages);
-	render_is_invalid = false;
-
-	glClearColor(background_color[0], background_color[1], background_color[2], 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-
-	for (int page : visible_pages) {
-		render_page(page, rendered_program, unrendered_program);
-
-		if (should_highlight_links) {
-			glUseProgram(highlight_program);
-			glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>(L"link_highlight_color"));
-			fz_link* links = current_document->get_page_links(page);
-			while (links != nullptr) {
-				render_highlight_document(highlight_program, page, links->rect);
-				links = links->next;
-			}
-		}
-	}
-
-	search_results_mutex.lock();
-	if (search_results.size() > 0) {
-		SearchResult current_search_result = search_results[current_search_result_index];
-		glUseProgram(highlight_program);
-		glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
-		render_highlight_document(highlight_program, current_search_result.page, current_search_result.rect);
-	}
-	search_results_mutex.unlock();
-}
+//void DocumentView::render_page(int page_number) {
+//
+//	if (!current_document) return;
+//
+//	GLuint texture = pdf_renderer->find_rendered_page(current_document->get_path(), page_number, zoom_level, nullptr, nullptr);
+//
+//	float page_vertices[4 * 2];
+//	fz_rect page_rect = { 0, 0, current_document->get_page_width(page_number), current_document->get_page_height(page_number) };
+//	fz_rect window_rect = document_to_window_rect(page_number, page_rect);
+//	rect_to_quad(window_rect, page_vertices);
+//
+//	if (texture != 0) {
+//
+//		glUseProgram(rendered_program);
+//		glBindTexture(GL_TEXTURE_2D, texture);
+//	}
+//	else {
+//		glUseProgram(unrendered_program);
+//	}
+//	glEnableVertexAttribArray(0);
+//	glEnableVertexAttribArray(1);
+//	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+//	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+//}
+//
+//void DocumentView::render() {
+//	if (current_document == nullptr) {
+//		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+//		glClear(GL_COLOR_BUFFER_BIT);
+//		return;
+//	}
+//
+//	vector<int> visible_pages;
+//	get_visible_pages(view_height, visible_pages);
+//	render_is_invalid = false;
+//
+//	glClearColor(background_color[0], background_color[1], background_color[2], 1.0f);
+//	glClear(GL_COLOR_BUFFER_BIT);
+//
+//
+//	for (int page : visible_pages) {
+//		render_page( page );
+//
+//		if (should_highlight_links) {
+//			glUseProgram(highlight_program);
+//			glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>(L"link_highlight_color"));
+//			fz_link* links = current_document->get_page_links(page);
+//			while (links != nullptr) {
+//				render_highlight_document(highlight_program, page, links->rect);
+//				links = links->next;
+//			}
+//		}
+//	}
+//
+//	search_results_mutex.lock();
+//	if (search_results.size() > 0) {
+//		SearchResult current_search_result = search_results[current_search_result_index];
+//		glUseProgram(highlight_program);
+//		glUniform3fv(highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
+//		render_highlight_document(highlight_program, current_search_result.page, current_search_result.rect);
+//	}
+//	search_results_mutex.unlock();
+//}
 void DocumentView::persist() {
 	if (!current_document) return;
 	update_book(database, current_document->get_path(), zoom_level, offset_x, offset_y);

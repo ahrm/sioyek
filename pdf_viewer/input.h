@@ -6,7 +6,7 @@
 #include <fstream>
 #include <sstream>
 
-#include <SDL.h>
+//#include <SDL.h>
 
 #include "utils.h"
 using namespace std;
@@ -33,7 +33,7 @@ struct InputParseTreeNode {
 
 	vector<InputParseTreeNode*> children;
 	//char command;
-	SDL_Keycode command;
+	int command;
 	string name = "";
 	bool shift_modifier = false;
 	bool control_modifier = false;
@@ -54,7 +54,7 @@ private:
 
 public:
 	InputHandler(wstring file_path);
-	const Command* handle_key(SDL_Keycode key, bool shift_pressed, bool control_pressed, int* num_repeats);
+	const Command* handle_key(int key, bool shift_pressed, bool control_pressed, int* num_repeats);
 };
 
 //int main(int argc, char** argv) {

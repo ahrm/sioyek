@@ -3,14 +3,16 @@
 #include <Windows.h>
 #include <vector>
 #include <string>
-#include <SDL.h>
+//#include <SDL.h>
 #include "book.h"
 #include "utf8.h"
 #include <sstream>
 #include <fstream>
 #include <filesystem>
 #include <iostream>
-#include <gl/glew.h>
+//#include <gl/glew.h>
+#include <qopenglfunctions.h>
+#include <qopengl.h>
 #include <functional>
 #include <mupdf/fitz.h>
 
@@ -23,8 +25,8 @@ int mod(int a, int b);
 bool intersects(float range1_start, float range1_end, float range2_start, float range2_end);
 void parse_uri(string uri, int* page, float* offset_x, float* offset_y);
 bool includes_rect(fz_rect includer, fz_rect includee);
-char get_symbol(SDL_Scancode scancode, bool is_shift_pressed);
-GLuint LoadShaders(filesystem::path vertex_file_path_, filesystem::path fragment_file_path_);
+char get_symbol(int scancode, bool is_shift_pressed);
+//GLuint LoadShaders(filesystem::path vertex_file_path_, filesystem::path fragment_file_path_);
 
 template<typename T>
 int argminf(const vector<T> &collection, function<float(T)> f) {
