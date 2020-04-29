@@ -22,6 +22,7 @@
 #include <mutex>
 #include <optional>
 #include <utility>
+#include <memory>
 
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -40,6 +41,8 @@
 #include <qdatetime.h>
 #include <qstackedwidget.h>
 #include <qboxlayout.h>
+#include <qlistview.h>
+#include <qstringlistmodel.h>
 
 //#include <SDL.h>
 //#include <gl/glew.h>
@@ -1998,6 +2001,9 @@ private:
 
 	InputHandler* input_handler;
 	DocumentView* main_document_view;
+	// current widget responsible for selecting an option (for example toc or bookmarks)
+	//QWidget* current_widget;
+	unique_ptr<QWidget> current_widget;
 
 	fz_context* mupdf_context;
 	sqlite3* db;
@@ -2017,6 +2023,8 @@ private:
 	//vector<fz_rect> selected_character_rects;
 
 	wstring selected_text;
+
+	Link* link_to_edit;
 
 	int main_window_width, main_window_height;
 protected:
@@ -2425,13 +2433,13 @@ public:
 			}
 		}
 		else if (command->name == "edit_link") {
-			//Link* link = main_document_view->find_closest_link();
-			//if (link) {
-			//	push_state();
-			//	link_to_edit = link;
-			//	open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
-			//	invalidate_render();
-			//}
+			Link* link = main_document_view->find_closest_link();
+			if (link) {
+				push_state();
+				link_to_edit = link;
+				open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
+				invalidate_render();
+			}
 		}
 
 		else if (command->name == "zoom_in") {
@@ -2470,77 +2478,77 @@ public:
 			main_document_view->move_pages(-1 - num_repeats);
 		}
 		else if (command->name == "goto_toc") {
-			//vector<wstring> flat_toc;
-			//vector<int> current_document_toc_pages;
-			//get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
-			//if (current_document_toc_pages.size() > 0) {
-			//	current_widget = new FilteredSelect<int>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
-			//		int* page_value = (int*)page_pointer;
-			//		if (page_value) {
-			//			push_state();
-			//			main_document_view->goto_page(*page_value);
-			//		}
-			//		});
-			//	is_showing_ui = true;
-			//}
+			vector<wstring> flat_toc;
+			vector<int> current_document_toc_pages;
+			get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
+			if (current_document_toc_pages.size() > 0) {
+				current_widget = make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
+					int* page_value = (int*)page_pointer;
+					if (page_value) {
+						push_state();
+						main_document_view->goto_page(*page_value);
+					}
+					}, this);
+				current_widget->show();
+			}
 		}
 		else if (command->name == "open_prev_doc") {
-			//vector<wstring> opened_docs_paths;
-			//vector<wstring> opened_docs_names;
-			//select_prev_docs(database, opened_docs_paths);
+			vector<wstring> opened_docs_paths;
+			vector<wstring> opened_docs_names;
+			select_prev_docs(db, opened_docs_paths);
 
-			//for (const auto& p : opened_docs_paths) {
-			//	opened_docs_names.push_back(std::filesystem::path(p).filename().wstring());
-			//}
+			for (const auto& p : opened_docs_paths) {
+				opened_docs_names.push_back(std::filesystem::path(p).filename().wstring());
+			}
 
-			//if (opened_docs_paths.size() > 0) {
-			//	current_widget = new FilteredSelect<wstring>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
-			//		wstring doc_path = *(wstring*)string_pointer;
-			//		if (doc_path.size() > 0) {
-			//			push_state();
-			//			open_document(doc_path);
-			//		}
-			//		});
-			//	is_showing_ui = true;
-			//}
+			if (opened_docs_paths.size() > 0) {
+				current_widget = make_unique<FilteredSelectWindowClass<wstring>>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
+					wstring doc_path = *(wstring*)string_pointer;
+					if (doc_path.size() > 0) {
+						push_state();
+						open_document(doc_path);
+					}
+					}, this);
+				current_widget->show();
+			}
 		}
 		else if (command->name == "goto_bookmark") {
-			//is_showing_ui = true;
-			//vector<wstring> option_names;
-			//vector<float> option_locations;
-			//for (int i = 0; i < main_document_view->get_document()->get_bookmarks().size(); i++) {
-			//	option_names.push_back(main_document_view->get_document()->get_bookmarks()[i].description);
-			//	option_locations.push_back(main_document_view->get_document()->get_bookmarks()[i].y_offset);
-			//}
-			//current_widget = new FilteredSelect<float>(option_names, option_locations, [&](void* float_pointer) {
+			vector<wstring> option_names;
+			vector<float> option_locations;
+			for (int i = 0; i < main_document_view->get_document()->get_bookmarks().size(); i++) {
+				option_names.push_back(main_document_view->get_document()->get_bookmarks()[i].description);
+				option_locations.push_back(main_document_view->get_document()->get_bookmarks()[i].y_offset);
+			}
+			current_widget = make_unique<FilteredSelectWindowClass<float>>(option_names, option_locations, [&](void* float_pointer) {
 
-			//	float* offset_value = (float*)float_pointer;
-			//	if (offset_value) {
-			//		push_state();
-			//		main_document_view->set_offset_y(*offset_value);
-			//	}
-			//	});
+				float* offset_value = (float*)float_pointer;
+				if (offset_value) {
+					push_state();
+					main_document_view->set_offset_y(*offset_value);
+				}
+				}, this);
+			current_widget->show();
 		}
 		else if (command->name == "goto_bookmark_g") {
-			//is_showing_ui = true;
-			//vector<pair<wstring, BookMark>> global_bookmarks;
-			//global_select_bookmark(database, global_bookmarks);
-			//vector<wstring> descs;
-			//vector<BookState> book_states;
+			vector<pair<wstring, BookMark>> global_bookmarks;
+			global_select_bookmark(db, global_bookmarks);
+			vector<wstring> descs;
+			vector<BookState> book_states;
 
-			//for (const auto& desc_bm_pair : global_bookmarks) {
-			//	wstring path = desc_bm_pair.first;
-			//	BookMark bm = desc_bm_pair.second;
-			//	descs.push_back(bm.description);
-			//	book_states.push_back({ path, bm.y_offset });
-			//}
-			//current_widget = new FilteredSelect<BookState>(descs, book_states, [&](void* book_p) {
-			//	BookState* offset_value = (BookState*)book_p;
-			//	if (offset_value) {
-			//		push_state();
-			//		open_document(offset_value->document_path, 0.0f, offset_value->offset_y);
-			//	}
-			//	});
+			for (const auto& desc_bm_pair : global_bookmarks) {
+				wstring path = desc_bm_pair.first;
+				BookMark bm = desc_bm_pair.second;
+				descs.push_back(bm.description);
+				book_states.push_back({ path, bm.y_offset });
+			}
+			current_widget = make_unique<FilteredSelectWindowClass<BookState>>(descs, book_states, [&](void* book_p) {
+				BookState* offset_value = (BookState*)book_p;
+				if (offset_value) {
+					push_state();
+					open_document(offset_value->document_path, 0.0f, offset_value->offset_y);
+				}
+				}, this);
+			current_widget->show();
 
 		}
 
@@ -2570,6 +2578,30 @@ public:
 
 	}
 };
+
+class TestListModel : public QAbstractListModel {
+		vector<string> values;
+protected:
+	int rowCount(const QModelIndex& parent = QModelIndex()) const override {
+		if (parent.isValid()) {
+			cout << "should not happen!" << endl;
+		}
+
+		return values.size();
+	}
+
+	QVariant data(const QModelIndex& index, int role) const override {
+		QString qstring = QString::fromStdString(values[index.row()]);
+		return QVariant::fromValue(qstring);
+	}
+public:
+
+	TestListModel(vector<string> values) : values(values) {
+	}
+
+};
+
+
 
 int main(int argc, char* args[]) {
 		char exe_file_name[MAX_PATH];
@@ -2676,6 +2708,19 @@ int main(int argc, char* args[]) {
 	main_widget.open_document(file_path);
 	main_widget.show();
 
+	//QStringList values1 = { "ali", "mos", "ta", "favi" };
+	//QStringList values2 = { "this", "was", "a", "triumph" };
+	//QStringListModel string_list_model(values1);
+	//QSortFilterProxyModel proxy_model;
+	//proxy_model.setSourceModel(&string_list_model);
+
+	//FilteredSelectWindowClass<string> window({ "this", "is", "a", "triumph" }, { "some","other","text","here" }, [&](void* string_pointer_) {
+	//	string* string_pointer = (string*)string_pointer_;
+	//	cout << *string_pointer << endl;
+	//	}
+	//);
+	//window.set_values({ "this", "was", "a", "triumph" });
+	//window.show();
 	//PdfViewOpenGLWidget pdf_widget(document_view, pdf_renderer);
 	//pdf_widget.show();
 
