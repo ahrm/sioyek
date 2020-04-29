@@ -2,20 +2,6 @@
 
 extern float background_color[3];
 
-//void DocumentView::initializeGL() {
-//	initializeOpenGLFunctions();
-//}
-//
-//void DocumentView::resizeGL(int w, int h)
-//{
-//	on_view_size_change(w, h);
-//}
-//
-//void DocumentView::paintGL() {
-//	glBindVertexArray(vertex_array_object);
-//	render();
-//}
-
 DocumentView::DocumentView( fz_context* mupdf_context,
 	sqlite3* db,
 	DocumentManager* document_manager,

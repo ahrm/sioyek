@@ -38,6 +38,8 @@
 #include <qopenglshaderprogram.h>
 #include <qtimer.h>
 #include <qdatetime.h>
+#include <qstackedwidget.h>
+#include <qboxlayout.h>
 
 //#include <SDL.h>
 //#include <gl/glew.h>
@@ -1705,9 +1707,6 @@ protected:
 	bool should_highlight_links;
 	float percent_done;
 
-	void toggle_highlight_links() {
-		this->should_highlight_links = !this->should_highlight_links;
-	}
 
 	void initializeGL() override {
 
@@ -1754,7 +1753,7 @@ protected:
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 		QTimer* timer = new QTimer(this);
-		timer->setInterval(100);
+		timer->setInterval(16);
 		connect(timer, &QTimer::timeout, [&]() {
 			update();
 			});
@@ -1763,7 +1762,10 @@ protected:
 
 	void resizeGL(int w, int h) override {
 		glViewport(0, 0, w, h);
-		document_view->on_view_size_change(w, h);
+
+		if (document_view) {
+			document_view->on_view_size_change(w, h);
+		}
 	}
 
 	void render_highlight_window(GLuint program, fz_rect window_rect) {
@@ -1790,6 +1792,40 @@ protected:
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect) {
 		fz_rect window_rect = document_view->document_to_window_rect(page, doc_rect);
 		render_highlight_window(program, window_rect);
+	}
+
+
+	void paintGL() override {
+		float time = static_cast<float>(QDateTime::currentDateTime().toMSecsSinceEpoch() - initial_time) * 0.001f;
+
+		glDisable(GL_CULL_FACE);
+		glDisable(GL_BLEND);
+
+		glBindVertexArray(vertex_array_object);
+
+		render();
+		//glUseProgram(g_shared_resources.program_id);
+		////gl_program->bind();
+		////gl_program->setUniformValue("time", time);
+		//glUniform1f(g_shared_resources.time_uniform_location, time);
+		//glBindVertexArray(vertex_array_object);
+		//glEnableVertexAttribArray(0);
+		//glEnableVertexAttribArray(1);
+		//glBindBuffer(GL_ARRAY_BUFFER, g_shared_resources.vertex_buffer_object);
+		//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	}
+public:
+
+	vector<fz_rect> selected_character_rects;
+	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, QWidget* parent = nullptr) :
+		QOpenGLWidget(parent),
+		document_view(document_view),
+		pdf_renderer(pdf_renderer)
+	{
+	}
+
+	void toggle_highlight_links() {
+		this->should_highlight_links = !this->should_highlight_links;
 	}
 
 	int get_num_search_results() {
@@ -1909,6 +1945,9 @@ protected:
 			render_highlight_document(g_shared_resources.highlight_program, current_search_result.page, current_search_result.rect);
 		}
 		search_results_mutex.unlock();
+		for (auto rect : selected_character_rects) {
+			render_highlight_absolute(g_shared_resources.highlight_program, rect);
+		}
 	}
 	bool get_is_searching(float* prog)
 	{
@@ -1939,36 +1978,596 @@ protected:
 			&is_searching,
 			&search_results_mutex);
 	}
-
-	void paintGL() override {
-		float time = static_cast<float>(QDateTime::currentDateTime().toMSecsSinceEpoch() - initial_time) * 0.001f;
-
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_BLEND);
-
-		glBindVertexArray(vertex_array_object);
-
-		render();
-		//glUseProgram(g_shared_resources.program_id);
-		////gl_program->bind();
-		////gl_program->setUniformValue("time", time);
-		//glUniform1f(g_shared_resources.time_uniform_location, time);
-		//glBindVertexArray(vertex_array_object);
-		//glEnableVertexAttribArray(0);
-		//glEnableVertexAttribArray(1);
-		//glBindBuffer(GL_ARRAY_BUFFER, g_shared_resources.vertex_buffer_object);
-		//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	}
-public:
-	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, QWidget* parent = nullptr) :
-		QOpenGLWidget(parent),
-		document_view(document_view),
-		pdf_renderer(pdf_renderer)
-	{
-	}
-
 	~PdfViewOpenGLWidget() {
 		glDeleteVertexArrays(1, &vertex_array_object);
+	}
+	
+	void set_document_view(DocumentView* dv) {
+		document_view = dv;
+	}
+};
+
+class MainWidget : public QWidget {
+private:
+	PdfViewOpenGLWidget* opengl_widget;
+	bool is_waiting_for_symbol = false;
+
+	//todo: see if these two can be merged
+	const Command* current_pending_command = nullptr;
+	const Command* pending_text_command = nullptr;
+
+	InputHandler* input_handler;
+	DocumentView* main_document_view;
+
+	fz_context* mupdf_context;
+	sqlite3* db;
+	DocumentManager* document_manager;
+	CommandManager command_manager;
+	ConfigManager* config_manager;
+	PdfRenderer* pdf_renderer;
+
+	vector<DocumentViewState> history;
+	int current_history_index;
+
+	// last position when mouse was clicked in absolute document space
+	float last_mouse_down_x;
+	float last_mouse_down_y;
+	bool is_selecting;
+	optional<fz_rect> selected_rect;
+	//vector<fz_rect> selected_character_rects;
+
+	wstring selected_text;
+
+	int main_window_width, main_window_height;
+protected:
+	void resizeEvent(QResizeEvent* resize_event) override {
+		main_window_width = resize_event->size().width();
+		main_window_height = resize_event->size().height();
+	}
+
+public:
+	MainWidget(
+		fz_context* mupdf_context,
+		sqlite3* db,
+		DocumentManager* document_manager,
+		ConfigManager* config_manager,
+		InputHandler* input_handler,
+		PdfRenderer* pdf_renderer,
+		QWidget* parent=nullptr
+	) : QWidget(parent),
+		mupdf_context(mupdf_context),
+		db(db),
+		document_manager(document_manager),
+		config_manager(config_manager),
+		input_handler(input_handler),
+		pdf_renderer(pdf_renderer)
+	{ 
+		resize(500, 500);
+		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer);
+
+		QVBoxLayout* layout = new QVBoxLayout;
+		layout->setSpacing(0);
+		layout->setContentsMargins(0, 0, 0, 0);
+		layout->addWidget(opengl_widget);
+		setLayout(layout);
+	}
+
+	void handle_escape() {
+	}
+
+	void keyPressEvent(QKeyEvent* kevent) override {
+		key_event(false, kevent);
+	}
+
+	void keyReleaseEvent(QKeyEvent* kevent) override {
+		key_event(true, kevent);
+	}
+
+	void invalidate_render() {
+		update();
+	}
+
+	void handle_command_with_symbol(const Command* command, char symbol) {
+		assert(symbol);
+		assert(command->requires_symbol);
+		if (command->name == "set_mark") {
+			assert(main_document_view);
+			main_document_view->add_mark(symbol);
+			invalidate_render();
+		}
+		else if (command->name == "goto_mark") {
+			assert(main_document_view);
+			main_document_view->goto_mark(symbol);
+		}
+		else if (command->name == "delete") {
+			if (symbol == 'y') {
+				main_document_view->delete_closest_link();
+				invalidate_render();
+			}
+			else if (symbol == 'b') {
+				main_document_view->delete_closest_bookmark();
+				invalidate_render();
+			}
+		}
+	}
+
+	void open_document(wstring path, optional<float> offset_x = {}, optional<float> offset_y = {}) {
+
+		//save the previous document state
+		if (main_document_view) {
+			main_document_view->persist();
+		}
+
+		//todo: do something less idiotic!
+		//urgent!
+		//main_document_view = new DocumentView(,);
+		main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
+		main_document_view->open_document(path);
+		opengl_widget->set_document_view(main_document_view);
+
+		if (path.size() > 0 && main_document_view->get_document() == nullptr) {
+			show_error_message(L"Could not open file: " + path);
+		}
+		main_document_view->on_view_size_change(main_window_width, main_window_height);
+
+		if (offset_x) {
+			main_document_view->set_offset_x(offset_x.value());
+		}
+		if (offset_y) {
+			main_document_view->set_offset_y(offset_y.value());
+		}
+
+		if (path.size() > 0) {
+			ofstream last_path_file(last_path_file_absolute_location);
+			last_path_file << utf8_encode(path) << endl;
+			last_path_file.close();
+		}
+	}
+	void handle_command_with_file_name(const Command* command, wstring file_name) {
+		assert(command->requires_file_name);
+		if (command->name == "open_document") {
+			//current_document_view->open_document(file_name);
+			open_document(file_name);
+		}
+	}
+
+	void key_event(bool released, QKeyEvent* kevent) {
+
+		if (kevent->key() == Qt::Key::Key_Escape) {
+			current_pending_command = nullptr;
+			is_waiting_for_symbol = false;
+			//todo: merge here and there
+			handle_escape();
+		}
+
+		if (released == false) {
+			vector<int> ignored_codes = {
+				Qt::Key::Key_Shift,
+				Qt::Key::Key_Control
+			};
+			if (std::find(ignored_codes.begin(), ignored_codes.end(), kevent->key()) != ignored_codes.end()) {
+				return;
+			}
+			if (is_waiting_for_symbol) {
+
+				char symb = get_symbol(kevent->key(), kevent->modifiers() & Qt::ShiftModifier);
+				if (symb) {
+					handle_command_with_symbol(current_pending_command, symb);
+					current_pending_command = nullptr;
+					is_waiting_for_symbol = false;
+				}
+				return;
+			}
+			int num_repeats = 0;
+			const Command* command = input_handler->handle_key(
+				kevent->key(),
+				kevent->modifiers() & Qt::ShiftModifier,
+				kevent->modifiers() & Qt::ControlModifier,
+				&num_repeats);
+
+			if (command) {
+				if (command->requires_symbol) {
+					is_waiting_for_symbol = true;
+					current_pending_command = command;
+					invalidate_render();
+					return;
+				}
+				if (command->requires_file_name) {
+					wchar_t file_name[MAX_PATH];
+					if (select_pdf_file_name(file_name, MAX_PATH)) {
+						handle_command_with_file_name(command, file_name);
+					}
+					else {
+						cerr << "File select failed" << endl;
+					}
+					return;
+				}
+				else {
+					handle_command(command, num_repeats);
+				}
+			}
+		}
+
+	}
+
+	void handle_left_click(float x, float y, bool down) {
+		//if (ImGui::GetIO().WantCaptureMouse) {
+		//	return;
+		//}
+		float x_, y_;
+		main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
+
+		if (down == true) {
+			last_mouse_down_x = x_;
+			last_mouse_down_y = y_;
+			opengl_widget->selected_character_rects.clear();
+			is_selecting = true;
+		}
+		else {
+			is_selecting = false;
+			if ((abs(last_mouse_down_x - x_) + abs(last_mouse_down_y - y_)) > 20) {
+				//fz_rect sr;
+				//sr.x0 = min(last_mouse_down_x, x_);
+				//sr.x1 = max(last_mouse_down_x, x_);
+
+				//sr.y0 = min(last_mouse_down_y, y_);
+				//sr.y1 = max(last_mouse_down_y, y_);
+				//selected_rect = sr;
+				fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
+				fz_point selection_end = { x_, y_ };
+
+				main_document_view->get_text_selection(selection_begin,
+					selection_end,
+					opengl_widget->selected_character_rects,
+					selected_text);
+				invalidate_render();
+			}
+			else {
+				selected_rect = {};
+				handle_click(x, y);
+				opengl_widget->selected_character_rects.clear();
+				invalidate_render();
+			}
+		}
+	}
+
+	void push_state() {
+		DocumentViewState dvs = main_document_view->get_state();
+
+		// do not add the same place to history multiple times
+		if (history.size() > 0) {
+			DocumentViewState last_history = history[history.size() - 1];
+			if (last_history.document_view == main_document_view && last_history.offset_x == dvs.offset_x && last_history.offset_y == dvs.offset_y) {
+				return;
+			}
+		}
+
+		if (current_history_index == history.size()) {
+			history.push_back(dvs);
+			current_history_index = history.size();
+		}
+		else {
+			//todo: should probably do some reference counting garbage collection here
+
+			history.erase(history.begin() + current_history_index, history.end());
+			history.push_back(dvs);
+			current_history_index = history.size();
+		}
+	}
+
+	void next_state() {
+		if (current_history_index+1 < history.size()) {
+			current_history_index++;
+			set_main_document_view_state(history[current_history_index]);
+		}
+	}
+
+	void prev_state() {
+
+		/*
+		Goto previous history
+		In order to edit a link, we set the link to edit and jump to the link location, when going back, we
+		update the link with the current location of document, therefore, we must check to see if a link
+		is being edited and if so, we should update its destination position
+		*/
+
+		if (current_history_index > 0) {
+			if (current_history_index == history.size()) {
+				push_state();
+				current_history_index = history.size()-1;
+			}
+			current_history_index--;
+
+			//if (link_to_edit) {
+			//	float link_new_offset_x = main_document_view->get_offset_x();
+			//	float link_new_offset_y = main_document_view->get_offset_y();
+			//	link_to_edit->dest_offset_x = link_new_offset_x;
+			//	link_to_edit->dest_offset_y = link_new_offset_y;
+			//	update_link(database, history[current_history_index].document_view->get_document()->get_path(),
+			//		link_new_offset_x, link_new_offset_y, link_to_edit->src_offset_y);
+			//	link_to_edit = nullptr;
+			//}
+
+			set_main_document_view_state(history[current_history_index]);
+		}
+	}
+
+	void set_main_document_view_state(DocumentViewState new_view_state) {
+		main_document_view = new_view_state.document_view;
+		main_document_view->on_view_size_change(main_window_width, main_window_height);
+		main_document_view->set_offsets(new_view_state.offset_x, new_view_state.offset_y);
+		main_document_view->set_zoom_level(new_view_state.zoom_level);
+	}
+
+	void handle_click(int pos_x, int pos_y) {
+		auto link_ = main_document_view->get_link_in_pos(pos_x, pos_y);
+		if (link_.has_value()) {
+			PdfLink link = link_.value();
+			int page;
+			float offset_x, offset_y;
+			parse_uri(link.uri, &page, &offset_x, &offset_y);
+
+			//if (!pending_link_source_filled) {
+				push_state();
+				main_document_view->goto_offset_within_page(page, offset_x, offset_y);
+			//}
+			//else {
+			//	// if we press the link button and then click on a pdf link, we automatically link to the
+			//	// link's destination
+
+			//	pending_link.dest_offset_x = offset_x;
+			//	pending_link.dest_offset_y = main_document_view->get_page_offset(page-1) + offset_y;
+			//	pending_link.document_path = main_document_view->get_document()->get_path();
+			//	main_document_view->get_document()->add_link(pending_link);
+			//	render_is_invalid = true;
+			//	pending_link_source_filled = false;
+			//}
+		}
+	}
+
+	void mouseReleaseEvent(QMouseEvent* mevent) override {
+
+		if (mevent->button() == Qt::MouseButton::LeftButton) {
+			//window_state.handle_click(event.button.x, event.button.y);
+			handle_left_click(mevent->pos().x(), mevent->pos().y(), false);
+		}
+
+	}
+
+	void mousePressEvent(QMouseEvent* mevent) override{
+		if (mevent->button() == Qt::MouseButton::LeftButton) {
+			//window_state.handle_click(event.button.x, event.button.y);
+			handle_left_click(mevent->pos().x(), mevent->pos().y(), true);
+		}
+
+		if (mevent->button() == Qt::MouseButton::XButton1) {
+			handle_command(command_manager.get_command_with_name("next_state"), 0);
+		}
+
+		if (mevent->button() == Qt::MouseButton::XButton2) {
+			handle_command(command_manager.get_command_with_name("prev_state"), 0);
+		}
+	}
+
+	void wheelEvent(QWheelEvent* wevent) override {
+		int num_repeats = 1;
+		const Command* command = nullptr;
+		if (wevent->delta() > 0) {
+			command = input_handler->handle_key(Qt::Key::Key_Up, false, false, &num_repeats);
+		}
+		if (wevent->delta() < 0) {
+			command = input_handler->handle_key(Qt::Key::Key_Down, false, false, &num_repeats);
+		}
+
+		if (command) {
+			handle_command(command, abs(wevent->delta() / 120));
+		}
+	}
+
+	void handle_command(const Command* command, int num_repeats) {
+		if (command->requires_text) {
+			//pending_text_command = command;
+			//show_textbar();
+			return;
+		}
+		if (command->pushes_state) {
+			push_state();
+		}
+		if (command->name == "goto_begining") {
+			if (num_repeats) {
+				main_document_view->goto_page(num_repeats);
+			}
+			else {
+				main_document_view->set_offset_y(0.0f);
+			}
+		}
+
+		if (command->name == "goto_end") {
+			main_document_view->goto_end();
+		}
+		if (command->name == "copy") {
+			//copy_to_clipboard(selected_text);
+		}
+
+		int rp = max(num_repeats, 1);
+
+		if (command->name == "move_down") {
+			main_document_view->move(0.0f, 72.0f * rp * vertical_move_amount);
+			invalidate_render();
+		}
+		else if (command->name == "move_up") {
+			main_document_view->move(0.0f, -72.0f * rp * vertical_move_amount);
+			invalidate_render();
+		}
+
+		else if (command->name == "move_right") {
+			main_document_view->move(72.0f * rp * horizontal_move_amount, 0.0f);
+			invalidate_render();
+		}
+
+		else if (command->name == "move_left") {
+			main_document_view->move(-72.0f * rp * horizontal_move_amount, 0.0f);
+			invalidate_render();
+		}
+
+		else if (command->name == "link") {
+			//handle_link();
+		}
+
+		else if (command->name == "goto_link") {
+			Link* link = main_document_view->find_closest_link();
+			if (link) {
+
+				//todo: add a feature where we can tap tab button to switch between main view and helper view
+				push_state();
+				open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
+				invalidate_render();
+			}
+		}
+		else if (command->name == "edit_link") {
+			//Link* link = main_document_view->find_closest_link();
+			//if (link) {
+			//	push_state();
+			//	link_to_edit = link;
+			//	open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
+			//	invalidate_render();
+			//}
+		}
+
+		else if (command->name == "zoom_in") {
+			main_document_view->zoom_in();
+		}
+
+		else if (command->name == "zoom_out") {
+			main_document_view->zoom_out();
+		}
+
+		else if (command->name == "next_state") {
+			next_state();
+		}
+		else if (command->name == "prev_state") {
+			prev_state();
+		}
+
+		else if (command->name == "next_item") {
+			opengl_widget->goto_search_result(1 + num_repeats);
+		}
+
+		else if (command->name == "previous_item") {
+			opengl_widget->goto_search_result(-1 - num_repeats);
+		}
+		else if (command->name == "push_state") {
+			push_state();
+		}
+		else if (command->name == "pop_state") {
+			prev_state();
+		}
+
+		else if (command->name == "next_page") {
+			main_document_view->move_pages(1 + num_repeats);
+		}
+		else if (command->name == "previous_page") {
+			main_document_view->move_pages(-1 - num_repeats);
+		}
+		else if (command->name == "goto_toc") {
+			//vector<wstring> flat_toc;
+			//vector<int> current_document_toc_pages;
+			//get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
+			//if (current_document_toc_pages.size() > 0) {
+			//	current_widget = new FilteredSelect<int>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
+			//		int* page_value = (int*)page_pointer;
+			//		if (page_value) {
+			//			push_state();
+			//			main_document_view->goto_page(*page_value);
+			//		}
+			//		});
+			//	is_showing_ui = true;
+			//}
+		}
+		else if (command->name == "open_prev_doc") {
+			//vector<wstring> opened_docs_paths;
+			//vector<wstring> opened_docs_names;
+			//select_prev_docs(database, opened_docs_paths);
+
+			//for (const auto& p : opened_docs_paths) {
+			//	opened_docs_names.push_back(std::filesystem::path(p).filename().wstring());
+			//}
+
+			//if (opened_docs_paths.size() > 0) {
+			//	current_widget = new FilteredSelect<wstring>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
+			//		wstring doc_path = *(wstring*)string_pointer;
+			//		if (doc_path.size() > 0) {
+			//			push_state();
+			//			open_document(doc_path);
+			//		}
+			//		});
+			//	is_showing_ui = true;
+			//}
+		}
+		else if (command->name == "goto_bookmark") {
+			//is_showing_ui = true;
+			//vector<wstring> option_names;
+			//vector<float> option_locations;
+			//for (int i = 0; i < main_document_view->get_document()->get_bookmarks().size(); i++) {
+			//	option_names.push_back(main_document_view->get_document()->get_bookmarks()[i].description);
+			//	option_locations.push_back(main_document_view->get_document()->get_bookmarks()[i].y_offset);
+			//}
+			//current_widget = new FilteredSelect<float>(option_names, option_locations, [&](void* float_pointer) {
+
+			//	float* offset_value = (float*)float_pointer;
+			//	if (offset_value) {
+			//		push_state();
+			//		main_document_view->set_offset_y(*offset_value);
+			//	}
+			//	});
+		}
+		else if (command->name == "goto_bookmark_g") {
+			//is_showing_ui = true;
+			//vector<pair<wstring, BookMark>> global_bookmarks;
+			//global_select_bookmark(database, global_bookmarks);
+			//vector<wstring> descs;
+			//vector<BookState> book_states;
+
+			//for (const auto& desc_bm_pair : global_bookmarks) {
+			//	wstring path = desc_bm_pair.first;
+			//	BookMark bm = desc_bm_pair.second;
+			//	descs.push_back(bm.description);
+			//	book_states.push_back({ path, bm.y_offset });
+			//}
+			//current_widget = new FilteredSelect<BookState>(descs, book_states, [&](void* book_p) {
+			//	BookState* offset_value = (BookState*)book_p;
+			//	if (offset_value) {
+			//		push_state();
+			//		open_document(offset_value->document_path, 0.0f, offset_value->offset_y);
+			//	}
+			//	});
+
+		}
+
+		else if (command->name == "toggle_fullscreen") {
+			//toggle_fullscreen();
+		}
+		else if (command->name == "toggle_one_window") {
+			//toggle_two_window_mode();
+		}
+
+		else if (command->name == "toggle_highlight") {
+			opengl_widget->toggle_highlight_links();
+			//invalidate_render();
+		}
+
+		//todo: check if still works after wstring
+		else if (command->name == "search_selected_text_in_google_scholar") {
+
+			//ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"google_scholar_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
+		}
+		else if (command->name == "search_selected_text_in_libgen") {
+			//ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"libgen_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
+		}
+		else if (command->name == "debug") {
+			cout << "debug" << endl;
+		}
+
 	}
 };
 
@@ -2073,8 +2672,12 @@ int main(int argc, char* args[]) {
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
-	PdfViewOpenGLWidget pdf_widget(document_view, pdf_renderer);
-	pdf_widget.show();
+	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, pdf_renderer);
+	main_widget.open_document(file_path);
+	main_widget.show();
+
+	//PdfViewOpenGLWidget pdf_widget(document_view, pdf_renderer);
+	//pdf_widget.show();
 
 	//PdfViewOpenGLWidget pdf_widget2(document_view2, pdf_renderer);
 	//pdf_widget2.show();
@@ -2090,6 +2693,8 @@ int main(int argc, char* args[]) {
 	//window.show();
 
 	//DocumentView* some_document_view = new DocumentView()
+
+
 	app.exec();
 	quit = true;
 	pdf_renderer->join_threads();
