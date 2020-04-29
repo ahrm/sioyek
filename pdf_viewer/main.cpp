@@ -6,9 +6,7 @@
 //todo: handle right to left documents
 //todo: going back does not work across documents
 //todo: link across documents requires restart
-//todo: closing the main window should close the application
 //todo: handle async events triggering rerender
-//todo: pressing search, then escape, then  searching crashes (should not even be possible to do this!)
 //todo: we should probably have a documentview manager akin to documentmanager, then we don't
 // have to worry about creating a new documentview each time a document is opened
 // also, remember to handle the commented case where when editting a link (or something like that)
@@ -2063,6 +2061,10 @@ protected:
 		status_label->resize(main_window_width, 20);
 	}
 
+	void closeEvent(QCloseEvent* close_event) override {
+		delete helper_opengl_widget;
+	}
+
 public:
 	MainWidget(
 		fz_context* mupdf_context,
@@ -2879,9 +2881,8 @@ int main(int argc, char* args[]) {
 	main_widget.open_document(file_path);
 	main_widget.show();
 
-
-
 	app.exec();
+
 	quit = true;
 	pdf_renderer->join_threads();
 	return 0;
