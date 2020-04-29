@@ -2567,10 +2567,10 @@ public:
 		//todo: check if still works after wstring
 		else if (command->name == "search_selected_text_in_google_scholar") {
 
-			//ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"google_scholar_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
+			ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"google_scholar_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
 		}
 		else if (command->name == "search_selected_text_in_libgen") {
-			//ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"libgen_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
+			ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"libgen_address") + (selected_text)).c_str() , 0, 0, SW_SHOW);
 		}
 		else if (command->name == "debug") {
 			cout << "debug" << endl;
