@@ -10,6 +10,9 @@
 //todo: going back does not work across documents
 //todo: link across documents requires restart
 //todo: closing the main window should close the application
+//todo: commands with modifiers (shift, control) are not working (e.g. zoom_in, command)
+//todo: handle escape
+//todo: handle async events triggering rerender
 
 //#include "imgui.h"
 //#include "imgui_impl_sdl.h"
@@ -46,6 +49,8 @@
 #include <qboxlayout.h>
 #include <qlistview.h>
 #include <qstringlistmodel.h>
+#include <qlabel.h>
+#include <qtextedit.h>
 
 //#include <SDL.h>
 //#include <gl/glew.h>
@@ -2036,10 +2041,19 @@ private:
 	bool pending_link_source_filled;
 
 	int main_window_width, main_window_height;
+
+	QLineEdit* text_command_line_edit;
+	QTextEdit* status_label;
 protected:
 	void resizeEvent(QResizeEvent* resize_event) override {
 		main_window_width = resize_event->size().width();
 		main_window_height = resize_event->size().height();
+
+		text_command_line_edit->move(0, 0);
+		text_command_line_edit->resize(main_window_width, 30);
+
+		status_label->move(0, main_window_height - 20);
+		status_label->resize(main_window_width, 20);
 	}
 
 public:
@@ -2060,18 +2074,64 @@ public:
 		pdf_renderer(pdf_renderer)
 	{ 
 		resize(500, 500);
-		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer);
+		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer, this);
 
 		helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
 		helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer);
 		helper_opengl_widget->show();
 
 
+		status_label = new QTextEdit(this);
+		status_label->setReadOnly(true);
+		status_label->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
+
+		status_label->setStyleSheet("background-color: black; color: white");
+
+		status_label->show();
+
+		text_command_line_edit = new QLineEdit(this);
+		text_command_line_edit->hide();
+
+		QObject::connect(text_command_line_edit, &QLineEdit::returnPressed, [&]() {
+			handle_pending_text_command(text_command_line_edit->text().toStdWString());
+			text_command_line_edit->hide();
+			setFocus();
+			});
+
 		QVBoxLayout* layout = new QVBoxLayout;
 		layout->setSpacing(0);
 		layout->setContentsMargins(0, 0, 0, 0);
 		layout->addWidget(opengl_widget);
 		setLayout(layout);
+		setFocus();
+	}
+
+	string get_status_string() {
+		stringstream ss;
+		if (main_document_view->get_document() == nullptr) return "";
+		ss << "Page " << main_document_view->get_current_page_number()+1 << " / " << main_document_view->get_document()->num_pages();
+		int num_search_results = opengl_widget->get_num_search_results();
+		float progress = -1;
+		if (num_search_results > 0 || opengl_widget->get_is_searching(&progress)) {
+			opengl_widget->get_is_searching(&progress);
+
+			// show the 0th result if there are no results and the index + 1 otherwise
+			int result_index = opengl_widget->get_num_search_results() > 0 ? opengl_widget->get_current_search_result_index() + 1 : 0;
+			ss << " | showing result " << result_index << " / " << num_search_results;
+			if (progress > 0) {
+				ss << " (" << ((int)(progress * 100)) << "%%" << ")";
+			}
+		}
+		if (pending_link_source_filled) {
+			ss << " | linking ...";
+		}
+		if (link_to_edit) {
+			ss << " | editing link ...";
+		}
+		if (current_pending_command && current_pending_command->requires_symbol) {
+			ss << " | " << current_pending_command->name <<" waiting for symbol";
+		}
+		return ss.str();
 	}
 
 	void handle_escape() {
@@ -2103,6 +2163,7 @@ public:
 				}
 			}
 		}
+		status_label->setText(QString::fromStdString(get_status_string()));
 		update();
 		opengl_widget->update();
 		helper_opengl_widget->update();
@@ -2319,15 +2380,15 @@ public:
 			}
 			current_history_index--;
 
-			//if (link_to_edit) {
-			//	float link_new_offset_x = main_document_view->get_offset_x();
-			//	float link_new_offset_y = main_document_view->get_offset_y();
-			//	link_to_edit->dest_offset_x = link_new_offset_x;
-			//	link_to_edit->dest_offset_y = link_new_offset_y;
-			//	update_link(database, history[current_history_index].document_view->get_document()->get_path(),
-			//		link_new_offset_x, link_new_offset_y, link_to_edit->src_offset_y);
-			//	link_to_edit = nullptr;
-			//}
+			if (link_to_edit) {
+				float link_new_offset_x = main_document_view->get_offset_x();
+				float link_new_offset_y = main_document_view->get_offset_y();
+				link_to_edit->dest_offset_x = link_new_offset_x;
+				link_to_edit->dest_offset_y = link_new_offset_y;
+				update_link(db, history[current_history_index].document_view->get_document()->get_path(),
+					link_new_offset_x, link_new_offset_y, link_to_edit->src_offset_y);
+				link_to_edit = nullptr;
+			}
 
 			set_main_document_view_state(history[current_history_index]);
 		}
@@ -2348,21 +2409,20 @@ public:
 			float offset_x, offset_y;
 			parse_uri(link.uri, &page, &offset_x, &offset_y);
 
-			//if (!pending_link_source_filled) {
+			if (!pending_link_source_filled) {
 				push_state();
 				main_document_view->goto_offset_within_page(page, offset_x, offset_y);
-			//}
-			//else {
-			//	// if we press the link button and then click on a pdf link, we automatically link to the
-			//	// link's destination
+			}
+			else {
+				// if we press the link button and then click on a pdf link, we automatically link to the
+				// link's destination
 
-			//	pending_link.dest_offset_x = offset_x;
-			//	pending_link.dest_offset_y = main_document_view->get_page_offset(page-1) + offset_y;
-			//	pending_link.document_path = main_document_view->get_document()->get_path();
-			//	main_document_view->get_document()->add_link(pending_link);
-			//	render_is_invalid = true;
-			//	pending_link_source_filled = false;
-			//}
+				pending_link.dest_offset_x = offset_x;
+				pending_link.dest_offset_y = main_document_view->get_page_offset(page-1) + offset_y;
+				pending_link.document_path = main_document_view->get_document()->get_path();
+				main_document_view->get_document()->add_link(pending_link);
+				pending_link_source_filled = false;
+			}
 		}
 	}
 
@@ -2405,11 +2465,17 @@ public:
 		}
 	}
 
+	void show_textbar() {
+		text_command_line_edit->show();
+		text_command_line_edit->setFixedSize(main_window_width, 30);
+		text_command_line_edit->setFocus();
+	}
+
 	void handle_command(const Command* command, int num_repeats) {
 
 		if (command->requires_text) {
-			//pending_text_command = command;
-			//show_textbar();
+			pending_text_command = command;
+			show_textbar();
 			return;
 		}
 		if (command->pushes_state) {
@@ -2428,7 +2494,7 @@ public:
 			main_document_view->goto_end();
 		}
 		if (command->name == "copy") {
-			//copy_to_clipboard(selected_text);
+			copy_to_clipboard(selected_text);
 		}
 
 		int rp = max(num_repeats, 1);
@@ -2644,11 +2710,26 @@ public:
 		invalidate_render();
 	}
 
+	void handle_pending_text_command(wstring text) {
+		if (pending_text_command->name == "search") {
+			opengl_widget->search_text(text.c_str());
+		}
+
+		if (pending_text_command->name == "add_bookmark") {
+			main_document_view->add_bookmark(text);
+		}
+		if (pending_text_command->name == "command") {
+			wcout << text << endl;
+		}
+	}
+
 	void toggle_fullscreen() {
 		if (isFullScreen()) {
+			helper_opengl_widget->setWindowState(Qt::WindowState::WindowMaximized);
 			setWindowState(Qt::WindowState::WindowMaximized);
 		}
 		else {
+			helper_opengl_widget->setWindowState(Qt::WindowState::WindowFullScreen);
 			setWindowState(Qt::WindowState::WindowFullScreen);
 		}
 	}
@@ -2772,10 +2853,6 @@ int main(int argc, char* args[]) {
 	wstring dummy_document_absolute_path = L"C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\data\\test.pdf";
 	document_view->open_document(dummy_document_absolute_path);
 
-	//DocumentView* document_view2 = new DocumentView(mupdf_context, db, &document_manager, &config_manager);
-	//wstring dummy_document_absolute_path2 = L"C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\data\\zlib.3.pdf";
-	//document_view2->open_document(dummy_document_absolute_path2);
-
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
@@ -2783,36 +2860,6 @@ int main(int argc, char* args[]) {
 	main_widget.open_document(file_path);
 	main_widget.show();
 
-	//QStringList values1 = { "ali", "mos", "ta", "favi" };
-	//QStringList values2 = { "this", "was", "a", "triumph" };
-	//QStringListModel string_list_model(values1);
-	//QSortFilterProxyModel proxy_model;
-	//proxy_model.setSourceModel(&string_list_model);
-
-	//FilteredSelectWindowClass<string> window({ "this", "is", "a", "triumph" }, { "some","other","text","here" }, [&](void* string_pointer_) {
-	//	string* string_pointer = (string*)string_pointer_;
-	//	cout << *string_pointer << endl;
-	//	}
-	//);
-	//window.set_values({ "this", "was", "a", "triumph" });
-	//window.show();
-	//PdfViewOpenGLWidget pdf_widget(document_view, pdf_renderer);
-	//pdf_widget.show();
-
-	//PdfViewOpenGLWidget pdf_widget2(document_view2, pdf_renderer);
-	//pdf_widget2.show();
-
-	//QWidget window;
-	//PdfViewOpenGLWidget test(&window);
-	//PdfViewOpenGLWidget test2(&window);
-	//test.move(0, 0);
-	//test.setFixedSize(100, 100);
-
-	//test2.move(100, 0);
-	//test2.setFixedSize(100, 100);
-	//window.show();
-
-	//DocumentView* some_document_view = new DocumentView()
 
 
 	app.exec();

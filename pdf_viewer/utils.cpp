@@ -75,12 +75,12 @@ bool includes_rect(fz_rect includer, fz_rect includee) {
 
 char get_symbol(int key, bool is_shift_pressed) {
 	//char key = SDL_GetKeyFromScancode(scancode);
-	if (key >= 'a' && key <= 'z') {
+	if (key >= 'A' && key <= 'Z') {
 		if (is_shift_pressed) {
-			return key + 'A' - 'a';
+			return key;
 		}
 		else {
-			return key;
+			return key + 'a' - 'A';
 		}
 	}
 	return 0;
