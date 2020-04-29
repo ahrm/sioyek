@@ -10,7 +10,6 @@
 //todo: going back does not work across documents
 //todo: link across documents requires restart
 //todo: closing the main window should close the application
-//todo: commands with modifiers (shift, control) are not working (e.g. zoom_in, command)
 //todo: handle async events triggering rerender
 //todo: pressing search, then escape, then  searching crashes (should not even be possible to do this!)
 
