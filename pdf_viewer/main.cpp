@@ -1,17 +1,18 @@
 //todo: cleanup the code
 //todo: visibility test is still buggy??
-//todo: threading
 //todo: add fuzzy search
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: tests!
-//todo: handle mouse in menues
-//todo: sort opened documents by last access
 //todo: handle right to left documents
 //todo: going back does not work across documents
 //todo: link across documents requires restart
 //todo: closing the main window should close the application
 //todo: handle async events triggering rerender
 //todo: pressing search, then escape, then  searching crashes (should not even be possible to do this!)
+//todo: we should probably have a documentview manager akin to documentmanager, then we don't
+// have to worry about creating a new documentview each time a document is opened
+// also, remember to handle the commented case where when editting a link (or something like that)
+// we had to iterate over opened documents to add the link (or whatever it was) to other documents
 
 //#include "imgui.h"
 //#include "imgui_impl_sdl.h"
@@ -2419,6 +2420,7 @@ public:
 
 	void set_main_document_view_state(DocumentViewState new_view_state) {
 		main_document_view = new_view_state.document_view;
+		opengl_widget->set_document_view(main_document_view);
 		main_document_view->on_view_size_change(main_window_width, main_window_height);
 		main_document_view->set_offsets(new_view_state.offset_x, new_view_state.offset_y);
 		main_document_view->set_zoom_level(new_view_state.zoom_level);
