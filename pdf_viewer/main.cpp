@@ -11,8 +11,8 @@
 //todo: link across documents requires restart
 //todo: closing the main window should close the application
 //todo: commands with modifiers (shift, control) are not working (e.g. zoom_in, command)
-//todo: handle escape
 //todo: handle async events triggering rerender
+//todo: pressing search, then escape, then  searching crashes (should not even be possible to do this!)
 
 //#include "imgui.h"
 //#include "imgui_impl_sdl.h"
@@ -1779,6 +1779,7 @@ protected:
 		}
 	}
 
+
 	void render_highlight_window(GLuint program, fz_rect window_rect) {
 		float quad_vertex_data[] = {
 			window_rect.x0, window_rect.y1,
@@ -1833,6 +1834,12 @@ public:
 		document_view(document_view),
 		pdf_renderer(pdf_renderer)
 	{
+	}
+
+	void handle_escape() {
+		search_results.clear();
+		current_search_result_index = 0;
+		is_searching = false;
 	}
 
 	void toggle_highlight_links() {
@@ -2085,7 +2092,8 @@ public:
 		status_label->setReadOnly(true);
 		status_label->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
 
-		status_label->setStyleSheet("background-color: black; color: white");
+		status_label->setStyleSheet("background-color: black; color: white; border: 0");
+		status_label->setFontFamily("Monaco");
 
 		status_label->show();
 
@@ -2135,6 +2143,22 @@ public:
 	}
 
 	void handle_escape() {
+		text_command_line_edit->setText("");
+		pending_link_source_document_path = L"";
+		pending_link_source_filled = false;
+		pending_text_command = nullptr;
+
+		if (current_widget) {
+			current_widget = nullptr;
+		}
+		if (main_document_view) {
+			main_document_view->handle_escape();
+			opengl_widget->handle_escape();
+		}
+
+		text_command_line_edit->hide();
+
+		invalidate_render();
 	}
 
 	void keyPressEvent(QKeyEvent* kevent) override {
@@ -2234,6 +2258,7 @@ public:
 	}
 
 	void key_event(bool released, QKeyEvent* kevent) {
+		invalidate_render();
 
 		if (kevent->key() == Qt::Key::Key_Escape) {
 			current_pending_command = nullptr;
@@ -2271,7 +2296,6 @@ public:
 				if (command->requires_symbol) {
 					is_waiting_for_symbol = true;
 					current_pending_command = command;
-					invalidate_render();
 					return;
 				}
 				if (command->requires_file_name) {
@@ -2501,21 +2525,17 @@ public:
 
 		if (command->name == "move_down") {
 			main_document_view->move(0.0f, 72.0f * rp * vertical_move_amount);
-			invalidate_render();
 		}
 		else if (command->name == "move_up") {
 			main_document_view->move(0.0f, -72.0f * rp * vertical_move_amount);
-			invalidate_render();
 		}
 
 		else if (command->name == "move_right") {
 			main_document_view->move(72.0f * rp * horizontal_move_amount, 0.0f);
-			invalidate_render();
 		}
 
 		else if (command->name == "move_left") {
 			main_document_view->move(-72.0f * rp * horizontal_move_amount, 0.0f);
-			invalidate_render();
 		}
 
 		else if (command->name == "link") {
@@ -2529,7 +2549,6 @@ public:
 				//todo: add a feature where we can tap tab button to switch between main view and helper view
 				push_state();
 				open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
-				invalidate_render();
 			}
 		}
 		else if (command->name == "edit_link") {
@@ -2538,7 +2557,6 @@ public:
 				push_state();
 				link_to_edit = link;
 				open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
-				invalidate_render();
 			}
 		}
 
