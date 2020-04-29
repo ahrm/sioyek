@@ -2553,7 +2553,7 @@ public:
 		}
 
 		else if (command->name == "toggle_fullscreen") {
-			//toggle_fullscreen();
+			toggle_fullscreen();
 		}
 		else if (command->name == "toggle_one_window") {
 			//toggle_two_window_mode();
@@ -2576,6 +2576,15 @@ public:
 			cout << "debug" << endl;
 		}
 
+	}
+
+	void toggle_fullscreen() {
+		if (isFullScreen()) {
+			setWindowState(Qt::WindowState::WindowMaximized);
+		}
+		else {
+			setWindowState(Qt::WindowState::WindowFullScreen);
+		}
 	}
 };
 
