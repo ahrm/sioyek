@@ -7,6 +7,9 @@
 //todo: handle mouse in menues
 //todo: sort opened documents by last access
 //todo: handle right to left documents
+//todo: going back does not work across documents
+//todo: link across documents requires restart
+//todo: closing the main window should close the application
 
 //#include "imgui.h"
 //#include "imgui_impl_sdl.h"
@@ -1756,7 +1759,7 @@ protected:
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 		QTimer* timer = new QTimer(this);
-		timer->setInterval(16);
+		timer->setInterval(200);
 		connect(timer, &QTimer::timeout, [&]() {
 			update();
 			});
@@ -1993,6 +1996,7 @@ public:
 class MainWidget : public QWidget {
 private:
 	PdfViewOpenGLWidget* opengl_widget;
+	PdfViewOpenGLWidget* helper_opengl_widget;
 	bool is_waiting_for_symbol = false;
 
 	//todo: see if these two can be merged
@@ -2001,6 +2005,7 @@ private:
 
 	InputHandler* input_handler;
 	DocumentView* main_document_view;
+	DocumentView* helper_document_view;
 	// current widget responsible for selecting an option (for example toc or bookmarks)
 	//QWidget* current_widget;
 	unique_ptr<QWidget> current_widget;
@@ -2025,6 +2030,10 @@ private:
 	wstring selected_text;
 
 	Link* link_to_edit;
+
+	wstring pending_link_source_document_path;
+	Link pending_link;
+	bool pending_link_source_filled;
 
 	int main_window_width, main_window_height;
 protected:
@@ -2053,6 +2062,11 @@ public:
 		resize(500, 500);
 		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer);
 
+		helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
+		helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer);
+		helper_opengl_widget->show();
+
+
 		QVBoxLayout* layout = new QVBoxLayout;
 		layout->setSpacing(0);
 		layout->setContentsMargins(0, 0, 0, 0);
@@ -2072,7 +2086,26 @@ public:
 	}
 
 	void invalidate_render() {
+		if (main_document_view && main_document_view->get_document()) {
+			Link* link = main_document_view->find_closest_link();
+			if (link) {
+				if (helper_document_view->get_document() &&
+					helper_document_view->get_document()->get_path() == link->document_path) {
+
+					helper_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
+				}
+				else {
+					//delete helper_document_view;
+					//helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, config_manager, link->document_path,
+					//	helper_window_width, helper_window_height, link->dest_offset_x, link->dest_offset_y);
+					helper_document_view->open_document(link->document_path);
+					helper_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
+				}
+			}
+		}
 		update();
+		opengl_widget->update();
+		helper_opengl_widget->update();
 	}
 
 	void handle_command_with_symbol(const Command* command, char symbol) {
@@ -2373,6 +2406,7 @@ public:
 	}
 
 	void handle_command(const Command* command, int num_repeats) {
+
 		if (command->requires_text) {
 			//pending_text_command = command;
 			//show_textbar();
@@ -2419,7 +2453,7 @@ public:
 		}
 
 		else if (command->name == "link") {
-			//handle_link();
+			handle_link();
 		}
 
 		else if (command->name == "goto_link") {
@@ -2561,7 +2595,6 @@ public:
 
 		else if (command->name == "toggle_highlight") {
 			opengl_widget->toggle_highlight_links();
-			//invalidate_render();
 		}
 
 		//todo: check if still works after wstring
@@ -2575,7 +2608,40 @@ public:
 		else if (command->name == "debug") {
 			cout << "debug" << endl;
 		}
+		invalidate_render();
+	}
 
+	void handle_link() {
+		if (pending_link_source_filled) {
+			pending_link.dest_offset_x = main_document_view->get_offset_x();
+			pending_link.dest_offset_y = main_document_view->get_offset_y();
+			pending_link.document_path = main_document_view->get_document()->get_path();
+			if (pending_link_source_document_path == main_document_view->get_document()->get_path()) {
+				main_document_view->get_document()->add_link(pending_link);
+			}
+			else {
+				//for (int i = 0; i < cached_document_views.size(); i++) {
+				//	if (cached_document_views[i]->get_document()) {
+				//		if (cached_document_views[i]->get_document()->get_path() == pending_link_source_document_path) {
+				//			cached_document_views[i]->get_document()->add_link(pending_link, false);
+				//		}
+				//	}
+				//}
+				insert_link(db,
+					pending_link_source_document_path,
+					pending_link.document_path,
+					pending_link.dest_offset_x,
+					pending_link.dest_offset_y,
+					pending_link.src_offset_y);
+			}
+			pending_link_source_filled = false;
+		}
+		else {
+			pending_link.src_offset_y = main_document_view->get_offset_y();
+			pending_link_source_document_path = main_document_view->get_document()->get_path();
+			pending_link_source_filled = true;
+		}
+		invalidate_render();
 	}
 
 	void toggle_fullscreen() {
