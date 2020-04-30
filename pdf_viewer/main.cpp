@@ -4,7 +4,6 @@
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: tests!
 //todo: handle right to left documents
-//todo: last document is not correct
 
 //#include "imgui.h"
 //#include "imgui_impl_sdl.h"
@@ -2053,7 +2052,10 @@ protected:
 	}
 
 	void closeEvent(QCloseEvent* close_event) override {
-		cout << "called close event" << endl;
+		main_document_view->persist();
+		ofstream last_path_file(last_path_file_absolute_location);
+		last_path_file << utf8_encode(main_document_view->get_document()->get_path()) << endl;
+		last_path_file.close();
 		delete helper_opengl_widget;
 	}
 
@@ -2271,11 +2273,6 @@ public:
 			main_document_view->persist();
 		}
 
-		//todo: do something less idiotic!
-		//urgent!
-		//main_document_view = new DocumentView(,);
-
-		//main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
 		main_document_view->open_document(path);
 		opengl_widget->set_document_view(main_document_view);
 
