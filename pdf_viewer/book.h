@@ -45,7 +45,8 @@ struct PdfLink {
 };
 
 struct DocumentViewState {
-	DocumentView* document_view;
+	//DocumentView* document_view;
+	wstring document_path;
 	float offset_x;
 	float offset_y;
 	float zoom_level;

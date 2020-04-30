@@ -40,7 +40,8 @@ float DocumentView::get_zoom_level() {
 
 DocumentViewState DocumentView::get_state() {
 	DocumentViewState res;
-	res.document_view = this;
+	//res.document_view = this;
+	res.document_path = current_document->get_path();
 	res.offset_x = get_offset_x();
 	res.offset_y = get_offset_y();
 	res.zoom_level = get_zoom_level();

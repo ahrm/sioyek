@@ -21,6 +21,7 @@ private:
 	sqlite3* db;
 	vector<TocNode*> top_level_toc_nodes;
 	optional<int> cached_num_pages;
+
 	fz_context* context;
 	wstring file_name;
 	unordered_map<int, fz_link*> cached_page_links;
@@ -82,4 +83,5 @@ public:
 	DocumentManager(fz_context* mupdf_context, sqlite3* database);
 
 	Document* get_document(wstring path);
+	const unordered_map<wstring, Document*>& get_cached_documents();;
 };

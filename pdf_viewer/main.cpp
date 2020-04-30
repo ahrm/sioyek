@@ -5,10 +5,6 @@
 //todo: tests!
 //todo: handle right to left documents
 //todo: link across documents requires restart
-//todo: we should probably have a documentview manager akin to documentmanager, then we don't
-// have to worry about creating a new documentview each time a document is opened
-// also, remember to handle the commented case where when editting a link (or something like that)
-// we had to iterate over opened documents to add the link (or whatever it was) to other documents
 
 //#include "imgui.h"
 //#include "imgui_impl_sdl.h"
@@ -1608,7 +1604,6 @@ OpenGLSharedResources g_shared_resources;
 
 class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions {
 private:
-	qint64 initial_time;
 
 	GLuint LoadShaders(filesystem::path vertex_file_path_, filesystem::path fragment_file_path_) {
 
@@ -1764,7 +1759,6 @@ protected:
 		//QTimer* timer = new QTimer(this);
 		//timer->setInterval(200);
 		//connect(timer, &QTimer::timeout, [&]() {
-		//	update();
 		//	});
 		//timer->start();
 	}
@@ -1806,7 +1800,6 @@ protected:
 
 
 	void paintGL() override {
-		float time = static_cast<float>(QDateTime::currentDateTime().toMSecsSinceEpoch() - initial_time) * 0.001f;
 
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_BLEND);
@@ -1814,15 +1807,6 @@ protected:
 		glBindVertexArray(vertex_array_object);
 
 		render();
-		//glUseProgram(g_shared_resources.program_id);
-		////gl_program->bind();
-		////gl_program->setUniformValue("time", time);
-		//glUniform1f(g_shared_resources.time_uniform_location, time);
-		//glBindVertexArray(vertex_array_object);
-		//glEnableVertexAttribArray(0);
-		//glEnableVertexAttribArray(1);
-		//glBindBuffer(GL_ARRAY_BUFFER, g_shared_resources.vertex_buffer_object);
-		//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
 public:
 
@@ -2051,6 +2035,10 @@ private:
 
 	QLineEdit* text_command_line_edit;
 	QTextEdit* status_label;
+
+	bool is_render_invalidated = false;
+	bool is_ui_invalidated = false;
+
 protected:
 	void resizeEvent(QResizeEvent* resize_event) override {
 		main_window_width = resize_event->size().width();
@@ -2102,6 +2090,8 @@ public:
 		resize(500, 500);
 		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer, config_manager, this);
 
+		main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
+
 		helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
 		helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager);
 		helper_opengl_widget->show();
@@ -2124,6 +2114,18 @@ public:
 			text_command_line_edit->hide();
 			setFocus();
 			});
+
+		QTimer* timer = new QTimer(this);
+		timer->setInterval(200);
+		connect(timer, &QTimer::timeout, [&]() {
+			if (is_render_invalidated) {
+				validate_render();
+			}
+			else if (is_ui_invalidated) {
+				validate_ui();
+			}
+			});
+		timer->start();
 
 		QVBoxLayout* layout = new QVBoxLayout;
 		layout->setSpacing(0);
@@ -2182,7 +2184,7 @@ public:
 
 		text_command_line_edit->hide();
 
-		invalidate_render();
+		validate_render();
 	}
 
 	void keyPressEvent(QKeyEvent* kevent) override {
@@ -2193,7 +2195,7 @@ public:
 		key_event(true, kevent);
 	}
 
-	void invalidate_render() {
+	void validate_render() {
 		if (main_document_view && main_document_view->get_document()) {
 			Link* link = main_document_view->find_closest_link();
 			if (link) {
@@ -2214,14 +2216,25 @@ public:
 				helper_document_view->set_null_document();
 			}
 		}
-		status_label->setText(QString::fromStdString(get_status_string()));
+		validate_ui();
 		update();
 		opengl_widget->update();
 		helper_opengl_widget->update();
+		is_render_invalidated = false;
+	}
+
+	void validate_ui() {
+		status_label->setText(QString::fromStdString(get_status_string()));
+		is_ui_invalidated = false;
+	}
+
+	void invalidate_render() {
+		invalidate_ui();
+		is_render_invalidated = true;
 	}
 
 	void invalidate_ui() {
-		status_label->setText(QString::fromStdString(get_status_string()));
+		is_render_invalidated = true;
 	}
 
 	void handle_command_with_symbol(const Command* command, char symbol) {
@@ -2230,7 +2243,7 @@ public:
 		if (command->name == "set_mark") {
 			assert(main_document_view);
 			main_document_view->add_mark(symbol);
-			invalidate_render();
+			validate_render();
 		}
 		else if (command->name == "goto_mark") {
 			assert(main_document_view);
@@ -2239,11 +2252,11 @@ public:
 		else if (command->name == "delete") {
 			if (symbol == 'y') {
 				main_document_view->delete_closest_link();
-				invalidate_render();
+				validate_render();
 			}
 			else if (symbol == 'b') {
 				main_document_view->delete_closest_bookmark();
-				invalidate_render();
+				validate_render();
 			}
 		}
 	}
@@ -2258,7 +2271,8 @@ public:
 		//todo: do something less idiotic!
 		//urgent!
 		//main_document_view = new DocumentView(,);
-		main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
+
+		//main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
 		main_document_view->open_document(path);
 		opengl_widget->set_document_view(main_document_view);
 
@@ -2289,7 +2303,7 @@ public:
 	}
 
 	void key_event(bool released, QKeyEvent* kevent) {
-		invalidate_render();
+		validate_render();
 
 		if (kevent->key() == Qt::Key::Key_Escape) {
 			current_pending_command = nullptr;
@@ -2377,13 +2391,13 @@ public:
 					selection_end,
 					opengl_widget->selected_character_rects,
 					selected_text);
-				invalidate_render();
+				validate_render();
 			}
 			else {
 				selected_rect = {};
 				handle_click(x, y);
 				opengl_widget->selected_character_rects.clear();
-				invalidate_render();
+				validate_render();
 			}
 		}
 	}
@@ -2394,7 +2408,7 @@ public:
 		// do not add the same place to history multiple times
 		if (history.size() > 0) {
 			DocumentViewState last_history = history[history.size() - 1];
-			if (last_history.document_view == main_document_view && last_history.offset_x == dvs.offset_x && last_history.offset_y == dvs.offset_y) {
+			if (last_history.document_path == main_document_view->get_document()->get_path() && last_history.offset_x == dvs.offset_x && last_history.offset_y == dvs.offset_y) {
 				return;
 			}
 		}
@@ -2440,7 +2454,10 @@ public:
 				float link_new_offset_y = main_document_view->get_offset_y();
 				link_to_edit->dest_offset_x = link_new_offset_x;
 				link_to_edit->dest_offset_y = link_new_offset_y;
-				update_link(db, history[current_history_index].document_view->get_document()->get_path(),
+				//update_link(db, history[current_history_index].document_view->get_document()->get_path(),
+				//	link_new_offset_x, link_new_offset_y, link_to_edit->src_offset_y);
+
+				update_link(db, history[current_history_index].document_path,
 					link_new_offset_x, link_new_offset_y, link_to_edit->src_offset_y);
 				link_to_edit = nullptr;
 			}
@@ -2450,8 +2467,12 @@ public:
 	}
 
 	void set_main_document_view_state(DocumentViewState new_view_state) {
-		main_document_view = new_view_state.document_view;
-		opengl_widget->set_document_view(main_document_view);
+		//main_document_view = new_view_state.document_view;
+		//opengl_widget->set_document_view(main_document_view);
+		if (main_document_view->get_document()->get_path() != new_view_state.document_path) {
+			main_document_view->open_document(new_view_state.document_path);
+		}
+
 		main_document_view->on_view_size_change(main_window_width, main_window_height);
 		main_document_view->set_offsets(new_view_state.offset_x, new_view_state.offset_y);
 		main_document_view->set_zoom_level(new_view_state.zoom_level);
@@ -2636,7 +2657,7 @@ public:
 					int* page_value = (int*)page_pointer;
 					if (page_value) {
 						push_state();
-						invalidate_render();
+						validate_render();
 						main_document_view->goto_page(*page_value);
 					}
 					}, this);
@@ -2657,7 +2678,7 @@ public:
 					wstring doc_path = *(wstring*)string_pointer;
 					if (doc_path.size() > 0) {
 						push_state();
-						invalidate_render();
+						validate_render();
 						open_document(doc_path);
 					}
 					}, this);
@@ -2676,7 +2697,7 @@ public:
 				float* offset_value = (float*)float_pointer;
 				if (offset_value) {
 					push_state();
-					invalidate_render();
+					validate_render();
 					main_document_view->set_offset_y(*offset_value);
 				}
 				}, this);
@@ -2698,7 +2719,7 @@ public:
 				BookState* offset_value = (BookState*)book_p;
 				if (offset_value) {
 					push_state();
-					invalidate_render();
+					validate_render();
 					open_document(offset_value->document_path, 0.0f, offset_value->offset_y);
 				}
 				}, this);
@@ -2728,7 +2749,7 @@ public:
 		else if (command->name == "debug") {
 			cout << "debug" << endl;
 		}
-		invalidate_render();
+		validate_render();
 	}
 
 	void handle_link() {
@@ -2740,13 +2761,13 @@ public:
 				main_document_view->get_document()->add_link(pending_link);
 			}
 			else {
-				//for (int i = 0; i < cached_document_views.size(); i++) {
-				//	if (cached_document_views[i]->get_document()) {
-				//		if (cached_document_views[i]->get_document()->get_path() == pending_link_source_document_path) {
-				//			cached_document_views[i]->get_document()->add_link(pending_link, false);
-				//		}
-				//	}
-				//}
+				const unordered_map<wstring, Document*> cached_documents = document_manager->get_cached_documents();
+				for (auto [doc_path, doc] : cached_documents) {
+					if (pending_link_source_document_path == doc_path) {
+						doc->add_link(pending_link, false);
+					}
+				}
+
 				insert_link(db,
 					pending_link_source_document_path,
 					pending_link.document_path,
@@ -2761,7 +2782,7 @@ public:
 			pending_link_source_document_path = main_document_view->get_document()->get_path();
 			pending_link_source_filled = true;
 		}
-		invalidate_render();
+		validate_render();
 	}
 
 	void handle_pending_text_command(wstring text) {
@@ -2900,9 +2921,6 @@ int main(int argc, char* args[]) {
 	const Command* current_pending_command = nullptr;
 
 	DocumentManager document_manager(mupdf_context, db);
-	DocumentView* document_view = new DocumentView(mupdf_context, db, &document_manager, &config_manager);
-	wstring dummy_document_absolute_path = L"C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\data\\test.pdf";
-	document_view->open_document(dummy_document_absolute_path);
 
 	QFileSystemWatcher pref_file_watcher;
 	pref_file_watcher.addPath(QString::fromStdWString(config_path));

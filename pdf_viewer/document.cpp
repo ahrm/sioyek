@@ -280,6 +280,11 @@ Document* DocumentManager::get_document(wstring path) {
 	return new_doc;
 }
 
+const unordered_map<wstring, Document*>& DocumentManager::get_cached_documents()
+{
+	return cached_documents;
+}
+
 void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
 
 	int i = std::lower_bound(
