@@ -337,11 +337,9 @@ protected:
 
 		render();
 
-		// todo: this is hacky, do something better here
-		// We only delete old cached pages after a rerender, therefore we ensure non of the deleted
-		// pages are immediately required
-		pdf_renderer->delete_old_pages();
 	}
+
+
 public:
 
 	vector<fz_rect> selected_character_rects;
@@ -576,8 +574,20 @@ private:
 	bool is_render_invalidated = false;
 	bool is_ui_invalidated = false;
 
+	bool should_delete_old_pages = false;
+
+	QTimer garbage_collect_timer;
+
 protected:
 
+
+	void paintEvent(QPaintEvent* paint_event) override {
+		QWidget::paintEvent(paint_event);
+
+		// we only try to delete old pages after a render event has occured to ensure we
+		// don't delete any immediately-useful pages
+		should_delete_old_pages = true;
+	}
 
 	void resizeEvent(QResizeEvent* resize_event) override {
 		main_window_width = size().width();
@@ -623,6 +633,16 @@ public:
 		pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
 		//pdf_renderer->set_invalidate_pointer(&dsqp);
 		pdf_renderer->start_threads();
+
+		garbage_collect_timer.setInterval(1000);
+		garbage_collect_timer.start();
+
+		QObject::connect(&garbage_collect_timer, &QTimer::timeout, [&]() {
+			if (should_delete_old_pages) {
+				pdf_renderer->delete_old_pages();
+				should_delete_old_pages = false;
+			}
+			});
 
 		//pdf_renderer->set_on_render_invalidate_function([&]() {
 		//	invalidate_render();
