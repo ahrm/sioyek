@@ -43,6 +43,7 @@
 #include <qlabel.h>
 #include <qtextedit.h>
 #include <qfilesystemwatcher.h>
+#include <qdesktopwidget.h>
 
 //#include <SDL.h>
 //#include <gl/glew.h>
@@ -2046,10 +2047,10 @@ private:
 
 protected:
 
-	void resizeEvent(QResizeEvent* resize_event) override {
-		main_window_width = resize_event->size().width();
-		main_window_height = resize_event->size().height();
 
+	void resizeEvent(QResizeEvent* resize_event) override {
+		main_window_width = size().width();
+		main_window_height = size().height();
 
 		text_command_line_edit->move(0, 0);
 		text_command_line_edit->resize(main_window_width, 30);
@@ -2084,6 +2085,9 @@ public:
 		config_manager(config_manager),
 		input_handler(input_handler)
 	{ 
+		int num_screens = QApplication::desktop()->numScreens();
+		int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
+
 		pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
 		//pdf_renderer->set_invalidate_pointer(&dsqp);
 		pdf_renderer->start_threads();
@@ -2098,8 +2102,6 @@ public:
 		QObject::connect(pdf_renderer, &PdfRenderer::render_advance, this, &MainWidget::invalidate_render);
 		QObject::connect(pdf_renderer, &PdfRenderer::search_advance, this, &MainWidget::invalidate_ui);
 
-		resize(500, 500);
-
 
 		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer, config_manager, this);
 
@@ -2107,7 +2109,11 @@ public:
 
 		helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
 		helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager);
-		//helper_opengl_widget->showMaximized();
+
+		if (num_screens > 1) {
+			helper_opengl_widget->move(first_screen_width, 0);
+			helper_opengl_widget->showMaximized();
+		}
 
 
 		status_label = new QTextEdit(this);
@@ -2145,6 +2151,7 @@ public:
 		layout->setContentsMargins(0, 0, 0, 0);
 		layout->addWidget(opengl_widget);
 		setLayout(layout);
+
 		setFocus();
 	}
 
@@ -2928,7 +2935,9 @@ int main(int argc, char* args[]) {
 
 	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, &quit);
 	main_widget.open_document(file_path);
-	main_widget.show();
+	main_widget.resize(500, 500);
+	main_widget.showMaximized();
+
 
 	app.exec();
 
