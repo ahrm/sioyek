@@ -2819,28 +2819,6 @@ public:
 	}
 };
 
-class TestListModel : public QAbstractListModel {
-		vector<string> values;
-protected:
-	int rowCount(const QModelIndex& parent = QModelIndex()) const override {
-		if (parent.isValid()) {
-			cout << "should not happen!" << endl;
-		}
-
-		return values.size();
-	}
-
-	QVariant data(const QModelIndex& index, int role) const override {
-		QString qstring = QString::fromStdString(values[index.row()]);
-		return QVariant::fromValue(qstring);
-	}
-public:
-
-	TestListModel(vector<string> values) : values(values) {
-	}
-
-};
-
 
 
 int main(int argc, char* args[]) {
