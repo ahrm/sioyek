@@ -2558,6 +2558,7 @@ public:
 	}
 
 	void show_textbar() {
+		text_command_line_edit->clear();
 		text_command_line_edit->show();
 		text_command_line_edit->setFixedSize(main_window_width, 30);
 		text_command_line_edit->setFocus();
@@ -2811,6 +2812,12 @@ public:
 
 	void handle_pending_text_command(wstring text) {
 		if (pending_text_command->name == "search") {
+
+			// in mupdf RTL documents are reversed, so we reverse the search string
+			//todo: better (or any!) handling of mixed RTL and LTR text
+			if (is_rtl(text[0])) {
+				text = reverse_wstring(text);
+			}
 			opengl_widget->search_text(text.c_str());
 		}
 
