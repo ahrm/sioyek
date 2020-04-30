@@ -1709,6 +1709,7 @@ protected:
 	GLuint vertex_array_object;
 	DocumentView* document_view;
 	PdfRenderer* pdf_renderer;
+	ConfigManager* config_manager;
 	vector<SearchResult> search_results;
 	int current_search_result_index = 0;
 	mutex search_results_mutex;
@@ -1827,9 +1828,10 @@ protected:
 public:
 
 	vector<fz_rect> selected_character_rects;
-	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, QWidget* parent = nullptr) :
+	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, QWidget* parent = nullptr) :
 		QOpenGLWidget(parent),
 		document_view(document_view),
+		config_manager(config_manager),
 		pdf_renderer(pdf_renderer)
 	{
 	}
@@ -1941,9 +1943,9 @@ public:
 				glUniform3fv(g_shared_resources.highlight_color_uniform_location,
 					1,
 					highlight_color_temp);
-				//glUniform3fv(g_shared_resources.highlight_color_uniform_location,
-				//	1,
-				//	config_manager->get_config<float>(L"link_highlight_color"));
+				glUniform3fv(g_shared_resources.highlight_color_uniform_location,
+					1,
+					config_manager->get_config<float>(L"link_highlight_color"));
 				fz_link* links = document_view->get_document()->get_page_links(page);
 				while (links != nullptr) {
 					render_highlight_document(g_shared_resources.highlight_program, page, links->rect);
@@ -1956,12 +1958,13 @@ public:
 		if (search_results.size() > 0) {
 			SearchResult current_search_result = search_results[current_search_result_index];
 			glUseProgram(g_shared_resources.highlight_program);
-			//glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
-			glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
+			glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
+			//glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
 			render_highlight_document(g_shared_resources.highlight_program, current_search_result.page, current_search_result.rect);
 		}
 		search_results_mutex.unlock();
 		for (auto rect : selected_character_rects) {
+			glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"text_highlight_color"));
 			render_highlight_absolute(g_shared_resources.highlight_program, rect);
 		}
 	}
@@ -2083,10 +2086,10 @@ public:
 		pdf_renderer(pdf_renderer)
 	{ 
 		resize(500, 500);
-		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer, this);
+		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer, config_manager, this);
 
 		helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
-		helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer);
+		helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager);
 		helper_opengl_widget->show();
 
 
@@ -2877,6 +2880,7 @@ int main(int argc, char* args[]) {
 	QFileSystemWatcher pref_file_watcher;
 	pref_file_watcher.addPath(QString::fromStdWString(config_path));
 
+	// live reload the config file
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 		wifstream config_file(config_path);
 		config_manager.deserialize(config_file);
