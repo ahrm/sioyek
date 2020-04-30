@@ -4,7 +4,7 @@
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: tests!
 //todo: handle right to left documents
-//todo: link across documents requires restart
+//todo: last document is not correct
 
 //#include "imgui.h"
 //#include "imgui_impl_sdl.h"
@@ -2040,6 +2040,7 @@ private:
 	bool is_ui_invalidated = false;
 
 protected:
+
 	void resizeEvent(QResizeEvent* resize_event) override {
 		main_window_width = resize_event->size().width();
 		main_window_height = resize_event->size().height();
@@ -2052,11 +2053,13 @@ protected:
 	}
 
 	void closeEvent(QCloseEvent* close_event) override {
+		cout << "called close event" << endl;
 		delete helper_opengl_widget;
 	}
 
 	bool dsqp;
 public:
+
 	MainWidget(
 		fz_context* mupdf_context,
 		sqlite3* db,
@@ -2288,11 +2291,11 @@ public:
 			main_document_view->set_offset_y(offset_y.value());
 		}
 
-		if (path.size() > 0) {
-			ofstream last_path_file(last_path_file_absolute_location);
-			last_path_file << utf8_encode(path) << endl;
-			last_path_file.close();
-		}
+		//if (path.size() > 0) {
+		//	ofstream last_path_file(last_path_file_absolute_location);
+		//	last_path_file << utf8_encode(path) << endl;
+		//	last_path_file.close();
+		//}
 	}
 	void handle_command_with_file_name(const Command* command, wstring file_name) {
 		assert(command->requires_file_name);
@@ -2548,6 +2551,15 @@ public:
 		text_command_line_edit->setFocus();
 	}
 
+	void toggle_two_window_mode() {
+		if (helper_opengl_widget->isHidden()) {
+			helper_opengl_widget->show();
+			activateWindow();
+		}
+		else {
+			helper_opengl_widget->hide();
+		}
+	}
 	void handle_command(const Command* command, int num_repeats) {
 
 		if (command->requires_text) {
@@ -2731,7 +2743,7 @@ public:
 			toggle_fullscreen();
 		}
 		else if (command->name == "toggle_one_window") {
-			//toggle_two_window_mode();
+			toggle_two_window_mode();
 		}
 
 		else if (command->name == "toggle_highlight") {
