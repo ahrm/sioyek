@@ -4,9 +4,8 @@
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: tests!
 //todo: handle right to left documents
-//todo: going back does not work across documents
 //todo: link across documents requires restart
-//todo: handle async events triggering rerender
+//todo: handle async events triggering rerender, possibly separate total rerender from status bar rerender
 //todo: we should probably have a documentview manager akin to documentmanager, then we don't
 // have to worry about creating a new documentview each time a document is opened
 // also, remember to handle the commented case where when editting a link (or something like that)
@@ -49,6 +48,7 @@
 #include <qstringlistmodel.h>
 #include <qlabel.h>
 #include <qtextedit.h>
+#include <qfilesystemwatcher.h>
 
 //#include <SDL.h>
 //#include <gl/glew.h>
@@ -1927,8 +1927,8 @@ public:
 		document_view->get_visible_pages(document_view->get_view_height(), visible_pages);
 		//render_is_invalid = false;
 
-		//glClearColor(background_color[0], background_color[1], background_color[2], 1.0f);
-		glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(background_color[0], background_color[1], background_color[2], 1.0f);
+		//glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		float highlight_color_temp[3] = { 1.0f, 0.0f, 0.0f };
@@ -2873,6 +2873,16 @@ int main(int argc, char* args[]) {
 	DocumentView* document_view = new DocumentView(mupdf_context, db, &document_manager, &config_manager);
 	wstring dummy_document_absolute_path = L"C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\data\\test.pdf";
 	document_view->open_document(dummy_document_absolute_path);
+
+	QFileSystemWatcher pref_file_watcher;
+	pref_file_watcher.addPath(QString::fromStdWString(config_path));
+
+	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
+		wifstream config_file(config_path);
+		config_manager.deserialize(config_file);
+		config_file.close();
+		});
+
 
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
