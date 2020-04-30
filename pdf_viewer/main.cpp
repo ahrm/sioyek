@@ -45,16 +45,10 @@
 #include <qfilesystemwatcher.h>
 #include <qdesktopwidget.h>
 
-//#include <SDL.h>
-//#include <gl/glew.h>
-#include <SDL_opengl.h>
-//#include <gl/GLU.h>
-
 #include <Windows.h>
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
 #include <filesystem>
-
 
 #include "input.h"
 #include "database.h"
@@ -64,6 +58,7 @@
 #include "pdf_renderer.h"
 #include "document.h"
 #include "document_view.h"
+#include "pdf_view_opengl_widget.h"
 #include "config.h"
 #include "utf8.h"
 
@@ -80,10 +75,9 @@ extern const unsigned int cache_invalid_milies = 1000;
 extern const int persist_milies = 1000 * 60;
 extern const int page_paddings = 0;
 extern const int max_pending_requests = 31;
-//extern const char* last_path_file_absolute_location = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\last_document_path.txt";
+
 wstring last_path_file_absolute_location;
-filesystem::path parent_path;
-//ImFont* g_font;
+extern filesystem::path parent_path = "";
 
 
 using namespace std;
@@ -100,428 +94,8 @@ void unlock_mutex(void* user, int lock) {
 	(mut + lock)->unlock();
 }
 
-GLfloat g_quad_vertex[] = {
-	-1.0f, -1.0f,
-	1.0f, -1.0f,
-	-1.0f, 1.0f,
-	1.0f, 1.0f
-};
 
-GLfloat g_quad_uvs[] = {
-	0.0f, 0.0f,
-	1.0f, 0.0f,
-	0.0f, 1.0f,
-	1.0f, 1.0f
-};
 
-
-struct OpenGLSharedResources {
-	GLuint vertex_buffer_object;
-	GLuint uv_buffer_object;
-	GLuint rendered_program;
-	GLuint unrendered_program;
-	GLuint highlight_program;
-	GLint highlight_color_uniform_location;
-
-	bool is_initialized;
-};
-
-OpenGLSharedResources g_shared_resources;
-
-class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions {
-private:
-
-	bool is_opengl_initialized = false;
-
-	GLuint LoadShaders(filesystem::path vertex_file_path_, filesystem::path fragment_file_path_) {
-
-		const wchar_t* vertex_file_path = vertex_file_path_.c_str();
-		const wchar_t* fragment_file_path = fragment_file_path_.c_str();
-		// Create the shaders
-		GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-		GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-
-		// Read the Vertex Shader code from the file
-		std::string VertexShaderCode;
-		std::ifstream VertexShaderStream(vertex_file_path, std::ios::in);
-		if (VertexShaderStream.is_open()) {
-			std::stringstream sstr;
-			sstr << VertexShaderStream.rdbuf();
-			VertexShaderCode = sstr.str();
-			VertexShaderStream.close();
-		}
-		else {
-			wprintf(L"Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
-			return 0;
-		}
-
-		// Read the Fragment Shader code from the file
-		std::string FragmentShaderCode;
-		std::ifstream FragmentShaderStream(fragment_file_path, std::ios::in);
-		if (FragmentShaderStream.is_open()) {
-			std::stringstream sstr;
-			sstr << FragmentShaderStream.rdbuf();
-			FragmentShaderCode = sstr.str();
-			FragmentShaderStream.close();
-		}
-		else {
-			wprintf(L"Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", fragment_file_path);
-			return 0;
-		}
-
-		GLint Result = GL_FALSE;
-		int InfoLogLength;
-
-		// Compile Vertex Shader
-		printf("Compiling shader : %s\n", vertex_file_path);
-		char const* VertexSourcePointer = VertexShaderCode.c_str();
-		glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
-		glCompileShader(VertexShaderID);
-
-		// Check Vertex Shader
-		glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
-		glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		if (InfoLogLength > 0) {
-			std::vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
-			glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-			printf("%s\n", &VertexShaderErrorMessage[0]);
-		}
-
-		// Compile Fragment Shader
-		printf("Compiling shader : %s\n", fragment_file_path);
-		char const* FragmentSourcePointer = FragmentShaderCode.c_str();
-		glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
-		glCompileShader(FragmentShaderID);
-
-		// Check Fragment Shader
-		glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
-		glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		if (InfoLogLength > 0) {
-			std::vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
-			glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
-			printf("%s\n", &FragmentShaderErrorMessage[0]);
-		}
-
-		// Link the program
-		printf("Linking program\n");
-		GLuint ProgramID = glCreateProgram();
-		glAttachShader(ProgramID, VertexShaderID);
-		glAttachShader(ProgramID, FragmentShaderID);
-		glLinkProgram(ProgramID);
-
-		// Check the program
-		glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
-		glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		if (InfoLogLength > 0) {
-			std::vector<char> ProgramErrorMessage(InfoLogLength + 1);
-			glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-			printf("%s\n", &ProgramErrorMessage[0]);
-		}
-
-		glDetachShader(ProgramID, VertexShaderID);
-		glDetachShader(ProgramID, FragmentShaderID);
-
-		glDeleteShader(VertexShaderID);
-		glDeleteShader(FragmentShaderID);
-
-		return ProgramID;
-	}
-protected:
-
-	GLuint vertex_array_object;
-	DocumentView* document_view;
-	PdfRenderer* pdf_renderer;
-	ConfigManager* config_manager;
-	vector<SearchResult> search_results;
-	int current_search_result_index = 0;
-	mutex search_results_mutex;
-	bool is_searching;
-	bool should_highlight_links;
-	float percent_done;
-
-
-	void initializeGL() override {
-		is_opengl_initialized = true;
-
-		initializeOpenGLFunctions();
-		if (!g_shared_resources.is_initialized) {
-
-			//struct OpenGLSharedResources {
-			//	GLuint vertex_buffer_object;
-			//	GLuint uv_buffer_object;
-			//	GLuint rendered_program;
-			//	GLuint unrendered_program;
-			//	GLuint highlight_program;
-			//	GLint highlight_color_uniform_location;
-
-			//	bool is_initialized;
-			//};
-			g_shared_resources.is_initialized = true;
-
-			g_shared_resources.rendered_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\simple.fragment");
-			g_shared_resources.unrendered_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\unrendered_page.fragment");
-			g_shared_resources.highlight_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\highlight.fragment");
-
-			g_shared_resources.highlight_color_uniform_location = glGetUniformLocation(g_shared_resources.highlight_program, "highlight_color");
-
-			glGenBuffers(1, &g_shared_resources.vertex_buffer_object);
-			glGenBuffers(1, &g_shared_resources.uv_buffer_object);
-
-			glBindBuffer(GL_ARRAY_BUFFER, g_shared_resources.vertex_buffer_object);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex), g_quad_vertex, GL_DYNAMIC_DRAW);
-
-			glBindBuffer(GL_ARRAY_BUFFER, g_shared_resources.uv_buffer_object);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_uvs), g_quad_uvs, GL_DYNAMIC_DRAW);
-
-		}
-
-		//vertex array objects can not be shared for some reason!
-		glGenVertexArrays(1, &vertex_array_object);
-		glBindVertexArray(vertex_array_object);
-
-		glBindBuffer(GL_ARRAY_BUFFER, g_shared_resources.vertex_buffer_object);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, g_shared_resources.uv_buffer_object);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-		//QTimer* timer = new QTimer(this);
-		//timer->setInterval(200);
-		//connect(timer, &QTimer::timeout, [&]() {
-		//	});
-		//timer->start();
-	}
-
-	void resizeGL(int w, int h) override {
-		glViewport(0, 0, w, h);
-
-		if (document_view) {
-			document_view->on_view_size_change(w, h);
-		}
-	}
-
-
-	void render_highlight_window(GLuint program, fz_rect window_rect) {
-		float quad_vertex_data[] = {
-			window_rect.x0, window_rect.y1,
-			window_rect.x1, window_rect.y1,
-			window_rect.x0, window_rect.y0,
-			window_rect.x1, window_rect.y0
-		};
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glUseProgram(program);
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		glDisable(GL_BLEND);
-	}
-	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect) {
-		fz_rect window_rect = document_view->absolute_to_window_rect(absolute_document_rect);
-		render_highlight_window(program, window_rect);
-	}
-
-	void render_highlight_document(GLuint program, int page, fz_rect doc_rect) {
-		fz_rect window_rect = document_view->document_to_window_rect(page, doc_rect);
-		render_highlight_window(program, window_rect);
-	}
-
-
-	void paintGL() override {
-
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_BLEND);
-
-		glBindVertexArray(vertex_array_object);
-
-		render();
-
-	}
-
-
-public:
-
-	vector<fz_rect> selected_character_rects;
-	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, QWidget* parent = nullptr) :
-		QOpenGLWidget(parent),
-		document_view(document_view),
-		config_manager(config_manager),
-		pdf_renderer(pdf_renderer)
-	{
-	}
-
-	void handle_escape() {
-		search_results.clear();
-		current_search_result_index = 0;
-		is_searching = false;
-	}
-
-	void toggle_highlight_links() {
-		this->should_highlight_links = !this->should_highlight_links;
-	}
-
-	int get_num_search_results() {
-		search_results_mutex.lock();
-		int num = search_results.size();
-		search_results_mutex.unlock();
-		return num;
-	}
-
-	int get_current_search_result_index() {
-		return current_search_result_index;
-	}
-	bool valid_document() {
-		if (document_view) {
-			if (document_view->get_document()) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	void goto_search_result(int offset) {
-		if (!valid_document()) return;
-
-		search_results_mutex.lock();
-		if (search_results.size() == 0) {
-			search_results_mutex.unlock();
-			return;
-		}
-
-		int target_index = mod(current_search_result_index + offset, search_results.size());
-		current_search_result_index = target_index;
- 
-		auto [rect, target_page] = search_results[target_index];
-		search_results_mutex.unlock();
-
-		float new_offset_y = rect.y0 + document_view->get_document()->get_accum_page_height(target_page);
-
-		document_view->set_offset_y(new_offset_y);
-	}
-	void render_page(int page_number) {
-
-		if (!valid_document()) return;
-
-		GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-			page_number,
-			document_view->get_zoom_level(),
-			nullptr,
-			nullptr);
-
-		float page_vertices[4 * 2];
-		fz_rect page_rect = { 0,
-			0,
-			document_view->get_document()->get_page_width(page_number),
-			document_view->get_document()->get_page_height(page_number) };
-
-		fz_rect window_rect = document_view->document_to_window_rect(page_number, page_rect);
-		rect_to_quad(window_rect, page_vertices);
-
-		if (texture != 0) {
-
-			glUseProgram(g_shared_resources.rendered_program);
-			glBindTexture(GL_TEXTURE_2D, texture);
-		}
-		else {
-			glUseProgram(g_shared_resources.unrendered_program);
-		}
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, g_shared_resources.vertex_buffer_object);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	}
-
-	void render() {
-		if (!valid_document()) {
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
-			return;
-		}
-
-		vector<int> visible_pages;
-		document_view->get_visible_pages(document_view->get_view_height(), visible_pages);
-		//render_is_invalid = false;
-
-		glClearColor(background_color[0], background_color[1], background_color[2], 1.0f);
-		//glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		float highlight_color_temp[3] = { 1.0f, 0.0f, 0.0f };
-
-		for (int page : visible_pages) {
-			render_page(page);
-
-			if (should_highlight_links) {
-				glUseProgram(g_shared_resources.highlight_program);
-				glUniform3fv(g_shared_resources.highlight_color_uniform_location,
-					1,
-					highlight_color_temp);
-				glUniform3fv(g_shared_resources.highlight_color_uniform_location,
-					1,
-					config_manager->get_config<float>(L"link_highlight_color"));
-				fz_link* links = document_view->get_document()->get_page_links(page);
-				while (links != nullptr) {
-					render_highlight_document(g_shared_resources.highlight_program, page, links->rect);
-					links = links->next;
-				}
-			}
-		}
-
-		search_results_mutex.lock();
-		if (search_results.size() > 0) {
-			SearchResult current_search_result = search_results[current_search_result_index];
-			glUseProgram(g_shared_resources.highlight_program);
-			glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
-			//glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
-			render_highlight_document(g_shared_resources.highlight_program, current_search_result.page, current_search_result.rect);
-		}
-		search_results_mutex.unlock();
-		for (auto rect : selected_character_rects) {
-			glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"text_highlight_color"));
-			render_highlight_absolute(g_shared_resources.highlight_program, rect);
-		}
-	}
-	bool get_is_searching(float* prog)
-	{
-		search_results_mutex.lock();
-		bool res = is_searching;
-		if (is_searching) {
-			*prog = percent_done;
-		}
-		search_results_mutex.unlock();
-		return res;
-	}
-
-	void search_text(const wchar_t* text) {
-		if (!document_view) return;
-
-		search_results_mutex.lock();
-		search_results.clear();
-		current_search_result_index = 0;
-		search_results_mutex.unlock();
-
-		is_searching = true;
-		pdf_renderer->add_request(
-			document_view->get_document()->get_path(),
-			document_view->get_current_page_number(),
-			text,
-			&search_results,
-			&percent_done,
-			&is_searching,
-			&search_results_mutex);
-	}
-	~PdfViewOpenGLWidget() {
-		if (is_opengl_initialized) {
-			glDeleteVertexArrays(1, &vertex_array_object);
-		}
-	}
-	
-	void set_document_view(DocumentView* dv) {
-		document_view = dv;
-	}
-};
 
 class MainWidget : public QWidget {
 
@@ -655,9 +229,8 @@ public:
 		QObject::connect(pdf_renderer, &PdfRenderer::search_advance, this, &MainWidget::invalidate_ui);
 
 
-		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer, config_manager, this);
-
 		main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
+		opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, this);
 
 		helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
 		helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager);
@@ -841,7 +414,7 @@ public:
 		}
 
 		main_document_view->open_document(path);
-		opengl_widget->set_document_view(main_document_view);
+		//opengl_widget->set_document_view(main_document_view);
 
 		if (path.size() > 0 && main_document_view->get_document() == nullptr) {
 			show_error_message(L"Could not open file: " + path);

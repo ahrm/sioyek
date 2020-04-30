@@ -74,6 +74,9 @@
     <ClCompile Include="GeneratedFiles\Release\moc_pdf_renderer.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="pdf_view_opengl_widget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sqlite3.h">
@@ -137,6 +140,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utf8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pdf_view_opengl_widget.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
