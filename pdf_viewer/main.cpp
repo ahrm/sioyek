@@ -2210,6 +2210,9 @@ public:
 					helper_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
 				}
 			}
+			else {
+				helper_document_view->set_null_document();
+			}
 		}
 		status_label->setText(QString::fromStdString(get_status_string()));
 		update();

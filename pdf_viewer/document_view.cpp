@@ -107,6 +107,11 @@ int DocumentView::get_view_width()
 	return view_width;
 }
 
+void DocumentView::set_null_document()
+{
+	current_document = nullptr;
+}
+
 void DocumentView::set_offset_x(float new_offset_x) {
 	set_offsets(new_offset_x, offset_y);
 }

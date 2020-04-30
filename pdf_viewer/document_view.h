@@ -58,6 +58,7 @@ public:
 	float get_offset_y();
 	int get_view_height();
 	int get_view_width();
+	void set_null_document();
 	void set_offset_x(float new_offset_x);
 	void set_offset_y(float new_offset_y);
 	optional<PdfLink> get_link_in_pos(int view_x, int view_y);
