@@ -1604,6 +1604,8 @@ OpenGLSharedResources g_shared_resources;
 class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions {
 private:
 
+	bool is_opengl_initialized = false;
+
 	GLuint LoadShaders(filesystem::path vertex_file_path_, filesystem::path fragment_file_path_) {
 
 		const wchar_t* vertex_file_path = vertex_file_path_.c_str();
@@ -1712,6 +1714,7 @@ protected:
 
 
 	void initializeGL() override {
+		is_opengl_initialized = true;
 
 		initializeOpenGLFunctions();
 		if (!g_shared_resources.is_initialized) {
@@ -1980,7 +1983,9 @@ public:
 			&search_results_mutex);
 	}
 	~PdfViewOpenGLWidget() {
-		glDeleteVertexArrays(1, &vertex_array_object);
+		if (is_opengl_initialized) {
+			glDeleteVertexArrays(1, &vertex_array_object);
+		}
 	}
 	
 	void set_document_view(DocumentView* dv) {
@@ -1989,6 +1994,7 @@ public:
 };
 
 class MainWidget : public QWidget {
+
 private:
 	PdfViewOpenGLWidget* opengl_widget;
 	PdfViewOpenGLWidget* helper_opengl_widget;
@@ -2044,6 +2050,7 @@ protected:
 		main_window_width = resize_event->size().width();
 		main_window_height = resize_event->size().height();
 
+
 		text_command_line_edit->move(0, 0);
 		text_command_line_edit->resize(main_window_width, 30);
 
@@ -2091,15 +2098,16 @@ public:
 		QObject::connect(pdf_renderer, &PdfRenderer::render_advance, this, &MainWidget::invalidate_render);
 		QObject::connect(pdf_renderer, &PdfRenderer::search_advance, this, &MainWidget::invalidate_ui);
 
-
 		resize(500, 500);
+
+
 		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer, config_manager, this);
 
 		main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
 
 		helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
 		helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager);
-		helper_opengl_widget->show();
+		//helper_opengl_widget->showMaximized();
 
 
 		status_label = new QTextEdit(this);
@@ -2109,7 +2117,7 @@ public:
 		status_label->setStyleSheet("background-color: black; color: white; border: 0");
 		status_label->setFontFamily("Monaco");
 
-		status_label->show();
+		//status_label->show();
 
 		text_command_line_edit = new QLineEdit(this);
 		text_command_line_edit->hide();
@@ -2895,14 +2903,9 @@ int main(int argc, char* args[]) {
 	wstring file_path;
 	string file_path_;
 	ifstream last_state_file(last_path_file_absolute_location);
-	//last_state_file.read(file_path, MAX_PATH);
 	getline(last_state_file, file_path_);
 	file_path = utf8_decode(file_path_);
-	//last_state_file >> initial_document;
 	last_state_file.close();
-
-	//bool dummy_invlaidate_pointer;
-	//pdf_renderer->set_invalidate_pointer(&dummy_invlaidate_pointer);
 
 	bool is_waiting_for_symbol = false;
 	const Command* current_pending_command = nullptr;
