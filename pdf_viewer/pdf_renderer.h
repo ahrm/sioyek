@@ -10,8 +10,11 @@
 #include <optional>
 #include <SDL.h>
 #include <iostream>
+#include <functional>
 //#include <gl/glew.h>
 #include <Windows.h>
+
+#include <qobject.h>
 
 #include "book.h"
 
@@ -44,7 +47,8 @@ struct RenderResponse {
 
 bool operator==(const RenderRequest& lhs, const RenderRequest& rhs);
 
-class PdfRenderer {
+class PdfRenderer : public QObject{
+	Q_OBJECT
 	// A pointer to the mupdf context to clone.
 	// Since the context should only be used from the thread that initialized it,
 	// we can not simply clone the context in the initializer because the initializer
@@ -62,8 +66,8 @@ class PdfRenderer {
 	vector<RenderRequest> pending_render_requests;
 	optional<SearchRequest> pending_search_request;
 	vector<RenderResponse> cached_responses;
-	vector<thread> worker_threads;
-	thread search_thread;
+	vector<std::thread> worker_threads;
+	std::thread search_thread;
 	//mutex for pending render requests
 	mutex pending_requests_mutex;
 	mutex search_request_mutex;
@@ -71,11 +75,14 @@ class PdfRenderer {
 	//mutex pixmap_drop_mutex;
 	vector<mutex> pixmap_drop_mutex;
 
-	// a pointer to a boolean variable indicating whether render is invalidated,
-	// this is so that we can initiate a rerender when worker thread has rendered
-	// a new page. (todo: this is very hacky, should be handled more elegantly)
-	bool* invalidate_pointer;
+	//// a pointer to a boolean variable indicating whether render is invalidated,
+	//// this is so that we can initiate a rerender when worker thread has rendered
+	//// a new page. (todo: this is very hacky, should be handled more elegantly)
+	//bool* invalidate_pointer;
 	bool* should_quit_pointer;
+
+	//std::function<void()> on_render_invalidate;
+	//std::function<void()> on_search_invalidate;
 
 	int num_threads;
 
@@ -88,7 +95,9 @@ public:
 	void start_threads();
 	void join_threads();
 
-	void set_invalidate_pointer(bool* inv_p);
+	//void set_invalidate_pointer(bool* inv_p);
+	//void set_on_render_invalidate_function(function<void()> f);
+	//void set_on_search_invalidate_function(function<void()> f);
 
 	fz_document* get_document_with_path(int thread_index, fz_context* mupdf_context, wstring path);
 
@@ -109,5 +118,9 @@ public:
 	void run_search(int thread_index);
 
 	~PdfRenderer();
+
+signals:
+	void render_advance();
+	void search_advance();
 
 };

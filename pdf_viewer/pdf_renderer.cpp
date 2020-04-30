@@ -6,7 +6,6 @@ should_quit_pointer(should_quit_pointer),
 num_threads(num_threads),
 pixmaps_to_drop(num_threads),
 pixmap_drop_mutex(num_threads) {
-	invalidate_pointer = nullptr;
 }
 
 fz_context* PdfRenderer::init_context() {
@@ -17,11 +16,11 @@ fz_context* PdfRenderer::init_context() {
 void PdfRenderer::start_threads() {
 
 	for (int i = 0; i < num_threads; i++) {
-		worker_threads.push_back(thread([&, i]() {
+		worker_threads.push_back(std::thread([&, i]() {
 				run(i);
 			}));
 	}
-	search_thread = thread([&]() {
+	search_thread = std::thread([&]() {
 		run_search(num_threads);
 		});
 }
@@ -34,10 +33,20 @@ void PdfRenderer::join_threads()
 	search_thread.join();
 }
 
-void PdfRenderer::set_invalidate_pointer(bool* inv_p) {
-	invalidate_pointer = inv_p;
-}
+//void PdfRenderer::set_invalidate_pointer(bool* inv_p) {
+//	invalidate_pointer = inv_p;
+//}
 
+//void PdfRenderer::set_on_render_invalidate_function(function<void()> f)
+//{
+//	on_render_invalidate = f;
+//}
+//
+//void PdfRenderer::set_on_search_invalidate_function(function<void()> f)
+//{
+//	on_search_invalidate = f;
+//}
+//
 //should only be called from the main thread
 
 void PdfRenderer::add_request(wstring document_path, int page, float zoom_level) {
@@ -249,7 +258,8 @@ void PdfRenderer::run_search(int thread_index)
 
 				if (num_handled_pages % 16 == 0) {
 					*req.percent_done = (float)num_handled_pages / num_pages;
-					*invalidate_pointer = true;
+					//*invalidate_pointer = true;
+					emit search_advance();
 				}
 
 				total_results += num_results;
@@ -260,7 +270,11 @@ void PdfRenderer::run_search(int thread_index)
 			}
 			req.search_results_mutex->lock();
 			*req.is_searching = false;
-			*invalidate_pointer = true;
+			//*invalidate_pointer = true;
+			//if (on_search_invalidate) {
+			//	on_search_invalidate();
+			//}
+			emit search_advance();
 			req.search_results_mutex->unlock();
 		}
 		else{
@@ -351,10 +365,14 @@ void PdfRenderer::run(int thread_index) {
 				cached_response_mutex.lock();
 				cached_responses.push_back(resp);
 				cached_response_mutex.unlock();
-				if (invalidate_pointer != nullptr) {
-					//todo: there might be a race condition here
-					*invalidate_pointer = true;
-				}
+				//if (invalidate_pointer != nullptr) {
+				//	//todo: there might be a race condition here
+				//	*invalidate_pointer = true;
+				//}
+				//if (on_render_invalidate) {
+				//	on_render_invalidate();
+				//}
+				emit render_advance();
 
 			}
 			fz_catch(mupdf_context) {

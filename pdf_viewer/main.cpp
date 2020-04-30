@@ -5,7 +5,6 @@
 //todo: tests!
 //todo: handle right to left documents
 //todo: link across documents requires restart
-//todo: handle async events triggering rerender, possibly separate total rerender from status bar rerender
 //todo: we should probably have a documentview manager akin to documentmanager, then we don't
 // have to worry about creating a new documentview each time a document is opened
 // also, remember to handle the commented case where when editting a link (or something like that)
@@ -1762,12 +1761,12 @@ protected:
 		glBindBuffer(GL_ARRAY_BUFFER, g_shared_resources.uv_buffer_object);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-		QTimer* timer = new QTimer(this);
-		timer->setInterval(200);
-		connect(timer, &QTimer::timeout, [&]() {
-			update();
-			});
-		timer->start();
+		//QTimer* timer = new QTimer(this);
+		//timer->setInterval(200);
+		//connect(timer, &QTimer::timeout, [&]() {
+		//	update();
+		//	});
+		//timer->start();
 	}
 
 	void resizeGL(int w, int h) override {
@@ -2068,6 +2067,7 @@ protected:
 		delete helper_opengl_widget;
 	}
 
+	bool dsqp;
 public:
 	MainWidget(
 		fz_context* mupdf_context,
@@ -2075,16 +2075,30 @@ public:
 		DocumentManager* document_manager,
 		ConfigManager* config_manager,
 		InputHandler* input_handler,
-		PdfRenderer* pdf_renderer,
+		bool* should_quit_ptr,
 		QWidget* parent=nullptr
 	) : QWidget(parent),
 		mupdf_context(mupdf_context),
 		db(db),
 		document_manager(document_manager),
 		config_manager(config_manager),
-		input_handler(input_handler),
-		pdf_renderer(pdf_renderer)
+		input_handler(input_handler)
 	{ 
+		pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
+		//pdf_renderer->set_invalidate_pointer(&dsqp);
+		pdf_renderer->start_threads();
+
+		//pdf_renderer->set_on_render_invalidate_function([&]() {
+		//	invalidate_render();
+		//	});
+
+		//pdf_renderer->set_on_search_invalidate_function([&]() {
+		//	invalidate_render();
+		//	});
+		QObject::connect(pdf_renderer, &PdfRenderer::render_advance, this, &MainWidget::invalidate_render);
+		QObject::connect(pdf_renderer, &PdfRenderer::search_advance, this, &MainWidget::invalidate_ui);
+
+
 		resize(500, 500);
 		opengl_widget = new PdfViewOpenGLWidget(nullptr, pdf_renderer, config_manager, this);
 
@@ -2117,6 +2131,11 @@ public:
 		layout->addWidget(opengl_widget);
 		setLayout(layout);
 		setFocus();
+	}
+
+	~MainWidget() {
+		cout << "Waiting for background threads ..." << endl;
+		pdf_renderer->join_threads();
 	}
 
 	string get_status_string() {
@@ -2196,6 +2215,10 @@ public:
 		update();
 		opengl_widget->update();
 		helper_opengl_widget->update();
+	}
+
+	void invalidate_ui() {
+		status_label->setText(QString::fromStdString(get_status_string()));
 	}
 
 	void handle_command_with_symbol(const Command* command, char symbol) {
@@ -2610,6 +2633,7 @@ public:
 					int* page_value = (int*)page_pointer;
 					if (page_value) {
 						push_state();
+						invalidate_render();
 						main_document_view->goto_page(*page_value);
 					}
 					}, this);
@@ -2630,6 +2654,7 @@ public:
 					wstring doc_path = *(wstring*)string_pointer;
 					if (doc_path.size() > 0) {
 						push_state();
+						invalidate_render();
 						open_document(doc_path);
 					}
 					}, this);
@@ -2648,6 +2673,7 @@ public:
 				float* offset_value = (float*)float_pointer;
 				if (offset_value) {
 					push_state();
+					invalidate_render();
 					main_document_view->set_offset_y(*offset_value);
 				}
 				}, this);
@@ -2669,6 +2695,7 @@ public:
 				BookState* offset_value = (BookState*)book_p;
 				if (offset_value) {
 					push_state();
+					invalidate_render();
 					open_document(offset_value->document_path, 0.0f, offset_value->offset_y);
 				}
 				}, this);
@@ -2843,9 +2870,6 @@ int main(int argc, char* args[]) {
 	}
 
 	bool quit = false;
-	PdfRenderer* pdf_renderer = new PdfRenderer(4, &quit, mupdf_context);
-	pdf_renderer->start_threads();
-
 
 	bool one_window_mode = false;
 	int num_displays = SDL_GetNumVideoDisplays();
@@ -2866,8 +2890,8 @@ int main(int argc, char* args[]) {
 	//last_state_file >> initial_document;
 	last_state_file.close();
 
-	bool dummy_invlaidate_pointer;
-	pdf_renderer->set_invalidate_pointer(&dummy_invlaidate_pointer);
+	//bool dummy_invlaidate_pointer;
+	//pdf_renderer->set_invalidate_pointer(&dummy_invlaidate_pointer);
 
 	bool is_waiting_for_symbol = false;
 	const Command* current_pending_command = nullptr;
@@ -2891,13 +2915,12 @@ int main(int argc, char* args[]) {
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
-	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, pdf_renderer);
+	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, &quit);
 	main_widget.open_document(file_path);
 	main_widget.show();
 
 	app.exec();
 
 	quit = true;
-	pdf_renderer->join_threads();
 	return 0;
 }
