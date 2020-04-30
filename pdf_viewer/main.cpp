@@ -336,6 +336,11 @@ protected:
 		glBindVertexArray(vertex_array_object);
 
 		render();
+
+		// todo: this is hacky, do something better here
+		// We only delete old cached pages after a rerender, therefore we ensure non of the deleted
+		// pages are immediately required
+		pdf_renderer->delete_old_pages();
 	}
 public:
 
@@ -584,6 +589,7 @@ protected:
 		status_label->move(0, main_window_height - 20);
 		status_label->resize(main_window_width, 20);
 	}
+
 
 	void closeEvent(QCloseEvent* close_event) override {
 		main_document_view->persist();
@@ -1370,28 +1376,27 @@ public:
 
 
 int main(int argc, char* args[]) {
-		char exe_file_name[MAX_PATH];
+
+	char exe_file_name[MAX_PATH];
 	GetModuleFileNameA(NULL, exe_file_name, sizeof(exe_file_name));
+	filesystem::path exe_path = exe_file_name;
+
+	// parent path is the directory in which config files and required shaders are located
+	// in debug mode this is the same directory as the source file but in release mode it is
+	// the directory in which the executable is located
+	parent_path = exe_path.parent_path();
 
 #ifdef NDEBUG
 	install_app(exe_file_name);
-#endif
-
-	filesystem::path exe_path = exe_file_name;
-	parent_path = exe_path.parent_path();
-
-	//comment this is release mode
-#ifdef _DEBUG
-	parent_path = "C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer";
+#else
+	filesystem::path source_file_path = __FILE__;
+	parent_path = source_file_path.parent_path();
 #endif
 
 	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
 
 	filesystem::path config_path = parent_path / "prefs.config";
 	ConfigManager config_manager(config_path.wstring());
-	auto last_config_write_time = std::filesystem::last_write_time(config_path);
-
-	const float* text_h = config_manager.get_config<float>(L"text_highlight_color");
 
 	sqlite3* db;
 	char* error_message = nullptr;
@@ -1410,7 +1415,7 @@ int main(int argc, char* args[]) {
 	locks.unlock = unlock_mutex;
 
 	fz_context* mupdf_context = fz_new_context(nullptr, &locks, FZ_STORE_UNLIMITED);
-	//fz_context* mupdf_context = fz_new_context(nullptr, nullptr, FZ_STORE_UNLIMITED);
+
 	if (!mupdf_context) {
 		cerr << "could not create mupdf context" << endl;
 		return -1;
