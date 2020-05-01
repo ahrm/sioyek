@@ -31,7 +31,7 @@ void Document::add_bookmark(wstring desc, float y_offset) {
 void Document::add_link(Link link, bool insert_into_database) {
 	links.push_back(link);
 	if (insert_into_database) {
-		insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.src_offset_y);
+		insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.dest_zoom_level ,link.src_offset_y);
 	}
 }
 

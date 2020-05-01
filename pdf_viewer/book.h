@@ -38,6 +38,7 @@ struct Link {
 	wstring document_path;
 	float dest_offset_x;
 	float dest_offset_y;
+	float dest_zoom_level;
 	float src_offset_y;
 };
 

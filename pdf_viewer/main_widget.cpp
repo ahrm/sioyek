@@ -212,6 +212,7 @@ void MainWidget::validate_render() {
 				helper_document_view->get_document()->get_path() == link->document_path) {
 
 				helper_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
+				helper_document_view->set_zoom_level(link->dest_zoom_level);
 			}
 			else {
 				//delete helper_document_view;
@@ -219,6 +220,7 @@ void MainWidget::validate_render() {
 				//	helper_window_width, helper_window_height, link->dest_offset_x, link->dest_offset_y);
 				helper_document_view->open_document(link->document_path);
 				helper_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
+				helper_document_view->set_zoom_level(link->dest_zoom_level);
 			}
 		}
 		else {
@@ -436,13 +438,15 @@ void MainWidget::prev_state() {
 		if (link_to_edit) {
 			float link_new_offset_x = main_document_view->get_offset_x();
 			float link_new_offset_y = main_document_view->get_offset_y();
+			float link_new_zoom_level = main_document_view->get_zoom_level();
 			link_to_edit->dest_offset_x = link_new_offset_x;
 			link_to_edit->dest_offset_y = link_new_offset_y;
+			link_to_edit->dest_zoom_level = link_new_zoom_level;
 			//update_link(db, history[current_history_index].document_view->get_document()->get_path(),
 			//	link_new_offset_x, link_new_offset_y, link_to_edit->src_offset_y);
 
 			update_link(db, history[current_history_index].document_path,
-				link_new_offset_x, link_new_offset_y, link_to_edit->src_offset_y);
+				link_new_offset_x, link_new_offset_y, link_new_zoom_level, link_to_edit->src_offset_y);
 			link_to_edit = nullptr;
 		}
 
@@ -481,6 +485,7 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 			Link& pl = pending_link.value().second;
 			pl.dest_offset_x = offset_x;
 			pl.dest_offset_y = main_document_view->get_page_offset(page - 1) + offset_y;
+			pl.dest_zoom_level = main_document_view->get_zoom_level();
 			pl.document_path = main_document_view->get_document()->get_path();
 			main_document_view->get_document()->add_link(pl);
 			pending_link = {};
@@ -596,6 +601,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			//todo: add a feature where we can tap tab button to switch between main view and helper view
 			push_state();
 			open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
+			main_document_view->set_zoom_level(link->dest_zoom_level);
 		}
 	}
 	else if (command->name == "edit_link") {
@@ -604,6 +610,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			push_state();
 			link_to_edit = link;
 			open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
+			main_document_view->set_zoom_level(link->dest_zoom_level);
 		}
 	}
 
@@ -751,6 +758,7 @@ void MainWidget::handle_link() {
 		auto [source_path, pl] = pending_link.value();
 		pl.dest_offset_x = main_document_view->get_offset_x();
 		pl.dest_offset_y = main_document_view->get_offset_y();
+		pl.dest_zoom_level = main_document_view->get_zoom_level();
 		pl.document_path = main_document_view->get_document()->get_path();
 		pending_link = {};
 		if (source_path == main_document_view->get_document()->get_path()) {
@@ -769,6 +777,7 @@ void MainWidget::handle_link() {
 				pl.document_path,
 				pl.dest_offset_x,
 				pl.dest_offset_y,
+				pl.dest_zoom_level,
 				pl.src_offset_y);
 		}
 	}

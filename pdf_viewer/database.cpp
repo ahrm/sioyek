@@ -79,18 +79,20 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 static int link_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	vector<Link>* res = (vector<Link>*)res_vector;
-	assert(argc == 4);
+	assert(argc == 5);
 
 	wstring dst_path = utf8_decode(argv[0]);
 	float src_offset_y = atof(argv[1]);
 	float dst_offset_x = atof(argv[2]);
 	float dst_offset_y = atof(argv[3]);
+	float dst_zoom_level = atof(argv[4]);
 
 	Link link;
 	link.document_path = dst_path;
 	link.src_offset_y = src_offset_y;
 	link.dest_offset_x = dst_offset_x;
 	link.dest_offset_y = dst_offset_y;
+	link.dest_zoom_level = dst_zoom_level;
 
 	res->push_back(link);
 	return 0;
@@ -155,7 +157,8 @@ bool create_links_table(sqlite3* db) {
 		"dst_document TEXT,"\
 		"src_offset_y REAL,"\
 		"dst_offset_x REAL,"\
-		"dst_offset_y REAL);";
+		"dst_offset_y REAL,"\
+		"dst_zoom_level REAL);";
 
 	char* error_message = nullptr;
 	return handle_error(
@@ -210,11 +213,11 @@ bool insert_bookmark(sqlite3* db, wstring document_path, wstring desc, float off
 		error_message);
 }
 
-bool insert_link(sqlite3* db, wstring src_document_path, wstring dst_document_path, float dst_offset_x, float dst_offset_y, float src_offset_y) {
+bool insert_link(sqlite3* db, wstring src_document_path, wstring dst_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
 
 	wstringstream ss;
-	ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y) VALUES ('" <<
-		src_document_path << "', '" << dst_document_path << "', " << src_offset_y << ", " << dst_offset_x << ", " << dst_offset_y << ");";
+	ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level) VALUES ('" <<
+		src_document_path << "', '" << dst_document_path << "', " << src_offset_y << ", " << dst_offset_x << ", " << dst_offset_y << ", " << dst_zoom_level << ");";
 	char* error_message = nullptr;
 
 	return handle_error(
@@ -222,10 +225,11 @@ bool insert_link(sqlite3* db, wstring src_document_path, wstring dst_document_pa
 		error_message);
 }
 
-bool update_link(sqlite3* db, wstring src_document_path, float dst_offset_x, float dst_offset_y, float src_offset_y) {
+bool update_link(sqlite3* db, wstring src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
 
 	wstringstream ss;
-	ss << "UPDATE links SET dst_offset_x=" << dst_offset_x << ", dst_offset_y=" << dst_offset_y << " WHERE src_document='" <<
+	ss << "UPDATE links SET dst_offset_x=" << dst_offset_x << ", dst_offset_y=" << dst_offset_y <<
+		", dst_zoom_level=" << dst_zoom_level << " WHERE src_document='" <<
 		src_document_path << "' AND src_offset_y=" << src_offset_y << ";";
 	char* error_message = nullptr;
 
@@ -318,7 +322,7 @@ bool global_select_bookmark(sqlite3* db,  vector<pair<wstring, BookMark>> &out_r
 
 bool select_links(sqlite3* db, wstring src_document_path, vector<Link> &out_result) {
 		wstringstream ss;
-		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y from links where src_document='" << src_document_path << "';";
+		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level from links where src_document='" << src_document_path << "';";
 
 		char* error_message = nullptr;
 		return handle_error(
