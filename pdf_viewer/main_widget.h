@@ -77,7 +77,6 @@ private:
 	DocumentView* helper_document_view;
 
 	// current widget responsible for selecting an option (for example toc or bookmarks)
-	//QWidget* current_widget;
 	unique_ptr<QWidget> current_widget;
 
 	vector<DocumentViewState> history;
@@ -930,7 +929,9 @@ public:
 			main_document_view->add_bookmark(text);
 		}
 		if (current_pending_command->name == "command") {
-			wcout << text << endl;
+			if (text == L"q") {
+				QApplication::quit();
+			}
 		}
 	}
 
