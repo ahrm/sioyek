@@ -83,7 +83,7 @@ public:
 	void get_visible_pages(int window_height, vector<int>& visible_pages);
 	void move_pages(int num_pages);
 	void reset_doc_state();
-	void open_document(wstring doc_path);
+	void open_document(wstring doc_path, bool load_prev_state = true);
 	float get_page_offset(int page);
 	void goto_offset_within_page(int page, float offset_x, float offset_y);
 	void goto_page(int page);

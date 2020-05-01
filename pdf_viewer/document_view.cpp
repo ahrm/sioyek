@@ -337,7 +337,7 @@ void DocumentView::reset_doc_state() {
 	zoom_level = 1.0f;
 	set_offsets(0.0f, 0.0f);
 }
-void DocumentView::open_document(wstring doc_path) {
+void DocumentView::open_document(wstring doc_path, bool load_prev_state) {
 
 	error_code error_code;
 	filesystem::path cannonical_path_ = std::filesystem::canonical(doc_path, error_code);
@@ -350,13 +350,7 @@ void DocumentView::open_document(wstring doc_path) {
 	wstring cannonical_path = cannonical_path_.wstring();
 
 	//document_path = cannonical_path;
-	vector<OpenedBookState> prev_state;
 
-	if (select_opened_book(database, cannonical_path, prev_state)) {
-		if (prev_state.size() > 1) {
-			cerr << "more than one file with one path, this should not happen!" << endl;
-		}
-	}
 
 	//current_document = new Document(mupdf_context, doc_path, database);
 	current_document = document_manager->get_document(doc_path);
@@ -366,12 +360,22 @@ void DocumentView::open_document(wstring doc_path) {
 	}
 
 	reset_doc_state();
-	if (prev_state.size() > 0) {
-		OpenedBookState previous_state = prev_state[0];
-		zoom_level = previous_state.zoom_level;
-		offset_x = previous_state.offset_x;
-		offset_y = previous_state.offset_y;
-		set_offsets(previous_state.offset_x, previous_state.offset_y);
+
+	if (load_prev_state) {
+
+		vector<OpenedBookState> prev_state;
+		if (select_opened_book(database, cannonical_path, prev_state)) {
+			if (prev_state.size() > 1) {
+				cerr << "more than one file with one path, this should not happen!" << endl;
+			}
+		}
+		if (prev_state.size() > 0) {
+			OpenedBookState previous_state = prev_state[0];
+			zoom_level = previous_state.zoom_level;
+			offset_x = previous_state.offset_x;
+			offset_y = previous_state.offset_y;
+			set_offsets(previous_state.offset_x, previous_state.offset_y);
+		}
 	}
 }
 float DocumentView::get_page_offset(int page) {

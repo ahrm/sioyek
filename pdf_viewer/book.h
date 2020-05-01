@@ -33,6 +33,8 @@ struct BookMark {
 };
 
 struct Link {
+	static Link with_src_offset(float src_offset);
+
 	wstring document_path;
 	float dest_offset_x;
 	float dest_offset_y;
