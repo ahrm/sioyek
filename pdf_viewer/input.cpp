@@ -132,6 +132,21 @@ InputParseTreeNode parse_token(string token) {
 		if (command_string == "backspace") {
 			res.command = Qt::Key::Key_Backspace;
 		}
+		if (command_string == "space") {
+			res.command = Qt::Key::Key_Space;
+		}
+		if (command_string == "pageup") {
+			res.command = Qt::Key::Key_PageUp;
+		}
+		if (command_string == "pagedown") {
+			res.command = Qt::Key::Key_PageDown;
+		}
+		if (command_string == "home") {
+			res.command = Qt::Key::Key_Home;
+		}
+		if (command_string == "end") {
+			res.command = Qt::Key::Key_End;
+		}
 		if (command_string == "down") {
 			res.command = Qt::Key::Key_Down;
 		}
@@ -169,6 +184,21 @@ InputParseTreeNode parse_token(string token) {
 		}
 		if (command_string == "<backspace>") {
 			res.command = Qt::Key::Key_Backspace;
+		}
+		if (command_string == "<space>") {
+			res.command = Qt::Key::Key_Space;
+		}
+		if (command_string == "<home>") {
+			res.command = Qt::Key::Key_Home;
+		}
+		if (command_string == "<end>") {
+			res.command = Qt::Key::Key_End;
+		}
+		if (command_string == "<pageup>") {
+			res.command = Qt::Key::Key_PageUp;
+		}
+		if (command_string == "<pagedown>") {
+			res.command = Qt::Key::Key_PageDown;
 		}
 	}
 
