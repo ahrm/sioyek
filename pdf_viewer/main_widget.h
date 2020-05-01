@@ -70,9 +70,7 @@ private:
 
 	PdfViewOpenGLWidget* opengl_widget;
 	PdfViewOpenGLWidget* helper_opengl_widget;
-	bool is_waiting_for_symbol = false;
 
-	//todo: see if these two can be merged
 	const Command* current_pending_command = nullptr;
 
 	DocumentView* main_document_view;
@@ -425,13 +423,14 @@ public:
 		}
 	}
 
+	bool is_waiting_for_symbol() {
+		return (current_pending_command && current_pending_command->requires_symbol);
+	}
+
 	void key_event(bool released, QKeyEvent* kevent) {
 		validate_render();
 
 		if (kevent->key() == Qt::Key::Key_Escape) {
-			current_pending_command = nullptr;
-			is_waiting_for_symbol = false;
-			//todo: merge here and there
 			handle_escape();
 		}
 
@@ -443,13 +442,12 @@ public:
 			if (std::find(ignored_codes.begin(), ignored_codes.end(), kevent->key()) != ignored_codes.end()) {
 				return;
 			}
-			if (is_waiting_for_symbol) {
+			if (is_waiting_for_symbol()) {
 
 				char symb = get_symbol(kevent->key(), kevent->modifiers() & Qt::ShiftModifier);
 				if (symb) {
 					handle_command_with_symbol(current_pending_command, symb);
 					current_pending_command = nullptr;
-					is_waiting_for_symbol = false;
 				}
 				return;
 			}
@@ -462,7 +460,6 @@ public:
 
 			if (command) {
 				if (command->requires_symbol) {
-					is_waiting_for_symbol = true;
 					current_pending_command = command;
 					return;
 				}
