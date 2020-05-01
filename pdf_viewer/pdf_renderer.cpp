@@ -33,21 +33,6 @@ void PdfRenderer::join_threads()
 	search_thread.join();
 }
 
-//void PdfRenderer::set_invalidate_pointer(bool* inv_p) {
-//	invalidate_pointer = inv_p;
-//}
-
-//void PdfRenderer::set_on_render_invalidate_function(function<void()> f)
-//{
-//	on_render_invalidate = f;
-//}
-//
-//void PdfRenderer::set_on_search_invalidate_function(function<void()> f)
-//{
-//	on_search_invalidate = f;
-//}
-//
-//should only be called from the main thread
 
 void PdfRenderer::add_request(wstring document_path, int page, float zoom_level) {
 	//fz_document* doc = get_document_with_path(document_path);
@@ -365,13 +350,7 @@ void PdfRenderer::run(int thread_index) {
 				cached_response_mutex.lock();
 				cached_responses.push_back(resp);
 				cached_response_mutex.unlock();
-				//if (invalidate_pointer != nullptr) {
-				//	//todo: there might be a race condition here
-				//	*invalidate_pointer = true;
-				//}
-				//if (on_render_invalidate) {
-				//	on_render_invalidate();
-				//}
+
 				emit render_advance();
 
 			}

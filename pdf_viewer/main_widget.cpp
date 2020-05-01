@@ -200,7 +200,7 @@ wstring MainWidget::get_status_string() {
 
 	ss << "Page " << main_document_view->get_current_page_number() + 1 << " / " << main_document_view->get_document()->num_pages();
 	if (chapter_name.size() > 0) {
-		ss << " [ " << chapter_name << "] ";
+		ss << " [ " << chapter_name << " ] ";
 	}
 	int num_search_results = opengl_widget->get_num_search_results();
 	float progress = -1;
