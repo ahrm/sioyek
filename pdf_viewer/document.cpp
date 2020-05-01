@@ -113,6 +113,16 @@ const vector<TocNode*>& Document::get_toc() {
 	return top_level_toc_nodes;
 }
 
+const vector<wstring>& Document::get_flat_toc_names()
+{
+	return flat_toc_names;
+}
+
+const vector<int>& Document::get_flat_toc_pages()
+{
+	return flat_toc_pages;
+}
+
 float Document::get_page_height(int page_index)
 {
 	return page_heights[page_index];
@@ -207,6 +217,7 @@ bool Document::open() {
 			load_page_dimensions();
 			load_document_metadata_from_db();
 			create_toc_tree(top_level_toc_nodes);
+			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
 			return true;
 		}
 

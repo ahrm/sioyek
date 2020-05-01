@@ -20,6 +20,9 @@ private:
 	vector<Link> links;
 	sqlite3* db;
 	vector<TocNode*> top_level_toc_nodes;
+	vector<wstring> flat_toc_names;
+	vector<int> flat_toc_pages;
+
 	optional<int> cached_num_pages;
 
 	fz_context* context;
@@ -53,6 +56,8 @@ public:
 	bool get_mark_location_if_exists(char symbol, float* y_offset);
 	~Document();
 	const vector<TocNode*>& get_toc();
+	const vector<wstring>& get_flat_toc_names();
+	const vector<int>& get_flat_toc_pages();
 	bool open();
 	float get_page_height(int page_index);
 	float get_page_width(int page_index);

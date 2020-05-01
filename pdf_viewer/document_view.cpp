@@ -1,6 +1,7 @@
 #include "document_view.h"
 
 extern float background_color[3];
+extern float move_screen_percentage;
 
 DocumentView::DocumentView( fz_context* mupdf_context,
 	sqlite3* db,
@@ -333,6 +334,13 @@ void DocumentView::move_pages(int num_pages) {
 	}
 	move_absolute(0, num_pages * (current_document->get_page_height(current_page) + page_paddings));
 }
+
+void DocumentView::move_screens(int num_screens)
+{
+	float screen_height_in_doc_space = view_height / zoom_level;
+	set_offset_y(get_offset_y() + num_screens * screen_height_in_doc_space * move_screen_percentage);
+}
+
 void DocumentView::reset_doc_state() {
 	zoom_level = 1.0f;
 	set_offsets(0.0f, 0.0f);
@@ -464,6 +472,53 @@ void DocumentView::persist() {
 	if (!current_document) return;
 	update_book(database, current_document->get_path(), zoom_level, offset_x, offset_y);
 }
+
+wstring DocumentView::get_current_chapter_name()
+{
+	const vector<wstring>& chapter_names = current_document->get_flat_toc_names();
+	const vector<int>& chapter_pages = current_document->get_flat_toc_pages();
+
+	if (chapter_names.size() == 0) {
+		return L"";
+	}
+
+	int cp = get_current_page_number();
+
+	int current_chapter_index = 0;
+
+	int index = 0;
+	for (int p : chapter_pages) {
+		if (p <= cp) {
+			current_chapter_index = index;
+		}
+		index++;
+	}
+
+	return chapter_names[current_chapter_index];
+}
+void DocumentView::goto_chapter(int diff)
+{
+	const vector<int>& chapter_pages = current_document->get_flat_toc_pages();
+	int curr_page = get_current_page_number();
+
+	int index = 0;
+
+	while (index < chapter_pages.size() && chapter_pages[index] < curr_page) {
+		index++;
+	}
+
+	int new_index = index + diff;
+	if (new_index < 0) {
+		goto_page(0);
+	}
+	else if (new_index >= chapter_pages.size()) {
+		goto_end();
+	}
+	else {
+		goto_page(chapter_pages[new_index]);
+	}
+}
+
 void DocumentView::get_text_selection(fz_point selection_begin, fz_point selection_end, vector<fz_rect>& selected_characters, wstring& selected_text) {
 
 	if (!current_document) return;

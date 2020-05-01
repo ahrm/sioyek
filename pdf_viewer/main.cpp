@@ -73,6 +73,7 @@ extern float background_color[3] = { 1.0f, 1.0f, 1.0f };
 extern float ZOOM_INC_FACTOR = 1.2f;
 extern float vertical_move_amount = 1.0f;
 extern float horizontal_move_amount = 1.0f;
+extern float move_screen_percentage = 0.8f;
 extern const unsigned int cache_invalid_milies = 1000;
 extern const int persist_milies = 1000 * 60;
 extern const int page_paddings = 0;
@@ -95,10 +96,6 @@ void unlock_mutex(void* user, int lock) {
 	mutex* mut = (mutex*)user;
 	(mut + lock)->unlock();
 }
-
-
-
-
 
 
 int main(int argc, char* args[]) {

@@ -3,6 +3,7 @@
 extern float ZOOM_INC_FACTOR;
 extern float vertical_move_amount;
 extern float horizontal_move_amount;
+extern float move_screen_percentage;
 extern float background_color[3];
 
 void int_serializer(void* int_pointer, wstringstream& stream) {
@@ -82,6 +83,7 @@ ConfigManager::ConfigManager(wstring path) {
 	configs.push_back({ L"zoom_inc_factor", &ZOOM_INC_FACTOR, float_serializer, float_deserializer });
 	configs.push_back({ L"vertical_move_amount", &vertical_move_amount, float_serializer, float_deserializer });
 	configs.push_back({ L"horizontal_move_amount", &horizontal_move_amount, float_serializer, float_deserializer });
+	configs.push_back({ L"move_screen_percentage", &move_screen_percentage, float_serializer, float_deserializer });
 	wifstream infile(path);
 	deserialize(infile);
 	infile.close();

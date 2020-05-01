@@ -50,6 +50,10 @@ CommandManager::CommandManager() {
 	commands.push_back({ "command", true, false , false, false});
 	commands.push_back({ "search_selected_text_in_google_scholar", false, false , false, false});
 	commands.push_back({ "search_selected_text_in_libgen", false, false , false, false});
+	commands.push_back({ "screen_down", false, false , false, false});
+	commands.push_back({ "screen_up", false, false , false, false});
+	commands.push_back({ "next_chapter", false, false , false, true});
+	commands.push_back({ "prev_chapter", false, false , false, true});
 }
 const Command* CommandManager::get_command_with_name(string name) {
 	for (const auto &com : commands) {

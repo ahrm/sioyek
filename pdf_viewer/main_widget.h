@@ -80,7 +80,7 @@ protected:
 	void mouseMoveEvent(QMouseEvent* mouse_event) override;
 	void closeEvent(QCloseEvent* close_event) override;
 	bool is_pending_link_source_filled();
-	string get_status_string();
+	wstring get_status_string();
 	void handle_escape();
 	void keyPressEvent(QKeyEvent* kevent) override;
 	void keyReleaseEvent(QKeyEvent* kevent) override;

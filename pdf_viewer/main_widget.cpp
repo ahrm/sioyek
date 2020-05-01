@@ -193,10 +193,15 @@ bool MainWidget::is_pending_link_source_filled() {
 	return (pending_link && pending_link.value().first);
 }
 
-string MainWidget::get_status_string() {
-	stringstream ss;
-	if (main_document_view->get_document() == nullptr) return "";
+wstring MainWidget::get_status_string() {
+	wstringstream ss;
+	if (main_document_view->get_document() == nullptr) return L"";
+	wstring chapter_name = main_document_view->get_current_chapter_name();
+
 	ss << "Page " << main_document_view->get_current_page_number() + 1 << " / " << main_document_view->get_document()->num_pages();
+	if (chapter_name.size() > 0) {
+		ss << " [ " << chapter_name << "] ";
+	}
 	int num_search_results = opengl_widget->get_num_search_results();
 	float progress = -1;
 	if (num_search_results > 0 || opengl_widget->get_is_searching(&progress)) {
@@ -216,7 +221,8 @@ string MainWidget::get_status_string() {
 		ss << " | editing link ...";
 	}
 	if (current_pending_command && current_pending_command->requires_symbol) {
-		ss << " | " << current_pending_command->name << " waiting for symbol";
+		wstring wcommand_name = utf8_decode(current_pending_command->name.c_str());
+		ss << " | " << wcommand_name << " waiting for symbol";
 	}
 	return ss.str();
 }
@@ -278,7 +284,7 @@ void MainWidget::validate_render() {
 }
 
 void MainWidget::validate_ui() {
-	status_label->setText(QString::fromStdString(get_status_string()));
+	status_label->setText(QString::fromStdWString(get_status_string()));
 	is_ui_invalidated = false;
 }
 
@@ -618,6 +624,12 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	int rp = max(num_repeats, 1);
 
+	if (command->name == "screen_down") {
+		main_document_view->move_screens(1 * rp);
+	}
+	if (command->name == "screen_up") {
+		main_document_view->move_screens(-1 * rp);
+	}
 	if (command->name == "move_down") {
 		main_document_view->move(0.0f, 72.0f * rp * vertical_move_amount);
 	}
@@ -692,6 +704,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "previous_page") {
 		main_document_view->move_pages(-1 - num_repeats);
 	}
+	else if (command->name == "next_chapter") {
+		main_document_view->goto_chapter(rp);
+	}
+	else if (command->name == "prev_chapter") {
+		main_document_view->goto_chapter(-rp);
+	}
+
 	else if (command->name == "goto_toc") {
 		vector<wstring> flat_toc;
 		vector<int> current_document_toc_pages;
