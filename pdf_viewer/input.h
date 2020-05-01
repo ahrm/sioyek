@@ -53,7 +53,8 @@ private:
 	string number_stack;
 
 public:
-	InputHandler(wstring file_path);
+	InputHandler(const wstring& file_path);
+	void reload_config_file(const wstring& file_path);
 	const Command* handle_key(int key, bool shift_pressed, bool control_pressed, int* num_repeats);
 };
 

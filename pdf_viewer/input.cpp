@@ -286,7 +286,7 @@ InputParseTreeNode* parse_lines(vector<string> lines, vector<string> command_nam
 
 }
 
-InputParseTreeNode* parse_key_config_file(wstring file_path) {
+InputParseTreeNode* parse_key_config_file(const wstring& file_path) {
 	ifstream infile(file_path);
 
 	vector<string> command_names;
@@ -302,10 +302,16 @@ InputParseTreeNode* parse_key_config_file(wstring file_path) {
 }
 
 
-InputHandler::InputHandler(wstring file_path) {
+InputHandler::InputHandler(const wstring& file_path) {
+	reload_config_file(file_path);
+}
+
+void InputHandler::reload_config_file(const wstring& file_path)
+{
 	root = parse_key_config_file(file_path);
 	current_node = root;
 }
+
 
 bool is_digit(int key) {
 	return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
