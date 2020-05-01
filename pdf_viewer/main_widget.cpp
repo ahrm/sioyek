@@ -523,6 +523,10 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 		float offset_x, offset_y;
 		parse_uri(link.uri, &page, &offset_x, &offset_y);
 
+		// we usually just want to center the y offset and not the x offset (otherwise for example
+		// a link at the right side of the screen will be centered, causing most of screen state to be empty)
+		offset_x = main_document_view->get_offset_x();
+
 		if (!is_pending_link_source_filled()) {
 			push_state();
 			main_document_view->goto_offset_within_page(page, offset_x, offset_y);
