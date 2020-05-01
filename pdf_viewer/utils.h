@@ -1,20 +1,17 @@
 #pragma once
 
-#include <Windows.h>
-#include <vector>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <sstream>
 #include <string>
-//#include <SDL.h>
+#include <vector>
+
+#include <mupdf/fitz.h>
+
 #include "book.h"
 #include "utf8.h"
-#include <sstream>
-#include <fstream>
-#include <filesystem>
-#include <iostream>
-//#include <gl/glew.h>
-#include <qopenglfunctions.h>
-#include <qopengl.h>
-#include <functional>
-#include <mupdf/fitz.h>
 
 using namespace std;
 

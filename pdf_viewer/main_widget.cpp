@@ -1,3 +1,46 @@
+
+#include <iostream>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <unordered_map>
+#include <optional>
+#include <memory>
+
+
+#include <qabstractitemmodel.h>
+#include <qapplication.h>
+#include <qboxlayout.h>
+#include <qdatetime.h>
+#include <qdesktopwidget.h>
+#include <qkeyevent.h>
+#include <qlabel.h>
+#include <qlineedit.h>
+#include <qlistview.h>
+#include <qopenglfunctions.h>
+#include <qpushbutton.h>
+#include <qsortfilterproxymodel.h>
+#include <qstringlistmodel.h>
+#include <qtextedit.h>
+#include <qtimer.h>
+#include <qtreeview.h>
+#include <qwindow.h>
+
+#include <filesystem>
+
+#include "input.h"
+#include "database.h"
+#include "book.h"
+#include "utils.h"
+#include "ui.h"
+#include "pdf_renderer.h"
+#include "document.h"
+#include "document_view.h"
+#include "pdf_view_opengl_widget.h"
+#include "config.h"
+#include "utf8.h"
+
 #include "main_widget.h"
 
 void MainWidget::paintEvent(QPaintEvent* paint_event) {

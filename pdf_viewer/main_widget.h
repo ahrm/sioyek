@@ -1,61 +1,29 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
 #include <string>
-#include <fstream>
-#include <sstream>
-#include <unordered_map>
-#include <thread>
-#include <mutex>
-#include <optional>
-#include <utility>
 #include <memory>
+#include <vector>
+#include <optional>
 
-#include <qapplication.h>
-#include <qpushbutton.h>
-#include <qopenglwidget.h>
-#include <qopenglextrafunctions.h>
-#include <qopenglfunctions.h>
-#include <qopengl.h>
-#include <qwindow.h>
-#include <qkeyevent.h>
+#include <qwidget.h>
 #include <qlineedit.h>
-#include <qtreeview.h>
-#include <qsortfilterproxymodel.h>
-#include <qabstractitemmodel.h>
-#include <qopenglshaderprogram.h>
-#include <qtimer.h>
-#include <qdatetime.h>
-#include <qstackedwidget.h>
-#include <qboxlayout.h>
-#include <qlistview.h>
-#include <qstringlistmodel.h>
-#include <qlabel.h>
 #include <qtextedit.h>
-#include <qfilesystemwatcher.h>
-#include <qdesktopwidget.h>
+#include <qtimer.h>
 
-#include <Windows.h>
 #include <mupdf/fitz.h>
-#include "sqlite3.h"
-#include <filesystem>
-
-#include "input.h"
-#include "database.h"
-#include "book.h"
-#include "utils.h"
-#include "ui.h"
-#include "pdf_renderer.h"
-#include "document.h"
 #include "document_view.h"
-#include "pdf_view_opengl_widget.h"
+#include "document.h"
+#include "input.h"
+#include "book.h"
 #include "config.h"
-#include "utf8.h"
+#include "pdf_renderer.h"
+#include "input.h"
+#include "pdf_view_opengl_widget.h"
 
 extern float vertical_move_amount;
 extern float horizontal_move_amount;
 extern filesystem::path last_path_file_absolute_location;
+
 
 class MainWidget : public QWidget {
 
