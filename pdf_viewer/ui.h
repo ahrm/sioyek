@@ -106,6 +106,7 @@ public:
 			//proxy_model->setFilterRegExp(text);
 			proxy_model->setFilterFixedString(text);
 			});
+
 	}
 
 	void resizeEvent(QResizeEvent* resize_event) override {
@@ -116,11 +117,6 @@ public:
 		move(parent_width / 3, 0);
 	}
 
-	//void set_values(QStringList string_list, vector<T> values_, function<void(void*)> on_done_) {
-	//	values = values_;
-	//	on_done_ = on_done_;
-	//	string_list_model->setStringList(string_list);
-	//}
 
 	void on_select(const QModelIndex& index) {
 		cout << "activated " << index.data().toString().toStdString() << endl;
