@@ -308,6 +308,7 @@ InputHandler::InputHandler(const wstring& file_path) {
 
 void InputHandler::reload_config_file(const wstring& file_path)
 {
+	delete_current_parse_tree(root);
 	root = parse_key_config_file(file_path);
 	current_node = root;
 }
@@ -352,61 +353,20 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 	return nullptr;
 }
 
+void InputHandler::delete_current_parse_tree(InputParseTreeNode* node_to_delete)
+{
+	bool is_root = false;
 
-//int main(int argc, char** argv) {
-//	//InputParseTreeNode* root = parse_key_config_file("keys.config");
-//
-//	////InputParseTreeNode* root =  parse_lines(commands, command_names);
-//	//InputParseTreeNode* current_node = root;
-//	InputHandler handler("keys.config");
-//
-//	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-//		cout << "could not initialize SDL" << endl;
-//		return -1;
-//	}
-//
-//	SDL_Window* window = SDL_CreateWindow("Input Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 500, 500,  SDL_WINDOW_SHOWN );
-//
-//	bool should_quit = false;
-//	while (!should_quit) {
-//
-//		SDL_Event event;
-//		while (SDL_PollEvent(&event)) {
-//			if (event.type == SDL_QUIT) {
-//				should_quit = true;
-//			}
-//
-//			if (event.type == SDL_KEYDOWN) {
-//				vector<SDL_Scancode> igonred_keycodes = {
-//					SDL_SCANCODE_LCTRL,
-//					SDL_SCANCODE_RCTRL,
-//					SDL_SCANCODE_RSHIFT,
-//					SDL_SCANCODE_LSHIFT
-//				};
-//
-//				if (find(igonred_keycodes.begin(), igonred_keycodes.end(), event.key.keysym.scancode) != igonred_keycodes.end()) {
-//					break;
-//				}
-//
-//				const Command* command = handler.handle_key(SDL_GetKeyFromScancode(event.key.keysym.scancode),
-//					(event.key.keysym.mod & KMOD_SHIFT) != 0,
-//					(event.key.keysym.mod & KMOD_CTRL) != 0
-//					);
-//				if (command) {
-//					cout << command->name << " " << command->requires_text <<  endl;
-//				}
-//
-//			}
-//		}
-//	}
-//	return 0;
-//
-//
-//	//}
-	//InputParseTreeNode node = parse_token("C-S-g");
-	//print_tree_node(node);
-//}
-//InputParseTreeNode* parse_config_file(string config_file_path) {
-//
-//}
+	if (node_to_delete != nullptr) {
+		is_root = node_to_delete->is_root;
 
+		for (int i = 0; i < node_to_delete->children.size(); i++) {
+			delete_current_parse_tree(node_to_delete->children[i]);
+		}
+		delete node_to_delete;
+	}
+
+	if (is_root) {
+		root = nullptr;
+	}
+}

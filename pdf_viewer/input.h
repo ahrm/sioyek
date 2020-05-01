@@ -5,6 +5,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <memory>
 
 //#include <SDL.h>
 
@@ -47,7 +48,7 @@ struct InputParseTreeNode {
 
 class InputHandler {
 private:
-	InputParseTreeNode* root;
+	InputParseTreeNode* root = nullptr;
 	InputParseTreeNode* current_node;
 	CommandManager command_manager;
 	string number_stack;
@@ -56,6 +57,8 @@ public:
 	InputHandler(const wstring& file_path);
 	void reload_config_file(const wstring& file_path);
 	const Command* handle_key(int key, bool shift_pressed, bool control_pressed, int* num_repeats);
+	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
+
 };
 
 //int main(int argc, char** argv) {

@@ -165,7 +165,8 @@ int main(int argc, char* args[]) {
 	}
 
 
-	InputHandler input_handler((parent_path / "keys.config").wstring());
+	wstring keymap_path = (parent_path / "keys.config").wstring();
+	InputHandler input_handler(keymap_path);
 
 	//char file_path[MAX_PATH] = { 0 };
 	wstring file_path;
@@ -183,11 +184,18 @@ int main(int argc, char* args[]) {
 	QFileSystemWatcher pref_file_watcher;
 	pref_file_watcher.addPath(QString::fromStdWString(config_path));
 
+	QFileSystemWatcher key_file_watcher;
+	key_file_watcher.addPath(QString::fromStdWString(keymap_path));
+
 	// live reload the config file
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 		wifstream config_file(config_path);
 		config_manager.deserialize(config_file);
 		config_file.close();
+		});
+
+	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
+		input_handler.reload_config_file(keymap_path);
 		});
 
 
