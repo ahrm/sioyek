@@ -1,5 +1,6 @@
 #include "pdf_renderer.h"
 #include "utils.h"
+#include <qdatetime.h>
 
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone) : context_to_clone(context_to_clone),
 should_quit_pointer(should_quit_pointer),
@@ -96,7 +97,7 @@ GLuint PdfRenderer::find_rendered_page(wstring path, int page, float zoom_level,
 		GLuint result = 0;
 		for (auto& cached_resp : cached_responses) {
 			if (cached_resp.request == req) {
-				cached_resp.last_access_time = SDL_GetTicks();
+				cached_resp.last_access_time = QDateTime::currentMSecsSinceEpoch();
 
 				if (page_width) *page_width = cached_resp.pixmap->w;
 				if (page_height) *page_height = cached_resp.pixmap->h;
@@ -173,7 +174,7 @@ void PdfRenderer::delete_old_pages() {
 	*/
 	cached_response_mutex.lock();
 	vector<int> indices_to_delete;
-	unsigned int now = SDL_GetTicks();
+	unsigned int now = QDateTime::currentMSecsSinceEpoch();
 
 	for (int i = 0; i < cached_responses.size(); i++) {
 		if ((now - cached_responses[i].last_access_time) > cache_invalid_milies) {
@@ -343,7 +344,7 @@ void PdfRenderer::run(int thread_index) {
 				RenderResponse resp;
 				resp.thread = thread_index;
 				resp.request = req;
-				resp.last_access_time = SDL_GetTicks();
+				resp.last_access_time = QDateTime::currentMSecsSinceEpoch();
 				resp.pixmap = rendered_pixmap;
 				resp.texture = 0;
 

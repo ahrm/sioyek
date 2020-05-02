@@ -158,13 +158,6 @@ int main(int argc, char* args[]) {
 
 	bool quit = false;
 
-	bool one_window_mode = false;
-	int num_displays = SDL_GetNumVideoDisplays();
-	if (num_displays == 1) {
-		one_window_mode = true;
-	}
-
-
 	wstring keymap_path = (parent_path / "keys.config").wstring();
 	InputHandler input_handler(keymap_path);
 
@@ -213,3 +206,4 @@ int main(int argc, char* args[]) {
 	quit = true;
 	return 0;
 }
+

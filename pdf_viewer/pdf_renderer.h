@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <map>
 #include <optional>
-#include <SDL.h>
 #include <iostream>
 #include <functional>
 //#include <gl/glew.h>
