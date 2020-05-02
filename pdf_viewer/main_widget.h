@@ -84,8 +84,6 @@ protected:
 	void handle_escape();
 	void keyPressEvent(QKeyEvent* kevent) override;
 	void keyReleaseEvent(QKeyEvent* kevent) override;
-	void validate_render();
-	void validate_ui();
 	void invalidate_render();
 	void invalidate_ui();
 	void handle_command_with_symbol(const Command* command, char symbol);
@@ -123,4 +121,6 @@ public:
 	~MainWidget();
 
 	void open_document(wstring path, optional<float> offset_x = {}, optional<float> offset_y = {});
+	void validate_render();
+	void validate_ui();
 };

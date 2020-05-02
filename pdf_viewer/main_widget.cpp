@@ -44,6 +44,7 @@
 #include "main_widget.h"
 
 extern bool launched_from_file_icon;
+extern filesystem::path parent_path;
 
 void MainWidget::paintEvent(QPaintEvent* paint_event) {
 	QWidget::paintEvent(paint_event);
@@ -878,6 +879,12 @@ void MainWidget::handle_pending_text_command(wstring text) {
 	if (current_pending_command->name == "command") {
 		if (text == L"q") {
 			QApplication::quit();
+		}
+		else if (text == L"keys") {
+			ShellExecuteW(0, 0, (parent_path / "keys.config").wstring().c_str(), 0, 0, SW_SHOW);
+		}
+		else if (text == L"prefs") {
+			ShellExecuteW(0, 0, (parent_path / "prefs.config").wstring().c_str(), 0, 0, SW_SHOW);
 		}
 	}
 }

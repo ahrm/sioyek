@@ -187,25 +187,30 @@ int main(int argc, char* args[]) {
 	QFileSystemWatcher key_file_watcher;
 	key_file_watcher.addPath(QString::fromStdWString(keymap_path));
 
-	// live reload the config file
-	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		wifstream config_file(config_path);
-		config_manager.deserialize(config_file);
-		config_file.close();
-		});
-
-	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		input_handler.reload_config_file(keymap_path);
-		});
 
 
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
+	QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));
+	app.setWindowIcon(icon);
+
 	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, &quit);
 	main_widget.open_document(file_path);
 	main_widget.resize(500, 500);
 	main_widget.showMaximized();
+
+	// live reload the config file
+	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
+		wifstream config_file(config_path);
+		config_manager.deserialize(config_file);
+		config_file.close();
+		main_widget.validate_render();
+		});
+
+	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
+		input_handler.reload_config_file(keymap_path);
+		});
 
 
 	app.exec();
