@@ -63,6 +63,7 @@ void PdfRenderer::add_request(wstring document_path, int page, float zoom_level)
 	}
 }
 void PdfRenderer::add_request(wstring document_path, int page, wstring term, vector<SearchResult>* out,float* percent_done, bool* is_searching, mutex* mut) {
+
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
 

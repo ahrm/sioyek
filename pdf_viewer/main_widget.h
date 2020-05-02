@@ -62,6 +62,8 @@ private:
 
 	int main_window_width, main_window_height;
 
+	QWidget* text_command_line_edit_container;
+	QLabel* text_command_line_edit_label;
 	QLineEdit* text_command_line_edit;
 	QTextEdit* status_label;
 

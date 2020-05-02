@@ -210,6 +210,7 @@ void PdfViewOpenGLWidget::handle_escape() {
 	search_results.clear();
 	current_search_result_index = 0;
 	is_searching = false;
+	is_search_cancelled = true;
 }
 
 void PdfViewOpenGLWidget::toggle_highlight_links() {
@@ -339,6 +340,10 @@ void PdfViewOpenGLWidget::render() {
 
 bool PdfViewOpenGLWidget::get_is_searching(float* prog)
 {
+	if (is_search_cancelled) {
+		return false;
+	}
+
 	search_results_mutex.lock();
 	bool res = is_searching;
 	if (is_searching) {
@@ -357,6 +362,7 @@ void PdfViewOpenGLWidget::search_text(const wchar_t* text) {
 	search_results_mutex.unlock();
 
 	is_searching = true;
+	is_search_cancelled = false;
 	pdf_renderer->add_request(
 		document_view->get_document()->get_path(),
 		document_view->get_current_page_number(),

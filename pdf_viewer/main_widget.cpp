@@ -62,11 +62,14 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 	main_window_width = size().width();
 	main_window_height = size().height();
 
-	text_command_line_edit->move(0, 0);
-	text_command_line_edit->resize(main_window_width, 30);
+	//text_command_line_edit->move(0, 0);
+	//text_command_line_edit->resize(main_window_width, 30);
+	text_command_line_edit_container->move(0, 0);
+	text_command_line_edit_container->resize(main_window_width, 30);
 
 	status_label->move(0, main_window_height - 20);
 	status_label->resize(main_window_width, 20);
+
 }
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
@@ -157,11 +160,21 @@ input_handler(input_handler)
 	status_label->setFontFamily("Monaco");
 
 
-	text_command_line_edit = new QLineEdit(this);
-	text_command_line_edit->hide();
+	text_command_line_edit_container = new QWidget(this);
+	QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
+
+	text_command_line_edit_label = new QLabel();
+	text_command_line_edit = new QLineEdit();
+
+	text_command_line_edit_container_layout->addWidget(text_command_line_edit_label);
+	text_command_line_edit_container_layout->addWidget(text_command_line_edit);
+
+	text_command_line_edit_container->setLayout(text_command_line_edit_container_layout);
+	text_command_line_edit_container->hide();
+
 	QObject::connect(text_command_line_edit, &QLineEdit::returnPressed, [&]() {
 		handle_pending_text_command(text_command_line_edit->text().toStdWString());
-		text_command_line_edit->hide();
+		text_command_line_edit_container->hide();
 		setFocus();
 		});
 
@@ -212,7 +225,7 @@ wstring MainWidget::get_status_string() {
 	}
 	int num_search_results = opengl_widget->get_num_search_results();
 	float progress = -1;
-	if (num_search_results > 0 || opengl_widget->get_is_searching(&progress)) {
+	if (opengl_widget->get_is_searching(&progress)) {
 		opengl_widget->get_is_searching(&progress);
 
 		// show the 0th result if there are no results and the index + 1 otherwise
@@ -248,7 +261,7 @@ void MainWidget::handle_escape() {
 		opengl_widget->handle_escape();
 	}
 
-	text_command_line_edit->hide();
+	text_command_line_edit_container->hide();
 
 	validate_render();
 }
@@ -593,8 +606,9 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
 void MainWidget::show_textbar() {
 	text_command_line_edit->clear();
-	text_command_line_edit->show();
-	text_command_line_edit->setFixedSize(main_window_width, 30);
+	//text_command_line_edit->show();
+	text_command_line_edit_container->show();
+	text_command_line_edit_container->setFixedSize(main_window_width, 30);
 	text_command_line_edit->setFocus();
 }
 
