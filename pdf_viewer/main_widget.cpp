@@ -43,6 +43,8 @@
 
 #include "main_widget.h"
 
+extern bool launched_from_file_icon;
+
 void MainWidget::paintEvent(QPaintEvent* paint_event) {
 	QWidget::paintEvent(paint_event);
 
@@ -138,7 +140,12 @@ input_handler(input_handler)
 
 	if (num_screens > 1) {
 		helper_opengl_widget->move(first_screen_width, 0);
-		helper_opengl_widget->showMaximized();
+		if (!launched_from_file_icon) {
+			helper_opengl_widget->showMaximized();
+		}
+		else{
+			helper_opengl_widget->setWindowState(Qt::WindowState::WindowMaximized);
+		}
 	}
 
 

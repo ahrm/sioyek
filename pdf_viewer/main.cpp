@@ -78,6 +78,7 @@ extern const unsigned int cache_invalid_milies = 1000;
 extern const int persist_milies = 1000 * 60;
 extern const int page_paddings = 0;
 extern const int max_pending_requests = 31;
+extern bool launched_from_file_icon = false;
 
 extern filesystem::path last_path_file_absolute_location = "";
 extern filesystem::path parent_path = "";
@@ -168,6 +169,12 @@ int main(int argc, char* args[]) {
 	getline(last_state_file, file_path_);
 	file_path = utf8_decode(file_path_);
 	last_state_file.close();
+
+	launched_from_file_icon = false;
+	if (argc > 1) {
+		file_path = utf8_decode(args[1]);
+		launched_from_file_icon = true;
+	}
 
 	bool is_waiting_for_symbol = false;
 	const Command* current_pending_command = nullptr;
