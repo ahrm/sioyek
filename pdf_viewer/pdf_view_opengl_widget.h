@@ -65,7 +65,7 @@ private:
 	vector<SearchResult> search_results;
 	int current_search_result_index = 0;
 	mutex search_results_mutex;
-	bool is_search_cancelled = false;
+	bool is_search_cancelled = true;
 	bool is_searching;
 	bool should_highlight_links;
 	float percent_done;

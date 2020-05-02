@@ -205,6 +205,7 @@ int main(int argc, char* args[]) {
 		wifstream config_file(config_path);
 		config_manager.deserialize(config_file);
 		config_file.close();
+		ConfigFileChangeListener::notify_config_file_changed(&config_manager);
 		main_widget.validate_render();
 		});
 
@@ -218,4 +219,5 @@ int main(int argc, char* args[]) {
 	quit = true;
 	return 0;
 }
+
 

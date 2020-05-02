@@ -211,13 +211,13 @@ void show_error_message(wstring error_message) {
 	MessageBoxW(nullptr, error_message.c_str(), L"Error", MB_OK);
 }
 
-wstring utf8_decode(string encoded_str) {
+wstring utf8_decode(const string& encoded_str) {
 	wstring res;
 	utf8::utf8to32(encoded_str.begin(), encoded_str.end(), std::back_inserter(res));
 	return res;
 }
 
-string utf8_encode(wstring decoded_str) {
+string utf8_encode(const wstring& decoded_str) {
 	string res;
 	utf8::utf32to8(decoded_str.begin(), decoded_str.end(), std::back_inserter(res));
 	return res;

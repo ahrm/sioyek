@@ -24,17 +24,33 @@
 #include <qboxlayout.h>
 #include <qlistview.h>
 #include <qstringlistmodel.h>
+#include <qpalette.h>
 
 
 #include <Windows.h>
 #include "utils.h"
+#include "config.h"
 
 using namespace std;
 
 const int max_select_size = 100;
 
+class ConfigFileChangeListener {
+	static vector<ConfigFileChangeListener*> registered_listeners;
+
+
+public:
+	ConfigFileChangeListener();
+
+	~ConfigFileChangeListener();
+
+	virtual void on_config_file_changed(ConfigManager* new_config_manager) = 0;
+
+	static void notify_config_file_changed(ConfigManager* new_config_manager);
+};
+
 template<typename T>
-class FilteredSelectWindowClass : public QWidget {
+class FilteredSelectWindowClass : public QWidget, ConfigFileChangeListener{
 private:
 
 	QStringListModel* string_list_model;
@@ -43,6 +59,7 @@ private:
 	QListView* list_view;
 	vector<T> values;
 	function<void(void*)> on_done;
+	ConfigManager* config_manager;
 
 protected:
 	bool eventFilter(QObject* obj, QEvent* event) override {
@@ -66,10 +83,22 @@ protected:
 
 public:
 
+	void on_config_file_changed(ConfigManager* new_config_manager) {
+		wstring item_list_stylesheet = *new_config_manager->get_config<wstring>(L"item_list_stylesheet");
+		wstring item_list_selected_stylesheet = *new_config_manager->get_config<wstring>(L"item_list_selected_stylesheet");
+
+		//list_view->setStyleSheet(QString::fromStdWString(item_list_stylesheet));
+		//list_view->setStyleSheet(QString::fromStdWString(item_list_selected_stylesheet));
+
+		setStyleSheet(QString::fromStdWString(item_list_stylesheet));
+		list_view->setStyleSheet("QListView::item::selected{" + QString::fromStdWString(item_list_selected_stylesheet) + "}");
+	}
+
 	//todo: check for memory leaks
-	FilteredSelectWindowClass(vector<wstring> std_string_list, vector<T> values, function<void(void*)> on_done,  QWidget* parent ) : 
+	FilteredSelectWindowClass(vector<wstring> std_string_list, vector<T> values, function<void(void*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
 		QWidget(parent) ,
 		values(values),
+		config_manager(config_manager),
 		on_done(on_done)
 	{
 		QVector<QString> q_string_list;
@@ -84,7 +113,7 @@ public:
 		string_list_model = new QStringListModel(string_list);
 		proxy_model->setSourceModel(string_list_model);
 
-		resize(500, 500);
+		resize(300, 800);
 		QVBoxLayout* layout = new QVBoxLayout;
 		setLayout(layout);
 
@@ -94,6 +123,25 @@ public:
 		list_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 		layout->addWidget(line_edit);
 		layout->addWidget(list_view);
+
+		line_edit->setFont(QFont("Monaco"));
+		list_view->setFont(QFont("Monaco"));
+
+		//line_edit->setStyleSheet("background-color: yellow;");
+		//setStyleSheet("background-color: black;color: white; border: 0;");
+
+		//palette.setColor(Qpalette);
+		//setPalette(palette);
+
+		//line_edit->setAutoFillBackground(true);
+		//line_edit->setPalette(palette);
+		//line_edit->setStyleSheet("background-color: black; color: white; border: 0;");
+		//list_view->setStyleSheet("background-color: black; color: white;");
+		//list_view->setPalette(palette);
+
+		//setStyleSheet("background-color: black; color: white;");
+		//list_view->setStyleSheet("color: red");
+		//setFont(QFont("Monaco"));
 
 		line_edit->installEventFilter(this);
 		line_edit->setFocus();
@@ -115,6 +163,11 @@ public:
 		int parent_height = parentWidget()->height();
 		setFixedSize(parent_width / 3, parent_height);
 		move(parent_width / 3, 0);
+		//list_view->setStyleSheet("QListView{ background-color: black;color: white; }");
+		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_stylesheet"));
+		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_selected_stylesheet"));
+		//list_view->setStyleSheet("QListView::item::selected{ background-color: white;color: black; }");
+		on_config_file_changed(config_manager);
 	}
 
 

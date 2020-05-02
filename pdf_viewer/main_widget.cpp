@@ -59,6 +59,8 @@ void MainWidget::paintEvent(QPaintEvent* paint_event) {
 }
 
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
+	QWidget::resizeEvent(resize_event);
+
 	main_window_width = size().width();
 	main_window_height = size().height();
 
@@ -161,13 +163,20 @@ input_handler(input_handler)
 
 
 	text_command_line_edit_container = new QWidget(this);
+
+	text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: 0");
+
 	QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
 
 	text_command_line_edit_label = new QLabel();
 	text_command_line_edit = new QLineEdit();
 
+	text_command_line_edit_label->setFont(QFont("Monaco"));
+	text_command_line_edit->setFont(QFont("Monaco"));
+
 	text_command_line_edit_container_layout->addWidget(text_command_line_edit_label);
 	text_command_line_edit_container_layout->addWidget(text_command_line_edit);
+	text_command_line_edit_container_layout->setContentsMargins(10, 0, 10, 0);
 
 	text_command_line_edit_container->setLayout(text_command_line_edit_container_layout);
 	text_command_line_edit_container->hide();
@@ -307,6 +316,10 @@ void MainWidget::validate_render() {
 void MainWidget::validate_ui() {
 	status_label->setText(QString::fromStdWString(get_status_string()));
 	is_ui_invalidated = false;
+}
+
+void MainWidget::on_config_file_changed(ConfigManager* new_config)
+{
 }
 
 void MainWidget::invalidate_render() {
@@ -604,11 +617,12 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	}
 }
 
-void MainWidget::show_textbar() {
+void MainWidget::show_textbar(const wstring& command_name) {
 	text_command_line_edit->clear();
+	text_command_line_edit_label->setText(QString::fromStdWString(command_name));
 	//text_command_line_edit->show();
 	text_command_line_edit_container->show();
-	text_command_line_edit_container->setFixedSize(main_window_width, 30);
+	//text_command_line_edit_container->setFixedSize(main_window_width, 30);
 	text_command_line_edit->setFocus();
 }
 
@@ -626,7 +640,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	if (command->requires_text) {
 		current_pending_command = command;
-		show_textbar();
+		show_textbar(utf8_decode(command->name.c_str()));
 		return;
 	}
 	if (command->pushes_state) {
@@ -749,7 +763,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					validate_render();
 					main_document_view->goto_page(*page_value);
 				}
-				}, this);
+				}, config_manager ,this);
 			current_widget->show();
 		}
 	}
@@ -770,7 +784,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					validate_render();
 					open_document(doc_path);
 				}
-				}, this);
+				}, config_manager, this);
 			current_widget->show();
 		}
 	}
@@ -789,7 +803,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 				validate_render();
 				main_document_view->set_offset_y(*offset_value);
 			}
-			}, this);
+			}, config_manager, this);
 		current_widget->show();
 	}
 	else if (command->name == "goto_bookmark_g") {
@@ -811,7 +825,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 				validate_render();
 				open_document(offset_value->document_path, 0.0f, offset_value->offset_y);
 			}
-			}, this);
+			}, config_manager, this);
 		current_widget->show();
 
 	}

@@ -26,8 +26,10 @@ void* int_deserializer(wstringstream& stream, void* res_ = nullptr) {
 void* string_deserializer(wstringstream& stream, void* res_ = nullptr) {
 	delete res_;
 	
+	//wstring res(300);
 	wstring res;
-	stream >> res;
+	getline(stream, res);
+	//stream >> res;
 	return new wstring(res);
 }
 
@@ -84,6 +86,8 @@ ConfigManager::ConfigManager(wstring path) {
 	configs.push_back({ L"vertical_move_amount", &vertical_move_amount, float_serializer, float_deserializer });
 	configs.push_back({ L"horizontal_move_amount", &horizontal_move_amount, float_serializer, float_deserializer });
 	configs.push_back({ L"move_screen_percentage", &move_screen_percentage, float_serializer, float_deserializer });
+	configs.push_back({ L"item_list_stylesheet", nullptr, string_serializer, string_deserializer });
+	configs.push_back({ L"item_list_selected_stylesheet", nullptr, string_serializer, string_deserializer });
 	wifstream infile(path);
 	deserialize(infile);
 	infile.close();
@@ -100,6 +104,7 @@ void ConfigManager::serialize(wofstream& file) {
 	}
 }
 
+		//list_view->setStyleSheet("QListView::item::selected::{ background-color: white;color: black; }");
 void ConfigManager::deserialize(wifstream& file) {
 	wstring line;
 

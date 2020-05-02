@@ -101,7 +101,7 @@ protected:
 	void mouseReleaseEvent(QMouseEvent* mevent) override;
 	void mousePressEvent(QMouseEvent* mevent) override;
 	void wheelEvent(QWheelEvent* wevent) override;
-	void show_textbar();
+	void show_textbar(const wstring& command_name);
 	void toggle_two_window_mode();
 	void handle_command(const Command* command, int num_repeats);
 	void handle_link();
@@ -125,4 +125,6 @@ public:
 	void open_document(wstring path, optional<float> offset_x = {}, optional<float> offset_y = {});
 	void validate_render();
 	void validate_ui();
+
+	void on_config_file_changed(ConfigManager* new_config);
 };
