@@ -26,10 +26,13 @@ void* int_deserializer(wstringstream& stream, void* res_ = nullptr) {
 void* string_deserializer(wstringstream& stream, void* res_ = nullptr) {
 	delete res_;
 	
-	//wstring res(300);
 	wstring res;
 	getline(stream, res);
-	//stream >> res;
+
+	while (iswspace(res[0])) {
+		res.erase(res.begin());
+	}
+
 	return new wstring(res);
 }
 

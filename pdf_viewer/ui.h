@@ -35,17 +35,15 @@ using namespace std;
 
 const int max_select_size = 100;
 
+
 class ConfigFileChangeListener {
 	static vector<ConfigFileChangeListener*> registered_listeners;
 
 
 public:
 	ConfigFileChangeListener();
-
 	~ConfigFileChangeListener();
-
 	virtual void on_config_file_changed(ConfigManager* new_config_manager) = 0;
-
 	static void notify_config_file_changed(ConfigManager* new_config_manager);
 };
 

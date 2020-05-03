@@ -41,11 +41,13 @@ float DocumentView::get_zoom_level() {
 
 DocumentViewState DocumentView::get_state() {
 	DocumentViewState res;
-	//res.document_view = this;
-	res.document_path = current_document->get_path();
-	res.offset_x = get_offset_x();
-	res.offset_y = get_offset_y();
-	res.zoom_level = get_zoom_level();
+
+	if (current_document) {
+		res.document_path = current_document->get_path();
+		res.offset_x = get_offset_x();
+		res.offset_y = get_offset_y();
+		res.zoom_level = get_zoom_level();
+	}
 	return res;
 }
 
@@ -518,6 +520,7 @@ void DocumentView::goto_chapter(int diff)
 		goto_page(chapter_pages[new_index]);
 	}
 }
+
 
 void DocumentView::get_text_selection(fz_point selection_begin, fz_point selection_end, vector<fz_rect>& selected_characters, wstring& selected_text) {
 

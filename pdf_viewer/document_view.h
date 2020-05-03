@@ -21,6 +21,7 @@
 #include "document.h"
 #include "utils.h"
 #include "config.h"
+#include "ui.h"
 
 extern float ZOOM_INC_FACTOR;
 extern const int page_paddings;
@@ -36,6 +37,8 @@ private:
 	Document* current_document;
 
 	float zoom_level;
+	//float offset_x;
+	//float offset_y;
 	float offset_x;
 	float offset_y;
 

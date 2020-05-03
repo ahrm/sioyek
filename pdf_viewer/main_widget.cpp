@@ -104,9 +104,12 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
 void MainWidget::closeEvent(QCloseEvent* close_event) {
 	main_document_view->persist();
-	ofstream last_path_file(last_path_file_absolute_location);
-	last_path_file << utf8_encode(main_document_view->get_document()->get_path()) << endl;
-	last_path_file.close();
+
+	if (main_document_view->get_document()) {
+		ofstream last_path_file(last_path_file_absolute_location);
+		last_path_file << utf8_encode(main_document_view->get_document()->get_path()) << endl;
+		last_path_file.close();
+	}
 
 	// we need to delete this here (instead of destructor) to ensure that application
 	// closes immediately after the main window is closed
@@ -159,7 +162,8 @@ input_handler(input_handler)
 	status_label->setReadOnly(true);
 	status_label->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
 	status_label->setStyleSheet("background-color: black; color: white; border: 0");
-	status_label->setFontFamily("Monaco");
+	//status_label->setFontFamily("Monaco");
+	status_label->setFont(QFont("Monaco"));
 
 
 	text_command_line_edit_container = new QWidget(this);
@@ -284,6 +288,10 @@ void MainWidget::keyReleaseEvent(QKeyEvent* kevent) {
 }
 
 void MainWidget::validate_render() {
+	if (!isVisible()) {
+		return;
+	}
+
 	if (main_document_view && main_document_view->get_document()) {
 		Link* link = main_document_view->find_closest_link();
 		if (link) {
@@ -843,7 +851,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	//todo: check if still works after wstring
 	else if (command->name == "search_selected_text_in_google_scholar") {
-
 		ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"google_scholar_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
 	}
 	else if (command->name == "search_selected_text_in_libgen") {
@@ -906,7 +913,8 @@ void MainWidget::handle_pending_text_command(wstring text) {
 	}
 	if (current_pending_command->name == "command") {
 		if (text == L"q") {
-			QApplication::quit();
+			close();
+			//QApplication::quit();
 		}
 		else if (text == L"keys") {
 			ShellExecuteW(0, 0, (parent_path / "keys.config").wstring().c_str(), 0, 0, SW_SHOW);

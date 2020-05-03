@@ -13,5 +13,6 @@ MOC_DIR += ./GeneratedFiles/$(ConfigurationName)
 OBJECTS_DIR += debug
 UI_DIR += ./GeneratedFiles
 RCC_DIR += ./GeneratedFiles
+RESOURCES += resources.qrc
 include(pdf_viewer.pri)
 win32:RC_FILE = pdf_viewer.rc

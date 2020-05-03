@@ -45,6 +45,7 @@
 #include <qtextedit.h>
 #include <qfilesystemwatcher.h>
 #include <qdesktopwidget.h>
+#include <qfontdatabase.h>
 
 #include <Windows.h>
 #include <mupdf/fitz.h>
@@ -83,7 +84,6 @@ extern bool launched_from_file_icon = false;
 extern filesystem::path last_path_file_absolute_location = "";
 extern filesystem::path parent_path = "";
 
-
 using namespace std;
 
 mutex mupdf_mutexes[FZ_LOCK_MAX];
@@ -100,6 +100,9 @@ void unlock_mutex(void* user, int lock) {
 
 
 int main(int argc, char* args[]) {
+
+	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
+	QApplication app(argc, args);
 
 	char exe_file_name[MAX_PATH];
 	GetModuleFileNameA(NULL, exe_file_name, sizeof(exe_file_name));
@@ -172,7 +175,8 @@ int main(int argc, char* args[]) {
 
 	launched_from_file_icon = false;
 	if (argc > 1) {
-		file_path = utf8_decode(args[1]);
+		//file_path = utf8_decode(args[1]);
+		file_path = app.arguments().at(1).toStdWString();
 		launched_from_file_icon = true;
 	}
 
@@ -189,8 +193,12 @@ int main(int argc, char* args[]) {
 
 
 
-	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
-	QApplication app(argc, args);
+
+	QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
+	if (QFontDatabase::addApplicationFont(font_path) < 0) {
+		cout << "could not add font!" << endl;
+	}
+
 
 	QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));
 	app.setWindowIcon(icon);
