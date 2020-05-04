@@ -50,3 +50,4 @@ wstring utf8_decode(const string& encoded_str);
 string utf8_encode(const wstring& decoded_str);
 bool is_rtl(int c);
 wstring reverse_wstring(const wstring& inp);
+bool parse_search_command(const wstring& search_command, int* out_begin, int* out_end, wstring* search_text);

@@ -65,7 +65,7 @@ private:
 	QWidget* text_command_line_edit_container;
 	QLabel* text_command_line_edit_label;
 	QLineEdit* text_command_line_edit;
-	QTextEdit* status_label;
+	QLabel* status_label;
 
 	bool is_render_invalidated = false;
 	bool is_ui_invalidated = false;

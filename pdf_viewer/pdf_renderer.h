@@ -34,6 +34,7 @@ struct SearchRequest {
 	mutex* search_results_mutex;
 	float* percent_done;
 	bool* is_searching;
+	optional<pair<int, int>> range;
 };
 
 struct RenderResponse {
@@ -91,7 +92,15 @@ public:
 
 	//should only be called from the main thread
 	void add_request(wstring document_path, int page, float zoom_level);
-	void add_request(wstring document_path, int page, wstring term, vector<SearchResult>* out, float* percent_done, bool* is_searching, mutex* mut);
+	void add_request(wstring document_path,
+		int page,
+		wstring term,
+		vector<SearchResult>* out,
+		float* percent_done,
+		bool* is_searching,
+		mutex* mut,
+		optional<pair<int,
+		int>> range = {});
 	GLuint find_rendered_page(wstring path, int page, float zoom_level, int* page_width, int* page_height);
 	void delete_old_pages();
 

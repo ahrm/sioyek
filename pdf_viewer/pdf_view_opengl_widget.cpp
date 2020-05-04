@@ -353,7 +353,8 @@ bool PdfViewOpenGLWidget::get_is_searching(float* prog)
 	return true;
 }
 
-void PdfViewOpenGLWidget::search_text(const wchar_t* text) {
+void PdfViewOpenGLWidget::search_text(const wstring& text, optional<pair<int,int>> range) {
+
 	if (!document_view) return;
 
 	search_results_mutex.lock();
@@ -370,7 +371,8 @@ void PdfViewOpenGLWidget::search_text(const wchar_t* text) {
 		&search_results,
 		&percent_done,
 		&is_searching,
-		&search_results_mutex);
+		&search_results_mutex,
+		range);
 }
 
 PdfViewOpenGLWidget::~PdfViewOpenGLWidget() {

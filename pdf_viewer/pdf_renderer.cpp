@@ -62,7 +62,14 @@ void PdfRenderer::add_request(wstring document_path, int page, float zoom_level)
 		cout << "Error: could not find documnet" << endl;
 	}
 }
-void PdfRenderer::add_request(wstring document_path, int page, wstring term, vector<SearchResult>* out,float* percent_done, bool* is_searching, mutex* mut) {
+void PdfRenderer::add_request(wstring document_path,
+	int page,
+	wstring term,
+	vector<SearchResult>* out,
+	float* percent_done,
+	bool* is_searching,
+	mutex* mut,
+	optional<pair<int, int>> range) {
 
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
@@ -75,6 +82,7 @@ void PdfRenderer::add_request(wstring document_path, int page, wstring term, vec
 		req.search_results = out;
 		req.percent_done = percent_done;
 		req.is_searching = is_searching;
+		req.range = range;
 
 		search_request_mutex.lock();
 		pending_search_request = req;
@@ -217,12 +225,32 @@ void PdfRenderer::run_search(int thread_index)
 
 			fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
 
-			int num_pages = fz_count_pages(mupdf_context, doc);
+			int num_pages_in_document = fz_count_pages(mupdf_context, doc);
+
+			int page_begin = 0;
+			int page_end = num_pages_in_document-1;
+
+			if (req.range) {
+				page_begin = req.range.value().first-1;
+				page_end = req.range.value().second-1;
+			}
+			// make sure page range is valid {
+			if (page_begin < 0) page_begin = 0;
+			if (page_begin > num_pages_in_document-1) page_begin = num_pages_in_document-1;
+			if (page_end < 0) page_end = 0;
+			if (page_end > num_pages_in_document-1) page_end = num_pages_in_document-1;
+			//}
+
+			int num_pages = page_end - page_begin + 1;
 
 			req.search_results_mutex->lock();
 			req.search_results->clear();
 			*req.is_searching = true;
 			req.search_results_mutex->unlock();
+
+			if (req.start_page > page_end || req.start_page < page_begin) {
+				req.start_page = page_begin;
+			}
 
 			int total_results = 0;
 			int num_handled_pages = 0;
@@ -253,7 +281,10 @@ void PdfRenderer::run_search(int thread_index)
 
 				fz_drop_page(mupdf_context, page);
 
-				i = (i + 1) % num_pages;
+				i++;
+				if (i > page_end) {
+					i = page_begin;
+				}
 			}
 			req.search_results_mutex->lock();
 			*req.is_searching = false;

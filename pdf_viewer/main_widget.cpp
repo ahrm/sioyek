@@ -158,9 +158,9 @@ input_handler(input_handler)
 	}
 
 
-	status_label = new QTextEdit(this);
-	status_label->setReadOnly(true);
-	status_label->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
+	status_label = new QLabel(this);
+	//status_label->setReadOnly(true);
+	//status_label->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
 	status_label->setStyleSheet("background-color: black; color: white; border: 0");
 	//status_label->setFontFamily("Monaco");
 	status_label->setFont(QFont("Monaco"));
@@ -649,6 +649,14 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	if (command->requires_text) {
 		current_pending_command = command;
 		show_textbar(utf8_decode(command->name.c_str()));
+		if (command->name == "chapter_search") {
+			optional<pair<int, int>> chapter_range = main_document_view->get_current_page_range();
+			if (chapter_range) {
+				stringstream search_range_string;
+				search_range_string << "<" << chapter_range.value().first << "," << chapter_range.value().second << ">";
+				text_command_line_edit->setText(search_range_string.str().c_str());
+			}
+		}
 		return;
 	}
 	if (command->pushes_state) {
@@ -898,15 +906,31 @@ void MainWidget::handle_link() {
 }
 
 void MainWidget::handle_pending_text_command(wstring text) {
-	if (current_pending_command->name == "search") {
+	if (current_pending_command->name == "search" ||
+		current_pending_command->name == "ranged_search" ||
+		current_pending_command->name == "chapter_search" ) {
 
-		// in mupdf RTL documents are reversed, so we reverse the search string
-		//todo: better (or any!) handling of mixed RTL and LTR text
-		if (is_rtl(text[0])) {
-			text = reverse_wstring(text);
+		int range_begin, range_end;
+		wstring search_term;
+		optional<pair<int, int>> search_range = {};
+		if (parse_search_command(text, &range_begin, &range_end, &search_term)) {
+			search_range = make_pair(range_begin, range_end);
 		}
-		opengl_widget->search_text(text.c_str());
+
+		if (search_term.size() > 0) {
+			// in mupdf RTL documents are reversed, so we reverse the search string
+			//todo: better (or any!) handling of mixed RTL and LTR text
+			if (is_rtl(search_term[0])) {
+				search_term = reverse_wstring(search_term);
+			}
+		}
+
+		opengl_widget->search_text(search_term, search_range);
 	}
+	//if (current_pending_command->name == "chapter_search" ) {
+	//	//main_document_view->get_current_chapter_name
+	//	opengl_widget->search_text(text);
+	//}
 
 	if (current_pending_command->name == "add_bookmark") {
 		main_document_view->add_bookmark(text);

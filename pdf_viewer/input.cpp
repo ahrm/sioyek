@@ -20,6 +20,8 @@ CommandManager::CommandManager() {
 	commands.push_back({ "set_mark", false, true , false, false});
 	commands.push_back({ "goto_mark", false, true , false, false});
 	commands.push_back({ "search", true, false , false, false});
+	commands.push_back({ "ranged_search", true, false , false, false});
+	commands.push_back({ "chapter_search", true, false , false, false});
 	commands.push_back({ "move_down", false, false , false, false});
 	commands.push_back({ "move_up", false, false , false, false});
 	commands.push_back({ "move_left", false, false , false, false});

@@ -475,13 +475,12 @@ void DocumentView::persist() {
 	update_book(database, current_document->get_path(), zoom_level, offset_x, offset_y);
 }
 
-wstring DocumentView::get_current_chapter_name()
+int DocumentView::get_current_chapter_index()
 {
-	const vector<wstring>& chapter_names = current_document->get_flat_toc_names();
 	const vector<int>& chapter_pages = current_document->get_flat_toc_pages();
 
-	if (chapter_names.size() == 0) {
-		return L"";
+	if (chapter_pages.size() == 0) {
+		return -1;
 	}
 
 	int cp = get_current_page_number();
@@ -496,8 +495,36 @@ wstring DocumentView::get_current_chapter_name()
 		index++;
 	}
 
-	return chapter_names[current_chapter_index];
+	return current_chapter_index;
 }
+
+wstring DocumentView::get_current_chapter_name()
+{
+	const vector<wstring>& chapter_names = current_document->get_flat_toc_names();
+	int current_chapter_index = get_current_chapter_index();
+	if (current_chapter_index > 0) {
+		return chapter_names[current_chapter_index];
+	}
+	return L"";
+}
+
+optional<pair<int, int>> DocumentView::get_current_page_range()
+{
+	int ci = get_current_chapter_index();
+	if (ci < 0) {
+		return {};
+	}
+	const vector<int>& chapter_pages = current_document->get_flat_toc_pages();
+	int range_begin = chapter_pages[ci];
+	int range_end = current_document->num_pages()-1;
+
+	if (ci < chapter_pages.size() - 1) {
+		range_end = chapter_pages[ci + 1];
+	}
+
+	return make_pair(range_begin, range_end);
+}
+
 void DocumentView::goto_chapter(int diff)
 {
 	const vector<int>& chapter_pages = current_document->get_flat_toc_pages();

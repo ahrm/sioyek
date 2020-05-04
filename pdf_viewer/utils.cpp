@@ -264,3 +264,21 @@ wstring reverse_wstring(const wstring& inp) {
 	}
 	return res;
 }
+
+bool parse_search_command(const wstring& search_command, int* out_begin, int* out_end, wstring* search_text) {
+	wstringstream ss(search_command);
+	if (search_command[0] == '<') {
+		wchar_t dummy;
+		ss >> dummy;
+		ss >> *out_begin;
+		ss >> dummy;
+		ss >> *out_end;
+		ss >> dummy;
+		getline(ss, *search_text);
+		return true;
+	}
+	else {
+		*search_text = ss.str();
+		return false;
+	}
+}

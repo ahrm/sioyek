@@ -96,5 +96,5 @@ public:
 	void goto_search_result(int offset);
 	void render_page(int page_number);
 	bool get_is_searching(float* prog);
-	void search_text(const wchar_t* text);
+	void search_text(const wstring& text, optional<pair<int, int>> range = {});
 };

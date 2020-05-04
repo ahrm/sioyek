@@ -93,5 +93,7 @@ public:
 	void goto_page(int page);
 	void persist();
 	wstring get_current_chapter_name();
+	optional<pair<int,int>> get_current_page_range();
+	int get_current_chapter_index();
 	void goto_chapter(int diff);
 };
