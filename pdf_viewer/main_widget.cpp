@@ -159,16 +159,14 @@ input_handler(input_handler)
 
 
 	status_label = new QLabel(this);
-	//status_label->setReadOnly(true);
-	//status_label->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
-	status_label->setStyleSheet("background-color: black; color: white; border: 0");
-	//status_label->setFontFamily("Monaco");
+	//status_label->setStyleSheet("background-color: black; color: white; border: 0");
+	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<wstring>(L"status_label_stylesheet")));
 	status_label->setFont(QFont("Monaco"));
 
 
 	text_command_line_edit_container = new QWidget(this);
-
-	text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: 0");
+	//text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: 0");
+	text_command_line_edit_container->setStyleSheet(QString::fromStdWString(*config_manager->get_config<wstring>(L"text_command_line_stylesheet")));
 
 	QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
 
@@ -277,6 +275,7 @@ void MainWidget::handle_escape() {
 	text_command_line_edit_container->hide();
 
 	validate_render();
+	setFocus();
 }
 
 void MainWidget::keyPressEvent(QKeyEvent* kevent) {
@@ -328,6 +327,9 @@ void MainWidget::validate_ui() {
 
 void MainWidget::on_config_file_changed(ConfigManager* new_config)
 {
+	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<wstring>(L"status_label_stylesheet")));
+	text_command_line_edit_container->setStyleSheet(
+		QString::fromStdWString(*config_manager->get_config<wstring>(L"text_command_line_stylesheet")));
 }
 
 void MainWidget::invalidate_render() {

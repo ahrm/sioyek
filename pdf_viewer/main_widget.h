@@ -25,7 +25,7 @@ extern float horizontal_move_amount;
 extern filesystem::path last_path_file_absolute_location;
 
 
-class MainWidget : public QWidget {
+class MainWidget : public QWidget, ConfigFileChangeListener{
 
 private:
 	fz_context* mupdf_context;
@@ -126,5 +126,5 @@ public:
 	void validate_render();
 	void validate_ui();
 
-	void on_config_file_changed(ConfigManager* new_config);
+	void on_config_file_changed(ConfigManager* new_config) override;
 };

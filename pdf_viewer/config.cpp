@@ -91,6 +91,8 @@ ConfigManager::ConfigManager(wstring path) {
 	configs.push_back({ L"move_screen_percentage", &move_screen_percentage, float_serializer, float_deserializer });
 	configs.push_back({ L"item_list_stylesheet", nullptr, string_serializer, string_deserializer });
 	configs.push_back({ L"item_list_selected_stylesheet", nullptr, string_serializer, string_deserializer });
+	configs.push_back({ L"text_command_line_stylesheet", nullptr, string_serializer, string_deserializer });
+	configs.push_back({ L"status_label_stylesheet", nullptr, string_serializer, string_deserializer });
 	wifstream infile(path);
 	deserialize(infile);
 	infile.close();
