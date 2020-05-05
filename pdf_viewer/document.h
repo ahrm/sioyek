@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include <Windows.h>
+#include <qstandarditemmodel.h>
 
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
@@ -29,6 +30,7 @@ private:
 	wstring file_name;
 	unordered_map<int, fz_link*> cached_page_links;
 	fz_outline* cached_outline;
+	QStandardItemModel* cached_toc_model = nullptr;
 
 	vector<float> accum_page_heights;
 	vector<float> page_heights;
@@ -69,6 +71,7 @@ public:
 	int num_pages();
 	fz_rect get_page_absolute_rect(int page);
 	void absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page);
+	QStandardItemModel* get_toc_model();
 	//void absolute_to_page_rects(fz_rect absolute_rect,
 	//	vector<fz_rect>& resulting_rects,
 	//	vector<int>& resulting_pages,

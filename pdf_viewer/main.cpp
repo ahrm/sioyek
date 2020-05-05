@@ -46,6 +46,7 @@
 #include <qfilesystemwatcher.h>
 #include <qdesktopwidget.h>
 #include <qfontdatabase.h>
+#include <qstandarditemmodel.h>
 
 #include <Windows.h>
 #include <mupdf/fitz.h>
@@ -221,6 +222,18 @@ int main(int argc, char* args[]) {
 		input_handler.reload_config_file(keymap_path);
 		});
 
+	//Document* test_doc = document_manager.get_document(L"C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\data\\toc.pdf");
+	//test_doc->open();
+	//QStandardItemModel* toc_model = test_doc->get_toc_model();
+
+	//HierarchialSortFilterProxyModel proxy_model;
+	//proxy_model.setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+	//proxy_model.setSourceModel(toc_model);
+
+	//QTreeView tree_view;
+	//tree_view.setModel(&proxy_model);
+	//tree_view.expandAll();
+	//tree_view.show();
 
 	app.exec();
 
@@ -229,3 +242,48 @@ int main(int argc, char* args[]) {
 }
 
 
+
+//int main(int argc, char* args[]) {
+//	QApplication app(argc, args);
+//
+//	QStandardItemModel* standardModel = new QStandardItemModel();
+//	QStandardItem* rootNode = standardModel->invisibleRootItem();
+//
+//	//defining a couple of items
+//	QStandardItem* americaItem = new QStandardItem("America");
+//	QStandardItem* mexicoItem = new QStandardItem("Canada");
+//	QStandardItem* usaItem = new QStandardItem("USA");
+//	QStandardItem* bostonItem = new QStandardItem("Boston");
+//	QStandardItem* europeItem = new QStandardItem("Europe");
+//	QStandardItem* italyItem = new QStandardItem("Italy");
+//	QStandardItem* romeItem = new QStandardItem("Rome");
+//	QStandardItem* veronaItem = new QStandardItem("Verona");
+//
+//	//building up the hierarchy
+//	rootNode->appendRow(americaItem);
+//	rootNode->appendRow(europeItem);
+//	americaItem->appendRow(mexicoItem);
+//	americaItem->appendRow(usaItem);
+//	usaItem->appendRow(bostonItem);
+//	europeItem->appendRow(italyItem);
+//	italyItem->appendRow(romeItem);
+//	italyItem->appendRow(veronaItem);
+//	HierarchialSortFilterProxyModel proxy_model;
+//	proxy_model.setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+//	proxy_model.setSourceModel(standardModel);
+//
+//	QTreeView tree_view;
+//	tree_view.setModel(&proxy_model);
+//	tree_view.show();
+//
+//	QObject::connect(&tree_view, &QTreeView::activated, [&](const QModelIndex& index) {
+//
+//		QModelIndex actual_index = proxy_model.mapToSource(index);
+//		actual_index = actual_index.parent();
+//		actual_index = actual_index.parent();
+//		actual_index = actual_index.parent();
+//		actual_index = actual_index.parent();
+//		cout << actual_index.row() << endl;
+//		});
+//	return app.exec();
+//}

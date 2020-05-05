@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <qstandarditemmodel.h>
+
 #include <mupdf/fitz.h>
 
 #include "book.h"
@@ -51,3 +53,5 @@ string utf8_encode(const wstring& decoded_str);
 bool is_rtl(int c);
 wstring reverse_wstring(const wstring& inp);
 bool parse_search_command(const wstring& search_command, int* out_begin, int* out_end, wstring* search_text);
+QStandardItemModel* get_model_from_toc(const vector<TocNode*>& roots);
+TocNode* get_toc_node_from_indices(const vector<TocNode*>& roots, const vector<int>& indices);

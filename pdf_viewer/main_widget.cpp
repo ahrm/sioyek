@@ -774,13 +774,25 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		vector<int> current_document_toc_pages;
 		get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
 		if (current_document_toc_pages.size() > 0) {
-			current_widget = make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
-				int* page_value = (int*)page_pointer;
-				if (page_value) {
-					push_state();
-					validate_render();
-					main_document_view->goto_page(*page_value);
-				}
+			//current_widget = make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
+			//	int* page_value = (int*)page_pointer;
+			//	if (page_value) {
+			//		push_state();
+			//		validate_render();
+			//		main_document_view->goto_page(*page_value);
+			//	}
+			//	}, config_manager ,this);
+			//current_widget->show();
+
+			current_widget = make_unique<FilteredTreeSelect<int>>(main_document_view->get_document()->get_toc_model(),
+				[&](const vector<int>& indices) {
+					TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
+						indices);
+					if (toc_node) {
+						push_state();
+						validate_render();
+						main_document_view->goto_page(toc_node->page);
+					}
 				}, config_manager ,this);
 			current_widget->show();
 		}

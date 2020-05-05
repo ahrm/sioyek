@@ -25,6 +25,7 @@
 #include <qlistview.h>
 #include <qstringlistmodel.h>
 #include <qpalette.h>
+#include <qstandarditemmodel.h>
 
 
 #include <Windows.h>
@@ -35,6 +36,10 @@ using namespace std;
 
 const int max_select_size = 100;
 
+class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
+protected:
+	bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const;
+};
 
 class ConfigFileChangeListener {
 	static vector<ConfigFileChangeListener*> registered_listeners;
@@ -45,6 +50,126 @@ public:
 	~ConfigFileChangeListener();
 	virtual void on_config_file_changed(ConfigManager* new_config_manager) = 0;
 	static void notify_config_file_changed(ConfigManager* new_config_manager);
+};
+
+template<typename T>
+class FilteredTreeSelect : public QWidget, ConfigFileChangeListener{
+private:
+
+	QStandardItemModel* tree_item_model;
+	QSortFilterProxyModel* proxy_model;
+	QLineEdit* line_edit;
+	QTreeView* tree_view;
+	function<void(const vector<int>&)> on_done;
+	ConfigManager* config_manager;
+
+protected:
+	bool eventFilter(QObject* obj, QEvent* event) override {
+		if (obj == line_edit) {
+			if (event->type() == QEvent::KeyPress) {
+				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+				if (key_event->key() == Qt::Key_Down ||
+					key_event->key() == Qt::Key_Up ||
+					key_event->key() == Qt::Key_Left ||
+					key_event->key() == Qt::Key_Right ||
+					key_event->key() == Qt::Key_Return) {
+					QKeyEvent* new_key_event = new QKeyEvent(*key_event);
+					if (key_event->key() == Qt::Key_Enter) {
+						tree_view->setFocus();
+					}
+					QCoreApplication::postEvent(tree_view, new_key_event);
+					return true;
+				}
+
+			}
+		}
+		return false;
+	}
+
+public:
+
+	void on_config_file_changed(ConfigManager* new_config_manager) {
+		wstring item_list_stylesheet = *new_config_manager->get_config<wstring>(L"item_list_stylesheet");
+		wstring item_list_selected_stylesheet = *new_config_manager->get_config<wstring>(L"item_list_selected_stylesheet");
+
+		setStyleSheet(QString::fromStdWString(item_list_stylesheet));
+		tree_view->setStyleSheet("QTreeView::item::selected{" + QString::fromStdWString(item_list_selected_stylesheet) + "}");
+	}
+
+	//todo: check for memory leaks
+	FilteredTreeSelect(QStandardItemModel* item_model, function<void(const vector<int>&)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
+		QWidget(parent) ,
+		tree_item_model(item_model),
+		config_manager(config_manager),
+		on_done(on_done)
+	{
+
+		proxy_model = new HierarchialSortFilterProxyModel;
+		proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+		proxy_model->setSourceModel(tree_item_model);
+
+		resize(300, 800);
+		QVBoxLayout* layout = new QVBoxLayout;
+		setLayout(layout);
+
+		line_edit = new QLineEdit;
+		tree_view = new QTreeView;
+		tree_view->setModel(proxy_model);
+		tree_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+		tree_view->expandAll();
+		tree_view->setHeaderHidden(true);
+		layout->addWidget(line_edit);
+		layout->addWidget(tree_view);
+
+		line_edit->setFont(QFont("Monaco"));
+		tree_view->setFont(QFont("Monaco"));
+
+		line_edit->installEventFilter(this);
+		line_edit->setFocus();
+
+		QObject::connect(tree_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
+			on_select(index);
+			});
+
+		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
+			//proxy_model->setFilterRegExp(text);
+			proxy_model->setFilterFixedString(text);
+			tree_view->expandAll();
+			});
+
+	}
+
+	void resizeEvent(QResizeEvent* resize_event) override {
+		QWidget::resizeEvent(resize_event);
+		int parent_width = parentWidget()->width();
+		int parent_height = parentWidget()->height();
+		setFixedSize(parent_width / 3, parent_height);
+		move(parent_width / 3, 0);
+		//list_view->setStyleSheet("QListView{ background-color: black;color: white; }");
+		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_stylesheet"));
+		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_selected_stylesheet"));
+		//list_view->setStyleSheet("QListView::item::selected{ background-color: white;color: black; }");
+		on_config_file_changed(config_manager);
+	}
+
+
+	void on_select(const QModelIndex& index) {
+		cout << "activated " << endl;
+		hide();
+		parentWidget()->setFocus();
+		auto source_index = proxy_model->mapToSource(index);
+		//auto parent = source_index.parent();
+		//parent = source_index.parent();
+		//parent = source_index.parent();
+		//parent = source_index.parent();
+		//parent = source_index.parent();
+		vector<int> indices;
+		while (source_index != QModelIndex()) {
+			indices.push_back(source_index.row());
+			source_index = source_index.parent();
+		}
+		on_done(indices);
+	}
 };
 
 template<typename T>
@@ -64,7 +189,6 @@ protected:
 		if (obj == line_edit) {
 			if (event->type() == QEvent::KeyPress) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-				auto kkk = key_event->key();
 				if (key_event->key() == Qt::Key_Down || key_event->key() == Qt::Key_Up || key_event->key() == Qt::Key_Return) {
 					QKeyEvent* new_key_event = new QKeyEvent(*key_event);
 					if (key_event->key() == Qt::Key_Enter) {
@@ -179,3 +303,4 @@ public:
 };
 
 bool select_pdf_file_name(wchar_t* out_file_name, int max_length);
+

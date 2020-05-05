@@ -311,6 +311,14 @@ void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* d
 	*doc_page = i;
 }
 
+QStandardItemModel* Document::get_toc_model()
+{
+	if (!cached_toc_model) {
+		cached_toc_model = get_model_from_toc(get_toc());
+	}
+	return cached_toc_model;
+}
+
 //void Document::absolute_to_page_rects(fz_rect absolute_rect, vector<fz_rect>& resulting_rects, vector<int>& resulting_pages)
 //{
 //	fz_rect res;

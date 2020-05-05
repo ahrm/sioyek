@@ -1,5 +1,6 @@
 #include <Windows.h>
 
+#include <cassert>
 #include "utils.h"
 
 wstring to_lower(const wstring& inp) {
@@ -37,6 +38,42 @@ void get_flat_toc(const vector<TocNode*>& roots, vector<wstring>& output, vector
 		get_flat_toc(root->children, output, pages);
 	}
 }
+
+TocNode* get_toc_node_from_indices_helper(const vector<TocNode*>& roots, const vector<int>& indices, int pointer) {
+	if (pointer < 0) {
+		// should not happen
+		assert(false);
+	}
+	if (pointer == 0) {
+		return roots[indices[pointer]];
+	}
+
+	return get_toc_node_from_indices_helper(roots[indices[pointer]]->children, indices, pointer - 1);
+}
+
+TocNode* get_toc_node_from_indices(const vector<TocNode*>& roots, const vector<int>& indices) {
+	return get_toc_node_from_indices_helper(roots, indices, indices.size() - 1);
+}
+
+
+QStandardItem* get_item_tree_from_toc_helper(const vector<TocNode*>& children, QStandardItem* parent) {
+
+	for (const auto* child : children) {
+		QStandardItem* child_item = new QStandardItem(QString::fromStdWString(child->title));
+		child_item->setData(child->page);
+		parent->appendRow(get_item_tree_from_toc_helper(child->children, child_item));
+	}
+	return parent;
+}
+
+
+QStandardItemModel* get_model_from_toc(const vector<TocNode*>& roots) {
+
+	QStandardItemModel* model = new QStandardItemModel();
+	get_item_tree_from_toc_helper(roots, model->invisibleRootItem());
+	return model;
+}
+
 
 int mod(int a, int b)
 {
