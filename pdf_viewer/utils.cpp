@@ -147,36 +147,6 @@ fz_rect corners_to_rect(fz_point corner1, fz_point corner2) {
 	return res;
 }
 
-bool should_select_char(fz_point selection_begin, fz_point selection_end, fz_rect character_rect) {
-	fz_rect selection_rect = corners_to_rect(selection_begin, selection_end);
-	fz_point top_point = selection_begin.y > selection_end.y ? selection_end : selection_begin;
-	fz_point bottom_point = selection_begin.y > selection_end.y ? selection_begin : selection_end;
-
-	// if character is included in the selection y range, then it is selected
-	if (selection_rect.y1 >= character_rect.y1 && selection_rect.y0 <= character_rect.y0) {
-		return true;
-	}
-
-	else if (character_rect.y1 >= selection_rect.y1 && character_rect.y0 <= selection_rect.y0) {
-		if (selection_rect.x1 >= character_rect.x0 && selection_rect.x0 <= character_rect.x1) {
-			return true;
-		}
-	}
-	else if (character_rect.y1 >= selection_rect.y1 && character_rect.y0 <= selection_rect.y1) {
-		if (character_rect.x0 <= bottom_point.x) {
-			return true;
-		}
-	}
-	else if (character_rect.y1 >= selection_rect.y0 && character_rect.y0 <= selection_rect.y0) {
-		if (character_rect.x1 >= top_point.x) {
-			return true;
-		}
-	}
-	return false;
-}
-
-//todo: see if it still works after wstring
-//todo: free the memory!
 void copy_to_clipboard(const wstring& text) {
 	if (text.size() > 0) {
 		const size_t len = text.size() + 1;
@@ -319,13 +289,6 @@ bool parse_search_command(const wstring& search_command, int* out_begin, int* ou
 		*search_text = ss.str();
 		return false;
 	}
-}
-
-fz_point find_quad_center(fz_quad quad) {
-	fz_point res;
-	res.x = (quad.ll.x + quad.lr.x) / 2;
-	res.y = (quad.ll.y + quad.ul.y) / 2;
-	return res;
 }
 
 float dist_squared(fz_point p1, fz_point p2) {

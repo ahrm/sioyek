@@ -44,7 +44,6 @@ int argminf(const vector<T> &collection, function<float(T)> f) {
 	return min_index;
 }
 void rect_to_quad(fz_rect rect, float quad[8]);
-bool should_select_char(fz_point selection_begin,fz_point selection_end , fz_rect character_rect);
 void copy_to_clipboard(const wstring& text);
 fz_rect corners_to_rect(fz_point corner1, fz_point corner2);
 void install_app(char* argv0);
