@@ -325,9 +325,15 @@ InputParseTreeNode* parse_key_config_file(const wstring& file_path) {
 	vector<string> command_names;
 	vector<string> command_keys;
 	while (infile.good()) {
+		string line;
+		getline(infile, line);
+		if (line.size() == 0 || line[0] == '#') {
+			continue;
+		}
+		stringstream ss(line);
 		string command_name;
 		string command_key;
-		infile >> command_name >> command_key;
+		ss >> command_name >> command_key;
 		command_names.push_back(command_name);
 		command_keys.push_back(command_key);
 	}
