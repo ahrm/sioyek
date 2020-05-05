@@ -128,6 +128,11 @@ void ConfigManager::deserialize(wifstream& file) {
 	wstring line;
 
 	while (getline(file, line)) {
+
+		if (line.size() == 0 || line[0] == '#') {
+			continue;
+		}
+
 		wstringstream ss{ line };
 		wstring conf_name;
 		ss >> conf_name;
