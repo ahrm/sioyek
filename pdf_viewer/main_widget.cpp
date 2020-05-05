@@ -44,6 +44,7 @@
 #include "main_widget.h"
 
 extern bool launched_from_file_icon;
+extern bool flat_table_of_contents;
 extern filesystem::path parent_path;
 
 void MainWidget::paintEvent(QPaintEvent* paint_event) {
@@ -778,27 +779,32 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		vector<int> current_document_toc_pages;
 		get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
 		if (current_document_toc_pages.size() > 0) {
-			//current_widget = make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
-			//	int* page_value = (int*)page_pointer;
-			//	if (page_value) {
-			//		push_state();
-			//		validate_render();
-			//		main_document_view->goto_page(*page_value);
-			//	}
-			//	}, config_manager ,this);
-			//current_widget->show();
-
-			current_widget = make_unique<FilteredTreeSelect<int>>(main_document_view->get_document()->get_toc_model(),
-				[&](const vector<int>& indices) {
-					TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
-						indices);
-					if (toc_node) {
+			if (flat_table_of_contents) {
+				current_widget = make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
+					int* page_value = (int*)page_pointer;
+					if (page_value) {
 						push_state();
 						validate_render();
-						main_document_view->goto_page(toc_node->page);
+						main_document_view->goto_page(*page_value);
 					}
-				}, config_manager ,this);
-			current_widget->show();
+					}, config_manager, this);
+				current_widget->show();
+			}
+			else {
+
+				current_widget = make_unique<FilteredTreeSelect<int>>(main_document_view->get_document()->get_toc_model(),
+					[&](const vector<int>& indices) {
+						TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
+							indices);
+						if (toc_node) {
+							push_state();
+							validate_render();
+							main_document_view->goto_page(toc_node->page);
+						}
+					}, config_manager, this);
+				current_widget->show();
+			}
+
 		}
 	}
 	else if (command->name == "open_prev_doc") {

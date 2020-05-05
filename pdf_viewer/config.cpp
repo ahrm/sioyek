@@ -5,9 +5,13 @@ extern float vertical_move_amount;
 extern float horizontal_move_amount;
 extern float move_screen_percentage;
 extern float background_color[3];
+extern bool flat_table_of_contents;
 
 void int_serializer(void* int_pointer, wstringstream& stream) {
 	stream << *(int*)int_pointer;
+}
+void bool_serializer(void* bool_pointer, wstringstream& stream) {
+	stream << *(bool*)bool_pointer;
 }
 
 void string_serializer(void* string_pointer, wstringstream& stream) {
@@ -18,6 +22,15 @@ void* int_deserializer(wstringstream& stream, void* res_ = nullptr) {
 	int* res = (int*)res_;
 	if (res == nullptr) {
 		res = new int;
+	}
+	stream >> *res;
+	return res;
+}
+
+void* bool_deserializer(wstringstream& stream, void* res_ = nullptr) {
+	bool* res = (bool*)res_;
+	if (res == nullptr) {
+		res = new bool;
 	}
 	stream >> *res;
 	return res;
@@ -93,6 +106,7 @@ ConfigManager::ConfigManager(wstring path) {
 	configs.push_back({ L"item_list_selected_stylesheet", nullptr, string_serializer, string_deserializer });
 	configs.push_back({ L"text_command_line_stylesheet", nullptr, string_serializer, string_deserializer });
 	configs.push_back({ L"status_label_stylesheet", nullptr, string_serializer, string_deserializer });
+	configs.push_back({ L"flat_toc", &flat_table_of_contents, bool_serializer, bool_deserializer });
 	wifstream infile(path);
 	deserialize(infile);
 	infile.close();

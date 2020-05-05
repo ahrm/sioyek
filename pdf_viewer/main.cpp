@@ -81,6 +81,7 @@ extern const int persist_milies = 1000 * 60;
 extern const int page_paddings = 0;
 extern const int max_pending_requests = 31;
 extern bool launched_from_file_icon = false;
+extern bool flat_table_of_contents = false;
 
 extern filesystem::path last_path_file_absolute_location = "";
 extern filesystem::path parent_path = "";
@@ -221,6 +222,26 @@ int main(int argc, char* args[]) {
 	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 		input_handler.reload_config_file(keymap_path);
 		});
+
+	//fz_document* doc = fz_open_document(mupdf_context, utf8_encode((parent_path / "data" / "onetwo.pdf").wstring()).c_str());
+	//fz_page* page = fz_load_page(mupdf_context, doc, 0);
+	//fz_stext_page* stext_page = fz_new_stext_page_from_page(mupdf_context, page, nullptr);
+	//int i = 3;
+
+	//for (fz_stext_block* current_block = stext_page->first_block; current_block; current_block = current_block->next) {
+	//	wstring text;
+	//	if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
+	//		for (fz_stext_line* current_line = current_block->u.t.first_line; current_line; current_line = current_line->next) {
+	//			for (auto current_char = current_line->first_char; current_char; current_char = current_char->next) {
+	//				text.push_back(current_char->c);
+	//			}
+	//		}
+	//	}
+	//	cout << "__________________" << endl;
+	//	cout << utf8_encode(text) << endl;
+	//	cout << "__________________" << endl;
+	//}
+
 
 	//Document* test_doc = document_manager.get_document(L"C:\\Users\\Lion\\source\\repos\\pdf_viewer\\pdf_viewer\\data\\toc.pdf");
 	//test_doc->open();

@@ -3,6 +3,7 @@
 #include <cassert>
 #include "utils.h"
 
+
 wstring to_lower(const wstring& inp) {
 	wstring res;
 	for (char c : inp) {
@@ -318,4 +319,41 @@ bool parse_search_command(const wstring& search_command, int* out_begin, int* ou
 		*search_text = ss.str();
 		return false;
 	}
+}
+
+fz_point find_quad_center(fz_quad quad) {
+	fz_point res;
+	res.x = (quad.ll.x + quad.lr.x) / 2;
+	res.y = (quad.ll.y + quad.ul.y) / 2;
+	return res;
+}
+
+float dist_squared(fz_point p1, fz_point p2) {
+	return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
+}
+
+fz_stext_char_s* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index) {
+	float min_distance = std::numeric_limits<float>::infinity();
+	fz_stext_char_s* res = nullptr;
+
+	int index = 0;
+	LL_ITER(current_block, stext_page->first_block) {
+		if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
+			LL_ITER(current_line, current_block->u.t.first_line) {
+				LL_ITER(current_char, current_line->first_char) {
+					//fz_point quad_center = find_quad_center(current_char->quad); // todo: use .origin instead
+					fz_point quad_center = current_char->origin;
+					float distance = dist_squared(document_point, quad_center);
+					if (distance < min_distance) {
+						min_distance = distance;
+						res = current_char;
+						*location_index = index;
+					}
+					index++;
+				}
+			}
+		}
+	}
+
+	return res;
 }
