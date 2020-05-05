@@ -404,7 +404,16 @@ void DocumentView::goto_offset_within_page(int page, float offset_x, float offse
 }
 
 void DocumentView::goto_page(int page) {
-	set_offset_y(get_page_offset(page));
+	set_offset_y(get_page_offset(page) + view_height_in_document_space()/2);
+}
+
+void DocumentView::fit_to_page_width()
+{
+	int cp = get_current_page_number();
+	int page_width = current_document->get_page_width(cp);
+	set_offset_x(0);
+	set_zoom_level(static_cast<float>(view_width) / page_width);
+	//set_zoom_level()
 }
 
 //void DocumentView::render_page(int page_number) {
@@ -546,6 +555,11 @@ void DocumentView::goto_chapter(int diff)
 	else {
 		goto_page(chapter_pages[new_index]);
 	}
+}
+
+float DocumentView::view_height_in_document_space()
+{
+	return static_cast<float>(view_height) / zoom_level;
 }
 
 

@@ -145,10 +145,6 @@ public:
 		int parent_height = parentWidget()->height();
 		setFixedSize(parent_width / 3, parent_height);
 		move(parent_width / 3, 0);
-		//list_view->setStyleSheet("QListView{ background-color: black;color: white; }");
-		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_stylesheet"));
-		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_selected_stylesheet"));
-		//list_view->setStyleSheet("QListView::item::selected{ background-color: white;color: black; }");
 		on_config_file_changed(config_manager);
 	}
 
