@@ -123,6 +123,11 @@ char get_symbol(int key, bool is_shift_pressed) {
 			return key + 'a' - 'A';
 		}
 	}
+
+	if (key >= '0' && key <= '9') {
+		return key;
+	}
+
 	return 0;
 }
 
