@@ -666,7 +666,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			if (chapter_range) {
 				stringstream search_range_string;
 				search_range_string << "<" << chapter_range.value().first << "," << chapter_range.value().second << ">";
-				text_command_line_edit->setText(search_range_string.str().c_str());
+				text_command_line_edit->setText(search_range_string.str().c_str() + text_command_line_edit->text());
 			}
 		}
 		return;
