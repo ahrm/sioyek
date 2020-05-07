@@ -75,16 +75,16 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\qt\5.9.9\msvc2017_64\include;D:\mupdf\mupdf\include;C:\Users\Lion\Desktop\glew-2.1.0\include;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\qt\5.9.9\msvc2017_64\lib;D:\mupdf\mupdf\platform\win32\x64\Debug;C:\Users\Lion\Desktop\glew-2.1.0\lib\Release\x64;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\qt10\5.14.2\msvc2017_64\include;D:\mupdf\mupdf\include;C:\Users\Lion\Desktop\glew-2.1.0\include;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\qt10\5.14.2\msvc2017_64\lib;D:\mupdf\mupdf\platform\win32\x64\Debug;C:\Users\Lion\Desktop\glew-2.1.0\lib\Release\x64;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\qt\5.9.9\msvc2017_64\include;C:\Users\Lion\Desktop\glew-2.1.0\include;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\include;D:\mupdf\mupdf\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\qt\5.9.9\msvc2017_64\lib;C:\Users\Lion\Desktop\glew-2.1.0\lib\Release\x64;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\lib\x64;D:\mupdf\mupdf\platform\win32\x64\Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\qt10\5.14.2\msvc2017_64\include;C:\Users\Lion\Desktop\glew-2.1.0\include;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\include;D:\mupdf\mupdf\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\qt10\5.14.2\msvc2017_64\lib;C:\Users\Lion\Desktop\glew-2.1.0\lib\Release\x64;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\lib\x64;D:\mupdf\mupdf\platform\win32\x64\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -92,12 +92,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;QT_3DCORE_LIB;QT_3DANIMATION_LIB;QT_3DEXTRAS_LIB;QT_3DINPUT_LIB;QT_3DLOGIC_LIB;QT_3DRENDER_LIB;QT_CORE_LIB;QT_GUI_LIB;QT_OPENGL_LIB;QT_OPENGLEXTENSIONS_LIB;QT_QUICKWIDGETS_LIB;QT_SQL_LIB;QT_WIDGETS_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\qt\5.9.9\msvc2017_64\include\Qt3DCore;D:\qt\5.9.9\msvc2017_64\include\Qt3DAnimation;D:\qt\5.9.9\msvc2017_64\include\Qt3DExtras;D:\qt\5.9.9\msvc2017_64\include\Qt3DInput;D:\qt\5.9.9\msvc2017_64\include\Qt3DLogic;D:\qt\5.9.9\msvc2017_64\include\Qt3DRender;D:\qt\5.9.9\msvc2017_64\include\QtCore;D:\qt\5.9.9\msvc2017_64\include\QtGui;D:\qt\5.9.9\msvc2017_64\include\QtANGLE;D:\qt\5.9.9\msvc2017_64\include\QtOpenGL;D:\qt\5.9.9\msvc2017_64\include\QtOpenGLExtensions;D:\qt\5.9.9\msvc2017_64\include\QtQuickWidgets;D:\qt\5.9.9\msvc2017_64\include\QtSql;D:\qt\5.9.9\msvc2017_64\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(QTDIR)\include\Qt3DCore;$(QTDIR)\include\Qt3DAnimation;$(QTDIR)\include\Qt3DExtras;$(QTDIR)\include\Qt3DInput;$(QTDIR)\include\Qt3DLogic;$(QTDIR)\include\Qt3DRender;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtOpenGLExtensions;$(QTDIR)\include\QtQuickWidgets;$(QTDIR)\include\QtSql;$(QTDIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>D:\qt\5.9.9\msvc2017_64\lib\Qt53DCored.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DCored.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DAnimationd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DExtrasd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DInputd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DLogicd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DRenderd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Cored.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Guid.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5OpenGLd.lib;opengl32.lib;glu32.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5OpenGLExtensionsd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5QuickWidgetsd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Sqld.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Widgetsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Qt53DCored.lib;Qt53DAnimationd.lib;Qt53DExtrasd.lib;Qt53DInputd.lib;Qt53DLogicd.lib;Qt53DRenderd.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5OpenGLd.lib;opengl32.lib;glu32.lib;Qt5OpenGLExtensionsd.lib;Qt5QuickWidgetsd.lib;Qt5Sqld.lib;Qt5Widgetsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -108,12 +108,12 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions> /D_HAS_STD_BYTE=0 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>D:\qt\5.9.9\msvc2017_64\include\Qt3DCore;D:\qt\5.9.9\msvc2017_64\include\Qt3DAnimation;D:\qt\5.9.9\msvc2017_64\include\Qt3DExtras;D:\qt\5.9.9\msvc2017_64\include\Qt3DInput;D:\qt\5.9.9\msvc2017_64\include\Qt3DLogic;D:\qt\5.9.9\msvc2017_64\include\Qt3DRender;D:\qt\5.9.9\msvc2017_64\include\QtCore;D:\qt\5.9.9\msvc2017_64\include\QtGui;D:\qt\5.9.9\msvc2017_64\include\QtANGLE;D:\qt\5.9.9\msvc2017_64\include\QtOpenGL;D:\qt\5.9.9\msvc2017_64\include\QtOpenGLExtensions;D:\qt\5.9.9\msvc2017_64\include\QtQuickWidgets;D:\qt\5.9.9\msvc2017_64\include\QtSql;D:\qt\5.9.9\msvc2017_64\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(QTDIR)\include\Qt3DCore;$(QTDIR)\include\Qt3DAnimation;$(QTDIR)\include\Qt3DExtras;$(QTDIR)\include\Qt3DInput;$(QTDIR)\include\Qt3DLogic;$(QTDIR)\include\Qt3DRender;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtOpenGLExtensions;$(QTDIR)\include\QtQuickWidgets;$(QTDIR)\include\QtSql;$(QTDIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>glew32.lib;glew32s.lib;opengl32.lib;libmupdf.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DCored.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DAnimationd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DExtrasd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DInputd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DLogicd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DRenderd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Cored.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Guid.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5OpenGLd.lib;glu32.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5OpenGLExtensionsd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5QuickWidgetsd.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Sqld.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Widgetsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32.lib;glew32s.lib;opengl32.lib;libmupdf.lib;Qt53DCored.lib;Qt53DAnimationd.lib;Qt53DExtrasd.lib;Qt53DInputd.lib;Qt53DLogicd.lib;Qt53DRenderd.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5OpenGLd.lib;glu32.lib;Qt5OpenGLExtensionsd.lib;Qt5QuickWidgetsd.lib;Qt5Sqld.lib;Qt5Widgetsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -124,14 +124,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;QT_3DCORE_LIB;QT_3DANIMATION_LIB;QT_3DEXTRAS_LIB;QT_3DINPUT_LIB;QT_3DLOGIC_LIB;QT_3DRENDER_LIB;QT_CORE_LIB;QT_GUI_LIB;QT_OPENGL_LIB;QT_OPENGLEXTENSIONS_LIB;QT_QUICKWIDGETS_LIB;QT_SQL_LIB;QT_WIDGETS_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\qt\5.9.9\msvc2017_64\include\Qt3DCore;D:\qt\5.9.9\msvc2017_64\include\Qt3DAnimation;D:\qt\5.9.9\msvc2017_64\include\Qt3DExtras;D:\qt\5.9.9\msvc2017_64\include\Qt3DInput;D:\qt\5.9.9\msvc2017_64\include\Qt3DLogic;D:\qt\5.9.9\msvc2017_64\include\Qt3DRender;D:\qt\5.9.9\msvc2017_64\include\QtCore;D:\qt\5.9.9\msvc2017_64\include\QtGui;D:\qt\5.9.9\msvc2017_64\include\QtANGLE;D:\qt\5.9.9\msvc2017_64\include\QtOpenGL;D:\qt\5.9.9\msvc2017_64\include\QtOpenGLExtensions;D:\qt\5.9.9\msvc2017_64\include\QtQuickWidgets;D:\qt\5.9.9\msvc2017_64\include\QtSql;D:\qt\5.9.9\msvc2017_64\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(QTDIR)\include\Qt3DCore;$(QTDIR)\include\Qt3DAnimation;$(QTDIR)\include\Qt3DExtras;$(QTDIR)\include\Qt3DInput;$(QTDIR)\include\Qt3DLogic;$(QTDIR)\include\Qt3DRender;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtOpenGLExtensions;$(QTDIR)\include\QtQuickWidgets;$(QTDIR)\include\QtSql;$(QTDIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>D:\qt\5.9.9\msvc2017_64\lib\Qt53DCore.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DCore.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DAnimation.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DExtras.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DInput.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DLogic.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DRender.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Core.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Gui.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5OpenGL.lib;opengl32.lib;glu32.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5OpenGLExtensions.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5QuickWidgets.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Sql.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Widgets.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Qt53DCore.lib;Qt53DAnimation.lib;Qt53DExtras.lib;Qt53DInput.lib;Qt53DLogic.lib;Qt53DRender.lib;Qt5Core.lib;Qt5Gui.lib;Qt5OpenGL.lib;opengl32.lib;glu32.lib;Qt5OpenGLExtensions.lib;Qt5QuickWidgets.lib;Qt5Sql.lib;Qt5Widgets.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,14 +143,14 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;QT_3DCORE_LIB;QT_3DANIMATION_LIB;QT_3DEXTRAS_LIB;QT_3DINPUT_LIB;QT_3DLOGIC_LIB;QT_3DRENDER_LIB;QT_CORE_LIB;QT_GUI_LIB;QT_OPENGL_LIB;QT_OPENGLEXTENSIONS_LIB;QT_QUICKWIDGETS_LIB;QT_SQL_LIB;QT_WIDGETS_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\qt\5.9.9\msvc2017_64\include\Qt3DCore;D:\qt\5.9.9\msvc2017_64\include\Qt3DAnimation;D:\qt\5.9.9\msvc2017_64\include\Qt3DExtras;D:\qt\5.9.9\msvc2017_64\include\Qt3DInput;D:\qt\5.9.9\msvc2017_64\include\Qt3DLogic;D:\qt\5.9.9\msvc2017_64\include\Qt3DRender;D:\qt\5.9.9\msvc2017_64\include\QtCore;D:\qt\5.9.9\msvc2017_64\include\QtGui;D:\qt\5.9.9\msvc2017_64\include\QtANGLE;D:\qt\5.9.9\msvc2017_64\include\QtOpenGL;D:\qt\5.9.9\msvc2017_64\include\QtOpenGLExtensions;D:\qt\5.9.9\msvc2017_64\include\QtQuickWidgets;D:\qt\5.9.9\msvc2017_64\include\QtSql;D:\qt\5.9.9\msvc2017_64\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(QTDIR)\include\Qt3DCore;$(QTDIR)\include\Qt3DAnimation;$(QTDIR)\include\Qt3DExtras;$(QTDIR)\include\Qt3DInput;$(QTDIR)\include\Qt3DLogic;$(QTDIR)\include\Qt3DRender;$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtOpenGL;$(QTDIR)\include\QtOpenGLExtensions;$(QTDIR)\include\QtQuickWidgets;$(QTDIR)\include\QtSql;$(QTDIR)\include\QtWidgets;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>glew32.lib;glew32s.lib;opengl32.lib;libmupdf.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DCore.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DAnimation.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DExtras.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DInput.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DLogic.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt53DRender.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Core.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Gui.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5OpenGL.lib;glu32.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5OpenGLExtensions.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5QuickWidgets.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Sql.lib;D:\qt\5.9.9\msvc2017_64\lib\Qt5Widgets.lib;D:\qt\5.9.9\msvc2017_64\lib\qtmain.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32.lib;glew32s.lib;opengl32.lib;libmupdf.lib;Qt53DCore.lib;Qt53DAnimation.lib;Qt53DExtras.lib;Qt53DInput.lib;Qt53DLogic.lib;Qt53DRender.lib;Qt5Core.lib;Qt5Gui.lib;Qt5OpenGL.lib;glu32.lib;Qt5OpenGLExtensions.lib;Qt5QuickWidgets.lib;Qt5Sql.lib;Qt5Widgets.lib;qtmain.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -185,22 +185,22 @@
     <ClInclude Include="fts_fuzzy_match.h" />
     <ClInclude Include="input.h" />
     <CustomBuild Include="pdf_renderer.h">
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">D:\qt\5.9.9\msvc2017_64\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Moc%27ing %(Identity)...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"D:\qt\5.9.9\msvc2017_64\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -D_DEBUG -D_CONSOLE -DQT_3DCORE_LIB -DQT_3DANIMATION_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_OPENGLEXTENSIONS_LIB -DQT_QUICKWIDGETS_LIB -DQT_SQL_LIB -DQT_WIDGETS_LIB -D%(PreprocessorDefinitions) "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DCore" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DAnimation" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DExtras" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DInput" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DLogic" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DRender" "-ID:\qt\5.9.9\msvc2017_64\include\QtCore" "-ID:\qt\5.9.9\msvc2017_64\include\QtGui" "-ID:\qt\5.9.9\msvc2017_64\include\QtANGLE" "-ID:\qt\5.9.9\msvc2017_64\include\QtOpenGL" "-ID:\qt\5.9.9\msvc2017_64\include\QtOpenGLExtensions" "-ID:\qt\5.9.9\msvc2017_64\include\QtQuickWidgets" "-ID:\qt\5.9.9\msvc2017_64\include\QtSql" "-ID:\qt\5.9.9\msvc2017_64\include\QtWidgets"</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\qt\5.9.9\msvc2017_64\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -D_DEBUG -D_CONSOLE -DQT_3DCORE_LIB -DQT_3DANIMATION_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_OPENGLEXTENSIONS_LIB -DQT_QUICKWIDGETS_LIB -DQT_SQL_LIB -DQT_WIDGETS_LIB -D%(PreprocessorDefinitions) "-I$(QTDIR)\include\Qt3DCore" "-I$(QTDIR)\include\Qt3DAnimation" "-I$(QTDIR)\include\Qt3DExtras" "-I$(QTDIR)\include\Qt3DInput" "-I$(QTDIR)\include\Qt3DLogic" "-I$(QTDIR)\include\Qt3DRender" "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtANGLE" "-I$(QTDIR)\include\QtOpenGL" "-I$(QTDIR)\include\QtOpenGLExtensions" "-I$(QTDIR)\include\QtQuickWidgets" "-I$(QTDIR)\include\QtSql" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing %(Identity)...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"D:\qt\5.9.9\msvc2017_64\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -D_DEBUG -D_CONSOLE -DQT_3DCORE_LIB -DQT_3DANIMATION_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_OPENGLEXTENSIONS_LIB -DQT_QUICKWIDGETS_LIB -DQT_SQL_LIB -DQT_WIDGETS_LIB -D%(PreprocessorDefinitions) "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DCore" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DAnimation" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DExtras" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DInput" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DLogic" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DRender" "-ID:\qt\5.9.9\msvc2017_64\include\QtCore" "-ID:\qt\5.9.9\msvc2017_64\include\QtGui" "-ID:\qt\5.9.9\msvc2017_64\include\QtANGLE" "-ID:\qt\5.9.9\msvc2017_64\include\QtOpenGL" "-ID:\qt\5.9.9\msvc2017_64\include\QtOpenGLExtensions" "-ID:\qt\5.9.9\msvc2017_64\include\QtQuickWidgets" "-ID:\qt\5.9.9\msvc2017_64\include\QtSql" "-ID:\qt\5.9.9\msvc2017_64\include\QtWidgets"</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">D:\qt\5.9.9\msvc2017_64\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -D_DEBUG -D_CONSOLE -DQT_3DCORE_LIB -DQT_3DANIMATION_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_OPENGLEXTENSIONS_LIB -DQT_QUICKWIDGETS_LIB -DQT_SQL_LIB -DQT_WIDGETS_LIB -D%(PreprocessorDefinitions) "-I$(QTDIR)\include\Qt3DCore" "-I$(QTDIR)\include\Qt3DAnimation" "-I$(QTDIR)\include\Qt3DExtras" "-I$(QTDIR)\include\Qt3DInput" "-I$(QTDIR)\include\Qt3DLogic" "-I$(QTDIR)\include\Qt3DRender" "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtANGLE" "-I$(QTDIR)\include\QtOpenGL" "-I$(QTDIR)\include\QtOpenGLExtensions" "-I$(QTDIR)\include\QtQuickWidgets" "-I$(QTDIR)\include\QtSql" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Moc%27ing %(Identity)...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"D:\qt\5.9.9\msvc2017_64\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DNDEBUG -D_CONSOLE -DQT_3DCORE_LIB -DQT_3DANIMATION_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_OPENGLEXTENSIONS_LIB -DQT_QUICKWIDGETS_LIB -DQT_SQL_LIB -DQT_WIDGETS_LIB -D%(PreprocessorDefinitions) "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DCore" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DAnimation" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DExtras" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DInput" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DLogic" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DRender" "-ID:\qt\5.9.9\msvc2017_64\include\QtCore" "-ID:\qt\5.9.9\msvc2017_64\include\QtGui" "-ID:\qt\5.9.9\msvc2017_64\include\QtANGLE" "-ID:\qt\5.9.9\msvc2017_64\include\QtOpenGL" "-ID:\qt\5.9.9\msvc2017_64\include\QtOpenGLExtensions" "-ID:\qt\5.9.9\msvc2017_64\include\QtQuickWidgets" "-ID:\qt\5.9.9\msvc2017_64\include\QtSql" "-ID:\qt\5.9.9\msvc2017_64\include\QtWidgets"</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\qt\5.9.9\msvc2017_64\bin\moc.exe;%(FullPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DNDEBUG -D_CONSOLE -DQT_3DCORE_LIB -DQT_3DANIMATION_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_OPENGLEXTENSIONS_LIB -DQT_QUICKWIDGETS_LIB -DQT_SQL_LIB -DQT_WIDGETS_LIB -D%(PreprocessorDefinitions) "-I$(QTDIR)\include\Qt3DCore" "-I$(QTDIR)\include\Qt3DAnimation" "-I$(QTDIR)\include\Qt3DExtras" "-I$(QTDIR)\include\Qt3DInput" "-I$(QTDIR)\include\Qt3DLogic" "-I$(QTDIR)\include\Qt3DRender" "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtANGLE" "-I$(QTDIR)\include\QtOpenGL" "-I$(QTDIR)\include\QtOpenGLExtensions" "-I$(QTDIR)\include\QtQuickWidgets" "-I$(QTDIR)\include\QtSql" "-I$(QTDIR)\include\QtWidgets"</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing %(Identity)...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"D:\qt\5.9.9\msvc2017_64\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DNDEBUG -D_CONSOLE -DQT_3DCORE_LIB -DQT_3DANIMATION_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_OPENGLEXTENSIONS_LIB -DQT_QUICKWIDGETS_LIB -DQT_SQL_LIB -DQT_WIDGETS_LIB -D%(PreprocessorDefinitions) "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DCore" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DAnimation" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DExtras" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DInput" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DLogic" "-ID:\qt\5.9.9\msvc2017_64\include\Qt3DRender" "-ID:\qt\5.9.9\msvc2017_64\include\QtCore" "-ID:\qt\5.9.9\msvc2017_64\include\QtGui" "-ID:\qt\5.9.9\msvc2017_64\include\QtANGLE" "-ID:\qt\5.9.9\msvc2017_64\include\QtOpenGL" "-ID:\qt\5.9.9\msvc2017_64\include\QtOpenGLExtensions" "-ID:\qt\5.9.9\msvc2017_64\include\QtQuickWidgets" "-ID:\qt\5.9.9\msvc2017_64\include\QtSql" "-ID:\qt\5.9.9\msvc2017_64\include\QtWidgets"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  -DNDEBUG -D_CONSOLE -DQT_3DCORE_LIB -DQT_3DANIMATION_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGL_LIB -DQT_OPENGLEXTENSIONS_LIB -DQT_QUICKWIDGETS_LIB -DQT_SQL_LIB -DQT_WIDGETS_LIB -D%(PreprocessorDefinitions) "-I$(QTDIR)\include\Qt3DCore" "-I$(QTDIR)\include\Qt3DAnimation" "-I$(QTDIR)\include\Qt3DExtras" "-I$(QTDIR)\include\Qt3DInput" "-I$(QTDIR)\include\Qt3DLogic" "-I$(QTDIR)\include\Qt3DRender" "-I$(QTDIR)\include\QtCore" "-I$(QTDIR)\include\QtGui" "-I$(QTDIR)\include\QtANGLE" "-I$(QTDIR)\include\QtOpenGL" "-I$(QTDIR)\include\QtOpenGLExtensions" "-I$(QTDIR)\include\QtQuickWidgets" "-I$(QTDIR)\include\QtSql" "-I$(QTDIR)\include\QtWidgets"</Command>
     </CustomBuild>
     <ClInclude Include="main_widget.h" />
     <ClInclude Include="pdf_view_opengl_widget.h" />
@@ -223,7 +223,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties />
+      <UserProperties Qt5Version_x0020_x64="msvc_2017_64_514" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

@@ -1,5 +1,6 @@
 #include "document.h"
 #include <algorithm>
+#include <thread>
 #include "utf8.h"
 
 int Document::get_mark_index(char symbol) {
@@ -250,6 +251,7 @@ void Document::load_page_dimensions() {
 		fz_drop_page(context, page);
 	}
 }
+
 
 fz_rect Document::get_page_absolute_rect(int page)
 {

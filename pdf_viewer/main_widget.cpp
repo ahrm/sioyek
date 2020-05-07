@@ -96,6 +96,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 				selection_end,
 				opengl_widget->selected_character_rects,
 				selected_text);
+
 			validate_render();
 			last_text_select_time = QTime::currentTime();
 		}
@@ -479,6 +480,7 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 		else {
 			handle_click(x, y);
 			opengl_widget->selected_character_rects.clear();
+			selected_text.clear();
 		}
 		validate_render();
 	}
@@ -628,8 +630,11 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	}
 }
 
-void MainWidget::show_textbar(const wstring& command_name) {
+void MainWidget::show_textbar(const wstring& command_name, bool should_fill_with_selected_text) {
 	text_command_line_edit->clear();
+	if (should_fill_with_selected_text) {
+		text_command_line_edit->setText(QString::fromStdWString(selected_text));
+	}
 	text_command_line_edit_label->setText(QString::fromStdWString(command_name));
 	//text_command_line_edit->show();
 	text_command_line_edit_container->show();
@@ -651,7 +656,11 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	if (command->requires_text) {
 		current_pending_command = command;
-		show_textbar(utf8_decode(command->name.c_str()));
+		bool should_fill_text_bar_with_selected_text = false;
+		if (command->name == "search" || command->name == "chapter_search" || command->name == "ranged_search") {
+			should_fill_text_bar_with_selected_text = true;
+		}
+		show_textbar(utf8_decode(command->name.c_str()), should_fill_text_bar_with_selected_text);
 		if (command->name == "chapter_search") {
 			optional<pair<int, int>> chapter_range = main_document_view->get_current_page_range();
 			if (chapter_range) {

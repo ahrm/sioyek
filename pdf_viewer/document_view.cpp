@@ -680,9 +680,9 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 		//}
 
 		// there is one extra space character, we append a space for each line
-		if (selected_text.size() > 0) {
-			selected_text.pop_back();
-		}
+		//if (selected_text.size() > 0) {
+		//	selected_text.pop_back();
+		//}
 
 		fz_drop_stext_page(mupdf_context, stext_page);
 		fz_drop_page(mupdf_context, page);

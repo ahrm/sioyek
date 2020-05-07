@@ -105,6 +105,8 @@ public:
 	{
 
 		proxy_model = new HierarchialSortFilterProxyModel;
+		//proxy_model = new QSortFilterProxyModel;
+		//proxy_model->setRecursiveFilteringEnabled(true);
 		proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 		proxy_model->setSourceModel(tree_item_model);
 
