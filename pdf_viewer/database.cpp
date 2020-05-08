@@ -6,6 +6,13 @@
 
 using namespace std;
 
+wstring esc(const wstring& inp) {
+	char* data = sqlite3_mprintf("%q", utf8_encode(inp).c_str());
+	wstring escaped_string = utf8_decode(data);
+	sqlite3_free(data);
+	return escaped_string;
+}
+
 static int null_callback(void* notused, int argc, char** argv, char** col_name) {
 	return 0;
 }
@@ -171,7 +178,7 @@ bool insert_book(sqlite3* db, wstring path, float zoom_level, float offset_x, fl
 		"INSERT INTO opened_books (PATH, zoom_level, offset_x, offset_y, last_access_time) VALUES ";
 
 	wstringstream ss;
-	ss << insert_books_sql << "'" << path << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now');";
+	ss << insert_books_sql << "'" << esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now');";
 	
 	char* error_message = nullptr;
 	return handle_error(
@@ -183,7 +190,7 @@ bool update_book(sqlite3* db, wstring path, float zoom_level, float offset_x, fl
 
 	wstringstream ss;
 	ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time) values ('" <<
-		path << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'));";
+		esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'));";
 
 	char* error_message = nullptr;
 	return handle_error(
@@ -193,8 +200,9 @@ bool update_book(sqlite3* db, wstring path, float zoom_level, float offset_x, fl
 
 bool insert_mark(sqlite3* db, wstring document_path, char symbol, float offset_y) {
 
+	//todo: probably should escape symbol too
 	wstringstream ss;
-	ss << "INSERT INTO marks (document_path, symbol, offset_y) VALUES ('" << document_path << "', '" << symbol << "', " << offset_y << ");";
+	ss << "INSERT INTO marks (document_path, symbol, offset_y) VALUES ('" << esc(document_path) << "', '" << symbol << "', " << offset_y << ");";
 	char* error_message = nullptr;
 
 	return handle_error(
@@ -205,7 +213,7 @@ bool insert_mark(sqlite3* db, wstring document_path, char symbol, float offset_y
 bool insert_bookmark(sqlite3* db, wstring document_path, wstring desc, float offset_y) {
 
 	wstringstream ss;
-	ss << "INSERT INTO bookmarks (document_path, desc, offset_y) VALUES ('" << document_path << "', '" << desc << "', " << offset_y << ");";
+	ss << "INSERT INTO bookmarks (document_path, desc, offset_y) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', " << offset_y << ");";
 	char* error_message = nullptr;
 
 	return handle_error(
@@ -217,7 +225,7 @@ bool insert_link(sqlite3* db, wstring src_document_path, wstring dst_document_pa
 
 	wstringstream ss;
 	ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level) VALUES ('" <<
-		src_document_path << "', '" << dst_document_path << "', " << src_offset_y << ", " << dst_offset_x << ", " << dst_offset_y << ", " << dst_zoom_level << ");";
+		esc(src_document_path) << "', '" << esc(dst_document_path) << "', " << src_offset_y << ", " << dst_offset_x << ", " << dst_offset_y << ", " << dst_zoom_level << ");";
 	char* error_message = nullptr;
 
 	return handle_error(
@@ -230,7 +238,7 @@ bool update_link(sqlite3* db, wstring src_document_path, float dst_offset_x, flo
 	wstringstream ss;
 	ss << "UPDATE links SET dst_offset_x=" << dst_offset_x << ", dst_offset_y=" << dst_offset_y <<
 		", dst_zoom_level=" << dst_zoom_level << " WHERE src_document='" <<
-		src_document_path << "' AND src_offset_y=" << src_offset_y << ";";
+		esc(src_document_path) << "' AND src_offset_y=" << src_offset_y << ";";
 	char* error_message = nullptr;
 
 	return handle_error(
@@ -241,7 +249,7 @@ bool update_link(sqlite3* db, wstring src_document_path, float dst_offset_x, flo
 bool delete_link(sqlite3* db, wstring src_document_path, float src_offset_y) {
 
 	wstringstream ss;
-	ss << "DELETE FROM links where src_document='" << src_document_path << "'AND src_offset_y=" << src_offset_y << ";";
+	ss << "DELETE FROM links where src_document='" << esc(src_document_path) << "'AND src_offset_y=" << src_offset_y << ";";
 	char* error_message = nullptr;
 
 	return handle_error(
@@ -252,7 +260,7 @@ bool delete_link(sqlite3* db, wstring src_document_path, float src_offset_y) {
 bool delete_bookmark(sqlite3* db, wstring src_document_path, float src_offset_y) {
 
 	wstringstream ss;
-	ss << "DELETE FROM bookmarks where document_path='" << src_document_path << "'AND offset_y=" << src_offset_y << ";";
+	ss << "DELETE FROM bookmarks where document_path='" << esc(src_document_path) << "'AND offset_y=" << src_offset_y << ";";
 	char* error_message = nullptr;
 
 	return handle_error(
@@ -263,7 +271,7 @@ bool delete_bookmark(sqlite3* db, wstring src_document_path, float src_offset_y)
 bool update_mark(sqlite3* db, wstring document_path, char symbol, float offset_y) {
 
 	wstringstream ss;
-	ss << "UPDATE marks set offset_y=" << offset_y << " where document_path='" << document_path << "' AND symbol='" << symbol << "';";
+	ss << "UPDATE marks set offset_y=" << offset_y << " where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
 
 	char* error_message = nullptr;
 	return handle_error(
@@ -274,7 +282,7 @@ bool update_mark(sqlite3* db, wstring document_path, char symbol, float offset_y
 
 bool select_opened_book(sqlite3* db, wstring book_path, vector<OpenedBookState> &out_result) {
 		wstringstream ss;
-		ss << "select zoom_level, offset_x, offset_y from opened_books where path='" << book_path << "'";
+		ss << "select zoom_level, offset_x, offset_y from opened_books where path='" << esc(book_path) << "'";
 		char* error_message = nullptr;
 		return handle_error(
 			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), opened_book_callback, &out_result, &error_message),
@@ -292,7 +300,7 @@ bool select_prev_docs(sqlite3* db,  vector<wstring> &out_result) {
 
 bool select_mark(sqlite3* db, wstring book_path, vector<Mark> &out_result) {
 		wstringstream ss;
-		ss << "select symbol, offset_y from marks where document_path='" << book_path << "';";
+		ss << "select symbol, offset_y from marks where document_path='" << esc(book_path) << "';";
 
 		char* error_message = nullptr;
 		return handle_error(
@@ -302,7 +310,7 @@ bool select_mark(sqlite3* db, wstring book_path, vector<Mark> &out_result) {
 
 bool select_bookmark(sqlite3* db, wstring book_path, vector<BookMark> &out_result) {
 		wstringstream ss;
-		ss << "select desc, offset_y from bookmarks where document_path='" << book_path << "';";
+		ss << "select desc, offset_y from bookmarks where document_path='" << esc(book_path) << "';";
 
 		char* error_message = nullptr;
 		return handle_error(
@@ -322,7 +330,7 @@ bool global_select_bookmark(sqlite3* db,  vector<pair<wstring, BookMark>> &out_r
 
 bool select_links(sqlite3* db, wstring src_document_path, vector<Link> &out_result) {
 		wstringstream ss;
-		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level from links where src_document='" << src_document_path << "';";
+		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level from links where src_document='" << esc(src_document_path) << "';";
 
 		char* error_message = nullptr;
 		return handle_error(

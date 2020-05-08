@@ -103,7 +103,6 @@ void unlock_mutex(void* user, int lock) {
 
 
 int main(int argc, char* args[]) {
-
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
