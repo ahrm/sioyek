@@ -243,8 +243,8 @@ void DocumentView::goto_mark(char symbol) {
 }
 void DocumentView::goto_end() {
 	if (current_document) {
-		const vector<float>& accum_page_heights = current_document->get_accum_page_heights();
-		set_offset_y(accum_page_heights[accum_page_heights.size() - 1]);
+		int last_page_index = current_document->num_pages() - 1;
+		set_offset_y(current_document->get_accum_page_height(last_page_index));
 	}
 }
 float DocumentView::set_zoom_level(float zl) {
@@ -266,13 +266,7 @@ void DocumentView::move(float dx, float dy) {
 	move_absolute(abs_dx, abs_dy);
 }
 int DocumentView::get_current_page_number() {
-	vector<int> visible_pages;
-	int window_height, window_width;
-	get_visible_pages(100, visible_pages);
-	if (visible_pages.size() > 0) {
-		return visible_pages[0];
-	}
-	return -1;
+	return current_document->get_offset_page_number(get_offset_y());
 }
 
 //void DocumentView::search_text(const wchar_t* text) {
@@ -311,22 +305,26 @@ int DocumentView::get_current_page_number() {
 //}
 void DocumentView::get_visible_pages(int window_height, vector<int>& visible_pages) {
 	if (!current_document) return;
-	float window_y_range_begin = offset_y - window_height / (zoom_level);
-	float window_y_range_end = offset_y + window_height / (zoom_level);
+
+	float window_y_range_begin = offset_y - window_height / (1.5 * zoom_level);
+	float window_y_range_end = offset_y + window_height / (1.5 * zoom_level);
 	window_y_range_begin -= 1;
 	window_y_range_end += 1;
 
-	float page_begin = 0.0f;
+	current_document->get_visible_pages(window_y_range_begin, window_y_range_end, visible_pages);
 
-	const vector<float>& page_heights = current_document->get_page_heights();
-	for (int i = 0; i < page_heights.size(); i++) {
-		float page_end = page_begin + page_heights[i];
+	//float page_begin = 0.0f;
 
-		if (intersects(window_y_range_begin, window_y_range_end, page_begin, page_end)) {
-			visible_pages.push_back(i);
-		}
-		page_begin = page_end;
-	}
+	//const vector<float>& page_heights = current_document->get_page_heights();
+	//for (int i = 0; i < page_heights.size(); i++) {
+	//	float page_end = page_begin + page_heights[i];
+
+	//	if (intersects(window_y_range_begin, window_y_range_end, page_begin, page_end)) {
+	//		visible_pages.push_back(i);
+	//	}
+	//	page_begin = page_end;
+	//}
+	//cout << "num visible pages:" << visible_pages.size() << endl;
 }
 void DocumentView::move_pages(int num_pages) {
 	if (!current_document) return;

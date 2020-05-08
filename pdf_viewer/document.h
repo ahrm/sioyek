@@ -35,6 +35,8 @@ private:
 	vector<float> accum_page_heights;
 	vector<float> page_heights;
 	vector<float> page_widths;
+	std::mutex page_dims_mutex;
+	bool are_dimensions_correct = false;
 
 	int get_mark_index(char symbol);
 	fz_outline* get_toc_outline();
@@ -64,20 +66,18 @@ public:
 	float get_page_height(int page_index);
 	float get_page_width(int page_index);
 	float get_accum_page_height(int page_index);
-	const vector<float>& get_page_heights();
-	const vector<float>& get_page_widths();
-	const vector<float>& get_accum_page_heights();
+	//const vector<float>& get_page_heights();
+	//const vector<float>& get_page_widths();
+	//const vector<float>& get_accum_page_heights();
+	void get_visible_pages(float doc_y_range_begin, float doc_y_range_end, vector<int>& visible_pages);
 	void load_page_dimensions();
 	int num_pages();
 	fz_rect get_page_absolute_rect(int page);
 	void absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page);
 	QStandardItemModel* get_toc_model();
-	//void absolute_to_page_rects(fz_rect absolute_rect,
-	//	vector<fz_rect>& resulting_rects,
-	//	vector<int>& resulting_pages,
-	//	vector<fz_rect>* complete_rects);
 	void page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y);
 	fz_rect page_rect_to_absolute_rect(int page, fz_rect page_rect);
+	int get_offset_page_number(float y_offset);
 	friend class DocumentManager;
 };
 

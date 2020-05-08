@@ -126,6 +126,7 @@ config_manager(config_manager),
 input_handler(input_handler)
 {
 	int num_screens = QApplication::desktop()->numScreens();
+	num_screens = 1; //DEBUG!!!!!!!! remove this!
 	int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
 
 	pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);

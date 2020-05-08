@@ -126,6 +126,7 @@ const vector<int>& Document::get_flat_toc_pages()
 
 float Document::get_page_height(int page_index)
 {
+	std::lock_guard guard(page_dims_mutex);
 	return page_heights[page_index];
 }
 
@@ -136,23 +137,24 @@ float Document::get_page_width(int page_index)
 
 float Document::get_accum_page_height(int page_index)
 {
+	std::lock_guard guard(page_dims_mutex);
 	return accum_page_heights[page_index];
 }
 
-const vector<float>& Document::get_page_heights()
-{
-	return page_heights;
-}
-
-const vector<float>& Document::get_page_widths()
-{
-	return page_widths;
-}
-
-const vector<float>& Document::get_accum_page_heights()
-{
-	return accum_page_heights;
-}
+//const vector<float>& Document::get_page_heights()
+//{
+//	return page_heights;
+//}
+//
+//const vector<float>& Document::get_page_widths()
+//{
+//	return page_widths;
+//}
+//
+//const vector<float>& Document::get_accum_page_heights()
+//{
+//	return accum_page_heights;
+//}
 
 fz_outline* Document::get_toc_outline() {
 	if (cached_outline) return cached_outline;
@@ -231,6 +233,26 @@ bool Document::open() {
 	}
 }
 
+
+//const vector<float>& get_page_heights();
+//const vector<float>& get_page_widths();
+//const vector<float>& get_accum_page_heights();
+
+void Document::get_visible_pages(float doc_y_range_begin, float doc_y_range_end, vector<int>& visible_pages) {
+
+	std::lock_guard guard(page_dims_mutex);
+	float page_begin = 0.0f;
+
+	for (int i = 0; i < page_heights.size(); i++) {
+		float page_end = page_begin + page_heights[i];
+
+		if (intersects(doc_y_range_begin, doc_y_range_end, page_begin, page_end)) {
+			visible_pages.push_back(i);
+		}
+		page_begin = page_end;
+	}
+}
+
 void Document::load_page_dimensions() {
 	page_heights.clear();
 	accum_page_heights.clear();
@@ -238,23 +260,68 @@ void Document::load_page_dimensions() {
 
 	int n = num_pages();
 	float acc_height = 0.0f;
-	for (int i = 0; i < n; i++) {
-		fz_page* page = fz_load_page(context, doc, i);
-		fz_rect page_rect = fz_bound_page(context, page);
-		float page_height = page_rect.y1 - page_rect.y0;
-		float page_width = page_rect.x1 - page_rect.x0;
-
-		accum_page_heights.push_back(acc_height);
-		page_heights.push_back(page_height);
-		page_widths.push_back(page_width);
-		acc_height += page_height;
+	// initially assume all pages have the same dimensions, correct these heights
+	// when the background thread is done
+	if (n > 0) {
+		fz_page* page = fz_load_page(context, doc, n/2);
+		fz_rect bounds = fz_bound_page(context, page);
 		fz_drop_page(context, page);
+		for (int i = 0; i < n; i++) {
+			int height = bounds.y1 - bounds.y0;
+			int width = bounds.x1 - bounds.x0;
+
+			page_heights.push_back(height);
+			accum_page_heights.push_back(acc_height);
+			acc_height += height;
+			page_widths.push_back(width);
+		}
 	}
+
+	auto background_page_dimensions_loading_thread = std::thread([this, n]() {
+		vector<float> accum_page_heights_;
+		vector<float> page_heights_;
+		vector<float> page_widths_;
+
+		// clone the main context for use in the background thread
+		fz_context* context_ = fz_clone_context(context);
+		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+
+		float acc_height_ = 0.0f;
+		for (int i = 0; i < n; i++) {
+			fz_page* page = fz_load_page(context_, doc_, i);
+			fz_rect page_rect = fz_bound_page(context_, page);
+
+			float page_height = page_rect.y1 - page_rect.y0;
+			float page_width = page_rect.x1 - page_rect.x0;
+
+			accum_page_heights_.push_back(acc_height_);
+			page_heights_.push_back(page_height);
+			page_widths_.push_back(page_width);
+			acc_height_ += page_height;
+
+			fz_drop_page(context_, page);
+		}
+
+		fz_drop_document(context_, doc_);
+		fz_drop_context(context_);
+
+		page_dims_mutex.lock();
+
+		page_heights = std::move(page_heights_);
+		accum_page_heights = std::move(accum_page_heights_);
+		page_widths = std::move(page_widths_);
+		are_dimensions_correct = true;
+
+		page_dims_mutex.unlock();
+		});
+	background_page_dimensions_loading_thread.detach();
 }
 
 
 fz_rect Document::get_page_absolute_rect(int page)
 {
+	std::lock_guard guard(page_dims_mutex);
+
 	fz_rect res;
 	res.x0 = -page_widths[page] / 2;
 	res.x1 = page_widths[page] / 2;
@@ -300,9 +367,11 @@ const unordered_map<wstring, Document*>& DocumentManager::get_cached_documents()
 
 void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
 
-	int i = std::lower_bound(
+	std::lock_guard guard(page_dims_mutex);
+
+	int i = (std::lower_bound(
 		accum_page_heights.begin(),
-		accum_page_heights.end(), absolute_y) -  accum_page_heights.begin() - 1;
+		accum_page_heights.end(), absolute_y) -  accum_page_heights.begin()) - 1;
 	i = max(0, i);
 
 	float remaining_y = absolute_y - accum_page_heights[i];
@@ -340,6 +409,7 @@ QStandardItemModel* Document::get_toc_model()
 //}
 
 void Document::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
+	std::lock_guard guard(page_dims_mutex);
 	*abs_x = page_x - page_widths[page] / 2;
 	*abs_y = page_y + accum_page_heights[page];
 }
@@ -350,4 +420,19 @@ fz_rect Document::page_rect_to_absolute_rect(int page, fz_rect page_rect) {
 	page_pos_to_absolute_pos(page, page_rect.x1, page_rect.y1, &res.x1, &res.y1);
 
 	return res;
+}
+
+int Document::get_offset_page_number(float y_offset)
+{
+	std::lock_guard guard(page_dims_mutex);
+
+	auto it = std::lower_bound(accum_page_heights.begin(), accum_page_heights.end(), y_offset);
+
+	// std::lower_bound returns an iterator pointing to the first element of the vector not less than y_offset,
+	// but we are looking for the last element of vector that is less than y_offset
+	if (it > accum_page_heights.begin()) {
+		it--;
+	}
+
+	return (it - accum_page_heights.begin());
 }
