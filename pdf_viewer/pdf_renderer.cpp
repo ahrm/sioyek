@@ -7,6 +7,14 @@ should_quit_pointer(should_quit_pointer),
 num_threads(num_threads),
 pixmaps_to_drop(num_threads),
 pixmap_drop_mutex(num_threads) {
+
+	// this interval must be less than cache invalidation time
+	garbage_collect_timer.setInterval(1000);
+	garbage_collect_timer.start();
+
+	QObject::connect(&garbage_collect_timer, &QTimer::timeout, [&]() {
+			delete_old_pages();
+		});
 }
 
 fz_context* PdfRenderer::init_context() {
@@ -184,11 +192,26 @@ void PdfRenderer::delete_old_pages() {
 	cached_response_mutex.lock();
 	vector<int> indices_to_delete;
 	unsigned int now = QDateTime::currentMSecsSinceEpoch();
+	vector<int> cached_response_times;
 
 	for (int i = 0; i < cached_responses.size(); i++) {
-		if ((now - cached_responses[i].last_access_time) > cache_invalid_milies) {
-			cout << "deleting cached texture ... " << endl;
-			indices_to_delete.push_back(i);
+		cached_response_times.push_back(now - cached_responses[i].last_access_time);
+	}
+	// we never delete N most recent pages
+	// todo: make this configurable
+	int N = 5;
+	if (cached_response_times.size() > N) {
+		std::nth_element(cached_response_times.begin(), cached_response_times.begin() + N - 1, cached_response_times.end());
+
+
+		unsigned int time_threshold = now - cached_response_times[N - 1];
+
+		for (int i = 0; i < cached_responses.size(); i++) {
+			if ((cached_responses[i].last_access_time < time_threshold)
+				&& ((now - cached_responses[i].last_access_time) > cache_invalid_milies)) {
+				cout << "deleting cached texture ... " << endl;
+				indices_to_delete.push_back(i);
+			}
 		}
 	}
 

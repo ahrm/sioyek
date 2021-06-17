@@ -126,22 +126,13 @@ config_manager(config_manager),
 input_handler(input_handler)
 {
 	int num_screens = QApplication::desktop()->numScreens();
+
+	//todo: add an option so this is configurable
 	num_screens = 1; //DEBUG!!!!!!!! remove this!
 	int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
 
 	pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
 	pdf_renderer->start_threads();
-
-	// this interval must be less than cache invalidation time
-	garbage_collect_timer.setInterval(1000);
-	garbage_collect_timer.start();
-
-	QObject::connect(&garbage_collect_timer, &QTimer::timeout, [&]() {
-		if (should_delete_old_pages) {
-			pdf_renderer->delete_old_pages();
-			should_delete_old_pages = false;
-		}
-		});
 
 
 	main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);

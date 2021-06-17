@@ -14,6 +14,7 @@
 #include <Windows.h>
 
 #include <qobject.h>
+#include <qtimer.h>
 
 #include "book.h"
 
@@ -70,6 +71,8 @@ class PdfRenderer : public QObject{
 	mutex search_request_mutex;
 	mutex cached_response_mutex;
 	vector<mutex> pixmap_drop_mutex;
+
+	QTimer garbage_collect_timer;
 
 	bool* should_quit_pointer;
 

@@ -72,7 +72,6 @@ private:
 
 	bool should_delete_old_pages = false;
 
-	QTimer garbage_collect_timer;
 	QTime last_text_select_time = QTime::currentTime();
 
 protected:

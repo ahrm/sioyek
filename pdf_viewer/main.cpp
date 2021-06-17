@@ -4,6 +4,7 @@
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: tests!
 //todo: handle right to left documents
+//todo: fix memory leak
 
 //#include "imgui.h"
 //#include "imgui_impl_sdl.h"
