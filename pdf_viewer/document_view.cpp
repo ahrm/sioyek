@@ -14,6 +14,8 @@ DocumentView::DocumentView( fz_context* mupdf_context,
 {
 
 }
+DocumentView::~DocumentView() {
+}
 
 DocumentView::DocumentView(fz_context* mupdf_context,
 	sqlite3* db,

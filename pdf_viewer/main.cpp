@@ -189,17 +189,15 @@ int main(int argc, char* args[]) {
 	QFileSystemWatcher pref_file_watcher;
 	pref_file_watcher.addPath(QString::fromStdWString(config_path));
 
+
 	QFileSystemWatcher key_file_watcher;
 	key_file_watcher.addPath(QString::fromStdWString(keymap_path));
-
-
 
 
 	QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
 	if (QFontDatabase::addApplicationFont(font_path) < 0) {
 		cout << "could not add font!" << endl;
 	}
-
 
 	QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));
 	app.setWindowIcon(icon);
@@ -225,6 +223,9 @@ int main(int argc, char* args[]) {
 	app.exec();
 
 	quit = true;
+
+	//fz_drop_context(mupdf_context);
+
 	return 0;
 }
 

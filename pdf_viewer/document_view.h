@@ -49,6 +49,7 @@ public:
 	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager);
 	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager,
 		wstring path, int view_width, int view_height, float offset_x, float offset_y);
+	~DocumentView();
 	float get_zoom_level();
 	DocumentViewState get_state();
 	void handle_escape();

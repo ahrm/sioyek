@@ -40,6 +40,9 @@ private:
 
 	vector<FigureData> figure_indices;
 	std::mutex figure_indices_mutex;
+	//std::thread figure_indexing_thread;
+	optional<thread> figure_indexing_thread = {};
+	bool is_figure_indexing_required = true;
 
 	int get_mark_index(char symbol);
 	fz_outline* get_toc_outline();
@@ -82,6 +85,7 @@ public:
 	fz_rect page_rect_to_absolute_rect(int page, fz_rect page_rect);
 	int get_offset_page_number(float y_offset);
 	void index_figures();
+	void stop_indexing();
 	bool find_figure_with_string(wstring figure_name, int* page, float* y_offset);
 	optional<wstring> get_text_at_position(int page, float offset_x, float offset_y);
 	friend class DocumentManager;

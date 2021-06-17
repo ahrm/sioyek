@@ -222,6 +222,21 @@ input_handler(input_handler)
 
 MainWidget::~MainWidget() {
 	pdf_renderer->join_threads();
+
+	if (main_document_view != nullptr) {
+		Document* main_doc = main_document_view->get_document();
+		if (main_doc != nullptr) delete main_doc;
+
+		Document* helper_doc = nullptr;
+		if (helper_document_view != nullptr) {
+			helper_doc = helper_document_view->get_document();
+		}
+		if (helper_doc != nullptr && helper_doc != main_doc) delete helper_doc;
+	}
+
+	if (helper_document_view != nullptr && helper_document_view != main_document_view) {
+		delete helper_document_view;
+	}
 }
 
 bool MainWidget::is_pending_link_source_filled() {

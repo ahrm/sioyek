@@ -198,6 +198,11 @@ fz_link* Document::get_page_links(int page_number) {
 }
 
 Document::~Document() {
+	if (figure_indexing_thread.has_value()) {
+		stop_indexing();
+		figure_indexing_thread.value().join();
+	}
+
 	if (doc != nullptr) {
 		fz_try(context) {
 			fz_drop_document(context, doc);
@@ -207,6 +212,7 @@ Document::~Document() {
 			cerr << "Error: could not drop documnet" << endl;
 		}
 	}
+	//this->figure_indexing_thread.join();
 }
 bool Document::open() {
 	if (doc == nullptr) {
@@ -352,6 +358,7 @@ DocumentManager::DocumentManager(fz_context* mupdf_context, sqlite3* database) :
 {
 }
 
+
 Document* DocumentManager::get_document(wstring path) {
 	if (cached_documents.find(path) != cached_documents.end()) {
 		return cached_documents.at(path);
@@ -440,8 +447,17 @@ int Document::get_offset_page_number(float y_offset)
 
 void Document::index_figures()
 {
+	//return;
 	int n = num_pages();
-	std::thread thread([this, n]() {
+	//this->figure_indexing_thread = std::thread([this, n]() {
+
+	if (this->figure_indexing_thread.has_value()) {
+		// if we are already indexing figures, we should wait for the previous thread to finish
+		this->figure_indexing_thread.value().join();
+	}
+
+	is_figure_indexing_required = true;
+	this->figure_indexing_thread = std::thread([this, n]() {
 		cout << "starting index thread ..." << endl;
 		vector<FigureData> local_figure_data;
 		fz_context* context_ = fz_clone_context(context);
@@ -449,6 +465,11 @@ void Document::index_figures()
 
 		bool focus_next = false;
 		for (int i = 0; i < n; i++) {
+			// when we close a document before its indexing is finished, we should stop indexing as soon as posible
+			if (!is_figure_indexing_required) {
+				break;
+			}
+
 			fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, nullptr);
 
 			LL_ITER(block, stext_page->first_block) {
@@ -471,7 +492,12 @@ void Document::index_figures()
 		figure_indices_mutex.unlock();
 		cout << "figure indexing finished ... " << endl;
 		});
-	thread.detach();
+	//thread.detach();
+}
+
+void Document::stop_indexing()
+{
+	is_figure_indexing_required = false;
 }
 
 bool Document::find_figure_with_string(wstring figure_name, int* page, float* y_offset)
