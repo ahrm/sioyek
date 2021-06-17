@@ -47,7 +47,7 @@ private:
 
 public:
 	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager);
-	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager,
+	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager, bool* invalid_flag,
 		wstring path, int view_width, int view_height, float offset_x, float offset_y);
 	~DocumentView();
 	float get_zoom_level();
@@ -89,7 +89,7 @@ public:
 	void move_pages(int num_pages);
 	void move_screens(int num_screens);
 	void reset_doc_state();
-	void open_document(wstring doc_path, bool load_prev_state = true);
+	void open_document(wstring doc_path, bool* invalid_flag, bool load_prev_state = true);
 	float get_page_offset(int page);
 	void goto_offset_within_page(int page, float offset_x, float offset_y);
 	void goto_page(int page);

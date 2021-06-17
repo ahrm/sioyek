@@ -274,6 +274,10 @@ wstring MainWidget::get_status_string() {
 		wstring wcommand_name = utf8_decode(current_pending_command->name.c_str());
 		ss << " | " << wcommand_name << " waiting for symbol";
 	}
+	if (main_document_view != nullptr && main_document_view->get_document() != nullptr &&
+		main_document_view->get_document()->get_is_indexing()) {
+		ss << " | indexing ... ";
+	}
 	return ss.str();
 }
 
@@ -322,7 +326,7 @@ void MainWidget::validate_render() {
 				//delete helper_document_view;
 				//helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, config_manager, link->document_path,
 				//	helper_window_width, helper_window_height, link->dest_offset_x, link->dest_offset_y);
-				helper_document_view->open_document(link->document_path);
+				helper_document_view->open_document(link->document_path, &this->is_ui_invalidated);
 				helper_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
 				helper_document_view->set_zoom_level(link->dest_zoom_level);
 			}
@@ -390,7 +394,7 @@ void MainWidget::open_document(wstring path, optional<float> offset_x, optional<
 		main_document_view->persist();
 	}
 
-	main_document_view->open_document(path);
+	main_document_view->open_document(path, &this->is_ui_invalidated);
 
 	if (path.size() > 0 && main_document_view->get_document() == nullptr) {
 		show_error_message(L"Could not open file: " + path);
@@ -575,7 +579,7 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
 	//main_document_view = new_view_state.document_view;
 	//opengl_widget->set_document_view(main_document_view);
 	if (main_document_view->get_document()->get_path() != new_view_state.document_path) {
-		main_document_view->open_document(new_view_state.document_path);
+		main_document_view->open_document(new_view_state.document_path, &this->is_ui_invalidated);
 	}
 
 	main_document_view->on_view_size_change(main_window_width, main_window_height);

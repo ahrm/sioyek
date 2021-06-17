@@ -21,6 +21,7 @@ DocumentView::DocumentView(fz_context* mupdf_context,
 	sqlite3* db,
 	DocumentManager* document_manager,
 	ConfigManager* config_manager,
+	bool* invalid_flag,
 	wstring path,
 	int view_width,
 	int view_height,
@@ -33,7 +34,7 @@ DocumentView::DocumentView(fz_context* mupdf_context,
 
 {
 	on_view_size_change(view_width, view_height);
-	open_document(path);
+	open_document(path, invalid_flag);
 	set_offsets(offset_x, offset_y);
 }
 
@@ -375,7 +376,7 @@ void DocumentView::reset_doc_state() {
 	zoom_level = 1.0f;
 	set_offsets(0.0f, 0.0f);
 }
-void DocumentView::open_document(wstring doc_path, bool load_prev_state) {
+void DocumentView::open_document(wstring doc_path,bool* invalid_flag,  bool load_prev_state) {
 
 	error_code error_code;
 	filesystem::path cannonical_path_ = std::filesystem::canonical(doc_path, error_code);
@@ -393,7 +394,7 @@ void DocumentView::open_document(wstring doc_path, bool load_prev_state) {
 	//current_document = new Document(mupdf_context, doc_path, database);
 	current_document = document_manager->get_document(doc_path);
 	//current_document->open();
-	if (!current_document->open()) {
+	if (!current_document->open(invalid_flag)) {
 		current_document = nullptr;
 	}
 

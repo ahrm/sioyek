@@ -29,6 +29,11 @@ void Document::add_bookmark(wstring desc, float y_offset) {
 	insert_bookmark(db, file_name, desc, y_offset);
 }
 
+bool Document::get_is_indexing()
+{
+	return is_indexing;
+}
+
 void Document::add_link(Link link, bool insert_into_database) {
 	links.push_back(link);
 	if (insert_into_database) {
@@ -214,7 +219,7 @@ Document::~Document() {
 	}
 	//this->figure_indexing_thread.join();
 }
-bool Document::open() {
+bool Document::open(bool* invalid_flag) {
 	if (doc == nullptr) {
 		fz_try(context) {
 			doc = fz_open_document(context, utf8_encode(file_name).c_str());
@@ -227,7 +232,7 @@ bool Document::open() {
 			load_document_metadata_from_db();
 			create_toc_tree(top_level_toc_nodes);
 			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
-			index_figures();
+			index_figures(invalid_flag);
 			return true;
 		}
 
@@ -445,7 +450,7 @@ int Document::get_offset_page_number(float y_offset)
 	return (it - accum_page_heights.begin());
 }
 
-void Document::index_figures()
+void Document::index_figures(bool* invalid_flag)
 {
 	//return;
 	int n = num_pages();
@@ -457,7 +462,8 @@ void Document::index_figures()
 	}
 
 	is_figure_indexing_required = true;
-	this->figure_indexing_thread = std::thread([this, n]() {
+	is_indexing = true;
+	this->figure_indexing_thread = std::thread([this, n, invalid_flag]() {
 		cout << "starting index thread ..." << endl;
 		vector<FigureData> local_figure_data;
 		fz_context* context_ = fz_clone_context(context);
@@ -491,6 +497,8 @@ void Document::index_figures()
 		figure_indices = std::move(local_figure_data);
 		figure_indices_mutex.unlock();
 		cout << "figure indexing finished ... " << endl;
+		is_indexing = false;
+		*invalid_flag = true;
 		});
 	//thread.detach();
 }
