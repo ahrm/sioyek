@@ -353,3 +353,74 @@ bool does_stext_block_starts_with_string(fz_stext_block* block, const wstring& s
 	}
 	return false;
 }
+
+bool is_consequtive(fz_rect rect1, fz_rect rect2) {
+	float xdist = abs(rect1.x1 - rect2.x0);
+	float ydist = abs(rect1.y0 - rect2.y0);
+
+	if (xdist < 1.0f && ydist < 1.0f) {
+		return true;
+	}
+	return false;
+
+}
+fz_rect bound_rects(const vector<fz_rect>& rects) {
+	// find the bounding box of some rects
+
+	fz_rect res = rects[0];
+
+	float average_y0 = 0.0f;
+	float average_y1 = 0.0f;
+
+	for (auto rect : rects) {
+		if (res.x1 < rect.x1) {
+			res.x1 = rect.x1;
+		}
+		if (res.x0 > rect.x0) {
+			res.x0 = rect.x0;
+		}
+
+		average_y0 += rect.y0;
+		average_y1 += rect.y1;
+	}
+
+	average_y0 /= rects.size();
+	average_y1 /= rects.size();
+
+	res.y0 = average_y0;
+	res.y1 = average_y1;
+
+	return res;
+
+}
+void simplify_selected_character_rects(vector<fz_rect> selected_character_rects, vector<fz_rect>& resulting_rects) {
+	
+	if (selected_character_rects.size() == 0) {
+		return;
+	}
+
+	vector<fz_rect> line_rects;
+
+	fz_rect last_rect = selected_character_rects[0];
+	line_rects.push_back(selected_character_rects[0]);
+
+	for (int i = 1; i < selected_character_rects.size(); i++) {
+		if (is_consequtive(last_rect, selected_character_rects[i])) {
+			last_rect = selected_character_rects[i];
+			line_rects.push_back(selected_character_rects[i]);
+		}
+		else {
+			fz_rect bounding_rect = bound_rects(line_rects);
+			resulting_rects.push_back(bounding_rect);
+			line_rects.clear();
+			last_rect = selected_character_rects[i];
+			line_rects.push_back(selected_character_rects[i]);
+		}
+	}
+
+	if (line_rects.size() > 0) {
+		fz_rect bounding_rect = bound_rects(line_rects);
+		resulting_rects.push_back(bounding_rect);
+	}
+
+}

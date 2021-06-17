@@ -59,3 +59,4 @@ TocNode* get_toc_node_from_indices(const vector<TocNode*>& roots, const vector<i
 fz_stext_char_s* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index);
 void get_stext_block_string(fz_stext_block* block, wstring& res);
 bool does_stext_block_starts_with_string(fz_stext_block* block, const wstring& str);
+void simplify_selected_character_rects(vector<fz_rect> selected_character_rects, vector<fz_rect>& resulting_rects);
