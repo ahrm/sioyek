@@ -321,6 +321,20 @@ void PdfViewOpenGLWidget::render() {
 		}
 	}
 
+#ifndef NDEBUG
+	if (last_selected_block) {
+		glUseProgram(shared_gl_objects.highlight_program);
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
+			1,
+			config_manager->get_config<float>(L"link_highlight_color"));
+
+		int page = last_selected_block_page.value();
+		fz_rect rect = last_selected_block.value();
+		render_highlight_document(shared_gl_objects.highlight_program, page, rect);
+	}
+#endif
+
+
 	search_results_mutex.lock();
 	if (search_results.size() > 0) {
 		SearchResult current_search_result = search_results[current_search_result_index];

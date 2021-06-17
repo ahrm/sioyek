@@ -490,6 +490,11 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 void MainWidget::push_state() {
 	DocumentViewState dvs = main_document_view->get_state();
 
+	// we do not need to add empty document to history
+	if (main_document_view->get_document() == nullptr) {
+		return;
+	}
+
 	// do not add the same place to history multiple times
 	if (history.size() > 0) {
 		DocumentViewState last_history = history[history.size() - 1];
@@ -599,6 +604,38 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 	if (mevent->button() == Qt::MouseButton::LeftButton) {
 		handle_left_click(mevent->pos().x(), mevent->pos().y(), false);
 	}
+
+#ifdef _DEBUG
+	if (mevent->button() == Qt::MouseButton::MiddleButton) {
+
+		//int page;
+		//fz_rect rect;
+		//if (main_document_view->get_block_at_window_position(mevent->pos().x(), mevent->pos().y(), &page, &rect)) {
+		//	//optional<int> last_selected_block_page = {};
+		//	//optional<fz_rect> last_selected_block = {};
+		//	opengl_widget->last_selected_block_page = page;
+		//	opengl_widget->last_selected_block = rect;
+		//	invalidate_render();
+		//}
+		int page;
+		float offset_x, offset_y;
+
+		main_document_view->window_to_document_pos(mevent->pos().x(), mevent->pos().y(), &offset_x, &offset_y, &page);
+		optional<wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(page, offset_x, offset_y);
+		if (text_on_pointer) {
+			int fig_page;
+			float fig_offset;
+			if (main_document_view->get_document()->find_figure_with_string(text_on_pointer.value(), &fig_page, &fig_offset)) {
+				push_state();
+				main_document_view->goto_page(fig_page);
+				invalidate_render();
+			}
+		}
+		//if (text_on_pointer) {
+		//	wcout << text_on_pointer.value() << endl;
+		//}
+	}
+#endif
 
 }
 
@@ -899,7 +936,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"libgen_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
 	}
 	else if (command->name == "debug") {
-		cout << "debug" << endl;
+		//cout << "debug" << endl;
+		int page;
+		float y_offset;
+		if (main_document_view->get_document()->find_figure_with_string(L"2.2", &page, &y_offset)) {
+			main_document_view->goto_page(page);
+		}
+
 	}
 	validate_render();
 }

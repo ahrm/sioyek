@@ -91,3 +91,9 @@ struct PdfPortal {
 	fz_rect absolute_document_rect;
 	Document* doc;
 };
+
+struct FigureData {
+	int page;
+	float y_offset;
+	wstring text;
+};

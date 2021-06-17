@@ -233,6 +233,34 @@ void DocumentView::window_to_absolute_document_pos(float window_x, float window_
 	*doc_x = (window_x - view_width / 2) / zoom_level - offset_x;
 	*doc_y = (window_y - view_height / 2) / zoom_level + offset_y;
 }
+bool DocumentView::get_block_at_window_position(float window_x, float window_y, int* page, fz_rect* rect)
+{
+	float doc_pos_x, doc_pos_y;
+	window_to_document_pos(window_x, window_y, &doc_pos_x, &doc_pos_y, page);
+
+	fz_stext_options options;
+	options.flags = FZ_STEXT_PRESERVE_IMAGES;
+	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(mupdf_context, current_document->doc, *page, &options);
+
+	fz_rect mouse_pointer_rect;
+	mouse_pointer_rect.x0 = doc_pos_x-1;
+	mouse_pointer_rect.x1 = doc_pos_x+1;
+
+	mouse_pointer_rect.y0 = doc_pos_y-1;
+	mouse_pointer_rect.y1 = doc_pos_y+1;
+
+	
+	bool found = false;
+	LL_ITER(block, stext_page->first_block) {
+		if (fz_contains_rect(block->bbox, mouse_pointer_rect)) {
+			*rect = block->bbox;
+			fz_drop_stext_page(mupdf_context, stext_page);
+			return true;
+		}
+	}
+	return false;
+
+}
 void DocumentView::goto_mark(char symbol) {
 	if (current_document) {
 		float new_y_offset = 0.0f;

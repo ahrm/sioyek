@@ -221,6 +221,7 @@ bool Document::open() {
 			load_document_metadata_from_db();
 			create_toc_tree(top_level_toc_nodes);
 			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
+			index_figures();
 			return true;
 		}
 
@@ -435,4 +436,110 @@ int Document::get_offset_page_number(float y_offset)
 	}
 
 	return (it - accum_page_heights.begin());
+}
+
+void Document::index_figures()
+{
+	int n = num_pages();
+	std::thread thread([this, n]() {
+		cout << "starting index thread ..." << endl;
+		vector<FigureData> local_figure_data;
+		fz_context* context_ = fz_clone_context(context);
+		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+
+		bool focus_next = false;
+		for (int i = 0; i < n; i++) {
+			fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, nullptr);
+
+			LL_ITER(block, stext_page->first_block) {
+				if (does_stext_block_starts_with_string(block, L"FIGURE")) {
+					wstring res;
+					get_stext_block_string(block, res);
+					local_figure_data.push_back({ i, block->bbox.y1, std::move(res) });
+				}
+			}
+
+			fz_drop_stext_page(context_, stext_page);
+		}
+
+
+		fz_drop_document(context_, doc_);
+		fz_drop_context(context_);
+
+		figure_indices_mutex.lock();
+		figure_indices = std::move(local_figure_data);
+		figure_indices_mutex.unlock();
+		cout << "figure indexing finished ... " << endl;
+		});
+	thread.detach();
+}
+
+bool Document::find_figure_with_string(wstring figure_name, int* page, float* y_offset)
+{
+	std::lock_guard guard(figure_indices_mutex);
+	int min_index = 1000;
+	float min_y = 0;
+	int min_page = -1;
+
+	for (const auto& [p, y, text] : figure_indices) {
+		size_t pos = text.find(figure_name);
+		if (pos != wstring::npos) {
+			if (pos < min_index) {
+				min_index = pos;
+				min_y = y;
+				min_page = p;
+			}
+		}
+	}
+	if (min_page >= 0) {
+		*page = min_page;
+		*y_offset = min_y;
+		return true;
+	}
+	return false;
+}
+
+optional<wstring> Document::get_text_at_position(int page, float offset_x, float offset_y)
+{
+	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page, nullptr);
+
+	fz_rect selected_rect;
+
+	selected_rect.x0 = offset_x - 0.1f;
+	selected_rect.x1 = offset_x + 0.1f;
+
+	selected_rect.y0 = offset_y - 0.1f;
+	selected_rect.y1 = offset_y + 0.1f;
+
+	LL_ITER(block, stext_page->first_block) {
+		if (block->type != FZ_STEXT_BLOCK_TEXT) continue;
+
+		if (fz_contains_rect(block->bbox, selected_rect)) {
+			LL_ITER(line, block->u.t.first_line) {
+				if (fz_contains_rect(line->bbox, selected_rect)) {
+					wstring selected_string;
+					bool reached = false;
+					LL_ITER(ch, line->first_char) {
+						if (iswspace(ch->c)) {
+							if (reached) {
+								return selected_string;
+							}
+							selected_string = L"";
+						}
+						else{
+							selected_string.push_back(ch->c);
+						}
+						if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
+							reached = true;
+						}
+
+					}
+				}
+			}
+		}
+	}
+
+	fz_drop_stext_page(context, stext_page);
+	return {};
+
 }

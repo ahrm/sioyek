@@ -38,6 +38,9 @@ private:
 	std::mutex page_dims_mutex;
 	bool are_dimensions_correct = false;
 
+	vector<FigureData> figure_indices;
+	std::mutex figure_indices_mutex;
+
 	int get_mark_index(char symbol);
 	fz_outline* get_toc_outline();
 	void load_document_metadata_from_db();
@@ -78,6 +81,9 @@ public:
 	void page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y);
 	fz_rect page_rect_to_absolute_rect(int page, fz_rect page_rect);
 	int get_offset_page_number(float y_offset);
+	void index_figures();
+	bool find_figure_with_string(wstring figure_name, int* page, float* y_offset);
+	optional<wstring> get_text_at_position(int page, float offset_x, float offset_y);
 	friend class DocumentManager;
 };
 

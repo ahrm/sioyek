@@ -325,3 +325,31 @@ fz_stext_char_s* find_closest_char_to_document_point(fz_stext_page* stext_page, 
 
 	return res;
 }
+
+void get_stext_block_string(fz_stext_block* block, wstring& res) {
+	assert(block->type == FZ_STEXT_BLOCK_TEXT);
+
+	LL_ITER(line, block->u.t.first_line) {
+		LL_ITER(c, line->first_char) {
+			res.push_back(c->c);
+		}
+	}
+}
+
+bool does_stext_block_starts_with_string(fz_stext_block* block, const wstring& str) {
+	assert(block->type == FZ_STEXT_BLOCK_TEXT);
+
+	if (block->u.t.first_line) {
+		int index = 0;
+		LL_ITER(ch, block->u.t.first_line->first_char) {
+			if (ch->c != str[index]) {
+				return false;
+			}
+			index++;
+			if (index == str.size()) {
+				return true;
+			}
+		}
+	}
+	return false;
+}

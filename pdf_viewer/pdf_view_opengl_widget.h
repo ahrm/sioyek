@@ -83,6 +83,12 @@ protected:
 
 public:
 
+#ifndef NDEBUG
+	// properties for visualizing selected blocks, used only for debug
+	optional<int> last_selected_block_page = {};
+	optional<fz_rect> last_selected_block = {};
+#endif
+
 	vector<fz_rect> selected_character_rects;
 
 	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, QWidget* parent = nullptr);
