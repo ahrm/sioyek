@@ -169,15 +169,32 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 		window_rect.x0, window_rect.y0,
 		window_rect.x1, window_rect.y0
 	};
+	float line_data[] = {
+		window_rect.x0, window_rect.y0,
+		window_rect.x1, window_rect.y0,
+		window_rect.x1, window_rect.y1,
+		window_rect.x0, window_rect.y1
+	};
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDisable(GL_CULL_FACE);
+
+	//glPolygonMode(GL_FRONT, GL_LINE);
+	//glPolygonMode(GL_BACK, GL_LINE);
+
 	glUseProgram(program);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
 	glDisable(GL_BLEND);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
+	glDrawArrays(GL_LINE_LOOP, 0, 4);
+
+	//glPolygonMode(GL_FRONT, GL_FILL);
+	//glPolygonMode(GL_BACK, GL_FILL);
 }
 
 void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect) {
