@@ -6,6 +6,7 @@
 
 #include <Windows.h>
 #include <qstandarditemmodel.h>
+#include <qdatetime.h>
 
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
@@ -44,6 +45,7 @@ private:
 	optional<thread> figure_indexing_thread = {};
 	bool is_figure_indexing_required = true;
 	bool is_indexing = false;
+	bool* invalid_flag_pointer = nullptr;
 
 	int get_mark_index(char symbol);
 	fz_outline* get_toc_outline();
@@ -71,6 +73,9 @@ public:
 	const vector<wstring>& get_flat_toc_names();
 	const vector<int>& get_flat_toc_pages();
 	bool open(bool* invalid_flag);
+	void reload();
+	QDateTime get_last_edit_time();
+	unsigned int get_milies_since_last_edit_time();
 	float get_page_height(int page_index);
 	float get_page_width(int page_index);
 	float get_accum_page_height(int page_index);

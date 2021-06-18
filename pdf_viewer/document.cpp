@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <thread>
 #include "utf8.h"
+#include <qfileinfo.h>
+#include <qdatetime.h>
 
 int Document::get_mark_index(char symbol) {
 	for (int i = 0; i < marks.size(); i++) {
@@ -202,6 +204,17 @@ fz_link* Document::get_page_links(int page_number) {
 	return res;
 }
 
+QDateTime Document::get_last_edit_time() {
+	QFileInfo info(QString::fromStdWString(get_path()));
+	return info.lastModified();
+}
+
+unsigned int Document::get_milies_since_last_edit_time() {
+	QDateTime last_modified_time = get_last_edit_time();
+	QDateTime now = QDateTime::currentDateTime();
+	return last_modified_time.msecsTo(now);
+}
+
 Document::~Document() {
 	if (figure_indexing_thread.has_value()) {
 		stop_indexing();
@@ -219,6 +232,25 @@ Document::~Document() {
 	}
 	//this->figure_indexing_thread.join();
 }
+void Document::reload() {
+	fz_drop_document(context, doc);
+	cached_num_pages = {};
+
+	for (auto page_link_pair : cached_page_links) {
+		fz_drop_link(context, page_link_pair.second);
+	}
+	cached_page_links.clear();
+
+	fz_drop_outline(context, cached_outline);
+	cached_outline = nullptr;
+
+	delete cached_toc_model;
+	cached_toc_model = nullptr;
+
+	doc = nullptr;
+	open(invalid_flag_pointer);
+}
+
 bool Document::open(bool* invalid_flag) {
 	if (doc == nullptr) {
 		fz_try(context) {
@@ -232,6 +264,7 @@ bool Document::open(bool* invalid_flag) {
 			load_document_metadata_from_db();
 			create_toc_tree(top_level_toc_nodes);
 			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
+			invalid_flag_pointer = invalid_flag;
 			index_figures(invalid_flag);
 			return true;
 		}

@@ -190,14 +190,27 @@ input_handler(input_handler)
 	// we check periodically to see if the ui needs updating
 	// this is done so that thousands of search results only trigger
 	// a few rerenders
+	// todo: make interval time configurable
 	QTimer* timer = new QTimer(this);
-	timer->setInterval(200);
+	unsigned int INTERVAL_TIME = 200;
+	timer->setInterval(INTERVAL_TIME);
 	connect(timer, &QTimer::timeout, [&]() {
 		if (is_render_invalidated) {
 			validate_render();
 		}
 		else if (is_ui_invalidated) {
 			validate_ui();
+		}
+		if (main_document_view != nullptr) {
+			Document* doc = nullptr;
+			if ((doc = main_document_view->get_document()) != nullptr) {
+				if (doc->get_milies_since_last_edit_time() < 2 * INTERVAL_TIME) {
+					doc->reload();
+					pdf_renderer->clear_cache();
+					validate_render();
+					validate_ui();
+				}
+			}
 		}
 		});
 	timer->start();
@@ -947,11 +960,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 	else if (command->name == "debug") {
 		//cout << "debug" << endl;
-		int page;
-		float y_offset;
-		if (main_document_view->get_document()->find_figure_with_string(L"2.2", &page, &y_offset)) {
-			main_document_view->goto_page(page);
-		}
+		//int page;
+		//float y_offset;
+		//if (main_document_view->get_document()->find_figure_with_string(L"2.2", &page, &y_offset)) {
+		//	main_document_view->goto_page(page);
+		//}
+		main_document_view->get_document()->reload();
+		pdf_renderer->clear_cache();
 
 	}
 	validate_render();

@@ -183,7 +183,7 @@ GLuint PdfRenderer::try_closest_rendered_page(wstring doc_path, int page, float 
 	return best_texture;
 }
 
-void PdfRenderer::delete_old_pages() {
+void PdfRenderer::delete_old_pages(bool force_all) {
 	/*
 	Deletes old cached pages. This function should only be called from the main thread.
 	OpenGL textures are released immediately but pixmaps should be freed from the thread
@@ -197,10 +197,15 @@ void PdfRenderer::delete_old_pages() {
 	for (int i = 0; i < cached_responses.size(); i++) {
 		cached_response_times.push_back(now - cached_responses[i].last_access_time);
 	}
-	// we never delete N most recent pages
-	// todo: make this configurable
 	int N = 5;
-	if (cached_response_times.size() > N) {
+	if (force_all) {
+		for (int i = 0; i < cached_responses.size(); i++) {
+			indices_to_delete.push_back(i);
+		}
+	}
+	else if (cached_response_times.size() > N) {
+		// we never delete N most recent pages
+		// todo: make this configurable
 		std::nth_element(cached_response_times.begin(), cached_response_times.begin() + N - 1, cached_response_times.end());
 
 
@@ -360,6 +365,9 @@ void PdfRenderer::delete_old_pixmaps(int thread_index, fz_context* mupdf_context
 	pixmaps_to_drop[thread_index].clear();
 	pixmap_drop_mutex[thread_index].unlock();
 }
+void PdfRenderer::clear_cache() {
+	delete_old_pages(true);
+}
 
 void PdfRenderer::run(int thread_index) {
 	fz_context* mupdf_context  = init_context();
@@ -430,3 +438,4 @@ bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 	}
 	return true;
 }
+

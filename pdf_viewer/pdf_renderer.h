@@ -89,6 +89,7 @@ public:
 
 	PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone);
 	~PdfRenderer();
+	void clear_cache();
 
 	void start_threads();
 	void join_threads();
@@ -105,7 +106,7 @@ public:
 		optional<pair<int,
 		int>> range = {});
 	GLuint find_rendered_page(wstring path, int page, float zoom_level, int* page_width, int* page_height);
-	void delete_old_pages();
+	void delete_old_pages(bool force_all=false);
 
 signals:
 	void render_advance();
