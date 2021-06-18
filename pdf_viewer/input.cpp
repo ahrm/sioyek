@@ -128,30 +128,32 @@ InputParseTreeNode parse_token(std::string token) {
 		if (int f_key = get_f_key(command_string)) {
 			res.command = Qt::Key::Key_F1 - 1 + f_key;
 		}
+		else {
 
-		std::map<std::string, Qt::Key> keymap_temp = {
-			{"up", Qt::Key::Key_Up},
-			{"down", Qt::Key::Key_Down},
-			{"left", Qt::Key::Key_Left},
-			{"right", Qt::Key::Key_Right},
-			{"backspace", Qt::Key::Key_Backspace},
-			{"space", Qt::Key::Key_Space},
-			{"pageup", Qt::Key::Key_PageUp},
-			{"pagedown", Qt::Key::Key_PageDown},
-			{"home", Qt::Key::Key_Home},
-			{"pagedown", Qt::Key::Key_End},
-			{"tab", Qt::Key::Key_Tab},
-		};
-		std::map<std::string, Qt::Key> keymap;
+			std::map<std::string, Qt::Key> keymap_temp = {
+				{"up", Qt::Key::Key_Up},
+				{"down", Qt::Key::Key_Down},
+				{"left", Qt::Key::Key_Left},
+				{"right", Qt::Key::Key_Right},
+				{"backspace", Qt::Key::Key_Backspace},
+				{"space", Qt::Key::Key_Space},
+				{"pageup", Qt::Key::Key_PageUp},
+				{"pagedown", Qt::Key::Key_PageDown},
+				{"home", Qt::Key::Key_Home},
+				{"pagedown", Qt::Key::Key_End},
+				{"tab", Qt::Key::Key_Tab},
+			};
+			std::map<std::string, Qt::Key> keymap;
 
-		for (auto item : keymap_temp) {
-			keymap[item.first] = item.second;
-			keymap["<" + item.first + ">"] = item.second;
+			for (auto item : keymap_temp) {
+				keymap[item.first] = item.second;
+				keymap["<" + item.first + ">"] = item.second;
+			}
+
+			res.command = keymap[command_string];
 		}
 
-		res.command = keymap[command_string];
 	}
-
 
 	return res;
 }
