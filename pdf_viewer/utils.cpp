@@ -425,6 +425,23 @@ void simplify_selected_character_rects(std::vector<fz_rect> selected_character_r
 
 }
 
+void string_split(std::string haystack, std::string needle, std::vector<std::string> &res) {
+
+	int loc = -1;
+	int needle_size = needle.size();
+	while ((loc = haystack.find(needle)) != -1) {
+		int skiplen = loc + needle_size;
+		if (loc != 0) {
+			std::string part = haystack.substr(0, loc);
+			res.push_back(part);
+		}
+		haystack = haystack.substr(skiplen, haystack.size() - skiplen);
+	}
+	if (haystack.size() > 0) {
+		res.push_back(haystack);
+	}
+}
+
 //void pdf_sandwich_maker(fz_context* context, std::wstring original_file_name, std::wstring sandwich_file_name) {
 //
 //	const char* utf8_encoded_output_name = utf8_encode(sandwich_file_name).c_str();

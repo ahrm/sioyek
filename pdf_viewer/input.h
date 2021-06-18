@@ -41,6 +41,8 @@ struct InputParseTreeNode {
 	bool requires_symbol = false;
 	bool is_root = false;
 	bool is_final = false;
+
+	bool is_same(const InputParseTreeNode* other);
 };
 
 

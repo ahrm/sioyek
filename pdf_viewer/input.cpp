@@ -99,15 +99,7 @@ InputParseTreeNode parse_token(std::string token) {
 	}
 
 	std::vector<std::string> subcommands;
-
-	int current_begin = 0;
-
-	while (token.find("-", current_begin) != -1) {
-		int current_end = token.find("-", current_begin);
-		subcommands.push_back(token.substr(current_begin, current_end-current_begin));
-		current_begin = current_end+1;
-	}
-	subcommands.push_back(token.substr(current_begin, token.size()));
+	string_split(token, "-", subcommands);
 
 	for (int i = 0; i < subcommands.size() - 1; i++) {
 		if (subcommands[i] == "C") {
@@ -157,63 +149,51 @@ InputParseTreeNode parse_token(std::string token) {
 
 	return res;
 }
+void get_tokens(std::string line, std::vector<std::string>& tokens) {
+	std::string stack;
+
+	int stack_depth = 0;
+
+	for (char c : line) {
+		if (stack_depth && (c != '>') && (c != '<')) {
+			stack.push_back(c);
+		}
+		else if ((c == '>')) {
+			stack_depth--;
+			if (stack_depth == 0) {
+				tokens.push_back(stack);
+				stack.clear();
+			}
+			else {
+				stack.push_back(c);
+			}
+		}
+		else if (c == '<') {
+			if (stack_depth) {
+				stack.push_back(c);
+			}
+			stack_depth++;
+		}
+		else {
+			tokens.push_back(std::string(1, c));
+		}
+
+	}
+}
 
 InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std::string> command_names) {
+	// parse key configs into a trie where leaves are annotated with the name of the command
+
 	InputParseTreeNode* root = new InputParseTreeNode;
 	root->is_root = true;
 
 	for (int j = 0; j < lines.size(); j++) {
 		std::string line = lines[j];
 
+		// for example convert "<a-<space>> to ["a", "space"]
 		std::vector<std::string> tokens;
-		std::string stack;
-		//bool is_stack_mode = false;
+		get_tokens(line, tokens);
 
-		//for (char c : line) {
-		//	if (is_stack_mode && (c != '>')) {
-		//		stack.push_back(c);
-		//	}
-		//	else if (is_stack_mode && (c == '>')) {
-		//		tokens.push_back(stack);
-		//		stack.clear();
-		//		is_stack_mode = false;
-		//	}
-		//	else if (c == '<') {
-		//		is_stack_mode = true;
-		//	}
-		//	else {
-		//		tokens.push_back(string(1, c));
-		//	}
-
-		//}
-
-		int stack_depth = 0;
-
-		for (char c : line) {
-			if (stack_depth && (c != '>') && (c!='<')) {
-				stack.push_back(c);
-			}
-			else if ((c == '>')) {
-				stack_depth--;
-				if (stack_depth == 0) {
-					tokens.push_back(stack);
-					stack.clear();
-				}
-				else {
-					stack.push_back(c);
-				}
-			}
-			else if (c == '<') {
-				if (stack_depth) {
-					stack.push_back(c);
-				}
-				stack_depth++;
-			}
-			else {
-				tokens.push_back(std::string(1, c));
-			}
-
-		}
 
 		InputParseTreeNode* parent_node = root;
 
@@ -221,13 +201,7 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 			InputParseTreeNode node = parse_token(tokens[i]);
 			bool existing_node = false;
 			for (InputParseTreeNode* child : parent_node->children) {
-				if (
-					child->command == node.command &&
-					child->control_modifier == node.control_modifier &&
-					child->requires_symbol == node.requires_symbol &&
-					child->requires_text == node.requires_text &&
-					child->shift_modifier == node.shift_modifier
-					) {
+				if (child->is_same(&node)) {
 					parent_node = child;
 					existing_node = true;
 					break;
@@ -357,4 +331,12 @@ void InputHandler::delete_current_parse_tree(InputParseTreeNode* node_to_delete)
 	if (is_root) {
 		root = nullptr;
 	}
+}
+
+bool InputParseTreeNode::is_same(const InputParseTreeNode* other) {
+	return (command == other->command) &&
+		(shift_modifier == other->shift_modifier) &&
+		(control_modifier == other->control_modifier) &&
+		(requires_symbol == other->requires_symbol) &&
+		(requires_text == other->requires_text);
 }
