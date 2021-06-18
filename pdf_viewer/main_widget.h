@@ -22,7 +22,7 @@
 
 extern float vertical_move_amount;
 extern float horizontal_move_amount;
-extern filesystem::path last_path_file_absolute_location;
+extern std::filesystem::path last_path_file_absolute_location;
 
 
 class MainWidget : public QWidget, ConfigFileChangeListener{
@@ -45,20 +45,20 @@ private:
 	DocumentView* helper_document_view;
 
 	// current widget responsible for selecting an option (for example toc or bookmarks)
-	unique_ptr<QWidget> current_widget;
+	std::unique_ptr<QWidget> current_widget;
 
-	vector<DocumentViewState> history;
+	std::vector<DocumentViewState> history;
 	int current_history_index;
 
 	// last position when mouse was clicked in absolute document space
 	float last_mouse_down_x;
 	float last_mouse_down_y;
 	bool is_selecting;
-	wstring selected_text;
+	std::wstring selected_text;
 
 	Link* link_to_edit;
 
-	optional<pair<optional<wstring>, Link>> pending_link;
+	std::optional<std::pair<std::optional<std::wstring>, Link>> pending_link;
 
 	int main_window_width, main_window_height;
 
@@ -81,14 +81,14 @@ protected:
 	void mouseMoveEvent(QMouseEvent* mouse_event) override;
 	void closeEvent(QCloseEvent* close_event) override;
 	bool is_pending_link_source_filled();
-	wstring get_status_string();
+	std::wstring get_status_string();
 	void handle_escape();
 	void keyPressEvent(QKeyEvent* kevent) override;
 	void keyReleaseEvent(QKeyEvent* kevent) override;
 	void invalidate_render();
 	void invalidate_ui();
 	void handle_command_with_symbol(const Command* command, char symbol);
-	void handle_command_with_file_name(const Command* command, wstring file_name);
+	void handle_command_with_file_name(const Command* command, std::wstring file_name);
 	bool is_waiting_for_symbol();
 	void key_event(bool released, QKeyEvent* kevent);
 	void handle_left_click(float x, float y, bool down);
@@ -100,11 +100,11 @@ protected:
 	void mouseReleaseEvent(QMouseEvent* mevent) override;
 	void mousePressEvent(QMouseEvent* mevent) override;
 	void wheelEvent(QWheelEvent* wevent) override;
-	void show_textbar(const wstring& command_name, bool should_fill_with_selected_text = false);
+	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
 	void toggle_two_window_mode();
 	void handle_command(const Command* command, int num_repeats);
 	void handle_link();
-	void handle_pending_text_command(wstring text);
+	void handle_pending_text_command(std::wstring text);
 	void toggle_fullscreen();
 
 public:
@@ -121,7 +121,7 @@ public:
 
 	~MainWidget();
 
-	void open_document(wstring path, optional<float> offset_x = {}, optional<float> offset_y = {});
+	void open_document(std::wstring path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {});
 	void validate_render();
 	void validate_ui();
 

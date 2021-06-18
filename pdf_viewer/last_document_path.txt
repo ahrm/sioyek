@@ -1,1 +1,1 @@
-C:\Users\Lion\source\repos\pdf_viewer\pdf_viewer\data\tex\test.pdf
+C:\Users\Lion\source\repos\pdf_viewer\pdf_viewer\data\scanned_ocr.pdf

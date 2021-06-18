@@ -45,7 +45,7 @@
 
 extern bool launched_from_file_icon;
 extern bool flat_table_of_contents;
-extern filesystem::path parent_path;
+extern std::filesystem::path parent_path;
 
 void MainWidget::paintEvent(QPaintEvent* paint_event) {
 	QWidget::paintEvent(paint_event);
@@ -108,8 +108,10 @@ void MainWidget::closeEvent(QCloseEvent* close_event) {
 	main_document_view->persist();
 
 	if (main_document_view->get_document()) {
-		ofstream last_path_file(last_path_file_absolute_location);
-		last_path_file << utf8_encode(main_document_view->get_document()->get_path()) << endl;
+		std::ofstream last_path_file(last_path_file_absolute_location);
+
+		std::string encoded_file_name_str = utf8_encode(main_document_view->get_document()->get_path());
+		last_path_file << encoded_file_name_str.c_str() << std::endl;
 		last_path_file.close();
 	}
 
@@ -154,13 +156,13 @@ input_handler(input_handler)
 
 	status_label = new QLabel(this);
 	//status_label->setStyleSheet("background-color: black; color: white; border: 0");
-	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<wstring>(L"status_label_stylesheet")));
+	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"status_label_stylesheet")));
 	status_label->setFont(QFont("Monaco"));
 
 
 	text_command_line_edit_container = new QWidget(this);
 	//text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: 0");
-	text_command_line_edit_container->setStyleSheet(QString::fromStdWString(*config_manager->get_config<wstring>(L"text_command_line_stylesheet")));
+	text_command_line_edit_container->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"text_command_line_stylesheet")));
 
 	QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
 
@@ -247,10 +249,10 @@ bool MainWidget::is_pending_link_source_filled() {
 	return (pending_link && pending_link.value().first);
 }
 
-wstring MainWidget::get_status_string() {
-	wstringstream ss;
+std::wstring MainWidget::get_status_string() {
+	std::wstringstream ss;
 	if (main_document_view->get_document() == nullptr) return L"";
-	wstring chapter_name = main_document_view->get_current_chapter_name();
+	std::wstring chapter_name = main_document_view->get_current_chapter_name();
 
 	ss << "Page " << main_document_view->get_current_page_number() + 1 << " / " << main_document_view->get_document()->num_pages();
 	if (chapter_name.size() > 0) {
@@ -275,7 +277,7 @@ wstring MainWidget::get_status_string() {
 		ss << " | editing link ...";
 	}
 	if (current_pending_command && current_pending_command->requires_symbol) {
-		wstring wcommand_name = utf8_decode(current_pending_command->name.c_str());
+		std::wstring wcommand_name = utf8_decode(current_pending_command->name.c_str());
 		ss << " | " << wcommand_name << " waiting for symbol";
 	}
 	if (main_document_view != nullptr && main_document_view->get_document() != nullptr &&
@@ -353,9 +355,9 @@ void MainWidget::validate_ui() {
 
 void MainWidget::on_config_file_changed(ConfigManager* new_config)
 {
-	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<wstring>(L"status_label_stylesheet")));
+	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"status_label_stylesheet")));
 	text_command_line_edit_container->setStyleSheet(
-		QString::fromStdWString(*config_manager->get_config<wstring>(L"text_command_line_stylesheet")));
+		QString::fromStdWString(*config_manager->get_config<std::wstring>(L"text_command_line_stylesheet")));
 }
 
 void MainWidget::invalidate_render() {
@@ -391,7 +393,7 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 	}
 }
 
-void MainWidget::open_document(wstring path, optional<float> offset_x, optional<float> offset_y) {
+void MainWidget::open_document(std::wstring path, std::optional<float> offset_x, std::optional<float> offset_y) {
 
 	//save the previous document state
 	if (main_document_view) {
@@ -414,7 +416,7 @@ void MainWidget::open_document(wstring path, optional<float> offset_x, optional<
 
 }
 
-void MainWidget::handle_command_with_file_name(const Command* command, wstring file_name) {
+void MainWidget::handle_command_with_file_name(const Command* command, std::wstring file_name) {
 	assert(command->requires_file_name);
 	if (command->name == "open_document") {
 		open_document(file_name);
@@ -433,7 +435,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 	}
 
 	if (released == false) {
-		vector<int> ignored_codes = {
+		std::vector<int> ignored_codes = {
 			Qt::Key::Key_Shift,
 			Qt::Key::Key_Control
 		};
@@ -467,7 +469,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 					handle_command_with_file_name(command, file_name);
 				}
 				else {
-					cerr << "File select failed" << endl;
+					std::cerr << "File select failed" << endl;
 				}
 				return;
 			}
@@ -521,7 +523,7 @@ void MainWidget::push_state() {
 	// do not add the same place to history multiple times
 	if (history.size() > 0) {
 		DocumentViewState last_history = history[history.size() - 1];
-		if (last_history.document_path == main_document_view->get_document()->get_path() && last_history.offset_x == dvs.offset_x && last_history.offset_y == dvs.offset_y) {
+		if (last_history.document_path == main_document_view->get_document()->get_path() && last_history.book_state.offset_x == dvs.book_state.offset_x && last_history.book_state.offset_y == dvs.book_state.offset_y) {
 			return;
 		}
 	}
@@ -587,8 +589,9 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
 	}
 
 	main_document_view->on_view_size_change(main_window_width, main_window_height);
-	main_document_view->set_offsets(new_view_state.offset_x, new_view_state.offset_y);
-	main_document_view->set_zoom_level(new_view_state.zoom_level);
+	//main_document_view->set_offsets(new_view_state.offset_x, new_view_state.offset_y);
+	//main_document_view->set_zoom_level(new_view_state.zoom_level);
+	main_document_view->set_book_state(new_view_state.book_state);
 }
 
 void MainWidget::handle_click(int pos_x, int pos_y) {
@@ -644,7 +647,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		float offset_x, offset_y;
 
 		main_document_view->window_to_document_pos(mevent->pos().x(), mevent->pos().y(), &offset_x, &offset_y, &page);
-		optional<wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(page, offset_x, offset_y);
+		std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(page, offset_x, offset_y);
 		if (text_on_pointer) {
 			int fig_page;
 			float fig_offset;
@@ -691,7 +694,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	}
 }
 
-void MainWidget::show_textbar(const wstring& command_name, bool should_fill_with_selected_text) {
+void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text) {
 	text_command_line_edit->clear();
 	if (should_fill_with_selected_text) {
 		text_command_line_edit->setText(QString::fromStdWString(selected_text));
@@ -723,9 +726,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 		show_textbar(utf8_decode(command->name.c_str()), should_fill_text_bar_with_selected_text);
 		if (command->name == "chapter_search") {
-			optional<pair<int, int>> chapter_range = main_document_view->get_current_page_range();
+			std::optional<std::pair<int, int>> chapter_range = main_document_view->get_current_page_range();
 			if (chapter_range) {
-				stringstream search_range_string;
+				std::stringstream search_range_string;
 				search_range_string << "<" << chapter_range.value().first << "," << chapter_range.value().second << ">";
 				text_command_line_edit->setText(search_range_string.str().c_str() + text_command_line_edit->text());
 			}
@@ -751,7 +754,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		copy_to_clipboard(selected_text);
 	}
 
-	int rp = max(num_repeats, 1);
+	int rp = std::max(num_repeats, 1);
 
 	if (command->name == "screen_down") {
 		main_document_view->move_screens(1 * rp);
@@ -845,12 +848,12 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 
 	else if (command->name == "goto_toc") {
-		vector<wstring> flat_toc;
-		vector<int> current_document_toc_pages;
+		std::vector<std::wstring> flat_toc;
+		std::vector<int> current_document_toc_pages;
 		get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
 		if (current_document_toc_pages.size() > 0) {
 			if (flat_table_of_contents) {
-				current_widget = make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
+				current_widget = std::make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
 					int* page_value = (int*)page_pointer;
 					if (page_value) {
 						push_state();
@@ -862,8 +865,8 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			}
 			else {
 
-				current_widget = make_unique<FilteredTreeSelect<int>>(main_document_view->get_document()->get_toc_model(),
-					[&](const vector<int>& indices) {
+				current_widget = std::make_unique<FilteredTreeSelect<int>>(main_document_view->get_document()->get_toc_model(),
+					[&](const std::vector<int>& indices) {
 						TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
 							indices);
 						if (toc_node) {
@@ -878,8 +881,8 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 	}
 	else if (command->name == "open_prev_doc") {
-		vector<wstring> opened_docs_paths;
-		vector<wstring> opened_docs_names;
+		std::vector<std::wstring> opened_docs_paths;
+		std::vector<std::wstring> opened_docs_names;
 		select_prev_docs(db, opened_docs_paths);
 
 		for (const auto& p : opened_docs_paths) {
@@ -887,8 +890,8 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 
 		if (opened_docs_paths.size() > 0) {
-			current_widget = make_unique<FilteredSelectWindowClass<wstring>>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
-				wstring doc_path = *(wstring*)string_pointer;
+			current_widget = std::make_unique<FilteredSelectWindowClass<std::wstring>>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
+				std::wstring doc_path = *(std::wstring*)string_pointer;
 				if (doc_path.size() > 0) {
 					push_state();
 					validate_render();
@@ -899,13 +902,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 	}
 	else if (command->name == "goto_bookmark") {
-		vector<wstring> option_names;
-		vector<float> option_locations;
+		std::vector<std::wstring> option_names;
+		std::vector<float> option_locations;
 		for (int i = 0; i < main_document_view->get_document()->get_bookmarks().size(); i++) {
 			option_names.push_back(main_document_view->get_document()->get_bookmarks()[i].description);
 			option_locations.push_back(main_document_view->get_document()->get_bookmarks()[i].y_offset);
 		}
-		current_widget = make_unique<FilteredSelectWindowClass<float>>(option_names, option_locations, [&](void* float_pointer) {
+		current_widget = std::make_unique<FilteredSelectWindowClass<float>>(option_names, option_locations, [&](void* float_pointer) {
 
 			float* offset_value = (float*)float_pointer;
 			if (offset_value) {
@@ -917,18 +920,18 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		current_widget->show();
 	}
 	else if (command->name == "goto_bookmark_g") {
-		vector<pair<wstring, BookMark>> global_bookmarks;
+		std::vector<std::pair<std::wstring, BookMark>> global_bookmarks;
 		global_select_bookmark(db, global_bookmarks);
-		vector<wstring> descs;
-		vector<BookState> book_states;
+		std::vector<std::wstring> descs;
+		std::vector<BookState> book_states;
 
 		for (const auto& desc_bm_pair : global_bookmarks) {
-			wstring path = desc_bm_pair.first;
+			std::wstring path = desc_bm_pair.first;
 			BookMark bm = desc_bm_pair.second;
 			descs.push_back(bm.description);
 			book_states.push_back({ path, bm.y_offset });
 		}
-		current_widget = make_unique<FilteredSelectWindowClass<BookState>>(descs, book_states, [&](void* book_p) {
+		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(descs, book_states, [&](void* book_p) {
 			BookState* offset_value = (BookState*)book_p;
 			if (offset_value) {
 				push_state();
@@ -953,10 +956,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	//todo: check if still works after wstring
 	else if (command->name == "search_selected_text_in_google_scholar") {
-		ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"google_scholar_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
+		ShellExecuteW(0, 0, (*config_manager->get_config<std::wstring>(L"google_scholar_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
 	}
 	else if (command->name == "search_selected_text_in_libgen") {
-		ShellExecuteW(0, 0, (*config_manager->get_config<wstring>(L"libgen_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
+		ShellExecuteW(0, 0, (*config_manager->get_config<std::wstring>(L"libgen_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
 	}
 	else if (command->name == "debug") {
 		//cout << "debug" << endl;
@@ -984,7 +987,7 @@ void MainWidget::handle_link() {
 			main_document_view->get_document()->add_link(pl);
 		}
 		else {
-			const unordered_map<wstring, Document*> cached_documents = document_manager->get_cached_documents();
+			const std::unordered_map<std::wstring, Document*> cached_documents = document_manager->get_cached_documents();
 			for (auto [doc_path, doc] : cached_documents) {
 				if (source_path == doc_path) {
 					doc->add_link(pl, false);
@@ -1001,13 +1004,13 @@ void MainWidget::handle_link() {
 		}
 	}
 	else {
-		pending_link = make_pair<wstring, Link>(main_document_view->get_document()->get_path(),
+		pending_link = std::make_pair<std::wstring, Link>(main_document_view->get_document()->get_path(),
 			Link::with_src_offset(main_document_view->get_offset_y()));
 	}
 	validate_render();
 }
 
-void MainWidget::handle_pending_text_command(wstring text) {
+void MainWidget::handle_pending_text_command(std::wstring text) {
 	if (current_pending_command->name == "search" ||
 		current_pending_command->name == "ranged_search" ||
 		current_pending_command->name == "chapter_search" ) {
@@ -1016,10 +1019,10 @@ void MainWidget::handle_pending_text_command(wstring text) {
 		main_document_view->add_mark('0');
 
 		int range_begin, range_end;
-		wstring search_term;
-		optional<pair<int, int>> search_range = {};
+		std::wstring search_term;
+		std::optional<std::pair<int, int>> search_range = {};
 		if (parse_search_command(text, &range_begin, &range_end, &search_term)) {
-			search_range = make_pair(range_begin, range_end);
+			search_range = std::make_pair(range_begin, range_end);
 		}
 
 		if (search_term.size() > 0) {
@@ -1044,6 +1047,35 @@ void MainWidget::handle_pending_text_command(wstring text) {
 		if (text == L"q") {
 			close();
 			//QApplication::quit();
+		}
+		else if (text == L"ocr") {
+			DocumentViewState current_state = main_document_view->get_state();
+			OpenedBookState state = current_state.book_state;
+
+			std::wstring docpathname = main_document_view->get_document()->get_path();
+			std::filesystem::path docpath(docpathname);
+			std::wstring file_name = docpath.filename().replace_extension("").wstring();
+			std::wstring new_file_name = file_name + L"_ocr.pdf";
+			std::wstring new_path = docpath.replace_filename(new_file_name).wstring();
+
+			std::wstring command_params = (L"\"" + docpathname + L"\" \"" + new_path + L"\"");
+
+			SHELLEXECUTEINFO ShExecInfo = { 0 };
+			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+			ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+			ShExecInfo.hwnd = NULL;
+			ShExecInfo.lpVerb = NULL;
+			ShExecInfo.lpFile = L"ocrmypdf.exe";
+			ShExecInfo.lpParameters = command_params.c_str();
+			ShExecInfo.lpDirectory = NULL;
+			ShExecInfo.nShow = SW_SHOW;
+			ShExecInfo.hInstApp = NULL;
+
+			ShellExecuteExW(&ShExecInfo);
+			WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+			CloseHandle(ShExecInfo.hProcess);
+
+			main_document_view->open_document(new_path, &this->is_ui_invalidated, false, state);
 		}
 		else if (text == L"keys") {
 			ShellExecuteW(0, 0, (parent_path / "keys.config").wstring().c_str(), 0, 0, SW_SHOW);

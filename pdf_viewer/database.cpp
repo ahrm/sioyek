@@ -4,11 +4,9 @@
 #include <utility>
 
 
-using namespace std;
-
-wstring esc(const wstring& inp) {
+std::wstring esc(const std::wstring& inp) {
 	char* data = sqlite3_mprintf("%q", utf8_encode(inp).c_str());
-	wstring escaped_string = utf8_decode(data);
+	std::wstring escaped_string = utf8_decode(data);
 	sqlite3_free(data);
 	return escaped_string;
 }
@@ -18,10 +16,10 @@ static int null_callback(void* notused, int argc, char** argv, char** col_name) 
 }
 
 static int opened_book_callback(void* res_vector, int argc, char** argv, char** col_name) {
-	vector<OpenedBookState>* res = (vector<OpenedBookState>*) res_vector;
+	std::vector<OpenedBookState>* res = (std::vector<OpenedBookState>*) res_vector;
 
 	if (argc != 3) {
-		cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << endl;
+		std::cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << std::endl;
 	}
 
 	float zoom_level = atof(argv[0]);
@@ -33,10 +31,10 @@ static int opened_book_callback(void* res_vector, int argc, char** argv, char** 
 }
 
 static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col_name) {
-	vector<wstring>* res = (vector<wstring>*) res_vector;
+	std::vector<std::wstring>* res = (std::vector<std::wstring>*) res_vector;
 
 	if (argc != 1) {
-		cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << endl;
+		std::cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << std::endl;
 	}
 
 	res->push_back(utf8_decode(argv[0]));
@@ -45,7 +43,7 @@ static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col
 
 static int mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
-	vector<Mark>* res = (vector<Mark>*)res_vector;
+	std::vector<Mark>* res = (std::vector<Mark>*)res_vector;
 	assert(argc == 2);
 
 	char symbol = argv[0][0];
@@ -57,26 +55,26 @@ static int mark_select_callback(void* res_vector, int argc, char** argv, char** 
 
 static int global_bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
-	vector<pair<wstring, BookMark>>* res = (vector<pair<wstring, BookMark>>*)res_vector;
+	std::vector<std::pair<std::wstring, BookMark>>* res = (std::vector<std::pair<std::wstring, BookMark>>*)res_vector;
 	assert(argc == 3);
 
-	wstring path = utf8_decode(argv[0]);
-	wstring desc = utf8_decode(argv[1]);
+	std::wstring path = utf8_decode(argv[0]);
+	std::wstring desc = utf8_decode(argv[1]);
 	float offset_y = atof(argv[2]);
 
 	BookMark bm;
 	bm.description = desc;
 	bm.y_offset = offset_y;
-	res->push_back(make_pair(path, bm));
+	res->push_back(std::make_pair(path, bm));
 	return 0;
 }
 
 static int bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
-	vector<BookMark>* res = (vector<BookMark>*)res_vector;
+	std::vector<BookMark>* res = (std::vector<BookMark>*)res_vector;
 	assert(argc == 2);
 
-	wstring desc = utf8_decode(argv[0]);
+	std::wstring desc = utf8_decode(argv[0]);
 	float offset_y = atof(argv[1]);
 
 	res->push_back({ offset_y, desc });
@@ -85,10 +83,10 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 
 static int link_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
-	vector<Link>* res = (vector<Link>*)res_vector;
+	std::vector<Link>* res = (std::vector<Link>*)res_vector;
 	assert(argc == 5);
 
-	wstring dst_path = utf8_decode(argv[0]);
+	std::wstring dst_path = utf8_decode(argv[0]);
 	float src_offset_y = atof(argv[1]);
 	float dst_offset_x = atof(argv[2]);
 	float dst_offset_y = atof(argv[3]);
@@ -107,7 +105,7 @@ static int link_select_callback(void* res_vector, int argc, char** argv, char** 
 
 bool handle_error(int error_code, char* error_message) {
 	if (error_code != SQLITE_OK) {
-		cerr << "SQL Error: " << error_message << endl;
+		std::cerr << "SQL Error: " << error_message << std::endl;
 		sqlite3_free(error_message);
 		return false;
 	}
@@ -173,11 +171,11 @@ bool create_links_table(sqlite3* db) {
 		error_message);
 }
 
-bool insert_book(sqlite3* db, wstring path, float zoom_level, float offset_x, float offset_y) {
+bool insert_book(sqlite3* db, std::wstring path, float zoom_level, float offset_x, float offset_y) {
 	const char* insert_books_sql = ""\
 		"INSERT INTO opened_books (PATH, zoom_level, offset_x, offset_y, last_access_time) VALUES ";
 
-	wstringstream ss;
+	std::wstringstream ss;
 	ss << insert_books_sql << "'" << esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now');";
 	
 	char* error_message = nullptr;
@@ -186,9 +184,9 @@ bool insert_book(sqlite3* db, wstring path, float zoom_level, float offset_x, fl
 		error_message);
 }
 
-bool update_book(sqlite3* db, wstring path, float zoom_level, float offset_x, float offset_y) {
+bool update_book(sqlite3* db, std::wstring path, float zoom_level, float offset_x, float offset_y) {
 
-	wstringstream ss;
+	std::wstringstream ss;
 	ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time) values ('" <<
 		esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'));";
 
@@ -198,10 +196,10 @@ bool update_book(sqlite3* db, wstring path, float zoom_level, float offset_x, fl
 		error_message);
 }
 
-bool insert_mark(sqlite3* db, wstring document_path, char symbol, float offset_y) {
+bool insert_mark(sqlite3* db, std::wstring document_path, char symbol, float offset_y) {
 
 	//todo: probably should escape symbol too
-	wstringstream ss;
+	std::wstringstream ss;
 	ss << "INSERT INTO marks (document_path, symbol, offset_y) VALUES ('" << esc(document_path) << "', '" << symbol << "', " << offset_y << ");";
 	char* error_message = nullptr;
 
@@ -210,9 +208,9 @@ bool insert_mark(sqlite3* db, wstring document_path, char symbol, float offset_y
 		error_message);
 }
 
-bool insert_bookmark(sqlite3* db, wstring document_path, wstring desc, float offset_y) {
+bool insert_bookmark(sqlite3* db, std::wstring document_path, std::wstring desc, float offset_y) {
 
-	wstringstream ss;
+	std::wstringstream ss;
 	ss << "INSERT INTO bookmarks (document_path, desc, offset_y) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', " << offset_y << ");";
 	char* error_message = nullptr;
 
@@ -221,9 +219,9 @@ bool insert_bookmark(sqlite3* db, wstring document_path, wstring desc, float off
 		error_message);
 }
 
-bool insert_link(sqlite3* db, wstring src_document_path, wstring dst_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
+bool insert_link(sqlite3* db, std::wstring src_document_path, std::wstring dst_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
 
-	wstringstream ss;
+	std::wstringstream ss;
 	ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level) VALUES ('" <<
 		esc(src_document_path) << "', '" << esc(dst_document_path) << "', " << src_offset_y << ", " << dst_offset_x << ", " << dst_offset_y << ", " << dst_zoom_level << ");";
 	char* error_message = nullptr;
@@ -233,9 +231,9 @@ bool insert_link(sqlite3* db, wstring src_document_path, wstring dst_document_pa
 		error_message);
 }
 
-bool update_link(sqlite3* db, wstring src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
+bool update_link(sqlite3* db, std::wstring src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
 
-	wstringstream ss;
+	std::wstringstream ss;
 	ss << "UPDATE links SET dst_offset_x=" << dst_offset_x << ", dst_offset_y=" << dst_offset_y <<
 		", dst_zoom_level=" << dst_zoom_level << " WHERE src_document='" <<
 		esc(src_document_path) << "' AND src_offset_y=" << src_offset_y << ";";
@@ -246,9 +244,9 @@ bool update_link(sqlite3* db, wstring src_document_path, float dst_offset_x, flo
 		error_message);
 }
 
-bool delete_link(sqlite3* db, wstring src_document_path, float src_offset_y) {
+bool delete_link(sqlite3* db, std::wstring src_document_path, float src_offset_y) {
 
-	wstringstream ss;
+	std::wstringstream ss;
 	ss << "DELETE FROM links where src_document='" << esc(src_document_path) << "'AND src_offset_y=" << src_offset_y << ";";
 	char* error_message = nullptr;
 
@@ -257,9 +255,9 @@ bool delete_link(sqlite3* db, wstring src_document_path, float src_offset_y) {
 		error_message);
 }
 
-bool delete_bookmark(sqlite3* db, wstring src_document_path, float src_offset_y) {
+bool delete_bookmark(sqlite3* db, std::wstring src_document_path, float src_offset_y) {
 
-	wstringstream ss;
+	std::wstringstream ss;
 	ss << "DELETE FROM bookmarks where document_path='" << esc(src_document_path) << "'AND offset_y=" << src_offset_y << ";";
 	char* error_message = nullptr;
 
@@ -268,9 +266,9 @@ bool delete_bookmark(sqlite3* db, wstring src_document_path, float src_offset_y)
 		error_message);
 }
 
-bool update_mark(sqlite3* db, wstring document_path, char symbol, float offset_y) {
+bool update_mark(sqlite3* db, std::wstring document_path, char symbol, float offset_y) {
 
-	wstringstream ss;
+	std::wstringstream ss;
 	ss << "UPDATE marks set offset_y=" << offset_y << " where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
 
 	char* error_message = nullptr;
@@ -280,8 +278,8 @@ bool update_mark(sqlite3* db, wstring document_path, char symbol, float offset_y
 }
 
 
-bool select_opened_book(sqlite3* db, wstring book_path, vector<OpenedBookState> &out_result) {
-		wstringstream ss;
+bool select_opened_book(sqlite3* db, std::wstring book_path, std::vector<OpenedBookState> &out_result) {
+		std::wstringstream ss;
 		ss << "select zoom_level, offset_x, offset_y from opened_books where path='" << esc(book_path) << "'";
 		char* error_message = nullptr;
 		return handle_error(
@@ -289,8 +287,8 @@ bool select_opened_book(sqlite3* db, wstring book_path, vector<OpenedBookState> 
 			error_message);
 }
 
-bool select_prev_docs(sqlite3* db,  vector<wstring> &out_result) {
-		wstringstream ss;
+bool select_prev_docs(sqlite3* db,  std::vector<std::wstring> &out_result) {
+		std::wstringstream ss;
 		ss << "SELECT path FROM opened_books order by datetime(last_access_time) desc;";
 		char* error_message = nullptr;
 		return handle_error(
@@ -298,8 +296,8 @@ bool select_prev_docs(sqlite3* db,  vector<wstring> &out_result) {
 			error_message);
 }
 
-bool select_mark(sqlite3* db, wstring book_path, vector<Mark> &out_result) {
-		wstringstream ss;
+bool select_mark(sqlite3* db, std::wstring book_path, std::vector<Mark> &out_result) {
+		std::wstringstream ss;
 		ss << "select symbol, offset_y from marks where document_path='" << esc(book_path) << "';";
 
 		char* error_message = nullptr;
@@ -308,8 +306,8 @@ bool select_mark(sqlite3* db, wstring book_path, vector<Mark> &out_result) {
 			error_message);
 }
 
-bool select_bookmark(sqlite3* db, wstring book_path, vector<BookMark> &out_result) {
-		wstringstream ss;
+bool select_bookmark(sqlite3* db, std::wstring book_path, std::vector<BookMark> &out_result) {
+		std::wstringstream ss;
 		ss << "select desc, offset_y from bookmarks where document_path='" << esc(book_path) << "';";
 
 		char* error_message = nullptr;
@@ -318,8 +316,8 @@ bool select_bookmark(sqlite3* db, wstring book_path, vector<BookMark> &out_resul
 			error_message);
 }
 
-bool global_select_bookmark(sqlite3* db,  vector<pair<wstring, BookMark>> &out_result) {
-		wstringstream ss;
+bool global_select_bookmark(sqlite3* db,  std::vector<std::pair<std::wstring, BookMark>> &out_result) {
+		std::wstringstream ss;
 		ss << "select document_path, desc, offset_y from bookmarks;";
 
 		char* error_message = nullptr;
@@ -328,8 +326,8 @@ bool global_select_bookmark(sqlite3* db,  vector<pair<wstring, BookMark>> &out_r
 			error_message);
 }
 
-bool select_links(sqlite3* db, wstring src_document_path, vector<Link> &out_result) {
-		wstringstream ss;
+bool select_links(sqlite3* db, std::wstring src_document_path, std::vector<Link> &out_result) {
+		std::wstringstream ss;
 		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level from links where src_document='" << esc(src_document_path) << "';";
 
 		char* error_message = nullptr;

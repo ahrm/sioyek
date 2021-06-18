@@ -32,8 +32,6 @@
 #include "utils.h"
 #include "config.h"
 
-using namespace std;
-
 const int max_select_size = 100;
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
@@ -42,7 +40,7 @@ protected:
 };
 
 class ConfigFileChangeListener {
-	static vector<ConfigFileChangeListener*> registered_listeners;
+	static std::vector<ConfigFileChangeListener*> registered_listeners;
 
 
 public:
@@ -60,7 +58,7 @@ private:
 	QSortFilterProxyModel* proxy_model;
 	QLineEdit* line_edit;
 	QTreeView* tree_view;
-	function<void(const vector<int>&)> on_done;
+	std::function<void(const std::vector<int>&)> on_done;
 	ConfigManager* config_manager;
 
 protected:
@@ -89,15 +87,15 @@ protected:
 public:
 
 	void on_config_file_changed(ConfigManager* new_config_manager) {
-		wstring item_list_stylesheet = *new_config_manager->get_config<wstring>(L"item_list_stylesheet");
-		wstring item_list_selected_stylesheet = *new_config_manager->get_config<wstring>(L"item_list_selected_stylesheet");
+		std::wstring item_list_stylesheet = *new_config_manager->get_config<std::wstring>(L"item_list_stylesheet");
+		std::wstring item_list_selected_stylesheet = *new_config_manager->get_config<std::wstring>(L"item_list_selected_stylesheet");
 
 		setStyleSheet(QString::fromStdWString(item_list_stylesheet));
 		tree_view->setStyleSheet("QTreeView::item::selected{" + QString::fromStdWString(item_list_selected_stylesheet) + "}");
 	}
 
 	//todo: check for memory leaks
-	FilteredTreeSelect(QStandardItemModel* item_model, function<void(const vector<int>&)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
+	FilteredTreeSelect(QStandardItemModel* item_model, std::function<void(const std::vector<int>&)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
 		QWidget(parent) ,
 		tree_item_model(item_model),
 		config_manager(config_manager),
@@ -152,7 +150,7 @@ public:
 
 
 	void on_select(const QModelIndex& index) {
-		cout << "activated " << endl;
+		std::cout << "activated " << endl;
 		hide();
 		parentWidget()->setFocus();
 		auto source_index = proxy_model->mapToSource(index);
@@ -161,7 +159,7 @@ public:
 		//parent = source_index.parent();
 		//parent = source_index.parent();
 		//parent = source_index.parent();
-		vector<int> indices;
+		std::vector<int> indices;
 		while (source_index != QModelIndex()) {
 			indices.push_back(source_index.row());
 			source_index = source_index.parent();
@@ -178,8 +176,8 @@ private:
 	QSortFilterProxyModel* proxy_model;
 	QLineEdit* line_edit;
 	QListView* list_view;
-	vector<T> values;
-	function<void(void*)> on_done;
+	std::vector<T> values;
+	std::function<void(void*)> on_done;
 	ConfigManager* config_manager;
 
 protected:
@@ -204,8 +202,8 @@ protected:
 public:
 
 	void on_config_file_changed(ConfigManager* new_config_manager) {
-		wstring item_list_stylesheet = *new_config_manager->get_config<wstring>(L"item_list_stylesheet");
-		wstring item_list_selected_stylesheet = *new_config_manager->get_config<wstring>(L"item_list_selected_stylesheet");
+		std::wstring item_list_stylesheet = *new_config_manager->get_config<std::wstring>(L"item_list_stylesheet");
+		std::wstring item_list_selected_stylesheet = *new_config_manager->get_config<std::wstring>(L"item_list_selected_stylesheet");
 
 		//list_view->setStyleSheet(QString::fromStdWString(item_list_stylesheet));
 		//list_view->setStyleSheet(QString::fromStdWString(item_list_selected_stylesheet));
@@ -215,7 +213,7 @@ public:
 	}
 
 	//todo: check for memory leaks
-	FilteredSelectWindowClass(vector<wstring> std_string_list, vector<T> values, function<void(void*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
+	FilteredSelectWindowClass(std::vector<std::wstring> std_string_list, std::vector<T> values, std::function<void(void*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
 		QWidget(parent) ,
 		values(values),
 		config_manager(config_manager),
@@ -292,7 +290,7 @@ public:
 
 
 	void on_select(const QModelIndex& index) {
-		cout << "activated " << index.data().toString().toStdString() << endl;
+		std::cout << "activated " << index.data().toString().toStdString() << std::endl;
 		hide();
 		parentWidget()->setFocus();
 		auto source_index = proxy_model->mapToSource(index);

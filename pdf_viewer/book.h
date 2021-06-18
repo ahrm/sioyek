@@ -7,12 +7,11 @@
 #include <qopengl.h>
 #include <mutex>
 
-using namespace std;
 
 class DocumentView;
 
 struct BookState {
-	wstring document_path;
+	std::wstring document_path;
 	float offset_y;
 };
 
@@ -29,13 +28,13 @@ struct Mark {
 
 struct BookMark {
 	float y_offset;
-	wstring description;
+	std::wstring description;
 };
 
 struct Link {
 	static Link with_src_offset(float src_offset);
 
-	wstring document_path;
+	std::wstring document_path;
 	float dest_offset_x;
 	float dest_offset_y;
 	float dest_zoom_level;
@@ -44,15 +43,16 @@ struct Link {
 
 struct PdfLink {
 	fz_rect rect;
-	string uri;
+	std::string uri;
 };
 
 struct DocumentViewState {
 	//DocumentView* document_view;
-	wstring document_path;
-	float offset_x;
-	float offset_y;
-	float zoom_level;
+	std::wstring document_path;
+	OpenedBookState book_state;
+	//float offset_x;
+	//float offset_y;
+	//float zoom_level;
 };
 
 struct SearchResult {
@@ -62,8 +62,8 @@ struct SearchResult {
 
 
 struct TocNode {
-	vector<TocNode*> children;
-	wstring title;
+	std::vector<TocNode*> children;
+	std::wstring title;
 	int page;
 	float y;
 	float x;
@@ -95,5 +95,5 @@ struct PdfPortal {
 struct FigureData {
 	int page;
 	float y_offset;
-	wstring text;
+	std::wstring text;
 };

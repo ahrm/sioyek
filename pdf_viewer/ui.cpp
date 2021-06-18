@@ -2,7 +2,7 @@
 
 bool select_pdf_file_name(wchar_t* out_file_name, int max_length) {
 
-	cout << filesystem::current_path().string() << endl;
+	std::cout << std::filesystem::current_path().string() << endl;
 	OPENFILENAMEW ofn;
 	ZeroMemory(out_file_name, max_length);
 	ZeroMemory(&ofn, sizeof(ofn));
@@ -16,21 +16,21 @@ bool select_pdf_file_name(wchar_t* out_file_name, int max_length) {
 
 
 	if (GetOpenFileNameW(&ofn)) {
-		cout << filesystem::current_path().string() << endl;
+		std::cout << std::filesystem::current_path().string() << endl;
 		return true;
 	}
 	return false;
 }
 
-vector<ConfigFileChangeListener*> ConfigFileChangeListener::registered_listeners;
+std::vector<ConfigFileChangeListener*> ConfigFileChangeListener::registered_listeners;
 
 ConfigFileChangeListener::ConfigFileChangeListener() {
-	cout << "config file change listener constructor called" << endl;
+	std::cout << "config file change listener constructor called" << endl;
 	registered_listeners.push_back(this);
 }
 
 ConfigFileChangeListener::~ConfigFileChangeListener() {
-	cout << "config file change listener destructor called" << endl;
+	std::cout << "config file change listener destructor called" << endl;
 	registered_listeners.erase(std::find(registered_listeners.begin(), registered_listeners.end(), this));
 }
 

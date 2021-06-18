@@ -17,32 +17,32 @@
 
 class Document {
 private:
-	vector<Mark> marks;
-	vector<BookMark> bookmarks;
-	vector<Link> links;
+	std::vector<Mark> marks;
+	std::vector<BookMark> bookmarks;
+	std::vector<Link> links;
 	sqlite3* db;
-	vector<TocNode*> top_level_toc_nodes;
-	vector<wstring> flat_toc_names;
-	vector<int> flat_toc_pages;
+	std::vector<TocNode*> top_level_toc_nodes;
+	std::vector<std::wstring> flat_toc_names;
+	std::vector<int> flat_toc_pages;
 
-	optional<int> cached_num_pages;
+	std::optional<int> cached_num_pages;
 
 	fz_context* context;
-	wstring file_name;
-	unordered_map<int, fz_link*> cached_page_links;
+	std::wstring file_name;
+	std::unordered_map<int, fz_link*> cached_page_links;
 	fz_outline* cached_outline;
 	QStandardItemModel* cached_toc_model = nullptr;
 
-	vector<float> accum_page_heights;
-	vector<float> page_heights;
-	vector<float> page_widths;
+	std::vector<float> accum_page_heights;
+	std::vector<float> page_heights;
+	std::vector<float> page_widths;
 	std::mutex page_dims_mutex;
 	bool are_dimensions_correct = false;
 
-	vector<FigureData> figure_indices;
+	std::vector<FigureData> figure_indices;
 	std::mutex figure_indices_mutex;
 	//std::thread figure_indexing_thread;
-	optional<thread> figure_indexing_thread = {};
+	std::optional<std::thread> figure_indexing_thread = {};
 	bool is_figure_indexing_required = true;
 	bool is_indexing = false;
 	bool* invalid_flag_pointer = nullptr;
@@ -50,28 +50,28 @@ private:
 	int get_mark_index(char symbol);
 	fz_outline* get_toc_outline();
 	void load_document_metadata_from_db();
-	void create_toc_tree(vector<TocNode*>& toc);
+	void create_toc_tree(std::vector<TocNode*>& toc);
 
-	Document(fz_context* context, wstring file_name, sqlite3* db);
+	Document(fz_context* context, std::wstring file_name, sqlite3* db);
 public:
 	fz_document* doc;
 
-	void add_bookmark(wstring desc, float y_offset);
+	void add_bookmark(std::wstring desc, float y_offset);
 	bool get_is_indexing();
 	void add_link(Link link, bool insert_into_database = true);
-	wstring get_path();
+	std::wstring get_path();
 	BookMark* find_closest_bookmark(float to_offset_y, int* index = nullptr);
 	void delete_closest_bookmark(float to_y_offset);
 	Link* find_closest_link(float to_offset_y, int* index = nullptr);
 	void delete_closest_link(float to_offset_y);
-	const vector<BookMark>& get_bookmarks() const;
+	const std::vector<BookMark>& get_bookmarks() const;
 	fz_link* get_page_links(int page_number);
 	void add_mark(char symbol, float y_offset);
 	bool get_mark_location_if_exists(char symbol, float* y_offset);
 	~Document();
-	const vector<TocNode*>& get_toc();
-	const vector<wstring>& get_flat_toc_names();
-	const vector<int>& get_flat_toc_pages();
+	const std::vector<TocNode*>& get_toc();
+	const std::vector<std::wstring>& get_flat_toc_names();
+	const std::vector<int>& get_flat_toc_pages();
 	bool open(bool* invalid_flag);
 	void reload();
 	QDateTime get_last_edit_time();
@@ -82,7 +82,7 @@ public:
 	//const vector<float>& get_page_heights();
 	//const vector<float>& get_page_widths();
 	//const vector<float>& get_accum_page_heights();
-	void get_visible_pages(float doc_y_range_begin, float doc_y_range_end, vector<int>& visible_pages);
+	void get_visible_pages(float doc_y_range_begin, float doc_y_range_end, std::vector<int>& visible_pages);
 	void load_page_dimensions();
 	int num_pages();
 	fz_rect get_page_absolute_rect(int page);
@@ -93,8 +93,8 @@ public:
 	int get_offset_page_number(float y_offset);
 	void index_figures(bool* invalid_flag);
 	void stop_indexing();
-	bool find_figure_with_string(wstring figure_name, int* page, float* y_offset);
-	optional<wstring> get_text_at_position(int page, float offset_x, float offset_y);
+	bool find_figure_with_string(std::wstring figure_name, int* page, float* y_offset);
+	std::optional<std::wstring> get_text_at_position(int page, float offset_x, float offset_y);
 	friend class DocumentManager;
 };
 
@@ -102,11 +102,11 @@ class DocumentManager {
 private:
 	fz_context* mupdf_context;
 	sqlite3* database;
-	unordered_map<wstring, Document*> cached_documents;
+	std::unordered_map<std::wstring, Document*> cached_documents;
 public:
 
 	DocumentManager(fz_context* mupdf_context, sqlite3* database);
 
-	Document* get_document(wstring path);
-	const unordered_map<wstring, Document*>& get_cached_documents();;
+	Document* get_document(std::wstring path);
+	const std::unordered_map<std::wstring, Document*>& get_cached_documents();;
 };

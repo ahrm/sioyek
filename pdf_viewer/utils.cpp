@@ -4,15 +4,15 @@
 #include "utils.h"
 
 
-wstring to_lower(const wstring& inp) {
-	wstring res;
+std::wstring to_lower(const std::wstring& inp) {
+	std::wstring res;
 	for (char c : inp) {
 		res.push_back(::tolower(c));
 	}
 	return res;
 }
 
-void convert_toc_tree(fz_outline* root, vector<TocNode*>& output) {
+void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output) {
 	// convert an fz_outline structure to a tree of TocNodes
 
 	do {
@@ -30,7 +30,7 @@ void convert_toc_tree(fz_outline* root, vector<TocNode*>& output) {
 	} while (root = root->next);
 }
 
-void get_flat_toc(const vector<TocNode*>& roots, vector<wstring>& output, vector<int>& pages) {
+void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages) {
 	// Enumerate ToC nodes in the DFS order
 
 	for (const auto& root : roots) {
@@ -40,7 +40,7 @@ void get_flat_toc(const vector<TocNode*>& roots, vector<wstring>& output, vector
 	}
 }
 
-TocNode* get_toc_node_from_indices_helper(const vector<TocNode*>& roots, const vector<int>& indices, int pointer) {
+TocNode* get_toc_node_from_indices_helper(const std::vector<TocNode*>& roots, const std::vector<int>& indices, int pointer) {
 	if (pointer < 0) {
 		// should not happen
 		assert(false);
@@ -52,12 +52,12 @@ TocNode* get_toc_node_from_indices_helper(const vector<TocNode*>& roots, const v
 	return get_toc_node_from_indices_helper(roots[indices[pointer]]->children, indices, pointer - 1);
 }
 
-TocNode* get_toc_node_from_indices(const vector<TocNode*>& roots, const vector<int>& indices) {
+TocNode* get_toc_node_from_indices(const std::vector<TocNode*>& roots, const std::vector<int>& indices) {
 	return get_toc_node_from_indices_helper(roots, indices, indices.size() - 1);
 }
 
 
-QStandardItem* get_item_tree_from_toc_helper(const vector<TocNode*>& children, QStandardItem* parent) {
+QStandardItem* get_item_tree_from_toc_helper(const std::vector<TocNode*>& children, QStandardItem* parent) {
 
 	for (const auto* child : children) {
 		QStandardItem* child_item = new QStandardItem(QString::fromStdWString(child->title));
@@ -68,7 +68,7 @@ QStandardItem* get_item_tree_from_toc_helper(const vector<TocNode*>& children, Q
 }
 
 
-QStandardItemModel* get_model_from_toc(const vector<TocNode*>& roots) {
+QStandardItemModel* get_model_from_toc(const std::vector<TocNode*>& roots) {
 
 	QStandardItemModel* model = new QStandardItemModel();
 	get_item_tree_from_toc_helper(roots, model->invisibleRootItem());
@@ -89,7 +89,7 @@ bool intersects(float range1_start, float range1_end, float range2_start, float 
 	return true;
 }
 
-void parse_uri(string uri, int* page, float* offset_x, float* offset_y) {
+void parse_uri(std::string uri, int* page, float* offset_x, float* offset_y) {
 	int comma_index = -1;
 
 	uri = uri.substr(1, uri.size() - 1);
@@ -152,7 +152,7 @@ fz_rect corners_to_rect(fz_point corner1, fz_point corner2) {
 	return res;
 }
 
-void copy_to_clipboard(const wstring& text) {
+void copy_to_clipboard(const std::wstring& text) {
 	if (text.size() > 0) {
 		const size_t len = text.size() + 1;
 		const size_t size = len * sizeof(text[0]);
@@ -202,7 +202,7 @@ void install_app(char *argv0)
 	RegCloseKey(software);
 }
 
-int get_f_key(string name) {
+int get_f_key(std::string name) {
 	if (name[0] == '<') {
 		name = name.substr(1, name.size() - 2);
 	}
@@ -215,23 +215,23 @@ int get_f_key(string name) {
 	}
 
 	int num;
-	stringstream ss(name);
+	std::stringstream ss(name);
 	ss >> num;
 	return  num;
 }
 
-void show_error_message(wstring error_message) {
+void show_error_message(std::wstring error_message) {
 	MessageBoxW(nullptr, error_message.c_str(), L"Error", MB_OK);
 }
 
-wstring utf8_decode(const string& encoded_str) {
-	wstring res;
+std::wstring utf8_decode(const std::string& encoded_str) {
+	std::wstring res;
 	utf8::utf8to32(encoded_str.begin(), encoded_str.end(), std::back_inserter(res));
 	return res;
 }
 
-string utf8_encode(const wstring& decoded_str) {
-	string res;
+std::string utf8_encode(const std::wstring& decoded_str) {
+	std::string res;
 	utf8::utf32to8(decoded_str.begin(), decoded_str.end(), std::back_inserter(res));
 	return res;
 }
@@ -270,16 +270,16 @@ bool is_rtl(int c){
   return false;
 }
 
-wstring reverse_wstring(const wstring& inp) {
-	wstring res;
+std::wstring reverse_wstring(const std::wstring& inp) {
+	std::wstring res;
 	for (int i = inp.size() - 1; i >= 0; i--) {
 		res.push_back(inp[i]);
 	}
 	return res;
 }
 
-bool parse_search_command(const wstring& search_command, int* out_begin, int* out_end, wstring* search_text) {
-	wstringstream ss(search_command);
+bool parse_search_command(const std::wstring& search_command, int* out_begin, int* out_end, std::wstring* search_text) {
+	std::wstringstream ss(search_command);
 	if (search_command[0] == '<') {
 		wchar_t dummy;
 		ss >> dummy;
@@ -287,7 +287,7 @@ bool parse_search_command(const wstring& search_command, int* out_begin, int* ou
 		ss >> dummy;
 		ss >> *out_end;
 		ss >> dummy;
-		getline(ss, *search_text);
+		std::getline(ss, *search_text);
 		return true;
 	}
 	else {
@@ -326,7 +326,7 @@ fz_stext_char_s* find_closest_char_to_document_point(fz_stext_page* stext_page, 
 	return res;
 }
 
-void get_stext_block_string(fz_stext_block* block, wstring& res) {
+void get_stext_block_string(fz_stext_block* block, std::wstring& res) {
 	assert(block->type == FZ_STEXT_BLOCK_TEXT);
 
 	LL_ITER(line, block->u.t.first_line) {
@@ -336,7 +336,7 @@ void get_stext_block_string(fz_stext_block* block, wstring& res) {
 	}
 }
 
-bool does_stext_block_starts_with_string(fz_stext_block* block, const wstring& str) {
+bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstring& str) {
 	assert(block->type == FZ_STEXT_BLOCK_TEXT);
 
 	if (block->u.t.first_line) {
@@ -364,7 +364,7 @@ bool is_consequtive(fz_rect rect1, fz_rect rect2) {
 	return false;
 
 }
-fz_rect bound_rects(const vector<fz_rect>& rects) {
+fz_rect bound_rects(const std::vector<fz_rect>& rects) {
 	// find the bounding box of some rects
 
 	fz_rect res = rects[0];
@@ -393,13 +393,13 @@ fz_rect bound_rects(const vector<fz_rect>& rects) {
 	return res;
 
 }
-void simplify_selected_character_rects(vector<fz_rect> selected_character_rects, vector<fz_rect>& resulting_rects) {
+void simplify_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects) {
 	
 	if (selected_character_rects.size() == 0) {
 		return;
 	}
 
-	vector<fz_rect> line_rects;
+	std::vector<fz_rect> line_rects;
 
 	fz_rect last_rect = selected_character_rects[0];
 	line_rects.push_back(selected_character_rects[0]);
@@ -424,3 +424,44 @@ void simplify_selected_character_rects(vector<fz_rect> selected_character_rects,
 	}
 
 }
+
+//void pdf_sandwich_maker(fz_context* context, std::wstring original_file_name, std::wstring sandwich_file_name) {
+//
+//	const char* utf8_encoded_output_name = utf8_encode(sandwich_file_name).c_str();
+//
+//	tesseract::TessBaseAPI* api = new tesseract::TessBaseAPI();
+//	api->Init(nullptr, "eng");
+//	tesseract::TessPDFRenderer* renderer = new tesseract::TessPDFRenderer(utf8_encoded_output_name, api->GetDatapath(), false);
+//
+//	fz_document* doc = fz_open_document(context, utf8_encode(original_file_name).c_str());
+//
+//	int num_pages = fz_count_pages(context, doc);
+//
+//	for (int i = 0; i < num_pages; i++) {
+//		fz_page* page = fz_load_page(context, doc, i);
+//		fz_pixmap* pixmap = fz_new_pixmap_from_page(context, page, fz_identity, fz_device_rgb(context), 0);
+//
+//		unsigned int width = pixmap->w;
+//		unsigned int height = pixmap->h;
+//
+//		//Pix* pix;
+//		//pix->data = pixmap->samples;
+//		//pix->w = pixmap->w;
+//		//pix->h = pixmap->h;
+//
+//		//api->SetImage()
+//		//api->ProcessPage()
+//
+//		//api->SetImage(pixmap->samples, pixmap->w, pixmap->h, 3, pixmap->stride);
+//		//api->Recognize(nullptr);
+//		bool success = api->ProcessPages("data\\image.png", nullptr, 1000, renderer);
+//
+//		//std::cout << std::string(api->GetUTF8Text()) << "\n";
+//
+//		fz_drop_pixmap(context, pixmap);
+//		fz_drop_page(context, page);
+//
+//	}
+//	fz_drop_document(context, doc);
+//	api->End();
+//}

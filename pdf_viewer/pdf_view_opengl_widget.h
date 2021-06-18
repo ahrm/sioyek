@@ -62,15 +62,15 @@ private:
 	DocumentView* document_view;
 	PdfRenderer* pdf_renderer;
 	ConfigManager* config_manager;
-	vector<SearchResult> search_results;
+	std::vector<SearchResult> search_results;
 	int current_search_result_index = 0;
-	mutex search_results_mutex;
+	std::mutex search_results_mutex;
 	bool is_search_cancelled = true;
 	bool is_searching;
 	bool should_highlight_links;
 	float percent_done;
 
-	GLuint LoadShaders(filesystem::path vertex_file_path_, filesystem::path fragment_file_path_);
+	GLuint LoadShaders(std::filesystem::path vertex_file_path_, std::filesystem::path fragment_file_path_);
 protected:
 
 	void initializeGL() override;
@@ -85,11 +85,11 @@ public:
 
 #ifndef NDEBUG
 	// properties for visualizing selected blocks, used only for debug
-	optional<int> last_selected_block_page = {};
-	optional<fz_rect> last_selected_block = {};
+	std::optional<int> last_selected_block_page = {};
+	std::optional<fz_rect> last_selected_block = {};
 #endif
 
-	vector<fz_rect> selected_character_rects;
+	std::vector<fz_rect> selected_character_rects;
 
 	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, QWidget* parent = nullptr);
 	~PdfViewOpenGLWidget();
@@ -102,5 +102,5 @@ public:
 	void goto_search_result(int offset);
 	void render_page(int page_number);
 	bool get_is_searching(float* prog);
-	void search_text(const wstring& text, optional<pair<int, int>> range = {});
+	void search_text(const std::wstring& text, std::optional<std::pair<int, int>> range = {});
 };

@@ -22,20 +22,20 @@ extern const int max_pending_requests;
 extern const unsigned int cache_invalid_milies;
 
 struct RenderRequest {
-	wstring path;
+	std::wstring path;
 	int page;
 	float zoom_level;
 };
 
 struct SearchRequest {
-	wstring path;
+	std::wstring path;
 	int start_page;
-	wstring search_term;
-	vector<SearchResult>* search_results;
-	mutex* search_results_mutex;
+	std::wstring search_term;
+	std::vector<SearchResult>* search_results;
+	std::mutex* search_results_mutex;
 	float* percent_done;
 	bool* is_searching;
-	optional<pair<int, int>> range;
+	std::optional<std::pair<int, int>> range;
 };
 
 struct RenderResponse {
@@ -58,19 +58,19 @@ class PdfRenderer : public QObject{
 	//thread.
 	fz_context* context_to_clone;
 
-	vector<vector<fz_pixmap*>> pixmaps_to_drop;
-	map<pair<int, wstring>, fz_document*> opened_documents;
+	std::vector<std::vector<fz_pixmap*>> pixmaps_to_drop;
+	std::map<std::pair<int, std::wstring>, fz_document*> opened_documents;
 
-	vector<RenderRequest> pending_render_requests;
-	optional<SearchRequest> pending_search_request;
-	vector<RenderResponse> cached_responses;
-	vector<std::thread> worker_threads;
+	std::vector<RenderRequest> pending_render_requests;
+	std::optional<SearchRequest> pending_search_request;
+	std::vector<RenderResponse> cached_responses;
+	std::vector<std::thread> worker_threads;
 	std::thread search_thread;
 
-	mutex pending_requests_mutex;
-	mutex search_request_mutex;
-	mutex cached_response_mutex;
-	vector<mutex> pixmap_drop_mutex;
+	std::mutex pending_requests_mutex;
+	std::mutex search_request_mutex;
+	std::mutex cached_response_mutex;
+	std::vector<std::mutex> pixmap_drop_mutex;
 
 	QTimer garbage_collect_timer;
 
@@ -79,8 +79,8 @@ class PdfRenderer : public QObject{
 	int num_threads;
 
 	fz_context* init_context();
-	fz_document* get_document_with_path(int thread_index, fz_context* mupdf_context, wstring path);
-	GLuint try_closest_rendered_page(wstring doc_path, int page, float zoom_level, int* page_width, int* page_height);
+	fz_document* get_document_with_path(int thread_index, fz_context* mupdf_context, std::wstring path);
+	GLuint try_closest_rendered_page(std::wstring doc_path, int page, float zoom_level, int* page_width, int* page_height);
 	void delete_old_pixmaps(int thread_index, fz_context* mupdf_context);
 	void run(int thread_index);
 	void run_search(int thread_index);
@@ -95,17 +95,17 @@ public:
 	void join_threads();
 
 	//should only be called from the main thread
-	void add_request(wstring document_path, int page, float zoom_level);
-	void add_request(wstring document_path,
+	void add_request(std::wstring document_path, int page, float zoom_level);
+	void add_request(std::wstring document_path,
 		int page,
-		wstring term,
-		vector<SearchResult>* out,
+		std::wstring term,
+		std::vector<SearchResult>* out,
 		float* percent_done,
 		bool* is_searching,
-		mutex* mut,
-		optional<pair<int,
+		std::mutex* mut,
+		std::optional<std::pair<int,
 		int>> range = {});
-	GLuint find_rendered_page(wstring path, int page, float zoom_level, int* page_width, int* page_height);
+	GLuint find_rendered_page(std::wstring path, int page, float zoom_level, int* page_width, int* page_height);
 	void delete_old_pages(bool force_all=false);
 
 signals:

@@ -1,6 +1,6 @@
 #include "pdf_view_opengl_widget.h"
 
-extern filesystem::path parent_path;
+extern std::filesystem::path parent_path;
 extern float background_color[3];
 
 GLfloat g_quad_vertex[] = {
@@ -19,7 +19,7 @@ GLfloat g_quad_uvs[] = {
 
 OpenGLSharedResources PdfViewOpenGLWidget::shared_gl_objects;
 
-GLuint PdfViewOpenGLWidget::LoadShaders(filesystem::path vertex_file_path_, filesystem::path fragment_file_path_) {
+GLuint PdfViewOpenGLWidget::LoadShaders(std::filesystem::path vertex_file_path_, std::filesystem::path fragment_file_path_) {
 
 	const wchar_t* vertex_file_path = vertex_file_path_.c_str();
 	const wchar_t* fragment_file_path = fragment_file_path_.c_str();
@@ -309,7 +309,7 @@ void PdfViewOpenGLWidget::render() {
 		return;
 	}
 
-	vector<int> visible_pages;
+	std::vector<int> visible_pages;
 	document_view->get_visible_pages(document_view->get_view_height(), visible_pages);
 
 	glClearColor(background_color[0], background_color[1], background_color[2], 1.0f);
@@ -358,7 +358,7 @@ void PdfViewOpenGLWidget::render() {
 
 	glUseProgram(shared_gl_objects.highlight_program);
 	glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"text_highlight_color"));
-	vector<fz_rect> bounding_rects;
+	std::vector<fz_rect> bounding_rects;
 	simplify_selected_character_rects(selected_character_rects, bounding_rects);
 	//for (auto rect : selected_character_rects) {
 	//	render_highlight_absolute(shared_gl_objects.highlight_program, rect);
@@ -383,7 +383,7 @@ bool PdfViewOpenGLWidget::get_is_searching(float* prog)
 	return true;
 }
 
-void PdfViewOpenGLWidget::search_text(const wstring& text, optional<pair<int,int>> range) {
+void PdfViewOpenGLWidget::search_text(const std::wstring& text, std::optional<std::pair<int,int>> range) {
 
 	if (!document_view) return;
 

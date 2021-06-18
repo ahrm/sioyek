@@ -23,7 +23,7 @@ void Document::load_document_metadata_from_db() {
 }
 
 
-void Document::add_bookmark(wstring desc, float y_offset) {
+void Document::add_bookmark(std::wstring desc, float y_offset) {
 	BookMark res;
 	res.description = desc;
 	res.y_offset = y_offset;
@@ -43,7 +43,7 @@ void Document::add_link(Link link, bool insert_into_database) {
 	}
 }
 
-wstring Document::get_path() {
+std::wstring Document::get_path() {
 	return file_name;
 }
 
@@ -89,7 +89,7 @@ void Document::delete_closest_link(float to_offset_y) {
 	}
 }
 
-const vector<BookMark>& Document::get_bookmarks() const {
+const std::vector<BookMark>& Document::get_bookmarks() const {
 	return bookmarks;
 }
 
@@ -114,19 +114,19 @@ bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
 	return true;
 }
 
-Document::Document(fz_context* context, wstring file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
+Document::Document(fz_context* context, std::wstring file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
 }
 
-const vector<TocNode*>& Document::get_toc() {
+const std::vector<TocNode*>& Document::get_toc() {
 	return top_level_toc_nodes;
 }
 
-const vector<wstring>& Document::get_flat_toc_names()
+const std::vector<std::wstring>& Document::get_flat_toc_names()
 {
 	return flat_toc_names;
 }
 
-const vector<int>& Document::get_flat_toc_pages()
+const std::vector<int>& Document::get_flat_toc_pages()
 {
 	return flat_toc_pages;
 }
@@ -169,25 +169,25 @@ fz_outline* Document::get_toc_outline() {
 		cached_outline = fz_load_outline(context, doc);
 	}
 	fz_catch(context) {
-		cerr << "Error: Could not load outline ... " << endl;
+		std::cerr << "Error: Could not load outline ... " << std::endl;
 	}
 	return cached_outline;
 }
 
-void Document::create_toc_tree(vector<TocNode*>& toc) {
+void Document::create_toc_tree(std::vector<TocNode*>& toc) {
 	fz_try(context) {
 		fz_outline* outline = get_toc_outline();
 		convert_toc_tree(outline, toc);
 	}
 	fz_catch(context) {
-		cerr << "Error: Could not load outline ... " << endl;
+		std::cerr << "Error: Could not load outline ... " << std::endl;
 	}
 }
 fz_link* Document::get_page_links(int page_number) {
 	if (cached_page_links.find(page_number) != cached_page_links.end()) {
 		return cached_page_links.at(page_number);
 	}
-	cerr << "getting links .... for " << page_number << endl;
+	std::cerr << "getting links .... for " << page_number << std::endl;
 
 	fz_link* res = nullptr;
 	fz_try(context) {
@@ -198,7 +198,7 @@ fz_link* Document::get_page_links(int page_number) {
 	}
 
 	fz_catch(context) {
-		cerr << "Error: Could not load links" << endl;
+		std::cerr << "Error: Could not load links" << std::endl;
 		res = nullptr;
 	}
 	return res;
@@ -227,7 +227,7 @@ Document::~Document() {
 			//todo: implement rest of destructor
 		}
 		fz_catch(context) {
-			cerr << "Error: could not drop documnet" << endl;
+			std::cerr << "Error: could not drop documnet" << std::endl;
 		}
 	}
 	//this->figure_indexing_thread.join();
@@ -257,7 +257,7 @@ bool Document::open(bool* invalid_flag) {
 			doc = fz_open_document(context, utf8_encode(file_name).c_str());
 		}
 		fz_catch(context) {
-			wcerr << "could not open " << file_name << endl;
+			std::wcerr << "could not open " << file_name << std::endl;
 		}
 		if (doc != nullptr) {
 			load_page_dimensions();
@@ -273,7 +273,7 @@ bool Document::open(bool* invalid_flag) {
 		return false;
 	}
 	else {
-		cerr << "warning! calling open() on an open document" << endl;
+		std::cerr << "warning! calling open() on an open document" << std::endl;
 		return true;
 	}
 }
@@ -283,7 +283,7 @@ bool Document::open(bool* invalid_flag) {
 //const vector<float>& get_page_widths();
 //const vector<float>& get_accum_page_heights();
 
-void Document::get_visible_pages(float doc_y_range_begin, float doc_y_range_end, vector<int>& visible_pages) {
+void Document::get_visible_pages(float doc_y_range_begin, float doc_y_range_end, std::vector<int>& visible_pages) {
 
 	std::lock_guard guard(page_dims_mutex);
 	float page_begin = 0.0f;
@@ -323,9 +323,9 @@ void Document::load_page_dimensions() {
 	}
 
 	auto background_page_dimensions_loading_thread = std::thread([this, n]() {
-		vector<float> accum_page_heights_;
-		vector<float> page_heights_;
-		vector<float> page_widths_;
+		std::vector<float> accum_page_heights_;
+		std::vector<float> page_heights_;
+		std::vector<float> page_widths_;
 
 		// clone the main context for use in the background thread
 		fz_context* context_ = fz_clone_context(context);
@@ -387,7 +387,7 @@ int Document::num_pages() {
 		cached_num_pages = pages;
 	}
 	fz_catch(context) {
-		cerr << "could not count pages" << endl;
+		std::cerr << "could not count pages" << std::endl;
 	}
 	return pages;
 }
@@ -397,7 +397,7 @@ DocumentManager::DocumentManager(fz_context* mupdf_context, sqlite3* database) :
 }
 
 
-Document* DocumentManager::get_document(wstring path) {
+Document* DocumentManager::get_document(std::wstring path) {
 	if (cached_documents.find(path) != cached_documents.end()) {
 		return cached_documents.at(path);
 	}
@@ -406,7 +406,7 @@ Document* DocumentManager::get_document(wstring path) {
 	return new_doc;
 }
 
-const unordered_map<wstring, Document*>& DocumentManager::get_cached_documents()
+const std::unordered_map<std::wstring, Document*>& DocumentManager::get_cached_documents()
 {
 	return cached_documents;
 }
@@ -497,8 +497,8 @@ void Document::index_figures(bool* invalid_flag)
 	is_figure_indexing_required = true;
 	is_indexing = true;
 	this->figure_indexing_thread = std::thread([this, n, invalid_flag]() {
-		cout << "starting index thread ..." << endl;
-		vector<FigureData> local_figure_data;
+		std::cout << "starting index thread ..." << std::endl;
+		std::vector<FigureData> local_figure_data;
 		fz_context* context_ = fz_clone_context(context);
 		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
 
@@ -513,7 +513,7 @@ void Document::index_figures(bool* invalid_flag)
 
 			LL_ITER(block, stext_page->first_block) {
 				if (does_stext_block_starts_with_string(block, L"FIGURE")) {
-					wstring res;
+					std::wstring res;
 					get_stext_block_string(block, res);
 					local_figure_data.push_back({ i, block->bbox.y1, std::move(res) });
 				}
@@ -529,7 +529,7 @@ void Document::index_figures(bool* invalid_flag)
 		figure_indices_mutex.lock();
 		figure_indices = std::move(local_figure_data);
 		figure_indices_mutex.unlock();
-		cout << "figure indexing finished ... " << endl;
+		std::cout << "figure indexing finished ... " << std::endl;
 		is_indexing = false;
 		*invalid_flag = true;
 		});
@@ -541,7 +541,7 @@ void Document::stop_indexing()
 	is_figure_indexing_required = false;
 }
 
-bool Document::find_figure_with_string(wstring figure_name, int* page, float* y_offset)
+bool Document::find_figure_with_string(std::wstring figure_name, int* page, float* y_offset)
 {
 	std::lock_guard guard(figure_indices_mutex);
 	int min_index = 1000;
@@ -550,7 +550,7 @@ bool Document::find_figure_with_string(wstring figure_name, int* page, float* y_
 
 	for (const auto& [p, y, text] : figure_indices) {
 		size_t pos = text.find(figure_name);
-		if (pos != wstring::npos) {
+		if (pos != std::wstring::npos) {
 			if (pos < min_index) {
 				min_index = pos;
 				min_y = y;
@@ -566,7 +566,7 @@ bool Document::find_figure_with_string(wstring figure_name, int* page, float* y_
 	return false;
 }
 
-optional<wstring> Document::get_text_at_position(int page, float offset_x, float offset_y)
+std::optional<std::wstring> Document::get_text_at_position(int page, float offset_x, float offset_y)
 {
 	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page, nullptr);
 
@@ -584,7 +584,7 @@ optional<wstring> Document::get_text_at_position(int page, float offset_x, float
 		if (fz_contains_rect(block->bbox, selected_rect)) {
 			LL_ITER(line, block->u.t.first_line) {
 				if (fz_contains_rect(line->bbox, selected_rect)) {
-					wstring selected_string;
+					std::wstring selected_string;
 					bool reached = false;
 					LL_ITER(ch, line->first_char) {
 						if (iswspace(ch->c)) {

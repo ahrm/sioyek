@@ -22,7 +22,7 @@ DocumentView::DocumentView(fz_context* mupdf_context,
 	DocumentManager* document_manager,
 	ConfigManager* config_manager,
 	bool* invalid_flag,
-	wstring path,
+	std::wstring path,
 	int view_width,
 	int view_height,
 	float offset_x,
@@ -47,9 +47,9 @@ DocumentViewState DocumentView::get_state() {
 
 	if (current_document) {
 		res.document_path = current_document->get_path();
-		res.offset_x = get_offset_x();
-		res.offset_y = get_offset_y();
-		res.zoom_level = get_zoom_level();
+		res.book_state.offset_x = get_offset_x();
+		res.book_state.offset_y = get_offset_y();
+		res.book_state.zoom_level = get_zoom_level();
 	}
 	return res;
 }
@@ -57,6 +57,10 @@ DocumentViewState DocumentView::get_state() {
 void DocumentView::handle_escape() {
 }
 
+void DocumentView::set_book_state(OpenedBookState state) {
+	set_offsets(state.offset_x, state.offset_y);
+	set_zoom_level(state.zoom_level);
+}
 void DocumentView::set_offsets(float new_offset_x, float new_offset_y) {
 	offset_x = new_offset_x;
 	offset_y = new_offset_y;
@@ -154,7 +158,7 @@ void DocumentView::set_offset_y(float new_offset_y) {
 //	render_highlight_window(program, window_rect);
 //}
 
-optional<PdfLink> DocumentView::get_link_in_pos(int view_x, int view_y) {
+std::optional<PdfLink> DocumentView::get_link_in_pos(int view_x, int view_y) {
 	if (!current_document) return {};
 
 	float doc_x, doc_y;
@@ -163,7 +167,7 @@ optional<PdfLink> DocumentView::get_link_in_pos(int view_x, int view_y) {
 
 	fz_link* links = current_document->get_page_links(page);
 	fz_point point = { doc_x, doc_y };
-	optional<PdfLink> res = {};
+	std::optional<PdfLink> res = {};
 
 	bool found = false;
 	while (links != nullptr) {
@@ -181,7 +185,7 @@ void DocumentView::add_mark(char symbol) {
 		current_document->add_mark(symbol, offset_y);
 	}
 }
-void DocumentView::add_bookmark(wstring desc) {
+void DocumentView::add_bookmark(std::wstring desc) {
 	//assert(current_document);
 	if (current_document) {
 		current_document->add_bookmark(desc, offset_y);
@@ -334,7 +338,7 @@ int DocumentView::get_current_page_number() {
 //	set_offset_y(new_offset_y);
 //	search_results_mutex.unlock();
 //}
-void DocumentView::get_visible_pages(int window_height, vector<int>& visible_pages) {
+void DocumentView::get_visible_pages(int window_height, std::vector<int>& visible_pages) {
 	if (!current_document) return;
 
 	float window_y_range_begin = offset_y - window_height / (1.5 * zoom_level);
@@ -376,17 +380,17 @@ void DocumentView::reset_doc_state() {
 	zoom_level = 1.0f;
 	set_offsets(0.0f, 0.0f);
 }
-void DocumentView::open_document(wstring doc_path,bool* invalid_flag,  bool load_prev_state) {
+void DocumentView::open_document(std::wstring doc_path,bool* invalid_flag,  bool load_prev_state, std::optional<OpenedBookState> prev_state) {
 
-	error_code error_code;
-	filesystem::path cannonical_path_ = std::filesystem::canonical(doc_path, error_code);
+	std::error_code error_code;
+	std::filesystem::path cannonical_path_ = std::filesystem::canonical(doc_path, error_code);
 
 	if (error_code) {
 		current_document = nullptr;
 		return;
 	}
 
-	wstring cannonical_path = cannonical_path_.wstring();
+	std::wstring cannonical_path = cannonical_path_.wstring();
 
 	//document_path = cannonical_path;
 
@@ -400,12 +404,18 @@ void DocumentView::open_document(wstring doc_path,bool* invalid_flag,  bool load
 
 	reset_doc_state();
 
-	if (load_prev_state) {
+	if (prev_state) {
+		zoom_level = prev_state.value().zoom_level;
+		offset_x = prev_state.value().offset_x;
+		offset_y = prev_state.value().offset_y;
+		set_offsets(offset_x, offset_y);
+	}
+	else if (load_prev_state) {
 
-		vector<OpenedBookState> prev_state;
+		std::vector<OpenedBookState> prev_state;
 		if (select_opened_book(database, cannonical_path, prev_state)) {
 			if (prev_state.size() > 1) {
-				cerr << "more than one file with one path, this should not happen!" << endl;
+				std::cerr << "more than one file with one path, this should not happen!" << std::endl;
 			}
 		}
 		if (prev_state.size() > 0) {
@@ -515,7 +525,7 @@ void DocumentView::persist() {
 
 int DocumentView::get_current_chapter_index()
 {
-	const vector<int>& chapter_pages = current_document->get_flat_toc_pages();
+	const std::vector<int>& chapter_pages = current_document->get_flat_toc_pages();
 
 	if (chapter_pages.size() == 0) {
 		return -1;
@@ -536,9 +546,9 @@ int DocumentView::get_current_chapter_index()
 	return current_chapter_index;
 }
 
-wstring DocumentView::get_current_chapter_name()
+std::wstring DocumentView::get_current_chapter_name()
 {
-	const vector<wstring>& chapter_names = current_document->get_flat_toc_names();
+	const std::vector<std::wstring>& chapter_names = current_document->get_flat_toc_names();
 	int current_chapter_index = get_current_chapter_index();
 	if (current_chapter_index > 0) {
 		return chapter_names[current_chapter_index];
@@ -546,13 +556,13 @@ wstring DocumentView::get_current_chapter_name()
 	return L"";
 }
 
-optional<pair<int, int>> DocumentView::get_current_page_range()
+std::optional<std::pair<int, int>> DocumentView::get_current_page_range()
 {
 	int ci = get_current_chapter_index();
 	if (ci < 0) {
 		return {};
 	}
-	const vector<int>& chapter_pages = current_document->get_flat_toc_pages();
+	const std::vector<int>& chapter_pages = current_document->get_flat_toc_pages();
 	int range_begin = chapter_pages[ci];
 	int range_end = current_document->num_pages()-1;
 
@@ -560,12 +570,12 @@ optional<pair<int, int>> DocumentView::get_current_page_range()
 		range_end = chapter_pages[ci + 1];
 	}
 
-	return make_pair(range_begin, range_end);
+	return std::make_pair(range_begin, range_end);
 }
 
 void DocumentView::goto_chapter(int diff)
 {
-	const vector<int>& chapter_pages = current_document->get_flat_toc_pages();
+	const std::vector<int>& chapter_pages = current_document->get_flat_toc_pages();
 	int curr_page = get_current_page_number();
 
 	int index = 0;
@@ -594,8 +604,8 @@ float DocumentView::view_height_in_document_space()
 
 void DocumentView::get_text_selection(fz_point selection_begin,
 	fz_point selection_end,
-	vector<fz_rect>& selected_characters,
-	wstring& selected_text) {
+	std::vector<fz_rect>& selected_characters,
+	std::wstring& selected_text) {
 	// selected_characters are in absolute document space
 
 	if (!current_document) return;
@@ -633,7 +643,7 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 			stext_page = fz_new_stext_page_from_page(mupdf_context, page, nullptr);
 		}
 		fz_catch(mupdf_context) {
-			cerr << "Error: could not load page for selection" << endl;
+			std::cerr << "Error: could not load page for selection" << std::endl;
 		}
 
 		if (!stext_page) continue;

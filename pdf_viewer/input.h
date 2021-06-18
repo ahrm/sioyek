@@ -10,10 +10,9 @@
 //#include <SDL.h>
 
 #include "utils.h"
-using namespace std;
 
 struct Command {
-	string name;
+	std::string name;
 	bool requires_text;
 	bool requires_symbol;
 	bool requires_file_name;
@@ -23,19 +22,19 @@ struct Command {
 
 class CommandManager {
 private:
-	vector<Command> commands;
+	std::vector<Command> commands;
 public:
 
 	CommandManager();
-	const Command* get_command_with_name(string name);
+	const Command* get_command_with_name(std::string name);
 };
 
 struct InputParseTreeNode {
 
-	vector<InputParseTreeNode*> children;
+	std::vector<InputParseTreeNode*> children;
 	//char command;
 	int command;
-	string name = "";
+	std::string name = "";
 	bool shift_modifier = false;
 	bool control_modifier = false;
 	bool requires_text = false;
@@ -51,11 +50,11 @@ private:
 	InputParseTreeNode* root = nullptr;
 	InputParseTreeNode* current_node;
 	CommandManager command_manager;
-	string number_stack;
+	std::string number_stack;
 
 public:
-	InputHandler(const wstring& file_path);
-	void reload_config_file(const wstring& file_path);
+	InputHandler(const std::wstring& file_path);
+	void reload_config_file(const std::wstring& file_path);
 	const Command* handle_key(int key, bool shift_pressed, bool control_pressed, int* num_repeats);
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 

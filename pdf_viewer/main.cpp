@@ -4,6 +4,10 @@
 //todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: tests!
 //todo: handle right to left documents
+//todo: clean up parsing code
+//todo: add ocr
+//todo: autocomplete in command window
+//todo: add djvu, epub and other formats
 
 //#include "imgui.h"
 //#include "imgui_impl_sdl.h"
@@ -53,6 +57,7 @@
 #include "sqlite3.h"
 #include <filesystem>
 
+
 #include "input.h"
 #include "database.h"
 #include "book.h"
@@ -83,31 +88,31 @@ extern const int max_pending_requests = 31;
 extern bool launched_from_file_icon = false;
 extern bool flat_table_of_contents = false;
 
-extern filesystem::path last_path_file_absolute_location = "";
-extern filesystem::path parent_path = "";
+extern std::filesystem::path last_path_file_absolute_location = "";
+extern std::filesystem::path parent_path = "";
 
-using namespace std;
 
-mutex mupdf_mutexes[FZ_LOCK_MAX];
+std::mutex mupdf_mutexes[FZ_LOCK_MAX];
 
 void lock_mutex(void* user, int lock) {
-	mutex* mut = (mutex*)user;
+	std::mutex* mut = (std::mutex*)user;
 	(mut + lock)->lock();
 }
 
 void unlock_mutex(void* user, int lock) {
-	mutex* mut = (mutex*)user;
+	std::mutex* mut = (std::mutex*)user;
 	(mut + lock)->unlock();
 }
 
 
 int main(int argc, char* args[]) {
+
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
 	char exe_file_name[MAX_PATH];
 	GetModuleFileNameA(NULL, exe_file_name, sizeof(exe_file_name));
-	filesystem::path exe_path = exe_file_name;
+	std::filesystem::path exe_path = exe_file_name;
 
 	// parent path is the directory in which config files and required shaders are located
 	// in debug mode this is the same directory as the source file but in release mode it is
@@ -117,13 +122,13 @@ int main(int argc, char* args[]) {
 #ifdef NDEBUG
 	install_app(exe_file_name);
 #else
-	filesystem::path source_file_path = __FILE__;
+	std::filesystem::path source_file_path = __FILE__;
 	parent_path = source_file_path.parent_path();
 #endif
 
 	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
 
-	filesystem::path config_path = parent_path / "prefs.config";
+	std::filesystem::path config_path = parent_path / "prefs.config";
 	ConfigManager config_manager(config_path.wstring());
 
 	sqlite3* db;
@@ -132,7 +137,7 @@ int main(int argc, char* args[]) {
 
 	rc = sqlite3_open((parent_path / "test.db").string().c_str(), &db);
 	if (rc) {
-		cerr << "could not open database" << sqlite3_errmsg(db) << endl;
+		std::cerr << "could not open database" << sqlite3_errmsg(db) << std::endl;
 	}
 
 	create_tables(db);
@@ -145,7 +150,7 @@ int main(int argc, char* args[]) {
 	fz_context* mupdf_context = fz_new_context(nullptr, &locks, FZ_STORE_UNLIMITED);
 
 	if (!mupdf_context) {
-		cerr << "could not create mupdf context" << endl;
+		std::cerr << "could not create mupdf context" << std::endl;
 		return -1;
 	}
 	bool fail = false;
@@ -153,7 +158,7 @@ int main(int argc, char* args[]) {
 		fz_register_document_handlers(mupdf_context);
 	}
 	fz_catch(mupdf_context) {
-		cerr << "could not register document handlers" << endl;
+		std::cerr << "could not register document handlers" << std::endl;
 		fail = true;
 	}
 
@@ -163,14 +168,14 @@ int main(int argc, char* args[]) {
 
 	bool quit = false;
 
-	wstring keymap_path = (parent_path / "keys.config").wstring();
+	std::wstring keymap_path = (parent_path / "keys.config").wstring();
 	InputHandler input_handler(keymap_path);
 
 	//char file_path[MAX_PATH] = { 0 };
-	wstring file_path;
-	string file_path_;
-	ifstream last_state_file(last_path_file_absolute_location);
-	getline(last_state_file, file_path_);
+	std::wstring file_path;
+	std::string file_path_;
+	std::ifstream last_state_file(last_path_file_absolute_location);
+	std::getline(last_state_file, file_path_);
 	file_path = utf8_decode(file_path_);
 	last_state_file.close();
 
@@ -196,7 +201,7 @@ int main(int argc, char* args[]) {
 
 	QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
 	if (QFontDatabase::addApplicationFont(font_path) < 0) {
-		cout << "could not add font!" << endl;
+		std::cout << "could not add font!" << endl;
 	}
 
 	QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));
@@ -209,7 +214,7 @@ int main(int argc, char* args[]) {
 
 	// live reload the config file
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		wifstream config_file(config_path);
+		std::wifstream config_file(config_path);
 		config_manager.deserialize(config_file);
 		config_file.close();
 		ConfigFileChangeListener::notify_config_file_changed(&config_manager);

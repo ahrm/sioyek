@@ -8,14 +8,13 @@
 //#include <SDL.h>
 #include "input.h"
 
-using namespace std;
 
 
 CommandManager::CommandManager() {
-	commands.push_back({ "goto_begining", false, false , false, true});
-	commands.push_back({ "goto_end", false, false , false, true});
-	commands.push_back({ "goto_definition", false, false , false, true});
-	commands.push_back({ "next_item", false, false , false, true});
+	commands.push_back({ "goto_begining",		false,	false,	false,	true});
+	commands.push_back({ "goto_end",			false,	false,	false,	true});
+	commands.push_back({ "goto_definition",		false,	false,	false,	true});
+	commands.push_back({ "next_item",			false,	false,	false,	true});
 	commands.push_back({ "previous_item", false, false , false, true});
 	commands.push_back({ "set_mark", false, true , false, false});
 	commands.push_back({ "goto_mark", false, true , false, false});
@@ -58,7 +57,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "next_chapter", false, false , false, true});
 	commands.push_back({ "prev_chapter", false, false , false, true});
 }
-const Command* CommandManager::get_command_with_name(string name) {
+const Command* CommandManager::get_command_with_name(std::string name) {
 	for (const auto &com : commands) {
 		if (com.name == name) {
 			return &com;
@@ -69,25 +68,25 @@ const Command* CommandManager::get_command_with_name(string name) {
 
 void print_tree_node(InputParseTreeNode node) {
 	if (node.requires_text) {
-		cout << "text node" << endl;
+		std::cout << "text node" << std::endl;
 		return;
 	}
 	if (node.requires_symbol) {
-		cout << "symbol node" << endl;
+		std::cout << "symbol node" << std::endl;
 		return;
 	}
 
 	if (node.control_modifier) {
-		cout << "Ctrl+";
+		std::cout << "Ctrl+";
 	}
 
 	if (node.shift_modifier) {
-		cout << "Shift+";
+		std::cout << "Shift+";
 	}
-	cout << node.command << endl;
+	std::cout << node.command << std::endl;
 }
 
-InputParseTreeNode parse_token(string token) {
+InputParseTreeNode parse_token(std::string token) {
 	InputParseTreeNode res;
 
 	if (token == "sym") {
@@ -99,7 +98,7 @@ InputParseTreeNode parse_token(string token) {
 		return res;
 	}
 
-	vector<string> subcommands;
+	std::vector<std::string> subcommands;
 
 	int current_begin = 0;
 
@@ -120,7 +119,7 @@ InputParseTreeNode parse_token(string token) {
 		}
 	}
 
-	string command_string = subcommands[subcommands.size() - 1];
+	std::string command_string = subcommands[subcommands.size() - 1];
 	if (command_string.size() == 1) {
 		res.command = subcommands[subcommands.size() - 1][0];
 	}
@@ -209,15 +208,15 @@ InputParseTreeNode parse_token(string token) {
 	return res;
 }
 
-InputParseTreeNode* parse_lines(vector<string> lines, vector<string> command_names) {
+InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std::string> command_names) {
 	InputParseTreeNode* root = new InputParseTreeNode;
 	root->is_root = true;
 
 	for (int j = 0; j < lines.size(); j++) {
-		string line = lines[j];
+		std::string line = lines[j];
 
-		vector<string> tokens;
-		string stack;
+		std::vector<std::string> tokens;
+		std::string stack;
 		//bool is_stack_mode = false;
 
 		//for (char c : line) {
@@ -261,7 +260,7 @@ InputParseTreeNode* parse_lines(vector<string> lines, vector<string> command_nam
 				stack_depth++;
 			}
 			else {
-				tokens.push_back(string(1, c));
+				tokens.push_back(std::string(1, c));
 			}
 
 		}
@@ -288,7 +287,7 @@ InputParseTreeNode* parse_lines(vector<string> lines, vector<string> command_nam
 				if ((tokens[i] != "sym") && (tokens[i] != "txt")) {
 
 					if (parent_node->is_final) {
-						cout << "adding child command to a final command" << endl;
+						std::cout << "adding child command to a final command" << std::endl;
 					}
 
 					parent_node->children.push_back(new InputParseTreeNode(node));
@@ -319,20 +318,20 @@ InputParseTreeNode* parse_lines(vector<string> lines, vector<string> command_nam
 
 }
 
-InputParseTreeNode* parse_key_config_file(const wstring& file_path) {
-	ifstream infile(file_path);
+InputParseTreeNode* parse_key_config_file(const std::wstring& file_path) {
+	std::ifstream infile(file_path);
 
-	vector<string> command_names;
-	vector<string> command_keys;
+	std::vector<std::string> command_names;
+	std::vector<std::string> command_keys;
 	while (infile.good()) {
-		string line;
-		getline(infile, line);
+		std::string line;
+		std::getline(infile, line);
 		if (line.size() == 0 || line[0] == '#') {
 			continue;
 		}
-		stringstream ss(line);
-		string command_name;
-		string command_key;
+		std::stringstream ss(line);
+		std::string command_name;
+		std::string command_key;
 		ss >> command_name >> command_key;
 		command_names.push_back(command_name);
 		command_keys.push_back(command_key);
@@ -341,11 +340,11 @@ InputParseTreeNode* parse_key_config_file(const wstring& file_path) {
 }
 
 
-InputHandler::InputHandler(const wstring& file_path) {
+InputHandler::InputHandler(const std::wstring& file_path) {
 	reload_config_file(file_path);
 }
 
-void InputHandler::reload_config_file(const wstring& file_path)
+void InputHandler::reload_config_file(const std::wstring& file_path)
 {
 	delete_current_parse_tree(root);
 	root = parse_key_config_file(file_path);
@@ -386,7 +385,7 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 			}
 		}
 	}
-	cout << "invalid command; resetting to root" << endl;
+	std::cout << "invalid command; resetting to root" << std::endl;
 	number_stack.clear();
 	current_node = root;
 	return nullptr;

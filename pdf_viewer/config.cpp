@@ -7,18 +7,18 @@ extern float move_screen_percentage;
 extern float background_color[3];
 extern bool flat_table_of_contents;
 
-void int_serializer(void* int_pointer, wstringstream& stream) {
+void int_serializer(void* int_pointer, std::wstringstream& stream) {
 	stream << *(int*)int_pointer;
 }
-void bool_serializer(void* bool_pointer, wstringstream& stream) {
+void bool_serializer(void* bool_pointer, std::wstringstream& stream) {
 	stream << *(bool*)bool_pointer;
 }
 
-void string_serializer(void* string_pointer, wstringstream& stream) {
-	stream << *(wstring*)string_pointer;
+void string_serializer(void* string_pointer, std::wstringstream& stream) {
+	stream << *(std::wstring*)string_pointer;
 }
 
-void* int_deserializer(wstringstream& stream, void* res_ = nullptr) {
+void* int_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 	int* res = (int*)res_;
 	if (res == nullptr) {
 		res = new int;
@@ -27,7 +27,7 @@ void* int_deserializer(wstringstream& stream, void* res_ = nullptr) {
 	return res;
 }
 
-void* bool_deserializer(wstringstream& stream, void* res_ = nullptr) {
+void* bool_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 	bool* res = (bool*)res_;
 	if (res == nullptr) {
 		res = new bool;
@@ -36,20 +36,20 @@ void* bool_deserializer(wstringstream& stream, void* res_ = nullptr) {
 	return res;
 }
 
-void* string_deserializer(wstringstream& stream, void* res_ = nullptr) {
+void* string_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 	delete res_;
 	
-	wstring res;
-	getline(stream, res);
+	std::wstring res;
+	std::getline(stream, res);
 
 	while (iswspace(res[0])) {
 		res.erase(res.begin());
 	}
 
-	return new wstring(res);
+	return new std::wstring(res);
 }
 
-void* vec3_deserializer(wstringstream& stream, void* res_ = nullptr) {
+void* vec3_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 	float* res = (float*)res_;
 	if (res == nullptr) {
 		res = new float[3];
@@ -59,17 +59,17 @@ void* vec3_deserializer(wstringstream& stream, void* res_ = nullptr) {
 	return res;
 }
 
-void float_serializer(void* float_pointer, wstringstream& stream) {
+void float_serializer(void* float_pointer, std::wstringstream& stream) {
 	stream << *(float*)float_pointer;
 }
 
-void vec3_serializer(void* vec3_pointer, wstringstream& stream) {
+void vec3_serializer(void* vec3_pointer, std::wstringstream& stream) {
 	stream << *((float*)(vec3_pointer) + 0);
 	stream << *((float*)(vec3_pointer) + 1);
 	stream << *((float*)(vec3_pointer) + 2);
 }
 
-void* float_deserializer(wstringstream& stream, void* res_) {
+void* float_deserializer(std::wstringstream& stream, void* res_) {
 	float* res = (float*)res_;
 
 	if (res == nullptr) {
@@ -84,14 +84,14 @@ void* Config::get_value() {
 	return value;
 }
 
-Config* ConfigManager::get_mut_config_with_name(wstring config_name) {
+Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 	for (auto& it : configs) {
 		if (it.name == config_name) return &it;
 	}
 	return nullptr;
 }
 
-ConfigManager::ConfigManager(wstring path) {
+ConfigManager::ConfigManager(std::wstring path) {
 	configs.push_back({ L"text_highlight_color", nullptr, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"search_highlight_color", nullptr, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"link_highlight_color", nullptr, vec3_serializer, vec3_deserializer });
@@ -107,34 +107,34 @@ ConfigManager::ConfigManager(wstring path) {
 	configs.push_back({ L"text_command_line_stylesheet", nullptr, string_serializer, string_deserializer });
 	configs.push_back({ L"status_label_stylesheet", nullptr, string_serializer, string_deserializer });
 	configs.push_back({ L"flat_toc", &flat_table_of_contents, bool_serializer, bool_deserializer });
-	wifstream infile(path);
+	std::wifstream infile(path);
 	deserialize(infile);
 	infile.close();
 }
 
-void ConfigManager::serialize(wofstream& file) {
+void ConfigManager::serialize(std::wofstream& file) {
 	for (auto it : configs) {
-		wstringstream ss;
+		std::wstringstream ss;
 		file << it.name << " ";
 		if (it.get_value()) {
 			it.serialize(it.get_value(), ss);
 		}
-		file << ss.str() << endl;
+		file << ss.str() << std::endl;
 	}
 }
 
 		//list_view->setStyleSheet("QListView::item::selected::{ background-color: white;color: black; }");
-void ConfigManager::deserialize(wifstream& file) {
-	wstring line;
+void ConfigManager::deserialize(std::wifstream& file) {
+	std::wstring line;
 
-	while (getline(file, line)) {
+	while (std::getline(file, line)) {
 
 		if (line.size() == 0 || line[0] == '#') {
 			continue;
 		}
 
-		wstringstream ss{ line };
-		wstring conf_name;
+		std::wstringstream ss{ line };
+		std::wstring conf_name;
 		ss >> conf_name;
 		Config* conf = get_mut_config_with_name(conf_name);
 		if (conf) {

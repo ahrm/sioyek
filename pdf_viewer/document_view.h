@@ -48,11 +48,12 @@ private:
 public:
 	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager);
 	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager, bool* invalid_flag,
-		wstring path, int view_width, int view_height, float offset_x, float offset_y);
+		std::wstring path, int view_width, int view_height, float offset_x, float offset_y);
 	~DocumentView();
 	float get_zoom_level();
 	DocumentViewState get_state();
 	void handle_escape();
+	void set_book_state(OpenedBookState state);
 	inline void set_offsets(float new_offset_x, float new_offset_y);
 	Document* get_document();
 	Link* find_closest_link();
@@ -65,10 +66,10 @@ public:
 	void set_null_document();
 	void set_offset_x(float new_offset_x);
 	void set_offset_y(float new_offset_y);
-	optional<PdfLink> get_link_in_pos(int view_x, int view_y);
-	void get_text_selection(fz_point selection_begin, fz_point selection_end, vector<fz_rect>& selected_characters, wstring& text_selection);
+	std::optional<PdfLink> get_link_in_pos(int view_x, int view_y);
+	void get_text_selection(fz_point selection_begin, fz_point selection_end, std::vector<fz_rect>& selected_characters, std::wstring& text_selection);
 	void add_mark(char symbol);
-	void add_bookmark(wstring desc);
+	void add_bookmark(std::wstring desc);
 	void on_view_size_change(int new_width, int new_height);
 	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
 	fz_rect absolute_to_window_rect(fz_rect doc_rect);
@@ -85,18 +86,18 @@ public:
 	void move_absolute(float dx, float dy);
 	void move(float dx, float dy);
 	int get_current_page_number();
-	void get_visible_pages(int window_height, vector<int>& visible_pages);
+	void get_visible_pages(int window_height, std::vector<int>& visible_pages);
 	void move_pages(int num_pages);
 	void move_screens(int num_screens);
 	void reset_doc_state();
-	void open_document(wstring doc_path, bool* invalid_flag, bool load_prev_state = true);
+	void open_document(std::wstring doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {});
 	float get_page_offset(int page);
 	void goto_offset_within_page(int page, float offset_x, float offset_y);
 	void goto_page(int page);
 	void fit_to_page_width();
 	void persist();
-	wstring get_current_chapter_name();
-	optional<pair<int,int>> get_current_page_range();
+	std::wstring get_current_chapter_name();
+	std::optional<std::pair<int,int>> get_current_page_range();
 	int get_current_chapter_index();
 	void goto_chapter(int diff);
 	float view_height_in_document_space();
