@@ -124,84 +124,32 @@ InputParseTreeNode parse_token(std::string token) {
 		res.command = subcommands[subcommands.size() - 1][0];
 	}
 	else {
+
 		if (int f_key = get_f_key(command_string)) {
 			res.command = Qt::Key::Key_F1 - 1 + f_key;
 		}
-		if (command_string == "up") {
-			res.command = Qt::Key::Key_Up;
+
+		std::map<std::string, Qt::Key> keymap_temp = {
+			{"up", Qt::Key::Key_Up},
+			{"down", Qt::Key::Key_Down},
+			{"left", Qt::Key::Key_Left},
+			{"right", Qt::Key::Key_Right},
+			{"backspace", Qt::Key::Key_Backspace},
+			{"space", Qt::Key::Key_Space},
+			{"pageup", Qt::Key::Key_PageUp},
+			{"pagedown", Qt::Key::Key_PageDown},
+			{"home", Qt::Key::Key_Home},
+			{"pagedown", Qt::Key::Key_End},
+			{"tab", Qt::Key::Key_Tab},
+		};
+		std::map<std::string, Qt::Key> keymap;
+
+		for (auto item : keymap_temp) {
+			keymap[item.first] = item.second;
+			keymap["<" + item.first + ">"] = item.second;
 		}
 
-		if (command_string == "backspace") {
-			res.command = Qt::Key::Key_Backspace;
-		}
-		if (command_string == "space") {
-			res.command = Qt::Key::Key_Space;
-		}
-		if (command_string == "pageup") {
-			res.command = Qt::Key::Key_PageUp;
-		}
-		if (command_string == "pagedown") {
-			res.command = Qt::Key::Key_PageDown;
-		}
-		if (command_string == "home") {
-			res.command = Qt::Key::Key_Home;
-		}
-		if (command_string == "end") {
-			res.command = Qt::Key::Key_End;
-		}
-		if (command_string == "down") {
-			res.command = Qt::Key::Key_Down;
-		}
-
-		if (command_string == "tab") {
-			res.command = Qt::Key::Key_Tab;
-		}
-
-		if (command_string == "left") {
-			res.command = Qt::Key::Key_Left;
-		}
-
-		if (command_string == "right") {
-			res.command = Qt::Key::Key_Right;
-		}
-
-		if (command_string == "<up>") {
-			res.command = Qt::Key::Key_Up;
-		}
-
-		if (command_string == "<down>") {
-			res.command = Qt::Key::Key_Down;
-		}
-
-		if (command_string == "<left>") {
-			res.command = Qt::Key::Key_Left;
-		}
-
-		if (command_string == "<right>") {
-			res.command = Qt::Key::Key_Right;
-		}
-
-		if (command_string == "<tab>") {
-			res.command = Qt::Key::Key_Tab;
-		}
-		if (command_string == "<backspace>") {
-			res.command = Qt::Key::Key_Backspace;
-		}
-		if (command_string == "<space>") {
-			res.command = Qt::Key::Key_Space;
-		}
-		if (command_string == "<home>") {
-			res.command = Qt::Key::Key_Home;
-		}
-		if (command_string == "<end>") {
-			res.command = Qt::Key::Key_End;
-		}
-		if (command_string == "<pageup>") {
-			res.command = Qt::Key::Key_PageUp;
-		}
-		if (command_string == "<pagedown>") {
-			res.command = Qt::Key::Key_PageDown;
-		}
+		res.command = keymap[command_string];
 	}
 
 

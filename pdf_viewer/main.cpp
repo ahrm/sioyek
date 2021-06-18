@@ -5,13 +5,8 @@
 //todo: tests!
 //todo: handle right to left documents
 //todo: clean up parsing code
-//todo: add ocr
 //todo: autocomplete in command window
 //todo: add djvu, epub and other formats
-
-//#include "imgui.h"
-//#include "imgui_impl_sdl.h"
-//#include "imgui_impl_opengl3.h"
 
 #include <iostream>
 #include <vector>

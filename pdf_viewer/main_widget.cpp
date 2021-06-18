@@ -1058,7 +1058,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			std::wstring new_file_name = file_name + L"_ocr.pdf";
 			std::wstring new_path = docpath.replace_filename(new_file_name).wstring();
 
-			std::wstring command_params = (L"\"" + docpathname + L"\" \"" + new_path + L"\"");
+			std::wstring command_params = (L"\"" + docpathname + L"\" \"" + new_path + L"\" --force-ocr");
 
 			SHELLEXECUTEINFO ShExecInfo = { 0 };
 			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
