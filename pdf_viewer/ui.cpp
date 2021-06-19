@@ -8,7 +8,7 @@ bool select_pdf_file_name(wchar_t* out_file_name, int max_length) {
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = nullptr;
-	ofn.lpstrFilter = L"Pdf Files\0*.pdf\0Any File\0*.*\0";
+	ofn.lpstrFilter = L"Pdf Files\0*.pdf;*.epub\0Any File\0*.*\0";
 	ofn.lpstrFile = out_file_name;
 	ofn.nMaxFile = max_length;
 	ofn.lpstrTitle = L"Select a document";

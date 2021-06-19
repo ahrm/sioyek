@@ -225,7 +225,5 @@ int main(int argc, char* args[]) {
 
 	quit = true;
 
-	//fz_drop_context(mupdf_context);
-
 	return 0;
 }
