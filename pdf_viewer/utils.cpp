@@ -12,7 +12,7 @@ std::wstring to_lower(const std::wstring& inp) {
 	return res;
 }
 
-void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output) {
+void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output, fz_context* context, fz_document* doc) {
 	// convert an fz_outline structure to a tree of TocNodes
 
 	do {
@@ -22,10 +22,25 @@ void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output) {
 
 		TocNode* current_node = new TocNode;
 		current_node->title = utf8_decode(root->title);
-		current_node->page = root->page;
+		//current_node->page = root->page;
 		current_node->x = root->x;
 		current_node->y = root->y;
-		convert_toc_tree(root->down, current_node->children);
+		if (root->page == -1) {
+			float xp, yp;
+			fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
+			int chapter_page = 0;
+			current_node->page = chapter_page + loc.page;
+		}
+		else {
+			current_node->page = root->page;
+		}
+		convert_toc_tree(root->down, current_node->children, context, doc);
+
+
+		//float xp, yp;
+		//fz_layout_document(context, doc, 600, 800, 20);
+		//fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
+
 		output.push_back(current_node);
 	} while (root = root->next);
 }

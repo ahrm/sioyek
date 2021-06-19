@@ -57,6 +57,9 @@ public:
 	fz_document* doc;
 
 	void add_bookmark(std::wstring desc, float y_offset);
+	void count_chapter_pages(std::vector<int> &page_counts);
+	void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
+	void count_chapter_pages_accum(std::vector<int> &page_counts);
 	bool get_is_indexing();
 	void add_link(Link link, bool insert_into_database = true);
 	std::wstring get_path();

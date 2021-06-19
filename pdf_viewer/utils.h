@@ -19,7 +19,7 @@
 #define LL_ITER(name, start) for(auto name=start;(name);name=name->next)
 
 std::wstring to_lower(const std::wstring& inp);
-void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
+void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output, fz_context* context, fz_document* doc);
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages);
 int mod(int a, int b);
 bool intersects(float range1_start, float range1_end, float range2_start, float range2_end);

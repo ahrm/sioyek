@@ -6,6 +6,7 @@
 //#include <gl/glew.h>
 #include <qopengl.h>
 #include <mutex>
+#include <variant>
 
 
 class DocumentView;
@@ -65,6 +66,7 @@ struct TocNode {
 	std::vector<TocNode*> children;
 	std::wstring title;
 	int page;
+
 	float y;
 	float x;
 };

@@ -446,6 +446,22 @@ void DocumentView::goto_page(int page) {
 	set_offset_y(get_page_offset(page) + view_height_in_document_space()/2);
 }
 
+//void DocumentView::goto_toc_link(std::variant<PageTocLink, ChapterTocLink> toc_link) {
+//	int page = -1;
+//
+//	if (std::holds_alternative<PageTocLink>(toc_link)) {
+//		PageTocLink l = std::get<PageTocLink>(toc_link);
+//		page = l.page;
+//	}
+//	else{
+//		ChapterTocLink l = std::get<ChapterTocLink>(toc_link);
+//		std::vector<int> accum_chapter_page_counts;
+//		current_document->count_chapter_pages_accum(accum_chapter_page_counts);
+//		page = accum_chapter_page_counts[l.chapter] + l.page;
+//	}
+//	set_offset_y(get_page_offset(page) + view_height_in_document_space()/2);
+//}
+
 void DocumentView::fit_to_page_width()
 {
 	int cp = get_current_page_number();

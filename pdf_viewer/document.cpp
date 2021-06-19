@@ -117,6 +117,29 @@ bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
 Document::Document(fz_context* context, std::wstring file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
 }
 
+void Document::count_chapter_pages(std::vector<int> &page_counts) {
+	int num_chapters = fz_count_chapters(context, doc);
+
+	for (int i = 0; i < num_chapters; i++) {
+		int num_pages = fz_count_chapter_pages(context, doc, i);
+		page_counts.push_back(num_pages);
+	}
+
+}
+
+void Document::count_chapter_pages_accum(std::vector<int> &accum_page_counts) {
+	std::vector<int> raw_page_count;
+	count_chapter_pages(raw_page_count);
+
+	int accum = 0;
+
+	for (int i = 0; i < raw_page_count.size(); i++) {
+		accum_page_counts.push_back(accum);
+		accum += raw_page_count[i];
+	}
+
+}
+
 const std::vector<TocNode*>& Document::get_toc() {
 	return top_level_toc_nodes;
 }
@@ -182,6 +205,37 @@ void Document::create_toc_tree(std::vector<TocNode*>& toc) {
 	fz_catch(context) {
 		std::cerr << "Error: Could not load outline ... " << std::endl;
 	}
+}
+
+void Document::convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output) {
+	// convert an fz_outline structure to a tree of TocNodes
+
+	std::vector<int> accum_chapter_pages;
+	count_chapter_pages_accum(accum_chapter_pages);
+
+	do {
+		if (root == nullptr) {
+			break;
+		}
+
+		TocNode* current_node = new TocNode;
+		current_node->title = utf8_decode(root->title);
+		current_node->x = root->x;
+		current_node->y = root->y;
+		if (root->page == -1) {
+			float xp, yp;
+			fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
+			int chapter_page = accum_chapter_pages[loc.chapter];
+			current_node->page = chapter_page + loc.page;
+		}
+		else {
+			current_node->page = root->page;
+		}
+		convert_toc_tree(root->down, current_node->children);
+
+
+		output.push_back(current_node);
+	} while (root = root->next);
 }
 fz_link* Document::get_page_links(int page_number) {
 	if (cached_page_links.find(page_number) != cached_page_links.end()) {
@@ -255,6 +309,7 @@ bool Document::open(bool* invalid_flag) {
 	if (doc == nullptr) {
 		fz_try(context) {
 			doc = fz_open_document(context, utf8_encode(file_name).c_str());
+			//fz_layout_document(context, doc, 600, 800, 9);
 		}
 		fz_catch(context) {
 			std::wcerr << "could not open " << file_name << std::endl;
@@ -330,6 +385,7 @@ void Document::load_page_dimensions() {
 		// clone the main context for use in the background thread
 		fz_context* context_ = fz_clone_context(context);
 		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+		//fz_layout_document(context_, doc, 600, 800, 20);
 
 		float acc_height_ = 0.0f;
 		for (int i = 0; i < n; i++) {
