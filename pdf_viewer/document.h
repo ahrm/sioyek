@@ -30,7 +30,6 @@ private:
 	fz_context* context;
 	std::wstring file_name;
 	std::unordered_map<int, fz_link*> cached_page_links;
-	fz_outline* cached_outline;
 	QStandardItemModel* cached_toc_model = nullptr;
 
 	std::vector<float> accum_page_heights;

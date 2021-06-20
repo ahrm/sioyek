@@ -7,7 +7,6 @@
 //todo: clean up parsing code
 //todo: autocomplete in command window
 //todo: add djvu, epub and other formats
-//todo: remove cached_outline from document
 
 #include <iostream>
 #include <vector>

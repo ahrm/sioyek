@@ -190,14 +190,14 @@ float Document::get_accum_page_height(int page_index)
 //}
 
 fz_outline* Document::get_toc_outline() {
-	if (cached_outline) return cached_outline;
+	fz_outline* res = nullptr;
 	fz_try(context) {
-		cached_outline = fz_load_outline(context, doc);
+		res = fz_load_outline(context, doc);
 	}
 	fz_catch(context) {
 		std::cerr << "Error: Could not load outline ... " << std::endl;
 	}
-	return cached_outline;
+	return res;
 }
 
 void Document::create_toc_tree(std::vector<TocNode*>& toc) {
@@ -297,9 +297,6 @@ void Document::reload() {
 		fz_drop_link(context, page_link_pair.second);
 	}
 	cached_page_links.clear();
-
-	fz_drop_outline(context, cached_outline);
-	cached_outline = nullptr;
 
 	delete cached_toc_model;
 	cached_toc_model = nullptr;
