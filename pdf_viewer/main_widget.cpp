@@ -76,8 +76,18 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 }
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
-	QWidget::mouseMoveEvent(mouse_event);
 
+	int x = mouse_event->pos().x();
+	int y = mouse_event->pos().y();
+
+	if (main_document_view && main_document_view->get_link_in_pos(x, y)) {
+
+		setCursor(Qt::PointingHandCursor);
+		//std::cout << "on link\n";
+	}
+	else {
+		setCursor(Qt::ArrowCursor);
+	}
 	if (is_selecting) {
 
 		// When selecting, we occasionally update selected text
@@ -127,6 +137,9 @@ document_manager(document_manager),
 config_manager(config_manager),
 input_handler(input_handler)
 {
+	//installEventFilter(this);
+	setMouseTracking(true);
+
 	int num_screens = QApplication::desktop()->numScreens();
 
 	//todo: add an option so this is configurable
@@ -220,6 +233,7 @@ input_handler(input_handler)
 	QVBoxLayout* layout = new QVBoxLayout;
 	layout->setSpacing(0);
 	layout->setContentsMargins(0, 0, 0, 0);
+	opengl_widget->setAttribute(Qt::WA_TransparentForMouseEvents);
 	layout->addWidget(opengl_widget);
 	setLayout(layout);
 
@@ -306,6 +320,22 @@ void MainWidget::handle_escape() {
 	setFocus();
 }
 
+//bool MainWidget::eventFilter(QObject* obj, QEvent* event) {
+//	if (event->type() == QEvent::MouseMove) {
+//		std::cout << "move!\n";
+//		QMouseEvent* mouse_event = static_cast<QMouseEvent*>(event);
+//
+//		int x = mouse_event->pos().x();
+//		int y = mouse_event->pos().y();
+//
+//		if (main_document_view->get_link_in_pos(x, y)) {
+//			std::cout << "on link\n";
+//		}
+//		return false;
+//	}
+//	return false;
+//
+//}
 void MainWidget::keyPressEvent(QKeyEvent* kevent) {
 	key_event(false, kevent);
 }
@@ -645,7 +675,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
 		//int page;
 		//fz_rect rect;
-		//if (main_document_view->get_block_at_window_position(mevent->pos().x(), mevent->pos().y(), &page, &rect)) {
+		//if (main_document_view->get_block_at_window_position(opengl_widget->pos().x(), mevent->pos().y(), &page, &rect)) {
 		//	//optional<int> last_selected_block_page = {};
 		//	//optional<fz_rect> last_selected_block = {};
 		//	opengl_widget->last_selected_block_page = page;

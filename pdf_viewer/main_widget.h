@@ -99,6 +99,8 @@ protected:
 	void handle_click(int pos_x, int pos_y);
 	void mouseReleaseEvent(QMouseEvent* mevent) override;
 	void mousePressEvent(QMouseEvent* mevent) override;
+
+	//bool eventFilter(QObject* obj, QEvent* event) override;
 	void wheelEvent(QWheelEvent* wevent) override;
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
 	void toggle_two_window_mode();

@@ -7,6 +7,7 @@
 //todo: clean up parsing code
 //todo: autocomplete in command window
 //todo: add djvu, epub and other formats
+//todo: change mouse cursor
 
 #include <iostream>
 #include <vector>
