@@ -8,6 +8,7 @@
 //todo: autocomplete in command window
 //todo: add djvu, epub and other formats
 //todo: simplify word selection logic (also avoid inefficient extra insertions followed by clears in selected_characters)
+//todo: improve selection highlight graphics (for example sometimes lines overlap, etc.)
 
 #include <iostream>
 #include <vector>

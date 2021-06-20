@@ -675,6 +675,10 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 		if (i == page_end) {
 			char_end = find_closest_char_to_document_point(stext_page, page_point2, &location_index2);
 		}
+		//if (char_end == nullptr) {
+		//	char_end = find_closest_char_to_document_point(stext_page, page_point1, &location_index2);
+		//	char_end = find_closest_char_to_document_point(stext_page, page_point2, &location_index2);
+		//}
 		if (char_begin && char_end) {
 			// swap the locations if end happends before begin
 			if (page_begin == page_end && location_index1 > location_index2) {
@@ -698,7 +702,7 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 							}
 						}
 						else {
-							if (word_selecting == false && current_char->c == ' ') {
+							if (word_selecting == false && is_separator(char_begin, current_char)) {
 								selected_text.clear();
 								selected_characters.clear();
 							}
@@ -708,15 +712,17 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 							if (current_char == char_end) {
 								selecting = false;
 							}
-							if (word_selecting == true && current_char->c == ' ' && selecting == false) {
+							if (word_selecting == true && is_separator(char_end, current_char) && selecting == false) {
 								word_selecting = false;
 								return;
 							}
 						}
 						if (selecting || word_selecting) {
-							selected_text.push_back(current_char->c);
-							fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
-							selected_characters.push_back(charrect);
+							if (!(current_char->c == ' ' && selected_text.size() == 0)) {
+								selected_text.push_back(current_char->c);
+								fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
+								selected_characters.push_back(charrect);
+							}
 						}
 					}
 				}

@@ -340,6 +340,20 @@ fz_stext_char_s* find_closest_char_to_document_point(fz_stext_page* stext_page, 
 
 	return res;
 }
+bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char) {
+	if (last_char == nullptr) {
+		return false;
+	}
+
+	if (current_char->c == ' ') {
+		return true;
+	}
+	float dist = abs(last_char->quad.ll.y - current_char->quad.ll.y);
+	if (dist > 1.0f) {
+		return true;
+	}
+	return false;
+}
 
 void get_stext_block_string(fz_stext_block* block, std::wstring& res) {
 	assert(block->type == FZ_STEXT_BLOCK_TEXT);
