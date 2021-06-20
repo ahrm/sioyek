@@ -465,7 +465,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 			}
 			if (command->requires_file_name) {
 				wchar_t file_name[MAX_PATH];
-				if (select_pdf_file_name(file_name, MAX_PATH)) {
+				if (select_document_file_name(file_name, MAX_PATH)) {
 					handle_command_with_file_name(command, file_name);
 				}
 				else {
@@ -600,6 +600,15 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 		PdfLink link = link_.value();
 		int page;
 		float offset_x, offset_y;
+
+
+
+
+		if (link.uri.substr(0, 4).compare("http") == 0) {
+			ShellExecuteA(0, 0, link.uri.c_str(), 0, 0, SW_SHOW);
+			return;
+		}
+
 		parse_uri(link.uri, &page, &offset_x, &offset_y);
 
 		// we usually just want to center the y offset and not the x offset (otherwise for example
@@ -958,6 +967,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "search_selected_text_in_google_scholar") {
 		ShellExecuteW(0, 0, (*config_manager->get_config<std::wstring>(L"google_scholar_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
 	}
+	else if (command->name == "open_selected_url") {
+		ShellExecuteW(0, 0, (selected_text).c_str(), 0, 0, SW_SHOW);
+	}
 	else if (command->name == "search_selected_text_in_libgen") {
 		ShellExecuteW(0, 0, (*config_manager->get_config<std::wstring>(L"libgen_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
 	}
@@ -983,6 +995,7 @@ void MainWidget::handle_link() {
 		pl.dest_zoom_level = main_document_view->get_zoom_level();
 		pl.document_path = main_document_view->get_document()->get_path();
 		pending_link = {};
+
 		if (source_path == main_document_view->get_document()->get_path()) {
 			main_document_view->get_document()->add_link(pl);
 		}

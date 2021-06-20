@@ -51,6 +51,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "toggle_highlight", false, false , false, false});
 	commands.push_back({ "command", true, false , false, false});
 	commands.push_back({ "search_selected_text_in_google_scholar", false, false , false, false});
+	commands.push_back({ "open_selected_url", false, false , false, false});
 	commands.push_back({ "search_selected_text_in_libgen", false, false , false, false});
 	commands.push_back({ "screen_down", false, false , false, false});
 	commands.push_back({ "screen_up", false, false , false, false});

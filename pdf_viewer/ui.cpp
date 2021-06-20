@@ -1,6 +1,6 @@
 #include "ui.h"
 
-bool select_pdf_file_name(wchar_t* out_file_name, int max_length) {
+bool select_document_file_name(wchar_t* out_file_name, int max_length) {
 
 	std::cout << std::filesystem::current_path().string() << endl;
 	OPENFILENAMEW ofn;

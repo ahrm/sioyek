@@ -68,7 +68,7 @@ void Document::delete_closest_bookmark(float to_y_offset) {
 	}
 }
 
-//todo: sort the lins and perform a binary search
+//todo: sort the links and perform a binary search
 Link* Document::find_closest_link(float to_offset_y, int* index) {
 	int min_index = argminf<Link>(links, [to_offset_y](Link l) {
 		return abs(l.src_offset_y - to_offset_y);
@@ -168,6 +168,9 @@ float Document::get_page_width(int page_index)
 float Document::get_accum_page_height(int page_index)
 {
 	std::lock_guard guard(page_dims_mutex);
+	if (page_index < 0) {
+		return 0.0f;
+	}
 	return accum_page_heights[page_index];
 }
 

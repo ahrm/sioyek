@@ -298,5 +298,5 @@ public:
 	}
 };
 
-bool select_pdf_file_name(wchar_t* out_file_name, int max_length);
+bool select_document_file_name(wchar_t* out_file_name, int max_length);
 
