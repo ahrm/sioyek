@@ -67,7 +67,7 @@ public:
 	void set_offset_x(float new_offset_x);
 	void set_offset_y(float new_offset_y);
 	std::optional<PdfLink> get_link_in_pos(int view_x, int view_y);
-	void get_text_selection(fz_point selection_begin, fz_point selection_end, std::vector<fz_rect>& selected_characters, std::wstring& text_selection);
+	void get_text_selection(fz_point selection_begin, fz_point selection_end, bool is_word_selection, std::vector<fz_rect>& selected_characters, std::wstring& text_selection);
 	void add_mark(char symbol);
 	void add_bookmark(std::wstring desc);
 	void on_view_size_change(int new_width, int new_height);

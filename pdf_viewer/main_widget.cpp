@@ -81,13 +81,12 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 	int y = mouse_event->pos().y();
 
 	if (main_document_view && main_document_view->get_link_in_pos(x, y)) {
-
 		setCursor(Qt::PointingHandCursor);
-		//std::cout << "on link\n";
 	}
 	else {
 		setCursor(Qt::ArrowCursor);
 	}
+
 	if (is_selecting) {
 
 		// When selecting, we occasionally update selected text
@@ -104,6 +103,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
 			main_document_view->get_text_selection(selection_begin,
 				selection_end,
+				is_word_selecting,
 				opengl_widget->selected_character_rects,
 				selected_text);
 
@@ -137,7 +137,6 @@ document_manager(document_manager),
 config_manager(config_manager),
 input_handler(input_handler)
 {
-	//installEventFilter(this);
 	setMouseTracking(true);
 
 	int num_screens = QApplication::desktop()->numScreens();
@@ -320,22 +319,6 @@ void MainWidget::handle_escape() {
 	setFocus();
 }
 
-//bool MainWidget::eventFilter(QObject* obj, QEvent* event) {
-//	if (event->type() == QEvent::MouseMove) {
-//		std::cout << "move!\n";
-//		QMouseEvent* mouse_event = static_cast<QMouseEvent*>(event);
-//
-//		int x = mouse_event->pos().x();
-//		int y = mouse_event->pos().y();
-//
-//		if (main_document_view->get_link_in_pos(x, y)) {
-//			std::cout << "on link\n";
-//		}
-//		return false;
-//	}
-//	return false;
-//
-//}
 void MainWidget::keyPressEvent(QKeyEvent* kevent) {
 	key_event(false, kevent);
 }
@@ -530,8 +513,10 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 
 			main_document_view->get_text_selection(selection_begin,
 				selection_end,
+				is_word_selecting,
 				opengl_widget->selected_character_rects,
 				selected_text);
+		is_word_selecting = false;
 		}
 		else {
 			handle_click(x, y);
@@ -702,6 +687,11 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 	}
 #endif
 
+}
+
+void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
+	is_selecting = true;
+	is_word_selecting = true;
 }
 
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {

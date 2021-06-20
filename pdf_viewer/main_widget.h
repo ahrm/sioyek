@@ -54,6 +54,7 @@ private:
 	float last_mouse_down_x;
 	float last_mouse_down_y;
 	bool is_selecting;
+	bool is_word_selecting;
 	std::wstring selected_text;
 
 	Link* link_to_edit;
@@ -99,6 +100,7 @@ protected:
 	void handle_click(int pos_x, int pos_y);
 	void mouseReleaseEvent(QMouseEvent* mevent) override;
 	void mousePressEvent(QMouseEvent* mevent) override;
+	void mouseDoubleClickEvent(QMouseEvent* mevent) override;
 
 	//bool eventFilter(QObject* obj, QEvent* event) override;
 	void wheelEvent(QWheelEvent* wevent) override;

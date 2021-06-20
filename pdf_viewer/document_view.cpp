@@ -620,6 +620,7 @@ float DocumentView::view_height_in_document_space()
 
 void DocumentView::get_text_selection(fz_point selection_begin,
 	fz_point selection_end,
+	bool is_word_selection,
 	std::vector<fz_rect>& selected_characters,
 	std::wstring& selected_text) {
 	// selected_characters are in absolute document space
@@ -631,10 +632,6 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 	selected_characters.clear();
 	selected_text.clear();
 
-	//fz_rect abs_rect = corners_to_rect(selection_begin, selection_end);
-
-	//current_document->absolute_to_page_pos(abs_rect.x0, abs_rect.y0, &page_rect.x0, &page_rect.y0, &page_begin);
-	//current_document->absolute_to_page_pos(abs_rect.x1, abs_rect.y1, &page_rect.x1, &page_rect.y1, &page_end);
 	fz_point page_point1;
 	fz_point page_point2;
 
@@ -651,7 +648,12 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 	selected_text.clear();
 
 
+	bool word_selecting = false;
 	bool selecting = false;
+	if (is_word_selection) {
+		selecting = true;
+	}
+	
 	for (int i = page_begin; i <= page_end; i++) {
 		// for now, let's assume there is only one page
 		fz_try(mupdf_context) {
@@ -687,13 +689,31 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 			if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
 				LL_ITER(current_line, current_block->u.t.first_line) { // for line in text block
 					LL_ITER(current_char, current_line->first_char) { // for char in line
-						if (current_char == char_begin) {
-							selecting = true;
+						if (!is_word_selection) {
+							if (current_char == char_begin) {
+								selecting = true;
+							}
+							if (current_char == char_end) {
+								selecting = false;
+							}
 						}
-						if (current_char == char_end) {
-							selecting = false;
+						else {
+							if (word_selecting == false && current_char->c == ' ') {
+								selected_text.clear();
+								selected_characters.clear();
+							}
+							if (current_char == char_begin) {
+								word_selecting = true;
+							}
+							if (current_char == char_end) {
+								selecting = false;
+							}
+							if (word_selecting == true && current_char->c == ' ' && selecting == false) {
+								word_selecting = false;
+								return;
+							}
 						}
-						if (selecting) {
+						if (selecting || word_selecting) {
 							selected_text.push_back(current_char->c);
 							fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
 							selected_characters.push_back(charrect);
