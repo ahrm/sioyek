@@ -452,6 +452,11 @@ void simplify_selected_character_rects(std::vector<fz_rect> selected_character_r
 		resulting_rects.push_back(bounding_rect);
 	}
 
+	// avoid overlapping rects
+	for (int i = 0; i < resulting_rects.size() - 1; i++) {
+		resulting_rects[i + 1].y0 = resulting_rects[i].y1;
+	}
+
 }
 
 void string_split(std::string haystack, std::string needle, std::vector<std::string> &res) {
