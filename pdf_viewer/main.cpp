@@ -8,6 +8,7 @@
 //todo: autocomplete in command window
 //todo: add djvu, epub and other formats
 //todo: simplify word selection logic (also avoid inefficient extra insertions followed by clears in selected_characters)
+//todo: create a vec_n serializer/deserializer and delete vec3 and vec4 verisons
 
 #include <iostream>
 #include <vector>
@@ -76,6 +77,8 @@ extern float background_color[3] = { 1.0f, 1.0f, 1.0f };
 extern float ZOOM_INC_FACTOR = 1.2f;
 extern float vertical_move_amount = 1.0f;
 extern float horizontal_move_amount = 1.0f;
+extern float vertical_line_width = 0.1f;
+extern float vertical_line_freq = 0.001f;
 extern float move_screen_percentage = 0.8f;
 extern const unsigned int cache_invalid_milies = 1000;
 extern const int persist_milies = 1000 * 60;

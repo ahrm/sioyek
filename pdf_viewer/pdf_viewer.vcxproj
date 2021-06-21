@@ -75,8 +75,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\qt10\5.14.2\msvc2017_64\include;D:\mupdf\mupdf\include;C:\Users\Lion\Desktop\glew-2.1.0\include;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\qt10\5.14.2\msvc2017_64\lib;D:\mupdf\mupdf\platform\win32\x64\Debug;C:\Users\Lion\Desktop\glew-2.1.0\lib\Release\x64;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\VS\UnitTest\include;D:\qt10\5.14.2\msvc2017_64\include;D:\mupdf\mupdf\include;C:\Users\Lion\Desktop\glew-2.1.0\include;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files (x86)\Microsoft Visual Studio\2019\Preview\VC\Auxiliary\VS\UnitTest\lib\;D:\qt10\5.14.2\msvc2017_64\lib;D:\mupdf\mupdf\platform\win32\x64\Debug;C:\Users\Lion\Desktop\glew-2.1.0\lib\Release\x64;C:\Users\Lion\Desktop\SDL2-devel-2.0.12-VC\SDL2-2.0.12\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -173,6 +173,7 @@
     <ClCompile Include="pdf_renderer.cpp" />
     <ClCompile Include="pdf_view_opengl_widget.cpp" />
     <ClCompile Include="sqlite3.c" />
+    <ClCompile Include="Test.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>

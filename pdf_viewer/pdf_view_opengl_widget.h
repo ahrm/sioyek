@@ -47,7 +47,12 @@ struct OpenGLSharedResources {
 	GLuint rendered_program;
 	GLuint unrendered_program;
 	GLuint highlight_program;
+	GLuint vertical_line_program;
+
 	GLint highlight_color_uniform_location;
+	GLint line_color_uniform_location;
+	GLint line_time_uniform_location;
+	GLint line_freq_uniform_location;
 
 	bool is_initialized;
 };
@@ -70,12 +75,17 @@ private:
 	bool should_highlight_links;
 	float percent_done;
 
+	int vertical_line_location;
+	bool should_draw_vertical_line;
+	QDateTime creation_time;
+
 	GLuint LoadShaders(std::filesystem::path vertex_file_path_, std::filesystem::path fragment_file_path_);
 protected:
 
 	void initializeGL() override;
 	void resizeGL(int w, int h) override;
 	void render_highlight_window(GLuint program, fz_rect window_rect);
+	void render_line_window(GLuint program, int vertical_pos);
 	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect);
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
 	void paintGL() override;
@@ -94,6 +104,10 @@ public:
 	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, QWidget* parent = nullptr);
 	~PdfViewOpenGLWidget();
 
+	void set_vertical_line_pos(float pos);
+	float get_vertical_line_pos();
+	void set_should_draw_vertical_line(bool val);
+	bool get_should_draw_vertical_line();
 	void handle_escape();
 	void toggle_highlight_links();
 	int get_num_search_results();

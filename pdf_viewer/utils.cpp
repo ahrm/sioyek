@@ -385,9 +385,14 @@ bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstri
 
 bool is_consequtive(fz_rect rect1, fz_rect rect2) {
 	float xdist = abs(rect1.x1 - rect2.x0);
-	float ydist = abs(rect1.y0 - rect2.y0);
+	float ydist1 = abs(rect1.y0 - rect2.y0);
+	float ydist2 = abs(rect1.y1 - rect2.y1);
+	float ydist = min(ydist1, ydist2);
 
-	if (xdist < 1.0f && ydist < 1.0f) {
+	//if (xdist < 1.0f && ydist < 1.0f) {
+	//	return true;
+	//}
+	if ( ydist < 5.0f) {
 		return true;
 	}
 	return false;

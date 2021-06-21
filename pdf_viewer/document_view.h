@@ -85,6 +85,7 @@ public:
 	float zoom_out();
 	void move_absolute(float dx, float dy);
 	void move(float dx, float dy);
+	void get_absolute_delta_from_doc_delta(float doc_dx, float doc_dy, float* abs_dx, float* abs_dy);
 	int get_current_page_number();
 	void get_visible_pages(int window_height, std::vector<int>& visible_pages);
 	void move_pages(int num_pages);

@@ -30,6 +30,10 @@ class ConfigManager {
 	std::vector<Config> configs;
 
 	Config* get_mut_config_with_name(std::wstring config_name);
+	float default_text_highlight_color[3];
+	float default_vertical_line_color[4];
+	float default_search_highlight_color[3];
+	float default_link_highlight_color[3];
 
 public:
 
@@ -38,6 +42,11 @@ public:
 	void deserialize(std::wifstream& file);
 	template<typename T>
 	const T* get_config(std::wstring name) {
-		return (T*)get_mut_config_with_name(name)->get_value();
+
+		void* raw_pointer = get_mut_config_with_name(name)->get_value();
+		// todo: Provide a default value for all configs, so that all the nullchecks here and in the
+		// places where `get_config` is called can be removed.
+		if (raw_pointer == nullptr) return nullptr;
+		return (T*)raw_pointer;
 	}
 };

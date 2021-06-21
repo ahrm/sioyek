@@ -1,6 +1,8 @@
 #include "config.h"
 
 extern float ZOOM_INC_FACTOR;
+extern float vertical_line_width;
+extern float vertical_line_freq;
 extern float vertical_move_amount;
 extern float horizontal_move_amount;
 extern float move_screen_percentage;
@@ -58,16 +60,33 @@ void* vec3_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 	stream >> *(res + 0) >> *(res + 1) >> *(res + 2);
 	return res;
 }
-
-void float_serializer(void* float_pointer, std::wstringstream& stream) {
-	stream << *(float*)float_pointer;
-}
-
 void vec3_serializer(void* vec3_pointer, std::wstringstream& stream) {
 	stream << *((float*)(vec3_pointer) + 0);
 	stream << *((float*)(vec3_pointer) + 1);
 	stream << *((float*)(vec3_pointer) + 2);
 }
+
+void vec4_serializer(void* vec4_pointer, std::wstringstream& stream) {
+	stream << *((float*)(vec4_pointer) + 0);
+	stream << *((float*)(vec4_pointer) + 1);
+	stream << *((float*)(vec4_pointer) + 2);
+	stream << *((float*)(vec4_pointer) + 3);
+}
+
+void* vec4_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
+	float* res = (float*)res_;
+	if (res == nullptr) {
+		res = new float[4];
+	}
+
+	stream >> *(res + 0) >> *(res + 1) >> *(res + 2) >> *(res + 3);
+	return res;
+}
+
+void float_serializer(void* float_pointer, std::wstringstream& stream) {
+	stream << *(float*)float_pointer;
+}
+
 
 void* float_deserializer(std::wstringstream& stream, void* res_) {
 	float* res = (float*)res_;
@@ -92,9 +111,13 @@ Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 }
 
 ConfigManager::ConfigManager(std::wstring path) {
-	configs.push_back({ L"text_highlight_color", nullptr, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"search_highlight_color", nullptr, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"link_highlight_color", nullptr, vec3_serializer, vec3_deserializer });
+
+	configs.push_back({ L"text_highlight_color", default_text_highlight_color, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"vertical_line_color", default_vertical_line_color, vec4_serializer, vec4_deserializer });
+	configs.push_back({ L"vertical_line_width", &vertical_line_width, float_serializer, float_deserializer });
+	configs.push_back({ L"vertical_line_freq", &vertical_line_freq, float_serializer, float_deserializer });
+	configs.push_back({ L"search_highlight_color", default_search_highlight_color, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"link_highlight_color", default_link_highlight_color, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"background_color", background_color, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"google_scholar_address", nullptr, string_serializer, string_deserializer });
 	configs.push_back({ L"libgen_address", nullptr, string_serializer, string_deserializer });

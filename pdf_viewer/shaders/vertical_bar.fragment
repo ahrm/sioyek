@@ -1,0 +1,32 @@
+#version 400 core
+
+out vec4 color;
+in vec2 screen_pos;
+in vec2 uvs;
+
+uniform vec4 line_color;
+uniform float time;
+uniform float freq;
+
+void main(){
+    color = line_color;
+    //color = vec4(0, 0, 0, 0.1);
+    //int x = int(gl_FragCoord.y / 1);
+    //int y =  int(gl_FragCoord.x / 1);
+    //if ((x+y) % 2 == 0){
+    //    color = vec4(0, 0, 0, 0.2);
+    //}
+    //else{
+    //    color = vec4(0, 0, 0, 0.1);
+    //}
+    //color = vec4(0, 0, 0, abs(sin(gl_FragCoord.y / 10 + gl_FragCoord.x / 10)));
+    //if (abs(uvs.x - fract(time * freq)) < 0.05){
+        //color = vec4(line_color, 0.1);
+    //}
+    //else{
+        //color = vec4(0, 0, 0, 0.1);
+    //}
+    //color = vec4(line_color * pow(abs(sin(uvs.x - time * freq)), 128), 0.3);
+    //color = vec4(line_color * abs(sin(time)), 0.3);
+    //color = vec4(line_color, 0.3);
+}

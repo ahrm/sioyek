@@ -55,6 +55,7 @@ private:
 	float last_mouse_down_y;
 	bool is_selecting;
 	bool is_word_selecting;
+	bool continuous_render_mode = false;
 	std::wstring selected_text;
 
 	Link* link_to_edit;
@@ -93,6 +94,7 @@ protected:
 	bool is_waiting_for_symbol();
 	void key_event(bool released, QKeyEvent* kevent);
 	void handle_left_click(float x, float y, bool down);
+	void handle_right_click(float x, float y, bool down);
 	void push_state();
 	void next_state();
 	void prev_state();
@@ -125,9 +127,13 @@ public:
 
 	~MainWidget();
 
+	void set_render_mode(bool continuous_render_mode);
+	void toggle_render_mode();
 	void open_document(std::wstring path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {});
 	void validate_render();
 	void validate_ui();
+	void move_document(float dx, float dy);
+	void move_document_screens(int num_screens);
 
 	void on_config_file_changed(ConfigManager* new_config) override;
 };

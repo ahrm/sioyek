@@ -2,6 +2,8 @@
 
 extern std::filesystem::path parent_path;
 extern float background_color[3];
+extern float vertical_line_width;
+extern float vertical_line_freq;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -128,8 +130,13 @@ void PdfViewOpenGLWidget::initializeGL() {
 		shared_gl_objects.rendered_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\simple.fragment");
 		shared_gl_objects.unrendered_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\unrendered_page.fragment");
 		shared_gl_objects.highlight_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\highlight.fragment");
+		shared_gl_objects.vertical_line_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\vertical_bar.fragment");
 
 		shared_gl_objects.highlight_color_uniform_location = glGetUniformLocation(shared_gl_objects.highlight_program, "highlight_color");
+
+		shared_gl_objects.line_color_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "line_color");
+		shared_gl_objects.line_time_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "time");
+		shared_gl_objects.line_freq_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "freq");
 
 		glGenBuffers(1, &shared_gl_objects.vertex_buffer_object);
 		glGenBuffers(1, &shared_gl_objects.uv_buffer_object);
@@ -161,6 +168,49 @@ void PdfViewOpenGLWidget::resizeGL(int w, int h) {
 	}
 }
 
+void PdfViewOpenGLWidget::render_line_window(GLuint program, int vertical_pos) {
+
+	int width = this->width();
+	int height = this->height();
+
+	float gl_vertical_pos = -(2 * static_cast<float>(vertical_pos) / height  -1);
+	float bar_height = vertical_line_width;
+
+	//float line_data[] = {
+	//	-1, gl_vertical_pos,
+	//	1, gl_vertical_pos
+	//};
+	float bar_data[] = {
+		-1, gl_vertical_pos,
+		1, gl_vertical_pos,
+		-1, gl_vertical_pos - bar_height,
+		1, gl_vertical_pos - bar_height
+	};
+
+	glDisable(GL_CULL_FACE);
+	glUseProgram(program);
+
+	const float* vertical_line_color = config_manager->get_config<float>(L"vertical_line_color");
+	if (vertical_line_color != nullptr) {
+		glUniform4fv(shared_gl_objects.line_color_uniform_location,
+			1,
+			vertical_line_color);
+	}
+	float time = -QDateTime::currentDateTime().msecsTo(creation_time);
+	glUniform1f(shared_gl_objects.line_time_uniform_location, time);
+	glUniform1f(shared_gl_objects.line_freq_uniform_location, vertical_line_freq);
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
+	//glDrawArrays(GL_LINES, 0, 2);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(bar_data), bar_data, GL_DYNAMIC_DRAW);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+}
 void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect) {
 
 	float quad_vertex_data[] = {
@@ -176,6 +226,7 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 		window_rect.x0, window_rect.y1
 	};
 
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDisable(GL_CULL_FACE);
@@ -189,6 +240,8 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 	glDisable(GL_BLEND);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_LINE_LOOP, 0, 4);
+
+
 }
 
 void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect) {
@@ -215,6 +268,7 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 	config_manager(config_manager),
 	pdf_renderer(pdf_renderer)
 {
+	creation_time = QDateTime::currentDateTime();
 }
 
 void PdfViewOpenGLWidget::handle_escape() {
@@ -332,7 +386,7 @@ void PdfViewOpenGLWidget::render() {
 		}
 	}
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 	if (last_selected_block) {
 		glUseProgram(shared_gl_objects.highlight_program);
 		glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
@@ -343,7 +397,7 @@ void PdfViewOpenGLWidget::render() {
 		fz_rect rect = last_selected_block.value();
 		render_highlight_document(shared_gl_objects.highlight_program, page, rect);
 	}
-#endif
+//#endif
 
 
 	search_results_mutex.lock();
@@ -365,6 +419,9 @@ void PdfViewOpenGLWidget::render() {
 	//}
 	for (auto rect : bounding_rects) {
 		render_highlight_absolute(shared_gl_objects.highlight_program, rect);
+	}
+	if (should_draw_vertical_line) {
+		render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 	}
 }
 
@@ -409,4 +466,24 @@ PdfViewOpenGLWidget::~PdfViewOpenGLWidget() {
 	if (is_opengl_initialized) {
 		glDeleteVertexArrays(1, &vertex_array_object);
 	}
+}
+
+void PdfViewOpenGLWidget::set_vertical_line_pos(float pos)
+{
+	vertical_line_location = pos;
+}
+
+float PdfViewOpenGLWidget::get_vertical_line_pos()
+{
+	return vertical_line_location;
+}
+
+void PdfViewOpenGLWidget::set_should_draw_vertical_line(bool val)
+{
+	should_draw_vertical_line = val;
+}
+
+bool PdfViewOpenGLWidget::get_should_draw_vertical_line()
+{
+	return should_draw_vertical_line;
 }

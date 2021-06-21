@@ -45,6 +45,7 @@
 
 extern bool launched_from_file_icon;
 extern bool flat_table_of_contents;
+extern float move_screen_percentage;
 extern std::filesystem::path parent_path;
 
 void MainWidget::paintEvent(QPaintEvent* paint_event) {
@@ -87,6 +88,10 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 		setCursor(Qt::ArrowCursor);
 	}
 
+	//if (opengl_widget->get_should_draw_vertical_line()) {
+	//	opengl_widget->set_vertical_line_pos(y);
+	//	validate_render();
+	//}
 	if (is_selecting) {
 
 		// When selecting, we occasionally update selected text
@@ -209,7 +214,7 @@ input_handler(input_handler)
 	unsigned int INTERVAL_TIME = 200;
 	timer->setInterval(INTERVAL_TIME);
 	connect(timer, &QTimer::timeout, [&]() {
-		if (is_render_invalidated) {
+		if (continuous_render_mode || is_render_invalidated) {
 			validate_render();
 		}
 		else if (is_ui_invalidated) {
@@ -366,6 +371,28 @@ void MainWidget::validate_ui() {
 	is_ui_invalidated = false;
 }
 
+void MainWidget::move_document(float dx, float dy)
+{
+	if (main_document_view) {
+		main_document_view->move(dx, dy);
+		int prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
+		int new_vertical_line_pos = prev_vertical_line_pos - dy;
+		opengl_widget->set_vertical_line_pos(new_vertical_line_pos);
+	}
+}
+
+void MainWidget::move_document_screens(int num_screens)
+{
+	main_document_view->move_screens(1 * num_screens);
+	int view_height = opengl_widget->height();
+	float move_amount = num_screens * view_height * move_screen_percentage;
+	if (opengl_widget) {
+		int current_loc = opengl_widget->get_vertical_line_pos();
+		int new_loc = current_loc - move_amount;
+		opengl_widget->set_vertical_line_pos(new_loc);
+	}
+}
+
 void MainWidget::on_config_file_changed(ConfigManager* new_config)
 {
 	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"status_label_stylesheet")));
@@ -406,6 +433,16 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 	}
 }
 
+void MainWidget::set_render_mode(bool continuous_render_mode_)
+{
+	continuous_render_mode = continuous_render_mode_;
+}
+
+void MainWidget::toggle_render_mode()
+{
+	set_render_mode(!continuous_render_mode);
+}
+
 void MainWidget::open_document(std::wstring path, std::optional<float> offset_x, std::optional<float> offset_y) {
 
 	//save the previous document state
@@ -414,6 +451,9 @@ void MainWidget::open_document(std::wstring path, std::optional<float> offset_x,
 	}
 
 	main_document_view->open_document(path, &this->is_ui_invalidated);
+	if (main_document_view->get_document() != nullptr) {
+		setWindowTitle(QString::fromStdWString(path));
+	}
 
 	if (path.size() > 0 && main_document_view->get_document() == nullptr) {
 		show_error_message(L"Could not open file: " + path);
@@ -494,8 +534,20 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
 }
 
+void MainWidget::handle_right_click(float x, float y, bool down) {
+	//main_document_view->set
+	if (opengl_widget) {
+		opengl_widget->set_should_draw_vertical_line(true);
+		opengl_widget->set_vertical_line_pos(y);
+		validate_render();
+		//set_render_mode(down);
+	}
+
+}
+
 void MainWidget::handle_left_click(float x, float y, bool down) {
 
+	if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
 	float x_, y_;
 	main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
 
@@ -655,6 +707,10 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		handle_left_click(mevent->pos().x(), mevent->pos().y(), false);
 	}
 
+	if (mevent->button() == Qt::MouseButton::RightButton) {
+		handle_right_click(mevent->pos().x(), mevent->pos().y(), false);
+	}
+
 #ifdef _DEBUG
 	if (mevent->button() == Qt::MouseButton::MiddleButton) {
 
@@ -690,13 +746,19 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 }
 
 void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
-	is_selecting = true;
-	is_word_selecting = true;
+	if (mevent->button() == Qt::MouseButton::LeftButton) {
+		is_selecting = true;
+		is_word_selecting = true;
+	}
 }
 
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 	if (mevent->button() == Qt::MouseButton::LeftButton) {
 		handle_left_click(mevent->pos().x(), mevent->pos().y(), true);
+	}
+
+	if (mevent->button() == Qt::MouseButton::RightButton) {
+		handle_right_click(mevent->pos().x(), mevent->pos().y(), true);
 	}
 
 	if (mevent->button() == Qt::MouseButton::XButton1) {
@@ -786,16 +848,16 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	int rp = std::max(num_repeats, 1);
 
 	if (command->name == "screen_down") {
-		main_document_view->move_screens(1 * rp);
+		move_document_screens(1 * rp);
 	}
 	if (command->name == "screen_up") {
-		main_document_view->move_screens(-1 * rp);
+		move_document_screens(-1 * rp);
 	}
 	if (command->name == "move_down") {
-		main_document_view->move(0.0f, 72.0f * rp * vertical_move_amount);
+		move_document(0.0f, 72.0f * rp * vertical_move_amount);
 	}
 	else if (command->name == "move_up") {
-		main_document_view->move(0.0f, -72.0f * rp * vertical_move_amount);
+		move_document(0.0f, -72.0f * rp * vertical_move_amount);
 	}
 
 	else if (command->name == "move_right") {

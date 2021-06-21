@@ -300,6 +300,11 @@ void DocumentView::move(float dx, float dy) {
 	int abs_dy = (dy / zoom_level);
 	move_absolute(abs_dx, abs_dy);
 }
+void DocumentView::get_absolute_delta_from_doc_delta(float dx, float dy, float* abs_dx, float* abs_dy)
+{
+	*abs_dx = (dx / zoom_level);
+	*abs_dy = (dy / zoom_level);
+}
 int DocumentView::get_current_page_number() {
 	return current_document->get_offset_page_number(get_offset_y());
 }
@@ -374,6 +379,7 @@ void DocumentView::move_screens(int num_screens)
 {
 	float screen_height_in_doc_space = view_height / zoom_level;
 	set_offset_y(get_offset_y() + num_screens * screen_height_in_doc_space * move_screen_percentage);
+	//return move_amount;
 }
 
 void DocumentView::reset_doc_state() {
