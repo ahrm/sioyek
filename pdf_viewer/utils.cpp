@@ -459,7 +459,10 @@ void simplify_selected_character_rects(std::vector<fz_rect> selected_character_r
 
 	// avoid overlapping rects
 	for (int i = 0; i < resulting_rects.size() - 1; i++) {
-		resulting_rects[i + 1].y0 = resulting_rects[i].y1;
+		// we don't need to do this across columns of document
+		if (resulting_rects[i + 1].x0 < resulting_rects[i].x1) {
+			resulting_rects[i + 1].y0 = resulting_rects[i].y1;
+		}
 	}
 
 }

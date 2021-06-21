@@ -8,7 +8,6 @@
 //todo: autocomplete in command window
 //todo: add djvu, epub and other formats
 //todo: simplify word selection logic (also avoid inefficient extra insertions followed by clears in selected_characters)
-//todo: create a vec_n serializer/deserializer and delete vec3 and vec4 verisons
 
 #include <iostream>
 #include <vector>

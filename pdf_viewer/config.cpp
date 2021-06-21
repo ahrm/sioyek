@@ -51,35 +51,24 @@ void* string_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 	return new std::wstring(res);
 }
 
-void* vec3_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
+template<int N>
+void vec_n_serializer(void* vec_n_pointer, std::wstringstream& stream) {
+	for (int i = 0; i < N; i++) {
+		stream << *(((float*)vec_n_pointer) + i);
+	}
+}
+
+template<int N>
+void* vec_n_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 	float* res = (float*)res_;
 	if (res == nullptr) {
-		res = new float[3];
+		res = new float[N];
 	}
 
-	stream >> *(res + 0) >> *(res + 1) >> *(res + 2);
-	return res;
-}
-void vec3_serializer(void* vec3_pointer, std::wstringstream& stream) {
-	stream << *((float*)(vec3_pointer) + 0);
-	stream << *((float*)(vec3_pointer) + 1);
-	stream << *((float*)(vec3_pointer) + 2);
-}
-
-void vec4_serializer(void* vec4_pointer, std::wstringstream& stream) {
-	stream << *((float*)(vec4_pointer) + 0);
-	stream << *((float*)(vec4_pointer) + 1);
-	stream << *((float*)(vec4_pointer) + 2);
-	stream << *((float*)(vec4_pointer) + 3);
-}
-
-void* vec4_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
-	float* res = (float*)res_;
-	if (res == nullptr) {
-		res = new float[4];
+	for (int i = 0; i < N; i++) {
+		stream >> *(res + i);
 	}
 
-	stream >> *(res + 0) >> *(res + 1) >> *(res + 2) >> *(res + 3);
 	return res;
 }
 
@@ -112,6 +101,12 @@ Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 
 ConfigManager::ConfigManager(std::wstring path) {
 
+	auto vec3_serializer = vec_n_serializer<3>;
+	auto vec4_serializer = vec_n_serializer<4>;
+	auto vec3_deserializer = vec_n_deserializer<3>;
+	auto vec4_deserializer = vec_n_deserializer<4>;
+
+	//configs.push_back({ L"text_highlight_color", default_text_highlight_color, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"text_highlight_color", default_text_highlight_color, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"vertical_line_color", default_vertical_line_color, vec4_serializer, vec4_deserializer });
 	configs.push_back({ L"vertical_line_width", &vertical_line_width, float_serializer, float_deserializer });
