@@ -320,7 +320,7 @@ bool Document::open(bool* invalid_flag) {
 			create_toc_tree(top_level_toc_nodes);
 			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
 			invalid_flag_pointer = invalid_flag;
-			index_figures(invalid_flag);
+			//index_figures(invalid_flag);
 			return true;
 		}
 

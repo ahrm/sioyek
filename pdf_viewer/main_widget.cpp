@@ -213,7 +213,7 @@ input_handler(input_handler)
 	QTimer* timer = new QTimer(this);
 	unsigned int INTERVAL_TIME = 200;
 	timer->setInterval(INTERVAL_TIME);
-	connect(timer, &QTimer::timeout, [&]() {
+	connect(timer, &QTimer::timeout, [&, INTERVAL_TIME]() {
 		if (continuous_render_mode || is_render_invalidated) {
 			validate_render();
 		}
@@ -223,6 +223,7 @@ input_handler(input_handler)
 		if (main_document_view != nullptr) {
 			Document* doc = nullptr;
 			if ((doc = main_document_view->get_document()) != nullptr) {
+
 				if (doc->get_milies_since_last_edit_time() < 2 * INTERVAL_TIME) {
 					doc->reload();
 					pdf_renderer->clear_cache();

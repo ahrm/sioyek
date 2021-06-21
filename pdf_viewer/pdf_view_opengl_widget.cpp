@@ -386,7 +386,7 @@ void PdfViewOpenGLWidget::render() {
 		}
 	}
 
-//#ifndef NDEBUG
+#ifndef NDEBUG
 	if (last_selected_block) {
 		glUseProgram(shared_gl_objects.highlight_program);
 		glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
@@ -397,7 +397,7 @@ void PdfViewOpenGLWidget::render() {
 		fz_rect rect = last_selected_block.value();
 		render_highlight_document(shared_gl_objects.highlight_program, page, rect);
 	}
-//#endif
+#endif
 
 
 	search_results_mutex.lock();

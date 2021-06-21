@@ -71,11 +71,12 @@ protected:
 					key_event->key() == Qt::Key_Left ||
 					key_event->key() == Qt::Key_Right ||
 					key_event->key() == Qt::Key_Return) {
-					QKeyEvent new_key_event(*key_event);
 					if (key_event->key() == Qt::Key_Enter) {
 						tree_view->setFocus();
 					}
-					QCoreApplication::postEvent(tree_view, &new_key_event);
+					QKeyEvent* newEvent = new QKeyEvent(*key_event);
+					QCoreApplication::postEvent(tree_view, newEvent);
+					//QCoreApplication::postEvent(tree_view, key_event);
 					return true;
 				}
 
