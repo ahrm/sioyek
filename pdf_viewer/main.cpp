@@ -85,6 +85,7 @@ extern const int page_paddings = 0;
 extern const int max_pending_requests = 31;
 extern bool launched_from_file_icon = false;
 extern bool flat_table_of_contents = false;
+extern bool should_use_multiple_monitors = false;
 
 extern std::filesystem::path last_path_file_absolute_location = "";
 extern std::filesystem::path parent_path = "";

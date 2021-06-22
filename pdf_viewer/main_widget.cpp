@@ -44,6 +44,7 @@
 #include "main_widget.h"
 
 extern bool launched_from_file_icon;
+extern bool should_use_multiple_monitors;
 extern bool flat_table_of_contents;
 extern float move_screen_percentage;
 extern std::filesystem::path parent_path;
@@ -103,6 +104,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 void MainWidget::closeEvent(QCloseEvent* close_event) {
 	main_document_view->persist();
 
+	// write the address of the current document in a file so that the next time
+	// we launch the application, we open this document
 	if (main_document_view->get_document()) {
 		std::ofstream last_path_file(last_path_file_absolute_location);
 
@@ -126,9 +129,10 @@ input_handler(input_handler)
 	setMouseTracking(true);
 
 	int num_screens = QApplication::desktop()->numScreens();
+	if (!should_use_multiple_monitors) {
+		num_screens = 1;
+	}
 
-	//todo: add an option so this is configurable
-	num_screens = 1; //DEBUG!!!!!!!! remove this!
 	int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
 
 	pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);

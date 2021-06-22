@@ -8,6 +8,7 @@ extern float horizontal_move_amount;
 extern float move_screen_percentage;
 extern float background_color[3];
 extern bool flat_table_of_contents;
+extern bool should_use_multiple_monitors;
 
 void int_serializer(void* int_pointer, std::wstringstream& stream) {
 	stream << *(int*)int_pointer;
@@ -125,6 +126,7 @@ ConfigManager::ConfigManager(std::wstring path) {
 	configs.push_back({ L"text_command_line_stylesheet", nullptr, string_serializer, string_deserializer });
 	configs.push_back({ L"status_label_stylesheet", nullptr, string_serializer, string_deserializer });
 	configs.push_back({ L"flat_toc", &flat_table_of_contents, bool_serializer, bool_deserializer });
+	configs.push_back({ L"should_use_multiple_monitors", &should_use_multiple_monitors, bool_serializer, bool_deserializer });
 	std::wifstream infile(path);
 	deserialize(infile);
 	infile.close();
