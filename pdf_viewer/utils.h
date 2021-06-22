@@ -59,6 +59,8 @@ TocNode* get_toc_node_from_indices(const std::vector<TocNode*>& roots, const std
 fz_stext_char_s* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index);
 void get_stext_block_string(fz_stext_block* block, std::wstring& res);
 bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstring& str);
+bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, std::wstring str);
+std::wstring get_figure_string_from_raw_string(std::wstring raw_string);
 void simplify_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects);
 void pdf_sandwich_maker(fz_context* context, std::wstring original_file_name, std::wstring sandwich_file_name);
 void string_split(std::string haystack, std::string needle, std::vector<std::string>& res);

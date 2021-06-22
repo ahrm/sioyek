@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <cwctype>
 
 #include <cassert>
 #include "utils.h"
@@ -365,19 +366,64 @@ void get_stext_block_string(fz_stext_block* block, std::wstring& res) {
 	}
 }
 
+std::wstring get_string_from_stext_line(fz_stext_line* line) {
+
+	std::wstring res;
+	LL_ITER(ch, line->first_char) {
+		res.push_back(ch->c);
+	}
+	return res;
+}
 bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstring& str) {
 	assert(block->type == FZ_STEXT_BLOCK_TEXT);
 
 	if (block->u.t.first_line) {
 		int index = 0;
-		LL_ITER(ch, block->u.t.first_line->first_char) {
-			if (ch->c != str[index]) {
-				return false;
+		std::wstring line_string = get_string_from_stext_line(block->u.t.first_line);
+		if (line_string.find(str) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+std::wstring get_figure_string_from_raw_string(std::wstring raw_string) {
+
+	std::wstring res;
+
+	bool begun = false;
+	for (int i = 0; i < raw_string.size(); i++) {
+		wchar_t c = raw_string[i];
+		bool is_last = (raw_string.size() - 1) == i;
+
+		if (std::iswdigit(c)) {
+			begun = true;
+			res.push_back(c);
+		}
+		else if ((c == '.') && begun) {
+			if (!is_last) {
+				res.push_back(c);
 			}
-			index++;
-			if (index == str.size()) {
-				return true;
-			}
+		}
+		else {
+			if (begun) break;
+		}
+	}
+	return res;
+}
+
+bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, std::wstring str) {
+
+	assert(block->type == FZ_STEXT_BLOCK_TEXT);
+
+	if (block->u.t.first_line) {
+		int index = 0;
+		QString line_string = QString::fromStdWString(get_string_from_stext_line(block->u.t.first_line));
+		line_string = line_string.toLower();
+		std::wstring std_line_string = line_string.toStdWString();
+
+		if (std_line_string.find(str) == 0) {
+			return true;
 		}
 	}
 	return false;

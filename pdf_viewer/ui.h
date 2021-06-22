@@ -37,6 +37,8 @@ const int max_select_size = 100;
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
 protected:
 	bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const;
+//public:
+//	mutable int count = 0;
 };
 
 class ConfigFileChangeListener {
@@ -135,6 +137,7 @@ public:
 		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
 			//proxy_model->setFilterRegExp(text);
 			proxy_model->setFilterFixedString(text);
+			//std::cout << ((HierarchialSortFilterProxyModel*)proxy_model)->count << "\n";
 			tree_view->expandAll();
 			});
 

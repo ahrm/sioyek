@@ -55,7 +55,7 @@ void MainWidget::paintEvent(QPaintEvent* paint_event) {
 	// don't delete any immediately-useful pages
 	// this is still problematic though, for example the main widget can be repainted without any of
 	// Pdf view widgets being repainted, which will delete useful pages
-	// a bettet solution might be to add an argument to delete old pages which is a vector of currently visible
+	// a better solution might be to add an argument to delete old pages which is a vector of currently visible
 	// pages, then ensure that we don't delete these pages in delete old pages
 	should_delete_old_pages = true;
 }
@@ -712,7 +712,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		handle_right_click(mevent->pos().x(), mevent->pos().y(), false);
 	}
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	if (mevent->button() == Qt::MouseButton::MiddleButton) {
 
 		//int page;
@@ -730,9 +730,12 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		main_document_view->window_to_document_pos(mevent->pos().x(), mevent->pos().y(), &offset_x, &offset_y, &page);
 		std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(page, offset_x, offset_y);
 		if (text_on_pointer) {
+			std::wstring figure_string = get_figure_string_from_raw_string(text_on_pointer.value());
+			if (figure_string.size() == 0) return;
+
 			int fig_page;
 			float fig_offset;
-			if (main_document_view->get_document()->find_figure_with_string(text_on_pointer.value(), &fig_page, &fig_offset)) {
+			if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
 				push_state();
 				main_document_view->goto_page(fig_page);
 				invalidate_render();
@@ -742,7 +745,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		//	wcout << text_on_pointer.value() << endl;
 		//}
 	}
-#endif
+//#endif
 
 }
 

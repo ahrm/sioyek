@@ -320,7 +320,7 @@ bool Document::open(bool* invalid_flag) {
 			create_toc_tree(top_level_toc_nodes);
 			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
 			invalid_flag_pointer = invalid_flag;
-			//index_figures(invalid_flag);
+			index_figures(invalid_flag);
 			return true;
 		}
 
@@ -541,9 +541,7 @@ int Document::get_offset_page_number(float y_offset)
 
 void Document::index_figures(bool* invalid_flag)
 {
-	//return;
 	int n = num_pages();
-	//this->figure_indexing_thread = std::thread([this, n]() {
 
 	if (this->figure_indexing_thread.has_value()) {
 		// if we are already indexing figures, we should wait for the previous thread to finish
@@ -568,9 +566,10 @@ void Document::index_figures(bool* invalid_flag)
 			fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, nullptr);
 
 			LL_ITER(block, stext_page->first_block) {
-				if (does_stext_block_starts_with_string(block, L"FIGURE")) {
+				if (does_stext_block_starts_with_string_case_insensitive(block, L"fig")) {
 					std::wstring res;
 					get_stext_block_string(block, res);
+					std::wcout << res << "\n";
 					local_figure_data.push_back({ i, block->bbox.y1, std::move(res) });
 				}
 			}
@@ -597,20 +596,29 @@ void Document::stop_indexing()
 	is_figure_indexing_required = false;
 }
 
-bool Document::find_figure_with_string(std::wstring figure_name, int* page, float* y_offset)
+bool Document::find_figure_with_string(std::wstring figure_name, int reference_page, int* page, float* y_offset)
 {
 	std::lock_guard guard(figure_indices_mutex);
-	int min_index = 1000;
+
+	if (figure_name[figure_name.size() - 1] == '.') { // some books have an extra dot at the end of figure references
+		figure_name = figure_name.substr(0, figure_name.size() - 1);
+	}
+
+	int min_index = 100000;
 	float min_y = 0;
 	int min_page = -1;
+	float min_score = 1000000;
 
 	for (const auto& [p, y, text] : figure_indices) {
 		size_t pos = text.find(figure_name);
+		int distance = abs(p - reference_page);
+		float score = distance + pos * 10;
 		if (pos != std::wstring::npos) {
-			if (pos < min_index) {
+			if (score < min_score) {
 				min_index = pos;
 				min_y = y;
 				min_page = p;
+				min_score = score;
 			}
 		}
 	}

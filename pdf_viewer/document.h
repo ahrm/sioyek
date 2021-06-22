@@ -95,7 +95,7 @@ public:
 	int get_offset_page_number(float y_offset);
 	void index_figures(bool* invalid_flag);
 	void stop_indexing();
-	bool find_figure_with_string(std::wstring figure_name, int* page, float* y_offset);
+	bool find_figure_with_string(std::wstring figure_name, int reference_page, int* page, float* y_offset);
 	std::optional<std::wstring> get_text_at_position(int page, float offset_x, float offset_y);
 	friend class DocumentManager;
 };
