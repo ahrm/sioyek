@@ -320,6 +320,8 @@ bool Document::open(bool* invalid_flag) {
 			create_toc_tree(top_level_toc_nodes);
 			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
 			invalid_flag_pointer = invalid_flag;
+
+			// we don't need to index figures in helper documents
 			index_figures(invalid_flag);
 			return true;
 		}
@@ -551,7 +553,7 @@ void Document::index_figures(bool* invalid_flag)
 	is_figure_indexing_required = true;
 	is_indexing = true;
 	this->figure_indexing_thread = std::thread([this, n, invalid_flag]() {
-		std::cout << "starting index thread ..." << std::endl;
+		std::wcout << "starting index thread ..." << std::endl;
 		std::vector<FigureData> local_figure_data;
 		fz_context* context_ = fz_clone_context(context);
 		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
@@ -584,9 +586,11 @@ void Document::index_figures(bool* invalid_flag)
 		figure_indices_mutex.lock();
 		figure_indices = std::move(local_figure_data);
 		figure_indices_mutex.unlock();
-		std::cout << "figure indexing finished ... " << std::endl;
+		std::wcout << "figure indexing finished ... " << std::endl;
 		is_indexing = false;
-		*invalid_flag = true;
+		if (invalid_flag) {
+			*invalid_flag = true;
+		}
 		});
 	//thread.detach();
 }

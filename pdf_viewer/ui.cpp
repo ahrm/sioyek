@@ -2,7 +2,7 @@
 
 bool select_document_file_name(wchar_t* out_file_name, int max_length) {
 
-	std::cout << std::filesystem::current_path().string() << endl;
+	std::wcout << std::filesystem::current_path().wstring() << endl;
 	OPENFILENAMEW ofn;
 	ZeroMemory(out_file_name, max_length);
 	ZeroMemory(&ofn, sizeof(ofn));
@@ -16,7 +16,7 @@ bool select_document_file_name(wchar_t* out_file_name, int max_length) {
 
 
 	if (GetOpenFileNameW(&ofn)) {
-		std::cout << std::filesystem::current_path().string() << endl;
+		std::wcout << std::filesystem::current_path().wstring() << endl;
 		return true;
 	}
 	return false;
@@ -25,12 +25,12 @@ bool select_document_file_name(wchar_t* out_file_name, int max_length) {
 std::vector<ConfigFileChangeListener*> ConfigFileChangeListener::registered_listeners;
 
 ConfigFileChangeListener::ConfigFileChangeListener() {
-	std::cout << "config file change listener constructor called" << endl;
+	std::wcout << "config file change listener constructor called" << endl;
 	registered_listeners.push_back(this);
 }
 
 ConfigFileChangeListener::~ConfigFileChangeListener() {
-	std::cout << "config file change listener destructor called" << endl;
+	std::wcout << "config file change listener destructor called" << endl;
 	registered_listeners.erase(std::find(registered_listeners.begin(), registered_listeners.end(), this));
 }
 
@@ -42,7 +42,7 @@ void ConfigFileChangeListener::notify_config_file_changed(ConfigManager* new_con
 
 bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
 {
-	std::cout << source_row << "\n";
+	std::wcout << source_row << "\n";
 	// custom behaviour :
 	if (filterRegExp().isEmpty() == false)
 	{

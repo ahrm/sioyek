@@ -154,7 +154,7 @@ public:
 
 
 	void on_select(const QModelIndex& index) {
-		std::cout << "activated " << endl;
+		std::wcout << "activated " << endl;
 		hide();
 		parentWidget()->setFocus();
 		auto source_index = proxy_model->mapToSource(index);
@@ -294,7 +294,7 @@ public:
 
 
 	void on_select(const QModelIndex& index) {
-		std::cout << "activated " << index.data().toString().toStdString() << std::endl;
+		std::wcout << "activated " << index.data().toString().toStdWString() << std::endl;
 		hide();
 		parentWidget()->setFocus();
 		auto source_index = proxy_model->mapToSource(index);

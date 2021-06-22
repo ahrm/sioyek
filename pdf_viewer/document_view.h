@@ -57,6 +57,7 @@ public:
 	inline void set_offsets(float new_offset_x, float new_offset_y);
 	Document* get_document();
 	Link* find_closest_link();
+	void goto_link(Link* link);
 	void delete_closest_link();
 	void delete_closest_bookmark();
 	float get_offset_x();

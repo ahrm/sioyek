@@ -69,22 +69,22 @@ const Command* CommandManager::get_command_with_name(std::string name) {
 
 void print_tree_node(InputParseTreeNode node) {
 	if (node.requires_text) {
-		std::cout << "text node" << std::endl;
+		std::wcout << "text node" << std::endl;
 		return;
 	}
 	if (node.requires_symbol) {
-		std::cout << "symbol node" << std::endl;
+		std::wcout << "symbol node" << std::endl;
 		return;
 	}
 
 	if (node.control_modifier) {
-		std::cout << "Ctrl+";
+		std::wcout << "Ctrl+";
 	}
 
 	if (node.shift_modifier) {
-		std::cout << "Shift+";
+		std::wcout << "Shift+";
 	}
-	std::cout << node.command << std::endl;
+	std::wcout << node.command << std::endl;
 }
 
 InputParseTreeNode parse_token(std::string token) {
@@ -212,7 +212,7 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 				if ((tokens[i] != "sym") && (tokens[i] != "txt")) {
 
 					if (parent_node->is_final) {
-						std::cout << "adding child command to a final command" << std::endl;
+						std::wcout << "adding child command to a final command" << std::endl;
 					}
 
 					parent_node->children.push_back(new InputParseTreeNode(node));
@@ -292,7 +292,8 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 	}
 
 	for (InputParseTreeNode* child : current_node->children) {
-		if (child->command == key && child->shift_modifier == shift_pressed && child->control_modifier == control_pressed){
+		//if (child->command == key && child->shift_modifier == shift_pressed && child->control_modifier == control_pressed){
+		if (child->matches(key, shift_pressed, control_pressed)){
 			if (child->is_final == true) {
 				current_node = root;
 				//cout << child->name << endl;
@@ -310,7 +311,7 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 			}
 		}
 	}
-	std::cout << "invalid command; resetting to root" << std::endl;
+	std::wcout << "invalid command; resetting to root" << std::endl;
 	number_stack.clear();
 	current_node = root;
 	return nullptr;
@@ -340,4 +341,9 @@ bool InputParseTreeNode::is_same(const InputParseTreeNode* other) {
 		(control_modifier == other->control_modifier) &&
 		(requires_symbol == other->requires_symbol) &&
 		(requires_text == other->requires_text);
+}
+
+bool InputParseTreeNode::matches(int key, bool shift, bool ctrl)
+{
+	return (key == this->command) && (shift == this->shift_modifier) && (ctrl == this->control_modifier);
 }

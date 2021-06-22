@@ -43,6 +43,7 @@ struct InputParseTreeNode {
 	bool is_final = false;
 
 	bool is_same(const InputParseTreeNode* other);
+	bool matches(int key, bool shift, bool ctrl);
 };
 
 

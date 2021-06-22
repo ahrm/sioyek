@@ -91,9 +91,6 @@
     <ClInclude Include="ui.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="document.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="document_view.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -128,6 +125,9 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="pdf_renderer.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="document.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

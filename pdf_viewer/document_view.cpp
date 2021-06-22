@@ -88,6 +88,23 @@ Link* DocumentView::find_closest_link() {
 	return nullptr;
 }
 
+void DocumentView::goto_link(Link* link)
+{
+	if (link) {
+		if (get_document() &&
+			get_document()->get_path() == link->document_path) {
+
+			set_offsets(link->dest_offset_x, link->dest_offset_y);
+			set_zoom_level(link->dest_zoom_level);
+		}
+		else {
+			open_document(link->document_path, nullptr);
+			set_offsets(link->dest_offset_x, link->dest_offset_y);
+			set_zoom_level(link->dest_zoom_level);
+		}
+	}
+}
+
 void DocumentView::delete_closest_link() {
 	if (current_document) {
 		current_document->delete_closest_link(offset_y);

@@ -1,4 +1,4 @@
-
+﻿
 #include <iostream>
 #include <vector>
 #include <string>
@@ -48,6 +48,11 @@ extern bool should_use_multiple_monitors;
 extern bool flat_table_of_contents;
 extern float move_screen_percentage;
 extern std::filesystem::path parent_path;
+
+bool MainWidget::main_document_view_has_document()
+{
+	return (main_document_view != nullptr) && (main_document_view->get_document() != nullptr);
+}
 
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 	QWidget::resizeEvent(resize_event);
@@ -128,10 +133,6 @@ input_handler(input_handler)
 {
 	setMouseTracking(true);
 
-	int num_screens = QApplication::desktop()->numScreens();
-	if (!should_use_multiple_monitors) {
-		num_screens = 1;
-	}
 
 	int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
 
@@ -145,7 +146,9 @@ input_handler(input_handler)
 	helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
 	helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager);
 
-	if (num_screens > 1) {
+	// automatically open the helper window in second monitor
+	int num_screens = QApplication::desktop()->numScreens();
+	if ((num_screens > 1) && should_use_multiple_monitors) {
 		helper_opengl_widget->move(first_screen_width, 0);
 		if (!launched_from_file_icon) {
 			helper_opengl_widget->showMaximized();
@@ -157,13 +160,11 @@ input_handler(input_handler)
 
 
 	status_label = new QLabel(this);
-	//status_label->setStyleSheet("background-color: black; color: white; border: 0");
 	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"status_label_stylesheet")));
 	status_label->setFont(QFont("Monaco"));
 
 
 	text_command_line_edit_container = new QWidget(this);
-	//text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: 0");
 	text_command_line_edit_container->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"text_command_line_stylesheet")));
 
 	QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
@@ -205,6 +206,7 @@ input_handler(input_handler)
 		else if (is_ui_invalidated) {
 			validate_ui();
 		}
+		// detect if the document file has changed and if so, reload the document
 		if (main_document_view != nullptr) {
 			Document* doc = nullptr;
 			if ((doc = main_document_view->get_document()) != nullptr) {
@@ -233,6 +235,11 @@ input_handler(input_handler)
 MainWidget::~MainWidget() {
 	pdf_renderer->join_threads();
 
+	// todo: use a reference counting pointer for document so we can delete main_doc
+	// and helper_doc in DocumentView's destructor, not here.
+	// ideally this function should just become:
+	//		delete main_document_view;
+	//		if(helper_document_view != main_document_view) delete helper_document_view;
 	if (main_document_view != nullptr) {
 		Document* main_doc = main_document_view->get_document();
 		if (main_doc != nullptr) delete main_doc;
@@ -254,6 +261,7 @@ bool MainWidget::is_pending_link_source_filled() {
 }
 
 std::wstring MainWidget::get_status_string() {
+
 	std::wstringstream ss;
 	if (main_document_view->get_document() == nullptr) return L"";
 	std::wstring chapter_name = main_document_view->get_current_chapter_name();
@@ -265,7 +273,6 @@ std::wstring MainWidget::get_status_string() {
 	int num_search_results = opengl_widget->get_num_search_results();
 	float progress = -1;
 	if (opengl_widget->get_is_searching(&progress)) {
-		opengl_widget->get_is_searching(&progress);
 
 		// show the 0th result if there are no results and the index + 1 otherwise
 		int result_index = opengl_widget->get_num_search_results() > 0 ? opengl_widget->get_current_search_result_index() + 1 : 0;
@@ -295,10 +302,8 @@ void MainWidget::handle_escape() {
 	text_command_line_edit->setText("");
 	pending_link = {};
 	current_pending_command = nullptr;
+	current_widget = nullptr;
 
-	if (current_widget) {
-		current_widget = nullptr;
-	}
 	if (main_document_view) {
 		main_document_view->handle_escape();
 		opengl_widget->handle_escape();
@@ -326,20 +331,7 @@ void MainWidget::validate_render() {
 	if (main_document_view && main_document_view->get_document()) {
 		Link* link = main_document_view->find_closest_link();
 		if (link) {
-			if (helper_document_view->get_document() &&
-				helper_document_view->get_document()->get_path() == link->document_path) {
-
-				helper_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
-				helper_document_view->set_zoom_level(link->dest_zoom_level);
-			}
-			else {
-				//delete helper_document_view;
-				//helper_document_view = new DocumentView(mupdf_context, database, pdf_renderer, document_manager, config_manager, link->document_path,
-				//	helper_window_width, helper_window_height, link->dest_offset_x, link->dest_offset_y);
-				helper_document_view->open_document(link->document_path, &this->is_ui_invalidated);
-				helper_document_view->set_offsets(link->dest_offset_x, link->dest_offset_y);
-				helper_document_view->set_zoom_level(link->dest_zoom_level);
-			}
+			helper_document_view->goto_link(link);
 		}
 		else {
 			helper_document_view->set_null_document();
@@ -359,7 +351,7 @@ void MainWidget::validate_ui() {
 
 void MainWidget::move_document(float dx, float dy)
 {
-	if (main_document_view) {
+	if (main_document_view_has_document()) {
 		main_document_view->move(dx, dy);
 		int prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
 		int new_vertical_line_pos = prev_vertical_line_pos - dy;
@@ -369,14 +361,9 @@ void MainWidget::move_document(float dx, float dy)
 
 void MainWidget::move_document_screens(int num_screens)
 {
-	main_document_view->move_screens(1 * num_screens);
 	int view_height = opengl_widget->height();
 	float move_amount = num_screens * view_height * move_screen_percentage;
-	if (opengl_widget) {
-		int current_loc = opengl_widget->get_vertical_line_pos();
-		int new_loc = current_loc - move_amount;
-		opengl_widget->set_vertical_line_pos(new_loc);
-	}
+	move_document(0, move_amount);
 }
 
 void MainWidget::on_config_file_changed(ConfigManager* new_config)
@@ -428,11 +415,14 @@ void MainWidget::open_document(std::wstring path, std::optional<float> offset_x,
 	}
 
 	main_document_view->open_document(path, &this->is_ui_invalidated);
-	if (main_document_view->get_document() != nullptr) {
+	bool has_document = main_document_view_has_document();
+
+	if (has_document) {
 		setWindowTitle(QString::fromStdWString(path));
+		push_state();
 	}
 
-	if (path.size() > 0 && main_document_view->get_document() == nullptr) {
+	if ((path.size() > 0) && (!has_document)) {
 		show_error_message(L"Could not open file: " + path);
 	}
 	main_document_view->on_view_size_change(main_window_width, main_window_height);
@@ -556,65 +546,55 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 	}
 }
 
-void MainWidget::push_state() {
+void MainWidget::push_state()
+{
+
+	if (!main_document_view_has_document()) return; // we don't add empty documnet to history
+
 	DocumentViewState dvs = main_document_view->get_state();
 
-	// we do not need to add empty document to history
-	if (main_document_view->get_document() == nullptr) {
-		return;
-	}
-
-	// do not add the same place to history multiple times
+	// don't add the same place in history multiple times
 	if (history.size() > 0) {
-		DocumentViewState last_history = history[history.size() - 1];
-		if (last_history.document_path == main_document_view->get_document()->get_path() && last_history.book_state.offset_x == dvs.book_state.offset_x && last_history.book_state.offset_y == dvs.book_state.offset_y) {
-			return;
-		}
+		DocumentViewState last_history = history.back();
+		if (last_history == dvs) return;
 	}
 
-	if (current_history_index == history.size()) {
-		history.push_back(dvs);
-		current_history_index = history.size();
-	}
-	else {
-		history.erase(history.begin() + current_history_index, history.end());
-		history.push_back(dvs);
-		current_history_index = history.size();
-	}
+	// delete all history elements after the current history point
+	history.erase(history.begin() + (1 + current_history_index), history.end());
+	history.push_back(dvs);
+	current_history_index = history.size() - 1;
 }
 
-void MainWidget::next_state() {
-	if (current_history_index + 1 < history.size()) {
+void MainWidget::next_state()
+{
+	update_current_history_index();
+	if (current_history_index < history.size()-1) {
 		current_history_index++;
 		set_main_document_view_state(history[current_history_index]);
+
 	}
 }
 
-void MainWidget::prev_state() {
-
-	/*
-	Goto previous history
-	In order to edit a link, we set the link to edit and jump to the link location, when going back, we
-	update the link with the current location of document, therefore, we must check to see if a link
-	is being edited and if so, we should update its destination position
-	*/
-
+void MainWidget::prev_state()
+{
+	update_current_history_index();
 	if (current_history_index > 0) {
-		if (current_history_index == history.size()) {
-			push_state();
-			current_history_index = history.size() - 1;
-		}
 		current_history_index--;
 
+		/*
+		Goto previous history
+		In order to edit a link, we set the link to edit and jump to the link location, when going back, we
+		update the link with the current location of document, therefore, we must check to see if a link
+		is being edited and if so, we should update its destination position
+		*/
 		if (link_to_edit) {
+
 			float link_new_offset_x = main_document_view->get_offset_x();
 			float link_new_offset_y = main_document_view->get_offset_y();
 			float link_new_zoom_level = main_document_view->get_zoom_level();
 			link_to_edit->dest_offset_x = link_new_offset_x;
 			link_to_edit->dest_offset_y = link_new_offset_y;
 			link_to_edit->dest_zoom_level = link_new_zoom_level;
-			//update_link(db, history[current_history_index].document_view->get_document()->get_path(),
-			//	link_new_offset_x, link_new_offset_y, link_to_edit->src_offset_y);
 
 			update_link(db, history[current_history_index].document_path,
 				link_new_offset_x, link_new_offset_y, link_new_zoom_level, link_to_edit->src_offset_y);
@@ -625,11 +605,22 @@ void MainWidget::prev_state() {
 	}
 }
 
+void MainWidget::update_current_history_index()
+{
+	if (main_document_view_has_document()) {
+		DocumentViewState current_state = main_document_view->get_state();
+		history[current_history_index] = current_state;
+
+	}
+}
+
 void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) {
 	//main_document_view = new_view_state.document_view;
 	//opengl_widget->set_document_view(main_document_view);
 	if (main_document_view->get_document()->get_path() != new_view_state.document_path) {
 		main_document_view->open_document(new_view_state.document_path, &this->is_ui_invalidated);
+		setWindowTitle(QString::fromStdWString(new_view_state.document_path));
+		
 	}
 
 	main_document_view->on_view_size_change(main_window_width, main_window_height);
@@ -660,8 +651,8 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 		offset_x = main_document_view->get_offset_x();
 
 		if (!is_pending_link_source_filled()) {
-			push_state();
 			main_document_view->goto_offset_within_page(page, offset_x, offset_y);
+			push_state();
 		}
 		else {
 			// if we press the link button and then click on a pdf link, we automatically link to the
@@ -712,8 +703,8 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 			int fig_page;
 			float fig_offset;
 			if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
-				push_state();
 				main_document_view->goto_page(fig_page);
+				push_state();
 				invalidate_render();
 			}
 		}
@@ -806,9 +797,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 		return;
 	}
-	if (command->pushes_state) {
-		push_state();
-	}
 	if (command->name == "goto_begining") {
 		if (num_repeats) {
 			main_document_view->goto_page(num_repeats);
@@ -857,7 +845,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		if (link) {
 
 			//todo: add a feature where we can tap tab button to switch between main view and helper view
-			push_state();
 			open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
 			main_document_view->set_zoom_level(link->dest_zoom_level);
 		}
@@ -865,7 +852,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "edit_link") {
 		Link* link = main_document_view->find_closest_link();
 		if (link) {
-			push_state();
 			link_to_edit = link;
 			open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
 			main_document_view->set_zoom_level(link->dest_zoom_level);
@@ -927,9 +913,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 				current_widget = std::make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
 					int* page_value = (int*)page_pointer;
 					if (page_value) {
-						push_state();
 						validate_render();
 						main_document_view->goto_page(*page_value);
+						push_state();
 					}
 					}, config_manager, this);
 				current_widget->show();
@@ -941,9 +927,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 						TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
 							indices);
 						if (toc_node) {
-							push_state();
 							validate_render();
 							main_document_view->goto_page(toc_node->page);
+							push_state();
 						}
 					}, config_manager, this);
 				current_widget->show();
@@ -964,7 +950,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			current_widget = std::make_unique<FilteredSelectWindowClass<std::wstring>>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
 				std::wstring doc_path = *(std::wstring*)string_pointer;
 				if (doc_path.size() > 0) {
-					push_state();
 					validate_render();
 					open_document(doc_path);
 				}
@@ -983,9 +968,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 			float* offset_value = (float*)float_pointer;
 			if (offset_value) {
-				push_state();
 				validate_render();
 				main_document_view->set_offset_y(*offset_value);
+				push_state();
 			}
 			}, config_manager, this);
 		current_widget->show();
@@ -1005,7 +990,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(descs, book_states, [&](void* book_p) {
 			BookState* offset_value = (BookState*)book_p;
 			if (offset_value) {
-				push_state();
 				validate_render();
 				open_document(offset_value->document_path, 0.0f, offset_value->offset_y);
 			}
@@ -1036,20 +1020,27 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		ShellExecuteW(0, 0, (*config_manager->get_config<std::wstring>(L"libgen_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
 	}
 	else if (command->name == "debug") {
-		//cout << "debug" << endl;
-		//int page;
-		//float y_offset;
-		//if (main_document_view->get_document()->find_figure_with_string(L"2.2", &page, &y_offset)) {
-		//	main_document_view->goto_page(page);
-		//}
-		main_document_view->get_document()->reload();
-		pdf_renderer->clear_cache();
+		wprintf(L"_________________________________\n");
+		for (auto& x : history) {
+			//std::wcout << x.document_path << "\n";
+			wprintf(x.document_path.c_str());
+			wprintf(L"\n");
+		}
+		wprintf(L"_________________________________\n");
+		int b = 2;
 
 	}
+
+	if (command->pushes_state) {
+		push_state();
+	}
+
 	validate_render();
 }
 
 void MainWidget::handle_link() {
+	if (!main_document_view_has_document()) return;
+
 	if (is_pending_link_source_filled()) {
 		auto [source_path, pl] = pending_link.value();
 		pl.dest_offset_x = main_document_view->get_offset_x();

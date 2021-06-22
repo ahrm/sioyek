@@ -48,13 +48,11 @@ struct PdfLink {
 };
 
 struct DocumentViewState {
-	//DocumentView* document_view;
 	std::wstring document_path;
 	OpenedBookState book_state;
-	//float offset_x;
-	//float offset_y;
-	//float zoom_level;
 };
+
+bool operator==(DocumentViewState& lhs, const DocumentViewState& rhs);
 
 struct SearchResult {
 	fz_rect rect;

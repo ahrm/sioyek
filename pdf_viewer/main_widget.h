@@ -48,7 +48,7 @@ private:
 	std::unique_ptr<QWidget> current_widget;
 
 	std::vector<DocumentViewState> history;
-	int current_history_index;
+	int current_history_index = -1;
 
 	// last position when mouse was clicked in absolute document space
 	float last_mouse_down_x;
@@ -76,6 +76,8 @@ private:
 
 	QTime last_text_select_time = QTime::currentTime();
 
+	bool main_document_view_has_document();
+
 protected:
 
 	//void paintEvent(QPaintEvent* paint_event) override;
@@ -95,9 +97,12 @@ protected:
 	void key_event(bool released, QKeyEvent* kevent);
 	void handle_left_click(float x, float y, bool down);
 	void handle_right_click(float x, float y, bool down);
+
 	void push_state();
 	void next_state();
 	void prev_state();
+	void update_current_history_index();
+
 	void set_main_document_view_state(DocumentViewState new_view_state);
 	void handle_click(int pos_x, int pos_y);
 	void mouseReleaseEvent(QMouseEvent* mevent) override;

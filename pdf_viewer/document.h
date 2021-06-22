@@ -8,6 +8,8 @@
 #include <qstandarditemmodel.h>
 #include <qdatetime.h>
 
+#include <qobject.h>
+
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
 
@@ -16,6 +18,7 @@
 #include "book.h"
 
 class Document {
+
 private:
 	std::vector<Mark> marks;
 	std::vector<BookMark> bookmarks;

@@ -8,6 +8,7 @@
 //todo: autocomplete in command window
 //todo: add djvu, epub and other formats
 //todo: simplify word selection logic (also avoid inefficient extra insertions followed by clears in selected_characters)
+//todo: history is buggy and ugly
 
 #include <iostream>
 #include <vector>
@@ -200,7 +201,7 @@ int main(int argc, char* args[]) {
 
 	QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
 	if (QFontDatabase::addApplicationFont(font_path) < 0) {
-		std::cout << "could not add font!" << endl;
+		std::wcout << "could not add font!" << endl;
 	}
 
 	QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));

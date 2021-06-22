@@ -67,7 +67,7 @@ void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_l
 		pending_requests_mutex.unlock();
 	}
 	else {
-		std::cout << "Error: could not find documnet" << std::endl;
+		std::wcout << "Error: could not find documnet" << std::endl;
 	}
 }
 void PdfRenderer::add_request(std::wstring document_path,
@@ -97,7 +97,7 @@ void PdfRenderer::add_request(std::wstring document_path,
 		search_request_mutex.unlock();
 	}
 	else {
-		std::cout << "Error: could not find document" << std::endl;
+		std::wcout << "Error: could not find document" << std::endl;
 	}
 }
 
@@ -142,7 +142,7 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
 					glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
 					glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cached_resp.pixmap->w, cached_resp.pixmap->h, 0, GL_RGB, GL_UNSIGNED_BYTE, cached_resp.pixmap->samples);
-					std::cout << "texture: " << result << std::endl;
+					std::wcout << "texture: " << result << std::endl;
 					cached_resp.texture = result;
 				}
 				break;
@@ -214,7 +214,7 @@ void PdfRenderer::delete_old_pages(bool force_all) {
 		for (int i = 0; i < cached_responses.size(); i++) {
 			if ((cached_responses[i].last_access_time < time_threshold)
 				&& ((now - cached_responses[i].last_access_time) > cache_invalid_milies)) {
-				std::cout << "deleting cached texture ... " << std::endl;
+				std::wcout << "deleting cached texture ... " << std::endl;
 				indices_to_delete.push_back(i);
 			}
 		}
@@ -345,7 +345,7 @@ fz_document* PdfRenderer::get_document_with_path(int thread_index, fz_context* m
 		opened_documents[make_pair(thread_index, path)] = ret_val;
 	}
 	fz_catch(mupdf_context) {
-		std::cout << "Error: could not open document" << std::endl;
+		std::wcout << "Error: could not open document" << std::endl;
 	}
 
 	return ret_val;
@@ -359,7 +359,7 @@ void PdfRenderer::delete_old_pixmaps(int thread_index, fz_context* mupdf_context
 			fz_drop_pixmap(mupdf_context, pixmaps_to_drop[thread_index][i]);
 		}
 		fz_catch(mupdf_context) {
-			std::cout << "Error: could not drop pixmap" << std::endl;
+			std::wcout << "Error: could not drop pixmap" << std::endl;
 		}
 	}
 	pixmaps_to_drop[thread_index].clear();
