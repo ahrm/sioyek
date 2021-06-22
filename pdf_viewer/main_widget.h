@@ -72,13 +72,11 @@ private:
 	bool is_render_invalidated = false;
 	bool is_ui_invalidated = false;
 
-	bool should_delete_old_pages = false;
-
 	QTime last_text_select_time = QTime::currentTime();
 
 protected:
 
-	void paintEvent(QPaintEvent* paint_event) override;
+	//void paintEvent(QPaintEvent* paint_event) override;
 	void resizeEvent(QResizeEvent* resize_event) override;
 	void mouseMoveEvent(QMouseEvent* mouse_event) override;
 	void closeEvent(QCloseEvent* close_event) override;

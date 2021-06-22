@@ -48,18 +48,6 @@ extern bool flat_table_of_contents;
 extern float move_screen_percentage;
 extern std::filesystem::path parent_path;
 
-void MainWidget::paintEvent(QPaintEvent* paint_event) {
-	QWidget::paintEvent(paint_event);
-
-	// we only try to delete old pages after a render event has occured to ensure we
-	// don't delete any immediately-useful pages
-	// this is still problematic though, for example the main widget can be repainted without any of
-	// Pdf view widgets being repainted, which will delete useful pages
-	// a better solution might be to add an argument to delete old pages which is a vector of currently visible
-	// pages, then ensure that we don't delete these pages in delete old pages
-	should_delete_old_pages = true;
-}
-
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 	QWidget::resizeEvent(resize_event);
 
