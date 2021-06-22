@@ -626,11 +626,11 @@ float DocumentView::view_height_in_document_space()
 
 void DocumentView::get_text_selection(fz_point selection_begin,
 	fz_point selection_end,
-	bool is_word_selection,
+	bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
 	std::vector<fz_rect>& selected_characters,
 	std::wstring& selected_text) {
-	// selected_characters are in absolute document space
 
+	// selected_characters are in absolute document space
 	if (!current_document) return;
 	int page_begin, page_end;
 	fz_rect page_rect;

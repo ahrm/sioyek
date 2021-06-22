@@ -53,9 +53,11 @@ private:
 	// last position when mouse was clicked in absolute document space
 	float last_mouse_down_x;
 	float last_mouse_down_y;
-	bool is_selecting;
+
+	// is the user currently selecing text? (happens when we left click and move the cursor)
+	bool is_selecting; 
+	// is the user in word select mode? (happens when we double left click and move the cursor)
 	bool is_word_selecting;
-	bool continuous_render_mode = false;
 	std::wstring selected_text;
 
 	Link* link_to_edit;
@@ -125,8 +127,6 @@ public:
 
 	~MainWidget();
 
-	void set_render_mode(bool continuous_render_mode);
-	void toggle_render_mode();
 	void open_document(std::wstring path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {});
 	void validate_render();
 	void validate_ui();

@@ -54,8 +54,6 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 	main_window_width = size().width();
 	main_window_height = size().height();
 
-	//text_command_line_edit->move(0, 0);
-	//text_command_line_edit->resize(main_window_width, 30);
 	text_command_line_edit_container->move(0, 0);
 	text_command_line_edit_container->resize(main_window_width, 30);
 
@@ -70,29 +68,24 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 	int y = mouse_event->pos().y();
 
 	if (main_document_view && main_document_view->get_link_in_pos(x, y)) {
+		// show hand cursor when hovering over links
 		setCursor(Qt::PointingHandCursor);
 	}
 	else {
 		setCursor(Qt::ArrowCursor);
 	}
 
-	//if (opengl_widget->get_should_draw_vertical_line()) {
-	//	opengl_widget->set_vertical_line_pos(y);
-	//	validate_render();
-	//}
 	if (is_selecting) {
 
 		// When selecting, we occasionally update selected text
 		//todo: maybe have a timer event that handles this periodically
 		if (last_text_select_time.msecsTo(QTime::currentTime()) > 100) {
-			int x = mouse_event->pos().x();
-			int y = mouse_event->pos().y();
 
-			float x_, y_;
-			main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
+			float document_x, document_y;
+			main_document_view->window_to_absolute_document_pos(x, y, &document_x, &document_y);
 
 			fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
-			fz_point selection_end = { x_, y_ };
+			fz_point selection_end = { document_x, document_y };
 
 			main_document_view->get_text_selection(selection_begin,
 				selection_end,
@@ -202,7 +195,7 @@ input_handler(input_handler)
 	unsigned int INTERVAL_TIME = 200;
 	timer->setInterval(INTERVAL_TIME);
 	connect(timer, &QTimer::timeout, [&, INTERVAL_TIME]() {
-		if (continuous_render_mode || is_render_invalidated) {
+		if (is_render_invalidated) {
 			validate_render();
 		}
 		else if (is_ui_invalidated) {
@@ -422,15 +415,6 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 	}
 }
 
-void MainWidget::set_render_mode(bool continuous_render_mode_)
-{
-	continuous_render_mode = continuous_render_mode_;
-}
-
-void MainWidget::toggle_render_mode()
-{
-	set_render_mode(!continuous_render_mode);
-}
 
 void MainWidget::open_document(std::wstring path, std::optional<float> offset_x, std::optional<float> offset_y) {
 
