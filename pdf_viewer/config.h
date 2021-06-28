@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 
 void int_serializer(void* int_pointer, std::wstringstream& stream);
@@ -18,9 +19,9 @@ void* float_deserializer(std::wstringstream& stream);
 struct Config {
 
 	std::wstring name;
-	void* value;
-	void (*serialize) (void*, std::wstringstream&);
-	void* (*deserialize) (std::wstringstream&, void* res);
+	void* value = nullptr;
+	void (*serialize) (void*, std::wstringstream&) = nullptr;
+	void* (*deserialize) (std::wstringstream&, void* res) = nullptr;
 
 	void* get_value();
 
@@ -37,7 +38,7 @@ class ConfigManager {
 
 public:
 
-	ConfigManager(std::wstring path);
+	ConfigManager(std::filesystem::path path);
 	void serialize(std::wofstream& file);
 	void deserialize(std::wifstream& file);
 	template<typename T>

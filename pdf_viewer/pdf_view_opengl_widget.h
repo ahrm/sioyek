@@ -64,19 +64,19 @@ private:
 
 	bool is_opengl_initialized = false;
 	GLuint vertex_array_object;
-	DocumentView* document_view;
-	PdfRenderer* pdf_renderer;
-	ConfigManager* config_manager;
+	DocumentView* document_view = nullptr;
+	PdfRenderer* pdf_renderer = nullptr;
+	ConfigManager* config_manager = nullptr;
 	std::vector<SearchResult> search_results;
 	int current_search_result_index = 0;
 	std::mutex search_results_mutex;
 	bool is_search_cancelled = true;
 	bool is_searching;
-	bool should_highlight_links;
-	float percent_done;
+	bool should_highlight_links = false;
+	float percent_done = 0.0f;
 
 	int vertical_line_location;
-	bool should_draw_vertical_line;
+	bool should_draw_vertical_line = false;
 	QDateTime creation_time;
 
 	GLuint LoadShaders(std::filesystem::path vertex_file_path_, std::filesystem::path fragment_file_path_);

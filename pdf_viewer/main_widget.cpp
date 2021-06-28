@@ -484,8 +484,8 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 				return;
 			}
 			if (command->requires_file_name) {
-				wchar_t file_name[MAX_PATH];
-				if (select_document_file_name(file_name, MAX_PATH)) {
+				std::wstring file_name = select_document_file_name();
+				if (file_name.size() > 0) {
 					handle_command_with_file_name(command, file_name);
 				}
 				else {
@@ -546,23 +546,36 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 	}
 }
 
+void MainWidget::update_history_state()
+{
+	if (!main_document_view_has_document()) return; // we don't add empty document to history
+	if (history.size() == 0) return; // this probably should not happen
+
+	DocumentViewState dvs = main_document_view->get_state();
+	history[current_history_index] = dvs;
+}
+
 void MainWidget::push_state()
 {
 
-	if (!main_document_view_has_document()) return; // we don't add empty documnet to history
+	if (!main_document_view_has_document()) return; // we don't add empty document to history
 
 	DocumentViewState dvs = main_document_view->get_state();
 
-	// don't add the same place in history multiple times
-	if (history.size() > 0) {
-		DocumentViewState last_history = history.back();
-		if (last_history == dvs) return;
-	}
+	//if (history.size() > 0) { // this check should always be true
+	//	history[history.size() - 1] = dvs;
+	//}
+	//// don't add the same place in history multiple times
+	//// todo: we probably don't need this check anymore
+	//if (history.size() > 0) {
+	//	DocumentViewState last_history = history.back();
+	//	if (last_history == dvs) return;
+	//}
 
 	// delete all history elements after the current history point
 	history.erase(history.begin() + (1 + current_history_index), history.end());
 	history.push_back(dvs);
-	current_history_index = history.size() - 1;
+	current_history_index = static_cast<int>(history.size() - 1);
 }
 
 void MainWidget::next_state()
@@ -615,17 +628,13 @@ void MainWidget::update_current_history_index()
 }
 
 void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) {
-	//main_document_view = new_view_state.document_view;
-	//opengl_widget->set_document_view(main_document_view);
+
 	if (main_document_view->get_document()->get_path() != new_view_state.document_path) {
 		main_document_view->open_document(new_view_state.document_path, &this->is_ui_invalidated);
 		setWindowTitle(QString::fromStdWString(new_view_state.document_path));
-		
 	}
 
 	main_document_view->on_view_size_change(main_window_width, main_window_height);
-	//main_document_view->set_offsets(new_view_state.offset_x, new_view_state.offset_y);
-	//main_document_view->set_zoom_level(new_view_state.zoom_level);
 	main_document_view->set_book_state(new_view_state.book_state);
 }
 
@@ -640,7 +649,7 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 
 
 		if (link.uri.substr(0, 4).compare("http") == 0) {
-			ShellExecuteA(0, 0, link.uri.c_str(), 0, 0, SW_SHOW);
+			open_url(link.uri.c_str());
 			return;
 		}
 
@@ -651,6 +660,7 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 		offset_x = main_document_view->get_offset_x();
 
 		if (!is_pending_link_source_filled()) {
+			update_history_state();
 			main_document_view->goto_offset_within_page(page, offset_x, offset_y);
 			push_state();
 		}
@@ -708,9 +718,6 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 				invalidate_render();
 			}
 		}
-		//if (text_on_pointer) {
-		//	wcout << text_on_pointer.value() << endl;
-		//}
 	}
 //#endif
 
@@ -733,11 +740,11 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 	}
 
 	if (mevent->button() == Qt::MouseButton::XButton1) {
-		handle_command(command_manager.get_command_with_name("next_state"), 0);
+		handle_command(command_manager.get_command_with_name("prev_state"), 0);
 	}
 
 	if (mevent->button() == Qt::MouseButton::XButton2) {
-		handle_command(command_manager.get_command_with_name("prev_state"), 0);
+		handle_command(command_manager.get_command_with_name("next_state"), 0);
 	}
 }
 
@@ -762,9 +769,7 @@ void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill
 		text_command_line_edit->setText(QString::fromStdWString(selected_text));
 	}
 	text_command_line_edit_label->setText(QString::fromStdWString(command_name));
-	//text_command_line_edit->show();
 	text_command_line_edit_container->show();
-	//text_command_line_edit_container->setFixedSize(main_window_width, 30);
 	text_command_line_edit->setFocus();
 }
 
@@ -844,7 +849,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		Link* link = main_document_view->find_closest_link();
 		if (link) {
 
-			//todo: add a feature where we can tap tab button to switch between main view and helper view
 			open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
 			main_document_view->set_zoom_level(link->dest_zoom_level);
 		}
@@ -905,11 +909,11 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 
 	else if (command->name == "goto_toc") {
-		std::vector<std::wstring> flat_toc;
-		std::vector<int> current_document_toc_pages;
-		get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
-		if (current_document_toc_pages.size() > 0) {
+		if (main_document_view->get_document()->has_toc()) {
 			if (flat_table_of_contents) {
+				std::vector<std::wstring> flat_toc;
+				std::vector<int> current_document_toc_pages;
+				get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
 				current_widget = std::make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
 					int* page_value = (int*)page_pointer;
 					if (page_value) {
@@ -1011,13 +1015,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	//todo: check if still works after wstring
 	else if (command->name == "search_selected_text_in_google_scholar") {
-		ShellExecuteW(0, 0, (*config_manager->get_config<std::wstring>(L"google_scholar_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
+		open_url((*config_manager->get_config<std::wstring>(L"google_scholar_address") + (selected_text)).c_str());
 	}
 	else if (command->name == "open_selected_url") {
-		ShellExecuteW(0, 0, (selected_text).c_str(), 0, 0, SW_SHOW);
+		open_url((selected_text).c_str());
 	}
 	else if (command->name == "search_selected_text_in_libgen") {
-		ShellExecuteW(0, 0, (*config_manager->get_config<std::wstring>(L"libgen_address") + (selected_text)).c_str(), 0, 0, SW_SHOW);
+		open_url((*config_manager->get_config<std::wstring>(L"libgen_address") + (selected_text)).c_str());
 	}
 	else if (command->name == "debug") {
 		wprintf(L"_________________________________\n");
@@ -1101,10 +1105,6 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 
 		opengl_widget->search_text(search_term, search_range);
 	}
-	//if (current_pending_command->name == "chapter_search" ) {
-	//	//main_document_view->get_current_chapter_name
-	//	opengl_widget->search_text(text);
-	//}
 
 	if (current_pending_command->name == "add_bookmark") {
 		main_document_view->add_bookmark(text);
@@ -1112,11 +1112,9 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 	if (current_pending_command->name == "command") {
 		if (text == L"q") {
 			close();
-			//QApplication::quit();
 		}
 		else if (text == L"ocr") {
-			DocumentViewState current_state = main_document_view->get_state();
-			OpenedBookState state = current_state.book_state;
+			OpenedBookState state = main_document_view->get_state().book_state;
 
 			std::wstring docpathname = main_document_view->get_document()->get_path();
 			std::filesystem::path docpath(docpathname);
@@ -1125,29 +1123,17 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			std::wstring new_path = docpath.replace_filename(new_file_name).wstring();
 
 			std::wstring command_params = (L"\"" + docpathname + L"\" \"" + new_path + L"\" --force-ocr");
-
-			SHELLEXECUTEINFO ShExecInfo = { 0 };
-			ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-			ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-			ShExecInfo.hwnd = NULL;
-			ShExecInfo.lpVerb = NULL;
-			ShExecInfo.lpFile = L"ocrmypdf.exe";
-			ShExecInfo.lpParameters = command_params.c_str();
-			ShExecInfo.lpDirectory = NULL;
-			ShExecInfo.nShow = SW_SHOW;
-			ShExecInfo.hInstApp = NULL;
-
-			ShellExecuteExW(&ShExecInfo);
-			WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
-			CloseHandle(ShExecInfo.hProcess);
+			run_command(L"ocrmypdf.exe", command_params);
 
 			main_document_view->open_document(new_path, &this->is_ui_invalidated, false, state);
 		}
 		else if (text == L"keys") {
-			ShellExecuteW(0, 0, (parent_path / "keys.config").wstring().c_str(), 0, 0, SW_SHOW);
+			std::wstring file_path_string = (parent_path / "keys.config").wstring();
+			open_file(file_path_string);
 		}
 		else if (text == L"prefs") {
-			ShellExecuteW(0, 0, (parent_path / "prefs.config").wstring().c_str(), 0, 0, SW_SHOW);
+			std::wstring file_path_string = (parent_path / "prefs.config").wstring();
+			open_file(file_path_string);
 		}
 	}
 }

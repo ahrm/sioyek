@@ -6,6 +6,7 @@
 #include <utility>
 #include <algorithm>
 #include <filesystem>
+#include <thread>
 
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -30,15 +31,13 @@ class DocumentView {
 protected:
 
 private:
-	fz_context* mupdf_context;
-	sqlite3* database;
-	ConfigManager* config_manager;
-	DocumentManager* document_manager;
-	Document* current_document;
+	fz_context* mupdf_context = nullptr;
+	sqlite3* database = nullptr;
+	ConfigManager* config_manager = nullptr;
+	DocumentManager* document_manager = nullptr;
+	Document* current_document = nullptr;
 
 	float zoom_level;
-	//float offset_x;
-	//float offset_y;
 	float offset_x;
 	float offset_y;
 

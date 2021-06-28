@@ -3,8 +3,9 @@
 #include <string>
 #include <optional>
 #include <iostream>
+#include <thread>
 
-#include <Windows.h>
+//#include <Windows.h>
 #include <qstandarditemmodel.h>
 #include <qdatetime.h>
 
@@ -23,14 +24,14 @@ private:
 	std::vector<Mark> marks;
 	std::vector<BookMark> bookmarks;
 	std::vector<Link> links;
-	sqlite3* db;
+	sqlite3* db = nullptr;
 	std::vector<TocNode*> top_level_toc_nodes;
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
 
 	std::optional<int> cached_num_pages;
 
-	fz_context* context;
+	fz_context* context = nullptr;
 	std::wstring file_name;
 	std::unordered_map<int, fz_link*> cached_page_links;
 	QStandardItemModel* cached_toc_model = nullptr;
@@ -56,7 +57,7 @@ private:
 
 	Document(fz_context* context, std::wstring file_name, sqlite3* db);
 public:
-	fz_document* doc;
+	fz_document* doc = nullptr;
 
 	void add_bookmark(std::wstring desc, float y_offset);
 	void count_chapter_pages(std::vector<int> &page_counts);
@@ -66,8 +67,8 @@ public:
 	void add_link(Link link, bool insert_into_database = true);
 	std::wstring get_path();
 	BookMark* find_closest_bookmark(float to_offset_y, int* index = nullptr);
-	void delete_closest_bookmark(float to_y_offset);
 	Link* find_closest_link(float to_offset_y, int* index = nullptr);
+	void delete_closest_bookmark(float to_y_offset);
 	void delete_closest_link(float to_offset_y);
 	const std::vector<BookMark>& get_bookmarks() const;
 	fz_link* get_page_links(int page_number);
@@ -75,6 +76,7 @@ public:
 	bool get_mark_location_if_exists(char symbol, float* y_offset);
 	~Document();
 	const std::vector<TocNode*>& get_toc();
+	bool has_toc();
 	const std::vector<std::wstring>& get_flat_toc_names();
 	const std::vector<int>& get_flat_toc_pages();
 	bool open(bool* invalid_flag);
@@ -105,8 +107,8 @@ public:
 
 class DocumentManager {
 private:
-	fz_context* mupdf_context;
-	sqlite3* database;
+	fz_context* mupdf_context = nullptr;
+	sqlite3* database = nullptr;
 	std::unordered_map<std::wstring, Document*> cached_documents;
 public:
 

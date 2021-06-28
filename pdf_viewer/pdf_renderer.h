@@ -10,8 +10,9 @@
 #include <optional>
 #include <iostream>
 #include <functional>
+#include <thread>
 //#include <gl/glew.h>
-#include <Windows.h>
+//#include <Windows.h>
 
 #include <qobject.h>
 #include <qtimer.h>
@@ -33,8 +34,8 @@ struct SearchRequest {
 	std::wstring search_term;
 	std::vector<SearchResult>* search_results;
 	std::mutex* search_results_mutex;
-	float* percent_done;
-	bool* is_searching;
+	float* percent_done = nullptr;
+	bool* is_searching = nullptr;
 	std::optional<std::pair<int, int>> range;
 };
 
@@ -42,7 +43,7 @@ struct RenderResponse {
 	RenderRequest request;
 	unsigned int last_access_time;
 	int thread;
-	fz_pixmap* pixmap;
+	fz_pixmap* pixmap = nullptr;
 	GLuint texture;
 };
 
@@ -74,7 +75,7 @@ class PdfRenderer : public QObject{
 
 	QTimer garbage_collect_timer;
 
-	bool* should_quit_pointer;
+	bool* should_quit_pointer = nullptr;
 
 	int num_threads;
 

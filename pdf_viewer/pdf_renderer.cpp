@@ -324,7 +324,7 @@ void PdfRenderer::run_search(int thread_index)
 			req.search_results_mutex->unlock();
 		}
 		else{
-			Sleep(100);
+			sleep_ms(100);
 		}
 	}
 }
@@ -380,7 +380,7 @@ void PdfRenderer::run(int thread_index) {
 			delete_old_pixmaps(thread_index, mupdf_context);
 			if (*should_quit_pointer) break;
 
-			Sleep(100);
+			sleep_ms(100);
 			pending_requests_mutex.lock();
 		}
 		if (*should_quit_pointer) break;

@@ -73,14 +73,14 @@ struct TocNode {
 class Document;
 
 struct CachedPageData {
-	Document* doc;
+	Document* doc = nullptr;
 	int page;
 	float zoom_level;
 };
 
 struct CachedPage {
 	CachedPageData cached_page_data;
-	fz_pixmap* cached_page_pixmap;
+	fz_pixmap* cached_page_pixmap = nullptr;
 	unsigned int last_access_time;
 	GLuint cached_page_texture;
 };
@@ -89,7 +89,7 @@ bool operator==(const CachedPageData& lhs, const CachedPageData& rhs);
 
 struct PdfPortal {
 	fz_rect absolute_document_rect;
-	Document* doc;
+	Document* doc = nullptr;
 };
 
 struct FigureData {

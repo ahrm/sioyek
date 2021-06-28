@@ -28,21 +28,21 @@ extern std::filesystem::path last_path_file_absolute_location;
 class MainWidget : public QWidget, ConfigFileChangeListener{
 
 private:
-	fz_context* mupdf_context;
-	sqlite3* db;
-	DocumentManager* document_manager;
+	fz_context* mupdf_context = nullptr;
+	sqlite3* db = nullptr;
+	DocumentManager* document_manager = nullptr;
 	CommandManager command_manager;
-	ConfigManager* config_manager;
-	PdfRenderer* pdf_renderer;
-	InputHandler* input_handler;
+	ConfigManager* config_manager = nullptr;
+	PdfRenderer* pdf_renderer = nullptr;
+	InputHandler* input_handler = nullptr;
 
-	PdfViewOpenGLWidget* opengl_widget;
-	PdfViewOpenGLWidget* helper_opengl_widget;
+	PdfViewOpenGLWidget* opengl_widget = nullptr;
+	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
 
 	const Command* current_pending_command = nullptr;
 
-	DocumentView* main_document_view;
-	DocumentView* helper_document_view;
+	DocumentView* main_document_view = nullptr;
+	DocumentView* helper_document_view = nullptr;
 
 	// current widget responsible for selecting an option (for example toc or bookmarks)
 	std::unique_ptr<QWidget> current_widget;
@@ -60,16 +60,16 @@ private:
 	bool is_word_selecting;
 	std::wstring selected_text;
 
-	Link* link_to_edit;
+	Link* link_to_edit = nullptr;
 
 	std::optional<std::pair<std::optional<std::wstring>, Link>> pending_link;
 
 	int main_window_width, main_window_height;
 
-	QWidget* text_command_line_edit_container;
-	QLabel* text_command_line_edit_label;
-	QLineEdit* text_command_line_edit;
-	QLabel* status_label;
+	QWidget* text_command_line_edit_container = nullptr;
+	QLabel* text_command_line_edit_label = nullptr;
+	QLineEdit* text_command_line_edit = nullptr;
+	QLabel* status_label = nullptr;
 
 	bool is_render_invalidated = false;
 	bool is_ui_invalidated = false;
@@ -98,6 +98,7 @@ protected:
 	void handle_left_click(float x, float y, bool down);
 	void handle_right_click(float x, float y, bool down);
 
+	void update_history_state();
 	void push_state();
 	void next_state();
 	void prev_state();

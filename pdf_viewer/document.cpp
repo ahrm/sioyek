@@ -144,6 +144,11 @@ const std::vector<TocNode*>& Document::get_toc() {
 	return top_level_toc_nodes;
 }
 
+bool Document::has_toc()
+{
+	return top_level_toc_nodes.size() > 0;
+}
+
 const std::vector<std::wstring>& Document::get_flat_toc_names()
 {
 	return flat_toc_names;
@@ -476,7 +481,7 @@ void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* d
 	int i = (std::lower_bound(
 		accum_page_heights.begin(),
 		accum_page_heights.end(), absolute_y) -  accum_page_heights.begin()) - 1;
-	i = max(0, i);
+	i = std::max(0, i);
 
 	float remaining_y = absolute_y - accum_page_heights[i];
 	float page_width = page_widths[i];
@@ -608,7 +613,7 @@ bool Document::find_figure_with_string(std::wstring figure_name, int reference_p
 		figure_name = figure_name.substr(0, figure_name.size() - 1);
 	}
 
-	int min_index = 100000;
+	size_t min_index = 100000;
 	float min_y = 0;
 	int min_page = -1;
 	float min_score = 1000000;

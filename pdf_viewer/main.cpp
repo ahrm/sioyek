@@ -9,6 +9,12 @@
 //todo: add djvu, epub and other formats
 //todo: simplify word selection logic (also avoid inefficient extra insertions followed by clears in selected_characters)
 //todo: history is buggy and ugly
+//todo: make it so that find_closest_bookmark and find_closest_link return the index instead of pointer
+// we are only using the index anyway and returning a pointer has potential for misuse.
+//todo: back after clicking on the first link in a documnet is not working properly
+//todo: make it so that all commands that change document state (for example goto_offset_withing_page, goto_link, etc.) do not change the document
+// state, instead they return a DocumentViewState object that is then applied using push_state and chnage_state functions
+// (chnage state should be a function that just applies the state without pushing it to history)
 
 #include <iostream>
 #include <vector>
@@ -49,7 +55,7 @@
 #include <qstandarditemmodel.h>
 #include <qscrollarea.h>
 
-#include <Windows.h>
+//#include <Windows.h>
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
 #include <filesystem>
@@ -71,6 +77,10 @@
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
+
+#ifndef MAX_PATH
+#define MAX_PATH PATH_MAX
+#endif
 
 
 extern float background_color[3] = { 1.0f, 1.0f, 1.0f };
@@ -105,22 +115,20 @@ void unlock_mutex(void* user, int lock) {
 }
 
 
+
+#include <qdesktopservices.h>
+#include <qprocess.h>
+
 int main(int argc, char* args[]) {
 
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
-	char exe_file_name[MAX_PATH];
-	GetModuleFileNameA(NULL, exe_file_name, sizeof(exe_file_name));
-	std::filesystem::path exe_path = exe_file_name;
-
-	// parent path is the directory in which config files and required shaders are located
-	// in debug mode this is the same directory as the source file but in release mode it is
-	// the directory in which the executable is located
-	parent_path = exe_path.parent_path();
+	parent_path = QCoreApplication::applicationDirPath().toStdWString();
+	std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
 
 #ifdef NDEBUG
-	install_app(exe_file_name);
+	install_app(exe_path.c_str());
 #else
 	std::filesystem::path source_file_path = __FILE__;
 	parent_path = source_file_path.parent_path();
@@ -129,7 +137,7 @@ int main(int argc, char* args[]) {
 	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
 
 	std::filesystem::path config_path = parent_path / "prefs.config";
-	ConfigManager config_manager(config_path.wstring());
+	ConfigManager config_manager(config_path);
 
 	sqlite3* db;
 	char* error_message = nullptr;
@@ -168,7 +176,7 @@ int main(int argc, char* args[]) {
 
 	bool quit = false;
 
-	std::wstring keymap_path = (parent_path / "keys.config").wstring();
+	std::filesystem::path keymap_path = parent_path / "keys.config";
 	InputHandler input_handler(keymap_path);
 
 	//char file_path[MAX_PATH] = { 0 };
@@ -192,11 +200,11 @@ int main(int argc, char* args[]) {
 	DocumentManager document_manager(mupdf_context, db);
 
 	QFileSystemWatcher pref_file_watcher;
-	pref_file_watcher.addPath(QString::fromStdWString(config_path));
+	pref_file_watcher.addPath(QString::fromStdWString(config_path.wstring()));
 
 
 	QFileSystemWatcher key_file_watcher;
-	key_file_watcher.addPath(QString::fromStdWString(keymap_path));
+	key_file_watcher.addPath(QString::fromStdWString(keymap_path.wstring()));
 
 
 	QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());

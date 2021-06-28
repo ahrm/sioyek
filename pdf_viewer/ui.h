@@ -28,7 +28,7 @@
 #include <qstandarditemmodel.h>
 
 
-#include <Windows.h>
+//#include <Windows.h>
 #include "utils.h"
 #include "config.h"
 
@@ -56,12 +56,12 @@ template<typename T>
 class FilteredTreeSelect : public QWidget, ConfigFileChangeListener{
 private:
 
-	QStandardItemModel* tree_item_model;
-	QSortFilterProxyModel* proxy_model;
-	QLineEdit* line_edit;
-	QTreeView* tree_view;
+	QStandardItemModel* tree_item_model = nullptr;
+	QSortFilterProxyModel* proxy_model = nullptr;
+	QLineEdit* line_edit = nullptr;
+	QTreeView* tree_view = nullptr;
 	std::function<void(const std::vector<int>&)> on_done;
-	ConfigManager* config_manager;
+	ConfigManager* config_manager = nullptr;
 
 protected:
 	bool eventFilter(QObject* obj, QEvent* event) override {
@@ -176,13 +176,13 @@ template<typename T>
 class FilteredSelectWindowClass : public QWidget, ConfigFileChangeListener{
 private:
 
-	QStringListModel* string_list_model;
-	QSortFilterProxyModel* proxy_model;
-	QLineEdit* line_edit;
-	QListView* list_view;
+	QStringListModel* string_list_model = nullptr;
+	QSortFilterProxyModel* proxy_model = nullptr;
+	QLineEdit* line_edit = nullptr;
+	QListView* list_view = nullptr;
 	std::vector<T> values;
-	std::function<void(void*)> on_done;
-	ConfigManager* config_manager;
+	std::function<void(void*)> on_done = nullptr;
+	ConfigManager* config_manager = nullptr;
 
 protected:
 	bool eventFilter(QObject* obj, QEvent* event) override {
@@ -302,5 +302,6 @@ public:
 	}
 };
 
-bool select_document_file_name(wchar_t* out_file_name, int max_length);
+std::wstring select_document_file_name();
+//bool select_document_file_name(wchar_t* out_file_name, int max_length);
 

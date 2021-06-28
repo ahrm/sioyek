@@ -243,7 +243,7 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 
 }
 
-InputParseTreeNode* parse_key_config_file(const std::wstring& file_path) {
+InputParseTreeNode* parse_key_config_file(const std::filesystem::path& file_path) {
 	std::ifstream infile(file_path);
 
 	std::vector<std::string> command_names;
@@ -265,11 +265,11 @@ InputParseTreeNode* parse_key_config_file(const std::wstring& file_path) {
 }
 
 
-InputHandler::InputHandler(const std::wstring& file_path) {
+InputHandler::InputHandler(const std::filesystem::path& file_path) {
 	reload_config_file(file_path);
 }
 
-void InputHandler::reload_config_file(const std::wstring& file_path)
+void InputHandler::reload_config_file(const std::filesystem::path& file_path)
 {
 	delete_current_parse_tree(root);
 	root = parse_key_config_file(file_path);

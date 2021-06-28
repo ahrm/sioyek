@@ -1,9 +1,22 @@
-#include <Windows.h>
+//#include <Windows.h>
 #include <cwctype>
 
 #include <cassert>
 #include "utils.h"
+#include <optional>
+#include <string>
+#include <filesystem>
+#include <regex>
+#include <qclipboard.h>
+#include <qguiapplication.h>
+#include <qprocess.h>
+#include <qdesktopservices.h>
+#include <qurl.h>
+#include <qmessagebox.h>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 
 std::wstring to_lower(const std::wstring& inp) {
 	std::wstring res;
@@ -109,11 +122,11 @@ void parse_uri(std::string uri, int* page, float* offset_x, float* offset_y) {
 	int comma_index = -1;
 
 	uri = uri.substr(1, uri.size() - 1);
-	comma_index = uri.find(",");
+	comma_index = static_cast<int>(uri.find(","));
 	*page = atoi(uri.substr(0, comma_index ).c_str());
 
 	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
-	comma_index = uri.find(",");
+	comma_index = static_cast<int>(uri.find(","));
 	*offset_x = atof(uri.substr(0, comma_index ).c_str());
 
 	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
@@ -160,26 +173,18 @@ void rect_to_quad(fz_rect rect, float quad[8]) {
 
 fz_rect corners_to_rect(fz_point corner1, fz_point corner2) {
 	fz_rect res;
-	res.x0 = min(corner1.x, corner2.x);
-	res.x1 = max(corner1.x, corner2.x);
+	res.x0 = std::min(corner1.x, corner2.x);
+	res.x1 = std::max(corner1.x, corner2.x);
 
-	res.y0 = min(corner1.y, corner2.y);
-	res.y1 = max(corner1.y, corner2.y);
+	res.y0 = std::min(corner1.y, corner2.y);
+	res.y1 = std::max(corner1.y, corner2.y);
 	return res;
 }
 
 void copy_to_clipboard(const std::wstring& text) {
-	if (text.size() > 0) {
-		const size_t len = text.size() + 1;
-		const size_t size = len * sizeof(text[0]);
-		HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, size);
-		memcpy(GlobalLock(hMem), text.c_str(), size);
-		GlobalUnlock(hMem);
-		OpenClipboard(0);
-		EmptyClipboard();
-		SetClipboardData(CF_UNICODETEXT, hMem);
-		CloseClipboard();
-	}
+	auto clipboard = QGuiApplication::clipboard();
+	auto qtext = QString::fromStdWString(text);
+	clipboard->setText(qtext);
 }
 
 #define OPEN_KEY(parent, name, ptr) \
@@ -188,8 +193,9 @@ void copy_to_clipboard(const std::wstring& text) {
 #define SET_KEY(parent, name, value) \
 	RegSetValueExA(parent, name, 0, REG_SZ, (const BYTE *)(value), (DWORD)strlen(value) + 1)
 
-void install_app(char *argv0)
+void install_app(const char *argv0)
 {
+#ifdef Q_OS_WIN
 	char buf[512];
 	HKEY software, classes, testpdf, dotpdf;
 	HKEY shell, open, command, supported_types;
@@ -216,6 +222,7 @@ void install_app(char *argv0)
 	RegCloseKey(testpdf);
 	RegCloseKey(classes);
 	RegCloseKey(software);
+#endif
 }
 
 int get_f_key(std::string name) {
@@ -237,7 +244,11 @@ int get_f_key(std::string name) {
 }
 
 void show_error_message(std::wstring error_message) {
-	MessageBoxW(nullptr, error_message.c_str(), L"Error", MB_OK);
+	QMessageBox msgBox;
+	msgBox.setText(QString::fromStdWString(error_message));
+	msgBox.setStandardButtons(QMessageBox::Ok);
+	msgBox.setDefaultButton(QMessageBox::Ok);
+	msgBox.exec();
 }
 
 std::wstring utf8_decode(const std::string& encoded_str) {
@@ -316,9 +327,9 @@ float dist_squared(fz_point p1, fz_point p2) {
 	return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
 }
 
-fz_stext_char_s* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index) {
+fz_stext_char* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index) {
 	float min_distance = std::numeric_limits<float>::infinity();
-	fz_stext_char_s* res = nullptr;
+	fz_stext_char* res = nullptr;
 
 	int index = 0;
 	LL_ITER(current_block, stext_page->first_block) {
@@ -374,6 +385,18 @@ std::wstring get_string_from_stext_line(fz_stext_line* line) {
 	}
 	return res;
 }
+
+std::wstring get_string_from_stext_block(fz_stext_block* block) {
+
+	std::wstring res;
+	LL_ITER(line, block->u.t.first_line) {
+		if (res.size() > 0) {
+			res.append(L"\n");
+		}
+		res.append(get_string_from_stext_line(line));
+	}
+	return res;
+}
 bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstring& str) {
 	assert(block->type == FZ_STEXT_BLOCK_TEXT);
 
@@ -411,6 +434,27 @@ std::wstring get_figure_string_from_raw_string(std::wstring raw_string) {
 	}
 	return res;
 }
+std::wstring get_reference_from_reference_string(std::wstring reference_string) {
+	std::wregex reference_regex(L"[0-9]+");
+	std::wsmatch match;
+	
+	if (std::regex_search(reference_string, match, reference_regex)) {
+		return match[0].str();
+	}
+	return L"";
+}
+
+bool is_line_referencish(std::wstring line_text) {
+
+	if (line_text[0] == '[') {
+		std::wregex reference_regex(L"^\\[[0-9]+\\]");
+		if (std::regex_search(line_text, reference_regex)) {
+			return true;
+		}
+	}
+
+	return false;
+}
 
 bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, std::wstring str) {
 
@@ -433,7 +477,7 @@ bool is_consequtive(fz_rect rect1, fz_rect rect2) {
 	float xdist = abs(rect1.x1 - rect2.x0);
 	float ydist1 = abs(rect1.y0 - rect2.y0);
 	float ydist2 = abs(rect1.y1 - rect2.y1);
-	float ydist = min(ydist1, ydist2);
+	float ydist = std::min(ydist1, ydist2);
 
 	//if (xdist < 1.0f && ydist < 1.0f) {
 	//	return true;
@@ -515,8 +559,8 @@ void simplify_selected_character_rects(std::vector<fz_rect> selected_character_r
 
 void string_split(std::string haystack, std::string needle, std::vector<std::string> &res) {
 
-	int loc = -1;
-	int needle_size = needle.size();
+	size_t loc = -1;
+	size_t needle_size = needle.size();
 	while ((loc = haystack.find(needle)) != -1) {
 		int skiplen = loc + needle_size;
 		if (loc != 0) {
@@ -530,43 +574,64 @@ void string_split(std::string haystack, std::string needle, std::vector<std::str
 	}
 }
 
-//void pdf_sandwich_maker(fz_context* context, std::wstring original_file_name, std::wstring sandwich_file_name) {
-//
-//	const char* utf8_encoded_output_name = utf8_encode(sandwich_file_name).c_str();
-//
-//	tesseract::TessBaseAPI* api = new tesseract::TessBaseAPI();
-//	api->Init(nullptr, "eng");
-//	tesseract::TessPDFRenderer* renderer = new tesseract::TessPDFRenderer(utf8_encoded_output_name, api->GetDatapath(), false);
-//
-//	fz_document* doc = fz_open_document(context, utf8_encode(original_file_name).c_str());
-//
-//	int num_pages = fz_count_pages(context, doc);
-//
-//	for (int i = 0; i < num_pages; i++) {
-//		fz_page* page = fz_load_page(context, doc, i);
-//		fz_pixmap* pixmap = fz_new_pixmap_from_page(context, page, fz_identity, fz_device_rgb(context), 0);
-//
-//		unsigned int width = pixmap->w;
-//		unsigned int height = pixmap->h;
-//
-//		//Pix* pix;
-//		//pix->data = pixmap->samples;
-//		//pix->w = pixmap->w;
-//		//pix->h = pixmap->h;
-//
-//		//api->SetImage()
-//		//api->ProcessPage()
-//
-//		//api->SetImage(pixmap->samples, pixmap->w, pixmap->h, 3, pixmap->stride);
-//		//api->Recognize(nullptr);
-//		bool success = api->ProcessPages("data\\image.png", nullptr, 1000, renderer);
-//
-//		//std::cout << std::string(api->GetUTF8Text()) << "\n";
-//
-//		fz_drop_pixmap(context, pixmap);
-//		fz_drop_page(context, page);
-//
-//	}
-//	fz_drop_document(context, doc);
-//	api->End();
-//}
+
+void run_command(std::wstring command, std::wstring parameters){
+
+
+#ifdef Q_OS_WIN
+	SHELLEXECUTEINFO ShExecInfo = { 0 };
+	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	ShExecInfo.hwnd = NULL;
+	ShExecInfo.lpVerb = NULL;
+	ShExecInfo.lpFile = command.c_str();
+	ShExecInfo.lpParameters = NULL;
+	ShExecInfo.lpDirectory = NULL;
+	ShExecInfo.nShow = SW_SHOW;
+	ShExecInfo.hInstApp = NULL;
+	ShExecInfo.lpParameters = parameters.c_str();
+
+	ShellExecuteExW(&ShExecInfo);
+	WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+	CloseHandle(ShExecInfo.hProcess);
+#else
+	QProcess process;
+	QString qcommand = QString::fromStdWString(command);
+	QStringList qparameters; 
+	qparameters.append(QString::fromStdWString(parameters));
+
+	process.start(qcommand, qparameters);
+	process.waitForFinished();
+#endif
+
+}
+
+void open_url(QString url_string) {
+	QDesktopServices::openUrl(url_string);
+}
+
+void open_url(std::string url_string) {
+	QString qurl_string = QString::fromStdString(url_string);
+	open_url(qurl_string);
+}
+
+void open_url(std::wstring url_string) {
+
+	QString qurl_string = QString::fromStdWString(url_string);
+	open_url(qurl_string);
+}
+
+void open_file(std::filesystem::path path) {
+	std::wstring generic_file_path = path.generic_wstring();
+	open_url(generic_file_path);
+}
+
+void sleep_ms(unsigned int ms) {
+#ifdef Q_OS_WIN
+	Sleep(ms);
+#else
+	struct timespec ts = { ms / 1000, (ms % 1000) * 1000 * 1000 };
+	nanosleep(&ts, NULL);
+#endif
+}
+

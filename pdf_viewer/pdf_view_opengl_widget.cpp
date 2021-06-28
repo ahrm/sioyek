@@ -21,10 +21,10 @@ GLfloat g_quad_uvs[] = {
 
 OpenGLSharedResources PdfViewOpenGLWidget::shared_gl_objects;
 
-GLuint PdfViewOpenGLWidget::LoadShaders(std::filesystem::path vertex_file_path_, std::filesystem::path fragment_file_path_) {
+GLuint PdfViewOpenGLWidget::LoadShaders(std::filesystem::path vertex_file_path, std::filesystem::path fragment_file_path) {
 
-	const wchar_t* vertex_file_path = vertex_file_path_.c_str();
-	const wchar_t* fragment_file_path = fragment_file_path_.c_str();
+	//const wchar_t* vertex_file_path = vertex_file_path_.c_str();
+	//const wchar_t* fragment_file_path = fragment_file_path_.c_str();
 	// Create the shaders
 	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
@@ -127,10 +127,10 @@ void PdfViewOpenGLWidget::initializeGL() {
 
 		shared_gl_objects.is_initialized = true;
 
-		shared_gl_objects.rendered_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\simple.fragment");
-		shared_gl_objects.unrendered_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\unrendered_page.fragment");
-		shared_gl_objects.highlight_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\highlight.fragment");
-		shared_gl_objects.vertical_line_program = LoadShaders(parent_path / "shaders\\simple.vertex", parent_path / "shaders\\vertical_bar.fragment");
+		shared_gl_objects.rendered_program = LoadShaders(parent_path / "shaders" / "simple.vertex", parent_path / "shaders" / "simple.fragment");
+		shared_gl_objects.unrendered_program = LoadShaders(parent_path / "shaders" / "simple.vertex", parent_path / "shaders" / "unrendered_page.fragment");
+		shared_gl_objects.highlight_program = LoadShaders(parent_path / "shaders" / "simple.vertex", parent_path / "shaders" / "highlight.fragment");
+		shared_gl_objects.vertical_line_program = LoadShaders(parent_path / "shaders" / "simple.vertex", parent_path / "shaders" / "vertical_bar.fragment");
 
 		shared_gl_objects.highlight_color_uniform_location = glGetUniformLocation(shared_gl_objects.highlight_program, "highlight_color");
 
