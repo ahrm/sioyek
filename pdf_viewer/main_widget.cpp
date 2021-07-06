@@ -412,6 +412,7 @@ void MainWidget::open_document(std::wstring path, std::optional<float> offset_x,
 	//save the previous document state
 	if (main_document_view) {
 		main_document_view->persist();
+		update_history_state();
 	}
 
 	main_document_view->open_document(path, &this->is_ui_invalidated);
@@ -549,7 +550,7 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 void MainWidget::update_history_state()
 {
 	if (!main_document_view_has_document()) return; // we don't add empty document to history
-	if (history.size() == 0) return; // this probably should not happen
+	if (history.size() == 0) return; // this probably should never execute
 
 	DocumentViewState dvs = main_document_view->get_state();
 	history[current_history_index] = dvs;
@@ -713,6 +714,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 			int fig_page;
 			float fig_offset;
 			if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
+				update_history_state();
 				main_document_view->goto_page(fig_page);
 				push_state();
 				invalidate_render();
@@ -918,6 +920,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					int* page_value = (int*)page_pointer;
 					if (page_value) {
 						validate_render();
+						update_history_state();
 						main_document_view->goto_page(*page_value);
 						push_state();
 					}
@@ -932,6 +935,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 							indices);
 						if (toc_node) {
 							validate_render();
+							update_history_state();
 							main_document_view->goto_page(toc_node->page);
 							push_state();
 						}
@@ -973,6 +977,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			float* offset_value = (float*)float_pointer;
 			if (offset_value) {
 				validate_render();
+				update_history_state();
 				main_document_view->set_offset_y(*offset_value);
 				push_state();
 			}

@@ -6,12 +6,11 @@
 //todo: handle right to left documents
 //todo: clean up parsing code
 //todo: autocomplete in command window
-//todo: add djvu, epub and other formats
+//todo: add djvu, and other formats
 //todo: simplify word selection logic (also avoid inefficient extra insertions followed by clears in selected_characters)
-//todo: history is buggy and ugly
 //todo: make it so that find_closest_bookmark and find_closest_link return the index instead of pointer
 // we are only using the index anyway and returning a pointer has potential for misuse.
-//todo: back after clicking on the first link in a documnet is not working properly
+//todo: back after clicking on the first link in a document is not working properly
 //todo: make it so that all commands that change document state (for example goto_offset_withing_page, goto_link, etc.) do not change the document
 // state, instead they return a DocumentViewState object that is then applied using push_state and chnage_state functions
 // (chnage state should be a function that just applies the state without pushing it to history)

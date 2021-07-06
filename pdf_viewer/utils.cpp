@@ -479,12 +479,12 @@ bool is_consequtive(fz_rect rect1, fz_rect rect2) {
 	float ydist2 = abs(rect1.y1 - rect2.y1);
 	float ydist = std::min(ydist1, ydist2);
 
-	//if (xdist < 1.0f && ydist < 1.0f) {
-	//	return true;
-	//}
-	if ( ydist < 5.0f) {
+	if (xdist < 40.0f && ydist < 40.0f) {
 		return true;
 	}
+	//if ( ydist < 10.0f) {
+	//	return true;
+	//}
 	return false;
 
 }
@@ -519,6 +519,11 @@ fz_rect bound_rects(const std::vector<fz_rect>& rects) {
 }
 void simplify_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects) {
 	
+	//for (fz_rect rect : selected_character_rects) {
+	//	resulting_rects.push_back(rect);
+	//}
+	//return;
+
 	if (selected_character_rects.size() == 0) {
 		return;
 	}
@@ -550,9 +555,13 @@ void simplify_selected_character_rects(std::vector<fz_rect> selected_character_r
 	// avoid overlapping rects
 	for (int i = 0; i < resulting_rects.size() - 1; i++) {
 		// we don't need to do this across columns of document
-		if (resulting_rects[i + 1].x0 < resulting_rects[i].x1) {
+		float height = resulting_rects[i].y1 - resulting_rects[i].y0;
+		if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1) ) {
 			resulting_rects[i + 1].y0 = resulting_rects[i].y1;
 		}
+		//if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1) && (resulting_rects[i+1].y0 > (resulting_rects[i].y0 + height))) {
+		//	resulting_rects[i + 1].y0 = resulting_rects[i].y1;
+		//}
 	}
 
 }
