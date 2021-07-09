@@ -181,7 +181,8 @@ private:
 	QLineEdit* line_edit = nullptr;
 	QListView* list_view = nullptr;
 	std::vector<T> values;
-	std::function<void(void*)> on_done = nullptr;
+	//std::function<void(void*)> on_done = nullptr;
+	std::function<void(T*)> on_done = nullptr;
 	ConfigManager* config_manager = nullptr;
 
 protected:
@@ -217,7 +218,8 @@ public:
 	}
 
 	//todo: check for memory leaks
-	FilteredSelectWindowClass(std::vector<std::wstring> std_string_list, std::vector<T> values, std::function<void(void*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
+	//FilteredSelectWindowClass(std::vector<std::wstring> std_string_list, std::vector<T> values, std::function<void(void*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
+	FilteredSelectWindowClass(std::vector<std::wstring> std_string_list, std::vector<T> values, std::function<void(T*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
 		QWidget(parent) ,
 		values(values),
 		config_manager(config_manager),

@@ -73,6 +73,7 @@ public:
 	const std::vector<BookMark>& get_bookmarks() const;
 	fz_link* get_page_links(int page_number);
 	void add_mark(char symbol, float y_offset);
+	bool remove_mark(char symbol);
 	bool get_mark_location_if_exists(char symbol, float* y_offset);
 	~Document();
 	const std::vector<TocNode*>& get_toc();
@@ -116,4 +117,5 @@ public:
 
 	Document* get_document(std::wstring path);
 	const std::unordered_map<std::wstring, Document*>& get_cached_documents();;
+	void delete_global_mark(char symbol);
 };

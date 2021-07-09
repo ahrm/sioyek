@@ -14,6 +14,7 @@
 //todo: make it so that all commands that change document state (for example goto_offset_withing_page, goto_link, etc.) do not change the document
 // state, instead they return a DocumentViewState object that is then applied using push_state and chnage_state functions
 // (chnage state should be a function that just applies the state without pushing it to history)
+// add "repeat last command" command
 
 #include <iostream>
 #include <vector>

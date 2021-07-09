@@ -387,12 +387,35 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 	assert(command->requires_symbol);
 	if (command->name == "set_mark") {
 		assert(main_document_view);
-		main_document_view->add_mark(symbol);
-		validate_render();
+
+		// it is a global mark, we delete other marks with the same symbol from database and add the new mark
+		if (isupper(symbol)) {
+			delete_mark_with_symbol(db, symbol);
+			// we should also delete the cached marks
+			document_manager->delete_global_mark(symbol);
+			main_document_view->add_mark(symbol);
+		}
+		else{
+			main_document_view->add_mark(symbol);
+			validate_render();
+		}
+
 	}
 	else if (command->name == "goto_mark") {
 		assert(main_document_view);
-		main_document_view->goto_mark(symbol);
+
+		if (isupper(symbol)) { // global mark
+			std::vector<std::pair<std::wstring, float>> mark_vector;
+			select_global_mark(db, symbol, mark_vector);
+			if (mark_vector.size() > 0) {
+				assert(mark_vector.size() == 1); // we can not have more than one global mark with the same name
+				open_document(mark_vector[0].first, {}, mark_vector[0].second);
+			}
+
+		}
+		else{
+			main_document_view->goto_mark(symbol);
+		}
 	}
 	else if (command->name == "delete") {
 		if (symbol == 'y') {
@@ -916,8 +939,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 				std::vector<std::wstring> flat_toc;
 				std::vector<int> current_document_toc_pages;
 				get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
-				current_widget = std::make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](void* page_pointer) {
-					int* page_value = (int*)page_pointer;
+				current_widget = std::make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](int* page_value) {
 					if (page_value) {
 						validate_render();
 						update_history_state();
@@ -955,11 +977,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 
 		if (opened_docs_paths.size() > 0) {
-			current_widget = std::make_unique<FilteredSelectWindowClass<std::wstring>>(opened_docs_names, opened_docs_paths, [&](void* string_pointer) {
-				std::wstring doc_path = *(std::wstring*)string_pointer;
-				if (doc_path.size() > 0) {
+			current_widget = std::make_unique<FilteredSelectWindowClass<std::wstring>>(opened_docs_names, opened_docs_paths, [&](std::wstring* doc_path) {
+				if (doc_path->size() > 0) {
 					validate_render();
-					open_document(doc_path);
+					open_document(*doc_path);
 				}
 				}, config_manager, this);
 			current_widget->show();
@@ -972,9 +993,8 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			option_names.push_back(main_document_view->get_document()->get_bookmarks()[i].description);
 			option_locations.push_back(main_document_view->get_document()->get_bookmarks()[i].y_offset);
 		}
-		current_widget = std::make_unique<FilteredSelectWindowClass<float>>(option_names, option_locations, [&](void* float_pointer) {
+		current_widget = std::make_unique<FilteredSelectWindowClass<float>>(option_names, option_locations, [&](float* offset_value) {
 
-			float* offset_value = (float*)float_pointer;
 			if (offset_value) {
 				validate_render();
 				update_history_state();
@@ -996,11 +1016,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			descs.push_back(bm.description);
 			book_states.push_back({ path, bm.y_offset });
 		}
-		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(descs, book_states, [&](void* book_p) {
-			BookState* offset_value = (BookState*)book_p;
-			if (offset_value) {
+		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(descs, book_states, [&](BookState* book_state) {
+			if (book_state) {
 				validate_render();
-				open_document(offset_value->document_path, 0.0f, offset_value->offset_y);
+				open_document(book_state->document_path, 0.0f, book_state->offset_y);
 			}
 			}, config_manager, this);
 		current_widget->show();

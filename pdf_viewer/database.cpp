@@ -53,6 +53,19 @@ static int mark_select_callback(void* res_vector, int argc, char** argv, char** 
 	return 0;
 }
 
+static int global_mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+
+	std::vector<std::pair<std::wstring, float>>* res = (std::vector<std::pair<std::wstring, float>>*)res_vector;
+	assert(argc == 2);
+
+	//char symbol = argv[0][0];
+	std::wstring path = utf8_decode(argv[0]);
+	float offset_y = atof(argv[1]);
+
+	res->push_back(std::make_pair(path, offset_y));
+	return 0;
+}
+
 static int global_bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<std::pair<std::wstring, BookMark>>* res = (std::vector<std::pair<std::wstring, BookMark>>*)res_vector;
@@ -208,6 +221,17 @@ bool insert_mark(sqlite3* db, std::wstring document_path, char symbol, float off
 		error_message);
 }
 
+bool delete_mark_with_symbol(sqlite3* db, char symbol) {
+
+	std::wstringstream ss;
+	ss << "DELETE FROM marks where symbol='" << symbol << "';";
+	char* error_message = nullptr;
+
+	return handle_error(
+		sqlite3_exec(db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message),
+		error_message);
+}
+
 bool insert_bookmark(sqlite3* db, std::wstring document_path, std::wstring desc, float offset_y) {
 
 	std::wstringstream ss;
@@ -303,6 +327,16 @@ bool select_mark(sqlite3* db, std::wstring book_path, std::vector<Mark> &out_res
 		char* error_message = nullptr;
 		return handle_error(
 			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), mark_select_callback, &out_result, &error_message),
+			error_message);
+}
+
+bool select_global_mark(sqlite3* db, char symbol, std::vector<std::pair<std::wstring, float>> &out_result) {
+		std::wstringstream ss;
+		ss << "select document_path, offset_y from marks where symbol='" << symbol << "';";
+
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), global_mark_select_callback, &out_result, &error_message),
 			error_message);
 }
 

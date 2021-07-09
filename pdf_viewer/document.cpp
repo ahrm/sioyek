@@ -105,6 +105,17 @@ void Document::add_mark(char symbol, float y_offset) {
 	}
 }
 
+bool Document::remove_mark(char symbol)
+{
+	for (int i = 0; i < marks.size(); i++) {
+		if (marks[i].symbol == symbol) {
+			marks.erase(marks.begin() + i);
+			return true;
+		}
+	}
+	return false;
+}
+
 bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
 	int mark_index = get_mark_index(symbol);
 	if (mark_index == -1) {
@@ -472,6 +483,13 @@ Document* DocumentManager::get_document(std::wstring path) {
 const std::unordered_map<std::wstring, Document*>& DocumentManager::get_cached_documents()
 {
 	return cached_documents;
+}
+
+void DocumentManager::delete_global_mark(char symbol)
+{
+	for (auto [path, doc] : cached_documents) {
+		doc->remove_mark(symbol);
+	}
 }
 
 void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {

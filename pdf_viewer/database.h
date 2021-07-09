@@ -27,3 +27,5 @@ bool global_select_bookmark(sqlite3* db,  std::vector<std::pair<std::wstring, Bo
 bool update_link(sqlite3* db, std::wstring src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y);
 bool select_prev_docs(sqlite3* db,  std::vector<std::wstring>& out_result);
 void create_tables(sqlite3* db);
+bool delete_mark_with_symbol(sqlite3* db, char symbol);
+bool select_global_mark(sqlite3* db, char symbol, std::vector<std::pair<std::wstring, float>>& out_result);
