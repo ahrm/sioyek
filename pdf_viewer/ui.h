@@ -90,11 +90,8 @@ protected:
 public:
 
 	void on_config_file_changed(ConfigManager* new_config_manager) {
-		std::wstring item_list_stylesheet = *new_config_manager->get_config<std::wstring>(L"item_list_stylesheet");
-		std::wstring item_list_selected_stylesheet = *new_config_manager->get_config<std::wstring>(L"item_list_selected_stylesheet");
-
-		setStyleSheet(QString::fromStdWString(item_list_stylesheet));
-		tree_view->setStyleSheet("QTreeView::item::selected{" + QString::fromStdWString(item_list_selected_stylesheet) + "}");
+		setStyleSheet("background-color: black; color: white; border: 0;");
+		tree_view->setStyleSheet("QTreeView::item::selected{background-color: white; color: black;}");
 	}
 
 	//todo: check for memory leaks
@@ -140,6 +137,9 @@ public:
 			//std::cout << ((HierarchialSortFilterProxyModel*)proxy_model)->count << "\n";
 			tree_view->expandAll();
 			});
+
+		setStyleSheet("background-color: black; color: white; border: 0;");
+		tree_view->setStyleSheet("QTreeView::item::selected{background-color: white; color: black;}");
 
 	}
 
@@ -207,14 +207,8 @@ protected:
 public:
 
 	void on_config_file_changed(ConfigManager* new_config_manager) {
-		std::wstring item_list_stylesheet = *new_config_manager->get_config<std::wstring>(L"item_list_stylesheet");
-		std::wstring item_list_selected_stylesheet = *new_config_manager->get_config<std::wstring>(L"item_list_selected_stylesheet");
-
-		//list_view->setStyleSheet(QString::fromStdWString(item_list_stylesheet));
-		//list_view->setStyleSheet(QString::fromStdWString(item_list_selected_stylesheet));
-
-		setStyleSheet(QString::fromStdWString(item_list_stylesheet));
-		list_view->setStyleSheet("QListView::item::selected{" + QString::fromStdWString(item_list_selected_stylesheet) + "}");
+		setStyleSheet("background-color: black; color: white; border: 0;");
+		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
 	}
 
 	//todo: check for memory leaks
@@ -278,6 +272,12 @@ public:
 			//proxy_model->setFilterRegExp(text);
 			proxy_model->setFilterFixedString(text);
 			});
+
+		//setStyleSheet(QString::fromStdWString(item_list_stylesheet));
+		//list_view->setStyleSheet("QListView::item::selected{" + QString::fromStdWString(item_list_selected_stylesheet) + "}");
+
+		setStyleSheet("background-color: black; color: white; border: 0;");
+		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
 
 	}
 

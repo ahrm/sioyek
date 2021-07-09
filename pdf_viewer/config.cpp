@@ -9,6 +9,8 @@ extern float move_screen_percentage;
 extern float background_color[3];
 extern bool flat_table_of_contents;
 extern bool should_use_multiple_monitors;
+extern std::wstring libgen_address;
+extern std::wstring google_scholar_address;
 
 void int_serializer(void* int_pointer, std::wstringstream& stream) {
 	stream << *(int*)int_pointer;
@@ -17,9 +19,6 @@ void bool_serializer(void* bool_pointer, std::wstringstream& stream) {
 	stream << *(bool*)bool_pointer;
 }
 
-void string_serializer(void* string_pointer, std::wstringstream& stream) {
-	stream << *(std::wstring*)string_pointer;
-}
 
 void* int_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 	int* res = (int*)res_;
@@ -39,17 +38,46 @@ void* bool_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 	return res;
 }
 
+//void string_serializer(void* string_pointer, std::wstringstream& stream) {
+//	stream << *(std::wstring*)string_pointer;
+//}
+//
+//void* string_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
+//	delete res_;
+//	
+//	std::wstring res;
+//	std::getline(stream, res);
+//
+//	while (iswspace(res[0])) {
+//		res.erase(res.begin());
+//	}
+//
+//	return new std::wstring(res);
+//}
+
+void string_serializer(void* string_pointer, std::wstringstream& stream) {
+	stream << *(std::wstring*)string_pointer;
+}
+
 void* string_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
-	delete res_;
+	//delete res_;
 	
-	std::wstring res;
-	std::getline(stream, res);
+	std::wstring* res = static_cast<std::wstring*>(res_);
+	res->clear();
+	std::getline(stream, *res);
+	while (iswspace((*res)[0])) {
+		res->erase(res->begin());
 
-	while (iswspace(res[0])) {
-		res.erase(res.begin());
 	}
+	return res;
+	//std::wstring res;
+	//std::getline(stream, res);
 
-	return new std::wstring(res);
+	//while (iswspace(res[0])) {
+	//	res.erase(res.begin());
+	//}
+
+	//return new std::wstring(res);
 }
 
 template<int N>
@@ -115,16 +143,18 @@ ConfigManager::ConfigManager(std::filesystem::path path) {
 	configs.push_back({ L"search_highlight_color", default_search_highlight_color, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"link_highlight_color", default_link_highlight_color, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"background_color", background_color, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"google_scholar_address", nullptr, string_serializer, string_deserializer });
-	configs.push_back({ L"libgen_address", nullptr, string_serializer, string_deserializer });
+	//configs.push_back({ L"google_scholar_address", nullptr, string_serializer, string_deserializer });
+	//configs.push_back({ L"libgen_address", nullptr, string_serializer, string_deserializer });
+	configs.push_back({ L"google_scholar_address", &google_scholar_address, string_serializer, string_deserializer });
+	configs.push_back({ L"libgen_address", &libgen_address, string_serializer, string_deserializer });
 	configs.push_back({ L"zoom_inc_factor", &ZOOM_INC_FACTOR, float_serializer, float_deserializer });
 	configs.push_back({ L"vertical_move_amount", &vertical_move_amount, float_serializer, float_deserializer });
 	configs.push_back({ L"horizontal_move_amount", &horizontal_move_amount, float_serializer, float_deserializer });
 	configs.push_back({ L"move_screen_percentage", &move_screen_percentage, float_serializer, float_deserializer });
-	configs.push_back({ L"item_list_stylesheet", nullptr, string_serializer, string_deserializer });
-	configs.push_back({ L"item_list_selected_stylesheet", nullptr, string_serializer, string_deserializer });
-	configs.push_back({ L"text_command_line_stylesheet", nullptr, string_serializer, string_deserializer });
-	configs.push_back({ L"status_label_stylesheet", nullptr, string_serializer, string_deserializer });
+	//configs.push_back({ L"item_list_stylesheet", nullptr, string_serializer, string_deserializer });
+	//configs.push_back({ L"item_list_selected_stylesheet", nullptr, string_serializer, string_deserializer });
+	//configs.push_back({ L"text_command_line_stylesheet", nullptr, string_serializer, string_deserializer });
+	//configs.push_back({ L"status_label_stylesheet", nullptr, string_serializer, string_deserializer });
 	configs.push_back({ L"flat_toc", &flat_table_of_contents, bool_serializer, bool_deserializer });
 	configs.push_back({ L"should_use_multiple_monitors", &should_use_multiple_monitors, bool_serializer, bool_deserializer });
 	std::wifstream infile(path);

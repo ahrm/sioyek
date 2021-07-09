@@ -48,6 +48,7 @@ extern bool should_use_multiple_monitors;
 extern bool flat_table_of_contents;
 extern float move_screen_percentage;
 extern std::filesystem::path parent_path;
+extern std::wstring libgen_address;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -160,12 +161,12 @@ input_handler(input_handler)
 
 
 	status_label = new QLabel(this);
-	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"status_label_stylesheet")));
+	status_label->setStyleSheet("background-color: black; color: white; border: 0");
 	status_label->setFont(QFont("Monaco"));
 
 
 	text_command_line_edit_container = new QWidget(this);
-	text_command_line_edit_container->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"text_command_line_stylesheet")));
+	text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
 
 	QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
 
@@ -368,9 +369,12 @@ void MainWidget::move_document_screens(int num_screens)
 
 void MainWidget::on_config_file_changed(ConfigManager* new_config)
 {
-	status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"status_label_stylesheet")));
-	text_command_line_edit_container->setStyleSheet(
-		QString::fromStdWString(*config_manager->get_config<std::wstring>(L"text_command_line_stylesheet")));
+	//status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"status_label_stylesheet")));
+	//text_command_line_edit_container->setStyleSheet(
+	//	QString::fromStdWString(*config_manager->get_config<std::wstring>(L"text_command_line_stylesheet")));
+
+	status_label->setStyleSheet("background-color: black; color: white; border: 0");
+	text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
 }
 
 void MainWidget::invalidate_render() {
@@ -728,21 +732,43 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		int page;
 		float offset_x, offset_y;
 
+		Qt::KeyboardModifiers modifiers = QGuiApplication::queryKeyboardModifiers();
+		bool is_shift_pressed = modifiers.testFlag(Qt::ShiftModifier);
+
+
 		main_document_view->window_to_document_pos(mevent->pos().x(), mevent->pos().y(), &offset_x, &offset_y, &page);
 		std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(page, offset_x, offset_y);
-		if (text_on_pointer) {
-			std::wstring figure_string = get_figure_string_from_raw_string(text_on_pointer.value());
-			if (figure_string.size() == 0) return;
+		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(page, offset_x, offset_y);
+		bool was_figure = false;
 
-			int fig_page;
-			float fig_offset;
-			if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
-				update_history_state();
-				main_document_view->goto_page(fig_page);
-				push_state();
-				invalidate_render();
+		if (text_on_pointer) {
+
+			std::wstring figure_string = get_figure_string_from_raw_string(text_on_pointer.value());
+			if (figure_string.size() > 0) {
+				was_figure = true;
+
+				int fig_page;
+				float fig_offset;
+				if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
+					update_history_state();
+					main_document_view->goto_page(fig_page);
+					push_state();
+					invalidate_render();
+				}
+			}
+
+		}
+		if ((!was_figure) && paper_name_on_pointer) {
+			if (paper_name_on_pointer.value().size() > 5) {
+				if (is_shift_pressed) {
+					search_libgen(paper_name_on_pointer.value());
+				}
+				else {
+					search_google_scholar(paper_name_on_pointer.value());
+				}
 			}
 		}
+
 	}
 //#endif
 
@@ -1039,13 +1065,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	//todo: check if still works after wstring
 	else if (command->name == "search_selected_text_in_google_scholar") {
-		open_url((*config_manager->get_config<std::wstring>(L"google_scholar_address") + (selected_text)).c_str());
+		search_google_scholar(selected_text);
 	}
 	else if (command->name == "open_selected_url") {
 		open_url((selected_text).c_str());
 	}
 	else if (command->name == "search_selected_text_in_libgen") {
-		open_url((*config_manager->get_config<std::wstring>(L"libgen_address") + (selected_text)).c_str());
+		search_libgen(selected_text);
 	}
 	else if (command->name == "debug") {
 		wprintf(L"_________________________________\n");

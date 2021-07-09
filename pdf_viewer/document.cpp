@@ -701,3 +701,55 @@ std::optional<std::wstring> Document::get_text_at_position(int page, float offse
 	return {};
 
 }
+
+std::optional<std::wstring> Document::get_paper_name_at_position(int page, float offset_x, float offset_y)
+{
+	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page, nullptr);
+
+	fz_rect selected_rect;
+
+	selected_rect.x0 = offset_x - 0.1f;
+	selected_rect.x1 = offset_x + 0.1f;
+
+	selected_rect.y0 = offset_y - 0.1f;
+	selected_rect.y1 = offset_y + 0.1f;
+
+	std::wstring selected_string = L"";
+	bool reached = false;
+
+	LL_ITER(block, stext_page->first_block) {
+		if (block->type != FZ_STEXT_BLOCK_TEXT) continue;
+
+
+		//if (fz_contains_rect(block->bbox, selected_rect)) {
+			LL_ITER(line, block->u.t.first_line) {
+				LL_ITER(ch, line->first_char) {
+					if (ch->c == '.') {
+						if (!reached) {
+							selected_string = L"";
+						}
+						else{
+							return selected_string;
+						}
+					}
+					if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
+						reached = true;
+					}
+					if ((ch->c == '-') && (ch == line->last_char)) continue;
+
+					if (ch->c != '.') {
+						selected_string.push_back(ch->c);
+					}
+					if (ch == line->last_char) {
+						selected_string.push_back(' ');
+					}
+
+				}
+			}
+		//}
+	}
+
+	fz_drop_stext_page(context, stext_page);
+	return {};
+
+}

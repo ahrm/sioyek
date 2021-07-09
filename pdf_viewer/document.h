@@ -103,6 +103,7 @@ public:
 	void stop_indexing();
 	bool find_figure_with_string(std::wstring figure_name, int reference_page, int* page, float* y_offset);
 	std::optional<std::wstring> get_text_at_position(int page, float offset_x, float offset_y);
+	std::optional<std::wstring> get_paper_name_at_position(int page, float offset_x, float offset_y);
 	friend class DocumentManager;
 };
 

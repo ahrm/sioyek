@@ -73,3 +73,5 @@ void sleep_ms(unsigned int ms);
 void open_url(std::string url_string);
 void open_url(std::wstring url_string);
 void open_file(std::filesystem::path path);
+void search_google_scholar(std::wstring search_string);
+void search_libgen(std::wstring search_string);

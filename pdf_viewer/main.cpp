@@ -14,7 +14,9 @@
 //todo: make it so that all commands that change document state (for example goto_offset_withing_page, goto_link, etc.) do not change the document
 // state, instead they return a DocumentViewState object that is then applied using push_state and chnage_state functions
 // (chnage state should be a function that just applies the state without pushing it to history)
-// add "repeat last command" command
+//todo: add "repeat last command" command
+//todo: make it so that when you middle click on the name of a paper, we search it in google scholar.
+//todo: add support for middle clicking on references
 
 #include <iostream>
 #include <vector>
@@ -97,6 +99,8 @@ extern const int max_pending_requests = 31;
 extern bool launched_from_file_icon = false;
 extern bool flat_table_of_contents = false;
 extern bool should_use_multiple_monitors = false;
+extern std::wstring libgen_address = L"";
+extern std::wstring google_scholar_address = L"";
 
 extern std::filesystem::path last_path_file_absolute_location = "";
 extern std::filesystem::path parent_path = "";
@@ -189,13 +193,9 @@ int main(int argc, char* args[]) {
 
 	launched_from_file_icon = false;
 	if (argc > 1) {
-		//file_path = utf8_decode(args[1]);
 		file_path = app.arguments().at(1).toStdWString();
 		launched_from_file_icon = true;
 	}
-
-	bool is_waiting_for_symbol = false;
-	const Command* current_pending_command = nullptr;
 
 	DocumentManager document_manager(mupdf_context, db);
 
