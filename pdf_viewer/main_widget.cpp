@@ -739,32 +739,52 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		main_document_view->window_to_document_pos(mevent->pos().x(), mevent->pos().y(), &offset_x, &offset_y, &page);
 		std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(page, offset_x, offset_y);
 		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(page, offset_x, offset_y);
+		std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(page, offset_x, offset_y);
 		bool was_figure = false;
 
-		if (text_on_pointer) {
+		if (reference_text_on_pointer) {
+			 std::optional<ReferenceData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
+			 if (refdata_) {
+				 ReferenceData refdata = refdata_.value();
+				update_history_state();
 
-			std::wstring figure_string = get_figure_string_from_raw_string(text_on_pointer.value());
-			if (figure_string.size() > 0) {
-				was_figure = true;
+				float page_height = main_document_view->get_document()->get_page_height(refdata.page);
 
-				int fig_page;
-				float fig_offset;
-				if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
-					update_history_state();
-					main_document_view->goto_page(fig_page);
-					push_state();
-					invalidate_render();
-				}
-			}
+				//todo: why do we need to have the +1??
+				main_document_view->goto_offset_within_page(refdata.page+1, main_document_view->get_offset_x(), refdata.y_offset);
+
+				push_state();
+				invalidate_render();
+			 }
 
 		}
-		if ((!was_figure) && paper_name_on_pointer) {
-			if (paper_name_on_pointer.value().size() > 5) {
-				if (is_shift_pressed) {
-					search_libgen(paper_name_on_pointer.value());
+		else {
+
+			if (text_on_pointer) {
+
+				std::wstring figure_string = get_figure_string_from_raw_string(text_on_pointer.value());
+				if (figure_string.size() > 0) {
+					was_figure = true;
+
+					int fig_page;
+					float fig_offset;
+					if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
+						update_history_state();
+						main_document_view->goto_page(fig_page);
+						push_state();
+						invalidate_render();
+					}
 				}
-				else {
-					search_google_scholar(paper_name_on_pointer.value());
+
+			}
+			if ((!was_figure) && paper_name_on_pointer) {
+				if (paper_name_on_pointer.value().size() > 5) {
+					if (is_shift_pressed) {
+						search_libgen(paper_name_on_pointer.value());
+					}
+					else {
+						search_google_scholar(paper_name_on_pointer.value());
+					}
 				}
 			}
 		}

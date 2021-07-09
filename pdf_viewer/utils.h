@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <map>
 
 #include <qstandarditemmodel.h>
 
@@ -58,8 +59,9 @@ QStandardItemModel* get_model_from_toc(const std::vector<TocNode*>& roots);
 TocNode* get_toc_node_from_indices(const std::vector<TocNode*>& roots, const std::vector<int>& indices);
 fz_stext_char* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index);
 void get_stext_block_string(fz_stext_block* block, std::wstring& res);
+void get_stext_page_string(fz_stext_page* page, std::wstring& res);
 bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstring& str);
-bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, std::wstring str);
+bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, const std::wstring& str);
 std::wstring get_figure_string_from_raw_string(std::wstring raw_string);
 void simplify_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects);
 void pdf_sandwich_maker(fz_context* context, std::wstring original_file_name, std::wstring sandwich_file_name);
@@ -75,3 +77,4 @@ void open_url(std::wstring url_string);
 void open_file(std::filesystem::path path);
 void search_google_scholar(std::wstring search_string);
 void search_libgen(std::wstring search_string);
+void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, ReferenceData>& indices);

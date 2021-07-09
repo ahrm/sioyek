@@ -369,6 +369,15 @@ bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char) {
 	return false;
 }
 
+void get_stext_page_string(fz_stext_page* page, std::wstring& res) {
+	LL_ITER(block, page->first_block) {
+		if (block->type != FZ_STEXT_BLOCK_TEXT) {
+			continue;
+		}
+
+		get_stext_block_string(block, res);
+	}
+}
 void get_stext_block_string(fz_stext_block* block, std::wstring& res) {
 	assert(block->type == FZ_STEXT_BLOCK_TEXT);
 
@@ -458,7 +467,7 @@ bool is_line_referencish(std::wstring line_text) {
 	return false;
 }
 
-bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, std::wstring str) {
+bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, const std::wstring &str) {
 
 	assert(block->type == FZ_STEXT_BLOCK_TEXT);
 
@@ -655,6 +664,75 @@ void open_url(std::wstring url_string) {
 void open_file(std::filesystem::path path) {
 	std::wstring generic_file_path = path.generic_wstring();
 	open_url(generic_file_path);
+}
+
+void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, ReferenceData>& indices) {
+
+	char start_char = '[';
+	char end_char = ']';
+	char delim_char = ',';
+
+	bool is_in_reference = false;
+	const int MAX_REFERENCE_SIZE = 10;
+
+	bool started = false;
+	std::vector<ReferenceData> temp_indices;
+	std::wstring current_text = L"";
+
+	LL_ITER(block, page->first_block) {
+		if (block->type != FZ_STEXT_BLOCK_TEXT) continue;
+
+		LL_ITER(line, block->u.t.first_line) {
+			LL_ITER(ch, line->first_char) {
+				if (ch->c == ' ') {
+					continue;
+				}
+				if (ch->c == '.') {
+					started = false;
+					temp_indices.clear();
+					current_text.clear();
+				}
+
+				if (ch->c == start_char) {
+					temp_indices.clear();
+					current_text.clear();
+					started = true;
+					continue;
+				}
+				if (ch->c == end_char) {
+					started = false;
+
+					ReferenceData index_data;
+					index_data.page = page_number;
+					index_data.y_offset = ch->quad.ll.y;
+					index_data.text = current_text;
+
+					temp_indices.push_back(index_data);
+					//indices[text] = index_data;
+
+					for (auto index : temp_indices) {
+						indices[index.text] = index;
+					}
+					current_text.clear();
+					temp_indices.clear();
+					continue;
+				}
+				if (started && (ch->c == delim_char)) {
+					ReferenceData index_data;
+					index_data.page = page_number;
+					index_data.y_offset = ch->quad.ll.y;
+					index_data.text = current_text;
+					current_text.clear();
+					temp_indices.push_back(index_data);
+					continue;
+				}
+				if (started) {
+					current_text.push_back(ch->c);
+				}
+			}
+
+		}
+	}
 }
 
 void sleep_ms(unsigned int ms) {

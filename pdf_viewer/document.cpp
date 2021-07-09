@@ -4,6 +4,7 @@
 #include "utf8.h"
 #include <qfileinfo.h>
 #include <qdatetime.h>
+#include <map>
 
 int Document::get_mark_index(char symbol) {
 	for (int i = 0; i < marks.size(); i++) {
@@ -578,6 +579,7 @@ void Document::index_figures(bool* invalid_flag)
 	this->figure_indexing_thread = std::thread([this, n, invalid_flag]() {
 		std::wcout << "starting index thread ..." << std::endl;
 		std::vector<FigureData> local_figure_data;
+		std::map<std::wstring, ReferenceData> local_reference_data;
 		fz_context* context_ = fz_clone_context(context);
 		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
 
@@ -589,6 +591,8 @@ void Document::index_figures(bool* invalid_flag)
 			}
 
 			fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, nullptr);
+
+			index_references(stext_page, i, local_reference_data);
 
 			LL_ITER(block, stext_page->first_block) {
 				if (does_stext_block_starts_with_string_case_insensitive(block, L"fig")) {
@@ -608,6 +612,7 @@ void Document::index_figures(bool* invalid_flag)
 
 		figure_indices_mutex.lock();
 		figure_indices = std::move(local_figure_data);
+		reference_indices = std::move(local_reference_data);
 		figure_indices_mutex.unlock();
 		std::wcout << "figure indexing finished ... " << std::endl;
 		is_indexing = false;
@@ -623,6 +628,8 @@ void Document::stop_indexing()
 	is_figure_indexing_required = false;
 }
 
+
+//todo: convert to std::optional
 bool Document::find_figure_with_string(std::wstring figure_name, int reference_page, int* page, float* y_offset)
 {
 	std::lock_guard guard(figure_indices_mutex);
@@ -657,6 +664,83 @@ bool Document::find_figure_with_string(std::wstring figure_name, int reference_p
 	return false;
 }
 
+std::optional<ReferenceData> Document::find_reference_with_string(std::wstring reference_name)
+{
+	if (reference_indices.find(reference_name) != reference_indices.end()) {
+		return reference_indices[reference_name];
+	}
+
+	return {};
+}
+
+std::optional<std::wstring> Document::get_reference_text_at_position(int page, float offset_x, float offset_y)
+{
+	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page, nullptr);
+
+	fz_rect selected_rect;
+
+	selected_rect.x0 = offset_x - 0.1f;
+	selected_rect.x1 = offset_x + 0.1f;
+
+	selected_rect.y0 = offset_y - 0.1f;
+	selected_rect.y1 = offset_y + 0.1f;
+
+	char start_char = '[';
+	char end_char = ']';
+	char delim = ',';
+
+	bool reached = false; // true when we reach selected character
+	bool started = false; // true when we reach [
+	bool done = false; // true when whe reach a delimeter after the click location
+	//	for example suppose we click here in  [124,253,432]
+	//                                              ^      
+	// then `done` will be true when we reach the second comma
+
+	std::wstring selected_text = L"";
+
+	LL_ITER(block, stext_page->first_block) {
+		if (block->type != FZ_STEXT_BLOCK_TEXT) continue;
+		LL_ITER(line, block->u.t.first_line) {
+			LL_ITER(ch, line->first_char) {
+				if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
+					if (started) {
+						reached = true;
+					}
+				}
+				if (ch->c == start_char) {
+					started = true;
+					continue;
+				}
+
+				if (started && reached && (ch->c == delim)) {
+					done = true;
+					continue;
+				}
+				if (started && reached && (ch->c == end_char)) {
+					return selected_text;
+				}
+				if (started && (!reached) && (ch->c == end_char)) {
+					started = false;
+					selected_text.clear();
+				}
+
+				if (started && (!done)) {
+					if (ch->c != ' ') {
+						selected_text.push_back(ch->c);
+					}
+				}
+
+				if ((started) && (!reached) && (ch->c == delim)) {
+					selected_text.clear();
+				}
+			}
+		}
+	}
+
+	fz_drop_stext_page(context, stext_page);
+	return {};
+
+}
 std::optional<std::wstring> Document::get_text_at_position(int page, float offset_x, float offset_y)
 {
 	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page, nullptr);
@@ -721,7 +805,6 @@ std::optional<std::wstring> Document::get_paper_name_at_position(int page, float
 		if (block->type != FZ_STEXT_BLOCK_TEXT) continue;
 
 
-		//if (fz_contains_rect(block->bbox, selected_rect)) {
 			LL_ITER(line, block->u.t.first_line) {
 				LL_ITER(ch, line->first_char) {
 					if (ch->c == '.') {
@@ -746,7 +829,6 @@ std::optional<std::wstring> Document::get_paper_name_at_position(int page, float
 
 				}
 			}
-		//}
 	}
 
 	fz_drop_stext_page(context, stext_page);

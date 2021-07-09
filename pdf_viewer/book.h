@@ -124,3 +124,9 @@ struct FigureData {
 	float y_offset;
 	std::wstring text;
 };
+
+struct ReferenceData {
+	int page;
+	float y_offset;
+	std::wstring text;
+};

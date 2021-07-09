@@ -4,6 +4,7 @@
 #include <optional>
 #include <iostream>
 #include <thread>
+#include <map>
 
 //#include <Windows.h>
 #include <qstandarditemmodel.h>
@@ -43,6 +44,8 @@ private:
 	bool are_dimensions_correct = false;
 
 	std::vector<FigureData> figure_indices;
+	//std::vector<ReferenceData> reference_indices;
+	std::map<std::wstring, ReferenceData> reference_indices;
 	std::mutex figure_indices_mutex;
 	//std::thread figure_indexing_thread;
 	std::optional<std::thread> figure_indexing_thread = {};
@@ -102,7 +105,9 @@ public:
 	void index_figures(bool* invalid_flag);
 	void stop_indexing();
 	bool find_figure_with_string(std::wstring figure_name, int reference_page, int* page, float* y_offset);
+	std::optional<ReferenceData> find_reference_with_string(std::wstring reference_name);
 	std::optional<std::wstring> get_text_at_position(int page, float offset_x, float offset_y);
+	std::optional<std::wstring> get_reference_text_at_position(int page, float offset_x, float offset_y);
 	std::optional<std::wstring> get_paper_name_at_position(int page, float offset_x, float offset_y);
 	friend class DocumentManager;
 };
