@@ -45,6 +45,7 @@ void Document::add_link(Link link, bool insert_into_database) {
 }
 
 std::wstring Document::get_path() {
+
 	return file_name;
 }
 
@@ -762,7 +763,7 @@ std::optional<std::wstring> Document::get_text_at_position(int page, float offse
 					std::wstring selected_string;
 					bool reached = false;
 					LL_ITER(ch, line->first_char) {
-						if (iswspace(ch->c)) {
+						if (iswspace(ch->c) || (ch == line->last_char)) {
 							if (reached) {
 								return selected_string;
 							}

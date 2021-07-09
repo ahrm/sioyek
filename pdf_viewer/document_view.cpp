@@ -419,7 +419,8 @@ void DocumentView::open_document(std::wstring doc_path,bool* invalid_flag,  bool
 
 
 	//current_document = new Document(mupdf_context, doc_path, database);
-	current_document = document_manager->get_document(doc_path);
+	//current_document = document_manager->get_document(doc_path);
+	current_document = document_manager->get_document(cannonical_path);
 	//current_document->open();
 	if (!current_document->open(invalid_flag)) {
 		current_document = nullptr;

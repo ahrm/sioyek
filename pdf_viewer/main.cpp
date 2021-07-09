@@ -16,7 +16,7 @@
 // (chnage state should be a function that just applies the state without pushing it to history)
 //todo: add "repeat last command" command
 //todo: make it so that when you middle click on the name of a paper, we search it in google scholar.
-//todo: add support for middle clicking on references
+//todo: add support for smart screen fit
 
 #include <iostream>
 #include <vector>
