@@ -442,7 +442,7 @@ void MainWidget::open_document(std::wstring path, std::optional<float> offset_x,
 		update_history_state();
 	}
 
-	main_document_view->open_document(path, &this->is_ui_invalidated);
+	main_document_view->open_document(path, &this->is_render_invalidated);
 	bool has_document = main_document_view_has_document();
 
 	if (has_document) {

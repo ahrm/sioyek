@@ -44,12 +44,21 @@ private:
 	std::vector<float> page_widths;
 	std::mutex page_dims_mutex;
 
+	// These are a heuristic index of all figures and references in the document
+	// The reason that we use a hashmap for reference_indices and a vector for figures is that
+	// the reference we are looking for is usually the last reference with that name, but this is not
+	// necessarily true for the figures.
 	std::vector<FigureData> figure_indices;
 	std::map<std::wstring, ReferenceData> reference_indices;
+
 	std::mutex figure_indices_mutex;
 	std::optional<std::thread> figure_indexing_thread = {};
 	bool is_figure_indexing_required = true;
 	bool is_indexing = false;
+
+	// we do some of the document processing in a background thread (for example indexing all the
+	// figures/indices and computing page heights. we use this pointer to notify the main thread when
+	// processing is complete.
 	bool* invalid_flag_pointer = nullptr;
 
 	int get_mark_index(char symbol);

@@ -501,6 +501,12 @@ void Document::load_page_dimensions() {
 		accum_page_heights = std::move(accum_page_heights_);
 		page_widths = std::move(page_widths_);
 
+		if (invalid_flag_pointer) {
+			*invalid_flag_pointer = true;
+		}
+
+		//are_dimensions_correct = true;
+
 		page_dims_mutex.unlock();
 		});
 	background_page_dimensions_loading_thread.detach();
