@@ -43,12 +43,12 @@
 
 #include "main_widget.h"
 
-extern bool launched_from_file_icon;
-extern bool should_use_multiple_monitors;
-extern bool flat_table_of_contents;
-extern float move_screen_percentage;
+extern bool LAUNCHED_FROM_FILE_ICON;
+extern bool SHOULD_USE_MULTIPLE_MONITORS;
+extern bool FLAT_TABLE_OF_CONTENTS;
+extern float MOVE_SCREEN_PERCENTAGE;
 extern std::filesystem::path parent_path;
-extern std::wstring libgen_address;
+extern std::wstring LIBGEN_ADDRESS;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -149,9 +149,9 @@ input_handler(input_handler)
 
 	// automatically open the helper window in second monitor
 	int num_screens = QApplication::desktop()->numScreens();
-	if ((num_screens > 1) && should_use_multiple_monitors) {
+	if ((num_screens > 1) && SHOULD_USE_MULTIPLE_MONITORS) {
 		helper_opengl_widget->move(first_screen_width, 0);
-		if (!launched_from_file_icon) {
+		if (!LAUNCHED_FROM_FILE_ICON) {
 			helper_opengl_widget->showMaximized();
 		}
 		else{
@@ -363,7 +363,7 @@ void MainWidget::move_document(float dx, float dy)
 void MainWidget::move_document_screens(int num_screens)
 {
 	int view_height = opengl_widget->height();
-	float move_amount = num_screens * view_height * move_screen_percentage;
+	float move_amount = num_screens * view_height * MOVE_SCREEN_PERCENTAGE;
 	move_document(0, move_amount);
 }
 
@@ -898,18 +898,18 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		move_document_screens(-1 * rp);
 	}
 	if (command->name == "move_down") {
-		move_document(0.0f, 72.0f * rp * vertical_move_amount);
+		move_document(0.0f, 72.0f * rp * VERTICAL_MOVE_AMOUNT);
 	}
 	else if (command->name == "move_up") {
-		move_document(0.0f, -72.0f * rp * vertical_move_amount);
+		move_document(0.0f, -72.0f * rp * VERTICAL_MOVE_AMOUNT);
 	}
 
 	else if (command->name == "move_right") {
-		main_document_view->move(72.0f * rp * horizontal_move_amount, 0.0f);
+		main_document_view->move(72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
 	}
 
 	else if (command->name == "move_left") {
-		main_document_view->move(-72.0f * rp * horizontal_move_amount, 0.0f);
+		main_document_view->move(-72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
 	}
 
 	else if (command->name == "link") {
@@ -984,7 +984,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	else if (command->name == "goto_toc") {
 		if (main_document_view->get_document()->has_toc()) {
-			if (flat_table_of_contents) {
+			if (FLAT_TABLE_OF_CONTENTS) {
 				std::vector<std::wstring> flat_toc;
 				std::vector<int> current_document_toc_pages;
 				get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);

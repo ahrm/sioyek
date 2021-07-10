@@ -500,7 +500,6 @@ void Document::load_page_dimensions() {
 		page_heights = std::move(page_heights_);
 		accum_page_heights = std::move(accum_page_heights_);
 		page_widths = std::move(page_widths_);
-		are_dimensions_correct = true;
 
 		page_dims_mutex.unlock();
 		});

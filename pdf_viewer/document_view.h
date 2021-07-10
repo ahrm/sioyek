@@ -25,7 +25,7 @@
 #include "ui.h"
 
 extern float ZOOM_INC_FACTOR;
-extern const int page_paddings;
+extern const int PAGE_PADDINGS;
 
 class DocumentView {
 protected:

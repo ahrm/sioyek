@@ -22,6 +22,7 @@
 class Document {
 
 private:
+
 	std::vector<Mark> marks;
 	std::vector<BookMark> bookmarks;
 	std::vector<Link> links;
@@ -30,6 +31,7 @@ private:
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
 
+	// number of pages in the document
 	std::optional<int> cached_num_pages;
 
 	fz_context* context = nullptr;
@@ -41,13 +43,10 @@ private:
 	std::vector<float> page_heights;
 	std::vector<float> page_widths;
 	std::mutex page_dims_mutex;
-	bool are_dimensions_correct = false;
 
 	std::vector<FigureData> figure_indices;
-	//std::vector<ReferenceData> reference_indices;
 	std::map<std::wstring, ReferenceData> reference_indices;
 	std::mutex figure_indices_mutex;
-	//std::thread figure_indexing_thread;
 	std::optional<std::thread> figure_indexing_thread = {};
 	bool is_figure_indexing_required = true;
 	bool is_indexing = false;

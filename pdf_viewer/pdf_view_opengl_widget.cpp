@@ -1,9 +1,9 @@
 #include "pdf_view_opengl_widget.h"
 
 extern std::filesystem::path parent_path;
-extern float background_color[3];
-extern float vertical_line_width;
-extern float vertical_line_freq;
+extern float BACKGROUND_COLOR[3];
+extern float VERTICAL_LINE_WIDTH;
+extern float VERTICAL_LINE_FREQ;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -174,7 +174,7 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, int vertical_pos) {
 	int height = this->height();
 
 	float gl_vertical_pos = -(2 * static_cast<float>(vertical_pos) / height  -1);
-	float bar_height = vertical_line_width;
+	float bar_height = VERTICAL_LINE_WIDTH;
 
 	//float line_data[] = {
 	//	-1, gl_vertical_pos,
@@ -198,7 +198,7 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, int vertical_pos) {
 	}
 	float time = -QDateTime::currentDateTime().msecsTo(creation_time);
 	glUniform1f(shared_gl_objects.line_time_uniform_location, time);
-	glUniform1f(shared_gl_objects.line_freq_uniform_location, vertical_line_freq);
+	glUniform1f(shared_gl_objects.line_freq_uniform_location, VERTICAL_LINE_FREQ);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
@@ -366,7 +366,7 @@ void PdfViewOpenGLWidget::render() {
 	std::vector<int> visible_pages;
 	document_view->get_visible_pages(document_view->get_view_height(), visible_pages);
 
-	glClearColor(background_color[0], background_color[1], background_color[2], 1.0f);
+	glClearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 

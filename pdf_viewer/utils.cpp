@@ -14,8 +14,8 @@
 #include <qurl.h>
 #include <qmessagebox.h>
 
-extern std::wstring libgen_address;
-extern std::wstring google_scholar_address;
+extern std::wstring LIBGEN_ADDRESS;
+extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
@@ -620,13 +620,13 @@ void open_url(const std::string &url_string) {
 
 void search_google_scholar(const std::wstring& search_string) {
 
-	QString qurl_string = QString::fromStdWString(google_scholar_address + search_string);
+	QString qurl_string = QString::fromStdWString(GOOGLE_SCHOLAR_ADDRESS + search_string);
 	open_url(qurl_string);
 }
 
 void search_libgen(const std::wstring& search_string) {
 
-	QString qurl_string = QString::fromStdWString(libgen_address + search_string);
+	QString qurl_string = QString::fromStdWString(LIBGEN_ADDRESS + search_string);
 	open_url(qurl_string);
 }
 

@@ -20,8 +20,8 @@
 #include "input.h"
 #include "pdf_view_opengl_widget.h"
 
-extern float vertical_move_amount;
-extern float horizontal_move_amount;
+extern float VERTICAL_MOVE_AMOUNT;
+extern float HORIZONTAL_MOVE_AMOUNT;
 extern std::filesystem::path last_path_file_absolute_location;
 
 

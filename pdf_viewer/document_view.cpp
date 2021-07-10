@@ -1,7 +1,7 @@
 #include "document_view.h"
 
-extern float background_color[3];
-extern float move_screen_percentage;
+extern float BACKGROUND_COLOR[3];
+extern float MOVE_SCREEN_PERCENTAGE;
 
 DocumentView::DocumentView( fz_context* mupdf_context,
 	sqlite3* db,
@@ -389,13 +389,13 @@ void DocumentView::move_pages(int num_pages) {
 	if (current_page == -1) {
 		current_page = 0;
 	}
-	move_absolute(0, num_pages * (current_document->get_page_height(current_page) + page_paddings));
+	move_absolute(0, num_pages * (current_document->get_page_height(current_page) + PAGE_PADDINGS));
 }
 
 void DocumentView::move_screens(int num_screens)
 {
 	float screen_height_in_doc_space = view_height / zoom_level;
-	set_offset_y(get_offset_y() + num_screens * screen_height_in_doc_space * move_screen_percentage);
+	set_offset_y(get_offset_y() + num_screens * screen_height_in_doc_space * MOVE_SCREEN_PERCENTAGE);
 	//return move_amount;
 }
 

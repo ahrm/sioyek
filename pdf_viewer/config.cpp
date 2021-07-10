@@ -1,65 +1,39 @@
 #include "config.h"
+#include <cassert>
 
 extern float ZOOM_INC_FACTOR;
-extern float vertical_line_width;
-extern float vertical_line_freq;
-extern float vertical_move_amount;
-extern float horizontal_move_amount;
-extern float move_screen_percentage;
-extern float background_color[3];
-extern bool flat_table_of_contents;
-extern bool should_use_multiple_monitors;
-extern std::wstring libgen_address;
-extern std::wstring google_scholar_address;
+extern float VERTICAL_LINE_WIDTH;
+extern float VERTICAL_LINE_FREQ;
+extern float VERTICAL_MOVE_AMOUNT;
+extern float HORIZONTAL_MOVE_AMOUNT;
+extern float MOVE_SCREEN_PERCENTAGE;
+extern float BACKGROUND_COLOR[3];
+extern bool FLAT_TABLE_OF_CONTENTS;
+extern bool SHOULD_USE_MULTIPLE_MONITORS;
+extern std::wstring LIBGEN_ADDRESS;
+extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
+
+template<typename T>
+void* generic_deserializer(std::wstringstream& stream, void* res_) {
+	T* res = static_cast<T*>(res_);
+	stream >> *res;
+	return res;
+}
 
 void int_serializer(void* int_pointer, std::wstringstream& stream) {
 	stream << *(int*)int_pointer;
 }
+
 void bool_serializer(void* bool_pointer, std::wstringstream& stream) {
 	stream << *(bool*)bool_pointer;
 }
-
-
-void* int_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
-	int* res = (int*)res_;
-	if (res == nullptr) {
-		res = new int;
-	}
-	stream >> *res;
-	return res;
-}
-
-void* bool_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
-	bool* res = (bool*)res_;
-	if (res == nullptr) {
-		res = new bool;
-	}
-	stream >> *res;
-	return res;
-}
-
-//void string_serializer(void* string_pointer, std::wstringstream& stream) {
-//	stream << *(std::wstring*)string_pointer;
-//}
-//
-//void* string_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
-//	delete res_;
-//	
-//	std::wstring res;
-//	std::getline(stream, res);
-//
-//	while (iswspace(res[0])) {
-//		res.erase(res.begin());
-//	}
-//
-//	return new std::wstring(res);
-//}
 
 void string_serializer(void* string_pointer, std::wstringstream& stream) {
 	stream << *(std::wstring*)string_pointer;
 }
 
-void* string_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
+void* string_deserializer(std::wstringstream& stream, void* res_) {
+	assert(res_ != nullptr);
 	//delete res_;
 	
 	std::wstring* res = static_cast<std::wstring*>(res_);
@@ -70,14 +44,6 @@ void* string_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
 
 	}
 	return res;
-	//std::wstring res;
-	//std::getline(stream, res);
-
-	//while (iswspace(res[0])) {
-	//	res.erase(res.begin());
-	//}
-
-	//return new std::wstring(res);
 }
 
 template<int N>
@@ -88,7 +54,8 @@ void vec_n_serializer(void* vec_n_pointer, std::wstringstream& stream) {
 }
 
 template<int N>
-void* vec_n_deserializer(std::wstringstream& stream, void* res_ = nullptr) {
+void* vec_n_deserializer(std::wstringstream& stream, void* res_) {
+	assert(res_ != nullptr);
 	float* res = (float*)res_;
 	if (res == nullptr) {
 		res = new float[N];
@@ -105,17 +72,6 @@ void float_serializer(void* float_pointer, std::wstringstream& stream) {
 	stream << *(float*)float_pointer;
 }
 
-
-void* float_deserializer(std::wstringstream& stream, void* res_) {
-	float* res = (float*)res_;
-
-	if (res == nullptr) {
-		res = new float;
-	}
-
-	stream >> *res;
-	return res;
-}
 
 void* Config::get_value() {
 	return value;
@@ -134,29 +90,25 @@ ConfigManager::ConfigManager(std::filesystem::path path) {
 	auto vec4_serializer = vec_n_serializer<4>;
 	auto vec3_deserializer = vec_n_deserializer<3>;
 	auto vec4_deserializer = vec_n_deserializer<4>;
+	auto float_deserializer = generic_deserializer<float>;
+	auto bool_deserializer = generic_deserializer<bool>;
 
-	//configs.push_back({ L"text_highlight_color", default_text_highlight_color, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"text_highlight_color", default_text_highlight_color, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"vertical_line_color", default_vertical_line_color, vec4_serializer, vec4_deserializer });
-	configs.push_back({ L"vertical_line_width", &vertical_line_width, float_serializer, float_deserializer });
-	configs.push_back({ L"vertical_line_freq", &vertical_line_freq, float_serializer, float_deserializer });
-	configs.push_back({ L"search_highlight_color", default_search_highlight_color, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"link_highlight_color", default_link_highlight_color, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"background_color", background_color, vec3_serializer, vec3_deserializer });
-	//configs.push_back({ L"google_scholar_address", nullptr, string_serializer, string_deserializer });
-	//configs.push_back({ L"libgen_address", nullptr, string_serializer, string_deserializer });
-	configs.push_back({ L"google_scholar_address", &google_scholar_address, string_serializer, string_deserializer });
-	configs.push_back({ L"libgen_address", &libgen_address, string_serializer, string_deserializer });
+	configs.push_back({ L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"vertical_line_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, vec4_deserializer });
+	configs.push_back({ L"vertical_line_width", &VERTICAL_LINE_WIDTH, float_serializer, float_deserializer });
+	configs.push_back({ L"vertical_line_freq", &VERTICAL_LINE_FREQ, float_serializer, float_deserializer });
+	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"google_scholar_address", &GOOGLE_SCHOLAR_ADDRESS, string_serializer, string_deserializer });
+	configs.push_back({ L"libgen_address", &LIBGEN_ADDRESS, string_serializer, string_deserializer });
 	configs.push_back({ L"zoom_inc_factor", &ZOOM_INC_FACTOR, float_serializer, float_deserializer });
-	configs.push_back({ L"vertical_move_amount", &vertical_move_amount, float_serializer, float_deserializer });
-	configs.push_back({ L"horizontal_move_amount", &horizontal_move_amount, float_serializer, float_deserializer });
-	configs.push_back({ L"move_screen_percentage", &move_screen_percentage, float_serializer, float_deserializer });
-	//configs.push_back({ L"item_list_stylesheet", nullptr, string_serializer, string_deserializer });
-	//configs.push_back({ L"item_list_selected_stylesheet", nullptr, string_serializer, string_deserializer });
-	//configs.push_back({ L"text_command_line_stylesheet", nullptr, string_serializer, string_deserializer });
-	//configs.push_back({ L"status_label_stylesheet", nullptr, string_serializer, string_deserializer });
-	configs.push_back({ L"flat_toc", &flat_table_of_contents, bool_serializer, bool_deserializer });
-	configs.push_back({ L"should_use_multiple_monitors", &should_use_multiple_monitors, bool_serializer, bool_deserializer });
+	configs.push_back({ L"vertical_move_amount", &VERTICAL_MOVE_AMOUNT, float_serializer, float_deserializer });
+	configs.push_back({ L"horizontal_move_amount", &HORIZONTAL_MOVE_AMOUNT, float_serializer, float_deserializer });
+	configs.push_back({ L"move_screen_percentage", &MOVE_SCREEN_PERCENTAGE, float_serializer, float_deserializer });
+	configs.push_back({ L"flat_toc", &FLAT_TABLE_OF_CONTENTS, bool_serializer, bool_deserializer });
+	configs.push_back({ L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS, bool_serializer, bool_deserializer });
+
 	std::wifstream infile(path);
 	deserialize(infile);
 	infile.close();
@@ -173,7 +125,6 @@ void ConfigManager::serialize(std::wofstream& file) {
 	}
 }
 
-		//list_view->setStyleSheet("QListView::item::selected::{ background-color: white;color: black; }");
 void ConfigManager::deserialize(std::wifstream& file) {
 	std::wstring line;
 

@@ -61,7 +61,7 @@ void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_l
 		if (should_add) {
 			pending_render_requests.push_back(req);
 		}
-		if (pending_render_requests.size() > max_pending_requests) {
+		if (pending_render_requests.size() > MAX_PENDING_REQUESTS) {
 			pending_render_requests.erase(pending_render_requests.begin());
 		}
 		pending_requests_mutex.unlock();
@@ -213,7 +213,7 @@ void PdfRenderer::delete_old_pages(bool force_all) {
 
 		for (int i = 0; i < cached_responses.size(); i++) {
 			if ((cached_responses[i].last_access_time < time_threshold)
-				&& ((now - cached_responses[i].last_access_time) > cache_invalid_milies)) {
+				&& ((now - cached_responses[i].last_access_time) > CACHE_INVALID_MILIES)) {
 				std::wcout << "deleting cached texture ... " << std::endl;
 				indices_to_delete.push_back(i);
 			}
