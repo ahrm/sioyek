@@ -291,6 +291,7 @@ void Document::create_toc_tree(std::vector<TocNode*>& toc) {
 	fz_try(context) {
 		fz_outline* outline = get_toc_outline();
 		convert_toc_tree(outline, toc);
+		fz_drop_outline(context, outline);
 	}
 	fz_catch(context) {
 		std::cerr << "Error: Could not load outline ... " << std::endl;
