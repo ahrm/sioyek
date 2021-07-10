@@ -330,9 +330,9 @@ void MainWidget::validate_render() {
 	}
 
 	if (main_document_view && main_document_view->get_document()) {
-		Link* link = main_document_view->find_closest_link();
+		std::optional<Link> link = main_document_view->find_closest_link();
 		if (link) {
-			helper_document_view->goto_link(link);
+			helper_document_view->goto_link(&link.value());
 		}
 		else {
 			helper_document_view->set_null_document();
@@ -630,16 +630,25 @@ void MainWidget::prev_state()
 		*/
 		if (link_to_edit) {
 
+			Document* link_owner = document_manager->get_document(link_to_edit.value().document_path);
+
 			float link_new_offset_x = main_document_view->get_offset_x();
 			float link_new_offset_y = main_document_view->get_offset_y();
 			float link_new_zoom_level = main_document_view->get_zoom_level();
-			link_to_edit->dest_offset_x = link_new_offset_x;
-			link_to_edit->dest_offset_y = link_new_offset_y;
-			link_to_edit->dest_zoom_level = link_new_zoom_level;
+			link_to_edit.value().dest_offset_x = link_new_offset_x;
+			link_to_edit.value().dest_offset_y = link_new_offset_y;
+			link_to_edit.value().dest_zoom_level = link_new_zoom_level;
+
+			if (link_owner) {
+				link_owner->update_link(link_to_edit.value());
+			}
+			//link_to_edit->dest_offset_x = link_new_offset_x;
+			//link_to_edit->dest_offset_y = link_new_offset_y;
+			//link_to_edit->dest_zoom_level = link_new_zoom_level;
 
 			update_link(db, history[current_history_index].document_path,
 				link_new_offset_x, link_new_offset_y, link_new_zoom_level, link_to_edit->src_offset_y);
-			link_to_edit = nullptr;
+			link_to_edit = {};
 		}
 
 		set_main_document_view_state(history[current_history_index]);
@@ -917,7 +926,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 
 	else if (command->name == "goto_link") {
-		Link* link = main_document_view->find_closest_link();
+		std::optional<Link> link = main_document_view->find_closest_link();
 		if (link) {
 
 			open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
@@ -925,7 +934,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 	}
 	else if (command->name == "edit_link") {
-		Link* link = main_document_view->find_closest_link();
+		std::optional<Link> link = main_document_view->find_closest_link();
 		if (link) {
 			link_to_edit = link;
 			open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);

@@ -24,11 +24,8 @@ void Document::load_document_metadata_from_db() {
 }
 
 
-void Document::add_bookmark(std::wstring desc, float y_offset) {
-	BookMark res;
-	res.description = desc;
-	res.y_offset = y_offset;
-	bookmarks.push_back(res);
+void Document::add_bookmark(const std::wstring& desc, float y_offset) {
+	bookmarks.push_back({y_offset, desc});
 	insert_bookmark(db, file_name, desc, y_offset);
 }
 
@@ -49,38 +46,46 @@ std::wstring Document::get_path() {
 	return file_name;
 }
 
-BookMark* Document::find_closest_bookmark(float to_offset_y, int* index) {
+int Document::find_closest_bookmark_index(float to_offset_y) {
 
 	int min_index = argminf<BookMark>(bookmarks, [to_offset_y](BookMark bm) {
 		return abs(bm.y_offset - to_offset_y);
 		});
 
-	if (min_index >= 0) {
-		if (index) *index = min_index;
-		return &bookmarks[min_index];
-	}
-	return nullptr;
+	return min_index;
 }
 
 void Document::delete_closest_bookmark(float to_y_offset) {
-	int closest_index = -1;
-	if (find_closest_bookmark(to_y_offset, &closest_index)) {
+	int closest_index = find_closest_bookmark_index(to_y_offset);
+	if (closest_index > -1) {
 		delete_bookmark(db, get_path(), bookmarks[closest_index].y_offset);
 		bookmarks.erase(bookmarks.begin() + closest_index);
 	}
 }
 
-//todo: sort the links and perform a binary search
-Link* Document::find_closest_link(float to_offset_y, int* index) {
+std::optional<Link> Document::find_closest_link(float to_offset_y, int* index) {
 	int min_index = argminf<Link>(links, [to_offset_y](Link l) {
 		return abs(l.src_offset_y - to_offset_y);
 		});
 
 	if (min_index >= 0) {
 		if (index) *index = min_index;
-		return &links[min_index];
+		return links[min_index];
 	}
-	return nullptr;
+	return {};
+}
+
+bool Document::update_link(Link new_link)
+{
+	for (auto& link : links) {
+		if (link.src_offset_y == new_link.src_offset_y) {
+			link.dest_offset_x = new_link.dest_offset_x;
+			link.dest_offset_y = new_link.dest_offset_y;
+			link.dest_zoom_level = new_link.dest_zoom_level;
+			return true;
+		}
+	}
+	return false;
 }
 
 void Document::delete_closest_link(float to_offset_y) {
@@ -261,20 +266,6 @@ float Document::get_accum_page_height(int page_index)
 	return accum_page_heights[page_index];
 }
 
-//const vector<float>& Document::get_page_heights()
-//{
-//	return page_heights;
-//}
-//
-//const vector<float>& Document::get_page_widths()
-//{
-//	return page_widths;
-//}
-//
-//const vector<float>& Document::get_accum_page_heights()
-//{
-//	return accum_page_heights;
-//}
 
 fz_outline* Document::get_toc_outline() {
 	fz_outline* res = nullptr;
@@ -328,6 +319,7 @@ void Document::convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output)
 		output.push_back(current_node);
 	} while (root = root->next);
 }
+
 fz_link* Document::get_page_links(int page_number) {
 	if (cached_page_links.find(page_number) != cached_page_links.end()) {
 		return cached_page_links.at(page_number);

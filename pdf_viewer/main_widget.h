@@ -60,7 +60,7 @@ private:
 	bool is_word_selecting;
 	std::wstring selected_text;
 
-	Link* link_to_edit = nullptr;
+	std::optional<Link> link_to_edit = {};
 
 	std::optional<std::pair<std::optional<std::wstring>, Link>> pending_link;
 

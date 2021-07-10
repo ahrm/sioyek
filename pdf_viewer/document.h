@@ -63,22 +63,27 @@ private:
 
 	int get_mark_index(char symbol);
 	fz_outline* get_toc_outline();
+
+	// load marks, bookmarks, links, etc.
 	void load_document_metadata_from_db();
+
+	// convetr the fz_outline structure to our own TocNode structure
 	void create_toc_tree(std::vector<TocNode*>& toc);
 
 	Document(fz_context* context, std::wstring file_name, sqlite3* db);
 public:
 	fz_document* doc = nullptr;
 
-	void add_bookmark(std::wstring desc, float y_offset);
+	void add_bookmark(const std::wstring& desc, float y_offset);
 	void count_chapter_pages(std::vector<int> &page_counts);
 	void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
 	void count_chapter_pages_accum(std::vector<int> &page_counts);
 	bool get_is_indexing();
 	void add_link(Link link, bool insert_into_database = true);
 	std::wstring get_path();
-	BookMark* find_closest_bookmark(float to_offset_y, int* index = nullptr);
-	Link* find_closest_link(float to_offset_y, int* index = nullptr);
+	int find_closest_bookmark_index(float to_offset_y);
+	std::optional<Link> find_closest_link(float to_offset_y, int* index = nullptr);
+	bool update_link(Link new_link);
 	void delete_closest_bookmark(float to_y_offset);
 	void delete_closest_link(float to_offset_y);
 	const std::vector<BookMark>& get_bookmarks() const;

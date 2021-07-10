@@ -184,7 +184,7 @@ bool create_links_table(sqlite3* db) {
 		error_message);
 }
 
-bool insert_book(sqlite3* db, std::wstring path, float zoom_level, float offset_x, float offset_y) {
+bool insert_book(sqlite3* db, const std::wstring& path, float zoom_level, float offset_x, float offset_y) {
 	const char* insert_books_sql = ""\
 		"INSERT INTO opened_books (PATH, zoom_level, offset_x, offset_y, last_access_time) VALUES ";
 
@@ -197,7 +197,7 @@ bool insert_book(sqlite3* db, std::wstring path, float zoom_level, float offset_
 		error_message);
 }
 
-bool update_book(sqlite3* db, std::wstring path, float zoom_level, float offset_x, float offset_y) {
+bool update_book(sqlite3* db, const std::wstring& path, float zoom_level, float offset_x, float offset_y) {
 
 	std::wstringstream ss;
 	ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time) values ('" <<
@@ -209,7 +209,7 @@ bool update_book(sqlite3* db, std::wstring path, float zoom_level, float offset_
 		error_message);
 }
 
-bool insert_mark(sqlite3* db, std::wstring document_path, char symbol, float offset_y) {
+bool insert_mark(sqlite3* db, const std::wstring& document_path, char symbol, float offset_y) {
 
 	//todo: probably should escape symbol too
 	std::wstringstream ss;
@@ -232,7 +232,7 @@ bool delete_mark_with_symbol(sqlite3* db, char symbol) {
 		error_message);
 }
 
-bool insert_bookmark(sqlite3* db, std::wstring document_path, std::wstring desc, float offset_y) {
+bool insert_bookmark(sqlite3* db, const std::wstring& document_path, const std::wstring& desc, float offset_y) {
 
 	std::wstringstream ss;
 	ss << "INSERT INTO bookmarks (document_path, desc, offset_y) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', " << offset_y << ");";
@@ -243,7 +243,7 @@ bool insert_bookmark(sqlite3* db, std::wstring document_path, std::wstring desc,
 		error_message);
 }
 
-bool insert_link(sqlite3* db, std::wstring src_document_path, std::wstring dst_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
+bool insert_link(sqlite3* db, const std::wstring& src_document_path, const std::wstring& dst_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
 
 	std::wstringstream ss;
 	ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level) VALUES ('" <<
@@ -255,7 +255,7 @@ bool insert_link(sqlite3* db, std::wstring src_document_path, std::wstring dst_d
 		error_message);
 }
 
-bool update_link(sqlite3* db, std::wstring src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
+bool update_link(sqlite3* db, const std::wstring& src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
 
 	std::wstringstream ss;
 	ss << "UPDATE links SET dst_offset_x=" << dst_offset_x << ", dst_offset_y=" << dst_offset_y <<
@@ -268,7 +268,7 @@ bool update_link(sqlite3* db, std::wstring src_document_path, float dst_offset_x
 		error_message);
 }
 
-bool delete_link(sqlite3* db, std::wstring src_document_path, float src_offset_y) {
+bool delete_link(sqlite3* db, const std::wstring& src_document_path, float src_offset_y) {
 
 	std::wstringstream ss;
 	ss << "DELETE FROM links where src_document='" << esc(src_document_path) << "'AND src_offset_y=" << src_offset_y << ";";
@@ -279,7 +279,7 @@ bool delete_link(sqlite3* db, std::wstring src_document_path, float src_offset_y
 		error_message);
 }
 
-bool delete_bookmark(sqlite3* db, std::wstring src_document_path, float src_offset_y) {
+bool delete_bookmark(sqlite3* db, const std::wstring& src_document_path, float src_offset_y) {
 
 	std::wstringstream ss;
 	ss << "DELETE FROM bookmarks where document_path='" << esc(src_document_path) << "'AND offset_y=" << src_offset_y << ";";
@@ -290,7 +290,7 @@ bool delete_bookmark(sqlite3* db, std::wstring src_document_path, float src_offs
 		error_message);
 }
 
-bool update_mark(sqlite3* db, std::wstring document_path, char symbol, float offset_y) {
+bool update_mark(sqlite3* db, const std::wstring& document_path, char symbol, float offset_y) {
 
 	std::wstringstream ss;
 	ss << "UPDATE marks set offset_y=" << offset_y << " where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
@@ -302,7 +302,7 @@ bool update_mark(sqlite3* db, std::wstring document_path, char symbol, float off
 }
 
 
-bool select_opened_book(sqlite3* db, std::wstring book_path, std::vector<OpenedBookState> &out_result) {
+bool select_opened_book(sqlite3* db, const std::wstring& book_path, std::vector<OpenedBookState> &out_result) {
 		std::wstringstream ss;
 		ss << "select zoom_level, offset_x, offset_y from opened_books where path='" << esc(book_path) << "'";
 		char* error_message = nullptr;
@@ -320,7 +320,7 @@ bool select_prev_docs(sqlite3* db,  std::vector<std::wstring> &out_result) {
 			error_message);
 }
 
-bool select_mark(sqlite3* db, std::wstring book_path, std::vector<Mark> &out_result) {
+bool select_mark(sqlite3* db, const std::wstring& book_path, std::vector<Mark> &out_result) {
 		std::wstringstream ss;
 		ss << "select symbol, offset_y from marks where document_path='" << esc(book_path) << "';";
 
@@ -340,7 +340,7 @@ bool select_global_mark(sqlite3* db, char symbol, std::vector<std::pair<std::wst
 			error_message);
 }
 
-bool select_bookmark(sqlite3* db, std::wstring book_path, std::vector<BookMark> &out_result) {
+bool select_bookmark(sqlite3* db, const std::wstring& book_path, std::vector<BookMark> &out_result) {
 		std::wstringstream ss;
 		ss << "select desc, offset_y from bookmarks where document_path='" << esc(book_path) << "';";
 
@@ -360,7 +360,7 @@ bool global_select_bookmark(sqlite3* db,  std::vector<std::pair<std::wstring, Bo
 			error_message);
 }
 
-bool select_links(sqlite3* db, std::wstring src_document_path, std::vector<Link> &out_result) {
+bool select_links(sqlite3* db, const std::wstring& src_document_path, std::vector<Link> &out_result) {
 		std::wstringstream ss;
 		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level from links where src_document='" << esc(src_document_path) << "';";
 

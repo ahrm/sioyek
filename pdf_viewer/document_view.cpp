@@ -81,11 +81,11 @@ Document* DocumentView::get_document() {
 //	return current_search_result_index;
 //}
 
-Link* DocumentView::find_closest_link() {
+std::optional<Link> DocumentView::find_closest_link() {
 	if (current_document) {
 		return current_document->find_closest_link(offset_y);
 	}
-	return nullptr;
+	return {};
 }
 
 void DocumentView::goto_link(Link* link)

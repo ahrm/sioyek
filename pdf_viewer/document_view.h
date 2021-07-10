@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <thread>
+#include <optional>
 
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -55,7 +56,7 @@ public:
 	void set_book_state(OpenedBookState state);
 	inline void set_offsets(float new_offset_x, float new_offset_y);
 	Document* get_document();
-	Link* find_closest_link();
+	std::optional<Link> find_closest_link();
 	void goto_link(Link* link);
 	void delete_closest_link();
 	void delete_closest_bookmark();
