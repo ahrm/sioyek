@@ -89,6 +89,7 @@ public:
 	unsigned int get_milies_since_last_edit_time();
 	float get_page_height(int page_index);
 	float get_page_width(int page_index);
+	float get_page_width_smart(int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
 	float get_accum_page_height(int page_index);
 	//const vector<float>& get_page_heights();
 	//const vector<float>& get_page_widths();

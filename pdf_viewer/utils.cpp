@@ -38,10 +38,12 @@ void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output, fz_contex
 
 		TocNode* current_node = new TocNode;
 		current_node->title = utf8_decode(root->title);
-		//current_node->page = root->page;
 		current_node->x = root->x;
 		current_node->y = root->y;
-		if (root->page == -1) {
+
+		if (root->page == -1) { 
+			// in reflowable documents such as epub we can't have static page numbers and
+			// mupdf has to resolve the link
 			float xp, yp;
 			fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
 			int chapter_page = 0;
@@ -52,17 +54,12 @@ void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output, fz_contex
 		}
 		convert_toc_tree(root->down, current_node->children, context, doc);
 
-
-		//float xp, yp;
-		//fz_layout_document(context, doc, 600, 800, 20);
-		//fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
-
 		output.push_back(current_node);
 	} while (root = root->next);
 }
 
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages) {
-	// Enumerate ToC nodes in the DFS order
+	// Enumerate ToC nodes in DFS order
 
 	for (const auto& root : roots) {
 		output.push_back(root->title);
@@ -72,10 +69,8 @@ void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>&
 }
 
 TocNode* get_toc_node_from_indices_helper(const std::vector<TocNode*>& roots, const std::vector<int>& indices, int pointer) {
-	if (pointer < 0) {
-		// should not happen
-		assert(false);
-	}
+	assert(pointer >= 0);
+
 	if (pointer == 0) {
 		return roots[indices[pointer]];
 	}
@@ -338,7 +333,6 @@ fz_stext_char* find_closest_char_to_document_point(fz_stext_page* stext_page, fz
 		if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
 			LL_ITER(current_line, current_block->u.t.first_line) {
 				LL_ITER(current_char, current_line->first_char) {
-					//fz_point quad_center = find_quad_center(current_char->quad); // todo: use .origin instead
 					fz_point quad_center = current_char->origin;
 					float distance = dist_squared(document_point, quad_center);
 					if (distance < min_distance) {
@@ -421,7 +415,7 @@ bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstri
 	return false;
 }
 
-std::wstring get_figure_string_from_raw_string(std::wstring raw_string) {
+std::wstring get_figure_string_from_raw_string(const std::wstring& raw_string) {
 
 	std::wstring res;
 
@@ -444,15 +438,6 @@ std::wstring get_figure_string_from_raw_string(std::wstring raw_string) {
 		}
 	}
 	return res;
-}
-std::wstring get_reference_from_reference_string(std::wstring reference_string) {
-	std::wregex reference_regex(L"[0-9]+");
-	std::wsmatch match;
-	
-	if (std::regex_search(reference_string, match, reference_regex)) {
-		return match[0].str();
-	}
-	return L"";
 }
 
 bool is_line_referencish(std::wstring line_text) {
@@ -528,12 +513,10 @@ fz_rect bound_rects(const std::vector<fz_rect>& rects) {
 	return res;
 
 }
-void simplify_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects) {
-	
-	//for (fz_rect rect : selected_character_rects) {
-	//	resulting_rects.push_back(rect);
-	//}
-	//return;
+void merge_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects) {
+	/*
+		This function merges the bounding boxes of all selected characters into large line chunks.
+	*/
 
 	if (selected_character_rects.size() == 0) {
 		return;
@@ -570,14 +553,13 @@ void simplify_selected_character_rects(std::vector<fz_rect> selected_character_r
 		if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1) ) {
 			resulting_rects[i + 1].y0 = resulting_rects[i].y1;
 		}
-		//if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1) && (resulting_rects[i+1].y0 > (resulting_rects[i].y0 + height))) {
-		//	resulting_rects[i + 1].y0 = resulting_rects[i].y1;
-		//}
 	}
 
 }
 
-void string_split(std::string haystack, std::string needle, std::vector<std::string> &res) {
+void string_split(std::string haystack, const std::string& needle, std::vector<std::string> &res) {
+	//todo: we can significantly reduce string allocations in this function if it turns out to be a 
+	//performance bottleneck.
 
 	size_t loc = -1;
 	size_t needle_size = needle.size();
@@ -626,42 +608,42 @@ void run_command(std::wstring command, std::wstring parameters){
 
 }
 
-void open_url(QString url_string) {
+void open_url(const QString& url_string) {
 	QDesktopServices::openUrl(url_string);
 }
 
-void open_url(std::string url_string) {
+void open_url(const std::string &url_string) {
 	QString qurl_string = QString::fromStdString(url_string);
 	open_url(qurl_string);
 }
 
 
-void search_google_scholar(std::wstring search_string) {
+void search_google_scholar(const std::wstring& search_string) {
 
 	QString qurl_string = QString::fromStdWString(google_scholar_address + search_string);
 	open_url(qurl_string);
 }
 
-void search_libgen(std::wstring search_string) {
+void search_libgen(const std::wstring& search_string) {
 
 	QString qurl_string = QString::fromStdWString(libgen_address + search_string);
 	open_url(qurl_string);
 }
 
-void search_custom_engine(std::wstring search_string, std::wstring custom_engine_url) {
+void search_custom_engine(const std::wstring& search_string, const std::wstring& custom_engine_url) {
 
 	QString qurl_string = QString::fromStdWString(custom_engine_url + search_string);
 	open_url(qurl_string);
 }
 
 
-void open_url(std::wstring url_string) {
+void open_url(const std::wstring& url_string) {
 
 	QString qurl_string = QString::fromStdWString(url_string);
 	open_url(qurl_string);
 }
 
-void open_file(std::filesystem::path path) {
+void open_file(const std::filesystem::path& path) {
 	std::wstring generic_file_path = path.generic_wstring();
 	open_url(generic_file_path);
 }

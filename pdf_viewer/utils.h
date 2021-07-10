@@ -56,25 +56,28 @@ bool is_rtl(int c);
 std::wstring reverse_wstring(const std::wstring& inp);
 bool parse_search_command(const std::wstring& search_command, int* out_begin, int* out_end, std::wstring* search_text);
 QStandardItemModel* get_model_from_toc(const std::vector<TocNode*>& roots);
+
+// given a tree of toc nodes and an array of indices, returns the node whose ith parent is indexed by the ith element
+// of the indices array. That is:
+// root[indices[0]][indices[1]] ... [indices[indices.size()-1]]
 TocNode* get_toc_node_from_indices(const std::vector<TocNode*>& roots, const std::vector<int>& indices);
+
 fz_stext_char* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index);
 void get_stext_block_string(fz_stext_block* block, std::wstring& res);
 void get_stext_page_string(fz_stext_page* page, std::wstring& res);
 bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstring& str);
 bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, const std::wstring& str);
-std::wstring get_figure_string_from_raw_string(std::wstring raw_string);
-void simplify_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects);
-void pdf_sandwich_maker(fz_context* context, std::wstring original_file_name, std::wstring sandwich_file_name);
-void string_split(std::string haystack, std::string needle, std::vector<std::string>& res);
+std::wstring get_figure_string_from_raw_string(const std::wstring& raw_string);
+void merge_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects);
+void string_split(std::string haystack, const std::string& needle, std::vector<std::string>& res);
 void run_command(std::wstring command, std::wstring parameters);
 
 std::wstring get_string_from_stext_line(fz_stext_line* line);
 std::wstring get_string_from_stext_block(fz_stext_block* block);
-std::wstring get_reference_from_reference_string(std::wstring reference_string);
 void sleep_ms(unsigned int ms);
-void open_url(std::string url_string);
-void open_url(std::wstring url_string);
-void open_file(std::filesystem::path path);
-void search_google_scholar(std::wstring search_string);
-void search_libgen(std::wstring search_string);
+void open_url(const std::string& url_string);
+void open_url(const std::wstring& url_string);
+void open_file(const std::filesystem::path& path);
+void search_google_scholar(const std::wstring& search_string);
+void search_libgen(const std::wstring& search_string);
 void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, ReferenceData>& indices);

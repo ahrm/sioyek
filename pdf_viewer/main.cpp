@@ -17,6 +17,7 @@
 //todo: add "repeat last command" command
 //todo: make it so that when you middle click on the name of a paper, we search it in google scholar.
 //todo: add support for smart screen fit
+//todo: get_page_width_smart is still not perfect
 
 #include <iostream>
 #include <vector>
@@ -57,6 +58,8 @@
 #include <qfontdatabase.h>
 #include <qstandarditemmodel.h>
 #include <qscrollarea.h>
+#include <qdesktopservices.h>
+#include <qprocess.h>
 
 //#include <Windows.h>
 #include <mupdf/fitz.h>
@@ -119,10 +122,6 @@ void unlock_mutex(void* user, int lock) {
 	(mut + lock)->unlock();
 }
 
-
-
-#include <qdesktopservices.h>
-#include <qprocess.h>
 
 int main(int argc, char* args[]) {
 

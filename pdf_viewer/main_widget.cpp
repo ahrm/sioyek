@@ -944,6 +944,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "fit_to_page_width") {
 		main_document_view->fit_to_page_width();
 	}
+	else if (command->name == "fit_to_page_width_smart") {
+		main_document_view->fit_to_page_width(true);
+	}
 
 	else if (command->name == "next_state") {
 		next_state();

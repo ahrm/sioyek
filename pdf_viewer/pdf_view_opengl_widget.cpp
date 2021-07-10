@@ -413,7 +413,7 @@ void PdfViewOpenGLWidget::render() {
 	glUseProgram(shared_gl_objects.highlight_program);
 	glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"text_highlight_color"));
 	std::vector<fz_rect> bounding_rects;
-	simplify_selected_character_rects(selected_character_rects, bounding_rects);
+	merge_selected_character_rects(selected_character_rects, bounding_rects);
 	//for (auto rect : selected_character_rects) {
 	//	render_highlight_absolute(shared_gl_objects.highlight_program, rect);
 	//}

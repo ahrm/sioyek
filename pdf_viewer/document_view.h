@@ -95,7 +95,7 @@ public:
 	float get_page_offset(int page);
 	void goto_offset_within_page(int page, float offset_x, float offset_y);
 	void goto_page(int page);
-	void fit_to_page_width();
+	void fit_to_page_width(bool smart=false);
 	void persist();
 	std::wstring get_current_chapter_name();
 	std::optional<std::pair<int,int>> get_current_page_range();

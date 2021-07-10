@@ -183,6 +183,75 @@ float Document::get_page_width(int page_index)
 	return page_widths[page_index];
 }
 
+float Document::get_page_width_smart(int page_index, float* left_ratio, float* right_ratio, int* normal_page_width)
+{
+	//fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+	//fz_matrix ctm = fz_scale(0.3, 0.3);
+	fz_matrix ctm = fz_identity;
+
+	fz_pixmap* pixmap = fz_new_pixmap_from_page_number(context, doc, page_index, ctm, fz_device_rgb(context), 0);
+
+	std::vector<float> vertical_histogram(pixmap->w);
+
+	//float brightness_sum = 0.0f;
+	//for (int i = 0; i < pixmap->w; i++) {
+	//	for (int j = 0; j < pixmap->h; j++) {
+	//		int index = 3 * pixmap->w * j + 3 * i;
+
+	//		int r = pixmap->samples[index];
+	//		int g = pixmap->samples[index + 1];
+	//		int b = pixmap->samples[index + 2];
+
+	//		float brightness = static_cast<float>(r + g + b) / 3.0f;
+	//		vertical_histogram[i] += brightness;
+	//		brightness_sum += brightness;
+	//	}
+	//}
+
+	float total_nonzero = 0.0f;
+	for (int i = 0; i < pixmap->w; i++) {
+		for (int j = 0; j < pixmap->h; j++) {
+			int index = 3 * pixmap->w * j + 3 * i;
+
+			int r = pixmap->samples[index];
+			int g = pixmap->samples[index + 1];
+			int b = pixmap->samples[index + 2];
+
+			float brightness = static_cast<float>(r + g + b) / 3.0f;
+			if (brightness < 250) {
+				vertical_histogram[i] += 1;
+				total_nonzero += 1;
+			}
+		}
+	}
+
+	float average_nonzero = total_nonzero / vertical_histogram.size();
+	float nonzero_threshold = average_nonzero / 3.0f;
+
+	int start_index = 0;
+	int end_index = vertical_histogram.size()-1;
+
+	while ((start_index < end_index) && (vertical_histogram[start_index++] < nonzero_threshold));
+	while ((start_index < end_index) && (vertical_histogram[end_index--] < nonzero_threshold));
+
+
+	int border = 10;
+	start_index = std::max<int>(start_index - border, 0);
+	end_index = std::min<int>(end_index + border, vertical_histogram.size()-1);
+
+	fz_drop_pixmap(context, pixmap);
+
+	*left_ratio = static_cast<float>(start_index) / vertical_histogram.size();
+	*right_ratio = static_cast<float>(end_index) / vertical_histogram.size();
+
+	float standard_width = page_widths[page_index];
+	float ratio = static_cast<float>(end_index - start_index) / vertical_histogram.size();
+
+	*normal_page_width = standard_width;
+
+	return ratio * standard_width;
+}
+
 float Document::get_accum_page_height(int page_index)
 {
 	std::lock_guard guard(page_dims_mutex);
