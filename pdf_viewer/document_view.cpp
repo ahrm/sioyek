@@ -441,7 +441,7 @@ float DocumentView::get_page_offset(int page) {
 }
 
 void DocumentView::goto_offset_within_page(int page, float offset_x, float offset_y) {
-	set_offsets(offset_x, get_page_offset(page - 1) + offset_y);
+	set_offsets(offset_x, get_page_offset(page) + offset_y);
 }
 
 void DocumentView::goto_page(int page) {

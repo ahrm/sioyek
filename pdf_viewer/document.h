@@ -127,6 +127,7 @@ public:
 	std::optional<std::wstring> get_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_reference_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_paper_name_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
+	//std::optional<std::pair<std::wstring, std::wstring>> get_all_text_objects_at_location(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	friend class DocumentManager;
 };
 

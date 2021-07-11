@@ -701,6 +701,9 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 
 		parse_uri(link.uri, &page, &offset_x, &offset_y);
 
+		// convert one indexed page to zero indexed page
+		page--;
+
 		// we usually just want to center the y offset and not the x offset (otherwise for example
 		// a link at the right side of the screen will be centered, causing most of screen state to be empty)
 		offset_x = main_document_view->get_offset_x();
@@ -735,9 +738,12 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		std::vector<fz_stext_char*> flat_chars;
 		get_flat_chars_from_stext_page(stext_page, flat_chars);
 
+
 		std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
 		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
 		std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
+
+		//auto something = main_document_view->get_document()->get_all_text_objects_at_location(flat_chars, offset_x, offset_y);
 
 		bool was_figure = false;
 
@@ -745,15 +751,14 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 			 std::optional<ReferenceData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
 			 if (refdata_) {
 				 ReferenceData refdata = refdata_.value();
-				update_history_state();
+				 update_history_state();
 
-				float page_height = main_document_view->get_document()->get_page_height(refdata.page);
+				 float page_height = main_document_view->get_document()->get_page_height(refdata.page);
 
-				//todo: why do we need to have the +1??
-				main_document_view->goto_offset_within_page(refdata.page+1, main_document_view->get_offset_x(), refdata.y_offset);
+				 main_document_view->goto_offset_within_page(refdata.page, main_document_view->get_offset_x(), refdata.y_offset);
 
-				push_state();
-				invalidate_render();
+				 push_state();
+				 invalidate_render();
 			 }
 
 		}
@@ -769,7 +774,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 					float fig_offset;
 					if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
 						float offset_x = main_document_view->get_offset_x();
-						long_jump_to_destination(fig_page + 1, offset_x, fig_offset); // todo: remove this +1 by fixing the offset
+						long_jump_to_destination(fig_page, offset_x, fig_offset);
 
 					}
 				}
@@ -1251,7 +1256,7 @@ void MainWidget::long_jump_to_destination(int page, float offset_x, float offset
 		DocumentViewState dest_state;
 		dest_state.document_path = main_document_view->get_document()->get_path();
 		dest_state.book_state.offset_x = offset_x;
-		dest_state.book_state.offset_y = main_document_view->get_page_offset(page - 1) + offset_y;
+		dest_state.book_state.offset_y = main_document_view->get_page_offset(page) + offset_y;
 		dest_state.book_state.zoom_level = main_document_view->get_zoom_level();
 
 		complete_pending_link(dest_state);

@@ -5,6 +5,7 @@
 #include <qfileinfo.h>
 #include <qdatetime.h>
 #include <map>
+#include <regex>
 
 int Document::get_mark_index(char symbol) {
 	for (int i = 0; i < marks.size(); i++) {
@@ -834,6 +835,97 @@ std::optional<std::wstring> Document::get_reference_text_at_position(std::vector
 
 	return {};
 }
+
+void get_matches(std::wstring haystack, const std::wregex& reg, std::vector<std::pair<int, int>>& indices) {
+	std::wsmatch match;
+
+	int offset = 0;
+	while (std::regex_search(haystack, match, reg)) {
+		int start_index = offset + match.position();
+		int end_index = start_index + match.length();
+		indices.push_back(std::make_pair(start_index, end_index));
+
+		int old_length = haystack.size();
+		haystack = match.suffix();
+		int new_length = haystack.size();
+
+		offset += (old_length - new_length);
+	}
+}
+//std::optional<std::pair<std::wstring, std::wstring>> Document::get_all_text_objects_at_location(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y) {
+//
+//	struct TextObjectType {
+//		std::wregex main_regex;
+//		std::optional<std::wregex> number_regex;
+//		std::wstring name;
+//	};
+//
+//	fz_rect selected_rect;
+//
+//	selected_rect.x0 = offset_x - 0.1f;
+//	selected_rect.x1 = offset_x + 0.1f;
+//
+//	selected_rect.y0 = offset_y - 0.1f;
+//	selected_rect.y1 = offset_y + 0.1f;
+//
+//	std::wregex reference_regex(L"\\[[^\\[\\]]+\\]");
+//	std::wregex reference_name_regex(L"[^,]+,");
+//
+//	std::wregex figure_regex(L"(figure|Figure|fig\\.|Fig\\.) [0-9]+(\\.[0-9]+)*");
+//	std::wregex figure_number_regex(L"[0-9]+(\\.[0-9]+)*");
+//
+//	std::wregex sentence_regex(L"[^\\.]{5,}\\.");
+//
+//	std::vector<TextObjectType>  regexes;
+//
+//	// sorted by priority
+//	regexes.push_back({ reference_regex, {}, L"reference" });
+//	regexes.push_back({ figure_regex, figure_number_regex, L"figure" });
+//	regexes.push_back({ sentence_regex, {}, L"paper_name" });
+//
+//	//regexes.push_back(std::make_pair(reference_regex, L"reference"));
+//	//regexes.push_back(std::make_pair(figure_regex, L"figure"));
+//	//regexes.push_back(std::make_pair(sentence_regex, L"paper_name"));
+//
+//	std::wstring raw_string;
+//	std::vector<int> indices;
+//
+//	for (int i = 0; i < flat_chars.size(); i++) {
+//
+//		fz_stext_char* ch = flat_chars[i];
+//
+//		raw_string.push_back(ch->c);
+//		indices.push_back(i);
+//
+//		if (ch->next == nullptr) {
+//			raw_string.push_back('\n');
+//			indices.push_back(-1);
+//		}
+//	}
+//
+//	int offset = 0;
+//
+//	std::vector<std::pair<int, int>> reference_matches;
+//	std::vector<std::pair<int, int>> figure_matches;
+//	std::vector<std::pair<int, int>> paper_matches;
+//
+//	get_matches(raw_string, reference_regex, reference_matches);
+//	get_matches(raw_string, figure_regex, figure_matches);
+//	get_matches(raw_string, sentence_regex, paper_matches);
+//
+//	for (auto [begin, end] : reference_matches) {
+//		for (int index = begin; index <= end; index++) {
+//			int char_index = indices[index];
+//			if (char_index < 0) continue;
+//
+//			if (fz_contains_rect(fz_rect_from_quad(flat_chars[char_index]->quad), selected_rect)) {
+//
+//			}
+//		}
+//	}
+//
+//	return {};
+//}
 
 std::optional<std::wstring> Document::get_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y)
 {
