@@ -74,6 +74,9 @@ private:
 	bool is_render_invalidated = false;
 	bool is_ui_invalidated = false;
 
+	//std::optional<std::pair<std::wstring, int>> last_smart_fit_state = {};
+	std::optional<int> last_smart_fit_page = {};
+
 	QTime last_text_select_time = QTime::currentTime();
 
 	bool main_document_view_has_document();

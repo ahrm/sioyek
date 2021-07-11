@@ -328,6 +328,13 @@ void MainWidget::validate_render() {
 	if (!isVisible()) {
 		return;
 	}
+	if (last_smart_fit_page) {
+		int current_page = main_document_view->get_current_page_number();
+		if (current_page != last_smart_fit_page) {
+			main_document_view->fit_to_page_width(true);
+			last_smart_fit_page = current_page;
+		}
+	}
 
 	if (main_document_view && main_document_view->get_document()) {
 		std::optional<Link> link = main_document_view->find_closest_link();
@@ -465,6 +472,9 @@ void MainWidget::open_document(std::wstring path, std::optional<float> offset_x,
 	if (zoom_level) {
 		main_document_view->set_zoom_level(zoom_level.value());
 	}
+
+	// reset smart fit when changing documents
+	last_smart_fit_page = {};
 
 }
 
@@ -908,10 +918,12 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	else if (command->name == "move_right") {
 		main_document_view->move(72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+		last_smart_fit_page = {};
 	}
 
 	else if (command->name == "move_left") {
 		main_document_view->move(-72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+		last_smart_fit_page = {};
 	}
 
 	else if (command->name == "link") {
@@ -934,17 +946,22 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	else if (command->name == "zoom_in") {
 		main_document_view->zoom_in();
+		last_smart_fit_page = {};
 	}
 
 	else if (command->name == "zoom_out") {
 		main_document_view->zoom_out();
+		last_smart_fit_page = {};
 	}
 
 	else if (command->name == "fit_to_page_width") {
 		main_document_view->fit_to_page_width();
+		last_smart_fit_page = {};
 	}
 	else if (command->name == "fit_to_page_width_smart") {
 		main_document_view->fit_to_page_width(true);
+		int current_page = main_document_view->get_current_page_number();
+		last_smart_fit_page = current_page;
 	}
 
 	else if (command->name == "next_state") {
