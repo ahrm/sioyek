@@ -30,9 +30,9 @@ class ConfigManager {
 
 public:
 
-	ConfigManager(std::filesystem::path path);
-	void serialize(std::wofstream& file);
-	void deserialize(std::wifstream& file);
+	ConfigManager(const std::filesystem::path& default_path, const std::filesystem::path& user_path);
+	//void serialize(std::wofstream& file);
+	void deserialize(std::wifstream& default_file, std::wifstream& user_file);
 	template<typename T>
 	const T* get_config(std::wstring name) {
 

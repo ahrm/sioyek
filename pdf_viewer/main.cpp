@@ -11,7 +11,6 @@
 // state, instead they return a DocumentViewState object that is then applied using push_state and chnage_state functions
 // (chnage state should be a function that just applies the state without pushing it to history)
 //todo: add "repeat last command" command
-//todo: create separate user and default configuration files
 //todo: auto smart fit pages while scrolling
 
 #include <iostream>
@@ -134,8 +133,9 @@ int main(int argc, char* args[]) {
 
 	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
 
-	std::filesystem::path config_path = parent_path / "prefs.config";
-	ConfigManager config_manager(config_path);
+	std::filesystem::path default_config_path = parent_path / "prefs.config";
+	std::filesystem::path user_config_path = parent_path / "prefs_user.config";
+	ConfigManager config_manager(default_config_path, user_config_path);
 
 	sqlite3* db;
 	char* error_message = nullptr;
@@ -174,8 +174,9 @@ int main(int argc, char* args[]) {
 
 	bool quit = false;
 
-	std::filesystem::path keymap_path = parent_path / "keys.config";
-	InputHandler input_handler(keymap_path);
+	std::filesystem::path keymap_default_path = parent_path / "keys.config";
+	std::filesystem::path keymap_user_path = parent_path / "keys_user.config";
+	InputHandler input_handler(keymap_default_path, keymap_user_path);
 
 	//char file_path[MAX_PATH] = { 0 };
 	std::wstring file_path;
@@ -194,11 +195,13 @@ int main(int argc, char* args[]) {
 	DocumentManager document_manager(mupdf_context, db);
 
 	QFileSystemWatcher pref_file_watcher;
-	pref_file_watcher.addPath(QString::fromStdWString(config_path.wstring()));
+	pref_file_watcher.addPath(QString::fromStdWString(default_config_path.wstring()));
+	pref_file_watcher.addPath(QString::fromStdWString(user_config_path.wstring()));
 
 
 	QFileSystemWatcher key_file_watcher;
-	key_file_watcher.addPath(QString::fromStdWString(keymap_path.wstring()));
+	key_file_watcher.addPath(QString::fromStdWString(keymap_default_path.wstring()));
+	key_file_watcher.addPath(QString::fromStdWString(keymap_user_path.wstring()));
 
 
 	QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
@@ -216,15 +219,19 @@ int main(int argc, char* args[]) {
 
 	// live reload the config file
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		std::wifstream config_file(config_path);
-		config_manager.deserialize(config_file);
-		config_file.close();
+		std::wifstream default_config_file(default_config_path);
+		std::wifstream user_config_file(user_config_path);
+
+		config_manager.deserialize(default_config_file, user_config_file);
+		default_config_file.close();
+		user_config_file.close();
+
 		ConfigFileChangeListener::notify_config_file_changed(&config_manager);
 		main_widget.validate_render();
 		});
 
 	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		input_handler.reload_config_file(keymap_path);
+		input_handler.reload_config_files(keymap_default_path, keymap_user_path);
 		});
 
 	app.exec();

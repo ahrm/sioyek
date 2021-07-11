@@ -1200,8 +1200,16 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			std::wstring file_path_string = (parent_path / "keys.config").wstring();
 			open_file(file_path_string);
 		}
+		else if (text == L"keys_user") {
+			std::wstring file_path_string = (parent_path / "keys_user.config").wstring();
+			open_file(file_path_string);
+		}
 		else if (text == L"prefs") {
 			std::wstring file_path_string = (parent_path / "prefs.config").wstring();
+			open_file(file_path_string);
+		}
+		else if (text == L"prefs_user") {
+			std::wstring file_path_string = (parent_path / "prefs_user.config").wstring();
 			open_file(file_path_string);
 		}
 	}

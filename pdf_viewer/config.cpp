@@ -84,7 +84,7 @@ Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 	return nullptr;
 }
 
-ConfigManager::ConfigManager(std::filesystem::path path) {
+ConfigManager::ConfigManager(const std::filesystem::path& default_path, const std::filesystem::path& user_path) {
 
 	auto vec3_serializer = vec_n_serializer<3>;
 	auto vec4_serializer = vec_n_serializer<4>;
@@ -109,26 +109,43 @@ ConfigManager::ConfigManager(std::filesystem::path path) {
 	configs.push_back({ L"flat_toc", &FLAT_TABLE_OF_CONTENTS, bool_serializer, bool_deserializer });
 	configs.push_back({ L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS, bool_serializer, bool_deserializer });
 
-	std::wifstream infile(path);
-	deserialize(infile);
-	infile.close();
+	std::wifstream default_infile(default_path);
+	std::wifstream user_infile(user_path);
+	deserialize(default_infile, user_infile);
+	default_infile.close();
+	user_infile.close();
 }
 
-void ConfigManager::serialize(std::wofstream& file) {
-	for (auto it : configs) {
-		std::wstringstream ss;
-		file << it.name << " ";
-		if (it.get_value()) {
-			it.serialize(it.get_value(), ss);
-		}
-		file << ss.str() << std::endl;
-	}
-}
+//void ConfigManager::serialize(std::wofstream& file) {
+//	for (auto it : configs) {
+//		std::wstringstream ss;
+//		file << it.name << " ";
+//		if (it.get_value()) {
+//			it.serialize(it.get_value(), ss);
+//		}
+//		file << ss.str() << std::endl;
+//	}
+//}
 
-void ConfigManager::deserialize(std::wifstream& file) {
+void ConfigManager::deserialize(std::wifstream& default_file, std::wifstream& user_file) {
 	std::wstring line;
 
-	while (std::getline(file, line)) {
+	while (std::getline(default_file, line)) {
+
+		if (line.size() == 0 || line[0] == '#') {
+			continue;
+		}
+
+		std::wstringstream ss{ line };
+		std::wstring conf_name;
+		ss >> conf_name;
+		Config* conf = get_mut_config_with_name(conf_name);
+		if (conf) {
+			conf->value = conf->deserialize(ss, conf->value);
+		}
+	}
+
+	while (std::getline(user_file, line)) {
 
 		if (line.size() == 0 || line[0] == '#') {
 			continue;

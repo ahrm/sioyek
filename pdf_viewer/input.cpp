@@ -183,11 +183,7 @@ void get_tokens(std::string line, std::vector<std::string>& tokens) {
 	}
 }
 
-InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std::string> command_names) {
-	// parse key configs into a trie where leaves are annotated with the name of the command
-
-	InputParseTreeNode* root = new InputParseTreeNode;
-	root->is_root = true;
+InputParseTreeNode* parse_lines(InputParseTreeNode* root, std::vector<std::string> lines, std::vector<std::string> command_names) {
 
 	for (int j = 0; j < lines.size(); j++) {
 		std::string line = lines[j];
@@ -241,17 +237,31 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 	}
 
 	return root;
+}
+
+InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std::string> command_names) {
+	// parse key configs into a trie where leaves are annotated with the name of the command
+
+	InputParseTreeNode* root = new InputParseTreeNode;
+	root->is_root = true;
+
+	parse_lines(root, lines, command_names);
+
+	return root;
 
 }
 
-InputParseTreeNode* parse_key_config_file(const std::filesystem::path& file_path) {
-	std::ifstream infile(file_path);
+InputParseTreeNode* parse_key_config_files(const std::filesystem::path& default_path,const std::filesystem::path& user_path) {
+	std::ifstream default_infile(default_path);
+	std::ifstream user_infile(user_path);
+
 
 	std::vector<std::string> command_names;
 	std::vector<std::string> command_keys;
-	while (infile.good()) {
+
+	while (default_infile.good()) {
 		std::string line;
-		std::getline(infile, line);
+		std::getline(default_infile, line);
 		if (line.size() == 0 || line[0] == '#') {
 			continue;
 		}
@@ -262,18 +272,37 @@ InputParseTreeNode* parse_key_config_file(const std::filesystem::path& file_path
 		command_names.push_back(command_name);
 		command_keys.push_back(command_key);
 	}
+
+	default_infile.close();
+
+	while (user_infile.good()) {
+		std::string line;
+		std::getline(user_infile, line);
+		if (line.size() == 0 || line[0] == '#') {
+			continue;
+		}
+		std::stringstream ss(line);
+		std::string command_name;
+		std::string command_key;
+		ss >> command_name >> command_key;
+		command_names.push_back(command_name);
+		command_keys.push_back(command_key);
+	}
+
+	user_infile.close();
+
 	return parse_lines(command_keys, command_names);
 }
 
 
-InputHandler::InputHandler(const std::filesystem::path& file_path) {
-	reload_config_file(file_path);
+InputHandler::InputHandler(const std::filesystem::path& default_path, const std::filesystem::path& user_path) {
+	reload_config_files(default_path, user_path);
 }
 
-void InputHandler::reload_config_file(const std::filesystem::path& file_path)
+void InputHandler::reload_config_files(const std::filesystem::path& default_config_path, const std::filesystem::path& user_config_path)
 {
 	delete_current_parse_tree(root);
-	root = parse_key_config_file(file_path);
+	root = parse_key_config_files(default_config_path, user_config_path);
 	current_node = root;
 }
 

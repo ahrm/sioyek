@@ -56,8 +56,8 @@ private:
 	std::string number_stack;
 
 public:
-	InputHandler(const std::filesystem::path& file_path);
-	void reload_config_file(const std::filesystem::path& file_path);
+	InputHandler(const std::filesystem::path& default_path, const std::filesystem::path& user_path);
+	void reload_config_files(const std::filesystem::path& default_path, const std::filesystem::path& user_path);
 	const Command* handle_key(int key, bool shift_pressed, bool control_pressed, int* num_repeats);
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
