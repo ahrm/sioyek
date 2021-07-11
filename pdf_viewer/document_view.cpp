@@ -261,34 +261,8 @@ void DocumentView::window_to_absolute_document_pos(float window_x, float window_
 	*doc_x = (window_x - view_width / 2) / zoom_level - offset_x;
 	*doc_y = (window_y - view_height / 2) / zoom_level + offset_y;
 }
-bool DocumentView::get_block_at_window_position(float window_x, float window_y, int* page, fz_rect* rect)
-{
-	float doc_pos_x, doc_pos_y;
-	window_to_document_pos(window_x, window_y, &doc_pos_x, &doc_pos_y, page);
 
-	fz_stext_options options;
-	options.flags = FZ_STEXT_PRESERVE_IMAGES;
-	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(mupdf_context, current_document->doc, *page, &options);
 
-	fz_rect mouse_pointer_rect;
-	mouse_pointer_rect.x0 = doc_pos_x-1;
-	mouse_pointer_rect.x1 = doc_pos_x+1;
-
-	mouse_pointer_rect.y0 = doc_pos_y-1;
-	mouse_pointer_rect.y1 = doc_pos_y+1;
-
-	
-	bool found = false;
-	LL_ITER(block, stext_page->first_block) {
-		if (fz_contains_rect(block->bbox, mouse_pointer_rect)) {
-			*rect = block->bbox;
-			fz_drop_stext_page(mupdf_context, stext_page);
-			return true;
-		}
-	}
-	return false;
-
-}
 void DocumentView::goto_mark(char symbol) {
 	if (current_document) {
 		float new_y_offset = 0.0f;
@@ -622,10 +596,7 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 		std::swap(page_point1, page_point2);
 	}
 
-	fz_page* page = nullptr;
-	fz_stext_page* stext_page = nullptr;
 	selected_text.clear();
-
 
 	bool word_selecting = false;
 	bool selecting = false;
@@ -634,14 +605,12 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 	}
 	
 	for (int i = page_begin; i <= page_end; i++) {
+
 		// for now, let's assume there is only one page
-		fz_try(mupdf_context) {
-			page = fz_load_page(mupdf_context, current_document->doc, i);
-			stext_page = fz_new_stext_page_from_page(mupdf_context, page, nullptr);
-		}
-		fz_catch(mupdf_context) {
-			std::cerr << "Error: could not load page for selection" << std::endl;
-		}
+		fz_stext_page* stext_page = current_document->get_stext_with_page_number(i);
+		std::vector<fz_stext_char*> flat_chars;
+
+		get_flat_chars_from_stext_page(stext_page, flat_chars);
 
 		if (!stext_page) continue;
 
@@ -649,10 +618,10 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 		fz_stext_char* char_begin = nullptr;
 		fz_stext_char* char_end = nullptr;
 		if (i == page_begin) {
-			char_begin = find_closest_char_to_document_point(stext_page, page_point1, &location_index1);
+			char_begin = find_closest_char_to_document_point(flat_chars, page_point1, &location_index1);
 		}
 		if (i == page_end) {
-			char_end = find_closest_char_to_document_point(stext_page, page_point2, &location_index2);
+			char_end = find_closest_char_to_document_point(flat_chars, page_point2, &location_index2);
 		}
 		if (char_begin && char_end) {
 			// swap the locations if end happends before begin
@@ -662,49 +631,40 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 		}
 
 
-		LL_ITER(current_block, stext_page->first_block) { // for block in page
-			if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
-				LL_ITER(current_line, current_block->u.t.first_line) { // for line in text block
-					LL_ITER(current_char, current_line->first_char) { // for char in line
-						if (!is_word_selection) {
-							if (current_char == char_begin) {
-								selecting = true;
-							}
-							if (current_char == char_end) {
-								selecting = false;
-							}
-						}
-						else {
-							if (word_selecting == false && is_separator(char_begin, current_char)) {
-								selected_text.clear();
-								selected_characters.clear();
-							}
-							if (current_char == char_begin) {
-								word_selecting = true;
-							}
-							if (current_char == char_end) {
-								selecting = false;
-							}
-							if (word_selecting == true && is_separator(char_end, current_char) && selecting == false) {
-								word_selecting = false;
-								return;
-							}
-						}
-						if (selecting || word_selecting) {
-							if (!(current_char->c == ' ' && selected_text.size() == 0)) {
-								selected_text.push_back(current_char->c);
-								fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
-								selected_characters.push_back(charrect);
-							}
-						}
-					}
+		for (auto current_char : flat_chars) {
+			if (!is_word_selection) {
+				if (current_char == char_begin) {
+					selecting = true;
+				}
+				if (current_char == char_end) {
+					selecting = false;
 				}
 			}
+			else {
+				if (word_selecting == false && is_separator(char_begin, current_char)) {
+					selected_text.clear();
+					selected_characters.clear();
+				}
+				if (current_char == char_begin) {
+					word_selecting = true;
+				}
+				if (current_char == char_end) {
+					selecting = false;
+				}
+				if (word_selecting == true && is_separator(char_end, current_char) && selecting == false) {
+					word_selecting = false;
+					return;
+				}
+			}
+			if (selecting || word_selecting) {
+				if (!(current_char->c == ' ' && selected_text.size() == 0)) {
+					selected_text.push_back(current_char->c);
+					fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
+					selected_characters.push_back(charrect);
+				}
+			}
+
 		}
-
-
-		fz_drop_stext_page(mupdf_context, stext_page);
-		fz_drop_page(mupdf_context, page);
 	}
 
 }

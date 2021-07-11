@@ -240,7 +240,7 @@ int get_f_key(std::string name) {
 	return  num;
 }
 
-void show_error_message(std::wstring error_message) {
+void show_error_message(const std::wstring& error_message) {
 	QMessageBox msgBox;
 	msgBox.setText(QString::fromStdWString(error_message));
 	msgBox.setStandardButtons(QMessageBox::Ok);
@@ -324,30 +324,57 @@ float dist_squared(fz_point p1, fz_point p2) {
 	return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
 }
 
-fz_stext_char* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index) {
-	float min_distance = std::numeric_limits<float>::infinity();
-	fz_stext_char* res = nullptr;
+void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
 
-	int index = 0;
-	LL_ITER(current_block, stext_page->first_block) {
-		if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
-			LL_ITER(current_line, current_block->u.t.first_line) {
-				LL_ITER(current_char, current_line->first_char) {
-					fz_point quad_center = current_char->origin;
-					float distance = dist_squared(document_point, quad_center);
-					if (distance < min_distance) {
-						min_distance = distance;
-						res = current_char;
-						*location_index = index;
-					}
-					index++;
+	LL_ITER(block, stext_page->first_block) {
+		if (block->type == FZ_STEXT_BLOCK_TEXT) {
+			LL_ITER(line, block->u.t.first_line) {
+				LL_ITER(ch, line->first_char) {
+					flat_chars.push_back(ch);
 				}
 			}
 		}
 	}
+}
+
+//fz_stext_char* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index) {
+fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_char*> flat_chars, fz_point document_point, int* location_index) {
+	float min_distance = std::numeric_limits<float>::infinity();
+	fz_stext_char* res = nullptr;
+
+	int index = 0;
+	for (auto current_char : flat_chars) {
+
+		fz_point quad_center = current_char->origin;
+		float distance = dist_squared(document_point, quad_center);
+		if (distance < min_distance) {
+			min_distance = distance;
+			res = current_char;
+			*location_index = index;
+		}
+		index++;
+	}
+
+	//LL_ITER(current_block, stext_page->first_block) {
+	//	if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
+	//		LL_ITER(current_line, current_block->u.t.first_line) {
+	//			LL_ITER(current_char, current_line->first_char) {
+	//				fz_point quad_center = current_char->origin;
+	//				float distance = dist_squared(document_point, quad_center);
+	//				if (distance < min_distance) {
+	//					min_distance = distance;
+	//					res = current_char;
+	//					*location_index = index;
+	//				}
+	//				index++;
+	//			}
+	//		}
+	//	}
+	//}
 
 	return res;
 }
+
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char) {
 	if (last_char == nullptr) {
 		return false;

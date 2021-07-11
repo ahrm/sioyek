@@ -34,6 +34,8 @@ private:
 	// number of pages in the document
 	std::optional<int> cached_num_pages;
 
+	std::vector<std::pair<int, fz_stext_page*>> cached_stext_pages;
+
 	fz_context* context = nullptr;
 	std::wstring file_name;
 	std::unordered_map<int, fz_link*> cached_page_links;
@@ -79,6 +81,7 @@ public:
 	void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
 	void count_chapter_pages_accum(std::vector<int> &page_counts);
 	bool get_is_indexing();
+	fz_stext_page* get_stext_with_page_number(int page_number);
 	void add_link(Link link, bool insert_into_database = true);
 	std::wstring get_path();
 	int find_closest_bookmark_index(float to_offset_y);
@@ -120,9 +123,10 @@ public:
 	void stop_indexing();
 	bool find_figure_with_string(std::wstring figure_name, int reference_page, int* page, float* y_offset);
 	std::optional<ReferenceData> find_reference_with_string(std::wstring reference_name);
-	std::optional<std::wstring> get_text_at_position(int page, float offset_x, float offset_y);
-	std::optional<std::wstring> get_reference_text_at_position(int page, float offset_x, float offset_y);
-	std::optional<std::wstring> get_paper_name_at_position(int page, float offset_x, float offset_y);
+
+	std::optional<std::wstring> get_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
+	std::optional<std::wstring> get_reference_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
+	std::optional<std::wstring> get_paper_name_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	friend class DocumentManager;
 };
 

@@ -694,9 +694,6 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 		int page;
 		float offset_x, offset_y;
 
-
-
-
 		if (link.uri.substr(0, 4).compare("http") == 0) {
 			open_url(link.uri.c_str());
 			return;
@@ -709,23 +706,6 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 		offset_x = main_document_view->get_offset_x();
 
 		long_jump_to_destination(page, offset_x, offset_y);
-		//if (!is_pending_link_source_filled()) {
-		//	update_history_state();
-		//	main_document_view->goto_offset_within_page(page, offset_x, offset_y);
-		//	push_state();
-		//}
-		//else {
-		//	// if we press the link button and then click on a pdf link, we automatically link to the
-		//	// link's destination
-
-		//	DocumentViewState dest_state;
-		//	dest_state.document_path = main_document_view->get_document()->get_path();
-		//	dest_state.book_state.offset_x = offset_x;
-		//	dest_state.book_state.offset_y = main_document_view->get_page_offset(page - 1) + offset_y;
-		//	dest_state.book_state.zoom_level = main_document_view->get_zoom_level();
-
-		//	complete_pending_link(dest_state);
-		//}
 	}
 }
 
@@ -750,9 +730,15 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
 
 		main_document_view->window_to_document_pos(mevent->pos().x(), mevent->pos().y(), &offset_x, &offset_y, &page);
-		std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(page, offset_x, offset_y);
-		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(page, offset_x, offset_y);
-		std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(page, offset_x, offset_y);
+
+		fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
+		std::vector<fz_stext_char*> flat_chars;
+		get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+		std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
+		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
+		std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
+
 		bool was_figure = false;
 
 		if (reference_text_on_pointer) {

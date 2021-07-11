@@ -51,7 +51,6 @@ void ConfigFileChangeListener::notify_config_file_changed(ConfigManager* new_con
 
 bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
 {
-	std::wcout << source_row << "\n";
 	// custom behaviour :
 	if (filterRegExp().isEmpty() == false)
 	{

@@ -567,6 +567,32 @@ void DocumentManager::delete_global_mark(char symbol)
 	}
 }
 
+
+fz_stext_page* Document::get_stext_with_page_number(int page_number)
+{
+	const int MAX_CACHED_STEXT_PAGES = 10;
+
+	for (auto [page, cached_stext_page] : cached_stext_pages) {
+		if (page == page_number) {
+			return cached_stext_page;
+		}
+	}
+
+	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page_number, nullptr);
+
+	if (stext_page != nullptr) {
+
+		if (cached_stext_pages.size() == MAX_CACHED_STEXT_PAGES) {
+			fz_drop_stext_page(context, cached_stext_pages[0].second);
+			cached_stext_pages.erase(cached_stext_pages.begin());
+		}
+		cached_stext_pages.push_back(std::make_pair(page_number, stext_page));
+		return stext_page;
+	}
+
+	return nullptr;
+}
+
 void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
 
 	std::lock_guard guard(page_dims_mutex);
@@ -664,6 +690,7 @@ void Document::index_figures(bool* invalid_flag)
 				break;
 			}
 
+			// we don't use get_stext_with_page_number here on purpose because it would lead to many unnecessary allocations
 			fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, nullptr);
 
 			index_references(stext_page, i, local_reference_data);
@@ -747,10 +774,8 @@ std::optional<ReferenceData> Document::find_reference_with_string(std::wstring r
 	return {};
 }
 
-std::optional<std::wstring> Document::get_reference_text_at_position(int page, float offset_x, float offset_y)
+std::optional<std::wstring> Document::get_reference_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y)
 {
-	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page, nullptr);
-
 	fz_rect selected_rect;
 
 	selected_rect.x0 = offset_x - 0.1f;
@@ -772,52 +797,46 @@ std::optional<std::wstring> Document::get_reference_text_at_position(int page, f
 
 	std::wstring selected_text = L"";
 
-	LL_ITER(block, stext_page->first_block) {
-		if (block->type != FZ_STEXT_BLOCK_TEXT) continue;
-		LL_ITER(line, block->u.t.first_line) {
-			LL_ITER(ch, line->first_char) {
-				if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
-					if (started) {
-						reached = true;
-					}
-				}
-				if (ch->c == start_char) {
-					started = true;
-					continue;
-				}
-
-				if (started && reached && (ch->c == delim)) {
-					done = true;
-					continue;
-				}
-				if (started && reached && (ch->c == end_char)) {
-					return selected_text;
-				}
-				if (started && (!reached) && (ch->c == end_char)) {
-					started = false;
-					selected_text.clear();
-				}
-
-				if (started && (!done)) {
-					if (ch->c != ' ') {
-						selected_text.push_back(ch->c);
-					}
-				}
-
-				if ((started) && (!reached) && (ch->c == delim)) {
-					selected_text.clear();
-				}
+	for (auto ch : flat_chars) {
+		if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
+			if (started) {
+				reached = true;
 			}
 		}
+		if (ch->c == start_char) {
+			started = true;
+			continue;
+		}
+
+		if (started && reached && (ch->c == delim)) {
+			done = true;
+			continue;
+		}
+		if (started && reached && (ch->c == end_char)) {
+			return selected_text;
+		}
+		if (started && (!reached) && (ch->c == end_char)) {
+			started = false;
+			selected_text.clear();
+		}
+
+		if (started && (!done)) {
+			if (ch->c != ' ') {
+				selected_text.push_back(ch->c);
+			}
+		}
+
+		if ((started) && (!reached) && (ch->c == delim)) {
+			selected_text.clear();
+		}
+
 	}
 
-	fz_drop_stext_page(context, stext_page);
 	return {};
-
 }
-std::optional<std::wstring> Document::get_text_at_position(int page, float offset_x, float offset_y)
+
+std::optional<std::wstring> Document::get_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y)
 {
-	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page, nullptr);
 
 	fz_rect selected_rect;
 
@@ -827,43 +846,30 @@ std::optional<std::wstring> Document::get_text_at_position(int page, float offse
 	selected_rect.y0 = offset_y - 0.1f;
 	selected_rect.y1 = offset_y + 0.1f;
 
-	LL_ITER(block, stext_page->first_block) {
-		if (block->type != FZ_STEXT_BLOCK_TEXT) continue;
+	std::wstring selected_string;
+	bool reached = false;
 
-		if (fz_contains_rect(block->bbox, selected_rect)) {
-			LL_ITER(line, block->u.t.first_line) {
-				if (fz_contains_rect(line->bbox, selected_rect)) {
-					std::wstring selected_string;
-					bool reached = false;
-					LL_ITER(ch, line->first_char) {
-						if (iswspace(ch->c) || (ch == line->last_char)) {
-							if (reached) {
-								return selected_string;
-							}
-							selected_string = L"";
-						}
-						else{
-							selected_string.push_back(ch->c);
-						}
-						if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
-							reached = true;
-						}
-
-					}
-				}
+	for (auto ch : flat_chars) {
+		if (iswspace(ch->c) || (ch->next == nullptr)) {
+			if (reached) {
+				return selected_string;
 			}
+			selected_string.clear();
+		}
+		else {
+			selected_string.push_back(ch->c);
+		}
+		if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
+			reached = true;
 		}
 	}
 
-	fz_drop_stext_page(context, stext_page);
-	return {};
 
+	return {};
 }
 
-std::optional<std::wstring> Document::get_paper_name_at_position(int page, float offset_x, float offset_y)
+std::optional<std::wstring> Document::get_paper_name_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y)
 {
-	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page, nullptr);
-
 	fz_rect selected_rect;
 
 	selected_rect.x0 = offset_x - 0.1f;
@@ -875,37 +881,28 @@ std::optional<std::wstring> Document::get_paper_name_at_position(int page, float
 	std::wstring selected_string = L"";
 	bool reached = false;
 
-	LL_ITER(block, stext_page->first_block) {
-		if (block->type != FZ_STEXT_BLOCK_TEXT) continue;
-
-
-			LL_ITER(line, block->u.t.first_line) {
-				LL_ITER(ch, line->first_char) {
-					if (ch->c == '.') {
-						if (!reached) {
-							selected_string = L"";
-						}
-						else{
-							return selected_string;
-						}
-					}
-					if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
-						reached = true;
-					}
-					if ((ch->c == '-') && (ch == line->last_char)) continue;
-
-					if (ch->c != '.') {
-						selected_string.push_back(ch->c);
-					}
-					if (ch == line->last_char) {
-						selected_string.push_back(' ');
-					}
-
-				}
+	for (auto ch : flat_chars) {
+		if (ch->c == '.') {
+			if (!reached) {
+				selected_string = L"";
 			}
+			else {
+				return selected_string;
+			}
+		}
+		if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
+			reached = true;
+		}
+		if ((ch->c == '-') && (ch->next == nullptr)) continue;
+
+		if (ch->c != '.') {
+			selected_string.push_back(ch->c);
+		}
+		if (ch->next == nullptr) {
+			selected_string.push_back(' ');
+		}
+
 	}
 
-	fz_drop_stext_page(context, stext_page);
 	return {};
-
 }
