@@ -118,6 +118,8 @@ protected:
 	void handle_link();
 	void handle_pending_text_command(std::wstring text);
 	void toggle_fullscreen();
+	void complete_pending_link(const DocumentViewState& destination_view_state);
+	void long_jump_to_destination(int page, float offset_x, float offset_y);
 
 public:
 

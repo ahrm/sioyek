@@ -696,23 +696,24 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 		// a link at the right side of the screen will be centered, causing most of screen state to be empty)
 		offset_x = main_document_view->get_offset_x();
 
-		if (!is_pending_link_source_filled()) {
-			update_history_state();
-			main_document_view->goto_offset_within_page(page, offset_x, offset_y);
-			push_state();
-		}
-		else {
-			// if we press the link button and then click on a pdf link, we automatically link to the
-			// link's destination
+		long_jump_to_destination(page, offset_x, offset_y);
+		//if (!is_pending_link_source_filled()) {
+		//	update_history_state();
+		//	main_document_view->goto_offset_within_page(page, offset_x, offset_y);
+		//	push_state();
+		//}
+		//else {
+		//	// if we press the link button and then click on a pdf link, we automatically link to the
+		//	// link's destination
 
-			Link& pl = pending_link.value().second;
-			pl.dest_offset_x = offset_x;
-			pl.dest_offset_y = main_document_view->get_page_offset(page - 1) + offset_y;
-			pl.dest_zoom_level = main_document_view->get_zoom_level();
-			pl.document_path = main_document_view->get_document()->get_path();
-			main_document_view->get_document()->add_link(pl);
-			pending_link = {};
-		}
+		//	DocumentViewState dest_state;
+		//	dest_state.document_path = main_document_view->get_document()->get_path();
+		//	dest_state.book_state.offset_x = offset_x;
+		//	dest_state.book_state.offset_y = main_document_view->get_page_offset(page - 1) + offset_y;
+		//	dest_state.book_state.zoom_level = main_document_view->get_zoom_level();
+
+		//	complete_pending_link(dest_state);
+		//}
 	}
 }
 
@@ -729,15 +730,6 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 //#ifdef _DEBUG
 	if (mevent->button() == Qt::MouseButton::MiddleButton) {
 
-		//int page;
-		//fz_rect rect;
-		//if (main_document_view->get_block_at_window_position(opengl_widget->pos().x(), mevent->pos().y(), &page, &rect)) {
-		//	//optional<int> last_selected_block_page = {};
-		//	//optional<fz_rect> last_selected_block = {};
-		//	opengl_widget->last_selected_block_page = page;
-		//	opengl_widget->last_selected_block = rect;
-		//	invalidate_render();
-		//}
 		int page;
 		float offset_x, offset_y;
 
@@ -778,10 +770,9 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 					int fig_page;
 					float fig_offset;
 					if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
-						update_history_state();
-						main_document_view->goto_page(fig_page);
-						push_state();
-						invalidate_render();
+						float offset_x = main_document_view->get_offset_x();
+						long_jump_to_destination(fig_page + 1, offset_x, fig_offset); // todo: remove this +1 by fixing the offset
+
 					}
 				}
 
@@ -1229,4 +1220,37 @@ void MainWidget::toggle_fullscreen() {
 		helper_opengl_widget->setWindowState(Qt::WindowState::WindowFullScreen);
 		setWindowState(Qt::WindowState::WindowFullScreen);
 	}
+}
+
+void MainWidget::complete_pending_link(const DocumentViewState& destination_view_state)
+{
+	Link& pl = pending_link.value().second;
+	pl.dest_offset_x = destination_view_state.book_state.offset_x;
+	pl.dest_offset_y = destination_view_state.book_state.offset_y;
+	pl.dest_zoom_level = destination_view_state.book_state.zoom_level;
+	pl.document_path = destination_view_state.document_path;
+	main_document_view->get_document()->add_link(pl);
+	pending_link = {};
+}
+
+void MainWidget::long_jump_to_destination(int page, float offset_x, float offset_y)
+{
+	if (!is_pending_link_source_filled()) {
+		update_history_state();
+		main_document_view->goto_offset_within_page(page, offset_x, offset_y);
+		push_state();
+	}
+	else {
+		// if we press the link button and then click on a pdf link, we automatically link to the
+		// link's destination
+
+		DocumentViewState dest_state;
+		dest_state.document_path = main_document_view->get_document()->get_path();
+		dest_state.book_state.offset_x = offset_x;
+		dest_state.book_state.offset_y = main_document_view->get_page_offset(page - 1) + offset_y;
+		dest_state.book_state.zoom_level = main_document_view->get_zoom_level();
+
+		complete_pending_link(dest_state);
+	}
+	invalidate_render();
 }

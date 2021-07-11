@@ -11,6 +11,9 @@
 // state, instead they return a DocumentViewState object that is then applied using push_state and chnage_state functions
 // (chnage state should be a function that just applies the state without pushing it to history)
 //todo: add "repeat last command" command
+//todo: refactor Link structure into DocumentViewState and extra stuff
+//todo: create separate user and default configuration files
+//todo: auto smart fit pages while scrolling
 
 #include <iostream>
 #include <vector>
