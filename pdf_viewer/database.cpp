@@ -106,11 +106,11 @@ static int link_select_callback(void* res_vector, int argc, char** argv, char** 
 	float dst_zoom_level = atof(argv[4]);
 
 	Link link;
-	link.document_path = dst_path;
+	link.dst.document_path = dst_path;
 	link.src_offset_y = src_offset_y;
-	link.dest_offset_x = dst_offset_x;
-	link.dest_offset_y = dst_offset_y;
-	link.dest_zoom_level = dst_zoom_level;
+	link.dst.book_state.offset_x = dst_offset_x;
+	link.dst.book_state.offset_y = dst_offset_y;
+	link.dst.book_state.zoom_level = dst_zoom_level;
 
 	res->push_back(link);
 	return 0;

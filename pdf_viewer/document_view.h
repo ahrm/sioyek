@@ -52,6 +52,7 @@ public:
 	~DocumentView();
 	float get_zoom_level();
 	DocumentViewState get_state();
+	void set_opened_book_state(const OpenedBookState& state);
 	void handle_escape();
 	void set_book_state(OpenedBookState state);
 	inline void set_offsets(float new_offset_x, float new_offset_y);

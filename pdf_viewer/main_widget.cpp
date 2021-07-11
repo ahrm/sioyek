@@ -434,7 +434,7 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 }
 
 
-void MainWidget::open_document(std::wstring path, std::optional<float> offset_x, std::optional<float> offset_y) {
+void MainWidget::open_document(std::wstring path, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
 
 	//save the previous document state
 	if (main_document_view) {
@@ -462,6 +462,15 @@ void MainWidget::open_document(std::wstring path, std::optional<float> offset_x,
 		main_document_view->set_offset_y(offset_y.value());
 	}
 
+	if (zoom_level) {
+		main_document_view->set_zoom_level(zoom_level.value());
+	}
+
+}
+
+void MainWidget::open_document(const DocumentViewState& state)
+{
+	open_document(state.document_path, state.book_state.offset_x, state.book_state.offset_y, state.book_state.zoom_level);
 }
 
 void MainWidget::handle_command_with_file_name(const Command* command, std::wstring file_name) {
@@ -630,24 +639,17 @@ void MainWidget::prev_state()
 		*/
 		if (link_to_edit) {
 
-			Document* link_owner = document_manager->get_document(link_to_edit.value().document_path);
+			Document* link_owner = document_manager->get_document(link_to_edit.value().dst.document_path);
 
-			float link_new_offset_x = main_document_view->get_offset_x();
-			float link_new_offset_y = main_document_view->get_offset_y();
-			float link_new_zoom_level = main_document_view->get_zoom_level();
-			link_to_edit.value().dest_offset_x = link_new_offset_x;
-			link_to_edit.value().dest_offset_y = link_new_offset_y;
-			link_to_edit.value().dest_zoom_level = link_new_zoom_level;
+			OpenedBookState state = main_document_view->get_state().book_state;
+			link_to_edit.value().dst.book_state = state;
 
 			if (link_owner) {
 				link_owner->update_link(link_to_edit.value());
 			}
-			//link_to_edit->dest_offset_x = link_new_offset_x;
-			//link_to_edit->dest_offset_y = link_new_offset_y;
-			//link_to_edit->dest_zoom_level = link_new_zoom_level;
 
 			update_link(db, history[current_history_index].document_path,
-				link_new_offset_x, link_new_offset_y, link_new_zoom_level, link_to_edit->src_offset_y);
+				state.offset_x, state.offset_y, state.zoom_level, link_to_edit->src_offset_y);
 			link_to_edit = {};
 		}
 
@@ -919,17 +921,14 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "goto_link") {
 		std::optional<Link> link = main_document_view->find_closest_link();
 		if (link) {
-
-			open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
-			main_document_view->set_zoom_level(link->dest_zoom_level);
+			open_document(link->dst);
 		}
 	}
 	else if (command->name == "edit_link") {
 		std::optional<Link> link = main_document_view->find_closest_link();
 		if (link) {
 			link_to_edit = link;
-			open_document(link->document_path, link->dest_offset_x, link->dest_offset_y);
-			main_document_view->set_zoom_level(link->dest_zoom_level);
+			open_document(link->dst);
 		}
 	}
 
@@ -1120,10 +1119,7 @@ void MainWidget::handle_link() {
 
 	if (is_pending_link_source_filled()) {
 		auto [source_path, pl] = pending_link.value();
-		pl.dest_offset_x = main_document_view->get_offset_x();
-		pl.dest_offset_y = main_document_view->get_offset_y();
-		pl.dest_zoom_level = main_document_view->get_zoom_level();
-		pl.document_path = main_document_view->get_document()->get_path();
+		pl.dst = main_document_view->get_state();
 		pending_link = {};
 
 		if (source_path == main_document_view->get_document()->get_path()) {
@@ -1139,10 +1135,10 @@ void MainWidget::handle_link() {
 
 			insert_link(db,
 				source_path.value(),
-				pl.document_path,
-				pl.dest_offset_x,
-				pl.dest_offset_y,
-				pl.dest_zoom_level,
+				pl.dst.document_path,
+				pl.dst.book_state.offset_x,
+				pl.dst.book_state.offset_y,
+				pl.dst.book_state.zoom_level,
 				pl.src_offset_y);
 		}
 	}
@@ -1225,10 +1221,7 @@ void MainWidget::toggle_fullscreen() {
 void MainWidget::complete_pending_link(const DocumentViewState& destination_view_state)
 {
 	Link& pl = pending_link.value().second;
-	pl.dest_offset_x = destination_view_state.book_state.offset_x;
-	pl.dest_offset_y = destination_view_state.book_state.offset_y;
-	pl.dest_zoom_level = destination_view_state.book_state.zoom_level;
-	pl.document_path = destination_view_state.document_path;
+	pl.dst = destination_view_state;
 	main_document_view->get_document()->add_link(pl);
 	pending_link = {};
 }

@@ -37,7 +37,13 @@ bool Document::get_is_indexing()
 void Document::add_link(Link link, bool insert_into_database) {
 	links.push_back(link);
 	if (insert_into_database) {
-		insert_link(db, get_path(), link.document_path, link.dest_offset_x, link.dest_offset_y, link.dest_zoom_level ,link.src_offset_y);
+		insert_link(db,
+			get_path(),
+			link.dst.document_path,
+			link.dst.book_state.offset_x,
+			link.dst.book_state.offset_y,
+			link.dst.book_state.zoom_level,
+			link.src_offset_y);
 	}
 }
 
@@ -79,9 +85,9 @@ bool Document::update_link(Link new_link)
 {
 	for (auto& link : links) {
 		if (link.src_offset_y == new_link.src_offset_y) {
-			link.dest_offset_x = new_link.dest_offset_x;
-			link.dest_offset_y = new_link.dest_offset_y;
-			link.dest_zoom_level = new_link.dest_zoom_level;
+			link.dst.book_state.offset_x = new_link.dst.book_state.offset_x;
+			link.dst.book_state.offset_y = new_link.dst.book_state.offset_y;
+			link.dst.book_state.zoom_level = new_link.dst.book_state.zoom_level;
 			return true;
 		}
 	}

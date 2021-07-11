@@ -54,6 +54,13 @@ DocumentViewState DocumentView::get_state() {
 	return res;
 }
 
+void DocumentView::set_opened_book_state(const OpenedBookState& state)
+{
+	set_offsets(state.offset_x, state.offset_y);
+	set_zoom_level(state.zoom_level);
+}
+
+
 void DocumentView::handle_escape() {
 }
 
@@ -92,15 +99,12 @@ void DocumentView::goto_link(Link* link)
 {
 	if (link) {
 		if (get_document() &&
-			get_document()->get_path() == link->document_path) {
-
-			set_offsets(link->dest_offset_x, link->dest_offset_y);
-			set_zoom_level(link->dest_zoom_level);
+			get_document()->get_path() == link->dst.document_path) {
+			set_opened_book_state(link->dst.book_state);
 		}
 		else {
-			open_document(link->document_path, nullptr);
-			set_offsets(link->dest_offset_x, link->dest_offset_y);
-			set_zoom_level(link->dest_zoom_level);
+			open_document(link->dst.document_path, nullptr);
+			set_opened_book_state(link->dst.book_state);
 		}
 	}
 }

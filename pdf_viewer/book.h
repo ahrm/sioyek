@@ -40,21 +40,6 @@ struct BookMark {
 	std::wstring description;
 };
 
-/*
-	A link is a connection between two document locations. For example when reading a paragraph that is referencing a figure,
-	we may want to link that paragraphs's location to the figure. We can then easily switch between the paragraph and the figure.
-	Also if helper window is opened, it automatically displays the closest link to the current location.
-	Note that this is different from PdfLink which is the built-in link functionality in PDF file format.
-*/
-struct Link {
-	static Link with_src_offset(float src_offset);
-
-	std::wstring document_path;
-	float dest_offset_x;
-	float dest_offset_y;
-	float dest_zoom_level;
-	float src_offset_y;
-};
 
 struct PdfLink {
 	fz_rect rect;
@@ -65,6 +50,20 @@ struct DocumentViewState {
 	std::wstring document_path;
 	OpenedBookState book_state;
 };
+
+/*
+	A link is a connection between two document locations. For example when reading a paragraph that is referencing a figure,
+	we may want to link that paragraphs's location to the figure. We can then easily switch between the paragraph and the figure.
+	Also if helper window is opened, it automatically displays the closest link to the current location.
+	Note that this is different from PdfLink which is the built-in link functionality in PDF file format.
+*/
+struct Link {
+	static Link with_src_offset(float src_offset);
+
+	DocumentViewState dst;
+	float src_offset_y;
+};
+
 
 bool operator==(DocumentViewState& lhs, const DocumentViewState& rhs);
 
