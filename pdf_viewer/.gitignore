@@ -1,1 +1,13 @@
 data/*
+x64/*
+release/*
+Debug/*
+.vscode/*
+Generated
+*.pdf
+*.pdb
+*.db
+*.aps
+.qmake.stash
+last_document_path.txt
+imgui.ini

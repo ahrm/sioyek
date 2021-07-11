@@ -743,8 +743,6 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
 		std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
 
-		//auto something = main_document_view->get_document()->get_all_text_objects_at_location(flat_chars, offset_x, offset_y);
-
 		bool was_figure = false;
 
 		if (reference_text_on_pointer) {
