@@ -1,8 +1,8 @@
-# sioyek
+# Sioyek
 
 Sioyek is a minimal PDF reader for reading technical documents.
 
-## features
+## Features
 
 ### Quick Open
 
@@ -44,5 +44,10 @@ https://user-images.githubusercontent.com/6392321/125322657-41c2ac80-e353-11eb-9
 Suppose you are reading a paragraph which references a figure which is not very close to the current location. Jumping back and forth between the current paragraph and the figure can be very annoying. Using portals, you can link the paragraph's location to the figure's location. Sioyek shows the closest portal destination in a separate window (which is usually placed on a second monitor). This window is automatically updated to show the closest portal destination as the user navigates the document.
 
 
+# Configuration
 
+
+https://user-images.githubusercontent.com/6392321/125337160-e4832700-e363-11eb-8801-0bee58121c2d.mp4
+
+You can customize all key bindings and some UI elements by editing `keys_user.conf` and `prefs_user.conf`. The default configurations are in `keys.conf` and `prefs.conf`.
 
