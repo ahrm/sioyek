@@ -1,5 +1,7 @@
 # sioyek
 
+Sioyek is a minimal PDF reader for researchers.
+
 ## features
 
 ### Quick Open
