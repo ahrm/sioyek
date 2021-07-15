@@ -69,6 +69,13 @@ void DocumentView::set_book_state(OpenedBookState state) {
 	set_zoom_level(state.zoom_level);
 }
 void DocumentView::set_offsets(float new_offset_x, float new_offset_y) {
+	int num_pages = current_document->num_pages();
+	float max_y_offset = current_document->get_accum_page_height(num_pages-1) + current_document->get_page_height(num_pages-1);
+	float min_y_offset = 0;
+
+	if (new_offset_y > max_y_offset) new_offset_y = max_y_offset;
+	if (new_offset_y < min_y_offset) new_offset_y = min_y_offset;
+
 	offset_x = new_offset_x;
 	offset_y = new_offset_y;
 }
