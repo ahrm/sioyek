@@ -434,6 +434,10 @@ void DocumentView::open_document(std::wstring doc_path,bool* invalid_flag,  bool
 			offset_y = previous_state.offset_y;
 			set_offsets(previous_state.offset_x, previous_state.offset_y);
 		}
+		else {
+			// automatically adjust width
+			fit_to_page_width();
+		}
 	}
 }
 float DocumentView::get_page_offset(int page) {
