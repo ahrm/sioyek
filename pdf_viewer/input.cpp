@@ -42,7 +42,9 @@ CommandManager::CommandManager() {
 	commands.push_back({ "prev_state", false, false , false, false});
 	commands.push_back({ "pop_state", false, false , false, false});
 	commands.push_back({ "test_command", false, false , false, false});
-	commands.push_back({ "delete", false, true , false, false});
+	commands.push_back({ "delete_link", false, false , false, false});
+	commands.push_back({ "delete_bookmark", false, false , false, false});
+	//commands.push_back({ "delete", false, true , false, false});
 	commands.push_back({ "goto_link", false, false , false, false});
 	commands.push_back({ "edit_link", false, false , false, false});
 	commands.push_back({ "open_prev_doc", false, false , false, false});
@@ -183,7 +185,9 @@ void get_tokens(std::string line, std::vector<std::string>& tokens) {
 	}
 }
 
-InputParseTreeNode* parse_lines(InputParseTreeNode* root, std::vector<std::string> lines, std::vector<std::string> command_names) {
+InputParseTreeNode* parse_lines(InputParseTreeNode* root,
+	std::vector<std::string> lines,
+	std::vector<std::string> command_names) {
 
 	for (int j = 0; j < lines.size(); j++) {
 		std::string line = lines[j];
@@ -191,7 +195,6 @@ InputParseTreeNode* parse_lines(InputParseTreeNode* root, std::vector<std::strin
 		// for example convert "<a-<space>> to ["a", "space"]
 		std::vector<std::string> tokens;
 		get_tokens(line, tokens);
-
 
 		InputParseTreeNode* parent_node = root;
 
@@ -251,7 +254,9 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 
 }
 
-InputParseTreeNode* parse_key_config_files(const std::filesystem::path& default_path,const std::filesystem::path& user_path) {
+InputParseTreeNode* parse_key_config_files(const std::filesystem::path& default_path,
+	const std::filesystem::path& user_path) {
+
 	std::ifstream default_infile(default_path);
 	std::ifstream user_infile(user_path);
 

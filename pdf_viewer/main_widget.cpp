@@ -428,16 +428,17 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 			main_document_view->goto_mark(symbol);
 		}
 	}
-	else if (command->name == "delete") {
-		if (symbol == 'y') {
-			main_document_view->delete_closest_link();
-			validate_render();
-		}
-		else if (symbol == 'b') {
-			main_document_view->delete_closest_bookmark();
-			validate_render();
-		}
-	}
+	//else if (command->name == "delete") {
+
+	//	if (symbol == input_handler->create_link_sumbol) {
+	//		main_document_view->delete_closest_link();
+	//		validate_render();
+	//	}
+	//	else if (symbol == input_handler->create_bookmark_symbol) {
+	//		main_document_view->delete_closest_bookmark();
+	//		validate_render();
+	//	}
+	//}
 }
 
 
@@ -1091,6 +1092,17 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		opengl_widget->toggle_highlight_links();
 	}
 
+	else if (command->name == "delete_link") {
+
+		main_document_view->delete_closest_link();
+		validate_render();
+	}
+
+	else if (command->name == "delete_bookmark") {
+
+		main_document_view->delete_closest_bookmark();
+		validate_render();
+	}
 	//todo: check if still works after wstring
 	else if (command->name == "search_selected_text_in_google_scholar") {
 		search_google_scholar(selected_text);

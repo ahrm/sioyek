@@ -56,6 +56,9 @@ private:
 	std::string number_stack;
 
 public:
+	//char create_link_sumbol = 0;
+	//char create_bookmark_symbol = 0;
+
 	InputHandler(const std::filesystem::path& default_path, const std::filesystem::path& user_path);
 	void reload_config_files(const std::filesystem::path& default_path, const std::filesystem::path& user_path);
 	const Command* handle_key(int key, bool shift_pressed, bool control_pressed, int* num_repeats);
