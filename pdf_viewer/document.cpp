@@ -998,3 +998,24 @@ std::optional<std::wstring> Document::get_paper_name_at_position(std::vector<fz_
 
 	return {};
 }
+
+fz_pixmap* Document::get_small_pixmap(int page)
+{
+	for (auto [cached_page, pixmap] : cached_small_pixmaps) {
+		if (cached_page == page) {
+			return pixmap;
+		}
+	}
+
+	fz_matrix ctm = fz_scale(0.5f, 0.5f);
+	fz_pixmap* res = fz_new_pixmap_from_page_number(context, doc, page, ctm, fz_device_rgb(context), 0);
+	cached_small_pixmaps.push_back(std::make_pair(page, res));
+	unsigned int SMALL_PIXMAP_CACHE_SIZE = 5;
+
+	if (cached_small_pixmaps.size() > SMALL_PIXMAP_CACHE_SIZE) {
+		fz_drop_pixmap(context, cached_small_pixmaps[0].second);
+		cached_small_pixmaps.erase(cached_small_pixmaps.begin());
+	}
+
+	return res;
+}

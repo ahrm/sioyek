@@ -69,6 +69,8 @@ void DocumentView::set_book_state(OpenedBookState state) {
 	set_zoom_level(state.zoom_level);
 }
 void DocumentView::set_offsets(float new_offset_x, float new_offset_y) {
+	if (current_document == nullptr) return;
+
 	int num_pages = current_document->num_pages();
 	float max_y_offset = current_document->get_accum_page_height(num_pages-1) + current_document->get_page_height(num_pages-1);
 	float min_y_offset = 0;
@@ -249,6 +251,13 @@ void DocumentView::document_to_window_pos(int page, float doc_x, float doc_y, fl
 		*window_y = (doc_rect_y_offset + offset_y - doc_y) / half_height;
 		*window_x = (doc_x + offset_x - current_document->get_page_width(page) / 2) / half_width;
 	}
+}
+void DocumentView::document_to_window_pos_in_pixels(int page, float doc_x, float doc_y, int* window_x, int* window_y)
+{
+	float opengl_window_pos_x, opengl_window_pos_y;
+	document_to_window_pos(page, doc_x, doc_y, &opengl_window_pos_x, &opengl_window_pos_y);
+	*window_x = static_cast<int>(opengl_window_pos_x * view_width / 2 + view_width / 2);
+	*window_y = static_cast<int>(-opengl_window_pos_y * view_height / 2 + view_height / 2);
 }
 fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
 	fz_rect res;
@@ -435,8 +444,10 @@ void DocumentView::open_document(std::wstring doc_path,bool* invalid_flag,  bool
 			set_offsets(previous_state.offset_x, previous_state.offset_y);
 		}
 		else {
-			// automatically adjust width
-			fit_to_page_width();
+			if (current_document) {
+				// automatically adjust width
+				fit_to_page_width();
+			}
 		}
 	}
 }

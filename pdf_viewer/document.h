@@ -32,9 +32,10 @@ private:
 	std::vector<int> flat_toc_pages;
 
 	// number of pages in the document
-	std::optional<int> cached_num_pages;
+	std::optional<int> cached_num_pages = {};
 
 	std::vector<std::pair<int, fz_stext_page*>> cached_stext_pages;
+	std::vector<std::pair<int, fz_pixmap*>> cached_small_pixmaps;
 
 	fz_context* context = nullptr;
 	std::wstring file_name;
@@ -104,6 +105,7 @@ public:
 	QDateTime get_last_edit_time();
 	unsigned int get_milies_since_last_edit_time();
 	float get_page_height(int page_index);
+	fz_pixmap* get_small_pixmap(int page);
 	float get_page_width(int page_index);
 	float get_page_width_smart(int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
 	float get_accum_page_height(int page_index);

@@ -361,8 +361,8 @@ void MainWidget::move_document(float dx, float dy)
 {
 	if (main_document_view_has_document()) {
 		main_document_view->move(dx, dy);
-		int prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
-		int new_vertical_line_pos = prev_vertical_line_pos - dy;
+		float prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
+		float new_vertical_line_pos = prev_vertical_line_pos - dy;
 		opengl_widget->set_vertical_line_pos(new_vertical_line_pos);
 	}
 }
@@ -552,8 +552,34 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 void MainWidget::handle_right_click(float x, float y, bool down) {
 	//main_document_view->set
 	if (opengl_widget) {
+		//todo: find a more suitable vertical line pos
 		opengl_widget->set_should_draw_vertical_line(true);
-		opengl_widget->set_vertical_line_pos(y);
+
+		float doc_x, doc_y;
+		int page;
+		main_document_view->window_to_document_pos(x, y, &doc_x, &doc_y, &page);
+
+
+		float scale = 0.5f;
+
+		fz_matrix ctm = fz_scale(scale, scale);
+
+		fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(page);
+
+		int small_doc_x = static_cast<int>(doc_x * scale);
+		int small_doc_y = static_cast<int>(doc_y * scale);
+
+		int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
+
+
+		float best_vertical_loc_doc_pos = best_vertical_loc / scale;
+
+		int window_x, window_y;
+		main_document_view->document_to_window_pos_in_pixels(page, doc_x, best_vertical_loc_doc_pos, &window_x, &window_y);
+		opengl_widget->set_vertical_line_pos(window_y);
+
+		//opengl_widget->set_vertical_line_pos(y);
+		//opengl_widget->set_vertical_line_pos(y);
 		validate_render();
 		//set_render_mode(down);
 	}

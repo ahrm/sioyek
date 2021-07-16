@@ -76,6 +76,7 @@ public:
 	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
 	fz_rect absolute_to_window_rect(fz_rect doc_rect);
 	void document_to_window_pos(int page, float doc_x, float doc_y, float* window_x, float* window_y);
+	void document_to_window_pos_in_pixels(int page, float doc_x, float doc_y, int* window_x, int* window_y);
 	fz_rect document_to_window_rect(int page, fz_rect doc_rect);
 	void window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page);
 	void window_to_absolute_document_pos(float window_x, float window_y, float* doc_x, float* doc_y);

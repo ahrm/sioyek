@@ -753,3 +753,130 @@ void sleep_ms(unsigned int ms) {
 #endif
 }
 
+void get_pixmap_pixel(fz_pixmap* pixmap, int x, int y, unsigned char* r, unsigned char* g, unsigned char* b){
+	if (
+		(x < 0) ||
+		(y < 0) ||
+		(x >= pixmap->w) ||
+		(y >= pixmap->h)
+		) {
+		*r = 0;
+		*g = 0;
+		*b = 0;
+		return;
+	}
+
+	(*r) = pixmap->samples[y * pixmap->w * 3 + x * 3 + 0];
+	(*g) = pixmap->samples[y * pixmap->w * 3 + x * 3 + 1];
+	(*b) = pixmap->samples[y * pixmap->w * 3 + x * 3 + 2];
+}
+
+int find_max_horizontal_line_length_at_pos(fz_pixmap* pixmap, int pos_x, int pos_y) {
+	int min_x = pos_x;
+	int max_x = pos_x;
+
+	while (true) {
+		unsigned char r, g, b;
+		get_pixmap_pixel(pixmap, min_x, pos_y, &r, &g, &b);
+		if ((r != 255) || (g != 255) || (b != 255)) {
+			break;
+		}
+		else {
+			min_x--;
+		}
+	}
+	while (true) {
+		unsigned char r, g, b;
+		get_pixmap_pixel(pixmap, max_x, pos_y, &r, &g, &b);
+		if ((r != 255) || (g != 255) || (b != 255)) {
+			break;
+		}
+		else {
+			max_x++;
+		}
+	}
+	return max_x - min_x;
+}
+
+bool largest_contigous_ones(std::vector<int>& arr, int* start_index, int* end_index) {
+	arr.push_back(0);
+
+	bool has_at_least_one_one = false;
+
+	for (auto x : arr) {
+		if (x == 1) {
+			has_at_least_one_one = true;
+		}
+	}
+	if (!has_at_least_one_one) {
+		return false;
+	}
+
+
+	int max_count = 0;
+	int max_start_index = -1;
+	int max_end_index = -1;
+
+	int count = 0;
+
+	for (int i = 0; i < arr.size(); i++) {
+		if (arr[i] == 1) {
+			count++;
+		}
+		else {
+			if (count > max_count) {
+				max_count = count;
+				max_end_index = i - 1;
+				max_start_index = i - count;
+			}
+			count = 0;
+		}
+	}
+
+	*start_index = max_start_index;
+	*end_index = max_end_index;
+	return true;
+}
+
+int find_best_vertical_line_location(fz_pixmap* pixmap, int doc_x, int doc_y) {
+
+
+	int search_height = 5;
+
+	float min_candid_y = doc_y;
+	float max_candid_y = doc_y + search_height;
+
+	std::vector<int> max_possible_widths;
+
+	for (int candid_y = min_candid_y; candid_y <= max_candid_y; candid_y++) {
+		int current_width = find_max_horizontal_line_length_at_pos(pixmap, doc_x , candid_y);
+		max_possible_widths.push_back(current_width);
+	}
+
+	int max_width_value = -1;
+
+	for (auto w : max_possible_widths) {
+		if (w > max_width_value) {
+			max_width_value = w;
+		}
+	}
+	std::vector<int> is_max_list;
+
+	for (auto x : max_possible_widths) {
+		if (x == max_width_value) {
+			is_max_list.push_back(1);
+		}
+		else{
+			is_max_list.push_back(0);
+		}
+	}
+
+	int start_index, end_index;
+	largest_contigous_ones(is_max_list, &start_index, &end_index);
+
+	int test = (start_index + end_index) / 2;
+	//return doc_y + (start_index + end_index) / 2;
+	return doc_y + start_index ;
+}
+
+

@@ -84,3 +84,4 @@ void search_google_scholar(const std::wstring& search_string);
 void search_libgen(const std::wstring& search_string);
 void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, ReferenceData>& indices);
 void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars);
+int find_best_vertical_line_location(fz_pixmap* pixmap, int relative_click_x, int relative_click_y);

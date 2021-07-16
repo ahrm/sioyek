@@ -273,7 +273,7 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 
 void PdfViewOpenGLWidget::handle_escape() {
 	search_results.clear();
-	current_search_result_index = 0;
+	current_search_result_index =-1;
 	is_searching = false;
 	is_search_cancelled = true;
 }
@@ -402,7 +402,10 @@ void PdfViewOpenGLWidget::render() {
 
 	search_results_mutex.lock();
 	if (search_results.size() > 0) {
-		SearchResult current_search_result = search_results[current_search_result_index];
+		int index = current_search_result_index;
+		if (index == -1) index = 0;
+
+		SearchResult current_search_result = search_results[index];
 		glUseProgram(shared_gl_objects.highlight_program);
 		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
 		//glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
@@ -446,7 +449,7 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, std::optional<st
 
 	search_results_mutex.lock();
 	search_results.clear();
-	current_search_result_index = 0;
+	current_search_result_index = -1;
 	search_results_mutex.unlock();
 
 	is_searching = true;
