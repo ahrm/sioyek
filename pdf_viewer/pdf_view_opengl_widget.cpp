@@ -168,18 +168,11 @@ void PdfViewOpenGLWidget::resizeGL(int w, int h) {
 	}
 }
 
-void PdfViewOpenGLWidget::render_line_window(GLuint program, int vertical_pos) {
+void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_pos) {
 
-	int width = this->width();
-	int height = this->height();
 
-	float gl_vertical_pos = -(2 * static_cast<float>(vertical_pos) / height  -1);
 	float bar_height = VERTICAL_LINE_WIDTH;
 
-	//float line_data[] = {
-	//	-1, gl_vertical_pos,
-	//	1, gl_vertical_pos
-	//};
 	float bar_data[] = {
 		-1, gl_vertical_pos,
 		1, gl_vertical_pos,
@@ -424,7 +417,9 @@ void PdfViewOpenGLWidget::render() {
 		render_highlight_absolute(shared_gl_objects.highlight_program, rect);
 	}
 	if (should_draw_vertical_line) {
-		render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
+		//render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
+
+		render_line_window(shared_gl_objects.vertical_line_program , document_view->get_vertical_line_window_y());
 	}
 }
 
@@ -471,15 +466,15 @@ PdfViewOpenGLWidget::~PdfViewOpenGLWidget() {
 	}
 }
 
-void PdfViewOpenGLWidget::set_vertical_line_pos(float pos)
-{
-	vertical_line_location = pos;
-}
-
-float PdfViewOpenGLWidget::get_vertical_line_pos()
-{
-	return vertical_line_location;
-}
+//void PdfViewOpenGLWidget::set_vertical_line_pos(float pos)
+//{
+//	vertical_line_location = pos;
+//}
+//
+//float PdfViewOpenGLWidget::get_vertical_line_pos()
+//{
+//	return vertical_line_location;
+//}
 
 void PdfViewOpenGLWidget::set_should_draw_vertical_line(bool val)
 {

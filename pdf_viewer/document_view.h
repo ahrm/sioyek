@@ -42,6 +42,8 @@ private:
 	float offset_x;
 	float offset_y;
 
+	float vertical_line_pos;
+
 	int view_width;
 	int view_height;
 
@@ -74,6 +76,7 @@ public:
 	void add_bookmark(std::wstring desc);
 	void on_view_size_change(int new_width, int new_height);
 	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
+	//void absolute_to_window_pos_pixels(float absolute_x, float absolute_y, float* window_x, float* window_y);
 	fz_rect absolute_to_window_rect(fz_rect doc_rect);
 	void document_to_window_pos(int page, float doc_x, float doc_y, float* window_x, float* window_y);
 	void document_to_window_pos_in_pixels(int page, float doc_x, float doc_y, int* window_x, int* window_y);
@@ -104,4 +107,7 @@ public:
 	int get_current_chapter_index();
 	void goto_chapter(int diff);
 	float view_height_in_document_space();
+	void set_vertical_line_pos(float pos);
+	float get_vertical_line_pos();
+	float get_vertical_line_window_y();
 };

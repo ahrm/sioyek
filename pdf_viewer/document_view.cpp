@@ -226,6 +226,10 @@ void DocumentView::on_view_size_change(int new_width, int new_height) {
 	view_height = new_height;
 }
 
+//void DocumentView::absolute_to_window_pos_pixels(float absolute_x, float absolute_y, float* window_x, float* window_y) {
+//
+//}
+
 void DocumentView::absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y) {
 	float half_width = static_cast<float>(view_width) / zoom_level / 2;
 	float half_height = static_cast<float>(view_height) / zoom_level / 2;
@@ -590,6 +594,24 @@ void DocumentView::goto_chapter(int diff)
 float DocumentView::view_height_in_document_space()
 {
 	return static_cast<float>(view_height) / zoom_level;
+}
+
+void DocumentView::set_vertical_line_pos(float pos)
+{
+	vertical_line_pos = pos;
+}
+
+float DocumentView::get_vertical_line_pos()
+{
+	return vertical_line_pos;
+}
+
+float DocumentView::get_vertical_line_window_y()
+{
+	float absol_y = get_vertical_line_pos();
+	float window_x, window_y;
+	absolute_to_window_pos(0.0, absol_y, &window_x, &window_y);
+	return window_y;
 }
 
 

@@ -75,7 +75,7 @@ private:
 	bool should_highlight_links = false;
 	float percent_done = 0.0f;
 
-	int vertical_line_location;
+	//float vertical_line_location;
 	bool should_draw_vertical_line = false;
 	QDateTime creation_time;
 
@@ -85,7 +85,7 @@ protected:
 	void initializeGL() override;
 	void resizeGL(int w, int h) override;
 	void render_highlight_window(GLuint program, fz_rect window_rect);
-	void render_line_window(GLuint program, int vertical_pos);
+	void render_line_window(GLuint program, float vertical_pos);
 	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect);
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
 	void paintGL() override;
@@ -104,8 +104,8 @@ public:
 	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, QWidget* parent = nullptr);
 	~PdfViewOpenGLWidget();
 
-	void set_vertical_line_pos(float pos);
-	float get_vertical_line_pos();
+	//void set_vertical_line_pos(float pos);
+	//float get_vertical_line_pos();
 	void set_should_draw_vertical_line(bool val);
 	bool get_should_draw_vertical_line();
 	void handle_escape();

@@ -361,9 +361,9 @@ void MainWidget::move_document(float dx, float dy)
 {
 	if (main_document_view_has_document()) {
 		main_document_view->move(dx, dy);
-		float prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
-		float new_vertical_line_pos = prev_vertical_line_pos - dy;
-		opengl_widget->set_vertical_line_pos(new_vertical_line_pos);
+		//float prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
+		//float new_vertical_line_pos = prev_vertical_line_pos - dy;
+		//opengl_widget->set_vertical_line_pos(new_vertical_line_pos);
 	}
 }
 
@@ -576,7 +576,11 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 
 		int window_x, window_y;
 		main_document_view->document_to_window_pos_in_pixels(page, doc_x, best_vertical_loc_doc_pos, &window_x, &window_y);
-		opengl_widget->set_vertical_line_pos(window_y);
+		float abs_doc_x, abs_doc_y;
+
+		main_document_view->window_to_absolute_document_pos(window_x, window_y, &abs_doc_x, &abs_doc_y);
+
+		main_document_view->set_vertical_line_pos(abs_doc_y);
 
 		//opengl_widget->set_vertical_line_pos(y);
 		//opengl_widget->set_vertical_line_pos(y);
