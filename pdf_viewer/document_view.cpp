@@ -302,7 +302,14 @@ float DocumentView::set_zoom_level(float zl) {
 	return zoom_level;
 }
 float DocumentView::zoom_in() {
-	return set_zoom_level(zoom_level * ZOOM_INC_FACTOR);
+	const float max_zoom_level = 10.0f;
+	float new_zoom_level = zoom_level * ZOOM_INC_FACTOR;
+
+	if (new_zoom_level > max_zoom_level) {
+		new_zoom_level = max_zoom_level;
+	}
+	
+	return set_zoom_level(new_zoom_level);
 }
 float DocumentView::zoom_out() {
 	return set_zoom_level(zoom_level / ZOOM_INC_FACTOR);
