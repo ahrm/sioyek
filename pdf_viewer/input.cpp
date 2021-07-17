@@ -136,6 +136,7 @@ InputParseTreeNode parse_token(std::string token) {
 				{"pageup", Qt::Key::Key_PageUp},
 				{"pagedown", Qt::Key::Key_PageDown},
 				{"home", Qt::Key::Key_Home},
+				{"end", Qt::Key::Key_End},
 				{"pagedown", Qt::Key::Key_End},
 				{"tab", Qt::Key::Key_Tab},
 			};
