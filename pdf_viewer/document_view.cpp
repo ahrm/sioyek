@@ -621,6 +621,14 @@ float DocumentView::get_vertical_line_window_y()
 	return window_y;
 }
 
+void DocumentView::goto_vertical_line_pos()
+{
+	if (current_document) {
+		float new_y_offset = vertical_line_pos;
+		set_offset_y(new_y_offset);
+	}
+}
+
 
 void DocumentView::get_text_selection(fz_point selection_begin,
 	fz_point selection_end,

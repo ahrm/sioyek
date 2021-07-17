@@ -756,6 +756,13 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 //#ifdef _DEBUG
 	if (mevent->button() == Qt::MouseButton::MiddleButton) {
 
+		if (current_pending_command->name == "goto_mark") {
+			main_document_view->goto_vertical_line_pos();
+			current_pending_command = nullptr;
+			validate_render();
+			return;
+		}
+
 		int page;
 		float offset_x, offset_y;
 
@@ -907,7 +914,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	if (command->requires_text) {
 		current_pending_command = command;
 		bool should_fill_text_bar_with_selected_text = false;
-		if (command->name == "search" || command->name == "chapter_search" || command->name == "ranged_search") {
+		if (command->name == "search" || command->name == "chapter_search" || command->name == "ranged_search" || command->name == "add_bookmark") {
 			should_fill_text_bar_with_selected_text = true;
 		}
 		show_textbar(utf8_decode(command->name.c_str()), should_fill_text_bar_with_selected_text);

@@ -110,4 +110,5 @@ public:
 	void set_vertical_line_pos(float pos);
 	float get_vertical_line_pos();
 	float get_vertical_line_window_y();
+	void goto_vertical_line_pos();
 };
