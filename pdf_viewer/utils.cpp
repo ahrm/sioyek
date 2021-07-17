@@ -324,6 +324,7 @@ float dist_squared(fz_point p1, fz_point p2) {
 	return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
 }
 
+
 void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
 
 	LL_ITER(block, stext_page->first_block) {
@@ -332,10 +333,27 @@ void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_st
 				LL_ITER(ch, line->first_char) {
 					flat_chars.push_back(ch);
 				}
+
 			}
 		}
 	}
 }
+
+//void get_flat_chars_from_stext_page_with_space(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, fz_stext_char* space) {
+//
+//	LL_ITER(block, stext_page->first_block) {
+//		if (block->type == FZ_STEXT_BLOCK_TEXT) {
+//			LL_ITER(line, block->u.t.first_line) {
+//				LL_ITER(ch, line->first_char) {
+//					flat_chars.push_back(ch);
+//				}
+//				flat_chars.push_back(space);
+//
+//			}
+//		}
+
+//	}
+//}
 
 //fz_stext_char* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index) {
 fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_char*> flat_chars, fz_point document_point, int* location_index) {

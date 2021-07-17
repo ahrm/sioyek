@@ -629,7 +629,6 @@ void DocumentView::goto_vertical_line_pos()
 	}
 }
 
-
 void DocumentView::get_text_selection(fz_point selection_begin,
 	fz_point selection_end,
 	bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
@@ -668,6 +667,7 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 		// for now, let's assume there is only one page
 		fz_stext_page* stext_page = current_document->get_stext_with_page_number(i);
 		std::vector<fz_stext_char*> flat_chars;
+
 
 		get_flat_chars_from_stext_page(stext_page, flat_chars);
 
@@ -720,6 +720,9 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 					selected_text.push_back(current_char->c);
 					fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
 					selected_characters.push_back(charrect);
+				}
+				if ((current_char->next == nullptr) && (current_char->c != '-')) {
+					selected_text.push_back(' ');
 				}
 			}
 

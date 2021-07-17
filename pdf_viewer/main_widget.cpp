@@ -550,42 +550,37 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 }
 
 void MainWidget::handle_right_click(float x, float y, bool down) {
-	//main_document_view->set
+
 	if (opengl_widget) {
-		//todo: find a more suitable vertical line pos
-		opengl_widget->set_should_draw_vertical_line(true);
 
-		float doc_x, doc_y;
-		int page;
-		main_document_view->window_to_document_pos(x, y, &doc_x, &doc_y, &page);
+		if (down == true) {
+			if (current_pending_command && (current_pending_command->name == "goto_mark")) {
+				main_document_view->goto_vertical_line_pos();
+				current_pending_command = nullptr;
+				validate_render();
+				return;
+			}
 
+			float doc_x, doc_y;
+			int page;
+			main_document_view->window_to_document_pos(x, y, &doc_x, &doc_y, &page);
+			opengl_widget->set_should_draw_vertical_line(true);
+			float scale = 0.5f;
+			fz_matrix ctm = fz_scale(scale, scale);
+			fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(page);
+			int small_doc_x = static_cast<int>(doc_x * scale);
+			int small_doc_y = static_cast<int>(doc_y * scale);
+			int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
+			float best_vertical_loc_doc_pos = best_vertical_loc / scale;
+			int window_x, window_y;
+			main_document_view->document_to_window_pos_in_pixels(page, doc_x, best_vertical_loc_doc_pos, &window_x, &window_y);
+			float abs_doc_x, abs_doc_y;
+			main_document_view->window_to_absolute_document_pos(window_x, window_y, &abs_doc_x, &abs_doc_y);
+			main_document_view->set_vertical_line_pos(abs_doc_y);
+			validate_render();
 
-		float scale = 0.5f;
+		}
 
-		fz_matrix ctm = fz_scale(scale, scale);
-
-		fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(page);
-
-		int small_doc_x = static_cast<int>(doc_x * scale);
-		int small_doc_y = static_cast<int>(doc_y * scale);
-
-		int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
-
-
-		float best_vertical_loc_doc_pos = best_vertical_loc / scale;
-
-		int window_x, window_y;
-		main_document_view->document_to_window_pos_in_pixels(page, doc_x, best_vertical_loc_doc_pos, &window_x, &window_y);
-		float abs_doc_x, abs_doc_y;
-
-		main_document_view->window_to_absolute_document_pos(window_x, window_y, &abs_doc_x, &abs_doc_y);
-
-		main_document_view->set_vertical_line_pos(abs_doc_y);
-
-		//opengl_widget->set_vertical_line_pos(y);
-		//opengl_widget->set_vertical_line_pos(y);
-		validate_render();
-		//set_render_mode(down);
 	}
 
 }
@@ -751,12 +746,6 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
 	if (mevent->button() == Qt::MouseButton::RightButton) {
 
-		if (current_pending_command && (current_pending_command->name == "goto_mark")) {
-			main_document_view->goto_vertical_line_pos();
-			current_pending_command = nullptr;
-			validate_render();
-			return;
-		}
 
 		handle_right_click(mevent->pos().x(), mevent->pos().y(), false);
 	}
@@ -1248,6 +1237,12 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 	if (current_pending_command->name == "add_bookmark") {
 		main_document_view->add_bookmark(text);
 	}
+
+	if (current_pending_command->name == "goto_page_with_page_number") {
+		int dest = std::stoi(text.c_str()) - 1;
+		main_document_view->goto_page(dest);
+	}
+
 	if (current_pending_command->name == "command") {
 		if (text == L"q") {
 			close();
