@@ -750,18 +750,17 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 	}
 
 	if (mevent->button() == Qt::MouseButton::RightButton) {
-		handle_right_click(mevent->pos().x(), mevent->pos().y(), false);
-	}
-
-//#ifdef _DEBUG
-	if (mevent->button() == Qt::MouseButton::MiddleButton) {
-
 		if (current_pending_command->name == "goto_mark") {
 			main_document_view->goto_vertical_line_pos();
 			current_pending_command = nullptr;
 			validate_render();
 			return;
 		}
+
+		handle_right_click(mevent->pos().x(), mevent->pos().y(), false);
+	}
+
+	if (mevent->button() == Qt::MouseButton::MiddleButton) {
 
 		int page;
 		float offset_x, offset_y;
@@ -829,7 +828,6 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		}
 
 	}
-//#endif
 
 }
 

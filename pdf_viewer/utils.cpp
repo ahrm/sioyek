@@ -588,9 +588,22 @@ void string_split(std::string haystack, const std::string& needle, std::vector<s
 	//todo: we can significantly reduce string allocations in this function if it turns out to be a 
 	//performance bottleneck.
 
+	if (haystack == needle){
+		res.push_back("-");
+		return;
+	}
+
 	size_t loc = -1;
 	size_t needle_size = needle.size();
 	while ((loc = haystack.find(needle)) != -1) {
+
+		if ((loc < (haystack.size()-1)) &&  (haystack.substr(needle.size(), needle.size()) == needle)) {
+			// if needle is repeated, one of them is added as a token for example
+			// <C-->
+			// means [C, -]
+			res.push_back(needle);
+		}
+
 		int skiplen = loc + needle_size;
 		if (loc != 0) {
 			std::string part = haystack.substr(0, loc);
