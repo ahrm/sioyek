@@ -67,6 +67,10 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 	status_label->move(0, main_window_height - 20);
 	status_label->resize(main_window_width, 20);
 
+	if (main_document_view->get_zoom_level() == 0) {
+		main_document_view->fit_to_page_width();
+	}
+
 }
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
@@ -769,13 +773,30 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
 		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
 		std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
+		std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
 
 		bool was_figure = false;
 
+		if (equation_text_on_pointer) {
+			 std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(equation_text_on_pointer.value());
+			 if (eqdata_) {
+				 IndexedData refdata = eqdata_.value();
+				 update_history_state();
+
+				 float page_height = main_document_view->get_document()->get_page_height(refdata.page);
+
+				 main_document_view->goto_offset_within_page(refdata.page, main_document_view->get_offset_x(), refdata.y_offset);
+
+				 push_state();
+				 invalidate_render();
+				 return;
+			 }
+		}
+
 		if (reference_text_on_pointer) {
-			 std::optional<ReferenceData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
+			 std::optional<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
 			 if (refdata_) {
-				 ReferenceData refdata = refdata_.value();
+				 IndexedData refdata = refdata_.value();
 				 update_history_state();
 
 				 float page_height = main_document_view->get_document()->get_page_height(refdata.page);
@@ -918,7 +939,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 	if (command->name == "goto_begining") {
 		if (num_repeats) {
-			main_document_view->goto_page(num_repeats);
+			main_document_view->goto_page(num_repeats-1);
 		}
 		else {
 			main_document_view->set_offset_y(0.0f);
@@ -1239,8 +1260,11 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 	}
 
 	if (current_pending_command->name == "goto_page_with_page_number") {
-		int dest = std::stoi(text.c_str()) - 1;
-		main_document_view->goto_page(dest);
+
+		if (is_string_numeric(text.c_str()) && text.size() < 6) { // make sure the page number is valid
+			int dest = std::stoi(text.c_str()) - 1;
+			main_document_view->goto_page(dest);
+		}
 	}
 
 	if (current_pending_command->name == "command") {

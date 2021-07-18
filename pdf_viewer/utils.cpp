@@ -6,7 +6,6 @@
 #include <optional>
 #include <string>
 #include <filesystem>
-#include <regex>
 #include <qclipboard.h>
 #include <qguiapplication.h>
 #include <qprocess.h>
@@ -706,7 +705,110 @@ void open_file(const std::filesystem::path& path) {
 	open_url(generic_file_path);
 }
 
-void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, ReferenceData>& indices) {
+void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::wstring& string_res, std::vector<int>& indices) {
+
+	string_res.clear();
+	indices.clear();
+
+	for (int i = 0; i < flat_chars.size(); i++) {
+		fz_stext_char* ch = flat_chars[i];
+
+		if (ch->next == nullptr) { // add a space after the last character in a line, igonre hyphenated characters
+			if (ch->c != '-') {
+				string_res.push_back(ch->c);
+				indices.push_back(i);
+
+				string_res.push_back(' ');
+				indices.push_back(-1);
+			}
+			continue;
+		}
+		string_res.push_back(ch->c);
+		indices.push_back(i);
+	}
+}
+
+//void get_matches(std::wstring haystack, const std::wregex& reg, std::vector<std::pair<int, int>>& indices) {
+//	std::wsmatch match;
+//
+//	int offset = 0;
+//	while (std::regex_search(haystack, match, reg)) {
+//		int start_index = offset + match.position();
+//		int end_index = start_index + match.length();
+//		indices.push_back(std::make_pair(start_index, end_index));
+//
+//		int old_length = haystack.size();
+//		haystack = match.suffix();
+//		int new_length = haystack.size();
+//
+//		offset += (old_length - new_length);
+//	}
+//}
+
+void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_chars,
+	const std::wregex &regex,
+	std::vector<std::pair<int, int>> &match_ranges, std::vector<std::wstring> &match_texts){
+
+	std::wstring page_string;
+	std::vector<int> indices;
+
+	get_text_from_flat_chars(flat_chars, page_string, indices);
+
+	std::wsmatch match;
+
+	int offset = 0;
+	while (std::regex_search(page_string, match, regex)) {
+		int start_index = offset + match.position();
+		int end_index = start_index + match.length()-1;
+		match_ranges.push_back(std::make_pair(indices[start_index], indices[end_index]));
+		match_texts.push_back(match.str());
+
+		int old_length = page_string.size();
+		page_string = match.suffix();
+		int new_length = page_string.size();
+
+		offset += (old_length - new_length);
+	}
+}
+
+bool are_stext_chars_far_enough(fz_stext_char* first, fz_stext_char* second) {
+	float second_width = second->quad.lr.x - second->quad.ll.x;
+	assert(second_width > 0);
+
+	return (second->origin.x - first->origin.x) > (5 * second_width);
+}
+
+void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_number, std::map<std::wstring, IndexedData>& indices) {
+	std::wregex regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
+	std::vector<std::pair<int, int>> match_ranges;
+	std::vector<std::wstring> match_texts;
+
+	find_regex_matches_in_stext_page(flat_chars, regex, match_ranges, match_texts);
+
+	for (int i = 0; i < match_ranges.size(); i++) {
+		auto [start_index, end_index] = match_ranges[i];
+		if (start_index == -1 || end_index == -1) {
+			break;
+		}
+		assert(flat_chars[start_index]->c == '(');
+		assert(flat_chars[end_index]->c == ')');
+
+		// we expect the equation reference to be sufficiently separated from the rest of the text
+		if ((start_index > 0) && are_stext_chars_far_enough(flat_chars[start_index-1], flat_chars[start_index])) { 
+			assert(match_texts[i] > 2);
+
+			std::wstring match_text = match_texts[i].substr(1, match_texts[i].size() - 2);
+			IndexedData indexed_equation;
+			indexed_equation.page = page_number;
+			indexed_equation.text = match_text;
+			indexed_equation.y_offset = flat_chars[start_index]->quad.ll.y;
+			indices[match_text] = indexed_equation;
+		}
+	}
+
+}
+
+void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, IndexedData>& indices) {
 
 	char start_char = '[';
 	char end_char = ']';
@@ -716,7 +818,7 @@ void index_references(fz_stext_page* page, int page_number, std::map<std::wstrin
 	const int MAX_REFERENCE_SIZE = 10;
 
 	bool started = false;
-	std::vector<ReferenceData> temp_indices;
+	std::vector<IndexedData> temp_indices;
 	std::wstring current_text = L"";
 
 	LL_ITER(block, page->first_block) {
@@ -742,7 +844,7 @@ void index_references(fz_stext_page* page, int page_number, std::map<std::wstrin
 				if (ch->c == end_char) {
 					started = false;
 
-					ReferenceData index_data;
+					IndexedData index_data;
 					index_data.page = page_number;
 					index_data.y_offset = ch->quad.ll.y;
 					index_data.text = current_text;
@@ -758,7 +860,7 @@ void index_references(fz_stext_page* page, int page_number, std::map<std::wstrin
 					continue;
 				}
 				if (started && (ch->c == delim_char)) {
-					ReferenceData index_data;
+					IndexedData index_data;
 					index_data.page = page_number;
 					index_data.y_offset = ch->quad.ll.y;
 					index_data.text = current_text;
@@ -908,6 +1010,18 @@ int find_best_vertical_line_location(fz_pixmap* pixmap, int doc_x, int doc_y) {
 	int test = (start_index + end_index) / 2;
 	//return doc_y + (start_index + end_index) / 2;
 	return doc_y + start_index ;
+}
+
+bool is_string_numeric(const std::wstring& str) {
+	if (str.size() == 0) {
+		return false;
+	}
+	for (auto ch : str) {
+		if (!std::isdigit(ch)) {
+			return false;
+		}
+	}
+	return true;
 }
 
 

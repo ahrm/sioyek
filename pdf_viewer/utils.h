@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <regex>
 
 #include <qstandarditemmodel.h>
 
@@ -82,7 +83,12 @@ void open_url(const std::wstring& url_string);
 void open_file(const std::filesystem::path& path);
 void search_google_scholar(const std::wstring& search_string);
 void search_libgen(const std::wstring& search_string);
-void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, ReferenceData>& indices);
+void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, IndexedData>& indices);
 void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars);
 int find_best_vertical_line_location(fz_pixmap* pixmap, int relative_click_x, int relative_click_y);
 //void get_flat_chars_from_stext_page_with_space(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, fz_stext_char* space);
+void index_equations(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::map<std::wstring, IndexedData>& indices);
+void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_chars,
+	const std::wregex& regex,
+	std::vector<std::pair<int, int>>& match_ranges, std::vector<std::wstring>& match_texts);
+bool is_string_numeric(const std::wstring& str);

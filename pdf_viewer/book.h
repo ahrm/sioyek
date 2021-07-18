@@ -118,13 +118,7 @@ bool operator==(const CachedPageData& lhs, const CachedPageData& rhs);
 	and index them in FigureData structure. Using this, we can quickly find the figures when user clicks on the
 	text descripbing the figure (for example 'Fig. 2.13')
 */
-struct FigureData {
-	int page;
-	float y_offset;
-	std::wstring text;
-};
-
-struct ReferenceData {
+struct IndexedData {
 	int page;
 	float y_offset;
 	std::wstring text;

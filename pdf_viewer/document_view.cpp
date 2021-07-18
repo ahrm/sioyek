@@ -466,7 +466,7 @@ float DocumentView::get_page_offset(int page) {
 
 	if (!current_document) return 0.0f;
 
-	int max_page = current_document->num_pages();
+	int max_page = current_document->num_pages()-1;
 	if (page > max_page) {
 		page = max_page;
 	}
@@ -721,11 +721,16 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 					fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
 					selected_characters.push_back(charrect);
 				}
-				if ((current_char->next == nullptr) && (current_char->c != '-')) {
-					selected_text.push_back(' ');
+				if ((current_char->next == nullptr)) {
+					if (current_char->c != '-')
+					{
+						selected_text.push_back(' ');
+					}
+					else {
+						selected_text.pop_back();
+					}
 				}
 			}
-
 		}
 	}
 

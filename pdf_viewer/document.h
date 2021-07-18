@@ -51,8 +51,9 @@ private:
 	// The reason that we use a hashmap for reference_indices and a vector for figures is that
 	// the reference we are looking for is usually the last reference with that name, but this is not
 	// necessarily true for the figures.
-	std::vector<FigureData> figure_indices;
-	std::map<std::wstring, ReferenceData> reference_indices;
+	std::vector<IndexedData> figure_indices;
+	std::map<std::wstring, IndexedData> reference_indices;
+	std::map<std::wstring, IndexedData> equation_indices;
 
 	std::mutex figure_indices_mutex;
 	std::optional<std::thread> figure_indexing_thread = {};
@@ -124,11 +125,13 @@ public:
 	void index_figures(bool* invalid_flag);
 	void stop_indexing();
 	bool find_figure_with_string(std::wstring figure_name, int reference_page, int* page, float* y_offset);
-	std::optional<ReferenceData> find_reference_with_string(std::wstring reference_name);
+	std::optional<IndexedData> find_reference_with_string(std::wstring reference_name);
+	std::optional<IndexedData> find_equation_with_string(std::wstring equation_name);
 
 	std::optional<std::wstring> get_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_reference_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_paper_name_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
+	std::optional<std::wstring> get_equation_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	//std::optional<std::pair<std::wstring, std::wstring>> get_all_text_objects_at_location(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	friend class DocumentManager;
 };

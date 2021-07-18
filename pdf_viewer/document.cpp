@@ -679,8 +679,10 @@ void Document::index_figures(bool* invalid_flag)
 	is_indexing = true;
 	this->figure_indexing_thread = std::thread([this, n, invalid_flag]() {
 		std::wcout << "starting index thread ..." << std::endl;
-		std::vector<FigureData> local_figure_data;
-		std::map<std::wstring, ReferenceData> local_reference_data;
+		std::vector<IndexedData> local_figure_data;
+		std::map<std::wstring, IndexedData> local_reference_data;
+		std::map<std::wstring, IndexedData> local_equation_data;
+
 		fz_context* context_ = fz_clone_context(context);
 		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
 
@@ -694,7 +696,11 @@ void Document::index_figures(bool* invalid_flag)
 			// we don't use get_stext_with_page_number here on purpose because it would lead to many unnecessary allocations
 			fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, nullptr);
 
+			std::vector<fz_stext_char*> flat_chars;
+			get_flat_chars_from_stext_page(stext_page, flat_chars);
+
 			index_references(stext_page, i, local_reference_data);
+			index_equations(flat_chars, i, local_equation_data);
 
 			LL_ITER(block, stext_page->first_block) {
 				if (does_stext_block_starts_with_string_case_insensitive(block, L"fig")) {
@@ -715,6 +721,7 @@ void Document::index_figures(bool* invalid_flag)
 		figure_indices_mutex.lock();
 		figure_indices = std::move(local_figure_data);
 		reference_indices = std::move(local_reference_data);
+		equation_indices = std::move(local_equation_data);
 		figure_indices_mutex.unlock();
 		std::wcout << "figure indexing finished ... " << std::endl;
 		is_indexing = false;
@@ -766,12 +773,47 @@ bool Document::find_figure_with_string(std::wstring figure_name, int reference_p
 	return false;
 }
 
-std::optional<ReferenceData> Document::find_reference_with_string(std::wstring reference_name)
+std::optional<IndexedData> Document::find_reference_with_string(std::wstring reference_name)
 {
 	if (reference_indices.find(reference_name) != reference_indices.end()) {
 		return reference_indices[reference_name];
 	}
 
+	return {};
+}
+
+std::optional<IndexedData> Document::find_equation_with_string(std::wstring equation_name)
+{
+	if (equation_indices.find(equation_name) != equation_indices.end()) {
+		return equation_indices[equation_name];
+	}
+
+	return {};
+}
+
+
+
+std::optional<std::wstring> Document::get_equation_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y) {
+	fz_rect selected_rect;
+	selected_rect.x0 = offset_x - 0.1f;
+	selected_rect.x1 = offset_x + 0.1f;
+	selected_rect.y0 = offset_y - 0.1f;
+	selected_rect.y1 = offset_y + 0.1f;
+
+	std::wregex regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
+	std::vector<std::pair<int, int>> match_ranges;
+	std::vector<std::wstring> match_texts;
+
+	find_regex_matches_in_stext_page(flat_chars, regex, match_ranges, match_texts);
+
+	for (int i = 0; i < match_ranges.size(); i++) {
+		auto [start_index, end_index] = match_ranges[i];
+		for (int index = start_index; index <= end_index; index++) {
+			if (fz_contains_rect(fz_rect_from_quad(flat_chars[index]->quad), selected_rect)) {
+				return match_texts[i].substr(1, match_texts[i].size() - 2);
+			}
+		}
+	}
 	return {};
 }
 
