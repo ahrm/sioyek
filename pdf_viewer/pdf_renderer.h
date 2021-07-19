@@ -76,6 +76,7 @@ class PdfRenderer : public QObject{
 	QTimer garbage_collect_timer;
 
 	bool* should_quit_pointer = nullptr;
+	bool are_documents_invalidated = false;
 
 	int num_threads;
 

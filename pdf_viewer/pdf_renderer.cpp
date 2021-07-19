@@ -202,7 +202,9 @@ void PdfRenderer::delete_old_pages(bool force_all) {
 		for (int i = 0; i < cached_responses.size(); i++) {
 			indices_to_delete.push_back(i);
 		}
+		are_documents_invalidated = true;
 	}
+
 	else if (cached_response_times.size() > N) {
 		// we never delete N most recent pages
 		// todo: make this configurable
@@ -333,6 +335,7 @@ PdfRenderer::~PdfRenderer() {
 }
 
 fz_document* PdfRenderer::get_document_with_path(int thread_index, fz_context* mupdf_context, std::wstring path) {
+
 	std::pair<int, std::wstring> document_id = std::make_pair(thread_index, path);
 
 	if (opened_documents.find(document_id) != opened_documents.end()) {
@@ -390,6 +393,15 @@ void PdfRenderer::run(int thread_index) {
 
 		// if the request is already rendered, just return the previous result
 		cached_response_mutex.lock();
+
+		if (are_documents_invalidated) {
+			for (auto [_, document] : opened_documents) {
+				fz_drop_document(mupdf_context, document);
+			}
+			opened_documents.clear();
+			are_documents_invalidated = false;
+		}
+
 		bool is_already_rendered = false;
 		for (const auto& cached_rep : cached_responses) {
 			if (cached_rep.request == req) is_already_rendered = true;

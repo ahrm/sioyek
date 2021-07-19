@@ -519,7 +519,19 @@ bool is_consequtive(fz_rect rect1, fz_rect rect2) {
 	float ydist2 = abs(rect1.y1 - rect2.y1);
 	float ydist = std::min(ydist1, ydist2);
 
-	if (xdist < 40.0f && ydist < 40.0f) {
+	float rect1_width = rect1.x1 - rect1.x0;
+	float rect2_width = rect2.x1 - rect2.x0;
+	float average_width = (rect1_width + rect2_width) / 2.0f;
+
+	float rect1_height = rect1.y1 - rect1.y0;
+	float rect2_height = rect2.y1 - rect2.y0;
+	float average_height = (rect1_height + rect2_height) / 2.0f;
+
+	//if (xdist < 40.0f && ydist < 40.0f) {
+	//if (xdist < 20.0f && ydist < 20.0f) {
+	//	return true;
+	//}
+	if (xdist < 2*average_width && ydist < 2*average_height) {
 		return true;
 	}
 	//if ( ydist < 10.0f) {
@@ -557,7 +569,7 @@ fz_rect bound_rects(const std::vector<fz_rect>& rects) {
 	return res;
 
 }
-void merge_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects) {
+void merge_selected_character_rects(const std::vector<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects) {
 	/*
 		This function merges the bounding boxes of all selected characters into large line chunks.
 	*/
@@ -584,6 +596,11 @@ void merge_selected_character_rects(std::vector<fz_rect> selected_character_rect
 			line_rects.push_back(selected_character_rects[i]);
 		}
 	}
+
+	//for (auto rect : line_rects) {
+	//	resulting_rects.push_back(rect);
+	//}
+	//return;
 
 	if (line_rects.size() > 0) {
 		fz_rect bounding_rect = bound_rects(line_rects);

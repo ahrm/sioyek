@@ -71,7 +71,7 @@ void get_stext_page_string(fz_stext_page* page, std::wstring& res);
 bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstring& str);
 bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, const std::wstring& str);
 std::wstring get_figure_string_from_raw_string(const std::wstring& raw_string);
-void merge_selected_character_rects(std::vector<fz_rect> selected_character_rects, std::vector<fz_rect>& resulting_rects);
+void merge_selected_character_rects(const std::vector<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects);
 void string_split(std::string haystack, const std::string& needle, std::vector<std::string>& res);
 void run_command(std::wstring command, std::wstring parameters);
 

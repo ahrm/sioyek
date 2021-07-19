@@ -380,6 +380,16 @@ void Document::reload() {
 	fz_drop_document(context, doc);
 	cached_num_pages = {};
 
+	for (auto [_, cached_small_pixmap] : cached_small_pixmaps) {
+		fz_drop_pixmap(context, cached_small_pixmap);
+	}
+	cached_small_pixmaps.clear();
+
+	for (auto [_, cached_stext_page] : cached_stext_pages) {
+		fz_drop_stext_page(context, cached_stext_page);
+	}
+	cached_stext_pages.clear();
+
 	for (auto page_link_pair : cached_page_links) {
 		fz_drop_link(context, page_link_pair.second);
 	}
@@ -389,6 +399,7 @@ void Document::reload() {
 	cached_toc_model = nullptr;
 
 	doc = nullptr;
+
 	open(invalid_flag_pointer);
 }
 
