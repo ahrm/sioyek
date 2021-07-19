@@ -90,7 +90,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
 		// When selecting, we occasionally update selected text
 		//todo: maybe have a timer event that handles this periodically
-		if (last_text_select_time.msecsTo(QTime::currentTime()) > 100) {
+		if (last_text_select_time.msecsTo(QTime::currentTime()) > 16) {
 
 			float document_x, document_y;
 			main_document_view->window_to_absolute_document_pos(x, y, &document_x, &document_y);

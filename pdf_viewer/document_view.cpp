@@ -695,14 +695,15 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 				if (current_char == char_begin) {
 					selecting = true;
 				}
-				if (current_char == char_end) {
-					selecting = false;
-				}
+				//if (current_char == char_end) {
+				//	selecting = false;
+				//}
 			}
 			else {
 				if (word_selecting == false && is_separator(char_begin, current_char)) {
 					selected_text.clear();
 					selected_characters.clear();
+					continue;
 				}
 				if (current_char == char_begin) {
 					word_selecting = true;
@@ -715,6 +716,7 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 					return;
 				}
 			}
+
 			if (selecting || word_selecting) {
 				if (!(current_char->c == ' ' && selected_text.size() == 0)) {
 					selected_text.push_back(current_char->c);
@@ -729,6 +731,12 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 					else {
 						selected_text.pop_back();
 					}
+				}
+
+			}
+			if (!is_word_selection) {
+				if (current_char == char_end) {
+					selecting = false;
 				}
 			}
 		}

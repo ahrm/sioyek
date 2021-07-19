@@ -320,7 +320,7 @@ bool parse_search_command(const std::wstring& search_command, int* out_begin, in
 }
 
 float dist_squared(fz_point p1, fz_point p2) {
-	return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
+	return (p1.x - p2.x) * (p1.x - p2.x) + 100 * (p1.y - p2.y) * (p1.y - p2.y);
 }
 
 
