@@ -1,6 +1,6 @@
 # Sioyek
 
-Sioyek is a minimal PDF reader for reading technical documents.
+Sioyek is a PDF viewer designed for reading research papers and technical books.
 
 ## Features
 
