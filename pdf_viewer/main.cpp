@@ -8,6 +8,8 @@
 // state, instead they return a DocumentViewState object that is then applied using push_state and chnage_state functions
 // (chnage state should be a function that just applies the state without pushing it to history)
 //todo: add "repeat last command" command
+//todo: fix selection logic so tutorial is not annoying!
+//todo: pdf live reload has some weird bugs. probably caused by inappropriate use of mupdf.
 
 #include <iostream>
 #include <vector>

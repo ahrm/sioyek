@@ -677,27 +677,35 @@ void open_url(const std::string &url_string) {
 
 void search_google_scholar(const std::wstring& search_string) {
 
-	QString qurl_string = QString::fromStdWString(GOOGLE_SCHOLAR_ADDRESS + search_string);
-	open_url(qurl_string);
+	if (search_string.size() > 0) {
+		QString qurl_string = QString::fromStdWString(GOOGLE_SCHOLAR_ADDRESS + search_string);
+		open_url(qurl_string);
+	}
 }
 
 void search_libgen(const std::wstring& search_string) {
 
-	QString qurl_string = QString::fromStdWString(LIBGEN_ADDRESS + search_string);
-	open_url(qurl_string);
+	if (search_string.size() > 0) {
+		QString qurl_string = QString::fromStdWString(LIBGEN_ADDRESS + search_string);
+		open_url(qurl_string);
+	}
 }
 
 void search_custom_engine(const std::wstring& search_string, const std::wstring& custom_engine_url) {
 
-	QString qurl_string = QString::fromStdWString(custom_engine_url + search_string);
-	open_url(qurl_string);
+	if (search_string.size() > 0) {
+		QString qurl_string = QString::fromStdWString(custom_engine_url + search_string);
+		open_url(qurl_string);
+	}
 }
 
 
 void open_url(const std::wstring& url_string) {
 
-	QString qurl_string = QString::fromStdWString(url_string);
-	open_url(qurl_string);
+	if (url_string.size() > 0) {
+		QString qurl_string = QString::fromStdWString(url_string);
+		open_url(qurl_string);
+	}
 }
 
 void open_file(const std::filesystem::path& path) {
