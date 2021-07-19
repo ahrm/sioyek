@@ -10,6 +10,7 @@ extern float MOVE_SCREEN_PERCENTAGE;
 extern float BACKGROUND_COLOR[3];
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
+extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE;
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
 
@@ -108,6 +109,8 @@ ConfigManager::ConfigManager(const std::filesystem::path& default_path, const st
 	configs.push_back({ L"move_screen_percentage", &MOVE_SCREEN_PERCENTAGE, float_serializer, float_deserializer });
 	configs.push_back({ L"flat_toc", &FLAT_TABLE_OF_CONTENTS, bool_serializer, bool_deserializer });
 	configs.push_back({ L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS, bool_serializer, bool_deserializer });
+	configs.push_back({ L"should_load_tutorial_when_no_other_file", &SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE, bool_serializer, bool_deserializer });
+//extern bool should_load_tutorial_when_no_other_file = false;
 
 	std::wifstream default_infile(default_path);
 	std::wifstream user_infile(user_path);

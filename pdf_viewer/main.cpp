@@ -5,9 +5,9 @@
 //todo: autocomplete in command window
 //todo: simplify word selection logic (also avoid inefficient extra insertions followed by clears in selected_characters)
 //todo: make it so that all commands that change document state (for example goto_offset_withing_page, goto_link, etc.) do not change the document
-// state, instead they return a DocumentViewState object that is then applied using push_state and chnage_state functions
+// state, instead they return a DocumentViewState object that is then applied using push_state and change_state functions
 // (chnage state should be a function that just applies the state without pushing it to history)
-//todo: pdf live reload has some weird bugs. probably caused by inappropriate use of mupdf.
+//todo: make tutorial file smaller
 
 #include <iostream>
 #include <vector>
@@ -94,6 +94,7 @@ extern bool FLAT_TABLE_OF_CONTENTS = false;
 extern bool SHOULD_USE_MULTIPLE_MONITORS = false;
 extern std::wstring LIBGEN_ADDRESS = L"";
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
+extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
 
 extern std::filesystem::path last_path_file_absolute_location = "";
 extern std::filesystem::path parent_path = "";
@@ -186,6 +187,10 @@ int main(int argc, char* args[]) {
 	if (argc > 1) {
 		file_path = app.arguments().at(1).toStdWString();
 		LAUNCHED_FROM_FILE_ICON = true;
+	}
+
+	if ((file_path.size() == 0) && SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE) {
+		file_path = parent_path / "tutorial.pdf";
 	}
 
 	DocumentManager document_manager(mupdf_context, db);
