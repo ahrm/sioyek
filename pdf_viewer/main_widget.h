@@ -138,7 +138,7 @@ public:
 
 	~MainWidget();
 
-	void open_document(std::wstring path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
+	void open_document(std::filesystem::path path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
 	void open_document(const DocumentViewState& state);
 	void validate_render();
 	void validate_ui();

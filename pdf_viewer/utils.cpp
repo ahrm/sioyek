@@ -820,7 +820,7 @@ void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_num
 
 		// we expect the equation reference to be sufficiently separated from the rest of the text
 		if ((start_index > 0) && are_stext_chars_far_enough(flat_chars[start_index-1], flat_chars[start_index])) { 
-			assert(match_texts[i] > 2);
+			assert(match_texts[i].size() > 2);
 
 			std::wstring match_text = match_texts[i].substr(1, match_texts[i].size() - 2);
 			IndexedData indexed_equation;

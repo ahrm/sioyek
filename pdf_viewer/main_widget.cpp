@@ -446,13 +446,14 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 }
 
 
-void MainWidget::open_document(std::wstring path, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
+void MainWidget::open_document(std::filesystem::path path_, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
 
 	//save the previous document state
 	if (main_document_view) {
 		main_document_view->persist();
 		update_history_state();
 	}
+  std::wstring path = path_.wstring();
 
 	main_document_view->open_document(path, &this->is_render_invalidated);
 	bool has_document = main_document_view_has_document();

@@ -176,7 +176,7 @@ int main(int argc, char* args[]) {
 	InputHandler input_handler(keymap_default_path, keymap_user_path);
 
 	//char file_path[MAX_PATH] = { 0 };
-	std::wstring file_path;
+	std::filesystem::path file_path;
 	std::string file_path_;
 	std::ifstream last_state_file(last_path_file_absolute_location);
 	std::getline(last_state_file, file_path_);
@@ -189,7 +189,7 @@ int main(int argc, char* args[]) {
 		LAUNCHED_FROM_FILE_ICON = true;
 	}
 
-	if ((file_path.size() == 0) && SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE) {
+	if ((file_path.wstring().size() == 0) && SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE) {
 		file_path = parent_path / "tutorial.pdf";
 	}
 

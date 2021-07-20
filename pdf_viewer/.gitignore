@@ -13,3 +13,4 @@ last_document_path.txt
 imgui.ini
 *.jar
 last_document_path.txt
+*.o
