@@ -1,6 +1,6 @@
 
 TEMPLATE = app
-TARGET = pdf_viewer_project
+TARGET = sioyek
 INCLUDEPATH += .
 
 # You can make your code fail to compile if you use deprecated APIs.
@@ -52,3 +52,20 @@ SOURCES += book.cpp \
 
 LIBS += -ldl -lmupdf -lz -lfreetype -lmujs -lgif -ljbig2dec -lopenjp2 -ljpeg -lharfbuzz
 QMAKE_CXXFLAGS += -std=c++17
+
+unix{
+    isEmpty(PREFIX){
+        PREFIX = /usr
+    }
+    target.path = $$PREFIX/bin
+    shortcutfiles.files = resources/sioyek.desktop
+    shortcutfiles.path = $$PREFIX/share/applications/
+    data.files = resources/sioyek-icon-linux.png
+    data.path = $$PREFIX/share/pixmaps/
+    INSTALLS += shortcutfiles
+    INSTALLS += data
+}
+
+INSTALLS += target
+DISTFILES += resources/sioyek.desktop\
+    resources/sioyek-icon-linux.png
