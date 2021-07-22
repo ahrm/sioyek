@@ -45,26 +45,27 @@ private:
 	DocumentView* helper_document_view = nullptr;
 
 	// current widget responsible for selecting an option (for example toc or bookmarks)
-	std::unique_ptr<QWidget> current_widget;
+	std::unique_ptr<QWidget> current_widget = nullptr;
 
 	std::vector<DocumentViewState> history;
 	int current_history_index = -1;
 
 	// last position when mouse was clicked in absolute document space
-	float last_mouse_down_x;
-	float last_mouse_down_y;
+	float last_mouse_down_x = 0;
+	float last_mouse_down_y = 0;
 
 	// is the user currently selecing text? (happens when we left click and move the cursor)
-	bool is_selecting; 
+	bool is_selecting = false;
 	// is the user in word select mode? (happens when we double left click and move the cursor)
-	bool is_word_selecting;
+	bool is_word_selecting = false;
 	std::wstring selected_text;
 
 	std::optional<Link> link_to_edit = {};
 
 	std::optional<std::pair<std::optional<std::wstring>, Link>> pending_link;
 
-	int main_window_width, main_window_height;
+	int main_window_width = 0;
+	int main_window_height = 0;
 
 	QWidget* text_command_line_edit_container = nullptr;
 	QLabel* text_command_line_edit_label = nullptr;

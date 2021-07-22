@@ -67,7 +67,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 	status_label->move(0, main_window_height - 20);
 	status_label->resize(main_window_width, 20);
 
-	if (main_document_view->get_zoom_level() == 0) {
+	if ((main_document_view->get_document() != nullptr) && (main_document_view->get_zoom_level() == 0)) {
 		main_document_view->fit_to_page_width();
 	}
 
