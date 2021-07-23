@@ -1,7 +1,7 @@
 cd mupdf
 make USE_SYSTEM_HARFBUZZ=yes
 cd ..
-qmake pdf_viewer_linux.pro
+qmake pdf_viewer_build_config.pro
 make
 
 rm -r build 2> /dev/null

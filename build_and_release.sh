@@ -9,7 +9,7 @@ cd ..
 cd mupdf
 make USE_SYSTEM_HARFBUZZ=yes
 cd ..
-qmake pdf_viewer_linux.pro
+qmake pdf_viewer_build_config.pro
 rm -r AppDir 2> /dev/null
 make install INSTALL_ROOT=sioyek-release
 

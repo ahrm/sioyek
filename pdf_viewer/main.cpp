@@ -124,7 +124,7 @@ int main(int argc, char* args[]) {
 #ifdef NDEBUG
 	install_app(exe_path.c_str());
 #else
-#ifdef WINDOWS
+#ifdef Q_OS_WIN
 	std::filesystem::path source_file_path = __FILE__;
 	parent_path = source_file_path.parent_path();
 #endif
