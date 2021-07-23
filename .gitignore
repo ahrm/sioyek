@@ -344,3 +344,4 @@ sioyek-release/*
 linux-deploy-binaries/*
 build/*
 *.zip
+*.sln
