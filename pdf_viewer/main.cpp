@@ -124,8 +124,10 @@ int main(int argc, char* args[]) {
 #ifdef NDEBUG
 	install_app(exe_path.c_str());
 #else
+#ifdef WINDOWS
 	std::filesystem::path source_file_path = __FILE__;
 	parent_path = source_file_path.parent_path();
+#endif
 #endif
 
 	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
