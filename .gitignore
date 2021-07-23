@@ -339,3 +339,8 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 *.o
+*.db
+sioyek-release/*
+linux-deploy-binaries/*
+build/*
+*.zip
