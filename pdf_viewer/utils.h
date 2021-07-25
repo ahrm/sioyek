@@ -92,3 +92,4 @@ void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_ch
 	const std::wregex& regex,
 	std::vector<std::pair<int, int>>& match_ranges, std::vector<std::wstring>& match_texts);
 bool is_string_numeric(const std::wstring& str);
+void create_file_if_not_exists(const std::filesystem::path& path);

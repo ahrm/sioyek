@@ -725,9 +725,19 @@ void open_url(const std::wstring& url_string) {
 	}
 }
 
+void create_file_if_not_exists(const std::filesystem::path& path) {
+	if (!std::filesystem::exists(path)) {
+		std::ofstream outfile(path);
+		outfile << "";
+		outfile.close();
+	}
+}
+
 void open_file(const std::filesystem::path& path) {
+
 	std::wstring generic_file_path = path.generic_wstring();
 	open_url(generic_file_path);
+
 }
 
 void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::wstring& string_res, std::vector<int>& indices) {

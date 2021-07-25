@@ -26,6 +26,7 @@
 #include <qtimer.h>
 #include <qtreeview.h>
 #include <qwindow.h>
+#include <qstandardpaths.h>
 
 #include <filesystem>
 
@@ -1269,6 +1270,8 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 	}
 
 	if (current_pending_command->name == "command") {
+		std::filesystem::path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+
 		if (text == L"q") {
 			close();
 		}
@@ -1291,7 +1294,11 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			open_file(file_path_string);
 		}
 		else if (text == L"keys_user") {
+#ifdef PORTABLE
 			std::wstring file_path_string = (parent_path / "keys_user.config").wstring();
+#else
+			std::wstring file_path_string = (standard_data_path / "keys_user.config").wstring();
+#endif
 			open_file(file_path_string);
 		}
 		else if (text == L"prefs") {
@@ -1299,7 +1306,11 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			open_file(file_path_string);
 		}
 		else if (text == L"prefs_user") {
+#ifdef PORTABLE
 			std::wstring file_path_string = (parent_path / "prefs_user.config").wstring();
+#else
+			std::wstring file_path_string = (standard_data_path / "prefs_user.config").wstring();
+#endif
 			open_file(file_path_string);
 		}
 	}

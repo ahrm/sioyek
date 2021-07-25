@@ -50,6 +50,7 @@
 #include <qscrollarea.h>
 #include <qdesktopservices.h>
 #include <qprocess.h>
+#include <qstandardpaths.h>
 
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
@@ -120,6 +121,8 @@ int main(int argc, char* args[]) {
 
 	parent_path = QCoreApplication::applicationDirPath().toStdWString();
 	std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
+	std::filesystem::path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+	std::filesystem::create_directory(standard_data_path);
 
 #ifdef NDEBUG
 	install_app(exe_path.c_str());
@@ -130,17 +133,36 @@ int main(int argc, char* args[]) {
 #endif
 #endif
 
-	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
 
 	std::filesystem::path default_config_path = parent_path / "prefs.config";
+	std::filesystem::path keymap_default_path = parent_path / "keys.config";
+
+#ifdef PORTABLE
+	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
+	std::filesystem::path keymap_user_path = parent_path / "keys_user.config";
 	std::filesystem::path user_config_path = parent_path / "prefs_user.config";
+#else
+	last_path_file_absolute_location = (standard_data_path / "last_document_path.txt").wstring();
+	std::filesystem::path keymap_user_path = standard_data_path / "keys_user.config";
+	std::filesystem::path user_config_path = standard_data_path / "prefs_user.config";
+#endif
+
+	create_file_if_not_exists(keymap_user_path);
+	create_file_if_not_exists(user_config_path);
+
 	ConfigManager config_manager(default_config_path, user_config_path);
 
 	sqlite3* db;
 	char* error_message = nullptr;
 	int rc;
 
+#ifdef PORTABLE
 	rc = sqlite3_open((parent_path / "test.db").string().c_str(), &db);
+#else
+	
+	std::filesystem::path dbpath = standard_data_path / "test.db";
+	rc = sqlite3_open((standard_data_path / "test.db").string().c_str(), &db);
+#endif
 	if (rc) {
 		std::cerr << "could not open database" << sqlite3_errmsg(db) << std::endl;
 	}
@@ -173,8 +195,6 @@ int main(int argc, char* args[]) {
 
 	bool quit = false;
 
-	std::filesystem::path keymap_default_path = parent_path / "keys.config";
-	std::filesystem::path keymap_user_path = parent_path / "keys_user.config";
 	InputHandler input_handler(keymap_default_path, keymap_user_path);
 
 	//char file_path[MAX_PATH] = { 0 };
