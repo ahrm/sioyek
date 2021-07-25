@@ -557,7 +557,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
 void MainWidget::handle_right_click(float x, float y, bool down) {
 
-	if (opengl_widget) {
+	if ((main_document_view->get_document() != nullptr) && (opengl_widget != nullptr)) {
 
 		if (down == true) {
 			if (current_pending_command && (current_pending_command->name == "goto_mark")) {
