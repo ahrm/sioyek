@@ -38,14 +38,14 @@ private:
 	DocumentManager* document_manager = nullptr;
 	Document* current_document = nullptr;
 
-	float zoom_level;
-	float offset_x;
-	float offset_y;
+	float zoom_level = 0;
+	float offset_x = 0;
+	float offset_y = 0;
 
-	float vertical_line_pos;
+	float vertical_line_pos = 0;
 
-	int view_width;
-	int view_height;
+	int view_width = 0;
+	int view_height = 0;
 
 public:
 	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager);
