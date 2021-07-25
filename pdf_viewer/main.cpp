@@ -137,14 +137,14 @@ int main(int argc, char* args[]) {
 	std::filesystem::path default_config_path = parent_path / "prefs.config";
 	std::filesystem::path keymap_default_path = parent_path / "keys.config";
 
-#ifdef PORTABLE
-	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
-	std::filesystem::path keymap_user_path = parent_path / "keys_user.config";
-	std::filesystem::path user_config_path = parent_path / "prefs_user.config";
-#else
+#ifdef NON_PORTABLE
 	last_path_file_absolute_location = (standard_data_path / "last_document_path.txt").wstring();
 	std::filesystem::path keymap_user_path = standard_data_path / "keys_user.config";
 	std::filesystem::path user_config_path = standard_data_path / "prefs_user.config";
+#else
+	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
+	std::filesystem::path keymap_user_path = parent_path / "keys_user.config";
+	std::filesystem::path user_config_path = parent_path / "prefs_user.config";
 #endif
 
 	create_file_if_not_exists(keymap_user_path);
@@ -156,13 +156,13 @@ int main(int argc, char* args[]) {
 	char* error_message = nullptr;
 	int rc;
 
-#ifdef PORTABLE
-	rc = sqlite3_open((parent_path / "test.db").string().c_str(), &db);
-#else
-	
+#ifdef NON_PORTABLE
 	std::filesystem::path dbpath = standard_data_path / "test.db";
 	rc = sqlite3_open((standard_data_path / "test.db").string().c_str(), &db);
+#else
+	rc = sqlite3_open((parent_path / "test.db").string().c_str(), &db);
 #endif
+
 	if (rc) {
 		std::cerr << "could not open database" << sqlite3_errmsg(db) << std::endl;
 	}

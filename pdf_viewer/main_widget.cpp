@@ -1294,11 +1294,13 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			open_file(file_path_string);
 		}
 		else if (text == L"keys_user") {
-#ifdef PORTABLE
-			std::wstring file_path_string = (parent_path / "keys_user.config").wstring();
-#else
+
+#ifdef NON_PORTABLE
 			std::wstring file_path_string = (standard_data_path / "keys_user.config").wstring();
+#else
+			std::wstring file_path_string = (parent_path / "keys_user.config").wstring();
 #endif
+
 			open_file(file_path_string);
 		}
 		else if (text == L"prefs") {
@@ -1306,10 +1308,11 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			open_file(file_path_string);
 		}
 		else if (text == L"prefs_user") {
-#ifdef PORTABLE
-			std::wstring file_path_string = (parent_path / "prefs_user.config").wstring();
-#else
+
+#ifdef NON_PORTABLE
 			std::wstring file_path_string = (standard_data_path / "prefs_user.config").wstring();
+#else
+			std::wstring file_path_string = (parent_path / "prefs_user.config").wstring();
 #endif
 			open_file(file_path_string);
 		}
