@@ -212,7 +212,11 @@ int main(int argc, char* args[]) {
 	}
 
 	if ((file_path.wstring().size() == 0) && SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE) {
+#ifdef Q_OS_LINUX
+		file_path = standard_data_path / "tutorial.pdf";
+#else
 		file_path = parent_path / "tutorial.pdf";
+#endif
 	}
 
 	DocumentManager document_manager(mupdf_context, db);

@@ -1,5 +1,7 @@
 [Desktop Entry]
+Version=1.0
 Type=Application
+MimeType=application/pdf;
 Name=Sioyek
 Exec=sioyek
 Icon=sioyek-icon-linux
