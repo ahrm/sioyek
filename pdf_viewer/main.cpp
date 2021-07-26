@@ -97,8 +97,66 @@ extern std::wstring LIBGEN_ADDRESS = L"";
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
 
-extern std::filesystem::path last_path_file_absolute_location = "";
-extern std::filesystem::path parent_path = "";
+//extern std::filesystem::path last_path_file_absolute_location = "";
+//extern std::filesystem::path parent_path = "";
+extern std::filesystem::path default_config_path = "";
+extern std::filesystem::path default_keys_path = "";
+extern std::filesystem::path user_config_path = "";
+extern std::filesystem::path user_keys_path = "";
+extern std::filesystem::path database_file_path = "";
+extern std::filesystem::path tutorial_path = "";
+extern std::filesystem::path last_opened_file_address_path = "";
+extern std::filesystem::path shader_path = "";
+
+void configure_paths(){
+
+	std::filesystem::path parent_path(QCoreApplication::applicationDirPath().toStdWString());
+	std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
+
+	shader_path = parent_path / "shaders";
+#ifdef Q_OS_LINUX
+	char* APPDIR = std::getenv("XDG_CONFIG_HOME");
+
+	if (!APPDIR){
+		APPDIR = std::getenv("HOME");
+	}
+
+	std::filesystem::path standard_data_path(APPDIR);
+	standard_data_path = standard_data_path / ".local" / "share" / "Sioyek";
+	std::filesystem::create_directories(standard_data_path);
+
+	default_config_path = parent_path / "prefs.config";
+	user_config_path = standard_data_path / "prefs_user.config";
+	default_keys_path = parent_path / "keys.config";
+	user_keys_path = standard_data_path / "keys_user.config";
+	database_file_path = standard_data_path / "test.db";
+	tutorial_path = standard_data_path / "tutorial.pdf";
+	last_opened_file_address_path = standard_data_path / "last_document_path.txt";
+	if (!std::filesystem::exists(tutorial_path)){
+		std::filesystem::copy(parent_path / "tutorial.pdf", tutorial_path);
+	}
+#else //windows
+	std::filesystem::path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+
+	default_config_path = parent_path / "prefs.config";
+	default_keys_path = parent_path / "keys.config";
+	tutorial_file_path = parent_path / "keys_user.config";
+	tutorial_path = parent_path / "tutorial.pdf";
+
+#ifdef NON_PORTABLE
+	user_config_path = standard_data_path / "prefs_user.config";
+	default_keys_path = standard_data_path / "keys_user.config";
+	database_file_path = standard_data_path / "test.db";
+	last_opened_file_address_path = standard_data_path / "last_document_path.txt";
+#else
+	user_config_path = parent_path / "prefs_user.config";
+	default_keys_path = parent_path / "keys_user.config";
+	database_file_path = parent_path / "test.db";
+	last_opened_file_address_path = parent_path / "last_document_path.txt";
+#endif
+
+#endif
+}
 
 
 std::mutex mupdf_mutexes[FZ_LOCK_MAX];
@@ -119,35 +177,22 @@ int main(int argc, char* args[]) {
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
-	parent_path = QCoreApplication::applicationDirPath().toStdWString();
-	std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
-	std::filesystem::path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
-	std::filesystem::create_directory(standard_data_path);
-
 #ifdef NDEBUG
 	install_app(exe_path.c_str());
-#else
-#ifdef Q_OS_WIN
-	std::filesystem::path source_file_path = __FILE__;
-	parent_path = source_file_path.parent_path();
-#endif
 #endif
 
+	configure_paths();
 
-	std::filesystem::path default_config_path = parent_path / "prefs.config";
-	std::filesystem::path keymap_default_path = parent_path / "keys.config";
+	std::cout <<  default_config_path << "\n";
+	std::cout <<  default_keys_path << "\n";
+	std::cout <<  user_config_path  << "\n";
+	std::cout <<  user_keys_path << "\n";
+	std::cout <<  database_file_path << "\n";
+	std::cout <<  tutorial_path << "\n";
+	std::cout <<  last_opened_file_address_path << "\n";
+	std::cout <<  shader_path << "\n";
 
-#ifdef NON_PORTABLE
-	last_path_file_absolute_location = (standard_data_path / "last_document_path.txt").wstring();
-	std::filesystem::path keymap_user_path = standard_data_path / "keys_user.config";
-	std::filesystem::path user_config_path = standard_data_path / "prefs_user.config";
-#else
-	last_path_file_absolute_location = (parent_path / "last_document_path.txt").wstring();
-	std::filesystem::path keymap_user_path = parent_path / "keys_user.config";
-	std::filesystem::path user_config_path = parent_path / "prefs_user.config";
-#endif
-
-	create_file_if_not_exists(keymap_user_path);
+	create_file_if_not_exists(user_keys_path);
 	create_file_if_not_exists(user_config_path);
 
 	ConfigManager config_manager(default_config_path, user_config_path);
@@ -156,12 +201,7 @@ int main(int argc, char* args[]) {
 	char* error_message = nullptr;
 	int rc;
 
-#ifdef NON_PORTABLE
-	std::filesystem::path dbpath = standard_data_path / "test.db";
-	rc = sqlite3_open((standard_data_path / "test.db").string().c_str(), &db);
-#else
-	rc = sqlite3_open((parent_path / "test.db").string().c_str(), &db);
-#endif
+	rc = sqlite3_open(database_file_path.string().c_str(), &db);
 
 	if (rc) {
 		std::cerr << "could not open database" << sqlite3_errmsg(db) << std::endl;
@@ -195,12 +235,12 @@ int main(int argc, char* args[]) {
 
 	bool quit = false;
 
-	InputHandler input_handler(keymap_default_path, keymap_user_path);
+	InputHandler input_handler(default_keys_path, user_keys_path);
 
 	//char file_path[MAX_PATH] = { 0 };
 	std::filesystem::path file_path;
 	std::string file_path_;
-	std::ifstream last_state_file(last_path_file_absolute_location);
+	std::ifstream last_state_file(last_opened_file_address_path);
 	std::getline(last_state_file, file_path_);
 	file_path = utf8_decode(file_path_);
 	last_state_file.close();
@@ -212,11 +252,7 @@ int main(int argc, char* args[]) {
 	}
 
 	if ((file_path.wstring().size() == 0) && SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE) {
-#ifdef Q_OS_LINUX
-		file_path = standard_data_path / "tutorial.pdf";
-#else
-		file_path = parent_path / "tutorial.pdf";
-#endif
+		file_path = tutorial_path;
 	}
 
 	DocumentManager document_manager(mupdf_context, db);
@@ -227,17 +263,17 @@ int main(int argc, char* args[]) {
 
 
 	QFileSystemWatcher key_file_watcher;
-	key_file_watcher.addPath(QString::fromStdWString(keymap_default_path.wstring()));
-	key_file_watcher.addPath(QString::fromStdWString(keymap_user_path.wstring()));
+	key_file_watcher.addPath(QString::fromStdWString(default_keys_path.wstring()));
+	key_file_watcher.addPath(QString::fromStdWString(user_keys_path.wstring()));
 
 
-	QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
-	if (QFontDatabase::addApplicationFont(font_path) < 0) {
-		std::wcout << "could not add font!" << endl;
-	}
+	//QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
+	//if (QFontDatabase::addApplicationFont(font_path) < 0) {
+		//std::wcout << "could not add font!" << endl;
+	//}
 
-	QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));
-	app.setWindowIcon(icon);
+	//QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));
+	//app.setWindowIcon(icon);
 
 	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, &quit);
 	main_widget.open_document(file_path);
@@ -258,7 +294,7 @@ int main(int argc, char* args[]) {
 		});
 
 	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		input_handler.reload_config_files(keymap_default_path, keymap_user_path);
+		input_handler.reload_config_files(default_keys_path, user_keys_path);
 		});
 
 	app.exec();

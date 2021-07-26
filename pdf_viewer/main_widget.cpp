@@ -48,8 +48,15 @@ extern bool LAUNCHED_FROM_FILE_ICON;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern float MOVE_SCREEN_PERCENTAGE;
-extern std::filesystem::path parent_path;
 extern std::wstring LIBGEN_ADDRESS;
+
+extern std::filesystem::path default_config_path;
+extern std::filesystem::path default_keys_path;
+extern std::filesystem::path user_config_path;
+extern std::filesystem::path user_keys_path;
+extern std::filesystem::path database_file_path;
+extern std::filesystem::path tutorial_path;
+extern std::filesystem::path last_opened_file_address_path;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -118,7 +125,7 @@ void MainWidget::closeEvent(QCloseEvent* close_event) {
 	// write the address of the current document in a file so that the next time
 	// we launch the application, we open this document
 	if (main_document_view->get_document()) {
-		std::ofstream last_path_file(last_path_file_absolute_location);
+		std::ofstream last_path_file(last_opened_file_address_path);
 
 		std::string encoded_file_name_str = utf8_encode(main_document_view->get_document()->get_path());
 		last_path_file << encoded_file_name_str.c_str() << std::endl;
@@ -1290,30 +1297,20 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			main_document_view->open_document(new_path, &this->is_ui_invalidated, false, state);
 		}
 		else if (text == L"keys") {
-			std::wstring file_path_string = (parent_path / "keys.config").wstring();
+			std::wstring file_path_string = default_keys_path.wstring();
 			open_file(file_path_string);
 		}
 		else if (text == L"keys_user") {
 
-#ifdef NON_PORTABLE
-			std::wstring file_path_string = (standard_data_path / "keys_user.config").wstring();
-#else
-			std::wstring file_path_string = (parent_path / "keys_user.config").wstring();
-#endif
-
+			std::wstring file_path_string = user_keys_path.wstring();
 			open_file(file_path_string);
 		}
 		else if (text == L"prefs") {
-			std::wstring file_path_string = (parent_path / "prefs.config").wstring();
+			std::wstring file_path_string = default_config_path.wstring();
 			open_file(file_path_string);
 		}
 		else if (text == L"prefs_user") {
-
-#ifdef NON_PORTABLE
-			std::wstring file_path_string = (standard_data_path / "prefs_user.config").wstring();
-#else
-			std::wstring file_path_string = (parent_path / "prefs_user.config").wstring();
-#endif
+			std::wstring file_path_string = user_config_path.wstring();
 			open_file(file_path_string);
 		}
 	}

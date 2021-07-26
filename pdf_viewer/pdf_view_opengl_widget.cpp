@@ -1,6 +1,6 @@
 #include "pdf_view_opengl_widget.h"
 
-extern std::filesystem::path parent_path;
+extern std::filesystem::path shader_path;
 extern float BACKGROUND_COLOR[3];
 extern float VERTICAL_LINE_WIDTH;
 extern float VERTICAL_LINE_FREQ;
@@ -127,10 +127,10 @@ void PdfViewOpenGLWidget::initializeGL() {
 
 		shared_gl_objects.is_initialized = true;
 
-		shared_gl_objects.rendered_program = LoadShaders(parent_path / "shaders" / "simple.vertex", parent_path / "shaders" / "simple.fragment");
-		shared_gl_objects.unrendered_program = LoadShaders(parent_path / "shaders" / "simple.vertex", parent_path / "shaders" / "unrendered_page.fragment");
-		shared_gl_objects.highlight_program = LoadShaders(parent_path / "shaders" / "simple.vertex", parent_path / "shaders" / "highlight.fragment");
-		shared_gl_objects.vertical_line_program = LoadShaders(parent_path / "shaders" / "simple.vertex", parent_path / "shaders" / "vertical_bar.fragment");
+		shared_gl_objects.rendered_program = LoadShaders(shader_path / "simple.vertex",  shader_path/ "simple.fragment");
+		shared_gl_objects.unrendered_program = LoadShaders(shader_path / "simple.vertex",  shader_path/ "unrendered_page.fragment");
+		shared_gl_objects.highlight_program = LoadShaders( shader_path / "simple.vertex",  shader_path / "highlight.fragment");
+		shared_gl_objects.vertical_line_program = LoadShaders(shader_path / "simple.vertex",  shader_path / "vertical_bar.fragment");
 
 		shared_gl_objects.highlight_color_uniform_location = glGetUniformLocation(shared_gl_objects.highlight_program, "highlight_color");
 

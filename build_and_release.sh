@@ -30,10 +30,18 @@ else
 	cp pdf_viewer/keys.config sioyek-release/usr/bin/keys.config
 	cp pdf_viewer/keys_user.config sioyek-release/usr/share/keys_user.config
 	cp -r pdf_viewer/shaders sioyek-release/usr/bin/shaders
-	cp tutorial.pdf sioyek-release/usr/share/tutorial.pdf
+	cp tutorial.pdf sioyek-release/usr/bin/tutorial.pdf
 fi
 
 #./linuxdeployqt-continuous-x86_64.AppImage --appdir sioyek-release --plugin qt
 ./linuxdeployqt-continuous-x86_64.AppImage ./sioyek-release/usr/share/applications/sioyek.desktop -appimage
 
+
+if [[ $1 == portable ]]; then
+	rm -r Sioyek-x86_64.AppImage.config
+	rm Sioyek-x86_64.AppImage
+	mv Sioyek-* Sioyek-x86_64.AppImage
+	mkdir -p Sioyek-x86_64.AppImage.config/.local/share/Sioyek
+	cp tutorial.pdf Sioyek-x86_64.AppImage.config/.local/share/Sioyek/tutorial.pdf
+fi
 
