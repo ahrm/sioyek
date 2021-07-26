@@ -348,4 +348,4 @@ build/*
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
-
+moc*

@@ -136,21 +136,23 @@ void configure_paths(){
 		std::filesystem::copy(parent_path / "tutorial.pdf", tutorial_path);
 	}
 #else //windows
+#ifdef NDEBUG
+	install_app(exe_path.c_str());
+#endif
 	std::filesystem::path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
 
 	default_config_path = parent_path / "prefs.config";
 	default_keys_path = parent_path / "keys.config";
-	tutorial_file_path = parent_path / "keys_user.config";
 	tutorial_path = parent_path / "tutorial.pdf";
 
 #ifdef NON_PORTABLE
 	user_config_path = standard_data_path / "prefs_user.config";
-	default_keys_path = standard_data_path / "keys_user.config";
+	user_keys_path = standard_data_path / "keys_user.config";
 	database_file_path = standard_data_path / "test.db";
 	last_opened_file_address_path = standard_data_path / "last_document_path.txt";
 #else
 	user_config_path = parent_path / "prefs_user.config";
-	default_keys_path = parent_path / "keys_user.config";
+	user_keys_path = parent_path / "keys_user.config";
 	database_file_path = parent_path / "test.db";
 	last_opened_file_address_path = parent_path / "last_document_path.txt";
 #endif
@@ -177,9 +179,6 @@ int main(int argc, char* args[]) {
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
-#ifdef NDEBUG
-	install_app(exe_path.c_str());
-#endif
 
 	configure_paths();
 
