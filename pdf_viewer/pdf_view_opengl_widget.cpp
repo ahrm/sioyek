@@ -2,6 +2,8 @@
 
 extern std::filesystem::path shader_path;
 extern float BACKGROUND_COLOR[3];
+extern float DARK_MODE_BACKGROUND_COLOR[3];
+extern float DARK_MODE_CONTRAST;
 extern float VERTICAL_LINE_WIDTH;
 extern float VERTICAL_LINE_FREQ;
 
@@ -39,7 +41,7 @@ GLuint PdfViewOpenGLWidget::LoadShaders(std::filesystem::path vertex_file_path, 
 		VertexShaderStream.close();
 	}
 	else {
-		wprintf(L"Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
+		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
 		return 0;
 	}
 
@@ -53,7 +55,7 @@ GLuint PdfViewOpenGLWidget::LoadShaders(std::filesystem::path vertex_file_path, 
 		FragmentShaderStream.close();
 	}
 	else {
-		wprintf(L"Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", fragment_file_path);
+		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", fragment_file_path);
 		return 0;
 	}
 
@@ -61,7 +63,7 @@ GLuint PdfViewOpenGLWidget::LoadShaders(std::filesystem::path vertex_file_path, 
 	int InfoLogLength;
 
 	// Compile Vertex Shader
-	wprintf(L"Compiling shader : %s\n", vertex_file_path);
+	printf("Compiling shader : %s\n", vertex_file_path);
 	char const* VertexSourcePointer = VertexShaderCode.c_str();
 	glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
 	glCompileShader(VertexShaderID);
@@ -72,11 +74,11 @@ GLuint PdfViewOpenGLWidget::LoadShaders(std::filesystem::path vertex_file_path, 
 	if (InfoLogLength > 0) {
 		std::vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
 		glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-		wprintf(L"%s\n", &VertexShaderErrorMessage[0]);
+		printf("%s\n", &VertexShaderErrorMessage[0]);
 	}
 
 	// Compile Fragment Shader
-	wprintf(L"Compiling shader : %s\n", fragment_file_path);
+	printf("Compiling shader : %s\n", fragment_file_path);
 	char const* FragmentSourcePointer = FragmentShaderCode.c_str();
 	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
 	glCompileShader(FragmentShaderID);
@@ -87,7 +89,7 @@ GLuint PdfViewOpenGLWidget::LoadShaders(std::filesystem::path vertex_file_path, 
 	if (InfoLogLength > 0) {
 		std::vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
 		glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
-		wprintf(L"%s\n", &FragmentShaderErrorMessage[0]);
+		printf("%s\n", &FragmentShaderErrorMessage[0]);
 	}
 
 	// Link the program
@@ -128,9 +130,13 @@ void PdfViewOpenGLWidget::initializeGL() {
 		shared_gl_objects.is_initialized = true;
 
 		shared_gl_objects.rendered_program = LoadShaders(shader_path / "simple.vertex",  shader_path/ "simple.fragment");
+		shared_gl_objects.rendered_dark_program = LoadShaders(shader_path / "simple.vertex",  shader_path/ "dark_mode.fragment");
 		shared_gl_objects.unrendered_program = LoadShaders(shader_path / "simple.vertex",  shader_path/ "unrendered_page.fragment");
 		shared_gl_objects.highlight_program = LoadShaders( shader_path / "simple.vertex",  shader_path / "highlight.fragment");
 		shared_gl_objects.vertical_line_program = LoadShaders(shader_path / "simple.vertex",  shader_path / "vertical_bar.fragment");
+		shared_gl_objects.vertical_line_dark_program = LoadShaders(shader_path / "simple.vertex",  shader_path / "vertical_bar_dark.fragment");
+
+		shared_gl_objects.dark_mode_contrast_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_dark_program, "contrast");
 
 		shared_gl_objects.highlight_color_uniform_location = glGetUniformLocation(shared_gl_objects.highlight_program, "highlight_color");
 
@@ -336,7 +342,14 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 	if (texture != 0) {
 
-		glUseProgram(shared_gl_objects.rendered_program);
+		if (is_dark_mode) {
+			glUseProgram(shared_gl_objects.rendered_dark_program);
+			glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
+		}
+		else {
+			glUseProgram(shared_gl_objects.rendered_program);
+		}
+
 		glBindTexture(GL_TEXTURE_2D, texture);
 	}
 	else {
@@ -359,7 +372,12 @@ void PdfViewOpenGLWidget::render() {
 	std::vector<int> visible_pages;
 	document_view->get_visible_pages(document_view->get_view_height(), visible_pages);
 
-	glClearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], 1.0f);
+	if (is_dark_mode) {
+		glClearColor(DARK_MODE_BACKGROUND_COLOR[0], DARK_MODE_BACKGROUND_COLOR[1], DARK_MODE_BACKGROUND_COLOR[2], 1.0f);
+	}
+	else {
+		glClearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], 1.0f);
+	}
 	glClear(GL_COLOR_BUFFER_BIT);
 
 
@@ -419,7 +437,12 @@ void PdfViewOpenGLWidget::render() {
 	if (should_draw_vertical_line) {
 		//render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
-		render_line_window(shared_gl_objects.vertical_line_program , document_view->get_vertical_line_window_y());
+		if (is_dark_mode) {
+			render_line_window(shared_gl_objects.vertical_line_dark_program , document_view->get_vertical_line_window_y());
+		}
+		else {
+			render_line_window(shared_gl_objects.vertical_line_program , document_view->get_vertical_line_window_y());
+		}
 	}
 }
 
@@ -458,6 +481,11 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, std::optional<st
 		&is_searching,
 		&search_results_mutex,
 		range);
+}
+
+void PdfViewOpenGLWidget::set_dark_mode(bool mode)
+{
+	this->is_dark_mode = mode;
 }
 
 PdfViewOpenGLWidget::~PdfViewOpenGLWidget() {

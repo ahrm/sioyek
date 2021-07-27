@@ -1,6 +1,5 @@
 #include "document_view.h"
 
-extern float BACKGROUND_COLOR[3];
 extern float MOVE_SCREEN_PERCENTAGE;
 
 DocumentView::DocumentView( fz_context* mupdf_context,

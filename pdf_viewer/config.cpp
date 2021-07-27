@@ -8,6 +8,8 @@ extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 extern float MOVE_SCREEN_PERCENTAGE;
 extern float BACKGROUND_COLOR[3];
+extern float DARK_MODE_BACKGROUND_COLOR[3];
+extern float DARK_MODE_CONTRAST;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE;
@@ -101,6 +103,8 @@ ConfigManager::ConfigManager(const std::filesystem::path& default_path, const st
 	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"dark_mode_background_color", DARK_MODE_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"dark_mode_contrast", &DARK_MODE_CONTRAST, float_serializer, float_deserializer });
 	configs.push_back({ L"google_scholar_address", &GOOGLE_SCHOLAR_ADDRESS, string_serializer, string_deserializer });
 	configs.push_back({ L"libgen_address", &LIBGEN_ADDRESS, string_serializer, string_deserializer });
 	configs.push_back({ L"zoom_inc_factor", &ZOOM_INC_FACTOR, float_serializer, float_deserializer });

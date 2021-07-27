@@ -45,10 +45,13 @@ struct OpenGLSharedResources {
 	GLuint vertex_buffer_object;
 	GLuint uv_buffer_object;
 	GLuint rendered_program;
+	GLuint rendered_dark_program;
 	GLuint unrendered_program;
 	GLuint highlight_program;
 	GLuint vertical_line_program;
+	GLuint vertical_line_dark_program;
 
+	GLint dark_mode_contrast_uniform_location;
 	GLint highlight_color_uniform_location;
 	GLint line_color_uniform_location;
 	GLint line_time_uniform_location;
@@ -73,6 +76,7 @@ private:
 	bool is_search_cancelled = true;
 	bool is_searching;
 	bool should_highlight_links = false;
+	bool is_dark_mode = false;
 	float percent_done = 0.0f;
 
 	//float vertical_line_location;
@@ -117,4 +121,5 @@ public:
 	void render_page(int page_number);
 	bool get_is_searching(float* prog);
 	void search_text(const std::wstring& text, std::optional<std::pair<int, int>> range = {});
+	void set_dark_mode(bool mode);
 };

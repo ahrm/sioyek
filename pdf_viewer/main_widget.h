@@ -64,6 +64,7 @@ private:
 
 	std::optional<std::pair<std::optional<std::wstring>, Link>> pending_link;
 
+	bool dark_mode = false;
 	int main_window_width = 0;
 	int main_window_height = 0;
 
@@ -147,4 +148,5 @@ public:
 	void move_document_screens(int num_screens);
 
 	void on_config_file_changed(ConfigManager* new_config) override;
+	void toggle_dark_mode();
 };

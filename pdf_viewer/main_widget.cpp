@@ -403,6 +403,17 @@ void MainWidget::on_config_file_changed(ConfigManager* new_config)
 	text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
 }
 
+void MainWidget::toggle_dark_mode()
+{
+	this->dark_mode = !this->dark_mode;
+	if (this->opengl_widget) {
+		this->opengl_widget->set_dark_mode(this->dark_mode);
+	}
+	if (this->helper_opengl_widget) {
+		this->helper_opengl_widget->set_dark_mode(this->dark_mode);
+	}
+}
+
 void MainWidget::invalidate_render() {
 	invalidate_ui();
 	is_render_invalidated = true;
@@ -1190,6 +1201,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 	else if (command->name == "search_selected_text_in_libgen") {
 		search_libgen(selected_text);
+	}
+	else if (command->name == "toggle_dark_mode") {
+		this->toggle_dark_mode();
 	}
 	else if (command->name == "debug") {
 		wprintf(L"_________________________________\n");

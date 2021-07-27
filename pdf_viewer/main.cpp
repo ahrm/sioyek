@@ -80,6 +80,8 @@
 
 
 extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+extern float DARK_MODE_CONTRAST = 0.8f;
 extern float ZOOM_INC_FACTOR = 1.2f;
 extern float VERTICAL_MOVE_AMOUNT = 1.0f;
 extern float HORIZONTAL_MOVE_AMOUNT = 1.0f;

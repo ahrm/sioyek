@@ -1,0 +1,13 @@
+#version 330 core
+
+out vec3 color;
+in vec2 screen_pos;
+in vec2 uvs;
+uniform sampler2D pdf_texture;
+
+uniform float contrast;
+
+void main(){
+    color = texture(pdf_texture, uvs).rgb;
+    color = (1-color) * contrast;
+}
