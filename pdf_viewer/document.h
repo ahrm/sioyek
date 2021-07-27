@@ -31,6 +31,7 @@ private:
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
 
+
 	// number of pages in the document
 	std::optional<int> cached_num_pages = {};
 
@@ -59,6 +60,8 @@ private:
 	std::optional<std::thread> figure_indexing_thread = {};
 	bool is_figure_indexing_required = true;
 	bool is_indexing = false;
+
+	QDateTime last_update_time;
 
 	// we do some of the document processing in a background thread (for example indexing all the
 	// figures/indices and computing page heights. we use this pointer to notify the main thread when
@@ -104,6 +107,7 @@ public:
 	bool open(bool* invalid_flag);
 	void reload();
 	QDateTime get_last_edit_time();
+	unsigned int get_milies_since_last_document_update_time();
 	unsigned int get_milies_since_last_edit_time();
 	float get_page_height(int page_index);
 	fz_pixmap* get_small_pixmap(int page);

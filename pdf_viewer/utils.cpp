@@ -201,7 +201,7 @@ void install_app(const char *argv0)
 	OPEN_KEY(software, "Classes", classes);
 	OPEN_KEY(classes, ".pdf", dotpdf);
 	OPEN_KEY(dotpdf, "OpenWithProgids", pdf_progids);
-	OPEN_KEY(classes, "TestPdf", testpdf);
+	OPEN_KEY(classes, "Sioyek", testpdf);
 	OPEN_KEY(testpdf, "SupportedTypes", supported_types);
 	OPEN_KEY(testpdf, "shell", shell);
 	OPEN_KEY(shell, "open", open);
@@ -209,10 +209,10 @@ void install_app(const char *argv0)
 
 	sprintf(buf, "\"%s\" \"%%1\"", argv0);
 
-	SET_KEY(open, "FriendlyAppName", "TestPdf");
+	SET_KEY(open, "FriendlyAppName", "Sioyek");
 	SET_KEY(command, "", buf);
 	SET_KEY(supported_types, ".pdf", "");
-	SET_KEY(pdf_progids, "TestPdf", "");
+	SET_KEY(pdf_progids, "Sioyek", "");
 
 	RegCloseKey(dotpdf);
 	RegCloseKey(testpdf);

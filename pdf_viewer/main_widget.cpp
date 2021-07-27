@@ -224,7 +224,14 @@ input_handler(input_handler)
 			Document* doc = nullptr;
 			if ((doc = main_document_view->get_document()) != nullptr) {
 
-				if (doc->get_milies_since_last_edit_time() < 2 * INTERVAL_TIME) {
+				// Wait until a safe amount of time has passed since the last time the file was updated on the filesystem
+				// this is because LaTeX software frequently puts PDF files in an invalid state while it is being made in
+				// multiple passes.
+				if ((doc->get_milies_since_last_edit_time() < (2 * INTERVAL_TIME)) &&
+					doc->get_milies_since_last_edit_time() > INTERVAL_TIME &&
+					doc->get_milies_since_last_document_update_time() > doc->get_milies_since_last_edit_time()
+					) {
+					std::wcout << L"calling\n";
 					doc->reload();
 					pdf_renderer->clear_cache();
 					validate_render();

@@ -140,6 +140,7 @@ bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
 }
 
 Document::Document(fz_context* context, std::wstring file_name, sqlite3* db) : context(context), file_name(file_name), doc(nullptr), db(db) {
+	last_update_time = QDateTime::currentDateTime();
 }
 
 void Document::count_chapter_pages(std::vector<int> &page_counts) {
@@ -353,6 +354,12 @@ QDateTime Document::get_last_edit_time() {
 	return info.lastModified();
 }
 
+unsigned int Document::get_milies_since_last_document_update_time() {
+	QDateTime now = QDateTime::currentDateTime();
+	return last_update_time.msecsTo(now);
+
+}
+
 unsigned int Document::get_milies_since_last_edit_time() {
 	QDateTime last_modified_time = get_last_edit_time();
 	QDateTime now = QDateTime::currentDateTime();
@@ -404,6 +411,7 @@ void Document::reload() {
 }
 
 bool Document::open(bool* invalid_flag) {
+	last_update_time = QDateTime::currentDateTime();
 	if (doc == nullptr) {
 		fz_try(context) {
 			doc = fz_open_document(context, utf8_encode(file_name).c_str());
