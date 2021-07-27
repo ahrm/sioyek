@@ -1,0 +1,195 @@
+
+name: Build Release
+
+on: workflow_dispatch
+
+jobs:
+  upload-release:
+
+    runs-on: ubuntu-18.04
+    needs: [build-linux, build-windows, build-linux-portable, build-windows-portable]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: create release
+      id: create_release
+      uses: actions/create-release@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false   
+    - name: download artifacts
+      uses: actions/download-artifact@v1
+      with:
+        name: uploads     
+    - name: upload linux
+      id: upload-linux
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./uploads/sioyek-release-linux.zip
+        asset_name: sioyek-release-linux.zip
+        asset_content_type: application/zip   
+    - name: upload windows
+      id: upload-windows
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./uploads/sioyek-release-windows.zip
+        asset_name: sioyek-release-windows.zip
+        asset_content_type: application/zip
+    - name: upload linux-portable
+      id: upload-linux-portable
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./uploads/sioyek-release-linux-portable.zip
+        asset_name: sioyek-release-linux-portable.zip
+        asset_content_type: application/zip   
+    - name: upload windows-portable
+      id: upload-windows-portable
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./uploads/sioyek-release-windows-portable.zip
+        asset_name: sioyek-release-windows-portable.zip
+        asset_content_type: application/zip
+    
+
+  build-linux:
+
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: 9
+        platform: x64
+        
+    - uses: actions/checkout@v2
+      with:
+            submodules: 'recursive'
+            
+    - name: Install libharfbuzz
+      run: sudo apt install libharfbuzz-dev
+      
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: '5.14.2'
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+
+      run: ./build_and_release.sh
+      env:
+        CC:   gcc-9
+        CXX:  g++-9
+    - name: upload linux artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: uploads
+        path: sioyek-release-linux.zip
+
+  build-linux-portable:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: 9
+        platform: x64
+        
+    - uses: actions/checkout@v2
+      with:
+            submodules: 'recursive'
+            
+    - name: Install libharfbuzz
+      run: sudo apt install libharfbuzz-dev
+      
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: '5.14.2'
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+
+      run: ./build_and_release.sh portable
+      env:
+        CC:   gcc-9
+        CXX:  g++-9
+    - name: upload linux artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: uploads
+        path: sioyek-release-linux-portable.zip   
+
+  build-windows:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+            submodules: 'recursive'
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+    - name: Add msvc-dev-cmd
+      uses: ilammy/msvc-dev-cmd@v1
+      
+      
+    - name: Build Sioyek
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: .\build_windows.bat non_portable
+      
+    - name: upload windows artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: uploads
+        path: sioyek-release-windows.zip
+        
+  build-windows-portable:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+            submodules: 'recursive'
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+    - name: Add msvc-dev-cmd
+      uses: ilammy/msvc-dev-cmd@v1
+      
+      
+    - name: Build Sioyek
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: .\build_windows.bat portable
+      
+    - name: upload windows artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: uploads
+        path: sioyek-release-windows-portable.zip

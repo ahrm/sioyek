@@ -43,5 +43,8 @@ if [[ $1 == portable ]]; then
 	mv Sioyek-* Sioyek-x86_64.AppImage
 	mkdir -p Sioyek-x86_64.AppImage.config/.local/share/Sioyek
 	cp tutorial.pdf Sioyek-x86_64.AppImage.config/.local/share/Sioyek/tutorial.pdf
+	zip -r sioyek-release-linux-portable.zip Sioyek-x86_64.AppImage.config Sioyek-x86_64.AppImage
+else
+	mv Sioyek-* Sioyek-x86_64.AppImage
+	zip sioyek-release-linux.zip Sioyek-x86_64.AppImage
 fi
-
