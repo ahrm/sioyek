@@ -139,9 +139,10 @@ void configure_paths(){
 	}
 #else //windows
 #ifdef NDEBUG
-	install_app(exe_path.c_str());
+	//install_app(exe_path.c_str());
 #endif
 	std::filesystem::path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+	std::filesystem::create_directories(standard_data_path);
 
 	default_config_path = parent_path / "prefs.config";
 	default_keys_path = parent_path / "keys.config";
