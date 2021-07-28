@@ -902,19 +902,26 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
 
 	if (!is_control_pressed) {
-		if (wevent->delta() > 0) {
+		if (wevent->angleDelta().y() > 0) {
 			command = input_handler->handle_key(Qt::Key::Key_Up, false, false, &num_repeats);
 		}
-		if (wevent->delta() < 0) {
+		if (wevent->angleDelta().y() < 0) {
 			command = input_handler->handle_key(Qt::Key::Key_Down, false, false, &num_repeats);
+		}
+
+		if (wevent->angleDelta().x() > 0) {
+			command = input_handler->handle_key(Qt::Key::Key_Right, false, false, &num_repeats);
+		}
+		if (wevent->angleDelta().x() < 0) {
+			command = input_handler->handle_key(Qt::Key::Key_Left, false, false, &num_repeats);
 		}
 	}
 
 	if (is_control_pressed) {
-		if (wevent->delta() > 0) {
+		if (wevent->angleDelta().y() > 0) {
 			command = command_manager.get_command_with_name("zoom_in");
 		}
-		if (wevent->delta() < 0) {
+		if (wevent->angleDelta().y() < 0) {
 			command = command_manager.get_command_with_name("zoom_out");
 		}
 
