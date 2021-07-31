@@ -407,7 +407,11 @@ void DocumentView::reset_doc_state() {
 	zoom_level = 1.0f;
 	set_offsets(0.0f, 0.0f);
 }
-void DocumentView::open_document(std::filesystem::path doc_path,bool* invalid_flag,  bool load_prev_state, std::optional<OpenedBookState> prev_state) {
+void DocumentView::open_document(std::filesystem::path doc_path,
+	bool* invalid_flag,
+	bool load_prev_state,
+	std::optional<OpenedBookState> prev_state,
+	bool force_load_dimensions) {
 
 	std::error_code error_code;
 	std::filesystem::path cannonical_path_ = std::filesystem::canonical(doc_path, error_code);
@@ -426,7 +430,7 @@ void DocumentView::open_document(std::filesystem::path doc_path,bool* invalid_fl
 	//current_document = document_manager->get_document(doc_path);
 	current_document = document_manager->get_document(cannonical_path);
 	//current_document->open();
-	if (!current_document->open(invalid_flag)) {
+	if (!current_document->open(invalid_flag, force_load_dimensions)) {
 		current_document = nullptr;
 	}
 

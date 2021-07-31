@@ -277,6 +277,7 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 
 void PdfViewOpenGLWidget::handle_escape() {
 	search_results.clear();
+	synctex_highlights.clear();
 	current_search_result_index =-1;
 	is_searching = false;
 	is_search_cancelled = true;
@@ -436,9 +437,15 @@ void PdfViewOpenGLWidget::render() {
 	//for (auto rect : selected_character_rects) {
 	//	render_highlight_absolute(shared_gl_objects.highlight_program, rect);
 	//}
+	glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"synctex_highlight_color"));
 	for (auto rect : bounding_rects) {
 		render_highlight_absolute(shared_gl_objects.highlight_program, rect);
 	}
+
+	for (auto [page, rect] : synctex_highlights) {
+		render_highlight_document(shared_gl_objects.highlight_program, page, rect);
+	}
+
 	if (should_draw_vertical_line) {
 		//render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
@@ -491,6 +498,16 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, std::optional<st
 void PdfViewOpenGLWidget::set_dark_mode(bool mode)
 {
 	this->is_dark_mode = mode;
+}
+
+void PdfViewOpenGLWidget::set_synctex_highlights(std::vector<std::pair<int, fz_rect>> highlights)
+{
+	synctex_highlights = std::move(highlights);
+}
+
+void PdfViewOpenGLWidget::on_document_view_reset()
+{
+	this->synctex_highlights.clear();
 }
 
 PdfViewOpenGLWidget::~PdfViewOpenGLWidget() {

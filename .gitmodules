@@ -1,3 +1,6 @@
 [submodule "mupdf"]
 	path = mupdf
 	url = https://github.com/ArtifexSoftware/mupdf
+[submodule "pdf_viewer/SingleApplication"]
+	path = pdf_viewer/SingleApplication
+	url = https://github.com/itay-grudev/SingleApplication

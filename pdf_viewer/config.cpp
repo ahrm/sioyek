@@ -13,8 +13,10 @@ extern float DARK_MODE_CONTRAST;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE;
+extern bool SHOULD_LAUNCH_NEW_INSTANCE;
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
+extern std::wstring INVERSE_SEARCH_COMMAND;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -102,10 +104,12 @@ ConfigManager::ConfigManager(const std::filesystem::path& default_path, const st
 	configs.push_back({ L"vertical_line_freq", &VERTICAL_LINE_FREQ, float_serializer, float_deserializer });
 	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"dark_mode_background_color", DARK_MODE_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"dark_mode_contrast", &DARK_MODE_CONTRAST, float_serializer, float_deserializer });
 	configs.push_back({ L"google_scholar_address", &GOOGLE_SCHOLAR_ADDRESS, string_serializer, string_deserializer });
+	configs.push_back({ L"inverse_search_command", &INVERSE_SEARCH_COMMAND, string_serializer, string_deserializer });
 	configs.push_back({ L"libgen_address", &LIBGEN_ADDRESS, string_serializer, string_deserializer });
 	configs.push_back({ L"zoom_inc_factor", &ZOOM_INC_FACTOR, float_serializer, float_deserializer });
 	configs.push_back({ L"vertical_move_amount", &VERTICAL_MOVE_AMOUNT, float_serializer, float_deserializer });
@@ -114,6 +118,7 @@ ConfigManager::ConfigManager(const std::filesystem::path& default_path, const st
 	configs.push_back({ L"flat_toc", &FLAT_TABLE_OF_CONTENTS, bool_serializer, bool_deserializer });
 	configs.push_back({ L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS, bool_serializer, bool_deserializer });
 	configs.push_back({ L"should_load_tutorial_when_no_other_file", &SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE, bool_serializer, bool_deserializer });
+	configs.push_back({ L"should_launch_new_instance", &SHOULD_LAUNCH_NEW_INSTANCE, bool_serializer, bool_deserializer });
 //extern bool should_load_tutorial_when_no_other_file = false;
 
 	std::wifstream default_infile(default_path);

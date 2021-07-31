@@ -410,7 +410,7 @@ void Document::reload() {
 	open(invalid_flag_pointer);
 }
 
-bool Document::open(bool* invalid_flag) {
+bool Document::open(bool* invalid_flag, bool force_load_dimensions) {
 	last_update_time = QDateTime::currentDateTime();
 	if (doc == nullptr) {
 		fz_try(context) {
@@ -421,7 +421,7 @@ bool Document::open(bool* invalid_flag) {
 			std::wcerr << "could not open " << file_name << std::endl;
 		}
 		if (doc != nullptr) {
-			load_page_dimensions();
+			load_page_dimensions(force_load_dimensions);
 			load_document_metadata_from_db();
 			create_toc_tree(top_level_toc_nodes);
 			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
@@ -461,7 +461,7 @@ void Document::get_visible_pages(float doc_y_range_begin, float doc_y_range_end,
 	}
 }
 
-void Document::load_page_dimensions() {
+void Document::load_page_dimensions(bool force_load_now) {
 	page_heights.clear();
 	accum_page_heights.clear();
 	page_widths.clear();
@@ -485,7 +485,7 @@ void Document::load_page_dimensions() {
 		}
 	}
 
-	auto background_page_dimensions_loading_thread = std::thread([this, n]() {
+	auto load_page_dimensions_function = [this, n]() {
 		std::vector<float> accum_page_heights_;
 		std::vector<float> page_heights_;
 		std::vector<float> page_widths_;
@@ -527,8 +527,15 @@ void Document::load_page_dimensions() {
 		//are_dimensions_correct = true;
 
 		page_dims_mutex.unlock();
-		});
-	background_page_dimensions_loading_thread.detach();
+	};
+
+	if (force_load_now) {
+		load_page_dimensions_function();
+	}
+	else {
+		auto background_page_dimensions_loading_thread = std::thread(load_page_dimensions_function);
+		background_page_dimensions_loading_thread.detach();
+	}
 }
 
 

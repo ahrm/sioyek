@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 #include <regex>
+#include <qcommandlineparser.h>
 
 #include <qstandarditemmodel.h>
 
@@ -92,4 +93,11 @@ void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_ch
 	const std::wregex& regex,
 	std::vector<std::pair<int, int>>& match_ranges, std::vector<std::wstring>& match_texts);
 bool is_string_numeric(const std::wstring& str);
+bool is_string_numeric_float(const std::wstring& str);
 void create_file_if_not_exists(const std::filesystem::path& path);
+QByteArray serialize_string_array(const QStringList& string_list);
+QStringList deserialize_string_array(const QByteArray& byte_array);
+std::filesystem::path add_redundant_dot_to_path(const std::filesystem::path& sane_path);
+bool should_reuse_instance(int argc, char** argv);
+bool should_new_instance(int argc, char** argv);
+QCommandLineParser* get_command_line_parser();

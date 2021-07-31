@@ -27,6 +27,7 @@
 #include <qtreeview.h>
 #include <qwindow.h>
 #include <qstandardpaths.h>
+#include <qprocess.h>
 
 #include <filesystem>
 
@@ -41,6 +42,7 @@
 #include "pdf_view_opengl_widget.h"
 #include "config.h"
 #include "utf8.h"
+#include "synctex/synctex_parser.h"
 
 #include "main_widget.h"
 
@@ -49,6 +51,7 @@ extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern float MOVE_SCREEN_PERCENTAGE;
 extern std::wstring LIBGEN_ADDRESS;
+extern std::wstring INVERSE_SEARCH_COMMAND;
 
 extern std::filesystem::path default_config_path;
 extern std::filesystem::path default_keys_path;
@@ -147,6 +150,7 @@ input_handler(input_handler)
 	setMouseTracking(true);
 
 
+	inverse_search_command = INVERSE_SEARCH_COMMAND;
 	int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
 
 	pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
@@ -315,6 +319,10 @@ std::wstring MainWidget::get_status_string() {
 		main_document_view->get_document()->get_is_indexing()) {
 		ss << " | indexing ... ";
 	}
+	if (this->synctex_mode) {
+		ss << " [ synctex ]";
+	}
+
 	return ss.str();
 }
 
@@ -414,6 +422,208 @@ void MainWidget::toggle_dark_mode()
 	}
 }
 
+void MainWidget::do_synctex_forward_search(std::filesystem::path pdf_file_path,std::filesystem::path latex_file_path, int line)
+{
+
+	std::filesystem::path latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path);
+
+	std::string latex_file_string = utf8_encode(latex_file_path.wstring());
+	std::string latex_file_with_redundant_dot_string = utf8_encode(latex_file_path_with_redundant_dot.wstring());
+	std::string pdf_file_string = utf8_encode(pdf_file_path.wstring());
+
+	//latex_file_string = "D:/phd/seventh/./pres.tex";
+	synctex_scanner_t scanner = synctex_scanner_new_with_output_file(pdf_file_string.c_str(), nullptr, 1);
+
+
+	int stat = synctex_display_query(scanner, latex_file_string.c_str(), line, 0);
+	int target_page = -1;
+
+	if (stat <= 0) {
+		stat = synctex_display_query(scanner, latex_file_with_redundant_dot_string.c_str(), line, 0);
+	}
+
+	if (stat > 0) {
+		synctex_node_t node;
+
+		std::vector<std::pair<int, fz_rect>> highlight_rects;
+
+		std::optional<fz_rect> first_rect = {};
+
+		while (node = synctex_next_result(scanner)) {
+			int page = synctex_node_page(node);
+			target_page = page-1;
+
+			float x = synctex_node_box_visible_h(node);
+			float y = synctex_node_box_visible_v(node);
+			float w = synctex_node_box_visible_width(node);
+			float h = synctex_node_box_visible_height(node);
+
+			fz_rect doc_rect;
+			doc_rect.x0 = x;
+			doc_rect.y0 = y;
+			doc_rect.x1 = x + w;
+			doc_rect.y1 = y - h;
+
+			if (!first_rect) {
+				first_rect = doc_rect;
+			}
+
+			highlight_rects.push_back(std::make_pair(target_page, doc_rect));
+
+			break; // todo: handle this properly
+		}
+		if (target_page != -1) {
+
+			if (pdf_file_path != main_document_view->get_document()->get_path()) {
+				open_document(pdf_file_path);
+			}
+
+			opengl_widget->set_synctex_highlights(highlight_rects);
+			if (highlight_rects.size() == 0) {
+				main_document_view->goto_page(target_page);
+			}
+			else {
+				main_document_view->goto_offset_within_page(target_page, main_document_view->get_offset_x(), first_rect.value().y0);
+			}
+		}
+
+	}
+	synctex_scanner_free(scanner);
+}
+
+void MainWidget::on_new_instance_message(qint32 instance_id, QByteArray arguments_str)
+{
+	QStringList arguments = deserialize_string_array(arguments_str);
+
+	handle_args(arguments);
+}
+
+//void MainWidget::handle_args(const std::vector<std::wstring> &arguments)
+//{
+//	std::optional<int> page = 0;
+//	std::optional<float> x_loc, y_loc;
+//	std::optional<float> zoom_level;
+//
+//	//todo: handle out of bounds error
+//
+//	std::wstring pdf_file_name = L"";
+//
+//	if (arguments.size() > 1) {
+//		pdf_file_name = arguments[1];
+//	}
+//
+//	std::optional<std::wstring> latex_file_name = {};
+//	std::optional<int> latex_line = {};
+//
+//
+//	for (int i = 0; i < arguments.size()-1; i++) {
+//		if (arguments[i] == L"--page") {
+//			if (is_string_numeric(arguments[i + 1])) {
+//				page = std::stoi(arguments[i + 1].c_str());
+//			}
+//		}
+//
+//		if (arguments[i] == L"--inverse-search") {
+//			inverse_search_command = arguments[i + 1];
+//		}
+//
+//		if (arguments[i] == L"--forward-search") {
+//			if (i + 3 < arguments.size()) {
+//
+//				latex_file_name = arguments[i + 1];
+//				if (is_string_numeric(arguments[i + 2])) {
+//					latex_line = std::stoi(arguments[i + 2].c_str());
+//				}
+//				pdf_file_name = arguments[i + 3];
+//			}
+//		}
+//	}
+//
+//	if (arguments.size() > 1) {
+//		open_document_at_location(pdf_file_name, page.value_or(0), x_loc, y_loc, zoom_level);
+//
+//		if (latex_file_name) {
+//			do_synctex_forward_search(pdf_file_name, latex_file_name.value(), latex_line.value_or(0));
+//		}
+//
+//		invalidate_render();
+//	}
+//	else {
+//	}
+//}
+
+void MainWidget::handle_args(const QStringList& arguments)
+{
+	std::optional<int> page = -1;
+	std::optional<float> x_loc, y_loc;
+	std::optional<float> zoom_level;
+
+	//todo: handle out of bounds error
+
+	QCommandLineParser* parser = get_command_line_parser();
+
+	if (!parser->parse(arguments)) {
+		std::wcout << parser->errorText().toStdWString() << L"\n";
+		return;
+	}
+
+	std::wstring pdf_file_name = L"";
+
+	if (parser->positionalArguments().size() > 0) {
+		pdf_file_name = parser->positionalArguments().at(0).toStdWString();
+	}
+
+	std::optional<std::wstring> latex_file_name = {};
+	std::optional<int> latex_line = {};
+
+	if (parser->isSet("forward-search-file")) {
+		latex_file_name = parser->value("forward-search-file").toStdWString();
+	}
+
+	if (parser->isSet("forward-search-line")) {
+		latex_line = parser->value("forward-search-line").toInt();
+	}
+
+	if (parser->isSet("page")) {
+		page = parser->value("page").toInt();
+	}
+
+	if (parser->isSet("zoom")) {
+		zoom_level = parser->value("zoom").toFloat();
+	}
+
+	if (parser->isSet("xloc")) {
+		x_loc = parser->value("xloc").toFloat();
+	}
+
+	if (parser->isSet("yloc")) {
+		y_loc = parser->value("yloc").toFloat();
+	}
+
+	if (parser->isSet("inverse-search")) {
+		inverse_search_command =  parser->value("inverse-search").toStdWString();
+	}
+
+	// if no file is specified, use the previous file
+	if (pdf_file_name == L"" && (main_document_view->get_document() != nullptr)) {
+		pdf_file_name = main_document_view->get_document()->get_path();
+	}
+
+	if (page != -1) {
+		open_document_at_location(pdf_file_name, page.value_or(0), x_loc, y_loc, zoom_level);
+	}
+	else if (latex_file_name) {
+		do_synctex_forward_search(pdf_file_name, latex_file_name.value(), latex_line.value_or(0));
+	}
+	else {
+		open_document(pdf_file_name);
+	}
+
+	invalidate_render();
+
+	delete parser;
+}
+
 void MainWidget::invalidate_render() {
 	invalidate_ui();
 	is_render_invalidated = true;
@@ -507,7 +717,57 @@ void MainWidget::open_document(std::filesystem::path path_, std::optional<float>
 
 	// reset smart fit when changing documents
 	last_smart_fit_page = {};
+	opengl_widget->on_document_view_reset();
 
+}
+
+void MainWidget::open_document_at_location(std::filesystem::path path_,
+	int page,
+	std::optional<float> x_loc,
+	std::optional<float> y_loc,
+	std::optional<float> zoom_level)
+{
+	//save the previous document state
+	if (main_document_view) {
+		main_document_view->persist();
+		update_history_state();
+	}
+	std::wstring path = path_.wstring();
+
+	main_document_view->open_document(path, &this->is_render_invalidated, true, {}, true);
+	bool has_document = main_document_view_has_document();
+
+	if (has_document) {
+		setWindowTitle(QString::fromStdWString(path));
+		push_state();
+	}
+
+	if ((path.size() > 0) && (!has_document)) {
+		show_error_message(L"Could not open file: " + path);
+	}
+
+	main_document_view->on_view_size_change(main_window_width, main_window_height);
+
+
+	float absolute_x_loc, absolute_y_loc;
+	main_document_view->get_document()->page_pos_to_absolute_pos(page,
+		x_loc.value_or(0),
+		y_loc.value_or(0),
+		&absolute_x_loc,
+		&absolute_y_loc);
+
+	if (x_loc) {
+		main_document_view->set_offset_x(absolute_x_loc);
+	}
+	main_document_view->set_offset_y(absolute_y_loc);
+
+	if (zoom_level) {
+		main_document_view->set_zoom_level(zoom_level.value());
+	}
+
+	// reset smart fit when changing documents
+	last_smart_fit_page = {};
+	opengl_widget->on_document_view_reset();
 }
 
 void MainWidget::open_document(const DocumentViewState& state)
@@ -610,6 +870,41 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 			main_document_view->set_vertical_line_pos(abs_doc_y);
 			validate_render();
 
+		}
+		else {
+			if (this->synctex_mode) {
+				float doc_x, doc_y;
+				int page;
+				main_document_view->window_to_document_pos(x, y, &doc_x, &doc_y, &page);
+				std::wstring docpath = main_document_view->get_document()->get_path();
+				std::string docpath_utf8 = utf8_encode(docpath);
+				synctex_scanner_t scanner = synctex_scanner_new_with_output_file(docpath_utf8.c_str(), nullptr, 1);
+
+				int stat = synctex_edit_query(scanner, page + 1, doc_x, doc_y);
+
+				if (stat > 0) {
+					synctex_node_t node;
+					while (node = synctex_next_result(scanner)) {
+						int line = synctex_node_line(node);
+						int column = synctex_node_column(node);
+						if (column < 0) column = 0;
+						int tag = synctex_node_tag(node);
+						const char* file_name = synctex_scanner_get_name(scanner, tag);
+						//std::wstringstream ss;
+
+						//ss << L"\"C:\\Users\\Lion\\AppData\\Local\\Programs\\Microsoft VS Code\\code.exe\" --goto " << file_name << L":" << line << L":" << column;
+						std::string line_string = std::to_string(line);
+						std::string column_string = std::to_string(column);
+
+						QString command = QString::fromStdWString(inverse_search_command).arg(file_name, line_string.c_str(), column_string.c_str());
+
+						QProcess::startDetached(command);
+					}
+
+				}
+				synctex_scanner_free(scanner);
+
+			}
 		}
 
 	}
@@ -1186,6 +1481,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	else if (command->name == "toggle_highlight") {
 		opengl_widget->toggle_highlight_links();
+	}
+
+	else if (command->name == "toggle_synctex") {
+		this->synctex_mode = !this->synctex_mode;
 	}
 
 	else if (command->name == "delete_link") {

@@ -1,18 +1,16 @@
 
+include(pdf_viewer/SingleApplication/singleapplication.pri)
+DEFINES += QAPPLICATION_CLASS=QApplication
+
 TEMPLATE = app
 TARGET = sioyek
 INCLUDEPATH += ./pdf_viewer\
-              mupdf/include
+              mupdf/include \
+              zlib
           
-# You can make your code fail to compile if you use deprecated APIs.
-# In order to do so, uncomment the following line.
-# Please consult the documentation of the deprecated API in order to know
-# how to port your code away from it.
-# You can also select to disable deprecated APIs only up to a certain version of Qt.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 QT += core sql opengl gui widgets quickwidgets 3dcore 3danimation 3dextras 3dinput 3dlogic 3drender openglextensions
-CONFIG += c++17
+CONFIG += c++17 console
 DEFINES += QT_3DCORE_LIB QT_3DANIMATION_LIB QT_3DEXTRAS_LIB QT_3DINPUT_LIB QT_3DLOGIC_LIB QT_3DRENDER_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_QUICKWIDGETS_LIB QT_SQL_LIB QT_WIDGETS_LIB
 
 
@@ -41,7 +39,9 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/utils.h \
            pdf_viewer/utf8/checked.h \
            pdf_viewer/utf8/core.h \
-           pdf_viewer/utf8/unchecked.h
+           pdf_viewer/utf8/unchecked.h \
+           pdf_viewer/synctex/synctex_parser.h \
+           pdf_viewer/synctex/synctex_parser_utils.h
 
 SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/config.cpp \
@@ -55,16 +55,35 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/pdf_view_opengl_widget.cpp \
            pdf_viewer/sqlite3.c \
            pdf_viewer/ui.cpp \
-           pdf_viewer/utils.cpp
+           pdf_viewer/utils.cpp \
+           pdf_viewer/synctex/synctex_parser.c \
+           pdf_viewer/synctex/synctex_parser_utils.c\
 
+SOURCES += zlib/adler32.c \
+        zlib/compress.c \
+        zlib/crc32.c \
+        zlib/deflate.c \
+        zlib/gzclose.c \
+        zlib/gzread.c \
+        zlib/gzwrite.c \
+        zlib/infback.c \
+        zlib/inffast.c \
+        zlib/inflate.c \
+        zlib/inftrees.c \
+        zlib/trees.c \
+        zlib/uncompr.c \
+        zlib/zutil.c
 
 win32{
+    DEFINES += _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE
     RC_ICONS = pdf_viewer\icon2.ico
     LIBS += -Lmupdf\platform\win32\x64\Release -llibmupdf
+    #LIBS += -Llibs -llibmupdf
     LIBS += opengl32.lib
 }
 
 unix{
+
     QMAKE_CC = gcc-9
     QMAKE_CXX = g++-9
 

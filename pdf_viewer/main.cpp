@@ -8,6 +8,8 @@
 // state, instead they return a DocumentViewState object that is then applied using push_state and change_state functions
 // (chnage state should be a function that just applies the state without pushing it to history)
 //todo: make tutorial file smaller
+//todo: delete LAUNCHED_FROM_FILE_ICON
+//todo: handle input errors in command line parsing
 
 #include <iostream>
 #include <vector>
@@ -51,6 +53,7 @@
 #include <qdesktopservices.h>
 #include <qprocess.h>
 #include <qstandardpaths.h>
+#include <qcommandlineparser.h>
 
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
@@ -69,6 +72,7 @@
 #include "config.h"
 #include "utf8.h"
 #include "main_widget.h"
+#include <SingleApplication/singleapplication.h>
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -97,7 +101,9 @@ extern bool FLAT_TABLE_OF_CONTENTS = false;
 extern bool SHOULD_USE_MULTIPLE_MONITORS = false;
 extern std::wstring LIBGEN_ADDRESS = L"";
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
+extern std::wstring INVERSE_SEARCH_COMMAND = L"";
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
+extern bool SHOULD_LAUNCH_NEW_INSTANCE = true;
 
 //extern std::filesystem::path last_path_file_absolute_location = "";
 //extern std::filesystem::path parent_path = "";
@@ -179,25 +185,67 @@ void unlock_mutex(void* user, int lock) {
 
 int main(int argc, char* args[]) {
 
-	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
-	QApplication app(argc, args);
 
-
+	// we need an application in order to be able to use QCoreApplication::applicationDirPath
+	QApplication* dummy_application = new QApplication(argc, args);
 	configure_paths();
+	delete dummy_application;
 
-	std::cout <<  default_config_path << "\n";
-	std::cout <<  default_keys_path << "\n";
-	std::cout <<  user_config_path  << "\n";
-	std::cout <<  user_keys_path << "\n";
-	std::cout <<  database_file_path << "\n";
-	std::cout <<  tutorial_path << "\n";
-	std::cout <<  last_opened_file_address_path << "\n";
-	std::cout <<  shader_path << "\n";
+	std::wcout << L"default_config_path: " << default_config_path << L"\n";
+	std::wcout << L"default_keys_path: " << default_keys_path << L"\n";
+	std::wcout << L"user_config_path: " << user_config_path << L"\n";
+	std::wcout << L"user_keys_path: " << user_keys_path << L"\n";
+	std::wcout << L"database_file_path: " << database_file_path << L"\n";
+	std::wcout << L"tutorial_path: " << tutorial_path << L"\n";
+	std::wcout << L"last_opened_file_address_path" << last_opened_file_address_path << L"\n";
+	std::wcout << L"shader_path" << shader_path << L"\n";
 
 	create_file_if_not_exists(user_keys_path);
 	create_file_if_not_exists(user_config_path);
 
 	ConfigManager config_manager(default_config_path, user_config_path);
+
+	// should we launche a new instance each time the user opens a PDF or should we reuse the previous instance
+	bool use_single_instance = !SHOULD_LAUNCH_NEW_INSTANCE;
+
+	if (should_reuse_instance(argc, args)) {
+		use_single_instance = true;
+	}
+	else if (should_new_instance(argc, args)) {
+		use_single_instance = false;
+	}
+
+	QApplication* app = nullptr;
+
+	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
+
+	if (!use_single_instance) {
+		app = new QApplication(argc, args);
+	}
+	else {
+		app = new SingleApplication(argc, args, true);
+		SingleApplication* single_app = static_cast<SingleApplication*>(app);
+
+		if (single_app->isSecondary()) {
+			//single_app->sendMessage(single_app->arguments().join(' ').toUtf8());
+			single_app->sendMessage(serialize_string_array(app->arguments()));
+			delete single_app;
+			return 0;
+		}
+	}
+
+	QCoreApplication::setApplicationName("sioyek");
+	QCoreApplication::setApplicationVersion("0.31.6");
+
+	QCommandLineParser* parser = get_command_line_parser();
+
+	if (!parser->parse(app->arguments())) {
+		std::wcout << parser->errorText().toStdWString() << L"\n";
+		return 1;
+	}
+
+	QStringList positional_args = parser->positionalArguments();
+	delete parser;
 
 	sqlite3* db;
 	char* error_message = nullptr;
@@ -248,8 +296,8 @@ int main(int argc, char* args[]) {
 	last_state_file.close();
 
 	LAUNCHED_FROM_FILE_ICON = false;
-	if (argc > 1) {
-		file_path = app.arguments().at(1).toStdWString();
+	if (positional_args.size() > 0) {
+		file_path = positional_args.at(0).toStdWString();
 		LAUNCHED_FROM_FILE_ICON = true;
 	}
 
@@ -282,6 +330,18 @@ int main(int argc, char* args[]) {
 	main_widget.resize(500, 500);
 	main_widget.showMaximized();
 
+	main_widget.handle_args(app->arguments());
+
+	// in single instance mode, when we try to launch a new instance, instead we send a message to the previous instance
+	if (use_single_instance) {
+		QObject::connect(
+			(SingleApplication*)app,
+			&SingleApplication::receivedMessage,
+			&main_widget,
+			&MainWidget::on_new_instance_message
+		);
+	}
+
 	// live reload the config file
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 		std::wifstream default_config_file(default_config_path);
@@ -299,9 +359,11 @@ int main(int argc, char* args[]) {
 		input_handler.reload_config_files(default_keys_path, user_keys_path);
 		});
 
-	app.exec();
+	app->exec();
 
 	quit = true;
+
+	delete app;
 
 	return 0;
 }

@@ -104,7 +104,7 @@ public:
 	bool has_toc();
 	const std::vector<std::wstring>& get_flat_toc_names();
 	const std::vector<int>& get_flat_toc_pages();
-	bool open(bool* invalid_flag);
+	bool open(bool* invalid_flag, bool force_load_dimensions=false);
 	void reload();
 	QDateTime get_last_edit_time();
 	unsigned int get_milies_since_last_document_update_time();
@@ -118,7 +118,7 @@ public:
 	//const vector<float>& get_page_widths();
 	//const vector<float>& get_accum_page_heights();
 	void get_visible_pages(float doc_y_range_begin, float doc_y_range_end, std::vector<int>& visible_pages);
-	void load_page_dimensions();
+	void load_page_dimensions(bool force_load_now);
 	int num_pages();
 	fz_rect get_page_absolute_rect(int page);
 	void absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page);
@@ -136,7 +136,7 @@ public:
 	std::optional<std::wstring> get_reference_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_paper_name_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_equation_text_at_position(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
-	//std::optional<std::pair<std::wstring, std::wstring>> get_all_text_objects_at_location(std::vector<fz_stext_char*> flat_chars, float offset_x, float offset_y);
+
 	friend class DocumentManager;
 };
 

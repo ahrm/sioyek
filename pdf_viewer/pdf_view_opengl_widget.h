@@ -104,6 +104,7 @@ public:
 #endif
 
 	std::vector<fz_rect> selected_character_rects;
+	std::vector<std::pair<int, fz_rect>> synctex_highlights;
 
 	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, QWidget* parent = nullptr);
 	~PdfViewOpenGLWidget();
@@ -122,4 +123,6 @@ public:
 	bool get_is_searching(float* prog);
 	void search_text(const std::wstring& text, std::optional<std::pair<int, int>> range = {});
 	void set_dark_mode(bool mode);
+	void set_synctex_highlights(std::vector<std::pair<int, fz_rect>> highlights);
+	void on_document_view_reset();
 };

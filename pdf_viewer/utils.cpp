@@ -12,6 +12,10 @@
 #include <qdesktopservices.h>
 #include <qurl.h>
 #include <qmessagebox.h>
+#include <qbytearray.h>
+#include <qdatastream.h>
+#include <qstringlist.h>
+#include <qcommandlineparser.h>
 
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
@@ -1059,4 +1063,117 @@ bool is_string_numeric(const std::wstring& str) {
 	return true;
 }
 
+bool is_string_numeric_float(const std::wstring& str) {
+	if (str.size() == 0) {
+		return false;
+	}
+	int dot_count = 0;
 
+	for (int i = 0; i < str.size(); i++) {
+		if (i == 0) {
+			if (str[i] == '-') continue;
+		}
+		else {
+			if (str[i] == '.') {
+				dot_count++;
+				if (dot_count >= 2) return false;
+			}
+			else if (!std::isdigit(str[i])) {
+				return false;
+			}
+		}
+
+	}
+	return true;
+}
+
+QByteArray serialize_string_array(const QStringList& string_list) {
+	QByteArray result;
+	QDataStream stream(&result, QIODevice::WriteOnly);
+	stream << string_list.size();
+	for (int i = 0; i < string_list.size(); i++) {
+		stream << string_list.at(i);
+	}
+	return result;
+}
+
+
+QStringList deserialize_string_array(const QByteArray &byte_array) {
+	QStringList result;
+	QDataStream stream(byte_array);
+
+	int size;
+	stream >> size;
+
+
+	for (int i = 0; i < size; i++) {
+		QString string;
+		stream >> string;
+		result.append(string);
+	}
+
+	return result;
+}
+
+
+std::filesystem::path add_redundant_dot_to_path(const std::filesystem::path& sane_path) {
+	return sane_path.parent_path() / "." / sane_path.filename();
+}
+
+
+bool should_reuse_instance(int argc, char** argv) {
+	for (int i = 0; i < argc; i++) {
+		if (std::strcmp(argv[i], "--reuse-instance") == 0) return true;
+
+	}
+	return false;
+}
+
+bool should_new_instance(int argc, char** argv) {
+	for (int i = 0; i < argc; i++) {
+		if (std::strcmp(argv[i], "--new-instance") == 0) return true;
+
+	}
+	return false;
+}
+
+QCommandLineParser* get_command_line_parser() {
+
+	QCommandLineParser* parser = new QCommandLineParser();
+
+	parser->setApplicationDescription("Sioyek is a PDF reader designed for reading research papers and technical books.");
+	parser->addHelpOption();
+	parser->addVersionOption();
+
+	QCommandLineOption reuse_instance_option("reuse-instance");
+	reuse_instance_option.setDescription("When opening a new file, reuse the previous instance of sioyek instead of opening a new window.");
+	parser->addOption(reuse_instance_option);
+
+	QCommandLineOption new_instance_option("new-instance");
+	new_instance_option.setDescription("When opening a new file, create a new instacne of sioyek.");
+	parser->addOption(new_instance_option);
+
+	QCommandLineOption page_option("page", "Which page to open.", "page");
+	parser->addOption(page_option);
+
+	QCommandLineOption inverse_search_option("inverse-search", "The command to execute when performing inverse search.\
+ In <command>, %1 is filled with the file name and %2 is filled with the line number.", "command");
+	parser->addOption(inverse_search_option);
+
+	QCommandLineOption forward_search_file_option("forward-search-file", "Perform forward search on file <file> must also include --forward-search-line to specify the line", "file");
+	parser->addOption(forward_search_file_option);
+
+	QCommandLineOption forward_search_line_option("forward-search-line", "Perform forward search on line <line> must also include --forward-search-file to specify the file", "file");
+	parser->addOption(forward_search_line_option);
+
+	QCommandLineOption zoom_level_option("zoom", "Set zoom level to <zoom>.", "zoom");
+	parser->addOption(zoom_level_option);
+
+	QCommandLineOption xloc_option("xloc", "Set x position within page to <xloc>.", "xloc");
+	parser->addOption(xloc_option);
+
+	QCommandLineOption yloc_option("yloc", "Set y position within page to <yloc>.", "yloc");
+	parser->addOption(yloc_option);
+
+	return parser;
+}
