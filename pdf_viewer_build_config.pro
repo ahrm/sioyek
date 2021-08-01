@@ -59,25 +59,25 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/synctex/synctex_parser.c \
            pdf_viewer/synctex/synctex_parser_utils.c\
 
-SOURCES += zlib/adler32.c \
-        zlib/compress.c \
-        zlib/crc32.c \
-        zlib/deflate.c \
-        zlib/gzclose.c \
-        zlib/gzread.c \
-        zlib/gzwrite.c \
-        zlib/infback.c \
-        zlib/inffast.c \
-        zlib/inflate.c \
-        zlib/inftrees.c \
-        zlib/trees.c \
-        zlib/uncompr.c \
-        zlib/zutil.c
+#SOURCES += zlib/adler32.c \
+#        zlib/compress.c \
+#        zlib/crc32.c \
+#        zlib/deflate.c \
+#        zlib/gzclose.c \
+#        zlib/gzread.c \
+#        zlib/gzwrite.c \
+#        zlib/infback.c \
+#        zlib/inffast.c \
+#        zlib/inflate.c \
+#        zlib/inftrees.c \
+#        zlib/trees.c \
+#        zlib/uncompr.c \
+#        zlib/zutil.c
 
 win32{
     DEFINES += _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE
     RC_ICONS = pdf_viewer\icon2.ico
-    LIBS += -Lmupdf\platform\win32\x64\Release -llibmupdf
+    LIBS += -Lmupdf\platform\win32\x64\Release -llibmupdf -Lzlib -lzlib
     #LIBS += -Llibs -llibmupdf
     LIBS += opengl32.lib
 }
@@ -88,7 +88,7 @@ unix{
     QMAKE_CXX = g++-9
 
     QMAKE_CXXFLAGS += -std=c++17
-    LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lharfbuzz
+    LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lharfbuzz -lz
     isEmpty(PREFIX){
         PREFIX = /usr
     }

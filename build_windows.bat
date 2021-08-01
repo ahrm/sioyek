@@ -2,6 +2,11 @@ cd mupdf\platform\win32\
 msbuild mupdf.sln /property:Configuration=Debug
 msbuild mupdf.sln /property:Configuration=Release
 cd ..\..\..
+
+cd zlib
+nmake -f win32/makefile.msc
+cd ..
+
 if %1 == portable (
     qmake -tp vc pdf_viewer_build_config.pro
 ) else (

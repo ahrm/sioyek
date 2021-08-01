@@ -4,3 +4,6 @@
 [submodule "pdf_viewer/SingleApplication"]
 	path = pdf_viewer/SingleApplication
 	url = https://github.com/itay-grudev/SingleApplication
+[submodule "zlib"]
+	path = zlib
+	url = https://github.com/madler/zlib
