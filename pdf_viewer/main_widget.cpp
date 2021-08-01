@@ -29,7 +29,6 @@
 #include <qstandardpaths.h>
 #include <qprocess.h>
 
-#include <filesystem>
 
 #include "input.h"
 #include "database.h"
@@ -43,6 +42,7 @@
 #include "config.h"
 #include "utf8.h"
 #include "synctex/synctex_parser.h"
+#include "path.h"
 
 #include "main_widget.h"
 
@@ -53,13 +53,14 @@ extern float MOVE_SCREEN_PERCENTAGE;
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring INVERSE_SEARCH_COMMAND;
 
-extern std::filesystem::path default_config_path;
-extern std::filesystem::path default_keys_path;
-extern std::filesystem::path user_config_path;
-extern std::filesystem::path user_keys_path;
-extern std::filesystem::path database_file_path;
-extern std::filesystem::path tutorial_path;
-extern std::filesystem::path last_opened_file_address_path;
+extern Path default_config_path;
+extern Path default_keys_path;
+extern Path user_config_path;
+extern Path user_keys_path;
+extern Path database_file_path;
+extern Path tutorial_path;
+extern Path last_opened_file_address_path;
+
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -128,7 +129,7 @@ void MainWidget::closeEvent(QCloseEvent* close_event) {
 	// write the address of the current document in a file so that the next time
 	// we launch the application, we open this document
 	if (main_document_view->get_document()) {
-		std::ofstream last_path_file(last_opened_file_address_path);
+		std::ofstream last_path_file(last_opened_file_address_path.get_path());
 
 		std::string encoded_file_name_str = utf8_encode(main_document_view->get_document()->get_path());
 		last_path_file << encoded_file_name_str.c_str() << std::endl;
@@ -422,14 +423,15 @@ void MainWidget::toggle_dark_mode()
 	}
 }
 
-void MainWidget::do_synctex_forward_search(std::filesystem::path pdf_file_path,std::filesystem::path latex_file_path, int line)
+void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line)
 {
 
-	std::filesystem::path latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path);
+	//Path latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path);
+	Path latex_file_path_with_redundant_dot = latex_file_path.add_redundant_dot();
 
-	std::string latex_file_string = utf8_encode(latex_file_path.wstring());
-	std::string latex_file_with_redundant_dot_string = utf8_encode(latex_file_path_with_redundant_dot.wstring());
-	std::string pdf_file_string = utf8_encode(pdf_file_path.wstring());
+	std::string latex_file_string = latex_file_path.get_path_utf8();
+	std::string latex_file_with_redundant_dot_string = latex_file_path_with_redundant_dot.get_path_utf8();
+	std::string pdf_file_string = pdf_file_path.get_path_utf8();
 
 	//latex_file_string = "D:/phd/seventh/./pres.tex";
 	synctex_scanner_t scanner = synctex_scanner_new_with_output_file(pdf_file_string.c_str(), nullptr, 1);
@@ -474,7 +476,7 @@ void MainWidget::do_synctex_forward_search(std::filesystem::path pdf_file_path,s
 		}
 		if (target_page != -1) {
 
-			if (pdf_file_path != main_document_view->get_document()->get_path()) {
+			if (pdf_file_path.get_path() != main_document_view->get_document()->get_path()) {
 				open_document(pdf_file_path);
 			}
 
@@ -682,25 +684,24 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 }
 
 
-void MainWidget::open_document(std::filesystem::path path_, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
+void MainWidget::open_document(const Path& path, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
 
 	//save the previous document state
 	if (main_document_view) {
 		main_document_view->persist();
 		update_history_state();
 	}
-  std::wstring path = path_.wstring();
 
-	main_document_view->open_document(path, &this->is_render_invalidated);
+	main_document_view->open_document(path.get_path(), &this->is_render_invalidated);
 	bool has_document = main_document_view_has_document();
 
 	if (has_document) {
-		setWindowTitle(QString::fromStdWString(path));
+		setWindowTitle(QString::fromStdWString(path.get_path()));
 		push_state();
 	}
 
-	if ((path.size() > 0) && (!has_document)) {
-		show_error_message(L"Could not open file: " + path);
+	if ((path.get_path().size() > 0) && (!has_document)) {
+		show_error_message(L"Could not open file: " + path.get_path());
 	}
 	main_document_view->on_view_size_change(main_window_width, main_window_height);
 
@@ -721,7 +722,7 @@ void MainWidget::open_document(std::filesystem::path path_, std::optional<float>
 
 }
 
-void MainWidget::open_document_at_location(std::filesystem::path path_,
+void MainWidget::open_document_at_location(const Path& path_,
 	int page,
 	std::optional<float> x_loc,
 	std::optional<float> y_loc,
@@ -732,7 +733,7 @@ void MainWidget::open_document_at_location(std::filesystem::path path_,
 		main_document_view->persist();
 		update_history_state();
 	}
-	std::wstring path = path_.wstring();
+	std::wstring path = path_.get_path();
 
 	main_document_view->open_document(path, &this->is_render_invalidated, true, {}, true);
 	bool has_document = main_document_view_has_document();
@@ -898,7 +899,11 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 
 						QString command = QString::fromStdWString(inverse_search_command).arg(file_name, line_string.c_str(), column_string.c_str());
 
+						std::wcout << L"inverse search command: " << inverse_search_command << L"\n";
+						std::wcout << L"executed command: " << command.toStdWString() << L"\n";
+
 						QProcess::startDetached(command);
+
 					}
 
 				}
@@ -1419,7 +1424,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		select_prev_docs(db, opened_docs_paths);
 
 		for (const auto& p : opened_docs_paths) {
-			opened_docs_names.push_back(std::filesystem::path(p).filename().wstring());
+			opened_docs_names.push_back(Path(p).filename().value_or(L"<ERROR>"));
 		}
 
 		if (opened_docs_paths.size() > 0) {
@@ -1604,41 +1609,22 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 	}
 
 	if (current_pending_command->name == "command") {
-		std::filesystem::path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+		//Path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
 
 		if (text == L"q") {
 			close();
 		}
-		else if (text == L"ocr") {
-			OpenedBookState state = main_document_view->get_state().book_state;
-
-			std::wstring docpathname = main_document_view->get_document()->get_path();
-			std::filesystem::path docpath(docpathname);
-			std::wstring file_name = docpath.filename().replace_extension("").wstring();
-			std::wstring new_file_name = file_name + L"_ocr.pdf";
-			std::wstring new_path = docpath.replace_filename(new_file_name).wstring();
-
-			std::wstring command_params = (L"\"" + docpathname + L"\" \"" + new_path + L"\" --force-ocr");
-			run_command(L"ocrmypdf.exe", command_params);
-
-			main_document_view->open_document(new_path, &this->is_ui_invalidated, false, state);
-		}
 		else if (text == L"keys") {
-			std::wstring file_path_string = default_keys_path.wstring();
-			open_file(file_path_string);
+			open_file(default_keys_path.get_path());
 		}
 		else if (text == L"keys_user") {
-
-			std::wstring file_path_string = user_keys_path.wstring();
-			open_file(file_path_string);
+			open_file(user_keys_path.get_path());
 		}
 		else if (text == L"prefs") {
-			std::wstring file_path_string = default_config_path.wstring();
-			open_file(file_path_string);
+			open_file(default_config_path.get_path());
 		}
 		else if (text == L"prefs_user") {
-			std::wstring file_path_string = user_config_path.wstring();
-			open_file(file_path_string);
+			open_file(user_config_path.get_path());
 		}
 	}
 }

@@ -149,7 +149,7 @@ public:
 
 	DocumentManager(fz_context* mupdf_context, sqlite3* database);
 
-	Document* get_document(std::filesystem::path path);
+	Document* get_document(const std::wstring& path);
 	const std::unordered_map<std::wstring, Document*>& get_cached_documents();;
 	void delete_global_mark(char symbol);
 };

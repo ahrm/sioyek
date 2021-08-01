@@ -5,7 +5,6 @@
 #include "utils.h"
 #include <optional>
 #include <string>
-#include <filesystem>
 #include <qclipboard.h>
 #include <qguiapplication.h>
 #include <qprocess.h>
@@ -16,6 +15,7 @@
 #include <qdatastream.h>
 #include <qstringlist.h>
 #include <qcommandlineparser.h>
+#include <qdir.h>
 
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
@@ -622,6 +622,37 @@ void merge_selected_character_rects(const std::vector<fz_rect>& selected_charact
 
 }
 
+int next_sep_pos(const std::wstring& path) {
+	wchar_t sep1 = '/';
+	wchar_t sep2 = '\\';
+	int index1 = path.find(sep1);
+	int index2 = path.find(sep2);
+	if (index2 == -1) {
+		return index1;
+	}
+
+	if (index1 == -1) {
+		return index2;
+	}
+	return std::min(index1, index2);
+}
+
+void split_path(std::wstring path, std::vector<std::wstring> &res) {
+
+	size_t loc = -1;
+	while ((loc = next_sep_pos(path)) != -1) {
+
+		int skiplen = loc + 1;
+		if (loc != 0) {
+			std::wstring part = path.substr(0, loc);
+			res.push_back(part);
+		}
+		path = path.substr(skiplen, path.size() - skiplen);
+	}
+	if (path.size() > 0) {
+		res.push_back(path);
+	}
+}
 void string_split(std::string haystack, const std::string& needle, std::vector<std::string> &res) {
 	//todo: we can significantly reduce string allocations in this function if it turns out to be a 
 	//performance bottleneck.
@@ -686,6 +717,7 @@ void run_command(std::wstring command, std::wstring parameters){
 
 }
 
+
 void open_url(const QString& url_string) {
 	QDesktopServices::openUrl(url_string);
 }
@@ -729,18 +761,37 @@ void open_url(const std::wstring& url_string) {
 	}
 }
 
-void create_file_if_not_exists(const std::filesystem::path& path) {
-	if (!std::filesystem::exists(path)) {
+void create_file_if_not_exists(const std::wstring& path) {
+	if (!QFile::exists(QString::fromStdWString(path))) {
 		std::ofstream outfile(path);
 		outfile << "";
 		outfile.close();
 	}
 }
 
-void open_file(const std::filesystem::path& path) {
+std::wstring join_string(const std::vector<std::wstring> parts, std::wstring sep) {
+	std::wstring res = L"";
+	for (int i = 0; i < parts.size(); i++) {
+		res.append(parts[i]);
+		if (i < parts.size() - 1) {
+			res.append(sep);
+		}
+	}
+	return std::move(res);
+}
 
-	std::wstring generic_file_path = path.generic_wstring();
-	open_url(generic_file_path);
+std::wstring canonicalize_path(const std::wstring& path) {
+
+	std::vector<std::wstring> parts;
+	split_path(path, parts);
+	return std::move(join_string(parts, L"/"));
+}
+
+void open_file(const std::wstring& path) {
+
+	//std::wstring generic_file_path = path.generic_wstring();
+	std::wstring canon_path = canonicalize_path(path);
+	open_url(canon_path);
 
 }
 
@@ -1116,9 +1167,6 @@ QStringList deserialize_string_array(const QByteArray &byte_array) {
 }
 
 
-std::filesystem::path add_redundant_dot_to_path(const std::filesystem::path& sane_path) {
-	return sane_path.parent_path() / "." / sane_path.filename();
-}
 
 
 bool should_reuse_instance(int argc, char** argv) {
@@ -1177,3 +1225,37 @@ QCommandLineParser* get_command_line_parser() {
 
 	return parser;
 }
+
+
+std::wstring concatenate_path(const std::wstring& prefix, const std::wstring& suffix) {
+	std::wstring result = prefix;
+#ifdef Q_OS_WIN
+	wchar_t separator = '\\';
+#else
+	wchar_t separator = '/';
+#endif
+	if (prefix == L"") {
+		return suffix;
+	}
+
+	if (result[result.size() - 1] != separator) {
+		result.push_back(separator);
+	}
+	result.append(suffix);
+	return std::move(result);
+}
+
+std::wstring concatenate_paths(const std::vector<std::wstring>& paths) {
+	std::wstring res = L"";
+	for (int i = 0; i < paths.size(); i++) {
+		res = concatenate_path(res, paths[i]);
+	}
+	return res;
+}
+
+std::wstring get_canonical_path(const std::wstring& path) {
+	QDir dir(QString::fromStdWString(path));
+	return std::move(dir.canonicalPath().toStdWString());
+
+}
+

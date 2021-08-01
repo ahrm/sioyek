@@ -20,10 +20,10 @@
 #include "pdf_renderer.h"
 #include "input.h"
 #include "pdf_view_opengl_widget.h"
+#include "path.h"
 
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
-extern std::filesystem::path last_path_file_absolute_location;
 
 
 class MainWidget : public QWidget, ConfigFileChangeListener{
@@ -145,8 +145,8 @@ public:
 
 	~MainWidget();
 
-	void open_document(std::filesystem::path path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
-	void open_document_at_location(std::filesystem::path path, int page, std::optional<float> x_loc, std::optional<float> y_loc, std::optional<float> zoom_level);
+	void open_document(const Path& path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
+	void open_document_at_location(const Path& path, int page, std::optional<float> x_loc, std::optional<float> y_loc, std::optional<float> zoom_level);
 	void open_document(const DocumentViewState& state);
 	void validate_render();
 	void validate_ui();
@@ -155,7 +155,7 @@ public:
 
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_dark_mode();
-	void do_synctex_forward_search(std::filesystem::path pdf_file_path,std::filesystem::path latex_file_path, int line);
+	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line);
 	void on_new_instance_message(qint32 instance_id, QByteArray arguments);
 	void handle_args(const QStringList &arguments);
 };

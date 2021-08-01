@@ -1,0 +1,105 @@
+#include <qdir.h>
+#include "path.h"
+
+Path::Path() : Path(L"")
+{
+}
+
+Path::Path(const std::wstring& pathname)
+{
+	canon_path = canonicalize_path(pathname);
+}
+
+Path Path::slash(const std::wstring& suffix) const
+{
+	std::wstring new_path = concatenate_path(canon_path, suffix);
+	return Path(std::move(new_path));
+}
+
+std::optional<std::wstring> Path::filename() const
+{
+	std::vector<std::wstring> all_parts;
+	parts(all_parts);
+	if (all_parts.size() > 0) {
+		return all_parts[all_parts.size() - 1];
+	}
+	return {};
+}
+
+Path Path::parent() const
+{
+	std::vector<std::wstring> all_parts;
+	parts(all_parts);
+	Path res;
+	for (int i = 0; i < all_parts.size() - 1; i++) {
+		res = res.slash(all_parts[i]);
+	}
+	return res;
+}
+
+std::wstring Path::get_path() const
+{
+	return canon_path;
+}
+
+std::string Path::get_path_utf8() const
+{
+	return std::move(utf8_encode(canon_path));
+}
+
+void Path::create_directories()
+{
+	QDir().mkpath(QString::fromStdWString(canon_path));
+}
+
+Path Path::add_redundant_dot() const
+{
+	std::wstring file_name = filename().value();
+	return parent().slash(L".").slash(file_name);
+}
+
+bool Path::exists() const
+{
+	return QDir(QString::fromStdWString(canon_path)).exists();
+}
+
+void Path::parts(std::vector<std::wstring>& res) const
+{
+	split_path(canon_path, res);
+}
+
+std::wostream& operator<<(std::wostream& stream, const Path& path) {
+	stream << path.get_path();
+	return stream;
+}
+
+void copy_file(Path src, Path dst)
+{
+	QFile::copy(QString::fromStdWString(src.get_path()), QString::fromStdWString(dst.get_path()));
+}
+
+
+//Path add_redundant_dot_to_path(const Path& sane_path) {
+//
+//	std::wstring file_name = sane_path.filename();
+//
+////#ifdef Q_OS_WIN
+////	wchar_t separator = '\\';
+////#else
+////	wchar_t separator = '/';
+////#endif
+////
+////	std::vector<std::wstring> parts;
+////	split_path(sane_path, parts);
+////	std::wstring res = L"";
+////	for (int i = 0; i < parts.size(); i++) {
+////		res = concatenate_path(res, parts[i]);
+////	}
+//
+//	//QDir sane_path_dir(QString::fromStdWString(sane_path));
+//	//sane_path_dir.filenam
+//	//sane_path_dir.cdUp();
+//
+//	//return concatenate_path(concatenate_path(sane_path_dir.canonicalPath().toStdWString(), L"."), sa
+//	//return sane_path.parent_path() / "." / sane_path.filename();
+//}

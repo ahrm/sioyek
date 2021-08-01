@@ -7,29 +7,6 @@ std::wstring select_document_file_name() {
 	return file_name.toStdWString();
 }
 
-//bool select_document_file_name(wchar_t* out_file_name, int max_length) {
-//
-//	
-//
-//	std::wcout << std::filesystem::current_path().wstring() << endl;
-//	OPENFILENAMEW ofn;
-//	ZeroMemory(out_file_name, max_length);
-//	ZeroMemory(&ofn, sizeof(ofn));
-//	ofn.lStructSize = sizeof(ofn);
-//	ofn.hwndOwner = nullptr;
-//	ofn.lpstrFilter = L"Pdf Files\0*.pdf;*.epub\0Any File\0*.*\0";
-//	ofn.lpstrFile = out_file_name;
-//	ofn.nMaxFile = max_length;
-//	ofn.lpstrTitle = L"Select a document";
-//	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-//
-//
-//	if (GetOpenFileNameW(&ofn)) {
-//		std::wcout << std::filesystem::current_path().wstring() << endl;
-//		return true;
-//	}
-//	return false;
-//}
 
 std::vector<ConfigFileChangeListener*> ConfigFileChangeListener::registered_listeners;
 

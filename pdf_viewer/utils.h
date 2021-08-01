@@ -1,6 +1,5 @@
 #pragma once
 
-#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -30,7 +29,6 @@ bool intersects(float range1_start, float range1_end, float range2_start, float 
 void parse_uri(std::string uri, int* page, float* offset_x, float* offset_y);
 bool includes_rect(fz_rect includer, fz_rect includee);
 char get_symbol(int scancode, bool is_shift_pressed);
-//GLuint LoadShaders(filesystem::path vertex_file_path_, filesystem::path fragment_file_path_);
 
 template<typename T>
 int argminf(const std::vector<T> &collection, std::function<float(T)> f) {
@@ -81,7 +79,7 @@ std::wstring get_string_from_stext_block(fz_stext_block* block);
 void sleep_ms(unsigned int ms);
 void open_url(const std::string& url_string);
 void open_url(const std::wstring& url_string);
-void open_file(const std::filesystem::path& path);
+void open_file(const std::wstring& path);
 void search_google_scholar(const std::wstring& search_string);
 void search_libgen(const std::wstring& search_string);
 void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, IndexedData>& indices);
@@ -94,10 +92,15 @@ void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_ch
 	std::vector<std::pair<int, int>>& match_ranges, std::vector<std::wstring>& match_texts);
 bool is_string_numeric(const std::wstring& str);
 bool is_string_numeric_float(const std::wstring& str);
-void create_file_if_not_exists(const std::filesystem::path& path);
+void create_file_if_not_exists(const std::wstring& path);
 QByteArray serialize_string_array(const QStringList& string_list);
 QStringList deserialize_string_array(const QByteArray& byte_array);
-std::filesystem::path add_redundant_dot_to_path(const std::filesystem::path& sane_path);
+//Path add_redundant_dot_to_path(const Path& sane_path);
 bool should_reuse_instance(int argc, char** argv);
 bool should_new_instance(int argc, char** argv);
 QCommandLineParser* get_command_line_parser();
+std::wstring concatenate_path(const std::wstring& prefix, const std::wstring& suffix);
+std::wstring get_canonical_path(const std::wstring& path);
+void split_path(std::wstring path, std::vector<std::wstring>& res);
+std::wstring concatenate_paths(const std::vector<std::wstring>& paths);
+std::wstring canonicalize_path(const std::wstring& path);

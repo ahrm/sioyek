@@ -11,7 +11,6 @@
 #include <optional>
 #include <utility>
 #include <memory>
-#include <filesystem>
 
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -38,6 +37,7 @@
 #include <qdesktopwidget.h>
 
 #include "document_view.h"
+#include "path.h"
 
 
 
@@ -83,7 +83,7 @@ private:
 	bool should_draw_vertical_line = false;
 	QDateTime creation_time;
 
-	GLuint LoadShaders(std::filesystem::path vertex_file_path_, std::filesystem::path fragment_file_path_);
+	GLuint LoadShaders(Path vertex_file_path_, Path fragment_file_path_);
 protected:
 
 	void initializeGL() override;

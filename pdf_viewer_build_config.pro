@@ -35,6 +35,7 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/sqlite3.h \
            pdf_viewer/sqlite3ext.h \
            pdf_viewer/ui.h \
+           pdf_viewer/path.h \
            pdf_viewer/utf8.h \
            pdf_viewer/utils.h \
            pdf_viewer/utf8/checked.h \
@@ -55,24 +56,11 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/pdf_view_opengl_widget.cpp \
            pdf_viewer/sqlite3.c \
            pdf_viewer/ui.cpp \
+           pdf_viewer/path.cpp \
            pdf_viewer/utils.cpp \
            pdf_viewer/synctex/synctex_parser.c \
            pdf_viewer/synctex/synctex_parser_utils.c\
 
-#SOURCES += zlib/adler32.c \
-#        zlib/compress.c \
-#        zlib/crc32.c \
-#        zlib/deflate.c \
-#        zlib/gzclose.c \
-#        zlib/gzread.c \
-#        zlib/gzwrite.c \
-#        zlib/infback.c \
-#        zlib/inffast.c \
-#        zlib/inflate.c \
-#        zlib/inftrees.c \
-#        zlib/trees.c \
-#        zlib/uncompr.c \
-#        zlib/zutil.c
 
 win32{
     DEFINES += _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE

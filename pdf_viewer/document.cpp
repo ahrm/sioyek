@@ -573,12 +573,12 @@ DocumentManager::DocumentManager(fz_context* mupdf_context, sqlite3* database) :
 }
 
 
-Document* DocumentManager::get_document(std::filesystem::path path) {
-	if (cached_documents.find(path.wstring()) != cached_documents.end()) {
-		return cached_documents.at(path.wstring());
+Document* DocumentManager::get_document(const std::wstring& path) {
+	if (cached_documents.find(path) != cached_documents.end()) {
+		return cached_documents.at(path);
 	}
-	Document* new_doc = new Document(mupdf_context, path.wstring(), database);
-	cached_documents[path.wstring()] = new_doc;
+	Document* new_doc = new Document(mupdf_context, path, database);
+	cached_documents[path] = new_doc;
 	return new_doc;
 }
 

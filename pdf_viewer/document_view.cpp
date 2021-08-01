@@ -407,28 +407,30 @@ void DocumentView::reset_doc_state() {
 	zoom_level = 1.0f;
 	set_offsets(0.0f, 0.0f);
 }
-void DocumentView::open_document(std::filesystem::path doc_path,
+void DocumentView::open_document(const std::wstring& doc_path,
 	bool* invalid_flag,
 	bool load_prev_state,
 	std::optional<OpenedBookState> prev_state,
 	bool force_load_dimensions) {
 
-	std::error_code error_code;
-	std::filesystem::path cannonical_path_ = std::filesystem::canonical(doc_path, error_code);
+	std::wstring canonical_path = get_canonical_path(doc_path);
 
-	if (error_code) {
+	if (canonical_path == L"") {
 		current_document = nullptr;
 		return;
 	}
 
-	std::wstring cannonical_path = cannonical_path_.wstring();
+	//if (error_code) {
+	//	current_document = nullptr;
+	//	return;
+	//}
 
 	//document_path = cannonical_path;
 
 
 	//current_document = new Document(mupdf_context, doc_path, database);
 	//current_document = document_manager->get_document(doc_path);
-	current_document = document_manager->get_document(cannonical_path);
+	current_document = document_manager->get_document(canonical_path);
 	//current_document->open();
 	if (!current_document->open(invalid_flag, force_load_dimensions)) {
 		current_document = nullptr;
@@ -445,7 +447,7 @@ void DocumentView::open_document(std::filesystem::path doc_path,
 	else if (load_prev_state) {
 
 		std::vector<OpenedBookState> prev_state;
-		if (select_opened_book(database, cannonical_path, prev_state)) {
+		if (select_opened_book(database, canonical_path, prev_state)) {
 			if (prev_state.size() > 1) {
 				std::cerr << "more than one file with one path, this should not happen!" << std::endl;
 			}

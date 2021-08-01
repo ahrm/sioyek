@@ -258,11 +258,11 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 
 }
 
-InputParseTreeNode* parse_key_config_files(const std::filesystem::path& default_path,
-	const std::filesystem::path& user_path) {
+InputParseTreeNode* parse_key_config_files(const Path& default_path,
+	const Path& user_path) {
 
-	std::ifstream default_infile(default_path);
-	std::ifstream user_infile(user_path);
+	std::ifstream default_infile(default_path.get_path());
+	std::ifstream user_infile(user_path.get_path());
 
 
 	std::vector<std::string> command_names;
@@ -304,11 +304,11 @@ InputParseTreeNode* parse_key_config_files(const std::filesystem::path& default_
 }
 
 
-InputHandler::InputHandler(const std::filesystem::path& default_path, const std::filesystem::path& user_path) {
+InputHandler::InputHandler(const Path& default_path, const Path& user_path) {
 	reload_config_files(default_path, user_path);
 }
 
-void InputHandler::reload_config_files(const std::filesystem::path& default_config_path, const std::filesystem::path& user_config_path)
+void InputHandler::reload_config_files(const Path& default_config_path, const Path& user_config_path)
 {
 	delete_current_parse_tree(root);
 	root = parse_key_config_files(default_config_path, user_config_path);

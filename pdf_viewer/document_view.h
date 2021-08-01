@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <utility>
 #include <algorithm>
-#include <filesystem>
 #include <thread>
 #include <optional>
 
@@ -96,7 +95,7 @@ public:
 	void move_pages(int num_pages);
 	void move_screens(int num_screens);
 	void reset_doc_state();
-	void open_document(std::filesystem::path doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions=false);
+	void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions=false);
 	float get_page_offset(int page);
 	void goto_offset_within_page(int page, float offset_x, float offset_y);
 	void goto_page(int page);

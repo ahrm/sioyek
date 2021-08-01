@@ -89,7 +89,7 @@ Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 	return nullptr;
 }
 
-ConfigManager::ConfigManager(const std::filesystem::path& default_path, const std::filesystem::path& user_path) {
+ConfigManager::ConfigManager(const std::wstring& default_path, const std::wstring& user_path) {
 
 	auto vec3_serializer = vec_n_serializer<3>;
 	auto vec4_serializer = vec_n_serializer<4>;

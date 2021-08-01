@@ -5,7 +5,6 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
-#include <filesystem>
 
 
 struct Config {
@@ -31,7 +30,7 @@ class ConfigManager {
 
 public:
 
-	ConfigManager(const std::filesystem::path& default_path, const std::filesystem::path& user_path);
+	ConfigManager(const std::wstring& default_path,const std::wstring& user_path);
 	//void serialize(std::wofstream& file);
 	void deserialize(std::wifstream& default_file, std::wifstream& user_file);
 	template<typename T>

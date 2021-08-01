@@ -10,6 +10,7 @@
 //#include <SDL.h>
 
 #include "utils.h"
+#include "path.h"
 
 struct Command {
 	std::string name;
@@ -59,8 +60,8 @@ public:
 	//char create_link_sumbol = 0;
 	//char create_bookmark_symbol = 0;
 
-	InputHandler(const std::filesystem::path& default_path, const std::filesystem::path& user_path);
-	void reload_config_files(const std::filesystem::path& default_path, const std::filesystem::path& user_path);
+	InputHandler(const Path& default_path, const Path& user_path);
+	void reload_config_files(const Path& default_path, const Path& user_path);
 	const Command* handle_key(int key, bool shift_pressed, bool control_pressed, int* num_repeats);
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
