@@ -1,4 +1,5 @@
 #include "config.h"
+#include "utils.h"
 #include <cassert>
 
 extern float ZOOM_INC_FACTOR;
@@ -121,8 +122,11 @@ ConfigManager::ConfigManager(const std::wstring& default_path, const std::wstrin
 	configs.push_back({ L"should_launch_new_instance", &SHOULD_LAUNCH_NEW_INSTANCE, bool_serializer, bool_deserializer });
 //extern bool should_load_tutorial_when_no_other_file = false;
 
-	std::wifstream default_infile(default_path);
-	std::wifstream user_infile(user_path);
+	std::string default_path_utf8 = utf8_encode(default_path);
+	std::string user_path_utf8 = utf8_encode(user_path);
+
+	std::wifstream default_infile(default_path_utf8);
+	std::wifstream user_infile(user_path_utf8);
 	deserialize(default_infile, user_infile);
 	default_infile.close();
 	user_infile.close();

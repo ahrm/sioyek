@@ -129,7 +129,7 @@ void MainWidget::closeEvent(QCloseEvent* close_event) {
 	// write the address of the current document in a file so that the next time
 	// we launch the application, we open this document
 	if (main_document_view->get_document()) {
-		std::ofstream last_path_file(last_opened_file_address_path.get_path());
+		std::ofstream last_path_file(last_opened_file_address_path.get_path_utf8());
 
 		std::string encoded_file_name_str = utf8_encode(main_document_view->get_document()->get_path());
 		last_path_file << encoded_file_name_str.c_str() << std::endl;

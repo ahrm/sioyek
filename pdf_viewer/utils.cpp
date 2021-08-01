@@ -762,8 +762,9 @@ void open_url(const std::wstring& url_string) {
 }
 
 void create_file_if_not_exists(const std::wstring& path) {
+	std::string path_utf8 = utf8_encode(path);
 	if (!QFile::exists(QString::fromStdWString(path))) {
-		std::ofstream outfile(path);
+		std::ofstream outfile(path_utf8);
 		outfile << "";
 		outfile.close();
 	}
