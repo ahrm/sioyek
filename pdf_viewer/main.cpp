@@ -294,7 +294,7 @@ int main(int argc, char* args[]) {
 	//char file_path[MAX_PATH] = { 0 };
 	Path file_path;
 	std::string file_path_;
-	std::ifstream last_state_file(last_opened_file_address_path.get_path());
+	std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
 	std::getline(last_state_file, file_path_);
 	file_path = utf8_decode(file_path_);
 	last_state_file.close();
@@ -348,8 +348,8 @@ int main(int argc, char* args[]) {
 
 	// live reload the config file
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		std::wifstream default_config_file(default_config_path.get_path());
-		std::wifstream user_config_file(user_config_path.get_path());
+		std::wifstream default_config_file(default_config_path.get_path_utf8());
+		std::wifstream user_config_file(user_config_path.get_path_utf8());
 
 		config_manager.deserialize(default_config_file, user_config_file);
 		default_config_file.close();
