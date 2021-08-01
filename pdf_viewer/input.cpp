@@ -261,8 +261,8 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	const Path& user_path) {
 
-	std::ifstream default_infile(default_path.get_path());
-	std::ifstream user_infile(user_path.get_path());
+	std::ifstream default_infile(default_path.get_path_utf8());
+	std::ifstream user_infile(user_path.get_path_utf8());
 
 
 	std::vector<std::string> command_names;
