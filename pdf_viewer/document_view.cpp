@@ -125,8 +125,13 @@ void DocumentView::delete_closest_link() {
 
 void DocumentView::delete_closest_bookmark() {
 	if (current_document) {
-		current_document->delete_closest_bookmark(offset_y);
+		delete_closest_bookmark_to_offset(offset_y);
 	}
+}
+
+void DocumentView::delete_closest_bookmark_to_offset(float offset)
+{
+	current_document->delete_closest_bookmark(offset);
 }
 
 float DocumentView::get_offset_x() {

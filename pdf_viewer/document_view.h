@@ -62,6 +62,7 @@ public:
 	void goto_link(Link* link);
 	void delete_closest_link();
 	void delete_closest_bookmark();
+	void delete_closest_bookmark_to_offset(float offset);
 	float get_offset_x();
 	float get_offset_y();
 	int get_view_height();
