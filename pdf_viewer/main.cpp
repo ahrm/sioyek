@@ -106,14 +106,14 @@ extern std::wstring INVERSE_SEARCH_COMMAND = L"";
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE = true;
 
-extern Path default_config_path = L"";
-extern Path default_keys_path = L"";
-extern Path user_config_path = L"";
-extern Path user_keys_path = L"";
-extern Path database_file_path = L"";
-extern Path tutorial_path = L"";
-extern Path last_opened_file_address_path = L"";
-extern Path shader_path = L"";
+extern Path default_config_path(L"");
+extern Path default_keys_path(L"");
+extern Path user_config_path(L"");
+extern Path user_keys_path(L"");
+extern Path database_file_path(L"");
+extern Path tutorial_path(L"");
+extern Path last_opened_file_address_path(L"");
+extern Path shader_path(L"");
 
 void configure_paths(){
 
@@ -133,8 +133,8 @@ void configure_paths(){
 	}
 
 	Path standard_data_path = Path(utf8_decode(APPDIR));
-	standard_data_path = standard_data_path.slash(L".local").slash("share").slash(L"Sioyek");
-	standard_data_path.create_directories()
+	standard_data_path = standard_data_path.slash(L".local").slash(L"share").slash(L"Sioyek");
+	standard_data_path.create_directories();
 
 	default_config_path = parent_path.slash(L"prefs.config");
 	user_config_path = standard_data_path.slash(L"prefs_user.config");

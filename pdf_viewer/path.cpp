@@ -39,12 +39,24 @@ Path Path::parent() const
 
 std::wstring Path::get_path() const
 {
+
+	if (canon_path.size() == 0) return canon_path;
+
+#ifdef Q_OS_WIN
 	return canon_path;
+#else
+	if (canon_path[0] != '/'){
+		return L"/" + canon_path;
+	}
+	else{
+		return  canon_path;
+	}
+#endif
 }
 
 std::string Path::get_path_utf8() const
 {
-	return std::move(utf8_encode(canon_path));
+	return std::move(utf8_encode(get_path()));
 }
 
 void Path::create_directories()
