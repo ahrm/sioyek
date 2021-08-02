@@ -427,10 +427,13 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
 {
 
 	//Path latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path);
-	Path latex_file_path_with_redundant_dot = latex_file_path.add_redundant_dot();
+
+	//std::wstring latex_file_path_with_redundant_dot = latex_file_path.add_redundant_dot();
+	//std::wstring latex_file_path_with_redundant_dot = add_redun
+	std::wstring latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path.get_path());
 
 	std::string latex_file_string = latex_file_path.get_path_utf8();
-	std::string latex_file_with_redundant_dot_string = latex_file_path_with_redundant_dot.get_path_utf8();
+	std::string latex_file_with_redundant_dot_string = utf8_encode(latex_file_path_with_redundant_dot);
 	std::string pdf_file_string = pdf_file_path.get_path_utf8();
 
 	//latex_file_string = "D:/phd/seventh/./pres.tex";

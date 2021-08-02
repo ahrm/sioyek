@@ -22,7 +22,7 @@ public:
 	std::string get_path_utf8() const;
 	void create_directories();
 	bool exists() const;
-	Path add_redundant_dot() const;
+	//std::wstring add_redundant_dot() const;
 
 };
 std::wostream& operator<<(std::wostream& stream, const Path& path);

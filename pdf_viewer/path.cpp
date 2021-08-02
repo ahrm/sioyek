@@ -64,11 +64,11 @@ void Path::create_directories()
 	QDir().mkpath(QString::fromStdWString(canon_path));
 }
 
-Path Path::add_redundant_dot() const
-{
-	std::wstring file_name = filename().value();
-	return parent().slash(L".").slash(file_name);
-}
+//std::wstring Path::add_redundant_dot() const
+//{
+//	std::wstring file_name = filename().value();
+//	return parent().get_path() + L"/./" + file_name;
+//}
 
 bool Path::exists() const
 {
