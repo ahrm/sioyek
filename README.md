@@ -51,3 +51,26 @@ https://user-images.githubusercontent.com/6392321/125337160-e4832700-e363-11eb-8
 
 You can customize all key bindings and some UI elements by editing `keys_user.conf` and `prefs_user.conf`. The default configurations are in `keys.conf` and `prefs.conf`.
 
+## Build Instructions
+
+### Linux
+1. Install Qt 5 and make sure `qmake` is in `PATH`.
+2. Install `libharfbuzz`:
+```
+sudo apt install libharfbuzz
+```
+3. Clone the repository and build:
+```
+git clone --recursive https://github.com/ahrm/sioyek
+cd sioyek
+./build_linux.sh
+```
+### Windows
+1. Install Visual Studio (tested on 2019, other relatively recent versions should work too)
+2. Install Qt 5 and make sure qmake is in `PATH`.
+3. Clone the repository and build using 64 bit Visual Studio Developer Commnand Prompt:
+```
+git clone --recursive https://github.com/ahrm/sioyek
+cd sioyek
+build_windows.bat
+```
