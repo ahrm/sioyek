@@ -781,7 +781,8 @@ std::wstring join_string(const std::vector<std::wstring> parts, std::wstring sep
 	return std::move(res);
 }
 
-std::wstring canonicalize_path(const std::wstring& path) {
+std::wstring canonicalize_path(const std::wstring& path_) {
+	std::wstring path  = QFileInfo(QString::fromStdWString(path_)).absoluteFilePath().toStdWString();
 
 	std::vector<std::wstring> parts;
 	split_path(path, parts);
