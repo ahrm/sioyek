@@ -29,3 +29,4 @@ bool select_prev_docs(sqlite3* db,  std::vector<std::wstring>& out_result);
 void create_tables(sqlite3* db);
 bool delete_mark_with_symbol(sqlite3* db, char symbol);
 bool select_global_mark(sqlite3* db, char symbol, std::vector<std::pair<std::wstring, float>>& out_result);
+bool delete_opened_book(sqlite3* db, const std::wstring& book_path);

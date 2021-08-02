@@ -311,6 +311,27 @@ bool select_opened_book(sqlite3* db, const std::wstring& book_path, std::vector<
 			error_message);
 }
 
+//bool delete_mark_with_symbol(sqlite3* db, char symbol) {
+//
+//	std::wstringstream ss;
+//	ss << "DELETE FROM marks where symbol='" << symbol << "';";
+//	char* error_message = nullptr;
+//
+//	return handle_error(
+//		sqlite3_exec(db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message),
+//		error_message);
+//}
+
+bool delete_opened_book(sqlite3* db, const std::wstring& book_path) {
+		std::wstringstream ss;
+		ss << "DELETE FROM opened_books where path='" << esc(book_path) << "'";
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message),
+			error_message);
+}
+
+
 bool select_prev_docs(sqlite3* db,  std::vector<std::wstring> &out_result) {
 		std::wstringstream ss;
 		ss << "SELECT path FROM opened_books order by datetime(last_access_time) desc;";

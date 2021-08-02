@@ -1428,12 +1428,19 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 
 		if (opened_docs_paths.size() > 0) {
-			current_widget = std::make_unique<FilteredSelectWindowClass<std::wstring>>(opened_docs_names, opened_docs_paths, [&](std::wstring* doc_path) {
-				if (doc_path->size() > 0) {
-					validate_render();
-					open_document(*doc_path);
-				}
-				}, config_manager, this);
+			current_widget = std::make_unique<FilteredSelectWindowClass<std::wstring>>(opened_docs_names,
+				opened_docs_paths,
+				[&](std::wstring* doc_path) {
+					if (doc_path->size() > 0) {
+						validate_render();
+						open_document(*doc_path);
+					}
+				},
+				config_manager,
+				this,
+				[&](std::wstring* doc_path) {
+					delete_opened_book(db, *doc_path);
+				});
 			current_widget->show();
 		}
 	}

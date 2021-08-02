@@ -182,6 +182,7 @@ private:
 	std::vector<T> values;
 	//std::function<void(void*)> on_done = nullptr;
 	std::function<void(T*)> on_done = nullptr;
+	std::function<void(T*)> on_delete = nullptr;
 	ConfigManager* config_manager = nullptr;
 
 protected:
@@ -212,11 +213,17 @@ public:
 
 	//todo: check for memory leaks
 	//FilteredSelectWindowClass(std::vector<std::wstring> std_string_list, std::vector<T> values, std::function<void(void*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
-	FilteredSelectWindowClass(std::vector<std::wstring> std_string_list, std::vector<T> values, std::function<void(T*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
+	FilteredSelectWindowClass(std::vector<std::wstring> std_string_list,
+		std::vector<T> values,
+		std::function<void(T*)> on_done,
+		ConfigManager* config_manager,
+		QWidget* parent,
+		std::function<void(T*)> on_delete=nullptr) :
 		QWidget(parent) ,
 		values(values),
 		config_manager(config_manager),
-		on_done(on_done)
+		on_done(on_done),
+		on_delete(on_delete)
 	{
 		QVector<QString> q_string_list;
 		for (const auto& s : std_string_list) {
@@ -267,6 +274,7 @@ public:
 			on_select(index);
 			});
 
+
 		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
 			//proxy_model->setFilterRegExp(text);
 			proxy_model->setFilterFixedString(text);
@@ -278,6 +286,25 @@ public:
 		setStyleSheet("background-color: black; color: white; border: 0;");
 		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
 
+	}
+
+	void keyReleaseEvent(QKeyEvent* event) override {
+		if (event->key() == Qt::Key_Delete) {
+			if (on_delete != nullptr) { // only handle delete when the user has provided the `on_delete` function
+				QModelIndexList selected_index_list = list_view->selectionModel()->selectedIndexes();
+				if (selected_index_list.size() > 0) {
+					QModelIndex selected_index = selected_index_list.at(0);
+					QModelIndex source_index = proxy_model->mapToSource(selected_index);
+
+					on_delete(&values[source_index.row()]);
+
+					int delete_row = selected_index.row();
+					proxy_model->removeRow(selected_index.row());
+					values.erase(values.begin() + source_index.row());
+				}
+			}
+		}
+		QWidget::keyReleaseEvent(event);
 	}
 
 	void resizeEvent(QResizeEvent* resize_event) override {
