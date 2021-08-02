@@ -12,7 +12,7 @@ Path::Path(const std::wstring& pathname)
 
 Path Path::slash(const std::wstring& suffix) const
 {
-	std::wstring new_path = concatenate_path(canon_path, suffix);
+	std::wstring new_path = concatenate_path(get_path(), suffix);
 	return Path(std::move(new_path));
 }
 
