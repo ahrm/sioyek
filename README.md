@@ -57,7 +57,7 @@ You can customize all key bindings and some UI elements by editing `keys_user.co
 1. Install Qt 5 and make sure `qmake` is in `PATH`.
 2. Install `libharfbuzz`:
 ```
-sudo apt install libharfbuzz
+sudo apt install libharfbuzz-dev
 ```
 3. Clone the repository and build:
 ```
