@@ -79,9 +79,6 @@
 #include "fts_fuzzy_match.h"
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
 
-#ifndef MAX_PATH
-#define MAX_PATH PATH_MAX
-#endif
 
 
 extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };

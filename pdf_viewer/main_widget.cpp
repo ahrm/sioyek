@@ -46,6 +46,10 @@
 
 #include "main_widget.h"
 
+#ifndef MAX_PATH
+#define MAX_PATH PATH_MAX
+#endif
+
 extern bool LAUNCHED_FROM_FILE_ICON;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool FLAT_TABLE_OF_CONTENTS;
