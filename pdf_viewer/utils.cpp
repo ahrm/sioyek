@@ -1257,7 +1257,8 @@ std::wstring concatenate_paths(const std::vector<std::wstring>& paths) {
 
 std::wstring get_canonical_path(const std::wstring& path) {
 	QDir dir(QString::fromStdWString(path));
-	return std::move(dir.canonicalPath().toStdWString());
+	//return std::move(dir.canonicalPath().toStdWString());
+	return std::move(dir.absolutePath().toStdWString());
 
 }
 
