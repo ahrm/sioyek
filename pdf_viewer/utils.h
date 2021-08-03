@@ -103,5 +103,5 @@ std::wstring concatenate_path(const std::wstring& prefix, const std::wstring& su
 std::wstring get_canonical_path(const std::wstring& path);
 void split_path(std::wstring path, std::vector<std::wstring>& res);
 std::wstring concatenate_paths(const std::vector<std::wstring>& paths);
-std::wstring canonicalize_path(const std::wstring& path);
+//std::wstring canonicalize_path(const std::wstring& path);
 std::wstring add_redundant_dot_to_path(const std::wstring& path);

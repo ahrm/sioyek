@@ -781,18 +781,18 @@ std::wstring join_string(const std::vector<std::wstring> parts, std::wstring sep
 	return std::move(res);
 }
 
-std::wstring canonicalize_path(const std::wstring& path_) {
-	std::wstring path  = QFileInfo(QString::fromStdWString(path_)).absoluteFilePath().toStdWString();
-
-	std::vector<std::wstring> parts;
-	split_path(path, parts);
-	return std::move(join_string(parts, L"/"));
-}
+//std::wstring canonicalize_path(const std::wstring& path_) {
+//	std::wstring path  = QFileInfo(QString::fromStdWString(path_)).absoluteFilePath().toStdWString();
+//
+//	std::vector<std::wstring> parts;
+//	split_path(path, parts);
+//	return std::move(join_string(parts, L"/"));
+//}
 
 void open_file(const std::wstring& path) {
 
 	//std::wstring generic_file_path = path.generic_wstring();
-	std::wstring canon_path = canonicalize_path(path);
+	std::wstring canon_path = get_canonical_path(path);
 	open_url(canon_path);
 
 }

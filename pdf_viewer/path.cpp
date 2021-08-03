@@ -7,7 +7,7 @@ Path::Path() : Path(L"")
 
 Path::Path(const std::wstring& pathname)
 {
-	canon_path = canonicalize_path(pathname);
+	canon_path = get_canonical_path(pathname);
 }
 
 Path Path::slash(const std::wstring& suffix) const

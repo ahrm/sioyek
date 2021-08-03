@@ -292,22 +292,22 @@ int main(int argc, char* args[]) {
 	InputHandler input_handler(default_keys_path.get_path(), user_keys_path.get_path());
 
 	//char file_path[MAX_PATH] = { 0 };
-	Path file_path;
-	std::string file_path_;
-	std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
-	std::getline(last_state_file, file_path_);
-	file_path = utf8_decode(file_path_);
-	last_state_file.close();
+	//Path file_path;
+	//std::string file_path_;
+	//std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
+	//std::getline(last_state_file, file_path_);
+	//file_path = utf8_decode(file_path_);
+	//last_state_file.close();
 
-	LAUNCHED_FROM_FILE_ICON = false;
-	if (positional_args.size() > 0) {
-		file_path = positional_args.at(0).toStdWString();
-		LAUNCHED_FROM_FILE_ICON = true;
-	}
+	//LAUNCHED_FROM_FILE_ICON = false;
+	//if (positional_args.size() > 0) {
+	//	file_path = positional_args.at(0).toStdWString();
+	//	LAUNCHED_FROM_FILE_ICON = true;
+	//}
 
-	if ((file_path.get_path().size() == 0) && SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE) {
-		file_path = tutorial_path;
-	}
+	//if ((file_path.get_path().size() == 0) && SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE) {
+	//	file_path = tutorial_path;
+	//}
 
 	DocumentManager document_manager(mupdf_context, db);
 
@@ -330,8 +330,13 @@ int main(int argc, char* args[]) {
 	//app.setWindowIcon(icon);
 
 	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, &quit);
-	main_widget.open_document(file_path.get_path());
-	main_widget.resize(500, 500);
+	//main_widget.open_document(file_path.get_path());
+	//main_widget.resize(500, 500);
+
+	int window_width = QApplication::desktop()->screenGeometry().width();
+	int window_height = QApplication::desktop()->screenGeometry().height();
+	main_widget.resize(window_width, window_height);
+
 	main_widget.showMaximized();
 
 	main_widget.handle_args(app->arguments());
