@@ -42,7 +42,8 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/utf8/core.h \
            pdf_viewer/utf8/unchecked.h \
            pdf_viewer/synctex/synctex_parser.h \
-           pdf_viewer/synctex/synctex_parser_utils.h
+           pdf_viewer/synctex/synctex_parser_utils.h \
+           pdf_viewer/RunGuard.h
 
 SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/config.cpp \
@@ -60,6 +61,7 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/utils.cpp \
            pdf_viewer/synctex/synctex_parser.c \
            pdf_viewer/synctex/synctex_parser_utils.c\
+           pdf_viewer/RunGuard.cpp
 
 
 win32{

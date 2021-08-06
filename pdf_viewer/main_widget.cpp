@@ -521,8 +521,11 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
 		}
 		if (target_page != -1) {
 
-			if (pdf_file_path.get_path() != main_document_view->get_document()->get_path()) {
+			if ((main_document_view->get_document() == nullptr) ||
+				(pdf_file_path.get_path() != main_document_view->get_document()->get_path())) {
+
 				open_document(pdf_file_path);
+
 			}
 
 			opengl_widget->set_synctex_highlights(highlight_rects);

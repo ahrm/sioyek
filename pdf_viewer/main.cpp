@@ -73,7 +73,7 @@
 #include "utf8.h"
 #include "main_widget.h"
 #include "path.h"
-#include <SingleApplication/singleapplication.h>
+#include "RunGuard.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -186,6 +186,12 @@ void unlock_mutex(void* user, int lock) {
 
 int main(int argc, char* args[]) {
 
+	std::ofstream debug_arguments_file("debug_args_file.txt");
+	for (int i = 0; i < argc; i++) {
+		debug_arguments_file << args[i] << "\n";
+	}
+	debug_arguments_file.close();
+
 	// we need an application in order to be able to use QCoreApplication::applicationDirPath
 	QApplication* dummy_application = new QApplication(argc, args);
 	configure_paths();
@@ -215,31 +221,55 @@ int main(int argc, char* args[]) {
 		use_single_instance = false;
 	}
 
-	QApplication* app = nullptr;
-
+	QApplication app(argc, args);
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 
-	if (!use_single_instance) {
-		app = new QApplication(argc, args);
-	}
-	else {
-		app = new SingleApplication(argc, args, true);
-		SingleApplication* single_app = static_cast<SingleApplication*>(app);
+ //*     RunGuard guard{"Lentigram"};
+ //*     if (guard.isPrimary()) {
+ //*         QObject::connect(
+ //*             &guard,
+ //*             &RunGuard::messageReceived, [this](const QByteArray &message) {
+ //*
+ //*                 ...process message coming from secondary application...
+ //*
+ //*                 qDebug() << message;
+ //*             }
+ //*         );
+ //*     } else {
+ //*         guard.sendMessage(app.arguments().join(' ').toUtf8());
+ //*         return 0;
+ //*     }
 
-		if (single_app->isSecondary()) {
-			//single_app->sendMessage(single_app->arguments().join(' ').toUtf8());
-			single_app->sendMessage(serialize_string_array(app->arguments()));
-			delete single_app;
+	RunGuard guard("sioyek");
+
+	if (use_single_instance) {
+		if (!guard.isPrimary()) {
+			guard.sendMessage(serialize_string_array(app.arguments()));
 			return 0;
 		}
 	}
+
+	//if (!use_single_instance) {
+	//	app = new QApplication(argc, args);
+	//}
+	//else {
+	//	app = new SingleApplication(argc, args, true);
+	//	SingleApplication* single_app = static_cast<SingleApplication*>(app);
+
+	//	if (single_app->isSecondary()) {
+	//		//single_app->sendMessage(single_app->arguments().join(' ').toUtf8());
+	//		single_app->sendMessage(serialize_string_array(app->arguments()));
+	//		delete single_app;
+	//		return 0;
+	//	}
+	//}
 
 	QCoreApplication::setApplicationName("sioyek");
 	QCoreApplication::setApplicationVersion("0.31.6");
 
 	QCommandLineParser* parser = get_command_line_parser();
 
-	if (!parser->parse(app->arguments())) {
+	if (!parser->parse(app.arguments())) {
 		std::wcout << parser->errorText().toStdWString() << L"\n";
 		return 1;
 	}
@@ -330,23 +360,22 @@ int main(int argc, char* args[]) {
 	//main_widget.open_document(file_path.get_path());
 	//main_widget.resize(500, 500);
 
+	if (use_single_instance) {
+		if (guard.isPrimary()) {
+			QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
+				QStringList args = deserialize_string_array(message);
+				main_widget.handle_args(args);
+				});
+		}
+	}
+
 	int window_width = QApplication::desktop()->screenGeometry().width();
 	int window_height = QApplication::desktop()->screenGeometry().height();
 	main_widget.resize(window_width, window_height);
 
 	main_widget.showMaximized();
 
-	main_widget.handle_args(app->arguments());
-
-	// in single instance mode, when we try to launch a new instance, instead we send a message to the previous instance
-	if (use_single_instance) {
-		QObject::connect(
-			(SingleApplication*)app,
-			&SingleApplication::receivedMessage,
-			&main_widget,
-			&MainWidget::on_new_instance_message
-		);
-	}
+	main_widget.handle_args(app.arguments());
 
 	// live reload the config file
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
@@ -365,11 +394,9 @@ int main(int argc, char* args[]) {
 		input_handler.reload_config_files(default_keys_path.get_path(), user_keys_path.get_path());
 		});
 
-	app->exec();
+	app.exec();
 
 	quit = true;
-
-	delete app;
 
 	return 0;
 }
