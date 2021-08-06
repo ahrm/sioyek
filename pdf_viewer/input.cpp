@@ -63,6 +63,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "next_chapter", false, false , false, true});
 	commands.push_back({ "prev_chapter", false, false , false, true});
 	commands.push_back({ "toggle_dark_mode", false, false , false, false});
+	commands.push_back({ "toggle_mouse_drag_mode", false, false , false, false});
 }
 const Command* CommandManager::get_command_with_name(std::string name) {
 	for (const auto &com : commands) {

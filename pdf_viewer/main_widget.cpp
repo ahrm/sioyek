@@ -118,6 +118,17 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 		setCursor(Qt::ArrowCursor);
 	}
 
+	if (is_dragging) {
+		float x_diff = x - last_mouse_down_window_x;
+		float y_diff = y - last_mouse_down_window_y;
+
+		float x_diff_doc = x_diff / main_document_view->get_zoom_level();
+		float y_diff_doc = y_diff / main_document_view->get_zoom_level();
+
+		main_document_view->set_offsets(last_mouse_down_document_x_offset + x_diff_doc, last_mouse_down_document_y_offset - y_diff_doc);
+		validate_render();
+	}
+
 	if (is_selecting) {
 
 		// When selecting, we occasionally update selected text
@@ -179,10 +190,10 @@ input_handler(input_handler)
 
 
 	main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
-	opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, this);
+	opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, false, this);
 
 	helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
-	helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager);
+	helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager, true);
 
 	// automatically open the helper window in second monitor
 	int num_screens = QApplication::desktop()->numScreens();
@@ -196,6 +207,9 @@ input_handler(input_handler)
 		}
 	}
 
+	helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
+		this->update_closest_link_with_opened_book_state(state);
+		});
 
 	status_label = new QLabel(this);
 	status_label->setStyleSheet("background-color: black; color: white; border: 0");
@@ -343,6 +357,9 @@ std::wstring MainWidget::get_status_string() {
 	if (this->synctex_mode) {
 		ss << " [ synctex ]";
 	}
+	if (this->mouse_drag_mode) {
+		ss << " [drag]";
+	}
 
 	return ss.str();
 }
@@ -441,6 +458,11 @@ void MainWidget::toggle_dark_mode()
 	if (this->helper_opengl_widget) {
 		this->helper_opengl_widget->set_dark_mode(this->dark_mode);
 	}
+}
+
+void MainWidget::toggle_mouse_drag_mode()
+{
+	this->mouse_drag_mode = !this->mouse_drag_mode;
 }
 
 void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line)
@@ -653,6 +675,31 @@ void MainWidget::handle_args(const QStringList& arguments)
 	invalidate_render();
 
 	delete parser;
+}
+
+void MainWidget::update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state)
+{
+	std::wstring docpath = main_document_view->get_document()->get_path();
+	Document* link_owner = document_manager->get_document(docpath);
+
+	lnk.dst.book_state = new_state;
+
+	if (link_owner) {
+		link_owner->update_link(lnk);
+	}
+
+	update_link(db, docpath,
+		new_state.offset_x, new_state.offset_y, new_state.zoom_level, lnk.src_offset_y);
+
+	link_to_edit = {};
+}
+
+void MainWidget::update_closest_link_with_opened_book_state(const OpenedBookState& new_state)
+{
+	std::optional<Link> closest_link = main_document_view->find_closest_link();
+	if (closest_link) {
+		update_link_with_opened_book_state(closest_link.value(), new_state);
+	}
 }
 
 void MainWidget::invalidate_render() {
@@ -954,12 +1001,26 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 	if (down == true) {
 		last_mouse_down_x = x_;
 		last_mouse_down_y = y_;
+		last_mouse_down_window_x = x;
+		last_mouse_down_window_y = y;
+		last_mouse_down_document_x_offset = main_document_view->get_offset_x();
+		last_mouse_down_document_y_offset = main_document_view->get_offset_y();
+
 		opengl_widget->selected_character_rects.clear();
-		is_selecting = true;
+
+		if (!mouse_drag_mode) {
+			is_selecting = true;
+		}
+		else {
+			is_dragging = true;
+		}
 	}
 	else {
+
 		is_selecting = false;
-		if ((abs(last_mouse_down_x - x_) + abs(last_mouse_down_y - y_)) > 20) {
+		is_dragging = false;
+
+		if ((!mouse_drag_mode) && (manhattan_distance(last_mouse_down_x, last_mouse_down_y, x_, y_) > 20)){
 			fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
 			fz_point selection_end = { x_, y_ };
 
@@ -968,7 +1029,7 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 				is_word_selecting,
 				opengl_widget->selected_character_rects,
 				selected_text);
-		is_word_selecting = false;
+			is_word_selecting = false;
 		}
 		else {
 			handle_click(x, y);
@@ -1541,6 +1602,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	else if (command->name == "toggle_highlight") {
 		opengl_widget->toggle_highlight_links();
+	}
+	else if (command->name == "toggle_mouse_drag_mode") {
+		toggle_mouse_drag_mode();
 	}
 
 	else if (command->name == "toggle_synctex") {

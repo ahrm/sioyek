@@ -55,6 +55,12 @@ private:
 	float last_mouse_down_x = 0;
 	float last_mouse_down_y = 0;
 
+	float last_mouse_down_document_x_offset = 0;
+	float last_mouse_down_document_y_offset = 0;
+
+	int last_mouse_down_window_x = 0;
+	int last_mouse_down_window_y = 0;
+
 	// is the user currently selecing text? (happens when we left click and move the cursor)
 	bool is_selecting = false;
 	// is the user in word select mode? (happens when we double left click and move the cursor)
@@ -66,7 +72,9 @@ private:
 	std::optional<std::pair<std::optional<std::wstring>, Link>> pending_link;
 
 	bool dark_mode = false;
+	bool mouse_drag_mode = false;
 	bool synctex_mode = false;
+	bool is_dragging = false;
 
 	int main_window_width = 0;
 	int main_window_height = 0;
@@ -155,7 +163,10 @@ public:
 
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_dark_mode();
+	void toggle_mouse_drag_mode();
 	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line);
 	void on_new_instance_message(qint32 instance_id, QByteArray arguments);
 	void handle_args(const QStringList &arguments);
+	void update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state);
+	void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
 };

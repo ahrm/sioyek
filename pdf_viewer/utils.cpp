@@ -1284,3 +1284,7 @@ std::wstring add_redundant_dot_to_path(const std::wstring& path) {
 	}
 	return std::move(res);
 }
+
+float manhattan_distance(float x1, float y1, float x2, float y2) {
+	return abs(x1 - x2) + abs(y1 - y2);
+}

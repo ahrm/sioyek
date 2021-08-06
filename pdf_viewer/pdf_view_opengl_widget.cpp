@@ -7,6 +7,8 @@ extern float DARK_MODE_BACKGROUND_COLOR[3];
 extern float DARK_MODE_CONTRAST;
 extern float VERTICAL_LINE_WIDTH;
 extern float VERTICAL_LINE_FREQ;
+extern float ZOOM_INC_FACTOR;
+extern float VERTICAL_MOVE_AMOUNT;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -269,11 +271,12 @@ void PdfViewOpenGLWidget::paintGL() {
 	render();
 }
 
-PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, QWidget* parent) :
+PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent) :
 	QOpenGLWidget(parent),
 	document_view(document_view),
 	config_manager(config_manager),
-	pdf_renderer(pdf_renderer)
+	pdf_renderer(pdf_renderer),
+	is_helper(is_helper)
 {
 	creation_time = QDateTime::currentDateTime();
 
@@ -542,4 +545,101 @@ void PdfViewOpenGLWidget::set_should_draw_vertical_line(bool val)
 bool PdfViewOpenGLWidget::get_should_draw_vertical_line()
 {
 	return should_draw_vertical_line;
+}
+
+void PdfViewOpenGLWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
+
+	if (is_helper && (document_view != nullptr)) {
+
+		int x = mouse_event->pos().x();
+		int y = mouse_event->pos().y();
+
+		int x_diff = x - last_mouse_down_window_x;
+		int y_diff = y - last_mouse_down_window_y;
+
+		float x_diff_doc = x_diff / document_view->get_zoom_level();
+		float y_diff_doc = y_diff / document_view->get_zoom_level();
+
+		document_view->set_offsets(last_mouse_down_document_offset_x + x_diff_doc, last_mouse_down_document_offset_y - y_diff_doc);
+		update();
+	}
+}
+
+void PdfViewOpenGLWidget::mousePressEvent(QMouseEvent* mevent) {
+	if (is_helper && (document_view != nullptr)) {
+		int window_x = mevent->pos().x();
+		int window_y = mevent->pos().y();
+
+		if (mevent->button() == Qt::MouseButton::LeftButton) {
+			last_mouse_down_window_x = window_x;
+			last_mouse_down_window_y = window_y;
+
+			last_mouse_down_document_offset_x = document_view->get_offset_x();
+			last_mouse_down_document_offset_y = document_view->get_offset_y();
+		}
+	}
+}
+
+void PdfViewOpenGLWidget::mouseReleaseEvent(QMouseEvent* mouse_event) {
+
+	if (is_helper && (document_view != nullptr)) {
+
+		int x = mouse_event->pos().x();
+		int y = mouse_event->pos().y();
+
+		int x_diff = x - last_mouse_down_window_x;
+		int y_diff = y - last_mouse_down_window_y;
+
+		float x_diff_doc = x_diff / document_view->get_zoom_level();
+		float y_diff_doc = y_diff / document_view->get_zoom_level();
+
+		document_view->set_offsets(last_mouse_down_document_offset_x + x_diff_doc, last_mouse_down_document_offset_y - y_diff_doc);
+
+		OpenedBookState new_book_state = document_view->get_state().book_state;
+		if (this->on_link_edit) {
+			(this->on_link_edit.value())(new_book_state);
+		}
+
+		update();
+	}
+}
+
+void PdfViewOpenGLWidget::wheelEvent(QWheelEvent* wevent) {
+
+	bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
+
+	if (is_control_pressed) {
+		if (wevent->angleDelta().y() > 0) {
+			float pev_zoom_level = document_view->get_zoom_level();
+			float new_zoom_level = pev_zoom_level * ZOOM_INC_FACTOR;
+			document_view->set_zoom_level(new_zoom_level);
+		}
+
+		if (wevent->angleDelta().y() < 0) {
+			float pev_zoom_level = document_view->get_zoom_level();
+			float new_zoom_level = pev_zoom_level / ZOOM_INC_FACTOR;
+			document_view->set_zoom_level(new_zoom_level);
+		}
+	}
+	else {
+		float prev_doc_x = document_view->get_offset_x();
+		float prev_doc_y = document_view->get_offset_y();
+		float prev_zoom_level = document_view->get_zoom_level();
+
+		float delta_y = wevent->angleDelta().y() * VERTICAL_MOVE_AMOUNT / prev_zoom_level;
+		float delta_x = wevent->angleDelta().x() * VERTICAL_MOVE_AMOUNT / prev_zoom_level;
+
+		document_view->set_offsets(prev_doc_x + delta_x, prev_doc_y - delta_y);
+	}
+
+	OpenedBookState new_book_state = document_view->get_state().book_state;
+	if (this->on_link_edit) {
+		(this->on_link_edit.value())(new_book_state);
+	}
+	update();
+
+}
+
+void PdfViewOpenGLWidget::register_on_link_edit_listener(std::function<void(const OpenedBookState&)> listener) {
+	this->on_link_edit = listener;
 }

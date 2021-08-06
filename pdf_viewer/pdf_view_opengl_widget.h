@@ -77,11 +77,22 @@ private:
 	bool is_searching;
 	bool should_highlight_links = false;
 	bool is_dark_mode = false;
+	bool is_helper = false;
 	float percent_done = 0.0f;
+
+	bool is_dragging = false;
+
+	int last_mouse_down_window_x = 0;
+	int last_mouse_down_window_y = 0;
+
+	float last_mouse_down_document_offset_x = 0;
+	float last_mouse_down_document_offset_y = 0;
 
 	//float vertical_line_location;
 	bool should_draw_vertical_line = false;
 	QDateTime creation_time;
+
+	std::optional<std::function<void(const OpenedBookState&)>> on_link_edit = {};
 
 	GLuint LoadShaders(Path vertex_file_path_, Path fragment_file_path_);
 protected:
@@ -106,7 +117,7 @@ public:
 	std::vector<fz_rect> selected_character_rects;
 	std::vector<std::pair<int, fz_rect>> synctex_highlights;
 
-	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, QWidget* parent = nullptr);
+	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent = nullptr);
 	~PdfViewOpenGLWidget();
 
 	//void set_vertical_line_pos(float pos);
@@ -125,4 +136,9 @@ public:
 	void set_dark_mode(bool mode);
 	void set_synctex_highlights(std::vector<std::pair<int, fz_rect>> highlights);
 	void on_document_view_reset();
+	void mouseMoveEvent(QMouseEvent* mouse_event) override;
+	void mousePressEvent(QMouseEvent* mevent) override;
+	void mouseReleaseEvent(QMouseEvent* mevent) override;
+	void wheelEvent(QWheelEvent* wevent) override;
+	void register_on_link_edit_listener(std::function<void(const OpenedBookState&)> listener);
 };

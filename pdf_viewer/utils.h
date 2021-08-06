@@ -105,3 +105,4 @@ void split_path(std::wstring path, std::vector<std::wstring>& res);
 std::wstring concatenate_paths(const std::vector<std::wstring>& paths);
 //std::wstring canonicalize_path(const std::wstring& path);
 std::wstring add_redundant_dot_to_path(const std::wstring& path);
+float manhattan_distance(float x1, float y1, float x2, float y2);
