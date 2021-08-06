@@ -186,12 +186,6 @@ void unlock_mutex(void* user, int lock) {
 
 int main(int argc, char* args[]) {
 
-	std::ofstream debug_arguments_file("debug_args_file.txt");
-	for (int i = 0; i < argc; i++) {
-		debug_arguments_file << args[i] << "\n";
-	}
-	debug_arguments_file.close();
-
 	// we need an application in order to be able to use QCoreApplication::applicationDirPath
 	QApplication* dummy_application = new QApplication(argc, args);
 	configure_paths();
