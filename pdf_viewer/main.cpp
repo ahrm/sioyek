@@ -215,8 +215,8 @@ int main(int argc, char* args[]) {
 		use_single_instance = false;
 	}
 
-	QApplication app(argc, args);
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
+	QApplication app(argc, args);
 
  //*     RunGuard guard{"Lentigram"};
  //*     if (guard.isPrimary()) {

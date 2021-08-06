@@ -380,6 +380,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 }
 
 void PdfViewOpenGLWidget::render() {
+
 	if (!valid_document()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
