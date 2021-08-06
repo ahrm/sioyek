@@ -56,7 +56,7 @@ public:
 	void set_opened_book_state(const OpenedBookState& state);
 	void handle_escape();
 	void set_book_state(OpenedBookState state);
-	inline void set_offsets(float new_offset_x, float new_offset_y);
+	void set_offsets(float new_offset_x, float new_offset_y);
 	Document* get_document();
 	std::optional<Link> find_closest_link();
 	void goto_link(Link* link);

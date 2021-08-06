@@ -605,38 +605,40 @@ void PdfViewOpenGLWidget::mouseReleaseEvent(QMouseEvent* mouse_event) {
 }
 
 void PdfViewOpenGLWidget::wheelEvent(QWheelEvent* wevent) {
+	if (is_helper && (document_view != nullptr)) {
 
-	bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
+		bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
 
-	if (is_control_pressed) {
-		if (wevent->angleDelta().y() > 0) {
-			float pev_zoom_level = document_view->get_zoom_level();
-			float new_zoom_level = pev_zoom_level * ZOOM_INC_FACTOR;
-			document_view->set_zoom_level(new_zoom_level);
+		if (is_control_pressed) {
+			if (wevent->angleDelta().y() > 0) {
+				float pev_zoom_level = document_view->get_zoom_level();
+				float new_zoom_level = pev_zoom_level * ZOOM_INC_FACTOR;
+				document_view->set_zoom_level(new_zoom_level);
+			}
+
+			if (wevent->angleDelta().y() < 0) {
+				float pev_zoom_level = document_view->get_zoom_level();
+				float new_zoom_level = pev_zoom_level / ZOOM_INC_FACTOR;
+				document_view->set_zoom_level(new_zoom_level);
+			}
+		}
+		else {
+			float prev_doc_x = document_view->get_offset_x();
+			float prev_doc_y = document_view->get_offset_y();
+			float prev_zoom_level = document_view->get_zoom_level();
+
+			float delta_y = wevent->angleDelta().y() * VERTICAL_MOVE_AMOUNT / prev_zoom_level;
+			float delta_x = wevent->angleDelta().x() * VERTICAL_MOVE_AMOUNT / prev_zoom_level;
+
+			document_view->set_offsets(prev_doc_x + delta_x, prev_doc_y - delta_y);
 		}
 
-		if (wevent->angleDelta().y() < 0) {
-			float pev_zoom_level = document_view->get_zoom_level();
-			float new_zoom_level = pev_zoom_level / ZOOM_INC_FACTOR;
-			document_view->set_zoom_level(new_zoom_level);
+		OpenedBookState new_book_state = document_view->get_state().book_state;
+		if (this->on_link_edit) {
+			(this->on_link_edit.value())(new_book_state);
 		}
+		update();
 	}
-	else {
-		float prev_doc_x = document_view->get_offset_x();
-		float prev_doc_y = document_view->get_offset_y();
-		float prev_zoom_level = document_view->get_zoom_level();
-
-		float delta_y = wevent->angleDelta().y() * VERTICAL_MOVE_AMOUNT / prev_zoom_level;
-		float delta_x = wevent->angleDelta().x() * VERTICAL_MOVE_AMOUNT / prev_zoom_level;
-
-		document_view->set_offsets(prev_doc_x + delta_x, prev_doc_y - delta_y);
-	}
-
-	OpenedBookState new_book_state = document_view->get_state().book_state;
-	if (this->on_link_edit) {
-		(this->on_link_edit.value())(new_book_state);
-	}
-	update();
 
 }
 
