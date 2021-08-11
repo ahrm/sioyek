@@ -9,7 +9,13 @@ sys_harfbuzz_libs=`pkg-config --libs harfbuzz`
 cd mupdf
 make USE_SYSTEM_HARFBUZZ=yes USE_SYSTEM_GLUT=yes SYS_GLUT_CFLAGS="${sys_glut_clfags}" SYS_GLUT_LIBS="${sys_glut_libs}" SYS_HARFBUZZ_CFLAGS="${sys_harfbuzz_clfags}" SYS_HARFBUZZ_LIBS="${sys_harfbuzz_libs}" -j 4
 cd ..
-qmake pdf_viewer_build_config.pro
+
+if [[ $1 == portable ]]; then
+	qmake pdf_viewer_build_config.pro
+else
+	qmake "CONFIG+=non_portable" pdf_viewer_build_config.pro
+fi
+
 make
 
 rm -r build 2> /dev/null
@@ -22,3 +28,6 @@ cp pdf_viewer/prefs_user.config build/sioyek.app/Contents/MacOS/prefs_user.confi
 cp pdf_viewer/keys.config build/sioyek.app/Contents/MacOS/keys.config
 cp pdf_viewer/keys_user.config build/sioyek.app/Contents/MacOS/keys_user.config
 cp tutorial.pdf build/sioyek.app/Contents/MacOS/tutorial.pdf
+
+macdeployqt build/sioyek.app -dmg
+zip -r sioyek-release-mac.zip build/sioyek.app
