@@ -50,7 +50,6 @@
 #define MAX_PATH PATH_MAX
 #endif
 
-extern bool LAUNCHED_FROM_FILE_ICON;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern float MOVE_SCREEN_PERCENTAGE;
@@ -199,12 +198,7 @@ input_handler(input_handler)
 	int num_screens = QApplication::desktop()->numScreens();
 	if ((num_screens > 1) && SHOULD_USE_MULTIPLE_MONITORS) {
 		helper_opengl_widget->move(first_screen_width, 0);
-		if (!LAUNCHED_FROM_FILE_ICON) {
-			helper_opengl_widget->showMaximized();
-		}
-		else{
-			helper_opengl_widget->setWindowState(Qt::WindowState::WindowMaximized);
-		}
+		helper_opengl_widget->setWindowState(Qt::WindowState::WindowMaximized);
 	}
 
 	helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {

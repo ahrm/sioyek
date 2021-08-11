@@ -1,15 +1,12 @@
 //todo: cleanup the code
-//todo: handle document memory leak (because documents are not deleted since adding state history)
 //todo: tests!
 //todo: clean up parsing code
-//todo: autocomplete in command window
 //todo: simplify word selection logic (also avoid inefficient extra insertions followed by clears in selected_characters)
 //todo: make it so that all commands that change document state (for example goto_offset_withing_page, goto_link, etc.) do not change the document
 // state, instead they return a DocumentViewState object that is then applied using push_state and change_state functions
 // (chnage state should be a function that just applies the state without pushing it to history)
-//todo: make tutorial file smaller
-//todo: delete LAUNCHED_FROM_FILE_ICON
 //todo: handle input errors in command line parsing
+//todo: fix configure_paths for MacOS
 
 #include <iostream>
 #include <vector>
@@ -82,6 +79,8 @@
 
 
 
+extern std::wstring APPLICATION_NAME = L"sioyek";
+extern std::wstring APPLICATION_VERSION = L"0.31.6";
 extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 extern float DARK_MODE_CONTRAST = 0.8f;
@@ -95,7 +94,6 @@ extern const unsigned int CACHE_INVALID_MILIES = 1000;
 extern const int PERSIST_MILIES = 1000 * 60;
 extern const int PAGE_PADDINGS = 0;
 extern const int MAX_PENDING_REQUESTS = 31;
-extern bool LAUNCHED_FROM_FILE_ICON = false;
 extern bool FLAT_TABLE_OF_CONTENTS = false;
 extern bool SHOULD_USE_MULTIPLE_MONITORS = false;
 extern std::wstring LIBGEN_ADDRESS = L"";
@@ -115,11 +113,9 @@ extern Path shader_path(L"");
 
 void configure_paths(){
 
-	//std::wstring parent_path = QCoreApplication::applicationDirPath().toStdWString();
 	Path parent_path(QCoreApplication::applicationDirPath().toStdWString());
 	std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
 
-	//shader_path = concatenate_path(parent_path , L"shaders");
 	shader_path = parent_path.slash(L"shaders");
 
 
@@ -224,22 +220,6 @@ int main(int argc, char* args[]) {
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
- //*     RunGuard guard{"Lentigram"};
- //*     if (guard.isPrimary()) {
- //*         QObject::connect(
- //*             &guard,
- //*             &RunGuard::messageReceived, [this](const QByteArray &message) {
- //*
- //*                 ...process message coming from secondary application...
- //*
- //*                 qDebug() << message;
- //*             }
- //*         );
- //*     } else {
- //*         guard.sendMessage(app.arguments().join(' ').toUtf8());
- //*         return 0;
- //*     }
-
 	RunGuard guard("sioyek");
 
 	if (use_single_instance) {
@@ -249,23 +229,8 @@ int main(int argc, char* args[]) {
 		}
 	}
 
-	//if (!use_single_instance) {
-	//	app = new QApplication(argc, args);
-	//}
-	//else {
-	//	app = new SingleApplication(argc, args, true);
-	//	SingleApplication* single_app = static_cast<SingleApplication*>(app);
-
-	//	if (single_app->isSecondary()) {
-	//		//single_app->sendMessage(single_app->arguments().join(' ').toUtf8());
-	//		single_app->sendMessage(serialize_string_array(app->arguments()));
-	//		delete single_app;
-	//		return 0;
-	//	}
-	//}
-
-	QCoreApplication::setApplicationName("sioyek");
-	QCoreApplication::setApplicationVersion("0.31.6");
+	QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
+	QCoreApplication::setApplicationVersion(QString::fromStdWString(APPLICATION_VERSION));
 
 	QCommandLineParser* parser = get_command_line_parser();
 
@@ -318,23 +283,6 @@ int main(int argc, char* args[]) {
 
 	InputHandler input_handler(default_keys_path.get_path(), user_keys_path.get_path());
 
-	//char file_path[MAX_PATH] = { 0 };
-	//Path file_path;
-	//std::string file_path_;
-	//std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
-	//std::getline(last_state_file, file_path_);
-	//file_path = utf8_decode(file_path_);
-	//last_state_file.close();
-
-	//LAUNCHED_FROM_FILE_ICON = false;
-	//if (positional_args.size() > 0) {
-	//	file_path = positional_args.at(0).toStdWString();
-	//	LAUNCHED_FROM_FILE_ICON = true;
-	//}
-
-	//if ((file_path.get_path().size() == 0) && SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE) {
-	//	file_path = tutorial_path;
-	//}
 
 	DocumentManager document_manager(mupdf_context, db);
 
