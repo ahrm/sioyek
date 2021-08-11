@@ -78,7 +78,8 @@ class PdfRenderer : public QObject{
 	bool* should_quit_pointer = nullptr;
 	bool are_documents_invalidated = false;
 
-	int num_threads;
+	int num_threads = 0;
+	float display_scale = 1.0f;
 
 	fz_context* init_context();
 	fz_document* get_document_with_path(int thread_index, fz_context* mupdf_context, std::wstring path);
@@ -89,7 +90,7 @@ class PdfRenderer : public QObject{
 
 public:
 
-	PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone);
+	PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone, float display_scale);
 	~PdfRenderer();
 	void clear_cache();
 
@@ -107,6 +108,7 @@ public:
 		std::mutex* mut,
 		std::optional<std::pair<int,
 		int>> range = {});
+
 	GLuint find_rendered_page(std::wstring path, int page, float zoom_level, int* page_width, int* page_height);
 	void delete_old_pages(bool force_all=false);
 

@@ -74,9 +74,6 @@ win32{
 
 unix{
 
-    QMAKE_CC = gcc-9
-    QMAKE_CXX = g++-9
-
     QMAKE_CXXFLAGS += -std=c++17
     LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lharfbuzz -lz
     isEmpty(PREFIX){
@@ -92,5 +89,15 @@ unix{
     INSTALLS += target
     DISTFILES += resources/sioyek.desktop\
         resources/sioyek-icon-linux.png
+}
+
+mac {
+  CONFIG+=sdk_no_version_check
+
+  QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.15
+  CONFIG+=link_pkgconfig
+  PKGCONFIG += harfbuzz
+
+  ICON = pdf_viewer\icon2.ico
 }
 

@@ -185,7 +185,7 @@ input_handler(input_handler)
 	inverse_search_command = INVERSE_SEARCH_COMMAND;
 	int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
 
-	pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
+	pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QApplication::desktop()->devicePixelRatioF());
 	pdf_renderer->start_threads();
 
 

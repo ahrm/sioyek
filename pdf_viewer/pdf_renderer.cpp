@@ -2,11 +2,13 @@
 #include "utils.h"
 #include <qdatetime.h>
 
-PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone) : context_to_clone(context_to_clone),
+PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone, float display_scale) : context_to_clone(context_to_clone),
 should_quit_pointer(should_quit_pointer),
 num_threads(num_threads),
 pixmaps_to_drop(num_threads),
-pixmap_drop_mutex(num_threads) {
+pixmap_drop_mutex(num_threads),
+display_scale(display_scale)
+{
 
 	// this interval must be less than cache invalidation time
 	garbage_collect_timer.setInterval(1000);
@@ -413,7 +415,7 @@ void PdfRenderer::run(int thread_index) {
 		if (!is_already_rendered) {
 
 			fz_try(mupdf_context) {
-				fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level, req.zoom_level);
+				fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level * display_scale, req.zoom_level * display_scale);
 				fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
 				fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
 				RenderResponse resp;

@@ -55,6 +55,7 @@
 #include <qstandardpaths.h>
 #include <qcommandlineparser.h>
 #include <qdir.h>
+#include <qsurfaceformat.h>
 
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
@@ -185,6 +186,11 @@ void unlock_mutex(void* user, int lock) {
 
 
 int main(int argc, char* args[]) {
+
+	QSurfaceFormat format;
+	format.setVersion(3, 3);
+	format.setProfile(QSurfaceFormat::CoreProfile);
+	QSurfaceFormat::setDefaultFormat(format);
 
 	// we need an application in order to be able to use QCoreApplication::applicationDirPath
 	QApplication* dummy_application = new QApplication(argc, args);
