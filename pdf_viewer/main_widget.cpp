@@ -1335,13 +1335,40 @@ void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill
 	text_command_line_edit->setFocus();
 }
 
+
 void MainWidget::toggle_two_window_mode() {
+
+	//main_widget.resize(window_width, window_height);
+
+	QWidget* helper_window = get_top_level_widget(helper_opengl_widget);
+	QWidget* main_window = get_top_level_widget(opengl_widget);
+
 	if (helper_opengl_widget->isHidden()) {
-		helper_opengl_widget->show();
+		//helper_opengl_widget->show();
+		int num_screens = QApplication::desktop()->numScreens();
+		int window_width = QApplication::desktop()->screenGeometry(0).width();
+		int window_height = QApplication::desktop()->screenGeometry(0).height();
+
+		if (num_screens > 1) {
+
+			int second_window_width = QApplication::desktop()->screenGeometry(1).width();
+			int second_window_height = QApplication::desktop()->screenGeometry(1).height();
+
+			helper_window->resize(second_window_width, second_window_height);
+			helper_window->move(window_width, 0);
+		}
+		else {
+			main_window->resize(window_width / 2, window_height);
+			helper_window->resize(window_width / 2, window_height);
+			main_window->move(0, 0);
+			helper_window->move(window_width/2, 0);
+		}
+		helper_window->show();
+
 		activateWindow();
 	}
 	else {
-		helper_opengl_widget->hide();
+		helper_window->hide();
 	}
 }
 
