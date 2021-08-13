@@ -1184,25 +1184,32 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		get_flat_chars_from_stext_page(stext_page, flat_chars);
 
 
-		std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
+		std::optional<std::pair<std::wstring, std::wstring>> generic_pair =\
+			main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
+
+		//std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
 		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
 		std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
 		std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
 
-		bool was_figure = false;
+		if (generic_pair) {
+			int page;
+			float y_offset;
 
+			if (main_document_view->get_document()->find_generic_location(generic_pair.value().first,
+				generic_pair.value().second,
+				&page,
+				&y_offset)) {
+
+				long_jump_to_destination(page, y_offset);
+				return;
+			}
+		}
 		if (equation_text_on_pointer) {
 			 std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(equation_text_on_pointer.value());
 			 if (eqdata_) {
 				 IndexedData refdata = eqdata_.value();
-				 update_history_state();
-
-				 float page_height = main_document_view->get_document()->get_page_height(refdata.page);
-
-				 main_document_view->goto_offset_within_page(refdata.page, main_document_view->get_offset_x(), refdata.y_offset);
-
-				 push_state();
-				 invalidate_render();
+				 long_jump_to_destination(refdata.page, refdata.y_offset);
 				 return;
 			 }
 		}
@@ -1211,43 +1218,18 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 			 std::optional<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
 			 if (refdata_) {
 				 IndexedData refdata = refdata_.value();
-				 update_history_state();
-
-				 float page_height = main_document_view->get_document()->get_page_height(refdata.page);
-
-				 main_document_view->goto_offset_within_page(refdata.page, main_document_view->get_offset_x(), refdata.y_offset);
-
-				 push_state();
-				 invalidate_render();
+				 long_jump_to_destination(refdata.page, refdata.y_offset);
+				 return;
 			 }
 
 		}
-		else {
-
-			if (text_on_pointer) {
-
-				std::wstring figure_string = get_figure_string_from_raw_string(text_on_pointer.value());
-				if (figure_string.size() > 0) {
-					was_figure = true;
-
-					int fig_page;
-					float fig_offset;
-					if (main_document_view->get_document()->find_figure_with_string(figure_string, page, &fig_page, &fig_offset)) {
-						float offset_x = main_document_view->get_offset_x();
-						long_jump_to_destination(fig_page, offset_x, fig_offset);
-
-					}
+		if (paper_name_on_pointer) {
+			if (paper_name_on_pointer.value().size() > 5) {
+				if (is_shift_pressed) {
+					search_libgen(paper_name_on_pointer.value());
 				}
-
-			}
-			if ((!was_figure) && paper_name_on_pointer) {
-				if (paper_name_on_pointer.value().size() > 5) {
-					if (is_shift_pressed) {
-						search_libgen(paper_name_on_pointer.value());
-					}
-					else {
-						search_google_scholar(paper_name_on_pointer.value());
-					}
+				else {
+					search_google_scholar(paper_name_on_pointer.value());
 				}
 			}
 		}
@@ -1789,6 +1771,10 @@ void MainWidget::complete_pending_link(const DocumentViewState& destination_view
 	pl.dst = destination_view_state;
 	main_document_view->get_document()->add_link(pl);
 	pending_link = {};
+}
+
+void MainWidget::long_jump_to_destination(int page, float offset_y) {
+	long_jump_to_destination(page, main_document_view->get_offset_x(), offset_y);
 }
 
 void MainWidget::long_jump_to_destination(int page, float offset_x, float offset_y)

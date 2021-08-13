@@ -107,3 +107,8 @@ std::wstring concatenate_paths(const std::vector<std::wstring>& paths);
 std::wstring add_redundant_dot_to_path(const std::wstring& path);
 float manhattan_distance(float x1, float y1, float x2, float y2);
 QWidget* get_top_level_widget(QWidget* widget);
+std::wstring strip_string(std::wstring& input_string);
+//void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::vector<IndexedData>& indices);
+void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::vector<IndexedData>& indices);
+std::vector<std::wstring> split_whitespace(std::wstring const& input);
+float type_name_similarity_score(std::wstring name1, std::wstring name2);

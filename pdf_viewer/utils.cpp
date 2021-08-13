@@ -653,6 +653,15 @@ void split_path(std::wstring path, std::vector<std::wstring> &res) {
 		res.push_back(path);
 	}
 }
+
+
+std::vector<std::wstring> split_whitespace(std::wstring const& input) {
+	std::wistringstream buffer(input);
+	std::vector<std::wstring> ret((std::istream_iterator<std::wstring, wchar_t>(buffer)),
+		std::istream_iterator<std::wstring, wchar_t>());
+	return ret;
+}
+
 void string_split(std::string haystack, const std::string& needle, std::vector<std::string> &res) {
 	//todo: we can significantly reduce string allocations in this function if it turns out to be a 
 	//performance bottleneck.
@@ -865,11 +874,82 @@ void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_ch
 
 bool are_stext_chars_far_enough(fz_stext_char* first, fz_stext_char* second) {
 	float second_width = second->quad.lr.x - second->quad.ll.x;
-	assert(second_width > 0);
+	assert(second_width >= 0);
 
 	return (second->origin.x - first->origin.x) > (5 * second_width);
 }
 
+bool is_whitespace(int chr) {
+	if ((chr == ' ') || (chr == '\n') || (chr == '\t')) {
+		return true;
+	}
+	return false;
+}
+
+std::wstring strip_string(std::wstring& input_string) {
+
+	std::wstring result;
+	int start_index = 0;
+	int end_index = input_string.size() - 1;
+	if (input_string.size() == 0) {
+		return L"";
+	}
+
+	while ( is_whitespace(input_string[start_index])) {
+		start_index++;
+		if (start_index == input_string.size()) {
+			return L"";
+		}
+	}
+
+	while (is_whitespace(input_string[end_index])) {
+		end_index--;
+	}
+	return input_string.substr(start_index, end_index - start_index + 1);
+
+}
+
+void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::vector<IndexedData>& indices) {
+
+	std::wstring page_string;
+	std::vector<std::optional<fz_rect>> page_rects;
+
+	for (auto ch : flat_chars) {
+		page_string.push_back(ch->c);
+		page_rects.push_back(fz_rect_from_quad(ch->quad));
+		if (ch->next == nullptr) {
+			page_string.push_back('\n');
+			page_rects.push_back({});
+		}
+	}
+
+
+	std::wregex index_dst_regex(L"(^|\n)[A-Z][a-zA-Z]{2,}[ \t]+[0-9]+(\.[0-9]+)*");
+	//std::wregex index_src_regex(L"[a-zA-Z]{3,}[ \t]+[0-9]+(\.[0-9]+)*");
+	std::wsmatch match;
+
+
+	while (std::regex_search(page_string, match, index_dst_regex)) {
+		
+		IndexedData new_data;
+		new_data.page = page_number;
+		std::wstring match_string = match.str();
+		new_data.text = strip_string(match_string);
+		new_data.y_offset = 0.0f;
+
+		int match_start_index = match.position();
+		int match_size = match_string.size();
+		for (int i = 0; i < match_size; i++) {
+			int index = match_start_index + i;
+			if (page_rects[index]) {
+				new_data.y_offset = page_rects[index].value().y0;
+			}
+		}
+		page_string = match.suffix();
+
+		indices.push_back(new_data);
+	}
+}
 void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_number, std::map<std::wstring, IndexedData>& indices) {
 	std::wregex regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
 	std::vector<std::pair<int, int>> match_ranges;
@@ -1294,4 +1374,18 @@ QWidget* get_top_level_widget(QWidget* widget) {
 		widget = widget->parentWidget();
 	}
 	return widget;
+}
+
+float type_name_similarity_score(std::wstring name1, std::wstring name2) {
+	name1 = to_lower(name1);
+	name2 = to_lower(name2);
+	int common_prefix_index = 0;
+
+	while (name1[common_prefix_index] == name2[common_prefix_index]){
+		common_prefix_index++;
+		if ((common_prefix_index == name1.size()) || (common_prefix_index == name2.size())) {
+			return common_prefix_index;
+		}
+	}
+	return common_prefix_index;
 }
