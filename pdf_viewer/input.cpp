@@ -107,7 +107,7 @@ InputParseTreeNode parse_token(std::string token) {
 	}
 
 	std::vector<std::string> subcommands;
-	string_split(token, "-", subcommands);
+	split_key_string(token, "-", subcommands);
 
 	for (int i = 0; i < subcommands.size() - 1; i++) {
 		if (subcommands[i] == "C") {

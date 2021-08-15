@@ -31,36 +31,6 @@ std::wstring to_lower(const std::wstring& inp) {
 	return res;
 }
 
-void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output, fz_context* context, fz_document* doc) {
-	// convert an fz_outline structure to a tree of TocNodes
-
-	do {
-		if (root == nullptr) {
-			break;
-		}
-
-		TocNode* current_node = new TocNode;
-		current_node->title = utf8_decode(root->title);
-		current_node->x = root->x;
-		current_node->y = root->y;
-
-		if (root->page == -1) { 
-			// in reflowable documents such as epub we can't have static page numbers and
-			// mupdf has to resolve the link
-			float xp, yp;
-			fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
-			int chapter_page = 0;
-			current_node->page = chapter_page + loc.page;
-		}
-		else {
-			current_node->page = root->page;
-		}
-		convert_toc_tree(root->down, current_node->children, context, doc);
-
-		output.push_back(current_node);
-	} while (root = root->next);
-}
-
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages) {
 	// Enumerate ToC nodes in DFS order
 
@@ -82,6 +52,7 @@ TocNode* get_toc_node_from_indices_helper(const std::vector<TocNode*>& roots, co
 }
 
 TocNode* get_toc_node_from_indices(const std::vector<TocNode*>& roots, const std::vector<int>& indices) {
+	// Get a table of contents item by recursively indexing using `indices`
 	return get_toc_node_from_indices_helper(roots, indices, indices.size() - 1);
 }
 
@@ -111,7 +82,7 @@ int mod(int a, int b)
 	return (a % b + b) % b;
 }
 
-bool intersects(float range1_start, float range1_end, float range2_start, float range2_end) {
+bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end) {
 	if (range2_start > range1_end || range1_start > range2_end) {
 		return false;
 	}
@@ -133,17 +104,8 @@ void parse_uri(std::string uri, int* page, float* offset_x, float* offset_y) {
 	*offset_y = atof(uri.c_str());
 }
 
-bool includes_rect(fz_rect includer, fz_rect includee) {
-	fz_rect intersection = fz_intersect_rect(includer, includee);
-	if (intersection.x0 == includee.x0 && intersection.x1 == includee.x1 &&
-		intersection.y0 == includee.y0 && intersection.y1 == includee.y1) {
-		return true;
-	}
-	return false;
-}
-
 char get_symbol(int key, bool is_shift_pressed) {
-	//char key = SDL_GetKeyFromScancode(scancode);
+
 	if (key >= 'A' && key <= 'Z') {
 		if (is_shift_pressed) {
 			return key;
@@ -169,16 +131,6 @@ void rect_to_quad(fz_rect rect, float quad[8]) {
 	quad[5] = rect.y1;
 	quad[6] = rect.x1;
 	quad[7] = rect.y1;
-}
-
-fz_rect corners_to_rect(fz_point corner1, fz_point corner2) {
-	fz_rect res;
-	res.x0 = std::min(corner1.x, corner2.x);
-	res.x1 = std::max(corner1.x, corner2.x);
-
-	res.y0 = std::min(corner1.y, corner2.y);
-	res.y1 = std::max(corner1.y, corner2.y);
-	return res;
 }
 
 void copy_to_clipboard(const std::wstring& text) {
@@ -336,29 +288,11 @@ void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_st
 				LL_ITER(ch, line->first_char) {
 					flat_chars.push_back(ch);
 				}
-
 			}
 		}
 	}
 }
 
-//void get_flat_chars_from_stext_page_with_space(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, fz_stext_char* space) {
-//
-//	LL_ITER(block, stext_page->first_block) {
-//		if (block->type == FZ_STEXT_BLOCK_TEXT) {
-//			LL_ITER(line, block->u.t.first_line) {
-//				LL_ITER(ch, line->first_char) {
-//					flat_chars.push_back(ch);
-//				}
-//				flat_chars.push_back(space);
-//
-//			}
-//		}
-
-//	}
-//}
-
-//fz_stext_char* find_closest_char_to_document_point(fz_stext_page* stext_page, fz_point document_point, int* location_index) {
 fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_char*> flat_chars, fz_point document_point, int* location_index) {
 	float min_distance = std::numeric_limits<float>::infinity();
 	fz_stext_char* res = nullptr;
@@ -375,23 +309,6 @@ fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_ch
 		}
 		index++;
 	}
-
-	//LL_ITER(current_block, stext_page->first_block) {
-	//	if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
-	//		LL_ITER(current_line, current_block->u.t.first_line) {
-	//			LL_ITER(current_char, current_line->first_char) {
-	//				fz_point quad_center = current_char->origin;
-	//				float distance = dist_squared(document_point, quad_center);
-	//				if (distance < min_distance) {
-	//					min_distance = distance;
-	//					res = current_char;
-	//					*location_index = index;
-	//				}
-	//				index++;
-	//			}
-	//		}
-	//	}
-	//}
 
 	return res;
 }
@@ -411,25 +328,6 @@ bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char) {
 	return false;
 }
 
-void get_stext_page_string(fz_stext_page* page, std::wstring& res) {
-	LL_ITER(block, page->first_block) {
-		if (block->type != FZ_STEXT_BLOCK_TEXT) {
-			continue;
-		}
-
-		get_stext_block_string(block, res);
-	}
-}
-void get_stext_block_string(fz_stext_block* block, std::wstring& res) {
-	assert(block->type == FZ_STEXT_BLOCK_TEXT);
-
-	LL_ITER(line, block->u.t.first_line) {
-		LL_ITER(c, line->first_char) {
-			res.push_back(c->c);
-		}
-	}
-}
-
 std::wstring get_string_from_stext_line(fz_stext_line* line) {
 
 	std::wstring res;
@@ -439,85 +337,8 @@ std::wstring get_string_from_stext_line(fz_stext_line* line) {
 	return res;
 }
 
-std::wstring get_string_from_stext_block(fz_stext_block* block) {
-
-	std::wstring res;
-	LL_ITER(line, block->u.t.first_line) {
-		if (res.size() > 0) {
-			res.append(L"\n");
-		}
-		res.append(get_string_from_stext_line(line));
-	}
-	return res;
-}
-bool does_stext_block_starts_with_string(fz_stext_block* block, const std::wstring& str) {
-	assert(block->type == FZ_STEXT_BLOCK_TEXT);
-
-	if (block->u.t.first_line) {
-		int index = 0;
-		std::wstring line_string = get_string_from_stext_line(block->u.t.first_line);
-		if (line_string.find(str) == 0) {
-			return true;
-		}
-	}
-	return false;
-}
-
-std::wstring get_figure_string_from_raw_string(const std::wstring& raw_string) {
-
-	std::wstring res;
-
-	bool begun = false;
-	for (int i = 0; i < raw_string.size(); i++) {
-		wchar_t c = raw_string[i];
-		bool is_last = (raw_string.size() - 1) == i;
-
-		if (std::iswdigit(c)) {
-			begun = true;
-			res.push_back(c);
-		}
-		else if ((c == '.') && begun) {
-			if (!is_last) {
-				res.push_back(c);
-			}
-		}
-		else {
-			if (begun) break;
-		}
-	}
-	return res;
-}
-
-bool is_line_referencish(std::wstring line_text) {
-
-	if (line_text[0] == '[') {
-		std::wregex reference_regex(L"^\\[[0-9]+\\]");
-		if (std::regex_search(line_text, reference_regex)) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool does_stext_block_starts_with_string_case_insensitive(fz_stext_block* block, const std::wstring &str) {
-
-	assert(block->type == FZ_STEXT_BLOCK_TEXT);
-
-	if (block->u.t.first_line) {
-		int index = 0;
-		QString line_string = QString::fromStdWString(get_string_from_stext_line(block->u.t.first_line));
-		line_string = line_string.toLower();
-		std::wstring std_line_string = line_string.toStdWString();
-
-		if (std_line_string.find(str) == 0) {
-			return true;
-		}
-	}
-	return false;
-}
-
 bool is_consequtive(fz_rect rect1, fz_rect rect2) {
+
 	float xdist = abs(rect1.x1 - rect2.x0);
 	float ydist1 = abs(rect1.y0 - rect2.y0);
 	float ydist2 = abs(rect1.y1 - rect2.y1);
@@ -531,16 +352,10 @@ bool is_consequtive(fz_rect rect1, fz_rect rect2) {
 	float rect2_height = rect2.y1 - rect2.y0;
 	float average_height = (rect1_height + rect2_height) / 2.0f;
 
-	//if (xdist < 40.0f && ydist < 40.0f) {
-	//if (xdist < 20.0f && ydist < 20.0f) {
-	//	return true;
-	//}
 	if (xdist < 2*average_width && ydist < 2*average_height) {
 		return true;
 	}
-	//if ( ydist < 10.0f) {
-	//	return true;
-	//}
+
 	return false;
 
 }
@@ -601,11 +416,6 @@ void merge_selected_character_rects(const std::vector<fz_rect>& selected_charact
 		}
 	}
 
-	//for (auto rect : line_rects) {
-	//	resulting_rects.push_back(rect);
-	//}
-	//return;
-
 	if (line_rects.size() > 0) {
 		fz_rect bounding_rect = bound_rects(line_rects);
 		resulting_rects.push_back(bounding_rect);
@@ -622,7 +432,7 @@ void merge_selected_character_rects(const std::vector<fz_rect>& selected_charact
 
 }
 
-int next_sep_pos(const std::wstring& path) {
+int next_path_separator_position(const std::wstring& path) {
 	wchar_t sep1 = '/';
 	wchar_t sep2 = '\\';
 	int index1 = path.find(sep1);
@@ -640,7 +450,7 @@ int next_sep_pos(const std::wstring& path) {
 void split_path(std::wstring path, std::vector<std::wstring> &res) {
 
 	size_t loc = -1;
-	while ((loc = next_sep_pos(path)) != -1) {
+	while ((loc = next_path_separator_position(path)) != -1) {
 
 		int skiplen = loc + 1;
 		if (loc != 0) {
@@ -662,7 +472,7 @@ std::vector<std::wstring> split_whitespace(std::wstring const& input) {
 	return ret;
 }
 
-void string_split(std::string haystack, const std::string& needle, std::vector<std::string> &res) {
+void split_key_string(std::string haystack, const std::string& needle, std::vector<std::string> &res) {
 	//todo: we can significantly reduce string allocations in this function if it turns out to be a 
 	//performance bottleneck.
 
@@ -737,22 +547,6 @@ void open_url(const std::string &url_string) {
 }
 
 
-void search_google_scholar(const std::wstring& search_string) {
-
-	if (search_string.size() > 0) {
-		QString qurl_string = QString::fromStdWString(GOOGLE_SCHOLAR_ADDRESS + search_string);
-		open_url(qurl_string);
-	}
-}
-
-void search_libgen(const std::wstring& search_string) {
-
-	if (search_string.size() > 0) {
-		QString qurl_string = QString::fromStdWString(LIBGEN_ADDRESS + search_string);
-		open_url(qurl_string);
-	}
-}
-
 void search_custom_engine(const std::wstring& search_string, const std::wstring& custom_engine_url) {
 
 	if (search_string.size() > 0) {
@@ -760,6 +554,15 @@ void search_custom_engine(const std::wstring& search_string, const std::wstring&
 		open_url(qurl_string);
 	}
 }
+
+void search_google_scholar(const std::wstring& search_string) {
+	search_custom_engine(search_string, GOOGLE_SCHOLAR_ADDRESS);
+}
+
+void search_libgen(const std::wstring& search_string) {
+	search_custom_engine(search_string, LIBGEN_ADDRESS);
+}
+
 
 
 void open_url(const std::wstring& url_string) {
@@ -779,28 +582,8 @@ void create_file_if_not_exists(const std::wstring& path) {
 	}
 }
 
-std::wstring join_string(const std::vector<std::wstring> parts, std::wstring sep) {
-	std::wstring res = L"";
-	for (int i = 0; i < parts.size(); i++) {
-		res.append(parts[i]);
-		if (i < parts.size() - 1) {
-			res.append(sep);
-		}
-	}
-	return std::move(res);
-}
-
-//std::wstring canonicalize_path(const std::wstring& path_) {
-//	std::wstring path  = QFileInfo(QString::fromStdWString(path_)).absoluteFilePath().toStdWString();
-//
-//	std::vector<std::wstring> parts;
-//	split_path(path, parts);
-//	return std::move(join_string(parts, L"/"));
-//}
 
 void open_file(const std::wstring& path) {
-
-	//std::wstring generic_file_path = path.generic_wstring();
 	std::wstring canon_path = get_canonical_path(path);
 	open_url(canon_path);
 
@@ -829,22 +612,6 @@ void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std
 	}
 }
 
-//void get_matches(std::wstring haystack, const std::wregex& reg, std::vector<std::pair<int, int>>& indices) {
-//	std::wsmatch match;
-//
-//	int offset = 0;
-//	while (std::regex_search(haystack, match, reg)) {
-//		int start_index = offset + match.position();
-//		int end_index = start_index + match.length();
-//		indices.push_back(std::make_pair(start_index, end_index));
-//
-//		int old_length = haystack.size();
-//		haystack = match.suffix();
-//		int new_length = haystack.size();
-//
-//		offset += (old_length - new_length);
-//	}
-//}
 
 void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_chars,
 	const std::wregex &regex,
@@ -872,7 +639,7 @@ void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_ch
 	}
 }
 
-bool are_stext_chars_far_enough(fz_stext_char* first, fz_stext_char* second) {
+bool are_stext_chars_far_enough_for_equation(fz_stext_char* first, fz_stext_char* second) {
 	float second_width = second->quad.lr.x - second->quad.ll.x;
 	assert(second_width >= 0);
 
@@ -923,7 +690,6 @@ void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_numbe
 		}
 	}
 
-
 	std::wregex index_dst_regex(L"(^|\n)[A-Z][a-zA-Z]{2,}[ \t]+[0-9]+(\.[0-9]+)*");
 	//std::wregex index_src_regex(L"[a-zA-Z]{3,}[ \t]+[0-9]+(\.[0-9]+)*");
 	std::wsmatch match;
@@ -950,6 +716,7 @@ void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_numbe
 		indices.push_back(new_data);
 	}
 }
+
 void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_number, std::map<std::wstring, IndexedData>& indices) {
 	std::wregex regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
 	std::vector<std::pair<int, int>> match_ranges;
@@ -966,7 +733,7 @@ void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_num
 		assert(flat_chars[end_index]->c == ')');
 
 		// we expect the equation reference to be sufficiently separated from the rest of the text
-		if ((start_index > 0) && are_stext_chars_far_enough(flat_chars[start_index-1], flat_chars[start_index])) { 
+		if ((start_index > 0) && are_stext_chars_far_enough_for_equation(flat_chars[start_index-1], flat_chars[start_index])) { 
 			assert(match_texts[i].size() > 2);
 
 			std::wstring match_text = match_texts[i].substr(1, match_texts[i].size() - 2);
@@ -1325,14 +1092,6 @@ std::wstring concatenate_path(const std::wstring& prefix, const std::wstring& su
 	}
 	result.append(suffix);
 	return std::move(result);
-}
-
-std::wstring concatenate_paths(const std::vector<std::wstring>& paths) {
-	std::wstring res = L"";
-	for (int i = 0; i < paths.size(); i++) {
-		res = concatenate_path(res, paths[i]);
-	}
-	return res;
 }
 
 std::wstring get_canonical_path(const std::wstring& path) {
