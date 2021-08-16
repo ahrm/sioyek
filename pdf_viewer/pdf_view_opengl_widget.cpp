@@ -458,6 +458,34 @@ void PdfViewOpenGLWidget::render() {
 		render_highlight_document(shared_gl_objects.highlight_program, page, rect);
 	}
 
+	if (document_view->get_document()->can_use_highlights()) {
+		const std::vector<Highlight>& highlights = document_view->get_document()->get_highlights();
+		for (int i = 0; i < highlights.size(); i++) {
+			float selection_begin_window_x, selection_begin_window_y;
+			float selection_end_window_x, selection_end_window_y;
+
+			document_view->absolute_to_window_pos(
+				highlights[i].selection_begin.x,
+				highlights[i].selection_begin.y,
+				&selection_begin_window_x,
+				&selection_begin_window_y);
+
+			document_view->absolute_to_window_pos(
+				highlights[i].selection_end.x,
+				highlights[i].selection_end.y,
+				&selection_end_window_x,
+				&selection_end_window_y);
+
+			bool is_selection_in_window = range_intersects(selection_begin_window_y, selection_end_window_y, -1.0f, 1.0f);
+
+			if (is_selection_in_window) {
+				for (int j = 0; j < highlights[i].highlight_rects.size(); j++) {
+					render_highlight_absolute(shared_gl_objects.highlight_program, highlights[i].highlight_rects[j]);
+				}
+			}
+		}
+	}
+
 	if (should_draw_vertical_line) {
 		//render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 

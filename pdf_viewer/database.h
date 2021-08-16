@@ -30,3 +30,16 @@ void create_tables(sqlite3* db);
 bool delete_mark_with_symbol(sqlite3* db, char symbol);
 bool select_global_mark(sqlite3* db, char symbol, std::vector<std::pair<std::wstring, float>>& out_result);
 bool delete_opened_book(sqlite3* db, const std::wstring& book_path);
+bool create_highlights_table(sqlite3* db);
+bool delete_highlight(sqlite3* db, const std::wstring& src_document_path, float begin_x, float begin_y, float end_x, float end_y);
+bool select_highlight(sqlite3* db, const std::wstring& book_path, std::vector<Highlight>& out_result);
+bool insert_highlight(sqlite3* db,
+	const std::wstring& document_path,
+	const std::wstring& desc,
+	float begin_x,
+	float begin_y,
+	float end_x,
+	float end_y,
+	float r,
+	float g,
+	float b);

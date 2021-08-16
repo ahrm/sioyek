@@ -996,6 +996,9 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 	main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
 
 	if (down == true) {
+		selection_begin_x = x_;
+		selection_begin_y = y_;
+
 		last_mouse_down_x = x_;
 		last_mouse_down_y = y_;
 		last_mouse_down_window_x = x;
@@ -1013,6 +1016,8 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 		}
 	}
 	else {
+		selection_end_x = x_;
+		selection_end_y = y_;
 
 		is_selecting = false;
 		is_dragging = false;
@@ -1133,6 +1138,8 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
 
 void MainWidget::handle_click(int pos_x, int pos_y) {
 	auto link_ = main_document_view->get_link_in_pos(pos_x, pos_y);
+	selected_highlight_index = main_document_view->get_highlight_index_in_pos(pos_x, pos_y);
+
 	if (link_.has_value()) {
 		PdfLink link = link_.value();
 		int page;
@@ -1480,6 +1487,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		main_document_view->goto_chapter(-rp);
 	}
 
+	else if (command->name == "add_highlight") {
+		main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y });
+	}
+
 	else if (command->name == "goto_toc") {
 		if (main_document_view->get_document()->has_toc()) {
 			if (FLAT_TABLE_OF_CONTENTS) {
@@ -1620,6 +1631,15 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "delete_link") {
 
 		main_document_view->delete_closest_link();
+		validate_render();
+	}
+
+	else if (command->name == "delete_highlight") {
+
+		if (selected_highlight_index != -1) {
+			main_document_view->delete_highlight_with_index(selected_highlight_index);
+			selected_highlight_index = -1;
+		}
 		validate_render();
 	}
 

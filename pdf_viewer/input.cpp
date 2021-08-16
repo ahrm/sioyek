@@ -35,6 +35,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "open_document", false, false , true, true});
 	commands.push_back({ "debug", false, false , false, false});
 	commands.push_back({ "add_bookmark", true, false , false, false});
+	commands.push_back({ "add_highlight", false, false , false, false});
 	commands.push_back({ "goto_toc", false, false , false, false});
 	commands.push_back({ "goto_bookmark", false, false , false, false});
 	commands.push_back({ "goto_bookmark_g", false, false , false, false});
@@ -45,6 +46,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "test_command", false, false , false, false});
 	commands.push_back({ "delete_link", false, false , false, false});
 	commands.push_back({ "delete_bookmark", false, false , false, false});
+	commands.push_back({ "delete_highlight", false, false , false, false});
 	//commands.push_back({ "delete", false, true , false, false});
 	commands.push_back({ "goto_link", false, false , false, false});
 	commands.push_back({ "edit_link", false, false , false, false});
