@@ -724,10 +724,6 @@ void Document::index_figures(bool* invalid_flag)
 			options.flags = FZ_STEXT_PRESERVE_IMAGES;
 			fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, &options);
 
-			std::wstring test_string;
-			std::vector<PdfCharacterLocationData> location_data;
-			get_document_location_data(stext_page, test_string, location_data);
-
 			std::vector<fz_stext_char*> flat_chars;
 			get_flat_chars_from_stext_page(stext_page, flat_chars);
 
