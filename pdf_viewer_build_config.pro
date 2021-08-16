@@ -1,7 +1,3 @@
-
-include(pdf_viewer/SingleApplication/singleapplication.pri)
-DEFINES += QAPPLICATION_CLASS=QApplication
-
 TEMPLATE = app
 TARGET = sioyek
 INCLUDEPATH += ./pdf_viewer\
