@@ -1580,7 +1580,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 	else if (command->name == "goto_highlight") {
 		std::vector<std::wstring> option_names;
-		std::vector<float> option_locations;
+		std::vector<std::vector<float>> option_locations;
 		const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights();
 
 
@@ -1589,22 +1589,32 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			type_name[0] = highlights[i].type;
 
 			option_names.push_back(L"[" + type_name + L"] " + highlights[i].description + L"]");
-			option_locations.push_back(highlights[i].selection_begin.y);
+			//option_locations.push_back(highlights[i].selection_begin.y);
+			option_locations.push_back({highlights[i].selection_begin.x, highlights[i].selection_begin.y, highlights[i].selection_end.x, highlights[i].selection_end.y});
 		}
 
-		current_widget = std::make_unique<FilteredSelectWindowClass<float>>(
+		current_widget = std::make_unique<FilteredSelectWindowClass<std::vector<float>>>(
 			option_names,
 			option_locations,
-			[&](float* offset_value) {
-				if (offset_value) {
+			[&](std::vector<float>* offset_values) {
+				if (offset_values) {
 					validate_render();
 					update_history_state();
-					main_document_view->set_offset_y(*offset_value);
+					main_document_view->set_offset_y((*offset_values)[1]);
 					push_state();
 				}
 			},
 			config_manager,
-			this);
+			this,
+				[&](std::vector<float>* offset_values) {
+				if (offset_values) {
+					float begin_x = (*(offset_values))[0];
+					float begin_y = (*(offset_values))[1];
+					float end_x = (*(offset_values))[2];
+					float end_y = (*(offset_values))[3];
+					main_document_view->delete_highlight_with_offsets(begin_x, begin_y, end_x, end_y);
+				}
+			});
 		current_widget->show();
 	}
 	else if (command->name == "goto_bookmark_g") {

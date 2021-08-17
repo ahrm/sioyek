@@ -113,6 +113,25 @@ void Document::delete_highlight_with_index(int index)
 	highlights.erase(highlights.begin() + index);
 }
 
+void Document::delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y)
+{
+	int index_to_delete = -1;
+	for (int i = 0; i < highlights.size(); i++) {
+		if (
+			(highlights[i].selection_begin.x == begin_x) &&
+			(highlights[i].selection_begin.y == begin_y) &&
+			(highlights[i].selection_end.x == end_x) &&
+			(highlights[i].selection_end.y == end_y)
+			) {
+			index_to_delete = i;
+		}
+	}
+	if (index_to_delete != -1) {
+		delete_highlight_with_index(index_to_delete);
+	}
+
+}
+
 std::optional<Link> Document::find_closest_link(float to_offset_y, int* index) {
 	int min_index = argminf<Link>(links, [to_offset_y](Link l) {
 		return abs(l.src_offset_y - to_offset_y);

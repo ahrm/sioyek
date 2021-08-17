@@ -134,6 +134,11 @@ void DocumentView::delete_highlight_with_index(int index)
 	current_document->delete_highlight_with_index(index);
 }
 
+void DocumentView::delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y)
+{
+	current_document->delete_highlight_with_offsets(begin_x, begin_y, end_x, end_y);
+}
+
 void DocumentView::delete_closest_bookmark_to_offset(float offset)
 {
 	current_document->delete_closest_bookmark(offset);

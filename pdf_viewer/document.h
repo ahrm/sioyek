@@ -98,6 +98,7 @@ public:
 	bool update_link(Link new_link);
 	void delete_closest_bookmark(float to_y_offset);
 	void delete_highlight_with_index(int index);
+	void delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y);
 	void delete_closest_link(float to_offset_y);
 	const std::vector<BookMark>& get_bookmarks() const;
 	const std::vector<Highlight>& get_highlights() const;
