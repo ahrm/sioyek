@@ -38,6 +38,10 @@ void Document::add_highlight(const std::wstring& desc,
 	fz_point selection_end,
 	char type)
 {
+	if (type > 'z' || type < 'a') {
+		type = 'a';
+	}
+
 	Highlight highlight;
 	highlight.description = desc;
 	highlight.selection_begin = selection_begin;

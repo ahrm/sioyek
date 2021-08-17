@@ -221,7 +221,7 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 }
-void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect) {
+void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect, bool draw_border) {
 
 	float quad_vertex_data[] = {
 		window_rect.x0, window_rect.y1,
@@ -247,16 +247,18 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	glDisable(GL_BLEND);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
-	glDrawArrays(GL_LINE_LOOP, 0, 4);
+	if (draw_border) {
+		glDisable(GL_BLEND);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_LINE_LOOP, 0, 4);
+	}
 
 
 }
 
-void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect) {
+void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border) {
 	fz_rect window_rect = document_view->absolute_to_window_rect(absolute_document_rect);
-	render_highlight_window(program, window_rect);
+	render_highlight_window(program, window_rect, draw_border);
 }
 
 void PdfViewOpenGLWidget::render_highlight_document(GLuint program, int page, fz_rect doc_rect) {
@@ -482,7 +484,7 @@ void PdfViewOpenGLWidget::render() {
 			if (is_selection_in_window) {
 				for (int j = 0; j < highlights[i].highlight_rects.size(); j++) {
 					glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
-					render_highlight_absolute(shared_gl_objects.highlight_program, highlights[i].highlight_rects[j]);
+					render_highlight_absolute(shared_gl_objects.highlight_program, highlights[i].highlight_rects[j], false);
 				}
 			}
 		}
