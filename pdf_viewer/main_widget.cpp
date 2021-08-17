@@ -727,6 +727,9 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 		}
 
 	}
+	else if (command->name == "add_highlight") {
+		main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, symbol);
+	}
 	else if (command->name == "goto_mark") {
 		assert(main_document_view);
 
@@ -1487,9 +1490,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		main_document_view->goto_chapter(-rp);
 	}
 
-	else if (command->name == "add_highlight") {
-		main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y });
-	}
 
 	else if (command->name == "goto_toc") {
 		if (main_document_view->get_document()->has_toc()) {
@@ -1576,6 +1576,35 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					main_document_view->delete_closest_bookmark_to_offset(*offset_value);
 				}
 			});
+		current_widget->show();
+	}
+	else if (command->name == "goto_highlight") {
+		std::vector<std::wstring> option_names;
+		std::vector<float> option_locations;
+		const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights();
+
+
+		for (int i = 0; i < highlights.size(); i++) {
+			std::wstring type_name = L"a";
+			type_name[0] = highlights[i].type;
+
+			option_names.push_back(L"[" + type_name + L"] " + highlights[i].description + L"]");
+			option_locations.push_back(highlights[i].selection_begin.y);
+		}
+
+		current_widget = std::make_unique<FilteredSelectWindowClass<float>>(
+			option_names,
+			option_locations,
+			[&](float* offset_value) {
+				if (offset_value) {
+					validate_render();
+					update_history_state();
+					main_document_view->set_offset_y(*offset_value);
+					push_state();
+				}
+			},
+			config_manager,
+			this);
 		current_widget->show();
 	}
 	else if (command->name == "goto_bookmark_g") {

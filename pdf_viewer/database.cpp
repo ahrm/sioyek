@@ -96,24 +96,19 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 
 static int highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
-	//ss << "select desc, begin_x, begin_y, end_x, end_y, color_r, color_g, color_b from highlights where document_path='" << esc(book_path) << "';";
 	std::vector<Highlight>* res = (std::vector<Highlight>*)res_vector;
-	assert(argc == 8);
+	assert(argc == 6);
 
 	std::wstring desc = utf8_decode(argv[0]);
 	float begin_x = atof(argv[1]);
 	float begin_y = atof(argv[2]);
 	float end_x = atof(argv[3]);
 	float end_y = atof(argv[4]);
-	float color_r = atof(argv[5]);
-	float color_g = atof(argv[6]);
-	float color_b = atof(argv[7]);
+	char type = argv[5][0];
 
 	Highlight highlight;
 	highlight.description = desc;
-	highlight.r = color_r;
-	highlight.g = color_g;
-	highlight.b = color_b;
+	highlight.type = type;
 	highlight.selection_begin = { begin_x, begin_y };
 	highlight.selection_end = { end_x, end_y };
 	res->push_back(highlight);
@@ -200,9 +195,7 @@ bool create_highlights_table(sqlite3* db) {
 		"id INTEGER PRIMARY KEY AUTOINCREMENT," \
 		"document_path TEXT,"\
 		"desc TEXT,"\
-		"color_r real,"\
-		"color_g real,"\
-		"color_b real,"\
+		"type char,"\
 		"begin_x real,"\
 		"begin_y real,"\
 		"end_x real,"\
@@ -296,15 +289,11 @@ bool insert_highlight(sqlite3* db,
 	float begin_y,
 	float end_x,
 	float end_y,
-	float r,
-	float g,
-	float b) {
+	char type) {
 
 	std::wstringstream ss;
-	ss << "INSERT INTO highlights (document_path, desc, color_r, color_g, color_b, begin_x, begin_y, end_x, end_y) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', " <<
-		r << " , " <<
-		g << " , " <<
-		b << " , " <<
+	ss << "INSERT INTO highlights (document_path, desc, type, begin_x, begin_y, end_x, end_y) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', '" <<
+		type << "' , " <<
 		begin_x << " , " <<
 		begin_y << " , " <<
 		end_x << " , " <<
@@ -461,7 +450,17 @@ bool select_bookmark(sqlite3* db, const std::wstring& book_path, std::vector<Boo
 
 bool select_highlight(sqlite3* db, const std::wstring& book_path, std::vector<Highlight> &out_result) {
 		std::wstringstream ss;
-		ss << "select desc, begin_x, begin_y, end_x, end_y, color_r, color_g, color_b from highlights where document_path='" << esc(book_path) << "';";
+		ss << "select desc, begin_x, begin_y, end_x, end_y, type from highlights where document_path='" << esc(book_path) << "';";
+
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), highlight_select_callback, &out_result, &error_message),
+			error_message);
+}
+
+bool select_highlight_with_type(sqlite3* db, const std::wstring& book_path, char type, std::vector<Highlight> &out_result) {
+		std::wstringstream ss;
+		ss << "select desc, begin_x, begin_y, end_x, end_y, type from highlights where document_path='" << esc(book_path) << "' AND type='" << type << "';";
 
 		char* error_message = nullptr;
 		return handle_error(

@@ -32,16 +32,17 @@ void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 	insert_bookmark(db, file_name, desc, y_offset);
 }
 
-void Document::add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, fz_point selection_begin, fz_point selection_end)
+void Document::add_highlight(const std::wstring& desc,
+	const std::vector<fz_rect>& highlight_rects,
+	fz_point selection_begin,
+	fz_point selection_end,
+	char type)
 {
 	Highlight highlight;
 	highlight.description = desc;
 	highlight.selection_begin = selection_begin;
 	highlight.selection_end = selection_end;
-
-	highlight.r = 1.0f;
-	highlight.g = 0.5f;
-	highlight.b = 1.0f;
+	highlight.type = type;
 	highlight.highlight_rects = highlight_rects;
 
 	highlights.push_back(highlight);
@@ -52,9 +53,7 @@ void Document::add_highlight(const std::wstring& desc, const std::vector<fz_rect
 		selection_begin.y,
 		selection_end.x,
 		selection_end.y,
-		highlight.r,
-		highlight.g,
-		highlight.b);
+		highlight.type);
 }
 
 bool Document::get_is_indexing()

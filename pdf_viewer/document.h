@@ -85,7 +85,7 @@ public:
 	fz_document* doc = nullptr;
 
 	void add_bookmark(const std::wstring& desc, float y_offset);
-	void add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, fz_point selection_begin, fz_point selection_end);
+	void add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, fz_point selection_begin, fz_point selection_end, char type);
 	void count_chapter_pages(std::vector<int> &page_counts);
 	void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
 	void count_chapter_pages_accum(std::vector<int> &page_counts);

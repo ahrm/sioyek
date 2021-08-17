@@ -33,6 +33,7 @@ bool delete_opened_book(sqlite3* db, const std::wstring& book_path);
 bool create_highlights_table(sqlite3* db);
 bool delete_highlight(sqlite3* db, const std::wstring& src_document_path, float begin_x, float begin_y, float end_x, float end_y);
 bool select_highlight(sqlite3* db, const std::wstring& book_path, std::vector<Highlight>& out_result);
+bool select_highlight_with_type(sqlite3* db, const std::wstring& book_path, char type, std::vector<Highlight>& out_result);
 bool insert_highlight(sqlite3* db,
 	const std::wstring& document_path,
 	const std::wstring& desc,
@@ -40,6 +41,4 @@ bool insert_highlight(sqlite3* db,
 	float begin_y,
 	float end_x,
 	float end_y,
-	float r,
-	float g,
-	float b);
+	char type);

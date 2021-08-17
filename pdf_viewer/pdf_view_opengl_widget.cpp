@@ -9,6 +9,7 @@ extern float VERTICAL_LINE_WIDTH;
 extern float VERTICAL_LINE_FREQ;
 extern float ZOOM_INC_FACTOR;
 extern float VERTICAL_MOVE_AMOUNT;
+extern float HIGHLIGHT_COLORS[26 * 3];
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -480,6 +481,7 @@ void PdfViewOpenGLWidget::render() {
 
 			if (is_selection_in_window) {
 				for (int j = 0; j < highlights[i].highlight_rects.size(); j++) {
+					glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
 					render_highlight_absolute(shared_gl_objects.highlight_program, highlights[i].highlight_rects[j]);
 				}
 			}

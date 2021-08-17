@@ -44,7 +44,7 @@ struct Highlight {
 	fz_point selection_begin;
 	fz_point selection_end;
 	std::wstring description;
-	float r, g, b;
+	char type;
 	std::vector<fz_rect> highlight_rects;
 };
 
