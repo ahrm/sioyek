@@ -729,6 +729,8 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 	}
 	else if (command->name == "add_highlight") {
 		main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, symbol);
+		opengl_widget->selected_character_rects.clear();
+		selected_text.clear();
 	}
 	else if (command->name == "goto_mark") {
 		assert(main_document_view);
@@ -746,17 +748,6 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 			main_document_view->goto_mark(symbol);
 		}
 	}
-	//else if (command->name == "delete") {
-
-	//	if (symbol == input_handler->create_link_sumbol) {
-	//		main_document_view->delete_closest_link();
-	//		validate_render();
-	//	}
-	//	else if (symbol == input_handler->create_bookmark_symbol) {
-	//		main_document_view->delete_closest_bookmark();
-	//		validate_render();
-	//	}
-	//}
 }
 
 
@@ -1581,7 +1572,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "goto_highlight") {
 		std::vector<std::wstring> option_names;
 		std::vector<std::vector<float>> option_locations;
-		const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights();
+		const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights_sorted();
 
 
 		for (int i = 0; i < highlights.size(); i++) {
@@ -1626,7 +1617,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		for (const auto& desc_bm_pair : global_bookmarks) {
 			std::wstring path = desc_bm_pair.first;
 			BookMark bm = desc_bm_pair.second;
-			descs.push_back(bm.description);
+
+			std::wstring file_name = Path(path).filename().value_or(L"");
+
+			descs.push_back(bm.description + L" {" + file_name + L"}");
 			book_states.push_back({ path, bm.y_offset });
 		}
 		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(
@@ -1645,6 +1639,38 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					delete_bookmark(db, book_state->document_path, book_state->offset_y);
 				}
 			});
+		current_widget->show();
+
+	}
+	else if (command->name == "goto_highlight_g") {
+		std::vector<std::pair<std::wstring, Highlight>> global_highlights;
+		global_select_highlight(db, global_highlights);
+		std::vector<std::wstring> descs;
+		std::vector<BookState> book_states;
+
+		for (const auto& desc_hl_pair : global_highlights) {
+			std::wstring path = desc_hl_pair.first;
+			Highlight hl = desc_hl_pair.second;
+
+			std::wstring file_name = Path(path).filename().value_or(L"");
+
+			std::wstring highlight_type_string = L"a";
+			highlight_type_string[0] = hl.type;
+
+			descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
+			book_states.push_back({ path, hl.selection_begin.y });
+		}
+		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(
+			descs,
+			book_states,
+			[&](BookState* book_state) {
+				if (book_state) {
+					validate_render();
+					open_document(book_state->document_path, 0.0f, book_state->offset_y);
+				}
+			},
+			config_manager,
+				this);
 		current_widget->show();
 
 	}

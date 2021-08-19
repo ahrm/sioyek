@@ -7,6 +7,7 @@
 // (chnage state should be a function that just applies the state without pushing it to history)
 //todo: handle input errors in command line parsing
 //todo: fix configure_paths for MacOS
+//todo: highlight sometimes doesn't work
 
 #include <iostream>
 #include <vector>

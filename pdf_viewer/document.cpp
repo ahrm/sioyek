@@ -173,6 +173,21 @@ const std::vector<Highlight>& Document::get_highlights() const {
 	return highlights;
 }
 
+const std::vector<Highlight> Document::get_highlights_sorted() const {
+	std::vector<Highlight> res;
+
+	for (auto hl : highlights) {
+		res.push_back(hl);
+	}
+
+	std::sort(res.begin(), res.end(), [](const Highlight& hl1, const Highlight& hl2) {
+		return hl1.selection_begin.y < hl2.selection_begin.y;
+		});
+
+	return res;
+}
+
+
 void Document::add_mark(char symbol, float y_offset) {
 	int current_mark_index = get_mark_index(symbol);
 	if (current_mark_index == -1) {
@@ -1180,6 +1195,11 @@ void Document::get_text_selection(fz_point selection_begin,
 		if (i == page_end) {
 			char_end = find_closest_char_to_document_point(flat_chars, page_point2, &location_index2);
 		}
+
+		while ((char_begin->c == ' ') && (char_begin->next != nullptr)) {
+			char_begin = char_begin->next;
+		}
+
 		if (char_begin && char_end) {
 			// swap the locations if end happends before begin
 			if (page_begin == page_end && location_index1 > location_index2) {

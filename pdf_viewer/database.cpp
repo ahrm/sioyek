@@ -82,6 +82,31 @@ static int global_bookmark_select_callback(void* res_vector, int argc, char** ar
 	return 0;
 }
 
+static int global_highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+
+	std::vector<std::pair<std::wstring, Highlight>>* res = (std::vector<std::pair<std::wstring, Highlight>>*)res_vector;
+	assert(argc == 7);
+
+	std::wstring path = utf8_decode(argv[0]);
+	std::wstring desc = utf8_decode(argv[1]);
+	char type = argv[2][0];
+	float begin_x = atof(argv[3]);
+	float begin_y = atof(argv[4]);
+	float end_x = atof(argv[5]);
+	float end_y = atof(argv[6]);
+
+	Highlight highlight;
+	highlight.description = desc;
+	highlight.type = type;
+	highlight.selection_begin.x = begin_x;
+	highlight.selection_begin.y = begin_y;
+
+	highlight.selection_end.x = end_x;
+	highlight.selection_end.y = end_y;
+	res->push_back(std::make_pair(path, highlight));
+	return 0;
+}
+
 static int bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<BookMark>* res = (std::vector<BookMark>*)res_vector;
@@ -465,6 +490,16 @@ bool select_highlight_with_type(sqlite3* db, const std::wstring& book_path, char
 		char* error_message = nullptr;
 		return handle_error(
 			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), highlight_select_callback, &out_result, &error_message),
+			error_message);
+}
+
+bool global_select_highlight(sqlite3* db,  std::vector<std::pair<std::wstring, Highlight>> &out_result) {
+		std::wstringstream ss;
+		ss << "select document_path, desc, type, begin_x, begin_y, end_x, end_y from highlights;";
+
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), global_highlight_select_callback, &out_result, &error_message),
 			error_message);
 }
 

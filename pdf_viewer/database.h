@@ -24,6 +24,7 @@ bool select_links(sqlite3* db, const std::wstring& src_document_path, std::vecto
 bool delete_link(sqlite3* db, const std::wstring& src_document_path, float src_offset_y);
 bool delete_bookmark(sqlite3* db, const std::wstring& src_document_path, float src_offset_y);
 bool global_select_bookmark(sqlite3* db,  std::vector<std::pair<std::wstring, BookMark>>& out_result);
+bool global_select_highlight(sqlite3* db, std::vector<std::pair<std::wstring, Highlight>>& out_result);
 bool update_link(sqlite3* db, const std::wstring& src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y);
 bool select_prev_docs(sqlite3* db,  std::vector<std::wstring>& out_result);
 void create_tables(sqlite3* db);

@@ -393,6 +393,7 @@ void merge_selected_character_rects(const std::vector<fz_rect>& selected_charact
 		This function merges the bounding boxes of all selected characters into large line chunks.
 	*/
 
+
 	if (selected_character_rects.size() == 0) {
 		return;
 	}

@@ -102,6 +102,7 @@ public:
 	void delete_closest_link(float to_offset_y);
 	const std::vector<BookMark>& get_bookmarks() const;
 	const std::vector<Highlight>& get_highlights() const;
+	const std::vector<Highlight> get_highlights_sorted() const;
 	fz_link* get_page_links(int page_number);
 	void add_mark(char symbol, float y_offset);
 	bool remove_mark(char symbol);
