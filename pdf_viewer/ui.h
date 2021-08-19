@@ -141,9 +141,9 @@ public:
 		line_edit->installEventFilter(this);
 		line_edit->setFocus();
 
-		//QObject::connect(tree_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
-		//	on_select(index);
-		//	});
+		QObject::connect(tree_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
+			on_select(index);
+			});
 
 		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
 			//proxy_model->setFilterRegExp(text);
