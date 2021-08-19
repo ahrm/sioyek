@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <functional>
+#include <optional>
 
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -63,6 +64,17 @@ private:
 	ConfigManager* config_manager = nullptr;
 
 protected:
+
+	std::optional<QModelIndex> get_selected_index() {
+		QModelIndexList selected_index_list = tree_view->selectionModel()->selectedIndexes();
+
+		if (selected_index_list.size() > 0) {
+			QModelIndex selected_index = selected_index_list.at(0);
+			return selected_index;
+		}
+		return {};
+	}
+
 	bool eventFilter(QObject* obj, QEvent* event) override {
 		if (obj == line_edit) {
 			if (event->type() == QEvent::KeyPress) {
@@ -70,15 +82,18 @@ protected:
 				if (key_event->key() == Qt::Key_Down ||
 					key_event->key() == Qt::Key_Up ||
 					key_event->key() == Qt::Key_Left ||
-					key_event->key() == Qt::Key_Right ||
-					key_event->key() == Qt::Key_Return) {
-					if (key_event->key() == Qt::Key_Enter) {
-						tree_view->setFocus();
-					}
+					key_event->key() == Qt::Key_Right
+					) {
 					QKeyEvent* newEvent = new QKeyEvent(*key_event);
 					QCoreApplication::postEvent(tree_view, newEvent);
 					//QCoreApplication::postEvent(tree_view, key_event);
 					return true;
+				}
+				if (key_event->key() == Qt::Key_Return || key_event->key() == Qt::Key_Enter) {
+					std::optional<QModelIndex> selected_index = get_selected_index();
+					if (selected_index) {
+						on_select(selected_index.value());
+					}
 				}
 
 			}
@@ -126,9 +141,9 @@ public:
 		line_edit->installEventFilter(this);
 		line_edit->setFocus();
 
-		QObject::connect(tree_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
-			on_select(index);
-			});
+		//QObject::connect(tree_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
+		//	on_select(index);
+		//	});
 
 		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
 			//proxy_model->setFilterRegExp(text);
@@ -155,7 +170,6 @@ public:
 
 
 	void on_select(const QModelIndex& index) {
-		std::wcout << "activated " << endl;
 		hide();
 		parentWidget()->setFocus();
 		auto source_index = proxy_model->mapToSource(index);
@@ -188,17 +202,42 @@ private:
 	ConfigManager* config_manager = nullptr;
 
 protected:
+	std::optional<QModelIndex> get_selected_index() {
+		QModelIndexList selected_index_list = list_view->selectionModel()->selectedIndexes();
+
+		if (selected_index_list.size() > 0) {
+			QModelIndex selected_index = selected_index_list.at(0);
+			return selected_index;
+		}
+		return {};
+	}
+
 	bool eventFilter(QObject* obj, QEvent* event) override {
 		if (obj == line_edit) {
 			if (event->type() == QEvent::KeyPress) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-				if (key_event->key() == Qt::Key_Down || key_event->key() == Qt::Key_Up || key_event->key() == Qt::Key_Return) {
+				if (key_event->key() == Qt::Key_Down || key_event->key() == Qt::Key_Up) {
 					QKeyEvent* new_key_event = new QKeyEvent(*key_event);
-					if (key_event->key() == Qt::Key_Enter) {
-						list_view->setFocus();
-					}
 					QCoreApplication::postEvent(list_view, new_key_event);
 					return true;
+				}
+				if (key_event->key() == Qt::Key_Enter || key_event->key() == Qt::Key_Return) {
+					//QModelIndexList selected_index_list = list_view->selectionModel()->selectedIndexes();
+					//if (selected_index_list.size() > 0) {
+					//	QModelIndex selected_index = selected_index_list.at(0);
+					//	QModelIndex source_index = proxy_model->mapToSource(selected_index);
+
+					//	on_delete(&values[source_index.row()]);
+
+					//	int delete_row = selected_index.row();
+					//	proxy_model->removeRow(selected_index.row());
+					//	values.erase(values.begin() + source_index.row());
+					//}
+					std::optional<QModelIndex> selected_index = get_selected_index();
+					if (selected_index) {
+						on_select(selected_index.value());
+					}
+					//on_select(proxy_model->index());
 				}
 
 			}
@@ -313,21 +352,13 @@ public:
 		QWidget::resizeEvent(resize_event);
 		int parent_width = parentWidget()->width();
 		int parent_height = parentWidget()->height();
-		//setFixedSize(parent_width / 3, parent_height);
-		//move(parent_width / 3, 0);
-
 		setFixedSize(parent_width * 0.9f, parent_height);
 		move(parent_width * 0.05f, 0);
-		//list_view->setStyleSheet("QListView{ background-color: black;color: white; }");
-		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_stylesheet"));
-		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_selected_stylesheet"));
-		//list_view->setStyleSheet("QListView::item::selected{ background-color: white;color: black; }");
 		on_config_file_changed(config_manager);
 	}
 
 
 	void on_select(const QModelIndex& index) {
-		std::wcout << "activated " << index.data().toString().toStdWString() << std::endl;
 		hide();
 		parentWidget()->setFocus();
 		auto source_index = proxy_model->mapToSource(index);
