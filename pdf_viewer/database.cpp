@@ -82,6 +82,31 @@ static int global_bookmark_select_callback(void* res_vector, int argc, char** ar
 	return 0;
 }
 
+static int global_highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+
+	std::vector<std::pair<std::wstring, Highlight>>* res = (std::vector<std::pair<std::wstring, Highlight>>*)res_vector;
+	assert(argc == 7);
+
+	std::wstring path = utf8_decode(argv[0]);
+	std::wstring desc = utf8_decode(argv[1]);
+	char type = argv[2][0];
+	float begin_x = atof(argv[3]);
+	float begin_y = atof(argv[4]);
+	float end_x = atof(argv[5]);
+	float end_y = atof(argv[6]);
+
+	Highlight highlight;
+	highlight.description = desc;
+	highlight.type = type;
+	highlight.selection_begin.x = begin_x;
+	highlight.selection_begin.y = begin_y;
+
+	highlight.selection_end.x = end_x;
+	highlight.selection_end.y = end_y;
+	res->push_back(std::make_pair(path, highlight));
+	return 0;
+}
+
 static int bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<BookMark>* res = (std::vector<BookMark>*)res_vector;
@@ -91,6 +116,28 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 	float offset_y = atof(argv[1]);
 
 	res->push_back({ offset_y, desc });
+	return 0;
+}
+
+static int highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+
+	std::vector<Highlight>* res = (std::vector<Highlight>*)res_vector;
+	assert(argc == 6);
+
+	std::wstring desc = utf8_decode(argv[0]);
+	float begin_x = atof(argv[1]);
+	float begin_y = atof(argv[2]);
+	float end_x = atof(argv[3]);
+	float end_y = atof(argv[4]);
+	char type = argv[5][0];
+
+	Highlight highlight;
+	highlight.description = desc;
+	highlight.type = type;
+	highlight.selection_begin = { begin_x, begin_y };
+	highlight.selection_end = { end_x, end_y };
+	res->push_back(highlight);
+
 	return 0;
 }
 
@@ -156,7 +203,7 @@ bool create_marks_table(sqlite3* db) {
 }
 
 bool create_bookmarks_table(sqlite3* db) {
-	const char* create_marks_sql = "CREATE TABLE IF NOT EXISTS bookmarks ("\
+	const char* create_bookmarks_sql = "CREATE TABLE IF NOT EXISTS bookmarks ("\
 		"id INTEGER PRIMARY KEY AUTOINCREMENT," \
 		"document_path TEXT,"\
 		"desc TEXT,"\
@@ -164,7 +211,24 @@ bool create_bookmarks_table(sqlite3* db) {
 
 	char* error_message = nullptr;
 	return handle_error(
-		sqlite3_exec(db, create_marks_sql, null_callback, 0, &error_message),
+		sqlite3_exec(db, create_bookmarks_sql, null_callback, 0, &error_message),
+		error_message);
+}
+
+bool create_highlights_table(sqlite3* db) {
+	const char* create_highlights_sql = "CREATE TABLE IF NOT EXISTS highlights ("\
+		"id INTEGER PRIMARY KEY AUTOINCREMENT," \
+		"document_path TEXT,"\
+		"desc TEXT,"\
+		"type char,"\
+		"begin_x real,"\
+		"begin_y real,"\
+		"end_x real,"\
+		"end_y real);";
+
+	char* error_message = nullptr;
+	return handle_error(
+		sqlite3_exec(db, create_highlights_sql, null_callback, 0, &error_message),
 		error_message);
 }
 
@@ -243,6 +307,29 @@ bool insert_bookmark(sqlite3* db, const std::wstring& document_path, const std::
 		error_message);
 }
 
+bool insert_highlight(sqlite3* db,
+	const std::wstring& document_path,
+	const std::wstring& desc,
+	float begin_x,
+	float begin_y,
+	float end_x,
+	float end_y,
+	char type) {
+
+	std::wstringstream ss;
+	ss << "INSERT INTO highlights (document_path, desc, type, begin_x, begin_y, end_x, end_y) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', '" <<
+		type << "' , " <<
+		begin_x << " , " <<
+		begin_y << " , " <<
+		end_x << " , " <<
+		end_y << ");";
+	char* error_message = nullptr;
+
+	return handle_error(
+		sqlite3_exec(db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message),
+		error_message);
+}
+
 bool insert_link(sqlite3* db, const std::wstring& src_document_path, const std::wstring& dst_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
 
 	std::wstringstream ss;
@@ -283,6 +370,21 @@ bool delete_bookmark(sqlite3* db, const std::wstring& src_document_path, float s
 
 	std::wstringstream ss;
 	ss << "DELETE FROM bookmarks where document_path='" << esc(src_document_path) << "'AND offset_y=" << src_offset_y << ";";
+	char* error_message = nullptr;
+
+	return handle_error(
+		sqlite3_exec(db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message),
+		error_message);
+}
+
+bool delete_highlight(sqlite3* db, const std::wstring& src_document_path, float begin_x, float begin_y, float end_x, float end_y) {
+
+	std::wstringstream ss;
+	ss << "DELETE FROM highlights where document_path='" << esc(src_document_path) <<
+		"'AND begin_x=" << begin_x <<
+		" AND begin_y=" << begin_y <<
+		" AND end_x=" << end_x <<
+		" AND end_y=" << end_y << ";";
 	char* error_message = nullptr;
 
 	return handle_error(
@@ -371,6 +473,36 @@ bool select_bookmark(sqlite3* db, const std::wstring& book_path, std::vector<Boo
 			error_message);
 }
 
+bool select_highlight(sqlite3* db, const std::wstring& book_path, std::vector<Highlight> &out_result) {
+		std::wstringstream ss;
+		ss << "select desc, begin_x, begin_y, end_x, end_y, type from highlights where document_path='" << esc(book_path) << "';";
+
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), highlight_select_callback, &out_result, &error_message),
+			error_message);
+}
+
+bool select_highlight_with_type(sqlite3* db, const std::wstring& book_path, char type, std::vector<Highlight> &out_result) {
+		std::wstringstream ss;
+		ss << "select desc, begin_x, begin_y, end_x, end_y, type from highlights where document_path='" << esc(book_path) << "' AND type='" << type << "';";
+
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), highlight_select_callback, &out_result, &error_message),
+			error_message);
+}
+
+bool global_select_highlight(sqlite3* db,  std::vector<std::pair<std::wstring, Highlight>> &out_result) {
+		std::wstringstream ss;
+		ss << "select document_path, desc, type, begin_x, begin_y, end_x, end_y from highlights;";
+
+		char* error_message = nullptr;
+		return handle_error(
+			sqlite3_exec(db, utf8_encode(ss.str()).c_str(), global_highlight_select_callback, &out_result, &error_message),
+			error_message);
+}
+
 bool global_select_bookmark(sqlite3* db,  std::vector<std::pair<std::wstring, BookMark>> &out_result) {
 		std::wstringstream ss;
 		ss << "select document_path, desc, offset_y from bookmarks;";
@@ -395,5 +527,6 @@ void create_tables(sqlite3* db) {
 	create_opened_books_table(db);
 	create_marks_table(db);
 	create_bookmarks_table(db);
+	create_highlights_table(db);
 	create_links_table(db);
 }

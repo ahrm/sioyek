@@ -146,8 +146,10 @@ public:
 		QWidget::resizeEvent(resize_event);
 		int parent_width = parentWidget()->width();
 		int parent_height = parentWidget()->height();
-		setFixedSize(parent_width / 3, parent_height);
-		move(parent_width / 3, 0);
+		//setFixedSize(parent_width / 3, parent_height);
+		//move(parent_width / 3, 0);
+		setFixedSize(parent_width * 0.9f, parent_height);
+		move(parent_width * 0.05f, 0);
 		on_config_file_changed(config_manager);
 	}
 
@@ -311,8 +313,11 @@ public:
 		QWidget::resizeEvent(resize_event);
 		int parent_width = parentWidget()->width();
 		int parent_height = parentWidget()->height();
-		setFixedSize(parent_width / 3, parent_height);
-		move(parent_width / 3, 0);
+		//setFixedSize(parent_width / 3, parent_height);
+		//move(parent_width / 3, 0);
+
+		setFixedSize(parent_width * 0.9f, parent_height);
+		move(parent_width * 0.05f, 0);
 		//list_view->setStyleSheet("QListView{ background-color: black;color: white; }");
 		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_stylesheet"));
 		//list_view->setStyleSheet(*config_manager->get_config<string>("item_list_selected_stylesheet"));

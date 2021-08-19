@@ -129,6 +129,16 @@ void DocumentView::delete_closest_bookmark() {
 	}
 }
 
+void DocumentView::delete_highlight_with_index(int index)
+{
+	current_document->delete_highlight_with_index(index);
+}
+
+void DocumentView::delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y)
+{
+	current_document->delete_highlight_with_offsets(begin_x, begin_y, end_x, end_y);
+}
+
 void DocumentView::delete_closest_bookmark_to_offset(float offset)
 {
 	current_document->delete_closest_bookmark(offset);
@@ -213,6 +223,26 @@ std::optional<PdfLink> DocumentView::get_link_in_pos(int view_x, int view_y) {
 	}
 	return {};
 }
+int DocumentView::get_highlight_index_in_pos(int view_x_, int view_y_)
+{
+	float view_x, view_y;
+	window_to_absolute_document_pos(view_x_, view_y_, &view_x, &view_y);
+
+	fz_point pos = { view_x, view_y };
+
+	if (current_document->can_use_highlights()) {
+		const std::vector<Highlight>& highlights = current_document->get_highlights();
+
+		for (int i = 0; i < highlights.size(); i++) {
+			for (int j = 0; j < highlights[i].highlight_rects.size(); j++) {
+				if (fz_is_point_inside_rect(pos, highlights[i].highlight_rects[j])) {
+					return i;
+				}
+			}
+		}
+	}
+	return -1;
+}
 void DocumentView::add_mark(char symbol) {
 	//assert(current_document);
 	if (current_document) {
@@ -225,6 +255,22 @@ void DocumentView::add_bookmark(std::wstring desc) {
 		current_document->add_bookmark(desc, offset_y);
 	}
 }
+
+void DocumentView::add_highlight(fz_point selection_begin, fz_point selection_end, char type) {
+
+	if (current_document) {
+		std::vector<fz_rect> selected_characters;
+		std::vector<fz_rect> merged_characters;
+		std::wstring selected_text;
+
+		get_text_selection(selection_begin, selection_end, true, selected_characters, selected_text);
+		merge_selected_character_rects(selected_characters, merged_characters);
+		if (selected_text.size() > 0) {
+			current_document->add_highlight(selected_text, merged_characters, selection_begin, selection_end, type);
+		}
+	}
+}
+
 void DocumentView::on_view_size_change(int new_width, int new_height) {
 	view_width = new_width;
 	view_height = new_height;
@@ -645,111 +691,8 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 	std::vector<fz_rect>& selected_characters,
 	std::wstring& selected_text) {
 
-	// selected_characters are in absolute document space
-	if (!current_document) return;
-	int page_begin, page_end;
-	fz_rect page_rect;
-
-	selected_characters.clear();
-	selected_text.clear();
-
-	fz_point page_point1;
-	fz_point page_point2;
-
-	current_document->absolute_to_page_pos(selection_begin.x, selection_begin.y, &page_point1.x, &page_point1.y, &page_begin);
-	current_document->absolute_to_page_pos(selection_end.x, selection_end.y, &page_point2.x, &page_point2.y, &page_end);
-
-	if (page_end < page_begin) {
-		std::swap(page_begin, page_end);
-		std::swap(page_point1, page_point2);
-	}
-
-	selected_text.clear();
-
-	bool word_selecting = false;
-	bool selecting = false;
-	if (is_word_selection) {
-		selecting = true;
-	}
-	
-	for (int i = page_begin; i <= page_end; i++) {
-
-		// for now, let's assume there is only one page
-		fz_stext_page* stext_page = current_document->get_stext_with_page_number(i);
-		std::vector<fz_stext_char*> flat_chars;
-
-
-		get_flat_chars_from_stext_page(stext_page, flat_chars);
-
-		if (!stext_page) continue;
-
-		int location_index1, location_index2;
-		fz_stext_char* char_begin = nullptr;
-		fz_stext_char* char_end = nullptr;
-		if (i == page_begin) {
-			char_begin = find_closest_char_to_document_point(flat_chars, page_point1, &location_index1);
-		}
-		if (i == page_end) {
-			char_end = find_closest_char_to_document_point(flat_chars, page_point2, &location_index2);
-		}
-		if (char_begin && char_end) {
-			// swap the locations if end happends before begin
-			if (page_begin == page_end && location_index1 > location_index2) {
-				std::swap(char_begin, char_end);
-			}
-		}
-
-
-		for (auto current_char : flat_chars) {
-			if (!is_word_selection) {
-				if (current_char == char_begin) {
-					selecting = true;
-				}
-				//if (current_char == char_end) {
-				//	selecting = false;
-				//}
-			}
-			else {
-				if (word_selecting == false && is_separator(char_begin, current_char)) {
-					selected_text.clear();
-					selected_characters.clear();
-					continue;
-				}
-				if (current_char == char_begin) {
-					word_selecting = true;
-				}
-				if (current_char == char_end) {
-					selecting = false;
-				}
-				if (word_selecting == true && is_separator(char_end, current_char) && selecting == false) {
-					word_selecting = false;
-					return;
-				}
-			}
-
-			if (selecting || word_selecting) {
-				if (!(current_char->c == ' ' && selected_text.size() == 0)) {
-					selected_text.push_back(current_char->c);
-					fz_rect charrect = current_document->page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
-					selected_characters.push_back(charrect);
-				}
-				if ((current_char->next == nullptr)) {
-					if (current_char->c != '-')
-					{
-						selected_text.push_back(' ');
-					}
-					else {
-						selected_text.pop_back();
-					}
-				}
-
-			}
-			if (!is_word_selection) {
-				if (current_char == char_end) {
-					selecting = false;
-				}
-			}
-		}
+	if (current_document) {
+		current_document->get_text_selection(selection_begin, selection_end, is_word_selection, selected_characters, selected_text);
 	}
 
 }

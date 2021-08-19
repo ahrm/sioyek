@@ -19,8 +19,10 @@ int Document::get_mark_index(char symbol) {
 void Document::load_document_metadata_from_db() {
 	marks.clear();
 	bookmarks.clear();
+	highlights.clear();
 	select_mark(db, file_name, marks);
 	select_bookmark(db, file_name, bookmarks);
+	select_highlight(db, file_name, highlights);
 	select_links(db, file_name, links);
 }
 
@@ -28,6 +30,34 @@ void Document::load_document_metadata_from_db() {
 void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 	bookmarks.push_back({y_offset, desc});
 	insert_bookmark(db, file_name, desc, y_offset);
+}
+
+void Document::add_highlight(const std::wstring& desc,
+	const std::vector<fz_rect>& highlight_rects,
+	fz_point selection_begin,
+	fz_point selection_end,
+	char type)
+{
+	if (type > 'z' || type < 'a') {
+		type = 'a';
+	}
+
+	Highlight highlight;
+	highlight.description = desc;
+	highlight.selection_begin = selection_begin;
+	highlight.selection_end = selection_end;
+	highlight.type = type;
+	highlight.highlight_rects = highlight_rects;
+
+	highlights.push_back(highlight);
+	insert_highlight(db,
+		file_name,
+		desc,
+		selection_begin.x,
+		selection_begin.y,
+		selection_end.x,
+		selection_end.y,
+		highlight.type);
 }
 
 bool Document::get_is_indexing()
@@ -70,6 +100,38 @@ void Document::delete_closest_bookmark(float to_y_offset) {
 	}
 }
 
+void Document::delete_highlight_with_index(int index)
+{
+	Highlight highlight_to_delete = highlights[index];
+
+	delete_highlight(db,
+		get_path(),
+		highlight_to_delete.selection_begin.x,
+		highlight_to_delete.selection_begin.y,
+		highlight_to_delete.selection_end.x,
+		highlight_to_delete.selection_end.y);
+	highlights.erase(highlights.begin() + index);
+}
+
+void Document::delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y)
+{
+	int index_to_delete = -1;
+	for (int i = 0; i < highlights.size(); i++) {
+		if (
+			(highlights[i].selection_begin.x == begin_x) &&
+			(highlights[i].selection_begin.y == begin_y) &&
+			(highlights[i].selection_end.x == end_x) &&
+			(highlights[i].selection_end.y == end_y)
+			) {
+			index_to_delete = i;
+		}
+	}
+	if (index_to_delete != -1) {
+		delete_highlight_with_index(index_to_delete);
+	}
+
+}
+
 std::optional<Link> Document::find_closest_link(float to_offset_y, int* index) {
 	int min_index = argminf<Link>(links, [to_offset_y](Link l) {
 		return abs(l.src_offset_y - to_offset_y);
@@ -106,6 +168,25 @@ void Document::delete_closest_link(float to_offset_y) {
 const std::vector<BookMark>& Document::get_bookmarks() const {
 	return bookmarks;
 }
+
+const std::vector<Highlight>& Document::get_highlights() const {
+	return highlights;
+}
+
+const std::vector<Highlight> Document::get_highlights_sorted() const {
+	std::vector<Highlight> res;
+
+	for (auto hl : highlights) {
+		res.push_back(hl);
+	}
+
+	std::sort(res.begin(), res.end(), [](const Highlight& hl1, const Highlight& hl2) {
+		return hl1.selection_begin.y < hl2.selection_begin.y;
+		});
+
+	return res;
+}
+
 
 void Document::add_mark(char symbol, float y_offset) {
 	int current_mark_index = get_mark_index(symbol);
@@ -421,8 +502,8 @@ bool Document::open(bool* invalid_flag, bool force_load_dimensions) {
 			std::wcerr << "could not open " << file_name << std::endl;
 		}
 		if (doc != nullptr) {
-			load_page_dimensions(force_load_dimensions);
 			load_document_metadata_from_db();
+			load_page_dimensions(force_load_dimensions);
 			create_toc_tree(top_level_toc_nodes);
 			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
 			invalid_flag_pointer = invalid_flag;
@@ -523,10 +604,23 @@ void Document::load_page_dimensions(bool force_load_now) {
 		if (invalid_flag_pointer) {
 			*invalid_flag_pointer = true;
 		}
-
-		//are_dimensions_correct = true;
-
 		page_dims_mutex.unlock();
+
+		for (int i = 0; i < highlights.size(); i++) {
+
+			const Highlight& highlight = highlights[i];
+			std::vector<fz_rect> highlight_rects;
+			std::vector<fz_rect> merged_rects;
+			std::wstring highlight_text;
+			get_text_selection(highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text);
+
+			merge_selected_character_rects(highlight_rects, merged_rects);
+
+			highlights[i].highlight_rects = std::move(merged_rects);
+		}
+
+		are_highlights_loaded = true;
+
 	};
 
 	if (force_load_now) {
@@ -851,6 +945,11 @@ bool Document::find_generic_location(const std::wstring& type, const std::wstrin
 	return false;
 }
 
+bool Document::can_use_highlights()
+{
+	return are_highlights_loaded;
+}
+
 std::optional<std::pair<std::wstring, std::wstring>> Document::get_generic_link_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
 	std::wregex regex(L"[a-zA-Z]{3,}[ \t]+[0-9]+(\.[0-9]+)*");
 	std::optional<std::wstring> match_string = get_regex_match_at_position(regex, flat_chars, offset_x, offset_y);
@@ -1042,4 +1141,123 @@ fz_pixmap* Document::get_small_pixmap(int page)
 	}
 
 	return res;
+}
+
+void Document::get_text_selection(fz_point selection_begin,
+	fz_point selection_end,
+	bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
+	std::vector<fz_rect>& selected_characters,
+	std::wstring& selected_text) {
+
+	// selected_characters are in absolute document space
+	int page_begin, page_end;
+	fz_rect page_rect;
+
+	selected_characters.clear();
+	selected_text.clear();
+
+	fz_point page_point1;
+	fz_point page_point2;
+
+	absolute_to_page_pos(selection_begin.x, selection_begin.y, &page_point1.x, &page_point1.y, &page_begin);
+	absolute_to_page_pos(selection_end.x, selection_end.y, &page_point2.x, &page_point2.y, &page_end);
+
+	if (page_end < page_begin) {
+		std::swap(page_begin, page_end);
+		std::swap(page_point1, page_point2);
+	}
+
+	selected_text.clear();
+
+	bool word_selecting = false;
+	bool selecting = false;
+	if (is_word_selection) {
+		selecting = true;
+	}
+	
+	for (int i = page_begin; i <= page_end; i++) {
+
+		// for now, let's assume there is only one page
+		fz_stext_page* stext_page = get_stext_with_page_number(i);
+		std::vector<fz_stext_char*> flat_chars;
+
+
+		get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+		if (!stext_page) continue;
+
+		int location_index1, location_index2;
+		fz_stext_char* char_begin = nullptr;
+		fz_stext_char* char_end = nullptr;
+		if (i == page_begin) {
+			char_begin = find_closest_char_to_document_point(flat_chars, page_point1, &location_index1);
+		}
+		if (i == page_end) {
+			char_end = find_closest_char_to_document_point(flat_chars, page_point2, &location_index2);
+		}
+
+		while ((char_begin->c == ' ') && (char_begin->next != nullptr)) {
+			char_begin = char_begin->next;
+		}
+
+		if (char_begin && char_end) {
+			// swap the locations if end happends before begin
+			if (page_begin == page_end && location_index1 > location_index2) {
+				std::swap(char_begin, char_end);
+			}
+		}
+
+
+		for (auto current_char : flat_chars) {
+			if (!is_word_selection) {
+				if (current_char == char_begin) {
+					selecting = true;
+				}
+				//if (current_char == char_end) {
+				//	selecting = false;
+				//}
+			}
+			else {
+				if (word_selecting == false && is_separator(char_begin, current_char)) {
+					selected_text.clear();
+					selected_characters.clear();
+					continue;
+				}
+				if (current_char == char_begin) {
+					word_selecting = true;
+				}
+				if (current_char == char_end) {
+					selecting = false;
+				}
+				if (word_selecting == true && is_separator(char_end, current_char) && selecting == false) {
+					word_selecting = false;
+					return;
+				}
+			}
+
+			if (selecting || word_selecting) {
+				if (!(current_char->c == ' ' && selected_text.size() == 0)) {
+					selected_text.push_back(current_char->c);
+					fz_rect charrect = page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
+					selected_characters.push_back(charrect);
+				}
+				if ((current_char->next == nullptr)) {
+					if (current_char->c != '-')
+					{
+						selected_text.push_back(' ');
+					}
+					else {
+						selected_text.pop_back();
+					}
+				}
+
+			}
+			if (!is_word_selection) {
+				if (current_char == char_end) {
+					selecting = false;
+				}
+			}
+		}
+	}
+
 }

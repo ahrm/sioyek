@@ -61,6 +61,11 @@ private:
 	int last_mouse_down_window_x = 0;
 	int last_mouse_down_window_y = 0;
 
+	float selection_begin_x = 0;
+	float selection_begin_y = 0;
+	float selection_end_x = 0;
+	float selection_end_y = 0;
+
 	// is the user currently selecing text? (happens when we left click and move the cursor)
 	bool is_selecting = false;
 	// is the user in word select mode? (happens when we double left click and move the cursor)
@@ -68,6 +73,7 @@ private:
 	std::wstring selected_text;
 
 	std::optional<Link> link_to_edit = {};
+	int selected_highlight_index = -1;
 
 	std::optional<std::pair<std::optional<std::wstring>, Link>> pending_link;
 

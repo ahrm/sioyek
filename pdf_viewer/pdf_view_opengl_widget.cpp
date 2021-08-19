@@ -9,6 +9,7 @@ extern float VERTICAL_LINE_WIDTH;
 extern float VERTICAL_LINE_FREQ;
 extern float ZOOM_INC_FACTOR;
 extern float VERTICAL_MOVE_AMOUNT;
+extern float HIGHLIGHT_COLORS[26 * 3];
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -220,7 +221,7 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 }
-void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect) {
+void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect, bool draw_border) {
 
 	float quad_vertex_data[] = {
 		window_rect.x0, window_rect.y1,
@@ -246,16 +247,18 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	glDisable(GL_BLEND);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
-	glDrawArrays(GL_LINE_LOOP, 0, 4);
+	if (draw_border) {
+		glDisable(GL_BLEND);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_LINE_LOOP, 0, 4);
+	}
 
 
 }
 
-void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect) {
+void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border) {
 	fz_rect window_rect = document_view->absolute_to_window_rect(absolute_document_rect);
-	render_highlight_window(program, window_rect);
+	render_highlight_window(program, window_rect, draw_border);
 }
 
 void PdfViewOpenGLWidget::render_highlight_document(GLuint program, int page, fz_rect doc_rect) {
@@ -456,6 +459,35 @@ void PdfViewOpenGLWidget::render() {
 	glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"synctex_highlight_color"));
 	for (auto [page, rect] : synctex_highlights) {
 		render_highlight_document(shared_gl_objects.highlight_program, page, rect);
+	}
+
+	if (document_view->get_document()->can_use_highlights()) {
+		const std::vector<Highlight>& highlights = document_view->get_document()->get_highlights();
+		for (int i = 0; i < highlights.size(); i++) {
+			float selection_begin_window_x, selection_begin_window_y;
+			float selection_end_window_x, selection_end_window_y;
+
+			document_view->absolute_to_window_pos(
+				highlights[i].selection_begin.x,
+				highlights[i].selection_begin.y,
+				&selection_begin_window_x,
+				&selection_begin_window_y);
+
+			document_view->absolute_to_window_pos(
+				highlights[i].selection_end.x,
+				highlights[i].selection_end.y,
+				&selection_end_window_x,
+				&selection_end_window_y);
+
+			bool is_selection_in_window = range_intersects(selection_begin_window_y, selection_end_window_y, -1.0f, 1.0f);
+
+			if (is_selection_in_window) {
+				for (int j = 0; j < highlights[i].highlight_rects.size(); j++) {
+					glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
+					render_highlight_absolute(shared_gl_objects.highlight_program, highlights[i].highlight_rects[j], false);
+				}
+			}
+		}
 	}
 
 	if (should_draw_vertical_line) {

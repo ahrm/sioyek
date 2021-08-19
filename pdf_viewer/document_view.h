@@ -62,6 +62,8 @@ public:
 	void goto_link(Link* link);
 	void delete_closest_link();
 	void delete_closest_bookmark();
+	void delete_highlight_with_index(int index);
+	void delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y);
 	void delete_closest_bookmark_to_offset(float offset);
 	float get_offset_x();
 	float get_offset_y();
@@ -71,9 +73,11 @@ public:
 	void set_offset_x(float new_offset_x);
 	void set_offset_y(float new_offset_y);
 	std::optional<PdfLink> get_link_in_pos(int view_x, int view_y);
+	int get_highlight_index_in_pos(int view_x, int view_y);
 	void get_text_selection(fz_point selection_begin, fz_point selection_end, bool is_word_selection, std::vector<fz_rect>& selected_characters, std::wstring& text_selection);
 	void add_mark(char symbol);
 	void add_bookmark(std::wstring desc);
+	void add_highlight(fz_point selection_begin, fz_point selection_end, char type);
 	void on_view_size_change(int new_width, int new_height);
 	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
 	//void absolute_to_window_pos_pixels(float absolute_x, float absolute_y, float* window_x, float* window_y);

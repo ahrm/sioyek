@@ -15,6 +15,7 @@ extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE;
+extern float HIGHLIGHT_COLORS[26 * 3];
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
 extern std::wstring INVERSE_SEARCH_COMMAND;
@@ -120,6 +121,12 @@ ConfigManager::ConfigManager(const std::wstring& default_path, const std::wstrin
 	configs.push_back({ L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS, bool_serializer, bool_deserializer });
 	configs.push_back({ L"should_load_tutorial_when_no_other_file", &SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE, bool_serializer, bool_deserializer });
 	configs.push_back({ L"should_launch_new_instance", &SHOULD_LAUNCH_NEW_INSTANCE, bool_serializer, bool_deserializer });
+
+	std::wstring highlight_config_string = L"highlight_color_a";
+	for (char highlight_type = 'a'; highlight_type <= 'z'; highlight_type++) {
+		highlight_config_string[highlight_config_string.size() - 1] = highlight_type;
+		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(highlight_type - 'a') * 3], vec3_serializer, vec3_deserializer });
+	}
 //extern bool should_load_tutorial_when_no_other_file = false;
 
 	std::string default_path_utf8 = utf8_encode(default_path);
