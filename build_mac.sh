@@ -29,5 +29,5 @@ cp pdf_viewer/keys.config build/sioyek.app/Contents/MacOS/keys.config
 cp pdf_viewer/keys_user.config build/sioyek.app/Contents/MacOS/keys_user.config
 cp tutorial.pdf build/sioyek.app/Contents/MacOS/tutorial.pdf
 
-macdeployqt build/sioyek.app -dmg
-zip -r sioyek-release-mac.zip build/sioyek.app
+#macdeployqt build/sioyek.app -dmg
+#zip -r sioyek-release-mac.zip build/sioyek.app
