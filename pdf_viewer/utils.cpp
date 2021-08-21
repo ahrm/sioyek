@@ -279,14 +279,46 @@ float dist_squared(fz_point p1, fz_point p2) {
 	return (p1.x - p2.x) * (p1.x - p2.x) + 100 * (p1.y - p2.y) * (p1.y - p2.y);
 }
 
+bool is_stext_page_rtl(fz_stext_page* stext_page) {
 
-void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
+	float rtl_count = 0.0f;
+	float total_count = 0.0f;
 
 	LL_ITER(block, stext_page->first_block) {
 		if (block->type == FZ_STEXT_BLOCK_TEXT) {
 			LL_ITER(line, block->u.t.first_line) {
 				LL_ITER(ch, line->first_char) {
-					flat_chars.push_back(ch);
+					if (is_rtl(ch->c)) {
+						rtl_count += 1.0f;
+					}
+					total_count += 1.0f;
+				}
+			}
+		}
+	}
+	return ((rtl_count / total_count) > 0.5f);
+}
+
+void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
+
+	bool rtl = is_stext_page_rtl(stext_page);
+
+	LL_ITER(block, stext_page->first_block) {
+		if (block->type == FZ_STEXT_BLOCK_TEXT) {
+			LL_ITER(line, block->u.t.first_line) {
+				if (!rtl) {
+					LL_ITER(ch, line->first_char) {
+						flat_chars.push_back(ch);
+					}
+				}
+				else {
+					std::vector<fz_stext_char*> line_chars;
+					LL_ITER(ch, line->first_char) {
+						line_chars.push_back(ch);
+					}
+					for (int i = line_chars.size() - 1; i >= 0; i--) {
+						flat_chars.push_back(line_chars[i]);
+					}
 				}
 			}
 		}
@@ -339,7 +371,7 @@ std::wstring get_string_from_stext_line(fz_stext_line* line) {
 
 bool is_consequtive(fz_rect rect1, fz_rect rect2) {
 
-	float xdist = abs(rect1.x1 - rect2.x0);
+	float xdist = abs(rect1.x1 - rect2.x1);
 	float ydist1 = abs(rect1.y0 - rect2.y0);
 	float ydist2 = abs(rect1.y1 - rect2.y1);
 	float ydist = std::min(ydist1, ydist2);
@@ -352,7 +384,7 @@ bool is_consequtive(fz_rect rect1, fz_rect rect2) {
 	float rect2_height = rect2.y1 - rect2.y0;
 	float average_height = (rect1_height + rect2_height) / 2.0f;
 
-	if (xdist < 2*average_width && ydist < 2*average_height) {
+	if (xdist < 3*average_width && ydist < 2*average_height) {
 		return true;
 	}
 
@@ -392,7 +424,6 @@ void merge_selected_character_rects(const std::vector<fz_rect>& selected_charact
 	/*
 		This function merges the bounding boxes of all selected characters into large line chunks.
 	*/
-
 
 	if (selected_character_rects.size() == 0) {
 		return;

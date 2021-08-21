@@ -100,4 +100,4 @@ std::wstring strip_string(std::wstring& input_string);
 void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::vector<IndexedData>& indices);
 std::vector<std::wstring> split_whitespace(std::wstring const& input);
 float type_name_similarity_score(std::wstring name1, std::wstring name2);
-
+bool is_stext_page_rtl(fz_stext_page* stext_page);
