@@ -279,6 +279,18 @@ float dist_squared(fz_point p1, fz_point p2) {
 	return (p1.x - p2.x) * (p1.x - p2.x) + 100 * (p1.y - p2.y) * (p1.y - p2.y);
 }
 
+bool is_stext_line_rtl(fz_stext_line* line) {
+
+	float rtl_count = 0.0f;
+	float total_count = 0.0f;
+	LL_ITER(ch, line->first_char) {
+		if (is_rtl(ch->c)) {
+			rtl_count += 1.0f;
+		}
+		total_count += 1.0f;
+	}
+	return ((rtl_count / total_count) > 0.5f);
+}
 bool is_stext_page_rtl(fz_stext_page* stext_page) {
 
 	float rtl_count = 0.0f;
@@ -299,27 +311,54 @@ bool is_stext_page_rtl(fz_stext_page* stext_page) {
 	return ((rtl_count / total_count) > 0.5f);
 }
 
+std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line) {
+
+	std::vector<fz_stext_char*> reordered_chars;
+
+	bool rtl = is_stext_line_rtl(line);
+
+	LL_ITER(ch, line->first_char) {
+		reordered_chars.push_back(ch);
+	}
+
+	if (rtl) {
+		std::sort(reordered_chars.begin(), reordered_chars.end(), [](fz_stext_char* lhs, fz_stext_char* rhs) {
+			return lhs->quad.ll.x > rhs->quad.ll.x;
+			});
+	}
+	else {
+		std::sort(reordered_chars.begin(), reordered_chars.end(), [](fz_stext_char* lhs, fz_stext_char* rhs) {
+			return lhs->quad.ll.x < rhs->quad.ll.x;
+			});
+	}
+	return std::move(reordered_chars);
+}
+
 void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
 
-	bool rtl = is_stext_page_rtl(stext_page);
+	//bool rtl = is_stext_page_rtl(stext_page);
 
 	LL_ITER(block, stext_page->first_block) {
 		if (block->type == FZ_STEXT_BLOCK_TEXT) {
 			LL_ITER(line, block->u.t.first_line) {
-				if (!rtl) {
-					LL_ITER(ch, line->first_char) {
-						flat_chars.push_back(ch);
-					}
+				std::vector<fz_stext_char*> reordered_chars = reorder_stext_line(line);
+				for (auto ch : reordered_chars) {
+					flat_chars.push_back(ch);
 				}
-				else {
-					std::vector<fz_stext_char*> line_chars;
-					LL_ITER(ch, line->first_char) {
-						line_chars.push_back(ch);
-					}
-					for (int i = line_chars.size() - 1; i >= 0; i--) {
-						flat_chars.push_back(line_chars[i]);
-					}
-				}
+				//if (!rtl) {
+				//	LL_ITER(ch, line->first_char) {
+				//		flat_chars.push_back(ch);
+				//	}
+				//}
+				//else {
+				//	std::vector<fz_stext_char*> line_chars;
+				//	LL_ITER(ch, line->first_char) {
+				//		line_chars.push_back(ch);
+				//	}
+				//	for (int i = line_chars.size() - 1; i >= 0; i--) {
+				//		flat_chars.push_back(line_chars[i]);
+				//	}
+				//}
 			}
 		}
 	}
@@ -456,7 +495,10 @@ void merge_selected_character_rects(const std::vector<fz_rect>& selected_charact
 	// avoid overlapping rects
 	for (int i = 0; i < resulting_rects.size() - 1; i++) {
 		// we don't need to do this across columns of document
-		float height = resulting_rects[i].y1 - resulting_rects[i].y0;
+		float height = std::abs(resulting_rects[i].y1 - resulting_rects[i].y0);
+		if (std::abs(resulting_rects[i + 1].y0 - resulting_rects[i].y0) < (0.5 * height)) {
+			continue;
+		}
 		if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1) ) {
 			resulting_rects[i + 1].y0 = resulting_rects[i].y1;
 		}
@@ -1180,3 +1222,4 @@ float type_name_similarity_score(std::wstring name1, std::wstring name2) {
 	}
 	return common_prefix_index;
 }
+
