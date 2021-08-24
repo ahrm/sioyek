@@ -10,7 +10,7 @@ jobs:
   upload-release:
 
     runs-on: ubuntu-18.04
-    needs: [build-linux, build-windows, build-linux-portable, build-windows-portable]
+    needs: [build-mac, build-linux, build-windows, build-linux-portable, build-windows-portable]
 
     steps:
     - uses: actions/checkout@v1
@@ -28,6 +28,17 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: uploads     
+    - name: upload mac
+      id: upload-mac
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./uploads/sioyek-release-mac.zip
+        asset_name: sioyek-release-mac.zip
+        asset_content_type: application/zip   
+
     - name: upload linux
       id: upload-linux
       uses: actions/upload-release-asset@v1.0.1
@@ -196,3 +207,33 @@ jobs:
       with:
         name: uploads
         path: sioyek-release-windows-portable.zip
+
+  build-mac:
+
+    runs-on: macos-latest
+
+    steps:
+        
+    - uses: actions/checkout@v2
+      with:
+            submodules: 'recursive'
+            
+    - name: Install dependencies
+      run:  brew install freeglut mesa harfbuzz 
+      
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: '5.14.2'
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        chmod +x build_mac.sh
+        ./build_mac.sh
+        
+    - name: upload mac artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: uploads
+        path: sioyek-release-mac.zip
