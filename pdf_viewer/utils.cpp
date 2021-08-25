@@ -16,6 +16,10 @@
 #include <qstringlist.h>
 #include <qcommandlineparser.h>
 #include <qdir.h>
+#include <qurl.h>
+#include <qnetworkaccessmanager.h>
+#include <qnetworkrequest.h>
+#include <qnetworkreply.h>
 
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
@@ -1223,3 +1227,30 @@ float type_name_similarity_score(std::wstring name1, std::wstring name2) {
 	return common_prefix_index;
 }
 
+
+void check_for_updates(QWidget* parent, std::string current_version) {
+
+	QString url = "https://github.com/ahrm/sioyek/releases/latest";
+	QNetworkAccessManager* manager = new QNetworkAccessManager;
+	
+	QObject::connect(manager, &QNetworkAccessManager::finished, [=](QNetworkReply *reply) {
+		std::string response_text = reply->readAll().toStdString();
+		int first_index = response_text.find("\"");
+		int last_index = response_text.rfind("\"");
+		std::string url_string = response_text.substr(first_index + 1, last_index - first_index - 1);
+		
+		std::vector<std::wstring> parts;
+		split_path(utf8_decode(url_string), parts);
+		std::string version_string = utf8_encode(parts.back().substr(1, parts.back().size() - 1));
+
+		if (version_string != current_version) {
+			int ret = QMessageBox::information(parent, "Update", QString::fromStdString("Do you want to update from " + current_version + " to " + version_string + "?"),
+				QMessageBox::Ok | QMessageBox::Cancel,
+				QMessageBox::Cancel);
+			if (ret == QMessageBox::Ok) {
+				open_url(url);
+			}
+		}
+		});
+	manager->get(QNetworkRequest(QUrl(url)));
+}

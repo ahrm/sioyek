@@ -15,6 +15,7 @@ extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE;
+extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
@@ -121,6 +122,7 @@ ConfigManager::ConfigManager(const std::wstring& default_path, const std::wstrin
 	configs.push_back({ L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS, bool_serializer, bool_deserializer });
 	configs.push_back({ L"should_load_tutorial_when_no_other_file", &SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE, bool_serializer, bool_deserializer });
 	configs.push_back({ L"should_launch_new_instance", &SHOULD_LAUNCH_NEW_INSTANCE, bool_serializer, bool_deserializer });
+	configs.push_back({ L"check_for_updates_on_startup", &SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP, bool_serializer, bool_deserializer });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	for (char highlight_type = 'a'; highlight_type <= 'z'; highlight_type++) {

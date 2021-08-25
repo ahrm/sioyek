@@ -81,7 +81,7 @@
 
 
 extern std::wstring APPLICATION_NAME = L"sioyek";
-extern std::wstring APPLICATION_VERSION = L"0.31.6";
+extern std::string APPLICATION_VERSION = "0.31.6";
 extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 extern float HIGHLIGHT_COLORS[26 * 3] = { \
@@ -125,6 +125,7 @@ extern const int PAGE_PADDINGS = 0;
 extern const int MAX_PENDING_REQUESTS = 31;
 extern bool FLAT_TABLE_OF_CONTENTS = false;
 extern bool SHOULD_USE_MULTIPLE_MONITORS = false;
+extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = true;
 extern std::wstring LIBGEN_ADDRESS = L"";
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 extern std::wstring INVERSE_SEARCH_COMMAND = L"";
@@ -259,7 +260,7 @@ int main(int argc, char* args[]) {
 	}
 
 	QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
-	QCoreApplication::setApplicationVersion(QString::fromStdWString(APPLICATION_VERSION));
+	QCoreApplication::setApplicationVersion(QString::fromStdString(APPLICATION_VERSION));
 
 	QCommandLineParser* parser = get_command_line_parser();
 
@@ -370,6 +371,10 @@ int main(int argc, char* args[]) {
 	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 		input_handler.reload_config_files(default_keys_path.get_path(), user_keys_path.get_path());
 		});
+
+	if (SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP) {
+		check_for_updates(&main_widget, APPLICATION_VERSION);
+	}
 
 	app.exec();
 
