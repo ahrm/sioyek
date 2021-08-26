@@ -25,9 +25,6 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/main_widget.h \
            pdf_viewer/pdf_renderer.h \
            pdf_viewer/pdf_view_opengl_widget.h \
-           pdf_viewer/resource.h \
-           pdf_viewer/resource1.h \
-           pdf_viewer/resource2.h \
            pdf_viewer/sqlite3.h \
            pdf_viewer/sqlite3ext.h \
            pdf_viewer/ui.h \

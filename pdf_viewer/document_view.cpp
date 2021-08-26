@@ -71,6 +71,8 @@ void DocumentView::set_offsets(float new_offset_x, float new_offset_y) {
 	if (current_document == nullptr) return;
 
 	int num_pages = current_document->num_pages();
+	if (num_pages == 0) return;
+
 	float max_y_offset = current_document->get_accum_page_height(num_pages-1) + current_document->get_page_height(num_pages-1);
 	float min_y_offset = 0;
 
@@ -209,17 +211,20 @@ std::optional<PdfLink> DocumentView::get_link_in_pos(int view_x, int view_y) {
 	int page;
 	window_to_document_pos(view_x, view_y, &doc_x, &doc_y, &page);
 
-	fz_link* links = current_document->get_page_links(page);
-	fz_point point = { doc_x, doc_y };
-	std::optional<PdfLink> res = {};
+	if (page != -1) {
+		fz_link* links = current_document->get_page_links(page);
+		fz_point point = { doc_x, doc_y };
+		std::optional<PdfLink> res = {};
 
-	bool found = false;
-	while (links != nullptr) {
-		if (fz_is_point_inside_rect(point, links->rect)) {
-			res = { links->rect, links->uri };
-			return res;
+		bool found = false;
+		while (links != nullptr) {
+			if (fz_is_point_inside_rect(point, links->rect)) {
+				res = { links->rect, links->uri };
+				return res;
+			}
+			links = links->next;
 		}
-		links = links->next;
+
 	}
 	return {};
 }
@@ -556,6 +561,8 @@ void DocumentView::goto_page(int page) {
 void DocumentView::fit_to_page_width(bool smart)
 {
 	int cp = get_current_page_number();
+	if (cp == -1) return;
+
 	//int page_width = current_document->get_page_width(cp);
 	if (smart) {
 

@@ -528,15 +528,20 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, std::optional<st
 
 	is_searching = true;
 	is_search_cancelled = false;
-	pdf_renderer->add_request(
-		document_view->get_document()->get_path(),
-		document_view->get_current_page_number(),
-		text,
-		&search_results,
-		&percent_done,
-		&is_searching,
-		&search_results_mutex,
-		range);
+
+	int current_page = document_view->get_current_page_number();
+	if (current_page >= 0) {
+		pdf_renderer->add_request(
+			document_view->get_document()->get_path(),
+			current_page,
+			text,
+			&search_results,
+			&percent_done,
+			&is_searching,
+			&search_results_mutex,
+			range);
+
+	}
 }
 
 void PdfViewOpenGLWidget::set_dark_mode(bool mode)

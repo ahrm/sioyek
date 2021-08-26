@@ -269,12 +269,22 @@ const std::vector<int>& Document::get_flat_toc_pages()
 float Document::get_page_height(int page_index)
 {
 	std::lock_guard guard(page_dims_mutex);
-	return page_heights[page_index];
+	if ((page_index >= 0) && (page_index < page_heights.size())) {
+		return page_heights[page_index];
+	}
+	else {
+		return -1.0f;
+	}
 }
 
 float Document::get_page_width(int page_index)
 {
-	return page_widths[page_index];
+	if ((page_index >= 0) && (page_index < page_widths.size())) {
+		return page_widths[page_index];
+	}
+	else {
+		return -1.0f;
+	}
 }
 
 float Document::get_page_width_smart(int page_index, float* left_ratio, float* right_ratio, int* normal_page_width)
@@ -699,7 +709,14 @@ fz_stext_page* Document::get_stext_with_page_number(int page_number)
 		}
 	}
 
-	fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context, doc, page_number, nullptr);
+	fz_stext_page* stext_page = nullptr;
+
+	fz_try(context) {
+		stext_page = fz_new_stext_page_from_page_number(context, doc, page_number, nullptr);
+	}
+	fz_catch(context) {
+
+	}
 
 	if (stext_page != nullptr) {
 
@@ -723,12 +740,21 @@ void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* d
 		accum_page_heights.end(), absolute_y) -  accum_page_heights.begin()) - 1;
 	i = std::max(0, i);
 
-	float remaining_y = absolute_y - accum_page_heights[i];
-	float page_width = page_widths[i];
+	float acc_page_heights_i = 0.0f;
+	float page_width_i = 0.0f;
+	if (i < accum_page_heights.size()) {
+		acc_page_heights_i = accum_page_heights[i];
+		page_width_i = page_widths[i];
+		float remaining_y = absolute_y - acc_page_heights_i;
+		float page_width = page_width_i;
 
-	*doc_x = page_width / 2 + absolute_x;
-	*doc_y = remaining_y;
-	*doc_page = i;
+		*doc_x = page_width / 2 + absolute_x;
+		*doc_y = remaining_y;
+		*doc_page = i;
+	}
+	else {
+		*doc_page = -1;
+	}
 }
 
 QStandardItemModel* Document::get_toc_model()
@@ -774,6 +800,10 @@ fz_rect Document::page_rect_to_absolute_rect(int page, fz_rect page_rect) {
 int Document::get_offset_page_number(float y_offset)
 {
 	std::lock_guard guard(page_dims_mutex);
+
+	if (accum_page_heights.size() == 0) {
+		return -1;
+	}
 
 	auto it = std::lower_bound(accum_page_heights.begin(), accum_page_heights.end(), y_offset);
 
@@ -1162,6 +1192,10 @@ void Document::get_text_selection(fz_point selection_begin,
 	absolute_to_page_pos(selection_begin.x, selection_begin.y, &page_point1.x, &page_point1.y, &page_begin);
 	absolute_to_page_pos(selection_end.x, selection_end.y, &page_point2.x, &page_point2.y, &page_end);
 
+	if ((page_begin == -1) || (page_end == -1)) {
+		return;
+	}
+
 	if (page_end < page_begin) {
 		std::swap(page_begin, page_end);
 		std::swap(page_point1, page_point2);
@@ -1179,12 +1213,11 @@ void Document::get_text_selection(fz_point selection_begin,
 
 		// for now, let's assume there is only one page
 		fz_stext_page* stext_page = get_stext_with_page_number(i);
+		if (!stext_page) continue;
+
 		std::vector<fz_stext_char*> flat_chars;
-
-
 		get_flat_chars_from_stext_page(stext_page, flat_chars);
 
-		if (!stext_page) continue;
 
 		int location_index1, location_index2;
 		fz_stext_char* char_begin = nullptr;
@@ -1194,6 +1227,10 @@ void Document::get_text_selection(fz_point selection_begin,
 		}
 		if (i == page_end) {
 			char_end = find_closest_char_to_document_point(flat_chars, page_point2, &location_index2);
+		}
+
+		if ((char_begin == nullptr) || (char_end == nullptr)) {
+			return;
 		}
 
 		while ((char_begin->c == ' ') && (char_begin->next != nullptr)) {
