@@ -34,6 +34,13 @@ https://user-images.githubusercontent.com/6392321/125322503-1a6bdf80-e353-11eb-8
 
 Bookmarks are similar to marks except they are named by a text string and they are all global.
 
+# Highlights
+
+
+https://user-images.githubusercontent.com/6392321/130956728-7e0a87fa-4ada-4108-a8fc-9d9d04180f56.mp4
+
+
+Highlight text using different kinds of highlight, you can search among all the highlights.
 
 # Portals (this feature is most useful for users with multiple monitors)
 
