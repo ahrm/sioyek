@@ -81,3 +81,13 @@ git clone --recursive https://github.com/ahrm/sioyek
 cd sioyek
 build_windows.bat
 ```
+
+### Mac
+1. Install Xcode and Qt 5.
+2. Clone the repository and build:
+```
+git clone --recursive https://github.com/ahrm/sioyek
+cd sioyek
+chmod +x build_mac.sh
+./build_mac.sh
+```
