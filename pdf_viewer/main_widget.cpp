@@ -1729,6 +1729,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "toggle_dark_mode") {
 		this->toggle_dark_mode();
 	}
+	else if (command->name == "quit") {
+		QApplication::quit();
+	}
 	else if (command->name == "debug") {
 		wprintf(L"_________________________________\n");
 		for (auto& x : history) {
