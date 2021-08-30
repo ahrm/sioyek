@@ -1,5 +1,6 @@
 #include "pdf_view_opengl_widget.h"
 #include "path.h"
+#include <qcolor.h>
 
 extern Path shader_path;
 extern float BACKGROUND_COLOR[3];
@@ -268,10 +269,19 @@ void PdfViewOpenGLWidget::render_highlight_document(GLuint program, int page, fz
 
 void PdfViewOpenGLWidget::paintGL() {
 
+	QPainter painter(this);
+	QTextOption option;
+
+	QColor red_color = QColor::fromRgb(255, 0, 0);
+	painter.setPen(red_color);
+
+	painter.beginNativePainting();
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
 	glBindVertexArray(vertex_array_object);
-	render();
+	render(&painter);
+	painter.endNativePainting();
+	painter.drawText(-100, -100, "1234567890");
 }
 
 PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent) :
@@ -295,10 +305,15 @@ void PdfViewOpenGLWidget::handle_escape() {
 	current_search_result_index =-1;
 	is_searching = false;
 	is_search_cancelled = true;
+	should_highlight_links = false;
 }
 
 void PdfViewOpenGLWidget::toggle_highlight_links() {
 	this->should_highlight_links = !this->should_highlight_links;
+}
+
+void PdfViewOpenGLWidget::set_highlight_links(bool should_highlight) {
+	this->should_highlight_links = should_highlight;
 }
 
 int PdfViewOpenGLWidget::get_num_search_results() {
@@ -382,7 +397,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void PdfViewOpenGLWidget::render() {
+void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	if (!valid_document()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -402,6 +417,8 @@ void PdfViewOpenGLWidget::render() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 
+	std::vector<std::pair<int, fz_link*>> all_visible_links;
+
 	for (int page : visible_pages) {
 		render_page(page);
 
@@ -413,6 +430,7 @@ void PdfViewOpenGLWidget::render() {
 			fz_link* links = document_view->get_document()->get_page_links(page);
 			while (links != nullptr) {
 				render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
+				all_visible_links.push_back(std::make_pair(page, links));
 				links = links->next;
 			}
 		}
@@ -498,6 +516,28 @@ void PdfViewOpenGLWidget::render() {
 		}
 		else {
 			render_line_window(shared_gl_objects.vertical_line_program , document_view->get_vertical_line_window_y());
+		}
+	}
+
+	if (should_highlight_links) {
+		painter->endNativePainting();
+		for (int i = 0; i < all_visible_links.size(); i++) {
+			std::stringstream ss;
+			ss << i;
+			std::string index_string = ss.str();
+
+			auto [page, link] = all_visible_links[i];
+
+			//document_view->document_to_window_pos_in_pixels(page, link->rect.x0, link->rect.x1, &window_x, &window_y);
+			fz_rect window_rect = document_view->document_to_window_rect(page, link->rect);
+
+			int view_width = static_cast<float>(document_view->get_view_width());
+			int view_height = static_cast<float>(document_view->get_view_height());
+			
+			int window_x = static_cast<int>(window_rect.x0 * view_width / 2 + view_width / 2);
+			int window_y = static_cast<int>(-window_rect.y0 * view_height / 2 + view_height / 2);
+
+			painter->drawText(window_x, window_y, index_string.c_str());
 		}
 	}
 }

@@ -1360,6 +1360,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		if (command->name == "search" || command->name == "chapter_search" || command->name == "ranged_search" || command->name == "add_bookmark") {
 			should_fill_text_bar_with_selected_text = true;
 		}
+		if (command->name == "open_link") {
+			opengl_widget->set_highlight_links(true);
+		}
 		show_textbar(utf8_decode(command->name.c_str()), should_fill_text_bar_with_selected_text);
 		if (command->name == "chapter_search") {
 			std::optional<std::pair<int, int>> chapter_range = main_document_view->get_current_page_range();
@@ -1814,6 +1817,37 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 
 	if (current_pending_command->name == "add_bookmark") {
 		main_document_view->add_bookmark(text);
+	}
+
+	if (current_pending_command->name == "open_link") {
+		std::vector<int> visible_pages;
+		std::vector<std::pair<int, fz_link*>> visible_page_links;
+
+		if (is_string_numeric(text)) {
+
+			int link_index = std::stoi(text);
+
+			main_document_view->get_visible_pages(main_document_view->get_view_height(), visible_pages);
+			for (int i = 0; i < visible_pages.size(); i++) {
+				int page = visible_pages[i];
+				fz_link* link = main_document_view->get_document()->get_page_links(page);
+				while (link) {
+					visible_page_links.push_back(std::make_pair(page, link));
+					link = link->next;
+				}
+			}
+			if ((link_index >= 0) && (link_index < visible_page_links.size())) {
+				auto [selected_page, selected_link] = visible_page_links[link_index];
+
+				int page;
+				float offset_x;
+				float offset_y;
+
+				parse_uri(selected_link->uri, &page, &offset_x, &offset_y);
+				long_jump_to_destination(page-1, offset_y);
+			}
+		}
+		opengl_widget->set_highlight_links(false);
 	}
 
 	if (current_pending_command->name == "goto_page_with_page_number") {

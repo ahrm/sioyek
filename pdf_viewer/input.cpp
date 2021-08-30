@@ -69,7 +69,9 @@ CommandManager::CommandManager() {
 	commands.push_back({ "toggle_dark_mode", false, false , false, false});
 	commands.push_back({ "toggle_mouse_drag_mode", false, false , false, false});
 	commands.push_back({ "quit", false, false , false, false});
+	commands.push_back({ "open_link", true, false , false, false});
 }
+
 const Command* CommandManager::get_command_with_name(std::string name) {
 	for (const auto &com : commands) {
 		if (com.name == name) {

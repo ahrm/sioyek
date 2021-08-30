@@ -35,6 +35,7 @@
 #include <qtextedit.h>
 #include <qfilesystemwatcher.h>
 #include <qdesktopwidget.h>
+#include <qpainter.h>
 
 #include "document_view.h"
 #include "path.h"
@@ -104,7 +105,7 @@ protected:
 	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border=true);
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
 	void paintGL() override;
-	void render();
+	void render(QPainter* painter);
 
 public:
 
@@ -126,6 +127,7 @@ public:
 	bool get_should_draw_vertical_line();
 	void handle_escape();
 	void toggle_highlight_links();
+	void set_highlight_links(bool should_highlight);
 	int get_num_search_results();
 	int get_current_search_result_index();
 	bool valid_document();

@@ -538,6 +538,10 @@ void DocumentView::goto_offset_within_page(int page, float offset_x, float offse
 	set_offsets(offset_x, get_page_offset(page) + offset_y);
 }
 
+void DocumentView::goto_offset_within_page(int page, float offset_y) {
+	set_offsets(offset_x, get_page_offset(page) + offset_y);
+}
+
 void DocumentView::goto_page(int page) {
 	set_offset_y(get_page_offset(page) + view_height_in_document_space()/2);
 }
