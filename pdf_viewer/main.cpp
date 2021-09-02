@@ -79,6 +79,8 @@
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
 
 
+//#define LINUX_STANDARD_PATHS
+
 
 extern std::wstring APPLICATION_NAME = L"sioyek";
 extern std::string APPLICATION_VERSION = "0.31.6";
@@ -150,6 +152,24 @@ void configure_paths(){
 
 
 #ifdef Q_OS_LINUX
+#ifdef LINUX_STANDARD_PATHS
+	Path home_path(QDir::homePath().toStdWString());
+	Path standard_data_path = home_path.slash(L".local").slash(L"share").slash(L"sioyek");
+	Path standard_config_path = home_path.slash(L".config").slash(L"sioyek");
+
+	default_config_path = standard_config_path.slash(L"prefs.config");
+	default_keys_path = standard_config_path.slash(L"keys.config");
+
+	for (int i = 0; i < all_config_paths.size(); i++) {
+		user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
+		user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
+	}
+
+	database_file_path = standard_data_path.slash(L"test.db");
+	tutorial_path = standard_data_path.slash(L"tutorial.pdf");
+	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
+	shader_path = standard_data_path.slash(L"shaders");
+#else
 	char* APPDIR = std::getenv("XDG_CONFIG_HOME");
 
 	if (!APPDIR){
@@ -172,6 +192,7 @@ void configure_paths(){
 	if (!tutorial_path.file_exists()) {
 		copy_file(parent_path.slash(L"tutorial.pdf"), tutorial_path);
 	}
+#endif
 #else //windows
 #ifdef NDEBUG
 	//install_app(exe_path.c_str());
