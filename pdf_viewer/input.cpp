@@ -358,7 +358,7 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 			}
 		}
 	}
-	std::wcout << "invalid command; resetting to root" << std::endl;
+	std::wcout << "invalid command (key:" << (char)key << "); resetting to root" << std::endl;
 	number_stack.clear();
 	current_node = root;
 	return nullptr;
