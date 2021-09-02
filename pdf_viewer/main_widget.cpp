@@ -58,8 +58,8 @@ extern std::wstring INVERSE_SEARCH_COMMAND;
 
 extern Path default_config_path;
 extern Path default_keys_path;
-extern Path user_config_path;
-extern Path user_keys_path;
+extern std::vector<Path> user_config_paths;
+extern std::vector<Path> user_keys_paths;
 extern Path database_file_path;
 extern Path tutorial_path;
 extern Path last_opened_file_address_path;
@@ -1868,13 +1868,23 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			open_file(default_keys_path.get_path());
 		}
 		else if (text == L"keys_user") {
-			open_file(user_keys_path.get_path());
+			for (int i = user_keys_paths.size() - 1; i >= 0; i--) {
+				if (user_keys_paths[i].file_exists()) {
+					open_file(user_keys_paths[i].get_path());
+					break;
+				}
+			}
 		}
 		else if (text == L"prefs") {
 			open_file(default_config_path.get_path());
 		}
 		else if (text == L"prefs_user") {
-			open_file(user_config_path.get_path());
+			for (int i = user_config_paths.size() - 1; i >= 0; i--) {
+				if (user_config_paths[i].file_exists()) {
+					open_file(user_config_paths[i].get_path());
+					break;
+				}
+			}
 		}
 	}
 }

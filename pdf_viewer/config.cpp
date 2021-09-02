@@ -92,7 +92,7 @@ Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 	return nullptr;
 }
 
-ConfigManager::ConfigManager(const std::wstring& default_path, const std::wstring& user_path) {
+ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& user_paths) {
 
 	auto vec3_serializer = vec_n_serializer<3>;
 	auto vec4_serializer = vec_n_serializer<4>;
@@ -129,16 +129,8 @@ ConfigManager::ConfigManager(const std::wstring& default_path, const std::wstrin
 		highlight_config_string[highlight_config_string.size() - 1] = highlight_type;
 		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(highlight_type - 'a') * 3], vec3_serializer, vec3_deserializer });
 	}
-//extern bool should_load_tutorial_when_no_other_file = false;
 
-	std::string default_path_utf8 = utf8_encode(default_path);
-	std::string user_path_utf8 = utf8_encode(user_path);
-
-	std::wifstream default_infile(default_path_utf8);
-	std::wifstream user_infile(user_path_utf8);
-	deserialize(default_infile, user_infile);
-	default_infile.close();
-	user_infile.close();
+	deserialize(default_path, user_paths);
 }
 
 //void ConfigManager::serialize(std::wofstream& file) {
@@ -152,9 +144,16 @@ ConfigManager::ConfigManager(const std::wstring& default_path, const std::wstrin
 //	}
 //}
 
-void ConfigManager::deserialize(std::wifstream& default_file, std::wifstream& user_file) {
-	std::wstring line;
+void ConfigManager::deserialize(const Path& default_file_path, const std::vector<Path>& user_file_paths) {
+	//std::string default_path_utf8 = default_path.get_path_utf8();
+	//std::string user_path_utf8 = utf8_encode(user_path);
 
+	//std::wifstream default_infile(default_path_utf8);
+	//std::wifstream user_infile(user_path_utf8);
+
+
+	std::wstring line;
+	std::wifstream default_file(default_file_path.get_path_utf8());
 	while (std::getline(default_file, line)) {
 
 		if (line.size() == 0 || line[0] == '#') {
@@ -169,19 +168,29 @@ void ConfigManager::deserialize(std::wifstream& default_file, std::wifstream& us
 			conf->value = conf->deserialize(ss, conf->value);
 		}
 	}
+	default_file.close();
 
-	while (std::getline(user_file, line)) {
+	for (int i = 0; i < user_file_paths.size(); i++) {
 
-		if (line.size() == 0 || line[0] == '#') {
-			continue;
+		if (user_file_paths[i].file_exists()) {
+			std::wifstream user_file(user_file_paths[i].get_path_utf8());
+			while (std::getline(user_file, line)) {
+
+				if (line.size() == 0 || line[0] == '#') {
+					continue;
+				}
+
+				std::wstringstream ss{ line };
+				std::wstring conf_name;
+				ss >> conf_name;
+				Config* conf = get_mut_config_with_name(conf_name);
+				if (conf) {
+					conf->value = conf->deserialize(ss, conf->value);
+				}
+			}
+			user_file.close();
+
 		}
 
-		std::wstringstream ss{ line };
-		std::wstring conf_name;
-		ss >> conf_name;
-		Config* conf = get_mut_config_with_name(conf_name);
-		if (conf) {
-			conf->value = conf->deserialize(ss, conf->value);
-		}
 	}
 }

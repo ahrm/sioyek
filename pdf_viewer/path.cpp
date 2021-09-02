@@ -70,9 +70,14 @@ void Path::create_directories()
 //	return parent().get_path() + L"/./" + file_name;
 //}
 
-bool Path::exists() const
+bool Path::dir_exists() const
 {
 	return QDir(QString::fromStdWString(canon_path)).exists();
+}
+
+bool Path::file_exists() const
+{
+	return QFile::exists(QString::fromStdWString(canon_path));
 }
 
 void Path::parts(std::vector<std::wstring>& res) const

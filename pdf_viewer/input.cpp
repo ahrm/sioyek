@@ -267,10 +267,9 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 }
 
 InputParseTreeNode* parse_key_config_files(const Path& default_path,
-	const Path& user_path) {
+	const std::vector<Path>& user_paths) {
 
 	std::ifstream default_infile(default_path.get_path_utf8());
-	std::ifstream user_infile(user_path.get_path_utf8());
 
 
 	std::vector<std::string> command_names;
@@ -292,34 +291,40 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 
 	default_infile.close();
 
-	while (user_infile.good()) {
-		std::string line;
-		std::getline(user_infile, line);
-		if (line.size() == 0 || line[0] == '#') {
-			continue;
-		}
-		std::stringstream ss(line);
-		std::string command_name;
-		std::string command_key;
-		ss >> command_name >> command_key;
-		command_names.push_back(command_name);
-		command_keys.push_back(command_key);
-	}
 
-	user_infile.close();
+	for (int i = 0; i < user_paths.size(); i++) {
+
+		if (user_paths[i].file_exists()) {
+			std::ifstream user_infile(user_paths[i].get_path_utf8());
+			while (user_infile.good()) {
+				std::string line;
+				std::getline(user_infile, line);
+				if (line.size() == 0 || line[0] == '#') {
+					continue;
+				}
+				std::stringstream ss(line);
+				std::string command_name;
+				std::string command_key;
+				ss >> command_name >> command_key;
+				command_names.push_back(command_name);
+				command_keys.push_back(command_key);
+			}
+			user_infile.close();
+		}
+	}
 
 	return parse_lines(command_keys, command_names);
 }
 
 
-InputHandler::InputHandler(const Path& default_path, const Path& user_path) {
-	reload_config_files(default_path, user_path);
+InputHandler::InputHandler(const Path& default_path, const std::vector<Path>& user_paths) {
+	reload_config_files(default_path, user_paths);
 }
 
-void InputHandler::reload_config_files(const Path& default_config_path, const Path& user_config_path)
+void InputHandler::reload_config_files(const Path& default_config_path, const std::vector<Path>& user_config_paths)
 {
 	delete_current_parse_tree(root);
-	root = parse_key_config_files(default_config_path, user_config_path);
+	root = parse_key_config_files(default_config_path, user_config_paths);
 	current_node = root;
 }
 

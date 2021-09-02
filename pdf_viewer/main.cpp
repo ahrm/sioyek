@@ -134,8 +134,8 @@ extern bool SHOULD_LAUNCH_NEW_INSTANCE = true;
 
 extern Path default_config_path(L"");
 extern Path default_keys_path(L"");
-extern Path user_config_path(L"");
-extern Path user_keys_path(L"");
+extern std::vector<Path> user_config_paths = {};
+extern std::vector<Path> user_keys_paths = {};
 extern Path database_file_path(L"");
 extern Path tutorial_path(L"");
 extern Path last_opened_file_address_path(L"");
@@ -161,9 +161,10 @@ void configure_paths(){
 	standard_data_path.create_directories();
 
 	default_config_path = parent_path.slash(L"prefs.config");
-	user_config_path = standard_data_path.slash(L"prefs_user.config");
+	//user_config_path = standard_data_path.slash(L"prefs_user.config");
+	user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
 	default_keys_path = parent_path.slash(L"keys.config");
-	user_keys_path = standard_data_path.slash(L"keys_user.config");
+	user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
 	database_file_path = standard_data_path.slash(L"test.db");
 	tutorial_path = standard_data_path.slash(L"tutorial.pdf");
 	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
@@ -183,13 +184,13 @@ void configure_paths(){
 	tutorial_path = parent_path.slash(L"tutorial.pdf");
 
 #ifdef NON_PORTABLE
-	user_config_path = standard_data_path.slash(L"prefs_user.config");
-	user_keys_path = standard_data_path.slash(L"keys_user.config");
+	user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
+	user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
 	database_file_path = standard_data_path.slash(L"test.db");
 	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
 #else
-	user_config_path = parent_path.slash(L"prefs_user.config");
-	user_keys_path = parent_path.slash(L"keys_user.config");
+	user_config_paths.push_back(parent_path.slash(L"prefs_user.config"));
+	user_keys_paths.push_back(parent_path.slash(L"keys_user.config"));
 	database_file_path = parent_path.slash(L"test.db");
 	last_opened_file_address_path = parent_path.slash(L"last_document_path.txt");
 #endif
@@ -225,17 +226,21 @@ int main(int argc, char* args[]) {
 
 	std::wcout << L"default_config_path: " << default_config_path << L"\n";
 	std::wcout << L"default_keys_path: " << default_keys_path << L"\n";
-	std::wcout << L"user_config_path: " << user_config_path << L"\n";
-	std::wcout << L"user_keys_path: " << user_keys_path << L"\n";
+	for (int i = 0; i < user_config_paths.size(); i++) {
+		std::wcout << L"user_config_path: [ " << i << " ] " << user_config_paths[i] << L"\n";
+	}
+	for (int i = 0; i < user_keys_paths.size(); i++) {
+		std::wcout << L"user_keys_path: [ " << i << " ] " << user_keys_paths[i] << L"\n";
+	}
 	std::wcout << L"database_file_path: " << database_file_path << L"\n";
 	std::wcout << L"tutorial_path: " << tutorial_path << L"\n";
 	std::wcout << L"last_opened_file_address_path" << last_opened_file_address_path << L"\n";
 	std::wcout << L"shader_path" << shader_path << L"\n";
 
-	create_file_if_not_exists(user_keys_path.get_path());
-	create_file_if_not_exists(user_config_path.get_path());
+	//create_file_if_not_exists(user_keys_path.get_path());
+	//create_file_if_not_exists(user_config_path.get_path());
 
-	ConfigManager config_manager(default_config_path.get_path(), user_config_path.get_path());
+	ConfigManager config_manager(default_config_path, user_config_paths);
 
 	// should we launche a new instance each time the user opens a PDF or should we reuse the previous instance
 	bool use_single_instance = !SHOULD_LAUNCH_NEW_INSTANCE;
@@ -311,19 +316,23 @@ int main(int argc, char* args[]) {
 
 	bool quit = false;
 
-	InputHandler input_handler(default_keys_path.get_path(), user_keys_path.get_path());
+	InputHandler input_handler(default_keys_path, user_keys_paths);
 
 
 	DocumentManager document_manager(mupdf_context, db);
 
 	QFileSystemWatcher pref_file_watcher;
 	pref_file_watcher.addPath(QString::fromStdWString(default_config_path.get_path()));
-	pref_file_watcher.addPath(QString::fromStdWString(user_config_path.get_path()));
+	for (int i = 0; i < user_config_paths.size(); i++) {
+		pref_file_watcher.addPath(QString::fromStdWString(user_config_paths[i].get_path()));
+	}
 
 
 	QFileSystemWatcher key_file_watcher;
 	key_file_watcher.addPath(QString::fromStdWString(default_keys_path.get_path()));
-	key_file_watcher.addPath(QString::fromStdWString(user_keys_path.get_path()));
+	for (int i = 0; i < user_keys_paths.size(); i++) {
+		key_file_watcher.addPath(QString::fromStdWString(user_keys_paths[i].get_path()));
+	}
 
 
 	//QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
@@ -358,19 +367,15 @@ int main(int argc, char* args[]) {
 
 	// live reload the config file
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		std::wifstream default_config_file(default_config_path.get_path_utf8());
-		std::wifstream user_config_file(user_config_path.get_path_utf8());
 
-		config_manager.deserialize(default_config_file, user_config_file);
-		default_config_file.close();
-		user_config_file.close();
+		config_manager.deserialize(default_config_path, user_config_paths);
 
 		ConfigFileChangeListener::notify_config_file_changed(&config_manager);
 		main_widget.validate_render();
 		});
 
 	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		input_handler.reload_config_files(default_keys_path.get_path(), user_keys_path.get_path());
+		input_handler.reload_config_files(default_keys_path, user_keys_paths);
 		});
 
 	if (SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP) {

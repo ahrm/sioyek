@@ -21,7 +21,8 @@ public:
 	std::wstring get_path() const;
 	std::string get_path_utf8() const;
 	void create_directories();
-	bool exists() const;
+	bool dir_exists() const;
+	bool file_exists() const;
 	//std::wstring add_redundant_dot() const;
 
 };
