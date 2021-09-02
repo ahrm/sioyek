@@ -151,7 +151,9 @@ void configure_paths(){
 	shader_path = parent_path.slash(L"shaders");
 
 
+
 #ifdef Q_OS_LINUX
+	QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
 #ifdef LINUX_STANDARD_PATHS
 	Path home_path(QDir::homePath().toStdWString());
 	Path standard_data_path = home_path.slash(L".local").slash(L"share").slash(L"sioyek");
