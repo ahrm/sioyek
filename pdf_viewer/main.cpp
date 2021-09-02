@@ -343,6 +343,7 @@ int main(int argc, char* args[]) {
 			QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
 				QStringList args = deserialize_string_array(message);
 				main_widget.handle_args(args);
+				main_widget.activateWindow();
 				});
 		}
 	}
