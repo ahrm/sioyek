@@ -349,3 +349,7 @@ build/*
 *.vcxproj.filters
 *.vcxproj.user
 moc*
+
+# Linux and Mac build files
+Makefile
+./sioyek
