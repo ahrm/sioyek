@@ -221,6 +221,27 @@ void configure_paths(){
 #endif
 }
 
+void verify_paths(){
+#define CHECK_DIR_EXIST(path) do{ if(!(path).dir_exists() ) std::wcout << L"Error: " << #path << ": " << path << L" doesn't exist!\n"; } while(false)
+
+    std::wcout << L"default_config_path: " << default_config_path << L"\n";
+    CHECK_DIR_EXIST(default_config_path);
+    std::wcout << L"default_keys_path: " << default_keys_path << L"\n";
+    CHECK_DIR_EXIST(default_keys_path);
+    for (size_t i = 0; i < user_config_paths.size(); i++) {
+        std::wcout << L"user_config_path: [ " << i << " ] " << user_config_paths[i] << L"\n";
+    }
+    for (size_t i = 0; i < user_keys_paths.size(); i++) {
+        std::wcout << L"user_keys_path: [ " << i << " ] " << user_keys_paths[i] << L"\n";
+    }
+    std::wcout << L"database_file_path: " << database_file_path << L"\n";
+    std::wcout << L"tutorial_path: " << tutorial_path << L"\n";
+    std::wcout << L"last_opened_file_address_path: " << last_opened_file_address_path << L"\n";
+    std::wcout << L"shader_path: " << shader_path << L"\n";
+    CHECK_DIR_EXIST(shader_path);
+
+#undef CHECK_DIR_EXIST
+}
 
 std::mutex mupdf_mutexes[FZ_LOCK_MAX];
 
@@ -245,20 +266,8 @@ int main(int argc, char* args[]) {
 	// we need an application in order to be able to use QCoreApplication::applicationDirPath
 	QApplication* dummy_application = new QApplication(argc, args);
 	configure_paths();
+	verify_paths();
 	delete dummy_application;
-
-	std::wcout << L"default_config_path: " << default_config_path << L"\n";
-	std::wcout << L"default_keys_path: " << default_keys_path << L"\n";
-	for (int i = 0; i < user_config_paths.size(); i++) {
-		std::wcout << L"user_config_path: [ " << i << " ] " << user_config_paths[i] << L"\n";
-	}
-	for (int i = 0; i < user_keys_paths.size(); i++) {
-		std::wcout << L"user_keys_path: [ " << i << " ] " << user_keys_paths[i] << L"\n";
-	}
-	std::wcout << L"database_file_path: " << database_file_path << L"\n";
-	std::wcout << L"tutorial_path: " << tutorial_path << L"\n";
-	std::wcout << L"last_opened_file_address_path" << last_opened_file_address_path << L"\n";
-	std::wcout << L"shader_path" << shader_path << L"\n";
 
 	//create_file_if_not_exists(user_keys_path.get_path());
 	//create_file_if_not_exists(user_config_path.get_path());
