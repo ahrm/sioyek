@@ -11,6 +11,7 @@ extern float VERTICAL_LINE_FREQ;
 extern float ZOOM_INC_FACTOR;
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HIGHLIGHT_COLORS[26 * 3];
+extern bool SHOULD_DRAW_UNRENDERED_PAGES;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -388,6 +389,9 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		glBindTexture(GL_TEXTURE_2D, texture);
 	}
 	else {
+		if (!SHOULD_DRAW_UNRENDERED_PAGES) {
+			return;
+		}
 		glUseProgram(shared_gl_objects.unrendered_program);
 	}
 	glEnableVertexAttribArray(0);
