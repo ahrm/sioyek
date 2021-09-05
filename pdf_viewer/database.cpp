@@ -2,6 +2,14 @@
 #include <sstream>
 #include <cassert>
 #include <utility>
+#include <set>
+#include <optional>
+
+#include <qfile.h>
+#include <qjsonarray.h>
+#include <qjsondocument.h>
+#include <qjsonobject.h>
+#include <qjsonvalue.h>
 
 #include "checksum.h"
 
@@ -669,3 +677,195 @@ void upgrade_database_hashes(sqlite3* db) {
 	}
 }
 
+template<typename T>
+QJsonArray export_array(std::vector<T> objects) {
+	QJsonArray res;
+
+	for (const T& obj : objects) {
+		res.append(obj.to_json());
+	}
+	return res;
+}
+
+
+template <typename T>
+std::vector<T> load_from_json_array(const QJsonArray& item_list) {
+
+	std::vector<T> res;
+
+	for (int i = 0; i < item_list.size(); i++) {
+		QJsonObject current_json_object = item_list.at(i).toObject();
+		T current_object;
+		current_object.from_json(current_json_object);
+		res.push_back(current_object);
+	}
+	return res;
+}
+
+
+void export_json(sqlite3* db, std::wstring json_file_path, CachedChecksummer* checksummer) {
+
+	std::set<std::string> seen_checksums;
+
+	std::vector<std::wstring> prev_doc_paths;
+
+	select_prev_docs(db, prev_doc_paths);
+
+	QJsonArray document_data_array;
+
+	for (int i = 0; i < prev_doc_paths.size(); i++) {
+
+		const auto& path = prev_doc_paths[i];
+		std::string document_checksum = checksummer->get_checksum(path);
+
+		if ((document_checksum.size() == 0) || (seen_checksums.find(document_checksum) != seen_checksums.end())) {
+			continue;
+		}
+
+		std::vector<BookMark> bookmarks;
+		std::vector<Highlight> highlights;
+		std::vector<Mark> marks;
+		std::vector<Link> portals;
+		std::vector<OpenedBookState> opened_book_state_;
+
+		select_opened_book(db, path, opened_book_state_);
+		if (opened_book_state_.size() != 1) {
+			continue;
+		}
+
+		OpenedBookState opened_book_state = opened_book_state_[0];
+
+		select_bookmark(db, document_checksum, bookmarks);
+		select_mark(db, document_checksum, marks);
+		select_highlight(db, document_checksum, highlights);
+		select_links(db, document_checksum, portals);
+
+
+		QJsonArray json_bookmarks = export_array(bookmarks);
+		QJsonArray json_highlights = export_array(highlights);
+		QJsonArray json_marks = export_array(marks);
+		QJsonArray json_portals = export_array(portals);
+
+		QJsonObject book_object;
+		book_object["offset_x"] = opened_book_state.offset_x;
+		book_object["offset_y"] = opened_book_state.offset_y;
+		book_object["zoom_level"] = opened_book_state.zoom_level;
+		book_object["checksum"] = QString::fromStdString(document_checksum);
+		book_object["path"] = QString::fromStdWString(path);
+		book_object["bookmarks"] = json_bookmarks;
+		book_object["marks"] = json_marks;
+		book_object["highlights"] = json_highlights;
+		book_object["portals"] = json_portals;
+
+		document_data_array.append(std::move(book_object));
+
+		seen_checksums.insert(document_checksum);
+	}
+
+	QJsonObject exported_json;
+	exported_json["documents"] = std::move(document_data_array);
+
+	QJsonDocument json_document(exported_json);
+
+
+	QFile output_file(QString::fromStdWString(json_file_path));
+	output_file.open(QFile::WriteOnly);
+	output_file.write(json_document.toJson());
+	output_file.close();
+}
+
+template<typename T>
+std::vector<T> get_new_elements(const std::vector<T>& prev_elements, const std::vector<T>& new_elements) {
+	std::vector<T> res;
+	for (const auto& new_elem : new_elements) {
+		bool is_new = true;
+		for (const auto& prev_elem : prev_elements) {
+			if (new_elem == prev_elem) {
+				is_new = false;
+				break;
+			}
+		}
+		if (is_new) {
+			res.push_back(new_elem);
+		}
+	}
+	return res;
+}
+
+void import_json(sqlite3* db, std::wstring json_file_path, CachedChecksummer* checksummer) {
+
+	QFile json_file(QString::fromStdWString(json_file_path));
+	json_file.open(QFile::ReadOnly);
+	QJsonDocument json_document = QJsonDocument().fromJson(json_file.readAll());
+	json_file.close();
+
+	QJsonObject imported_json = json_document.object();
+	QJsonArray documents_json_array = imported_json.value("documents").toArray();
+
+	//std::vector<JsonDocumentData> imported_documents;
+
+	for (int i = 0; i < documents_json_array.size(); i++) {
+
+		QJsonObject current_json_doc = documents_json_array.at(i).toObject();
+
+		std::string checksum = current_json_doc["checksum"].toString().toStdString();
+		//std::wstring path = current_json_doc["path"].toString().toStdWString();
+		float offset_x = current_json_doc["offset_x"].toDouble();
+		float offset_y = current_json_doc["offset_y"].toDouble();
+		float zoom_level = current_json_doc["zoom_level"].toDouble();
+
+		auto bookmarks = std::move(load_from_json_array<BookMark>(current_json_doc["bookmarks"].toArray()));
+		auto marks = load_from_json_array<Mark>(current_json_doc["marks"].toArray());
+		auto highlights = load_from_json_array<Highlight>(current_json_doc["highlights"].toArray());
+		auto portals = load_from_json_array<Link>(current_json_doc["portals"].toArray());
+
+		std::vector<BookMark> prev_bookmarks;
+		std::vector<Mark> prev_marks;
+		std::vector<Highlight> prev_highlights;
+		std::vector<Link> prev_portals;
+
+
+		select_bookmark(db, checksum, prev_bookmarks);
+		select_mark(db, checksum, prev_marks);
+		select_highlight(db, checksum, prev_highlights);
+		select_links(db, checksum, prev_portals);
+
+		std::vector<BookMark> new_bookmarks = get_new_elements(prev_bookmarks, bookmarks);
+		std::vector<Mark> new_marks = get_new_elements(prev_marks, marks);
+		std::vector<Highlight> new_highlights = get_new_elements(prev_highlights, highlights);
+		std::vector<Link> new_portals = get_new_elements(prev_portals, portals);
+
+		std::optional<std::wstring> path = checksummer->get_path(checksum);
+
+		if (path) {
+			update_book(db, path.value(), zoom_level, offset_x, offset_y);
+		}
+
+		for (const auto& bm : new_bookmarks) {
+			insert_bookmark(db, checksum, bm.description, bm.y_offset);
+		}
+		for (const auto& mark : new_marks) {
+			insert_mark(db, checksum, mark.symbol, mark.y_offset);
+		}
+		for (const auto& hl : new_highlights) {
+			insert_highlight(db,
+				checksum,
+				hl.description,
+				hl.selection_begin.x,
+				hl.selection_begin.y,
+				hl.selection_end.x,
+				hl.selection_end.y,
+				hl.type);
+		}
+		for (const auto& portal : new_portals) {
+			insert_link(db,
+				checksum,
+				portal.dst.document_checksum,
+				portal.dst.book_state.offset_x,
+				portal.dst.book_state.offset_y,
+				portal.dst.book_state.zoom_level,
+				portal.src_offset_y);
+		}
+
+	}
+}

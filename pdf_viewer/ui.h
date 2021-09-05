@@ -367,5 +367,5 @@ public:
 };
 
 std::wstring select_document_file_name();
-//bool select_document_file_name(wchar_t* out_file_name, int max_length);
-
+std::wstring select_json_file_name();
+std::wstring select_new_json_file_name();

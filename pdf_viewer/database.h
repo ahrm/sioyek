@@ -7,6 +7,7 @@
 #include "sqlite3.h"
 #include "book.h"
 #include "utils.h"
+#include "checksum.h"
 
 bool create_opened_books_table(sqlite3* db);
 bool create_marks_table(sqlite3* db);
@@ -50,3 +51,5 @@ bool get_prev_path_hash_pairs(sqlite3* db, std::vector<std::pair<std::wstring, s
 bool insert_document_hash(sqlite3* db, const std::wstring& path, const std::string& checksum);
 bool update_mark_path(sqlite3* db, const std::wstring& path, const std::wstring& new_path);
 void upgrade_database_hashes(sqlite3* db);
+void export_json(sqlite3* db, std::wstring json_file_path, CachedChecksummer* checksummer);
+void import_json(sqlite3* db, std::wstring json_file_path, CachedChecksummer* checksummer);

@@ -1912,6 +1912,14 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 				}
 			}
 		}
+		else if (text == L"export") {
+			std::wstring export_file_name = select_new_json_file_name();
+			export_json(db, export_file_name, checksummer);
+		}
+		else if (text == L"import") {
+			std::wstring import_file_name = select_json_file_name();
+			import_json(db, import_file_name, checksummer);
+		}
 	}
 }
 

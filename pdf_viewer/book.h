@@ -8,6 +8,8 @@
 #include <mutex>
 #include <variant>
 
+#include <qjsonobject.h>
+
 
 class DocumentView;
 
@@ -30,6 +32,9 @@ struct OpenedBookState {
 struct Mark {
 	float y_offset;
 	char symbol;
+
+	QJsonObject to_json() const;
+	void from_json(const QJsonObject& json_object);
 };
 
 /*
@@ -38,6 +43,9 @@ struct Mark {
 struct BookMark {
 	float y_offset;
 	std::wstring description;
+
+	QJsonObject to_json() const;
+	void from_json(const QJsonObject& json_object);
 };
 
 struct Highlight {
@@ -46,6 +54,9 @@ struct Highlight {
 	std::wstring description;
 	char type;
 	std::vector<fz_rect> highlight_rects;
+
+	QJsonObject to_json() const;
+	void from_json(const QJsonObject& json_object);
 };
 
 
@@ -75,6 +86,9 @@ struct Link {
 
 	LinkViewState dst;
 	float src_offset_y;
+
+	QJsonObject to_json() const;
+	void from_json(const QJsonObject& json_object);
 };
 
 
@@ -136,3 +150,8 @@ struct IndexedData {
 	float y_offset;
 	std::wstring text;
 };
+
+bool operator==(const Mark& lhs, const Mark& rhs);
+bool operator==(const BookMark& lhs, const BookMark& rhs);
+bool operator==(const Highlight& lhs, const Highlight& rhs);
+bool operator==(const Link& lhs, const Link& rhs);
