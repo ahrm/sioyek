@@ -171,12 +171,21 @@ void MainWidget::closeEvent(QCloseEvent* close_event) {
 	delete helper_opengl_widget;
 }
 
-MainWidget::MainWidget(fz_context* mupdf_context, sqlite3* db, DocumentManager* document_manager, ConfigManager* config_manager, InputHandler* input_handler, bool* should_quit_ptr, QWidget* parent) : QWidget(parent),
-mupdf_context(mupdf_context),
-db(db),
-document_manager(document_manager),
-config_manager(config_manager),
-input_handler(input_handler)
+MainWidget::MainWidget(fz_context* mupdf_context,
+	sqlite3* db,
+	DocumentManager* document_manager,
+	ConfigManager* config_manager,
+	InputHandler* input_handler,
+	CachedChecksummer* checksummer,
+	bool* should_quit_ptr,
+	QWidget* parent):
+	QWidget(parent),
+	mupdf_context(mupdf_context),
+	db(db),
+	document_manager(document_manager),
+	config_manager(config_manager),
+	input_handler(input_handler),
+	checksummer(checksummer)
 {
 	setMouseTracking(true);
 
@@ -188,10 +197,10 @@ input_handler(input_handler)
 	pdf_renderer->start_threads();
 
 
-	main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
+	main_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager, checksummer);
 	opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, false, this);
 
-	helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager);
+	helper_document_view = new DocumentView(mupdf_context, db, document_manager, config_manager, checksummer);
 	helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager, true);
 
 	// automatically open the helper window in second monitor
@@ -685,7 +694,7 @@ void MainWidget::update_link_with_opened_book_state(Link lnk, const OpenedBookSt
 		link_owner->update_link(lnk);
 	}
 
-	update_link(db, docpath,
+	update_link(db, link_owner->get_checksum(),
 		new_state.offset_x, new_state.offset_y, new_state.zoom_level, lnk.src_offset_y);
 
 	link_to_edit = {};
@@ -736,17 +745,28 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 		assert(main_document_view);
 
 		if (isupper(symbol)) { // global mark
-			std::vector<std::pair<std::wstring, float>> mark_vector;
+			std::vector<std::pair<std::string, float>> mark_vector;
 			select_global_mark(db, symbol, mark_vector);
 			if (mark_vector.size() > 0) {
 				assert(mark_vector.size() == 1); // we can not have more than one global mark with the same name
-				open_document(mark_vector[0].first, {}, mark_vector[0].second);
+				std::wstring doc_path = checksummer->get_path(mark_vector[0].first).value();
+				open_document(doc_path, {}, mark_vector[0].second);
 			}
 
 		}
 		else{
 			main_document_view->goto_mark(symbol);
 		}
+	}
+}
+
+void MainWidget::open_document(const LinkViewState& lvs) {
+	DocumentViewState dvs;
+	auto path = checksummer->get_path(lvs.document_checksum);
+	if (path) {
+		dvs.book_state = lvs.book_state;
+		dvs.document_path = path.value();
+		open_document(dvs);
 	}
 }
 
@@ -1095,7 +1115,8 @@ void MainWidget::prev_state()
 		*/
 		if (link_to_edit) {
 
-			Document* link_owner = document_manager->get_document(link_to_edit.value().dst.document_path);
+			std::wstring link_document_path = checksummer->get_path(link_to_edit.value().dst.document_checksum).value();
+			Document* link_owner = document_manager->get_document(link_document_path);
 
 			OpenedBookState state = main_document_view->get_state().book_state;
 			link_to_edit.value().dst.book_state = state;
@@ -1104,7 +1125,7 @@ void MainWidget::prev_state()
 				link_owner->update_link(link_to_edit.value());
 			}
 
-			update_link(db, history[current_history_index].document_path,
+			update_link(db, checksummer->get_checksum(history[current_history_index].document_path),
 				state.offset_x, state.offset_y, state.zoom_level, link_to_edit->src_offset_y);
 			link_to_edit = {};
 		}
@@ -1615,19 +1636,20 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		current_widget->show();
 	}
 	else if (command->name == "goto_bookmark_g") {
-		std::vector<std::pair<std::wstring, BookMark>> global_bookmarks;
+		std::vector<std::pair<std::string, BookMark>> global_bookmarks;
 		global_select_bookmark(db, global_bookmarks);
 		std::vector<std::wstring> descs;
 		std::vector<BookState> book_states;
 
 		for (const auto& desc_bm_pair : global_bookmarks) {
-			std::wstring path = desc_bm_pair.first;
-			BookMark bm = desc_bm_pair.second;
-
-			std::wstring file_name = Path(path).filename().value_or(L"");
-
-			descs.push_back(bm.description + L" {" + file_name + L"}");
-			book_states.push_back({ path, bm.y_offset });
+			std::string checksum = desc_bm_pair.first;
+			std::optional<std::wstring> path = checksummer->get_path(checksum);
+			if (path) {
+				BookMark bm = desc_bm_pair.second;
+				std::wstring file_name = Path(path.value()).filename().value_or(L"");
+				descs.push_back(bm.description + L" {" + file_name + L"}");
+				book_states.push_back({ path.value(), bm.y_offset });
+			}
 		}
 		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(
 			descs,
@@ -1642,29 +1664,33 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			this,
 			[&](BookState* book_state) {
 				if (book_state) {
-					delete_bookmark(db, book_state->document_path, book_state->offset_y);
+					delete_bookmark(db, checksummer->get_checksum(book_state->document_path), book_state->offset_y);
 				}
 			});
 		current_widget->show();
 
 	}
 	else if (command->name == "goto_highlight_g") {
-		std::vector<std::pair<std::wstring, Highlight>> global_highlights;
+		std::vector<std::pair<std::string, Highlight>> global_highlights;
 		global_select_highlight(db, global_highlights);
 		std::vector<std::wstring> descs;
 		std::vector<BookState> book_states;
 
 		for (const auto& desc_hl_pair : global_highlights) {
-			std::wstring path = desc_hl_pair.first;
-			Highlight hl = desc_hl_pair.second;
+			std::string checksum = desc_hl_pair.first;
+			std::optional<std::wstring> path = checksummer->get_path(checksum);
+			if (path) {
+				Highlight hl = desc_hl_pair.second;
 
-			std::wstring file_name = Path(path).filename().value_or(L"");
+				std::wstring file_name = Path(path.value()).filename().value_or(L"");
 
-			std::wstring highlight_type_string = L"a";
-			highlight_type_string[0] = hl.type;
+				std::wstring highlight_type_string = L"a";
+				highlight_type_string[0] = hl.type;
 
-			descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
-			book_states.push_back({ path, hl.selection_begin.y });
+				descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
+				book_states.push_back({ path.value(), hl.selection_begin.y });
+
+			}
 		}
 		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(
 			descs,
@@ -1759,7 +1785,7 @@ void MainWidget::handle_link() {
 
 	if (is_pending_link_source_filled()) {
 		auto [source_path, pl] = pending_link.value();
-		pl.dst = main_document_view->get_state();
+		pl.dst = main_document_view->get_checksum_state();
 		pending_link = {};
 
 		if (source_path == main_document_view->get_document()->get_path()) {
@@ -1774,8 +1800,8 @@ void MainWidget::handle_link() {
 			}
 
 			insert_link(db,
-				source_path.value(),
-				pl.dst.document_path,
+				checksummer->get_checksum(source_path.value()),
+				pl.dst.document_checksum,
 				pl.dst.book_state.offset_x,
 				pl.dst.book_state.offset_y,
 				pl.dst.book_state.zoom_level,
@@ -1900,7 +1926,7 @@ void MainWidget::toggle_fullscreen() {
 	}
 }
 
-void MainWidget::complete_pending_link(const DocumentViewState& destination_view_state)
+void MainWidget::complete_pending_link(const LinkViewState& destination_view_state)
 {
 	Link& pl = pending_link.value().second;
 	pl.dst = destination_view_state;
@@ -1923,8 +1949,8 @@ void MainWidget::long_jump_to_destination(int page, float offset_x, float offset
 		// if we press the link button and then click on a pdf link, we automatically link to the
 		// link's destination
 
-		DocumentViewState dest_state;
-		dest_state.document_path = main_document_view->get_document()->get_path();
+		LinkViewState dest_state;
+		dest_state.document_checksum = main_document_view->get_document()->get_checksum();
 		dest_state.book_state.offset_x = offset_x;
 		dest_state.book_state.offset_y = main_document_view->get_page_offset(page) + offset_y;
 		dest_state.book_state.zoom_level = main_document_view->get_zoom_level();

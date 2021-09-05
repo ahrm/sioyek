@@ -59,6 +59,11 @@ struct DocumentViewState {
 	OpenedBookState book_state;
 };
 
+struct LinkViewState {
+	std::string document_checksum;
+	OpenedBookState book_state;
+};
+
 /*
 	A link is a connection between two document locations. For example when reading a paragraph that is referencing a figure,
 	we may want to link that paragraphs's location to the figure. We can then easily switch between the paragraph and the figure.
@@ -68,7 +73,7 @@ struct DocumentViewState {
 struct Link {
 	static Link with_src_offset(float src_offset);
 
-	DocumentViewState dst;
+	LinkViewState dst;
 	float src_offset_y;
 };
 

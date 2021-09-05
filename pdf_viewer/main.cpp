@@ -73,6 +73,7 @@
 #include "main_widget.h"
 #include "path.h"
 #include "RunGuard.h"
+#include "checksum.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -351,8 +352,18 @@ int main(int argc, char* args[]) {
 
 	InputHandler input_handler(default_keys_path, user_keys_paths);
 
+	std::vector<std::pair<std::wstring, std::wstring>> prev_path_hash_pairs;
+	get_prev_path_hash_pairs(db, prev_path_hash_pairs);
 
-	DocumentManager document_manager(mupdf_context, db);
+	if (prev_path_hash_pairs.size() == 0) {
+		// migrate the databse paths to checksums the first time we launch the new version
+		upgrade_database_hashes(db);
+		get_prev_path_hash_pairs(db, prev_path_hash_pairs);
+	}
+
+	CachedChecksummer checksummer(&prev_path_hash_pairs);
+
+	DocumentManager document_manager(mupdf_context, db, &checksummer);
 
 	QFileSystemWatcher pref_file_watcher;
 	pref_file_watcher.addPath(QString::fromStdWString(default_config_path.get_path()));
@@ -376,7 +387,7 @@ int main(int argc, char* args[]) {
 	//QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));
 	//app.setWindowIcon(icon);
 
-	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, &quit);
+	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, &checksummer, &quit);
 	//main_widget.open_document(file_path.get_path());
 	//main_widget.resize(500, 500);
 

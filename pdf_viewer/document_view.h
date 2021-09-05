@@ -23,6 +23,7 @@
 #include "utils.h"
 #include "config.h"
 #include "ui.h"
+#include "checksum.h"
 
 extern float ZOOM_INC_FACTOR;
 extern const int PAGE_PADDINGS;
@@ -35,6 +36,7 @@ private:
 	sqlite3* database = nullptr;
 	ConfigManager* config_manager = nullptr;
 	DocumentManager* document_manager = nullptr;
+	CachedChecksummer* checksummer;
 	Document* current_document = nullptr;
 
 	float zoom_level = 0;
@@ -47,12 +49,13 @@ private:
 	int view_height = 0;
 
 public:
-	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager);
-	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager, bool* invalid_flag,
+	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer);
+	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer, bool* invalid_flag,
 		std::wstring path, int view_width, int view_height, float offset_x, float offset_y);
 	~DocumentView();
 	float get_zoom_level();
 	DocumentViewState get_state();
+	LinkViewState get_checksum_state();
 	void set_opened_book_state(const OpenedBookState& state);
 	void handle_escape();
 	void set_book_state(OpenedBookState state);

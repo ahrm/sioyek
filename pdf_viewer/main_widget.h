@@ -21,6 +21,7 @@
 #include "input.h"
 #include "pdf_view_opengl_widget.h"
 #include "path.h"
+#include "checksum.h"
 
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
@@ -36,6 +37,7 @@ private:
 	ConfigManager* config_manager = nullptr;
 	PdfRenderer* pdf_renderer = nullptr;
 	InputHandler* input_handler = nullptr;
+	CachedChecksummer* checksummer = nullptr;
 
 	PdfViewOpenGLWidget* opengl_widget = nullptr;
 	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
@@ -142,7 +144,7 @@ protected:
 	void handle_link();
 	void handle_pending_text_command(std::wstring text);
 	void toggle_fullscreen();
-	void complete_pending_link(const DocumentViewState& destination_view_state);
+	void complete_pending_link(const LinkViewState& destination_view_state);
 	void long_jump_to_destination(int page, float offset_x, float offset_y);
 	void long_jump_to_destination(int page, float offset_y);
 
@@ -154,6 +156,7 @@ public:
 		DocumentManager* document_manager,
 		ConfigManager* config_manager,
 		InputHandler* input_handler,
+		CachedChecksummer* checksummer,
 		bool* should_quit_ptr,
 		QWidget* parent=nullptr
 	);
@@ -163,6 +166,7 @@ public:
 	void open_document(const Path& path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
 	void open_document_at_location(const Path& path, int page, std::optional<float> x_loc, std::optional<float> y_loc, std::optional<float> zoom_level);
 	void open_document(const DocumentViewState& state);
+	void open_document(const LinkViewState& checksum);
 	void validate_render();
 	void validate_ui();
 	void move_document(float dx, float dy);
