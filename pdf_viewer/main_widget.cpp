@@ -1762,14 +1762,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		QApplication::quit();
 	}
 	else if (command->name == "debug") {
-		wprintf(L"_________________________________\n");
-		for (auto& x : history) {
-			//std::wcout << x.document_path << "\n";
-			wprintf(x.document_path.c_str());
-			wprintf(L"\n");
-		}
-		wprintf(L"_________________________________\n");
-		int b = 2;
 
 	}
 
