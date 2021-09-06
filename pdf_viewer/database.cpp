@@ -317,15 +317,26 @@ bool insert_book(sqlite3* db, const std::string& path, float zoom_level, float o
 }
 
 bool insert_document_hash(sqlite3* db, const std::wstring& path, const std::string& checksum){
+
+	const char* delete_doc_sql = ""\
+		"DELETE FROM document_hash WHERE path=";
+
 	const char* insert_doc_hash_sql = ""\
 		"INSERT INTO document_hash (path, hash) VALUES (";
 
-	std::wstringstream ss;
-	ss << insert_doc_hash_sql << "'" << esc(path) << "', '" << esc(checksum) << "');";
+	std::wstringstream insert_ss;
+	insert_ss << insert_doc_hash_sql << "'" << esc(path) << "', '" << esc(checksum) << "');";
+
+	std::wstringstream delete_ss;
+	delete_ss << delete_doc_sql << "'" << esc(path) << "';";
+
+	char* delete_error_message = nullptr;
+	int delete_error_code = sqlite3_exec(db, utf8_encode(delete_ss.str()).c_str(), null_callback, 0, &delete_error_message);
+	handle_error(delete_error_code, delete_error_message);
 	
-	char* error_message = nullptr;
-	int error_code = sqlite3_exec(db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
-	return handle_error(error_code, error_message);
+	char* insert_error_message = nullptr;
+	int insert_error_code = sqlite3_exec(db, utf8_encode(insert_ss.str()).c_str(), null_callback, 0, &insert_error_message);
+	return handle_error(insert_error_code, insert_error_message);
 }
 
 bool update_book(sqlite3* db, const std::wstring& path, float zoom_level, float offset_x, float offset_y) {
