@@ -144,6 +144,17 @@ static int wstring_select_callback(void* res_vector, int argc, char** argv, char
 	return 0;
 }
 
+static int string_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+
+	std::vector<std::string>* res = (std::vector<std::string>*)res_vector;
+	assert(argc == 1);
+
+	std::string desc = argv[0];
+
+	res->push_back(desc);
+	return 0;
+}
+
 static int wstring_pair_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<std::pair<std::wstring, std::wstring>>* res = (std::vector<std::pair<std::wstring, std::wstring>>*)res_vector;
@@ -339,7 +350,7 @@ bool insert_document_hash(sqlite3* db, const std::wstring& path, const std::stri
 	return handle_error(insert_error_code, insert_error_message);
 }
 
-bool update_book(sqlite3* db, const std::wstring& path, float zoom_level, float offset_x, float offset_y) {
+bool update_book(sqlite3* db, const std::string& path, float zoom_level, float offset_x, float offset_y) {
 
 	std::wstringstream ss;
 	ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time) values ('" <<
@@ -493,7 +504,7 @@ bool update_mark(sqlite3* db, const std::string& document_path, char symbol, flo
 }
 
 
-bool select_opened_book(sqlite3* db, const std::wstring& book_path, std::vector<OpenedBookState> &out_result) {
+bool select_opened_book(sqlite3* db, const std::string& book_path, std::vector<OpenedBookState> &out_result) {
 		std::wstringstream ss;
 		ss << "select zoom_level, offset_x, offset_y from opened_books where path='" << esc(book_path) << "'";
 		char* error_message = nullptr;
@@ -514,7 +525,7 @@ bool select_opened_book(sqlite3* db, const std::wstring& book_path, std::vector<
 //		error_message);
 //}
 
-bool delete_opened_book(sqlite3* db, const std::wstring& book_path) {
+bool delete_opened_book(sqlite3* db, const std::string& book_path) {
 		std::wstringstream ss;
 		ss << "DELETE FROM opened_books where path='" << esc(book_path) << "'";
 		char* error_message = nullptr;
@@ -525,11 +536,21 @@ bool delete_opened_book(sqlite3* db, const std::wstring& book_path) {
 }
 
 
-bool select_prev_docs(sqlite3* db,  std::vector<std::wstring> &out_result) {
+bool select_opened_books_path_values(sqlite3* db,  std::vector<std::wstring> &out_result) {
 		std::wstringstream ss;
 		ss << "SELECT path FROM opened_books order by datetime(last_access_time) desc;";
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(db, utf8_encode(ss.str()).c_str(), prev_doc_callback, &out_result, &error_message);
+		return handle_error(
+			error_code,
+			error_message);
+}
+
+bool select_opened_books_hashes_and_names(sqlite3* db,  std::vector<std::pair<std::wstring, std::wstring>> &out_result) {
+		std::wstringstream ss;
+		ss << "SELECT opened_books.path, document_hash.path FROM opened_books, document_hash where opened_books.path=document_hash.hash order by datetime(opened_books.last_access_time) desc;";
+		char* error_message = nullptr;
+		int error_code = sqlite3_exec(db, utf8_encode(ss.str()).c_str(), wstring_pair_select_callback, &out_result, &error_message);
 		return handle_error(
 			error_code,
 			error_message);
@@ -685,6 +706,10 @@ bool update_mark_path(sqlite3* db, const std::wstring& path, const std::wstring&
 	return update_string_value(db, L"marks", L"document_path", path, new_path);
 }
 
+bool update_opened_book_path(sqlite3* db, const std::wstring& path, const std::wstring& new_path) {
+	return update_string_value(db, L"opened_books", L"path", path, new_path);
+}
+
 bool update_bookmark_path(sqlite3* db, const std::wstring& path, const std::wstring& new_path) {
 	return update_string_value(db, L"bookmarks", L"document_path", path, new_path);
 }
@@ -704,17 +729,20 @@ void upgrade_database_hashes(sqlite3* db) {
 	get_prev_path_hash_pairs(db, prev_docs);
 	if (prev_docs.size() == 0) {
 		std::vector<std::wstring> prev_doc_paths;
-		select_prev_docs(db, prev_doc_paths);
+		select_opened_books_path_values(db, prev_doc_paths);
 
 		for (const auto& doc_path : prev_doc_paths) {
 			std::string checksum = checksummer.get_checksum(doc_path);
-			std::wstring uchecksum = utf8_decode(checksum);
-			insert_document_hash(db, doc_path, checksum);
+			if (checksum.size() > 0) {
+				std::wstring uchecksum = utf8_decode(checksum);
+				insert_document_hash(db, doc_path, checksum);
 
-			update_mark_path(db, doc_path, uchecksum);
-			update_bookmark_path(db, doc_path, uchecksum);
-			update_highlight_path(db, doc_path, uchecksum);
-			update_portal_path(db, doc_path, uchecksum);
+				update_mark_path(db, doc_path, uchecksum);
+				update_bookmark_path(db, doc_path, uchecksum);
+				update_highlight_path(db, doc_path, uchecksum);
+				update_portal_path(db, doc_path, uchecksum);
+				update_opened_book_path(db, doc_path, uchecksum);
+			}
 		}
 	}
 }
@@ -749,18 +777,18 @@ void export_json(sqlite3* db, std::wstring json_file_path, CachedChecksummer* ch
 
 	std::set<std::string> seen_checksums;
 
-	std::vector<std::wstring> prev_doc_paths;
+	std::vector<std::wstring> prev_doc_checksums;
 
-	select_prev_docs(db, prev_doc_paths);
+	select_opened_books_path_values(db, prev_doc_checksums);
 
 	QJsonArray document_data_array;
 
-	for (int i = 0; i < prev_doc_paths.size(); i++) {
+	for (int i = 0; i < prev_doc_checksums.size(); i++) {
 
-		const auto& path = prev_doc_paths[i];
-		std::string document_checksum = checksummer->get_checksum(path);
+		const auto& document_checksum = utf8_encode(prev_doc_checksums[i]);
+		std::optional<std::wstring> path = checksummer->get_path(document_checksum);
 
-		if ((document_checksum.size() == 0) || (seen_checksums.find(document_checksum) != seen_checksums.end())) {
+		if ((!path) || (document_checksum.size() == 0) || (seen_checksums.find(document_checksum) != seen_checksums.end())) {
 			continue;
 		}
 
@@ -770,7 +798,7 @@ void export_json(sqlite3* db, std::wstring json_file_path, CachedChecksummer* ch
 		std::vector<Link> portals;
 		std::vector<OpenedBookState> opened_book_state_;
 
-		select_opened_book(db, path, opened_book_state_);
+		select_opened_book(db, document_checksum, opened_book_state_);
 		if (opened_book_state_.size() != 1) {
 			continue;
 		}
@@ -793,7 +821,7 @@ void export_json(sqlite3* db, std::wstring json_file_path, CachedChecksummer* ch
 		book_object["offset_y"] = opened_book_state.offset_y;
 		book_object["zoom_level"] = opened_book_state.zoom_level;
 		book_object["checksum"] = QString::fromStdString(document_checksum);
-		book_object["path"] = QString::fromStdWString(path);
+		book_object["path"] = QString::fromStdWString(path.value());
 		book_object["bookmarks"] = json_bookmarks;
 		book_object["marks"] = json_marks;
 		book_object["highlights"] = json_highlights;
@@ -880,7 +908,8 @@ void import_json(sqlite3* db, std::wstring json_file_path, CachedChecksummer* ch
 		std::optional<std::wstring> path = checksummer->get_path(checksum);
 
 		if (path) {
-			update_book(db, path.value(), zoom_level, offset_x, offset_y);
+			//update_book(db, path.value(), zoom_level, offset_x, offset_y);
+			update_book(db, checksum, zoom_level, offset_x, offset_y);
 		}
 
 		for (const auto& bm : new_bookmarks) {

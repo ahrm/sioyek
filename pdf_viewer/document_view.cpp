@@ -519,8 +519,9 @@ void DocumentView::open_document(const std::wstring& doc_path,
 	}
 	else if (load_prev_state) {
 
+		std::string checksum = checksummer->get_checksum(canonical_path);
 		std::vector<OpenedBookState> prev_state;
-		if (select_opened_book(database, canonical_path, prev_state)) {
+		if (select_opened_book(database, checksum, prev_state)) {
 			if (prev_state.size() > 1) {
 				std::cerr << "more than one file with one path, this should not happen!" << std::endl;
 			}
@@ -606,7 +607,7 @@ void DocumentView::fit_to_page_width(bool smart)
 
 void DocumentView::persist() {
 	if (!current_document) return;
-	update_book(database, current_document->get_path(), zoom_level, offset_x, offset_y);
+	update_book(database, current_document->get_checksum(), zoom_level, offset_x, offset_y);
 }
 
 int DocumentView::get_current_chapter_index()

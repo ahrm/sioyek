@@ -770,6 +770,13 @@ void MainWidget::open_document(const LinkViewState& lvs) {
 	}
 }
 
+void MainWidget::open_document_with_hash(const std::string& path, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
+	std::optional<std::wstring> maybe_path = checksummer->get_path(path);
+	if (maybe_path) {
+		Path path(maybe_path.value());
+		open_document(path, offset_x, offset_y, zoom_level);
+	}
+}
 
 void MainWidget::open_document(const Path& path, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
 
@@ -1544,27 +1551,30 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 	}
 	else if (command->name == "open_prev_doc") {
-		std::vector<std::wstring> opened_docs_paths;
+		std::vector<std::pair<std::wstring, std::wstring>> opened_docs_hash_path_pairs;
 		std::vector<std::wstring> opened_docs_names;
-		select_prev_docs(db, opened_docs_paths);
+		std::vector<std::string> opened_docs_hashes;
 
-		for (const auto& p : opened_docs_paths) {
-			opened_docs_names.push_back(Path(p).filename().value_or(L"<ERROR>"));
+		select_opened_books_hashes_and_names(db, opened_docs_hash_path_pairs);
+
+		for (const auto& [hash, path] : opened_docs_hash_path_pairs) {
+			opened_docs_names.push_back(Path(path).filename().value_or(L"<ERROR>"));
+			opened_docs_hashes.push_back(utf8_encode(hash));
 		}
 
-		if (opened_docs_paths.size() > 0) {
-			current_widget = std::make_unique<FilteredSelectWindowClass<std::wstring>>(opened_docs_names,
-				opened_docs_paths,
-				[&](std::wstring* doc_path) {
-					if (doc_path->size() > 0) {
+		if (opened_docs_hash_path_pairs.size() > 0) {
+			current_widget = std::make_unique<FilteredSelectWindowClass<std::string>>(opened_docs_names,
+				opened_docs_hashes,
+				[&](std::string* doc_hash) {
+					if (doc_hash->size() > 0) {
 						validate_render();
-						open_document(*doc_path);
+						open_document_with_hash(*doc_hash);
 					}
 				},
 				config_manager,
 				this,
-				[&](std::wstring* doc_path) {
-					delete_opened_book(db, *doc_path);
+				[&](std::string* doc_hash) {
+					delete_opened_book(db, *doc_hash);
 				});
 			current_widget->show();
 		}
