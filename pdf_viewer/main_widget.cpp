@@ -1894,22 +1894,18 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			open_file(default_keys_path.get_path());
 		}
 		else if (text == L"keys_user") {
-			for (int i = user_keys_paths.size() - 1; i >= 0; i--) {
-				if (user_keys_paths[i].file_exists()) {
-					open_file(user_keys_paths[i].get_path());
-					break;
-				}
+			std::optional<Path> key_file_path = input_handler->get_or_create_user_keys_path();
+			if (key_file_path) {
+				open_file(key_file_path.value().get_path());
 			}
 		}
 		else if (text == L"prefs") {
 			open_file(default_config_path.get_path());
 		}
 		else if (text == L"prefs_user") {
-			for (int i = user_config_paths.size() - 1; i >= 0; i--) {
-				if (user_config_paths[i].file_exists()) {
-					open_file(user_config_paths[i].get_path());
-					break;
-				}
+			std::optional<Path> pref_file_path = config_manager->get_or_create_user_config_file();
+			if (pref_file_path) {
+				open_file(pref_file_path.value().get_path());
 			}
 		}
 		else if (text == L"export") {

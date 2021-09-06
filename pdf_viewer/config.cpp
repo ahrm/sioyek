@@ -95,6 +95,7 @@ Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 
 ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& user_paths) {
 
+	user_config_paths = user_paths;
 	auto vec3_serializer = vec_n_serializer<3>;
 	auto vec4_serializer = vec_n_serializer<4>;
 	auto vec3_deserializer = vec_n_deserializer<3>;
@@ -195,4 +196,18 @@ void ConfigManager::deserialize(const Path& default_file_path, const std::vector
 		}
 
 	}
+}
+
+std::optional<Path> ConfigManager::get_or_create_user_config_file() {
+	if (user_config_paths.size() == 0) {
+		return {};
+	}
+
+	for (int i = user_config_paths.size() - 1; i >= 0; i--) {
+		if (user_config_paths[i].file_exists()) {
+			return user_config_paths[i];
+		}
+	}
+	create_file_if_not_exists(user_config_paths.back().get_path());
+	return user_config_paths.back();
 }

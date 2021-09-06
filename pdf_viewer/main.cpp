@@ -267,17 +267,6 @@ int main(int argc, char* args[]) {
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	QSurfaceFormat::setDefaultFormat(format);
 
-	// we need an application in order to be able to use QCoreApplication::applicationDirPath
-	QApplication* dummy_application = new QApplication(argc, args);
-	configure_paths();
-	verify_paths();
-	delete dummy_application;
-
-	//create_file_if_not_exists(user_keys_path.get_path());
-	//create_file_if_not_exists(user_config_path.get_path());
-
-	ConfigManager config_manager(default_config_path, user_config_paths);
-
 	// should we launche a new instance each time the user opens a PDF or should we reuse the previous instance
 	bool use_single_instance = !SHOULD_LAUNCH_NEW_INSTANCE;
 
@@ -290,6 +279,11 @@ int main(int argc, char* args[]) {
 
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
+
+	configure_paths();
+	verify_paths();
+
+	ConfigManager config_manager(default_config_path, user_config_paths);
 
 	RunGuard guard("sioyek");
 
