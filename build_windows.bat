@@ -12,7 +12,7 @@ if %1 == portable (
 ) else (
     qmake -tp vc "DEFINES+=NON_PORTABLE" pdf_viewer_build_config.pro
 )
-msbuild sioyek.vcxproj /property:Configuration=Release
+msbuild -maxcpucount sioyek.vcxproj /property:Configuration=Release
 rm -r sioyek-release-windows 2> NUL
 mkdir sioyek-release-windows
 cp release\sioyek.exe sioyek-release-windows\sioyek.exe

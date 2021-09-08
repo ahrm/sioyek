@@ -5,10 +5,13 @@ on:
   push:
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - "*"
 
 jobs:
   upload-release:
-
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-18.04
     needs: [build-mac, build-linux, build-windows, build-linux-portable, build-windows-portable]
 
@@ -86,16 +89,28 @@ jobs:
     runs-on: ubuntu-18.04
 
     steps:
+    - name: Cache apt-get packages
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-deb-packages
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
     - name: Set up GCC
       uses: egor-tensin/setup-gcc@v1
       with:
         version: 9
         platform: x64
-        
+
     - uses: actions/checkout@v2
       with:
             submodules: 'recursive'
-            
+
     - name: Install libharfbuzz
       run: sudo apt install libharfbuzz-dev
       
@@ -107,7 +122,7 @@ jobs:
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
 
-      run: ./build_and_release.sh
+      run: MAKE_PARALLEL=$(nproc) ./build_and_release.sh
       env:
         CC:   gcc-9
         CXX:  g++-9
@@ -116,21 +131,37 @@ jobs:
       with:
         name: uploads
         path: sioyek-release-linux.zip
+    - name: Workaround apt-get cache permission (https://github.com/actions/cache/issues/324)
+      run: |
+        export USER_NAME=$(whoami)
+        sudo chown -R $USER_NAME /var/cache/apt/archives
 
   build-linux-portable:
     runs-on: ubuntu-18.04
 
     steps:
+    - name: Cache apt-get packages
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-deb-packages
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}-portable
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
     - name: Set up GCC
       uses: egor-tensin/setup-gcc@v1
       with:
         version: 9
         platform: x64
-        
+
     - uses: actions/checkout@v2
       with:
             submodules: 'recursive'
-            
+
     - name: Install libharfbuzz
       run: sudo apt install libharfbuzz-dev
       
@@ -142,7 +173,7 @@ jobs:
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
 
-      run: ./build_and_release.sh portable
+      run: MAKE_PARALLEL=$(nproc) ./build_and_release.sh portable
       env:
         CC:   gcc-9
         CXX:  g++-9
@@ -150,7 +181,11 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: uploads
-        path: sioyek-release-linux-portable.zip   
+        path: sioyek-release-linux-portable.zip
+    - name: Workaround apt-get cache permission (https://github.com/actions/cache/issues/324)
+      run: |
+        export USER_NAME=$(whoami)
+        sudo chown -R $USER_NAME /var/cache/apt/archives
 
   build-windows:
 
@@ -213,11 +248,23 @@ jobs:
     runs-on: macos-latest
 
     steps:
-        
+
     - uses: actions/checkout@v2
       with:
             submodules: 'recursive'
-            
+
+    - name: Cache Homebrew packages
+      uses: actions/cache@v2
+      env:
+        cache-name: homebrew
+      with:
+        path: ~/Library/Caches/Homebrew
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
     - name: Install dependencies
       run:  brew install freeglut mesa harfbuzz 
       
@@ -230,7 +277,7 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         chmod +x build_mac.sh
-        ./build_mac.sh
+        MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) ./build_mac.sh
         
     - name: upload mac artifact
       uses: actions/upload-artifact@v1
