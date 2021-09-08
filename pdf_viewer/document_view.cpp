@@ -129,9 +129,11 @@ void DocumentView::goto_link(Link* link)
 			set_opened_book_state(link->dst.book_state);
 		}
 		else {
-			std::wstring destination_path = checksummer->get_path(link->dst.document_checksum).value();
-			open_document(destination_path, nullptr);
-			set_opened_book_state(link->dst.book_state);
+			auto destination_path = checksummer->get_path(link->dst.document_checksum);
+			if (destination_path) {
+				open_document(destination_path.value(), nullptr);
+				set_opened_book_state(link->dst.book_state);
+			}
 		}
 	}
 }

@@ -23,7 +23,6 @@ private:
 public:
 	bool open(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path);
 	bool select_opened_book(const std::string& book_path, std::vector<OpenedBookState>& out_result);
-	bool select_opened_books_hashes_and_names(std::vector<std::pair<std::wstring, std::wstring>>& out_result);
 	bool insert_mark(const std::string& checksum, char symbol, float offset_y);
 	bool update_mark(const std::string& checksum, char symbol, float offset_y);
 	bool update_book(const std::string& path, float zoom_level, float offset_x, float offset_y);
@@ -56,7 +55,7 @@ public:
 	bool get_prev_path_hash_pairs(std::vector<std::pair<std::wstring, std::wstring>>& out_pairs);
 	bool insert_document_hash(const std::wstring& path, const std::string& checksum);
 	void upgrade_database_hashes();
-	void split_database(const std::wstring& local_database_path, const std::wstring& global_database_path);
+	void split_database(const std::wstring& local_database_path, const std::wstring& global_database_path, bool was_using_hashes);
 	void export_json(std::wstring json_file_path, CachedChecksummer* checksummer);
 	void import_json(std::wstring json_file_path, CachedChecksummer* checksummer);
 	void ensure_database_compatibility(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path);

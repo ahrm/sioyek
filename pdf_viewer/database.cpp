@@ -4,6 +4,7 @@
 #include <utility>
 #include <set>
 #include <optional>
+#include <unordered_map>
 
 #include <qfile.h>
 #include <qjsonarray.h>
@@ -575,27 +576,27 @@ bool DatabaseManager::select_opened_books_path_values( std::vector<std::wstring>
 			error_message);
 }
 
-bool DatabaseManager::select_opened_books_hashes_and_names(std::vector<std::pair<std::wstring, std::wstring>> &out_result) {
-	std::vector<std::wstring> hashes;
-	select_opened_books_path_values(hashes);
-	for (const auto& hash : hashes) {
-		std::vector<std::wstring> paths;
-		get_path_from_hash(utf8_encode(hash), paths);
-		if (paths.size() > 0) {
-			out_result.push_back(std::make_pair(hash, paths.back()));
-		}
-	}
-	return true;
-	//this->select_
-	//this->sele
-		//std::wstringstream ss;
-		//ss << "SELECT opened_books.path, document_hash.path FROM opened_books, document_hash where opened_books.path=document_hash.hash order by datetime(opened_books.last_access_time) desc;";
-		//char* error_message = nullptr;
-		//int error_code = sqlite3_exec(db, utf8_encode(ss.str()).c_str(), wstring_pair_select_callback, &out_result, &error_message);
-		//return handle_error(
-		//	error_code,
-		//	error_message);
-}
+//bool DatabaseManager::select_opened_books_hashes_and_names(std::vector<std::pair<std::wstring, std::wstring>> &out_result) {
+//	std::vector<std::wstring> hashes;
+//	select_opened_books_path_values(hashes);
+//	for (const auto& hash : hashes) {
+//		std::vector<std::wstring> paths;
+//		get_path_from_hash(utf8_encode(hash), paths);
+//		if (paths.size() > 0) {
+//			out_result.push_back(std::make_pair(hash, paths.back()));
+//		}
+//	}
+//	return true;
+//	//this->select_
+//	//this->sele
+//		//std::wstringstream ss;
+//		//ss << "SELECT opened_books.path, document_hash.path FROM opened_books, document_hash where opened_books.path=document_hash.hash order by datetime(opened_books.last_access_time) desc;";
+//		//char* error_message = nullptr;
+//		//int error_code = sqlite3_exec(db, utf8_encode(ss.str()).c_str(), wstring_pair_select_callback, &out_result, &error_message);
+//		//return handle_error(
+//		//	error_code,
+//		//	error_message);
+//}
 
 bool DatabaseManager::select_mark(const std::string& book_path, std::vector<Mark> &out_result) {
 		std::wstringstream ss;
@@ -784,7 +785,7 @@ void DatabaseManager::upgrade_database_hashes() {
 	}
 }
 
-void DatabaseManager::split_database(const std::wstring& local_database_path, const std::wstring& global_database_path) {
+void DatabaseManager::split_database(const std::wstring& local_database_path, const std::wstring& global_database_path, bool was_using_hashes) {
 
 	//we should only split when we have the same local and global database
 	assert(local_db == global_db);
@@ -792,44 +793,66 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 	sqlite3* prev_database = local_db;
 
 	// ---------------------- EXPORT PREVIOUS DATABASE ----------------------------
-	std::vector<std::pair<std::wstring, std::wstring>> hash_path;
-	select_opened_books_hashes_and_names(hash_path);
+	std::vector<std::pair<std::wstring, std::wstring>> path_hash;
+	get_prev_path_hash_pairs(path_hash);
 	std::vector<std::pair<std::string, OpenedBookState>> opened_book_states;
 	std::vector<std::pair<std::string, Mark>> marks;
 	std::vector<std::pair<std::string, BookMark>> bookmarks;
 	std::vector<std::pair<std::string, Highlight>> highlights;
 	std::vector<std::pair<std::string, Link>> portals;
 
-	for (const auto [hash_, path] : hash_path) {
+	std::unordered_map<std::wstring, std::wstring> path_to_hash;
+
+	for (const auto& [path, hash] : path_hash) {
+		path_to_hash[path] = hash;
+	}
+
+	for (const auto [path, hash_] : path_hash) {
 		std::string hash = utf8_encode(hash_);
+		std::string key;
+		if (was_using_hashes) {
+			key = hash;
+		}
+		else {
+			key = utf8_encode(path);
+		}
 		std::vector<OpenedBookState> current_book_state;
 		std::vector<Mark> current_marks;
 		std::vector<BookMark> current_bookmarks;
 		std::vector<Highlight> current_highlights;
 		std::vector<Link> current_portals;
 
-		select_opened_book(hash, current_book_state);
+		select_opened_book(key, current_book_state);
 		if (current_book_state.size() > 0) {
 			opened_book_states.push_back(std::make_pair(hash, current_book_state[0]));
 		}
 
-		select_mark(hash, current_marks);
+		select_mark(key, current_marks);
 		for (const auto& mark : current_marks) {
 			marks.push_back(std::make_pair(hash, mark));
 		}
 
-		select_bookmark(hash, current_bookmarks);
+		select_bookmark(key, current_bookmarks);
 		for (const auto& bookmark : current_bookmarks) {
 			bookmarks.push_back(std::make_pair(hash, bookmark));
 		}
 
-		select_highlight(hash, current_highlights);
+		select_highlight(key, current_highlights);
 		for (const auto& highlight : current_highlights) {
 			highlights.push_back(std::make_pair(hash, highlight));
 		}
 
-		select_links(hash, current_portals);
-		for (const auto& portal : current_portals) {
+		select_links(key, current_portals);
+		for (auto portal : current_portals) {
+			if (!was_using_hashes) {
+				if (path_to_hash.find(utf8_decode(portal.dst.document_checksum)) == path_to_hash.end()) {
+					continue;
+				}
+				else {
+					portal.dst.document_checksum = utf8_encode(path_to_hash[utf8_decode(portal.dst.document_checksum)]);
+				}
+			}
+
 			portals.push_back(std::make_pair(hash, portal));
 		}
 	}
@@ -844,7 +867,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 
 	// ---------------------- IMPORT PREVIOUS DATA ----------------------------
 	create_tables();
-	for (const auto [hash, path] : hash_path) {
+	for (const auto [path, hash] : path_hash) {
 		insert_document_hash(path, utf8_encode(hash));
 	}
 
@@ -1078,13 +1101,15 @@ void DatabaseManager::ensure_database_compatibility(const std::wstring& local_db
 	// if the database is still using absolute paths instead of checksums, update all paths to checksums
 	std::vector<std::pair<std::wstring, std::wstring>> prev_path_hash_pairs;
 	get_prev_path_hash_pairs(prev_path_hash_pairs);
+	bool was_using_hashes = true;
 
 	if (prev_path_hash_pairs.size() == 0) {
+		was_using_hashes = false;
 		upgrade_database_hashes();
 	}
 
 	//if we are still using a single database file instead of separate local and global database files, split the database.
 	if (local_db == global_db) {
-		split_database(local_db_file_path, global_db_file_path);
+		split_database(local_db_file_path, global_db_file_path, was_using_hashes);
 	}
 }
