@@ -23,14 +23,14 @@ void Document::load_document_metadata_from_db() {
 	std::thread background(
 		[this]() {
 			std::string checksum = get_checksum();
-			insert_document_hash(db, get_path(), checksum);
+			db_manager->insert_document_hash(get_path(), checksum);
 			marks.clear();
 			bookmarks.clear();
 			highlights.clear();
-			select_mark(db, checksum, marks);
-			select_bookmark(db, checksum, bookmarks);
-			select_highlight(db, checksum, highlights);
-			select_links(db, checksum, links);
+			db_manager->select_mark(checksum, marks);
+			db_manager->select_bookmark(checksum, bookmarks);
+			db_manager->select_highlight(checksum, highlights);
+			db_manager->select_links(checksum, links);
 		}
 	);
 	background.detach();
@@ -39,7 +39,7 @@ void Document::load_document_metadata_from_db() {
 
 void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 	bookmarks.push_back({y_offset, desc});
-	insert_bookmark(db, get_checksum(), desc, y_offset);
+	db_manager->insert_bookmark(get_checksum(), desc, y_offset);
 }
 
 void Document::add_highlight(const std::wstring& desc,
@@ -60,7 +60,7 @@ void Document::add_highlight(const std::wstring& desc,
 	highlight.highlight_rects = highlight_rects;
 
 	highlights.push_back(highlight);
-	insert_highlight(db,
+	db_manager->insert_highlight(
 		get_checksum(),
 		desc,
 		selection_begin.x,
@@ -78,7 +78,7 @@ bool Document::get_is_indexing()
 void Document::add_link(Link link, bool insert_into_database) {
 	links.push_back(link);
 	if (insert_into_database) {
-		insert_link(db,
+		db_manager->insert_link(
 			get_checksum(),
 			link.dst.document_checksum,
 			link.dst.book_state.offset_x,
@@ -110,7 +110,7 @@ int Document::find_closest_bookmark_index(float to_offset_y) {
 void Document::delete_closest_bookmark(float to_y_offset) {
 	int closest_index = find_closest_bookmark_index(to_y_offset);
 	if (closest_index > -1) {
-		delete_bookmark(db, get_checksum(), bookmarks[closest_index].y_offset);
+		db_manager->delete_bookmark( get_checksum(), bookmarks[closest_index].y_offset);
 		bookmarks.erase(bookmarks.begin() + closest_index);
 	}
 }
@@ -119,7 +119,7 @@ void Document::delete_highlight_with_index(int index)
 {
 	Highlight highlight_to_delete = highlights[index];
 
-	delete_highlight(db,
+	db_manager->delete_highlight(
 		get_checksum(),
 		highlight_to_delete.selection_begin.x,
 		highlight_to_delete.selection_begin.y,
@@ -175,7 +175,7 @@ bool Document::update_link(Link new_link)
 void Document::delete_closest_link(float to_offset_y) {
 	int closest_index = -1;
 	if (find_closest_link(to_offset_y, &closest_index)) {
-		delete_link(db, get_checksum(), links[closest_index].src_offset_y);
+		db_manager->delete_link( get_checksum(), links[closest_index].src_offset_y);
 		links.erase(links.begin() + closest_index);
 	}
 }
@@ -207,11 +207,11 @@ void Document::add_mark(char symbol, float y_offset) {
 	int current_mark_index = get_mark_index(symbol);
 	if (current_mark_index == -1) {
 		marks.push_back({ y_offset, symbol });
-		insert_mark(db, get_checksum(), symbol, y_offset);
+		db_manager->insert_mark( get_checksum(), symbol, y_offset);
 	}
 	else {
 		marks[current_mark_index].y_offset = y_offset;
-		update_mark(db, get_checksum(), symbol, y_offset);
+		db_manager->update_mark( get_checksum(), symbol, y_offset);
 	}
 }
 
@@ -235,11 +235,11 @@ bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
 	return true;
 }
 
-Document::Document(fz_context* context, std::wstring file_name, sqlite3* db, CachedChecksummer* checksummer) :
+Document::Document(fz_context* context, std::wstring file_name, DatabaseManager* db, CachedChecksummer* checksummer) :
 	context(context),
 	file_name(file_name),
 	doc(nullptr),
-	db(db),
+	db_manager(db),
 	checksummer(checksummer){
 	last_update_time = QDateTime::currentDateTime();
 }
@@ -692,9 +692,9 @@ int Document::num_pages() {
 	return pages;
 }
 
-DocumentManager::DocumentManager(fz_context* mupdf_context, sqlite3* database, CachedChecksummer* checksummer) :
+DocumentManager::DocumentManager(fz_context* mupdf_context, DatabaseManager* db, CachedChecksummer* checksummer) :
 	mupdf_context(mupdf_context),
-	database(database),
+	db_manager(db),
 	checksummer(checksummer)
 {
 	//get_prev_path_hash_pairs(database, const std::string& path, std::vector<std::pair<std::wstring, std::wstring>>& out_pairs);
@@ -705,7 +705,7 @@ Document* DocumentManager::get_document(const std::wstring& path) {
 	if (cached_documents.find(path) != cached_documents.end()) {
 		return cached_documents.at(path);
 	}
-	Document* new_doc = new Document(mupdf_context, path, database, checksummer);
+	Document* new_doc = new Document(mupdf_context, path, db_manager, checksummer);
 	cached_documents[path] = new_doc;
 	return new_doc;
 }

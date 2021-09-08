@@ -33,7 +33,7 @@ protected:
 
 private:
 	fz_context* mupdf_context = nullptr;
-	sqlite3* database = nullptr;
+	DatabaseManager* db_manager = nullptr;
 	ConfigManager* config_manager = nullptr;
 	DocumentManager* document_manager = nullptr;
 	CachedChecksummer* checksummer;
@@ -49,8 +49,8 @@ private:
 	int view_height = 0;
 
 public:
-	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer);
-	DocumentView( fz_context* mupdf_context, sqlite3* db,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer, bool* invalid_flag,
+	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer);
+	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer, bool* invalid_flag,
 		std::wstring path, int view_width, int view_height, float offset_x, float offset_y);
 	~DocumentView();
 	float get_zoom_level();

@@ -31,7 +31,7 @@ class MainWidget : public QWidget, ConfigFileChangeListener{
 
 private:
 	fz_context* mupdf_context = nullptr;
-	sqlite3* db = nullptr;
+	DatabaseManager* db_manager = nullptr;
 	DocumentManager* document_manager = nullptr;
 	CommandManager command_manager;
 	ConfigManager* config_manager = nullptr;
@@ -152,7 +152,7 @@ public:
 
 	MainWidget(
 		fz_context* mupdf_context,
-		sqlite3* db,
+		DatabaseManager* db_manager,
 		DocumentManager* document_manager,
 		ConfigManager* config_manager,
 		InputHandler* input_handler,

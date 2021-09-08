@@ -3,12 +3,12 @@
 extern float MOVE_SCREEN_PERCENTAGE;
 
 DocumentView::DocumentView( fz_context* mupdf_context,
-	sqlite3* db,
+	DatabaseManager* db_manager,
 	DocumentManager* document_manager,
 	ConfigManager* config_manager,
 	CachedChecksummer* checksummer) :
 	mupdf_context(mupdf_context),
-	database(db),
+	db_manager(db_manager),
 	document_manager(document_manager),
 	config_manager(config_manager),
 	checksummer(checksummer)
@@ -19,7 +19,7 @@ DocumentView::~DocumentView() {
 }
 
 DocumentView::DocumentView(fz_context* mupdf_context,
-	sqlite3* db,
+	DatabaseManager* db_manager,
 	DocumentManager* document_manager,
 	ConfigManager* config_manager,
 	CachedChecksummer* checksummer,
@@ -30,7 +30,7 @@ DocumentView::DocumentView(fz_context* mupdf_context,
 	float offset_x,
 	float offset_y) :
 	DocumentView(mupdf_context,
-		db,
+		db_manager,
 		document_manager,
 		config_manager,
 		checksummer)
@@ -521,7 +521,7 @@ void DocumentView::open_document(const std::wstring& doc_path,
 
 		std::string checksum = checksummer->get_checksum(canonical_path);
 		std::vector<OpenedBookState> prev_state;
-		if (select_opened_book(database, checksum, prev_state)) {
+		if (db_manager->select_opened_book(checksum, prev_state)) {
 			if (prev_state.size() > 1) {
 				std::cerr << "more than one file with one path, this should not happen!" << std::endl;
 			}
@@ -607,7 +607,7 @@ void DocumentView::fit_to_page_width(bool smart)
 
 void DocumentView::persist() {
 	if (!current_document) return;
-	update_book(database, current_document->get_checksum(), zoom_level, offset_x, offset_y);
+	db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y);
 }
 
 int DocumentView::get_current_chapter_index()

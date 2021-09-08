@@ -29,7 +29,7 @@ private:
 	std::vector<BookMark> bookmarks;
 	std::vector<Highlight> highlights;
 	std::vector<Link> links;
-	sqlite3* db = nullptr;
+	DatabaseManager* db_manager = nullptr;
 	std::vector<TocNode*> top_level_toc_nodes;
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
@@ -82,7 +82,7 @@ private:
 	// convetr the fz_outline structure to our own TocNode structure
 	void create_toc_tree(std::vector<TocNode*>& toc);
 
-	Document(fz_context* context, std::wstring file_name, sqlite3* db, CachedChecksummer* checksummer);
+	Document(fz_context* context, std::wstring file_name, DatabaseManager* db_manager, CachedChecksummer* checksummer);
 public:
 	fz_document* doc = nullptr;
 
@@ -163,13 +163,13 @@ public:
 class DocumentManager {
 private:
 	fz_context* mupdf_context = nullptr;
-	sqlite3* database = nullptr;
+	DatabaseManager* db_manager = nullptr;
 	CachedChecksummer* checksummer;
 	std::unordered_map<std::wstring, Document*> cached_documents;
 	std::unordered_map<std::string, std::wstring> hash_to_path;
 public:
 
-	DocumentManager(fz_context* mupdf_context, sqlite3* database, CachedChecksummer* checksummer);
+	DocumentManager(fz_context* mupdf_context, DatabaseManager* db_manager, CachedChecksummer* checksummer);
 
 	Document* get_document(const std::wstring& path);
 	const std::unordered_map<std::wstring, Document*>& get_cached_documents();
