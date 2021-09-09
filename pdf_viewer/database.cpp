@@ -5,6 +5,7 @@
 #include <set>
 #include <optional>
 #include <unordered_map>
+#include <variant>
 
 #include <qfile.h>
 #include <qjsonarray.h>
@@ -211,6 +212,65 @@ static int link_select_callback(void* res_vector, int argc, char** argv, char** 
 	res->push_back(link);
 	return 0;
 }
+
+//template<typename T>
+//T parse_single(char* inp) {
+//	return T();
+//}
+//
+//template<>
+//int parse_single<int>(char* inp) {
+//	return std::stoi(inp);
+//}
+//
+//template<>
+//float parse_single<float>(char* inp) {
+//	return std::stof(inp);
+//}
+//
+//template<>
+//std::string parse_single<std::string>(char* inp) {
+//	return std::string(inp);
+//}
+//
+//template<>
+//std::wstring parse_single<std::wstring>(char* inp) {
+//	return utf8_decode(std::string(inp));
+//}
+//
+//template<>
+//char parse_single<char>(char* inp) {
+//	return *inp;
+//}
+//
+//template <size_t i>
+//std::tuple<> unpack_helper(void* res_vector, int argc, char** argv, char** col_name) {
+//	return std::tuple<>();
+//}
+//
+//template <size_t i, typename T, typename... Types>
+//std::tuple<T, Types...> unpack_helper(void* res_vector, int argc, char** argv, char** col_name) {
+//	return std::tuple_cat(std::tuple<T>(parse_single<T>(argv[i])), unpack_helper<i + 1, Types...>(res_vector, argc, argv, col_name));
+//}
+//
+//template<typename... Types>
+//std::tuple<Types...> unpack(void* res_vector, int argc, char** argv, char** col_name) {
+//	auto item = unpack_helper<0, Types...>(res_vector, argc, argv, col_name);
+//	(static_cast<std::vector<std::tuple<Types...>>*>(res_vector))->push_back(item);
+//}
+
+//template<typename T>
+//T::tuple_type unpack_object(void* res_vector, int argc, char** argv, char** col_name) {
+//	//using std::tuple<Types...> = T::tuple_type;
+//	auto item = unpack_helper<Types...>(res_vector, argc, argv, col_name);
+//	(static_cast<std::vector<std::tuple<Types...>>*>(res_vector))->push_back(item);
+//}
+
+//template<typename T>
+//T unpack(void* res_vector, int argc, char** argv, char** col_name) {
+//	auto item = unpack_helper<Types...>(res_vector, argc, argv, col_name);
+//	(static_cast<std::vector<std::tuple<Types...>>*>(res_vector))->push_back(item);
+//}
 
 bool handle_error(int error_code, char* error_message) {
 	if (error_code != SQLITE_OK) {
@@ -1095,6 +1155,55 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
 
 	}
 }
+
+std::string create_select_query(std::string table_name,
+	std::vector<std::string> selections,
+	std::unordered_map<std::string,std::variant<std::wstring, std::string, int, char, float>> values) {
+	std::wstringstream ss;
+
+	ss << L"SELECT ";
+	for (int i = 0; i < selections.size(); i++) {
+		ss << utf8_decode(selections[i]);
+		if (i < (selections.size() - 1)) {
+			ss << ", ";
+		}
+	}
+	ss << " FROM " << utf8_decode(table_name) << " WHERE ";
+
+	int index = 0;
+	for (const auto& [key, value] : values) {
+
+		std::wstring ukey = utf8_decode(key);
+
+		if (std::holds_alternative<std::wstring>(value)) {
+			ss << ukey << L"='" << esc(std::get<std::wstring>(value)) << L"'";
+		}
+
+		if (std::holds_alternative<std::string>(value)) {
+			ss << ukey << L"='" << esc(std::get<std::string>(value)) << L"'";
+		}
+
+		if (std::holds_alternative<char>(value)) {
+			ss << ukey << L"='" << std::get<char>(value) << L"'";
+		}
+
+		if (std::holds_alternative<int>(value)) {
+			ss << ukey << L"=" << std::get<int>(value) << L"";
+		}
+
+		if (std::holds_alternative<float>(value)) {
+			ss << ukey << L"=" << std::get<float>(value) << L"";
+		}
+
+		index++;
+		if (index != values.size()) {
+			ss << ", ";
+		}
+	}
+	ss << L";";
+	return utf8_encode(ss.str());
+}
+
 void DatabaseManager::ensure_database_compatibility(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path) {
 	create_tables();
 
