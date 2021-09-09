@@ -1553,17 +1553,16 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "open_prev_doc") {
 		//std::vector<std::pair<std::wstring, std::wstring>> opened_docs_hash_path_pairs;
 		std::vector<std::wstring> opened_docs_names;
-		std::vector<std::wstring> opened_docs_hashes;
+		std::vector<std::wstring> opened_docs_hashes_;
+		std::vector<std::string> opened_docs_hashes;
 
-		db_manager->select_opened_books_path_values(opened_docs_hashes);
+		db_manager->select_opened_books_path_values(opened_docs_hashes_);
 
-		for (const auto& doc_hash : opened_docs_hashes) {
-			std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash));
+		for (const auto& doc_hash_ : opened_docs_hashes_) {
+			std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
 			if (path) {
 				opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
-			}
-			else {
-				opened_docs_names.push_back(L"<ERROR>");
+				opened_docs_hashes.push_back(utf8_encode(doc_hash_));
 			}
 		}
 		//db_manager->get_prev_path_hash_pairs(opened_docs_hash_path_pairs);
@@ -1574,18 +1573,18 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		//}
 
 		if (opened_docs_hashes.size() > 0) {
-			current_widget = std::make_unique<FilteredSelectWindowClass<std::wstring>>(opened_docs_names,
+			current_widget = std::make_unique<FilteredSelectWindowClass<std::string>>(opened_docs_names,
 				opened_docs_hashes,
-				[&](std::wstring* doc_hash) {
+				[&](std::string* doc_hash) {
 					if (doc_hash->size() > 0) {
 						validate_render();
-						open_document_with_hash(utf8_encode(*doc_hash));
+						open_document_with_hash(*doc_hash);
 					}
 				},
 				config_manager,
 				this,
-				[&](std::wstring* doc_hash) {
-					db_manager->delete_opened_book(utf8_encode(*doc_hash));
+				[&](std::string* doc_hash) {
+					db_manager->delete_opened_book(*doc_hash);
 				});
 			current_widget->show();
 		}
