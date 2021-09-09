@@ -289,7 +289,7 @@ int main(int argc, char* args[]) {
 
 	ConfigManager config_manager(default_config_path, user_config_paths);
 
-	if (SHARED_DATABASE_PATH != nullptr) {
+	if (SHARED_DATABASE_PATH.size() > 0) {
 		global_database_file_path = SHARED_DATABASE_PATH;
 	}
 	char* shared_database_path_arg = get_argv_value(argc, args, "--shared-database-path");
