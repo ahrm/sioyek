@@ -88,10 +88,12 @@ public:
 
 	void add_bookmark(const std::wstring& desc, float y_offset);
 	void add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, fz_point selection_begin, fz_point selection_end, char type);
+	void fill_highlight_rects(fz_context* ctx);
 	void count_chapter_pages(std::vector<int> &page_counts);
 	void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
 	void count_chapter_pages_accum(std::vector<int> &page_counts);
 	bool get_is_indexing();
+	fz_stext_page* get_stext_with_page_number(fz_context* ctx, int page_number);
 	fz_stext_page* get_stext_with_page_number(int page_number);
 	void add_link(Link link, bool insert_into_database = true);
 	std::wstring get_path();
@@ -152,6 +154,11 @@ public:
 	bool can_use_highlights();
 
 	void get_text_selection(fz_point selection_begin,
+		fz_point selection_end,
+		bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
+		std::vector<fz_rect>& selected_characters,
+		std::wstring& selected_text);
+	void get_text_selection(fz_context* ctx, fz_point selection_begin,
 		fz_point selection_end,
 		bool is_word_selection,
 		std::vector<fz_rect>& selected_characters,
