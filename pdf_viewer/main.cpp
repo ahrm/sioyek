@@ -132,6 +132,7 @@ extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = true;
 extern std::wstring LIBGEN_ADDRESS = L"";
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 extern std::wstring INVERSE_SEARCH_COMMAND = L"";
+extern std::wstring SHARED_DATABASE_PATH = L"";
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE = true;
 extern bool SHOULD_DRAW_UNRENDERED_PAGES = true;
@@ -287,6 +288,14 @@ int main(int argc, char* args[]) {
 	verify_paths();
 
 	ConfigManager config_manager(default_config_path, user_config_paths);
+
+	if (SHARED_DATABASE_PATH != nullptr) {
+		global_database_file_path = SHARED_DATABASE_PATH;
+	}
+	char* shared_database_path_arg = get_argv_value(argc, args, "--shared-database-path");
+	if (shared_database_path_arg) {
+		global_database_file_path = utf8_decode(std::string(shared_database_path_arg));
+	}
 
 	// should we launche a new instance each time the user opens a PDF or should we reuse the previous instance
 	bool use_single_instance = !SHOULD_LAUNCH_NEW_INSTANCE;
