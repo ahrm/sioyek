@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include "path.h"
 
 
@@ -29,6 +30,8 @@ class ConfigManager {
 	float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
 	float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
 
+	std::vector<Path> user_config_paths;
+
 public:
 
 	ConfigManager(const Path& default_path,const std::vector<Path>& user_paths);
@@ -44,4 +47,5 @@ public:
 		if (raw_pointer == nullptr) return nullptr;
 		return (T*)raw_pointer;
 	}
+	std::optional<Path> get_or_create_user_config_file();
 };

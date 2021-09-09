@@ -2,8 +2,17 @@
 #include <qfiledialog.h>
 
 std::wstring select_document_file_name() {
-	QFileDialog::Options options;
 	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.pdf *.epub)");
+	return file_name.toStdWString();
+}
+
+std::wstring select_json_file_name() {
+	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.json )");
+	return file_name.toStdWString();
+}
+
+std::wstring select_new_json_file_name() {
+	QString file_name = QFileDialog::getSaveFileName(nullptr, "Select Document", "", "Documents (*.json )");
 	return file_name.toStdWString();
 }
 

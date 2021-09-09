@@ -73,6 +73,7 @@
 #include "main_widget.h"
 #include "path.h"
 #include "RunGuard.h"
+#include "checksum.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -131,6 +132,7 @@ extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = true;
 extern std::wstring LIBGEN_ADDRESS = L"";
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 extern std::wstring INVERSE_SEARCH_COMMAND = L"";
+extern std::wstring SHARED_DATABASE_PATH = L"";
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE = true;
 extern bool SHOULD_DRAW_UNRENDERED_PAGES = true;
@@ -140,6 +142,8 @@ extern Path default_keys_path(L"");
 extern std::vector<Path> user_config_paths = {};
 extern std::vector<Path> user_keys_paths = {};
 extern Path database_file_path(L"");
+extern Path local_database_file_path(L"");
+extern Path global_database_file_path(L"");
 extern Path tutorial_path(L"");
 extern Path last_opened_file_address_path(L"");
 extern Path shader_path(L"");
@@ -169,6 +173,8 @@ void configure_paths(){
 	}
 
 	database_file_path = standard_data_path.slash(L"test.db");
+	local_database_file_path = standard_data_path.slash(L"local.db");
+	global_database_file_path = standard_data_path.slash(L"shared.db");
 	tutorial_path = standard_data_path.slash(L"tutorial.pdf");
 	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
 	shader_path = standard_data_path.slash(L"shaders");
@@ -189,6 +195,8 @@ void configure_paths(){
 	default_keys_path = parent_path.slash(L"keys.config");
 	user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
 	database_file_path = standard_data_path.slash(L"test.db");
+	local_database_file_path = standard_data_path.slash(L"local.db");
+	global_database_file_path = standard_data_path.slash(L"shared.db");
 	tutorial_path = standard_data_path.slash(L"tutorial.pdf");
 	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
 
@@ -211,11 +219,15 @@ void configure_paths(){
 	user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
 	user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
 	database_file_path = standard_data_path.slash(L"test.db");
+	local_database_file_path = standard_data_path.slash(L"local.db");
+	global_database_file_path = standard_data_path.slash(L"shared.db");
 	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
 #else
 	user_config_paths.push_back(parent_path.slash(L"prefs_user.config"));
 	user_keys_paths.push_back(parent_path.slash(L"keys_user.config"));
 	database_file_path = parent_path.slash(L"test.db");
+	local_database_file_path = parent_path.slash(L"local.db");
+	global_database_file_path = parent_path.slash(L"shared.db");
 	last_opened_file_address_path = parent_path.slash(L"last_document_path.txt");
 #endif
 
@@ -237,6 +249,8 @@ void verify_paths(){
         std::wcout << L"user_keys_path: [ " << i << " ] " << user_keys_paths[i] << L"\n";
     }
     std::wcout << L"database_file_path: " << database_file_path << L"\n";
+    std::wcout << L"local_database_file_path: " << local_database_file_path << L"\n";
+    std::wcout << L"global_database_file_path: " << global_database_file_path << L"\n";
     std::wcout << L"tutorial_path: " << tutorial_path << L"\n";
     std::wcout << L"last_opened_file_address_path: " << last_opened_file_address_path << L"\n";
     std::wcout << L"shader_path: " << shader_path << L"\n";
@@ -266,16 +280,22 @@ int main(int argc, char* args[]) {
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	QSurfaceFormat::setDefaultFormat(format);
 
-	// we need an application in order to be able to use QCoreApplication::applicationDirPath
-	QApplication* dummy_application = new QApplication(argc, args);
+
+	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
+	QApplication app(argc, args);
+
 	configure_paths();
 	verify_paths();
-	delete dummy_application;
-
-	//create_file_if_not_exists(user_keys_path.get_path());
-	//create_file_if_not_exists(user_config_path.get_path());
 
 	ConfigManager config_manager(default_config_path, user_config_paths);
+
+	if (SHARED_DATABASE_PATH != nullptr) {
+		global_database_file_path = SHARED_DATABASE_PATH;
+	}
+	char* shared_database_path_arg = get_argv_value(argc, args, "--shared-database-path");
+	if (shared_database_path_arg) {
+		global_database_file_path = utf8_decode(std::string(shared_database_path_arg));
+	}
 
 	// should we launche a new instance each time the user opens a PDF or should we reuse the previous instance
 	bool use_single_instance = !SHOULD_LAUNCH_NEW_INSTANCE;
@@ -286,9 +306,6 @@ int main(int argc, char* args[]) {
 	else if (should_new_instance(argc, args)) {
 		use_single_instance = false;
 	}
-
-	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
-	QApplication app(argc, args);
 
 	RunGuard guard("sioyek");
 
@@ -316,14 +333,22 @@ int main(int argc, char* args[]) {
 	char* error_message = nullptr;
 	int rc;
 
-	std::string database_file_path_utf8 = utf8_encode(database_file_path.get_path());
-	rc = sqlite3_open(database_file_path_utf8.c_str(), &db);
-
-	if (rc) {
-		std::cerr << "could not open database" << sqlite3_errmsg(db) << std::endl;
+	DatabaseManager db_manager;
+	if (local_database_file_path.file_exists() && global_database_file_path.file_exists()) {
+		db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
 	}
+	else {
+		db_manager.open(database_file_path.get_path(), database_file_path.get_path());
+	}
+	db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path());
+	//std::string database_file_path_utf8 = utf8_encode(database_file_path.get_path());
+	//rc = sqlite3_open(database_file_path_utf8.c_str(), &db);
 
-	create_tables(db);
+	//if (rc) {
+	//	std::cerr << "could not open database" << sqlite3_errmsg(db) << std::endl;
+	//}
+
+	//create_tables(db);
 
 	fz_locks_context locks;
 	locks.user = mupdf_mutexes;
@@ -353,8 +378,20 @@ int main(int argc, char* args[]) {
 
 	InputHandler input_handler(default_keys_path, user_keys_paths);
 
+	//get_prev_path_hash_pairs(db, prev_path_hash_pairs);
 
-	DocumentManager document_manager(mupdf_context, db);
+	//if (prev_path_hash_pairs.size() == 0) {
+	//	// migrate the databse paths to checksums the first time we launch the new version
+	//	upgrade_database_hashes(db);
+	//	get_prev_path_hash_pairs(db, prev_path_hash_pairs);
+	//}
+
+	std::vector<std::pair<std::wstring, std::wstring>> prev_path_hash_pairs;
+	db_manager.get_prev_path_hash_pairs(prev_path_hash_pairs);
+
+	CachedChecksummer checksummer(&prev_path_hash_pairs);
+
+	DocumentManager document_manager(mupdf_context, &db_manager, &checksummer);
 
 	QFileSystemWatcher pref_file_watcher;
 	pref_file_watcher.addPath(QString::fromStdWString(default_config_path.get_path()));
@@ -378,7 +415,7 @@ int main(int argc, char* args[]) {
 	//QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));
 	//app.setWindowIcon(icon);
 
-	MainWidget main_widget(mupdf_context, db, &document_manager, &config_manager, &input_handler, &quit);
+	MainWidget main_widget(mupdf_context, &db_manager, &document_manager, &config_manager, &input_handler, &checksummer, &quit);
 	//main_widget.open_document(file_path.get_path());
 	//main_widget.resize(500, 500);
 

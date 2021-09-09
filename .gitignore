@@ -353,3 +353,7 @@ moc*
 # Linux and Mac build files
 Makefile
 ./sioyek
+libs/*
+*.rc
+pdf_viewer/fonts/*
+*.stash

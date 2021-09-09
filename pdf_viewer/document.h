@@ -19,6 +19,7 @@
 #include "database.h"
 #include "utils.h"
 #include "book.h"
+#include "checksum.h"
 
 class Document {
 
@@ -28,7 +29,7 @@ private:
 	std::vector<BookMark> bookmarks;
 	std::vector<Highlight> highlights;
 	std::vector<Link> links;
-	sqlite3* db = nullptr;
+	DatabaseManager* db_manager = nullptr;
 	std::vector<TocNode*> top_level_toc_nodes;
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
@@ -65,6 +66,7 @@ private:
 	bool are_highlights_loaded = false;
 
 	QDateTime last_update_time;
+	CachedChecksummer* checksummer;
 
 	// we do some of the document processing in a background thread (for example indexing all the
 	// figures/indices and computing page heights. we use this pointer to notify the main thread when
@@ -80,7 +82,7 @@ private:
 	// convetr the fz_outline structure to our own TocNode structure
 	void create_toc_tree(std::vector<TocNode*>& toc);
 
-	Document(fz_context* context, std::wstring file_name, sqlite3* db);
+	Document(fz_context* context, std::wstring file_name, DatabaseManager* db_manager, CachedChecksummer* checksummer);
 public:
 	fz_document* doc = nullptr;
 
@@ -93,6 +95,7 @@ public:
 	fz_stext_page* get_stext_with_page_number(int page_number);
 	void add_link(Link link, bool insert_into_database = true);
 	std::wstring get_path();
+	std::string get_checksum();
 	int find_closest_bookmark_index(float to_offset_y);
 	std::optional<Link> find_closest_link(float to_offset_y, int* index = nullptr);
 	bool update_link(Link new_link);
@@ -160,13 +163,15 @@ public:
 class DocumentManager {
 private:
 	fz_context* mupdf_context = nullptr;
-	sqlite3* database = nullptr;
+	DatabaseManager* db_manager = nullptr;
+	CachedChecksummer* checksummer;
 	std::unordered_map<std::wstring, Document*> cached_documents;
+	std::unordered_map<std::string, std::wstring> hash_to_path;
 public:
 
-	DocumentManager(fz_context* mupdf_context, sqlite3* database);
+	DocumentManager(fz_context* mupdf_context, DatabaseManager* db_manager, CachedChecksummer* checksummer);
 
 	Document* get_document(const std::wstring& path);
-	const std::unordered_map<std::wstring, Document*>& get_cached_documents();;
+	const std::unordered_map<std::wstring, Document*>& get_cached_documents();
 	void delete_global_mark(char symbol);
 };

@@ -318,6 +318,7 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 
 
 InputHandler::InputHandler(const Path& default_path, const std::vector<Path>& user_paths) {
+	user_key_paths = user_paths;
 	reload_config_files(default_path, user_paths);
 }
 
@@ -398,4 +399,18 @@ bool InputParseTreeNode::is_same(const InputParseTreeNode* other) {
 bool InputParseTreeNode::matches(int key, bool shift, bool ctrl)
 {
 	return (key == this->command) && (shift == this->shift_modifier) && (ctrl == this->control_modifier);
+}
+
+std::optional<Path> InputHandler::get_or_create_user_keys_path() {
+	if (user_key_paths.size() == 0) {
+		return {};
+	}
+
+	for (int i = user_key_paths.size() - 1; i >= 0; i--) {
+		if (user_key_paths[i].file_exists()) {
+			return user_key_paths[i];
+		}
+	}
+	create_file_if_not_exists(user_key_paths.back().get_path());
+	return user_key_paths.back();
 }
