@@ -1311,10 +1311,10 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 		}
 
 		if (wevent->angleDelta().x() > 0) {
-			command = input_handler->handle_key(Qt::Key::Key_Right, false, false, &num_repeats);
+			command = input_handler->handle_key(Qt::Key::Key_Left, false, false, &num_repeats);
 		}
 		if (wevent->angleDelta().x() < 0) {
-			command = input_handler->handle_key(Qt::Key::Key_Left, false, false, &num_repeats);
+			command = input_handler->handle_key(Qt::Key::Key_Right, false, false, &num_repeats);
 		}
 	}
 
