@@ -209,6 +209,8 @@ void configure_paths(){
 	//install_app(exe_path.c_str());
 #endif
 	Path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+	QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
+
 	standard_data_path.create_directories();
 
 	default_config_path = parent_path.slash(L"prefs.config");
@@ -218,6 +220,10 @@ void configure_paths(){
 #ifdef NON_PORTABLE
 	user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
 	user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
+	for (int i = 0; i < all_config_paths.size(); i++) {
+		user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
+		user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
+	}
 	database_file_path = standard_data_path.slash(L"test.db");
 	local_database_file_path = standard_data_path.slash(L"local.db");
 	global_database_file_path = standard_data_path.slash(L"shared.db");
