@@ -443,7 +443,11 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(page_uvs), page_uvs, GL_DYNAMIC_DRAW);
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	//draw the border
 	glDisable(GL_BLEND);
