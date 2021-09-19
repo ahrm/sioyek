@@ -357,6 +357,106 @@ void PdfViewOpenGLWidget::goto_search_result(int offset) {
 	document_view->set_offset_y(new_offset_y);
 }
 
+
+void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
+
+	if (!valid_document()) return;
+
+	GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+		overview.page,
+		document_view->get_zoom_level(),
+		nullptr,
+		nullptr);
+
+	float page_vertices[4 * 2];
+	float border_vertices[4 * 2];
+	float page_uvs[4 * 2];
+	fz_rect page_rect = { 0,
+		0,
+		document_view->get_document()->get_page_width(overview.page),
+		document_view->get_document()->get_page_height(overview.page) };
+
+	fz_rect window_rect = document_view->document_to_window_rect(overview.page, page_rect);
+
+	float page_window_width = abs(window_rect.x1 - window_rect.x0);
+	float page_window_height = abs(window_rect.y1 - window_rect.y0);
+
+	float overview_half_width = 0.8f;
+	float overview_half_height = 0.4f;
+
+	page_vertices[0] = -overview_half_width;
+	page_vertices[1] = overview_half_height;
+	page_vertices[2] = overview_half_width;
+	page_vertices[3] = overview_half_height;
+	page_vertices[4] = -overview_half_width;
+	page_vertices[5] = -overview_half_height;
+	page_vertices[6] = overview_half_width;
+	page_vertices[7] = -overview_half_height;
+
+	border_vertices[0] = -overview_half_width;
+	border_vertices[1] = overview_half_height;
+	border_vertices[2] = -overview_half_width;
+	border_vertices[3] = -overview_half_height;
+	border_vertices[4] = overview_half_width;
+	border_vertices[5] = -overview_half_height;
+	border_vertices[6] = overview_half_width;
+	border_vertices[7] = overview_half_height;
+
+	float overview_y_span = 1 * page_window_width / page_window_height * overview_half_height / overview_half_width;
+
+	float uv_min_y = overview.offset_y / overview.page_height - overview_y_span / 2;
+	float uv_max_y = overview.offset_y / overview.page_height + overview_y_span / 2;
+
+	float uv_min_x = 0.0f;
+	float uv_max_x = 1.0f;
+
+	page_uvs[0] = uv_min_x;
+	page_uvs[1] = uv_min_y;
+	page_uvs[2] = uv_max_x;
+	page_uvs[3] = uv_min_y;
+	page_uvs[4] = uv_min_x;
+	page_uvs[5] = uv_max_y;
+	page_uvs[6] = uv_max_x;
+	page_uvs[7] = uv_max_y;
+
+	if (texture != 0) {
+		if (is_dark_mode) {
+			glUseProgram(shared_gl_objects.rendered_dark_program);
+			glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
+		}
+		else {
+			glUseProgram(shared_gl_objects.rendered_program);
+		}
+
+		glBindTexture(GL_TEXTURE_2D, texture);
+	}
+	else {
+		return;
+	}
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	//draw the overview
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(page_uvs), page_uvs, GL_DYNAMIC_DRAW);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	//draw the border
+	glDisable(GL_BLEND);
+	glUseProgram(shared_gl_objects.highlight_program);
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(border_vertices), border_vertices, GL_DYNAMIC_DRAW);
+	float gray_color[] = { 0.5f, 0.5f, 0.5f };
+	glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, gray_color);
+	glDrawArrays(GL_LINE_LOOP, 0, 4);
+
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_uvs), g_quad_uvs, GL_DYNAMIC_DRAW);
+}
 void PdfViewOpenGLWidget::render_page(int page_number) {
 
 	if (!valid_document()) return;
@@ -521,6 +621,9 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		else {
 			render_line_window(shared_gl_objects.vertical_line_program , document_view->get_vertical_line_window_y());
 		}
+	}
+	if (overview_page) {
+		render_overview(overview_page.value());
 	}
 
 	if (should_highlight_links) {
@@ -727,3 +830,7 @@ void PdfViewOpenGLWidget::wheelEvent(QWheelEvent* wevent) {
 void PdfViewOpenGLWidget::register_on_link_edit_listener(std::function<void(const OpenedBookState&)> listener) {
 	this->on_link_edit = listener;
 }
+void PdfViewOpenGLWidget::set_overview_page(std::optional<OverviewState> overview) {
+	this->overview_page = overview;
+}
+

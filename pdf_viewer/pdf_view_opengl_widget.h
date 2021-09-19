@@ -61,6 +61,11 @@ struct OpenGLSharedResources {
 	bool is_initialized;
 };
 
+struct OverviewState {
+	int page;
+	float offset_y;
+	float page_height;
+};
 
 class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions {
 private:
@@ -94,6 +99,7 @@ private:
 	QDateTime creation_time;
 
 	std::optional<std::function<void(const OpenedBookState&)>> on_link_edit = {};
+	std::optional<OverviewState> overview_page = {};
 
 	GLuint LoadShaders(Path vertex_file_path_, Path fragment_file_path_);
 protected:
@@ -132,6 +138,7 @@ public:
 	int get_current_search_result_index();
 	bool valid_document();
 	void goto_search_result(int offset);
+	void render_overview(OverviewState overview);
 	void render_page(int page_number);
 	bool get_is_searching(float* prog);
 	void search_text(const std::wstring& text, std::optional<std::pair<int, int>> range = {});
@@ -143,4 +150,5 @@ public:
 	void mouseReleaseEvent(QMouseEvent* mevent) override;
 	void wheelEvent(QWheelEvent* wevent) override;
 	void register_on_link_edit_listener(std::function<void(const OpenedBookState&)> listener);
+	void set_overview_page(std::optional<OverviewState> overview_page);
 };

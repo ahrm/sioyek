@@ -136,6 +136,7 @@ extern std::wstring SHARED_DATABASE_PATH = L"";
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE = true;
 extern bool SHOULD_DRAW_UNRENDERED_PAGES = true;
+extern bool HOVER_OVERVIEW = false;
 
 extern Path default_config_path(L"");
 extern Path default_keys_path(L"");

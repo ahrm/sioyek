@@ -52,6 +52,7 @@
 
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool FLAT_TABLE_OF_CONTENTS;
+extern bool HOVER_OVERVIEW;
 extern float MOVE_SCREEN_PERCENTAGE;
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring INVERSE_SEARCH_COMMAND;
@@ -109,12 +110,29 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 	int x = mouse_event->pos().x();
 	int y = mouse_event->pos().y();
 
-	if (main_document_view && main_document_view->get_link_in_pos(x, y)) {
+	std::optional<PdfLink> link = {};
+	if (main_document_view && (link = main_document_view->get_link_in_pos(x, y))) {
 		// show hand cursor when hovering over links
 		setCursor(Qt::PointingHandCursor);
+
+		if (HOVER_OVERVIEW) {
+			int page;
+			float offset_x, offset_y;
+			parse_uri(link.value().uri, &page, &offset_x, &offset_y);
+
+			int current_page = main_document_view->get_current_page_number();
+			float page_height = main_document_view->get_document()->get_page_height(current_page);
+
+			opengl_widget->set_overview_page(OverviewState{ page - 1, offset_y, page_height });
+			invalidate_render();
+		}
 	}
 	else {
 		setCursor(Qt::ArrowCursor);
+		if (HOVER_OVERVIEW) {
+			opengl_widget->set_overview_page({});
+			invalidate_render();
+		}
 	}
 
 	if (is_dragging) {
