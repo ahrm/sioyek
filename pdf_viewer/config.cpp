@@ -214,6 +214,7 @@ std::optional<Path> ConfigManager::get_or_create_user_config_file() {
 			return user_config_paths[i];
 		}
 	}
+	user_config_paths.back().file_parent().create_directories();
 	create_file_if_not_exists(user_config_paths.back().get_path());
 	return user_config_paths.back();
 }

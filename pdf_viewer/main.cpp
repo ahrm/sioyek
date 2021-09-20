@@ -164,12 +164,13 @@ void configure_paths(){
 #ifdef LINUX_STANDARD_PATHS
 	Path home_path(QDir::homePath().toStdWString());
 	Path standard_data_path = home_path.slash(L".local").slash(L"share").slash(L"sioyek");
-	Path standard_config_path = home_path.slash(L".config").slash(L"sioyek");
+	Path standard_config_path = Path(L"/etc/sioyek");
+	Path read_only_data_path = Path(L"/usr/share/sioyek");
 
 	default_config_path = standard_config_path.slash(L"prefs.config");
 	default_keys_path = standard_config_path.slash(L"keys.config");
 
-	for (int i = 0; i < all_config_paths.size(); i++) {
+	for (int i = all_config_paths.size()-1; i >= 0; i--) {
 		user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
 		user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
 	}
@@ -177,9 +178,9 @@ void configure_paths(){
 	database_file_path = standard_data_path.slash(L"test.db");
 	local_database_file_path = standard_data_path.slash(L"local.db");
 	global_database_file_path = standard_data_path.slash(L"shared.db");
-	tutorial_path = standard_data_path.slash(L"tutorial.pdf");
+	tutorial_path = read_only_data_path.slash(L"tutorial.pdf");
 	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
-	shader_path = standard_data_path.slash(L"shaders");
+	shader_path = read_only_data_path.slash(L"shaders");
 #else
 	char* APPDIR = std::getenv("XDG_CONFIG_HOME");
 
@@ -222,7 +223,7 @@ void configure_paths(){
 #ifdef NON_PORTABLE
 	user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
 	user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
-	for (int i = 0; i < all_config_paths.size(); i++) {
+	for (int i = all_config_paths.size()-1; i > 0; i--) {
 		user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
 		user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
 	}

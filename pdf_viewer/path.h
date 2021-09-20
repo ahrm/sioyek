@@ -16,7 +16,7 @@ public:
 	Path slash(const std::wstring& suffix) const;
 
 	std::optional<std::wstring> filename() const;
-	Path parent() const;
+	Path file_parent() const;
 
 	std::wstring get_path() const;
 	std::string get_path_utf8() const;

@@ -420,6 +420,7 @@ std::optional<Path> InputHandler::get_or_create_user_keys_path() {
 			return user_key_paths[i];
 		}
 	}
+	user_key_paths.back().file_parent().create_directories();
 	create_file_if_not_exists(user_key_paths.back().get_path());
 	return user_key_paths.back();
 }

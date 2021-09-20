@@ -1,5 +1,6 @@
 #include <qdir.h>
 #include "path.h"
+#include <qfileinfo.h>
 
 Path::Path() : Path(L"")
 {
@@ -26,15 +27,10 @@ std::optional<std::wstring> Path::filename() const
 	return {};
 }
 
-Path Path::parent() const
+Path Path::file_parent() const
 {
-	std::vector<std::wstring> all_parts;
-	parts(all_parts);
-	Path res;
-	for (int i = 0; i < all_parts.size() - 1; i++) {
-		res = res.slash(all_parts[i]);
-	}
-	return res;
+	QFileInfo info(QString::fromStdWString(get_path()));
+	return Path(info.dir().absolutePath().toStdWString());
 }
 
 std::wstring Path::get_path() const
