@@ -1570,6 +1570,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			}
 
 		}
+		else {
+			show_error_message(L"This document doesn't have a table of contents");
+		}
 	}
 	else if (command->name == "open_prev_doc") {
 		//std::vector<std::pair<std::wstring, std::wstring>> opened_docs_hash_path_pairs;
