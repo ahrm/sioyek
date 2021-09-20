@@ -510,6 +510,11 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (!valid_document()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		if (is_helper) {
+			//painter->endNativePainting();
+			draw_empty_helper_message(painter);
+		}
 		return;
 	}
 
@@ -630,8 +635,9 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		render_overview(overview_page.value());
 	}
 
+	painter->endNativePainting();
+
 	if (should_highlight_links) {
-		painter->endNativePainting();
 		for (int i = 0; i < all_visible_links.size(); i++) {
 			std::stringstream ss;
 			ss << i;
@@ -651,6 +657,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			painter->drawText(window_x, window_y, index_string.c_str());
 		}
 	}
+
 }
 
 bool PdfViewOpenGLWidget::get_is_searching(float* prog)
@@ -838,3 +845,16 @@ void PdfViewOpenGLWidget::set_overview_page(std::optional<OverviewState> overvie
 	this->overview_page = overview;
 }
 
+void PdfViewOpenGLWidget::draw_empty_helper_message(QPainter* painter) {
+	// should be called with native painting disabled
+
+	QString message = "No portals yet";
+	QFontMetrics fm(QApplication::font());
+	int message_width = fm.width(message);
+	int message_height = fm.height();
+
+	int view_width = document_view->get_view_width();
+	int view_height = document_view->get_view_height();
+
+	painter->drawText(view_width / 2 - message_width / 2, view_height / 2 - message_height / 2, message);
+}
