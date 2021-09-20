@@ -930,6 +930,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 			kevent->key(),
 			kevent->modifiers() & Qt::ShiftModifier,
 			kevent->modifiers() & Qt::ControlModifier,
+			kevent->modifiers() & Qt::AltModifier,
 			&num_repeats);
 
 		if (command) {
@@ -1324,17 +1325,17 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
 	if (!is_control_pressed) {
 		if (wevent->angleDelta().y() > 0) {
-			command = input_handler->handle_key(Qt::Key::Key_Up, false, false, &num_repeats);
+			command = input_handler->handle_key(Qt::Key::Key_Up, false, false, false, &num_repeats);
 		}
 		if (wevent->angleDelta().y() < 0) {
-			command = input_handler->handle_key(Qt::Key::Key_Down, false, false, &num_repeats);
+			command = input_handler->handle_key(Qt::Key::Key_Down, false, false, false ,&num_repeats);
 		}
 
 		if (wevent->angleDelta().x() > 0) {
-			command = input_handler->handle_key(Qt::Key::Key_Left, false, false, &num_repeats);
+			command = input_handler->handle_key(Qt::Key::Key_Left, false, false, false, &num_repeats);
 		}
 		if (wevent->angleDelta().x() < 0) {
-			command = input_handler->handle_key(Qt::Key::Key_Right, false, false, &num_repeats);
+			command = input_handler->handle_key(Qt::Key::Key_Right, false, false, false, &num_repeats);
 		}
 	}
 

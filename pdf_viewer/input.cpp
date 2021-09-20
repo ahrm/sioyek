@@ -98,6 +98,10 @@ void print_tree_node(InputParseTreeNode node) {
 	if (node.shift_modifier) {
 		std::wcout << "Shift+";
 	}
+
+	if (node.alt_modifier) {
+		std::wcout << "Alt+";
+	}
 	std::wcout << node.command << std::endl;
 }
 
@@ -123,6 +127,10 @@ InputParseTreeNode parse_token(std::string token) {
 
 		if (subcommands[i] == "S") {
 			res.shift_modifier = true;
+		}
+
+		if (subcommands[i] == "A") {
+			res.alt_modifier = true;
 		}
 	}
 
@@ -334,7 +342,7 @@ bool is_digit(int key) {
 	return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-const Command* InputHandler::handle_key(int key, bool shift_pressed, bool control_pressed, int* num_repeats) {
+const Command* InputHandler::handle_key(int key, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
 	if (key >= 'A' && key <= 'Z') {
 		key = key - 'A' + 'a';
 	}
@@ -346,7 +354,7 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 
 	for (InputParseTreeNode* child : current_node->children) {
 		//if (child->command == key && child->shift_modifier == shift_pressed && child->control_modifier == control_pressed){
-		if (child->matches(key, shift_pressed, control_pressed)){
+		if (child->matches(key, shift_pressed, control_pressed, alt_pressed)){
 			if (child->is_final == true) {
 				current_node = root;
 				//cout << child->name << endl;
@@ -392,13 +400,14 @@ bool InputParseTreeNode::is_same(const InputParseTreeNode* other) {
 	return (command == other->command) &&
 		(shift_modifier == other->shift_modifier) &&
 		(control_modifier == other->control_modifier) &&
+		(alt_modifier == other->alt_modifier) &&
 		(requires_symbol == other->requires_symbol) &&
 		(requires_text == other->requires_text);
 }
 
-bool InputParseTreeNode::matches(int key, bool shift, bool ctrl)
+bool InputParseTreeNode::matches(int key, bool shift, bool ctrl, bool alt)
 {
-	return (key == this->command) && (shift == this->shift_modifier) && (ctrl == this->control_modifier);
+	return (key == this->command) && (shift == this->shift_modifier) && (ctrl == this->control_modifier) && (alt == this->alt_modifier);
 }
 
 std::optional<Path> InputHandler::get_or_create_user_keys_path() {
