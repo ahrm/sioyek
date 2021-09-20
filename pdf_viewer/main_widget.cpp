@@ -755,9 +755,11 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 
 	}
 	else if (command->name == "add_highlight") {
-		main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, symbol);
-		opengl_widget->selected_character_rects.clear();
-		selected_text.clear();
+		if (opengl_widget->selected_character_rects.size() > 0) {
+			main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, symbol);
+			opengl_widget->selected_character_rects.clear();
+			selected_text.clear();
+		}
 	}
 	else if (command->name == "goto_mark") {
 		assert(main_document_view);
