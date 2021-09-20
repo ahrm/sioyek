@@ -607,6 +607,22 @@ void DocumentView::fit_to_page_width(bool smart)
 
 }
 
+void DocumentView::fit_to_page_height_width_minimum()
+{
+	int cp = get_current_page_number();
+	if (cp == -1) return;
+
+	int page_width = current_document->get_page_width(cp);
+	int page_height = current_document->get_page_height(cp);
+
+	float x_zoom_level = static_cast<float>(view_width) / page_width;
+	float y_zoom_level = static_cast<float>(view_height) / page_height;
+
+	set_offset_x(0);
+	set_zoom_level(std::min(x_zoom_level, y_zoom_level));
+
+}
+
 void DocumentView::persist() {
 	if (!current_document) return;
 	db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y);

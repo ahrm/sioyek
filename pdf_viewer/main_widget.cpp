@@ -424,6 +424,8 @@ void MainWidget::validate_render() {
 	if (opengl_widget->is_presentation_mode()) {
 		int current_page = main_document_view->get_current_page_number();
 		opengl_widget->set_visible_page_number(current_page);
+		main_document_view->set_offset_y(main_document_view->get_document()->get_accum_page_height(current_page) + main_document_view->get_document()->get_page_height(current_page)/2);
+		main_document_view->fit_to_page_height_width_minimum();
 	}
 
 	if (main_document_view && main_document_view->get_document()) {
