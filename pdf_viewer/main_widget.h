@@ -144,6 +144,7 @@ protected:
 	void handle_link();
 	void handle_pending_text_command(std::wstring text);
 	void toggle_fullscreen();
+	void toggle_presentation_mode();
 	void complete_pending_link(const LinkViewState& destination_view_state);
 	void long_jump_to_destination(int page, float offset_x, float offset_y);
 	void long_jump_to_destination(int page, float offset_y);

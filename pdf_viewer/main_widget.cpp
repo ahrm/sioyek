@@ -421,6 +421,10 @@ void MainWidget::validate_render() {
 			last_smart_fit_page = current_page;
 		}
 	}
+	if (opengl_widget->is_presentation_mode()) {
+		int current_page = main_document_view->get_current_page_number();
+		opengl_widget->set_visible_page_number(current_page);
+	}
 
 	if (main_document_view && main_document_view->get_document()) {
 		std::optional<Link> link = main_document_view->find_closest_link();
@@ -1435,6 +1439,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	if (command->name == "goto_end") {
 		main_document_view->goto_end();
 	}
+
 	if (command->name == "copy") {
 		copy_to_clipboard(selected_text);
 	}
@@ -1754,6 +1759,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "toggle_fullscreen") {
 		toggle_fullscreen();
 	}
+	else if (command->name == "toggle_presentation_mode") {
+		toggle_presentation_mode();
+	}
 	else if (command->name == "toggle_one_window") {
 		toggle_two_window_mode();
 	}
@@ -1962,6 +1970,15 @@ void MainWidget::toggle_fullscreen() {
 	else {
 		helper_opengl_widget->setWindowState(Qt::WindowState::WindowFullScreen);
 		setWindowState(Qt::WindowState::WindowFullScreen);
+	}
+}
+
+void MainWidget::toggle_presentation_mode() {
+	if (opengl_widget->is_presentation_mode()) {
+		opengl_widget->set_visible_page_number({});
+	}
+	else {
+		opengl_widget->set_visible_page_number(main_document_view->get_current_page_number());
 	}
 }
 

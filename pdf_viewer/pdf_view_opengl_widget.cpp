@@ -532,19 +532,25 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	std::vector<std::pair<int, fz_link*>> all_visible_links;
 
-	for (int page : visible_pages) {
-		render_page(page);
+	if (is_presentation_mode()) {
+		render_page(visible_page_number.value());
+	}
+	else {
+		for (int page : visible_pages) {
+			render_page(page);
 
-		if (should_highlight_links) {
-			glUseProgram(shared_gl_objects.highlight_program);
-			glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
-				1,
-				config_manager->get_config<float>(L"link_highlight_color"));
-			fz_link* links = document_view->get_document()->get_page_links(page);
-			while (links != nullptr) {
-				render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
-				all_visible_links.push_back(std::make_pair(page, links));
-				links = links->next;
+
+			if (should_highlight_links) {
+				glUseProgram(shared_gl_objects.highlight_program);
+				glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
+					1,
+					config_manager->get_config<float>(L"link_highlight_color"));
+				fz_link* links = document_view->get_document()->get_page_links(page);
+				while (links != nullptr) {
+					render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
+					all_visible_links.push_back(std::make_pair(page, links));
+					links = links->next;
+				}
 			}
 		}
 	}
@@ -857,4 +863,15 @@ void PdfViewOpenGLWidget::draw_empty_helper_message(QPainter* painter) {
 	int view_height = document_view->get_view_height();
 
 	painter->drawText(view_width / 2 - message_width / 2, view_height / 2 - message_height / 2, message);
+}
+
+void PdfViewOpenGLWidget::set_visible_page_number(std::optional<int> val) {
+	this->visible_page_number = val;
+}
+
+bool PdfViewOpenGLWidget::is_presentation_mode() {
+	if (visible_page_number) {
+		return true;
+	}
+	return false;
 }

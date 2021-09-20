@@ -85,6 +85,7 @@ private:
 	bool is_dark_mode = false;
 	bool is_helper = false;
 	float percent_done = 0.0f;
+	std::optional<int> visible_page_number = {};
 
 	bool is_dragging = false;
 
@@ -152,4 +153,6 @@ public:
 	void register_on_link_edit_listener(std::function<void(const OpenedBookState&)> listener);
 	void set_overview_page(std::optional<OverviewState> overview_page);
 	void draw_empty_helper_message(QPainter* painter);
+	void set_visible_page_number(std::optional<int> val);
+	bool is_presentation_mode();
 };
