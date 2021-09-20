@@ -89,6 +89,16 @@ protected:
 					//QCoreApplication::postEvent(tree_view, key_event);
 					return true;
 				}
+				if (key_event->key() == Qt::Key_Tab) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
+					QCoreApplication::postEvent(tree_view, new_key_event);
+					return true;
+				}
+				if (key_event->key() == Qt::Key_Backtab) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
+					QCoreApplication::postEvent(tree_view, new_key_event);
+					return true;
+				}
 				if (key_event->key() == Qt::Key_Return || key_event->key() == Qt::Key_Enter) {
 					std::optional<QModelIndex> selected_index = get_selected_index();
 					if (selected_index) {
@@ -221,6 +231,17 @@ protected:
 					QCoreApplication::postEvent(list_view, new_key_event);
 					return true;
 				}
+				if (key_event->key() == Qt::Key_Tab) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
+					QCoreApplication::postEvent(list_view, new_key_event);
+					return true;
+				}
+				if (key_event->key() == Qt::Key_Backtab) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
+					QCoreApplication::postEvent(list_view, new_key_event);
+					return true;
+				}
+
 				if (key_event->key() == Qt::Key_Enter || key_event->key() == Qt::Key_Return) {
 					//QModelIndexList selected_index_list = list_view->selectionModel()->selectedIndexes();
 					//if (selected_index_list.size() > 0) {
