@@ -129,6 +129,7 @@ extern const int MAX_PENDING_REQUESTS = 31;
 extern bool FLAT_TABLE_OF_CONTENTS = false;
 extern bool SHOULD_USE_MULTIPLE_MONITORS = false;
 extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = true;
+extern bool DEFAULT_DARK_MODE = false;
 extern std::wstring LIBGEN_ADDRESS = L"";
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 extern std::wstring INVERSE_SEARCH_COMMAND = L"";
@@ -423,6 +424,10 @@ int main(int argc, char* args[]) {
 	//app.setWindowIcon(icon);
 
 	MainWidget main_widget(mupdf_context, &db_manager, &document_manager, &config_manager, &input_handler, &checksummer, &quit);
+
+	if (DEFAULT_DARK_MODE) {
+		main_widget.toggle_dark_mode();
+	}
 	//main_widget.open_document(file_path.get_path());
 	//main_widget.resize(500, 500);
 
