@@ -1277,9 +1277,15 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 			out_root = parts.join(sep);
 		}
 		else {
-			out_partial = parts.back();
-			parts.pop_back();
-			out_root = parts.join(sep);
+			if ((parts.size() == 1) && (path.at(0) == '/')) {
+				out_root = "/";
+				out_partial = parts.at(0);
+			}
+			else {
+				out_partial = parts.back();
+				parts.pop_back();
+				out_root = parts.join(sep);
+			}
 		}
 	}
 	else {

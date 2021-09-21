@@ -497,9 +497,11 @@ public:
 		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
 
 	}
-	QStringList get_dir_contents(const QString& root, QString prefix) {
+	QStringList get_dir_contents(QString root, QString prefix) {
 
-
+		if ((root.size() > 0) && (root.at(0) == '~')) {
+			root = QDir::homePath() + QDir::separator() + root.remove(0, 1);
+		}
 		QDir directory(root);
 		return directory.entryList({ prefix + "*" });
 	}
