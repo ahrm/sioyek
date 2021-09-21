@@ -498,10 +498,7 @@ public:
 
 	}
 	QStringList get_dir_contents(QString root, QString prefix) {
-
-		if ((root.size() > 0) && (root.at(0) == '~')) {
-			root = QDir::homePath() + QDir::separator() + root.remove(0, 1);
-		}
+		root = expand_home_dir(root);
 		QDir directory(root);
 		return directory.entryList({ prefix + "*" });
 	}
@@ -521,7 +518,7 @@ public:
 
 		QString name = list_model->data(index).toString();
 		QChar sep = QDir::separator();
-		QString full_path = last_root + sep + name;
+		QString full_path = expand_home_dir(last_root + sep + name);
 
 		if (QFileInfo(full_path).isFile()){
 			on_done(full_path.toStdWString());

@@ -1267,6 +1267,15 @@ void check_for_updates(QWidget* parent, std::string current_version) {
 	manager->get(QNetworkRequest(QUrl(url)));
 }
 
+QString expand_home_dir(QString path) {
+	if (path.size() > 0) {
+		if (path.at(0) == '~') {
+			return QDir::homePath() + QDir::separator() + path.remove(0, 1);
+		}
+	}
+	return path;
+}
+
 void split_root_file(QString path, QString& out_root, QString& out_partial) {
 
 	QChar sep = QDir::separator();
@@ -1277,9 +1286,9 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 			out_root = parts.join(sep);
 		}
 		else {
-			if ((parts.size() == 1) && (path.at(0) == '/')) {
+			if ((parts.size() == 2) && (path.at(0) == '/')) {
 				out_root = "/";
-				out_partial = parts.at(0);
+				out_partial = parts.at(1);
 			}
 			else {
 				out_partial = parts.back();
