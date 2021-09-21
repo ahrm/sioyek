@@ -379,7 +379,10 @@ std::wstring MainWidget::get_status_string() {
 		ss << " [ synctex ]";
 	}
 	if (this->mouse_drag_mode) {
-		ss << " [drag]";
+		ss << " [ drag ]";
+	}
+	if (opengl_widget->is_presentation_mode()) {
+		ss << " [ presentation mode ] ";
 	}
 
 	return ss.str();
@@ -1448,30 +1451,53 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	int rp = std::max(num_repeats, 1);
 
-	if (command->name == "screen_down") {
-		move_document_screens(1 * rp);
+	if (!opengl_widget->is_presentation_mode()) {
+		if (command->name == "screen_down") {
+			move_document_screens(1 * rp);
+		}
+		if (command->name == "screen_up") {
+			move_document_screens(-1 * rp);
+		}
+		if (command->name == "move_down") {
+			move_document(0.0f, 72.0f * rp * VERTICAL_MOVE_AMOUNT);
+		}
+		if (command->name == "move_up") {
+			move_document(0.0f, -72.0f * rp * VERTICAL_MOVE_AMOUNT);
+		}
+
+		if (command->name == "move_right") {
+			main_document_view->move(72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+			last_smart_fit_page = {};
+		}
+
+		if (command->name == "move_left") {
+			main_document_view->move(-72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+			last_smart_fit_page = {};
+		}
 	}
-	if (command->name == "screen_up") {
-		move_document_screens(-1 * rp);
-	}
-	if (command->name == "move_down") {
-		move_document(0.0f, 72.0f * rp * VERTICAL_MOVE_AMOUNT);
-	}
-	else if (command->name == "move_up") {
-		move_document(0.0f, -72.0f * rp * VERTICAL_MOVE_AMOUNT);
+	else {
+		if (command->name == "screen_down") {
+			main_document_view->move_pages(1);
+		}
+		if (command->name == "screen_up") {
+			main_document_view->move_pages(-1);
+		}
+		if (command->name == "move_down") {
+			main_document_view->move_pages(1);
+		}
+		if (command->name == "move_up") {
+			main_document_view->move_pages(-1);
+		}
+		if (command->name == "move_left") {
+			main_document_view->move_pages(1);
+		}
+		if (command->name == "move_right") {
+			main_document_view->move_pages(-1);
+		}
 	}
 
-	else if (command->name == "move_right") {
-		main_document_view->move(72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
-		last_smart_fit_page = {};
-	}
 
-	else if (command->name == "move_left") {
-		main_document_view->move(-72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
-		last_smart_fit_page = {};
-	}
-
-	else if (command->name == "link") {
+	if (command->name == "link") {
 		handle_link();
 	}
 
