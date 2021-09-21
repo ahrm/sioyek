@@ -53,6 +53,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "goto_link", false, false , false, false});
 	commands.push_back({ "edit_link", false, false , false, false});
 	commands.push_back({ "open_prev_doc", false, false , false, false});
+	commands.push_back({ "open_document_embedded", false, false , false, false});
 	commands.push_back({ "copy", false, false , false, false});
 	commands.push_back({ "toggle_fullscreen", false, false , false, false});
 	commands.push_back({ "toggle_one_window", false, false , false, false});

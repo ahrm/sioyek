@@ -1434,7 +1434,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 	if (command->name == "goto_begining") {
 		if (num_repeats) {
-			main_document_view->goto_page(num_repeats-1);
+			main_document_view->goto_page(num_repeats - 1);
 		}
 		else {
 			main_document_view->set_offset_y(0.0f);
@@ -1639,12 +1639,20 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					}
 				},
 				config_manager,
-				this,
-				[&](std::string* doc_hash) {
+					this,
+					[&](std::string* doc_hash) {
 					db_manager->delete_opened_book(*doc_hash);
 				});
 			current_widget->show();
 		}
+	}
+	else if (command->name == "open_document_embedded") {
+		current_widget = std::make_unique<FileSelector>(
+			[&](std::wstring doc_path) {
+				validate_render();
+				open_document(doc_path);
+			}, this);
+		current_widget->show();
 	}
 	else if (command->name == "goto_bookmark") {
 		std::vector<std::wstring> option_names;

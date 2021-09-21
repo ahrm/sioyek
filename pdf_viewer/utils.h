@@ -103,3 +103,4 @@ float type_name_similarity_score(std::wstring name1, std::wstring name2);
 bool is_stext_page_rtl(fz_stext_page* stext_page);
 void check_for_updates(QWidget* parent, std::string current_version);
 char* get_argv_value(int argc, char** argv, std::string key);
+void split_root_file(QString path, QString& out_root, QString& out_partial);

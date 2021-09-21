@@ -1266,3 +1266,24 @@ void check_for_updates(QWidget* parent, std::string current_version) {
 		});
 	manager->get(QNetworkRequest(QUrl(url)));
 }
+
+void split_root_file(QString path, QString& out_root, QString& out_partial) {
+
+	QChar sep = QDir::separator();
+	QStringList parts = path.split(sep);
+
+	if (path.size() > 0) {
+		if (path.back() == sep) {
+			out_root = parts.join(sep);
+		}
+		else {
+			out_partial = parts.back();
+			parts.pop_back();
+			out_root = parts.join(sep);
+		}
+	}
+	else {
+		out_partial = "";
+		out_root = "";
+	}
+}

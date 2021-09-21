@@ -26,6 +26,7 @@
 #include <qstringlistmodel.h>
 #include <qpalette.h>
 #include <qstandarditemmodel.h>
+#include <qfilesystemmodel.h>
 
 
 //#include <Windows.h>
@@ -387,6 +388,150 @@ public:
 	}
 };
 
+class FileSelector : public QWidget{
+private:
+
+	QLineEdit* line_edit = nullptr;
+	QListView* list_view = nullptr;
+	QStringListModel* list_model = nullptr;
+	std::function<void(std::wstring)> on_done = nullptr;
+	QString last_root = "";
+
+protected:
+	std::optional<QModelIndex> get_selected_index() {
+		QModelIndexList selected_index_list = list_view->selectionModel()->selectedIndexes();
+
+		if (selected_index_list.size() > 0) {
+			QModelIndex selected_index = selected_index_list.at(0);
+			return selected_index;
+		}
+		return {};
+	}
+
+	bool eventFilter(QObject* obj, QEvent* event) override {
+		if (obj == line_edit) {
+			if (event->type() == QEvent::KeyPress) {
+				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+				if (key_event->key() == Qt::Key_Down || key_event->key() == Qt::Key_Up) {
+					QKeyEvent* new_key_event = new QKeyEvent(*key_event);
+					QCoreApplication::postEvent(list_view, new_key_event);
+					return true;
+				}
+				if (key_event->key() == Qt::Key_Tab) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
+					QCoreApplication::postEvent(list_view, new_key_event);
+					return true;
+				}
+				if (key_event->key() == Qt::Key_Backtab) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
+					QCoreApplication::postEvent(list_view, new_key_event);
+					return true;
+				}
+
+				if (key_event->key() == Qt::Key_Enter || key_event->key() == Qt::Key_Return) {
+					std::optional<QModelIndex> selected_index = get_selected_index();
+					if (selected_index) {
+						on_select(selected_index.value());
+					}
+				}
+
+			}
+		}
+		return false;
+	}
+
+public:
+
+	void on_config_file_changed() {
+		setStyleSheet("background-color: black; color: white; border: 0;");
+		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
+	}
+
+	//todo: check for memory leaks
+	//FilteredSelectWindowClass(std::vector<std::wstring> std_string_list, std::vector<T> values, std::function<void(void*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
+	FileSelector(std::function<void(std::wstring)> on_done, QWidget* parent) :
+		QWidget(parent) ,
+		on_done(on_done)
+	{
+		resize(300, 800);
+		QVBoxLayout* layout = new QVBoxLayout;
+		setLayout(layout);
+
+		list_model = new QStringListModel(get_dir_contents("", ""));
+
+		line_edit = new QLineEdit;
+		list_view = new QListView;
+		list_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+		list_view->setModel(list_model);
+		layout->addWidget(line_edit);
+		layout->addWidget(list_view);
+
+		line_edit->installEventFilter(this);
+		line_edit->setFocus();
+
+		QObject::connect(list_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
+			on_select(index);
+			});
+
+
+		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
+			QString root_path;
+			QString partial_name;
+			split_root_file(text, root_path, partial_name);
+
+			last_root = root_path;
+			if (last_root.size() > 0) {
+				if (last_root.back() == QDir::separator()) {
+					last_root.chop(1);
+				}
+			}
+
+			QStringListModel* new_list_model = new QStringListModel(get_dir_contents(root_path, partial_name));
+			list_view->setModel(new_list_model);
+			delete list_model;
+			list_model = new_list_model;
+			});
+
+
+		setStyleSheet("background-color: black; color: white; border: 0;");
+		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
+
+	}
+	QStringList get_dir_contents(const QString& root, QString prefix) {
+
+
+		QDir directory(root);
+		return directory.entryList({ prefix + "*" });
+	}
+
+	void resizeEvent(QResizeEvent* resize_event) override {
+		QWidget::resizeEvent(resize_event);
+		int parent_width = parentWidget()->width();
+		int parent_height = parentWidget()->height();
+		setFixedSize(parent_width * 0.9f, parent_height);
+		move(parent_width * 0.05f, 0);
+		on_config_file_changed();
+	}
+
+
+	void on_select(const QModelIndex& index) {
+		//hide();
+
+		QString name = list_model->data(index).toString();
+		QChar sep = QDir::separator();
+		QString full_path = last_root + sep + name;
+
+		if (QFileInfo(full_path).isFile()){
+			on_done(full_path.toStdWString());
+			hide();
+			parentWidget()->setFocus();
+		}
+		else {
+			line_edit->setText(full_path + sep);
+		}
+	}
+};
 std::wstring select_document_file_name();
 std::wstring select_json_file_name();
 std::wstring select_new_json_file_name();
+
