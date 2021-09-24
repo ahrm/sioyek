@@ -2,7 +2,7 @@
 #include <qfiledialog.h>
 
 std::wstring select_document_file_name() {
-	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.pdf *.epub)");
+	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.pdf *.epub *.cbz)");
 	return file_name.toStdWString();
 }
 
