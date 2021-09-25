@@ -58,6 +58,9 @@ https://user-images.githubusercontent.com/6392321/125337160-e4832700-e363-11eb-8
 
 You can customize all key bindings and some UI elements by editing `keys_user.conf` and `prefs_user.conf`. The default configurations are in `keys.conf` and `prefs.conf`.
 
+## Install
+There're installers for Windows, macOS and Linux. See [Releases page](https://github.com/ahrm/sioyek/releases).
+
 ## Build Instructions
 
 ### Linux
