@@ -65,8 +65,12 @@ QStandardItem* get_item_tree_from_toc_helper(const std::vector<TocNode*>& childr
 
 	for (const auto* child : children) {
 		QStandardItem* child_item = new QStandardItem(QString::fromStdWString(child->title));
+		QStandardItem* page_item = new QStandardItem("[ " + QString::number(child->page) + " ]");
 		child_item->setData(child->page);
-		parent->appendRow(get_item_tree_from_toc_helper(child->children, child_item));
+		page_item->setTextAlignment(Qt::AlignRight);
+
+		get_item_tree_from_toc_helper(child->children, child_item);
+		parent->appendRow(QList<QStandardItem*>() << child_item << page_item);
 	}
 	return parent;
 }

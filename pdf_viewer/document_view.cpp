@@ -678,6 +678,33 @@ std::optional<std::pair<int, int>> DocumentView::get_current_page_range()
 	return std::make_pair(range_begin, range_end);
 }
 
+void DocumentView::get_page_chapter_index(int page, std::vector<TocNode*> nodes, std::vector<int>& res) {
+
+
+	for (int i = 0; i < nodes.size(); i++) {
+		if ((i == nodes.size() - 1) && (nodes[i]->page <= page)) {
+			res.push_back(i);
+			get_page_chapter_index(page, nodes[i]->children, res);
+			return;
+		}
+		else {
+			if ((nodes[i]->page <= page) && (nodes[i + 1]->page > page)) {
+				res.push_back(i);
+				get_page_chapter_index(page, nodes[i]->children, res);
+				return;
+			}
+		}
+	}
+
+}
+std::vector<int> DocumentView::get_current_chapter_recursive_index() {
+	int curr_page = get_current_page_number();
+	std::vector<TocNode*> nodes = current_document->get_toc();
+	std::vector<int> res;
+	get_page_chapter_index(curr_page, nodes, res);
+	return res;
+}
+
 void DocumentView::goto_chapter(int diff)
 {
 	const std::vector<int>& chapter_pages = current_document->get_flat_toc_pages();

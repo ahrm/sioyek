@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 
+#include <qsizepolicy.h>
 #include <qapplication.h>
 #include <qpushbutton.h>
 #include <qopenglwidget.h>
@@ -120,7 +121,11 @@ public:
 	}
 
 	//todo: check for memory leaks
-	FilteredTreeSelect(QStandardItemModel* item_model, std::function<void(const std::vector<int>&)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
+	FilteredTreeSelect(QStandardItemModel* item_model,
+		std::function<void(const std::vector<int>&)> on_done,
+		ConfigManager* config_manager,
+		QWidget* parent,
+		std::vector<int> selected_index) : 
 		QWidget(parent) ,
 		tree_item_model(item_model),
 		config_manager(config_manager),
@@ -143,6 +148,15 @@ public:
 		tree_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 		tree_view->expandAll();
 		tree_view->setHeaderHidden(true);
+		tree_view->resizeColumnToContents(0);
+
+		auto index = QModelIndex();
+		for (auto i : selected_index) {
+			index = proxy_model->index(i, 0, index);
+		}
+
+		tree_view->setCurrentIndex(index);
+
 		layout->addWidget(line_edit);
 		layout->addWidget(tree_view);
 

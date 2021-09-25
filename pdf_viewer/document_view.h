@@ -115,6 +115,8 @@ public:
 	std::optional<std::pair<int,int>> get_current_page_range();
 	int get_current_chapter_index();
 	void goto_chapter(int diff);
+	void get_page_chapter_index(int page, std::vector<TocNode*> toc_nodes, std::vector<int>& res);
+	std::vector<int> get_current_chapter_recursive_index();
 	float view_height_in_document_space();
 	void set_vertical_line_pos(float pos);
 	float get_vertical_line_pos();

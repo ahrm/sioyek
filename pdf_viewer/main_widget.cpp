@@ -1588,6 +1588,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			}
 			else {
 
+				std::vector<int> selected_index = main_document_view->get_current_chapter_recursive_index();
 				current_widget = std::make_unique<FilteredTreeSelect<int>>(main_document_view->get_document()->get_toc_model(),
 					[&](const std::vector<int>& indices) {
 						TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
@@ -1598,7 +1599,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 							main_document_view->goto_page(toc_node->page);
 							push_state();
 						}
-					}, config_manager, this);
+					}, config_manager, this, selected_index);
 				current_widget->show();
 			}
 
