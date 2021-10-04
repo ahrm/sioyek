@@ -219,8 +219,13 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 	//glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
 	//glDrawArrays(GL_LINES, 0, 2);
 
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(bar_data), bar_data, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisable(GL_BLEND);
 
 }
 void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect, bool draw_border) {
@@ -498,6 +503,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		}
 		glUseProgram(shared_gl_objects.unrendered_program);
 	}
+
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
