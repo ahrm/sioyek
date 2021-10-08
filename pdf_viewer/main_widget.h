@@ -187,4 +187,6 @@ public:
 	void update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state);
 	void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
 	void set_current_widget(QWidget* new_widget);
+	float get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont);
+	bool focus_on_visual_mark_pos();
 };

@@ -105,3 +105,19 @@ void check_for_updates(QWidget* parent, std::string current_version);
 char* get_argv_value(int argc, char** argv, std::string key);
 void split_root_file(QString path, QString& out_root, QString& out_partial);
 QString expand_home_dir(QString path);
+std::vector<unsigned int> get_max_width_histogram_from_pixmap(fz_pixmap* pixmap);
+std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int> histogram);
+
+template<typename T>
+int find_nth_larger_element_in_sorted_list(std::vector<T> sorted_list, T value, int n) {
+	int i = 0;
+	while (i < sorted_list.size() && (value >= sorted_list[i])) i++;
+	if ((i < sorted_list.size()) && (sorted_list[i] == value)) i--;
+	if ((i + n - 1) < sorted_list.size()) {
+		return i + n - 1;
+	}
+	else {
+		return -1;
+	}
+
+}

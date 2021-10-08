@@ -138,6 +138,8 @@ extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE = true;
 extern bool SHOULD_DRAW_UNRENDERED_PAGES = true;
 extern bool HOVER_OVERVIEW = false;
+extern float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.25f;
+extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
 
 extern Path default_config_path(L"");
 extern Path default_keys_path(L"");

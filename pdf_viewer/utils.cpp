@@ -992,6 +992,49 @@ bool largest_contigous_ones(std::vector<int>& arr, int* start_index, int* end_in
 	return true;
 }
 
+std::vector<unsigned int> get_max_width_histogram_from_pixmap(fz_pixmap* pixmap) {
+	std::vector<unsigned int> res;
+
+	for (int j = 0; j < pixmap->h; j++){
+		unsigned int x_value = 0;
+		for (int i = 0; i < pixmap->w; i++) {
+			unsigned char r, g, b;
+			get_pixmap_pixel(pixmap, i, j, &r, &g, &b);
+			if ((r == 255) && (g == 255) && (b == 255)) {
+				x_value += 1;
+			}
+		}
+		res.push_back(x_value);
+	}
+
+	return res;
+}
+
+template<typename T>
+float average_value(std::vector<T> values) {
+	T sum = 0;
+	for (auto x : values) {
+		sum += x;
+	}
+	return static_cast<float>(sum) / values.size();
+}
+
+std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int> histogram) {
+	std::vector<unsigned int> res;
+
+	unsigned int mean_width = static_cast<unsigned int>(average_value(histogram));
+
+	int i = 0;
+
+	while (i < histogram.size()) {
+		while ((i < histogram.size()) && (histogram[i] > mean_width)) i++;
+		while ((i < histogram.size()) && (histogram[i] <= mean_width)) i++;
+		if (i == histogram.size()) break;
+		res.push_back(i);
+	}
+	return res;
+}
+
 int find_best_vertical_line_location(fz_pixmap* pixmap, int doc_x, int doc_y) {
 
 
@@ -1306,3 +1349,4 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 		out_root = "";
 	}
 }
+
