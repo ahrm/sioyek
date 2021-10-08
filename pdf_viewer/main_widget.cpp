@@ -171,7 +171,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
 }
 
-void MainWidget::closeEvent(QCloseEvent* close_event) {
+void MainWidget::persist() {
 	main_document_view->persist();
 
 	// write the address of the current document in a file so that the next time
@@ -183,6 +183,9 @@ void MainWidget::closeEvent(QCloseEvent* close_event) {
 		last_path_file << encoded_file_name_str.c_str() << std::endl;
 		last_path_file.close();
 	}
+}
+void MainWidget::closeEvent(QCloseEvent* close_event) {
+	persist();
 
 	// we need to delete this here (instead of destructor) to ensure that application
 	// closes immediately after the main window is closed
@@ -255,10 +258,15 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 	text_command_line_edit_container->setLayout(text_command_line_edit_container_layout);
 	text_command_line_edit_container->hide();
 
+	on_command_done = [&](std::string command_name) {
+		const Command* command = command_manager.get_command_with_name(command_name);
+		handle_command_types(command, 1);
+	};
+
 	QObject::connect(text_command_line_edit, &QLineEdit::returnPressed, [&]() {
-		handle_pending_text_command(text_command_line_edit->text().toStdWString());
 		text_command_line_edit_container->hide();
 		setFocus();
+		handle_pending_text_command(text_command_line_edit->text().toStdWString());
 		});
 
 	// when pdf renderer's background threads finish rendering a page or find a new search result
@@ -392,7 +400,11 @@ void MainWidget::handle_escape() {
 	text_command_line_edit->setText("");
 	pending_link = {};
 	current_pending_command = nullptr;
-	current_widget = nullptr;
+
+	if (current_widget != nullptr) {
+		delete current_widget;
+		current_widget = nullptr;
+	}
 
 	if (main_document_view) {
 		main_document_view->handle_escape();
@@ -910,6 +922,29 @@ bool MainWidget::is_waiting_for_symbol() {
 	return (current_pending_command && current_pending_command->requires_symbol);
 }
 
+void MainWidget::handle_command_types(const Command* command, int num_repeats) {
+
+	if (command == nullptr) return;
+
+	if (command->requires_symbol) {
+		current_pending_command = command;
+		return;
+	}
+	if (command->requires_file_name) {
+		std::wstring file_name = select_document_file_name();
+		if (file_name.size() > 0) {
+			handle_command_with_file_name(command, file_name);
+		}
+		else {
+			std::cerr << "File select failed" << endl;
+		}
+		return;
+	}
+	else {
+		handle_command(command, num_repeats);
+	}
+}
+
 void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 	validate_render();
 
@@ -943,23 +978,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 			&num_repeats);
 
 		if (command) {
-			if (command->requires_symbol) {
-				current_pending_command = command;
-				return;
-			}
-			if (command->requires_file_name) {
-				std::wstring file_name = select_document_file_name();
-				if (file_name.size() > 0) {
-					handle_command_with_file_name(command, file_name);
-				}
-				else {
-					std::cerr << "File select failed" << endl;
-				}
-				return;
-			}
-			else {
-				handle_command(command, num_repeats);
-			}
+			handle_command_types(command, num_repeats);
 		}
 	}
 
@@ -1411,6 +1430,7 @@ void MainWidget::toggle_two_window_mode() {
 }
 
 void MainWidget::handle_command(const Command* command, int num_repeats) {
+	if (command == nullptr) return;
 
 	if (command->requires_text) {
 		current_pending_command = command;
@@ -1576,20 +1596,20 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 				std::vector<std::wstring> flat_toc;
 				std::vector<int> current_document_toc_pages;
 				get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
-				current_widget = std::make_unique<FilteredSelectWindowClass<int>>(flat_toc, current_document_toc_pages, [&](int* page_value) {
+				set_current_widget(new FilteredSelectWindowClass<int>(flat_toc, current_document_toc_pages, [&](int* page_value) {
 					if (page_value) {
 						validate_render();
 						update_history_state();
 						main_document_view->goto_page(*page_value);
 						push_state();
 					}
-					}, config_manager, this);
+					}, config_manager, this));
 				current_widget->show();
 			}
 			else {
 
 				std::vector<int> selected_index = main_document_view->get_current_chapter_recursive_index();
-				current_widget = std::make_unique<FilteredTreeSelect<int>>(main_document_view->get_document()->get_toc_model(),
+				set_current_widget(new FilteredTreeSelect<int>(main_document_view->get_document()->get_toc_model(),
 					[&](const std::vector<int>& indices) {
 						TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
 							indices);
@@ -1599,7 +1619,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 							main_document_view->goto_page(toc_node->page);
 							push_state();
 						}
-					}, config_manager, this, selected_index);
+					}, config_manager, this, selected_index));
 				current_widget->show();
 			}
 
@@ -1631,7 +1651,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		//}
 
 		if (opened_docs_hashes.size() > 0) {
-			current_widget = std::make_unique<FilteredSelectWindowClass<std::string>>(opened_docs_names,
+			set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
 				opened_docs_hashes,
 				[&](std::string* doc_hash) {
 					if (doc_hash->size() > 0) {
@@ -1643,16 +1663,16 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					this,
 					[&](std::string* doc_hash) {
 					db_manager->delete_opened_book(*doc_hash);
-				});
+				}));
 			current_widget->show();
 		}
 	}
 	else if (command->name == "open_document_embedded") {
-		current_widget = std::make_unique<FileSelector>(
+		set_current_widget(new FileSelector(
 			[&](std::wstring doc_path) {
 				validate_render();
 				open_document(doc_path);
-			}, this);
+			}, this));
 		current_widget->show();
 	}
 	else if (command->name == "goto_bookmark") {
@@ -1662,7 +1682,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			option_names.push_back(main_document_view->get_document()->get_bookmarks()[i].description);
 			option_locations.push_back(main_document_view->get_document()->get_bookmarks()[i].y_offset);
 		}
-		current_widget = std::make_unique<FilteredSelectWindowClass<float>>(
+		set_current_widget(new FilteredSelectWindowClass<float>(
 			option_names,
 			option_locations,
 			[&](float* offset_value) {
@@ -1679,7 +1699,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 				if (offset_value) {
 					main_document_view->delete_closest_bookmark_to_offset(*offset_value);
 				}
-			});
+			}));
 		current_widget->show();
 	}
 	else if (command->name == "goto_highlight") {
@@ -1697,7 +1717,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			option_locations.push_back({highlights[i].selection_begin.x, highlights[i].selection_begin.y, highlights[i].selection_end.x, highlights[i].selection_end.y});
 		}
 
-		current_widget = std::make_unique<FilteredSelectWindowClass<std::vector<float>>>(
+		set_current_widget(new FilteredSelectWindowClass<std::vector<float>>(
 			option_names,
 			option_locations,
 			[&](std::vector<float>* offset_values) {
@@ -1718,7 +1738,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					float end_y = (*(offset_values))[3];
 					main_document_view->delete_highlight_with_offsets(begin_x, begin_y, end_x, end_y);
 				}
-			});
+			}));
 		current_widget->show();
 	}
 	else if (command->name == "goto_bookmark_g") {
@@ -1737,7 +1757,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 				book_states.push_back({ path.value(), bm.y_offset });
 			}
 		}
-		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(
+		set_current_widget(new FilteredSelectWindowClass<BookState>(
 			descs,
 			book_states,
 			[&](BookState* book_state) {
@@ -1752,7 +1772,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 				if (book_state) {
 					db_manager->delete_bookmark(checksummer->get_checksum(book_state->document_path), book_state->offset_y);
 				}
-			});
+			}));
 		current_widget->show();
 
 	}
@@ -1778,7 +1798,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 			}
 		}
-		current_widget = std::make_unique<FilteredSelectWindowClass<BookState>>(
+		set_current_widget(new FilteredSelectWindowClass<BookState>(
 			descs,
 			book_states,
 			[&](BookState* book_state) {
@@ -1788,7 +1808,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 				}
 			},
 			config_manager,
-				this);
+				this));
 		current_widget->show();
 
 	}
@@ -1847,11 +1867,43 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "toggle_dark_mode") {
 		this->toggle_dark_mode();
 	}
-	else if (command->name == "quit") {
+	else if (command->name == "quit" || command->name == "q") {
+		persist();
 		QApplication::quit();
 	}
+	else if (command->name == "command") {
+		QStringList command_names = command_manager.get_all_command_names();
+	 	set_current_widget(new CommandSelector(
+			&on_command_done, this, command_names, input_handler->get_command_key_mappings()));
+		current_widget->show();
+	}
+	else if (command->name == "keys") {
+		open_file(default_keys_path.get_path());
+	}
+	else if (command->name == "keys_user") {
+		std::optional<Path> key_file_path = input_handler->get_or_create_user_keys_path();
+		if (key_file_path) {
+			open_file(key_file_path.value().get_path());
+		}
+	}
+	else if (command->name == "prefs") {
+		open_file(default_config_path.get_path());
+	}
+	else if (command->name == "prefs_user") {
+		std::optional<Path> pref_file_path = config_manager->get_or_create_user_config_file();
+		if (pref_file_path) {
+			open_file(pref_file_path.value().get_path());
+		}
+	}
+	else if (command->name == "export") {
+		std::wstring export_file_name = select_new_json_file_name();
+		db_manager->export_json(export_file_name, checksummer);
+	}
+	else if (command->name == "import") {
+		std::wstring import_file_name = select_json_file_name();
+		db_manager->import_json(import_file_name, checksummer);
+	}
 	else if (command->name == "debug") {
-
 	}
 
 	if (command->pushes_state) {
@@ -1996,6 +2048,12 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			std::wstring import_file_name = select_json_file_name();
 			db_manager->import_json(import_file_name, checksummer);
 		}
+		else{
+			const Command* command = command_manager.get_command_with_name(utf8_encode(text));
+			if (command != nullptr) {
+				handle_command(command, 1);
+			}
+		}
 	}
 }
 
@@ -2051,4 +2109,16 @@ void MainWidget::long_jump_to_destination(int page, float offset_x, float offset
 		complete_pending_link(dest_state);
 	}
 	invalidate_render();
+}
+
+void MainWidget::set_current_widget(QWidget* new_widget) {
+	if (current_widget != nullptr) {
+		garbage_widgets.push_back(current_widget);
+	}
+	current_widget = new_widget;
+
+	if (garbage_widgets.size() > 2) {
+		delete garbage_widgets[0];
+		garbage_widgets.erase(garbage_widgets.begin());
+	}
 }

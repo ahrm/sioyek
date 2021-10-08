@@ -7,6 +7,7 @@
 #include <sstream>
 #include <memory>
 #include <optional>
+#include <unordered_map>
 
 //#include <SDL.h>
 
@@ -29,6 +30,7 @@ public:
 
 	CommandManager();
 	const Command* get_command_with_name(std::string name);
+	QStringList get_all_command_names();
 };
 
 struct InputParseTreeNode {
@@ -59,6 +61,10 @@ private:
 	std::string number_stack;
 	std::vector<Path> user_key_paths;
 
+	std::string get_key_string_from_tree_node_sequence(const std::vector<InputParseTreeNode*> seq) const;
+	std::string get_key_name_from_key_code(int key_code) const;
+
+	void add_command_key_mappings(InputParseTreeNode* root, std::unordered_map<std::string, std::vector<std::string>>& map, std::vector<InputParseTreeNode*> prefix) const;
 public:
 	//char create_link_sumbol = 0;
 	//char create_bookmark_symbol = 0;
@@ -69,6 +75,7 @@ public:
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
 	std::optional<Path> get_or_create_user_keys_path();
+	std::unordered_map<std::string, std::vector<std::string>> get_command_key_mappings() const;
 
 };
 

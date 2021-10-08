@@ -48,8 +48,10 @@ private:
 	DocumentView* helper_document_view = nullptr;
 
 	// current widget responsible for selecting an option (for example toc or bookmarks)
-	std::unique_ptr<QWidget> current_widget = nullptr;
+	QWidget* current_widget = nullptr;
+	std::vector<QWidget*> garbage_widgets;
 
+	std::function<void(std::string)> on_command_done = nullptr;
 	std::vector<DocumentViewState> history;
 	int current_history_index = -1;
 
@@ -110,6 +112,7 @@ protected:
 	void resizeEvent(QResizeEvent* resize_event) override;
 	void mouseMoveEvent(QMouseEvent* mouse_event) override;
 	void closeEvent(QCloseEvent* close_event) override;
+	void persist() ;
 	bool is_pending_link_source_filled();
 	std::wstring get_status_string();
 	void handle_escape();
@@ -141,6 +144,7 @@ protected:
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
 	void toggle_two_window_mode();
 	void handle_command(const Command* command, int num_repeats);
+	void handle_command_types(const Command* command, int num_repeats);
 	void handle_link();
 	void handle_pending_text_command(std::wstring text);
 	void toggle_fullscreen();
@@ -182,4 +186,5 @@ public:
 	void handle_args(const QStringList &arguments);
 	void update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state);
 	void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
+	void set_current_widget(QWidget* new_widget);
 };

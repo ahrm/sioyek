@@ -4,6 +4,7 @@
 #include <iostream>
 #include <functional>
 #include <optional>
+#include <unordered_map>
 
 #include <qsizepolicy.h>
 #include <qapplication.h>
@@ -24,10 +25,12 @@
 #include <qstackedwidget.h>
 #include <qboxlayout.h>
 #include <qlistview.h>
+#include <qtableview.h>
 #include <qstringlistmodel.h>
 #include <qpalette.h>
 #include <qstandarditemmodel.h>
 #include <qfilesystemmodel.h>
+#include <qheaderview.h>
 
 
 //#include <Windows.h>
@@ -177,8 +180,8 @@ public:
 			tree_view->expandAll();
 			});
 
-		setStyleSheet("background-color: black; color: white; border: 0;");
-		tree_view->setStyleSheet("QTreeView::item::selected{background-color: white; color: black;}");
+		//setStyleSheet("background-color: black; color: white; border: 0; QScrollBar::vertical{background: red;}");
+		//tree_view->setStyleSheet("QTreeView::item::selected{background-color: white; color: black;}");
 
 	}
 
@@ -399,6 +402,187 @@ public:
 		parentWidget()->setFocus();
 		auto source_index = proxy_model->mapToSource(index);
 		on_done(&values[source_index.row()]);
+	}
+};
+
+class CommandSelector : public QWidget{
+private:
+
+	QLineEdit* line_edit = nullptr;
+	QTableView* table_view = nullptr;
+	QStringList string_elements;
+	//QStringListModel* list_model = nullptr;
+	QStandardItemModel* standard_item_model = nullptr;
+	std::unordered_map<std::string, std::vector<std::string>> key_map;
+	std::function<void(std::string)>* on_done = nullptr;
+
+	QList<QStandardItem*> get_item(std::string command_name) {
+
+		std::string command_key = "";
+
+		if (key_map.find(command_name) != key_map.end()) {
+			const std::vector<std::string>& command_keys = key_map[command_name];
+			for (int i = 0; i < command_keys.size(); i++) {
+				const std::string& ck = command_keys[i];
+				if (i > 0) {
+					command_key += " | ";
+				}
+				command_key += ck;
+			}
+
+		}
+		QStandardItem* name_item = new QStandardItem(QString::fromStdString(command_name));
+		QStandardItem* key_item = new QStandardItem(QString::fromStdString(command_key));
+		key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
+		return (QList<QStandardItem*>() << name_item << key_item);
+	}
+
+	QStandardItemModel* get_standard_item_model(std::vector<std::string> command_names) {
+
+		QStandardItemModel* res = new QStandardItemModel();
+
+		for (int i = 0; i < command_names.size(); i++) {
+			res->appendRow(get_item(command_names[i]));
+		}
+		return res;
+	}
+
+	QStandardItemModel* get_standard_item_model(QStringList command_names) {
+
+		std::vector<std::string> std_command_names;
+
+		for (int i = 0; i < command_names.size(); i++) {
+			std_command_names.push_back(command_names.at(i).toStdString());
+		}
+		return get_standard_item_model(std_command_names);
+	}
+
+protected:
+	std::optional<QModelIndex> get_selected_index() {
+		QModelIndexList selected_index_list = table_view->selectionModel()->selectedIndexes();
+
+		if (selected_index_list.size() > 0) {
+			QModelIndex selected_index = selected_index_list.at(0);
+			return selected_index;
+		}
+		return {};
+	}
+
+	bool eventFilter(QObject* obj, QEvent* event) override {
+		if (obj == line_edit) {
+			if (event->type() == QEvent::KeyPress) {
+				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+				if (key_event->key() == Qt::Key_Down || key_event->key() == Qt::Key_Up) {
+					QKeyEvent* new_key_event = new QKeyEvent(*key_event);
+					QCoreApplication::postEvent(table_view, new_key_event);
+					return true;
+				}
+				if (key_event->key() == Qt::Key_Tab) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
+					QCoreApplication::postEvent(table_view, new_key_event);
+					return true;
+				}
+				if (key_event->key() == Qt::Key_Backtab) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
+					QCoreApplication::postEvent(table_view, new_key_event);
+					return true;
+				}
+
+				if (key_event->key() == Qt::Key_Enter || key_event->key() == Qt::Key_Return) {
+					std::optional<QModelIndex> selected_index = get_selected_index();
+					if (selected_index) {
+						on_select(selected_index.value());
+					}
+					else {
+						hide();
+						parentWidget()->setFocus();
+						(*on_done)(line_edit->text().toStdString());
+					}
+				}
+
+			}
+		}
+		return false;
+	}
+
+public:
+
+	void on_config_file_changed() {
+		setStyleSheet("background-color: black; color: white; border: 0;");
+		table_view->setStyleSheet("QTableView::item::selected{background-color: white; color: black;}");
+		//myTable->setStyleSheet("QHeaderView {background-color: transparent;}");
+		table_view->horizontalHeader()->setStretchLastSection(true);
+		table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+		table_view->horizontalHeader()->hide();
+		table_view->verticalHeader()->hide();
+
+	}
+
+	CommandSelector(std::function<void(std::string)>* on_done, QWidget* parent, QStringList elements, std::unordered_map<std::string, std::vector<std::string>> key_map) :
+		QWidget(parent) ,
+		on_done(on_done),
+		key_map(key_map)
+	{
+		resize(300, 800);
+		QVBoxLayout* layout = new QVBoxLayout;
+		setLayout(layout);
+
+		string_elements = elements;
+		//list_model = new QStringListModel(string_elements);
+		standard_item_model = get_standard_item_model(string_elements);
+
+		line_edit = new QLineEdit;
+		table_view = new QTableView;
+		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+		table_view->setModel(standard_item_model);
+		layout->addWidget(line_edit);
+		layout->addWidget(table_view);
+
+		line_edit->installEventFilter(this);
+		line_edit->setFocus();
+
+		QObject::connect(table_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
+			on_select(index);
+			});
+
+
+		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
+
+			std::vector<std::string> matching_element_names;
+
+			for (int i = 0; i < string_elements.size(); i++) {
+				if (string_elements.at(i).startsWith(text)) {
+					matching_element_names.push_back(string_elements.at(i).toStdString());
+				}
+			}
+			//QStringListModel* new_standard_item_model = new QStringListModel(matching_elements);
+
+			QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
+			table_view->setModel(new_standard_item_model);
+			delete standard_item_model;
+			standard_item_model = new_standard_item_model;
+			});
+
+
+		on_config_file_changed();
+	}
+
+	void resizeEvent(QResizeEvent* resize_event) override {
+		QWidget::resizeEvent(resize_event);
+		int parent_width = parentWidget()->width();
+		int parent_height = parentWidget()->height();
+		setFixedSize(parent_width * 0.9f, parent_height);
+		move(parent_width * 0.05f, 0);
+		on_config_file_changed();
+	}
+
+
+	void on_select(const QModelIndex& index) {
+
+		QString name = standard_item_model->data(index).toString();
+		hide();
+		parentWidget()->setFocus();
+		(*on_done)(name.toStdString());
 	}
 };
 
