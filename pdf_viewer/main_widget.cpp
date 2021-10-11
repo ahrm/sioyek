@@ -66,6 +66,7 @@ extern std::vector<Path> user_keys_paths;
 extern Path database_file_path;
 extern Path tutorial_path;
 extern Path last_opened_file_address_path;
+extern std::wstring ITEM_LIST_PREFIX;
 
 
 bool MainWidget::main_document_view_has_document()
@@ -1684,7 +1685,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		std::vector<std::wstring> option_names;
 		std::vector<float> option_locations;
 		for (int i = 0; i < main_document_view->get_document()->get_bookmarks().size(); i++) {
-			option_names.push_back(main_document_view->get_document()->get_bookmarks()[i].description);
+			option_names.push_back(ITEM_LIST_PREFIX + L" " + main_document_view->get_document()->get_bookmarks()[i].description);
 			option_locations.push_back(main_document_view->get_document()->get_bookmarks()[i].y_offset);
 		}
 		set_current_widget(new FilteredSelectWindowClass<float>(
@@ -1758,7 +1759,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			if (path) {
 				BookMark bm = desc_bm_pair.second;
 				std::wstring file_name = Path(path.value()).filename().value_or(L"");
-				descs.push_back(bm.description + L" {" + file_name + L"}");
+				descs.push_back(ITEM_LIST_PREFIX + L" " + bm.description + L" {" + file_name + L"}");
 				book_states.push_back({ path.value(), bm.y_offset });
 			}
 		}
