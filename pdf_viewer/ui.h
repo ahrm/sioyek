@@ -37,6 +37,7 @@
 #include "utils.h"
 #include "config.h"
 
+extern std::wstring UI_FONT_FACE_NAME;
 const int max_select_size = 100;
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
@@ -163,8 +164,8 @@ public:
 		layout->addWidget(line_edit);
 		layout->addWidget(tree_view);
 
-		line_edit->setFont(QFont("Monaco"));
-		tree_view->setFont(QFont("Monaco"));
+		line_edit->setFont(QFont(QString::fromStdWString(UI_FONT_FACE_NAME)));
+		tree_view->setFont(QFont(QString::fromStdWString(UI_FONT_FACE_NAME)));
 
 		line_edit->installEventFilter(this);
 		line_edit->setFocus();
@@ -328,8 +329,8 @@ public:
 		layout->addWidget(line_edit);
 		layout->addWidget(list_view);
 
-		line_edit->setFont(QFont("Monaco"));
-		list_view->setFont(QFont("Monaco"));
+		line_edit->setFont(QFont(QString::fromStdWString(UI_FONT_FACE_NAME)));
+		list_view->setFont(QFont(QString::fromStdWString(UI_FONT_FACE_NAME)));
 
 		//line_edit->setStyleSheet("background-color: yellow;");
 		//setStyleSheet("background-color: black;color: white; border: 0;");

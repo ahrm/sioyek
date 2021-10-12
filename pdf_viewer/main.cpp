@@ -134,6 +134,7 @@ extern std::wstring LIBGEN_ADDRESS = L"";
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 extern std::wstring INVERSE_SEARCH_COMMAND = L"";
 extern std::wstring SHARED_DATABASE_PATH = L"";
+extern std::wstring UI_FONT_FACE_NAME = L"";
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE = true;
 extern bool SHOULD_DRAW_UNRENDERED_PAGES = true;

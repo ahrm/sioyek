@@ -27,6 +27,7 @@ extern std::wstring SHARED_DATABASE_PATH;
 extern std::wstring ITEM_LIST_PREFIX;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
+extern std::wstring UI_FONT_FACE_NAME;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -138,6 +139,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"hover_overview", &HOVER_OVERVIEW, bool_serializer, bool_deserializer });
 	configs.push_back({ L"visual_mark_next_page_fraction", &VISUAL_MARK_NEXT_PAGE_FRACTION, float_serializer, float_deserializer });
 	configs.push_back({ L"visual_mark_next_page_threshold", &VISUAL_MARK_NEXT_PAGE_THRESHOLD, float_serializer, float_deserializer });
+	configs.push_back({ L"ui_font", &UI_FONT_FACE_NAME, string_serializer, string_deserializer });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	for (char highlight_type = 'a'; highlight_type <= 'z'; highlight_type++) {
@@ -159,17 +161,14 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 //	}
 //}
 
-void ConfigManager::deserialize(const Path& default_file_path, const std::vector<Path>& user_file_paths) {
-	//std::string default_path_utf8 = default_path.get_path_utf8();
-	//std::string user_path_utf8 = utf8_encode(user_path);
-
-	//std::wifstream default_infile(default_path_utf8);
-	//std::wifstream user_infile(user_path_utf8);
-
+void ConfigManager::deserialize_file(const Path& file_path) {
 
 	std::wstring line;
-	std::wifstream default_file(default_file_path.get_path_utf8());
-	while (std::getline(default_file, line)) {
+	std::string encoded_line;
+	std::ifstream default_file(file_path.get_path_utf8());
+	while (std::getline(default_file, encoded_line)) {
+
+		line = utf8_decode(encoded_line);
 
 		if (line.size() == 0 || line[0] == '#') {
 			continue;
@@ -184,29 +183,14 @@ void ConfigManager::deserialize(const Path& default_file_path, const std::vector
 		}
 	}
 	default_file.close();
+}
 
-	for (int i = 0; i < user_file_paths.size(); i++) {
+void ConfigManager::deserialize(const Path& default_file_path, const std::vector<Path>& user_file_paths) {
 
-		if (user_file_paths[i].file_exists()) {
-			std::wifstream user_file(user_file_paths[i].get_path_utf8());
-			while (std::getline(user_file, line)) {
+	deserialize_file(default_file_path);
 
-				if (line.size() == 0 || line[0] == '#') {
-					continue;
-				}
-
-				std::wstringstream ss{ line };
-				std::wstring conf_name;
-				ss >> conf_name;
-				Config* conf = get_mut_config_with_name(conf_name);
-				if (conf) {
-					conf->value = conf->deserialize(ss, conf->value);
-				}
-			}
-			user_file.close();
-
-		}
-
+	for (const auto& user_file_path : user_file_paths) {
+		deserialize_file(user_file_path);
 	}
 }
 

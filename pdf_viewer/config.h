@@ -37,6 +37,7 @@ public:
 	ConfigManager(const Path& default_path,const std::vector<Path>& user_paths);
 	//void serialize(std::wofstream& file);
 	void deserialize(const Path& default_file_path, const std::vector<Path>& user_file_paths);
+	void deserialize_file(const Path& file_path);
 	template<typename T>
 	const T* get_config(std::wstring name) {
 
