@@ -770,3 +770,11 @@ void DocumentView::get_text_selection(fz_point selection_begin,
 	}
 
 }
+
+int DocumentView::get_page_offset() {
+	return current_document->get_page_offset();
+}
+
+void DocumentView::set_page_offset(int new_offset) {
+	current_document->set_page_offset(new_offset);
+}

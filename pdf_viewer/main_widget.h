@@ -55,9 +55,6 @@ private:
 	std::vector<DocumentViewState> history;
 	int current_history_index = -1;
 
-	// manual offset for documents which do not begin at page 1
-	int page_offset = 0;
-
 	// last position when mouse was clicked in absolute document space
 	float last_mouse_down_x = 0;
 	float last_mouse_down_y = 0;

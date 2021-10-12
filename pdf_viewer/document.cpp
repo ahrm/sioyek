@@ -761,6 +761,13 @@ fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_nu
 	return nullptr;
 }
 
+int Document::get_page_offset() {
+	return page_offset;
+}
+
+void Document::set_page_offset(int new_offset) {
+	page_offset = new_offset;
+}
 void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
 
 	std::lock_guard guard(page_dims_mutex);

@@ -122,4 +122,6 @@ public:
 	float get_vertical_line_pos();
 	float get_vertical_line_window_y();
 	void goto_vertical_line_pos();
+	int get_page_offset();
+	void set_page_offset(int new_offset);
 };

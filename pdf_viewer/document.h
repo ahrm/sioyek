@@ -34,6 +34,8 @@ private:
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
 
+	int page_offset = 0;
+
 
 	// number of pages in the document
 	std::optional<int> cached_num_pages = {};
@@ -163,6 +165,9 @@ public:
 		bool is_word_selection,
 		std::vector<fz_rect>& selected_characters,
 		std::wstring& selected_text);
+
+	int get_page_offset();
+	void set_page_offset(int new_offset);
 
 	friend class DocumentManager;
 };
