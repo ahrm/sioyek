@@ -82,6 +82,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "export", false, false , false, false});
 	commands.push_back({ "move_visual_mark_down", false, false , false, false});
 	commands.push_back({ "move_visual_mark_up", false, false , false, false});
+	commands.push_back({ "set_page_offset", true, false , false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {

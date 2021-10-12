@@ -1460,7 +1460,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 	if (command->name == "goto_begining") {
 		if (num_repeats) {
-			main_document_view->goto_page(num_repeats - 1);
+			main_document_view->goto_page(num_repeats - 1 + page_offset);
 		}
 		else {
 			main_document_view->set_offset_y(0.0f);
@@ -2038,7 +2038,14 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 
 		if (is_string_numeric(text.c_str()) && text.size() < 6) { // make sure the page number is valid
 			int dest = std::stoi(text.c_str()) - 1;
-			main_document_view->goto_page(dest);
+			main_document_view->goto_page(dest + page_offset);
+		}
+	}
+
+	if (current_pending_command->name == "set_page_offset") {
+
+		if (is_string_numeric(text.c_str()) && text.size() < 6) { // make sure the page number is valid
+			page_offset = std::stoi(text.c_str());
 		}
 	}
 
