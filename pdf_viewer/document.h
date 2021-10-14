@@ -108,6 +108,7 @@ public:
 	void delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y);
 	void delete_closest_link(float to_offset_y);
 	const std::vector<BookMark>& get_bookmarks() const;
+	std::vector<BookMark> get_sorted_bookmarks() const;
 	const std::vector<Highlight>& get_highlights() const;
 	const std::vector<Highlight> get_highlights_sorted() const;
 	fz_link* get_page_links(int page_number);

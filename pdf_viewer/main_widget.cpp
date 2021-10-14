@@ -51,6 +51,7 @@
 #endif
 
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
+extern bool SORT_BOOKMARKS_BY_LOCATION;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool HOVER_OVERVIEW;
 extern float MOVE_SCREEN_PERCENTAGE;
@@ -1684,9 +1685,17 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	else if (command->name == "goto_bookmark") {
 		std::vector<std::wstring> option_names;
 		std::vector<float> option_locations;
-		for (int i = 0; i < main_document_view->get_document()->get_bookmarks().size(); i++) {
-			option_names.push_back(ITEM_LIST_PREFIX + L" " + main_document_view->get_document()->get_bookmarks()[i].description);
-			option_locations.push_back(main_document_view->get_document()->get_bookmarks()[i].y_offset);
+		std::vector<BookMark> bookmarks;
+		if (SORT_BOOKMARKS_BY_LOCATION) {
+			bookmarks = main_document_view->get_document()->get_sorted_bookmarks();
+		}
+		else {
+			bookmarks = main_document_view->get_document()->get_bookmarks();
+		}
+
+		for (int i = 0; i < bookmarks.size() ; i++) {
+			option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmarks[i].description);
+			option_locations.push_back(bookmarks[i].y_offset);
 		}
 		set_current_widget(new FilteredSelectWindowClass<float>(
 			option_names,

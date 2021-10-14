@@ -196,6 +196,12 @@ const std::vector<BookMark>& Document::get_bookmarks() const {
 	return bookmarks;
 }
 
+std::vector<BookMark> Document::get_sorted_bookmarks() const {
+	std::vector<BookMark> res = bookmarks;
+	std::sort(res.begin(), res.end(), [](const BookMark& lhs, const BookMark& rhs) {return lhs.y_offset < rhs.y_offset; });
+	return res;
+}
+
 const std::vector<Highlight>& Document::get_highlights() const {
 	return highlights;
 }

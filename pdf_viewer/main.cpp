@@ -130,6 +130,7 @@ extern bool FLAT_TABLE_OF_CONTENTS = false;
 extern bool SHOULD_USE_MULTIPLE_MONITORS = false;
 extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = true;
 extern bool DEFAULT_DARK_MODE = false;
+extern bool SORT_BOOKMARKS_BY_LOCATION = false;
 extern std::wstring LIBGEN_ADDRESS = L"";
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 extern std::wstring INVERSE_SEARCH_COMMAND = L"";
