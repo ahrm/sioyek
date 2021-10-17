@@ -397,6 +397,10 @@ std::wstring MainWidget::get_status_string() {
 		ss << " [ presentation mode ] ";
 	}
 
+	if (visual_scroll_mode) {
+		ss << " [ visual scroll mode ] ";
+	}
+
 	return ss.str();
 }
 
@@ -1357,13 +1361,22 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	const Command* command = nullptr;
 
 	bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
+	bool is_visual_mark_mode = opengl_widget->get_should_draw_vertical_line() && visual_scroll_mode;
 
 	if (!is_control_pressed) {
 		if (wevent->angleDelta().y() > 0) {
-			command = input_handler->handle_key(Qt::Key::Key_Up, false, false, false, &num_repeats);
+			command = command_manager.get_command_with_name("move_up");
+
+			if (is_visual_mark_mode ) {
+				command = command_manager.get_command_with_name("move_visual_mark_up");
+			}
 		}
 		if (wevent->angleDelta().y() < 0) {
-			command = input_handler->handle_key(Qt::Key::Key_Down, false, false, false ,&num_repeats);
+				command = command_manager.get_command_with_name("move_down");
+
+			if (is_visual_mark_mode) {
+				command = command_manager.get_command_with_name("move_visual_mark_down");
+			}
 		}
 
 		if (wevent->angleDelta().x() > 0) {
@@ -1828,6 +1841,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	}
 
+	else if (command->name == "toggle_visual_scroll") {
+		toggle_visual_scroll_mode();
+	}
 	else if (command->name == "toggle_fullscreen") {
 		toggle_fullscreen();
 	}
@@ -2221,4 +2237,8 @@ bool MainWidget::focus_on_visual_mark_pos() {
 		return true;
 	}
 	return false;
+}
+
+void MainWidget::toggle_visual_scroll_mode() {
+	visual_scroll_mode = !visual_scroll_mode;
 }

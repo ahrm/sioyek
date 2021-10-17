@@ -70,6 +70,9 @@ private:
 	float selection_end_x = 0;
 	float selection_end_y = 0;
 
+	// when set, mouse wheel moves the visual mark
+	bool visual_scroll_mode = false;
+
 	// is the user currently selecing text? (happens when we left click and move the cursor)
 	bool is_selecting = false;
 	// is the user in word select mode? (happens when we double left click and move the cursor)
@@ -189,4 +192,5 @@ public:
 	void set_current_widget(QWidget* new_widget);
 	float get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont);
 	bool focus_on_visual_mark_pos();
+	void toggle_visual_scroll_mode();
 };
