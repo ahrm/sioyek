@@ -1000,7 +1000,9 @@ std::vector<unsigned int> get_max_width_histogram_from_pixmap(fz_pixmap* pixmap)
 		for (int i = 0; i < pixmap->w; i++) {
 			unsigned char r, g, b;
 			get_pixmap_pixel(pixmap, i, j, &r, &g, &b);
-			if ((r == 255) && (g == 255) && (b == 255)) {
+			float lightness = (static_cast<float>(r) + static_cast<float>(g) + static_cast<float>(b)) / 3.0f;
+
+			if (lightness > 150) {
 				x_value += 1;
 			}
 		}
