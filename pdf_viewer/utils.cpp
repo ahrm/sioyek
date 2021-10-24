@@ -1021,16 +1021,35 @@ float average_value(std::vector<T> values) {
 	return static_cast<float>(sum) / values.size();
 }
 
+template<typename T>
+float standard_deviation(std::vector<T> values, float average_value) {
+	T sum = 0;
+	for (auto x : values) {
+		sum += (x - average_value) * (x-average_value);
+	}
+	return std::sqrt(static_cast<float>(sum) / values.size());
+}
+
 std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int> histogram) {
 	std::vector<unsigned int> res;
 
-	unsigned int mean_width = static_cast<unsigned int>(average_value(histogram));
+	float mean_width = average_value(histogram);
+	float std = standard_deviation(histogram, mean_width);
+
+	std::vector<float> normalized_histogram;
+
+	for (auto x : histogram) {
+		normalized_histogram.push_back((x - mean_width) / std);
+	}
 
 	int i = 0;
 
 	while (i < histogram.size()) {
-		while ((i < histogram.size()) && (histogram[i] > mean_width)) i++;
-		while ((i < histogram.size()) && (histogram[i] <= mean_width)) i++;
+		//while ((i < histogram.size()) && (histogram[i] > mean_width)) i++;
+		//while ((i < histogram.size()) && (histogram[i] <= (mean_width / 2))) i++;
+
+		while ((i < histogram.size()) && (normalized_histogram[i] > 0.2f)) i++;
+		while ((i < histogram.size()) && (normalized_histogram[i] <= 0.21f)) i++;
 		if (i == histogram.size()) break;
 		res.push_back(i);
 	}
@@ -1302,15 +1321,18 @@ void check_for_updates(QWidget* parent, std::string current_version) {
 		
 		std::vector<std::wstring> parts;
 		split_path(utf8_decode(url_string), parts);
-		std::string version_string = utf8_encode(parts.back().substr(1, parts.back().size() - 1));
+		if (parts.size() > 0) {
+			std::string version_string = utf8_encode(parts.back().substr(1, parts.back().size() - 1));
 
-		if (version_string != current_version) {
-			int ret = QMessageBox::information(parent, "Update", QString::fromStdString("Do you want to update from " + current_version + " to " + version_string + "?"),
-				QMessageBox::Ok | QMessageBox::Cancel,
-				QMessageBox::Cancel);
-			if (ret == QMessageBox::Ok) {
-				open_url(url);
+			if (version_string != current_version) {
+				int ret = QMessageBox::information(parent, "Update", QString::fromStdString("Do you want to update from " + current_version + " to " + version_string + "?"),
+					QMessageBox::Ok | QMessageBox::Cancel,
+					QMessageBox::Cancel);
+				if (ret == QMessageBox::Ok) {
+					open_url(url);
+				}
 			}
+
 		}
 		});
 	manager->get(QNetworkRequest(QUrl(url)));
