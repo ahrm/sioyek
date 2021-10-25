@@ -857,6 +857,10 @@ void PdfViewOpenGLWidget::set_overview_page(std::optional<OverviewState> overvie
 	this->overview_page = overview;
 }
 
+std::optional<OverviewState> PdfViewOpenGLWidget::get_overview_page() {
+	return overview_page;
+}
+
 void PdfViewOpenGLWidget::draw_empty_helper_message(QPainter* painter) {
 	// should be called with native painting disabled
 

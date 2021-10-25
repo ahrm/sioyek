@@ -193,4 +193,7 @@ public:
 	float get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont);
 	bool focus_on_visual_mark_pos(bool moving_down);
 	void toggle_visual_scroll_mode();
+	void set_overview_link(PdfLink link);
+	void set_overview_position(int page, float offset);
+	bool find_location_of_text_under_pointer(int pointer_x, int pointer_y, int* out_page, float* out_offset);
 };
