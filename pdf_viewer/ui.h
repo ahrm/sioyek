@@ -534,6 +534,8 @@ public:
 
 		line_edit = new QLineEdit;
 		table_view = new QTableView;
+		table_view->setSelectionMode(QAbstractItemView::SingleSelection);
+		table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
 		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 		table_view->setModel(standard_item_model);
 		layout->addWidget(line_edit);
