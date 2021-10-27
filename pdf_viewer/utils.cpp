@@ -799,7 +799,7 @@ void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_numbe
 	}
 }
 
-void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_number, std::map<std::wstring, IndexedData>& indices) {
+void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_number, std::map<std::wstring, std::vector<IndexedData>>& indices) {
 	std::wregex regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
 	std::vector<std::pair<int, int>> match_ranges;
 	std::vector<std::wstring> match_texts;
@@ -823,7 +823,13 @@ void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_num
 			indexed_equation.page = page_number;
 			indexed_equation.text = match_text;
 			indexed_equation.y_offset = flat_chars[start_index]->quad.ll.y;
-			indices[match_text] = indexed_equation;
+			if (indices.find(match_text) == indices.end()) {
+				indices[match_text] = std::vector<IndexedData>();
+				indices[match_text].push_back(indexed_equation);
+			}
+			else {
+				indices[match_text].push_back(indexed_equation);
+			}
 		}
 	}
 

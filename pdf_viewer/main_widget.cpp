@@ -1292,6 +1292,7 @@ bool MainWidget::find_location_of_text_under_pointer(int pointer_x, int pointer_
 
 
 	main_document_view->window_to_document_pos(pointer_x, pointer_y, &offset_x, &offset_y, &page);
+	int current_page_number = main_document_view->get_current_page_number();
 
 	fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
 	std::vector<fz_stext_char*> flat_chars;
@@ -1312,7 +1313,7 @@ bool MainWidget::find_location_of_text_under_pointer(int pointer_x, int pointer_
 			out_offset);
 	}
 	if (equation_text_on_pointer) {
-		 std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(equation_text_on_pointer.value());
+		 std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(equation_text_on_pointer.value(), current_page_number);
 		 if (eqdata_) {
 			 IndexedData refdata = eqdata_.value();
 			 *out_page = refdata.page;
@@ -1385,7 +1386,9 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 			}
 		}
 		if (equation_text_on_pointer) {
-			 std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(equation_text_on_pointer.value());
+			 std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(
+				 equation_text_on_pointer.value(),
+				 main_document_view->get_current_page_number());
 			 if (eqdata_) {
 				 IndexedData refdata = eqdata_.value();
 				 long_jump_to_destination(refdata.page, refdata.y_offset);

@@ -59,7 +59,8 @@ private:
 	// necessarily true for the figures.
 	std::vector<IndexedData> generic_indices;
 	std::map<std::wstring, IndexedData> reference_indices;
-	std::map<std::wstring, IndexedData> equation_indices;
+	//std::map<std::wstring, IndexedData> equation_indices;
+	std::map<std::wstring, std::vector<IndexedData>> equation_indices;
 
 	std::mutex figure_indices_mutex;
 	std::optional<std::thread> figure_indexing_thread = {};
@@ -145,7 +146,7 @@ public:
 	void index_figures(bool* invalid_flag);
 	void stop_indexing();
 	std::optional<IndexedData> find_reference_with_string(std::wstring reference_name);
-	std::optional<IndexedData> find_equation_with_string(std::wstring equation_name);
+	std::optional<IndexedData> find_equation_with_string(std::wstring equation_name, int page_number);
 
 	std::optional<std::wstring> get_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_reference_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);

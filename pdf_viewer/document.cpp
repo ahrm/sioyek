@@ -874,7 +874,7 @@ void Document::index_figures(bool* invalid_flag)
 		std::wcout << "starting index thread ..." << std::endl;
 		std::vector<IndexedData> local_generic_data;
 		std::map<std::wstring, IndexedData> local_reference_data;
-		std::map<std::wstring, IndexedData> local_equation_data;
+		std::map<std::wstring, std::vector<IndexedData>> local_equation_data;
 
 		fz_context* context_ = fz_clone_context(context);
 		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
@@ -937,10 +937,22 @@ std::optional<IndexedData> Document::find_reference_with_string(std::wstring ref
 	return {};
 }
 
-std::optional<IndexedData> Document::find_equation_with_string(std::wstring equation_name)
+std::optional<IndexedData> Document::find_equation_with_string(std::wstring equation_name, int page_number)
 {
 	if (equation_indices.find(equation_name) != equation_indices.end()) {
-		return equation_indices[equation_name];
+		const std::vector<IndexedData> equations = equation_indices[equation_name];
+		int min_distance = 10000;
+		std::optional<IndexedData> res = {};
+
+		for (const auto& index : equations) {
+			int distance = std::abs(index.page - page_number);
+
+			if (distance < min_distance) {
+				min_distance = distance;
+				res = index;
+			}
+		}
+		return res;
 	}
 
 	return {};
