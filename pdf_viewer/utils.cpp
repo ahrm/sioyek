@@ -1,6 +1,7 @@
 //#include <Windows.h>
 #include <cwctype>
 
+#include <cmath>
 #include <cassert>
 #include "utils.h"
 #include <optional>
