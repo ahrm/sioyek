@@ -433,6 +433,9 @@ void MainWidget::handle_escape() {
 		main_document_view->handle_escape();
 		opengl_widget->handle_escape();
 	}
+	if (opengl_widget) {
+		opengl_widget->set_overview_page({});
+	}
 
 	text_command_line_edit_container->hide();
 
