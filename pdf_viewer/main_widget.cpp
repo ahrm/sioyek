@@ -123,7 +123,9 @@ void MainWidget::set_overview_link(PdfLink link) {
 	float offset_x, offset_y;
 
 	parse_uri(link.uri, &page, &offset_x, &offset_y);
-	set_overview_position(page - 1, offset_y);
+	if (page >= 1) {
+		set_overview_position(page - 1, offset_y);
+	}
 
 	//int current_page = main_document_view->get_current_page_number();
 	//float page_height = main_document_view->get_document()->get_page_height(current_page);
