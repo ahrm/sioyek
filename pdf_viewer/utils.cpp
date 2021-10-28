@@ -778,6 +778,7 @@ void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_numbe
 	std::wsmatch match;
 
 
+	int offset = 0;
 	while (std::regex_search(page_string, match, index_dst_regex)) {
 		
 		IndexedData new_data;
@@ -789,11 +790,13 @@ void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_numbe
 		int match_start_index = match.position();
 		int match_size = match_string.size();
 		for (int i = 0; i < match_size; i++) {
-			int index = match_start_index + i;
+			int index = offset +  match_start_index + i;
 			if (page_rects[index]) {
 				new_data.y_offset = page_rects[index].value().y0;
+				break;
 			}
 		}
+		offset += match_start_index + match_size;
 		page_string = match.suffix();
 
 		indices.push_back(new_data);
