@@ -143,6 +143,7 @@ extern bool HOVER_OVERVIEW = false;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.25f;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
 extern std::wstring ITEM_LIST_PREFIX = L">";
+extern float SMALL_PIXMAP_SCALE = 0.75f;
 
 extern Path default_config_path(L"");
 extern Path default_keys_path(L"");

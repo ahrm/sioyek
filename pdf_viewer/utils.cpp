@@ -1055,14 +1055,31 @@ std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int>
 	int i = 0;
 
 	while (i < histogram.size()) {
-		//while ((i < histogram.size()) && (histogram[i] > mean_width)) i++;
-		//while ((i < histogram.size()) && (histogram[i] <= (mean_width / 2))) i++;
 
 		while ((i < histogram.size()) && (normalized_histogram[i] > 0.2f)) i++;
 		while ((i < histogram.size()) && (normalized_histogram[i] <= 0.21f)) i++;
 		if (i == histogram.size()) break;
 		res.push_back(i);
 	}
+
+	float additional_distance = 0.0f;
+
+	if (res.size() > 5) {
+		std::vector<float> line_distances;
+
+		for (int i = 0; i < res.size() - 1; i++) {
+			line_distances.push_back(res[i + 1] - res[i]);
+		}
+		std::nth_element(line_distances.begin(), line_distances.begin() + line_distances.size() / 2, line_distances.end());
+		additional_distance = line_distances[line_distances.size() / 2];
+
+		for (int i = 0; i < res.size(); i++) {
+			res[i] += static_cast<unsigned int>(additional_distance / 5.0f);
+		}
+
+	}
+
+
 	return res;
 }
 

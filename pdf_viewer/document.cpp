@@ -10,6 +10,8 @@
 
 #include "checksum.h"
 
+extern float SMALL_PIXMAP_SCALE;
+
 int Document::get_mark_index(char symbol) {
 	for (int i = 0; i < marks.size(); i++) {
 		if (marks[i].symbol == symbol) {
@@ -1215,7 +1217,8 @@ fz_pixmap* Document::get_small_pixmap(int page)
 		}
 	}
 
-	fz_matrix ctm = fz_scale(0.5f, 0.5f);
+	//fz_matrix ctm = fz_scale(0.5f, 0.5f);
+	fz_matrix ctm = fz_scale(SMALL_PIXMAP_SCALE, SMALL_PIXMAP_SCALE);
 	fz_pixmap* res = fz_new_pixmap_from_page_number(context, doc, page, ctm, fz_device_rgb(context), 0);
 	cached_small_pixmaps.push_back(std::make_pair(page, res));
 	unsigned int SMALL_PIXMAP_CACHE_SIZE = 5;
