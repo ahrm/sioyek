@@ -73,6 +73,8 @@ private:
 	// when set, mouse wheel moves the visual mark
 	bool visual_scroll_mode = false;
 
+	bool horizontal_scroll_locked = false;
+
 	// is the user currently selecing text? (happens when we left click and move the cursor)
 	bool is_selecting = false;
 	// is the user in word select mode? (happens when we double left click and move the cursor)

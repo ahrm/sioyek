@@ -419,6 +419,10 @@ std::wstring MainWidget::get_status_string() {
 		ss << " [ visual scroll mode ] ";
 	}
 
+	if (horizontal_scroll_locked) {
+		ss << " [ locked horizontal scroll ] ";
+	}
+
 	return ss.str();
 }
 
@@ -1616,13 +1620,17 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 
 		if (command->name == "move_right") {
-			main_document_view->move(72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
-			last_smart_fit_page = {};
+			if (!horizontal_scroll_locked) {
+				main_document_view->move(72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+				last_smart_fit_page = {};
+			}
 		}
 
 		if (command->name == "move_left") {
-			main_document_view->move(-72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
-			last_smart_fit_page = {};
+			if (!horizontal_scroll_locked) {
+				main_document_view->move(-72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+				last_smart_fit_page = {};
+			}
 		}
 	}
 	else {
@@ -2045,6 +2053,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		db_manager->import_json(import_file_name, checksummer);
 	}
 	else if (command->name == "debug") {
+	}
+	else if (command->name == "toggle_horizontal_scroll_lock") {
+		horizontal_scroll_locked = !horizontal_scroll_locked;
 	}
 	else if (command->name == "move_visual_mark_down") {
 		float new_pos = get_ith_next_line_from_absolute_y(main_document_view->get_vertical_line_pos(), 2, true);

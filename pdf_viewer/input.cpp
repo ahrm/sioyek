@@ -84,6 +84,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "move_visual_mark_up", false, false , false, false});
 	commands.push_back({ "set_page_offset", true, false , false, false});
 	commands.push_back({ "toggle_visual_scroll", false, false , false, false});
+	commands.push_back({ "toggle_horizontal_scroll_lock", false, false , false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {
