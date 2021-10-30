@@ -2,6 +2,20 @@
 
 Sioyek is a PDF viewer designed for reading research papers and technical books.
 
+## Install
+### Official packages
+There're installers for Windows, macOS and Linux. See [Releases page](https://github.com/ahrm/sioyek/releases).
+
+### Third-party packages for Linux
+If you prefer to install sioyek with a package manager, you can look at this list. Please note that they are provided by third party packagers. USE AT YOUR OWN RISK! If you're reporting a bug for a thrid-party package, please mention which package you're using.
+
+Distro | Link | Maintainer
+------- | ----- | -------------
+Arch | [AUR Sioyek-git](https://aur.archlinux.org/packages/sioyek-git/) | [@randomn4me](https://github.com/randomn4me)  
+Fedora | [Copr endle/sioyek](https://copr.fedorainfracloud.org/coprs/endle/sioyek/) | [@Endle](https://github.com/Endle)  
+
+## Documentation
+You can view the official documentation [here](https://sioyek-documentation.readthedocs.io/en/latest/) .
 ## Features
 
 ### Quick Open
@@ -58,17 +72,6 @@ https://user-images.githubusercontent.com/6392321/125337160-e4832700-e363-11eb-8
 
 You can customize all key bindings and some UI elements by editing `keys_user.conf` and `prefs_user.conf`. The default configurations are in `keys.conf` and `prefs.conf`.
 
-## Install
-### Official packages
-There're installers for Windows, macOS and Linux. See [Releases page](https://github.com/ahrm/sioyek/releases).
-
-### Third-party packages for Linux
-If you prefer to install sioyek with a package manager, you can look at this list. Please note that they are provided by third party packagers. USE AT YOUR OWN RISK! If you're reporting a bug for a thrid-party package, please mention which package you're using.
-
-Distro | Link | Maintainer
-------- | ----- | -------------
-Arch | [AUR Sioyek-git](https://aur.archlinux.org/packages/sioyek-git/) | [@randomn4me](https://github.com/randomn4me)  
-Fedora | [Copr endle/sioyek](https://copr.fedorainfracloud.org/coprs/endle/sioyek/) | [@Endle](https://github.com/Endle)  
 
 
 ## Build Instructions
