@@ -21,6 +21,7 @@ extern bool SHOULD_DRAW_UNRENDERED_PAGES;
 extern bool HOVER_OVERVIEW;
 extern bool DEFAULT_DARK_MODE;
 extern float HIGHLIGHT_COLORS[26 * 3];
+extern std::wstring SEARCH_URLS[26];
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
 extern std::wstring INVERSE_SEARCH_COMMAND;
@@ -29,6 +30,8 @@ extern std::wstring ITEM_LIST_PREFIX;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern std::wstring UI_FONT_FACE_NAME;
+extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
+extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -142,11 +145,16 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"visual_mark_next_page_fraction", &VISUAL_MARK_NEXT_PAGE_FRACTION, float_serializer, float_deserializer });
 	configs.push_back({ L"visual_mark_next_page_threshold", &VISUAL_MARK_NEXT_PAGE_THRESHOLD, float_serializer, float_deserializer });
 	configs.push_back({ L"ui_font", &UI_FONT_FACE_NAME, string_serializer, string_deserializer });
+	configs.push_back({ L"middle_click_search_engine", &MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer });
+	configs.push_back({ L"shift_middle_click_search_engine", &SHIFT_MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
-	for (char highlight_type = 'a'; highlight_type <= 'z'; highlight_type++) {
-		highlight_config_string[highlight_config_string.size() - 1] = highlight_type;
-		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(highlight_type - 'a') * 3], vec3_serializer, vec3_deserializer });
+	std::wstring search_url_config_string = L"search_url_a";
+	for (char letter = 'a'; letter <= 'z'; letter++) {
+		highlight_config_string[highlight_config_string.size() - 1] = letter;
+		search_url_config_string[search_url_config_string.size() - 1] = letter;
+		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(letter - 'a') * 3], vec3_serializer, vec3_deserializer });
+		configs.push_back({ search_url_config_string, &SEARCH_URLS[letter - 'a'], string_serializer, string_deserializer });
 	}
 
 	deserialize(default_path, user_paths);

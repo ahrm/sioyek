@@ -61,9 +61,10 @@ CommandManager::CommandManager() {
 	commands.push_back({ "toggle_synctex", false, false , false, false});
 	//commands.push_back({ "command", true, false , false, false});
 	commands.push_back({ "command", false, false , false, false});
-	commands.push_back({ "search_selected_text_in_google_scholar", false, false , false, false});
+	//commands.push_back({ "search_selected_text_in_google_scholar", false, false , false, false});
+	//commands.push_back({ "search_selected_text_in_libgen", false, false , false, false});
+	commands.push_back({ "external_search", false, true , false, false});
 	commands.push_back({ "open_selected_url", false, false , false, false});
-	commands.push_back({ "search_selected_text_in_libgen", false, false , false, false});
 	commands.push_back({ "screen_down", false, false , false, false});
 	commands.push_back({ "screen_up", false, false , false, false});
 	commands.push_back({ "next_chapter", false, false , false, true});

@@ -69,6 +69,7 @@ void sleep_ms(unsigned int ms);
 void open_url(const std::string& url_string);
 void open_url(const std::wstring& url_string);
 void open_file(const std::wstring& path);
+void search_custom_engine(const std::wstring& search_string, const std::wstring& custom_engine_url);
 void search_google_scholar(const std::wstring& search_string);
 void search_libgen(const std::wstring& search_string);
 void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, IndexedData>& indices);

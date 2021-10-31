@@ -69,7 +69,9 @@ extern Path database_file_path;
 extern Path tutorial_path;
 extern Path last_opened_file_address_path;
 extern std::wstring ITEM_LIST_PREFIX;
-
+extern std::wstring SEARCH_URLS[26];
+extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
+extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -815,6 +817,16 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 			selected_text.clear();
 		}
 	}
+	else if (command->name == "external_search") {
+		if ((symbol >= 'a') && (symbol <= 'z')) {
+			search_custom_engine(selected_text, SEARCH_URLS[symbol - 'a']);
+		}
+		//if (opengl_widget->selected_character_rects.size() > 0) {
+		//	main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, symbol);
+		//	opengl_widget->selected_character_rects.clear();
+		//	selected_text.clear();
+		//}
+	}
 	else if (command->name == "goto_mark") {
 		assert(main_document_view);
 
@@ -1415,11 +1427,15 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		}
 		if (paper_name_on_pointer) {
 			if (paper_name_on_pointer.value().size() > 5) {
+				char type;
 				if (is_shift_pressed) {
-					search_libgen(paper_name_on_pointer.value());
+					type = SHIFT_MIDDLE_CLICK_SEARCH_ENGINE[0];
 				}
 				else {
-					search_google_scholar(paper_name_on_pointer.value());
+					type = MIDDLE_CLICK_SEARCH_ENGINE[0];
+				}
+				if ((type >= 'a') && (type <= 'z')) {
+					search_custom_engine(paper_name_on_pointer.value(), SEARCH_URLS[type - 'a']);
 				}
 			}
 		}

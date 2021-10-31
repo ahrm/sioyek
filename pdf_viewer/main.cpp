@@ -87,6 +87,9 @@ extern std::wstring APPLICATION_NAME = L"sioyek";
 extern std::string APPLICATION_VERSION = "0.31.6";
 extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+std::wstring SEARCH_URLS[26];
+extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
+extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
 extern float HIGHLIGHT_COLORS[26 * 3] = { \
 0.5182963463943647, 0.052279561076773784, 0.42942409252886155, \
 0.673198309637537, 0.14250443697242887, 0.1842972533900342, \
