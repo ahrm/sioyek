@@ -146,6 +146,7 @@ extern bool HOVER_OVERVIEW = false;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.25f;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
 extern std::wstring ITEM_LIST_PREFIX = L">";
+extern std::wstring STARTUP_COMMANDS = L"";
 extern float SMALL_PIXMAP_SCALE = 0.75f;
 
 extern Path default_config_path(L"");
@@ -439,6 +440,15 @@ int main(int argc, char* args[]) {
 	if (DEFAULT_DARK_MODE) {
 		main_widget.toggle_dark_mode();
 	}
+
+	QString startup_commands_list = QString::fromStdWString(STARTUP_COMMANDS);
+	QStringList startup_commands = startup_commands_list.split(";");
+	CommandManager* command_manager = main_widget.get_command_manager();
+
+	for (auto command : startup_commands) {
+		main_widget.handle_command(command_manager->get_command_with_name(command.toStdString()), 1);
+	}
+
 	//main_widget.open_document(file_path.get_path());
 	//main_widget.resize(500, 500);
 

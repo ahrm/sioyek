@@ -2376,3 +2376,7 @@ bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
 void MainWidget::toggle_visual_scroll_mode() {
 	visual_scroll_mode = !visual_scroll_mode;
 }
+
+CommandManager* MainWidget::get_command_manager(){
+	return &command_manager;
+}

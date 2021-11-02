@@ -148,7 +148,6 @@ protected:
 	void wheelEvent(QWheelEvent* wevent) override;
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
 	void toggle_two_window_mode();
-	void handle_command(const Command* command, int num_repeats);
 	void handle_command_types(const Command* command, int num_repeats);
 	void handle_link();
 	void handle_pending_text_command(std::wstring text);
@@ -159,6 +158,8 @@ protected:
 	void long_jump_to_destination(int page, float offset_y);
 
 public:
+
+	void handle_command(const Command* command, int num_repeats);
 
 	MainWidget(
 		fz_context* mupdf_context,
@@ -198,4 +199,5 @@ public:
 	void set_overview_link(PdfLink link);
 	void set_overview_position(int page, float offset);
 	bool find_location_of_text_under_pointer(int pointer_x, int pointer_y, int* out_page, float* out_offset);
+	CommandManager* get_command_manager();
 };

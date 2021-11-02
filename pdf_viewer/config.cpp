@@ -32,6 +32,7 @@ extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern std::wstring UI_FONT_FACE_NAME;
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
+extern std::wstring STARTUP_COMMANDS;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -147,6 +148,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"ui_font", &UI_FONT_FACE_NAME, string_serializer, string_deserializer });
 	configs.push_back({ L"middle_click_search_engine", &MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer });
 	configs.push_back({ L"shift_middle_click_search_engine", &SHIFT_MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer });
+	configs.push_back({ L"startup_commands", &STARTUP_COMMANDS, string_serializer, string_deserializer });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";
