@@ -16,6 +16,10 @@ Fedora | [Copr endle/sioyek](https://copr.fedorainfracloud.org/coprs/endle/sioye
 
 ## Documentation
 You can view the official documentation [here](https://sioyek-documentation.readthedocs.io/en/latest/) .
+## Feature Video Overview
+
+[![Sioyek feature overview](https://img.youtube.com/vi/yTmCI0Xp5vI/0.jpg)](https://www.youtube.com/watch?v=yTmCI0Xp5vI)
+
 ## Features
 
 ### Quick Open
