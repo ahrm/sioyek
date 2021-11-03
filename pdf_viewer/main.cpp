@@ -84,7 +84,7 @@
 
 
 extern std::wstring APPLICATION_NAME = L"sioyek";
-extern std::string APPLICATION_VERSION = "0.31.6";
+extern std::string APPLICATION_VERSION = "1.0.0";
 extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 std::wstring SEARCH_URLS[26];
