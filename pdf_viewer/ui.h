@@ -99,10 +99,13 @@ protected:
 			});
 
 		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
-			proxy_model->setFilterFixedString(text);
-			QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
-			if (t_view) {
-				t_view->expandAll();
+			if (!on_text_change(text)) {
+				// generic text change handling when we don't explicitly handle text change events
+				proxy_model->setFilterFixedString(text);
+				QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
+				if (t_view) {
+					t_view->expandAll();
+				}
 			}
 			});
 	}
@@ -129,6 +132,13 @@ protected:
 	//}
 	virtual void on_select(const QModelIndex& value) = 0;
 	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) {}
+	virtual void on_return_no_select(const QString& text) {}
+
+	// should return true when we want to manually handle text change events
+	virtual bool on_text_change(const QString& text) {
+		return false;
+	}
+
 	virtual QString get_view_stylesheet_type_name() = 0;
 
 public:
@@ -173,6 +183,9 @@ public:
 					if (selected_index) {
 						on_select(selected_index.value());
 					}
+					else {
+						on_return_no_select(line_edit->text());
+					}
 				}
 
 			}
@@ -185,9 +198,10 @@ public:
 			QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
 			if (selected_index_list.size() > 0) {
 				QModelIndex selected_index = selected_index_list.at(0);
-				QModelIndex source_index = proxy_model->mapToSource(selected_index);
-
-				on_delete(source_index, selected_index);
+				if (proxy_model->hasIndex(selected_index.row(), selected_index.column())) {
+					QModelIndex source_index = proxy_model->mapToSource(selected_index);
+					on_delete(source_index, selected_index);
+				}
 			}
 		}
 		QWidget::keyReleaseEvent(event);
@@ -311,13 +325,9 @@ public:
 	}
 };
 
-class CommandSelector : public QWidget{
+class CommandSelector : public BaseSelectorWidget<std::string, QTableView, QSortFilterProxyModel> {
 private:
-
-	QLineEdit* line_edit = nullptr;
-	QTableView* table_view = nullptr;
 	QStringList string_elements;
-	//QStringListModel* list_model = nullptr;
 	QStandardItemModel* standard_item_model = nullptr;
 	std::unordered_map<std::string, std::vector<std::string>> key_map;
 	std::function<void(std::string)>* on_done = nullptr;
@@ -364,59 +374,37 @@ private:
 	}
 
 protected:
-	std::optional<QModelIndex> get_selected_index() {
-		QModelIndexList selected_index_list = table_view->selectionModel()->selectedIndexes();
-
-		if (selected_index_list.size() > 0) {
-			QModelIndex selected_index = selected_index_list.at(0);
-			return selected_index;
-		}
-		return {};
-	}
-
-	bool eventFilter(QObject* obj, QEvent* event) override {
-		if (obj == line_edit) {
-			if (event->type() == QEvent::KeyPress) {
-				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-				if (key_event->key() == Qt::Key_Down || key_event->key() == Qt::Key_Up) {
-					QKeyEvent* new_key_event = new QKeyEvent(*key_event);
-					QCoreApplication::postEvent(table_view, new_key_event);
-					return true;
-				}
-				if (key_event->key() == Qt::Key_Tab) {
-					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
-					QCoreApplication::postEvent(table_view, new_key_event);
-					return true;
-				}
-				if (key_event->key() == Qt::Key_Backtab) {
-					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
-					QCoreApplication::postEvent(table_view, new_key_event);
-					return true;
-				}
-
-				if (key_event->key() == Qt::Key_Enter || key_event->key() == Qt::Key_Return) {
-					std::optional<QModelIndex> selected_index = get_selected_index();
-					if (selected_index) {
-						on_select(selected_index.value());
-					}
-					else {
-						hide();
-						parentWidget()->setFocus();
-						(*on_done)(line_edit->text().toStdString());
-					}
-				}
-
-			}
-		}
-		return false;
-	}
-
 public:
 
-	void on_config_file_changed() {
-		setStyleSheet("background-color: black; color: white; border: 0;");
-		table_view->setStyleSheet("QTableView::item::selected{background-color: white; color: black;}");
-		//myTable->setStyleSheet("QHeaderView {background-color: transparent;}");
+	QString get_view_stylesheet_type_name() {
+		return "QTableView";
+	}
+
+	void on_select(const QModelIndex& index) {
+		QString name = standard_item_model->data(index).toString();
+		hide();
+		parentWidget()->setFocus();
+		(*on_done)(name.toStdString());
+	}
+
+	CommandSelector(std::function<void(std::string)>* on_done,
+		QWidget* parent,
+		QStringList elements,
+		std::unordered_map<std::string,
+		std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, QSortFilterProxyModel>(nullptr, parent),
+		on_done(on_done),
+		key_map(key_map)
+	{
+		string_elements = elements;
+		standard_item_model = get_standard_item_model(string_elements);
+
+		QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+
+		table_view->setSelectionMode(QAbstractItemView::SingleSelection);
+		table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+		table_view->setModel(standard_item_model);
+
 		table_view->horizontalHeader()->setStretchLastSection(true);
 		table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 		table_view->horizontalHeader()->hide();
@@ -424,74 +412,28 @@ public:
 
 	}
 
-	CommandSelector(std::function<void(std::string)>* on_done, QWidget* parent, QStringList elements, std::unordered_map<std::string, std::vector<std::string>> key_map) :
-		QWidget(parent) ,
-		on_done(on_done),
-		key_map(key_map)
-	{
-		resize(300, 800);
-		QVBoxLayout* layout = new QVBoxLayout;
-		setLayout(layout);
-
-		string_elements = elements;
-		//list_model = new QStringListModel(string_elements);
-		standard_item_model = get_standard_item_model(string_elements);
-
-		line_edit = new QLineEdit;
-		table_view = new QTableView;
-		table_view->setSelectionMode(QAbstractItemView::SingleSelection);
-		table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
-		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
-		table_view->setModel(standard_item_model);
-		layout->addWidget(line_edit);
-		layout->addWidget(table_view);
-
-		line_edit->installEventFilter(this);
-		line_edit->setFocus();
-
-		QObject::connect(table_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
-			on_select(index);
-			});
-
-
-		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
-
-			std::vector<std::string> matching_element_names;
-
-			for (int i = 0; i < string_elements.size(); i++) {
-				if (string_elements.at(i).startsWith(text)) {
-					matching_element_names.push_back(string_elements.at(i).toStdString());
-				}
-			}
-			//QStringListModel* new_standard_item_model = new QStringListModel(matching_elements);
-
-			QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
-			table_view->setModel(new_standard_item_model);
-			delete standard_item_model;
-			standard_item_model = new_standard_item_model;
-			});
-
-
-		on_config_file_changed();
-	}
-
-	void resizeEvent(QResizeEvent* resize_event) override {
-		QWidget::resizeEvent(resize_event);
-		int parent_width = parentWidget()->width();
-		int parent_height = parentWidget()->height();
-		setFixedSize(parent_width * 0.9f, parent_height);
-		move(parent_width * 0.05f, 0);
-		on_config_file_changed();
-	}
-
-
-	void on_select(const QModelIndex& index) {
-
-		QString name = standard_item_model->data(index).toString();
+	virtual void on_return_no_select(const QString& text) {
 		hide();
 		parentWidget()->setFocus();
-		(*on_done)(name.toStdString());
+		(*on_done)(line_edit->text().toStdString());
 	}
+
+	virtual bool on_text_change(const QString& text) {
+		std::vector<std::string> matching_element_names;
+
+		for (int i = 0; i < string_elements.size(); i++) {
+			if (string_elements.at(i).startsWith(text)) {
+				matching_element_names.push_back(string_elements.at(i).toStdString());
+			}
+		}
+
+		QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
+		dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
+		delete standard_item_model;
+		standard_item_model = new_standard_item_model;
+		return true;
+	}
+
 };
 
 class FileSelector : public QWidget{
