@@ -33,6 +33,7 @@ extern std::wstring UI_FONT_FACE_NAME;
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring STARTUP_COMMANDS;
+extern int FONT_SIZE;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -113,6 +114,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	auto vec3_deserializer = vec_n_deserializer<3>;
 	auto vec4_deserializer = vec_n_deserializer<4>;
 	auto float_deserializer = generic_deserializer<float>;
+	auto int_deserializer = generic_deserializer<int>;
 	auto bool_deserializer = generic_deserializer<bool>;
 
 	configs.push_back({ L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
@@ -149,6 +151,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"middle_click_search_engine", &MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer });
 	configs.push_back({ L"shift_middle_click_search_engine", &SHIFT_MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer });
 	configs.push_back({ L"startup_commands", &STARTUP_COMMANDS, string_serializer, string_deserializer });
+	configs.push_back({ L"font_size", &FONT_SIZE, int_serializer, int_deserializer });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

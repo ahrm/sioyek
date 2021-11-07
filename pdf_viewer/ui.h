@@ -38,6 +38,7 @@
 #include "config.h"
 
 extern std::wstring UI_FONT_FACE_NAME;
+extern int FONT_SIZE;
 const int max_select_size = 100;
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
@@ -57,6 +58,15 @@ public:
 	virtual void on_config_file_changed(ConfigManager* new_config_manager) = 0;
 	static void notify_config_file_changed(ConfigManager* new_config_manager);
 };
+
+//class BaseSelectorWidget : public QWidget {
+//
+//	BaseSelectorWidget(QWidget* parent) : QWidget(parent) {
+//
+//	}
+//
+//	virtual void on_config_file_changed(ConfigManager* new_config_manager) = 0;
+//};
 
 template<typename T>
 class FilteredTreeSelect : public QWidget, ConfigFileChangeListener{
@@ -120,7 +130,12 @@ protected:
 public:
 
 	void on_config_file_changed(ConfigManager* new_config_manager) {
-		setStyleSheet("background-color: black; color: white; border: 0;");
+		QString font_size_stylesheet = "";
+		if (FONT_SIZE > 0) {
+			font_size_stylesheet = QString("font-size: %1px").arg(FONT_SIZE);
+		}
+
+		setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
 		tree_view->setStyleSheet("QTreeView::item::selected{background-color: white; color: black;}");
 	}
 
@@ -290,7 +305,13 @@ protected:
 public:
 
 	void on_config_file_changed(ConfigManager* new_config_manager) {
-		setStyleSheet("background-color: black; color: white; border: 0;");
+
+		QString font_size_stylesheet = "";
+		if (FONT_SIZE > 0) {
+			font_size_stylesheet = QString("font-size: %1px").arg(FONT_SIZE);
+		}
+
+		setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
 		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
 	}
 
@@ -648,7 +669,13 @@ protected:
 public:
 
 	void on_config_file_changed() {
-		setStyleSheet("background-color: black; color: white; border: 0;");
+
+		QString font_size_stylesheet = "";
+		if (FONT_SIZE > 0) {
+			font_size_stylesheet = QString("font-size: %1px").arg(FONT_SIZE);
+		}
+
+		setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
 		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
 	}
 

@@ -84,6 +84,7 @@
 
 
 extern std::wstring APPLICATION_NAME = L"sioyek";
+extern int FONT_SIZE = -1;
 extern std::string APPLICATION_VERSION = "1.0.0";
 extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
