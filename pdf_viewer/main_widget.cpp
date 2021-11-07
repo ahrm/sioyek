@@ -1757,7 +1757,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 						main_document_view->goto_page(*page_value);
 						push_state();
 					}
-					}, config_manager, this));
+					}, this));
 				current_widget->show();
 			}
 			else {
@@ -1773,7 +1773,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 							main_document_view->goto_page(toc_node->page);
 							push_state();
 						}
-					}, config_manager, this, selected_index));
+					}, this, selected_index));
 				current_widget->show();
 			}
 
@@ -1813,7 +1813,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 						open_document_with_hash(*doc_hash);
 					}
 				},
-				config_manager,
 					this,
 					[&](std::string* doc_hash) {
 					db_manager->delete_opened_book(*doc_hash);
@@ -1855,7 +1854,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					push_state();
 				}
 			},
-			config_manager,
 			this,
 				[&](float* offset_value) {
 				if (offset_value) {
@@ -1890,7 +1888,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					push_state();
 				}
 			},
-			config_manager,
 			this,
 				[&](std::vector<float>* offset_values) {
 				if (offset_values) {
@@ -1928,7 +1925,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					open_document(book_state->document_path, 0.0f, book_state->offset_y);
 				}
 			},
-			config_manager,
 			this,
 			[&](BookState* book_state) {
 				if (book_state) {
@@ -1969,7 +1965,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 					open_document(book_state->document_path, 0.0f, book_state->offset_y);
 				}
 			},
-			config_manager,
 				this));
 		current_widget->show();
 

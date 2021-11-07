@@ -59,30 +59,83 @@ public:
 	static void notify_config_file_changed(ConfigManager* new_config_manager);
 };
 
-//class BaseSelectorWidget : public QWidget {
-//
-//	BaseSelectorWidget(QWidget* parent) : QWidget(parent) {
-//
-//	}
-//
-//	virtual void on_config_file_changed(ConfigManager* new_config_manager) = 0;
-//};
-
-template<typename T>
-class FilteredTreeSelect : public QWidget, ConfigFileChangeListener{
-private:
-
-	QStandardItemModel* tree_item_model = nullptr;
-	QSortFilterProxyModel* proxy_model = nullptr;
-	QLineEdit* line_edit = nullptr;
-	QTreeView* tree_view = nullptr;
-	std::function<void(const std::vector<int>&)> on_done;
-	ConfigManager* config_manager = nullptr;
+template <typename T, typename ViewType, typename ProxyModelType>
+class BaseSelectorWidget : public QWidget {
 
 protected:
+	BaseSelectorWidget(QStandardItemModel* item_model, QWidget* parent) : QWidget(parent){
+
+		proxy_model = new ProxyModelType;
+		proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+
+		if (item_model) {
+			proxy_model->setSourceModel(item_model);
+		}
+
+		resize(300, 800);
+		QVBoxLayout* layout = new QVBoxLayout;
+		setLayout(layout);
+
+		line_edit = new QLineEdit;
+		abstract_item_view = new ViewType;
+		abstract_item_view->setModel(proxy_model);
+		abstract_item_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+		QTreeView* tree_view = dynamic_cast<QTreeView*>(abstract_item_view);
+		if (tree_view) {
+			tree_view->expandAll();
+			tree_view->setHeaderHidden(true);
+			tree_view->resizeColumnToContents(0);
+		}
+
+		layout->addWidget(line_edit);
+		layout->addWidget(abstract_item_view);
+
+		line_edit->installEventFilter(this);
+		line_edit->setFocus();
+		
+		QObject::connect(tree_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
+			on_select(index);
+			});
+
+		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
+			proxy_model->setFilterFixedString(text);
+			QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
+			if (t_view) {
+				t_view->expandAll();
+			}
+			});
+	}
+
+
+	QAbstractItemView* get_view() {
+		return abstract_item_view;
+	}
+
+	QLineEdit* line_edit = nullptr;
+	QSortFilterProxyModel* proxy_model = nullptr;
+	ViewType* abstract_item_view;
+
+	//void on_select(const QModelIndex& index) {
+	//	hide();
+	//	parentWidget()->setFocus();
+	//	auto source_index = proxy_model->mapToSource(index);
+	//	std::vector<int> indices;
+	//	while (source_index != QModelIndex()) {
+	//		indices.push_back(source_index.row());
+	//		source_index = source_index.parent();
+	//	}
+	//	on_done(indices);
+	//}
+	virtual void on_select(const QModelIndex& value) = 0;
+	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) {}
+	virtual QString get_view_stylesheet_type_name() = 0;
+
+public:
+
 
 	std::optional<QModelIndex> get_selected_index() {
-		QModelIndexList selected_index_list = tree_view->selectionModel()->selectedIndexes();
+		QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
 
 		if (selected_index_list.size() > 0) {
 			QModelIndex selected_index = selected_index_list.at(0);
@@ -101,18 +154,18 @@ protected:
 					key_event->key() == Qt::Key_Right
 					) {
 					QKeyEvent* newEvent = new QKeyEvent(*key_event);
-					QCoreApplication::postEvent(tree_view, newEvent);
+					QCoreApplication::postEvent(get_view(), newEvent);
 					//QCoreApplication::postEvent(tree_view, key_event);
 					return true;
 				}
 				if (key_event->key() == Qt::Key_Tab) {
 					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
-					QCoreApplication::postEvent(tree_view, new_key_event);
+					QCoreApplication::postEvent(get_view(), new_key_event);
 					return true;
 				}
 				if (key_event->key() == Qt::Key_Backtab) {
 					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
-					QCoreApplication::postEvent(tree_view, new_key_event);
+					QCoreApplication::postEvent(get_view(), new_key_event);
 					return true;
 				}
 				if (key_event->key() == Qt::Key_Return || key_event->key() == Qt::Key_Enter) {
@@ -127,103 +180,73 @@ protected:
 		return false;
 	}
 
-public:
+	void keyReleaseEvent(QKeyEvent* event) override {
+		if (event->key() == Qt::Key_Delete) {
+			QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
+			if (selected_index_list.size() > 0) {
+				QModelIndex selected_index = selected_index_list.at(0);
+				QModelIndex source_index = proxy_model->mapToSource(selected_index);
 
-	void on_config_file_changed(ConfigManager* new_config_manager) {
+				on_delete(source_index, selected_index);
+			}
+		}
+		QWidget::keyReleaseEvent(event);
+	}
+
+	virtual void on_config_file_changed() {
 		QString font_size_stylesheet = "";
 		if (FONT_SIZE > 0) {
 			font_size_stylesheet = QString("font-size: %1px").arg(FONT_SIZE);
 		}
 
 		setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
-		tree_view->setStyleSheet("QTreeView::item::selected{background-color: white; color: black;}");
-	}
-
-	//todo: check for memory leaks
-	FilteredTreeSelect(QStandardItemModel* item_model,
-		std::function<void(const std::vector<int>&)> on_done,
-		ConfigManager* config_manager,
-		QWidget* parent,
-		std::vector<int> selected_index) : 
-		QWidget(parent) ,
-		tree_item_model(item_model),
-		config_manager(config_manager),
-		on_done(on_done)
-	{
-
-		proxy_model = new HierarchialSortFilterProxyModel;
-		//proxy_model = new QSortFilterProxyModel;
-		//proxy_model->setRecursiveFilteringEnabled(true);
-		proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
-		proxy_model->setSourceModel(tree_item_model);
-
-		resize(300, 800);
-		QVBoxLayout* layout = new QVBoxLayout;
-		setLayout(layout);
-
-		line_edit = new QLineEdit;
-		tree_view = new QTreeView;
-		tree_view->setModel(proxy_model);
-		tree_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
-		tree_view->expandAll();
-		tree_view->setHeaderHidden(true);
-		tree_view->resizeColumnToContents(0);
-
-		auto index = QModelIndex();
-		for (auto i : selected_index) {
-			index = proxy_model->index(i, 0, index);
-		}
-
-		tree_view->setCurrentIndex(index);
-
-		layout->addWidget(line_edit);
-		layout->addWidget(tree_view);
-
-		if (UI_FONT_FACE_NAME.size() > 0) {
-			line_edit->setFont(QFont(QString::fromStdWString(UI_FONT_FACE_NAME)));
-			tree_view->setFont(QFont(QString::fromStdWString(UI_FONT_FACE_NAME)));
-		}
-
-		line_edit->installEventFilter(this);
-		line_edit->setFocus();
-
-		QObject::connect(tree_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
-			on_select(index);
-			});
-
-		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
-			//proxy_model->setFilterRegExp(text);
-			proxy_model->setFilterFixedString(text);
-			//std::cout << ((HierarchialSortFilterProxyModel*)proxy_model)->count << "\n";
-			tree_view->expandAll();
-			});
-
-		//setStyleSheet("background-color: black; color: white; border: 0; QScrollBar::vertical{background: red;}");
-		//tree_view->setStyleSheet("QTreeView::item::selected{background-color: white; color: black;}");
-
+		get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{background-color: white; color: black;}");
 	}
 
 	void resizeEvent(QResizeEvent* resize_event) override {
 		QWidget::resizeEvent(resize_event);
 		int parent_width = parentWidget()->width();
 		int parent_height = parentWidget()->height();
-		//setFixedSize(parent_width / 3, parent_height);
-		//move(parent_width / 3, 0);
 		setFixedSize(parent_width * 0.9f, parent_height);
 		move(parent_width * 0.05f, 0);
-		on_config_file_changed(config_manager);
+		on_config_file_changed();
 	}
 
+};
+
+template<typename T>
+class FilteredTreeSelect : public BaseSelectorWidget<T, QTreeView, QSortFilterProxyModel> {
+private:
+	std::function<void(const std::vector<int>&)> on_done;
+
+protected:
+
+public:
+
+	QString get_view_stylesheet_type_name() {
+		return "QTreeView";
+	}
+
+	FilteredTreeSelect(QStandardItemModel* item_model,
+		std::function<void(const std::vector<int>&)> on_done,
+		QWidget* parent,
+		std::vector<int> selected_index) : BaseSelectorWidget(item_model, parent),
+		on_done(on_done)
+	{
+
+		auto index = QModelIndex();
+		for (auto i : selected_index) {
+			index = proxy_model->index(i, 0, index);
+		}
+
+		dynamic_cast<QTreeView*>(get_view())->setCurrentIndex(index);
+
+	}
 
 	void on_select(const QModelIndex& index) {
 		hide();
 		parentWidget()->setFocus();
 		auto source_index = proxy_model->mapToSource(index);
-		//auto parent = source_index.parent();
-		//parent = source_index.parent();
-		//parent = source_index.parent();
-		//parent = source_index.parent();
-		//parent = source_index.parent();
 		std::vector<int> indices;
 		while (source_index != QModelIndex()) {
 			indices.push_back(source_index.row());
@@ -234,100 +257,30 @@ public:
 };
 
 template<typename T>
-class FilteredSelectWindowClass : public QWidget, ConfigFileChangeListener{
+class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView, QSortFilterProxyModel>{
 private:
 
 	QStringListModel* string_list_model = nullptr;
-	QSortFilterProxyModel* proxy_model = nullptr;
-	QLineEdit* line_edit = nullptr;
-	QListView* list_view = nullptr;
 	std::vector<T> values;
-	//std::function<void(void*)> on_done = nullptr;
 	std::function<void(T*)> on_done = nullptr;
-	std::function<void(T*)> on_delete = nullptr;
-	ConfigManager* config_manager = nullptr;
+	std::function<void(T*)> on_delete_function = nullptr;
 
 protected:
-	std::optional<QModelIndex> get_selected_index() {
-		QModelIndexList selected_index_list = list_view->selectionModel()->selectedIndexes();
-
-		if (selected_index_list.size() > 0) {
-			QModelIndex selected_index = selected_index_list.at(0);
-			return selected_index;
-		}
-		return {};
-	}
-
-	bool eventFilter(QObject* obj, QEvent* event) override {
-		if (obj == line_edit) {
-			if (event->type() == QEvent::KeyPress) {
-				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-				if (key_event->key() == Qt::Key_Down || key_event->key() == Qt::Key_Up) {
-					QKeyEvent* new_key_event = new QKeyEvent(*key_event);
-					QCoreApplication::postEvent(list_view, new_key_event);
-					return true;
-				}
-				if (key_event->key() == Qt::Key_Tab) {
-					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
-					QCoreApplication::postEvent(list_view, new_key_event);
-					return true;
-				}
-				if (key_event->key() == Qt::Key_Backtab) {
-					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
-					QCoreApplication::postEvent(list_view, new_key_event);
-					return true;
-				}
-
-				if (key_event->key() == Qt::Key_Enter || key_event->key() == Qt::Key_Return) {
-					//QModelIndexList selected_index_list = list_view->selectionModel()->selectedIndexes();
-					//if (selected_index_list.size() > 0) {
-					//	QModelIndex selected_index = selected_index_list.at(0);
-					//	QModelIndex source_index = proxy_model->mapToSource(selected_index);
-
-					//	on_delete(&values[source_index.row()]);
-
-					//	int delete_row = selected_index.row();
-					//	proxy_model->removeRow(selected_index.row());
-					//	values.erase(values.begin() + source_index.row());
-					//}
-					std::optional<QModelIndex> selected_index = get_selected_index();
-					if (selected_index) {
-						on_select(selected_index.value());
-					}
-					//on_select(proxy_model->index());
-				}
-
-			}
-		}
-		return false;
-	}
 
 public:
 
-	void on_config_file_changed(ConfigManager* new_config_manager) {
-
-		QString font_size_stylesheet = "";
-		if (FONT_SIZE > 0) {
-			font_size_stylesheet = QString("font-size: %1px").arg(FONT_SIZE);
-		}
-
-		setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
-		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
+	QString get_view_stylesheet_type_name() {
+		return "QListView";
 	}
 
-	//todo: check for memory leaks
-	//FilteredSelectWindowClass(std::vector<std::wstring> std_string_list, std::vector<T> values, std::function<void(void*)> on_done, ConfigManager* config_manager, QWidget* parent ) : 
 	FilteredSelectWindowClass(std::vector<std::wstring> std_string_list,
 		std::vector<T> values,
 		std::function<void(T*)> on_done,
-		ConfigManager* config_manager,
 		QWidget* parent,
-		std::function<void(T*)> on_delete=nullptr) :
-		QWidget(parent) ,
+		std::function<void(T*)> on_delete_function=nullptr) : BaseSelectorWidget<T, QListView, QSortFilterProxyModel>(nullptr, parent),
 		values(values),
-		config_manager(config_manager),
 		on_done(on_done),
-		on_delete(on_delete)
+		on_delete_function(on_delete_function)
 	{
 		QVector<QString> q_string_list;
 		for (const auto& s : std_string_list) {
@@ -336,92 +289,19 @@ public:
 		}
 		QStringList string_list = QStringList::fromVector(q_string_list);
 
-		proxy_model = new QSortFilterProxyModel;
-		proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 		string_list_model = new QStringListModel(string_list);
 		proxy_model->setSourceModel(string_list_model);
 
-		resize(300, 800);
-		QVBoxLayout* layout = new QVBoxLayout;
-		setLayout(layout);
+	}
 
-		line_edit = new QLineEdit;
-		list_view = new QListView;
-		list_view->setModel(proxy_model);
-		list_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
-		layout->addWidget(line_edit);
-		layout->addWidget(list_view);
-
-		if (UI_FONT_FACE_NAME.size() > 0) {
-			line_edit->setFont(QFont(QString::fromStdWString(UI_FONT_FACE_NAME)));
-			list_view->setFont(QFont(QString::fromStdWString(UI_FONT_FACE_NAME)));
+	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) override {
+		if (on_delete_function) {
+			on_delete_function(&values[source_index.row()]);
+			int delete_row = selected_index.row();
+			proxy_model->removeRow(selected_index.row());
+			values.erase(values.begin() + source_index.row());
 		}
-
-		//line_edit->setStyleSheet("background-color: yellow;");
-		//setStyleSheet("background-color: black;color: white; border: 0;");
-
-		//palette.setColor(Qpalette);
-		//setPalette(palette);
-
-		//line_edit->setAutoFillBackground(true);
-		//line_edit->setPalette(palette);
-		//line_edit->setStyleSheet("background-color: black; color: white; border: 0;");
-		//list_view->setStyleSheet("background-color: black; color: white;");
-		//list_view->setPalette(palette);
-
-		//setStyleSheet("background-color: black; color: white;");
-		//list_view->setStyleSheet("color: red");
-		//setFont(QFont("Monaco"));
-
-		line_edit->installEventFilter(this);
-		line_edit->setFocus();
-
-		QObject::connect(list_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
-			on_select(index);
-			});
-
-
-		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
-			//proxy_model->setFilterRegExp(text);
-			proxy_model->setFilterFixedString(text);
-			});
-
-		//setStyleSheet(QString::fromStdWString(item_list_stylesheet));
-		//list_view->setStyleSheet("QListView::item::selected{" + QString::fromStdWString(item_list_selected_stylesheet) + "}");
-
-		setStyleSheet("background-color: black; color: white; border: 0;");
-		list_view->setStyleSheet("QListView::item::selected{background-color: white; color: black;}");
-
 	}
-
-	void keyReleaseEvent(QKeyEvent* event) override {
-		if (event->key() == Qt::Key_Delete) {
-			if (on_delete != nullptr) { // only handle delete when the user has provided the `on_delete` function
-				QModelIndexList selected_index_list = list_view->selectionModel()->selectedIndexes();
-				if (selected_index_list.size() > 0) {
-					QModelIndex selected_index = selected_index_list.at(0);
-					QModelIndex source_index = proxy_model->mapToSource(selected_index);
-
-					on_delete(&values[source_index.row()]);
-
-					int delete_row = selected_index.row();
-					proxy_model->removeRow(selected_index.row());
-					values.erase(values.begin() + source_index.row());
-				}
-			}
-		}
-		QWidget::keyReleaseEvent(event);
-	}
-
-	void resizeEvent(QResizeEvent* resize_event) override {
-		QWidget::resizeEvent(resize_event);
-		int parent_width = parentWidget()->width();
-		int parent_height = parentWidget()->height();
-		setFixedSize(parent_width * 0.9f, parent_height);
-		move(parent_width * 0.05f, 0);
-		on_config_file_changed(config_manager);
-	}
-
 
 	void on_select(const QModelIndex& index) {
 		hide();
