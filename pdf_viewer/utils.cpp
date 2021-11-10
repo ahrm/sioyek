@@ -1377,6 +1377,10 @@ QString expand_home_dir(QString path) {
 void split_root_file(QString path, QString& out_root, QString& out_partial) {
 
 	QChar sep = QDir::separator();
+	if (path.indexOf(sep) == -1) {
+		sep = '/';
+	}
+
 	QStringList parts = path.split(sep);
 
 	if (path.size() > 0) {
@@ -1391,7 +1395,7 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 			else {
 				out_partial = parts.back();
 				parts.pop_back();
-				out_root = parts.join(sep);
+				out_root = parts.join(QDir::separator());
 			}
 		}
 	}

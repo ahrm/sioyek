@@ -439,12 +439,24 @@ public:
 		return "QListView";
 	}
 
-	FileSelector(std::function<void(std::wstring)> on_done, QWidget* parent) :
+	FileSelector(std::function<void(std::wstring)> on_done, QWidget* parent, QString last_path) :
 		BaseSelectorWidget<std::wstring, QListView, QSortFilterProxyModel>(nullptr, parent),
 		on_done(on_done)
 	{
 
-		list_model = new QStringListModel(get_dir_contents("", ""));
+
+		QString root_path;
+
+		if (last_path.size() > 0) {
+			QString file_name;
+			split_root_file(last_path, root_path, file_name);
+			root_path += QDir::separator();
+		}
+		
+		list_model = new QStringListModel(get_dir_contents(root_path, ""));
+		last_root = root_path;
+		line_edit->setText(last_root);
+
 		dynamic_cast<QListView*>(get_view())->setModel(list_model);
 	}
 

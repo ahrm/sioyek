@@ -1475,9 +1475,10 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	const Command* command = nullptr;
 
 	bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
+	bool is_shift_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
 	bool is_visual_mark_mode = opengl_widget->get_should_draw_vertical_line() && visual_scroll_mode;
 
-	if (!is_control_pressed) {
+	if ((!is_control_pressed) && (!is_shift_pressed)) {
 		if (opengl_widget->get_overview_page()) {
 			if (wevent->angleDelta().y() > 0) {
 				OverviewState state = opengl_widget->get_overview_page().value();
@@ -1523,6 +1524,15 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 		}
 		if (wevent->angleDelta().y() < 0) {
 			command = command_manager.get_command_with_name("zoom_out");
+		}
+
+	}
+	if (is_shift_pressed) {
+		if (wevent->angleDelta().y() > 0) {
+			command = command_manager.get_command_with_name("move_left");
+		}
+		if (wevent->angleDelta().y() < 0) {
+			command = command_manager.get_command_with_name("move_right");
 		}
 
 	}
@@ -1821,11 +1831,22 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		}
 	}
 	else if (command->name == "open_document_embedded") {
+
 		set_current_widget(new FileSelector(
 			[&](std::wstring doc_path) {
 				validate_render();
 				open_document(doc_path);
-			}, this));
+			}, this, ""));
+		current_widget->show();
+	}
+	else if (command->name == "open_document_embedded_from_current_path") {
+		std::wstring last_file_name = get_current_file_name().value_or(L"");
+
+		set_current_widget(new FileSelector(
+			[&](std::wstring doc_path) {
+				validate_render();
+				open_document(doc_path);
+			}, this, QString::fromStdWString(last_file_name)));
 		current_widget->show();
 	}
 	else if (command->name == "goto_bookmark") {
@@ -2370,6 +2391,15 @@ bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
 
 void MainWidget::toggle_visual_scroll_mode() {
 	visual_scroll_mode = !visual_scroll_mode;
+}
+
+std::optional<std::wstring> MainWidget::get_current_file_name() {
+	if (main_document_view) {
+		if (main_document_view->get_document()) {
+			return main_document_view->get_document()->get_path();
+		}
+	}
+	return {};
 }
 
 CommandManager* MainWidget::get_command_manager(){

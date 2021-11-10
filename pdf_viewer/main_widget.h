@@ -199,5 +199,6 @@ public:
 	void set_overview_link(PdfLink link);
 	void set_overview_position(int page, float offset);
 	bool find_location_of_text_under_pointer(int pointer_x, int pointer_y, int* out_page, float* out_offset);
+	std::optional<std::wstring> get_current_file_name();
 	CommandManager* get_command_manager();
 };
