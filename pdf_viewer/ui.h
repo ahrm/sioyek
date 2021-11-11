@@ -232,23 +232,22 @@ public:
 	FilteredTreeSelect(QStandardItemModel* item_model,
 		std::function<void(const std::vector<int>&)> on_done,
 		QWidget* parent,
-		std::vector<int> selected_index) : BaseSelectorWidget(item_model, parent),
+		std::vector<int> selected_index) : BaseSelectorWidget<T, QTreeView, QSortFilterProxyModel>(item_model, parent),
 		on_done(on_done)
 	{
-
 		auto index = QModelIndex();
 		for (auto i : selected_index) {
-			index = proxy_model->index(i, 0, index);
+			index = this->proxy_model->index(i, 0, index);
 		}
 
-		dynamic_cast<QTreeView*>(get_view())->setCurrentIndex(index);
+		dynamic_cast<QTreeView*>(this->get_view())->setCurrentIndex(index);
 
 	}
 
 	void on_select(const QModelIndex& index) {
-		hide();
-		parentWidget()->setFocus();
-		auto source_index = proxy_model->mapToSource(index);
+		this->hide();
+		this->parentWidget()->setFocus();
+		auto source_index = this->proxy_model->mapToSource(index);
 		std::vector<int> indices;
 		while (source_index != QModelIndex()) {
 			indices.push_back(source_index.row());
@@ -292,7 +291,7 @@ public:
 		QStringList string_list = QStringList::fromVector(q_string_list);
 
 		string_list_model = new QStringListModel(string_list);
-		proxy_model->setSourceModel(string_list_model);
+		this->proxy_model->setSourceModel(string_list_model);
 
 	}
 
@@ -300,15 +299,15 @@ public:
 		if (on_delete_function) {
 			on_delete_function(&values[source_index.row()]);
 			int delete_row = selected_index.row();
-			proxy_model->removeRow(selected_index.row());
+			this->proxy_model->removeRow(selected_index.row());
 			values.erase(values.begin() + source_index.row());
 		}
 	}
 
 	void on_select(const QModelIndex& index) {
-		hide();
-		parentWidget()->setFocus();
-		auto source_index = proxy_model->mapToSource(index);
+		this->hide();
+		this->parentWidget()->setFocus();
+		auto source_index = this->proxy_model->mapToSource(index);
 		on_done(&values[source_index.row()]);
 	}
 };
