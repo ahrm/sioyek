@@ -1048,6 +1048,10 @@ std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int>
 
 	std::vector<float> normalized_histogram;
 
+	if (std < 0.00001f) {
+		return res;
+	}
+
 	for (auto x : histogram) {
 		normalized_histogram.push_back((x - mean_width) / std);
 	}
