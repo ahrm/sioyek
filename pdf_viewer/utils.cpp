@@ -724,7 +724,10 @@ void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_ch
 
 bool are_stext_chars_far_enough_for_equation(fz_stext_char* first, fz_stext_char* second) {
 	float second_width = second->quad.lr.x - second->quad.ll.x;
-	assert(second_width >= 0);
+
+	if (second_width < 0) {
+		return false;
+	}
 
 	return (second->origin.x - first->origin.x) > (5 * second_width);
 }
