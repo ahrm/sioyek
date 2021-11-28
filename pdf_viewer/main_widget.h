@@ -107,6 +107,13 @@ private:
 
 	std::wstring inverse_search_command;
 
+	std::optional<std::pair<float, float>> overview_move_original_offsets = {};
+	std::optional<std::pair<float, float>> overview_move_original_normal_mouse_positions = {};
+
+	std::optional<fz_rect> overview_resize_original_rect = {};
+	std::optional<std::pair<float, float>> overview_resize_original_mouse_position = {};
+	std::optional<int> overview_resize_side_index = {};
+
 	QTime last_text_select_time = QTime::currentTime();
 
 	bool main_document_view_has_document();

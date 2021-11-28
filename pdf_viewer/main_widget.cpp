@@ -143,6 +143,30 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 	int y = mouse_event->pos().y();
 
 	std::optional<PdfLink> link = {};
+
+	float normal_x, normal_y;
+	main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
+
+	if (overview_resize_original_mouse_position) {
+
+		float offset_diff_x = normal_x - overview_resize_original_mouse_position.value().first;
+		float offset_diff_y = normal_y - overview_resize_original_mouse_position.value().second;
+		opengl_widget->set_overview_side_pos(overview_resize_side_index.value(), overview_resize_original_rect.value(), offset_diff_x, offset_diff_y);
+		invalidate_render();
+		return;
+	}
+	if (overview_move_original_normal_mouse_positions) {
+		float offset_diff_x = normal_x - overview_move_original_normal_mouse_positions.value().first;
+		float offset_diff_y = normal_y - overview_move_original_normal_mouse_positions.value().second;
+
+		float new_offset_x = overview_move_original_offsets.value().first + offset_diff_x;
+		float new_offset_y = overview_move_original_offsets.value().second - offset_diff_y;
+
+		opengl_widget->set_overview_offsets(new_offset_x, new_offset_y);
+		invalidate_render();
+		return;
+	}
+
 	if (main_document_view && (link = main_document_view->get_link_in_pos(x, y))) {
 		// show hand cursor when hovering over links
 		setCursor(Qt::PointingHandCursor);
@@ -1133,10 +1157,30 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 	float x_, y_;
 	main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
 
+	float normal_x, normal_y;
+	main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
 
 	if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
 
 	if (down == true) {
+
+		int border_index = -1;
+		if (opengl_widget->is_window_point_in_overview_border(normal_x, normal_y, &border_index)) {
+			overview_resize_original_mouse_position = std::make_pair(normal_x, normal_y);
+			overview_resize_original_rect = opengl_widget->get_overview_rect();
+			overview_resize_side_index = border_index;
+			return;
+		}
+		if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
+			float original_offset_x, original_offset_y;
+
+			opengl_widget->get_overview_offsets(&original_offset_x, &original_offset_y);
+			overview_move_original_normal_mouse_positions = std::make_pair(normal_x, normal_y);
+			overview_move_original_offsets = std::make_pair(original_offset_x, original_offset_y);
+
+			return;
+		}
+
 		selection_begin_x = x_;
 		selection_begin_y = y_;
 
@@ -1163,6 +1207,17 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 		is_selecting = false;
 		is_dragging = false;
 
+		if (overview_move_original_normal_mouse_positions) {
+			overview_move_original_normal_mouse_positions = {};
+			overview_move_original_offsets = {};
+			return;
+		}
+		if (overview_resize_original_mouse_position) {
+			overview_resize_original_mouse_position = {};
+			overview_resize_original_rect = {};
+			overview_resize_side_index = {};
+			return;
+		}
 		if ((!mouse_drag_mode) && (manhattan_distance(last_mouse_down_x, last_mouse_down_y, x_, y_) > 5)){
 			fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
 			fz_point selection_end = { x_, y_ };
@@ -1478,8 +1533,14 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	bool is_shift_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
 	bool is_visual_mark_mode = opengl_widget->get_should_draw_vertical_line() && visual_scroll_mode;
 
+
+	int x = wevent->pos().x();
+	int y = wevent->pos().y();
+	float normal_x, normal_y;
+	main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
+
 	if ((!is_control_pressed) && (!is_shift_pressed)) {
-		if (opengl_widget->get_overview_page()) {
+		if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
 			if (wevent->angleDelta().y() > 0) {
 				OverviewState state = opengl_widget->get_overview_page().value();
 				state.offset_y -= 36.0f * VERTICAL_MOVE_AMOUNT;
