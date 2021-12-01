@@ -152,7 +152,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 		float offset_diff_x = normal_x - overview_resize_data.value().original_mouse_pos.first;
 		float offset_diff_y = normal_y - overview_resize_data.value().original_mouse_pos.second;
 		opengl_widget->set_overview_side_pos(overview_resize_data.value().side_index, overview_resize_data.value().original_rect, offset_diff_x, offset_diff_y);
-		invalidate_render();
+		validate_render();
 		return;
 	}
 	if (overview_move_data) {
@@ -163,7 +163,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 		float new_offset_y = overview_move_data.value().original_offsets.second - offset_diff_y;
 
 		opengl_widget->set_overview_offsets(new_offset_x, new_offset_y);
-		invalidate_render();
+		validate_render();
 		return;
 	}
 
@@ -1127,9 +1127,7 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 						if (column < 0) column = 0;
 						int tag = synctex_node_tag(node);
 						const char* file_name = synctex_scanner_get_name(scanner, tag);
-						//std::wstringstream ss;
 
-						//ss << L"\"C:\\Users\\Lion\\AppData\\Local\\Programs\\Microsoft VS Code\\code.exe\" --goto " << file_name << L":" << line << L":" << column;
 						std::string line_string = std::to_string(line);
 						std::string column_string = std::to_string(column);
 
