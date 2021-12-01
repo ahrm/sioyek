@@ -1544,7 +1544,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 				state.offset_y += 36.0f * VERTICAL_MOVE_AMOUNT;
 				opengl_widget->set_overview_page(state);
 			}
-			invalidate_render();
+			validate_render();
 		}
 		else {
 
