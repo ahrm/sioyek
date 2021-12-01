@@ -147,20 +147,20 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 	float normal_x, normal_y;
 	main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
 
-	if (overview_resize_original_mouse_position) {
+	if (overview_resize_data) {
 
-		float offset_diff_x = normal_x - overview_resize_original_mouse_position.value().first;
-		float offset_diff_y = normal_y - overview_resize_original_mouse_position.value().second;
-		opengl_widget->set_overview_side_pos(overview_resize_side_index.value(), overview_resize_original_rect.value(), offset_diff_x, offset_diff_y);
+		float offset_diff_x = normal_x - overview_resize_data.value().original_mouse_pos.first;
+		float offset_diff_y = normal_y - overview_resize_data.value().original_mouse_pos.second;
+		opengl_widget->set_overview_side_pos(overview_resize_data.value().side_index, overview_resize_data.value().original_rect, offset_diff_x, offset_diff_y);
 		invalidate_render();
 		return;
 	}
-	if (overview_move_original_normal_mouse_positions) {
-		float offset_diff_x = normal_x - overview_move_original_normal_mouse_positions.value().first;
-		float offset_diff_y = normal_y - overview_move_original_normal_mouse_positions.value().second;
+	if (overview_move_data) {
+		float offset_diff_x = normal_x - overview_move_data.value().original_mouse_pos.first;
+		float offset_diff_y = normal_y - overview_move_data.value().original_mouse_pos.second;
 
-		float new_offset_x = overview_move_original_offsets.value().first + offset_diff_x;
-		float new_offset_y = overview_move_original_offsets.value().second - offset_diff_y;
+		float new_offset_x = overview_move_data.value().original_offsets.first + offset_diff_x;
+		float new_offset_y = overview_move_data.value().original_offsets.second - offset_diff_y;
 
 		opengl_widget->set_overview_offsets(new_offset_x, new_offset_y);
 		invalidate_render();
@@ -1164,20 +1164,23 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 
 	if (down == true) {
 
-		int border_index = -1;
+		PdfViewOpenGLWidget::OverviewSide border_index = static_cast<PdfViewOpenGLWidget::OverviewSide>(-1);
 		if (opengl_widget->is_window_point_in_overview_border(normal_x, normal_y, &border_index)) {
-			overview_resize_original_mouse_position = std::make_pair(normal_x, normal_y);
-			overview_resize_original_rect = opengl_widget->get_overview_rect();
-			overview_resize_side_index = border_index;
+			PdfViewOpenGLWidget::OverviewResizeData resize_data;
+			resize_data.original_mouse_pos = std::make_pair(normal_x, normal_y);
+			resize_data.original_rect = opengl_widget->get_overview_rect();
+			resize_data.side_index = border_index;
+			overview_resize_data = resize_data;
 			return;
 		}
 		if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
 			float original_offset_x, original_offset_y;
 
+			PdfViewOpenGLWidget::OverviewMoveData move_data;
 			opengl_widget->get_overview_offsets(&original_offset_x, &original_offset_y);
-			overview_move_original_normal_mouse_positions = std::make_pair(normal_x, normal_y);
-			overview_move_original_offsets = std::make_pair(original_offset_x, original_offset_y);
-
+			move_data.original_mouse_pos =  std::make_pair(normal_x, normal_y);
+			move_data.original_offsets = std::make_pair(original_offset_x, original_offset_y);
+			overview_move_data = move_data;
 			return;
 		}
 
@@ -1207,17 +1210,9 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 		is_selecting = false;
 		is_dragging = false;
 
-		if (overview_move_original_normal_mouse_positions) {
-			overview_move_original_normal_mouse_positions = {};
-			overview_move_original_offsets = {};
-			return;
-		}
-		if (overview_resize_original_mouse_position) {
-			overview_resize_original_mouse_position = {};
-			overview_resize_original_rect = {};
-			overview_resize_side_index = {};
-			return;
-		}
+		overview_move_data = {};
+		overview_resize_data = {};
+
 		if ((!mouse_drag_mode) && (manhattan_distance(last_mouse_down_x, last_mouse_down_y, x_, y_) > 5)){
 			fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
 			fz_point selection_end = { x_, y_ };

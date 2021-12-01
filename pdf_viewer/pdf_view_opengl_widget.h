@@ -68,6 +68,26 @@ struct OverviewState {
 };
 
 class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions {
+public:
+
+	enum OverviewSide {
+		bottom=0,
+		top=1,
+		left=2,
+		right=3
+	};
+
+	struct OverviewResizeData {
+		fz_rect original_rect;
+		std::pair<float, float> original_mouse_pos;
+		OverviewSide side_index;
+	};
+
+	struct OverviewMoveData {
+		std::pair<float, float> original_offsets;
+		std::pair<float, float> original_mouse_pos;
+	};
+
 private:
 	static OpenGLSharedResources shared_gl_objects;
 
@@ -165,7 +185,7 @@ public:
 	fz_rect	get_overview_rect();
 	std::vector<fz_rect> get_overview_border_rects();
 	bool is_window_point_in_overview(float window_x, float window_y);
-	bool is_window_point_in_overview_border(float window_x, float window_y, int *which_border);
+	bool is_window_point_in_overview_border(float window_x, float window_y, OverviewSide *which_border);
 
 	void get_overview_offsets(float* offset_x, float* offset_y);
 

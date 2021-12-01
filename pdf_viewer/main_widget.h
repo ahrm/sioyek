@@ -107,12 +107,8 @@ private:
 
 	std::wstring inverse_search_command;
 
-	std::optional<std::pair<float, float>> overview_move_original_offsets = {};
-	std::optional<std::pair<float, float>> overview_move_original_normal_mouse_positions = {};
-
-	std::optional<fz_rect> overview_resize_original_rect = {};
-	std::optional<std::pair<float, float>> overview_resize_original_mouse_position = {};
-	std::optional<int> overview_resize_side_index = {};
+	std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
+	std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
 
 	QTime last_text_select_time = QTime::currentTime();
 

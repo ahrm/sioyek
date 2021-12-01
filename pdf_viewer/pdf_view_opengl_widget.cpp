@@ -939,13 +939,13 @@ bool PdfViewOpenGLWidget::is_window_point_in_overview(float window_x, float wind
 	return false;
 }
 
-bool PdfViewOpenGLWidget::is_window_point_in_overview_border(float window_x, float window_y, int* which_border) {
+bool PdfViewOpenGLWidget::is_window_point_in_overview_border(float window_x, float window_y, OverviewSide* which_border) {
 
 	fz_point point{ window_x, window_y };
 	std::vector<fz_rect> rects = get_overview_border_rects();
 	for (int i = 0; i < rects.size(); i++) {
 		if (fz_is_point_inside_rect(point, rects[i])) {
-			*which_border = i;
+			*which_border = static_cast<OverviewSide>(i);
 			return true;
 		}
 	}
@@ -962,20 +962,16 @@ void PdfViewOpenGLWidget::set_overview_offsets(float offset_x, float offset_y) {
 }
 
 float PdfViewOpenGLWidget::get_overview_side_pos(int index) {
-	if (index == 0) {
-	// 0: bottom
+	if (index == OverviewSide::bottom) {
 		return overview_offset_y - overview_half_height;
 	}
-	if (index == 1) {
-	// 1: top
+	if (index == OverviewSide::top) {
 		return overview_offset_y + overview_half_height;
 	}
-	if (index == 2) {
-	// 2: left
+	if (index == OverviewSide::left) {
 		return overview_offset_x - overview_half_width;
 	}
-	if (index == 3) {
-	// 3: right
+	if (index == OverviewSide::right) {
 		return overview_offset_x + overview_half_width;
 	}
 }
@@ -984,29 +980,25 @@ void PdfViewOpenGLWidget::set_overview_side_pos(int index, fz_rect original_rect
 
 	fz_rect new_rect = original_rect;
 
-	if (index == 0) {
-	// 0: bottom
+	if (index == OverviewSide::bottom) {
 		float new_bottom_pos = original_rect.y0 + diff_y;
 		if (new_bottom_pos < original_rect.y1) {
 			new_rect.y0 = new_bottom_pos;
 		}
 	}
-	if (index == 1) {
-	// 1: top
+	if (index == OverviewSide::top) {
 		float new_top_pos = original_rect.y1 + diff_y;
 		if (new_top_pos > original_rect.y0) {
 			new_rect.y1 = new_top_pos;
 		}
 	}
-	if (index == 2) {
-	// 2: left
+	if (index == OverviewSide::left) {
 		float new_left_pos = original_rect.x0 + diff_x;
 		if (new_left_pos < original_rect.x1) {
 			new_rect.x0 = new_left_pos;
 		}
 	}
-	if (index == 3) {
-	// 3: right
+	if (index == OverviewSide::right) {
 		float new_right_pos = original_rect.x1 + diff_x;
 		if (new_right_pos > original_rect.x0) {
 			new_rect.x1 = new_right_pos;
