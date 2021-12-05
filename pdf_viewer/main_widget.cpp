@@ -1208,10 +1208,17 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 		is_selecting = false;
 		is_dragging = false;
 
+		bool was_overview_mode = overview_move_data || overview_resize_data;
+
 		overview_move_data = {};
 		overview_resize_data = {};
 
+		if (was_overview_mode) {
+			return;
+		}
+
 		if ((!mouse_drag_mode) && (manhattan_distance(last_mouse_down_x, last_mouse_down_y, x_, y_) > 5)){
+
 			fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
 			fz_point selection_end = { x_, y_ };
 
