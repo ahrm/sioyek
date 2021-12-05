@@ -550,16 +550,16 @@ void MainWidget::on_config_file_changed(ConfigManager* new_config)
 	text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
 }
 
-void MainWidget::toggle_dark_mode()
-{
-	this->dark_mode = !this->dark_mode;
-	if (this->opengl_widget) {
-		this->opengl_widget->set_dark_mode(this->dark_mode);
-	}
-	if (this->helper_opengl_widget) {
-		this->helper_opengl_widget->set_dark_mode(this->dark_mode);
-	}
-}
+//void MainWidget::toggle_dark_mode()
+//{
+//	this->dark_mode = !this->dark_mode;
+//	if (this->opengl_widget) {
+//		this->opengl_widget->set_dark_mode(this->dark_mode);
+//	}
+//	if (this->helper_opengl_widget) {
+//		this->helper_opengl_widget->set_dark_mode(this->dark_mode);
+//	}
+//}
 
 void MainWidget::toggle_mouse_drag_mode()
 {
@@ -2107,7 +2107,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		search_libgen(selected_text);
 	}
 	else if (command->name == "toggle_dark_mode") {
-		this->toggle_dark_mode();
+		this->opengl_widget->toggle_dark_mode();
+	}
+	else if (command->name == "toggle_custom_color") {
+		this->opengl_widget->toggle_custom_color_mode();
 	}
 	else if (command->name == "quit" || command->name == "q") {
 		persist();
@@ -2465,4 +2468,8 @@ std::optional<std::wstring> MainWidget::get_current_file_name() {
 
 CommandManager* MainWidget::get_command_manager(){
 	return &command_manager;
+}
+
+void MainWidget::toggle_dark_mode() {
+	this->opengl_widget->toggle_dark_mode();
 }

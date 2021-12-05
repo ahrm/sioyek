@@ -88,6 +88,8 @@ extern int FONT_SIZE = -1;
 extern std::string APPLICATION_VERSION = "1.0.0";
 extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+extern float CUSTOM_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+extern float CUSTOM_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 std::wstring SEARCH_URLS[26];
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";

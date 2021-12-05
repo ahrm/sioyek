@@ -12,6 +12,9 @@ extern float ZOOM_INC_FACTOR;
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern bool SHOULD_DRAW_UNRENDERED_PAGES;
+extern float CUSTOM_BACKGROUND_COLOR[3];
+extern float CUSTOM_TEXT_COLOR[3];
+
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -148,6 +151,7 @@ void PdfViewOpenGLWidget::initializeGL() {
 		shared_gl_objects.highlight_program = LoadShaders( shader_path.slash(L"simple.vertex"),  shader_path .slash(L"highlight.fragment"));
 		shared_gl_objects.vertical_line_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path .slash(L"vertical_bar.fragment"));
 		shared_gl_objects.vertical_line_dark_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path .slash(L"vertical_bar_dark.fragment"));
+		shared_gl_objects.custom_color_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"custom_colors.fragment"));
 
 		shared_gl_objects.dark_mode_contrast_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_dark_program, "contrast");
 
@@ -156,6 +160,9 @@ void PdfViewOpenGLWidget::initializeGL() {
 		shared_gl_objects.line_color_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "line_color");
 		shared_gl_objects.line_time_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "time");
 		shared_gl_objects.line_freq_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "freq");
+
+		shared_gl_objects.custom_color_background_uniform_location = glGetUniformLocation(shared_gl_objects.custom_color_program, "background_color");
+		shared_gl_objects.custom_color_text_uniform_location = glGetUniformLocation(shared_gl_objects.custom_color_program, "text_color");
 
 		glGenBuffers(1, &shared_gl_objects.vertex_buffer_object);
 		glGenBuffers(1, &shared_gl_objects.uv_buffer_object);
@@ -423,13 +430,14 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 	page_uvs[7] = uv_max_y;
 
 	if (texture != 0) {
-		if (is_dark_mode) {
-			glUseProgram(shared_gl_objects.rendered_dark_program);
-			glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
-		}
-		else {
-			glUseProgram(shared_gl_objects.rendered_program);
-		}
+		//if (is_dark_mode) {
+		//	glUseProgram(shared_gl_objects.rendered_dark_program);
+		//	glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
+		//}
+		//else {
+		//	glUseProgram(shared_gl_objects.rendered_program);
+		//}
+		bind_program();
 
 		glBindTexture(GL_TEXTURE_2D, texture);
 	}
@@ -485,13 +493,14 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 	if (texture != 0) {
 
-		if (is_dark_mode) {
-			glUseProgram(shared_gl_objects.rendered_dark_program);
-			glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
-		}
-		else {
-			glUseProgram(shared_gl_objects.rendered_program);
-		}
+		//if (is_dark_mode) {
+		//	glUseProgram(shared_gl_objects.rendered_dark_program);
+		//	glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
+		//}
+		//else {
+		//	glUseProgram(shared_gl_objects.rendered_program);
+		//}
+		bind_program();
 
 		glBindTexture(GL_TEXTURE_2D, texture);
 	}
@@ -525,8 +534,11 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	std::vector<int> visible_pages;
 	document_view->get_visible_pages(document_view->get_view_height(), visible_pages);
 
-	if (is_dark_mode) {
+	if (color_mode == ColorPalette::Dark) {
 		glClearColor(DARK_MODE_BACKGROUND_COLOR[0], DARK_MODE_BACKGROUND_COLOR[1], DARK_MODE_BACKGROUND_COLOR[2], 1.0f);
+	}
+	else if (color_mode == ColorPalette::Custom) {
+		glClearColor(CUSTOM_BACKGROUND_COLOR[0], CUSTOM_BACKGROUND_COLOR[1], CUSTOM_BACKGROUND_COLOR[2], 1.0f);
 	}
 	else {
 		glClearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], 1.0f);
@@ -634,7 +646,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (should_draw_vertical_line) {
 		//render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
-		if (is_dark_mode) {
+		if (color_mode = ColorPalette::Dark) {
 			render_line_window(shared_gl_objects.vertical_line_dark_program , document_view->get_vertical_line_window_y());
 		}
 		else {
@@ -714,7 +726,17 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, std::optional<st
 
 void PdfViewOpenGLWidget::set_dark_mode(bool mode)
 {
-	this->is_dark_mode = mode;
+	if (mode == true) {
+		this->color_mode = ColorPalette::Dark;
+	}
+	else {
+		this->color_mode = ColorPalette::Normal;
+	}
+}
+
+void PdfViewOpenGLWidget::toggle_dark_mode()
+{
+	set_dark_mode(!(this->color_mode == ColorPalette::Dark));
 }
 
 void PdfViewOpenGLWidget::set_synctex_highlights(std::vector<std::pair<int, fz_rect>> highlights)
@@ -1018,4 +1040,34 @@ void PdfViewOpenGLWidget::set_overview_rect(fz_rect rect) {
 	overview_offset_y = -offset_y;
 	overview_half_width = halfwidth;
 	overview_half_height = halfheight;
+}
+
+void PdfViewOpenGLWidget::set_custom_color_mode(bool mode) {
+	if (mode) {
+		this->color_mode = ColorPalette::Custom;
+	}
+	else {
+		this->color_mode = ColorPalette::Normal;
+	}
+}
+
+void PdfViewOpenGLWidget::toggle_custom_color_mode() {
+	set_custom_color_mode(!(this->color_mode == ColorPalette::Custom));
+}
+
+void PdfViewOpenGLWidget::bind_program() {
+	if (color_mode == ColorPalette::Dark) {
+		glUseProgram(shared_gl_objects.rendered_dark_program);
+		glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
+	}
+	else if (color_mode == ColorPalette::Custom) {
+		glUseProgram(shared_gl_objects.custom_color_program);
+
+
+		glUniform3fv(shared_gl_objects.custom_color_background_uniform_location, 1, CUSTOM_BACKGROUND_COLOR);
+		glUniform3fv(shared_gl_objects.custom_color_text_uniform_location, 1, CUSTOM_TEXT_COLOR);
+	}
+	else {
+		glUseProgram(shared_gl_objects.rendered_program);
+	}
 }

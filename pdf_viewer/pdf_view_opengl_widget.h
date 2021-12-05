@@ -47,6 +47,7 @@ struct OpenGLSharedResources {
 	GLuint uv_buffer_object;
 	GLuint rendered_program;
 	GLuint rendered_dark_program;
+	GLuint custom_color_program;
 	GLuint unrendered_program;
 	GLuint highlight_program;
 	GLuint vertical_line_program;
@@ -57,6 +58,9 @@ struct OpenGLSharedResources {
 	GLint line_color_uniform_location;
 	GLint line_time_uniform_location;
 	GLint line_freq_uniform_location;
+
+	GLint custom_color_background_uniform_location;
+	GLint custom_color_text_uniform_location;
 
 	bool is_initialized;
 };
@@ -88,6 +92,12 @@ public:
 		std::pair<float, float> original_mouse_pos;
 	};
 
+	enum ColorPalette {
+		Normal,
+		Dark,
+		Custom
+	};
+
 private:
 	static OpenGLSharedResources shared_gl_objects;
 
@@ -102,7 +112,7 @@ private:
 	bool is_search_cancelled = true;
 	bool is_searching;
 	bool should_highlight_links = false;
-	bool is_dark_mode = false;
+	ColorPalette color_mode = ColorPalette::Normal;
 	bool is_helper = false;
 	float percent_done = 0.0f;
 	std::optional<int> visible_page_number = {};
@@ -170,6 +180,9 @@ public:
 	bool get_is_searching(float* prog);
 	void search_text(const std::wstring& text, std::optional<std::pair<int, int>> range = {});
 	void set_dark_mode(bool mode);
+	void toggle_dark_mode();
+	void set_custom_color_mode(bool mode);
+	void toggle_custom_color_mode();
 	void set_synctex_highlights(std::vector<std::pair<int, fz_rect>> highlights);
 	void on_document_view_reset();
 	void mouseMoveEvent(QMouseEvent* mouse_event) override;
@@ -194,4 +207,6 @@ public:
 	void set_overview_rect(fz_rect rect);
 
 	void set_overview_offsets(float offset_x, float offset_y);
+
+	void bind_program();
 };

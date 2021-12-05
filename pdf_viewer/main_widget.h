@@ -86,7 +86,6 @@ private:
 
 	std::optional<std::pair<std::optional<std::wstring>, Link>> pending_link;
 
-	bool dark_mode = false;
 	bool mouse_drag_mode = false;
 	bool synctex_mode = false;
 	bool is_dragging = false;
@@ -188,8 +187,8 @@ public:
 	void move_document_screens(int num_screens);
 
 	void on_config_file_changed(ConfigManager* new_config) override;
-	void toggle_dark_mode();
 	void toggle_mouse_drag_mode();
+	void toggle_dark_mode();
 	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line);
 	void on_new_instance_message(qint32 instance_id, QByteArray arguments);
 	void handle_args(const QStringList &arguments);
