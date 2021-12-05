@@ -93,7 +93,7 @@ protected:
 		line_edit->installEventFilter(this);
 		line_edit->setFocus();
 
-		QObject::connect(tree_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
+		QObject::connect(abstract_item_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
 			on_select(index);
 			});
 
