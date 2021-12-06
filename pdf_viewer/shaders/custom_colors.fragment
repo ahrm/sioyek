@@ -10,10 +10,11 @@ uniform vec3 text_color;
 
 void main(){
     mat4 transform_matrix;
-    transform_matrix[0] = vec4(background_color, 0) / 3;
-    transform_matrix[1] = vec4(background_color, 0) / 3;
-    transform_matrix[2] = vec4(background_color, 0) / 3;
+    transform_matrix[0] = vec4(background_color.r, 0, 0, 0);
+    transform_matrix[1] = vec4(0, background_color.g, 0, 0);
+    transform_matrix[2] = vec4(0, 0, background_color.b, 0);
     transform_matrix[3] = vec4(text_color, 0);
+
     vec3 pdf_color = texture(pdf_texture, uvs).rgb;
     float blackness = 1 - (pdf_color.r + pdf_color.g + pdf_color.b) / 3;
     vec4 augumented_color = vec4(pdf_color, blackness);
