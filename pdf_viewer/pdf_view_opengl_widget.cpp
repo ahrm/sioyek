@@ -646,7 +646,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (should_draw_vertical_line) {
 		//render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
-		if (color_mode = ColorPalette::Dark) {
+		if (color_mode == ColorPalette::Dark) {
 			render_line_window(shared_gl_objects.vertical_line_dark_program , document_view->get_vertical_line_window_y());
 		}
 		else {
