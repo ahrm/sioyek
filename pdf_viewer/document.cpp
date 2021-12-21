@@ -308,7 +308,7 @@ const std::vector<int>& Document::get_flat_toc_pages()
 
 float Document::get_page_height(int page_index)
 {
-	std::lock_guard guard(page_dims_mutex);
+	//std::lock_guard guard(page_dims_mutex);
 	if ((page_index >= 0) && (page_index < page_heights.size())) {
 		return page_heights[page_index];
 	}
@@ -398,8 +398,8 @@ float Document::get_page_width_smart(int page_index, float* left_ratio, float* r
 
 float Document::get_accum_page_height(int page_index)
 {
-	std::lock_guard guard(page_dims_mutex);
-	if (page_index < 0) {
+	//std::lock_guard guard(page_dims_mutex);
+	if (page_index < 0 || (page_index >= accum_page_heights.size())) {
 		return 0.0f;
 	}
 	return accum_page_heights[page_index];
@@ -579,7 +579,12 @@ bool Document::open(bool* invalid_flag, bool force_load_dimensions) {
 
 void Document::get_visible_pages(float doc_y_range_begin, float doc_y_range_end, std::vector<int>& visible_pages) {
 
-	std::lock_guard guard(page_dims_mutex);
+	//std::lock_guard guard(page_dims_mutex);
+
+	if (page_heights.size() == 0) {
+		return;
+	}
+
 	float page_begin = 0.0f;
 
 	for (int i = 0; i < page_heights.size(); i++) {
@@ -675,9 +680,18 @@ void Document::load_page_dimensions(bool force_load_now) {
 
 fz_rect Document::get_page_absolute_rect(int page)
 {
-	std::lock_guard guard(page_dims_mutex);
+	//std::lock_guard guard(page_dims_mutex);
 
 	fz_rect res;
+
+	if (page >= page_widths.size()) {
+		res.x0 = 0;
+		res.y0 = 0;
+		res.x1 = 1;
+		res.y1 = 1;
+		return res;
+	}
+
 	res.x0 = -page_widths[page] / 2;
 	res.x1 = page_widths[page] / 2;
 
@@ -778,7 +792,13 @@ void Document::set_page_offset(int new_offset) {
 }
 void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
 
-	std::lock_guard guard(page_dims_mutex);
+	//std::lock_guard guard(page_dims_mutex);
+	if (accum_page_heights.size() == 0) {
+		*doc_x = 0;
+		*doc_y = 0;
+		*doc_page = 0;
+		return;
+	}
 
 	int i = (std::lower_bound(
 		accum_page_heights.begin(),
@@ -829,7 +849,13 @@ QStandardItemModel* Document::get_toc_model()
 //}
 
 void Document::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
-	std::lock_guard guard(page_dims_mutex);
+	//std::lock_guard guard(page_dims_mutex);
+	if (page_widths.size() == 0) {
+		*abs_x = 0;
+		*abs_y = 0;
+		return;
+	}
+
 	*abs_x = page_x - page_widths[page] / 2;
 	*abs_y = page_y + accum_page_heights[page];
 }
@@ -844,7 +870,7 @@ fz_rect Document::page_rect_to_absolute_rect(int page, fz_rect page_rect) {
 
 int Document::get_offset_page_number(float y_offset)
 {
-	std::lock_guard guard(page_dims_mutex);
+	//std::lock_guard guard(page_dims_mutex);
 
 	if (accum_page_heights.size() == 0) {
 		return -1;
