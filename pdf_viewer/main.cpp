@@ -306,7 +306,7 @@ int main(int argc, char* args[]) {
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	QSurfaceFormat::setDefaultFormat(format);
 
-	LOG_FILE = std::ofstream(LOG_FILE_NAME);
+	LOG_FILE = std::ofstream(LOG_FILE_NAME.c_str());
 
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
