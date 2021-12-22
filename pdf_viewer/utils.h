@@ -122,3 +122,12 @@ int find_nth_larger_element_in_sorted_list(std::vector<T> sorted_list, T value, 
 	}
 
 }
+class Logger {
+private:
+	std::string name;
+public:
+	Logger(std::string name);
+	~Logger();
+};
+
+#define LOG(name) Logger _ = Logger(name);

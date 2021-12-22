@@ -75,10 +75,12 @@ extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 
 bool MainWidget::main_document_view_has_document()
 {
+	LOG("MainWidget::main_document_view_has_document");
 	return (main_document_view != nullptr) && (main_document_view->get_document() != nullptr);
 }
 
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
+	LOG("MainWidget::resizeEvent");
 	QWidget::resizeEvent(resize_event);
 
 	main_window_width = size().width();
@@ -98,6 +100,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 }
 
 std::optional<std::wstring> get_last_opened_file_name() {
+	LOG("get_last_opened_file_name;");
 	char file_path[MAX_PATH] = { 0 };
 	std::string file_path_;
 	std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
@@ -113,6 +116,7 @@ std::optional<std::wstring> get_last_opened_file_name() {
 }
 
 void MainWidget::set_overview_position(int page, float offset) {
+	LOG("MainWidget::set_overview_position");
 
 	int current_page = main_document_view->get_current_page_number();
 	float page_height = main_document_view->get_document()->get_page_height(current_page);
@@ -122,6 +126,7 @@ void MainWidget::set_overview_position(int page, float offset) {
 }
 
 void MainWidget::set_overview_link(PdfLink link) {
+	LOG("MainWidget::set_overview_link");
 	int page;
 	float offset_x, offset_y;
 
@@ -138,6 +143,7 @@ void MainWidget::set_overview_link(PdfLink link) {
 }
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
+	LOG("MainWidget::mouseMoveEvent");
 
 	int x = mouse_event->pos().x();
 	int y = mouse_event->pos().y();
@@ -220,6 +226,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 }
 
 void MainWidget::persist() {
+	LOG("MainWidget::persist");
 	main_document_view->persist();
 
 	// write the address of the current document in a file so that the next time
@@ -233,6 +240,7 @@ void MainWidget::persist() {
 	}
 }
 void MainWidget::closeEvent(QCloseEvent* close_event) {
+	LOG("MainWidget::closeEvent");
 	persist();
 
 	// we need to delete this here (instead of destructor) to ensure that application
@@ -393,10 +401,12 @@ MainWidget::~MainWidget() {
 }
 
 bool MainWidget::is_pending_link_source_filled() {
+	LOG("MainWidget::is_pending_link_source_filled");
 	return (pending_link && pending_link.value().first);
 }
 
 std::wstring MainWidget::get_status_string() {
+	LOG("MainWidget::get_status_string");
 
 	std::wstringstream ss;
 	if (main_document_view->get_document() == nullptr) return L"";
@@ -453,6 +463,7 @@ std::wstring MainWidget::get_status_string() {
 }
 
 void MainWidget::handle_escape() {
+	LOG("MainWidget::handle_escape");
 	text_command_line_edit->setText("");
 	pending_link = {};
 	current_pending_command = nullptr;
@@ -477,14 +488,17 @@ void MainWidget::handle_escape() {
 }
 
 void MainWidget::keyPressEvent(QKeyEvent* kevent) {
+	LOG("MainWidget::keyPressEvent");
 	key_event(false, kevent);
 }
 
 void MainWidget::keyReleaseEvent(QKeyEvent* kevent) {
+	LOG("MainWidget::keyReleaseEvent");
 	key_event(true, kevent);
 }
 
 void MainWidget::validate_render() {
+	LOG("MainWidget::validate_render");
 	if (!isVisible()) {
 		return;
 	}
@@ -519,12 +533,13 @@ void MainWidget::validate_render() {
 }
 
 void MainWidget::validate_ui() {
+	LOG("MainWidget::validate_ui");
 	status_label->setText(QString::fromStdWString(get_status_string()));
 	is_ui_invalidated = false;
 }
 
-void MainWidget::move_document(float dx, float dy)
-{
+void MainWidget::move_document(float dx, float dy) {
+	LOG("MainWidget::move_document");
 	if (main_document_view_has_document()) {
 		main_document_view->move(dx, dy);
 		//float prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
@@ -533,15 +548,15 @@ void MainWidget::move_document(float dx, float dy)
 	}
 }
 
-void MainWidget::move_document_screens(int num_screens)
-{
+void MainWidget::move_document_screens(int num_screens) {
+	LOG("MainWidget::move_document_screens");
 	int view_height = opengl_widget->height();
 	float move_amount = num_screens * view_height * MOVE_SCREEN_PERCENTAGE;
 	move_document(0, move_amount);
 }
 
-void MainWidget::on_config_file_changed(ConfigManager* new_config)
-{
+void MainWidget::on_config_file_changed(ConfigManager* new_config) {
+	LOG("MainWidget::on_config_file_changed");
 	//status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"status_label_stylesheet")));
 	//text_command_line_edit_container->setStyleSheet(
 	//	QString::fromStdWString(*config_manager->get_config<std::wstring>(L"text_command_line_stylesheet")));
@@ -561,13 +576,13 @@ void MainWidget::on_config_file_changed(ConfigManager* new_config)
 //	}
 //}
 
-void MainWidget::toggle_mouse_drag_mode()
-{
+void MainWidget::toggle_mouse_drag_mode(){
+	LOG("MainWidget::toggle_mouse_drag_mode");
 	this->mouse_drag_mode = !this->mouse_drag_mode;
 }
 
-void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line)
-{
+void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line) {
+	LOG("MainWidget::do_synctex_forward_search");
 
 	//Path latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path);
 
@@ -642,8 +657,8 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
 	synctex_scanner_free(scanner);
 }
 
-void MainWidget::on_new_instance_message(qint32 instance_id, QByteArray arguments_str)
-{
+void MainWidget::on_new_instance_message(qint32 instance_id, QByteArray arguments_str) {
+	LOG("MainWidget::on_new_instance_message");
 	QStringList arguments = deserialize_string_array(arguments_str);
 
 	handle_args(arguments);
@@ -703,8 +718,8 @@ void MainWidget::on_new_instance_message(qint32 instance_id, QByteArray argument
 //	}
 //}
 
-void MainWidget::handle_args(const QStringList& arguments)
-{
+void MainWidget::handle_args(const QStringList& arguments) {
+	LOG("MainWidget::handle_args");
 	std::optional<int> page = -1;
 	std::optional<float> x_loc, y_loc;
 	std::optional<float> zoom_level;
@@ -781,8 +796,8 @@ void MainWidget::handle_args(const QStringList& arguments)
 	delete parser;
 }
 
-void MainWidget::update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state)
-{
+void MainWidget::update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state) {
+	LOG("MainWidget::update_link_with_opened_book_state");
 	std::wstring docpath = main_document_view->get_document()->get_path();
 	Document* link_owner = document_manager->get_document(docpath);
 
@@ -798,8 +813,8 @@ void MainWidget::update_link_with_opened_book_state(Link lnk, const OpenedBookSt
 	link_to_edit = {};
 }
 
-void MainWidget::update_closest_link_with_opened_book_state(const OpenedBookState& new_state)
-{
+void MainWidget::update_closest_link_with_opened_book_state(const OpenedBookState& new_state) {
+	LOG("MainWidget::update_closest_link_with_opened_book_state");
 	std::optional<Link> closest_link = main_document_view->find_closest_link();
 	if (closest_link) {
 		update_link_with_opened_book_state(closest_link.value(), new_state);
@@ -807,15 +822,18 @@ void MainWidget::update_closest_link_with_opened_book_state(const OpenedBookStat
 }
 
 void MainWidget::invalidate_render() {
+	LOG("MainWidget::invalidate_render");
 	invalidate_ui();
 	is_render_invalidated = true;
 }
 
 void MainWidget::invalidate_ui() {
+	LOG("MainWidget::invalidate_ui");
 	is_render_invalidated = true;
 }
 
 void MainWidget::handle_command_with_symbol(const Command* command, char symbol) {
+	LOG("MainWidget::handle_command_with_symbol");
 	assert(symbol);
 	assert(command->requires_symbol);
 	if (command->name == "set_mark") {
@@ -871,6 +889,7 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 }
 
 void MainWidget::open_document(const LinkViewState& lvs) {
+	LOG("MainWidget::open_document");
 	DocumentViewState dvs;
 	auto path = checksummer->get_path(lvs.document_checksum);
 	if (path) {
@@ -881,6 +900,7 @@ void MainWidget::open_document(const LinkViewState& lvs) {
 }
 
 void MainWidget::open_document_with_hash(const std::string& path, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
+	LOG("MainWidget::open_document_with_hash");
 	std::optional<std::wstring> maybe_path = checksummer->get_path(path);
 	if (maybe_path) {
 		Path path(maybe_path.value());
@@ -889,6 +909,7 @@ void MainWidget::open_document_with_hash(const std::string& path, std::optional<
 }
 
 void MainWidget::open_document(const Path& path, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
+	LOG("MainWidget::open_document");
 
 	//save the previous document state
 	if (main_document_view) {
@@ -932,6 +953,7 @@ void MainWidget::open_document_at_location(const Path& path_,
 	std::optional<float> y_loc,
 	std::optional<float> zoom_level)
 {
+	LOG("MainWidget::open_document_at_location");
 	//save the previous document state
 	if (main_document_view) {
 		main_document_view->persist();
@@ -977,10 +999,12 @@ void MainWidget::open_document_at_location(const Path& path_,
 
 void MainWidget::open_document(const DocumentViewState& state)
 {
+	LOG("MainWidget::open_document");
 	open_document(state.document_path, state.book_state.offset_x, state.book_state.offset_y, state.book_state.zoom_level);
 }
 
 void MainWidget::handle_command_with_file_name(const Command* command, std::wstring file_name) {
+	LOG("MainWidget::handle_command_with_file_name");
 	assert(command->requires_file_name);
 	if (command->name == "open_document") {
 		open_document(file_name);
@@ -988,10 +1012,12 @@ void MainWidget::handle_command_with_file_name(const Command* command, std::wstr
 }
 
 bool MainWidget::is_waiting_for_symbol() {
+	LOG("MainWidget::is_waiting_for_symbol");
 	return (current_pending_command && current_pending_command->requires_symbol);
 }
 
 void MainWidget::handle_command_types(const Command* command, int num_repeats) {
+	LOG("MainWidget::handle_command_types");
 
 	if (command == nullptr) return;
 
@@ -1015,6 +1041,7 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
 }
 
 void MainWidget::key_event(bool released, QKeyEvent* kevent) {
+	LOG("MainWidget::key_event");
 	validate_render();
 
 	if (kevent->key() == Qt::Key::Key_Escape) {
@@ -1054,6 +1081,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 }
 
 void MainWidget::handle_right_click(float x, float y, bool down) {
+	LOG("MainWidget::handle_right_click");
 
 	if ((down == true) && opengl_widget->get_overview_page()) {
 		opengl_widget->set_overview_page({});
@@ -1151,6 +1179,7 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 }
 
 void MainWidget::handle_left_click(float x, float y, bool down) {
+	LOG("MainWidget::handle_left_click");
 
 	float x_, y_;
 	main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
@@ -1238,8 +1267,8 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
 	}
 }
 
-void MainWidget::update_history_state()
-{
+void MainWidget::update_history_state() {
+	LOG("MainWidget::update_history_state");
 	if (!main_document_view_has_document()) return; // we don't add empty document to history
 	if (history.size() == 0) return; // this probably should never execute
 
@@ -1247,8 +1276,8 @@ void MainWidget::update_history_state()
 	history[current_history_index] = dvs;
 }
 
-void MainWidget::push_state()
-{
+void MainWidget::push_state() {
+	LOG("MainWidget::push_state");
 
 	if (!main_document_view_has_document()) return; // we don't add empty document to history
 
@@ -1270,8 +1299,8 @@ void MainWidget::push_state()
 	current_history_index = static_cast<int>(history.size() - 1);
 }
 
-void MainWidget::next_state()
-{
+void MainWidget::next_state() {
+	LOG("MainWidget::next_state");
 	update_current_history_index();
 	if (current_history_index < history.size()-1) {
 		current_history_index++;
@@ -1280,8 +1309,8 @@ void MainWidget::next_state()
 	}
 }
 
-void MainWidget::prev_state()
-{
+void MainWidget::prev_state() {
+	LOG("MainWidget::prev_state");
 	update_current_history_index();
 	if (current_history_index > 0) {
 		current_history_index--;
@@ -1313,8 +1342,8 @@ void MainWidget::prev_state()
 	}
 }
 
-void MainWidget::update_current_history_index()
-{
+void MainWidget::update_current_history_index() {
+	LOG("MainWidget::update_current_history_index");
 	if (main_document_view_has_document()) {
 		DocumentViewState current_state = main_document_view->get_state();
 		history[current_history_index] = current_state;
@@ -1323,6 +1352,7 @@ void MainWidget::update_current_history_index()
 }
 
 void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) {
+	LOG("MainWidget::set_main_document_view_state");
 
 	if (main_document_view->get_document()->get_path() != new_view_state.document_path) {
 		main_document_view->open_document(new_view_state.document_path, &this->is_ui_invalidated);
@@ -1334,6 +1364,7 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
 }
 
 void MainWidget::handle_click(int pos_x, int pos_y) {
+	LOG("MainWidget::handle_click");
 	auto link_ = main_document_view->get_link_in_pos(pos_x, pos_y);
 	selected_highlight_index = main_document_view->get_highlight_index_in_pos(pos_x, pos_y);
 
@@ -1361,6 +1392,7 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
 	}
 }
 bool MainWidget::find_location_of_text_under_pointer(int pointer_x, int pointer_y, int* out_page, float* out_offset) {
+	LOG("MainWidget::find_location_of_text_under_pointer");
 
 	int page;
 	float offset_x, offset_y;
@@ -1412,6 +1444,7 @@ bool MainWidget::find_location_of_text_under_pointer(int pointer_x, int pointer_
 }
 
 void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
+	LOG("MainWidget::mouseReleaseEvent");
 
 	if (mevent->button() == Qt::MouseButton::LeftButton) {
 		handle_left_click(mevent->pos().x(), mevent->pos().y(), false);
@@ -1500,6 +1533,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 }
 
 void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
+	LOG("MainWidget::mouseDoubleClickEvent");
 	if (mevent->button() == Qt::MouseButton::LeftButton) {
 		is_selecting = true;
 		is_word_selecting = true;
@@ -1507,6 +1541,7 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
 }
 
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
+	LOG("MainWidget::mousePressEvent");
 	if (mevent->button() == Qt::MouseButton::LeftButton) {
 		handle_left_click(mevent->pos().x(), mevent->pos().y(), true);
 	}
@@ -1525,6 +1560,7 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 }
 
 void MainWidget::wheelEvent(QWheelEvent* wevent) {
+	LOG("MainWidget::wheelEvent");
 	int num_repeats = 1;
 
 	const Command* command = nullptr;
@@ -1604,6 +1640,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 }
 
 void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text) {
+	LOG("MainWidget::show_textbar");
 	text_command_line_edit->clear();
 	if (should_fill_with_selected_text) {
 		text_command_line_edit->setText(QString::fromStdWString(selected_text));
@@ -1615,6 +1652,7 @@ void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill
 
 
 void MainWidget::toggle_two_window_mode() {
+	LOG("MainWidget::toggle_two_window_mode");
 
 	//main_widget.resize(window_width, window_height);
 
@@ -1651,6 +1689,7 @@ void MainWidget::toggle_two_window_mode() {
 }
 
 void MainWidget::handle_command(const Command* command, int num_repeats) {
+	LOG("MainWidget::handle_command");
 	if (command == nullptr) return;
 
 	if (command->requires_text) {
@@ -2180,6 +2219,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 }
 
 void MainWidget::handle_link() {
+	LOG("MainWidget::handle_link");
 	if (!main_document_view_has_document()) return;
 
 	if (is_pending_link_source_filled()) {
@@ -2214,6 +2254,7 @@ void MainWidget::handle_link() {
 }
 
 void MainWidget::handle_pending_text_command(std::wstring text) {
+	LOG("MainWidget::handle_pending_text_command");
 	if (current_pending_command->name == "search" ||
 		current_pending_command->name == "ranged_search" ||
 		current_pending_command->name == "chapter_search" ) {
@@ -2331,6 +2372,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 }
 
 void MainWidget::toggle_fullscreen() {
+	LOG("MainWidget::toggle_fullscreen");
 	if (isFullScreen()) {
 		helper_opengl_widget->setWindowState(Qt::WindowState::WindowMaximized);
 		setWindowState(Qt::WindowState::WindowMaximized);
@@ -2342,6 +2384,7 @@ void MainWidget::toggle_fullscreen() {
 }
 
 void MainWidget::toggle_presentation_mode() {
+	LOG("MainWidget::toggle_presentation_mode");
 	if (opengl_widget->is_presentation_mode()) {
 		opengl_widget->set_visible_page_number({});
 	}
@@ -2350,8 +2393,8 @@ void MainWidget::toggle_presentation_mode() {
 	}
 }
 
-void MainWidget::complete_pending_link(const LinkViewState& destination_view_state)
-{
+void MainWidget::complete_pending_link(const LinkViewState& destination_view_state) {
+	LOG("MainWidget::complete_pending_link");
 	Link& pl = pending_link.value().second;
 	pl.dst = destination_view_state;
 	main_document_view->get_document()->add_link(pl);
@@ -2359,11 +2402,12 @@ void MainWidget::complete_pending_link(const LinkViewState& destination_view_sta
 }
 
 void MainWidget::long_jump_to_destination(int page, float offset_y) {
+	LOG("MainWidget::long_jump_to_destination");
 	long_jump_to_destination(page, main_document_view->get_offset_x(), offset_y);
 }
 
-void MainWidget::long_jump_to_destination(int page, float offset_x, float offset_y)
-{
+void MainWidget::long_jump_to_destination(int page, float offset_x, float offset_y) {
+	LOG("MainWidget::long_jump_to_destination");
 	if (!is_pending_link_source_filled()) {
 		update_history_state();
 		main_document_view->goto_offset_within_page(page, offset_x, offset_y);
@@ -2385,6 +2429,7 @@ void MainWidget::long_jump_to_destination(int page, float offset_x, float offset
 }
 
 void MainWidget::set_current_widget(QWidget* new_widget) {
+	LOG("MainWidget::set_current_widget");
 	if (current_widget != nullptr) {
 		garbage_widgets.push_back(current_widget);
 	}
@@ -2397,6 +2442,7 @@ void MainWidget::set_current_widget(QWidget* new_widget) {
 }
 
 float MainWidget::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont) {
+	LOG("MainWidget::get_ith_next_line_from_absolute_y");
 		float doc_x, doc_y;
 		int page;
 		main_document_view->get_document()->absolute_to_page_pos(0, absolute_y, &doc_x, &doc_y, &page);
@@ -2440,6 +2486,7 @@ float MainWidget::get_ith_next_line_from_absolute_y(float absolute_y, int i, boo
 
 }
 bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
+	LOG("MainWidget::focus_on_visual_mark_pos");
 	float window_x, window_y;
 	float thresh = 1 - VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 	main_document_view->absolute_to_window_pos(0, main_document_view->get_vertical_line_pos(), &window_x, &window_y);
@@ -2454,10 +2501,12 @@ bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
 }
 
 void MainWidget::toggle_visual_scroll_mode() {
+	LOG("MainWidget::toggle_visual_scroll_mode");
 	visual_scroll_mode = !visual_scroll_mode;
 }
 
 std::optional<std::wstring> MainWidget::get_current_file_name() {
+	LOG("MainWidget::get_current_file_name");
 	if (main_document_view) {
 		if (main_document_view->get_document()) {
 			return main_document_view->get_document()->get_path();
@@ -2467,9 +2516,11 @@ std::optional<std::wstring> MainWidget::get_current_file_name() {
 }
 
 CommandManager* MainWidget::get_command_manager(){
+	LOG("MainWidget::get_command_manager");
 	return &command_manager;
 }
 
 void MainWidget::toggle_dark_mode() {
+	LOG("MainWidget::toggle_dark_mode");
 	this->opengl_widget->toggle_dark_mode();
 }

@@ -24,6 +24,7 @@
 
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
+extern std::ofstream LOG_FILE;
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
@@ -1412,3 +1413,11 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 	}
 }
 
+Logger::Logger(std::string _name) {
+	name = _name;
+	LOG_FILE << "entered " << name << "\n";
+}
+
+Logger::~Logger() {
+	LOG_FILE << "exited " << name << "\n";
+}
