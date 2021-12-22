@@ -85,7 +85,7 @@
 
 
 extern std::wstring APPLICATION_NAME = L"sioyek";
-extern std::wstring LOG_FILE_NAME = L"sioyek_log.txt";
+extern std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;
 extern int FONT_SIZE = -1;
 extern std::string APPLICATION_VERSION = "1.0.0";
