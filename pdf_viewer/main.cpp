@@ -79,8 +79,6 @@
 #include "fts_fuzzy_match.h"
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
 
-#define LOG_ENABLED
-
 //#define LINUX_STANDARD_PATHS
 
 
@@ -306,7 +304,9 @@ int main(int argc, char* args[]) {
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	QSurfaceFormat::setDefaultFormat(format);
 
+#ifdef LOG_ENABLED
 	LOG_FILE = std::ofstream(LOG_FILE_NAME.c_str());
+#endif
 
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
@@ -498,6 +498,9 @@ int main(int argc, char* args[]) {
 
 	quit = true;
 
+#ifdef LOG_ENABLED
 	LOG_FILE.close();
+#endif
+
 	return 0;
 }

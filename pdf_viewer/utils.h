@@ -130,4 +130,9 @@ public:
 	~Logger();
 };
 
+#ifdef LOG_ENABLED
 #define LOG(name) Logger _ = Logger(name);
+#else
+#define LOG(name)
+#endif
+
