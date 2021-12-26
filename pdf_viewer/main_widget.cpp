@@ -2283,6 +2283,31 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 	if (current_pending_command->name == "add_bookmark") {
 		main_document_view->add_bookmark(text);
 	}
+	if (current_pending_command->name == "execute") {
+
+		std::wstring file_path = main_document_view->get_document()->get_path();
+		std::vector<std::wstring> path_parts;
+		split_path(file_path, path_parts);
+		std::wstring file_name = path_parts.back();
+
+		QString qtext = QString::fromStdWString(text);
+
+		qtext.arg(file_path);
+
+		QStringList command_parts = qtext.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+		if (command_parts.size() > 0) {
+			QString command_name = command_parts[0];
+			QStringList command_args;
+
+			command_parts.takeFirst();
+			for (int i = 0; i < command_parts.size(); i++) {
+				command_args.push_back(command_parts.at(i).arg(file_path, file_name));
+			}
+
+			run_command(command_name.toStdWString(), command_args.join(" ").toStdWString(), false);
+		}
+		//run_command(L"code", L"somesearchablefilename.java");
+	}
 
 	if (current_pending_command->name == "open_link") {
 		std::vector<int> visible_pages;

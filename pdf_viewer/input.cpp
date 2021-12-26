@@ -88,6 +88,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "toggle_visual_scroll", false, false , false, false});
 	commands.push_back({ "toggle_horizontal_scroll_lock", false, false , false, false});
 	commands.push_back({ "toggle_custom_color", false, false , false, false});
+	commands.push_back({ "execute", true, false , false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {

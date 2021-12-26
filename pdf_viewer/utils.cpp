@@ -589,7 +589,7 @@ void split_key_string(std::string haystack, const std::string& needle, std::vect
 }
 
 
-void run_command(std::wstring command, std::wstring parameters){
+void run_command(std::wstring command, std::wstring parameters, bool wait){
 
 
 #ifdef Q_OS_WIN
@@ -615,7 +615,9 @@ void run_command(std::wstring command, std::wstring parameters){
 	qparameters.append(QString::fromStdWString(parameters));
 
 	process.start(qcommand, qparameters);
-	process.waitForFinished();
+	if (wait) {
+		process.waitForFinished();
+	}
 #endif
 
 }
