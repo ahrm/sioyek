@@ -2286,13 +2286,15 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 	if (current_pending_command->name == "execute") {
 
 		std::wstring file_path = main_document_view->get_document()->get_path();
+		QString qfile_path = QString::fromStdWString(file_path);
 		std::vector<std::wstring> path_parts;
 		split_path(file_path, path_parts);
 		std::wstring file_name = path_parts.back();
+		QString qfile_name = QString::fromStdWString(file_name);
 
 		QString qtext = QString::fromStdWString(text);
 
-		qtext.arg(file_path);
+		qtext.arg(qfile_path);
 
 		QStringList command_parts = qtext.split(QRegExp("\\s+"), QString::SkipEmptyParts);
 		if (command_parts.size() > 0) {
@@ -2301,7 +2303,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 
 			command_parts.takeFirst();
 			for (int i = 0; i < command_parts.size(); i++) {
-				command_args.push_back(command_parts.at(i).arg(file_path, file_name));
+				command_args.push_back(command_parts.at(i).arg(qfile_path, qfile_name));
 			}
 
 			run_command(command_name.toStdWString(), command_args.join(" ").toStdWString(), false);
