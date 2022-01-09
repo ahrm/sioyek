@@ -14,7 +14,7 @@ extern float HIGHLIGHT_COLORS[26 * 3];
 extern bool SHOULD_DRAW_UNRENDERED_PAGES;
 extern float CUSTOM_BACKGROUND_COLOR[3];
 extern float CUSTOM_TEXT_COLOR[3];
-
+extern bool RERENDER_OVERVIEW;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -390,11 +390,20 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 
 	if (!valid_document()) return;
 
+	float zoom_level = document_view->get_zoom_level();
+
+	if (RERENDER_OVERVIEW) {
+		float view_width = document_view->get_view_width() * overview_half_width;
+		float page_width = document_view->get_document()->get_page_width(overview.page);
+		zoom_level = view_width / page_width;
+	}
+
 	GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
 		overview.page,
-		document_view->get_zoom_level(),
+		zoom_level,
 		nullptr,
 		nullptr);
+
 
 	float page_vertices[4 * 2];
 	float border_vertices[4 * 2];
@@ -456,25 +465,22 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 		bind_program();
 
 		glBindTexture(GL_TEXTURE_2D, texture);
+
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		//draw the overview
+		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(page_uvs), page_uvs, GL_DYNAMIC_DRAW);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	}
-	else {
-		return;
-	}
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	//draw the overview
-	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(page_uvs), page_uvs, GL_DYNAMIC_DRAW);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	//draw the border
 	glDisable(GL_BLEND);
