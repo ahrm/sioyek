@@ -37,6 +37,7 @@ extern int FONT_SIZE;
 extern float CUSTOM_BACKGROUND_COLOR[3];
 extern float CUSTOM_TEXT_COLOR[3];
 extern bool RERENDER_OVERVIEW;
+extern bool LINEAR_TEXTURE_FILTERING;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -158,6 +159,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"custom_background_color", CUSTOM_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"custom_text_color", CUSTOM_TEXT_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"rerender_overview", &RERENDER_OVERVIEW, bool_serializer, bool_deserializer });
+	configs.push_back({ L"linear_filter", &LINEAR_TEXTURE_FILTERING, bool_serializer, bool_deserializer });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

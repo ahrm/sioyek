@@ -2,6 +2,8 @@
 #include "utils.h"
 #include <qdatetime.h>
 
+extern bool LINEAR_TEXTURE_FILTERING;
+
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone, float display_scale) : context_to_clone(context_to_clone),
 should_quit_pointer(should_quit_pointer),
 num_threads(num_threads),
@@ -131,8 +133,15 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
 					glGenTextures(1, &result);
 					glBindTexture(GL_TEXTURE_2D, result);
 
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+					if (LINEAR_TEXTURE_FILTERING) {
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					}
+					else {
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+					}
+
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
