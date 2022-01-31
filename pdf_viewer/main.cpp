@@ -154,6 +154,7 @@ extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
 extern std::wstring ITEM_LIST_PREFIX = L">";
 extern std::wstring STARTUP_COMMANDS = L"";
 extern float SMALL_PIXMAP_SCALE = 0.75f;
+extern float DISPLAY_RESOLUTION_SCALE = -1;
 
 extern Path default_config_path(L"");
 extern Path default_keys_path(L"");

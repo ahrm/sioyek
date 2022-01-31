@@ -72,6 +72,7 @@ extern std::wstring ITEM_LIST_PREFIX;
 extern std::wstring SEARCH_URLS[26];
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
+extern float DISPLAY_RESOLUTION_SCALE;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -270,7 +271,13 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 	inverse_search_command = INVERSE_SEARCH_COMMAND;
 	int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
 
-	pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QApplication::desktop()->devicePixelRatioF());
+	if (DISPLAY_RESOLUTION_SCALE <= 0){
+		pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QApplication::desktop()->devicePixelRatioF());
+	}
+	else {
+		pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, DISPLAY_RESOLUTION_SCALE);
+
+	}
 	pdf_renderer->start_threads();
 
 
