@@ -1859,11 +1859,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 
 	else if (command->name == "next_item") {
-		opengl_widget->goto_search_result(1 + num_repeats);
+		if (num_repeats == 0) num_repeats++;
+		opengl_widget->goto_search_result(num_repeats);
 	}
 
 	else if (command->name == "previous_item") {
-		opengl_widget->goto_search_result(-1 - num_repeats);
+		if (num_repeats == 0) num_repeats++;
+		opengl_widget->goto_search_result(-num_repeats);
 	}
 	else if (command->name == "push_state") {
 		push_state();
