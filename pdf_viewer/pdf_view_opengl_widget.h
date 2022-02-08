@@ -210,4 +210,5 @@ public:
 	void set_overview_offsets(float offset_x, float offset_y);
 
 	void bind_program();
+	void cancel_search();
 };

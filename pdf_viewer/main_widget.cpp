@@ -471,6 +471,25 @@ std::wstring MainWidget::get_status_string() {
 
 void MainWidget::handle_escape() {
 	LOG("MainWidget::handle_escape");
+
+	// add high escape priority to overview and search, if any of them are escaped, do not escape any further
+	if (opengl_widget) {
+		bool should_return = false;
+		if (opengl_widget->get_overview_page()) {
+			opengl_widget->set_overview_page({});
+			should_return = true;
+		}
+		else if (opengl_widget->get_is_searching(nullptr)) {
+			opengl_widget->cancel_search();
+			should_return = true;
+		}
+		if (should_return) {
+			validate_render();
+			setFocus();
+			return;
+		}
+	}
+
 	text_command_line_edit->setText("");
 	pending_link = {};
 	current_pending_command = nullptr;
@@ -1051,11 +1070,13 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 	LOG("MainWidget::key_event");
 	validate_render();
 
-	if (kevent->key() == Qt::Key::Key_Escape) {
-		handle_escape();
-	}
 
 	if (released == false) {
+
+		if (kevent->key() == Qt::Key::Key_Escape) {
+			handle_escape();
+		}
+
 		std::vector<int> ignored_codes = {
 			Qt::Key::Key_Shift,
 			Qt::Key::Key_Control

@@ -320,13 +320,18 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 	this->setFormat(format);
 }
 
-void PdfViewOpenGLWidget::handle_escape() {
-	LOG("PdfViewOpenGLWidget::handle_escape");
+void PdfViewOpenGLWidget::cancel_search() {
+	LOG("PdfViewOpenGLWidget::cancel_search");
 	search_results.clear();
-	synctex_highlights.clear();
 	current_search_result_index =-1;
 	is_searching = false;
 	is_search_cancelled = true;
+}
+
+void PdfViewOpenGLWidget::handle_escape() {
+	LOG("PdfViewOpenGLWidget::handle_escape");
+	cancel_search();
+	synctex_highlights.clear();
 	should_highlight_links = false;
 	should_show_numbers = false;
 }
