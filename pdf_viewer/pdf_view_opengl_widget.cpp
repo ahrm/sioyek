@@ -328,6 +328,7 @@ void PdfViewOpenGLWidget::handle_escape() {
 	is_searching = false;
 	is_search_cancelled = true;
 	should_highlight_links = false;
+	should_show_numbers = false;
 }
 
 void PdfViewOpenGLWidget::toggle_highlight_links() {
@@ -335,9 +336,10 @@ void PdfViewOpenGLWidget::toggle_highlight_links() {
 	this->should_highlight_links = !this->should_highlight_links;
 }
 
-void PdfViewOpenGLWidget::set_highlight_links(bool should_highlight) {
+void PdfViewOpenGLWidget::set_highlight_links(bool should_highlight, bool should_show_numbers) {
 	LOG("PdfViewOpenGLWidget::set_highlight_links");
 	this->should_highlight_links = should_highlight;
+	this->should_show_numbers = should_show_numbers;
 }
 
 int PdfViewOpenGLWidget::get_num_search_results() {
@@ -683,7 +685,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	painter->endNativePainting();
 
-	if (should_highlight_links) {
+	if (should_highlight_links && should_show_numbers) {
 		for (int i = 0; i < all_visible_links.size(); i++) {
 			std::stringstream ss;
 			ss << i;

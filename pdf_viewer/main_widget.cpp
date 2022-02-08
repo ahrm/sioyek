@@ -1706,7 +1706,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			should_fill_text_bar_with_selected_text = true;
 		}
 		if (command->name == "open_link") {
-			opengl_widget->set_highlight_links(true);
+			opengl_widget->set_highlight_links(true, true);
 		}
 		show_textbar(utf8_decode(command->name.c_str()), should_fill_text_bar_with_selected_text);
 		if (command->name == "chapter_search") {
@@ -1734,6 +1734,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	if (command->name == "copy") {
 		copy_to_clipboard(selected_text);
+	}
+
+	if (command->name == "highlight_links") {
+		opengl_widget->set_highlight_links(true, false);
 	}
 
 	int rp = std::max(num_repeats, 1);
@@ -2346,7 +2350,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 				long_jump_to_destination(page-1, offset_y);
 			}
 		}
-		opengl_widget->set_highlight_links(false);
+		opengl_widget->set_highlight_links(false, false);
 	}
 
 	if (current_pending_command->name == "goto_page_with_page_number") {

@@ -1239,7 +1239,7 @@ QCommandLineParser* get_command_line_parser() {
 	parser->addOption(reuse_instance_option);
 
 	QCommandLineOption new_instance_option("new-instance");
-	new_instance_option.setDescription("When opening a new file, create a new instacne of sioyek.");
+	new_instance_option.setDescription("When opening a new file, create a new instance of sioyek.");
 	parser->addOption(new_instance_option);
 
 	QCommandLineOption page_option("page", "Which page to open.", "page");
