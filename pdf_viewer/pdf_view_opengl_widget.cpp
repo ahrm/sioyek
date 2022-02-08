@@ -685,7 +685,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	painter->endNativePainting();
 
-	if (should_highlight_links && should_show_numbers) {
+	if (should_highlight_links && should_show_numbers && (!overview_page)) {
 		for (int i = 0; i < all_visible_links.size(); i++) {
 			std::stringstream ss;
 			ss << i;
