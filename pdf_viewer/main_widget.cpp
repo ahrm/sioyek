@@ -60,6 +60,7 @@ extern std::wstring INVERSE_SEARCH_COMMAND;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float SMALL_PIXMAP_SCALE;
+extern std::wstring EXECUTE_COMMANDS[26];
 
 extern Path default_config_path;
 extern Path default_keys_path;
@@ -894,6 +895,11 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 		//	opengl_widget->selected_character_rects.clear();
 		//	selected_text.clear();
 		//}
+	}
+	else if (command->name == "execute_predefined_command" ) {
+		if ((symbol >= 'a') && (symbol <= 'z')) {
+			execute_command(EXECUTE_COMMANDS[symbol - 'a']);
+		}
 	}
 	else if (command->name == "goto_mark") {
 		assert(main_document_view);
@@ -2319,30 +2325,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 	}
 	if (current_pending_command->name == "execute") {
 
-		std::wstring file_path = main_document_view->get_document()->get_path();
-		QString qfile_path = QString::fromStdWString(file_path);
-		std::vector<std::wstring> path_parts;
-		split_path(file_path, path_parts);
-		std::wstring file_name = path_parts.back();
-		QString qfile_name = QString::fromStdWString(file_name);
-
-		QString qtext = QString::fromStdWString(text);
-
-		qtext.arg(qfile_path);
-
-		QStringList command_parts = qtext.split(QRegExp("\\s+"), QString::SkipEmptyParts);
-		if (command_parts.size() > 0) {
-			QString command_name = command_parts[0];
-			QStringList command_args;
-
-			command_parts.takeFirst();
-			for (int i = 0; i < command_parts.size(); i++) {
-				command_args.push_back(command_parts.at(i).arg(qfile_path, qfile_name));
-			}
-
-			run_command(command_name.toStdWString(), command_args.join(" ").toStdWString(), false);
-		}
-		//run_command(L"code", L"somesearchablefilename.java");
+		execute_command(text);
 	}
 
 	if (current_pending_command->name == "open_link") {
@@ -2584,4 +2567,47 @@ CommandManager* MainWidget::get_command_manager(){
 void MainWidget::toggle_dark_mode() {
 	LOG("MainWidget::toggle_dark_mode");
 	this->opengl_widget->toggle_dark_mode();
+}
+
+void MainWidget::execute_command(std::wstring command) {
+
+	std::wstring file_path = main_document_view->get_document()->get_path();
+	QString qfile_path = QString::fromStdWString(file_path);
+	std::vector<std::wstring> path_parts;
+	split_path(file_path, path_parts);
+	std::wstring file_name = path_parts.back();
+	QString qfile_name = QString::fromStdWString(file_name);
+
+	QString qtext = QString::fromStdWString(command);
+
+	qtext.arg(qfile_path);
+
+	QStringList command_parts = qtext.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+	if (command_parts.size() > 0) {
+		QString command_name = command_parts[0];
+		QStringList command_args;
+
+		command_parts.takeFirst();
+
+		// you would think
+		// "command %2".arg("first", "second");
+		// would expand into
+		// "command second"
+		// and you would be wrong, for some reason qt decided the lowest numbered
+		// %n should be filled with the first argument and so on. what follows is a hack to get around this
+
+		for (int i = 0; i < command_parts.size(); i++) {
+			bool part_requires_only_second = (command_parts[i].arg("%1", "%2") != command_parts[i]);
+
+			if (part_requires_only_second) {
+				command_args.push_back(command_parts.at(i).arg(qfile_name));
+			}
+			else {
+				command_args.push_back(command_parts.at(i).arg(qfile_path, qfile_name));
+			}
+		}
+
+		run_command(command_name.toStdWString(), command_args.join(" ").toStdWString(), false);
+	}
+
 }

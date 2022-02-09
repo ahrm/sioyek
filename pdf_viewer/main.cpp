@@ -92,6 +92,7 @@ extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 extern float CUSTOM_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 extern float CUSTOM_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 std::wstring SEARCH_URLS[26];
+std::wstring EXECUTE_COMMANDS[26];
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
 extern float HIGHLIGHT_COLORS[26 * 3] = { \
@@ -310,7 +311,7 @@ int main(int argc, char* args[]) {
 #ifdef LOG_ENABLED
 	LOG_FILE = std::ofstream(LOG_FILE_NAME.c_str());
 #endif
-
+	
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 

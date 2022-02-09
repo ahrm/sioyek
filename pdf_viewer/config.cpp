@@ -22,6 +22,7 @@ extern bool HOVER_OVERVIEW;
 extern bool DEFAULT_DARK_MODE;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern std::wstring SEARCH_URLS[26];
+extern std::wstring EXECUTE_COMMANDS[26];
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
 extern std::wstring INVERSE_SEARCH_COMMAND;
@@ -165,11 +166,16 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";
+	std::wstring execute_command_config_string = L"execute_command_a";
+
 	for (char letter = 'a'; letter <= 'z'; letter++) {
 		highlight_config_string[highlight_config_string.size() - 1] = letter;
 		search_url_config_string[search_url_config_string.size() - 1] = letter;
+		execute_command_config_string[execute_command_config_string.size() - 1] = letter;
+
 		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(letter - 'a') * 3], vec3_serializer, vec3_deserializer });
 		configs.push_back({ search_url_config_string, &SEARCH_URLS[letter - 'a'], string_serializer, string_deserializer });
+		configs.push_back({ execute_command_config_string, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer });
 	}
 
 	deserialize(default_path, user_paths);
