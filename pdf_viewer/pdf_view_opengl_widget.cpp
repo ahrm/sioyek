@@ -296,13 +296,9 @@ void PdfViewOpenGLWidget::paintGL() {
 	QColor red_color = QColor::fromRgb(255, 0, 0);
 	painter.setPen(red_color);
 
-	painter.beginNativePainting();
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_BLEND);
-	glBindVertexArray(vertex_array_object);
 	render(&painter);
-	painter.endNativePainting();
-	painter.drawText(-100, -100, "1234567890");
+
+	//painter.drawText(-100, -100, "1234567890");
 }
 
 PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent) :
@@ -550,6 +546,11 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 void PdfViewOpenGLWidget::render(QPainter* painter) {
 	LOG("PdfViewOpenGLWidget::render");
+
+	painter->beginNativePainting();
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
+	glBindVertexArray(vertex_array_object);
 
 	if (!valid_document()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

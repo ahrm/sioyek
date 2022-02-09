@@ -148,11 +148,10 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
 
 					// OpenGL usually expects powers of two textures and since our pixmaps dimensions are
 					// often not powers of two, we set the unpack alignment to 1 (no alignment) 
+
 					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-					glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-					glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-					glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cached_resp.pixmap->w, cached_resp.pixmap->h, 0, GL_RGB, GL_UNSIGNED_BYTE, cached_resp.pixmap->samples);
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 					std::wcout << "texture: " << result << std::endl;
 					cached_resp.texture = result;
 				}
