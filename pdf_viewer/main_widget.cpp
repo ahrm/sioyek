@@ -61,7 +61,7 @@ extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float SMALL_PIXMAP_SCALE;
 extern std::wstring EXECUTE_COMMANDS[26];
-
+extern int STATUS_BAR_FONT_SIZE;
 extern Path default_config_path;
 extern Path default_keys_path;
 extern std::vector<Path> user_config_paths;
@@ -74,6 +74,9 @@ extern std::wstring SEARCH_URLS[26];
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 extern float DISPLAY_RESOLUTION_SCALE;
+
+extern float STATUS_BAR_COLOR[3];
+extern float STATUS_BAR_TEXT_COLOR[3];
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -91,8 +94,9 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 	text_command_line_edit_container->move(0, 0);
 	text_command_line_edit_container->resize(main_window_width, 30);
 
-	status_label->move(0, main_window_height - 20);
-	status_label->resize(main_window_width, 20);
+	int status_bar_height = get_status_bar_height();
+	status_label->move(0, main_window_height - status_bar_height);
+	status_label->resize(main_window_width, status_bar_height);
 
 	if ((main_document_view->get_document() != nullptr) && (main_document_view->get_zoom_level() == 0)) {
 		main_document_view->fit_to_page_width();
@@ -300,7 +304,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 		});
 
 	status_label = new QLabel(this);
-	status_label->setStyleSheet("background-color: black; color: white; border: 0");
+
+	status_label->setStyleSheet(get_status_stylesheet());
 	status_label->setFont(QFont("Monaco"));
 
 
@@ -582,13 +587,41 @@ void MainWidget::move_document_screens(int num_screens) {
 	move_document(0, move_amount);
 }
 
+QString MainWidget::get_status_stylesheet() {
+	if (STATUS_BAR_FONT_SIZE > -1) {
+		QString	font_size_stylesheet = QString("font-size: %1px").arg(STATUS_BAR_FONT_SIZE);
+		return QString("background-color: %1; color: %2; border: 0; %3").arg(
+			get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
+			get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2]),
+			font_size_stylesheet
+		);
+	}
+	else{
+		return QString("background-color: %1; color: %2; border: 0").arg(
+			get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
+			get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2])
+		);
+	}
+}
+
+int MainWidget::get_status_bar_height() {
+	if (STATUS_BAR_FONT_SIZE > 0) {
+		return STATUS_BAR_FONT_SIZE + 5;
+	}
+	else {
+		return 20;
+	}
+}
+
 void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 	LOG("MainWidget::on_config_file_changed");
-	//status_label->setStyleSheet(QString::fromStdWString(*config_manager->get_config<std::wstring>(L"status_label_stylesheet")));
-	//text_command_line_edit_container->setStyleSheet(
-	//	QString::fromStdWString(*config_manager->get_config<std::wstring>(L"text_command_line_stylesheet")));
 
-	status_label->setStyleSheet("background-color: black; color: white; border: 0");
+	status_label->setStyleSheet(get_status_stylesheet());
+
+	int status_bar_height = get_status_bar_height();
+	status_label->move(0, main_window_height - status_bar_height);
+	status_label->resize(main_window_width, status_bar_height);
+
 	text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
 }
 

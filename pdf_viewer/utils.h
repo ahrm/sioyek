@@ -136,3 +136,4 @@ public:
 #define LOG(name)
 #endif
 
+QString get_color_qml_string(float r, float g, float b);

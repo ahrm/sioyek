@@ -1423,3 +1423,17 @@ Logger::Logger(std::string _name) {
 Logger::~Logger() {
 	LOG_FILE << "exited " << name << "\n";
 }
+
+QString get_color_hexadecimal(float color) {
+	QString hex_map[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f" };
+	int val = static_cast<int>(color * 255);
+	int high = val / 16;
+	int low = val % 16;
+	return QString("%1%2").arg(hex_map[high], hex_map[low]);
+	
+}
+
+QString get_color_qml_string(float r, float g, float b) {
+	QString res =  QString("#%1%2%3").arg(get_color_hexadecimal(r), get_color_hexadecimal(g), get_color_hexadecimal(b));
+	return res;
+}
