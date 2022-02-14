@@ -303,6 +303,17 @@ void unlock_mutex(void* user, int lock) {
 	(mut + lock)->unlock();
 }
 
+void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& default_path, const std::vector<Path>& user_paths) {
+	if (QFile::exists(QString::fromStdWString(default_path.get_path()))) {
+		watcher.addPath(QString::fromStdWString(default_path.get_path()));
+	}
+
+	for (int i = 0; i < user_paths.size(); i++) {
+		if (QFile::exists(QString::fromStdWString(user_paths[i].get_path()))) {
+			watcher.addPath(QString::fromStdWString(user_paths[i].get_path()));
+		}
+	}
+}
 
 int main(int argc, char* args[]) {
 
@@ -428,17 +439,10 @@ int main(int argc, char* args[]) {
 	DocumentManager document_manager(mupdf_context, &db_manager, &checksummer);
 
 	QFileSystemWatcher pref_file_watcher;
-	pref_file_watcher.addPath(QString::fromStdWString(default_config_path.get_path()));
-	for (int i = 0; i < user_config_paths.size(); i++) {
-		pref_file_watcher.addPath(QString::fromStdWString(user_config_paths[i].get_path()));
-	}
-
+	add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
 
 	QFileSystemWatcher key_file_watcher;
-	key_file_watcher.addPath(QString::fromStdWString(default_keys_path.get_path()));
-	for (int i = 0; i < user_keys_paths.size(); i++) {
-		key_file_watcher.addPath(QString::fromStdWString(user_keys_paths[i].get_path()));
-	}
+	add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
 
 
 	//QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
@@ -491,10 +495,12 @@ int main(int argc, char* args[]) {
 
 		ConfigFileChangeListener::notify_config_file_changed(&config_manager);
 		main_widget.validate_render();
+		add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
 		});
 
 	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 		input_handler.reload_config_files(default_keys_path, user_keys_paths);
+		add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
 		});
 
 	if (SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP) {
