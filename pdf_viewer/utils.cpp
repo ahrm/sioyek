@@ -609,14 +609,17 @@ void run_command(std::wstring command, std::wstring parameters, bool wait){
 	WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
 	CloseHandle(ShExecInfo.hProcess);
 #else
-	QProcess process;
+	QProcess* process;
 	QString qcommand = QString::fromStdWString(command);
 	QStringList qparameters; 
 	qparameters.append(QString::fromStdWString(parameters));
 
-	process.start(qcommand, qparameters);
+	process->start(qcommand, qparameters);
 	if (wait) {
-		process.waitForFinished();
+		process->waitForFinished();
+	}
+	else {
+		QObject::connect(process, SIGNAL(finished(int)), process, SLOT(deleteLater()));
 	}
 #endif
 
