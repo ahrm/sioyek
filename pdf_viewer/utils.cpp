@@ -609,7 +609,7 @@ void run_command(std::wstring command, std::wstring parameters, bool wait){
 	WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
 	CloseHandle(ShExecInfo.hProcess);
 #else
-	QProcess* process;
+	QProcess* process = new QProcess;
 	QString qcommand = QString::fromStdWString(command);
 	QStringList qparameters; 
 	qparameters.append(QString::fromStdWString(parameters));
