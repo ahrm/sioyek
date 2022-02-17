@@ -90,7 +90,14 @@ public:
 	fz_document* doc = nullptr;
 
 	void add_bookmark(const std::wstring& desc, float y_offset);
+	//void add_bookmark_annotation(const BookMark& bookmark);
+	//void delete_bookmark_annotation(const BookMark& bookmark);
 	void add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, fz_point selection_begin, fz_point selection_end, char type);
+	//void add_highlight_annotation(const Highlight& highlight, const std::vector<fz_rect>& selected_rects);
+	void delete_highlight_with_index(int index);
+	void delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y);
+	//void delete_highlight_annotation(const Highlight& highlight);
+
 	void fill_highlight_rects(fz_context* ctx);
 	void count_chapter_pages(std::vector<int> &page_counts);
 	void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
@@ -105,8 +112,6 @@ public:
 	std::optional<Link> find_closest_link(float to_offset_y, int* index = nullptr);
 	bool update_link(Link new_link);
 	void delete_closest_bookmark(float to_y_offset);
-	void delete_highlight_with_index(int index);
-	void delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y);
 	void delete_closest_link(float to_offset_y);
 	const std::vector<BookMark>& get_bookmarks() const;
 	std::vector<BookMark> get_sorted_bookmarks() const;

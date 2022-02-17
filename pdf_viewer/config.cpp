@@ -3,8 +3,6 @@
 #include <cassert>
 
 extern float ZOOM_INC_FACTOR;
-extern float VERTICAL_LINE_WIDTH;
-extern float VERTICAL_LINE_FREQ;
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 extern float MOVE_SCREEN_PERCENTAGE;
@@ -19,6 +17,7 @@ extern bool SHOULD_LAUNCH_NEW_INSTANCE;
 extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP;
 extern bool SHOULD_DRAW_UNRENDERED_PAGES;
 extern bool HOVER_OVERVIEW;
+//extern bool AUTO_EMBED_ANNOTATIONS;
 extern bool DEFAULT_DARK_MODE;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern std::wstring SEARCH_URLS[26];
@@ -128,8 +127,6 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 
 	configs.push_back({ L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"vertical_line_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, vec4_deserializer });
-	configs.push_back({ L"vertical_line_width", &VERTICAL_LINE_WIDTH, float_serializer, float_deserializer });
-	configs.push_back({ L"vertical_line_freq", &VERTICAL_LINE_FREQ, float_serializer, float_deserializer });
 	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
@@ -169,6 +166,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"status_bar_color", STATUS_BAR_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"status_bar_text_color", STATUS_BAR_TEXT_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"status_bar_font_size", &STATUS_BAR_FONT_SIZE, int_serializer, int_deserializer });
+	//configs.push_back({ L"auto_embed_annotations", &AUTO_EMBED_ANNOTATIONS, bool_serializer, bool_deserializer });
 
 
 	std::wstring highlight_config_string = L"highlight_color_a";

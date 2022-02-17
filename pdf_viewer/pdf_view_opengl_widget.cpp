@@ -6,8 +6,6 @@ extern Path shader_path;
 extern float BACKGROUND_COLOR[3];
 extern float DARK_MODE_BACKGROUND_COLOR[3];
 extern float DARK_MODE_CONTRAST;
-extern float VERTICAL_LINE_WIDTH;
-extern float VERTICAL_LINE_FREQ;
 extern float ZOOM_INC_FACTOR;
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HIGHLIGHT_COLORS[26 * 3];
@@ -161,7 +159,6 @@ void PdfViewOpenGLWidget::initializeGL() {
 
 		shared_gl_objects.line_color_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "line_color");
 		shared_gl_objects.line_time_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "time");
-		shared_gl_objects.line_freq_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "freq");
 
 		shared_gl_objects.custom_color_background_uniform_location = glGetUniformLocation(shared_gl_objects.custom_color_program, "background_color");
 		shared_gl_objects.custom_color_text_uniform_location = glGetUniformLocation(shared_gl_objects.custom_color_program, "text_color");
@@ -201,7 +198,7 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 	LOG("PdfViewOpenGLWidget::render_line_window");
 
 
-	float bar_height = VERTICAL_LINE_WIDTH;
+	float bar_height = 4.0f;
 
 	float bar_data[] = {
 		-1, gl_vertical_pos,
@@ -221,7 +218,6 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 	}
 	float time = -QDateTime::currentDateTime().msecsTo(creation_time);
 	glUniform1f(shared_gl_objects.line_time_uniform_location, time);
-	glUniform1f(shared_gl_objects.line_freq_uniform_location, VERTICAL_LINE_FREQ);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);

@@ -14,6 +14,7 @@
 
 extern float SMALL_PIXMAP_SCALE;
 extern float HIGHLIGHT_COLORS[26 * 3];
+//extern bool AUTO_EMBED_ANNOTATIONS;
 
 int Document::get_mark_index(char symbol) {
 	LOG("Document::get_mark_index");
@@ -43,8 +44,12 @@ void Document::load_document_metadata_from_db() {
 
 void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 	LOG("Document::add_bookmark");
-	bookmarks.push_back({y_offset, desc});
+	BookMark bookmark{ y_offset, desc };
+	bookmarks.push_back(bookmark);
 	db_manager->insert_bookmark(get_checksum(), desc, y_offset);
+	//if (AUTO_EMBED_ANNOTATIONS) {
+	//	add_bookmark_annotation(bookmark);
+	//}
 }
 
 void Document::fill_highlight_rects(fz_context* ctx) {
@@ -63,6 +68,8 @@ void Document::fill_highlight_rects(fz_context* ctx) {
 		highlights[i].highlight_rects = std::move(merged_rects);
 	}
 }
+
+
 void Document::add_highlight(const std::wstring& desc,
 	const std::vector<fz_rect>& highlight_rects,
 	fz_point selection_begin,
@@ -90,6 +97,10 @@ void Document::add_highlight(const std::wstring& desc,
 		selection_end.x,
 		selection_end.y,
 		highlight.type);
+
+	//if (AUTO_EMBED_ANNOTATIONS) {
+	//	add_highlight_annotation(highlight, highlight_rects);
+	//}
 }
 
 bool Document::get_is_indexing() {
@@ -137,8 +148,12 @@ void Document::delete_closest_bookmark(float to_y_offset) {
 	LOG("Document::delete_closest_bookmark");
 	int closest_index = find_closest_bookmark_index(to_y_offset);
 	if (closest_index > -1) {
+		BookMark deleted_bookmark = bookmarks[closest_index];
 		db_manager->delete_bookmark( get_checksum(), bookmarks[closest_index].y_offset);
 		bookmarks.erase(bookmarks.begin() + closest_index);
+		//if (AUTO_EMBED_ANNOTATIONS) {
+		//	delete_bookmark_annotation(deleted_bookmark);
+		//}
 	}
 }
 
@@ -153,6 +168,9 @@ void Document::delete_highlight_with_index(int index) {
 		highlight_to_delete.selection_end.x,
 		highlight_to_delete.selection_end.y);
 	highlights.erase(highlights.begin() + index);
+	//if (AUTO_EMBED_ANNOTATIONS) {
+	//	delete_highlight_annotation(highlight_to_delete);
+	//}
 }
 
 void Document::delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y) {
@@ -1550,3 +1568,51 @@ void Document::embed_annotations(std::wstring new_file_path) {
 		fz_drop_page(context, page);
 	}
 }
+
+
+//void Document::add_highlight_annotation(const Highlight& highlight, const std::vector<fz_rect>& selected_rects) {
+//
+//
+//	int page_number = get_offset_page_number(highlight.selection_begin.y);
+//
+//	//todo: refactor this and other instances of this code into a function
+//	std::vector<fz_rect> merged_characters;
+//	std::vector<fz_rect> page_characters;
+//
+//	merge_selected_character_rects(selected_rects, merged_characters);
+//
+//	for (auto absrect : merged_characters) {
+//		page_characters.push_back(absolute_to_page_rect(absrect, nullptr));
+//	}
+//	std::vector<fz_quad> selected_character_quads = quads_from_rects(page_characters);
+//
+//	fz_page* page = fz_load_page(context, doc, page_number);
+//	pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
+//
+//	if (pdf_page) {
+//		pdf_annot* highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_HIGHLIGHT);
+//		float color[] = { 1.0f, 0.0f, 0.0f };
+//		color[0] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 0];
+//		color[1] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 1];
+//		color[2] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 2];
+//
+//		pdf_set_annot_color(context, highlight_annot, 3, color);
+//		pdf_set_annot_quad_points(context, highlight_annot, selected_character_quads.size(), &selected_character_quads[0]);
+//		pdf_update_annot(context, highlight_annot);
+//		pdf_update_page(context, pdf_page);
+//	}
+//
+//	fz_drop_page(context, page);
+//}
+//
+//void Document::delete_highlight_annotation(const Highlight& highlight) {
+//
+//}
+//
+//void Document::add_bookmark_annotation(const BookMark& bookmark) {
+//
+//}
+//
+//void Document::delete_bookmark_annotation(const BookMark& bookmark) {
+//
+//}

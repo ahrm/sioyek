@@ -6,7 +6,6 @@ in vec2 uvs;
 
 uniform vec4 line_color;
 uniform float time;
-uniform float freq;
 
 void main(){
     color = line_color;
