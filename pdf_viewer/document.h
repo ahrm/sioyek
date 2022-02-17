@@ -139,6 +139,7 @@ public:
 	int num_pages();
 	fz_rect get_page_absolute_rect(int page);
 	void absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page);
+	fz_rect absolute_to_page_rect(const fz_rect& absolute_rect, int* page);
 	QStandardItemModel* get_toc_model();
 	void page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y);
 	fz_rect page_rect_to_absolute_rect(int page, fz_rect page_rect);
@@ -170,6 +171,7 @@ public:
 
 	int get_page_offset();
 	void set_page_offset(int new_offset);
+	void embed_annotations(std::wstring new_file_path);
 
 	friend class DocumentManager;
 };

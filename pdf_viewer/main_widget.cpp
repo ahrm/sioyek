@@ -2252,6 +2252,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			open_file(pref_file_path.value().get_path());
 		}
 	}
+	else if (command->name == "embed_annotations") {
+		std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
+		main_document_view->get_document()->embed_annotations(embedded_pdf_file_name);
+	}
 	else if (command->name == "export") {
 		std::wstring export_file_name = select_new_json_file_name();
 		db_manager->export_json(export_file_name, checksummer);

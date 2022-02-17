@@ -8,9 +8,12 @@
 #include <regex>
 #include <qcryptographichash.h>
 
+#include <mupdf/pdf.h>
+
 #include "checksum.h"
 
 extern float SMALL_PIXMAP_SCALE;
+extern float HIGHLIGHT_COLORS[26 * 3];
 
 int Document::get_mark_index(char symbol) {
 	LOG("Document::get_mark_index");
@@ -827,6 +830,23 @@ void Document::set_page_offset(int new_offset) {
 	LOG("Document::set_page_offset");
 	page_offset = new_offset;
 }
+
+fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page) {
+	float page_x0, page_x1, page_y0, page_y1;
+	int page_number = -1;
+	absolute_to_page_pos(absolute_rect.x0, absolute_rect.y0, &page_x0, &page_y0, &page_number);
+	absolute_to_page_pos(absolute_rect.x1, absolute_rect.y1, &page_x1, &page_y1, &page_number);
+	if (page != nullptr) {
+		*page = page_number;
+	}
+	fz_rect res;
+	res.x0 = page_x0;
+	res.x1 = page_x1;
+	res.y0 = page_y0;
+	res.y1 = page_y1;
+	return res;
+}
+
 void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
 	LOG("Document::absolute_to_page_pos");
 
@@ -1311,7 +1331,7 @@ void Document::get_text_selection(fz_point selection_begin,
 }
 void Document::get_text_selection(fz_context* ctx, fz_point selection_begin,
 	fz_point selection_end,
-	bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
+	bool is_word_selection,
 	std::vector<fz_rect>& selected_characters,
 	std::wstring& selected_text) {
 	LOG("Document::get_text_selection");
@@ -1434,4 +1454,99 @@ void Document::get_text_selection(fz_context* ctx, fz_point selection_begin,
 		}
 	}
 
+}
+
+void Document::embed_annotations(std::wstring new_file_path) {
+
+	std::unordered_map<int, fz_page*> cached_pages;
+	std::vector<std::pair<pdf_page*, pdf_annot*>> created_annotations;
+
+	auto load_cached_page = [&](int page_number) {
+		if (cached_pages.find(page_number) != cached_pages.end()) {
+			return cached_pages[page_number];
+		}
+		else {
+			fz_page* page = fz_load_page(context, doc, page_number);
+			cached_pages[page_number] = page;
+			return page;
+		}
+	};
+
+	std::string new_file_path_utf8 = utf8_encode(new_file_path);
+	fz_output* output_file = fz_new_output_with_path(context, new_file_path_utf8.c_str(), 0);
+
+	pdf_document* pdf_doc = pdf_specifics(context, doc);
+	int page_count = num_pages();
+
+	const std::vector<Highlight>& doc_highlights = get_highlights();
+	const std::vector<BookMark>& doc_bookmarks = get_bookmarks();
+
+	for (auto highlight : doc_highlights) {
+		int page_number = get_offset_page_number(highlight.selection_begin.y);
+
+		std::vector<fz_rect> selected_characters;
+		std::vector<fz_rect> merged_characters;
+		std::vector<fz_rect> selected_characters_page_rects;
+		std::wstring selected_text;
+
+		get_text_selection(highlight.selection_begin, highlight.selection_end, true, selected_characters, selected_text);
+		merge_selected_character_rects(selected_characters, merged_characters);
+
+		for (auto absrect : merged_characters) {
+			selected_characters_page_rects.push_back(absolute_to_page_rect(absrect, nullptr));
+		}
+		//absolute_to_page_pos
+		std::vector<fz_quad> selected_character_quads = quads_from_rects(selected_characters_page_rects);
+
+		fz_page* page = load_cached_page(page_number);
+		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
+		pdf_annot* highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_HIGHLIGHT);
+		float color[] = { 1.0f, 0.0f, 0.0f };
+		color[0] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 0];
+		color[1] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 1];
+		color[2] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 2];
+
+		pdf_set_annot_color(context, highlight_annot, 3, color);
+		pdf_set_annot_quad_points(context, highlight_annot, selected_character_quads.size(), &selected_character_quads[0]);
+		pdf_update_annot(context, highlight_annot);
+
+		created_annotations.push_back(std::make_pair(pdf_page, highlight_annot));
+
+	}
+
+	for (auto bookmark : doc_bookmarks) {
+		int page_number;
+		float doc_x, doc_y;
+		absolute_to_page_pos(0, bookmark.y_offset, &doc_x, &doc_y, &page_number);
+
+		fz_page* page = load_cached_page(page_number);
+		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
+		pdf_annot* bookmark_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_TEXT);
+		std::string encoded_bookmark_text = utf8_encode(bookmark.description);
+
+		fz_rect annot_rect;
+		annot_rect.x0 = 10;
+		annot_rect.x1 = 20;
+		annot_rect.y0 = doc_y;
+		annot_rect.y1 = doc_y + 10;
+
+		pdf_set_annot_rect(context, bookmark_annot, annot_rect);
+		pdf_set_annot_contents(context, bookmark_annot, encoded_bookmark_text.c_str());
+		pdf_update_annot(context, bookmark_annot);
+
+		created_annotations.push_back(std::make_pair(pdf_page, bookmark_annot));
+	}
+
+	pdf_write_options pwo = {0};
+	pdf_write_document(context, pdf_doc, output_file, &pwo);
+	fz_close_output(context, output_file);
+	fz_drop_output(context, output_file);
+
+	for (auto [page, annot] : created_annotations) {
+		pdf_delete_annot(context, page, annot);
+		pdf_drop_annot(context, annot);
+	}
+	for (auto [num, page] : cached_pages) {
+		fz_drop_page(context, page);
+	}
 }

@@ -137,3 +137,6 @@ public:
 #endif
 
 QString get_color_qml_string(float r, float g, float b);
+void copy_file(std::wstring src_path, std::wstring dst_path);
+fz_quad quad_from_rect(fz_rect r);
+std::vector<fz_quad> quads_from_rects(const std::vector<fz_rect>& rects);

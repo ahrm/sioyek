@@ -90,6 +90,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "toggle_custom_color", false, false , false, false});
 	commands.push_back({ "execute", true, false , false, false});
 	commands.push_back({ "execute_predefined_command", false, true, false, false});
+	commands.push_back({ "embed_annotations", false, false, false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {
