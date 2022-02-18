@@ -1,6 +1,12 @@
 # Sioyek
 
 Sioyek is a PDF viewer designed for reading research papers and technical books.
+## Contents
+* [Installation](#install)
+* [Documentation](#documentation)
+* [Video Demo](#feature-video-overview)
+* [Features](#features)
+* [Build Instructions](#build-instructions)
 
 ## Install
 ### Official packages
