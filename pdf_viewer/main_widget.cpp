@@ -2254,7 +2254,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 	else if (command->name == "embed_annotations") {
 		std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
-		main_document_view->get_document()->embed_annotations(embedded_pdf_file_name);
+		if (embedded_pdf_file_name.size() > 0) {
+			main_document_view->get_document()->embed_annotations(embedded_pdf_file_name);
+		}
 	}
 	else if (command->name == "export") {
 		std::wstring export_file_name = select_new_json_file_name();
