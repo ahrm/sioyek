@@ -46,6 +46,12 @@ https://user-images.githubusercontent.com/6392321/125321419-e5ab5880-e351-11eb-9
 
 You can jump to any referenced figure or bibliography item *even if the PDF file doesn't provide links*. You can also search the names of bibliography items in google scholar/libgen by middle clicking/shif+middle clicking on their name.
 
+### Overview
+
+https://user-images.githubusercontent.com/6392321/154683015-0bae4f92-78e2-4141-8446-49dd7c2bd7c9.mp4
+
+You can open a quick overview of figures/references/tables/etc. by right clicking on them (Like Smart Jump, this feature works even if the document doesn't provide links).
+
 ### Mark
 
 https://user-images.githubusercontent.com/6392321/125321811-505c9400-e352-11eb-85e0-ffc3ae5f8cb8.mp4
