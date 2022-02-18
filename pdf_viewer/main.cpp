@@ -87,7 +87,7 @@ extern std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;
 extern int FONT_SIZE = -1;
 extern int STATUS_BAR_FONT_SIZE = -1;
-extern std::string APPLICATION_VERSION = "1.0.0";
+extern std::string APPLICATION_VERSION = "1.1.0";
 extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 extern float CUSTOM_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
