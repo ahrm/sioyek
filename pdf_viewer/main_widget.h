@@ -81,6 +81,9 @@ private:
 	bool is_word_selecting = false;
 	std::wstring selected_text;
 
+	bool is_select_highlight_mode = false;
+	char select_highlight_type = 'a';
+
 	std::optional<Link> link_to_edit = {};
 	int selected_highlight_index = -1;
 

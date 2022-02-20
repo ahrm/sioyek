@@ -916,6 +916,9 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
 		}
 
 	}
+	else if (command->name == "set_select_highlight_type") {
+		select_highlight_type = symbol;
+	}
 	else if (command->name == "add_highlight") {
 		if (opengl_widget->selected_character_rects.size() > 0) {
 			main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, symbol);
@@ -1519,6 +1522,9 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
 	if (mevent->button() == Qt::MouseButton::LeftButton) {
 		handle_left_click(mevent->pos().x(), mevent->pos().y(), false);
+		if (is_select_highlight_mode && (opengl_widget->selected_character_rects.size() > 0)) {
+			main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, select_highlight_type);
+		}
 	}
 
 	if (mevent->button() == Qt::MouseButton::RightButton) {
@@ -1830,6 +1836,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		main_document_view->goto_end();
 	}
 
+	if (command->name == "toggle_select_highlight") {
+		is_select_highlight_mode = !is_select_highlight_mode;
+	}
 	if (command->name == "copy") {
 		copy_to_clipboard(selected_text);
 	}
