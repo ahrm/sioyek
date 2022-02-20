@@ -466,7 +466,7 @@ public:
 
 		last_root = root_path;
 		if (last_root.size() > 0) {
-			if (last_root.back() == QDir::separator()) {
+			if (last_root.at(last_root.size()-1) == QDir::separator()) {
 				last_root.chop(1);
 			}
 		}
