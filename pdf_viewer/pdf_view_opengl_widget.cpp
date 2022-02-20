@@ -1122,3 +1122,23 @@ void PdfViewOpenGLWidget::bind_program() {
 		glUseProgram(shared_gl_objects.rendered_program);
 	}
 }
+
+void PdfViewOpenGLWidget::window_pos_to_overview_pos(float window_x_normal, float window_y_normal, float* doc_offset_x, float* doc_offset_y, int* doc_page) {
+	float window_width = static_cast<float>(size().width());
+	float window_height = static_cast<float>(size().height());
+	int window_x = static_cast<int>((1.0f + window_x_normal) / 2 * window_width);
+	int window_y = static_cast<int>((1.0f + window_y_normal) / 2 * window_height);
+	float overview_width = document_view->get_view_width() * overview_half_width;
+	float page_width = document_view->get_document()->get_page_width(get_overview_page().value().page);
+	float zoom_level = overview_width / page_width;
+
+	int overview_left = (-overview_half_width + overview_offset_x) * window_width / 2 + window_width / 2;
+	int overview_mid = ( - overview_offset_y) * window_height / 2 + window_height / 2;
+
+	int relative_window_x = static_cast<int>(static_cast<float>(window_x - overview_left) / zoom_level);
+	int relative_window_y = static_cast<int>(static_cast<float>(window_y - overview_mid) / zoom_level);
+
+	*doc_offset_x = relative_window_x;
+	*doc_offset_y = overview_page.value().offset_y + relative_window_y;
+	*doc_page = get_overview_page().value().page;
+}

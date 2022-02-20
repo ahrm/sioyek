@@ -162,6 +162,7 @@ extern int MAIN_WINDOW_SIZE[2] = { -1, -1 };
 extern int HELPER_WINDOW_SIZE[2] = { -1, -1 };
 extern int MAIN_WINDOW_MOVE[2] = { -1, -1 };
 extern int HELPER_WINDOW_MOVE[2] = { -1, -1 };
+extern float TOUCHPAD_SENSITIVITY = 1.0f;
 
 extern Path default_config_path(L"");
 extern Path default_keys_path(L"");

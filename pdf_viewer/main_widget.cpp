@@ -80,6 +80,7 @@ extern int MAIN_WINDOW_SIZE[2];
 extern int HELPER_WINDOW_SIZE[2];
 extern int MAIN_WINDOW_MOVE[2];
 extern int HELPER_WINDOW_MOVE[2];
+extern float TOUCHPAD_SENSITIVITY;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -1534,7 +1535,20 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 		Qt::KeyboardModifiers modifiers = QGuiApplication::queryKeyboardModifiers();
 		bool is_shift_pressed = modifiers.testFlag(Qt::ShiftModifier);
 
+		float normal_x, normal_y;
+		main_document_view->window_to_normalized_window_pos(mevent->pos().x(), mevent->pos().y(), &normal_x, &normal_y);
 
+		// if overview page is open and we middle click on a paper name, search it in a search engine
+		if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
+			float doc_x, doc_y;
+			int doc_page;
+			opengl_widget->window_pos_to_overview_pos(normal_x, normal_y, &doc_x, &doc_y, &doc_page);
+			std::optional<std::wstring> paper_name = main_document_view->get_document()->get_paper_name_at_position(doc_page, doc_x, doc_y);
+			if (paper_name) {
+				handle_paper_name_on_pointer(paper_name.value(), is_shift_pressed);
+			}
+			return;
+		}
 		main_document_view->window_to_document_pos(mevent->pos().x(), mevent->pos().y(), &offset_x, &offset_y, &page);
 
 		fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
@@ -1584,18 +1598,19 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
 		}
 		if (paper_name_on_pointer) {
-			if (paper_name_on_pointer.value().size() > 5) {
-				char type;
-				if (is_shift_pressed) {
-					type = SHIFT_MIDDLE_CLICK_SEARCH_ENGINE[0];
-				}
-				else {
-					type = MIDDLE_CLICK_SEARCH_ENGINE[0];
-				}
-				if ((type >= 'a') && (type <= 'z')) {
-					search_custom_engine(paper_name_on_pointer.value(), SEARCH_URLS[type - 'a']);
-				}
-			}
+			handle_paper_name_on_pointer(paper_name_on_pointer.value(), is_shift_pressed);
+			//if (paper_name_on_pointer.value().size() > 5) {
+			//	char type;
+			//	if (is_shift_pressed) {
+			//		type = SHIFT_MIDDLE_CLICK_SEARCH_ENGINE[0];
+			//	}
+			//	else {
+			//		type = MIDDLE_CLICK_SEARCH_ENGINE[0];
+			//	}
+			//	if ((type >= 'a') && (type <= 'z')) {
+			//		search_custom_engine(paper_name_on_pointer.value(), SEARCH_URLS[type - 'a']);
+			//	}
+			//}
 		}
 
 	}
@@ -1634,6 +1649,14 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	int num_repeats = 1;
 
 	const Command* command = nullptr;
+	bool is_touchpad = wevent->source() == Qt::MouseEventSource::MouseEventSynthesizedBySystem;
+	float vertical_move_amount = VERTICAL_MOVE_AMOUNT;
+	float horizontal_move_amount = HORIZONTAL_MOVE_AMOUNT;
+
+	if (is_touchpad) {
+		vertical_move_amount *= TOUCHPAD_SENSITIVITY;
+		horizontal_move_amount *= TOUCHPAD_SENSITIVITY;
+	}
 
 	bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
 	bool is_shift_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
@@ -1649,12 +1672,12 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 		if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
 			if (wevent->angleDelta().y() > 0) {
 				OverviewState state = opengl_widget->get_overview_page().value();
-				state.offset_y -= 36.0f * VERTICAL_MOVE_AMOUNT;
+				state.offset_y -= 36.0f * vertical_move_amount;
 				opengl_widget->set_overview_page(state);
 			}
 			if (wevent->angleDelta().y() < 0) {
 				OverviewState state = opengl_widget->get_overview_page().value();
-				state.offset_y += 36.0f * VERTICAL_MOVE_AMOUNT;
+				state.offset_y += 36.0f * vertical_move_amount;
 				opengl_widget->set_overview_page(state);
 			}
 			validate_render();
@@ -1705,7 +1728,12 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	}
 
 	if (command) {
-		handle_command(command, abs(wevent->delta() / 120));
+		if (is_touchpad) {
+			handle_command(command, abs(wevent->delta() / 120 * TOUCHPAD_SENSITIVITY));
+		}
+		else {
+			handle_command(command, abs(wevent->delta() / 120));
+		}
 	}
 }
 
@@ -2685,6 +2713,21 @@ void MainWidget::execute_command(std::wstring command) {
 		}
 
 		run_command(command_name.toStdWString(), command_args.join(" ").toStdWString(), false);
+	}
+
+}
+void MainWidget::handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed) {
+	if (paper_name.size() > 5) {
+		char type;
+		if (is_shift_pressed) {
+			type = SHIFT_MIDDLE_CLICK_SEARCH_ENGINE[0];
+		}
+		else {
+			type = MIDDLE_CLICK_SEARCH_ENGINE[0];
+		}
+		if ((type >= 'a') && (type <= 'z')) {
+			search_custom_engine(paper_name, SEARCH_URLS[type - 'a']);
+		}
 	}
 
 }
