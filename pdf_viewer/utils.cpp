@@ -1397,7 +1397,7 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 	QStringList parts = path.split(sep);
 
 	if (path.size() > 0) {
-		if (path.back() == sep) {
+		if (path.at(path.size()-1) == sep) {
 			out_root = parts.join(sep);
 		}
 		else {
@@ -1406,7 +1406,7 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 				out_partial = parts.at(1);
 			}
 			else {
-				out_partial = parts.back();
+				out_partial = parts.at(parts.size()-1);
 				parts.pop_back();
 				out_root = parts.join(QDir::separator());
 			}
