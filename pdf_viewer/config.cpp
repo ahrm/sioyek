@@ -42,7 +42,10 @@ extern float DISPLAY_RESOLUTION_SCALE;
 extern float STATUS_BAR_COLOR[3];
 extern float STATUS_BAR_TEXT_COLOR[3];
 extern int STATUS_BAR_FONT_SIZE;
-
+extern int MAIN_WINDOW_SIZE[2];
+extern int HELPER_WINDOW_SIZE[2];
+extern int MAIN_WINDOW_MOVE[2];
+extern int HELPER_WINDOW_MOVE[2];
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
 	T* res = static_cast<T*>(res_);
@@ -76,19 +79,19 @@ void* string_deserializer(std::wstringstream& stream, void* res_) {
 	return res;
 }
 
-template<int N>
+template<int N, typename T>
 void vec_n_serializer(void* vec_n_pointer, std::wstringstream& stream) {
 	for (int i = 0; i < N; i++) {
-		stream << *(((float*)vec_n_pointer) + i);
+		stream << *(((T*)vec_n_pointer) + i);
 	}
 }
 
-template<int N>
+template<int N, typename T>
 void* vec_n_deserializer(std::wstringstream& stream, void* res_) {
 	assert(res_ != nullptr);
-	float* res = (float*)res_;
+	T* res = (T*)res_;
 	if (res == nullptr) {
-		res = new float[N];
+		res = new T[N];
 	}
 
 	for (int i = 0; i < N; i++) {
@@ -117,10 +120,12 @@ Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& user_paths) {
 
 	user_config_paths = user_paths;
-	auto vec3_serializer = vec_n_serializer<3>;
-	auto vec4_serializer = vec_n_serializer<4>;
-	auto vec3_deserializer = vec_n_deserializer<3>;
-	auto vec4_deserializer = vec_n_deserializer<4>;
+	auto ivec2_serializer = vec_n_serializer<2, int>;
+	auto ivec2_deserializer = vec_n_deserializer<2, int>;
+	auto vec3_serializer = vec_n_serializer<3, float>;
+	auto vec4_serializer = vec_n_serializer<4, float>;
+	auto vec3_deserializer = vec_n_deserializer<3, float>;
+	auto vec4_deserializer = vec_n_deserializer<4, float>;
 	auto float_deserializer = generic_deserializer<float>;
 	auto int_deserializer = generic_deserializer<int>;
 	auto bool_deserializer = generic_deserializer<bool>;
@@ -165,7 +170,11 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"display_resolution_scale", &DISPLAY_RESOLUTION_SCALE, float_serializer, float_deserializer });
 	configs.push_back({ L"status_bar_color", STATUS_BAR_COLOR, vec3_serializer, vec3_deserializer });
 	configs.push_back({ L"status_bar_text_color", STATUS_BAR_TEXT_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"status_bar_font_size", &STATUS_BAR_FONT_SIZE, int_serializer, int_deserializer });
+	configs.push_back({ L"main_window_size", &MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer });
+	configs.push_back({ L"helper_window_size", &HELPER_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer });
+	configs.push_back({ L"main_window_move", &MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer });
+	configs.push_back({ L"helper_window_move", &HELPER_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer });
+
 	//configs.push_back({ L"auto_embed_annotations", &AUTO_EMBED_ANNOTATIONS, bool_serializer, bool_deserializer });
 
 

@@ -74,9 +74,12 @@ extern std::wstring SEARCH_URLS[26];
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 extern float DISPLAY_RESOLUTION_SCALE;
-
 extern float STATUS_BAR_COLOR[3];
 extern float STATUS_BAR_TEXT_COLOR[3];
+extern int MAIN_WINDOW_SIZE[2];
+extern int HELPER_WINDOW_SIZE[2];
+extern int MAIN_WINDOW_MOVE[2];
+extern int HELPER_WINDOW_MOVE[2];
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -1732,19 +1735,26 @@ void MainWidget::toggle_two_window_mode() {
 		int window_width = QApplication::desktop()->screenGeometry(0).width();
 		int window_height = QApplication::desktop()->screenGeometry(0).height();
 
-		if (num_screens > 1) {
-
-			int second_window_width = QApplication::desktop()->screenGeometry(1).width();
-			int second_window_height = QApplication::desktop()->screenGeometry(1).height();
-
-			helper_window->resize(second_window_width, second_window_height);
-			helper_window->move(window_width, 0);
+		if ((HELPER_WINDOW_MOVE[0] != -1) && (HELPER_WINDOW_SIZE[0] != -1)) {
+			helper_window->resize(HELPER_WINDOW_SIZE[0], HELPER_WINDOW_SIZE[1]);
+			helper_window->move(HELPER_WINDOW_MOVE[0], HELPER_WINDOW_MOVE[1]);
 		}
 		else {
-			main_window->resize(window_width / 2, window_height);
-			helper_window->resize(window_width / 2, window_height);
-			main_window->move(0, 0);
-			helper_window->move(window_width/2, 0);
+			if (num_screens > 1) {
+
+				int second_window_width = QApplication::desktop()->screenGeometry(1).width();
+				int second_window_height = QApplication::desktop()->screenGeometry(1).height();
+
+				helper_window->resize(second_window_width, second_window_height);
+				helper_window->move(window_width, 0);
+			}
+			else {
+				main_window->resize(window_width / 2, window_height);
+				helper_window->resize(window_width / 2, window_height);
+				main_window->move(0, 0);
+				helper_window->move(window_width / 2, 0);
+			}
+
 		}
 		helper_window->show();
 
@@ -1794,6 +1804,34 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	if (command->name == "copy") {
 		copy_to_clipboard(selected_text);
+	}
+	if (command->name == "copy_window_size_config") {
+		QString config_string = "main_window_size    %1 %2\nmain_window_move     %3 %4\nhelper_window_size    %5 %6\nhelper_window_move     %7 %8";
+
+		QString main_window_size_w = QString::number(size().width());
+		QString main_window_size_h = QString::number(size().height());
+		QString helper_window_size_w = QString::number(-1);
+		QString helper_window_size_h = QString::number(-1);
+		QString main_window_move_x = QString::number(pos().x());
+		QString main_window_move_y = QString::number(pos().y());
+		QString helper_window_move_x = QString::number(-1);
+		QString helper_window_move_y = QString::number(-1);
+
+		if (helper_opengl_widget->isVisible()) {
+			helper_window_size_w = QString::number(helper_opengl_widget->size().width());
+			helper_window_size_h = QString::number(helper_opengl_widget->size().height());
+			helper_window_move_x = QString::number(helper_opengl_widget->pos().x());
+			helper_window_move_y = QString::number(helper_opengl_widget->pos().y());
+		}
+
+		copy_to_clipboard(config_string.arg(main_window_size_w,
+			main_window_size_h,
+			main_window_move_x,
+			main_window_move_y,
+			helper_window_size_w,
+			helper_window_size_h,
+			helper_window_move_x,
+			helper_window_move_y).toStdWString());
 	}
 
 	if (command->name == "highlight_links") {
