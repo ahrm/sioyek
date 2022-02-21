@@ -52,6 +52,7 @@ struct OpenGLSharedResources {
 	GLuint highlight_program;
 	GLuint vertical_line_program;
 	GLuint vertical_line_dark_program;
+	GLuint separator_program;
 
 	GLint dark_mode_contrast_uniform_location;
 	GLint highlight_color_uniform_location;
@@ -60,6 +61,8 @@ struct OpenGLSharedResources {
 
 	GLint custom_color_background_uniform_location;
 	GLint custom_color_text_uniform_location;
+
+	GLint separator_background_color_uniform_location;
 
 	bool is_initialized;
 };

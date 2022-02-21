@@ -13,6 +13,8 @@ extern bool SHOULD_DRAW_UNRENDERED_PAGES;
 extern float CUSTOM_BACKGROUND_COLOR[3];
 extern float CUSTOM_TEXT_COLOR[3];
 extern bool RERENDER_OVERVIEW;
+extern float PAGE_SEPARATOR_WIDTH;
+extern float PAGE_SEPARATOR_COLOR[3];
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -158,6 +160,7 @@ void PdfViewOpenGLWidget::initializeGL() {
 		shared_gl_objects.vertical_line_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path .slash(L"vertical_bar.fragment"));
 		shared_gl_objects.vertical_line_dark_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path .slash(L"vertical_bar_dark.fragment"));
 		shared_gl_objects.custom_color_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"custom_colors.fragment"));
+		shared_gl_objects.separator_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"separator.fragment"));
 
 		shared_gl_objects.dark_mode_contrast_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_dark_program, "contrast");
 
@@ -168,6 +171,8 @@ void PdfViewOpenGLWidget::initializeGL() {
 
 		shared_gl_objects.custom_color_background_uniform_location = glGetUniformLocation(shared_gl_objects.custom_color_program, "background_color");
 		shared_gl_objects.custom_color_text_uniform_location = glGetUniformLocation(shared_gl_objects.custom_color_program, "text_color");
+
+		shared_gl_objects.separator_background_color_uniform_location = glGetUniformLocation(shared_gl_objects.separator_program, "background_color");
 
 		glGenBuffers(1, &shared_gl_objects.vertex_buffer_object);
 		glGenBuffers(1, &shared_gl_objects.uv_buffer_object);
@@ -544,6 +549,25 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	// render page separator
+	glUseProgram(shared_gl_objects.separator_program);
+
+	fz_rect separator_rect = { 0,
+		document_view->get_document()->get_page_height(page_number) - PAGE_SEPARATOR_WIDTH / 2,
+		document_view->get_document()->get_page_width(page_number),
+		document_view->get_document()->get_page_height(page_number) + PAGE_SEPARATOR_WIDTH / 2};
+
+	fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
+	rect_to_quad(separator_window_rect, page_vertices);
+
+	float backcolor[] = { 0.0f, 0.0f, 0.0f };
+	glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
+
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
 }
 
 void PdfViewOpenGLWidget::render(QPainter* painter) {
