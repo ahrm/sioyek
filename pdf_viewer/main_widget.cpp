@@ -1140,10 +1140,11 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 			return;
 		}
 		int num_repeats = 0;
+		bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier) || (kevent->modifiers() & Qt::MetaModifier);
 		const Command* command = input_handler->handle_key(
 			kevent->key(),
 			kevent->modifiers() & Qt::ShiftModifier,
-			kevent->modifiers() & Qt::ControlModifier,
+			is_control_pressed,
 			kevent->modifiers() & Qt::AltModifier,
 			&num_repeats);
 
@@ -1655,14 +1656,15 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	int num_repeats = 1;
 
 	const Command* command = nullptr;
-	bool is_touchpad = wevent->source() == Qt::MouseEventSource::MouseEventSynthesizedBySystem;
-	float vertical_move_amount = VERTICAL_MOVE_AMOUNT;
-	float horizontal_move_amount = HORIZONTAL_MOVE_AMOUNT;
+	//bool is_touchpad = wevent->source() == Qt::MouseEventSource::MouseEventSynthesizedBySystem;
+	//bool is_touchpad = true;
+	float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
+	float horizontal_move_amount = HORIZONTAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
 
-	if (is_touchpad) {
-		vertical_move_amount *= TOUCHPAD_SENSITIVITY;
-		horizontal_move_amount *= TOUCHPAD_SENSITIVITY;
-	}
+	//if (is_touchpad) {
+	//	vertical_move_amount *= TOUCHPAD_SENSITIVITY;
+	//	horizontal_move_amount *= TOUCHPAD_SENSITIVITY;
+	//}
 
 	bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier) ||
 		QApplication::queryKeyboardModifiers().testFlag(Qt::MetaModifier);
@@ -1693,25 +1695,33 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 		else {
 
 			if (wevent->angleDelta().y() > 0) {
-				command = command_manager.get_command_with_name("move_up");
 
 				if (is_visual_mark_mode) {
 					command = command_manager.get_command_with_name("move_visual_mark_up");
 				}
+				else {
+					move_vertical(-72.0f * vertical_move_amount);
+					return;
+				}
 			}
 			if (wevent->angleDelta().y() < 0) {
-				command = command_manager.get_command_with_name("move_down");
 
 				if (is_visual_mark_mode) {
 					command = command_manager.get_command_with_name("move_visual_mark_down");
 				}
+				else {
+					move_vertical(72.0f * vertical_move_amount);
+					return;
+				}
 			}
 
 			if (wevent->angleDelta().x() > 0) {
-				command = input_handler->handle_key(Qt::Key::Key_Left, false, false, false, &num_repeats);
+				move_horizontal(-72.0f * horizontal_move_amount);
+				return;
 			}
 			if (wevent->angleDelta().x() < 0) {
-				command = input_handler->handle_key(Qt::Key::Key_Right, false, false, false, &num_repeats);
+				move_horizontal(72.0f * horizontal_move_amount);
+				return;
 			}
 		}
 	}
@@ -1736,12 +1746,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	}
 
 	if (command) {
-		if (is_touchpad) {
-			handle_command(command, abs(wevent->delta() / 120 * TOUCHPAD_SENSITIVITY));
-		}
-		else {
-			handle_command(command, abs(wevent->delta() / 120));
-		}
+		handle_command(command, abs(wevent->delta() / 120));
 	}
 }
 
@@ -2741,4 +2746,15 @@ void MainWidget::handle_paper_name_on_pointer(std::wstring paper_name, bool is_s
 		}
 	}
 
+}
+void MainWidget::move_vertical(float amount) {
+	move_document(0, amount);
+	validate_render();
+
+}
+void MainWidget::move_horizontal(float amount){
+	if (!horizontal_scroll_locked) {
+		move_document(amount, 0);
+		validate_render();
+	}
 }
