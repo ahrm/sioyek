@@ -309,24 +309,24 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	const std::vector<Path>& user_paths) {
 
-	std::ifstream default_infile(default_path.get_path_utf8());
+	std::wifstream default_infile(default_path.get_path_utf8());
 
 
 	std::vector<std::string> command_names;
 	std::vector<std::string> command_keys;
 
 	while (default_infile.good()) {
-		std::string line;
+		std::wstring line;
 		std::getline(default_infile, line);
 		if (line.size() == 0 || line[0] == '#') {
 			continue;
 		}
-		std::stringstream ss(line);
-		std::string command_name;
-		std::string command_key;
+		std::wstringstream ss(line);
+		std::wstring command_name;
+		std::wstring command_key;
 		ss >> command_name >> command_key;
-		command_names.push_back(command_name);
-		command_keys.push_back(command_key);
+		command_names.push_back(utf8_encode(command_name));
+		command_keys.push_back(utf8_encode(command_key));
 	}
 
 	default_infile.close();
@@ -335,19 +335,19 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	for (int i = 0; i < user_paths.size(); i++) {
 
 		if (user_paths[i].file_exists()) {
-			std::ifstream user_infile(user_paths[i].get_path_utf8());
+			std::wifstream user_infile(user_paths[i].get_path_utf8());
 			while (user_infile.good()) {
-				std::string line;
+				std::wstring line;
 				std::getline(user_infile, line);
 				if (line.size() == 0 || line[0] == '#') {
 					continue;
 				}
-				std::stringstream ss(line);
-				std::string command_name;
-				std::string command_key;
+				std::wstringstream ss(line);
+				std::wstring command_name;
+				std::wstring command_key;
 				ss >> command_name >> command_key;
-				command_names.push_back(command_name);
-				command_keys.push_back(command_key);
+				command_names.push_back(utf8_encode(command_name));
+				command_keys.push_back(utf8_encode(command_key));
 			}
 			user_infile.close();
 		}

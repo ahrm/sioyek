@@ -40,10 +40,11 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 
 	// Read the Vertex Shader code from the file
-	std::string VertexShaderCode;
-	std::ifstream VertexShaderStream(vertex_file_path.get_path_utf8(), std::ios::in);
+	std::wstring VertexShaderCode;
+	std::string vertex_shader_code_utf8;
+	std::wifstream VertexShaderStream(vertex_file_path.get_path_utf8(), std::ios::in);
 	if (VertexShaderStream.is_open()) {
-		std::stringstream sstr;
+		std::wstringstream sstr;
 		sstr << VertexShaderStream.rdbuf();
 		VertexShaderCode = sstr.str();
 		VertexShaderStream.close();
@@ -54,10 +55,11 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 	}
 
 	// Read the Fragment Shader code from the file
-	std::string FragmentShaderCode;
-	std::ifstream FragmentShaderStream(fragment_file_path.get_path_utf8(), std::ios::in);
+	std::wstring FragmentShaderCode;
+	std::string fragment_shader_code_utf8;
+	std::wifstream FragmentShaderStream(fragment_file_path.get_path_utf8(), std::ios::in);
 	if (FragmentShaderStream.is_open()) {
-		std::stringstream sstr;
+		std::wstringstream sstr;
 		sstr << FragmentShaderStream.rdbuf();
 		FragmentShaderCode = sstr.str();
 		FragmentShaderStream.close();
@@ -72,7 +74,8 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 
 	// Compile Vertex Shader
 	printf("Compiling shader : %s\n", vertex_file_path.get_path_utf8().c_str());
-	char const* VertexSourcePointer = VertexShaderCode.c_str();
+	vertex_shader_code_utf8 = utf8_encode(VertexShaderCode);
+	char const* VertexSourcePointer = vertex_shader_code_utf8.c_str();
 	glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
 	glCompileShader(VertexShaderID);
 
@@ -87,7 +90,8 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 
 	// Compile Fragment Shader
 	printf("Compiling shader : %s\n", fragment_file_path.get_path_utf8().c_str());
-	char const* FragmentSourcePointer = FragmentShaderCode.c_str();
+	fragment_shader_code_utf8 = utf8_encode(FragmentShaderCode);
+	char const* FragmentSourcePointer = fragment_shader_code_utf8.c_str();
 	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
 	glCompileShader(FragmentShaderID);
 
