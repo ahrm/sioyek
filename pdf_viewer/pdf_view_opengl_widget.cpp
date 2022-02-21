@@ -42,7 +42,8 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 	// Read the Vertex Shader code from the file
 	std::wstring VertexShaderCode;
 	std::string vertex_shader_code_utf8;
-	std::wifstream VertexShaderStream(vertex_file_path.get_path_utf8(), std::ios::in);
+	std::wstring vertex_file_path_wstring = vertex_file_path.get_path();
+	std::wifstream VertexShaderStream(vertex_file_path_wstring.c_str(), std::ios::in);
 	if (VertexShaderStream.is_open()) {
 		std::wstringstream sstr;
 		sstr << VertexShaderStream.rdbuf();
@@ -57,7 +58,8 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 	// Read the Fragment Shader code from the file
 	std::wstring FragmentShaderCode;
 	std::string fragment_shader_code_utf8;
-	std::wifstream FragmentShaderStream(fragment_file_path.get_path_utf8(), std::ios::in);
+	std::wstring fragment_file_path_wstring = fragment_file_path.get_path();
+	std::wifstream FragmentShaderStream(fragment_file_path_wstring.c_str(), std::ios::in);
 	if (FragmentShaderStream.is_open()) {
 		std::wstringstream sstr;
 		sstr << FragmentShaderStream.rdbuf();

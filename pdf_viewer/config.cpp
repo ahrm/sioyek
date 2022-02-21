@@ -212,7 +212,8 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 void ConfigManager::deserialize_file(const Path& file_path) {
 
 	std::wstring line;
-	std::wifstream default_file(file_path.get_path());
+	std::wstring file_path_wstring = file_path.get_path();
+	std::wifstream default_file(file_path_wstring.c_str());
 	while (std::getline(default_file, line)) {
 
 		if (line.size() == 0 || line[0] == '#') {
