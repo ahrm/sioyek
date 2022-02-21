@@ -872,7 +872,8 @@ void PdfViewOpenGLWidget::wheelEvent(QWheelEvent* wevent) {
 	LOG("PdfViewOpenGLWidget::wheelEvent");
 	if (is_helper && (document_view != nullptr)) {
 
-		bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
+		bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)
+			|| QApplication::queryKeyboardModifiers().testFlag(Qt::MetaModifier);
 
 		if (is_control_pressed) {
 			if (wevent->angleDelta().y() > 0) {

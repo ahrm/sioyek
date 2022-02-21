@@ -1664,7 +1664,9 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 		horizontal_move_amount *= TOUCHPAD_SENSITIVITY;
 	}
 
-	bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
+	bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier) ||
+		QApplication::queryKeyboardModifiers().testFlag(Qt::MetaModifier);
+
 	bool is_shift_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
 	bool is_visual_mark_mode = opengl_widget->get_should_draw_vertical_line() && visual_scroll_mode;
 
