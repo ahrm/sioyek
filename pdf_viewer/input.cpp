@@ -309,8 +309,8 @@ InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std:
 InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	const std::vector<Path>& user_paths) {
 
-	std::wstring default_path_wstring = default_path.get_path();
-	std::wifstream default_infile(default_path_wstring.c_str());
+	//std::wstring default_path_wstring = default_path.get_path();
+	std::wifstream default_infile = open_wifstream(default_path.get_path());
 
 
 	std::vector<std::string> command_names;
@@ -336,8 +336,7 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	for (int i = 0; i < user_paths.size(); i++) {
 
 		if (user_paths[i].file_exists()) {
-			std::wstring user_path_wstring = user_paths[i].get_path();
-			std::wifstream user_infile(user_path_wstring.c_str());
+			std::wifstream user_infile = open_wifstream(user_paths[i].get_path());
 			while (user_infile.good()) {
 				std::wstring line;
 				std::getline(user_infile, line);
