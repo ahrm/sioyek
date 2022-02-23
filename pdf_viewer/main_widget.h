@@ -115,6 +115,7 @@ private:
 	QTime last_text_select_time = QTime::currentTime();
 
 	bool main_document_view_has_document();
+	std::optional<std::string> get_last_opened_file_checksum();
 
 protected:
 

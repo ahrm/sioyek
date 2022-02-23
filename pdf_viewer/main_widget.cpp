@@ -2047,6 +2047,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			show_error_message(L"This document doesn't have a table of contents");
 		}
 	}
+	else if (command->name == "open_last_document") {
+
+		auto last_opened_file = get_last_opened_file_checksum();
+		if (last_opened_file) {
+			open_document_with_hash(last_opened_file.value());
+		}
+	}
 	else if (command->name == "open_prev_doc") {
 		//std::vector<std::pair<std::wstring, std::wstring>> opened_docs_hash_path_pairs;
 		std::vector<std::wstring> opened_docs_names;
@@ -2757,4 +2764,27 @@ void MainWidget::move_horizontal(float amount){
 		move_document(amount, 0);
 		validate_render();
 	}
+}
+
+std::optional<std::string> MainWidget::get_last_opened_file_checksum() {
+
+	std::vector<std::wstring> opened_docs_hashes;
+	std::wstring current_checksum = L"";
+	if (main_document_view_has_document()) {
+		current_checksum = utf8_decode(main_document_view->get_document()->get_checksum());
+	}
+
+	db_manager->select_opened_books_path_values(opened_docs_hashes);
+
+	int index = 0;
+	while (index < opened_docs_hashes.size()) {
+		if (opened_docs_hashes[index] == current_checksum) {
+			index++;
+		}
+		else {
+			return utf8_encode(opened_docs_hashes[index]);
+		}
+	}
+
+	return {};
 }

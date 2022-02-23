@@ -94,6 +94,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "copy_window_size_config", false, false, false, false});
 	commands.push_back({ "toggle_select_highlight", false, false, false, false});
 	commands.push_back({ "set_select_highlight_type", false, true, false, false});
+	commands.push_back({ "open_last_document", false, false, false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {
