@@ -163,6 +163,8 @@ extern int HELPER_WINDOW_SIZE[2] = { -1, -1 };
 extern int MAIN_WINDOW_MOVE[2] = { -1, -1 };
 extern int HELPER_WINDOW_MOVE[2] = { -1, -1 };
 extern float TOUCHPAD_SENSITIVITY = 1.0f;
+extern int SINGLE_MAIN_WINDOW_SIZE[2] = { -1, -1 };
+extern int SINGLE_MAIN_WINDOW_MOVE[2] = { -1, -1 };
 
 extern float PAGE_SEPARATOR_WIDTH = 0.0f;
 extern float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
@@ -487,33 +489,8 @@ int main(int argc, char* args[]) {
 		}
 	}
 
-	int window_width = QApplication::desktop()->screenGeometry().width();
-	int window_height = QApplication::desktop()->screenGeometry().height();
-
-	bool should_maximize = false;
-
-	if ((MAIN_WINDOW_SIZE[0] == -1) || (MAIN_WINDOW_SIZE[0] == window_width)) {
-		should_maximize = true;
-	}
-
-	if (MAIN_WINDOW_SIZE[0] != -1) {
-		window_width = MAIN_WINDOW_SIZE[0];
-	}
-	if (MAIN_WINDOW_SIZE[1] != -1) {
-		window_height = MAIN_WINDOW_SIZE[1];
-	}
-
-	main_widget.resize(window_width, window_height);
-
-	if (should_maximize) {
-		main_widget.showMaximized();
-	}
-	else {
-		main_widget.show();
-		if (MAIN_WINDOW_MOVE[0] != -1) {
-			main_widget.move(MAIN_WINDOW_MOVE[0], MAIN_WINDOW_MOVE[1]);
-		}
-	}
+	//main_widget.apply_window_params_for_one_window_mode();
+	main_widget.show();
 
 	main_widget.handle_args(app.arguments());
 

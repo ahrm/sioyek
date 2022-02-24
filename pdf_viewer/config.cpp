@@ -49,6 +49,8 @@ extern int HELPER_WINDOW_MOVE[2];
 extern float TOUCHPAD_SENSITIVITY;
 extern float PAGE_SEPARATOR_WIDTH;
 extern float PAGE_SEPARATOR_COLOR[3];
+extern int SINGLE_MAIN_WINDOW_SIZE[2];
+extern int SINGLE_MAIN_WINDOW_MOVE[2];
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -181,6 +183,8 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"touchpad_sensitivity", &TOUCHPAD_SENSITIVITY, float_serializer, float_deserializer });
 	configs.push_back({ L"page_separator_width", &PAGE_SEPARATOR_WIDTH, float_serializer, float_deserializer });
 	configs.push_back({ L"page_separator_color", PAGE_SEPARATOR_COLOR, vec3_serializer, vec3_deserializer });
+	configs.push_back({ L"single_main_window_size", &SINGLE_MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer });
+	configs.push_back({ L"single_main_window_move", &SINGLE_MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer });
 
 
 	//configs.push_back({ L"auto_embed_annotations", &AUTO_EMBED_ANNOTATIONS, bool_serializer, bool_deserializer });
