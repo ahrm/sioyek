@@ -146,6 +146,8 @@ public:
 		if (obj == line_edit) {
 			if (event->type() == QEvent::KeyPress) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+				bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
+
 				if (key_event->key() == Qt::Key_Down ||
 					key_event->key() == Qt::Key_Up ||
 					key_event->key() == Qt::Key_Left ||
@@ -158,6 +160,16 @@ public:
 				}
 				if (key_event->key() == Qt::Key_Tab) {
 					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
+					QCoreApplication::postEvent(get_view(), new_key_event);
+					return true;
+				}
+				if ((key_event->key() == Qt::Key_N) && is_control_pressed) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
+					QCoreApplication::postEvent(get_view(), new_key_event);
+					return true;
+				}
+				if ((key_event->key() == Qt::Key_P) && is_control_pressed) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
 					QCoreApplication::postEvent(get_view(), new_key_event);
 					return true;
 				}
