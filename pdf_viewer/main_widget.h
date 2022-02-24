@@ -117,6 +117,8 @@ private:
 	bool main_document_view_has_document();
 	std::optional<std::string> get_last_opened_file_checksum();
 
+	void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions=false);
+
 protected:
 
 	void handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed);

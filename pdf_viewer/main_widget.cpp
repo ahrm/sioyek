@@ -1003,7 +1003,14 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
 	bool has_document = main_document_view_has_document();
 
 	if (has_document) {
-		setWindowTitle(QString::fromStdWString(path.get_path()));
+		//setWindowTitle(QString::fromStdWString(path.get_path()));
+		if (path.filename().has_value()) {
+			setWindowTitle(QString::fromStdWString(path.filename().value()));
+		}
+		else {
+			setWindowTitle(QString::fromStdWString(path.get_path()));
+		}
+
 		push_state();
 	}
 
@@ -1043,11 +1050,11 @@ void MainWidget::open_document_at_location(const Path& path_,
 	}
 	std::wstring path = path_.get_path();
 
-	main_document_view->open_document(path, &this->is_render_invalidated, true, {}, true);
+	open_document(path, &this->is_render_invalidated, true, {}, true);
 	bool has_document = main_document_view_has_document();
 
 	if (has_document) {
-		setWindowTitle(QString::fromStdWString(path));
+		//setWindowTitle(QString::fromStdWString(path));
 		push_state();
 	}
 
@@ -1440,8 +1447,8 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
 	LOG("MainWidget::set_main_document_view_state");
 
 	if (main_document_view->get_document()->get_path() != new_view_state.document_path) {
-		main_document_view->open_document(new_view_state.document_path, &this->is_ui_invalidated);
-		setWindowTitle(QString::fromStdWString(new_view_state.document_path));
+		open_document(new_view_state.document_path, &this->is_ui_invalidated);
+		//setWindowTitle(QString::fromStdWString(new_view_state.document_path));
 	}
 
 	main_document_view->on_view_size_change(main_window_width, main_window_height);
@@ -2942,4 +2949,17 @@ QRect MainWidget::get_helper_window_rect() {
 	QPoint helper_window_pos = helper_opengl_widget->pos();
 	QSize helper_window_size = helper_opengl_widget->size();
 	return QRect(helper_window_pos, helper_window_size);
+}
+
+void MainWidget::open_document(const std::wstring& doc_path,
+	bool* invalid_flag,
+	bool load_prev_state,
+	std::optional<OpenedBookState> prev_state,
+	bool force_load_dimensions) {
+	main_document_view->open_document(doc_path, invalid_flag, load_prev_state, prev_state, force_load_dimensions);
+
+	std::optional<std::wstring> filename = Path(doc_path).filename();
+	if (filename) {
+		setWindowTitle(QString::fromStdWString(filename.value()));
+	}
 }
