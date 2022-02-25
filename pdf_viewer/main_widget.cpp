@@ -106,6 +106,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 		int status_bar_height = get_status_bar_height();
 		status_label->move(0, main_window_height - status_bar_height);
 		status_label->resize(main_window_width, status_bar_height);
+		status_label->show();
 	}
 
 	if ((main_document_view->get_document() != nullptr) && (main_document_view->get_zoom_level() == 0)) {
