@@ -86,6 +86,10 @@ protected:
 			tree_view->setHeaderHidden(true);
 			tree_view->resizeColumnToContents(0);
 		}
+		QSortFilterProxyModel* sort_filter_proxy_model = dynamic_cast<QSortFilterProxyModel*>(proxy_model);
+		if (proxy_model) {
+			proxy_model->setRecursiveFilteringEnabled(true);
+		}
 
 		layout->addWidget(line_edit);
 		layout->addWidget(abstract_item_view);
