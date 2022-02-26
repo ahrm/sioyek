@@ -489,7 +489,7 @@ int main(int argc, char* args[]) {
 		}
 	}
 
-	//main_widget.apply_window_params_for_one_window_mode();
+	main_widget.apply_window_params_for_one_window_mode();
 	main_widget.show();
 
 	main_widget.handle_args(app.arguments());
