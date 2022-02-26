@@ -32,6 +32,9 @@
 #include <qfilesystemmodel.h>
 #include <qheaderview.h>
 
+#define FTS_FUZZY_MATCH_IMPLEMENTATION
+#include "fts_fuzzy_match.h"
+#undef FTS_FUZZY_MATCH_IMPLEMENTATION
 
 #include "utils.h"
 #include "config.h"
@@ -422,11 +425,31 @@ public:
 	}
 
 	virtual bool on_text_change(const QString& text) {
+
 		std::vector<std::string> matching_element_names;
+		std::vector<int> scores;
+		std::string search_text_string = text.toStdString();
+		std::vector<std::pair<std::string, int>> match_score_pairs;
+
+		for (int i = 0; i < string_elements.size(); i++) {
+			std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
+			int score = 0;
+			fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
+			match_score_pairs.push_back(std::make_pair(encoded, score));
+		}
+		std::sort(match_score_pairs.begin(), match_score_pairs.end(), [](std::pair<std::string, int> lhs, std::pair<std::string, int> rhs) {
+			return lhs.second > rhs.second;
+			});
 
 		for (int i = 0; i < string_elements.size(); i++) {
 			if (string_elements.at(i).startsWith(text)) {
 				matching_element_names.push_back(string_elements.at(i).toStdString());
+			}
+		}
+
+		if (matching_element_names.size() == 0) {
+			for (auto [command, _] : match_score_pairs) {
+				matching_element_names.push_back(command);
 			}
 		}
 
