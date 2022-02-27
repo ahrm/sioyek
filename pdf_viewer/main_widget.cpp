@@ -303,6 +303,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 	helper_document_view = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
 	helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager, true);
 
+	status_label = new QLabel(this);
+	status_label->setStyleSheet(get_status_stylesheet());
+	status_label->setFont(QFont("Monaco"));
+
 	// automatically open the helper window in second monitor
 	int num_screens = QApplication::desktop()->numScreens();
 	if ((num_screens > 1) && SHOULD_USE_MULTIPLE_MONITORS) {
@@ -317,12 +321,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 	helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
 		this->update_closest_link_with_opened_book_state(state);
 		});
-
-	status_label = new QLabel(this);
-
-	status_label->setStyleSheet(get_status_stylesheet());
-	status_label->setFont(QFont("Monaco"));
-
 
 	text_command_line_edit_container = new QWidget(this);
 	text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
