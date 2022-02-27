@@ -2354,9 +2354,11 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 	else if (command->name == "toggle_dark_mode") {
 		this->opengl_widget->toggle_dark_mode();
+		helper_opengl_widget->toggle_dark_mode();
 	}
 	else if (command->name == "toggle_custom_color") {
 		this->opengl_widget->toggle_custom_color_mode();
+		helper_opengl_widget->toggle_custom_color_mode();
 	}
 	else if (command->name == "quit" || command->name == "q") {
 		persist();
