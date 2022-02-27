@@ -224,6 +224,7 @@ public:
 	void get_window_params_for_two_window_mode(int* main_window_size, int* main_window_move, int* helper_window_size, int* helper_window_move);
 	void apply_window_params_for_one_window_mode();
 	void apply_window_params_for_two_window_mode();
+	bool helper_window_overlaps_main_window();
 	//void get_desired_window_size_and_location(int* main_window_width,
 	//	int* main_window_height,
 	//	int* main_window_pos_x,
