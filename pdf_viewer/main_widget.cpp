@@ -2834,7 +2834,7 @@ std::optional<std::string> MainWidget::get_last_opened_file_checksum() {
 	return {};
 }
 void MainWidget::get_window_params_for_one_window_mode(int* main_window_size, int* main_window_move){
-	if (SINGLE_MAIN_WINDOW_MOVE[0] >= 0) {
+	if (SINGLE_MAIN_WINDOW_SIZE[0] >= 0) {
 		main_window_size[0] = SINGLE_MAIN_WINDOW_SIZE[0];
 		main_window_size[1] = SINGLE_MAIN_WINDOW_SIZE[1];
 		main_window_move[0] = SINGLE_MAIN_WINDOW_MOVE[0];
@@ -2850,7 +2850,7 @@ void MainWidget::get_window_params_for_one_window_mode(int* main_window_size, in
 	}
 }
 void MainWidget::get_window_params_for_two_window_mode(int* main_window_size, int* main_window_move, int* helper_window_size, int* helper_window_move) {
-	if (MAIN_WINDOW_MOVE[0] >= 0) {
+	if (MAIN_WINDOW_SIZE[0] >= 0) {
 		main_window_size[0] = MAIN_WINDOW_SIZE[0];
 		main_window_size[1] = MAIN_WINDOW_SIZE[1];
 		main_window_move[0] = MAIN_WINDOW_MOVE[0];
