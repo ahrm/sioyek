@@ -49,4 +49,5 @@ public:
 		return (T*)raw_pointer;
 	}
 	std::optional<Path> get_or_create_user_config_file();
+	std::vector<Path> get_all_user_config_files();
 };

@@ -96,6 +96,8 @@ CommandManager::CommandManager() {
 	commands.push_back({ "set_select_highlight_type", false, true, false, false});
 	commands.push_back({ "open_last_document", false, false, false, false});
 	commands.push_back({ "toggle_window_configuration", false, false, false, false});
+	commands.push_back({ "prefs_user_all", false, false, false, false});
+	commands.push_back({ "keys_user_all", false, false, false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {
@@ -542,3 +544,15 @@ std::string InputHandler::get_key_string_from_tree_node_sequence(const std::vect
 	}
 	return res;
 }
+std::vector<Path> InputHandler::get_all_user_keys_paths() {
+	std::vector<Path> res;
+
+	for (int i = user_key_paths.size() - 1; i >= 0; i--) {
+		if (user_key_paths[i].file_exists()) {
+			res.push_back(user_key_paths[i]);
+		}
+	}
+
+	return res;
+}
+

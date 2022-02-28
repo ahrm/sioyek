@@ -2396,6 +2396,44 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			open_file(pref_file_path.value().get_path());
 		}
 	}
+	else if (command->name == "prefs_user_all") {
+
+		std::vector<Path> prefs_paths = config_manager->get_all_user_config_files();
+		std::vector<std::wstring> prefs_paths_wstring;
+		for (auto path : prefs_paths) {
+			prefs_paths_wstring.push_back(path.get_path());
+		}
+
+		set_current_widget(new FilteredSelectWindowClass<std::wstring>(
+			prefs_paths_wstring,
+			prefs_paths_wstring,
+			[&](std::wstring* path) {
+				if (path) {
+					open_file(*path);
+				}
+			},
+				this));
+		current_widget->show();
+	}
+	else if (command->name == "keys_user_all") {
+
+		std::vector<Path> keys_paths = input_handler->get_all_user_keys_paths();
+		std::vector<std::wstring> keys_paths_wstring;
+		for (auto path : keys_paths) {
+			keys_paths_wstring.push_back(path.get_path());
+		}
+
+		set_current_widget(new FilteredSelectWindowClass<std::wstring>(
+			keys_paths_wstring,
+			keys_paths_wstring,
+			[&](std::wstring* path) {
+				if (path) {
+					open_file(*path);
+				}
+			},
+				this));
+		current_widget->show();
+	}
 	else if (command->name == "embed_annotations") {
 		std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
 		if (embedded_pdf_file_name.size() > 0) {

@@ -75,6 +75,7 @@ public:
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
 	std::optional<Path> get_or_create_user_keys_path();
+	std::vector<Path> get_all_user_keys_paths();
 	std::unordered_map<std::string, std::vector<std::string>> get_command_key_mappings() const;
 
 };

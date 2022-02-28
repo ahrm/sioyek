@@ -262,3 +262,13 @@ std::optional<Path> ConfigManager::get_or_create_user_config_file() {
 	create_file_if_not_exists(user_config_paths.back().get_path());
 	return user_config_paths.back();
 }
+
+std::vector<Path> ConfigManager::get_all_user_config_files(){
+	std::vector<Path> res;
+	for (int i = user_config_paths.size() - 1; i >= 0; i--) {
+		if (user_config_paths[i].file_exists()) {
+			res.push_back(user_config_paths[i]);
+		}
+	}
+	return  res;
+}
