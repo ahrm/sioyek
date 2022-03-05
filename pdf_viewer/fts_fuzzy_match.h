@@ -183,8 +183,10 @@ namespace fts {
                     // Camel case
                     char neighbor = strBegin[currIdx - 1];
                     char curr = strBegin[currIdx];
-                    if (::islower(neighbor) && ::isupper(curr))
-                        outScore += camel_bonus;
+                    if ((neighbor > 0) && (curr > 0)) {
+						if (::islower(neighbor) && ::isupper(curr))
+							outScore += camel_bonus;
+                    }
 
                     // Separator
                     bool neighborSeparator = neighbor == '_' || neighbor == ' ';

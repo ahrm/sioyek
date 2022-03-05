@@ -510,7 +510,8 @@ public:
 			}
 		}
 
-		QStringListModel* new_list_model = new QStringListModel(get_dir_contents(root_path, partial_name));
+		QStringList match_list = get_dir_contents(root_path, partial_name);
+		QStringListModel* new_list_model = new QStringListModel(match_list);
 		dynamic_cast<QListView*>(get_view())->setModel(new_list_model);
 		delete list_model;
 		list_model = new_list_model;
@@ -518,9 +519,31 @@ public:
 	}
 
 	QStringList get_dir_contents(QString root, QString prefix) {
+
 		root = expand_home_dir(root);
 		QDir directory(root);
-		return directory.entryList({ prefix + "*" });
+		QStringList res = directory.entryList({ prefix + "*" });
+		if (res.size() == 0) {
+			std::string encoded_prefix = utf8_encode(prefix.toStdWString());
+			QStringList all_directory_files = directory.entryList();
+			std::vector<std::pair<QString, int>> file_scores;
+
+			for (auto file : all_directory_files) {
+				std::string encoded_file = utf8_encode(file.toStdWString());
+				int score = 0; 
+				fts::fuzzy_match(encoded_prefix.c_str(), encoded_file.c_str(), score);
+				file_scores.push_back(std::make_pair(file, score));
+			}
+			std::sort(file_scores.begin(), file_scores.end(), [](std::pair<QString, int> lhs, std::pair<QString, int> rhs) {
+				return lhs.second > rhs.second;
+				});
+			for (auto [file, score] : file_scores) {
+				if (score > 0) {
+					res.push_back(file);
+				}
+			}
+		}
+		return res;
 	}
 
 	void on_select(const QModelIndex& index) {
