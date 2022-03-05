@@ -98,6 +98,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "toggle_window_configuration", false, false, false, false});
 	commands.push_back({ "prefs_user_all", false, false, false, false});
 	commands.push_back({ "keys_user_all", false, false, false, false});
+	commands.push_back({ "fit_to_page_width_ratio", false, false, false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {

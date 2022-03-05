@@ -158,6 +158,7 @@ extern std::wstring ITEM_LIST_PREFIX = L">";
 extern std::wstring STARTUP_COMMANDS = L"";
 extern float SMALL_PIXMAP_SCALE = 0.75f;
 extern float DISPLAY_RESOLUTION_SCALE = -1;
+extern float FIT_TO_PAGE_WIDTH_RATIO = 1;
 extern int MAIN_WINDOW_SIZE[2] = { -1, -1 };
 extern int HELPER_WINDOW_SIZE[2] = { -1, -1 };
 extern int MAIN_WINDOW_MOVE[2] = { -1, -1 };

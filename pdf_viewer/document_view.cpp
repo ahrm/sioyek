@@ -1,6 +1,7 @@
 #include "document_view.h"
 
 extern float MOVE_SCREEN_PERCENTAGE;
+extern float FIT_TO_PAGE_WIDTH_RATIO;
 
 DocumentView::DocumentView( fz_context* mupdf_context,
 	DatabaseManager* db_manager,
@@ -639,7 +640,7 @@ void DocumentView::goto_page(int page) {
 //	set_offset_y(get_page_offset(page) + view_height_in_document_space()/2);
 //}
 
-void DocumentView::fit_to_page_width(bool smart) {
+void DocumentView::fit_to_page_width(bool smart, bool ratio) {
 	LOG("DocumentView::fit_to_page_width");
 	int cp = get_current_page_number();
 	if (cp == -1) return;
@@ -658,8 +659,12 @@ void DocumentView::fit_to_page_width(bool smart) {
 	}
 	else {
 		int page_width = current_document->get_page_width(cp);
+		int virtual_view_width = view_width;
+		if (ratio) {
+			virtual_view_width = static_cast<int>(static_cast<float>(view_width) * FIT_TO_PAGE_WIDTH_RATIO);
+		}
 		set_offset_x(0);
-		set_zoom_level(static_cast<float>(view_width) / page_width);
+		set_zoom_level(static_cast<float>(virtual_view_width) / page_width);
 	}
 
 }

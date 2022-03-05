@@ -2020,6 +2020,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		main_document_view->fit_to_page_width();
 		last_smart_fit_page = {};
 	}
+	else if (command->name == "fit_to_page_width_ratio") {
+		main_document_view->fit_to_page_width(false, true);
+		last_smart_fit_page = {};
+	}
 	else if (command->name == "fit_to_page_width_smart") {
 		main_document_view->fit_to_page_width(true);
 		int current_page = main_document_view->get_current_page_number();
