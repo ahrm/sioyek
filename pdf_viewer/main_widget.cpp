@@ -830,7 +830,11 @@ void MainWidget::handle_args(const QStringList& arguments) {
 	}
 
 	if (parser->isSet("page")) {
-		page = parser->value("page").toInt();
+
+		int page_int = parser->value("page").toInt();
+		// 1 is the index for the first page (not 0)
+		if (page_int > 0) page_int--;
+		page = page_int;
 	}
 
 	if (parser->isSet("zoom")) {

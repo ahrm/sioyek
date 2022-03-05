@@ -927,7 +927,7 @@ QStandardItemModel* Document::get_toc_model() {
 void Document::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
 	LOG("Document::page_pos_to_absolute_pos");
 	std::lock_guard guard(page_dims_mutex);
-	if (page_widths.size() == 0) {
+	if ((page_widths.size() == 0) || (page >= page_widths.size())) {
 		*abs_x = 0;
 		*abs_y = 0;
 		return;
