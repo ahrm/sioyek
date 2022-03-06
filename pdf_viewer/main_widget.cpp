@@ -1460,6 +1460,11 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
 
 void MainWidget::handle_click(int pos_x, int pos_y) {
 	LOG("MainWidget::handle_click");
+
+	if (!main_document_view_has_document()) {
+		return;
+	}
+
 	auto link_ = main_document_view->get_link_in_pos(pos_x, pos_y);
 	selected_highlight_index = main_document_view->get_highlight_index_in_pos(pos_x, pos_y);
 
@@ -1555,6 +1560,10 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 	}
 
 	if (mevent->button() == Qt::MouseButton::MiddleButton) {
+
+		if (!main_document_view_has_document()) {
+			return;
+		}
 
 		int page;
 		float offset_x, offset_y;
