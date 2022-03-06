@@ -1002,6 +1002,7 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
 		update_history_state();
 	}
 
+	main_document_view->on_view_size_change(main_window_width, main_window_height);
 	main_document_view->open_document(path.get_path(), &this->is_render_invalidated);
 	bool has_document = main_document_view_has_document();
 
@@ -1020,7 +1021,6 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
 	if ((path.get_path().size() > 0) && (!has_document)) {
 		show_error_message(L"Could not open file: " + path.get_path());
 	}
-	main_document_view->on_view_size_change(main_window_width, main_window_height);
 
 	if (offset_x) {
 		main_document_view->set_offset_x(offset_x.value());
