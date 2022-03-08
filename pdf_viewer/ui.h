@@ -88,6 +88,7 @@ protected:
 			tree_view->expandAll();
 			tree_view->setHeaderHidden(true);
 			tree_view->resizeColumnToContents(0);
+			tree_view->header()->setSectionResizeMode(0, QHeaderView::Stretch);
 		}
 		QSortFilterProxyModel* sort_filter_proxy_model = dynamic_cast<QSortFilterProxyModel*>(proxy_model);
 		if (proxy_model) {
