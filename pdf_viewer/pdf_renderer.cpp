@@ -118,7 +118,7 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
 		cached_response_mutex.lock();
 		GLuint result = 0;
 		for (auto& cached_resp : cached_responses) {
-			if (cached_resp.request == req) {
+			if ((cached_resp.request == req) && (cached_resp.invalid == false)) {
 				cached_resp.last_access_time = QDateTime::currentMSecsSinceEpoch();
 
 				if (page_width) *page_width = cached_resp.pixmap->w;
@@ -153,8 +153,14 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
 					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cached_resp.pixmap->w, cached_resp.pixmap->h, 0, GL_RGB, GL_UNSIGNED_BYTE, cached_resp.pixmap->samples);
 					glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-					std::wcout << "texture: " << result << std::endl;
+
+					// don't need the pixmap anymore
+					pixmap_drop_mutex[cached_resp.thread].lock();
+					pixmaps_to_drop[cached_resp.thread].push_back(cached_resp.pixmap);
 					cached_resp.texture = result;
+					pixmap_drop_mutex[cached_resp.thread].unlock();
+
+					std::wcout << "texture: " << result << std::endl;
 				}
 				break;
 			}
@@ -194,7 +200,7 @@ GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, f
 	return best_texture;
 }
 
-void PdfRenderer::delete_old_pages(bool force_all) {
+void PdfRenderer::delete_old_pages(bool force_all, bool invalidate_all) {
 	/*
 	Deletes old cached pages. This function should only be called from the main thread.
 	OpenGL textures are released immediately but pixmaps should be freed from the thread
@@ -209,13 +215,20 @@ void PdfRenderer::delete_old_pages(bool force_all) {
 		cached_response_times.push_back(now - cached_responses[i].last_access_time);
 	}
 	int N = 5;
+
+	if (invalidate_all) {
+		for (int i = 0; i < cached_responses.size(); i++) {
+			cached_responses[i].invalid = true;
+		}
+		are_documents_invalidated = true;
+	}
+
 	if (force_all) {
 		for (int i = 0; i < cached_responses.size(); i++) {
 			indices_to_delete.push_back(i);
 		}
 		are_documents_invalidated = true;
 	}
-
 	else if (cached_response_times.size() > N) {
 		// we never delete N most recent pages
 		// todo: make this configurable
@@ -240,7 +253,9 @@ void PdfRenderer::delete_old_pages(bool force_all) {
 		RenderResponse resp = cached_responses[index_to_delete];
 
 		pixmap_drop_mutex[resp.thread].lock();
-		pixmaps_to_drop[resp.thread].push_back(resp.pixmap);
+		if (resp.texture == 0) {
+			pixmaps_to_drop[resp.thread].push_back(resp.pixmap);
+		}
 		pixmap_drop_mutex[resp.thread].unlock();
 
 		if (resp.texture != 0) {
@@ -380,7 +395,7 @@ void PdfRenderer::delete_old_pixmaps(int thread_index, fz_context* mupdf_context
 	pixmap_drop_mutex[thread_index].unlock();
 }
 void PdfRenderer::clear_cache() {
-	delete_old_pages(true);
+	delete_old_pages(false, true);
 }
 
 void PdfRenderer::run(int thread_index) {
@@ -415,7 +430,7 @@ void PdfRenderer::run(int thread_index) {
 
 		bool is_already_rendered = false;
 		for (const auto& cached_rep : cached_responses) {
-			if (cached_rep.request == req) is_already_rendered = true;
+			if ((cached_rep.request == req) && (cached_rep.invalid == false)) is_already_rendered = true;
 		}
 		cached_response_mutex.unlock();
 		pending_render_requests.pop_back();
@@ -443,6 +458,7 @@ void PdfRenderer::run(int thread_index) {
 				resp.last_access_time = QDateTime::currentMSecsSinceEpoch();
 				resp.pixmap = rendered_pixmap;
 				resp.texture = 0;
+				resp.invalid = false;
 
 				cached_response_mutex.lock();
 				cached_responses.push_back(resp);

@@ -44,7 +44,8 @@ struct RenderResponse {
 	unsigned int last_access_time;
 	int thread;
 	fz_pixmap* pixmap = nullptr;
-	GLuint texture;
+	GLuint texture = 0;
+	bool invalid = false;
 };
 
 bool operator==(const RenderRequest& lhs, const RenderRequest& rhs);
@@ -110,7 +111,7 @@ public:
 		int>> range = {});
 
 	GLuint find_rendered_page(std::wstring path, int page, float zoom_level, int* page_width, int* page_height);
-	void delete_old_pages(bool force_all=false);
+	void delete_old_pages(bool force_all=false, bool invalidate_all=false);
 
 signals:
 	void render_advance();
