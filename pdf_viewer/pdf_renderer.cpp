@@ -188,7 +188,7 @@ GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, f
 	for (const auto& cached_resp : cached_responses) {
 		if ((cached_resp.request.path == doc_path) && (cached_resp.request.page == page) && (cached_resp.texture != 0)) {
 			float diff = cached_resp.request.zoom_level - zoom_level;
-			if (diff < min_diff) {
+			if (diff <= min_diff) {
 				min_diff = diff;
 				best_texture = cached_resp.texture;
 				if (page_width) *page_width = static_cast<int>(cached_resp.pixmap->w * zoom_level / cached_resp.request.zoom_level);
