@@ -1420,11 +1420,11 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 
 Logger::Logger(std::string _name) {
 	name = _name;
-	LOG_FILE << "entered " << name << "\n";
+	std::wcout << L"entered " << utf8_decode(name) << "\n";
 }
 
 Logger::~Logger() {
-	LOG_FILE << "exited " << name << "\n";
+	 std::wcout << L"exited " << utf8_decode(name) << "\n";
 }
 
 QString get_color_hexadecimal(float color) {

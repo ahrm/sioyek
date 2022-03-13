@@ -660,17 +660,22 @@ void Document::load_page_dimensions(bool force_load_now) {
 	// initially assume all pages have the same dimensions, correct these heights
 	// when the background thread is done
 	if (n > 0) {
-		fz_page* page = fz_load_page(context, doc, n/2);
-		fz_rect bounds = fz_bound_page(context, page);
-		fz_drop_page(context, page);
-		for (int i = 0; i < n; i++) {
-			int height = bounds.y1 - bounds.y0;
-			int width = bounds.x1 - bounds.x0;
+		fz_try(context) {
+			fz_page* page = fz_load_page(context, doc, n / 2);
+			fz_rect bounds = fz_bound_page(context, page);
+			fz_drop_page(context, page);
+			for (int i = 0; i < n; i++) {
+				int height = bounds.y1 - bounds.y0;
+				int width = bounds.x1 - bounds.x0;
 
-			page_heights.push_back(height);
-			accum_page_heights.push_back(acc_height);
-			acc_height += height;
-			page_widths.push_back(width);
+				page_heights.push_back(height);
+				accum_page_heights.push_back(acc_height);
+				acc_height += height;
+				page_widths.push_back(width);
+			}
+		}
+		fz_catch(context) {
+			std::wcout << L"could not load sample page dimensions\n";
 		}
 	}
 
@@ -681,27 +686,32 @@ void Document::load_page_dimensions(bool force_load_now) {
 
 		// clone the main context for use in the background thread
 		fz_context* context_ = fz_clone_context(context);
-		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
-		//fz_layout_document(context_, doc, 600, 800, 20);
-		load_document_metadata_from_db();
+		fz_try(context_) {
+			fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+			//fz_layout_document(context_, doc, 600, 800, 20);
+			load_document_metadata_from_db();
 
-		float acc_height_ = 0.0f;
-		for (int i = 0; i < n; i++) {
-			fz_page* page = fz_load_page(context_, doc_, i);
-			fz_rect page_rect = fz_bound_page(context_, page);
+			float acc_height_ = 0.0f;
+			for (int i = 0; i < n; i++) {
+				fz_page* page = fz_load_page(context_, doc_, i);
+				fz_rect page_rect = fz_bound_page(context_, page);
 
-			float page_height = page_rect.y1 - page_rect.y0;
-			float page_width = page_rect.x1 - page_rect.x0;
+				float page_height = page_rect.y1 - page_rect.y0;
+				float page_width = page_rect.x1 - page_rect.x0;
 
-			accum_page_heights_.push_back(acc_height_);
-			page_heights_.push_back(page_height);
-			page_widths_.push_back(page_width);
-			acc_height_ += page_height;
+				accum_page_heights_.push_back(acc_height_);
+				page_heights_.push_back(page_height);
+				page_widths_.push_back(page_width);
+				acc_height_ += page_height;
 
-			fz_drop_page(context_, page);
+				fz_drop_page(context_, page);
+			}
+
+			fz_drop_document(context_, doc_);
 		}
-
-		fz_drop_document(context_, doc_);
+		fz_catch(context_) {
+			std::wcout << L"Error: could not load page dimensions\n";
+		}
 
 		page_dims_mutex.lock();
 
@@ -976,6 +986,7 @@ void Document::index_figures(bool* invalid_flag) {
 
 	is_figure_indexing_required = true;
 	is_indexing = true;
+
 	this->figure_indexing_thread = std::thread([this, n, invalid_flag]() {
 		std::wcout << "starting index thread ..." << std::endl;
 		std::vector<IndexedData> local_generic_data;
@@ -983,32 +994,39 @@ void Document::index_figures(bool* invalid_flag) {
 		std::map<std::wstring, std::vector<IndexedData>> local_equation_data;
 
 		fz_context* context_ = fz_clone_context(context);
-		fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+		fz_try(context_) {
 
-		bool focus_next = false;
-		for (int i = 0; i < n; i++) {
-			// when we close a document before its indexing is finished, we should stop indexing as soon as posible
-			if (!is_figure_indexing_required) {
-				break;
+			fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+
+			bool focus_next = false;
+			for (int i = 0; i < n; i++) {
+				// when we close a document before its indexing is finished, we should stop indexing as soon as posible
+				if (!is_figure_indexing_required) {
+					break;
+				}
+
+				// we don't use get_stext_with_page_number here on purpose because it would lead to many unnecessary allocations
+				fz_stext_options options;
+				options.flags = FZ_STEXT_PRESERVE_IMAGES;
+				fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, &options);
+
+				std::vector<fz_stext_char*> flat_chars;
+				get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+				index_references(stext_page, i, local_reference_data);
+				index_equations(flat_chars, i, local_equation_data);
+				index_generic(flat_chars, i, local_generic_data);
+
+				fz_drop_stext_page(context_, stext_page);
 			}
 
-			// we don't use get_stext_with_page_number here on purpose because it would lead to many unnecessary allocations
-			fz_stext_options options;
-			options.flags = FZ_STEXT_PRESERVE_IMAGES;
-			fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, &options);
 
-			std::vector<fz_stext_char*> flat_chars;
-			get_flat_chars_from_stext_page(stext_page, flat_chars);
-
-			index_references(stext_page, i, local_reference_data);
-			index_equations(flat_chars, i, local_equation_data);
-			index_generic(flat_chars, i, local_generic_data);
-
-			fz_drop_stext_page(context_, stext_page);
+			fz_drop_document(context_, doc_);
+		}
+		fz_catch(context_) {
+			std::wcout << L"There was an error in indexing thread.\n";
 		}
 
-
-		fz_drop_document(context_, doc_);
 		fz_drop_context(context_);
 
 		figure_indices_mutex.lock();
