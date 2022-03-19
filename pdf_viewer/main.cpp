@@ -151,6 +151,7 @@ extern bool SHOULD_DRAW_UNRENDERED_PAGES = true;
 extern bool HOVER_OVERVIEW = false;
 extern bool RERENDER_OVERVIEW = false;
 extern bool LINEAR_TEXTURE_FILTERING = false;
+extern bool SMALL_TOC = false;
 //extern bool AUTO_EMBED_ANNOTATIONS = false;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.25f;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
@@ -335,7 +336,7 @@ int main(int argc, char* args[]) {
 #ifdef LOG_ENABLED
 	LOG_FILE = std::ofstream(LOG_FILE_NAME.c_str());
 #endif
-	
+
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 

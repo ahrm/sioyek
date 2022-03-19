@@ -42,6 +42,7 @@
 extern std::wstring UI_FONT_FACE_NAME;
 extern int FONT_SIZE;
 const int max_select_size = 100;
+extern bool SMALL_TOC;
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
 protected:
@@ -260,7 +261,13 @@ public:
 			index = this->proxy_model->index(i, 0, index);
 		}
 
-		dynamic_cast<QTreeView*>(this->get_view())->setCurrentIndex(index);
+        QTreeView* tree_view = dynamic_cast<QTreeView*>(this->get_view());
+        if (SMALL_TOC){
+            tree_view->collapseAll();
+            tree_view->expand(index);
+        }
+
+		tree_view->setCurrentIndex(index);
 
 	}
 
@@ -491,7 +498,7 @@ public:
 			split_root_file(last_path, root_path, file_name);
 			root_path += QDir::separator();
 		}
-		
+
 		list_model = new QStringListModel(get_dir_contents(root_path, ""));
 		last_root = root_path;
 		line_edit->setText(last_root);
@@ -531,7 +538,7 @@ public:
 
 			for (auto file : all_directory_files) {
 				std::string encoded_file = utf8_encode(file.toStdWString());
-				int score = 0; 
+				int score = 0;
 				fts::fuzzy_match(encoded_prefix.c_str(), encoded_file.c_str(), score);
 				file_scores.push_back(std::make_pair(file, score));
 			}

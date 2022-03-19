@@ -10,6 +10,7 @@ extern float BACKGROUND_COLOR[3];
 extern float DARK_MODE_BACKGROUND_COLOR[3];
 extern float DARK_MODE_CONTRAST;
 extern bool FLAT_TABLE_OF_CONTENTS;
+extern bool SMALL_TOC;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE;
@@ -75,7 +76,7 @@ void string_serializer(void* string_pointer, std::wstringstream& stream) {
 void* string_deserializer(std::wstringstream& stream, void* res_) {
 	assert(res_ != nullptr);
 	//delete res_;
-	
+
 	std::wstring* res = static_cast<std::wstring*>(res_);
 	res->clear();
 	std::getline(stream, *res);
@@ -187,6 +188,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"single_main_window_size", &SINGLE_MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer });
 	configs.push_back({ L"single_main_window_move", &SINGLE_MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer });
 	configs.push_back({ L"fit_to_page_width_ratio", &FIT_TO_PAGE_WIDTH_RATIO, float_serializer, float_deserializer });
+	configs.push_back({ L"collapsed_toc", &SMALL_TOC, bool_serializer, bool_deserializer });
 
 	//configs.push_back({ L"auto_embed_annotations", &AUTO_EMBED_ANNOTATIONS, bool_serializer, bool_deserializer });
 
