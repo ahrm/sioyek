@@ -1233,7 +1233,6 @@ QCommandLineParser* get_command_line_parser() {
 	QCommandLineParser* parser = new QCommandLineParser();
 
 	parser->setApplicationDescription("Sioyek is a PDF reader designed for reading research papers and technical books.");
-	parser->addHelpOption();
 	parser->addVersionOption();
 
 
@@ -1269,6 +1268,8 @@ QCommandLineParser* get_command_line_parser() {
 
 	QCommandLineOption shared_database_path_option("shared-database-path", "Specify which file to use for shared data (bookmarks, highlights, etc.)", "path");
 	parser->addOption(shared_database_path_option);
+
+    parser->addHelpOption();
 
 	return parser;
 }

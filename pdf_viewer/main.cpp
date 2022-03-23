@@ -371,6 +371,9 @@ int main(int argc, char* args[]) {
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
 
+    QCommandLineParser* parser = get_command_line_parser();
+    parser->process(app.arguments());
+
 	configure_paths();
 	verify_paths();
 
@@ -406,13 +409,6 @@ int main(int argc, char* args[]) {
 
 	QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
 	QCoreApplication::setApplicationVersion(QString::fromStdString(APPLICATION_VERSION));
-
-	QCommandLineParser* parser = get_command_line_parser();
-
-	if (!parser->parse(app.arguments())) {
-		std::wcout << parser->errorText().toStdWString() << L"\n";
-		return 1;
-	}
 
 	QStringList positional_args = parser->positionalArguments();
 	delete parser;
