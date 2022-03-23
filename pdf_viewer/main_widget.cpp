@@ -1188,7 +1188,11 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 
 	if ((main_document_view->get_document() != nullptr) && (opengl_widget != nullptr)) {
 
-		if (down == true) {
+        // disable visual mark and overview window when we are in synctex mode
+        // because we probably don't need them (we are editing our own document after all)
+        // we can always use middle click to jump to a destination which is probably what we
+        // need anyway
+        if (down == true && (!this->synctex_mode)) {
 			if (current_pending_command && (current_pending_command->name == "goto_mark")) {
 				main_document_view->goto_vertical_line_pos();
 				current_pending_command = nullptr;
@@ -2346,7 +2350,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 
 	else if (command->name == "toggle_synctex") {
-		this->synctex_mode = !this->synctex_mode;
+        toggle_synctex_mode();
 	}
 
 	else if (command->name == "delete_link") {
@@ -2496,6 +2500,14 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 
 	validate_render();
+}
+
+void MainWidget::toggle_synctex_mode(){
+    this->synctex_mode = !this->synctex_mode;
+    if (this->synctex_mode){
+        // we disable overview image in synctex mode
+        this->opengl_widget->set_overview_page({});
+    }
 }
 
 void MainWidget::handle_link() {
