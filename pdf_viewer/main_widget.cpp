@@ -476,11 +476,11 @@ std::wstring MainWidget::get_status_string() {
 		ss << " [ drag ]";
 	}
 	if (opengl_widget->is_presentation_mode()) {
-		ss << " [ presentation mode ] ";
+        ss << " [ presentation ] ";
 	}
 
 	if (visual_scroll_mode) {
-		ss << " [ visual scroll mode ] ";
+        ss << " [ visual scroll ] ";
 	}
 
 	if (horizontal_scroll_locked) {
