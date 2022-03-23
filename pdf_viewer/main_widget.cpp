@@ -28,6 +28,7 @@
 #include <qwindow.h>
 #include <qstandardpaths.h>
 #include <qprocess.h>
+#include <qguiapplication.h>
 
 
 #include "input.h"
@@ -308,8 +309,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 	status_label->setFont(QFont("Monaco"));
 
 	// automatically open the helper window in second monitor
-	int num_screens = QApplication::desktop()->numScreens();
-	if ((num_screens > 1) && SHOULD_USE_MULTIPLE_MONITORS) {
+    int num_screens = QGuiApplication::screens().size();
+
+    if ((num_screens > 1) && SHOULD_USE_MULTIPLE_MONITORS) {
 		//helper_opengl_widget->move(first_screen_width, 0);
 		//helper_opengl_widget->setWindowState(Qt::WindowState::WindowMaximized);
 		apply_window_params_for_two_window_mode();
@@ -659,19 +661,13 @@ void MainWidget::toggle_mouse_drag_mode(){
 void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line) {
 	LOG("MainWidget::do_synctex_forward_search");
 
-	//Path latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path);
-
-	//std::wstring latex_file_path_with_redundant_dot = latex_file_path.add_redundant_dot();
-	//std::wstring latex_file_path_with_redundant_dot = add_redun
 	std::wstring latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path.get_path());
 
 	std::string latex_file_string = latex_file_path.get_path_utf8();
 	std::string latex_file_with_redundant_dot_string = utf8_encode(latex_file_path_with_redundant_dot);
 	std::string pdf_file_string = pdf_file_path.get_path_utf8();
 
-	//latex_file_string = "D:/phd/seventh/./pres.tex";
 	synctex_scanner_t scanner = synctex_scanner_new_with_output_file(pdf_file_string.c_str(), nullptr, 1);
-
 
 	int stat = synctex_display_query(scanner, latex_file_string.c_str(), line, 0);
 	int target_page = -1;
@@ -687,7 +683,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
 
 		std::optional<fz_rect> first_rect = {};
 
-		while (node = synctex_next_result(scanner)) {
+        while ((node = synctex_next_result(scanner))) {
 			int page = synctex_node_page(node);
 			target_page = page-1;
 
@@ -738,60 +734,6 @@ void MainWidget::on_new_instance_message(qint32 instance_id, QByteArray argument
 
 	handle_args(arguments);
 }
-
-//void MainWidget::handle_args(const std::vector<std::wstring> &arguments)
-//{
-//	std::optional<int> page = 0;
-//	std::optional<float> x_loc, y_loc;
-//	std::optional<float> zoom_level;
-//
-//	//todo: handle out of bounds error
-//
-//	std::wstring pdf_file_name = L"";
-//
-//	if (arguments.size() > 1) {
-//		pdf_file_name = arguments[1];
-//	}
-//
-//	std::optional<std::wstring> latex_file_name = {};
-//	std::optional<int> latex_line = {};
-//
-//
-//	for (int i = 0; i < arguments.size()-1; i++) {
-//		if (arguments[i] == L"--page") {
-//			if (is_string_numeric(arguments[i + 1])) {
-//				page = std::stoi(arguments[i + 1].c_str());
-//			}
-//		}
-//
-//		if (arguments[i] == L"--inverse-search") {
-//			inverse_search_command = arguments[i + 1];
-//		}
-//
-//		if (arguments[i] == L"--forward-search") {
-//			if (i + 3 < arguments.size()) {
-//
-//				latex_file_name = arguments[i + 1];
-//				if (is_string_numeric(arguments[i + 2])) {
-//					latex_line = std::stoi(arguments[i + 2].c_str());
-//				}
-//				pdf_file_name = arguments[i + 3];
-//			}
-//		}
-//	}
-//
-//	if (arguments.size() > 1) {
-//		open_document_at_location(pdf_file_name, page.value_or(0), x_loc, y_loc, zoom_level);
-//
-//		if (latex_file_name) {
-//			do_synctex_forward_search(pdf_file_name, latex_file_name.value(), latex_line.value_or(0));
-//		}
-//
-//		invalidate_render();
-//	}
-//	else {
-//	}
-//}
 
 void MainWidget::handle_args(const QStringList& arguments) {
 	LOG("MainWidget::handle_args");
@@ -1125,7 +1067,7 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
 			handle_command_with_file_name(command, file_name);
 		}
 		else {
-			std::cerr << "File select failed" << endl;
+            std::cerr << "File select failed\n";
 		}
 		return;
 	}
@@ -1220,7 +1162,7 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 
 				if (stat > 0) {
 					synctex_node_t node;
-					while (node = synctex_next_result(scanner)) {
+                    while ((node = synctex_next_result(scanner))) {
 						int line = synctex_node_line(node);
 						int column = synctex_node_column(node);
 						if (column < 0) column = 0;
@@ -1373,7 +1315,7 @@ void MainWidget::push_state() {
 void MainWidget::next_state() {
 	LOG("MainWidget::next_state");
 	update_current_history_index();
-	if (current_history_index < history.size()-1) {
+    if (current_history_index < (static_cast<int>(history.size())-1)) {
 		current_history_index++;
 		set_main_document_view_state(history[current_history_index]);
 
@@ -1570,7 +1512,6 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 
 void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	LOG("MainWidget::wheelEvent");
-	int num_repeats = 1;
 
 	const Command* command = nullptr;
 	//bool is_touchpad = wevent->source() == Qt::MouseEventSource::MouseEventSynthesizedBySystem;
@@ -1590,8 +1531,8 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 	bool is_visual_mark_mode = opengl_widget->get_should_draw_vertical_line() && visual_scroll_mode;
 
 
-	int x = wevent->pos().x();
-	int y = wevent->pos().y();
+    int x = wevent->position().x();
+    int y = wevent->position().y();
 	float normal_x, normal_y;
 	main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
 
@@ -1713,35 +1654,9 @@ void MainWidget::toggle_two_window_mode() {
 	//main_widget.resize(window_width, window_height);
 
 	QWidget* helper_window = get_top_level_widget(helper_opengl_widget);
-	QWidget* main_window = get_top_level_widget(opengl_widget);
 
 	if (helper_opengl_widget->isHidden()) {
-		//helper_opengl_widget->show();
-		//int num_screens = QApplication::desktop()->numScreens();
-		//int window_width = QApplication::desktop()->screenGeometry(0).width();
-		//int window_height = QApplication::desktop()->screenGeometry(0).height();
 
-		//if ((HELPER_WINDOW_MOVE[0] != -1) && (HELPER_WINDOW_SIZE[0] != -1)) {
-		//	helper_window->resize(HELPER_WINDOW_SIZE[0], HELPER_WINDOW_SIZE[1]);
-		//	helper_window->move(HELPER_WINDOW_MOVE[0], HELPER_WINDOW_MOVE[1]);
-		//}
-		//else {
-		//	if (num_screens > 1) {
-
-		//		int second_window_width = QApplication::desktop()->screenGeometry(1).width();
-		//		int second_window_height = QApplication::desktop()->screenGeometry(1).height();
-
-		//		helper_window->resize(second_window_width, second_window_height);
-		//		helper_window->move(window_width, 0);
-		//	}
-		//	else {
-		//		main_window->resize(window_width / 2, window_height);
-		//		helper_window->resize(window_width / 2, window_height);
-		//		main_window->move(0, 0);
-		//		helper_window->move(window_width / 2, 0);
-		//	}
-
-		//}
 		QPoint pos = helper_opengl_widget->pos();
 		QSize size = helper_opengl_widget->size();
 		helper_window->show();
@@ -2077,10 +1992,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			bookmarks = main_document_view->get_document()->get_bookmarks();
 		}
 
-		for (int i = 0; i < bookmarks.size() ; i++) {
-			option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmarks[i].description);
-			option_locations.push_back(bookmarks[i].y_offset);
-		}
+        for (auto bookmark : bookmarks){
+            option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmark.description);
+            option_locations.push_back(bookmark.y_offset);
+        }
 		set_current_widget(new FilteredSelectWindowClass<float>(
 			option_names,
 			option_locations,
@@ -2106,14 +2021,12 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights_sorted();
 
 
-		for (int i = 0; i < highlights.size(); i++) {
-			std::wstring type_name = L"a";
-			type_name[0] = highlights[i].type;
-
-			option_names.push_back(L"[" + type_name + L"] " + highlights[i].description + L"]");
-			//option_locations.push_back(highlights[i].selection_begin.y);
-			option_locations.push_back({highlights[i].selection_begin.x, highlights[i].selection_begin.y, highlights[i].selection_end.x, highlights[i].selection_end.y});
-		}
+        for (auto highlight : highlights){
+            std::wstring type_name = L"a";
+            type_name[0] = highlight.type;
+            option_names.push_back(L"[" + type_name + L"] " + highlight.description + L"]");
+            option_locations.push_back({highlight.selection_begin.x, highlight.selection_begin.y, highlight.selection_end.x, highlight.selection_end.y});
+        }
 
 		set_current_widget(new FilteredSelectWindowClass<std::vector<float>>(
 			option_names,
@@ -2609,15 +2522,14 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			int link_index = std::stoi(text);
 
 			main_document_view->get_visible_pages(main_document_view->get_view_height(), visible_pages);
-			for (int i = 0; i < visible_pages.size(); i++) {
-				int page = visible_pages[i];
-				fz_link* link = main_document_view->get_document()->get_page_links(page);
-				while (link) {
-					visible_page_links.push_back(std::make_pair(page, link));
-					link = link->next;
-				}
-			}
-			if ((link_index >= 0) && (link_index < visible_page_links.size())) {
+            for (auto page : visible_pages){
+                fz_link* link = main_document_view->get_document()->get_page_links(page);
+                while (link) {
+                    visible_page_links.push_back(std::make_pair(page, link));
+                    link = link->next;
+                }
+            }
+            if ((link_index >= 0) && (link_index < static_cast<int>(visible_page_links.size()))) {
 				auto [selected_page, selected_link] = visible_page_links[link_index];
 
 				int page;
@@ -2766,7 +2678,6 @@ float MainWidget::get_ith_next_line_from_absolute_y(float absolute_y, int i, boo
 		fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(page);
 		std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
 		std::vector<unsigned int> line_locations = get_line_ends_from_histogram(hist);
-		int small_doc_x = static_cast<int>(doc_x * SMALL_PIXMAP_SCALE);
 		int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
 
 		int index = find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y - 0.3f), i);
@@ -2852,9 +2763,9 @@ void MainWidget::execute_command(std::wstring command) {
 
 	QString qtext = QString::fromStdWString(command);
 
-	qtext.arg(qfile_path);
+    qtext.arg(qfile_path);
 
-	QStringList command_parts = qtext.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+    QStringList command_parts = qtext.split(QRegExp("\\s+"), QString::SkipEmptyParts);
 	if (command_parts.size() > 0) {
 		QString command_name = command_parts[0];
 		QStringList command_args;
@@ -2920,8 +2831,8 @@ std::optional<std::string> MainWidget::get_last_opened_file_checksum() {
 
 	db_manager->select_opened_books_path_values(opened_docs_hashes);
 
-	int index = 0;
-	while (index < opened_docs_hashes.size()) {
+    size_t index = 0;
+    while (index < opened_docs_hashes.size()) {
 		if (opened_docs_hashes[index] == current_checksum) {
 			index++;
 		}

@@ -82,23 +82,23 @@
 //#define LINUX_STANDARD_PATHS
 
 
-extern std::wstring APPLICATION_NAME = L"sioyek";
-extern std::string LOG_FILE_NAME = "sioyek_log.txt";
+std::wstring APPLICATION_NAME = L"sioyek";
+std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;
-extern int FONT_SIZE = -1;
-extern int STATUS_BAR_FONT_SIZE = -1;
-extern std::string APPLICATION_VERSION = "1.1.0";
-extern float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
-extern float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-extern float CUSTOM_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
-extern float CUSTOM_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-extern float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-extern float STATUS_BAR_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+int FONT_SIZE = -1;
+int STATUS_BAR_FONT_SIZE = -1;
+std::string APPLICATION_VERSION = "1.1.0";
+float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float CUSTOM_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+float CUSTOM_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float STATUS_BAR_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];
-extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
-extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
-extern float HIGHLIGHT_COLORS[26 * 3] = { \
+std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
+std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
+float HIGHLIGHT_COLORS[26 * 3] = { \
 0.5182963463943647, 0.052279561076773784, 0.42942409252886155, \
 0.673198309637537, 0.14250443697242887, 0.1842972533900342, \
 0.1259143196334698, 0.3472546716690144, 0.5268310086975159, \
@@ -126,61 +126,61 @@ extern float HIGHLIGHT_COLORS[26 * 3] = { \
 0.16837764593670387, 0.43225375356473283, 0.3993686004985632, \
 0.21290269578043475, 0.5704883842115632, 0.21660892000800203, \
 };
-extern float DARK_MODE_CONTRAST = 0.8f;
-extern float ZOOM_INC_FACTOR = 1.2f;
-extern float VERTICAL_MOVE_AMOUNT = 1.0f;
-extern float HORIZONTAL_MOVE_AMOUNT = 1.0f;
-extern float MOVE_SCREEN_PERCENTAGE = 0.8f;
-extern const unsigned int CACHE_INVALID_MILIES = 1000;
-extern const int PERSIST_MILIES = 1000 * 60;
-extern const int PAGE_PADDINGS = 0;
-extern const int MAX_PENDING_REQUESTS = 31;
-extern bool FLAT_TABLE_OF_CONTENTS = false;
-extern bool SHOULD_USE_MULTIPLE_MONITORS = false;
-extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = true;
-extern bool DEFAULT_DARK_MODE = false;
-extern bool SORT_BOOKMARKS_BY_LOCATION = false;
-extern std::wstring LIBGEN_ADDRESS = L"";
-extern std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
-extern std::wstring INVERSE_SEARCH_COMMAND = L"";
-extern std::wstring SHARED_DATABASE_PATH = L"";
-extern std::wstring UI_FONT_FACE_NAME = L"";
-extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
-extern bool SHOULD_LAUNCH_NEW_INSTANCE = true;
-extern bool SHOULD_DRAW_UNRENDERED_PAGES = true;
-extern bool HOVER_OVERVIEW = false;
-extern bool RERENDER_OVERVIEW = false;
-extern bool LINEAR_TEXTURE_FILTERING = false;
-extern bool SMALL_TOC = false;
-//extern bool AUTO_EMBED_ANNOTATIONS = false;
-extern float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.25f;
-extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
-extern std::wstring ITEM_LIST_PREFIX = L">";
-extern std::wstring STARTUP_COMMANDS = L"";
-extern float SMALL_PIXMAP_SCALE = 0.75f;
-extern float DISPLAY_RESOLUTION_SCALE = -1;
-extern float FIT_TO_PAGE_WIDTH_RATIO = 1;
-extern int MAIN_WINDOW_SIZE[2] = { -1, -1 };
-extern int HELPER_WINDOW_SIZE[2] = { -1, -1 };
-extern int MAIN_WINDOW_MOVE[2] = { -1, -1 };
-extern int HELPER_WINDOW_MOVE[2] = { -1, -1 };
-extern float TOUCHPAD_SENSITIVITY = 1.0f;
-extern int SINGLE_MAIN_WINDOW_SIZE[2] = { -1, -1 };
-extern int SINGLE_MAIN_WINDOW_MOVE[2] = { -1, -1 };
 
-extern float PAGE_SEPARATOR_WIDTH = 0.0f;
-extern float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
+float DARK_MODE_CONTRAST = 0.8f;
+float ZOOM_INC_FACTOR = 1.2f;
+float VERTICAL_MOVE_AMOUNT = 1.0f;
+float HORIZONTAL_MOVE_AMOUNT = 1.0f;
+float MOVE_SCREEN_PERCENTAGE = 0.8f;
+const unsigned int CACHE_INVALID_MILIES = 1000;
+const int PERSIST_MILIES = 1000 * 60;
+const int PAGE_PADDINGS = 0;
+const int MAX_PENDING_REQUESTS = 31;
+bool FLAT_TABLE_OF_CONTENTS = false;
+bool SHOULD_USE_MULTIPLE_MONITORS = false;
+bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = true;
+bool DEFAULT_DARK_MODE = false;
+bool SORT_BOOKMARKS_BY_LOCATION = false;
+std::wstring LIBGEN_ADDRESS = L"";
+std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
+std::wstring INVERSE_SEARCH_COMMAND = L"";
+std::wstring SHARED_DATABASE_PATH = L"";
+std::wstring UI_FONT_FACE_NAME = L"";
+bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
+bool SHOULD_LAUNCH_NEW_INSTANCE = true;
+bool SHOULD_DRAW_UNRENDERED_PAGES = true;
+bool HOVER_OVERVIEW = false;
+bool RERENDER_OVERVIEW = false;
+bool LINEAR_TEXTURE_FILTERING = false;
+bool SMALL_TOC = false;
+float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.25f;
+float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
+std::wstring ITEM_LIST_PREFIX = L">";
+std::wstring STARTUP_COMMANDS = L"";
+float SMALL_PIXMAP_SCALE = 0.75f;
+float DISPLAY_RESOLUTION_SCALE = -1;
+float FIT_TO_PAGE_WIDTH_RATIO = 1;
+int MAIN_WINDOW_SIZE[2] = { -1, -1 };
+int HELPER_WINDOW_SIZE[2] = { -1, -1 };
+int MAIN_WINDOW_MOVE[2] = { -1, -1 };
+int HELPER_WINDOW_MOVE[2] = { -1, -1 };
+float TOUCHPAD_SENSITIVITY = 1.0f;
+int SINGLE_MAIN_WINDOW_SIZE[2] = { -1, -1 };
+int SINGLE_MAIN_WINDOW_MOVE[2] = { -1, -1 };
 
-extern Path default_config_path(L"");
-extern Path default_keys_path(L"");
-extern std::vector<Path> user_config_paths = {};
-extern std::vector<Path> user_keys_paths = {};
-extern Path database_file_path(L"");
-extern Path local_database_file_path(L"");
-extern Path global_database_file_path(L"");
-extern Path tutorial_path(L"");
-extern Path last_opened_file_address_path(L"");
-extern Path shader_path(L"");
+float PAGE_SEPARATOR_WIDTH = 0.0f;
+float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
+
+Path default_config_path(L"");
+Path default_keys_path(L"");
+std::vector<Path> user_config_paths = {};
+std::vector<Path> user_keys_paths = {};
+Path database_file_path(L"");
+Path local_database_file_path(L"");
+Path global_database_file_path(L"");
+Path tutorial_path(L"");
+Path last_opened_file_address_path(L"");
+Path shader_path(L"");
 
 QStringList convert_arguments(QStringList input_args){
     // convert the relative path of filename (if it exists) to absolute path
@@ -350,11 +350,11 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
 		watcher.addPath(QString::fromStdWString(default_path.get_path()));
 	}
 
-	for (int i = 0; i < user_paths.size(); i++) {
-		if (QFile::exists(QString::fromStdWString(user_paths[i].get_path()))) {
-			watcher.addPath(QString::fromStdWString(user_paths[i].get_path()));
-		}
-	}
+    for (auto user_path : user_paths){
+        if (QFile::exists(QString::fromStdWString(user_path.get_path()))) {
+            watcher.addPath(QString::fromStdWString(user_path.get_path()));
+        }
+    }
 }
 
 int main(int argc, char* args[]) {
@@ -363,10 +363,6 @@ int main(int argc, char* args[]) {
 	format.setVersion(3, 3);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	QSurfaceFormat::setDefaultFormat(format);
-
-#ifdef LOG_ENABLED
-	LOG_FILE = std::ofstream(LOG_FILE_NAME.c_str());
-#endif
 
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	QApplication app(argc, args);
@@ -413,10 +409,6 @@ int main(int argc, char* args[]) {
 	QStringList positional_args = parser->positionalArguments();
 	delete parser;
 
-	sqlite3* db;
-	char* error_message = nullptr;
-	int rc;
-
 	DatabaseManager db_manager;
 	if (local_database_file_path.file_exists() && global_database_file_path.file_exists()) {
 		db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
@@ -425,14 +417,6 @@ int main(int argc, char* args[]) {
 		db_manager.open(database_file_path.get_path(), database_file_path.get_path());
 	}
 	db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path());
-	//std::string database_file_path_utf8 = utf8_encode(database_file_path.get_path());
-	//rc = sqlite3_open(database_file_path_utf8.c_str(), &db);
-
-	//if (rc) {
-	//	std::cerr << "could not open database" << sqlite3_errmsg(db) << std::endl;
-	//}
-
-	//create_tables(db);
 
 	fz_locks_context locks;
 	locks.user = mupdf_mutexes;
@@ -462,14 +446,6 @@ int main(int argc, char* args[]) {
 
 	InputHandler input_handler(default_keys_path, user_keys_paths);
 
-	//get_prev_path_hash_pairs(db, prev_path_hash_pairs);
-
-	//if (prev_path_hash_pairs.size() == 0) {
-	//	// migrate the databse paths to checksums the first time we launch the new version
-	//	upgrade_database_hashes(db);
-	//	get_prev_path_hash_pairs(db, prev_path_hash_pairs);
-	//}
-
 	std::vector<std::pair<std::wstring, std::wstring>> prev_path_hash_pairs;
 	db_manager.get_prev_path_hash_pairs(prev_path_hash_pairs);
 
@@ -482,15 +458,6 @@ int main(int argc, char* args[]) {
 
 	QFileSystemWatcher key_file_watcher;
 	add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
-
-
-	//QString font_path = QString::fromStdWString((parent_path / "fonts" / "monaco.ttf").wstring());
-	//if (QFontDatabase::addApplicationFont(font_path) < 0) {
-		//std::wcout << "could not add font!" << endl;
-	//}
-
-	//QIcon icon(QString::fromStdWString((parent_path / "icon2.ico").wstring()));
-	//app.setWindowIcon(icon);
 
 	MainWidget main_widget(mupdf_context, &db_manager, &document_manager, &config_manager, &input_handler, &checksummer, &quit);
 
@@ -505,9 +472,6 @@ int main(int argc, char* args[]) {
 	for (auto command : startup_commands) {
 		main_widget.handle_command(command_manager->get_command_with_name(command.toStdString()), 1);
 	}
-
-	//main_widget.open_document(file_path.get_path());
-	//main_widget.resize(500, 500);
 
 	if (use_single_instance) {
 		if (guard.isPrimary()) {
@@ -524,7 +488,7 @@ int main(int argc, char* args[]) {
 
 	main_widget.handle_args(app.arguments());
 
-	// live reload the config file
+    // live reload the config files
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 
 		config_manager.deserialize(default_config_path, user_config_paths);
@@ -546,10 +510,5 @@ int main(int argc, char* args[]) {
 	app.exec();
 
 	quit = true;
-
-#ifdef LOG_ENABLED
-	LOG_FILE.close();
-#endif
-
 	return 0;
 }
