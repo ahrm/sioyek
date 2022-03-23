@@ -1200,41 +1200,11 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 				return;
 			}
 
-			std::optional<PdfLink> link;
-			if (main_document_view && (link = main_document_view->get_link_in_pos(x, y))) {
-				set_overview_link(link.value());
-				return;
-			}
+            if (overview_under_pos(static_cast<int>(x), static_cast<int>(y))){
+                return;
+            }
 
-			int autoreference_page;
-			float autoreference_offset;
-			if (find_location_of_text_under_pointer(x, y, &autoreference_page, &autoreference_offset)) {
-				set_overview_position(autoreference_page, autoreference_offset);
-				return;
-			}
-
-
-			float doc_x, doc_y;
-			int page;
-			main_document_view->window_to_document_pos(x, y, &doc_x, &doc_y, &page);
-			if (page != -1) {
-				opengl_widget->set_should_draw_vertical_line(true);
-				fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(page);
-				std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
-				std::vector<unsigned int> line_locations = get_line_ends_from_histogram(hist);
-				int small_doc_x = static_cast<int>(doc_x * SMALL_PIXMAP_SCALE);
-				int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
-				int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
-				//int best_vertical_loc = line_locations[find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y), 2)];
-				float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
-				int window_x, window_y;
-				main_document_view->document_to_window_pos_in_pixels(page, doc_x, best_vertical_loc_doc_pos, &window_x, &window_y);
-				float abs_doc_x, abs_doc_y;
-				main_document_view->window_to_absolute_document_pos(window_x, window_y, &abs_doc_x, &abs_doc_y);
-				main_document_view->set_vertical_line_pos(abs_doc_y);
-				validate_render();
-
-			}
+            visual_mark_under_pos(static_cast<int>(x), static_cast<int>(y));
 
 		}
 		else {
@@ -1566,95 +1536,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 	}
 
 	if (mevent->button() == Qt::MouseButton::MiddleButton) {
-
-		if (!main_document_view_has_document()) {
-			return;
-		}
-
-		int page;
-		float offset_x, offset_y;
-
-		Qt::KeyboardModifiers modifiers = QGuiApplication::queryKeyboardModifiers();
-		bool is_shift_pressed = modifiers.testFlag(Qt::ShiftModifier);
-
-		float normal_x, normal_y;
-		main_document_view->window_to_normalized_window_pos(mevent->pos().x(), mevent->pos().y(), &normal_x, &normal_y);
-
-		// if overview page is open and we middle click on a paper name, search it in a search engine
-		if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
-			float doc_x, doc_y;
-			int doc_page;
-			opengl_widget->window_pos_to_overview_pos(normal_x, normal_y, &doc_x, &doc_y, &doc_page);
-			std::optional<std::wstring> paper_name = main_document_view->get_document()->get_paper_name_at_position(doc_page, doc_x, doc_y);
-			if (paper_name) {
-				handle_paper_name_on_pointer(paper_name.value(), is_shift_pressed);
-			}
-			return;
-		}
-		main_document_view->window_to_document_pos(mevent->pos().x(), mevent->pos().y(), &offset_x, &offset_y, &page);
-
-		fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
-		std::vector<fz_stext_char*> flat_chars;
-		get_flat_chars_from_stext_page(stext_page, flat_chars);
-
-
-		std::optional<std::pair<std::wstring, std::wstring>> generic_pair =\
-			main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
-
-		//std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
-		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
-		std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
-		std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
-
-		if (generic_pair) {
-			int page;
-			float y_offset;
-
-			if (main_document_view->get_document()->find_generic_location(generic_pair.value().first,
-				generic_pair.value().second,
-				&page,
-				&y_offset)) {
-
-				long_jump_to_destination(page, y_offset);
-				return;
-			}
-		}
-		if (equation_text_on_pointer) {
-			 std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(
-				 equation_text_on_pointer.value(),
-				 main_document_view->get_current_page_number());
-			 if (eqdata_) {
-				 IndexedData refdata = eqdata_.value();
-				 long_jump_to_destination(refdata.page, refdata.y_offset);
-				 return;
-			 }
-		}
-
-		if (reference_text_on_pointer) {
-			 std::optional<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
-			 if (refdata_) {
-				 IndexedData refdata = refdata_.value();
-				 long_jump_to_destination(refdata.page, refdata.y_offset);
-				 return;
-			 }
-
-		}
-		if (paper_name_on_pointer) {
-			handle_paper_name_on_pointer(paper_name_on_pointer.value(), is_shift_pressed);
-			//if (paper_name_on_pointer.value().size() > 5) {
-			//	char type;
-			//	if (is_shift_pressed) {
-			//		type = SHIFT_MIDDLE_CLICK_SEARCH_ENGINE[0];
-			//	}
-			//	else {
-			//		type = MIDDLE_CLICK_SEARCH_ENGINE[0];
-			//	}
-			//	if ((type >= 'a') && (type <= 'z')) {
-			//		search_custom_engine(paper_name_on_pointer.value(), SEARCH_URLS[type - 'a']);
-			//	}
-			//}
-		}
-
+        smart_jump_under_pos(mevent->pos().x(), mevent->pos().y());
 	}
 
 }
@@ -2473,7 +2355,25 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 	else if (command->name == "debug") {
 	}
-	else if (command->name == "toggle_horizontal_scroll_lock") {
+    else if (command->name == "smart_jump_under_cursor") {
+        QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+        smart_jump_under_pos(mouse_pos.x(), mouse_pos.y());
+    }
+    else if (command->name == "overview_under_cursor") {
+        QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+        overview_under_pos(mouse_pos.x(), mouse_pos.y());
+    }
+    else if (command->name == "close_overview") {
+        opengl_widget->set_overview_page({});
+    }
+    else if (command->name == "visual_mark_under_cursor") {
+        QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+        visual_mark_under_pos(mouse_pos.x(), mouse_pos.y());
+    }
+    else if (command->name == "close_visual_mark") {
+        opengl_widget->set_should_draw_vertical_line(false);
+    }
+    else if (command->name == "toggle_horizontal_scroll_lock") {
 		horizontal_scroll_locked = !horizontal_scroll_locked;
 	}
 	else if (command->name == "move_visual_mark_down") {
@@ -2500,6 +2400,126 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 
 	validate_render();
+}
+
+void MainWidget::smart_jump_under_pos(int pos_x, int pos_y){
+    if (!main_document_view_has_document()) {
+        return;
+    }
+
+    int page;
+    float offset_x, offset_y;
+
+    Qt::KeyboardModifiers modifiers = QGuiApplication::queryKeyboardModifiers();
+    bool is_shift_pressed = modifiers.testFlag(Qt::ShiftModifier);
+
+    float normal_x, normal_y;
+    main_document_view->window_to_normalized_window_pos(pos_x, pos_y, &normal_x, &normal_y);
+
+    // if overview page is open and we middle click on a paper name, search it in a search engine
+    if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
+        float doc_x, doc_y;
+        int doc_page;
+        opengl_widget->window_pos_to_overview_pos(normal_x, normal_y, &doc_x, &doc_y, &doc_page);
+        std::optional<std::wstring> paper_name = main_document_view->get_document()->get_paper_name_at_position(doc_page, doc_x, doc_y);
+        if (paper_name) {
+            handle_paper_name_on_pointer(paper_name.value(), is_shift_pressed);
+        }
+        return;
+    }
+    main_document_view->window_to_document_pos(pos_x, pos_y, &offset_x, &offset_y, &page);
+
+    fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
+    std::vector<fz_stext_char*> flat_chars;
+    get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+
+    std::optional<std::pair<std::wstring, std::wstring>> generic_pair =\
+            main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
+
+    //std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
+    std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
+    std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
+    std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
+
+    if (generic_pair) {
+        int page;
+        float y_offset;
+
+        if (main_document_view->get_document()->find_generic_location(generic_pair.value().first,
+                                                                      generic_pair.value().second,
+                                                                      &page,
+                                                                      &y_offset)) {
+
+            long_jump_to_destination(page, y_offset);
+            return;
+        }
+    }
+    if (equation_text_on_pointer) {
+        std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(
+                    equation_text_on_pointer.value(),
+                    main_document_view->get_current_page_number());
+        if (eqdata_) {
+            IndexedData refdata = eqdata_.value();
+            long_jump_to_destination(refdata.page, refdata.y_offset);
+            return;
+        }
+    }
+
+    if (reference_text_on_pointer) {
+        std::optional<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
+        if (refdata_) {
+            IndexedData refdata = refdata_.value();
+            long_jump_to_destination(refdata.page, refdata.y_offset);
+            return;
+        }
+
+    }
+    if (paper_name_on_pointer) {
+        handle_paper_name_on_pointer(paper_name_on_pointer.value(), is_shift_pressed);
+    }
+}
+
+void MainWidget::visual_mark_under_pos(int pos_x, int pos_y){
+    float doc_x, doc_y;
+    int page;
+    main_document_view->window_to_document_pos(pos_x, pos_y, &doc_x, &doc_y, &page);
+    if (page != -1) {
+        opengl_widget->set_should_draw_vertical_line(true);
+        fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(page);
+        std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
+        std::vector<unsigned int> line_locations = get_line_ends_from_histogram(hist);
+        int small_doc_x = static_cast<int>(doc_x * SMALL_PIXMAP_SCALE);
+        int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
+        int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
+        //int best_vertical_loc = line_locations[find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y), 2)];
+        float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
+        int window_x, window_y;
+        main_document_view->document_to_window_pos_in_pixels(page, doc_x, best_vertical_loc_doc_pos, &window_x, &window_y);
+        float abs_doc_x, abs_doc_y;
+        main_document_view->window_to_absolute_document_pos(window_x, window_y, &abs_doc_x, &abs_doc_y);
+        main_document_view->set_vertical_line_pos(abs_doc_y);
+        validate_render();
+    }
+}
+
+
+bool MainWidget::overview_under_pos(int pos_x, int pos_y){
+
+    std::optional<PdfLink> link;
+    if (main_document_view && (link = main_document_view->get_link_in_pos(pos_x, pos_y))) {
+        set_overview_link(link.value());
+        return true;
+    }
+
+    int autoreference_page;
+    float autoreference_offset;
+    if (find_location_of_text_under_pointer(pos_x, pos_y, &autoreference_page, &autoreference_offset)) {
+        set_overview_position(autoreference_page, autoreference_offset);
+        return true;
+    }
+
+    return false;
 }
 
 void MainWidget::toggle_synctex_mode(){
