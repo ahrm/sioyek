@@ -182,6 +182,37 @@ extern Path tutorial_path(L"");
 extern Path last_opened_file_address_path(L"");
 extern Path shader_path(L"");
 
+QStringList convert_arguments(QStringList input_args){
+    // convert the relative path of filename (if it exists) to absolute path
+
+    QStringList output_args;
+
+    //the first argument is always path of the executable
+    output_args.push_back(input_args.at(0));
+    input_args.pop_front();
+
+    if (input_args.size() > 0){
+        QString path = input_args.at(0);
+
+        bool is_path_argument = true;
+
+        if (path.size() > 2 && path.startsWith("--")){
+            is_path_argument = false;
+        }
+
+        if (is_path_argument){
+            Path path_object(path.toStdWString());
+            output_args.push_back(QString::fromStdWString(path_object.get_path()));
+            input_args.pop_front();
+        }
+    }
+    for (int i =0; i < input_args.size(); i++){
+        output_args.push_back(input_args.at(i));
+    }
+
+    return output_args;
+}
+
 void configure_paths(){
 
 	Path parent_path(QCoreApplication::applicationDirPath().toStdWString());
@@ -367,7 +398,8 @@ int main(int argc, char* args[]) {
 
 	if (use_single_instance) {
 		if (!guard.isPrimary()) {
-			guard.sendMessage(serialize_string_array(app.arguments()));
+            QStringList sent_args = convert_arguments(app.arguments());
+            guard.sendMessage(serialize_string_array(sent_args));
 			return 0;
 		}
 	}
