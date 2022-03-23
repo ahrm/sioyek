@@ -1469,8 +1469,6 @@ std::vector<fz_quad> quads_from_rects(const std::vector<fz_rect>& rects) {
 
 std::wifstream open_wifstream(const std::wstring& file_name) {
 
-	//std::wstring fragment_file_path_wstring = fragment_file_path.get_path();
-	//std::wifstream FragmentShaderStream(fragment_file_path_wstring.c_str(), std::ios::in);
 #ifdef Q_OS_WIN
 	return std::move(std::wifstream(file_name));
 #else
