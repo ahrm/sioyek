@@ -1531,8 +1531,8 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     bool is_visual_mark_mode = opengl_widget->get_should_draw_vertical_line() && visual_scroll_mode;
 
 
-    int x = wevent->position().x();
-    int y = wevent->position().y();
+    int x = wevent->pos().x();
+    int y = wevent->pos().y();
     float normal_x, normal_y;
     main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
 
