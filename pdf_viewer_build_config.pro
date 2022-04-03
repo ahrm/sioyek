@@ -37,7 +37,8 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/utf8/unchecked.h \
            pdf_viewer/synctex/synctex_parser.h \
            pdf_viewer/synctex/synctex_parser_utils.h \
-           pdf_viewer/RunGuard.h
+           pdf_viewer/RunGuard.h \
+           pdf_viewer/OpenWithApplication.h
 
 SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/config.cpp \
@@ -92,5 +93,6 @@ mac {
     CONFIG+=sdk_no_version_check
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.15
     ICON = pdf_viewer\icon2.ico
+    QMAKE_INFO_PLIST = resources/Info.plist
 }
 
