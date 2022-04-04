@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key>
-	<string>sioyek</string>
+	<string>@EXECUTABLE@</string>
 	<key>CFBundleIconFile</key>
-	<string>icon2.ico</string>
+	<string>@ICON@</string>
 	<key>CFBundleIdentifier</key>
 	<string>info.sioyek.sioyek</string>
 	<key>CFBundlePackageType</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.1.0</string>
+	<string>@SHORT_VERSION@</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.15</string>
 	<key>NSPrincipalClass</key>

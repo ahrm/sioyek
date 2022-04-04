@@ -1,5 +1,6 @@
 TEMPLATE = app
 TARGET = sioyek
+VERSION = 1.2.0
 INCLUDEPATH += ./pdf_viewer\
               mupdf/include \
               zlib
@@ -56,8 +57,9 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/path.cpp \
            pdf_viewer/utils.cpp \
            pdf_viewer/synctex/synctex_parser.c \
-           pdf_viewer/synctex/synctex_parser_utils.c\
-           pdf_viewer/RunGuard.cpp
+           pdf_viewer/synctex/synctex_parser_utils.c \
+           pdf_viewer/RunGuard.cpp \
+           pdf_viewer/OpenWithApplication.cpp
 
 
 win32{
