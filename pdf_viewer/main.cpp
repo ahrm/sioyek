@@ -88,7 +88,7 @@ std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;
 int FONT_SIZE = -1;
 int STATUS_BAR_FONT_SIZE = -1;
-std::string APPLICATION_VERSION = "1.1.0";
+std::string APPLICATION_VERSION = "1.2.0";
 float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float CUSTOM_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
@@ -358,17 +358,6 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
     }
 }
 
-bool OpenWithApplication::event(QEvent *event)
-{
-	if (event->type() == QEvent::FileOpen) {
-		QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
-		file_name = openEvent->file();
-		emit fileReady(file_name); //  the file is ready
-	}
-
-	return QApplication::event(event);
-}
-
 int main(int argc, char* args[]) {
 
 	QSurfaceFormat format;
@@ -501,8 +490,8 @@ int main(int argc, char* args[]) {
 	main_widget.handle_args(app.arguments());
 
 	// load input file from `QFileOpenEvent` for macOS drag and drop & "open with"
-	QObject::connect(&app, &OpenWithApplication::fileReady, [&main_widget](QString fileName) {
-		main_widget.open_document(fileName.toStdWString());
+	QObject::connect(&app, &OpenWithApplication::file_ready, [&main_widget](const QString& file_name) {
+		main_widget.handle_args(QStringList() << file_name << file_name);
 	});
 
     // live reload the config files
