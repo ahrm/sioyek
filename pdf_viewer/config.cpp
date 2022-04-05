@@ -38,6 +38,7 @@ extern int FONT_SIZE;
 extern float CUSTOM_BACKGROUND_COLOR[3];
 extern float CUSTOM_TEXT_COLOR[3];
 extern bool RERENDER_OVERVIEW;
+extern bool RULER_MODE;
 extern bool LINEAR_TEXTURE_FILTERING;
 extern float DISPLAY_RESOLUTION_SCALE;
 extern float STATUS_BAR_COLOR[3];
@@ -189,6 +190,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"single_main_window_move", &SINGLE_MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer });
 	configs.push_back({ L"fit_to_page_width_ratio", &FIT_TO_PAGE_WIDTH_RATIO, float_serializer, float_deserializer });
 	configs.push_back({ L"collapsed_toc", &SMALL_TOC, bool_serializer, bool_deserializer });
+	configs.push_back({ L"ruler_mode", &RULER_MODE, bool_serializer, bool_deserializer });
 
 	//configs.push_back({ L"auto_embed_annotations", &AUTO_EMBED_ANNOTATIONS, bool_serializer, bool_deserializer });
 

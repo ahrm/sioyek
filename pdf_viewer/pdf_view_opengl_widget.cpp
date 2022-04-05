@@ -13,6 +13,7 @@ extern bool SHOULD_DRAW_UNRENDERED_PAGES;
 extern float CUSTOM_BACKGROUND_COLOR[3];
 extern float CUSTOM_TEXT_COLOR[3];
 extern bool RERENDER_OVERVIEW;
+extern bool RULER_MODE;
 extern float PAGE_SEPARATOR_WIDTH;
 extern float PAGE_SEPARATOR_COLOR[3];
 
@@ -205,7 +206,7 @@ void PdfViewOpenGLWidget::resizeGL(int w, int h) {
 	}
 }
 
-void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_pos) {
+void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_pos, float gl_vertical_begin_pos) {
 	LOG("PdfViewOpenGLWidget::render_line_window");
 
 
@@ -216,6 +217,13 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 		1, gl_vertical_pos,
 		-1, gl_vertical_pos - bar_height,
 		1, gl_vertical_pos - bar_height
+	};
+
+	float top_bar_data[] = {
+		-1, gl_vertical_begin_pos + bar_height,
+		1, gl_vertical_begin_pos + bar_height,
+		-1, gl_vertical_begin_pos,
+		1, gl_vertical_begin_pos  
 	};
 
 	glDisable(GL_CULL_FACE);
@@ -240,6 +248,11 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(bar_data), bar_data, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	if (RULER_MODE) {
+		glBufferData(GL_ARRAY_BUFFER, sizeof(top_bar_data), top_bar_data, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	}
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
@@ -709,11 +722,14 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (should_draw_vertical_line) {
 		//render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
+		float vertical_line_begin, vertical_line_end;
+		document_view->get_vertical_line_window_y(&vertical_line_begin, &vertical_line_end);
+
 		if (color_mode == ColorPalette::Dark) {
-			render_line_window(shared_gl_objects.vertical_line_dark_program , document_view->get_vertical_line_window_y());
+			render_line_window(shared_gl_objects.vertical_line_dark_program , vertical_line_end, vertical_line_begin);
 		}
 		else {
-			render_line_window(shared_gl_objects.vertical_line_program , document_view->get_vertical_line_window_y());
+			render_line_window(shared_gl_objects.vertical_line_program , vertical_line_end, vertical_line_begin);
 		}
 	}
 	if (overview_page) {

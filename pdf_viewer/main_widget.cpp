@@ -2298,8 +2298,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         horizontal_scroll_locked = !horizontal_scroll_locked;
     }
     else if (command->name == "move_visual_mark_down") {
-        float new_pos = get_ith_next_line_from_absolute_y(main_document_view->get_vertical_line_pos(), 2, true);
-        main_document_view->set_vertical_line_pos(new_pos);
+		float new_pos, new_begin_pos;
+        get_ith_next_line_from_absolute_y(main_document_view->get_vertical_line_end_pos(), 2, true, &new_begin_pos, &new_pos);
+        main_document_view->set_vertical_line_pos(new_pos, new_begin_pos);
         if (focus_on_visual_mark_pos(true)) {
             float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
             main_document_view->move_absolute(0, distance);
@@ -2307,8 +2308,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         validate_render();
     }
     else if (command->name == "move_visual_mark_up") {
-        float new_pos = get_ith_next_line_from_absolute_y(main_document_view->get_vertical_line_pos(), 0, true);
-        main_document_view->set_vertical_line_pos(new_pos);
+		float new_pos, new_begin_pos;
+        get_ith_next_line_from_absolute_y(main_document_view->get_vertical_line_end_pos(), 0, true, &new_begin_pos, &new_pos);
+        main_document_view->set_vertical_line_pos(new_pos, new_begin_pos);
         if (focus_on_visual_mark_pos(false)) {
             float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
             main_document_view->move_absolute(0, -distance);
@@ -2408,7 +2410,9 @@ void MainWidget::visual_mark_under_pos(int pos_x, int pos_y){
         opengl_widget->set_should_draw_vertical_line(true);
         fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(page);
         std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
-        std::vector<unsigned int> line_locations = get_line_ends_from_histogram(hist);
+        std::vector<unsigned int> line_locations;
+        std::vector<unsigned int> _;
+        get_line_begins_and_ends_from_histogram(hist, _, line_locations);
         int small_doc_x = static_cast<int>(doc_x * SMALL_PIXMAP_SCALE);
         int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
         int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
@@ -2418,7 +2422,7 @@ void MainWidget::visual_mark_under_pos(int pos_x, int pos_y){
         main_document_view->document_to_window_pos_in_pixels(page, doc_x, best_vertical_loc_doc_pos, &window_x, &window_y);
         float abs_doc_x, abs_doc_y;
         main_document_view->window_to_absolute_document_pos(window_x, window_y, &abs_doc_x, &abs_doc_y);
-        main_document_view->set_vertical_line_pos(abs_doc_y);
+        main_document_view->set_vertical_line_pos(abs_doc_y, abs_doc_x);
         validate_render();
     }
 }
@@ -2701,7 +2705,15 @@ void MainWidget::set_current_widget(QWidget* new_widget) {
     }
 }
 
-float MainWidget::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont) {
+float MainWidget::document_to_absolute_y(int page, float doc_x, float doc_y) {
+	int window_x, window_y;
+	main_document_view->document_to_window_pos_in_pixels(page, doc_x, doc_y, &window_x, &window_y);
+	float abs_doc_x, abs_doc_y;
+	main_document_view->window_to_absolute_document_pos(window_x, window_y, &abs_doc_x, &abs_doc_y);
+	return abs_doc_y;
+}
+
+void MainWidget::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
     LOG("MainWidget::get_ith_next_line_from_absolute_y");
         float doc_x, doc_y;
         int page;
@@ -2709,38 +2721,49 @@ float MainWidget::get_ith_next_line_from_absolute_y(float absolute_y, int i, boo
 
         fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(page);
         std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
-        std::vector<unsigned int> line_locations = get_line_ends_from_histogram(hist);
+        std::vector<unsigned int> line_locations;
+        std::vector<unsigned int> line_locations_begins;
+        get_line_begins_and_ends_from_histogram(hist, line_locations_begins, line_locations);
         int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
 
         int index = find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y - 0.3f), i);
 
         if (index > -1) {
             int best_vertical_loc = line_locations[index];
+            int best_vertical_loc_begin = line_locations_begins[index];
+
             float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
-            int window_x, window_y;
-            main_document_view->document_to_window_pos_in_pixels(page, doc_x, best_vertical_loc_doc_pos, &window_x, &window_y);
-            float abs_doc_x, abs_doc_y;
-            main_document_view->window_to_absolute_document_pos(window_x, window_y, &abs_doc_x, &abs_doc_y);
-            return abs_doc_y;
+            float best_vertical_loc_begin_doc_pos = best_vertical_loc_begin / SMALL_PIXMAP_SCALE;
+
+            float abs_doc_y = document_to_absolute_y(page, doc_x, best_vertical_loc_doc_pos);
+            float abs_doc_begin_y = document_to_absolute_y(page, doc_x, best_vertical_loc_begin_doc_pos);
+            *out_begin = abs_doc_begin_y;
+            *out_end = abs_doc_y;
         }
         else {
-            if (!cont) return absolute_y;
+            if (!cont) {
+                *out_begin = absolute_y;
+                *out_end = absolute_y;
+                return;
+            }
 
             int next_page;
             if (i > 0) {
                 //next_page = main_document_view->get_current_page_number() + 1;
                 next_page = main_document_view->get_document()->get_offset_page_number(absolute_y) + 1;
                 if (next_page < main_document_view->get_document()->num_pages()) {
-                    return get_ith_next_line_from_absolute_y(main_document_view->get_document()->get_accum_page_height(next_page) + 0.5, 1, false);
+                    return get_ith_next_line_from_absolute_y(main_document_view->get_document()->get_accum_page_height(next_page) + 0.5, 1, false, out_begin, out_end);
                 }
             }
             else {
                 next_page = main_document_view->get_document()->get_offset_page_number(absolute_y);
                 if (next_page > 0) {
-                    return get_ith_next_line_from_absolute_y(main_document_view->get_document()->get_accum_page_height(next_page) - 0.5f, -1, false);
+                    return get_ith_next_line_from_absolute_y(main_document_view->get_document()->get_accum_page_height(next_page) - 0.5f, -1, false, out_begin, out_end);
                 }
             }
-            return absolute_y;
+			*out_begin = absolute_y;
+			*out_end = absolute_y;
+			return;
         }
 
 }
@@ -2748,7 +2771,7 @@ bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
     LOG("MainWidget::focus_on_visual_mark_pos");
     float window_x, window_y;
     float thresh = 1 - VISUAL_MARK_NEXT_PAGE_THRESHOLD;
-    main_document_view->absolute_to_window_pos(0, main_document_view->get_vertical_line_pos(), &window_x, &window_y);
+    main_document_view->absolute_to_window_pos(0, main_document_view->get_vertical_line_end_pos(), &window_x, &window_y);
     //if ((window_y < -thresh) || (window_y > thresh)) {
     if ((moving_down && (window_y < -thresh)) || ((!moving_down) && (window_y > thresh))) {
         main_document_view->goto_vertical_line_pos();

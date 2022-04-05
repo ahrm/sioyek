@@ -1137,8 +1137,8 @@ float standard_deviation(std::vector<T> values, float average_value) {
 	return std::sqrt(static_cast<float>(sum) / values.size());
 }
 
-std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int> histogram) {
-	std::vector<unsigned int> res;
+//std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int> histogram) {
+void get_line_begins_and_ends_from_histogram(std::vector<unsigned int> histogram, std::vector<unsigned int>& res_begins, std::vector<unsigned int>& res) {
 
 	float mean_width = average_value(histogram);
 	float std = standard_deviation(histogram, mean_width);
@@ -1146,7 +1146,7 @@ std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int>
 	std::vector<float> normalized_histogram;
 
 	if (std < 0.00001f) {
-		return res;
+		return;
 	}
 
 	for (auto x : histogram) {
@@ -1158,9 +1158,14 @@ std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int>
 	while (i < histogram.size()) {
 
 		while ((i < histogram.size()) && (normalized_histogram[i] > 0.2f)) i++;
+		res_begins.push_back(i);
 		while ((i < histogram.size()) && (normalized_histogram[i] <= 0.21f)) i++;
 		if (i == histogram.size()) break;
 		res.push_back(i);
+	}
+
+	while (res_begins.size() > res.size()) {
+		res_begins.pop_back();
 	}
 
 	float additional_distance = 0.0f;
@@ -1176,12 +1181,11 @@ std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int>
 
 		for (int i = 0; i < res.size(); i++) {
 			res[i] += static_cast<unsigned int>(additional_distance / 5.0f);
+			res_begins[i] -= static_cast<unsigned int>(additional_distance / 5.0f);
 		}
 
 	}
 
-
-	return res;
 }
 
 int find_best_vertical_line_location(fz_pixmap* pixmap, int doc_x, int doc_y) {

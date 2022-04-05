@@ -798,22 +798,38 @@ float DocumentView::view_height_in_document_space() {
 	return static_cast<float>(view_height) / zoom_level;
 }
 
-void DocumentView::set_vertical_line_pos(float pos) {
+void DocumentView::set_vertical_line_pos(float pos, float begin_pos) {
 	LOG("DocumentView::set_vertical_line_pos");
 	vertical_line_pos = pos;
+	vertical_line_begin_pos = begin_pos;
+
 }
 
-float DocumentView::get_vertical_line_pos() {
+void DocumentView::get_vertical_line_pos(float* begin_pos, float* end_pos) {
 	LOG("DocumentView::get_vertical_line_pos");
-	return vertical_line_pos;
+	*end_pos = vertical_line_pos;
+	*begin_pos = vertical_line_begin_pos;
 }
 
-float DocumentView::get_vertical_line_window_y() {
+float DocumentView::get_vertical_line_end_pos() {
+	float begin_pos, end_pos;
+	get_vertical_line_pos(&begin_pos, &end_pos);
+	return end_pos;
+}
+
+void DocumentView::get_vertical_line_window_y(float* begin_y, float* end_y) {
 	LOG("DocumentView::get_vertical_line_window_y");
-	float absol_y = get_vertical_line_pos();
-	float window_x, window_y;
-	absolute_to_window_pos(0.0, absol_y, &window_x, &window_y);
-	return window_y;
+
+	float absol_begin_y, absol_end_y;
+	get_vertical_line_pos(&absol_begin_y, &absol_end_y);
+
+	float window_begin_x, window_begin_y;
+	float window_end_x, window_end_y;
+	absolute_to_window_pos(0.0, absol_begin_y, &window_begin_x, &window_begin_y);
+	absolute_to_window_pos(0.0, absol_end_y, &window_end_x, &window_end_y);
+
+	*begin_y = window_begin_y;
+	*end_y = window_end_y;
 }
 
 void DocumentView::goto_vertical_line_pos() {

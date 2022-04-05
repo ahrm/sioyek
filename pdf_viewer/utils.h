@@ -107,7 +107,8 @@ char* get_argv_value(int argc, char** argv, std::string key);
 void split_root_file(QString path, QString& out_root, QString& out_partial);
 QString expand_home_dir(QString path);
 std::vector<unsigned int> get_max_width_histogram_from_pixmap(fz_pixmap* pixmap);
-std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int> histogram);
+//std::vector<unsigned int> get_line_ends_from_histogram(std::vector<unsigned int> histogram);
+void get_line_begins_and_ends_from_histogram(std::vector<unsigned int> histogram, std::vector<unsigned int>& begins, std::vector<unsigned int>& ends);
 
 template<typename T>
 int find_nth_larger_element_in_sorted_list(std::vector<T> sorted_list, T value, int n) {

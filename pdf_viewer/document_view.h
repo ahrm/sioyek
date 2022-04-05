@@ -43,6 +43,7 @@ private:
 	float offset_x = 0;
 	float offset_y = 0;
 
+	float vertical_line_begin_pos = 0;
 	float vertical_line_pos = 0;
 
 	int view_width = 0;
@@ -119,9 +120,10 @@ public:
 	void get_page_chapter_index(int page, std::vector<TocNode*> toc_nodes, std::vector<int>& res);
 	std::vector<int> get_current_chapter_recursive_index();
 	float view_height_in_document_space();
-	void set_vertical_line_pos(float pos);
-	float get_vertical_line_pos();
-	float get_vertical_line_window_y();
+	void set_vertical_line_pos(float pos, float begin_pos);
+	void get_vertical_line_pos(float* begin_pos, float* end_pos);
+	float get_vertical_line_end_pos();
+	void get_vertical_line_window_y(float* begin_y, float* end_y);
 	void goto_vertical_line_pos();
 	int get_page_offset();
 	void set_page_offset(int new_offset);
