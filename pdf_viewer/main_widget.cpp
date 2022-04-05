@@ -29,6 +29,7 @@
 #include <qstandardpaths.h>
 #include <qprocess.h>
 #include <qguiapplication.h>
+#include <qmimedata.h>
 
 
 #include "input.h"
@@ -283,6 +284,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     checksummer(checksummer)
 {
     setMouseTracking(true);
+    setAcceptDrops(true);
 
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
@@ -2976,3 +2978,22 @@ void MainWidget::open_document(const std::wstring& doc_path,
         setWindowTitle(QString::fromStdWString(filename.value()));
     }
 }
+
+#ifndef Q_OS_MACOS
+void MainWidget::dragEnterEvent(QDragEnterEvent* e)
+{
+	e->acceptProposedAction();
+
+}
+
+void MainWidget::dropEvent(QDropEvent* event)
+{
+    if (event->mimeData()->hasUrls()) {
+        auto urls = event->mimeData()->urls();
+        std::wstring path = urls.at(0).toString().toStdWString();
+        // ignore file:/// at the begining of the URL
+        path = path.substr(8, path.size() - 8);
+        handle_args(QStringList() << QApplication::applicationFilePath() << QString::fromStdWString(path));
+    }
+}
+#endif

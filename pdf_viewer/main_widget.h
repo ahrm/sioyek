@@ -10,6 +10,7 @@
 #include <qtextedit.h>
 #include <qtimer.h>
 #include <qbytearray.h>
+#include <qdrag.h>
 
 #include <mupdf/fitz.h>
 #include "document_view.h"
@@ -124,6 +125,13 @@ protected:
 	//void paintEvent(QPaintEvent* paint_event) override;
 	void resizeEvent(QResizeEvent* resize_event) override;
 	void mouseMoveEvent(QMouseEvent* mouse_event) override;
+
+	// we already handle drag and drop on macos elsewhere
+#ifndef Q_OS_MACOS
+	void dragEnterEvent(QDragEnterEvent* e);
+	void dropEvent(QDropEvent* event);
+#endif
+
 	void closeEvent(QCloseEvent* close_event) override;
 	void persist() ;
 	bool is_pending_link_source_filled();
