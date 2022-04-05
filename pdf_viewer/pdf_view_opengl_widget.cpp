@@ -336,6 +336,7 @@ void PdfViewOpenGLWidget::handle_escape() {
 	cancel_search();
 	synctex_highlights.clear();
 	should_highlight_links = false;
+	should_highlight_words = false;
 	should_show_numbers = false;
 }
 
@@ -690,6 +691,10 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 				&selection_end_window_x,
 				&selection_end_window_y);
 
+			if (selection_begin_window_y > selection_end_window_y) {
+				std::swap(selection_begin_window_y, selection_end_window_y);
+			}
+
 			bool is_selection_in_window = range_intersects(selection_begin_window_y, selection_end_window_y, -1.0f, 1.0f);
 
 			if (is_selection_in_window) {
@@ -717,6 +722,37 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	painter->endNativePainting();
 
+	if (should_highlight_words && (!overview_page)) {
+
+		QBrush background_brush = QBrush(QColor(236, 200, 0));
+		QFont font;
+		font.setPixelSize(20);
+
+		painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
+		painter->setBackground(background_brush);
+		painter->setPen(QColor(0, 0, 128));
+		painter->setFont(font);
+
+		std::vector<std::string> tags = get_tags(word_rects.size());
+
+		for (int i = 0; i < word_rects.size(); i++) {
+
+			auto [rect, page] = word_rects[i];
+
+			fz_rect window_rect = document_view->document_to_window_rect(page, rect);
+
+			int view_width = static_cast<float>(document_view->get_view_width());
+			int view_height = static_cast<float>(document_view->get_view_height());
+			
+			int window_x0 = static_cast<int>(window_rect.x0 * view_width / 2 + view_width / 2);
+			int window_y0 = static_cast<int>(-window_rect.y0 * view_height / 2 + view_height / 2);
+
+			int window_x1 = static_cast<int>(window_rect.x1 * view_width / 2 + view_width / 2);
+			int window_y1 = static_cast<int>(-window_rect.y1 * view_height / 2 + view_height / 2);
+
+			painter->drawText(window_x0, (window_y0 + window_y1) / 2, tags[i].c_str());
+		}
+	}
 	if (should_highlight_links && should_show_numbers && (!overview_page)) {
 		for (int i = 0; i < all_visible_links.size(); i++) {
 			std::stringstream ss;
@@ -1172,4 +1208,16 @@ void PdfViewOpenGLWidget::window_pos_to_overview_pos(float window_x_normal, floa
 	*doc_offset_x = relative_window_x;
 	*doc_offset_y = overview_page.value().offset_y + relative_window_y;
 	*doc_page = get_overview_page().value().page;
+}
+
+void PdfViewOpenGLWidget::toggle_highlight_words() {
+	this->should_highlight_words = !this->should_highlight_words;
+}
+
+void PdfViewOpenGLWidget::set_highlight_words(std::vector<std::pair<fz_rect, int>>& rects) {
+	word_rects = std::move(rects);
+}
+
+void PdfViewOpenGLWidget::set_should_highlight_words(bool should_highlight) {
+	this->should_highlight_words = should_highlight;
 }

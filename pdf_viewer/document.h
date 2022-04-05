@@ -46,6 +46,7 @@ private:
 	fz_context* context = nullptr;
 	std::wstring file_name;
 	std::unordered_map<int, fz_link*> cached_page_links;
+	std::unordered_map<int, std::vector<fz_rect>> cached_flat_words;
 	QStandardItemModel* cached_toc_model = nullptr;
 
 	std::vector<float> accum_page_heights;
@@ -183,6 +184,7 @@ public:
 	int get_page_offset();
 	void set_page_offset(int new_offset);
 	void embed_annotations(std::wstring new_file_path);
+	std::vector<fz_rect> get_page_flat_words(int page);
 
 	friend class DocumentManager;
 };

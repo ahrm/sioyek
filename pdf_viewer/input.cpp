@@ -76,6 +76,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "quit", false, false , false, false});
 	commands.push_back({ "q", false, false , false, false});
 	commands.push_back({ "open_link", true, false , false, false});
+	commands.push_back({ "keyboard_select", true, false , false, false});
 	commands.push_back({ "keys", false, false , false, false});
 	commands.push_back({ "keys_user", false, false , false, false});
 	commands.push_back({ "prefs", false, false , false, false});

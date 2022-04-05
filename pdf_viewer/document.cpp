@@ -1677,3 +1677,18 @@ std::optional<std::wstring> Document::get_regex_match_at_position(const std::wre
 	get_flat_chars_from_stext_page(stext_page, flat_chars);
 	return get_regex_match_at_position(regex, flat_chars, offset_x, offset_y);
 }
+
+std::vector<fz_rect> Document::get_page_flat_words(int page) {
+	if (cached_flat_words.find(page) != cached_flat_words.end()) {
+		return cached_flat_words[page];
+	}
+
+	fz_stext_page* stext_page = get_stext_with_page_number(page);
+	std::vector<fz_stext_char*> flat_chars;
+	std::vector<fz_rect> word_rects;
+	std::vector<std::pair<fz_rect, int>> word_rects_with_page;
+	get_flat_chars_from_stext_page(stext_page, flat_chars);
+	get_flat_words_from_flat_chars(flat_chars, word_rects);
+	cached_flat_words[page] = word_rects;
+    return word_rects;
+}

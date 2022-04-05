@@ -114,6 +114,7 @@ private:
 	bool is_search_cancelled = true;
 	bool is_searching;
 	bool should_highlight_links = false;
+	bool should_highlight_words = false;
 	bool should_show_numbers = false;
 	ColorPalette color_mode = ColorPalette::Normal;
 	bool is_helper = false;
@@ -162,6 +163,7 @@ public:
 #endif
 
 	std::vector<fz_rect> selected_character_rects;
+	std::vector<std::pair<fz_rect, int>> word_rects;
 	std::vector<std::pair<int, fz_rect>> synctex_highlights;
 
 	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent = nullptr);
@@ -172,8 +174,13 @@ public:
 	void set_should_draw_vertical_line(bool val);
 	bool get_should_draw_vertical_line();
 	void handle_escape();
+
 	void toggle_highlight_links();
 	void set_highlight_links(bool should_highlight_links, bool should_show_numbers);
+	void toggle_highlight_words();
+	void set_highlight_words(std::vector<std::pair<fz_rect, int>>& rects);
+	void set_should_highlight_words(bool should_highlight);
+
 	int get_num_search_results();
 	int get_current_search_result_index();
 	bool valid_document();

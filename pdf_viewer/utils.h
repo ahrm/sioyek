@@ -143,3 +143,6 @@ void copy_file(std::wstring src_path, std::wstring dst_path);
 fz_quad quad_from_rect(fz_rect r);
 std::vector<fz_quad> quads_from_rects(const std::vector<fz_rect>& rects);
 std::wifstream open_wifstream(const std::wstring& file_name);
+void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::vector<fz_rect>& flat_word_rects);
+std::vector<std::string> get_tags(int n);
+int get_index_from_tag(const std::string& tag);

@@ -346,8 +346,6 @@ std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line) {
 
 void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
 
-	//bool rtl = is_stext_page_rtl(stext_page);
-
 	LL_ITER(block, stext_page->first_block) {
 		if (block->type == FZ_STEXT_BLOCK_TEXT) {
 			LL_ITER(line, block->u.t.first_line) {
@@ -355,23 +353,107 @@ void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_st
 				for (auto ch : reordered_chars) {
 					flat_chars.push_back(ch);
 				}
-				//if (!rtl) {
-				//	LL_ITER(ch, line->first_char) {
-				//		flat_chars.push_back(ch);
-				//	}
-				//}
-				//else {
-				//	std::vector<fz_stext_char*> line_chars;
-				//	LL_ITER(ch, line->first_char) {
-				//		line_chars.push_back(ch);
-				//	}
-				//	for (int i = line_chars.size() - 1; i >= 0; i--) {
-				//		flat_chars.push_back(line_chars[i]);
-				//	}
-				//}
 			}
 		}
 	}
+}
+
+bool is_delimeter(int c) {
+	std::vector<char> delimeters = {' ', '\n', ';', ','};
+	return std::find(delimeters.begin(), delimeters.end(), c) != delimeters.end();
+}
+
+float get_character_height(fz_stext_char* c) {
+	return std::abs(c->quad.ul.y - c->quad.ll.y);
+}
+
+float get_character_width(fz_stext_char* c) {
+	return std::abs(c->quad.ul.x - c->quad.ur.x);
+}
+
+bool is_start_of_new_word(fz_stext_char* prev_char, fz_stext_char* current_char) {
+	if (is_delimeter(prev_char->c)) {
+		return true;
+	}
+
+	float height = get_character_height(current_char);
+	float threshold = height / 2;
+	if (std::abs(prev_char->quad.ll.y - current_char->quad.ll.y) > threshold) {
+		return true;
+	}
+	return false;
+}
+
+fz_rect create_word_rect(const std::vector<fz_stext_char*>& chars) {
+	fz_rect res;
+	res.x0 = res.x1 = res.y0 = res.y1 = 0;
+	if (chars.size() == 0) return res;
+	res = fz_rect_from_quad(chars[0]->quad);
+
+	float min_x;
+	for (int i = 1; i < chars.size(); i++) {
+		fz_rect current_char_rect = fz_rect_from_quad(chars[i]->quad);
+		if (res.x0 > current_char_rect.x0) res.x0 = current_char_rect.x0;
+		if (res.x1 < current_char_rect.x1) res.x1 = current_char_rect.x1;
+		if (res.y0 > current_char_rect.y0) res.y0 = current_char_rect.y0;
+		if (res.y1 < current_char_rect.y1) res.y1 = current_char_rect.y1;
+	}
+
+	return res;
+}
+
+void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::vector<fz_rect>& flat_word_rects) {
+
+	if (flat_chars.size() == 0) return;
+
+	std::vector<fz_stext_char*> pending_word;
+	pending_word.push_back(flat_chars[0]);
+
+	for (int i = 1; i < flat_chars.size(); i++) {
+		if (is_start_of_new_word(flat_chars[i - 1], flat_chars[i])) {
+			flat_word_rects.push_back(create_word_rect(pending_word));
+			pending_word.clear();
+			pending_word.push_back(flat_chars[i]);
+		}
+		else {
+			pending_word.push_back(flat_chars[i]);
+		}
+	}
+}
+
+int get_num_tag_digits(int n) {
+	int res = 1;
+	while (n > 26) {
+		n = n / 26;
+		res++;
+	}
+	return res;
+}
+
+std::vector<std::string> get_tags(int n) {
+	std::vector<std::string> res;
+	int n_digits = get_num_tag_digits(n);
+	for (int i = 0; i < n; i++) {
+		int current_n = i;
+		std::string tag;
+		for (int i = 0; i < n_digits; i++) {
+			tag.push_back('a' + (current_n % 26));
+			current_n = current_n / 26;
+		}
+		res.push_back(tag);
+	}
+	return res;
+}
+
+int get_index_from_tag(const std::string& tag) {
+	int res = 0;
+	int mult = 1;
+
+	for (int i = 0; i < tag.size(); i++) {
+		res += (tag[i] - 'a') * mult;
+		mult = mult * 26;
+	}
+	return res;
 }
 
 fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_char*> flat_chars, fz_point document_point, int* location_index) {

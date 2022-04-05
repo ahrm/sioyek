@@ -530,6 +530,8 @@ void MainWidget::handle_escape() {
     }
     if (opengl_widget) {
         opengl_widget->set_overview_page({});
+		opengl_widget->selected_character_rects.clear();
+		selected_text.clear();
     }
 
     text_command_line_edit_container->hide();
@@ -1687,6 +1689,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         if (command->name == "open_link") {
             opengl_widget->set_highlight_links(true, true);
         }
+        if (command->name == "keyboard_select") {
+            highlight_words();
+        }
         show_textbar(utf8_decode(command->name.c_str()), should_fill_text_bar_with_selected_text);
         if (command->name == "chapter_search") {
             std::optional<std::pair<int, int>> chapter_range = main_document_view->get_current_page_range();
@@ -2269,6 +2274,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         db_manager->import_json(import_file_name, checksummer);
     }
     else if (command->name == "debug") {
+		highlight_words();
     }
     else if (command->name == "smart_jump_under_cursor") {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
@@ -2347,7 +2353,6 @@ void MainWidget::smart_jump_under_pos(int pos_x, int pos_y){
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
-
 
     std::optional<std::pair<std::wstring, std::wstring>> generic_pair =\
             main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
@@ -2544,6 +2549,20 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         }
         opengl_widget->set_highlight_links(false, false);
     }
+    if (current_pending_command->name == "keyboard_select") {
+
+        QStringList parts = QString::fromStdWString(text).split(' ');
+
+        if (parts.size() == 2) {
+
+            fz_irect srect = get_tag_window_rect(parts.at(0).toStdString());
+            fz_irect erect = get_tag_window_rect(parts.at(1).toStdString());
+
+            handle_left_click(srect.x0+5, (srect.y0 + srect.y1) / 2, true);
+            handle_left_click(erect.x0-5 , (erect.y0 + erect.y1) / 2, false);
+            opengl_widget->set_should_highlight_words(false);
+		}
+	}
 
     if (current_pending_command->name == "goto_page_with_page_number") {
 
@@ -2997,3 +3016,57 @@ void MainWidget::dropEvent(QDropEvent* event)
     }
 }
 #endif
+
+void MainWidget::highlight_words() {
+
+    int page = main_document_view->get_current_page_number();
+    fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
+    std::vector<fz_stext_char*> flat_chars;
+    std::vector<fz_rect> word_rects;
+    std::vector<std::pair<fz_rect, int>> word_rects_with_page;
+
+    get_flat_chars_from_stext_page(stext_page, flat_chars);
+    get_flat_words_from_flat_chars(flat_chars, word_rects);
+    for (auto rect : word_rects) {
+        word_rects_with_page.push_back(std::make_pair(rect, page));
+    }
+    opengl_widget->set_highlight_words(word_rects_with_page);
+    opengl_widget->set_should_highlight_words(true);
+
+}
+
+std::vector<fz_rect> MainWidget::get_flat_words() {
+    int page = main_document_view->get_current_page_number();
+    return main_document_view->get_document()->get_page_flat_words(page);
+}
+
+fz_irect MainWidget::get_tag_window_rect(std::string tag) {
+
+    int page = main_document_view->get_current_page_number();
+    fz_rect rect = get_tag_rect(tag);
+
+    fz_irect window_rect;
+
+	main_document_view->document_to_window_pos_in_pixels(
+		page,
+		rect.x0,
+		rect.y0,
+		&window_rect.x0,
+		&window_rect.y0);
+
+	main_document_view->document_to_window_pos_in_pixels(
+		page,
+		rect.x1,
+		rect.y1,
+		&window_rect.x1,
+		&window_rect.y1);
+
+    return window_rect;
+}
+
+fz_rect MainWidget::get_tag_rect(std::string tag) {
+	std::vector<fz_rect> word_rects = get_flat_words();
+	int index = get_index_from_tag(tag);
+    return word_rects[index];
+
+}
