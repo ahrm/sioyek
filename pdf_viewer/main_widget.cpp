@@ -1689,7 +1689,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         if (command->name == "open_link") {
             opengl_widget->set_highlight_links(true, true);
         }
-        if (command->name == "keyboard_select") {
+        if ((command->name == "keyboard_select") || (command->name == "keyboard_smart_jump") || (command->name == "keyboard_overview")) {
             highlight_words();
         }
         show_textbar(utf8_decode(command->name.c_str()), should_fill_text_bar_with_selected_text);
@@ -2562,6 +2562,17 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
             handle_left_click(erect.x0-5 , (erect.y0 + erect.y1) / 2, false);
             opengl_widget->set_should_highlight_words(false);
 		}
+	}
+    if (current_pending_command->name == "keyboard_smart_jump") {
+		fz_irect rect = get_tag_window_rect(utf8_encode(text));
+        smart_jump_under_pos((rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2);
+		opengl_widget->set_should_highlight_words(false);
+	}
+
+    if (current_pending_command->name == "keyboard_overview") {
+		fz_irect rect = get_tag_window_rect(utf8_encode(text));
+        overview_under_pos((rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2);
+		opengl_widget->set_should_highlight_words(false);
 	}
 
     if (current_pending_command->name == "goto_page_with_page_number") {

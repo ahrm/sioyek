@@ -371,17 +371,20 @@ float get_character_width(fz_stext_char* c) {
 	return std::abs(c->quad.ul.x - c->quad.ur.x);
 }
 
-bool is_start_of_new_word(fz_stext_char* prev_char, fz_stext_char* current_char) {
-	if (is_delimeter(prev_char->c)) {
-		return true;
-	}
-
+bool is_start_of_new_line(fz_stext_char* prev_char, fz_stext_char* current_char) {
 	float height = get_character_height(current_char);
 	float threshold = height / 2;
 	if (std::abs(prev_char->quad.ll.y - current_char->quad.ll.y) > threshold) {
 		return true;
 	}
 	return false;
+}
+bool is_start_of_new_word(fz_stext_char* prev_char, fz_stext_char* current_char) {
+	if (is_delimeter(prev_char->c)) {
+		return true;
+	}
+
+	return is_start_of_new_line(prev_char, current_char);
 }
 
 fz_rect create_word_rect(const std::vector<fz_stext_char*>& chars) {
@@ -412,6 +415,9 @@ void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_char
 	for (int i = 1; i < flat_chars.size(); i++) {
 		if (is_start_of_new_word(flat_chars[i - 1], flat_chars[i])) {
 			flat_word_rects.push_back(create_word_rect(pending_word));
+			if (is_start_of_new_line(flat_chars[i - 1], flat_chars[i])) {
+				flat_word_rects.push_back(fz_rect_from_quad(flat_chars[i - 1]->quad));
+			}
 			pending_word.clear();
 			pending_word.push_back(flat_chars[i]);
 		}
