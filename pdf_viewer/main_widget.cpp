@@ -3045,7 +3045,11 @@ void MainWidget::dropEvent(QDropEvent* event)
         auto urls = event->mimeData()->urls();
         std::wstring path = urls.at(0).toString().toStdWString();
         // ignore file:/// at the begining of the URL
+#ifdef Q_OS_WIN
         path = path.substr(8, path.size() - 8);
+#else
+        path = path.substr(7, path.size() - 7);
+#endif
         handle_args(QStringList() << QApplication::applicationFilePath() << QString::fromStdWString(path));
     }
 }
