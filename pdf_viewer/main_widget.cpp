@@ -1723,7 +1723,8 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         copy_to_clipboard(selected_text);
     }
     if (command->name == "copy_window_size_config") {
-        QString config_string = "main_window_size    %1 %2\nmain_window_move     %3 %4\nhelper_window_size    %5 %6\nhelper_window_move     %7 %8";
+        QString config_string_multi = "main_window_size    %1 %2\nmain_window_move     %3 %4\nhelper_window_size    %5 %6\nhelper_window_move     %7 %8";
+        QString config_string_single = "single_main_window_size    %1 %2\nsingle_main_window_move     %3 %4";
 
         QString main_window_size_w = QString::number(size().width());
         QString main_window_size_h = QString::number(size().height());
@@ -1739,16 +1740,22 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             helper_window_size_h = QString::number(helper_opengl_widget->size().height());
             helper_window_move_x = QString::number(helper_opengl_widget->pos().x());
             helper_window_move_y = QString::number(helper_opengl_widget->pos().y());
+			copy_to_clipboard(config_string_multi.arg(main_window_size_w,
+				main_window_size_h,
+				main_window_move_x,
+				main_window_move_y,
+				helper_window_size_w,
+				helper_window_size_h,
+				helper_window_move_x,
+				helper_window_move_y).toStdWString());
+        }
+        else {
+			copy_to_clipboard(config_string_single.arg(main_window_size_w,
+				main_window_size_h,
+				main_window_move_x,
+				main_window_move_y).toStdWString());
         }
 
-        copy_to_clipboard(config_string.arg(main_window_size_w,
-            main_window_size_h,
-            main_window_move_x,
-            main_window_move_y,
-            helper_window_size_w,
-            helper_window_size_h,
-            helper_window_move_x,
-            helper_window_move_y).toStdWString());
     }
 
     if (command->name == "highlight_links") {
