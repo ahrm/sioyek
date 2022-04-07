@@ -97,6 +97,8 @@ public:
 	float set_zoom_level(float zl);
 	float zoom_in();
 	float zoom_out();
+	float zoom_in_cursor(int mouse_x, int mouse_y);
+	float zoom_out_cursor(int mouse_x, int mouse_y);
 	void move_absolute(float dx, float dy);
 	void move(float dx, float dy);
 	void get_absolute_delta_from_doc_delta(float doc_dx, float doc_dy, float* abs_dx, float* abs_dy);

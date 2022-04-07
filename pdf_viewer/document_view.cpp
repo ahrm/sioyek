@@ -430,6 +430,36 @@ float DocumentView::zoom_out() {
 	LOG("DocumentView::zoom_out");
 	return set_zoom_level(zoom_level / ZOOM_INC_FACTOR);
 }
+
+float DocumentView::zoom_in_cursor(int mouse_x, int mouse_y) {
+	LOG("DocumentView::zoom_in_cursor");
+
+	float prev_doc_x, prev_doc_y;
+	window_to_absolute_document_pos(mouse_x, mouse_y, &prev_doc_x, &prev_doc_y);
+
+	float res = zoom_in();
+
+	float new_doc_x, new_doc_y;
+	window_to_absolute_document_pos(mouse_x, mouse_y, &new_doc_x, &new_doc_y);
+
+	move_absolute(-prev_doc_x + new_doc_x, prev_doc_y - new_doc_y);
+
+	return res;
+}
+
+float DocumentView::zoom_out_cursor(int mouse_x, int mouse_y) {
+	LOG("DocumentView::zoom_out_cursor");
+	float prev_doc_x, prev_doc_y;
+	window_to_absolute_document_pos(mouse_x, mouse_y, &prev_doc_x, &prev_doc_y);
+
+	float res = zoom_out();
+
+	float new_doc_x, new_doc_y;
+	window_to_absolute_document_pos(mouse_x, mouse_y, &new_doc_x, &new_doc_y);
+
+	move_absolute(-prev_doc_x + new_doc_x, prev_doc_y - new_doc_y);
+	return res;
+}
 void DocumentView::move_absolute(float dx, float dy) {
 	LOG("DocumentView::move_absolute");
 	set_offsets(offset_x + dx, offset_y + dy);

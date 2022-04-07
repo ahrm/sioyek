@@ -155,6 +155,7 @@ bool RERENDER_OVERVIEW = false;
 bool LINEAR_TEXTURE_FILTERING = false;
 bool RULER_MODE = false;
 bool SMALL_TOC = false;
+bool WHEEL_ZOOM_ON_CURSOR = false;
 float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.25f;
 float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
 std::wstring ITEM_LIST_PREFIX = L">";

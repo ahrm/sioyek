@@ -107,6 +107,8 @@ CommandManager::CommandManager() {
     commands.push_back({ "close_overview", false, false, false, false});
     commands.push_back({ "visual_mark_under_cursor", false, false, false, false});
     commands.push_back({ "close_visual_mark", false, false, false, false});
+    commands.push_back({ "zoom_in_cursor", false, false, false, false});
+    commands.push_back({ "zoom_out_cursor", false, false, false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {

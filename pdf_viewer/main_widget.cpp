@@ -56,6 +56,7 @@ extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool HOVER_OVERVIEW;
+extern bool WHEEL_ZOOM_ON_CURSOR;
 extern float MOVE_SCREEN_PERCENTAGE;
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring INVERSE_SEARCH_COMMAND;
@@ -1590,10 +1591,20 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
     if (is_control_pressed) {
         if (wevent->angleDelta().y() > 0) {
-            command = command_manager.get_command_with_name("zoom_in");
+            if (WHEEL_ZOOM_ON_CURSOR) {
+				command = command_manager.get_command_with_name("zoom_in_cursor");
+            }
+			else {
+				command = command_manager.get_command_with_name("zoom_in");
+            }
         }
         if (wevent->angleDelta().y() < 0) {
-            command = command_manager.get_command_with_name("zoom_out");
+            if (WHEEL_ZOOM_ON_CURSOR) {
+				command = command_manager.get_command_with_name("zoom_out_cursor");
+            }
+            else {
+				command = command_manager.get_command_with_name("zoom_out");
+            }
         }
 
     }
@@ -1833,13 +1844,25 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
 
     else if (command->name == "zoom_in") {
-        main_document_view->zoom_in();
+		main_document_view->zoom_in();
         last_smart_fit_page = {};
     }
 
     else if (command->name == "zoom_out") {
-        main_document_view->zoom_out();
+		main_document_view->zoom_out();
         last_smart_fit_page = {};
+    }
+
+    else if (command->name == "zoom_in_cursor") {
+		QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+		main_document_view->zoom_in_cursor(mouse_pos.x(), mouse_pos.y());
+		last_smart_fit_page = {};
+    }
+
+    else if (command->name == "zoom_out_cursor") {
+		QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+		main_document_view->zoom_out_cursor(mouse_pos.x(), mouse_pos.y());
+		last_smart_fit_page = {};
     }
 
     else if (command->name == "fit_to_page_width") {
