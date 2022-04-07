@@ -16,6 +16,7 @@ extern bool RERENDER_OVERVIEW;
 extern bool RULER_MODE;
 extern float PAGE_SEPARATOR_WIDTH;
 extern float PAGE_SEPARATOR_COLOR[3];
+extern float RULER_PADDING;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -223,7 +224,7 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 		-1, gl_vertical_begin_pos + bar_height,
 		1, gl_vertical_begin_pos + bar_height,
 		-1, gl_vertical_begin_pos,
-		1, gl_vertical_begin_pos  
+		1, gl_vertical_begin_pos 
 	};
 
 	glDisable(GL_CULL_FACE);

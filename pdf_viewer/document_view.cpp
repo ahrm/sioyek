@@ -2,6 +2,7 @@
 
 extern float MOVE_SCREEN_PERCENTAGE;
 extern float FIT_TO_PAGE_WIDTH_RATIO;
+extern float RULER_PADDING;
 
 DocumentView::DocumentView( fz_context* mupdf_context,
 	DatabaseManager* db_manager,
@@ -903,6 +904,8 @@ void DocumentView::get_vertical_line_window_y(float* begin_y, float* end_y) {
 
 	float absol_begin_y, absol_end_y;
 	get_vertical_line_pos(&absol_begin_y, &absol_end_y);
+	absol_begin_y -= RULER_PADDING;
+	absol_end_y += RULER_PADDING;
 
 	float window_begin_x, window_begin_y;
 	float window_end_x, window_end_y;

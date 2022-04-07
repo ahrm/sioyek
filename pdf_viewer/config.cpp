@@ -55,6 +55,7 @@ extern float PAGE_SEPARATOR_COLOR[3];
 extern int SINGLE_MAIN_WINDOW_SIZE[2];
 extern int SINGLE_MAIN_WINDOW_MOVE[2];
 extern float FIT_TO_PAGE_WIDTH_RATIO;
+extern float RULER_PADDING;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -193,6 +194,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"fit_to_page_width_ratio", &FIT_TO_PAGE_WIDTH_RATIO, float_serializer, float_deserializer });
 	configs.push_back({ L"collapsed_toc", &SMALL_TOC, bool_serializer, bool_deserializer });
 	configs.push_back({ L"ruler_mode", &RULER_MODE, bool_serializer, bool_deserializer });
+	configs.push_back({ L"ruler_padding", &RULER_PADDING, float_serializer, float_deserializer });
 
 	//configs.push_back({ L"auto_embed_annotations", &AUTO_EMBED_ANNOTATIONS, bool_serializer, bool_deserializer });
 

@@ -158,6 +158,7 @@ bool SMALL_TOC = false;
 bool WHEEL_ZOOM_ON_CURSOR = false;
 float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.25f;
 float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
+float RULER_PADDING = 0.0f;
 std::wstring ITEM_LIST_PREFIX = L">";
 std::wstring STARTUP_COMMANDS = L"";
 float SMALL_PIXMAP_SCALE = 0.75f;
