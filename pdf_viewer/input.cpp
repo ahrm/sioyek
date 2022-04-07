@@ -400,8 +400,10 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 	}
 
 	if (current_node == root && is_digit(key)) {
-		number_stack.push_back('0' + key - Qt::Key::Key_0);
-		return nullptr;
+		if (!(key == '0' && (number_stack.size() == 0))) {
+			number_stack.push_back('0' + key - Qt::Key::Key_0);
+			return nullptr;
+		}
 	}
 
 	for (InputParseTreeNode* child : current_node->children) {
