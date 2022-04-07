@@ -2303,8 +2303,19 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         std::wstring import_file_name = select_json_file_name();
         db_manager->import_json(import_file_name, checksummer);
     }
+    else if (command->name == "goto_left") {
+		main_document_view->goto_left();
+    }
+    else if (command->name == "goto_left_smart") {
+		main_document_view->goto_left_smart();
+    }
+    else if (command->name == "goto_right") {
+		main_document_view->goto_right();
+    }
+    else if (command->name == "goto_right_smart") {
+		main_document_view->goto_right_smart();
+    }
     else if (command->name == "debug") {
-		highlight_words();
     }
     else if (command->name == "smart_jump_under_cursor") {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());

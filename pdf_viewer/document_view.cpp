@@ -410,11 +410,57 @@ void DocumentView::goto_end() {
 		set_offset_y(current_document->get_accum_page_height(last_page_index) + current_document->get_page_height(last_page_index));
 	}
 }
+
+void DocumentView::goto_left_smart() {
+	LOG("DocumentView::goto_left");
+
+	float left_ratio, right_ratio;
+	int normal_page_width;
+	float page_width = current_document->get_page_width_smart(get_current_page_number(), &left_ratio, &right_ratio, &normal_page_width);
+
+	float right_leftover = 1.0f - right_ratio;
+	float imbalance = left_ratio - right_leftover;
+
+	float view_left_offset = (page_width / 2 -  view_width / zoom_level / 2);
+
+	set_offset_x(view_left_offset);
+}
+
+void DocumentView::goto_left() {
+	LOG("DocumentView::goto_left");
+	float page_width = current_document->get_page_width(get_current_page_number());
+	float view_left_offset = (page_width / 2 -  view_width / zoom_level / 2);
+	set_offset_x(view_left_offset);
+}
+
+void DocumentView::goto_right_smart() {
+	LOG("DocumentView::goto_left");
+
+	float left_ratio, right_ratio;
+	int normal_page_width;
+	float page_width = current_document->get_page_width_smart(get_current_page_number(), &left_ratio, &right_ratio, &normal_page_width);
+
+	float right_leftover = 1.0f - right_ratio;
+	float imbalance = left_ratio - right_leftover;
+
+	float view_left_offset = -(page_width / 2 -  view_width / zoom_level / 2);
+
+	set_offset_x(view_left_offset);
+}
+
+void DocumentView::goto_right() {
+	LOG("DocumentView::goto_left");
+	float page_width = current_document->get_page_width(get_current_page_number());
+	float view_left_offset = -(page_width / 2 -  view_width / zoom_level / 2);
+	set_offset_x(view_left_offset);
+}
+
 float DocumentView::set_zoom_level(float zl) {
 	LOG("DocumentView::set_zoom_level");
 	zoom_level = zl;
 	return zoom_level;
 }
+
 float DocumentView::zoom_in() {
 	LOG("DocumentView::zoom_in");
 	const float max_zoom_level = 10.0f;
