@@ -954,3 +954,11 @@ float DocumentView::get_max_valid_x() {
 float DocumentView::get_min_valid_x() {
 	return -current_document->get_page_width(get_current_page_number()) / 2;
 }
+
+void DocumentView::rotate() {
+	int current_page = get_current_page_number();
+
+	current_document->rotate();
+	float new_offset = current_document->get_accum_page_height(current_page) + current_document->get_page_height(current_page) / 2;
+	set_offset_y(new_offset);
+}

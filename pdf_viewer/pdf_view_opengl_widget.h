@@ -121,6 +121,7 @@ private:
 	float percent_done = 0.0f;
 	std::optional<int> visible_page_number = {};
 
+	int rotation_index = 0;
 	bool is_dragging = false;
 
 	int last_mouse_down_window_x = 0;
@@ -221,4 +222,8 @@ public:
 	void bind_program();
 	void cancel_search();
 	void window_pos_to_overview_pos(float window_x, float window_y, float* doc_offset_x, float* doc_offset_y, int* doc_page);
+	void rotate();
+
+	bool is_rotated();
+
 };

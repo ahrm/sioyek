@@ -9,6 +9,7 @@
 #include <memory>
 
 
+#include <qscrollarea.h>
 #include <qabstractitemmodel.h>
 #include <qapplication.h>
 #include <qboxlayout.h>
@@ -164,6 +165,10 @@ void MainWidget::set_overview_link(PdfLink link) {
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     LOG("MainWidget::mouseMoveEvent");
+
+    if (is_rotated()) {
+        return;
+    }
 
     int x = mouse_event->pos().x();
     int y = mouse_event->pos().y();
@@ -398,6 +403,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         }
         });
     timer->start();
+
 
     QVBoxLayout* layout = new QVBoxLayout;
     layout->setSpacing(0);
@@ -1127,6 +1133,10 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 void MainWidget::handle_right_click(float x, float y, bool down) {
     LOG("MainWidget::handle_right_click");
 
+    if (is_rotated()) {
+        return;
+    }
+
     if ((down == true) && opengl_widget->get_overview_page()) {
         opengl_widget->set_overview_page({});
         invalidate_render();
@@ -1199,6 +1209,10 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 void MainWidget::handle_left_click(float x, float y, bool down) {
     LOG("MainWidget::handle_left_click");
 
+    if (is_rotated()) {
+        return;
+    }
+
     float x_, y_;
     main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
 
@@ -1255,7 +1269,7 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
         is_selecting = false;
         is_dragging = false;
 
-        bool was_overview_mode = overview_move_data || overview_resize_data;
+        bool was_overview_mode = overview_move_data.has_value() || overview_resize_data.has_value();
 
         overview_move_data = {};
         overview_resize_data = {};
@@ -1469,6 +1483,10 @@ bool MainWidget::find_location_of_text_under_pointer(int pointer_x, int pointer_
 void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     LOG("MainWidget::mouseReleaseEvent");
 
+	if (is_rotated()) {
+		return;
+	}
+
     if (mevent->button() == Qt::MouseButton::LeftButton) {
         handle_left_click(mevent->pos().x(), mevent->pos().y(), false);
         if (is_select_highlight_mode && (opengl_widget->selected_character_rects.size() > 0)) {
@@ -1498,6 +1516,7 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
 
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     LOG("MainWidget::mousePressEvent");
+
     if (mevent->button() == Qt::MouseButton::LeftButton) {
         handle_left_click(mevent->pos().x(), mevent->pos().y(), true);
     }
@@ -2314,6 +2333,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "goto_right_smart") {
 		main_document_view->goto_right_smart();
+    }
+    else if (command->name == "rotate") {
+		main_document_view->rotate();
+        opengl_widget->rotate();
     }
     else if (command->name == "debug") {
     }
@@ -3148,4 +3171,8 @@ fz_rect MainWidget::get_tag_rect(std::string tag) {
 	int index = get_index_from_tag(tag);
     return word_rects[index];
 
+}
+
+bool MainWidget::is_rotated() {
+    return opengl_widget->is_rotated();
 }

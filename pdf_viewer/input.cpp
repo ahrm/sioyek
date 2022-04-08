@@ -113,6 +113,7 @@ CommandManager::CommandManager() {
     commands.push_back({ "goto_left_smart", false, false, false, false});
     commands.push_back({ "goto_right", false, false, false, false});
     commands.push_back({ "goto_right_smart", false, false, false, false});
+    commands.push_back({ "rotate", false, false, false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {

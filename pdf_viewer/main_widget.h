@@ -244,4 +244,6 @@ public:
 	fz_rect get_tag_rect(std::string tag);
 	fz_irect get_tag_window_rect(std::string tag);
 
+	bool is_rotated();
+
 };

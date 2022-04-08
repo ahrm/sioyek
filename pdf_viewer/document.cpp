@@ -1692,3 +1692,12 @@ std::vector<fz_rect> Document::get_page_flat_words(int page) {
 	cached_flat_words[page] = word_rects;
     return word_rects;
 }
+
+void Document::rotate() {
+	std::swap(page_heights, page_widths);
+	float acc_height = 0;
+	for (int i = 0; i < page_heights.size(); i++) {
+		accum_page_heights[i] = acc_height;
+		acc_height += page_heights[i];
+	}
+}

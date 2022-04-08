@@ -32,6 +32,40 @@ GLfloat g_quad_uvs[] = {
 	1.0f, 1.0f
 };
 
+GLfloat g_quad_uvs_rotated[] = {
+	0.0f, 1.0f,
+	0.0f, 0.0f,
+	1.0f, 1.0f,
+	1.0f, 0.0f
+};
+
+GLfloat rotation_uvs[4][8] = {
+	{
+	0.0f, 0.0f,
+	1.0f, 0.0f,
+	0.0f, 1.0f,
+	1.0f, 1.0f
+	},
+	{
+	0.0f, 1.0f,
+	0.0f, 0.0f,
+	1.0f, 1.0f,
+	1.0f, 0.0f
+	},
+	{
+	1.0f, 1.0f,
+	0.0f, 1.0f,
+	1.0f, 0.0f,
+	0.0f, 0.0f
+	},
+	{
+	1.0f, 0.0f,
+	1.0f, 1.0f,
+	0.0f, 0.0f,
+	0.0f, 1.0f
+	},
+};
+
 OpenGLSharedResources PdfViewOpenGLWidget::shared_gl_objects;
 
 GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_file_path) {
@@ -262,6 +296,10 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 }
 void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect, bool draw_border) {
 	LOG("PdfViewOpenGLWidget::render_highlight_window");
+
+	if (is_rotated()) {
+		return;
+	}
 
 	float quad_vertex_data[] = {
 		window_rect.x0, window_rect.y1,
@@ -561,6 +599,10 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_uvs), rotation_uvs[rotation_index], GL_DYNAMIC_DRAW);
+
 	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1090,6 +1132,10 @@ bool PdfViewOpenGLWidget::is_window_point_in_overview(float window_x, float wind
 bool PdfViewOpenGLWidget::is_window_point_in_overview_border(float window_x, float window_y, OverviewSide* which_border) {
 	LOG("PdfViewOpenGLWidget::is_window_point_in_overview_border");
 
+	if (!get_overview_page().has_value()) {
+		return false;
+	}
+
 	fz_point point{ window_x, window_y };
 	std::vector<fz_rect> rects = get_overview_border_rects();
 	for (int i = 0; i < rects.size(); i++) {
@@ -1237,4 +1283,12 @@ void PdfViewOpenGLWidget::set_highlight_words(std::vector<std::pair<fz_rect, int
 
 void PdfViewOpenGLWidget::set_should_highlight_words(bool should_highlight) {
 	this->should_highlight_words = should_highlight;
+}
+
+void PdfViewOpenGLWidget::rotate() {
+	rotation_index = (rotation_index + 1) % 4;
+}
+
+bool PdfViewOpenGLWidget::is_rotated() {
+	return rotation_index != 0;
 }
