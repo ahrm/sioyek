@@ -2334,9 +2334,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "goto_right_smart") {
 		main_document_view->goto_right_smart();
     }
-    else if (command->name == "rotate") {
+    else if (command->name == "rotate_clockwise") {
 		main_document_view->rotate();
-        opengl_widget->rotate();
+        opengl_widget->rotate_clockwise();
+    }
+    else if (command->name == "rotate_counterclockwise") {
+		main_document_view->rotate();
+        opengl_widget->rotate_counterclockwise();
     }
     else if (command->name == "debug") {
     }

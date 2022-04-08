@@ -1285,8 +1285,15 @@ void PdfViewOpenGLWidget::set_should_highlight_words(bool should_highlight) {
 	this->should_highlight_words = should_highlight;
 }
 
-void PdfViewOpenGLWidget::rotate() {
+void PdfViewOpenGLWidget::rotate_clockwise() {
 	rotation_index = (rotation_index + 1) % 4;
+}
+
+void PdfViewOpenGLWidget::rotate_counterclockwise() {
+	rotation_index = (rotation_index - 1) % 4;
+	if (rotation_index < 0) {
+		rotation_index += 4;
+	}
 }
 
 bool PdfViewOpenGLWidget::is_rotated() {

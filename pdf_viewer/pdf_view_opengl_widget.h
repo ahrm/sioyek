@@ -222,7 +222,8 @@ public:
 	void bind_program();
 	void cancel_search();
 	void window_pos_to_overview_pos(float window_x, float window_y, float* doc_offset_x, float* doc_offset_y, int* doc_page);
-	void rotate();
+	void rotate_clockwise();
+	void rotate_counterclockwise();
 
 	bool is_rotated();
 
