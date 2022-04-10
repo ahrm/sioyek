@@ -14,9 +14,9 @@ make USE_SYSTEM_HARFBUZZ=yes
 cd ..
 
 if [[ $1 == portable ]]; then
-	qmake pdf_viewer_build_config.pro
+	qmake "CONFIG+=linux_app_image" pdf_viewer_build_config.pro
 else
-	qmake "CONFIG+=non_portable" pdf_viewer_build_config.pro
+	qmake "CONFIG+=linux_app_image non_portable" pdf_viewer_build_config.pro
 fi
 
 rm -r sioyek-release 2> /dev/null

@@ -10,7 +10,6 @@ QT += core sql opengl gui widgets quickwidgets 3dcore 3danimation 3dextras 3dinp
 CONFIG += c++17
 DEFINES += QT_3DCORE_LIB QT_3DANIMATION_LIB QT_3DEXTRAS_LIB QT_3DINPUT_LIB QT_3DLOGIC_LIB QT_3DRENDER_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_QUICKWIDGETS_LIB QT_SQL_LIB QT_WIDGETS_LIB
 
-
 CONFIG(non_portable){
     DEFINES += NON_PORTABLE
 }
@@ -73,7 +72,15 @@ win32{
 unix:!mac {
 
     QMAKE_CXXFLAGS += -std=c++17
-    LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lharfbuzz -lz
+
+    CONFIG(linux_app_image){
+        LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lharfbuzz -lz
+    } else {
+        DEFINES += NON_PORTABLE
+        DEFINES += LINUX_STANDARD_PATHS
+        LIBS += -ldl -lmupdf -lharfbuzz -lfreetype -ljbig2dec -ljpeg -lmujs -lopenjp2 -lz
+    }
+
     isEmpty(PREFIX){
         PREFIX = /usr
     }
