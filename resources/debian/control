@@ -1,0 +1,12 @@
+Source: sioyek
+Maintainer: Ali Mostafavi <a.hr.mostafavi@gmail.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 10) , libharfbuzz-dev, libfreetype-dev, libjbig2dec0-dev, libjpeg-dev, libmujs-dev, libopenjp2-7-dev, zlib1g-dev, qtbase5-dev, qtdeclarative5-dev, qt3d5-dev, gcc-9, libqt5opengl5-dev, libmupdf-dev, libgl-dev
+
+Package: sioyek
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description:  PDF viewer
+ Sioyek is a PDF viewer optimized for reading research papers and textbooks.

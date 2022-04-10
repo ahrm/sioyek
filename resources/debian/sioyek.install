@@ -1,0 +1,13 @@
+pdf_viewer/prefs.config etc/sioyek/
+pdf_viewer/keys.config etc/sioyek/
+tutorial.pdf usr/share/sioyek/
+pdf_viewer/shaders/simple.vertex usr/share/sioyek/shaders/
+pdf_viewer/shaders/custom_colors.fragment usr/share/sioyek/shaders/
+pdf_viewer/shaders/dark_mode.fragment usr/share/sioyek/shaders/
+pdf_viewer/shaders/debug.fragment usr/share/sioyek/shaders/
+pdf_viewer/shaders/highlight.fragment usr/share/sioyek/shaders/
+pdf_viewer/shaders/separator.fragment usr/share/sioyek/shaders/
+pdf_viewer/shaders/simple.fragment usr/share/sioyek/shaders/
+pdf_viewer/shaders/unrendered_page.fragment usr/share/sioyek/shaders/
+pdf_viewer/shaders/vertical_bar_dark.fragment usr/share/sioyek/shaders/
+pdf_viewer/shaders/vertical_bar.fragment usr/share/sioyek/shaders/
