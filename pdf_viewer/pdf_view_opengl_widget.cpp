@@ -635,9 +635,11 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	glDisable(GL_BLEND);
 	glBindVertexArray(vertex_array_object);
 
+
 	if (!valid_document()) {
+
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		if (is_helper) {
 			//painter->endNativePainting();
@@ -658,7 +660,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	else {
 		glClearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], 1.0f);
 	}
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 
 	std::vector<std::pair<int, fz_link*>> all_visible_links;
@@ -778,6 +780,20 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (overview_page) {
 		render_overview(overview_page.value());
 	}
+
+	enable_stencil();
+	write_to_stencil();
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+	render_overview(OverviewState{ 0, 0, 0 });
+	use_stencil_to_write();
+	for (int page : visible_pages) {
+		render_page(page);
+	}
+	render_transparent_white();
+	disable_stencil();
 
 	painter->endNativePainting();
 
@@ -1298,4 +1314,59 @@ void PdfViewOpenGLWidget::rotate_counterclockwise() {
 
 bool PdfViewOpenGLWidget::is_rotated() {
 	return rotation_index != 0;
+}
+
+void PdfViewOpenGLWidget::enable_stencil() {
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0xFF);
+}
+
+void PdfViewOpenGLWidget::write_to_stencil() {
+	glStencilFunc(GL_NEVER, 1, 0xFF);
+	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+}
+
+void PdfViewOpenGLWidget::use_stencil_to_write() {
+	//glStencilFunc(GL_EQUAL, 1, 0xFF);
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+}
+
+void PdfViewOpenGLWidget::disable_stencil() {
+	glDisable(GL_STENCIL_TEST);
+}
+
+void PdfViewOpenGLWidget::render_transparent_white() {
+
+	float bar_data[] = {
+		-1, -1,
+		1, -1,
+		-1, 1,
+		1, 1
+	};
+
+	glDisable(GL_CULL_FACE);
+	glUseProgram(shared_gl_objects.vertical_line_program);
+
+	const float* vertical_line_color = config_manager->get_config<float>(L"vertical_line_color");
+	if (vertical_line_color != nullptr) {
+		glUniform4fv(shared_gl_objects.line_color_uniform_location,
+			1,
+			vertical_line_color);
+	}
+	float time = -QDateTime::currentDateTime().msecsTo(creation_time);
+	glUniform1f(shared_gl_objects.line_time_uniform_location, time);
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(bar_data), bar_data, GL_DYNAMIC_DRAW);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisable(GL_BLEND);
 }

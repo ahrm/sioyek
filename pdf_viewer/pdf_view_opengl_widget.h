@@ -155,6 +155,13 @@ protected:
 	void paintGL() override;
 	void render(QPainter* painter);
 
+	void enable_stencil();
+	void write_to_stencil();
+	void use_stencil_to_write();
+	void disable_stencil();
+
+	void render_transparent_white();
+
 public:
 
 #ifndef NDEBUG
@@ -226,5 +233,6 @@ public:
 	void rotate_counterclockwise();
 
 	bool is_rotated();
+
 
 };
