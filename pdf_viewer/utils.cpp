@@ -1578,3 +1578,9 @@ std::wstring truncate_string(const std::wstring& inp, int size) {
 	}
  
 }
+
+std::wstring get_page_formatted_string(int page) {
+	std::wstringstream ss;
+	ss << L"[ " << page << L" ]";
+	return ss.str();
+}

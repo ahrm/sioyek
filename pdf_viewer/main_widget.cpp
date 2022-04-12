@@ -2040,6 +2040,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "goto_bookmark") {
         std::vector<std::wstring> option_names;
+        std::vector<std::wstring> option_location_strings;
         std::vector<float> option_locations;
         std::vector<BookMark> bookmarks;
         if (SORT_BOOKMARKS_BY_LOCATION) {
@@ -2052,9 +2053,14 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         for (auto bookmark : bookmarks){
             option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmark.description);
             option_locations.push_back(bookmark.y_offset);
+            int page;
+            float _;
+            main_document_view->get_document()->absolute_to_page_pos(0, bookmark.y_offset, &_, &_, &page);
+            option_location_strings.push_back(get_page_formatted_string(page));
         }
-        set_current_widget(new FilteredSelectWindowClass<float>(
+        set_current_widget(new FilteredSelectTableWindowClass<float>(
             option_names,
+            option_location_strings,
             option_locations,
             [&](float* offset_value) {
                 if (offset_value) {
@@ -2119,9 +2125,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             int page;
             float _;
             main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin.x, highlight.selection_begin.y, &_, &_, &page);
-            std::wstringstream ss;
-            ss << L"[ " << page+1 << L" ]";
-            option_location_strings.push_back(ss.str());
+            option_location_strings.push_back(get_page_formatted_string(page));
         }
 
         set_current_widget(new FilteredSelectTableWindowClass<std::vector<float>>(
@@ -2152,6 +2156,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         std::vector<std::pair<std::string, BookMark>> global_bookmarks;
         db_manager->global_select_bookmark(global_bookmarks);
         std::vector<std::wstring> descs;
+        std::vector<std::wstring> file_names;
         std::vector<BookState> book_states;
 
         for (const auto& desc_bm_pair : global_bookmarks) {
@@ -2160,12 +2165,14 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             if (path) {
                 BookMark bm = desc_bm_pair.second;
                 std::wstring file_name = Path(path.value()).filename().value_or(L"");
-                descs.push_back(ITEM_LIST_PREFIX + L" " + bm.description + L" {" + file_name + L"}");
+                descs.push_back(ITEM_LIST_PREFIX + L" " + bm.description);
+                file_names.push_back(truncate_string(file_name, 50));
                 book_states.push_back({ path.value(), bm.y_offset });
             }
         }
-        set_current_widget(new FilteredSelectWindowClass<BookState>(
+        set_current_widget(new FilteredSelectTableWindowClass<BookState>(
             descs,
+            file_names,
             book_states,
             [&](BookState* book_state) {
                 if (book_state) {

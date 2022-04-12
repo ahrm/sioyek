@@ -148,3 +148,4 @@ void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_char
 std::vector<std::string> get_tags(int n);
 int get_index_from_tag(const std::string& tag);
 std::wstring truncate_string(const std::wstring& inp, int size);
+std::wstring get_page_formatted_string(int page);
