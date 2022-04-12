@@ -129,7 +129,12 @@ protected:
 
 	virtual void on_select(const QModelIndex& value) = 0;
 	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) {}
-	virtual void on_return_no_select(const QString& text) {}
+
+	virtual void on_return_no_select(const QString& text) {
+		if (get_view()->model()->hasIndex(0, 0)) {
+			on_select(get_view()->model()->index(0, 0));
+		}
+	}
 
 	// should return true when we want to manually handle text change events
 	virtual bool on_text_change(const QString& text) {
@@ -424,12 +429,6 @@ public:
 		table_view->horizontalHeader()->hide();
 		table_view->verticalHeader()->hide();
 
-	}
-
-	virtual void on_return_no_select(const QString& text) {
-		hide();
-		parentWidget()->setFocus();
-		(*on_done)(line_edit->text().toStdString());
 	}
 
 	virtual bool on_text_change(const QString& text) {
