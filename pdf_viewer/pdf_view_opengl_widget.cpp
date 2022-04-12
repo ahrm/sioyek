@@ -680,7 +680,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 					config_manager->get_config<float>(L"link_highlight_color"));
 				fz_link* links = document_view->get_document()->get_page_links(page);
 				while (links != nullptr) {
-					render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
+					//render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
 					all_visible_links.push_back(std::make_pair(page, links));
 					links = links->next;
 				}
@@ -783,11 +783,15 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	enable_stencil();
 	write_to_stencil();
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
-	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
-	render_overview(OverviewState{ 0, 0, 0 });
+	//glEnableVertexAttribArray(0);
+	//glEnableVertexAttribArray(1);
+	//glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
+	//glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+	//render_overview(OverviewState{ 0, 0, 0 });
+	for (auto link : all_visible_links) {
+		render_highlight_document(shared_gl_objects.highlight_program, link.first, link.second->rect);
+	}
+
 	use_stencil_to_write();
 	for (int page : visible_pages) {
 		render_page(page);
@@ -1348,7 +1352,8 @@ void PdfViewOpenGLWidget::render_transparent_white() {
 	glDisable(GL_CULL_FACE);
 	glUseProgram(shared_gl_objects.vertical_line_program);
 
-	const float* vertical_line_color = config_manager->get_config<float>(L"vertical_line_color");
+	float vertical_line_color[4] = { 1.0f, 1.0f, 1.0f, 0.5f };
+
 	if (vertical_line_color != nullptr) {
 		glUniform4fv(shared_gl_objects.line_color_uniform_location,
 			1,
