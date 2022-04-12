@@ -144,6 +144,24 @@ int Document::find_closest_bookmark_index(float to_offset_y) {
 	return min_index;
 }
 
+int Document::find_closest_sorted_bookmark_index(const std::vector<BookMark>& sorted_bookmarks, float to_offset_y) const {
+
+	int min_index = argminf<BookMark>(sorted_bookmarks, [to_offset_y](BookMark bm) {
+		return abs(bm.y_offset - to_offset_y);
+		});
+
+	return min_index;
+}
+
+int Document::find_closest_sorted_highlight_index(const std::vector<Highlight>& sorted_highlights, float to_offset_y) const {
+
+	int min_index = argminf<Highlight>(sorted_highlights, [to_offset_y](Highlight hl) {
+		return abs(hl.selection_begin.y - to_offset_y);
+		});
+
+	return min_index;
+}
+
 void Document::delete_closest_bookmark(float to_y_offset) {
 	LOG("Document::delete_closest_bookmark");
 	int closest_index = find_closest_bookmark_index(to_y_offset);

@@ -310,6 +310,7 @@ public:
 		std::vector<std::wstring> std_string_list,
 		std::vector<std::wstring> std_string_list_right,
 		std::vector<T> values,
+		int selected_index,
 		std::function<void(T*)> on_done,
 		QWidget* parent,
 		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView, QSortFilterProxyModel>(nullptr, parent),
@@ -336,13 +337,20 @@ public:
 
 		QTableView* table_view = dynamic_cast<QTableView*>(get_view());
 
+		if (selected_index != -1) {
+			table_view->selectionModel()->setCurrentIndex(model->index(selected_index, 0), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
+		}
+
 		table_view->setSelectionMode(QAbstractItemView::SingleSelection);
 		table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
 		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-		table_view->horizontalHeader()->setStretchLastSection(false);
-		table_view->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-		table_view->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+		if (std_string_list.size() > 0) {
+			table_view->horizontalHeader()->setStretchLastSection(false);
+			table_view->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+			table_view->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+		}
+
 		table_view->horizontalHeader()->hide();
 		table_view->verticalHeader()->hide();
 	}

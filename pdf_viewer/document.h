@@ -110,6 +110,10 @@ public:
 	std::wstring get_path();
 	std::string get_checksum();
 	int find_closest_bookmark_index(float to_offset_y);
+
+	int find_closest_sorted_bookmark_index(const std::vector<BookMark>& sorted_bookmarks, float to_offset_y) const;
+	int find_closest_sorted_highlight_index(const std::vector<Highlight>& sorted_highlights, float to_offset_y) const;
+
 	std::optional<Link> find_closest_link(float to_offset_y, int* index = nullptr);
 	bool update_link(Link new_link);
 	void delete_closest_bookmark(float to_y_offset);

@@ -2056,12 +2056,16 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             int page;
             float _;
             main_document_view->get_document()->absolute_to_page_pos(0, bookmark.y_offset, &_, &_, &page);
-            option_location_strings.push_back(get_page_formatted_string(page));
+            option_location_strings.push_back(get_page_formatted_string(page + 1));
         }
+
+        int closest_bookmark_index = main_document_view->get_document()->find_closest_sorted_bookmark_index(bookmarks, main_document_view->get_offset_y());
+
         set_current_widget(new FilteredSelectTableWindowClass<float>(
             option_names,
             option_location_strings,
             option_locations,
+            closest_bookmark_index,
             [&](float* offset_value) {
                 if (offset_value) {
                     validate_render();
@@ -2116,6 +2120,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         std::vector<std::vector<float>> option_locations;
         const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights_sorted();
 
+        int closest_highlight_index = main_document_view->get_document()->find_closest_sorted_highlight_index(highlights, main_document_view->get_offset_y());
 
         for (auto highlight : highlights){
             std::wstring type_name = L"a";
@@ -2125,13 +2130,14 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             int page;
             float _;
             main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin.x, highlight.selection_begin.y, &_, &_, &page);
-            option_location_strings.push_back(get_page_formatted_string(page));
+            option_location_strings.push_back(get_page_formatted_string(page + 1));
         }
 
         set_current_widget(new FilteredSelectTableWindowClass<std::vector<float>>(
             option_names,
             option_location_strings,
             option_locations,
+            closest_highlight_index,
             [&](std::vector<float>* offset_values) {
                 if (offset_values) {
                     validate_render();
@@ -2174,6 +2180,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             descs,
             file_names,
             book_states,
+            -1,
             [&](BookState* book_state) {
                 if (book_state) {
                     validate_render();
@@ -2220,6 +2227,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             descs,
             file_names,
             book_states,
+            -1,
             [&](BookState* book_state) {
                 if (book_state) {
                     validate_render();
