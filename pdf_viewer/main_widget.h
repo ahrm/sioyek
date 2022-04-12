@@ -174,6 +174,7 @@ protected:
     void complete_pending_link(const LinkViewState& destination_view_state);
 	void long_jump_to_destination(int page, float offset_x, float offset_y);
 	void long_jump_to_destination(int page, float offset_y);
+	void long_jump_to_destination(float abs_offset_y);
 	void execute_command(std::wstring command);
 	QString get_status_stylesheet();
 	int get_status_bar_height();

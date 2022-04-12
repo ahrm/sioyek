@@ -244,12 +244,26 @@ const std::vector<Highlight>& Document::get_highlights() const {
 	return highlights;
 }
 
-const std::vector<Highlight> Document::get_highlights_sorted() const {
-	LOG("std::vector<Highlight> Document::get_highlights_sorted");
+const std::vector<Highlight> Document::get_highlights_of_type(char type) const {
 	std::vector<Highlight> res;
 
 	for (auto hl : highlights) {
-		res.push_back(hl);
+		if (hl.type == type) {
+			res.push_back(hl);
+		}
+	}
+	return res;
+}
+
+const std::vector<Highlight> Document::get_highlights_sorted(char type) const {
+	LOG("std::vector<Highlight> Document::get_highlights_sorted");
+	std::vector<Highlight> res;
+
+	if (type == 0) {
+		res = highlights;
+	}
+	else {
+		res = get_highlights_of_type(type);
 	}
 
 	std::sort(res.begin(), res.end(), [](const Highlight& hl1, const Highlight& hl2) {
@@ -1700,4 +1714,48 @@ void Document::rotate() {
 		accum_page_heights[i] = acc_height;
 		acc_height += page_heights[i];
 	}
+}
+
+std::optional<Highlight> Document::get_next_highlight(float abs_y, char type, int offset) const {
+
+	int index = 0;
+	auto sorted_highlights = get_highlights_sorted(type);
+
+	for (auto hl : sorted_highlights) {
+		if (hl.selection_begin.y <= abs_y) {
+			index++;
+		}
+		else {
+			break;
+		}
+	}
+
+	// now index points the the next highlight
+	if ((index+offset) < sorted_highlights.size()) {
+		return sorted_highlights[index + offset];
+	}
+
+	return {};
+}
+
+std::optional<Highlight> Document::get_prev_highlight(float abs_y, char type, int offset) const {
+
+	int index = -1;
+	auto sorted_highlights = get_highlights_sorted(type);
+
+	for (auto hl : sorted_highlights) {
+		if (hl.selection_begin.y < abs_y) {
+			index++;
+		}
+		else {
+			break;
+		}
+	}
+
+	// now index points the the previous highlight
+	if ((index+offset) >= 0) {
+		return sorted_highlights[index + offset];
+	}
+
+	return {};
 }

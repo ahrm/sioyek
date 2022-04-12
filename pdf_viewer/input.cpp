@@ -115,6 +115,10 @@ CommandManager::CommandManager() {
     commands.push_back({ "goto_right_smart", false, false, false, false});
     commands.push_back({ "rotate_clockwise", false, false, false, false});
     commands.push_back({ "rotate_counterclockwise", false, false, false, false});
+    commands.push_back({ "goto_next_highlight", false, false, false, false});
+    commands.push_back({ "goto_prev_highlight", false, false, false, false});
+    commands.push_back({ "goto_next_highlight_of_type", false, false, false, false});
+    commands.push_back({ "goto_prev_highlight_of_type", false, false, false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {

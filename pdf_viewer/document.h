@@ -117,7 +117,12 @@ public:
 	const std::vector<BookMark>& get_bookmarks() const;
 	std::vector<BookMark> get_sorted_bookmarks() const;
 	const std::vector<Highlight>& get_highlights() const;
-	const std::vector<Highlight> get_highlights_sorted() const;
+	const std::vector<Highlight> get_highlights_of_type(char type) const;
+	const std::vector<Highlight> get_highlights_sorted(char type=0) const;
+
+	std::optional<Highlight> get_next_highlight(float abs_y, char type=0, int offset=0) const;
+	std::optional<Highlight> get_prev_highlight(float abs_y, char type=0, int offset=0) const;
+
 	fz_link* get_page_links(int page_number);
 	void add_mark(char symbol, float y_offset);
 	bool remove_mark(char symbol);

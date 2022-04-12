@@ -497,6 +497,7 @@ std::wstring MainWidget::get_status_string() {
     if (horizontal_scroll_locked) {
         ss << " [ locked horizontal scroll ] ";
     }
+    ss << " [ h:" << select_highlight_type << " ] ";
 
     return ss.str();
 }
@@ -2071,6 +2072,30 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             }));
         current_widget->show();
     }
+    else if (command->name == "goto_next_highlight") {
+		auto next_highlight = main_document_view->get_document()->get_next_highlight(main_document_view->get_offset_y());
+        if (next_highlight.has_value()) {
+			long_jump_to_destination(next_highlight.value().selection_begin.y);
+        }
+	}
+    else if (command->name == "goto_next_highlight_of_type") {
+		auto next_highlight = main_document_view->get_document()->get_next_highlight(main_document_view->get_offset_y(), select_highlight_type);
+        if (next_highlight.has_value()) {
+			long_jump_to_destination(next_highlight.value().selection_begin.y);
+        }
+	}
+    else if (command->name == "goto_prev_highlight") {
+		auto prev_highlight = main_document_view->get_document()->get_prev_highlight(main_document_view->get_offset_y());
+        if (prev_highlight.has_value()) {
+			long_jump_to_destination(prev_highlight.value().selection_begin.y);
+        }
+	}
+    else if (command->name == "goto_prev_highlight_of_type") {
+		auto prev_highlight = main_document_view->get_document()->get_prev_highlight(main_document_view->get_offset_y(), select_highlight_type);
+        if (prev_highlight.has_value()) {
+			long_jump_to_destination(prev_highlight.value().selection_begin.y);
+        }
+	}
     else if (command->name == "goto_highlight") {
         std::vector<std::wstring> option_names;
         std::vector<std::vector<float>> option_locations;
@@ -2736,6 +2761,15 @@ void MainWidget::complete_pending_link(const LinkViewState& destination_view_sta
 void MainWidget::long_jump_to_destination(int page, float offset_y) {
     LOG("MainWidget::long_jump_to_destination");
     long_jump_to_destination(page, main_document_view->get_offset_x(), offset_y);
+}
+
+
+void MainWidget::long_jump_to_destination(float abs_offset_y) {
+
+    int page;
+    float offset_x, offset_y;
+    main_document_view->get_document()->absolute_to_page_pos(main_document_view->get_offset_x(), abs_offset_y, &offset_x, &offset_y, &page);
+    long_jump_to_destination(page, offset_y);
 }
 
 void MainWidget::long_jump_to_destination(int page, float offset_x, float offset_y) {
