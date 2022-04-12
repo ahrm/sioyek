@@ -290,6 +290,82 @@ public:
 };
 
 template<typename T>
+class FilteredSelectTableWindowClass : public BaseSelectorWidget<T, QTableView, QSortFilterProxyModel> {
+private:
+
+	QStringListModel* string_list_model = nullptr;
+	std::vector<T> values;
+	std::function<void(T*)> on_done = nullptr;
+	std::function<void(T*)> on_delete_function = nullptr;
+
+protected:
+
+public:
+
+	QString get_view_stylesheet_type_name() {
+		return "QTableView";
+	}
+
+	FilteredSelectTableWindowClass(
+		std::vector<std::wstring> std_string_list,
+		std::vector<std::wstring> std_string_list_right,
+		std::vector<T> values,
+		std::function<void(T*)> on_done,
+		QWidget* parent,
+		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView, QSortFilterProxyModel>(nullptr, parent),
+		values(values),
+		on_done(on_done),
+		on_delete_function(on_delete_function)
+	{
+		QVector<QString> q_string_list;
+		for (const auto& s : std_string_list) {
+			q_string_list.push_back(QString::fromStdWString(s));
+
+		}
+
+		QStandardItemModel* model = new QStandardItemModel();
+
+		for (int i = 0; i < std_string_list.size(); i++) {
+			QStandardItem* name_item = new QStandardItem(QString::fromStdWString(std_string_list[i]));
+			QStandardItem* key_item = new QStandardItem(QString::fromStdWString(std_string_list_right[i]));
+			key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
+			model->appendRow(QList<QStandardItem*>() << name_item << key_item);
+		}
+
+		this->proxy_model->setSourceModel(model);
+
+		QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+
+		table_view->setSelectionMode(QAbstractItemView::SingleSelection);
+		table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+		table_view->horizontalHeader()->setStretchLastSection(false);
+		table_view->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+		table_view->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+		table_view->horizontalHeader()->hide();
+		table_view->verticalHeader()->hide();
+	}
+
+
+	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) override {
+		if (on_delete_function) {
+			on_delete_function(&values[source_index.row()]);
+			int delete_row = selected_index.row();
+			this->proxy_model->removeRow(selected_index.row());
+			values.erase(values.begin() + source_index.row());
+		}
+	}
+
+	void on_select(const QModelIndex& index) {
+		this->hide();
+		this->parentWidget()->setFocus();
+		auto source_index = this->proxy_model->mapToSource(index);
+		on_done(&values[source_index.row()]);
+	}
+};
+
+template<typename T>
 class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView, QSortFilterProxyModel> {
 private:
 
@@ -305,6 +381,7 @@ public:
 	QString get_view_stylesheet_type_name() {
 		return "QListView";
 	}
+
 
 	FilteredSelectWindowClass(std::vector<std::wstring> std_string_list,
 		std::vector<T> values,

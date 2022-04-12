@@ -41,6 +41,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "goto_bookmark", false, false , false, false});
 	commands.push_back({ "goto_bookmark_g", false, false , false, false});
 	commands.push_back({ "goto_highlight_g", false, false , false, false});
+	commands.push_back({ "goto_highlight_ranged", false, false , false, false});
 	commands.push_back({ "link", false, false , false, false});
 	commands.push_back({ "next_state", false, false , false, false});
 	commands.push_back({ "prev_state", false, false , false, false});
@@ -119,6 +120,7 @@ CommandManager::CommandManager() {
     commands.push_back({ "goto_prev_highlight", false, false, false, false});
     commands.push_back({ "goto_next_highlight_of_type", false, false, false, false});
     commands.push_back({ "goto_prev_highlight_of_type", false, false, false, false});
+    commands.push_back({ "add_highlight_with_current_type", false, false, false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {

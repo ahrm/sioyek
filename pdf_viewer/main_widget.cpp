@@ -2072,6 +2072,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             }));
         current_widget->show();
     }
+    else if (command->name == "add_highlight_with_current_type") {
+        if (opengl_widget->selected_character_rects.size() > 0) {
+            main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, select_highlight_type);
+            opengl_widget->selected_character_rects.clear();
+            selected_text.clear();
+        }
+    }
     else if (command->name == "goto_next_highlight") {
 		auto next_highlight = main_document_view->get_document()->get_next_highlight(main_document_view->get_offset_y());
         if (next_highlight.has_value()) {
@@ -2098,6 +2105,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
     else if (command->name == "goto_highlight") {
         std::vector<std::wstring> option_names;
+        std::vector<std::wstring> option_location_strings;
         std::vector<std::vector<float>> option_locations;
         const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights_sorted();
 
@@ -2107,10 +2115,17 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             type_name[0] = highlight.type;
             option_names.push_back(L"[" + type_name + L"] " + highlight.description + L"]");
             option_locations.push_back({highlight.selection_begin.x, highlight.selection_begin.y, highlight.selection_end.x, highlight.selection_end.y});
+            int page;
+            float _;
+            main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin.x, highlight.selection_begin.y, &_, &_, &page);
+            std::wstringstream ss;
+            ss << L"[ " << page+1 << L" ]";
+            option_location_strings.push_back(ss.str());
         }
 
-        set_current_widget(new FilteredSelectWindowClass<std::vector<float>>(
+        set_current_widget(new FilteredSelectTableWindowClass<std::vector<float>>(
             option_names,
+            option_location_strings,
             option_locations,
             [&](std::vector<float>* offset_values) {
                 if (offset_values) {
