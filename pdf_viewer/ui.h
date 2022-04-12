@@ -119,7 +119,7 @@ protected:
 	}
 
 
-	QAbstractItemView* get_view() {
+	virtual QAbstractItemView* get_view() {
 		return abstract_item_view;
 	}
 
@@ -345,7 +345,7 @@ public:
 
 		this->proxy_model->setSourceModel(model);
 
-		QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+		QTableView* table_view = dynamic_cast<QTableView*>(this->get_view());
 
 		if (selected_index != -1) {
 			table_view->selectionModel()->setCurrentIndex(model->index(selected_index, 0), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
