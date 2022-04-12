@@ -187,6 +187,16 @@ public:
 					QCoreApplication::postEvent(get_view(), new_key_event);
 					return true;
 				}
+				if ((key_event->key() == Qt::Key_PageDown)) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageDown, key_event->modifiers());
+					QCoreApplication::postEvent(get_view(), new_key_event);
+					return true;
+				}
+				if ((key_event->key() == Qt::Key_PageUp)) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageUp, key_event->modifiers());
+					QCoreApplication::postEvent(get_view(), new_key_event);
+					return true;
+				}
 				if (key_event->key() == Qt::Key_Backtab) {
 					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
 					QCoreApplication::postEvent(get_view(), new_key_event);
