@@ -2103,6 +2103,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			long_jump_to_destination(prev_highlight.value().selection_begin.y);
         }
 	}
+
     else if (command->name == "goto_highlight") {
         std::vector<std::wstring> option_names;
         std::vector<std::wstring> option_location_strings;
@@ -2185,6 +2186,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         std::vector<std::pair<std::string, Highlight>> global_highlights;
         db_manager->global_select_highlight(global_highlights);
         std::vector<std::wstring> descs;
+        std::vector<std::wstring> file_names;
         std::vector<BookState> book_states;
 
         for (const auto& desc_hl_pair : global_highlights) {
@@ -2198,13 +2200,18 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
                 std::wstring highlight_type_string = L"a";
                 highlight_type_string[0] = hl.type;
 
-                descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
+                //descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
+                descs.push_back(L"[" + highlight_type_string + L"]" + hl.description);
+
+				file_names.push_back(truncate_string(file_name, 50));
+
                 book_states.push_back({ path.value(), hl.selection_begin.y });
 
             }
         }
-        set_current_widget(new FilteredSelectWindowClass<BookState>(
+        set_current_widget(new FilteredSelectTableWindowClass<BookState>(
             descs,
+            file_names,
             book_states,
             [&](BookState* book_state) {
                 if (book_state) {
