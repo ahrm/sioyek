@@ -1568,3 +1568,19 @@ std::wifstream open_wifstream(const std::wstring& file_name) {
 	return std::move(std::wifstream(encoded_file_name.c_str()));
 #endif
 }
+
+std::wstring truncate_string(const std::wstring& inp, int size) {
+	if (inp.size() <= size) {
+		return inp;
+	}
+	else {
+		return inp.substr(0, size - 3) + L"...";
+	}
+ 
+}
+
+std::wstring get_page_formatted_string(int page) {
+	std::wstringstream ss;
+	ss << L"[ " << page << L" ]";
+	return ss.str();
+}

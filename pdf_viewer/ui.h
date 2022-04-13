@@ -119,7 +119,7 @@ protected:
 	}
 
 
-	QAbstractItemView* get_view() {
+	virtual QAbstractItemView* get_view() {
 		return abstract_item_view;
 	}
 
@@ -129,7 +129,12 @@ protected:
 
 	virtual void on_select(const QModelIndex& value) = 0;
 	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) {}
-	virtual void on_return_no_select(const QString& text) {}
+
+	virtual void on_return_no_select(const QString& text) {
+		if (get_view()->model()->hasIndex(0, 0)) {
+			on_select(get_view()->model()->index(0, 0));
+		}
+	}
 
 	// should return true when we want to manually handle text change events
 	virtual bool on_text_change(const QString& text) {
@@ -179,6 +184,16 @@ public:
 				}
 				if ((key_event->key() == Qt::Key_P) && is_control_pressed) {
 					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
+					QCoreApplication::postEvent(get_view(), new_key_event);
+					return true;
+				}
+				if ((key_event->key() == Qt::Key_PageDown)) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageDown, key_event->modifiers());
+					QCoreApplication::postEvent(get_view(), new_key_event);
+					return true;
+				}
+				if ((key_event->key() == Qt::Key_PageUp)) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageUp, key_event->modifiers());
 					QCoreApplication::postEvent(get_view(), new_key_event);
 					return true;
 				}
@@ -285,6 +300,90 @@ public:
 };
 
 template<typename T>
+class FilteredSelectTableWindowClass : public BaseSelectorWidget<T, QTableView, QSortFilterProxyModel> {
+private:
+
+	QStringListModel* string_list_model = nullptr;
+	std::vector<T> values;
+	std::function<void(T*)> on_done = nullptr;
+	std::function<void(T*)> on_delete_function = nullptr;
+
+protected:
+
+public:
+
+	QString get_view_stylesheet_type_name() {
+		return "QTableView";
+	}
+
+	FilteredSelectTableWindowClass(
+		std::vector<std::wstring> std_string_list,
+		std::vector<std::wstring> std_string_list_right,
+		std::vector<T> values,
+		int selected_index,
+		std::function<void(T*)> on_done,
+		QWidget* parent,
+		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView, QSortFilterProxyModel>(nullptr, parent),
+		values(values),
+		on_done(on_done),
+		on_delete_function(on_delete_function)
+	{
+		QVector<QString> q_string_list;
+		for (const auto& s : std_string_list) {
+			q_string_list.push_back(QString::fromStdWString(s));
+
+		}
+
+		QStandardItemModel* model = new QStandardItemModel();
+
+		for (int i = 0; i < std_string_list.size(); i++) {
+			QStandardItem* name_item = new QStandardItem(QString::fromStdWString(std_string_list[i]));
+			QStandardItem* key_item = new QStandardItem(QString::fromStdWString(std_string_list_right[i]));
+			key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
+			model->appendRow(QList<QStandardItem*>() << name_item << key_item);
+		}
+
+		this->proxy_model->setSourceModel(model);
+
+		QTableView* table_view = dynamic_cast<QTableView*>(this->get_view());
+
+		if (selected_index != -1) {
+			table_view->selectionModel()->setCurrentIndex(model->index(selected_index, 0), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
+		}
+
+		table_view->setSelectionMode(QAbstractItemView::SingleSelection);
+		table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+		if (std_string_list.size() > 0) {
+			table_view->horizontalHeader()->setStretchLastSection(false);
+			table_view->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+			table_view->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+		}
+
+		table_view->horizontalHeader()->hide();
+		table_view->verticalHeader()->hide();
+	}
+
+
+	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) override {
+		if (on_delete_function) {
+			on_delete_function(&values[source_index.row()]);
+			int delete_row = selected_index.row();
+			this->proxy_model->removeRow(selected_index.row());
+			values.erase(values.begin() + source_index.row());
+		}
+	}
+
+	void on_select(const QModelIndex& index) {
+		this->hide();
+		this->parentWidget()->setFocus();
+		auto source_index = this->proxy_model->mapToSource(index);
+		on_done(&values[source_index.row()]);
+	}
+};
+
+template<typename T>
 class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView, QSortFilterProxyModel> {
 private:
 
@@ -300,6 +399,7 @@ public:
 	QString get_view_stylesheet_type_name() {
 		return "QListView";
 	}
+
 
 	FilteredSelectWindowClass(std::vector<std::wstring> std_string_list,
 		std::vector<T> values,
@@ -424,12 +524,6 @@ public:
 		table_view->horizontalHeader()->hide();
 		table_view->verticalHeader()->hide();
 
-	}
-
-	virtual void on_return_no_select(const QString& text) {
-		hide();
-		parentWidget()->setFocus();
-		(*on_done)(line_edit->text().toStdString());
 	}
 
 	virtual bool on_text_change(const QString& text) {

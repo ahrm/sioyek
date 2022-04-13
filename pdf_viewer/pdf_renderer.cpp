@@ -371,6 +371,13 @@ fz_document* PdfRenderer::get_document_with_path(int thread_index, fz_context* m
 	fz_document* ret_val = nullptr;
 	fz_try(mupdf_context) {
 		ret_val = fz_open_document(mupdf_context, utf8_encode(path).c_str());
+
+		if (fz_needs_password(mupdf_context, ret_val)) {
+			if (document_passwords.find(path) != document_passwords.end()) {
+				fz_authenticate_password(mupdf_context, ret_val, document_passwords[path].c_str());
+			}
+		}
+
 		opened_documents[make_pair(thread_index, path)] = ret_val;
 	}
 	fz_catch(mupdf_context) {
@@ -473,6 +480,11 @@ void PdfRenderer::run(int thread_index) {
 		}
 
 	}
+}
+
+void PdfRenderer::add_password(std::wstring path, std::string password) {
+	document_passwords[path] = password;
+	delete_old_pages(true, false);
 }
 
 bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {

@@ -11,6 +11,8 @@
 #include <iostream>
 #include <functional>
 #include <thread>
+#include <unordered_map>
+#include <map>
 //#include <gl/glew.h>
 //#include <Windows.h>
 
@@ -82,6 +84,8 @@ class PdfRenderer : public QObject{
 	int num_threads = 0;
 	float display_scale = 1.0f;
 
+	std::map<std::wstring, std::string> document_passwords;
+
 	fz_context* init_context();
 	fz_document* get_document_with_path(int thread_index, fz_context* mupdf_context, std::wstring path);
 	GLuint try_closest_rendered_page(std::wstring doc_path, int page, float zoom_level, int* page_width, int* page_height);
@@ -112,6 +116,7 @@ public:
 
 	GLuint find_rendered_page(std::wstring path, int page, float zoom_level, int* page_width, int* page_height);
 	void delete_old_pages(bool force_all=false, bool invalidate_all=false);
+	void add_password(std::wstring path, std::string password);
 
 signals:
 	void render_advance();

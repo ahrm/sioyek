@@ -373,6 +373,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     unsigned int INTERVAL_TIME = 200;
     timer->setInterval(INTERVAL_TIME);
     connect(timer, &QTimer::timeout, [&, INTERVAL_TIME]() {
+
+
         if (is_render_invalidated) {
             validate_render();
         }
@@ -497,6 +499,7 @@ std::wstring MainWidget::get_status_string() {
     if (horizontal_scroll_locked) {
         ss << " [ locked horizontal scroll ] ";
     }
+    ss << " [ h:" << select_highlight_type << " ] ";
 
     return ss.str();
 }
@@ -991,6 +994,8 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     // reset smart fit when changing documents
     last_smart_fit_page = {};
     opengl_widget->on_document_view_reset();
+    show_password_prompt_if_required();
+
 
 }
 
@@ -1042,6 +1047,7 @@ void MainWidget::open_document_at_location(const Path& path_,
     // reset smart fit when changing documents
     last_smart_fit_page = {};
     opengl_widget->on_document_view_reset();
+    show_password_prompt_if_required();
 }
 
 void MainWidget::open_document(const DocumentViewState& state)
@@ -2039,6 +2045,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "goto_bookmark") {
         std::vector<std::wstring> option_names;
+        std::vector<std::wstring> option_location_strings;
         std::vector<float> option_locations;
         std::vector<BookMark> bookmarks;
         if (SORT_BOOKMARKS_BY_LOCATION) {
@@ -2051,10 +2058,19 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         for (auto bookmark : bookmarks){
             option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmark.description);
             option_locations.push_back(bookmark.y_offset);
+            int page;
+            float _;
+            main_document_view->get_document()->absolute_to_page_pos(0, bookmark.y_offset, &_, &_, &page);
+            option_location_strings.push_back(get_page_formatted_string(page + 1));
         }
-        set_current_widget(new FilteredSelectWindowClass<float>(
+
+        int closest_bookmark_index = main_document_view->get_document()->find_closest_sorted_bookmark_index(bookmarks, main_document_view->get_offset_y());
+
+        set_current_widget(new FilteredSelectTableWindowClass<float>(
             option_names,
+            option_location_strings,
             option_locations,
+            closest_bookmark_index,
             [&](float* offset_value) {
                 if (offset_value) {
                     validate_render();
@@ -2071,22 +2087,62 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             }));
         current_widget->show();
     }
+    else if (command->name == "add_highlight_with_current_type") {
+        if (opengl_widget->selected_character_rects.size() > 0) {
+            main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, select_highlight_type);
+            opengl_widget->selected_character_rects.clear();
+            selected_text.clear();
+        }
+    }
+    else if (command->name == "goto_next_highlight") {
+		auto next_highlight = main_document_view->get_document()->get_next_highlight(main_document_view->get_offset_y());
+        if (next_highlight.has_value()) {
+			long_jump_to_destination(next_highlight.value().selection_begin.y);
+        }
+	}
+    else if (command->name == "goto_next_highlight_of_type") {
+		auto next_highlight = main_document_view->get_document()->get_next_highlight(main_document_view->get_offset_y(), select_highlight_type);
+        if (next_highlight.has_value()) {
+			long_jump_to_destination(next_highlight.value().selection_begin.y);
+        }
+	}
+    else if (command->name == "goto_prev_highlight") {
+		auto prev_highlight = main_document_view->get_document()->get_prev_highlight(main_document_view->get_offset_y());
+        if (prev_highlight.has_value()) {
+			long_jump_to_destination(prev_highlight.value().selection_begin.y);
+        }
+	}
+    else if (command->name == "goto_prev_highlight_of_type") {
+		auto prev_highlight = main_document_view->get_document()->get_prev_highlight(main_document_view->get_offset_y(), select_highlight_type);
+        if (prev_highlight.has_value()) {
+			long_jump_to_destination(prev_highlight.value().selection_begin.y);
+        }
+	}
+
     else if (command->name == "goto_highlight") {
         std::vector<std::wstring> option_names;
+        std::vector<std::wstring> option_location_strings;
         std::vector<std::vector<float>> option_locations;
         const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights_sorted();
 
+        int closest_highlight_index = main_document_view->get_document()->find_closest_sorted_highlight_index(highlights, main_document_view->get_offset_y());
 
         for (auto highlight : highlights){
             std::wstring type_name = L"a";
             type_name[0] = highlight.type;
             option_names.push_back(L"[" + type_name + L"] " + highlight.description + L"]");
             option_locations.push_back({highlight.selection_begin.x, highlight.selection_begin.y, highlight.selection_end.x, highlight.selection_end.y});
+            int page;
+            float _;
+            main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin.x, highlight.selection_begin.y, &_, &_, &page);
+            option_location_strings.push_back(get_page_formatted_string(page + 1));
         }
 
-        set_current_widget(new FilteredSelectWindowClass<std::vector<float>>(
+        set_current_widget(new FilteredSelectTableWindowClass<std::vector<float>>(
             option_names,
+            option_location_strings,
             option_locations,
+            closest_highlight_index,
             [&](std::vector<float>* offset_values) {
                 if (offset_values) {
                     validate_render();
@@ -2111,6 +2167,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         std::vector<std::pair<std::string, BookMark>> global_bookmarks;
         db_manager->global_select_bookmark(global_bookmarks);
         std::vector<std::wstring> descs;
+        std::vector<std::wstring> file_names;
         std::vector<BookState> book_states;
 
         for (const auto& desc_bm_pair : global_bookmarks) {
@@ -2119,13 +2176,16 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             if (path) {
                 BookMark bm = desc_bm_pair.second;
                 std::wstring file_name = Path(path.value()).filename().value_or(L"");
-                descs.push_back(ITEM_LIST_PREFIX + L" " + bm.description + L" {" + file_name + L"}");
+                descs.push_back(ITEM_LIST_PREFIX + L" " + bm.description);
+                file_names.push_back(truncate_string(file_name, 50));
                 book_states.push_back({ path.value(), bm.y_offset });
             }
         }
-        set_current_widget(new FilteredSelectWindowClass<BookState>(
+        set_current_widget(new FilteredSelectTableWindowClass<BookState>(
             descs,
+            file_names,
             book_states,
+            -1,
             [&](BookState* book_state) {
                 if (book_state) {
                     validate_render();
@@ -2145,6 +2205,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         std::vector<std::pair<std::string, Highlight>> global_highlights;
         db_manager->global_select_highlight(global_highlights);
         std::vector<std::wstring> descs;
+        std::vector<std::wstring> file_names;
         std::vector<BookState> book_states;
 
         for (const auto& desc_hl_pair : global_highlights) {
@@ -2158,14 +2219,20 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
                 std::wstring highlight_type_string = L"a";
                 highlight_type_string[0] = hl.type;
 
-                descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
+                //descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
+                descs.push_back(L"[" + highlight_type_string + L"]" + hl.description);
+
+				file_names.push_back(truncate_string(file_name, 50));
+
                 book_states.push_back({ path.value(), hl.selection_begin.y });
 
             }
         }
-        set_current_widget(new FilteredSelectWindowClass<BookState>(
+        set_current_widget(new FilteredSelectTableWindowClass<BookState>(
             descs,
+            file_names,
             book_states,
+            -1,
             [&](BookState* book_state) {
                 if (book_state) {
                     validate_render();
@@ -2584,6 +2651,12 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         opengl_widget->search_text(search_term, search_range);
     }
 
+    if (current_pending_command->name == "enter_password") {
+        std::string password = utf8_encode(text);
+        bool success = main_document_view->get_document()->apply_password(password.c_str());
+        pdf_renderer->add_password(main_document_view->get_document()->get_path(), password);
+    }
+
     if (current_pending_command->name == "add_bookmark") {
         main_document_view->add_bookmark(text);
     }
@@ -2736,6 +2809,15 @@ void MainWidget::complete_pending_link(const LinkViewState& destination_view_sta
 void MainWidget::long_jump_to_destination(int page, float offset_y) {
     LOG("MainWidget::long_jump_to_destination");
     long_jump_to_destination(page, main_document_view->get_offset_x(), offset_y);
+}
+
+
+void MainWidget::long_jump_to_destination(float abs_offset_y) {
+
+    int page;
+    float offset_x, offset_y;
+    main_document_view->get_document()->absolute_to_page_pos(main_document_view->get_offset_x(), abs_offset_y, &offset_x, &offset_y, &page);
+    long_jump_to_destination(page, offset_y);
 }
 
 void MainWidget::long_jump_to_destination(int page, float offset_x, float offset_y) {
@@ -3179,4 +3261,14 @@ fz_rect MainWidget::get_tag_rect(std::string tag) {
 
 bool MainWidget::is_rotated() {
     return opengl_widget->is_rotated();
+}
+
+void MainWidget::show_password_prompt_if_required() {
+	if (main_document_view && (main_document_view->get_document() != nullptr)) {
+		if (main_document_view->get_document()->needs_authentication()) {
+			if (current_pending_command == nullptr || current_pending_command->name != "enter_password") {
+				handle_command(command_manager.get_command_with_name("enter_password"), 1);
+			}
+		}
+	}
 }

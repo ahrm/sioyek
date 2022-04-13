@@ -144,6 +144,24 @@ int Document::find_closest_bookmark_index(float to_offset_y) {
 	return min_index;
 }
 
+int Document::find_closest_sorted_bookmark_index(const std::vector<BookMark>& sorted_bookmarks, float to_offset_y) const {
+
+	int min_index = argminf<BookMark>(sorted_bookmarks, [to_offset_y](BookMark bm) {
+		return abs(bm.y_offset - to_offset_y);
+		});
+
+	return min_index;
+}
+
+int Document::find_closest_sorted_highlight_index(const std::vector<Highlight>& sorted_highlights, float to_offset_y) const {
+
+	int min_index = argminf<Highlight>(sorted_highlights, [to_offset_y](Highlight hl) {
+		return abs(hl.selection_begin.y - to_offset_y);
+		});
+
+	return min_index;
+}
+
 void Document::delete_closest_bookmark(float to_y_offset) {
 	LOG("Document::delete_closest_bookmark");
 	int closest_index = find_closest_bookmark_index(to_y_offset);
@@ -244,12 +262,26 @@ const std::vector<Highlight>& Document::get_highlights() const {
 	return highlights;
 }
 
-const std::vector<Highlight> Document::get_highlights_sorted() const {
-	LOG("std::vector<Highlight> Document::get_highlights_sorted");
+const std::vector<Highlight> Document::get_highlights_of_type(char type) const {
 	std::vector<Highlight> res;
 
 	for (auto hl : highlights) {
-		res.push_back(hl);
+		if (hl.type == type) {
+			res.push_back(hl);
+		}
+	}
+	return res;
+}
+
+const std::vector<Highlight> Document::get_highlights_sorted(char type) const {
+	LOG("std::vector<Highlight> Document::get_highlights_sorted");
+	std::vector<Highlight> res;
+
+	if (type == 0) {
+		res = highlights;
+	}
+	else {
+		res = get_highlights_of_type(type);
 	}
 
 	std::sort(res.begin(), res.end(), [](const Highlight& hl1, const Highlight& hl2) {
@@ -563,7 +595,7 @@ Document::~Document() {
 	}
 	//this->figure_indexing_thread.join();
 }
-void Document::reload() {
+void Document::reload(std::string password) {
 	LOG("Document::reload");
 	fz_drop_document(context, doc);
 	cached_num_pages = {};
@@ -588,15 +620,22 @@ void Document::reload() {
 
 	doc = nullptr;
 
-	open(invalid_flag_pointer);
+	open(invalid_flag_pointer, false, password);
 }
 
-bool Document::open(bool* invalid_flag, bool force_load_dimensions) {
+bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string password) {
 	LOG("Document::open");
 	last_update_time = QDateTime::currentDateTime();
 	if (doc == nullptr) {
 		fz_try(context) {
 			doc = fz_open_document(context, utf8_encode(file_name).c_str());
+			document_needs_password = fz_needs_password(context, doc);
+			if (password.size() > 0) {
+				int auth_res = fz_authenticate_password(context, doc, password.c_str());
+				if (auth_res > 0) {
+					password_was_correct = true;
+				}
+			}
 			//fz_layout_document(context, doc, 600, 800, 9);
 		}
 		fz_catch(context) {
@@ -830,6 +869,9 @@ fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_nu
 	fz_stext_page* stext_page = nullptr;
 
 	fz_try(ctx) {
+		//if (needs_authentication()) {
+		//	fz_authenticate_password(context, doc, correct_password.c_str());
+		//}
 		stext_page = fz_new_stext_page_from_page_number(ctx, doc, page_number, nullptr);
 	}
 	fz_catch(ctx) {
@@ -997,6 +1039,10 @@ void Document::index_figures(bool* invalid_flag) {
 		fz_try(context_) {
 
 			fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+
+			if (document_needs_password) {
+				fz_authenticate_password(context_, doc_, correct_password.c_str());
+			}
 
 			bool focus_next = false;
 			for (int i = 0; i < n; i++) {
@@ -1699,5 +1745,75 @@ void Document::rotate() {
 	for (int i = 0; i < page_heights.size(); i++) {
 		accum_page_heights[i] = acc_height;
 		acc_height += page_heights[i];
+	}
+}
+
+std::optional<Highlight> Document::get_next_highlight(float abs_y, char type, int offset) const {
+
+	int index = 0;
+	auto sorted_highlights = get_highlights_sorted(type);
+
+	for (auto hl : sorted_highlights) {
+		if (hl.selection_begin.y <= abs_y) {
+			index++;
+		}
+		else {
+			break;
+		}
+	}
+
+	// now index points the the next highlight
+	if ((index+offset) < sorted_highlights.size()) {
+		return sorted_highlights[index + offset];
+	}
+
+	return {};
+}
+
+std::optional<Highlight> Document::get_prev_highlight(float abs_y, char type, int offset) const {
+
+	int index = -1;
+	auto sorted_highlights = get_highlights_sorted(type);
+
+	for (auto hl : sorted_highlights) {
+		if (hl.selection_begin.y < abs_y) {
+			index++;
+		}
+		else {
+			break;
+		}
+	}
+
+	// now index points the the previous highlight
+	if ((index+offset) >= 0) {
+		return sorted_highlights[index + offset];
+	}
+
+	return {};
+}
+
+bool Document::needs_password() {
+	return document_needs_password;
+}
+
+
+bool Document::apply_password(const char* password) {
+
+	if (context && doc) {
+		reload(password);
+		if (password_was_correct) {
+			correct_password = password;
+		}
+		return password_was_correct;
+	}
+	return false;
+}
+
+bool Document::needs_authentication() {
+	if (needs_password()) {
+		return !password_was_correct;
+	}
+	else {
+		return false;
 	}
 }
