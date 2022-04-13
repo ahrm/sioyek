@@ -387,6 +387,23 @@ bool is_start_of_new_word(fz_stext_char* prev_char, fz_stext_char* current_char)
 	return is_start_of_new_line(prev_char, current_char);
 }
 
+fz_rect create_word_rect(const std::vector<fz_rect>& chars) {
+	fz_rect res;
+	res.x0 = res.x1 = res.y0 = res.y1 = 0;
+	if (chars.size() == 0) return res;
+	res = chars[0];
+
+	float min_x;
+	for (int i = 1; i < chars.size(); i++) {
+		if (res.x0 > chars[i].x0) res.x0 = chars[i].x0;
+		if (res.x1 < chars[i].x1) res.x1 = chars[i].x1;
+		if (res.y0 > chars[i].y0) res.y0 = chars[i].y0;
+		if (res.y1 < chars[i].y1) res.y1 = chars[i].y1;
+	}
+
+	return res;
+}
+
 fz_rect create_word_rect(const std::vector<fz_stext_char*>& chars) {
 	fz_rect res;
 	res.x0 = res.x1 = res.y0 = res.y1 = 0;
@@ -409,6 +426,7 @@ void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_char
 
 	if (flat_chars.size() == 0) return;
 
+	std::vector<std::wstring> res;
 	std::vector<fz_stext_char*> pending_word;
 	pending_word.push_back(flat_chars[0]);
 
@@ -418,6 +436,45 @@ void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_char
 			if (is_start_of_new_line(flat_chars[i - 1], flat_chars[i])) {
 				flat_word_rects.push_back(fz_rect_from_quad(flat_chars[i - 1]->quad));
 			}
+			pending_word.clear();
+			pending_word.push_back(flat_chars[i]);
+		}
+		else {
+			pending_word.push_back(flat_chars[i]);
+		}
+	}
+}
+
+void get_word_rect_list_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars,
+	std::vector<std::wstring>& words,
+	std::vector<std::vector<fz_rect>>& flat_word_rects) {
+	
+	if (flat_chars.size() == 0) return;
+
+	std::vector<fz_stext_char*> pending_word;
+	pending_word.push_back(flat_chars[0]);
+
+	auto get_rects = [&]() {
+		std::vector<fz_rect> res;
+		for (auto chr : pending_word) {
+			res.push_back(fz_rect_from_quad(chr->quad));
+		}
+		return res;
+	};
+
+	auto get_word = [&]() {
+		std::wstring res;
+		for (auto chr : pending_word) {
+			res.push_back(chr->c);
+		}
+		return res;
+	};
+
+	for (int i = 1; i < flat_chars.size(); i++) {
+		if (is_start_of_new_word(flat_chars[i - 1], flat_chars[i])) {
+			flat_word_rects.push_back(get_rects());
+			words.push_back(get_word());
+
 			pending_word.clear();
 			pending_word.push_back(flat_chars[i]);
 		}

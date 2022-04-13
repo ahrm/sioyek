@@ -1817,3 +1817,52 @@ bool Document::needs_authentication() {
 		return false;
 	}
 }
+
+std::vector<fz_rect> Document::get_highlighted_character_masks(int page) {
+	fz_stext_page* stext_page = get_stext_with_page_number(page);
+	std::vector<fz_stext_char*> flat_chars;
+	get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+	std::vector<std::wstring> words;
+	std::vector<std::vector<fz_rect>> word_rects;
+	get_word_rect_list_from_flat_chars(flat_chars, words, word_rects);
+
+	std::vector<fz_rect> res;
+
+	for (int i = 0; i < words.size(); i++) {
+
+		std::vector<fz_rect> highlighted_characters;
+
+		if (words[i].size() == 1) {
+			highlighted_characters.push_back(word_rects[i][0]);
+		}
+		else if (words[i].size() == 2) {
+			highlighted_characters.push_back(word_rects[i][0]);
+		}
+		else if (words[i].size() == 3) {
+			highlighted_characters.push_back(word_rects[i][0]);
+			highlighted_characters.push_back(word_rects[i][1]);
+		}
+		else {
+			int num_highlighted = static_cast<int>(words[i].size() * 0.4f);
+			for (int j = 0; j < num_highlighted; j++) {
+				highlighted_characters.push_back(word_rects[i][j]);
+			}
+
+		}
+		res.push_back(create_word_rect(highlighted_characters));
+	}
+
+	//std::vector<fz_rect> res;
+
+	//std::vector<fz_rect> pending_word;
+	//pending_word.push_back(flat_chars[0]);
+
+	//for (int i = 1; i < flat_chars.size(); i++) {
+	//	if (flat_chars[i - 1]->c == ' ') {
+	//		res.push_back(fz_rect_from_quad(flat_chars[i]->quad));
+	//	}
+	//}
+	return res;
+}
+

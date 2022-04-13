@@ -202,6 +202,7 @@ public:
 	bool needs_password();
 	bool needs_authentication();
 	bool apply_password(const char* password);
+	std::vector<fz_rect> get_highlighted_character_masks(int page);
 
 	friend class DocumentManager;
 };

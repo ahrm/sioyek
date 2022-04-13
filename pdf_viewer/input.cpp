@@ -122,6 +122,7 @@ CommandManager::CommandManager() {
     commands.push_back({ "goto_prev_highlight_of_type", false, false, false, false});
     commands.push_back({ "add_highlight_with_current_type", false, false, false, false});
 	commands.push_back({ "enter_password", true, false , false, false});
+	commands.push_back({ "toggle_fastread", false, false , false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {

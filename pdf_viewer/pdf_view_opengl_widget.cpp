@@ -197,6 +197,7 @@ void PdfViewOpenGLWidget::initializeGL() {
 		shared_gl_objects.vertical_line_dark_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path .slash(L"vertical_bar_dark.fragment"));
 		shared_gl_objects.custom_color_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"custom_colors.fragment"));
 		shared_gl_objects.separator_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"separator.fragment"));
+		shared_gl_objects.stencil_program = LoadShaders(shader_path.slash(L"stencil.vertex"),  shader_path.slash(L"stencil.fragment"));
 
 		shared_gl_objects.dark_mode_contrast_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_dark_program, "contrast");
 
@@ -688,6 +689,17 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		}
 	}
 
+	if (fastread_mode) {
+
+		enable_stencil();
+		write_to_stencil();
+		auto rects = document_view->get_document()->get_highlighted_character_masks(document_view->get_current_page_number());
+		draw_stencil_rects(document_view->get_current_page_number(), rects);
+		use_stencil_to_write();
+		render_transparent_white();
+		disable_stencil();
+	}
+
 #ifndef NDEBUG
 	if (last_selected_block) {
 		glUseProgram(shared_gl_objects.highlight_program);
@@ -781,23 +793,6 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		render_overview(overview_page.value());
 	}
 
-	enable_stencil();
-	write_to_stencil();
-	//glEnableVertexAttribArray(0);
-	//glEnableVertexAttribArray(1);
-	//glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
-	//glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
-	//render_overview(OverviewState{ 0, 0, 0 });
-	for (auto link : all_visible_links) {
-		render_highlight_document(shared_gl_objects.highlight_program, link.first, link.second->rect);
-	}
-
-	use_stencil_to_write();
-	for (int page : visible_pages) {
-		render_page(page);
-	}
-	render_transparent_white();
-	disable_stencil();
 
 	painter->endNativePainting();
 
@@ -1374,4 +1369,36 @@ void PdfViewOpenGLWidget::render_transparent_white() {
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
 	glDisable(GL_BLEND);
+}
+
+void PdfViewOpenGLWidget::draw_stencil_rects(int page, const std::vector<fz_rect>& rects) {
+
+	std::vector<float> window_rects;
+	for (auto rect : rects) {
+		fz_rect window_rect = document_view->document_to_window_rect(page, rect);
+		float triangle1[6] = {
+			window_rect.x0, window_rect.y0,
+			window_rect.x0, window_rect.y1,
+			window_rect.x1, window_rect.y0
+		};
+		float triangle2[6] = {
+			window_rect.x1, window_rect.y0,
+			window_rect.x0, window_rect.y1,
+			window_rect.x1, window_rect.y1
+		};
+		for (int i = 0; i < 6; i++) window_rects.push_back(triangle1[i]);
+		for (int i = 0; i < 6; i++) window_rects.push_back(triangle2[i]);
+	}
+
+	glUseProgram(shared_gl_objects.stencil_program);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+	glBufferData(GL_ARRAY_BUFFER, window_rects.size() * sizeof(float), window_rects.data(), GL_DYNAMIC_DRAW);
+	glDrawArrays(GL_TRIANGLES, 0, rects.size() * 6);
+	glDisableVertexAttribArray(0);
+
+}
+
+void PdfViewOpenGLWidget::toggle_fastread_mode() {
+	fastread_mode = !fastread_mode;
 }

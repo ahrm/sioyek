@@ -2411,6 +2411,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "debug") {
     }
+    else if (command->name == "toggle_fastread") {
+		opengl_widget->toggle_fastread_mode();
+	}
     else if (command->name == "smart_jump_under_cursor") {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
         smart_jump_under_pos(mouse_pos.x(), mouse_pos.y());
