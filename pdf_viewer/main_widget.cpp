@@ -373,6 +373,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     unsigned int INTERVAL_TIME = 200;
     timer->setInterval(INTERVAL_TIME);
     connect(timer, &QTimer::timeout, [&, INTERVAL_TIME]() {
+
+
         if (is_render_invalidated) {
             validate_render();
         }
@@ -992,6 +994,8 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     // reset smart fit when changing documents
     last_smart_fit_page = {};
     opengl_widget->on_document_view_reset();
+    show_password_prompt_if_required();
+
 
 }
 
@@ -1043,6 +1047,7 @@ void MainWidget::open_document_at_location(const Path& path_,
     // reset smart fit when changing documents
     last_smart_fit_page = {};
     opengl_widget->on_document_view_reset();
+    show_password_prompt_if_required();
 }
 
 void MainWidget::open_document(const DocumentViewState& state)
@@ -2646,6 +2651,12 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         opengl_widget->search_text(search_term, search_range);
     }
 
+    if (current_pending_command->name == "enter_password") {
+        std::string password = utf8_encode(text);
+        bool success = main_document_view->get_document()->apply_password(password.c_str());
+        pdf_renderer->add_password(main_document_view->get_document()->get_path(), password);
+    }
+
     if (current_pending_command->name == "add_bookmark") {
         main_document_view->add_bookmark(text);
     }
@@ -3250,4 +3261,14 @@ fz_rect MainWidget::get_tag_rect(std::string tag) {
 
 bool MainWidget::is_rotated() {
     return opengl_widget->is_rotated();
+}
+
+void MainWidget::show_password_prompt_if_required() {
+	if (main_document_view && (main_document_view->get_document() != nullptr)) {
+		if (main_document_view->get_document()->needs_authentication()) {
+			if (current_pending_command == nullptr || current_pending_command->name != "enter_password") {
+				handle_command(command_manager.get_command_with_name("enter_password"), 1);
+			}
+		}
+	}
 }

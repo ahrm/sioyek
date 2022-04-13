@@ -53,6 +53,9 @@ private:
 	std::vector<float> page_heights;
 	std::vector<float> page_widths;
 	std::mutex page_dims_mutex;
+	std::string correct_password = "";
+	bool password_was_correct = false;
+	bool document_needs_password = false;
 
 	// These are a heuristic index of all figures and references in the document
 	// The reason that we use a hashmap for reference_indices and a vector for figures is that
@@ -136,8 +139,8 @@ public:
 	bool has_toc();
 	const std::vector<std::wstring>& get_flat_toc_names();
 	const std::vector<int>& get_flat_toc_pages();
-	bool open(bool* invalid_flag, bool force_load_dimensions=false);
-	void reload();
+	bool open(bool* invalid_flag, bool force_load_dimensions=false, std::string password="");
+	void reload(std::string password="");
 	QDateTime get_last_edit_time();
 	unsigned int get_milies_since_last_document_update_time();
 	unsigned int get_milies_since_last_edit_time();
@@ -195,6 +198,10 @@ public:
 	void set_page_offset(int new_offset);
 	void embed_annotations(std::wstring new_file_path);
 	std::vector<fz_rect> get_page_flat_words(int page);
+
+	bool needs_password();
+	bool needs_authentication();
+	bool apply_password(const char* password);
 
 	friend class DocumentManager;
 };

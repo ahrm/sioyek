@@ -595,7 +595,7 @@ Document::~Document() {
 	}
 	//this->figure_indexing_thread.join();
 }
-void Document::reload() {
+void Document::reload(std::string password) {
 	LOG("Document::reload");
 	fz_drop_document(context, doc);
 	cached_num_pages = {};
@@ -620,15 +620,22 @@ void Document::reload() {
 
 	doc = nullptr;
 
-	open(invalid_flag_pointer);
+	open(invalid_flag_pointer, false, password);
 }
 
-bool Document::open(bool* invalid_flag, bool force_load_dimensions) {
+bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string password) {
 	LOG("Document::open");
 	last_update_time = QDateTime::currentDateTime();
 	if (doc == nullptr) {
 		fz_try(context) {
 			doc = fz_open_document(context, utf8_encode(file_name).c_str());
+			document_needs_password = fz_needs_password(context, doc);
+			if (password.size() > 0) {
+				int auth_res = fz_authenticate_password(context, doc, password.c_str());
+				if (auth_res > 0) {
+					password_was_correct = true;
+				}
+			}
 			//fz_layout_document(context, doc, 600, 800, 9);
 		}
 		fz_catch(context) {
@@ -862,6 +869,9 @@ fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_nu
 	fz_stext_page* stext_page = nullptr;
 
 	fz_try(ctx) {
+		//if (needs_authentication()) {
+		//	fz_authenticate_password(context, doc, correct_password.c_str());
+		//}
 		stext_page = fz_new_stext_page_from_page_number(ctx, doc, page_number, nullptr);
 	}
 	fz_catch(ctx) {
@@ -1029,6 +1039,10 @@ void Document::index_figures(bool* invalid_flag) {
 		fz_try(context_) {
 
 			fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+
+			if (document_needs_password) {
+				fz_authenticate_password(context_, doc_, correct_password.c_str());
+			}
 
 			bool focus_next = false;
 			for (int i = 0; i < n; i++) {
@@ -1776,4 +1790,30 @@ std::optional<Highlight> Document::get_prev_highlight(float abs_y, char type, in
 	}
 
 	return {};
+}
+
+bool Document::needs_password() {
+	return document_needs_password;
+}
+
+
+bool Document::apply_password(const char* password) {
+
+	if (context && doc) {
+		reload(password);
+		if (password_was_correct) {
+			correct_password = password;
+		}
+		return password_was_correct;
+	}
+	return false;
+}
+
+bool Document::needs_authentication() {
+	if (needs_password()) {
+		return !password_was_correct;
+	}
+	else {
+		return false;
+	}
 }

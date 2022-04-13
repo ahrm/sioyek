@@ -185,6 +185,8 @@ protected:
 	QRect get_main_window_rect();
 	QRect get_helper_window_rect();
 
+	void show_password_prompt_if_required();
+
 public:
 
 	void handle_command(const Command* command, int num_repeats);
