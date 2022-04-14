@@ -1,6 +1,7 @@
 #include "document.h"
 #include <algorithm>
 #include <thread>
+#include <cmath>
 #include "utf8.h"
 #include <qfileinfo.h>
 #include <qdatetime.h>
