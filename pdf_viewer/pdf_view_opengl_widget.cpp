@@ -691,13 +691,17 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	if (fastread_mode) {
 
-		enable_stencil();
-		write_to_stencil();
 		auto rects = document_view->get_document()->get_highlighted_character_masks(document_view->get_current_page_number());
-		draw_stencil_rects(document_view->get_current_page_number(), rects);
-		use_stencil_to_write();
-		render_transparent_white();
-		disable_stencil();
+
+		if (rects.size() > 0) {
+			enable_stencil();
+			write_to_stencil();
+			draw_stencil_rects(document_view->get_current_page_number(), rects);
+			use_stencil_to_write();
+			render_transparent_background();
+			disable_stencil();
+
+		}
 	}
 
 #ifndef NDEBUG
@@ -1335,7 +1339,7 @@ void PdfViewOpenGLWidget::disable_stencil() {
 	glDisable(GL_STENCIL_TEST);
 }
 
-void PdfViewOpenGLWidget::render_transparent_white() {
+void PdfViewOpenGLWidget::render_transparent_background() {
 
 	float bar_data[] = {
 		-1, -1,
@@ -1347,13 +1351,23 @@ void PdfViewOpenGLWidget::render_transparent_white() {
 	glDisable(GL_CULL_FACE);
 	glUseProgram(shared_gl_objects.vertical_line_program);
 
-	float vertical_line_color[4] = { 1.0f, 1.0f, 1.0f, 0.5f };
+	float background_color[4] = { 1.0f, 1.0f, 1.0f, 0.5f };
 
-	if (vertical_line_color != nullptr) {
-		glUniform4fv(shared_gl_objects.line_color_uniform_location,
-			1,
-			vertical_line_color);
+	if (this->color_mode == ColorPalette::Normal) {
 	}
+	else if (this->color_mode == ColorPalette::Dark) {
+		background_color[0] = background_color[1] = background_color[2] = 0;
+	}
+	else {
+		background_color[0] = CUSTOM_BACKGROUND_COLOR[0];
+		background_color[1] = CUSTOM_BACKGROUND_COLOR[1];
+		background_color[2] = CUSTOM_BACKGROUND_COLOR[2];
+	}
+
+	glUniform4fv(shared_gl_objects.line_color_uniform_location,
+		1,
+		background_color);
+
 	float time = -QDateTime::currentDateTime().msecsTo(creation_time);
 	glUniform1f(shared_gl_objects.line_time_uniform_location, time);
 

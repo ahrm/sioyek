@@ -154,3 +154,4 @@ int get_index_from_tag(const std::string& tag);
 std::wstring truncate_string(const std::wstring& inp, int size);
 std::wstring get_page_formatted_string(int page);
 fz_rect create_word_rect(const std::vector<fz_rect>& chars);
+std::vector<fz_rect> create_word_rects_multiline(const std::vector<fz_rect>& chars);

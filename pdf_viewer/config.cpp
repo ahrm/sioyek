@@ -56,6 +56,11 @@ extern int SINGLE_MAIN_WINDOW_SIZE[2];
 extern int SINGLE_MAIN_WINDOW_MOVE[2];
 extern float FIT_TO_PAGE_WIDTH_RATIO;
 extern float RULER_PADDING;
+extern std::wstring TEXT_HIGHLIGHT_URL;
+extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE;
+extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL;
+extern int TEXT_SUMMARY_CONTEXT_SIZE;
+extern bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -195,8 +200,11 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"collapsed_toc", &SMALL_TOC, bool_serializer, bool_deserializer });
 	configs.push_back({ L"ruler_mode", &RULER_MODE, bool_serializer, bool_deserializer });
 	configs.push_back({ L"ruler_padding", &RULER_PADDING, float_serializer, float_deserializer });
-
-	//configs.push_back({ L"auto_embed_annotations", &AUTO_EMBED_ANNOTATIONS, bool_serializer, bool_deserializer });
+	configs.push_back({ L"text_summary_url", &TEXT_HIGHLIGHT_URL, string_serializer, string_deserializer });
+	configs.push_back({ L"text_summary_should_refine", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE, bool_serializer, bool_deserializer });
+	configs.push_back({ L"text_summary_should_fill", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL, bool_serializer, bool_deserializer });
+	configs.push_back({ L"text_summary_context_size", &TEXT_SUMMARY_CONTEXT_SIZE, int_serializer, int_deserializer });
+	configs.push_back({ L"use_heuristic_if_text_summary_not_available", &USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE, bool_serializer, bool_deserializer });
 
 
 	std::wstring highlight_config_string = L"highlight_color_a";

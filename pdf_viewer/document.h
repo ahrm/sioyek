@@ -12,6 +12,9 @@
 #include <qdatetime.h>
 
 #include <qobject.h>
+#include <qnetworkreply.h>
+#include <qjsondocument.h>
+#include <qurlquery.h>
 
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
@@ -33,6 +36,7 @@ private:
 	std::vector<TocNode*> top_level_toc_nodes;
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
+	QNetworkAccessManager* network_access_manager = nullptr;
 
 	int page_offset = 0;
 
@@ -42,6 +46,7 @@ private:
 
 	std::vector<std::pair<int, fz_stext_page*>> cached_stext_pages;
 	std::vector<std::pair<int, fz_pixmap*>> cached_small_pixmaps;
+	std::map<int, std::optional<std::string>> cached_fastread_highlights;
 
 	fz_context* context = nullptr;
 	std::wstring file_name;
@@ -202,6 +207,7 @@ public:
 	bool needs_password();
 	bool needs_authentication();
 	bool apply_password(const char* password);
+	std::optional<std::string> get_page_fastread_highlights(int page);
 	std::vector<fz_rect> get_highlighted_character_masks(int page);
 
 	friend class DocumentManager;

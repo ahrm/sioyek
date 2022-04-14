@@ -404,6 +404,29 @@ fz_rect create_word_rect(const std::vector<fz_rect>& chars) {
 	return res;
 }
 
+std::vector<fz_rect> create_word_rects_multiline(const std::vector<fz_rect>& chars) {
+	std::vector<fz_rect> res;
+	std::vector<fz_rect> current_line_chars;
+
+	if (chars.size() == 0) return res;
+	current_line_chars.push_back(chars[0]);
+
+	for (int i = 1; i < chars.size(); i++) {
+		if (chars[i].x0 < chars[i - 1].x0) { // a new line has begun
+			res.push_back(create_word_rect(current_line_chars));
+			current_line_chars.clear();
+			current_line_chars.push_back(chars[i]);
+		}
+		else {
+			current_line_chars.push_back(chars[i]);
+		}
+	}
+	if (current_line_chars.size() > 0) {
+		res.push_back(create_word_rect(current_line_chars));
+	}
+	return res;
+}
+
 fz_rect create_word_rect(const std::vector<fz_stext_char*>& chars) {
 	fz_rect res;
 	res.x0 = res.x1 = res.y0 = res.y1 = 0;
@@ -1496,7 +1519,6 @@ float type_name_similarity_score(std::wstring name1, std::wstring name2) {
 	}
 	return common_prefix_index;
 }
-
 
 void check_for_updates(QWidget* parent, std::string current_version) {
 

@@ -163,7 +163,7 @@ protected:
 	void use_stencil_to_write();
 	void disable_stencil();
 
-	void render_transparent_white();
+	void render_transparent_background();
 
 public:
 
