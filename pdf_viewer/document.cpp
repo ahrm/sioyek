@@ -350,6 +350,9 @@ Document::Document(fz_context* context, std::wstring file_name, DatabaseManager*
 		std::string highlights = responsedoc.object().value("text").toString().toStdString();
 		cached_fastread_highlights[page] = highlights;
         reply->deleteLater();
+		if (invalid_flag_pointer != nullptr) {
+			*invalid_flag_pointer = true;
+		}
         });
 }
 
