@@ -7,6 +7,7 @@ Sioyek is a PDF viewer designed for reading research papers and technical books.
 * [Video Demo](#feature-video-overview)
 * [Features](#features)
 * [Build Instructions](#build-instructions)
+* [Donation](#donation)
 
 ## Install
 ### Official packages
@@ -124,3 +125,14 @@ cd sioyek
 chmod +x build_mac.sh
 ./build_mac.sh
 ```
+
+## Donation
+If you enjoy sioyek, please consider donating to support its development.
+
+Bitcoin (BTC) Address: `bc1qexc7wcjq9uetr2vq2wzy7m45y29j0f82uwpn3z`
+
+<a href="https://www.bitcoinqrcodemaker.com/pay/?type=2&amp;style=bitcoin&amp;address=bc1qexc7wcjq9uetr2vq2wzy7m45y29j0f82uwpn3z" target="_blank"><div style="width:150px;display:inline-block;"><div><img src="https://www.bitcoinqrcodemaker.com/api/?style=bitcoin&amp;address=bc1qexc7wcjq9uetr2vq2wzy7m45y29j0f82uwpn3z" width="150" height="150" alt="Bitcoin QR code donation address" title="Bitcoin QR code donation address" /></div><div><img src="https://www.bitcoinqrcodemaker.com/donate_button.png" width="150" height="36" alt="Donate button" title="Donate here" /></div></div></a>
+
+Ethereum (ETH) Address: `0xf78E20eb68b150301EC895eb44c0Ab3c5A016075`
+
+<a href="https://www.bitcoinqrcodemaker.com/pay/?type=2&amp;style=ethereum&amp;address=0xf78E20eb68b150301EC895eb44c0Ab3c5A016075" target="_blank"><div style="width:150px;display:inline-block;"><div><img src="https://www.bitcoinqrcodemaker.com/api/?style=ethereum&amp;address=0xf78E20eb68b150301EC895eb44c0Ab3c5A016075" width="150" height="150" alt="Ethereum QR code donation address" title="Ethereum QR code donation address" /></div><div><img src="https://www.bitcoinqrcodemaker.com/donate_button.png" width="150" height="36" alt="Donate button" title="Donate here" /></div></div></a>

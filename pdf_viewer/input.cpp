@@ -219,6 +219,7 @@ InputParseTreeNode parse_token(std::string token) {
 				{"end", Qt::Key::Key_End},
 				{"pagedown", Qt::Key::Key_End},
 				{"tab", Qt::Key::Key_Tab},
+				{"return", Qt::Key::Key_Return},
 			};
 			std::map<std::string, Qt::Key> keymap;
 

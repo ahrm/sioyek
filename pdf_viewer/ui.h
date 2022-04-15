@@ -210,6 +210,7 @@ public:
 					else {
 						on_return_no_select(line_edit->text());
 					}
+					return true;
 				}
 
 			}
