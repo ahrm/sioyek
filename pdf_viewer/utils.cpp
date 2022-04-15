@@ -143,10 +143,15 @@ void rect_to_quad(fz_rect rect, float quad[8]) {
 	quad[7] = rect.y1;
 }
 
-void copy_to_clipboard(const std::wstring& text) {
+void copy_to_clipboard(const std::wstring& text, bool selection) {
 	auto clipboard = QGuiApplication::clipboard();
 	auto qtext = QString::fromStdWString(text);
-	clipboard->setText(qtext);
+	if (!selection) {
+		clipboard->setText(qtext);
+	}
+	else {
+		clipboard->setText(qtext, QClipboard::Selection);
+	}
 }
 
 #define OPEN_KEY(parent, name, ptr) \

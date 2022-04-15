@@ -42,7 +42,7 @@ int argminf(const std::vector<T> &collection, std::function<float(T)> f) {
 	return min_index;
 }
 void rect_to_quad(fz_rect rect, float quad[8]);
-void copy_to_clipboard(const std::wstring& text);
+void copy_to_clipboard(const std::wstring& text, bool selection=false);
 void install_app(const char* argv0);
 int get_f_key(std::string name);
 void show_error_message(const std::wstring& error_message);

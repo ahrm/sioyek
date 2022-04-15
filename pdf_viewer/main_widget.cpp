@@ -1498,6 +1498,9 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         if (is_select_highlight_mode && (opengl_widget->selected_character_rects.size() > 0)) {
             main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, select_highlight_type);
         }
+        if (opengl_widget->selected_character_rects.size() > 0) {
+            copy_to_clipboard(selected_text, true);
+        }
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
