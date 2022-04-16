@@ -1,14 +1,3 @@
-//todo: cleanup the code
-//todo: tests!
-//todo: clean up parsing code
-//todo: simplify word selection logic (also avoid inefficient extra insertions followed by clears in selected_characters)
-//todo: make it so that all commands that change document state (for example goto_offset_withing_page, goto_link, etc.) do not change the document
-// state, instead they return a DocumentViewState object that is then applied using push_state and change_state functions
-// (chnage state should be a function that just applies the state without pushing it to history)
-//todo: handle input errors in command line parsing
-//todo: fix configure_paths for MacOS
-//todo: highlight sometimes doesn't work
-
 #include <iostream>
 #include <vector>
 #include <string>
