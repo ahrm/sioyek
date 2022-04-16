@@ -19,11 +19,12 @@ If you prefer to install sioyek with a package manager, you can look at this lis
 Distro | Link | Maintainer
 ------- | ----- | -------------
 Flathub | [sioyek](https://flathub.org/apps/details/com.github.ahrm.sioyek) | [@nbenitez](https://flathub.org/apps/details/com.github.ahrm.sioyek)
-Arch | [AUR Sioyek-git](https://aur.archlinux.org/packages/sioyek-git/) | [@randomn4me](https://github.com/randomn4me)  
-Fedora | [Copr endle/sioyek](https://copr.fedorainfracloud.org/coprs/endle/sioyek/) | [@Endle](https://github.com/Endle)  
+Arch | [AUR Sioyek-git](https://aur.archlinux.org/packages/sioyek-git/) | [@randomn4me](https://github.com/randomn4me)
+Fedora | [Copr endle/sioyek](https://copr.fedorainfracloud.org/coprs/endle/sioyek/) | [@Endle](https://github.com/Endle)
+NixOS | [sioyek](https://search.nixos.org/packages?channel=unstable&show=sioyek&from=0&size=50&sort=relevance&type=packages&query=sioyek) | [@podocarp](https://github.com/podocarp)
 
 ## Documentation
-You can view the official documentation [here](https://sioyek-documentation.readthedocs.io/en/latest/) .
+You can view the official documentation [here](https://sioyek-documentation.readthedocs.io/en/latest/).
 ## Feature Video Overview
 
 [![Sioyek feature overview](https://img.youtube.com/vi/yTmCI0Xp5vI/0.jpg)](https://www.youtube.com/watch?v=yTmCI0Xp5vI)
@@ -88,7 +89,7 @@ Suppose you are reading a paragraph which references a figure which is not very 
 
 https://user-images.githubusercontent.com/6392321/125337160-e4832700-e363-11eb-8801-0bee58121c2d.mp4
 
-You can customize all key bindings and some UI elements by editing `keys_user.conf` and `prefs_user.conf`. The default configurations are in `keys.conf` and `prefs.conf`.
+You can customize all key bindings and some UI elements by editing `keys_user.config` and `prefs_user.config`. The default configurations are in `keys.config` and `prefs.config`.
 
 
 
