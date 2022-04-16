@@ -645,7 +645,7 @@ void Document::reload(std::string password) {
 	open(invalid_flag_pointer, false, password);
 }
 
-bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string password) {
+bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string password, bool temp) {
 	LOG("Document::open");
 	last_update_time = QDateTime::currentDateTime();
 	if (doc == nullptr) {
@@ -663,7 +663,7 @@ bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string 
 		fz_catch(context) {
 			std::wcerr << "could not open " << file_name << std::endl;
 		}
-		if (doc != nullptr) {
+		if ((doc != nullptr) && (!temp)) {
 			//load_document_metadata_from_db();
 			load_page_dimensions(force_load_dimensions);
 			create_toc_tree(top_level_toc_nodes);
@@ -1937,4 +1937,38 @@ std::optional<std::string> Document::get_page_fastread_highlights(int page) {
         network_access_manager->post(request, postData.toString(QUrl::FullyEncoded).toUtf8());
 		return {};
 	}
+}
+
+fz_rect Document::get_page_rect_no_cache(int page_number) {
+	fz_rect res = {0};
+	fz_try(context) {
+		int n_pages = num_pages();
+		if (page_number < n_pages) {
+			fz_page* page = fz_load_page(context, doc, page_number);
+			fz_rect bound = fz_bound_page(context, page);
+			res = bound;
+			fz_drop_page(context, page);
+		}
+	}
+	fz_catch(context) {
+
+	}
+	return res;
+}
+
+void DocumentManager::free_document(Document* document) {
+	bool found = false;
+	std::wstring path_to_erase;
+
+	for (auto [path, doc] : cached_documents) {
+		if (doc == document) {
+			found = true;
+			path_to_erase = path;
+		}
+	}
+	if (found) {
+		cached_documents.erase(path_to_erase);
+	}
+
+	delete document;
 }

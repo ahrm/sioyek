@@ -61,6 +61,7 @@ extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE;
 extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL;
 extern int TEXT_SUMMARY_CONTEXT_SIZE;
 extern bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE;
+extern std::wstring PAPERS_FOLDER_PATH;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -205,7 +206,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 	configs.push_back({ L"text_summary_should_fill", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL, bool_serializer, bool_deserializer });
 	configs.push_back({ L"text_summary_context_size", &TEXT_SUMMARY_CONTEXT_SIZE, int_serializer, int_deserializer });
 	configs.push_back({ L"use_heuristic_if_text_summary_not_available", &USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE, bool_serializer, bool_deserializer });
-
+	configs.push_back({ L"papers_folder_path", &PAPERS_FOLDER_PATH, string_serializer, string_deserializer });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

@@ -1361,7 +1361,8 @@ void MainWidget::prev_state() {
         */
         if (link_to_edit) {
 
-            std::wstring link_document_path = checksummer->get_path(link_to_edit.value().dst.document_checksum).value();
+            //std::wstring link_document_path = checksummer->get_path(link_to_edit.value().dst.document_checksum).value();
+            std::wstring link_document_path = history[current_history_index].document_path;
             Document* link_owner = document_manager->get_document(link_document_path);
 
             OpenedBookState state = main_document_view->get_state().book_state;
@@ -1544,7 +1545,6 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 }
 
 void MainWidget::wheelEvent(QWheelEvent* wevent) {
-    LOG("MainWidget::wheelEvent");
 
     const Command* command = nullptr;
     //bool is_touchpad = wevent->source() == Qt::MouseEventSource::MouseEventSynthesizedBySystem;
@@ -1569,6 +1569,8 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     float normal_x, normal_y;
     main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
 
+	int num_repeats = abs(wevent->delta() / 120);
+
     if ((!is_control_pressed) && (!is_shift_pressed)) {
         if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
             if (wevent->angleDelta().y() > 0) {
@@ -1591,7 +1593,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     command = command_manager.get_command_with_name("move_visual_mark_up");
                 }
                 else {
-                    move_vertical(-72.0f * vertical_move_amount);
+                    move_vertical(-72.0f * vertical_move_amount * num_repeats);
                     return;
                 }
             }
@@ -1601,7 +1603,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     command = command_manager.get_command_with_name("move_visual_mark_down");
                 }
                 else {
-                    move_vertical(72.0f * vertical_move_amount);
+                    move_vertical(72.0f * vertical_move_amount * num_repeats);
                     return;
                 }
             }
@@ -1647,7 +1649,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     }
 
     if (command) {
-        handle_command(command, abs(wevent->delta() / 120));
+        handle_command(command, num_repeats);
     }
 }
 
@@ -3277,4 +3279,32 @@ void MainWidget::show_password_prompt_if_required() {
 			}
 		}
 	}
+}
+
+void MainWidget::on_new_paper_added(const std::wstring& file_path) {
+    if (is_pending_link_source_filled()) {
+        LinkViewState dst_view_state;
+
+        dst_view_state.book_state.offset_x = 0;
+        dst_view_state.book_state.offset_y = 0;
+        dst_view_state.book_state.zoom_level = 1;
+        Document* new_doc = document_manager->get_document(file_path);
+        new_doc->open(nullptr, false, "", true);
+        fz_rect first_page_rect = new_doc->get_page_rect_no_cache(0);
+        document_manager->free_document(new_doc);
+        float first_page_width = first_page_rect.x1 - first_page_rect.x0;
+        float first_page_height = first_page_rect.y1 - first_page_rect.y0;
+
+        dst_view_state.document_checksum = checksummer->get_checksum(file_path);
+
+        if (helper_document_view) {
+            float helper_view_width = helper_document_view->get_view_width();
+            float helper_view_height = helper_document_view->get_view_height();
+            float zoom_level = helper_view_width / first_page_width; 
+            dst_view_state.book_state.zoom_level = zoom_level;
+			dst_view_state.book_state.offset_y = -std::abs(-helper_view_height / zoom_level / 2 + first_page_height / 2);
+        }
+        complete_pending_link(dst_view_state);
+        invalidate_render();
+    }
 }

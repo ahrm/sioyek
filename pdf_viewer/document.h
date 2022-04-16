@@ -144,7 +144,7 @@ public:
 	bool has_toc();
 	const std::vector<std::wstring>& get_flat_toc_names();
 	const std::vector<int>& get_flat_toc_pages();
-	bool open(bool* invalid_flag, bool force_load_dimensions=false, std::string password="");
+	bool open(bool* invalid_flag, bool force_load_dimensions=false, std::string password="", bool temp=false);
 	void reload(std::string password="");
 	QDateTime get_last_edit_time();
 	unsigned int get_milies_since_last_document_update_time();
@@ -209,6 +209,7 @@ public:
 	bool apply_password(const char* password);
 	std::optional<std::string> get_page_fastread_highlights(int page);
 	std::vector<fz_rect> get_highlighted_character_masks(int page);
+	fz_rect get_page_rect_no_cache(int page);
 
 	friend class DocumentManager;
 };
@@ -225,6 +226,7 @@ public:
 	DocumentManager(fz_context* mupdf_context, DatabaseManager* db_manager, CachedChecksummer* checksummer);
 
 	Document* get_document(const std::wstring& path);
+	void free_document(Document* document);
 	const std::unordered_map<std::wstring, Document*>& get_cached_documents();
 	void delete_global_mark(char symbol);
 };

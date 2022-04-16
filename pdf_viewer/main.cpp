@@ -64,6 +64,7 @@
 #include "RunGuard.h"
 #include "checksum.h"
 #include "OpenWithApplication.h"
+#include "new_file_checker.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -89,6 +90,7 @@ std::wstring EXECUTE_COMMANDS[26];
 std::wstring TEXT_HIGHLIGHT_URL = L"http://localhost:5000/";
 std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
 std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
+std::wstring PAPERS_FOLDER_PATH = L"";
 float HIGHLIGHT_COLORS[26 * 3] = { \
 0.5182963463943647, 0.052279561076773784, 0.42942409252886155, \
 0.673198309637537, 0.14250443697242887, 0.1842972533900342, \
@@ -179,6 +181,7 @@ Path global_database_file_path(L"");
 Path tutorial_path(L"");
 Path last_opened_file_address_path(L"");
 Path shader_path(L"");
+
 
 QStringList convert_arguments(QStringList input_args){
     // convert the relative path of filename (if it exists) to absolute path
@@ -457,6 +460,7 @@ int main(int argc, char* args[]) {
 	QFileSystemWatcher key_file_watcher;
 	add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
 
+
 	MainWidget main_widget(mupdf_context, &db_manager, &document_manager, &config_manager, &input_handler, &checksummer, &quit);
 
 	if (DEFAULT_DARK_MODE) {
@@ -466,6 +470,7 @@ int main(int argc, char* args[]) {
 	QString startup_commands_list = QString::fromStdWString(STARTUP_COMMANDS);
 	QStringList startup_commands = startup_commands_list.split(";");
 	CommandManager* command_manager = main_widget.get_command_manager();
+	NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, &main_widget);
 
 	for (auto command : startup_commands) {
 		main_widget.handle_command(command_manager->get_command_with_name(command.toStdString()), 1);
@@ -505,6 +510,7 @@ int main(int argc, char* args[]) {
 		input_handler.reload_config_files(default_keys_path, user_keys_paths);
 		add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
 		});
+
 
 	if (SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP) {
 		check_for_updates(&main_widget, APPLICATION_VERSION);

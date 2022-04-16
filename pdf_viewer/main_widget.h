@@ -248,5 +248,6 @@ public:
 	fz_irect get_tag_window_rect(std::string tag);
 
 	bool is_rotated();
+	void on_new_paper_added(const std::wstring& file_path);
 
 };
