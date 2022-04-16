@@ -1,4 +1,5 @@
 #include "document_view.h"
+#include <cmath>
 
 extern float MOVE_SCREEN_PERCENTAGE;
 extern float FIT_TO_PAGE_WIDTH_RATIO;
@@ -948,11 +949,13 @@ void DocumentView::set_page_offset(int new_offset) {
 }
 
 float DocumentView::get_max_valid_x() {
-	return current_document->get_page_width(get_current_page_number()) / 2;
+	float page_width = current_document->get_page_width(get_current_page_number());
+	return std::abs(-view_width / zoom_level / 2 + page_width / 2);
 }
 
 float DocumentView::get_min_valid_x() {
-	return -current_document->get_page_width(get_current_page_number()) / 2;
+	float page_width = current_document->get_page_width(get_current_page_number());
+	return -std::abs(-view_width / zoom_level / 2 + page_width / 2);
 }
 
 void DocumentView::rotate() {
