@@ -1172,6 +1172,7 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
         if (down == true && (!this->synctex_mode)) {
             if (current_pending_command && (current_pending_command->name == "goto_mark")) {
                 main_document_view->goto_vertical_line_pos();
+                opengl_widget->set_should_draw_vertical_line(true);
                 current_pending_command = nullptr;
                 validate_render();
                 return;
