@@ -210,6 +210,7 @@ public:
 	std::optional<std::string> get_page_fastread_highlights(int page);
 	std::vector<fz_rect> get_highlighted_character_masks(int page);
 	fz_rect get_page_rect_no_cache(int page);
+	std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
 
 	friend class DocumentManager;
 };

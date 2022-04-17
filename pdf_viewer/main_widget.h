@@ -186,6 +186,7 @@ protected:
 	QRect get_helper_window_rect();
 
 	void show_password_prompt_if_required();
+	void handle_link_click(const PdfLink& link);
 
 public:
 

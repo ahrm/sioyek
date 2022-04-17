@@ -1972,3 +1972,24 @@ void DocumentManager::free_document(Document* document) {
 
 	delete document;
 }
+
+std::optional<PdfLink> Document::get_link_in_pos(int page, float doc_x, float doc_y){
+	if (!doc) return {};
+
+	if (page != -1) {
+		fz_link* links = get_page_links(page);
+		fz_point point = { doc_x, doc_y };
+		std::optional<PdfLink> res = {};
+
+		bool found = false;
+		while (links != nullptr) {
+			if (fz_is_point_inside_rect(point, links->rect)) {
+				res = { links->rect, links->uri };
+				return res;
+			}
+			links = links->next;
+		}
+
+	}
+	return {};
+}

@@ -250,23 +250,7 @@ std::optional<PdfLink> DocumentView::get_link_in_pos(int view_x, int view_y) {
 	float doc_x, doc_y;
 	int page;
 	window_to_document_pos(view_x, view_y, &doc_x, &doc_y, &page);
-
-	if (page != -1) {
-		fz_link* links = current_document->get_page_links(page);
-		fz_point point = { doc_x, doc_y };
-		std::optional<PdfLink> res = {};
-
-		bool found = false;
-		while (links != nullptr) {
-			if (fz_is_point_inside_rect(point, links->rect)) {
-				res = { links->rect, links->uri };
-				return res;
-			}
-			links = links->next;
-		}
-
-	}
-	return {};
+	return current_document->get_link_in_pos(page, doc_x, doc_y);
 }
 
 int DocumentView::get_highlight_index_in_pos(int view_x_, int view_y_) {

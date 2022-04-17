@@ -198,6 +198,20 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
+    if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
+        float doc_x, doc_y;
+        int doc_page;
+        opengl_widget->window_pos_to_overview_pos(normal_x, normal_y, &doc_x, &doc_y, &doc_page);
+        link = main_document_view->get_document()->get_link_in_pos(doc_page, doc_x, doc_y);
+        if (link) {
+			setCursor(Qt::PointingHandCursor);
+        }
+        else {
+			setCursor(Qt::ArrowCursor);
+        }
+        return;
+    }
+
     if (main_document_view && (link = main_document_view->get_link_in_pos(x, y))) {
         // show hand cursor when hovering over links
         setCursor(Qt::PointingHandCursor);
@@ -1280,11 +1294,11 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
         overview_move_data = {};
         overview_resize_data = {};
 
-        if (was_overview_mode) {
-            return;
-        }
+        //if (was_overview_mode) {
+        //    return;
+        //}
 
-        if ((!mouse_drag_mode) && (manhattan_distance(last_mouse_down_x, last_mouse_down_y, x_, y_) > 5)){
+        if ((!was_overview_mode) && (!mouse_drag_mode) && (manhattan_distance(last_mouse_down_x, last_mouse_down_y, x_, y_) > 5)) {
 
             fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
             fz_point selection_end = { x_, y_ };
@@ -1409,30 +1423,25 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
         return;
     }
 
-    auto link_ = main_document_view->get_link_in_pos(pos_x, pos_y);
+    float normal_x, normal_y;
+    main_document_view->window_to_normalized_window_pos(pos_x, pos_y, &normal_x, &normal_y);
+    if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
+        float doc_x, doc_y;
+        int doc_page;
+        opengl_widget->window_pos_to_overview_pos(normal_x, normal_y, &doc_x, &doc_y, &doc_page);
+        auto link = main_document_view->get_document()->get_link_in_pos(doc_page, doc_x, doc_y);
+        if (link) {
+            handle_link_click(link.value());
+        }
+        return;
+    }
+
+    auto link = main_document_view->get_link_in_pos(pos_x, pos_y);
     selected_highlight_index = main_document_view->get_highlight_index_in_pos(pos_x, pos_y);
 
 
-    if (link_.has_value()) {
-        PdfLink link = link_.value();
-        int page;
-        float offset_x, offset_y;
-
-        if (link.uri.substr(0, 4).compare("http") == 0) {
-            open_url(link.uri.c_str());
-            return;
-        }
-
-        parse_uri(link.uri, &page, &offset_x, &offset_y);
-
-        // convert one indexed page to zero indexed page
-        page--;
-
-        // we usually just want to center the y offset and not the x offset (otherwise for example
-        // a link at the right side of the screen will be centered, causing most of screen state to be empty)
-        offset_x = main_document_view->get_offset_x();
-
-        long_jump_to_destination(page, offset_x, offset_y);
+    if (link.has_value()) {
+        handle_link_click(link.value());
     }
 }
 bool MainWidget::find_location_of_text_under_pointer(int pointer_x, int pointer_y, int* out_page, float* out_offset) {
@@ -3307,4 +3316,24 @@ void MainWidget::on_new_paper_added(const std::wstring& file_path) {
         complete_pending_link(dst_view_state);
         invalidate_render();
     }
+}
+void MainWidget::handle_link_click(const PdfLink& link) {
+
+	if (link.uri.substr(0, 4).compare("http") == 0) {
+		open_url(link.uri.c_str());
+		return;
+	}
+
+	int page;
+	float offset_x, offset_y;
+	parse_uri(link.uri, &page, &offset_x, &offset_y);
+
+	// convert one indexed page to zero indexed page
+	page--;
+
+	// we usually just want to center the y offset and not the x offset (otherwise for example
+	// a link at the right side of the screen will be centered, causing most of screen state to be empty)
+	offset_x = main_document_view->get_offset_x();
+
+	long_jump_to_destination(page, offset_x, offset_y);
 }
