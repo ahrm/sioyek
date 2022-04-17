@@ -73,6 +73,7 @@ extern std::vector<Path> user_keys_paths;
 extern Path database_file_path;
 extern Path tutorial_path;
 extern Path last_opened_file_address_path;
+extern Path auto_config_path;
 extern std::wstring ITEM_LIST_PREFIX;
 extern std::wstring SEARCH_URLS[26];
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
@@ -280,6 +281,7 @@ void MainWidget::persist() {
 }
 void MainWidget::closeEvent(QCloseEvent* close_event) {
     LOG("MainWidget::closeEvent");
+    save_auto_config();
     persist();
 
     // we need to delete this here (instead of destructor) to ensure that application
@@ -1774,39 +1776,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         copy_to_clipboard(selected_text);
     }
     if (command->name == "copy_window_size_config") {
-        QString config_string_multi = "main_window_size    %1 %2\nmain_window_move     %3 %4\nhelper_window_size    %5 %6\nhelper_window_move     %7 %8";
-        QString config_string_single = "single_main_window_size    %1 %2\nsingle_main_window_move     %3 %4";
-
-        QString main_window_size_w = QString::number(size().width());
-        QString main_window_size_h = QString::number(size().height());
-        QString helper_window_size_w = QString::number(-1);
-        QString helper_window_size_h = QString::number(-1);
-        QString main_window_move_x = QString::number(pos().x());
-        QString main_window_move_y = QString::number(pos().y());
-        QString helper_window_move_x = QString::number(-1);
-        QString helper_window_move_y = QString::number(-1);
-
-        if (helper_opengl_widget->isVisible()) {
-            helper_window_size_w = QString::number(helper_opengl_widget->size().width());
-            helper_window_size_h = QString::number(helper_opengl_widget->size().height());
-            helper_window_move_x = QString::number(helper_opengl_widget->pos().x());
-            helper_window_move_y = QString::number(helper_opengl_widget->pos().y());
-			copy_to_clipboard(config_string_multi.arg(main_window_size_w,
-				main_window_size_h,
-				main_window_move_x,
-				main_window_move_y,
-				helper_window_size_w,
-				helper_window_size_h,
-				helper_window_move_x,
-				helper_window_move_y).toStdWString());
-        }
-        else {
-			copy_to_clipboard(config_string_single.arg(main_window_size_w,
-				main_window_size_h,
-				main_window_move_x,
-				main_window_move_y).toStdWString());
-        }
-
+        copy_to_clipboard(get_window_configuration_string());
     }
 
     if (command->name == "highlight_links") {
@@ -3337,4 +3307,46 @@ void MainWidget::handle_link_click(const PdfLink& link) {
 	offset_x = main_document_view->get_offset_x();
 
 	long_jump_to_destination(page, offset_x, offset_y);
+}
+
+void MainWidget::save_auto_config() {
+    std::wofstream outfile(auto_config_path.get_path_utf8());
+    outfile << get_window_configuration_string();
+    outfile.close();
+}
+
+std::wstring MainWidget::get_window_configuration_string() {
+	
+	QString config_string_multi = "main_window_size    %1 %2\nmain_window_move     %3 %4\nhelper_window_size    %5 %6\nhelper_window_move     %7 %8";
+	QString config_string_single = "single_main_window_size    %1 %2\nsingle_main_window_move     %3 %4";
+
+	QString main_window_size_w = QString::number(size().width());
+	QString main_window_size_h = QString::number(size().height());
+	QString helper_window_size_w = QString::number(-1);
+	QString helper_window_size_h = QString::number(-1);
+	QString main_window_move_x = QString::number(pos().x());
+	QString main_window_move_y = QString::number(pos().y());
+	QString helper_window_move_x = QString::number(-1);
+	QString helper_window_move_y = QString::number(-1);
+
+	if (helper_opengl_widget->isVisible()) {
+		helper_window_size_w = QString::number(helper_opengl_widget->size().width());
+		helper_window_size_h = QString::number(helper_opengl_widget->size().height());
+		helper_window_move_x = QString::number(helper_opengl_widget->pos().x());
+		helper_window_move_y = QString::number(helper_opengl_widget->pos().y());
+		return (config_string_multi.arg(main_window_size_w,
+			main_window_size_h,
+			main_window_move_x,
+			main_window_move_y,
+			helper_window_size_w,
+			helper_window_size_h,
+			helper_window_move_x,
+			helper_window_move_y).toStdWString());
+	}
+	else {
+		return (config_string_single.arg(main_window_size_w,
+			main_window_size_h,
+			main_window_move_x,
+			main_window_move_y).toStdWString());
+	}
 }

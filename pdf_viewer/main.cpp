@@ -181,6 +181,7 @@ Path global_database_file_path(L"");
 Path tutorial_path(L"");
 Path last_opened_file_address_path(L"");
 Path shader_path(L"");
+Path auto_config_path(L"");
 
 
 QStringList convert_arguments(QStringList input_args){
@@ -220,7 +221,6 @@ void configure_paths(){
 	std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
 
 	shader_path = parent_path.slash(L"shaders");
-
 
 
 #ifdef Q_OS_LINUX
@@ -306,6 +306,8 @@ void configure_paths(){
 #endif
 
 #endif
+	auto_config_path = standard_data_path.slash(L"auto.config");
+	// user_config_paths.insert(user_config_paths.begin(), auto_config_path);
 }
 
 void verify_paths(){
@@ -374,7 +376,7 @@ int main(int argc, char* args[]) {
 	configure_paths();
 	verify_paths();
 
-	ConfigManager config_manager(default_config_path, user_config_paths);
+	ConfigManager config_manager(default_config_path, auto_config_path, user_config_paths);
 
 	if (SHARED_DATABASE_PATH.size() > 0) {
 		global_database_file_path = SHARED_DATABASE_PATH;
@@ -486,7 +488,14 @@ int main(int argc, char* args[]) {
 		}
 	}
 
-	main_widget.apply_window_params_for_one_window_mode();
+
+	if (HELPER_WINDOW_SIZE[0] > -1) {
+		main_widget.apply_window_params_for_two_window_mode();
+	}
+	else {
+		main_widget.apply_window_params_for_one_window_mode();
+	}
+
 	main_widget.show();
 
 	main_widget.handle_args(app.arguments());
@@ -499,7 +508,7 @@ int main(int argc, char* args[]) {
     // live reload the config files
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 
-		config_manager.deserialize(default_config_path, user_config_paths);
+		config_manager.deserialize(default_config_path, auto_config_path, user_config_paths);
 
 		ConfigFileChangeListener::notify_config_file_changed(&config_manager);
 		main_widget.validate_render();

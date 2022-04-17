@@ -134,7 +134,7 @@ Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 	return nullptr;
 }
 
-ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& user_paths) {
+ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,const std::vector<Path>& user_paths) {
 
 	user_config_paths = user_paths;
 	auto ivec2_serializer = vec_n_serializer<2, int>;
@@ -222,7 +222,7 @@ ConfigManager::ConfigManager(const Path& default_path, const std::vector<Path>& 
 		configs.push_back({ execute_command_config_string, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer });
 	}
 
-	deserialize(default_path, user_paths);
+	deserialize(default_path, auto_path, user_paths);
 }
 
 //void ConfigManager::serialize(std::wofstream& file) {
@@ -257,9 +257,10 @@ void ConfigManager::deserialize_file(const Path& file_path) {
 	default_file.close();
 }
 
-void ConfigManager::deserialize(const Path& default_file_path, const std::vector<Path>& user_file_paths) {
+void ConfigManager::deserialize(const Path& default_file_path, const Path& auto_path ,const std::vector<Path>& user_file_paths) {
 
 	deserialize_file(default_file_path);
+	deserialize_file(auto_path);
 
 	for (const auto& user_file_path : user_file_paths) {
 		deserialize_file(user_file_path);
@@ -272,7 +273,7 @@ std::optional<Path> ConfigManager::get_or_create_user_config_file() {
 	}
 
 	for (int i = user_config_paths.size() - 1; i >= 0; i--) {
-		if (user_config_paths[i].file_exists()) {
+		if (user_config_paths[i].file_exists() ) {
 			return user_config_paths[i];
 		}
 	}

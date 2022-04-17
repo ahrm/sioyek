@@ -164,8 +164,7 @@ protected:
 	void wheelEvent(QWheelEvent* wevent) override;
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
 	void toggle_two_window_mode();
-	void toggle_window_configuration();
-	void handle_command_types(const Command* command, int num_repeats);
+	void toggle_window_configuration(); void handle_command_types(const Command* command, int num_repeats);
 	void handle_link();
 	void handle_pending_text_command(std::wstring text);
 	void toggle_fullscreen();
@@ -187,6 +186,9 @@ protected:
 
 	void show_password_prompt_if_required();
 	void handle_link_click(const PdfLink& link);
+
+	std::wstring get_window_configuration_string();
+	void save_auto_config();
 
 public:
 
