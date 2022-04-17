@@ -2,15 +2,31 @@
 
 extern std::wstring PAPERS_FOLDER_PATH;
 
-std::vector<QString> NewFileChecker::get_dir_files() {
-	QDir dir(path);
-	dir.setFilter(QDir::Files | QDir::NoSymLinks);
-	dir.setSorting(QDir::Time);
-	QFileInfoList list = dir.entryInfoList();
-	std::vector<QString> res;
+void NewFileChecker::get_dir_files_helper(QString parent_path, std::vector<QString>& paths) {
+
+	QDir parent(parent_path);
+	parent.setFilter(QDir::Files | QDir::NoSymLinks);
+	parent.setSorting(QDir::Time);
+	QFileInfoList list = parent.entryInfoList();
+
 	for (int i = 0; i < list.size(); i++) {
-		res.push_back(list.at(i).absoluteFilePath());
+		paths.push_back(list.at(i).absoluteFilePath());
 	}
+
+	parent.setFilter(QDir::Dirs | QDir::NoSymLinks);
+	QFileInfoList dirlist = parent.entryInfoList();
+	for (auto dir : dirlist) {
+		if (dir.fileName() == "." || dir.fileName() == "..") {
+			continue;
+		}
+		get_dir_files_helper(dir.absoluteFilePath(), paths);
+	}
+
+}
+std::vector<QString> NewFileChecker::get_dir_files() {
+
+	std::vector<QString> res;
+	get_dir_files_helper(path, res);
 	return res;
 }
 
@@ -40,12 +56,26 @@ QString NewFileChecker::get_lastest_new_file_path() {
 	return "";
 }
 
+void NewFileChecker::register_subdirectories(QString dirpath) {
+	paper_folder_watcher.addPath(dirpath);
+
+	QDir parent(dirpath);
+	parent.setFilter(QDir::Dirs | QDir::NoSymLinks);
+	QFileInfoList dirlist = parent.entryInfoList();
+	for (auto dir : dirlist) {
+		if (dir.fileName() == "." || dir.fileName() == "..") {
+			continue;
+		}
+		register_subdirectories(dir.absoluteFilePath());
+	}
+}
+
 NewFileChecker::NewFileChecker(std::wstring dirpath, MainWidget* main_widget) {
 
 	path = QString::fromStdWString(dirpath);
 	if (dirpath.size() > 0) {
 		update_files();
-		paper_folder_watcher.addPath(QString::fromStdWString(PAPERS_FOLDER_PATH));
+		register_subdirectories(QString::fromStdWString(PAPERS_FOLDER_PATH));
 		QObject::connect(&paper_folder_watcher, &QFileSystemWatcher::directoryChanged, [&, main_widget](const QString& path) {
 			auto new_path = get_lastest_new_file_path();
 			if (new_path.size() > 0) {
