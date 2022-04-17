@@ -15,6 +15,7 @@ struct Config {
 	void* value = nullptr;
 	void (*serialize) (void*, std::wstringstream&) = nullptr;
 	void* (*deserialize) (std::wstringstream&, void* res) = nullptr;
+	bool (*validator) (const std::wstring& value);
 
 	void* get_value();
 

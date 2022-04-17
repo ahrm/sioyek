@@ -23,6 +23,7 @@ void NewFileChecker::get_dir_files_helper(QString parent_path, std::vector<QStri
 	}
 
 }
+
 std::vector<QString> NewFileChecker::get_dir_files() {
 
 	std::vector<QString> res;

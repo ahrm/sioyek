@@ -110,7 +110,6 @@ void* vec_n_deserializer(std::wstringstream& stream, void* res_) {
 	if (res == nullptr) {
 		res = new T[N];
 	}
-
 	for (int i = 0; i < N; i++) {
 		stream >> *(res + i);
 	}
@@ -134,6 +133,64 @@ Config* ConfigManager::get_mut_config_with_name(std::wstring config_name) {
 	return nullptr;
 }
 
+bool ensure_between_0_and_1(const QStringList& parts) {
+	bool ok = false;
+	for (int i = 0; i < parts.size(); i++) {
+		int val = parts.at(i).toFloat(&ok);
+		if (!ok) {
+			std::wcout << L"Error: invalid value for color component: " << parts.at(i).toStdWString() << "\n";
+			return false;
+		}
+		if (val < 0 || val > 1) {
+			std::wcout << L"Error: invalid value for color component (must be between 0 and 1): " << parts.at(i).toStdWString() << "\n";
+			return false;
+		}
+	}
+	return true;
+}
+
+bool color_3_validator(const std::wstring& str) {
+	QString qstr = QString::fromStdWString(str);
+	auto parts = qstr.split(' ', Qt::SplitBehaviorFlags::SkipEmptyParts);
+	if (parts.size() != 3) {
+		std::wcout << L"Error: required 3 values for color, but got " << parts.size() << "\n";
+		return false;
+	}
+	if (!ensure_between_0_and_1(parts)) {
+		return false;
+	}
+	return true;
+}
+
+bool color_4_validator(const std::wstring& str) {
+	QString qstr = QString::fromStdWString(str);
+	auto parts = qstr.split(' ', Qt::SplitBehaviorFlags::SkipEmptyParts);
+	if (parts.size() != 4) {
+		std::wcout << L"Error: required 4 values for color, but got " << parts.size() << "\n";
+		return false;
+	}
+	if (!ensure_between_0_and_1(parts)) {
+		return false;
+	}
+	return true;
+}
+
+bool bool_validator(const std::wstring& str) {
+	QString qstr = QString::fromStdWString(str);
+	auto parts = qstr.split(' ', Qt::SplitBehaviorFlags::SkipEmptyParts);
+	int is_correct = true;
+	std::wstring msg = L"Bool values should be either 0 or 1, but got ";
+	if (parts.size() != 1) {
+		std::wcout << msg << str << L"\n";
+		return false;
+	}
+	if (parts.at(0).trimmed() == L"0" || parts.at(0).trimmed() == L"1") {
+		return true;
+	}
+	std::wcout << msg << str << L"\n";
+	return false;
+}
+
 ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,const std::vector<Path>& user_paths) {
 
 	user_config_paths = user_paths;
@@ -147,66 +204,66 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	auto int_deserializer = generic_deserializer<int>;
 	auto bool_deserializer = generic_deserializer<bool>;
 
-	configs.push_back({ L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"vertical_line_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, vec4_deserializer });
-	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"dark_mode_background_color", DARK_MODE_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"dark_mode_contrast", &DARK_MODE_CONTRAST, float_serializer, float_deserializer });
-	configs.push_back({ L"default_dark_mode", &DEFAULT_DARK_MODE, bool_serializer, bool_deserializer });
-	configs.push_back({ L"google_scholar_address", &GOOGLE_SCHOLAR_ADDRESS, string_serializer, string_deserializer });
-	configs.push_back({ L"item_list_prefix", &ITEM_LIST_PREFIX, string_serializer, string_deserializer });
-	configs.push_back({ L"inverse_search_command", &INVERSE_SEARCH_COMMAND, string_serializer, string_deserializer });
-	configs.push_back({ L"libgen_address", &LIBGEN_ADDRESS, string_serializer, string_deserializer });
-	configs.push_back({ L"zoom_inc_factor", &ZOOM_INC_FACTOR, float_serializer, float_deserializer });
-	configs.push_back({ L"vertical_move_amount", &VERTICAL_MOVE_AMOUNT, float_serializer, float_deserializer });
-	configs.push_back({ L"horizontal_move_amount", &HORIZONTAL_MOVE_AMOUNT, float_serializer, float_deserializer });
-	configs.push_back({ L"move_screen_percentage", &MOVE_SCREEN_PERCENTAGE, float_serializer, float_deserializer });
-	configs.push_back({ L"flat_toc", &FLAT_TABLE_OF_CONTENTS, bool_serializer, bool_deserializer });
-	configs.push_back({ L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS, bool_serializer, bool_deserializer });
-	configs.push_back({ L"should_load_tutorial_when_no_other_file", &SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE, bool_serializer, bool_deserializer });
-	configs.push_back({ L"should_launch_new_instance", &SHOULD_LAUNCH_NEW_INSTANCE, bool_serializer, bool_deserializer });
-	configs.push_back({ L"should_draw_unrendered_pages", &SHOULD_DRAW_UNRENDERED_PAGES, bool_serializer, bool_deserializer });
-	configs.push_back({ L"check_for_updates_on_startup", &SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP, bool_serializer, bool_deserializer });
-	configs.push_back({ L"sort_bookmarks_by_location", &SORT_BOOKMARKS_BY_LOCATION, bool_serializer, bool_deserializer });
-	configs.push_back({ L"shared_database_path", &SHARED_DATABASE_PATH, string_serializer, string_deserializer });
-	configs.push_back({ L"hover_overview", &HOVER_OVERVIEW, bool_serializer, bool_deserializer });
-	configs.push_back({ L"visual_mark_next_page_fraction", &VISUAL_MARK_NEXT_PAGE_FRACTION, float_serializer, float_deserializer });
-	configs.push_back({ L"visual_mark_next_page_threshold", &VISUAL_MARK_NEXT_PAGE_THRESHOLD, float_serializer, float_deserializer });
-	configs.push_back({ L"ui_font", &UI_FONT_FACE_NAME, string_serializer, string_deserializer });
-	configs.push_back({ L"middle_click_search_engine", &MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer });
-	configs.push_back({ L"shift_middle_click_search_engine", &SHIFT_MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer });
-	configs.push_back({ L"startup_commands", &STARTUP_COMMANDS, string_serializer, string_deserializer });
-	configs.push_back({ L"font_size", &FONT_SIZE, int_serializer, int_deserializer });
-	configs.push_back({ L"custom_background_color", CUSTOM_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"custom_text_color", CUSTOM_TEXT_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"rerender_overview", &RERENDER_OVERVIEW, bool_serializer, bool_deserializer });
-	configs.push_back({ L"wheel_zoom_on_cursor", &WHEEL_ZOOM_ON_CURSOR, bool_serializer, bool_deserializer });
-	configs.push_back({ L"linear_filter", &LINEAR_TEXTURE_FILTERING, bool_serializer, bool_deserializer });
-	configs.push_back({ L"display_resolution_scale", &DISPLAY_RESOLUTION_SCALE, float_serializer, float_deserializer });
-	configs.push_back({ L"status_bar_color", STATUS_BAR_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"status_bar_text_color", STATUS_BAR_TEXT_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"main_window_size", &MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer });
-	configs.push_back({ L"helper_window_size", &HELPER_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer });
-	configs.push_back({ L"main_window_move", &MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer });
-	configs.push_back({ L"helper_window_move", &HELPER_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer });
-	configs.push_back({ L"touchpad_sensitivity", &TOUCHPAD_SENSITIVITY, float_serializer, float_deserializer });
-	configs.push_back({ L"page_separator_width", &PAGE_SEPARATOR_WIDTH, float_serializer, float_deserializer });
-	configs.push_back({ L"page_separator_color", PAGE_SEPARATOR_COLOR, vec3_serializer, vec3_deserializer });
-	configs.push_back({ L"single_main_window_size", &SINGLE_MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer });
-	configs.push_back({ L"single_main_window_move", &SINGLE_MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer });
-	configs.push_back({ L"fit_to_page_width_ratio", &FIT_TO_PAGE_WIDTH_RATIO, float_serializer, float_deserializer });
-	configs.push_back({ L"collapsed_toc", &SMALL_TOC, bool_serializer, bool_deserializer });
-	configs.push_back({ L"ruler_mode", &RULER_MODE, bool_serializer, bool_deserializer });
-	configs.push_back({ L"ruler_padding", &RULER_PADDING, float_serializer, float_deserializer });
-	configs.push_back({ L"text_summary_url", &TEXT_HIGHLIGHT_URL, string_serializer, string_deserializer });
-	configs.push_back({ L"text_summary_should_refine", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE, bool_serializer, bool_deserializer });
-	configs.push_back({ L"text_summary_should_fill", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL, bool_serializer, bool_deserializer });
-	configs.push_back({ L"text_summary_context_size", &TEXT_SUMMARY_CONTEXT_SIZE, int_serializer, int_deserializer });
-	configs.push_back({ L"use_heuristic_if_text_summary_not_available", &USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE, bool_serializer, bool_deserializer });
-	configs.push_back({ L"papers_folder_path", &PAPERS_FOLDER_PATH, string_serializer, string_deserializer });
+	configs.push_back({ L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"vertical_line_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, vec4_deserializer, color_4_validator });
+	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"dark_mode_background_color", DARK_MODE_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"dark_mode_contrast", &DARK_MODE_CONTRAST, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"default_dark_mode", &DEFAULT_DARK_MODE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"google_scholar_address", &GOOGLE_SCHOLAR_ADDRESS, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"item_list_prefix", &ITEM_LIST_PREFIX, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"inverse_search_command", &INVERSE_SEARCH_COMMAND, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"libgen_address", &LIBGEN_ADDRESS, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"zoom_inc_factor", &ZOOM_INC_FACTOR, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"vertical_move_amount", &VERTICAL_MOVE_AMOUNT, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"horizontal_move_amount", &HORIZONTAL_MOVE_AMOUNT, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"move_screen_percentage", &MOVE_SCREEN_PERCENTAGE, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"flat_toc", &FLAT_TABLE_OF_CONTENTS, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"should_load_tutorial_when_no_other_file", &SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"should_launch_new_instance", &SHOULD_LAUNCH_NEW_INSTANCE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"should_draw_unrendered_pages", &SHOULD_DRAW_UNRENDERED_PAGES, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"check_for_updates_on_startup", &SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"sort_bookmarks_by_location", &SORT_BOOKMARKS_BY_LOCATION, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"shared_database_path", &SHARED_DATABASE_PATH, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"hover_overview", &HOVER_OVERVIEW, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"visual_mark_next_page_fraction", &VISUAL_MARK_NEXT_PAGE_FRACTION, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"visual_mark_next_page_threshold", &VISUAL_MARK_NEXT_PAGE_THRESHOLD, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"ui_font", &UI_FONT_FACE_NAME, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"middle_click_search_engine", &MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"shift_middle_click_search_engine", &SHIFT_MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"startup_commands", &STARTUP_COMMANDS, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"font_size", &FONT_SIZE, int_serializer, int_deserializer, nullptr });
+	configs.push_back({ L"custom_background_color", CUSTOM_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"custom_text_color", CUSTOM_TEXT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"rerender_overview", &RERENDER_OVERVIEW, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"wheel_zoom_on_cursor", &WHEEL_ZOOM_ON_CURSOR, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"linear_filter", &LINEAR_TEXTURE_FILTERING, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"display_resolution_scale", &DISPLAY_RESOLUTION_SCALE, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"status_bar_color", STATUS_BAR_COLOR, vec3_serializer, vec3_deserializer, nullptr });
+	configs.push_back({ L"status_bar_text_color", STATUS_BAR_TEXT_COLOR, vec3_serializer, vec3_deserializer, nullptr });
+	configs.push_back({ L"main_window_size", &MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer, nullptr });
+	configs.push_back({ L"helper_window_size", &HELPER_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer, nullptr });
+	configs.push_back({ L"main_window_move", &MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer, nullptr });
+	configs.push_back({ L"helper_window_move", &HELPER_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer, nullptr });
+	configs.push_back({ L"touchpad_sensitivity", &TOUCHPAD_SENSITIVITY, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"page_separator_width", &PAGE_SEPARATOR_WIDTH, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"page_separator_color", PAGE_SEPARATOR_COLOR, vec3_serializer, vec3_deserializer, nullptr });
+	configs.push_back({ L"single_main_window_size", &SINGLE_MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer, nullptr });
+	configs.push_back({ L"single_main_window_move", &SINGLE_MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer, nullptr });
+	configs.push_back({ L"fit_to_page_width_ratio", &FIT_TO_PAGE_WIDTH_RATIO, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"collapsed_toc", &SMALL_TOC, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"ruler_mode", &RULER_MODE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"ruler_padding", &RULER_PADDING, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"text_summary_url", &TEXT_HIGHLIGHT_URL, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"text_summary_should_refine", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"text_summary_should_fill", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"text_summary_context_size", &TEXT_SUMMARY_CONTEXT_SIZE, int_serializer, int_deserializer, nullptr });
+	configs.push_back({ L"use_heuristic_if_text_summary_not_available", &USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"papers_folder_path", &PAPERS_FOLDER_PATH, string_serializer, string_deserializer, nullptr });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";
@@ -240,7 +297,9 @@ void ConfigManager::deserialize_file(const Path& file_path) {
 
 	std::wstring line;
 	std::wifstream default_file = open_wifstream(file_path.get_path());
+	int line_number = 0;
 	while (std::getline(default_file, line)) {
+		line_number++;
 
 		if (line.size() == 0 || line[0] == '#') {
 			continue;
@@ -250,9 +309,33 @@ void ConfigManager::deserialize_file(const Path& file_path) {
 		std::wstring conf_name;
 		ss >> conf_name;
 		Config* conf = get_mut_config_with_name(conf_name);
-		if (conf) {
-			conf->value = conf->deserialize(ss, conf->value);
+		if (conf == nullptr) {
+			std::wcout << L"Error: " << conf_name << L" is not a valid configuration name\n";
+			continue;
 		}
+
+		std::wstring config_value;
+		std::getline(ss, config_value);
+
+		std::wstringstream config_value_stream(config_value);
+
+		if ((conf != nullptr) && (conf->validator != nullptr)) {
+			if (!conf->validator(config_value)) {
+				std::wcout << L"Error in config file " << file_path.get_path() << L" at line " << line_number << L" : " << line << L"\n";
+				continue;
+			}
+		}
+
+		if (conf) {
+			auto deserialization_result = conf->deserialize(config_value_stream, conf->value);
+			if (deserialization_result != nullptr) {
+				conf->value = deserialization_result;
+			}
+			else {
+				std::wcout << L"Error in config file " << file_path.get_path() << L" at line " << line_number << L" : " << line << L"\n";
+			}
+		}
+
 	}
 	default_file.close();
 }
