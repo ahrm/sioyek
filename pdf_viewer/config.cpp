@@ -62,6 +62,9 @@ extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL;
 extern int TEXT_SUMMARY_CONTEXT_SIZE;
 extern bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE;
 extern std::wstring PAPERS_FOLDER_PATH;
+extern bool ENABLE_EXPERIMENTAL_FEATURES;
+extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
+extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -264,6 +267,9 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"text_summary_context_size", &TEXT_SUMMARY_CONTEXT_SIZE, int_serializer, int_deserializer, nullptr });
 	configs.push_back({ L"use_heuristic_if_text_summary_not_available", &USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"papers_folder_path", &PAPERS_FOLDER_PATH, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"enable_experimental_features", &ENABLE_EXPERIMENTAL_FEATURES, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"create_table_of_contents_if_not_exists", &CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"max_created_toc_size", &MAX_CREATED_TABLE_OF_CONTENTS_SIZE, int_serializer, int_deserializer, nullptr });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

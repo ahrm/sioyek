@@ -21,7 +21,9 @@ extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE;
 extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL;
 extern int TEXT_SUMMARY_CONTEXT_SIZE;
 extern bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE;
-//extern bool AUTO_EMBED_ANNOTATIONS;
+extern bool ENABLE_EXPERIMENTAL_FEATURES;
+extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
+extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
 
 int Document::get_mark_index(char symbol) {
 	LOG("Document::get_mark_index");
@@ -341,19 +343,21 @@ Document::Document(fz_context* context, std::wstring file_name, DatabaseManager*
 	checksummer(checksummer){
 	last_update_time = QDateTime::currentDateTime();
 
-	network_access_manager = new QNetworkAccessManager;
+	if (ENABLE_EXPERIMENTAL_FEATURES) {
+		network_access_manager = new QNetworkAccessManager;
 
-    QObject::connect(network_access_manager, &QNetworkAccessManager::finished, [&](QNetworkReply *reply) {
-		QJsonDocument responsedoc = QJsonDocument::fromJson(reply->readAll());
-		std::string page_string = responsedoc.object().value("page").toString().toStdString();
-		int page = atoi(page_string.c_str());
-		std::string highlights = responsedoc.object().value("text").toString().toStdString();
-		cached_fastread_highlights[page] = highlights;
-        reply->deleteLater();
-		if (invalid_flag_pointer != nullptr) {
-			*invalid_flag_pointer = true;
-		}
-        });
+		QObject::connect(network_access_manager, &QNetworkAccessManager::finished, [&](QNetworkReply* reply) {
+			QJsonDocument responsedoc = QJsonDocument::fromJson(reply->readAll());
+			std::string page_string = responsedoc.object().value("page").toString().toStdString();
+			int page = atoi(page_string.c_str());
+			std::string highlights = responsedoc.object().value("text").toString().toStdString();
+			cached_fastread_highlights[page] = highlights;
+			reply->deleteLater();
+			if (invalid_flag_pointer != nullptr) {
+				*invalid_flag_pointer = true;
+			}
+		});
+	}
 }
 
 void Document::count_chapter_pages(std::vector<int> &page_counts) {
@@ -383,12 +387,17 @@ void Document::count_chapter_pages_accum(std::vector<int> &accum_page_counts) {
 
 const std::vector<TocNode*>& Document::get_toc() {
 	LOG("std::vector<TocNode*>& Document::get_toc");
-	return top_level_toc_nodes;
+	if (top_level_toc_nodes.size() > 0) {
+		return top_level_toc_nodes;
+	}
+	else {
+		return created_top_level_toc_nodes;
+	}
 }
 
 bool Document::has_toc() {
 	LOG("Document::has_toc");
-	return top_level_toc_nodes.size() > 0;
+	return top_level_toc_nodes.size() > 0 || created_top_level_toc_nodes.size() > 0;
 }
 
 const std::vector<std::wstring>& Document::get_flat_toc_names() {
@@ -517,8 +526,13 @@ void Document::create_toc_tree(std::vector<TocNode*>& toc) {
 	LOG("Document::create_toc_tree");
 	fz_try(context) {
 		fz_outline* outline = get_toc_outline();
-		convert_toc_tree(outline, toc);
-		fz_drop_outline(context, outline);
+		if (outline) {
+			convert_toc_tree(outline, toc);
+			fz_drop_outline(context, outline);
+		}
+		else {
+			//create_table_of_contents(toc);
+		}
 	}
 	fz_catch(context) {
 		std::cerr << "Error: Could not load outline ... " << std::endl;
@@ -614,7 +628,9 @@ Document::~Document() {
 			std::cerr << "Error: could not drop documnet" << std::endl;
 		}
 	}
-	delete network_access_manager;
+	if (network_access_manager != nullptr) {
+		delete network_access_manager;
+	}
 	//this->figure_indexing_thread.join();
 }
 void Document::reload(std::string password) {
@@ -1057,6 +1073,10 @@ void Document::index_figures(bool* invalid_flag) {
 		std::map<std::wstring, IndexedData> local_reference_data;
 		std::map<std::wstring, std::vector<IndexedData>> local_equation_data;
 
+		std::vector<TocNode*> toc_stack;
+		std::vector<TocNode*> top_level_nodes;
+		int num_added_toc_entries = 0;
+
 		fz_context* context_ = fz_clone_context(context);
 		fz_try(context_) {
 
@@ -1085,6 +1105,13 @@ void Document::index_figures(bool* invalid_flag) {
 				index_equations(flat_chars, i, local_equation_data);
 				index_generic(flat_chars, i, local_generic_data);
 
+				// if the document doesn't have table of contents, try to create one
+				if (CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS && (top_level_toc_nodes.size() == 0)) {
+					if (num_added_toc_entries < MAX_CREATED_TABLE_OF_CONTENTS_SIZE) {
+						num_added_toc_entries += add_stext_page_to_created_toc(stext_page, i, toc_stack, top_level_nodes);
+					}
+				}
+
 				fz_drop_stext_page(context_, stext_page);
 			}
 
@@ -1102,6 +1129,8 @@ void Document::index_figures(bool* invalid_flag) {
 		reference_indices = std::move(local_reference_data);
 		equation_indices = std::move(local_equation_data);
 		generic_indices = std::move(local_generic_data);
+
+		created_top_level_toc_nodes = std::move(top_level_nodes);
 
 		figure_indices_mutex.unlock();
 		std::wcout << "figure indexing finished ... " << std::endl;
@@ -1934,7 +1963,9 @@ std::optional<std::string> Document::get_page_fastread_highlights(int page) {
 		postData.addQueryItem("context_size", QString::number(TEXT_SUMMARY_CONTEXT_SIZE));
 
 
-        network_access_manager->post(request, postData.toString(QUrl::FullyEncoded).toUtf8());
+		if (network_access_manager != nullptr) {
+			network_access_manager->post(request, postData.toString(QUrl::FullyEncoded).toUtf8());
+		}
 		return {};
 	}
 }
@@ -1992,4 +2023,54 @@ std::optional<PdfLink> Document::get_link_in_pos(int page, float doc_x, float do
 
 	}
 	return {};
+}
+
+int Document::add_stext_page_to_created_toc(fz_stext_page* stext_page,
+	int page_number,
+	std::vector<TocNode*>& toc_node_stack,
+	std::vector<TocNode*>& top_level_nodes) {
+
+	int num_new_entries = 0;
+	auto add_toc_node = [&](TocNode* node) {
+		if (toc_node_stack.size() == 0) {
+			top_level_nodes.push_back(node);
+			toc_node_stack.push_back(node);
+		}
+		else {
+			bool are_same = false;
+			while ((toc_node_stack.size() > 0) && (!is_title_parent_of(toc_node_stack[toc_node_stack.size() - 1]->title, node->title, &are_same)) && (!are_same)) {
+				toc_node_stack.pop_back();
+			}
+
+			if (are_same) return;
+			num_new_entries += 1;
+
+			if (toc_node_stack.size() > 0) {
+				toc_node_stack[toc_node_stack.size() - 1]->children.push_back(node);
+			}
+			else {
+				toc_node_stack.push_back(node);
+				top_level_nodes.push_back(node);
+			}
+		}
+	};
+
+	LL_ITER(block, stext_page->first_block) {
+		std::vector<fz_stext_char*> chars;
+		get_flat_chars_from_block(block, chars);
+		if (chars.size() > 0) {
+			std::wstring block_string;
+			std::vector<int> indices;
+			get_text_from_flat_chars(chars, block_string, indices);
+			if (is_string_titlish(block_string)) {
+				TocNode* new_node = new TocNode;
+				new_node->page = page_number;
+				new_node->title = block_string;
+				new_node->x = 0;
+				new_node->y = block->bbox.y0;
+				add_toc_node(new_node);
+			}
+		}
+	}
+	return num_new_entries;
 }

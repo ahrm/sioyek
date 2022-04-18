@@ -155,3 +155,7 @@ std::wstring truncate_string(const std::wstring& inp, int size);
 std::wstring get_page_formatted_string(int page);
 fz_rect create_word_rect(const std::vector<fz_rect>& chars);
 std::vector<fz_rect> create_word_rects_multiline(const std::vector<fz_rect>& chars);
+void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*>& flat_chars);
+void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::wstring& string_res, std::vector<int>& indices);
+bool is_string_titlish(const std::wstring& str);
+bool is_title_parent_of(const std::wstring& parent_title, const std::wstring& child_title, bool* are_same);

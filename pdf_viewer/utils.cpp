@@ -349,17 +349,21 @@ std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line) {
 	return std::move(reordered_chars);
 }
 
+void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*>& flat_chars) {
+	if (block->type == FZ_STEXT_BLOCK_TEXT) {
+		LL_ITER(line, block->u.t.first_line) {
+			std::vector<fz_stext_char*> reordered_chars = reorder_stext_line(line);
+			for (auto ch : reordered_chars) {
+				flat_chars.push_back(ch);
+			}
+		}
+	}
+}
+
 void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
 
 	LL_ITER(block, stext_page->first_block) {
-		if (block->type == FZ_STEXT_BLOCK_TEXT) {
-			LL_ITER(line, block->u.t.first_line) {
-				std::vector<fz_stext_char*> reordered_chars = reorder_stext_line(line);
-				for (auto ch : reordered_chars) {
-					flat_chars.push_back(ch);
-				}
-			}
-		}
+		get_flat_chars_from_block(block, flat_chars);
 	}
 }
 
@@ -1667,4 +1671,40 @@ std::wstring get_page_formatted_string(int page) {
 	std::wstringstream ss;
 	ss << L"[ " << page << L" ]";
 	return ss.str();
+}
+
+bool is_string_titlish(const std::wstring& str) {
+	if (str.size() <= 5 || str.size() >= 60) {
+		return false;
+	}
+	std::wregex regex(L"([0-9]+\\.)+([0-9]+)*");
+	std::wsmatch match;
+
+	std::regex_search(str, match, regex);
+	int pos = match.position();
+	int size = match.length();
+	return (size > 0) && (pos == 0);
+}
+
+bool is_title_parent_of(const std::wstring& parent_title, const std::wstring& child_title, bool* are_same) {
+	int count = std::min(parent_title.size(), child_title.size());
+
+	*are_same = false;
+
+	for (int i = 0; i < count; i++) {
+		if (parent_title.at(i) == ' ') {
+			if (child_title.at(i) == ' ') {
+				*are_same = true;
+				return false;
+			}
+			else {
+				return true;
+			}
+		}
+		if (child_title.at(i) != parent_title.at(i)) {
+			return false;
+		}
+	}
+
+	return true;
 }

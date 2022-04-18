@@ -1947,7 +1947,8 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
                         if (toc_node) {
                             validate_render();
                             update_history_state();
-                            main_document_view->goto_page(toc_node->page);
+                            //main_document_view->goto_page(toc_node->page);
+                            main_document_view->goto_offset_within_page(toc_node->page, toc_node->x, toc_node->y);
                             push_state();
                         }
                     }, this, selected_index));

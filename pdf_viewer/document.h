@@ -34,6 +34,7 @@ private:
 	std::vector<Link> links;
 	DatabaseManager* db_manager = nullptr;
 	std::vector<TocNode*> top_level_toc_nodes;
+	std::vector<TocNode*> created_top_level_toc_nodes;
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
 	QNetworkAccessManager* network_access_manager = nullptr;
@@ -211,6 +212,12 @@ public:
 	std::vector<fz_rect> get_highlighted_character_masks(int page);
 	fz_rect get_page_rect_no_cache(int page);
 	std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
+
+	//void create_table_of_contents(std::vector<TocNode*>& top_nodes);
+	int add_stext_page_to_created_toc(fz_stext_page* stext_page,
+		int page_number,
+		std::vector<TocNode*>& toc_node_stack,
+		std::vector<TocNode*>& top_level_node);
 
 	friend class DocumentManager;
 };
