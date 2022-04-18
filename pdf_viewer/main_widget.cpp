@@ -281,12 +281,7 @@ void MainWidget::persist() {
 }
 void MainWidget::closeEvent(QCloseEvent* close_event) {
     LOG("MainWidget::closeEvent");
-    save_auto_config();
-    persist();
-
-    // we need to delete this here (instead of destructor) to ensure that application
-    // closes immediately after the main window is closed
-    delete helper_opengl_widget;
+    handle_close_event();
 }
 
 MainWidget::MainWidget(fz_context* mupdf_context,
@@ -2295,8 +2290,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         helper_opengl_widget->toggle_custom_color_mode();
     }
     else if (command->name == "quit" || command->name == "q") {
-        persist();
+		handle_close_event();
         QApplication::quit();
+        return;
     }
     else if (command->name == "command") {
         QStringList command_names = command_manager.get_all_command_names();
@@ -3353,4 +3349,13 @@ std::wstring MainWidget::get_window_configuration_string() {
 			main_window_move_x,
 			main_window_move_y).toStdWString());
 	}
+}
+
+void MainWidget::handle_close_event() {
+	save_auto_config();
+	persist();
+
+	// we need to delete this here (instead of destructor) to ensure that application
+	// closes immediately after the main window is closed
+	delete helper_opengl_widget;
 }

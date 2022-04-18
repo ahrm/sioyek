@@ -190,6 +190,7 @@ protected:
 	std::wstring get_window_configuration_string();
 	void save_auto_config();
 
+	void handle_close_event();
 public:
 
 	void handle_command(const Command* command, int num_repeats);
