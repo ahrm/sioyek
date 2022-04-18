@@ -366,12 +366,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         handle_command_types(command, 1);
     };
 
-    QObject::connect(text_command_line_edit, &QLineEdit::returnPressed, [&]() {
-        text_command_line_edit_container->hide();
-        setFocus();
-        handle_pending_text_command(text_command_line_edit->text().toStdWString());
-        });
-
     // when pdf renderer's background threads finish rendering a page or find a new search result
     // we need to update the ui
     QObject::connect(pdf_renderer, &PdfRenderer::render_advance, this, &MainWidget::invalidate_render);
@@ -1113,6 +1107,15 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
         if (kevent->key() == Qt::Key::Key_Escape) {
             handle_escape();
+        }
+
+        if (kevent->key() == Qt::Key::Key_Return) {
+            if (text_command_line_edit_container->isVisible()) {
+                text_command_line_edit_container->hide();
+                setFocus();
+                handle_pending_text_command(text_command_line_edit->text().toStdWString());
+                return;
+            }
         }
 
         std::vector<int> ignored_codes = {

@@ -2038,7 +2038,10 @@ int Document::add_stext_page_to_created_toc(fz_stext_page* stext_page,
 		}
 		else {
 			bool are_same = false;
-			while ((toc_node_stack.size() > 0) && (!is_title_parent_of(toc_node_stack[toc_node_stack.size() - 1]->title, node->title, &are_same)) && (!are_same)) {
+			// pop until we reach a parent of stack is empty
+			while ((toc_node_stack.size() > 0) &&
+				(!is_title_parent_of(toc_node_stack[toc_node_stack.size() - 1]->title, node->title, &are_same)) &&
+				(!are_same)) { // ignore items with the same name as current parent (happens when title of chapter is written on top of pages)
 				toc_node_stack.pop_back();
 			}
 
