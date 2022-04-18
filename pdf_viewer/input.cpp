@@ -294,7 +294,7 @@ InputParseTreeNode* parse_lines(InputParseTreeNode* root,
 				if ((tokens[i] != "sym") && (tokens[i] != "txt")) {
 
 					if (parent_node->is_final) {
-						std::wcout << "adding child command to a final command" << std::endl;
+						std::wcout << L"adding child command to a final command\n";
 					}
 
 					parent_node->children.push_back(new InputParseTreeNode(node));
@@ -311,6 +311,10 @@ InputParseTreeNode* parse_lines(InputParseTreeNode* root,
 						parent_node->is_final = true;
 					}
 				}
+			}
+			else if (i == (tokens.size() - 1)) {
+				std::wcout << L"Warning: overriding command for " << utf8_decode(line) << L" : replacing " << 
+					utf8_decode(parent_node->name) << L" with " << utf8_decode(command_names[j]) << L"\n";
 			}
 
 			if (i == (tokens.size() - 1)) {
@@ -437,7 +441,7 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 			}
 		}
 	}
-	std::wcout << "invalid command (key:" << (char)key << "); resetting to root" << std::endl;
+	std::wcout << "Warning: invalid command (key:" << (char)key << "); resetting to root" << std::endl;
 	number_stack.clear();
 	current_node = root;
 	return nullptr;

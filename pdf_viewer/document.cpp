@@ -517,7 +517,7 @@ fz_outline* Document::get_toc_outline() {
 		res = fz_load_outline(context, doc);
 	}
 	fz_catch(context) {
-		std::cerr << "Error: Could not load outline ... " << std::endl;
+		//std::cerr << "Error: Could not load outline ... " << std::endl;
 	}
 	return res;
 }
@@ -535,7 +535,7 @@ void Document::create_toc_tree(std::vector<TocNode*>& toc) {
 		}
 	}
 	fz_catch(context) {
-		std::cerr << "Error: Could not load outline ... " << std::endl;
+		//std::cerr << "Error: Could not load outline ... " << std::endl;
 	}
 }
 
@@ -576,7 +576,7 @@ fz_link* Document::get_page_links(int page_number) {
 	if (cached_page_links.find(page_number) != cached_page_links.end()) {
 		return cached_page_links.at(page_number);
 	}
-	std::cerr << "getting links .... for " << page_number << std::endl;
+	//std::cerr << "getting links .... for " << page_number << std::endl;
 
 	fz_link* res = nullptr;
 	fz_try(context) {
@@ -695,7 +695,7 @@ bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string 
 		return false;
 	}
 	else {
-		std::cerr << "warning! calling open() on an open document" << std::endl;
+		//std::cerr << "warning! calling open() on an open document" << std::endl;
 		return true;
 	}
 }
@@ -752,7 +752,7 @@ void Document::load_page_dimensions(bool force_load_now) {
 			}
 		}
 		fz_catch(context) {
-			std::wcout << L"could not load sample page dimensions\n";
+			std::wcout << L"Error: could not load sample page dimensions\n";
 		}
 	}
 
@@ -1068,7 +1068,6 @@ void Document::index_figures(bool* invalid_flag) {
 	is_indexing = true;
 
 	this->figure_indexing_thread = std::thread([this, n, invalid_flag]() {
-		std::wcout << "starting index thread ..." << std::endl;
 		std::vector<IndexedData> local_generic_data;
 		std::map<std::wstring, IndexedData> local_reference_data;
 		std::map<std::wstring, std::vector<IndexedData>> local_equation_data;
@@ -1133,7 +1132,6 @@ void Document::index_figures(bool* invalid_flag) {
 		created_top_level_toc_nodes = std::move(top_level_nodes);
 
 		figure_indices_mutex.unlock();
-		std::wcout << "figure indexing finished ... " << std::endl;
 		is_indexing = false;
 		if (invalid_flag) {
 			*invalid_flag = true;
@@ -1880,7 +1878,7 @@ std::vector<fz_rect> Document::get_highlighted_character_masks(int page) {
 		auto fastread_highlights = fastread_highlights_.value();
 
 		if (fastread_highlights.size() != flat_chars.size()) {
-			std::wcout << L"invalid highlight received\n";
+			std::wcout << L"Error: invalid highlight received\n";
 			return res;
 		}
 

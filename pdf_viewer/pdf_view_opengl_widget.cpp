@@ -89,7 +89,6 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 		VertexShaderStream.close();
 	}
 	else {
-		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path.get_path_utf8().c_str());
 		return 0;
 	}
 
@@ -105,7 +104,6 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 		FragmentShaderStream.close();
 	}
 	else {
-		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", fragment_file_path.get_path_utf8().c_str());
 		return 0;
 	}
 
@@ -113,7 +111,6 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 	int InfoLogLength;
 
 	// Compile Vertex Shader
-	printf("Compiling shader : %s\n", vertex_file_path.get_path_utf8().c_str());
 	vertex_shader_code_utf8 = utf8_encode(VertexShaderCode);
 	char const* VertexSourcePointer = vertex_shader_code_utf8.c_str();
 	glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
@@ -129,7 +126,6 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 	}
 
 	// Compile Fragment Shader
-	printf("Compiling shader : %s\n", fragment_file_path.get_path_utf8().c_str());
 	fragment_shader_code_utf8 = utf8_encode(FragmentShaderCode);
 	char const* FragmentSourcePointer = fragment_shader_code_utf8.c_str();
 	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
@@ -145,7 +141,6 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 	}
 
 	// Link the program
-	printf("Linking program\n");
 	GLuint ProgramID = glCreateProgram();
 	glAttachShader(ProgramID, VertexShaderID);
 	glAttachShader(ProgramID, FragmentShaderID);

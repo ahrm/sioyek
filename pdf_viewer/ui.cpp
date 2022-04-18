@@ -25,12 +25,10 @@ std::wstring select_new_pdf_file_name() {
 std::vector<ConfigFileChangeListener*> ConfigFileChangeListener::registered_listeners;
 
 ConfigFileChangeListener::ConfigFileChangeListener() {
-    std::wcout << "config file change listener constructor called\n" << endl;
 	registered_listeners.push_back(this);
 }
 
 ConfigFileChangeListener::~ConfigFileChangeListener() {
-    std::wcout << "config file change listener destructor called\n" << endl;
 	registered_listeners.erase(std::find(registered_listeners.begin(), registered_listeners.end(), this));
 }
 

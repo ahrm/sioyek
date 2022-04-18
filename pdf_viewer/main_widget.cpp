@@ -401,7 +401,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                     ) {
 
                 //if (doc->get_milies_since_last_document_update_time() > doc->get_milies_since_last_edit_time()) {
-                    std::wcout << L"calling\n";
                     doc->reload();
                     pdf_renderer->clear_cache();
                     invalidate_render();
@@ -1209,10 +1208,6 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
                         std::string column_string = std::to_string(column);
 
                         QString command = QString::fromStdWString(inverse_search_command).arg(file_name, line_string.c_str(), column_string.c_str());
-
-                        std::wcout << L"inverse search command: " << inverse_search_command << L"\n";
-                        std::wcout << L"executed command: " << command.toStdWString() << L"\n";
-
                         QProcess::startDetached(command);
 
                     }

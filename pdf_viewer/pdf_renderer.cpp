@@ -160,7 +160,6 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
 					cached_resp.texture = result;
 					pixmap_drop_mutex[cached_resp.thread].unlock();
 
-					std::wcout << "texture: " << result << std::endl;
 				}
 				break;
 			}
@@ -240,7 +239,6 @@ void PdfRenderer::delete_old_pages(bool force_all, bool invalidate_all) {
 		for (int i = 0; i < cached_responses.size(); i++) {
 			if ((cached_responses[i].last_access_time < time_threshold)
 				&& ((now - cached_responses[i].last_access_time) > CACHE_INVALID_MILIES)) {
-				std::wcout << "deleting cached texture ... " << std::endl;
 				indices_to_delete.push_back(i);
 			}
 		}
