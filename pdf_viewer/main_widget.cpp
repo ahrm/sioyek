@@ -91,7 +91,7 @@ extern int SINGLE_MAIN_WINDOW_MOVE[2];
 
 bool MainWidget::main_document_view_has_document()
 {
-    return (main_document_view != nullptr) && (main_document_view->get_document() != nullptr);
+    return (main_document_view != nullptr) && (doc() != nullptr);
 }
 
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
@@ -135,10 +135,7 @@ std::optional<std::wstring> get_last_opened_file_name() {
 }
 
 void MainWidget::set_overview_position(int page, float offset) {
-
-    int current_page = main_document_view->get_current_page_number();
-    float page_height = main_document_view->get_document()->get_page_height(current_page);
-
+    float page_height = main_document_view->get_document()->get_page_height(page);
     opengl_widget->set_overview_page(OverviewState{ page, offset, page_height });
     invalidate_render();
 }
