@@ -77,8 +77,8 @@ void Document::fill_highlight_rects(fz_context* ctx) {
 
 void Document::add_highlight(const std::wstring& desc,
 	const std::vector<fz_rect>& highlight_rects,
-	fz_point selection_begin,
-	fz_point selection_end,
+	AbsoluteDocumentPos selection_begin,
+	AbsoluteDocumentPos selection_end,
 	char type)
 {
 	if (type > 'z' || type < 'a') {
@@ -889,32 +889,29 @@ void Document::set_page_offset(int new_offset) {
 fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page) {
 	float page_x0, page_x1, page_y0, page_y1;
 	int page_number = -1;
-	absolute_to_page_pos(absolute_rect.x0, absolute_rect.y0, &page_x0, &page_y0, &page_number);
-	absolute_to_page_pos(absolute_rect.x1, absolute_rect.y1, &page_x1, &page_y1, &page_number);
+	DocumentPos bottom_left = absolute_to_page_pos({ absolute_rect.x0, absolute_rect.y0 });
+	DocumentPos top_right = absolute_to_page_pos({ absolute_rect.x1, absolute_rect.y1 });
 	if (page != nullptr) {
 		*page = page_number;
 	}
 	fz_rect res;
-	res.x0 = page_x0;
-	res.x1 = page_x1;
-	res.y0 = page_y0;
-	res.y1 = page_y1;
+	res.x0 = bottom_left.x;
+	res.x1 = top_right.x;
+	res.y0 = bottom_left.y;
+	res.y1 = top_right.y;
 	return res;
 }
 
-void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* doc_x, float* doc_y, int* doc_page) {
+DocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp){
 
 	std::lock_guard guard(page_dims_mutex);
 	if (accum_page_heights.size() == 0) {
-		*doc_x = 0;
-		*doc_y = 0;
-		*doc_page = 0;
-		return;
+		return {0, 0.0f, 0.0f};
 	}
 
 	int i = (std::lower_bound(
 		accum_page_heights.begin(),
-		accum_page_heights.end(), absolute_y) -  accum_page_heights.begin()) - 1;
+		accum_page_heights.end(), absp.y) -  accum_page_heights.begin()) - 1;
 	i = std::max(0, i);
 
 	float acc_page_heights_i = 0.0f;
@@ -922,15 +919,13 @@ void Document::absolute_to_page_pos(float absolute_x, float absolute_y, float* d
 	if (i < accum_page_heights.size()) {
 		acc_page_heights_i = accum_page_heights[i];
 		page_width_i = page_widths[i];
-		float remaining_y = absolute_y - acc_page_heights_i;
+		float remaining_y = absp.y - acc_page_heights_i;
 		float page_width = page_width_i;
 
-		*doc_x = page_width / 2 + absolute_x;
-		*doc_y = remaining_y;
-		*doc_page = i;
+		return {i, page_width / 2 + absp.x, remaining_y};
 	}
 	else {
-		*doc_page = -1;
+		return {-1, 0.0f, 0.0f};
 	}
 }
 
@@ -1381,31 +1376,36 @@ fz_pixmap* Document::get_small_pixmap(int page) {
 	return res;
 }
 
-void Document::get_text_selection(fz_point selection_begin,
-	fz_point selection_end,
+void Document::get_text_selection(AbsoluteDocumentPos selection_begin,
+	AbsoluteDocumentPos selection_end,
 	bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
 	std::vector<fz_rect>& selected_characters,
 	std::wstring& selected_text) {
 	get_text_selection(context, selection_begin, selection_end, is_word_selection, selected_characters, selected_text);
 }
-void Document::get_text_selection(fz_context* ctx, fz_point selection_begin,
-	fz_point selection_end,
+void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection_begin,
+	AbsoluteDocumentPos selection_end,
 	bool is_word_selection,
 	std::vector<fz_rect>& selected_characters,
 	std::wstring& selected_text) {
 
-	// selected_characters are in absolute document space
-	int page_begin, page_end;
-	fz_rect page_rect;
-
 	selected_characters.clear();
 	selected_text.clear();
 
+
+	DocumentPos page_pos1 = absolute_to_page_pos(selection_begin);
+	DocumentPos page_pos2 = absolute_to_page_pos(selection_end);
+
+	int page_begin, page_end;
 	fz_point page_point1;
 	fz_point page_point2;
 
-	absolute_to_page_pos(selection_begin.x, selection_begin.y, &page_point1.x, &page_point1.y, &page_begin);
-	absolute_to_page_pos(selection_end.x, selection_end.y, &page_point2.x, &page_point2.y, &page_end);
+	page_begin = page_pos1.page;
+	page_end = page_pos2.page;
+	page_point1.x = page_pos1.x;
+	page_point2.x = page_pos2.x;
+	page_point1.y = page_pos1.y;
+	page_point2.y = page_pos2.y;
 
 	if ((page_begin == -1) || (page_end == -1)) {
 		return;
@@ -1572,9 +1572,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
 	}
 
 	for (auto bookmark : doc_bookmarks) {
-		int page_number;
-		float doc_x, doc_y;
-		absolute_to_page_pos(0, bookmark.y_offset, &doc_x, &doc_y, &page_number);
+		auto [page_number, doc_x, doc_y] = absolute_to_page_pos({ 0, bookmark.y_offset });
 
 		fz_page* page = load_cached_page(page_number);
 		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
@@ -1928,6 +1926,10 @@ void DocumentManager::free_document(Document* document) {
 	delete document;
 }
 
+std::optional<PdfLink> Document::get_link_in_pos(const DocumentPos& pos) {
+	return get_link_in_pos(pos.page, pos.x, pos.y);
+}
+
 std::optional<PdfLink> Document::get_link_in_pos(int page, float doc_x, float doc_y){
 	if (!doc) return {};
 
@@ -2010,9 +2012,7 @@ float Document::document_to_absolute_y(int page, float doc_y) {
 }
 
 void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
-	float doc_x, doc_y;
-	int page;
-	absolute_to_page_pos(0, absolute_y, &doc_x, &doc_y, &page);
+	auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
 
 	fz_pixmap* pixmap = get_small_pixmap(page);
 	std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);

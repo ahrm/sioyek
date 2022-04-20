@@ -28,15 +28,6 @@
 extern float ZOOM_INC_FACTOR;
 extern const int PAGE_PADDINGS;
 
-struct NormalizedWindowPos {
-	float x;
-	float y;
-};
-
-struct WindowPos {
-	int x;
-	int y;
-};
 
 class DocumentView {
 protected:
@@ -81,27 +72,28 @@ public:
 	void delete_closest_bookmark_to_offset(float offset);
 	float get_offset_x();
 	float get_offset_y();
+	AbsoluteDocumentPos get_offsets();
 	int get_view_height();
 	int get_view_width();
 	void set_null_document();
 	void set_offset_x(float new_offset_x);
 	void set_offset_y(float new_offset_y);
-	std::optional<PdfLink> get_link_in_pos(int view_x, int view_y);
-	int get_highlight_index_in_pos(int view_x, int view_y);
-	void get_text_selection(fz_point selection_begin, fz_point selection_end, bool is_word_selection, std::vector<fz_rect>& selected_characters, std::wstring& text_selection);
+	std::optional<PdfLink> get_link_in_pos(WindowPos pos);
+	int get_highlight_index_in_pos(WindowPos pos);
+	void get_text_selection(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, std::vector<fz_rect>& selected_characters, std::wstring& text_selection);
 	void add_mark(char symbol);
 	void add_bookmark(std::wstring desc);
-	void add_highlight(fz_point selection_begin, fz_point selection_end, char type);
+	void add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
 	void on_view_size_change(int new_width, int new_height);
 	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
 	//void absolute_to_window_pos_pixels(float absolute_x, float absolute_y, float* window_x, float* window_y);
 	fz_rect absolute_to_window_rect(fz_rect doc_rect);
-	void document_to_window_pos(int page, float doc_x, float doc_y, float* window_x, float* window_y);
-	void document_to_window_pos_in_pixels(int page, float doc_x, float doc_y, int* window_x, int* window_y);
+	NormalizedWindowPos document_to_window_pos(DocumentPos pos);
+	WindowPos document_to_window_pos_in_pixels(DocumentPos doc_pos);
 	fz_rect document_to_window_rect(int page, fz_rect doc_rect);
-	void window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page);
-	void window_to_absolute_document_pos(float window_x, float window_y, float* doc_x, float* doc_y);
-	NormalizedWindowPos window_to_normalized_window_pos(float window_x, float window_y);
+	DocumentPos window_to_document_pos(WindowPos window_pos);
+	AbsoluteDocumentPos window_to_absolute_document_pos(WindowPos window_pos);
+	NormalizedWindowPos window_to_normalized_window_pos(WindowPos window_pos);
 	void goto_mark(char symbol);
 	void goto_end();
 
@@ -117,8 +109,8 @@ public:
 	float set_zoom_level(float zl);
 	float zoom_in();
 	float zoom_out();
-	float zoom_in_cursor(int mouse_x, int mouse_y);
-	float zoom_out_cursor(int mouse_x, int mouse_y);
+	float zoom_in_cursor(WindowPos mouse_pos);
+	float zoom_out_cursor(WindowPos mouse_pos);
 	void move_absolute(float dx, float dy);
 	void move(float dx, float dy);
 	void get_absolute_delta_from_doc_delta(float doc_dx, float doc_dy, float* abs_dx, float* abs_dy);
@@ -129,7 +121,7 @@ public:
 	void reset_doc_state();
 	void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions=false);
 	float get_page_offset(int page);
-	void goto_offset_within_page(int page, float offset_x, float offset_y);
+	void goto_offset_within_page(DocumentPos pos);
 	void goto_offset_within_page(int page, float offset_y);
 	void goto_page(int page);
 	void fit_to_page_width(bool smart=false, bool ratio=false);

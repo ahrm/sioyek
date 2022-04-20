@@ -1093,9 +1093,9 @@ std::vector<fz_rect> PdfViewOpenGLWidget::get_overview_border_rects() {
 	return res;
 }
 
-bool PdfViewOpenGLWidget::is_window_point_in_overview(float window_x, float window_y) {
+bool PdfViewOpenGLWidget::is_window_point_in_overview(fvec2 window_point) {
 	if (get_overview_page()) {
-		fz_point point{ window_x, window_y };
+		fz_point point{ window_point.x(), window_point.y()};
 		fz_rect rect = get_overview_rect();
 		bool res = fz_is_point_inside_rect(point, rect);
 		return res;
@@ -1129,6 +1129,10 @@ void PdfViewOpenGLWidget::set_overview_offsets(float offset_x, float offset_y) {
 	overview_offset_y = offset_y;
 }
 
+void PdfViewOpenGLWidget::set_overview_offsets(fvec2 offsets) {
+	set_overview_offsets(offsets.x(), offsets.y());
+}
+
 float PdfViewOpenGLWidget::get_overview_side_pos(int index) {
 	if (index == OverviewSide::bottom) {
 		return overview_offset_y - overview_half_height;
@@ -1144,30 +1148,30 @@ float PdfViewOpenGLWidget::get_overview_side_pos(int index) {
 	}
 }
 
-void PdfViewOpenGLWidget::set_overview_side_pos(int index, fz_rect original_rect, float diff_x, float diff_y) {
+void PdfViewOpenGLWidget::set_overview_side_pos(int index, fz_rect original_rect, fvec2 diff) {
 
 	fz_rect new_rect = original_rect;
 
 	if (index == OverviewSide::bottom) {
-		float new_bottom_pos = original_rect.y0 + diff_y;
+		float new_bottom_pos = original_rect.y0 + diff.y();
 		if (new_bottom_pos < original_rect.y1) {
 			new_rect.y0 = new_bottom_pos;
 		}
 	}
 	if (index == OverviewSide::top) {
-		float new_top_pos = original_rect.y1 + diff_y;
+		float new_top_pos = original_rect.y1 + diff.y();
 		if (new_top_pos > original_rect.y0) {
 			new_rect.y1 = new_top_pos;
 		}
 	}
 	if (index == OverviewSide::left) {
-		float new_left_pos = original_rect.x0 + diff_x;
+		float new_left_pos = original_rect.x0 + diff.x();
 		if (new_left_pos < original_rect.x1) {
 			new_rect.x0 = new_left_pos;
 		}
 	}
 	if (index == OverviewSide::right) {
-		float new_right_pos = original_rect.x1 + diff_x;
+		float new_right_pos = original_rect.x1 + diff.x();
 		if (new_right_pos > original_rect.x0) {
 			new_rect.x1 = new_right_pos;
 		}
@@ -1218,11 +1222,11 @@ void PdfViewOpenGLWidget::bind_program() {
 	}
 }
 
-DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(float window_x_normal, float window_y_normal) {
+DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos window_pos) {
 	float window_width = static_cast<float>(size().width());
 	float window_height = static_cast<float>(size().height());
-	int window_x = static_cast<int>((1.0f + window_x_normal) / 2 * window_width);
-	int window_y = static_cast<int>((1.0f + window_y_normal) / 2 * window_height);
+	int window_x = static_cast<int>((1.0f + window_pos.x) / 2 * window_width);
+	int window_y = static_cast<int>((1.0f + window_pos.y) / 2 * window_height);
 	float overview_width = document_view->get_view_width() * overview_half_width;
 	float page_width = document_view->get_document()->get_page_width(get_overview_page().value().page);
 	float zoom_level = overview_width / page_width;

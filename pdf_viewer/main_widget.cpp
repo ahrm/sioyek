@@ -156,41 +156,38 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
-    int x = mouse_event->pos().x();
-    int y = mouse_event->pos().y();
+    //int x = mouse_event->pos().x();
+    //int y = mouse_event->pos().y();
+    WindowPos mpos = { mouse_event->pos().x(), mouse_event->pos().y() };
 
     std::optional<PdfLink> link = {};
 
-    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(x, y);
+    NormalizedWindowPos normal_mpos = main_document_view->window_to_normalized_window_pos(mpos);
 
     if (overview_resize_data) {
         // if we are resizing overview page, set the selected side of the overview window to the mosue position
-        float offset_diff_x = normal_x - overview_resize_data.value().original_mouse_pos.first;
-        float offset_diff_y = normal_y - overview_resize_data.value().original_mouse_pos.second;
+        //float offset_diff_x = normal_x - overview_resize_data.value().original_mouse_pos.first;
+        //float offset_diff_y = normal_y - overview_resize_data.value().original_mouse_pos.second;
+        fvec2 offset_diff = fvec2(normal_mpos) - fvec2(overview_resize_data.value().original_normal_mouse_pos);
         opengl_widget->set_overview_side_pos(
             overview_resize_data.value().side_index,
             overview_resize_data.value().original_rect,
-            offset_diff_x,
-            offset_diff_y);
+            offset_diff);
         validate_render();
         return;
     }
 
     if (overview_move_data) {
-        float offset_diff_x = normal_x - overview_move_data.value().original_mouse_pos.first;
-        float offset_diff_y = normal_y - overview_move_data.value().original_mouse_pos.second;
-
-        float new_offset_x = overview_move_data.value().original_offsets.first + offset_diff_x;
-        float new_offset_y = overview_move_data.value().original_offsets.second - offset_diff_y;
-
-        opengl_widget->set_overview_offsets(new_offset_x, new_offset_y);
+        fvec2 offset_diff = fvec2(normal_mpos) - fvec2(overview_move_data.value().original_normal_mouse_pos);
+        offset_diff[1] = -offset_diff[1];
+        fvec2 new_offsets = overview_move_data.value().original_offsets + offset_diff;
+        opengl_widget->set_overview_offsets(new_offsets);
         validate_render();
         return;
     }
 
-    if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
-        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos(normal_x, normal_y);
-        link = main_document_view->get_document()->get_link_in_pos(doc_page, doc_x, doc_y);
+    if (opengl_widget->is_window_point_in_overview(normal_mpos)) {
+        link = doc()->get_link_in_pos(opengl_widget->window_pos_to_overview_pos(normal_mpos));
         if (link) {
 			setCursor(Qt::PointingHandCursor);
         }
@@ -200,10 +197,11 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
-    if (main_document_view && (link = main_document_view->get_link_in_pos(x, y))) {
+    if (main_document_view && (link = main_document_view->get_link_in_pos(mpos))) {
         // show hand cursor when hovering over links
         setCursor(Qt::PointingHandCursor);
 
+        // if hover_overview config is set, we show an overview of links while hovering over them
         if (HOVER_OVERVIEW) {
             set_overview_link(link.value());
         }
@@ -217,13 +215,12 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     }
 
     if (is_dragging) {
-        float x_diff = x - last_mouse_down_window_x;
-        float y_diff = y - last_mouse_down_window_y;
+        ivec2 diff = ivec2(mpos) - ivec2(last_mouse_down_window_pos);
 
-        float x_diff_doc = x_diff / main_document_view->get_zoom_level();
-        float y_diff_doc = y_diff / main_document_view->get_zoom_level();
+        fvec2 diff_doc = diff / main_document_view->get_zoom_level();
 
-        main_document_view->set_offsets(last_mouse_down_document_x_offset + x_diff_doc, last_mouse_down_document_y_offset - y_diff_doc);
+        main_document_view->set_offsets(last_mouse_down_document_offset.x + diff_doc.x(),
+            last_mouse_down_document_offset.y - diff_doc.y());
         validate_render();
     }
 
@@ -233,11 +230,12 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         //todo: maybe have a timer event that handles this periodically
         if (last_text_select_time.msecsTo(QTime::currentTime()) > 16) {
 
-            float document_x, document_y;
-            main_document_view->window_to_absolute_document_pos(x, y, &document_x, &document_y);
+            AbsoluteDocumentPos document_pos = main_document_view->window_to_absolute_document_pos(mpos);
 
-            fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
-            fz_point selection_end = { document_x, document_y };
+            selection_begin = last_mouse_down;
+            selection_end = document_pos;
+            //fz_point selection_begin = { last_mouse_down.x(), last_mouse_down.y()};
+            //fz_point selection_end = { document_x, document_y };
 
             main_document_view->get_text_selection(selection_begin,
                 selection_end,
@@ -709,7 +707,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
                 main_document_view->goto_page(target_page);
             }
             else {
-                main_document_view->goto_offset_within_page(target_page, main_document_view->get_offset_x(), first_rect.value().y0);
+                main_document_view->goto_offset_within_page({ target_page, main_document_view->get_offset_x(), first_rect.value().y0 });
             }
         }
 
@@ -860,7 +858,7 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
     }
     else if (command->name == "add_highlight") {
         if (opengl_widget->selected_character_rects.size() > 0) {
-            main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, symbol);
+            main_document_view->add_highlight(selection_begin, selection_end, symbol);
             opengl_widget->selected_character_rects.clear();
             selected_text.clear();
         }
@@ -1107,7 +1105,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
 }
 
-void MainWidget::handle_right_click(float x, float y, bool down) {
+void MainWidget::handle_right_click(WindowPos click_pos, bool down) {
 
     if (is_rotated()) {
         return;
@@ -1131,18 +1129,16 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
                 return;
             }
 
-            if (overview_under_pos(static_cast<int>(x), static_cast<int>(y))){
+            if (overview_under_pos(click_pos)) {
                 return;
             }
 
-            visual_mark_under_pos(static_cast<int>(x), static_cast<int>(y));
+            visual_mark_under_pos(click_pos);
 
         }
         else {
             if (this->synctex_mode) {
-                float doc_x, doc_y;
-                int page;
-                main_document_view->window_to_document_pos(x, y, &doc_x, &doc_y, &page);
+                auto [page, doc_x, doc_y] = main_document_view->window_to_document_pos(click_pos);
                 std::wstring docpath = main_document_view->get_document()->get_path();
                 std::string docpath_utf8 = utf8_encode(docpath);
                 synctex_scanner_t scanner = synctex_scanner_new_with_output_file(docpath_utf8.c_str(), nullptr, 1);
@@ -1176,16 +1172,15 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
 
 }
 
-void MainWidget::handle_left_click(float x, float y, bool down) {
+void MainWidget::handle_left_click(WindowPos click_pos, bool down) {
 
     if (is_rotated()) {
         return;
     }
 
-    float x_, y_;
-    main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
+    AbsoluteDocumentPos abs_doc_pos = main_document_view->window_to_absolute_document_pos(click_pos);
 
-    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(x, y);
+    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(click_pos);
 
     if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
 
@@ -1194,32 +1189,34 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
         PdfViewOpenGLWidget::OverviewSide border_index = static_cast<PdfViewOpenGLWidget::OverviewSide>(-1);
         if (opengl_widget->is_window_point_in_overview_border(normal_x, normal_y, &border_index)) {
             PdfViewOpenGLWidget::OverviewResizeData resize_data;
-            resize_data.original_mouse_pos = std::make_pair(normal_x, normal_y);
+            resize_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
             resize_data.original_rect = opengl_widget->get_overview_rect();
             resize_data.side_index = border_index;
             overview_resize_data = resize_data;
             return;
         }
-        if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
+        if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
             float original_offset_x, original_offset_y;
 
             PdfViewOpenGLWidget::OverviewMoveData move_data;
             opengl_widget->get_overview_offsets(&original_offset_x, &original_offset_y);
-            move_data.original_mouse_pos =  std::make_pair(normal_x, normal_y);
-            move_data.original_offsets = std::make_pair(original_offset_x, original_offset_y);
+            move_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
+            move_data.original_offsets = fvec2{ original_offset_x, original_offset_y };
             overview_move_data = move_data;
             return;
         }
 
-        selection_begin_x = x_;
-        selection_begin_y = y_;
+        selection_begin = abs_doc_pos;
+        //selection_begin_x = x_;
+        //selection_begin_y = y_;
 
-        last_mouse_down_x = x_;
-        last_mouse_down_y = y_;
-        last_mouse_down_window_x = x;
-        last_mouse_down_window_y = y;
-        last_mouse_down_document_x_offset = main_document_view->get_offset_x();
-        last_mouse_down_document_y_offset = main_document_view->get_offset_y();
+        last_mouse_down = abs_doc_pos;
+        //last_mouse_down_x = x_;
+        //last_mouse_down_y = y_;
+        last_mouse_down_window_pos = click_pos;
+        last_mouse_down_document_offset = main_document_view->get_offsets();
+        //last_mouse_down_window_x = x;
+        //last_mouse_down_window_y = y;
 
         opengl_widget->selected_character_rects.clear();
 
@@ -1231,8 +1228,7 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
         }
     }
     else {
-        selection_end_x = x_;
-        selection_end_y = y_;
+        selection_end = abs_doc_pos;
 
         is_selecting = false;
         is_dragging = false;
@@ -1246,20 +1242,20 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
         //    return;
         //}
 
-        if ((!was_overview_mode) && (!mouse_drag_mode) && (manhattan_distance(last_mouse_down_x, last_mouse_down_y, x_, y_) > 5)) {
+        if ((!was_overview_mode) && (!mouse_drag_mode) && (manhattan_distance(fvec2(last_mouse_down), fvec2(abs_doc_pos)) > 5)) {
 
-            fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
-            fz_point selection_end = { x_, y_ };
+            //fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
+            //fz_point selection_end = { x_, y_ };
 
-            main_document_view->get_text_selection(selection_begin,
-                selection_end,
+            main_document_view->get_text_selection(last_mouse_down,
+                abs_doc_pos,
                 is_word_selecting,
                 opengl_widget->selected_character_rects,
                 selected_text);
             is_word_selecting = false;
         }
         else {
-            handle_click(x, y);
+            handle_click(click_pos);
             opengl_widget->selected_character_rects.clear();
             selected_text.clear();
         }
@@ -1358,16 +1354,16 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
     main_document_view->set_book_state(new_view_state.book_state);
 }
 
-void MainWidget::handle_click(int pos_x, int pos_y) {
+void MainWidget::handle_click(WindowPos click_pos) {
 
     if (!main_document_view_has_document()) {
         return;
     }
 
-    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(pos_x, pos_y);
+    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(click_pos);
 
-    if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
-        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos(normal_x, normal_y);
+    if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
+        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y });
         auto link = main_document_view->get_document()->get_link_in_pos(doc_page, doc_x, doc_y);
         if (link) {
             handle_link_click(link.value());
@@ -1375,21 +1371,17 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
         return;
     }
 
-    auto link = main_document_view->get_link_in_pos(pos_x, pos_y);
-    selected_highlight_index = main_document_view->get_highlight_index_in_pos(pos_x, pos_y);
+    auto link = main_document_view->get_link_in_pos(click_pos);
+    selected_highlight_index = main_document_view->get_highlight_index_in_pos(click_pos);
 
 
     if (link.has_value()) {
         handle_link_click(link.value());
     }
 }
-bool MainWidget::find_location_of_text_under_pointer(int pointer_x, int pointer_y, int* out_page, float* out_offset) {
+bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int* out_page, float* out_offset) {
 
-    int page;
-    float offset_x, offset_y;
-
-
-    main_document_view->window_to_document_pos(pointer_x, pointer_y, &offset_x, &offset_y, &page);
+    auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
     int current_page_number = main_document_view->get_current_page_number();
 
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
@@ -1441,9 +1433,9 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 	}
 
     if (mevent->button() == Qt::MouseButton::LeftButton) {
-        handle_left_click(mevent->pos().x(), mevent->pos().y(), false);
+        handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false);
         if (is_select_highlight_mode && (opengl_widget->selected_character_rects.size() > 0)) {
-            main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, select_highlight_type);
+            main_document_view->add_highlight(selection_begin, selection_end, select_highlight_type);
         }
         if (opengl_widget->selected_character_rects.size() > 0) {
             copy_to_clipboard(selected_text, true);
@@ -1451,13 +1443,11 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
-
-
-        handle_right_click(mevent->pos().x(), mevent->pos().y(), false);
+        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, false);
     }
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
-        smart_jump_under_pos(mevent->pos().x(), mevent->pos().y());
+        smart_jump_under_pos({ mevent->pos().x(), mevent->pos().y() });
     }
 
 }
@@ -1472,11 +1462,11 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 
     if (mevent->button() == Qt::MouseButton::LeftButton) {
-        handle_left_click(mevent->pos().x(), mevent->pos().y(), true);
+        handle_left_click({ mevent->pos().x(), mevent->pos().y() }, true);
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
-        handle_right_click(mevent->pos().x(), mevent->pos().y(), true);
+        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true);
     }
 
     if (mevent->button() == Qt::MouseButton::XButton1) {
@@ -1510,12 +1500,13 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
     int x = wevent->pos().x();
     int y = wevent->pos().y();
-    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(x, y);
+    WindowPos mouse_window_pos = { x, y };
+    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(mouse_window_pos);
 
 	int num_repeats = abs(wevent->delta() / 120);
 
     if ((!is_control_pressed) && (!is_shift_pressed)) {
-        if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
+        if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
             if (wevent->angleDelta().y() > 0) {
                 OverviewState state = opengl_widget->get_overview_page().value();
                 state.offset_y -= 36.0f * vertical_move_amount;
@@ -1793,13 +1784,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
     else if (command->name == "zoom_in_cursor") {
 		QPoint mouse_pos = mapFromGlobal(QCursor::pos());
-		main_document_view->zoom_in_cursor(mouse_pos.x(), mouse_pos.y());
+        main_document_view->zoom_in_cursor({ mouse_pos.x(), mouse_pos.y() });
 		last_smart_fit_page = {};
     }
 
     else if (command->name == "zoom_out_cursor") {
 		QPoint mouse_pos = mapFromGlobal(QCursor::pos());
-		main_document_view->zoom_out_cursor(mouse_pos.x(), mouse_pos.y());
+        main_document_view->zoom_out_cursor({ mouse_pos.x(), mouse_pos.y() });
 		last_smart_fit_page = {};
     }
 
@@ -1881,7 +1872,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
                             validate_render();
                             update_history_state();
                             //main_document_view->goto_page(toc_node->page);
-                            main_document_view->goto_offset_within_page(toc_node->page, toc_node->x, toc_node->y);
+                            main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
                             push_state();
                         }
                     }, this, selected_index));
@@ -1972,9 +1963,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         for (auto bookmark : bookmarks){
             option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmark.description);
             option_locations.push_back(bookmark.y_offset);
-            int page;
-            float _;
-            main_document_view->get_document()->absolute_to_page_pos(0, bookmark.y_offset, &_, &_, &page);
+            auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos({ 0, bookmark.y_offset });
             option_location_strings.push_back(get_page_formatted_string(page + 1));
         }
 
@@ -2003,7 +1992,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "add_highlight_with_current_type") {
         if (opengl_widget->selected_character_rects.size() > 0) {
-            main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, select_highlight_type);
+            main_document_view->add_highlight(selection_begin, selection_end, select_highlight_type);
             opengl_widget->selected_character_rects.clear();
             selected_text.clear();
         }
@@ -2046,9 +2035,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             type_name[0] = highlight.type;
             option_names.push_back(L"[" + type_name + L"] " + highlight.description + L"]");
             option_locations.push_back({highlight.selection_begin.x, highlight.selection_begin.y, highlight.selection_end.x, highlight.selection_end.y});
-            int page;
-            float _;
-            main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin.x, highlight.selection_begin.y, &_, &_, &page);
+            auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin);
             option_location_strings.push_back(get_page_formatted_string(page + 1));
         }
 
@@ -2334,18 +2321,18 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
     else if (command->name == "smart_jump_under_cursor") {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
-        smart_jump_under_pos(mouse_pos.x(), mouse_pos.y());
+        smart_jump_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
     else if (command->name == "overview_under_cursor") {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
-        overview_under_pos(mouse_pos.x(), mouse_pos.y());
+        overview_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
     else if (command->name == "close_overview") {
         opengl_widget->set_overview_page({});
     }
     else if (command->name == "visual_mark_under_cursor") {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
-        visual_mark_under_pos(mouse_pos.x(), mouse_pos.y());
+        visual_mark_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
     else if (command->name == "close_visual_mark") {
         opengl_widget->set_should_draw_vertical_line(false);
@@ -2385,29 +2372,28 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     validate_render();
 }
 
-void MainWidget::smart_jump_under_pos(int pos_x, int pos_y){
+void MainWidget::smart_jump_under_pos(WindowPos pos){
     if (!main_document_view_has_document()) {
         return;
     }
 
-    int page;
-    float offset_x, offset_y;
 
     Qt::KeyboardModifiers modifiers = QGuiApplication::queryKeyboardModifiers();
     bool is_shift_pressed = modifiers.testFlag(Qt::ShiftModifier);
 
-    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(pos_x, pos_y);
+    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(pos);
 
     // if overview page is open and we middle click on a paper name, search it in a search engine
-    if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
-        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos(normal_x, normal_y);
+    if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
+        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y });
         std::optional<std::wstring> paper_name = main_document_view->get_document()->get_paper_name_at_position(doc_page, doc_x, doc_y);
         if (paper_name) {
             handle_paper_name_on_pointer(paper_name.value(), is_shift_pressed);
         }
         return;
     }
-    main_document_view->window_to_document_pos(pos_x, pos_y, &offset_x, &offset_y, &page);
+
+    auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pos);
 
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
@@ -2459,43 +2445,41 @@ void MainWidget::smart_jump_under_pos(int pos_x, int pos_y){
     }
 }
 
-void MainWidget::visual_mark_under_pos(int pos_x, int pos_y){
-    float doc_x, doc_y;
-    int page;
-    main_document_view->window_to_document_pos(pos_x, pos_y, &doc_x, &doc_y, &page);
-    if (page != -1) {
+void MainWidget::visual_mark_under_pos(WindowPos pos){
+    //float doc_x, doc_y;
+    //int page;
+    DocumentPos document_pos = main_document_view->window_to_document_pos(pos);
+    if (document_pos.page != -1) {
         opengl_widget->set_should_draw_vertical_line(true);
-        fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(page);
+        fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(document_pos.page);
         std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
         std::vector<unsigned int> line_locations;
         std::vector<unsigned int> _;
         get_line_begins_and_ends_from_histogram(hist, _, line_locations);
-        int small_doc_x = static_cast<int>(doc_x * SMALL_PIXMAP_SCALE);
-        int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
+        int small_doc_x = static_cast<int>(document_pos.x * SMALL_PIXMAP_SCALE);
+        int small_doc_y = static_cast<int>(document_pos.y * SMALL_PIXMAP_SCALE);
         int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
         //int best_vertical_loc = line_locations[find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y), 2)];
         float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
-        int window_x, window_y;
-        main_document_view->document_to_window_pos_in_pixels(page, doc_x, best_vertical_loc_doc_pos, &window_x, &window_y);
-        float abs_doc_x, abs_doc_y;
-        main_document_view->window_to_absolute_document_pos(window_x, window_y, &abs_doc_x, &abs_doc_y);
+        WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels({document_pos.page, 0, best_vertical_loc_doc_pos});
+        auto [abs_doc_x, abs_doc_y] = main_document_view->window_to_absolute_document_pos(window_pos);
         main_document_view->set_vertical_line_pos(abs_doc_y, abs_doc_x);
         validate_render();
     }
 }
 
 
-bool MainWidget::overview_under_pos(int pos_x, int pos_y){
+bool MainWidget::overview_under_pos(WindowPos pos){
 
     std::optional<PdfLink> link;
-    if (main_document_view && (link = main_document_view->get_link_in_pos(pos_x, pos_y))) {
+    if (main_document_view && (link = main_document_view->get_link_in_pos(pos))) {
         set_overview_link(link.value());
         return true;
     }
 
     int autoreference_page;
     float autoreference_offset;
-    if (find_location_of_text_under_pointer(pos_x, pos_y, &autoreference_page, &autoreference_offset)) {
+    if (find_location_of_text_under_pointer(pos, &autoreference_page, &autoreference_offset)) {
         set_overview_position(autoreference_page, autoreference_offset);
         return true;
     }
@@ -2618,20 +2602,20 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
             fz_irect srect = get_tag_window_rect(parts.at(0).toStdString());
             fz_irect erect = get_tag_window_rect(parts.at(1).toStdString());
 
-            handle_left_click(srect.x0+5, (srect.y0 + srect.y1) / 2, true);
-            handle_left_click(erect.x0-5 , (erect.y0 + erect.y1) / 2, false);
+            handle_left_click({ srect.x0 + 5, (srect.y0 + srect.y1) / 2 }, true);
+            handle_left_click({ erect.x0 - 5 , (erect.y0 + erect.y1) / 2 }, false);
             opengl_widget->set_should_highlight_words(false);
 		}
 	}
     if (current_pending_command->name == "keyboard_smart_jump") {
 		fz_irect rect = get_tag_window_rect(utf8_encode(text));
-        smart_jump_under_pos((rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2);
+        smart_jump_under_pos({ (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 });
 		opengl_widget->set_should_highlight_words(false);
 	}
 
     if (current_pending_command->name == "keyboard_overview") {
-		fz_irect rect = get_tag_window_rect(utf8_encode(text));
-        overview_under_pos((rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2);
+        fz_irect rect = get_tag_window_rect(utf8_encode(text));
+        overview_under_pos({(rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2});
 		opengl_widget->set_should_highlight_words(false);
 	}
 
@@ -2719,22 +2703,21 @@ void MainWidget::complete_pending_link(const LinkViewState& destination_view_sta
 }
 
 void MainWidget::long_jump_to_destination(int page, float offset_y) {
-    long_jump_to_destination(page, main_document_view->get_offset_x(), offset_y);
+    long_jump_to_destination({ page, main_document_view->get_offset_x(), offset_y });
 }
 
 
 void MainWidget::long_jump_to_destination(float abs_offset_y) {
 
-    int page;
-    float offset_x, offset_y;
-    main_document_view->get_document()->absolute_to_page_pos(main_document_view->get_offset_x(), abs_offset_y, &offset_x, &offset_y, &page);
+    auto [page, _, offset_y] = main_document_view->get_document()->absolute_to_page_pos(
+        { main_document_view->get_offset_x(), abs_offset_y });
     long_jump_to_destination(page, offset_y);
 }
 
-void MainWidget::long_jump_to_destination(int page, float offset_x, float offset_y) {
+void MainWidget::long_jump_to_destination(DocumentPos pos) {
     if (!is_pending_link_source_filled()) {
         update_history_state();
-        main_document_view->goto_offset_within_page(page, offset_x, offset_y);
+        main_document_view->goto_offset_within_page({ pos.page, pos.x, pos.y });
         push_state();
     }
     else {
@@ -2743,8 +2726,8 @@ void MainWidget::long_jump_to_destination(int page, float offset_x, float offset
 
         LinkViewState dest_state;
         dest_state.document_checksum = main_document_view->get_document()->get_checksum();
-        dest_state.book_state.offset_x = offset_x;
-        dest_state.book_state.offset_y = main_document_view->get_page_offset(page) + offset_y;
+        dest_state.book_state.offset_x = pos.x;
+        dest_state.book_state.offset_y = main_document_view->get_page_offset(pos.page) + pos.y;
         dest_state.book_state.zoom_level = main_document_view->get_zoom_level();
 
         complete_pending_link(dest_state);
@@ -3086,19 +3069,12 @@ fz_irect MainWidget::get_tag_window_rect(std::string tag) {
 
     fz_irect window_rect;
 
-	main_document_view->document_to_window_pos_in_pixels(
-		page,
-		rect.x0,
-		rect.y0,
-		&window_rect.x0,
-		&window_rect.y0);
-
-	main_document_view->document_to_window_pos_in_pixels(
-		page,
-		rect.x1,
-		rect.y1,
-		&window_rect.x1,
-		&window_rect.y1);
+    WindowPos bottom_left =  main_document_view->document_to_window_pos_in_pixels({ page, rect.x0, rect.y0 });
+    WindowPos top_right = main_document_view->document_to_window_pos_in_pixels({ page, rect.x1, rect.y1 });
+    window_rect.x0 = bottom_left.x;
+    window_rect.y0 = bottom_left.y;
+    window_rect.x1 = top_right.x;
+    window_rect.y1 = top_right.y;
 
     return window_rect;
 }
@@ -3167,7 +3143,7 @@ void MainWidget::handle_link_click(const PdfLink& link) {
 	// a link at the right side of the screen will be centered, causing most of screen state to be empty)
 	offset_x = main_document_view->get_offset_x();
 
-	long_jump_to_destination(page, offset_x, offset_y);
+    long_jump_to_destination({ page, offset_x, offset_y });
 }
 
 void MainWidget::save_auto_config() {

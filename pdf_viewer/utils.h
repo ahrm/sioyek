@@ -11,11 +11,13 @@
 #include <qcommandlineparser.h>
 
 #include <qstandarditemmodel.h>
+#include <qpoint.h>
 
 #include <mupdf/fitz.h>
 
 #include "book.h"
 #include "utf8.h"
+#include "coordinates.h"
 
 #define LL_ITER(name, start) for(auto name=start;(name);name=name->next)
 
@@ -101,6 +103,7 @@ void split_path(std::wstring path, std::vector<std::wstring>& res);
 //std::wstring canonicalize_path(const std::wstring& path);
 std::wstring add_redundant_dot_to_path(const std::wstring& path);
 float manhattan_distance(float x1, float y1, float x2, float y2);
+float manhattan_distance(fvec2 v1, fvec2 v2);
 QWidget* get_top_level_widget(QWidget* widget);
 std::wstring strip_string(std::wstring& input_string);
 //void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::vector<IndexedData>& indices);

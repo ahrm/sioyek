@@ -7,9 +7,9 @@
 #include <qopengl.h>
 #include <mutex>
 #include <variant>
-
 #include <qjsonobject.h>
 
+#include "coordinates.h"
 
 class DocumentView;
 
@@ -49,8 +49,8 @@ struct BookMark {
 };
 
 struct Highlight {
-	fz_point selection_begin;
-	fz_point selection_end;
+	AbsoluteDocumentPos selection_begin;
+	AbsoluteDocumentPos selection_end;
 	std::wstring description;
 	char type;
 	std::vector<fz_rect> highlight_rects;

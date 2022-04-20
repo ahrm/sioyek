@@ -5,6 +5,7 @@ extern float MOVE_SCREEN_PERCENTAGE;
 extern float FIT_TO_PAGE_WIDTH_RATIO;
 extern float RULER_PADDING;
 
+
 DocumentView::DocumentView( fz_context* mupdf_context,
 	DatabaseManager* db_manager,
 	DocumentManager* document_manager,
@@ -175,6 +176,10 @@ float DocumentView::get_offset_y() {
 	return offset_y;
 }
 
+AbsoluteDocumentPos DocumentView::get_offsets() {
+	return {offset_x, offset_y};
+}
+
 int DocumentView::get_view_height() {
 	return view_height;
 }
@@ -222,18 +227,15 @@ void DocumentView::set_offset_y(float new_offset_y) {
 //	render_highlight_window(program, window_rect);
 //}
 
-std::optional<PdfLink> DocumentView::get_link_in_pos(int view_x, int view_y) {
+std::optional<PdfLink> DocumentView::get_link_in_pos(WindowPos pos) {
 	if (!current_document) return {};
 
-	float doc_x, doc_y;
-	int page;
-	window_to_document_pos(view_x, view_y, &doc_x, &doc_y, &page);
-	return current_document->get_link_in_pos(page, doc_x, doc_y);
+	DocumentPos doc_pos = window_to_document_pos(pos);
+	return current_document->get_link_in_pos(doc_pos);
 }
 
-int DocumentView::get_highlight_index_in_pos(int view_x_, int view_y_) {
-	float view_x, view_y;
-	window_to_absolute_document_pos(view_x_, view_y_, &view_x, &view_y);
+int DocumentView::get_highlight_index_in_pos(WindowPos window_pos) {
+	auto [view_x, view_y] = window_to_absolute_document_pos(window_pos);
 
 	fz_point pos = { view_x, view_y };
 
@@ -265,7 +267,7 @@ void DocumentView::add_bookmark(std::wstring desc) {
 	}
 }
 
-void DocumentView::add_highlight(fz_point selection_begin, fz_point selection_end, char type) {
+void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
 
 	if (current_document) {
 		std::vector<fz_rect> selected_characters;
@@ -303,49 +305,63 @@ fz_rect DocumentView::absolute_to_window_rect(fz_rect doc_rect) {
 
 	return res;
 }
-void DocumentView::document_to_window_pos(int page, float doc_x, float doc_y, float* window_x, float* window_y) {
+
+NormalizedWindowPos DocumentView::document_to_window_pos(DocumentPos doc_pos) {
 
 	if (current_document) {
-		double doc_rect_y_offset = -current_document->get_accum_page_height(page);
+		double doc_rect_y_offset = -current_document->get_accum_page_height(doc_pos.page);
 
 		float half_width = static_cast<float>(view_width) / zoom_level / 2;
 		float half_height = static_cast<float>(view_height) / zoom_level / 2;
 
-		*window_y = (doc_rect_y_offset + offset_y - doc_y) / half_height;
-		*window_x = (doc_x + offset_x - current_document->get_page_width(page) / 2) / half_width;
+		float window_y = (doc_rect_y_offset + offset_y - doc_pos.y) / half_height;
+		float window_x = (doc_pos.x + offset_x - current_document->get_page_width(doc_pos.page) / 2) / half_width;
+		return { window_x, window_y };
 	}
 }
-void DocumentView::document_to_window_pos_in_pixels(int page, float doc_x, float doc_y, int* window_x, int* window_y) {
-	float opengl_window_pos_x, opengl_window_pos_y;
-	document_to_window_pos(page, doc_x, doc_y, &opengl_window_pos_x, &opengl_window_pos_y);
-	*window_x = static_cast<int>(opengl_window_pos_x * view_width / 2 + view_width / 2);
-	*window_y = static_cast<int>(-opengl_window_pos_y * view_height / 2 + view_height / 2);
+
+WindowPos DocumentView::document_to_window_pos_in_pixels(DocumentPos doc_pos){
+	//float opengl_window_pos_x, opengl_window_pos_y;
+	NormalizedWindowPos normal_window_pos = document_to_window_pos(doc_pos);
+	int window_x = static_cast<int>(normal_window_pos.x * view_width / 2 + view_width / 2);
+	int window_y = static_cast<int>(-normal_window_pos.y * view_height / 2 + view_height / 2);
+	return { window_x, window_y };
 }
 
 fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
 	fz_rect res;
-	document_to_window_pos(page, doc_rect.x0, doc_rect.y0, &res.x0, &res.y0);
-	document_to_window_pos(page, doc_rect.x1, doc_rect.y1, &res.x1, &res.y1);
+
+	NormalizedWindowPos p0 = document_to_window_pos({ page, doc_rect.x0, doc_rect.y0 });
+	NormalizedWindowPos p1 = document_to_window_pos({ page, doc_rect.x1, doc_rect.y1 });
+
+	res.x0 = p0.x;
+	res.x1 = p1.x;
+	res.y0 = p0.y;
+	res.y1 = p1.y;
 
 	return res;
 }
 
-void DocumentView::window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page) {
+DocumentPos DocumentView::window_to_document_pos(WindowPos window_pos){
 	if (current_document) {
-		current_document->absolute_to_page_pos(
-			(window_x - view_width / 2) / zoom_level - offset_x,
-			(window_y - view_height / 2) / zoom_level + offset_y, doc_x, doc_y, doc_page);
+		return current_document->absolute_to_page_pos(
+			{ (window_pos.x - view_width / 2) / zoom_level - offset_x,
+			(window_pos.y - view_height / 2) / zoom_level + offset_y});
+	}
+	else {
+		return { -1, 0, 0 };
 	}
 }
 
-void DocumentView::window_to_absolute_document_pos(float window_x, float window_y, float* doc_x, float* doc_y) {
-	*doc_x = (window_x - view_width / 2) / zoom_level - offset_x;
-	*doc_y = (window_y - view_height / 2) / zoom_level + offset_y;
+AbsoluteDocumentPos DocumentView::window_to_absolute_document_pos(WindowPos window_pos) {
+	float doc_x = (window_pos.x - view_width / 2) / zoom_level - offset_x;
+	float doc_y = (window_pos.y - view_height / 2) / zoom_level + offset_y;
+	return { doc_x, doc_y };
 }
 
-NormalizedWindowPos DocumentView::window_to_normalized_window_pos(float window_x, float window_y) {
-	float normal_x = 2 * (window_x - view_width / 2) / view_width;
-	float normal_y = 2 * (window_y - view_height / 2) / view_height;
+NormalizedWindowPos DocumentView::window_to_normalized_window_pos(WindowPos window_pos) {
+	float normal_x = 2 * (static_cast<float>(window_pos.x) - view_width / 2.0f) / view_width;
+	float normal_y = 2 * (static_cast<float>(window_pos.y) - view_height / 2.0f) / view_height;
 	return { normal_x, normal_y };
 }
 
@@ -424,29 +440,25 @@ float DocumentView::zoom_out() {
 	return set_zoom_level(zoom_level / ZOOM_INC_FACTOR);
 }
 
-float DocumentView::zoom_in_cursor(int mouse_x, int mouse_y) {
+float DocumentView::zoom_in_cursor(WindowPos mouse_pos) {
 
-	float prev_doc_x, prev_doc_y;
-	window_to_absolute_document_pos(mouse_x, mouse_y, &prev_doc_x, &prev_doc_y);
+	AbsoluteDocumentPos prev_doc_pos = window_to_absolute_document_pos(mouse_pos);
 
 	float res = zoom_in();
 
-	float new_doc_x, new_doc_y;
-	window_to_absolute_document_pos(mouse_x, mouse_y, &new_doc_x, &new_doc_y);
+	AbsoluteDocumentPos new_doc_pos = window_to_absolute_document_pos(mouse_pos);
 
-	move_absolute(-prev_doc_x + new_doc_x, prev_doc_y - new_doc_y);
+	move_absolute(-prev_doc_pos.x + new_doc_pos.x, prev_doc_pos.y - new_doc_pos.y);
 
 	return res;
 }
 
-float DocumentView::zoom_out_cursor(int mouse_x, int mouse_y) {
-	float prev_doc_x, prev_doc_y;
-	window_to_absolute_document_pos(mouse_x, mouse_y, &prev_doc_x, &prev_doc_y);
+float DocumentView::zoom_out_cursor(WindowPos mouse_pos) {
+	auto [prev_doc_x, prev_doc_y] = window_to_absolute_document_pos(mouse_pos);
 
 	float res = zoom_out();
 
-	float new_doc_x, new_doc_y;
-	window_to_absolute_document_pos(mouse_x, mouse_y, &new_doc_x, &new_doc_y);
+	auto [new_doc_x, new_doc_y] = window_to_absolute_document_pos(mouse_pos);
 
 	move_absolute(-prev_doc_x + new_doc_x, prev_doc_y - new_doc_y);
 	return res;
@@ -621,8 +633,8 @@ float DocumentView::get_page_offset(int page) {
 	return current_document->get_accum_page_height(page);
 }
 
-void DocumentView::goto_offset_within_page(int page, float offset_x, float offset_y) {
-	set_offsets(offset_x, get_page_offset(page) + offset_y);
+void DocumentView::goto_offset_within_page(DocumentPos pos) {
+	set_offsets(pos.x, get_page_offset(pos.page) + pos.y);
 }
 
 void DocumentView::goto_offset_within_page(int page, float offset_y) {
@@ -837,8 +849,8 @@ void DocumentView::goto_vertical_line_pos() {
 	}
 }
 
-void DocumentView::get_text_selection(fz_point selection_begin,
-	fz_point selection_end,
+void DocumentView::get_text_selection(AbsoluteDocumentPos selection_begin,
+	AbsoluteDocumentPos selection_end,
 	bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
 	std::vector<fz_rect>& selected_characters,
 	std::wstring& selected_text) {

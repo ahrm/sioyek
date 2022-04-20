@@ -56,19 +56,15 @@ private:
 	int current_history_index = -1;
 
 	// last position when mouse was clicked in absolute document space
-	float last_mouse_down_x = 0;
-	float last_mouse_down_y = 0;
+	AbsoluteDocumentPos last_mouse_down;
+	AbsoluteDocumentPos last_mouse_down_document_offset;
 
-	float last_mouse_down_document_x_offset = 0;
-	float last_mouse_down_document_y_offset = 0;
+	//int last_mouse_down_window_x = 0;
+	//int last_mouse_down_window_y = 0;
+	WindowPos last_mouse_down_window_pos;
 
-	int last_mouse_down_window_x = 0;
-	int last_mouse_down_window_y = 0;
-
-	float selection_begin_x = 0;
-	float selection_begin_y = 0;
-	float selection_end_x = 0;
-	float selection_end_y = 0;
+	AbsoluteDocumentPos selection_begin;
+	AbsoluteDocumentPos selection_end;
 
 	// when set, mouse wheel moves the visual mark
 	bool visual_scroll_mode = false;
@@ -145,8 +141,8 @@ protected:
 	void handle_command_with_file_name(const Command* command, std::wstring file_name);
 	bool is_waiting_for_symbol();
 	void key_event(bool released, QKeyEvent* kevent);
-	void handle_left_click(float x, float y, bool down);
-	void handle_right_click(float x, float y, bool down);
+	void handle_left_click(WindowPos click_pos, bool down);
+	void handle_right_click(WindowPos click_pos, bool down);
 
 	void update_history_state();
 	void push_state();
@@ -155,7 +151,7 @@ protected:
 	void update_current_history_index();
 
 	void set_main_document_view_state(DocumentViewState new_view_state);
-	void handle_click(int pos_x, int pos_y);
+	void handle_click(WindowPos pos);
 	void mouseReleaseEvent(QMouseEvent* mevent) override;
 	void mousePressEvent(QMouseEvent* mevent) override;
 	void mouseDoubleClickEvent(QMouseEvent* mevent) override;
@@ -171,15 +167,15 @@ protected:
 	void toggle_presentation_mode();
     void toggle_synctex_mode();
     void complete_pending_link(const LinkViewState& destination_view_state);
-	void long_jump_to_destination(int page, float offset_x, float offset_y);
+	void long_jump_to_destination(DocumentPos pos);
 	void long_jump_to_destination(int page, float offset_y);
 	void long_jump_to_destination(float abs_offset_y);
 	void execute_command(std::wstring command);
 	QString get_status_stylesheet();
 	int get_status_bar_height();
-    void smart_jump_under_pos(int pos_x, int pos_y);
-    bool overview_under_pos(int pos_x, int pos_y);
-    void visual_mark_under_pos(int pos_x, int pos_y);
+    void smart_jump_under_pos(WindowPos pos);
+    bool overview_under_pos(WindowPos pos);
+    void visual_mark_under_pos(WindowPos pos);
 
 	QRect get_main_window_rect();
 	QRect get_helper_window_rect();
@@ -234,7 +230,7 @@ public:
 	void toggle_visual_scroll_mode();
 	void set_overview_link(PdfLink link);
 	void set_overview_position(int page, float offset);
-	bool find_location_of_text_under_pointer(int pointer_x, int pointer_y, int* out_page, float* out_offset);
+	bool find_location_of_text_under_pointer(WindowPos pos, int* out_page, float* out_offset);
 	std::optional<std::wstring> get_current_file_name();
 	CommandManager* get_command_manager();
 

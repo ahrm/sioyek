@@ -110,10 +110,12 @@ bool operator==(const fz_point& lhs, const fz_point& rhs) {
 
 bool operator==(const Highlight& lhs, const Highlight& rhs)
 {
-	return  (lhs.selection_begin == rhs.selection_begin) && (lhs.selection_end == rhs.selection_end);
+	return  (lhs.selection_begin.x == rhs.selection_begin.x) && (lhs.selection_end.x == rhs.selection_end.x) && 
+		  (lhs.selection_begin.y == rhs.selection_begin.y) && (lhs.selection_end.y == rhs.selection_end.y) ;
 }
 
 bool operator==(const Link& lhs, const Link& rhs)
 {
 	return  (lhs.src_offset_y == rhs.src_offset_y) && (lhs.dst.document_checksum == rhs.dst.document_checksum);
 }
+

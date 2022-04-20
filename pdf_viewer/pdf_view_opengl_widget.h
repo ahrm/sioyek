@@ -86,13 +86,13 @@ public:
 
 	struct OverviewResizeData {
 		fz_rect original_rect;
-		std::pair<float, float> original_mouse_pos;
+		NormalizedWindowPos original_normal_mouse_pos;
 		OverviewSide side_index;
 	};
 
 	struct OverviewMoveData {
-		std::pair<float, float> original_offsets;
-		std::pair<float, float> original_mouse_pos;
+		fvec2 original_offsets;
+		NormalizedWindowPos original_normal_mouse_pos;
 	};
 
 	enum ColorPalette {
@@ -218,21 +218,22 @@ public:
 	bool is_presentation_mode();
 	fz_rect	get_overview_rect();
 	std::vector<fz_rect> get_overview_border_rects();
-	bool is_window_point_in_overview(float window_x, float window_y);
+	bool is_window_point_in_overview(fvec2 window_point);
 	bool is_window_point_in_overview_border(float window_x, float window_y, OverviewSide *which_border);
 
 	void get_overview_offsets(float* offset_x, float* offset_y);
 
 	float get_overview_side_pos(int index);
-	void set_overview_side_pos(int index, fz_rect original_rect, float diff_x, float diff_y);
+	void set_overview_side_pos(int index, fz_rect original_rect, fvec2 diff);
 	void set_overview_rect(fz_rect rect);
 
 	void set_overview_offsets(float offset_x, float offset_y);
+	void set_overview_offsets(fvec2 offsets);
 
 	void bind_program();
 	void cancel_search();
 	//void window_pos_to_overview_pos(float window_x, float window_y, float* doc_offset_x, float* doc_offset_y, int* doc_page);
-	DocumentPos window_pos_to_overview_pos(float window_x, float window_y);
+	DocumentPos window_pos_to_overview_pos(NormalizedWindowPos window_pos);
 	void rotate_clockwise();
 	void rotate_counterclockwise();
 

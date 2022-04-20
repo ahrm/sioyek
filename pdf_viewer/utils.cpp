@@ -29,6 +29,7 @@ extern std::ofstream LOG_FILE;
 #include <windows.h>
 #endif
 
+
 std::wstring to_lower(const std::wstring& inp) {
 	std::wstring res;
 	for (char c : inp) {
@@ -1514,6 +1515,10 @@ float manhattan_distance(float x1, float y1, float x2, float y2) {
 	return abs(x1 - x2) + abs(y1 - y2);
 }
 
+float manhattan_distance(fvec2 v1, fvec2 v2) {
+	return manhattan_distance(v1.x(), v1.y(), v2.x(), v2.y());
+}
+
 QWidget* get_top_level_widget(QWidget* widget) {
 	while (widget->parent() != nullptr) {
 		widget = widget->parentWidget();
@@ -1706,3 +1711,4 @@ bool is_title_parent_of(const std::wstring& parent_title, const std::wstring& ch
 
 	return true;
 }
+
