@@ -19,12 +19,18 @@
 
 #define LL_ITER(name, start) for(auto name=start;(name);name=name->next)
 
+struct ParsedUri {
+	int page;
+	float x;
+	float y;
+};
+
 std::wstring to_lower(const std::wstring& inp);
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char);
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages);
 int mod(int a, int b);
 bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end);
-void parse_uri(std::string uri, int* page, float* offset_x, float* offset_y);
+ParsedUri parse_uri(std::string uri);
 char get_symbol(int key, bool is_shift_pressed, const std::vector<char>&special_symbols);
 
 template<typename T>

@@ -99,19 +99,21 @@ bool range_intersects(float range1_start, float range1_end, float range2_start, 
 	return true;
 }
 
-void parse_uri(std::string uri, int* page, float* offset_x, float* offset_y) {
+ParsedUri parse_uri(std::string uri) {
 	int comma_index = -1;
 
 	uri = uri.substr(1, uri.size() - 1);
 	comma_index = static_cast<int>(uri.find(","));
-	*page = atoi(uri.substr(0, comma_index ).c_str());
+	int page = atoi(uri.substr(0, comma_index ).c_str());
 
 	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
 	comma_index = static_cast<int>(uri.find(","));
-	*offset_x = atof(uri.substr(0, comma_index ).c_str());
+	float offset_x = atof(uri.substr(0, comma_index ).c_str());
 
 	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
-	*offset_y = atof(uri.c_str());
+	float offset_y = atof(uri.c_str());
+
+	return { page, offset_x, offset_y };
 }
 
 char get_symbol(int key, bool is_shift_pressed, const std::vector<char>& special_symbols) {
