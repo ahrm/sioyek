@@ -25,7 +25,7 @@ void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>&
 int mod(int a, int b);
 bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end);
 void parse_uri(std::string uri, int* page, float* offset_x, float* offset_y);
-char get_symbol(int scancode, bool is_shift_pressed);
+char get_symbol(int key, bool is_shift_pressed, const std::vector<char>&special_symbols);
 
 template<typename T>
 int argminf(const std::vector<T> &collection, std::function<float(T)> f) {

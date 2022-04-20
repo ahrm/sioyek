@@ -890,7 +890,10 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
     else if (command->name == "goto_mark") {
         assert(main_document_view);
 
-        if (isupper(symbol)) { // global mark
+        if (symbol == '`' || symbol == '\'') {
+            return_to_last_visual_mark();
+        }
+        else if (isupper(symbol)) { // global mark
             std::vector<std::pair<std::string, float>> mark_vector;
             db_manager->select_global_mark(symbol, mark_vector);
             if (mark_vector.size() > 0) {
@@ -1088,7 +1091,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
         }
         if (is_waiting_for_symbol()) {
 
-            char symb = get_symbol(kevent->key(), kevent->modifiers() & Qt::ShiftModifier);
+            char symb = get_symbol(kevent->key(), kevent->modifiers() & Qt::ShiftModifier, current_pending_command->special_symbols);
             if (symb) {
                 handle_command_with_symbol(current_pending_command, symb);
                 current_pending_command = nullptr;
@@ -1131,10 +1134,7 @@ void MainWidget::handle_right_click(float x, float y, bool down) {
         // need anyway
         if (down == true && (!this->synctex_mode)) {
             if (current_pending_command && (current_pending_command->name == "goto_mark")) {
-                main_document_view->goto_vertical_line_pos();
-                opengl_widget->set_should_draw_vertical_line(true);
-                current_pending_command = nullptr;
-                validate_render();
+                return_to_last_visual_mark();
                 return;
             }
 
@@ -3244,4 +3244,11 @@ void MainWidget::handle_close_event() {
 
 Document* MainWidget::doc() {
     return main_document_view->get_document();
+}
+
+void MainWidget::return_to_last_visual_mark() {
+	main_document_view->goto_vertical_line_pos();
+	opengl_widget->set_should_draw_vertical_line(true);
+	current_pending_command = nullptr;
+	validate_render();
 }

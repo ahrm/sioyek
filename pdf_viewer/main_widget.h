@@ -192,6 +192,8 @@ protected:
 
 	void handle_close_event();
 	Document* doc();
+	void return_to_last_visual_mark();
+
 public:
 
 	void handle_command(const Command* command, int num_repeats);

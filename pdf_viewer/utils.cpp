@@ -114,7 +114,7 @@ void parse_uri(std::string uri, int* page, float* offset_x, float* offset_y) {
 	*offset_y = atof(uri.c_str());
 }
 
-char get_symbol(int key, bool is_shift_pressed) {
+char get_symbol(int key, bool is_shift_pressed, const std::vector<char>& special_symbols) {
 
 	if (key >= 'A' && key <= 'Z') {
 		if (is_shift_pressed) {
@@ -126,6 +126,10 @@ char get_symbol(int key, bool is_shift_pressed) {
 	}
 
 	if (key >= '0' && key <= '9') {
+		return key;
+	}
+
+	if (std::find(special_symbols.begin(), special_symbols.end(), key) != special_symbols.end()) {
 		return key;
 	}
 
