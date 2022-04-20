@@ -2075,3 +2075,64 @@ int Document::add_stext_page_to_created_toc(fz_stext_page* stext_page,
 	}
 	return num_new_entries;
 }
+
+float Document::document_to_absolute_y(int page, float doc_y) {
+	if ((page < accum_page_heights.size()) && (page >= 0)) {
+		return doc_y + accum_page_heights[page];
+	}
+	return 0;
+}
+
+void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
+	float doc_x, doc_y;
+	int page;
+	absolute_to_page_pos(0, absolute_y, &doc_x, &doc_y, &page);
+
+	fz_pixmap* pixmap = get_small_pixmap(page);
+	std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
+	std::vector<unsigned int> line_locations;
+	std::vector<unsigned int> line_locations_begins;
+	get_line_begins_and_ends_from_histogram(hist, line_locations_begins, line_locations);
+	int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
+
+	int index = find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y - 0.3f), i);
+
+	if (index > -1) {
+		int best_vertical_loc = line_locations[index];
+		int best_vertical_loc_begin = line_locations_begins[index];
+
+		float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
+		float best_vertical_loc_begin_doc_pos = best_vertical_loc_begin / SMALL_PIXMAP_SCALE;
+
+		float abs_doc_y = document_to_absolute_y(page, best_vertical_loc_doc_pos);
+		float abs_doc_begin_y = document_to_absolute_y(page, best_vertical_loc_begin_doc_pos);
+		*out_begin = abs_doc_begin_y;
+		*out_end = abs_doc_y;
+	}
+	else {
+		if (!cont) {
+			*out_begin = absolute_y;
+			*out_end = absolute_y;
+			return;
+		}
+
+		int next_page;
+		if (i > 0) {
+			//next_page = main_document_view->get_current_page_number() + 1;
+			next_page = get_offset_page_number(absolute_y) + 1;
+			if (next_page < num_pages()) {
+				return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) + 0.5, 1, false, out_begin, out_end);
+			}
+		}
+		else {
+			next_page = get_offset_page_number(absolute_y);
+			if (next_page > 0) {
+				return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) - 0.5f, -1, false, out_begin, out_end);
+			}
+		}
+		*out_begin = absolute_y;
+		*out_end = absolute_y;
+		return;
+	}
+
+}
