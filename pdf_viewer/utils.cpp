@@ -1599,14 +1599,6 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 	}
 }
 
-Logger::Logger(std::string _name) {
-	name = _name;
-	std::wcout << L"entered " << utf8_decode(name) << "\n";
-}
-
-Logger::~Logger() {
-	 std::wcout << L"exited " << utf8_decode(name) << "\n";
-}
 
 QString get_color_hexadecimal(float color) {
 	QString hex_map[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f" };

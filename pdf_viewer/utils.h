@@ -123,21 +123,6 @@ int find_nth_larger_element_in_sorted_list(std::vector<T> sorted_list, T value, 
 	}
 
 }
-class Logger {
-private:
-	std::string name;
-public:
-	Logger(std::string name);
-	~Logger();
-};
-
-//#define LOG_ENABLED
-
-#ifdef LOG_ENABLED
-#define LOG(name) Logger _ = Logger(name);
-#else
-#define LOG(name)
-#endif
 
 QString get_color_qml_string(float r, float g, float b);
 void copy_file(std::wstring src_path, std::wstring dst_path);
