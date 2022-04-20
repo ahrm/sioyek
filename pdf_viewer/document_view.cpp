@@ -721,8 +721,8 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
 		float right_leftover = 1.0f - right_ratio;
 		float imbalance = left_ratio - right_leftover;
 
-		set_offset_x(-imbalance * normal_page_width / 2.0f);
 		set_zoom_level(static_cast<float>(view_width) / page_width);
+		set_offset_x(-imbalance * normal_page_width / 2.0f);
 	}
 	else {
 		int page_width = current_document->get_page_width(cp);
