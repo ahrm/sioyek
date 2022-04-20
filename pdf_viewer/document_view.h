@@ -28,6 +28,16 @@
 extern float ZOOM_INC_FACTOR;
 extern const int PAGE_PADDINGS;
 
+struct NormalizedWindowPos {
+	float x;
+	float y;
+};
+
+struct WindowPos {
+	int x;
+	int y;
+};
+
 class DocumentView {
 protected:
 
@@ -91,7 +101,7 @@ public:
 	fz_rect document_to_window_rect(int page, fz_rect doc_rect);
 	void window_to_document_pos(float window_x, float window_y, float* doc_x, float* doc_y, int* doc_page);
 	void window_to_absolute_document_pos(float window_x, float window_y, float* doc_x, float* doc_y);
-	void window_to_normalized_window_pos(float window_x, float window_y, float* normal_x, float* normal_y);
+	NormalizedWindowPos window_to_normalized_window_pos(float window_x, float window_y);
 	void goto_mark(char symbol);
 	void goto_end();
 

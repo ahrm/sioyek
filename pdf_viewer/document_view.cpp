@@ -343,9 +343,10 @@ void DocumentView::window_to_absolute_document_pos(float window_x, float window_
 	*doc_y = (window_y - view_height / 2) / zoom_level + offset_y;
 }
 
-void DocumentView::window_to_normalized_window_pos(float window_x, float window_y, float* normal_x, float* normal_y) {
-	*normal_x = 2 * (window_x - view_width / 2) / view_width;
-	*normal_y = 2 * (window_y - view_height / 2) / view_height;
+NormalizedWindowPos DocumentView::window_to_normalized_window_pos(float window_x, float window_y) {
+	float normal_x = 2 * (window_x - view_width / 2) / view_width;
+	float normal_y = 2 * (window_y - view_height / 2) / view_height;
+	return { normal_x, normal_y };
 }
 
 

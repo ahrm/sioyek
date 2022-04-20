@@ -24,6 +24,17 @@
 #include "book.h"
 #include "checksum.h"
 
+struct DocumentPos {
+	int page;
+	float x;
+	float y;
+};
+
+struct AbsoluteDocumentPos {
+	float x;
+	float y;
+};
+
 class Document {
 
 private:

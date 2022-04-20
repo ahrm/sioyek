@@ -151,6 +151,8 @@ void MainWidget::set_overview_link(PdfLink link) {
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     if (is_rotated()) {
+        // we don't handle mouse events while document is rotated becausae proper handling
+        // would increase the code complexity too much to be worth it
         return;
     }
 
@@ -159,8 +161,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     std::optional<PdfLink> link = {};
 
-    float normal_x, normal_y;
-    main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
+    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(x, y);
 
     if (overview_resize_data) {
 
@@ -1181,8 +1182,7 @@ void MainWidget::handle_left_click(float x, float y, bool down) {
     float x_, y_;
     main_document_view->window_to_absolute_document_pos(x, y, &x_, &y_);
 
-    float normal_x, normal_y;
-    main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
+    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(x, y);
 
     if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
 
@@ -1361,8 +1361,8 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
         return;
     }
 
-    float normal_x, normal_y;
-    main_document_view->window_to_normalized_window_pos(pos_x, pos_y, &normal_x, &normal_y);
+    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(pos_x, pos_y);
+
     if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
         float doc_x, doc_y;
         int doc_page;
@@ -1509,8 +1509,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
     int x = wevent->pos().x();
     int y = wevent->pos().y();
-    float normal_x, normal_y;
-    main_document_view->window_to_normalized_window_pos(x, y, &normal_x, &normal_y);
+    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(x, y);
 
 	int num_repeats = abs(wevent->delta() / 120);
 
@@ -2396,8 +2395,7 @@ void MainWidget::smart_jump_under_pos(int pos_x, int pos_y){
     Qt::KeyboardModifiers modifiers = QGuiApplication::queryKeyboardModifiers();
     bool is_shift_pressed = modifiers.testFlag(Qt::ShiftModifier);
 
-    float normal_x, normal_y;
-    main_document_view->window_to_normalized_window_pos(pos_x, pos_y, &normal_x, &normal_y);
+    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(pos_x, pos_y);
 
     // if overview page is open and we middle click on a paper name, search it in a search engine
     if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
