@@ -267,9 +267,13 @@ void get_tokens(std::string line, std::vector<std::string>& tokens) {
 	}
 }
 
-InputParseTreeNode* parse_lines(InputParseTreeNode* root,
-	std::vector<std::string> lines,
-	std::vector<std::string> command_names) {
+InputParseTreeNode* parse_lines(
+	InputParseTreeNode* root,
+	const std::vector<std::string>& lines,
+	const std::vector<std::string>& command_names,
+	const std::vector<std::wstring>& command_file_names,
+	const std::vector<int>& command_line_numbers
+	) {
 
 	for (int j = 0; j < lines.size(); j++) {
 		std::string line = lines[j];
@@ -294,10 +298,16 @@ InputParseTreeNode* parse_lines(InputParseTreeNode* root,
 				if ((tokens[i] != "sym") && (tokens[i] != "txt")) {
 
 					if (parent_node->is_final) {
-						std::wcout << L"adding child command to a final command\n";
+						std::wcout << L"Warning: key defined in " << parent_node->defining_file_path << L" line " 
+							<< parent_node->defining_file_line << L" is being overwritten in file " << command_file_names[j]
+							<< L" line " << command_line_numbers[j] << L"\n";
+						std::wcout << L"Warning: Adding child command to a final command: " << utf8_decode(parent_node->name) << L"\n";
 					}
 
-					parent_node->children.push_back(new InputParseTreeNode(node));
+					auto new_node = new InputParseTreeNode(node);
+					new_node->defining_file_line = command_line_numbers[j];
+					new_node->defining_file_path = command_file_names[j];
+					parent_node->children.push_back(new_node);
 					parent_node = parent_node->children[parent_node->children.size() - 1];
 				}
 				else {
@@ -313,6 +323,9 @@ InputParseTreeNode* parse_lines(InputParseTreeNode* root,
 				}
 			}
 			else if (i == (tokens.size() - 1)) {
+				std::wcout << L"Warning: key defined in " << parent_node->defining_file_path << L" line "
+					<< parent_node->defining_file_line << L" is being overwritten in file " << command_file_names[j]
+					<< L" line " << command_line_numbers[j] << L"\n";
 				std::wcout << L"Warning: overriding command for " << utf8_decode(line) << L" : replacing " << 
 					utf8_decode(parent_node->name) << L" with " << utf8_decode(command_names[j]) << L"\n";
 			}
@@ -328,13 +341,18 @@ InputParseTreeNode* parse_lines(InputParseTreeNode* root,
 	return root;
 }
 
-InputParseTreeNode* parse_lines(std::vector<std::string> lines, std::vector<std::string> command_names) {
+InputParseTreeNode* parse_lines(
+	const std::vector<std::string>& lines,
+	const std::vector<std::string>& command_names,
+	const std::vector<std::wstring>& command_file_names,
+	const std::vector<int>& command_line_numbers
+	) {
 	// parse key configs into a trie where leaves are annotated with the name of the command
 
 	InputParseTreeNode* root = new InputParseTreeNode;
 	root->is_root = true;
 
-	parse_lines(root, lines, command_names);
+	parse_lines(root, lines, command_names, command_file_names, command_line_numbers);
 
 	return root;
 
@@ -350,7 +368,13 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	std::vector<std::string> command_names;
 	std::vector<std::string> command_keys;
 
+	std::vector<std::wstring> command_files;
+	std::vector<int> command_line_numbers;
+
+	int line_number = 0;
+	std::wstring default_path_name = default_path.get_path();
 	while (default_infile.good()) {
+		line_number++;
 		std::wstring line;
 		std::getline(default_infile, line);
 		if (line.size() == 0 || line[0] == '#') {
@@ -362,16 +386,21 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 		ss >> command_name >> command_key;
 		command_names.push_back(utf8_encode(command_name));
 		command_keys.push_back(utf8_encode(command_key));
+		command_files.push_back(default_path_name);
+		command_line_numbers.push_back(line_number);
 	}
 
 	default_infile.close();
 
 
 	for (int i = 0; i < user_paths.size(); i++) {
+		line_number = 0;
+		std::wstring user_path_name = user_paths[i].get_path();
 
 		if (user_paths[i].file_exists()) {
 			std::wifstream user_infile = open_wifstream(user_paths[i].get_path());
 			while (user_infile.good()) {
+				line_number++;
 				std::wstring line;
 				std::getline(user_infile, line);
 				if (line.size() == 0 || line[0] == '#') {
@@ -383,12 +412,14 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 				ss >> command_name >> command_key;
 				command_names.push_back(utf8_encode(command_name));
 				command_keys.push_back(utf8_encode(command_key));
+				command_files.push_back(user_path_name);
+				command_line_numbers.push_back(line_number);
 			}
 			user_infile.close();
 		}
 	}
 
-	return parse_lines(command_keys, command_names);
+	return parse_lines(command_keys, command_names, command_files, command_line_numbers);
 }
 
 

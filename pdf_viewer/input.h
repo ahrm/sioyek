@@ -47,6 +47,10 @@ struct InputParseTreeNode {
 	bool is_root = false;
 	bool is_final = false;
 
+	// todo: use a pointer to reduce allocation
+	std::wstring defining_file_path;
+	int defining_file_line;
+
 	bool is_same(const InputParseTreeNode* other);
 	bool matches(int key, bool shift, bool ctrl, bool alt);
 };
