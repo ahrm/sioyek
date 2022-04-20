@@ -330,9 +330,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
 
-    if ((num_screens > 1) && SHOULD_USE_MULTIPLE_MONITORS) {
-        //helper_opengl_widget->move(first_screen_width, 0);
-        //helper_opengl_widget->setWindowState(Qt::WindowState::WindowMaximized);
+    if ((num_screens > 1) && (HELPER_WINDOW_SIZE[0] > 0)) {
         apply_window_params_for_two_window_mode();
     }
     else {
@@ -2390,6 +2388,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         opengl_widget->rotate_counterclockwise();
     }
     else if (command->name == "debug") {
+    status_label->show();
+    int swidth = status_label->width();
+    int sheight = status_label->height();
     }
     else if (command->name == "toggle_fastread") {
 		opengl_widget->toggle_fastread_mode();
@@ -3103,11 +3104,16 @@ void MainWidget::apply_window_params_for_one_window_mode(){
     get_window_params_for_one_window_mode(main_window_size, main_window_move);
 
     bool should_maximize = main_window_width == main_window_size[0];
-    main_window->move(main_window_move[0], main_window_move[1]);
-    main_window->resize(main_window_size[0], main_window_size[1]);
+
     if (should_maximize) {
+        main_window->hide();
         main_window->showMaximized();
     }
+    else {
+        main_window->move(main_window_move[0], main_window_move[1]);
+        main_window->resize(main_window_size[0], main_window_size[1]);
+    }
+
 
     if (helper_opengl_widget != nullptr) {
         helper_opengl_widget->hide();
@@ -3131,11 +3137,6 @@ void MainWidget::apply_window_params_for_two_window_mode() {
 
     bool should_maximize = main_window_width == main_window_size[0];
 
-    main_window->move(main_window_move[0], main_window_move[1]);
-    main_window->resize(main_window_size[0], main_window_size[1]);
-    if (should_maximize) {
-        main_window->showMaximized();
-    }
 
     if (helper_opengl_widget != nullptr) {
         helper_window->move(helper_window_move[0], helper_window_move[1]);
@@ -3143,7 +3144,16 @@ void MainWidget::apply_window_params_for_two_window_mode() {
         helper_window->show();
     }
 
+    if (should_maximize) {
+        main_window->hide();
+        main_window->showMaximized();
+    }
+    else {
+		main_window->move(main_window_move[0], main_window_move[1]);
+		main_window->resize(main_window_size[0], main_window_size[1]);
+    }
 }
+
 QRect MainWidget::get_main_window_rect() {
     QPoint main_window_pos = pos();
     QSize main_window_size = size();

@@ -492,6 +492,8 @@ int main(int argc, char* args[]) {
 	}
 
 
+	main_widget.topLevelWidget()->resize(500, 500);
+
 	if (HELPER_WINDOW_SIZE[0] > -1) {
 		main_widget.apply_window_params_for_two_window_mode();
 	}
