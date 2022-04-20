@@ -164,13 +164,18 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(x, y);
 
     if (overview_resize_data) {
-
+        // if we are resizing overview page, set the selected side of the overview window to the mosue position
         float offset_diff_x = normal_x - overview_resize_data.value().original_mouse_pos.first;
         float offset_diff_y = normal_y - overview_resize_data.value().original_mouse_pos.second;
-        opengl_widget->set_overview_side_pos(overview_resize_data.value().side_index, overview_resize_data.value().original_rect, offset_diff_x, offset_diff_y);
+        opengl_widget->set_overview_side_pos(
+            overview_resize_data.value().side_index,
+            overview_resize_data.value().original_rect,
+            offset_diff_x,
+            offset_diff_y);
         validate_render();
         return;
     }
+
     if (overview_move_data) {
         float offset_diff_x = normal_x - overview_move_data.value().original_mouse_pos.first;
         float offset_diff_y = normal_y - overview_move_data.value().original_mouse_pos.second;
@@ -184,9 +189,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     }
 
     if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
-        float doc_x, doc_y;
-        int doc_page;
-        opengl_widget->window_pos_to_overview_pos(normal_x, normal_y, &doc_x, &doc_y, &doc_page);
+        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos(normal_x, normal_y);
         link = main_document_view->get_document()->get_link_in_pos(doc_page, doc_x, doc_y);
         if (link) {
 			setCursor(Qt::PointingHandCursor);
@@ -1364,9 +1367,7 @@ void MainWidget::handle_click(int pos_x, int pos_y) {
     auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(pos_x, pos_y);
 
     if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
-        float doc_x, doc_y;
-        int doc_page;
-        opengl_widget->window_pos_to_overview_pos(normal_x, normal_y, &doc_x, &doc_y, &doc_page);
+        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos(normal_x, normal_y);
         auto link = main_document_view->get_document()->get_link_in_pos(doc_page, doc_x, doc_y);
         if (link) {
             handle_link_click(link.value());
@@ -2399,9 +2400,7 @@ void MainWidget::smart_jump_under_pos(int pos_x, int pos_y){
 
     // if overview page is open and we middle click on a paper name, search it in a search engine
     if (opengl_widget->is_window_point_in_overview(normal_x, normal_y)) {
-        float doc_x, doc_y;
-        int doc_page;
-        opengl_widget->window_pos_to_overview_pos(normal_x, normal_y, &doc_x, &doc_y, &doc_page);
+        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos(normal_x, normal_y);
         std::optional<std::wstring> paper_name = main_document_view->get_document()->get_paper_name_at_position(doc_page, doc_x, doc_y);
         if (paper_name) {
             handle_paper_name_on_pointer(paper_name.value(), is_shift_pressed);

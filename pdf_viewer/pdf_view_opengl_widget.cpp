@@ -1218,7 +1218,7 @@ void PdfViewOpenGLWidget::bind_program() {
 	}
 }
 
-void PdfViewOpenGLWidget::window_pos_to_overview_pos(float window_x_normal, float window_y_normal, float* doc_offset_x, float* doc_offset_y, int* doc_page) {
+DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(float window_x_normal, float window_y_normal) {
 	float window_width = static_cast<float>(size().width());
 	float window_height = static_cast<float>(size().height());
 	int window_x = static_cast<int>((1.0f + window_x_normal) / 2 * window_width);
@@ -1233,9 +1233,10 @@ void PdfViewOpenGLWidget::window_pos_to_overview_pos(float window_x_normal, floa
 	int relative_window_x = static_cast<int>(static_cast<float>(window_x - overview_left) / zoom_level);
 	int relative_window_y = static_cast<int>(static_cast<float>(window_y - overview_mid) / zoom_level);
 
-	*doc_offset_x = relative_window_x;
-	*doc_offset_y = overview_page.value().offset_y + relative_window_y;
-	*doc_page = get_overview_page().value().page;
+	float doc_offset_x = relative_window_x;
+	float doc_offset_y = overview_page.value().offset_y + relative_window_y;
+	int doc_page = get_overview_page().value().page;
+	return {doc_page, doc_offset_x, doc_offset_y};
 }
 
 void PdfViewOpenGLWidget::toggle_highlight_words() {
