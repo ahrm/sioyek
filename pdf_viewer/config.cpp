@@ -187,7 +187,7 @@ bool bool_validator(const std::wstring& str) {
 		std::wcout << msg << str << L"\n";
 		return false;
 	}
-	if (parts.at(0).trimmed() == L"0" || parts.at(0).trimmed() == L"1") {
+	if (parts.at(0).trimmed().toStdWString() == L"0" || parts.at(0).trimmed().toStdWString() == L"1") {
 		return true;
 	}
 	std::wcout << msg << str << L"\n";
