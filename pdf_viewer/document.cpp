@@ -1187,7 +1187,7 @@ bool Document::can_use_highlights() {
 }
 
 std::optional<std::pair<std::wstring, std::wstring>> Document::get_generic_link_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
-	std::wregex regex(L"[a-zA-Z]{3,}[ \t]+[0-9]+(\.[0-9]+)*");
+	std::wregex regex(L"[a-zA-Z]{3,}(\.){0,1}[ \t]+[0-9]+(\.[0-9]+)*");
 	std::optional<std::wstring> match_string = get_regex_match_at_position(regex, flat_chars, offset_x, offset_y);
 	if (match_string) {
 		std::vector<std::wstring> parts = split_whitespace(match_string.value());
