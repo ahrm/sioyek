@@ -245,7 +245,7 @@ jobs:
 
   build-mac:
 
-    runs-on: macos-10.15
+    runs-on: macos-11
 
     steps:
 
