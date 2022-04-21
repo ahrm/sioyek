@@ -226,6 +226,13 @@ void configure_paths(){
 	shader_path = parent_path.slash(L"shaders");
 
 
+#ifdef Q_OS_MACOS
+	Path mac_home_path(QDir::homePath().toStdWString());
+	Path mac_standard_config_path = home_path.slash(L".config").slash(L"sioyek");
+	user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
+	user_prefs_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
+#endif
+
 #ifdef Q_OS_LINUX
 	QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
 #ifdef LINUX_STANDARD_PATHS
