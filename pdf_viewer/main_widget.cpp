@@ -1504,6 +1504,9 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(mouse_window_pos);
 
 	int num_repeats = abs(wevent->delta() / 120);
+    if (num_repeats == 0) {
+        num_repeats = 1;
+    }
 
     if ((!is_control_pressed) && (!is_shift_pressed)) {
         if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
