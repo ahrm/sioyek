@@ -1757,7 +1757,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
 
 
-    if (command->name == "link" || command->name == "create_portal") {
+    if (command->name == "link" || command->name == "portal") {
         handle_link();
     }
 
