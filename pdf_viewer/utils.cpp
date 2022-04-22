@@ -1008,12 +1008,10 @@ void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_num
 		if (start_index == -1 || end_index == -1) {
 			break;
 		}
-		assert(flat_chars[start_index]->c == '(');
-		assert(flat_chars[end_index]->c == ')');
+
 
 		// we expect the equation reference to be sufficiently separated from the rest of the text
-		if ((start_index > 0) && are_stext_chars_far_enough_for_equation(flat_chars[start_index-1], flat_chars[start_index])) { 
-			assert(match_texts[i].size() > 2);
+		if (((start_index > 0) && are_stext_chars_far_enough_for_equation(flat_chars[start_index-1], flat_chars[start_index]))) {
 
 			std::wstring match_text = match_texts[i].substr(1, match_texts[i].size() - 2);
 			IndexedData indexed_equation;
@@ -1049,17 +1047,21 @@ void index_references(fz_stext_page* page, int page_number, std::map<std::wstrin
 		if (block->type != FZ_STEXT_BLOCK_TEXT) continue;
 
 		LL_ITER(line, block->u.t.first_line) {
+			int chars_in_line = 0;
 			LL_ITER(ch, line->first_char) {
+				chars_in_line++;
 				if (ch->c == ' ') {
 					continue;
 				}
-				if (ch->c == '.') {
-					started = false;
-					temp_indices.clear();
-					current_text.clear();
-				}
+				//if (ch->c == '.') {
+				//	started = false;
+				//	temp_indices.clear();
+				//	current_text.clear();
+				//}
 
-				if (ch->c == start_char) {
+				// refernces are usually at the begining of the line, we consider the possibility
+				// of up to 3 extra characters before the reference (e.g. numbers, extra spaces, etc.)
+				if ((ch->c == start_char) && (chars_in_line < 4)) {
 					temp_indices.clear();
 					current_text.clear();
 					started = true;
