@@ -120,6 +120,7 @@ protected:
 	void handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed);
 	//void paintEvent(QPaintEvent* paint_event) override;
 	void resizeEvent(QResizeEvent* resize_event) override;
+	void changeEvent(QEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* mouse_event) override;
 
 	// we already handle drag and drop on macos elsewhere

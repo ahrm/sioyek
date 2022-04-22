@@ -3210,3 +3210,13 @@ void MainWidget::return_to_last_visual_mark() {
 	current_pending_command = nullptr;
 	validate_render();
 }
+
+void MainWidget::changeEvent(QEvent* event) {
+    if (event->type() == QEvent::WindowStateChange) {
+        if (isMaximized()) {
+			main_window_width = QApplication::desktop()->screenGeometry(0).width();
+			main_window_height = QApplication::desktop()->screenGeometry(0).height();
+		}
+    }
+    QWidget::changeEvent(event);
+}
