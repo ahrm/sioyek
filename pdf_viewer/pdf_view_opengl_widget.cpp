@@ -838,7 +838,9 @@ bool PdfViewOpenGLWidget::get_is_searching(float* prog) {
 	search_results_mutex.lock();
 	bool res = is_searching;
 	if (is_searching) {
-		*prog = percent_done;
+		if (prog) {
+			*prog = percent_done;
+		}
 	}
 	search_results_mutex.unlock();
 	return true;
