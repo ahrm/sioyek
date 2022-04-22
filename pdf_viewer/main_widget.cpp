@@ -1757,17 +1757,17 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
 
 
-    if (command->name == "link") {
+    if (command->name == "link" || command->name == "create_portal") {
         handle_link();
     }
 
-    else if (command->name == "goto_link") {
+    else if (command->name == "goto_link" || command->name == "goto_portal") {
         std::optional<Link> link = main_document_view->find_closest_link();
         if (link) {
             open_document(link->dst);
         }
     }
-    else if (command->name == "edit_link") {
+    else if (command->name == "edit_link" || command->name == "edit_portal") {
         std::optional<Link> link = main_document_view->find_closest_link();
         if (link) {
             link_to_edit = link;
@@ -2175,7 +2175,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         toggle_synctex_mode();
     }
 
-    else if (command->name == "delete_link") {
+    else if (command->name == "delete_link" || command->name == "delete_portal") {
 
         main_document_view->delete_closest_link();
         validate_render();
