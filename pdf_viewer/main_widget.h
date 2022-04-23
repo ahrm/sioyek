@@ -190,6 +190,9 @@ protected:
 	void handle_close_event();
 	Document* doc();
 	void return_to_last_visual_mark();
+	void move_visual_mark_down();
+	void move_visual_mark_up();
+	bool is_visual_mark_mode();
 
 public:
 

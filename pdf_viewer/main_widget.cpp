@@ -2344,28 +2344,22 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         horizontal_scroll_locked = !horizontal_scroll_locked;
     }
     else if (command->name == "move_visual_mark_down") {
-		if (opengl_widget->get_should_draw_vertical_line()) {
-			float new_pos, new_begin_pos;
-			doc()->get_ith_next_line_from_absolute_y(main_document_view->get_vertical_line_end_pos(), 2, true, &new_begin_pos, &new_pos);
-			main_document_view->set_vertical_line_pos(new_pos, new_begin_pos);
-			if (focus_on_visual_mark_pos(true)) {
-				float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
-				main_document_view->move_absolute(0, distance);
-			}
-			validate_render();
+		if (is_visual_mark_mode()) {
+            move_visual_mark_down();
         }
+        else {
+            move_document(0.0f, 72.0f * rp * VERTICAL_MOVE_AMOUNT);
+        }
+		validate_render();
     }
     else if (command->name == "move_visual_mark_up") {
-        if (opengl_widget->get_should_draw_vertical_line()) {
-            float new_pos, new_begin_pos;
-            doc()->get_ith_next_line_from_absolute_y(main_document_view->get_vertical_line_end_pos(), 0, true, &new_begin_pos, &new_pos);
-            main_document_view->set_vertical_line_pos(new_pos, new_begin_pos);
-            if (focus_on_visual_mark_pos(false)) {
-                float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
-                main_document_view->move_absolute(0, -distance);
-            }
-            validate_render();
+		if (is_visual_mark_mode()) {
+            move_visual_mark_up();
         }
+        else {
+            move_document(0.0f, -72.0f * rp * VERTICAL_MOVE_AMOUNT);
+        }
+		validate_render();
     }
 
     if (command->pushes_state) {
@@ -3219,4 +3213,28 @@ void MainWidget::changeEvent(QEvent* event) {
 		}
     }
     QWidget::changeEvent(event);
+}
+
+void MainWidget::move_visual_mark_down() {
+	float new_pos, new_begin_pos;
+	doc()->get_ith_next_line_from_absolute_y(main_document_view->get_vertical_line_end_pos(), 2, true, &new_begin_pos, &new_pos);
+	main_document_view->set_vertical_line_pos(new_pos, new_begin_pos);
+	if (focus_on_visual_mark_pos(true)) {
+		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
+		main_document_view->move_absolute(0, distance);
+	}
+}
+
+void MainWidget::move_visual_mark_up() {
+	float new_pos, new_begin_pos;
+	doc()->get_ith_next_line_from_absolute_y(main_document_view->get_vertical_line_end_pos(), 0, true, &new_begin_pos, &new_pos);
+	main_document_view->set_vertical_line_pos(new_pos, new_begin_pos);
+	if (focus_on_visual_mark_pos(false)) {
+		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
+		main_document_view->move_absolute(0, -distance);
+	}
+}
+
+bool MainWidget::is_visual_mark_mode() {
+    return opengl_widget->get_should_draw_vertical_line();
 }
