@@ -6,9 +6,9 @@ INCLUDEPATH += ./pdf_viewer\
               zlib
           
 
-QT += core sql opengl gui widgets quickwidgets 3dcore 3danimation 3dextras 3dinput 3dlogic 3drender openglextensions
+QT += core opengl gui widgets network 3dinput openglextensions
 CONFIG += c++17
-DEFINES += QT_3DCORE_LIB QT_3DANIMATION_LIB QT_3DEXTRAS_LIB QT_3DINPUT_LIB QT_3DLOGIC_LIB QT_3DRENDER_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_QUICKWIDGETS_LIB QT_SQL_LIB QT_WIDGETS_LIB
+DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
 
 CONFIG(non_portable){
     DEFINES += NON_PORTABLE
