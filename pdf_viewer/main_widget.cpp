@@ -1091,14 +1091,14 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
         }
         int num_repeats = 0;
         bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier) || (kevent->modifiers() & Qt::MetaModifier);
-        const Command* command = input_handler->handle_key(
+        std::vector<const Command*> commands = input_handler->handle_key(
             kevent->key(),
             kevent->modifiers() & Qt::ShiftModifier,
             is_control_pressed,
             kevent->modifiers() & Qt::AltModifier,
             &num_repeats);
 
-        if (command) {
+        for (auto command : commands) {
             handle_command_types(command, num_repeats);
         }
     }
@@ -1839,6 +1839,12 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "previous_page") {
         main_document_view->move_pages(-1 - num_repeats);
+    }
+    else if (command->name == "goto_top_of_page") {
+        main_document_view->goto_top_of_page();
+    }
+    else if (command->name == "goto_bottom_of_page") {
+        main_document_view->goto_bottom_of_page();
     }
     else if (command->name == "next_chapter") {
         main_document_view->goto_chapter(rp);

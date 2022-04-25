@@ -886,3 +886,15 @@ void DocumentView::rotate() {
 	float new_offset = current_document->get_accum_page_height(current_page) + current_document->get_page_height(current_page) / 2;
 	set_offset_y(new_offset);
 }
+
+void DocumentView::goto_top_of_page() {
+	int current_page = get_current_page_number();
+	float offset_y = get_document()->get_accum_page_height(current_page) + static_cast<float>(view_height) / 2.0f / zoom_level;
+	set_offset_y(offset_y);
+}
+
+void DocumentView::goto_bottom_of_page() {
+	int current_page = get_current_page_number();
+	float offset_y = get_document()->get_accum_page_height(current_page+1) - static_cast<float>(view_height) / 2.0f / zoom_level;
+	set_offset_y(offset_y);
+}

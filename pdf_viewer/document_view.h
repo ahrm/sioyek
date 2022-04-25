@@ -142,4 +142,6 @@ public:
 	int get_page_offset();
 	void set_page_offset(int new_offset);
 	void rotate();
+	void goto_top_of_page();
+	void goto_bottom_of_page();
 };

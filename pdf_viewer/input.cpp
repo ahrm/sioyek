@@ -5,6 +5,8 @@
 #include <sstream>
 
 #include <qkeyevent.h>
+#include <qstring.h>
+#include <qstringlist.h>
 //#include <SDL.h>
 #include "input.h"
 
@@ -127,6 +129,8 @@ CommandManager::CommandManager() {
     commands.push_back({ "add_highlight_with_current_type", false, false, false, false});
 	commands.push_back({ "enter_password", true, false , false, false});
 	commands.push_back({ "toggle_fastread", false, false , false, false});
+	commands.push_back({ "goto_top_of_page", false, false , false, false});
+	commands.push_back({ "goto_bottom_of_page", false, false , false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {
@@ -274,7 +278,7 @@ void get_tokens(std::string line, std::vector<std::string>& tokens) {
 InputParseTreeNode* parse_lines(
 	InputParseTreeNode* root,
 	const std::vector<std::string>& lines,
-	const std::vector<std::string>& command_names,
+	const std::vector<std::vector<std::string>>& command_names,
 	const std::vector<std::wstring>& command_file_names,
 	const std::vector<int>& command_line_numbers
 	) {
@@ -305,7 +309,9 @@ InputParseTreeNode* parse_lines(
 						std::wcout << L"Warning: key defined in " << parent_node->defining_file_path << L" line " 
 							<< parent_node->defining_file_line << L" is being overwritten in file " << command_file_names[j]
 							<< L" line " << command_line_numbers[j] << L"\n";
-						std::wcout << L"Warning: Adding child command to a final command: " << utf8_decode(parent_node->name) << L"\n";
+						if (parent_node->name.size() > 0) {
+							std::wcout << L"Warning: Adding child command to a final command: " << utf8_decode(parent_node->name[0]) << L"\n";
+						}
 					}
 
 					auto new_node = new InputParseTreeNode(node);
@@ -330,13 +336,18 @@ InputParseTreeNode* parse_lines(
 				std::wcout << L"Warning: key defined in " << parent_node->defining_file_path << L" line "
 					<< parent_node->defining_file_line << L" is being overwritten in file " << command_file_names[j]
 					<< L" line " << command_line_numbers[j] << L"\n";
-				std::wcout << L"Warning: overriding command for " << utf8_decode(line) << L" : replacing " << 
-					utf8_decode(parent_node->name) << L" with " << utf8_decode(command_names[j]) << L"\n";
+				if (parent_node->name.size() > 0) {
+					std::wcout << L"Warning: overriding command for " << utf8_decode(line) << L" : replacing " <<
+						utf8_decode(parent_node->name[0]) << L" with " << utf8_decode(command_names[j][0]) << L"\n";
+				}
 			}
 
 			if (i == (tokens.size() - 1)) {
 				parent_node->is_final = true;
-				parent_node->name = command_names[j];
+				parent_node->name.clear();
+				for (int k = 0; k < command_names[j].size(); k++) {
+					parent_node->name.push_back(command_names[j][k]);
+				}
 			}
 
 		}
@@ -347,7 +358,7 @@ InputParseTreeNode* parse_lines(
 
 InputParseTreeNode* parse_lines(
 	const std::vector<std::string>& lines,
-	const std::vector<std::string>& command_names,
+	const std::vector<std::vector<std::string>>& command_names,
 	const std::vector<std::wstring>& command_file_names,
 	const std::vector<int>& command_line_numbers
 	) {
@@ -362,6 +373,15 @@ InputParseTreeNode* parse_lines(
 
 }
 
+std::vector<std::string> parse_command_name(const std::wstring& command_names) {
+	QStringList parts = QString::fromStdWString(command_names).split(';');
+	std::vector<std::string> res;
+	for (int i = 0; i < parts.size(); i++) {
+		res.push_back(parts.at(i).toStdString());
+	}
+	return res;
+}
+
 InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	const std::vector<Path>& user_paths) {
 
@@ -369,7 +389,7 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	std::wifstream default_infile = open_wifstream(default_path.get_path());
 
 
-	std::vector<std::string> command_names;
+	std::vector<std::vector<std::string>> command_names;
 	std::vector<std::string> command_keys;
 
 	std::vector<std::wstring> command_files;
@@ -388,7 +408,8 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 		std::wstring command_name;
 		std::wstring command_key;
 		ss >> command_name >> command_key;
-		command_names.push_back(utf8_encode(command_name));
+		//command_names.push_back(utf8_encode(command_name));
+		command_names.push_back(parse_command_name(command_name));
 		command_keys.push_back(utf8_encode(command_key));
 		command_files.push_back(default_path_name);
 		command_line_numbers.push_back(line_number);
@@ -414,7 +435,7 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 				std::wstring command_name;
 				std::wstring command_key;
 				ss >> command_name >> command_key;
-				command_names.push_back(utf8_encode(command_name));
+				command_names.push_back(parse_command_name(command_name));
 				command_keys.push_back(utf8_encode(command_key));
 				command_files.push_back(user_path_name);
 				command_line_numbers.push_back(line_number);
@@ -444,7 +465,9 @@ bool is_digit(int key) {
 	return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-const Command* InputHandler::handle_key(int key, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+std::vector<const Command*> InputHandler::handle_key(int key, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+	std::vector<const Command*> res;
+
 	if (key >= 'A' && key <= 'Z') {
 		key = key - 'A' + 'a';
 	}
@@ -452,7 +475,7 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 	if (current_node == root && is_digit(key)) {
 		if (!(key == '0' && (number_stack.size() == 0))) {
 			number_stack.push_back('0' + key - Qt::Key::Key_0);
-			return nullptr;
+			return {};
 		}
 	}
 
@@ -468,18 +491,22 @@ const Command* InputHandler::handle_key(int key, bool shift_pressed, bool contro
 					number_stack.clear();
 				}
 
-				return command_manager.get_command_with_name(child->name);
+				//return command_manager.get_command_with_name(child->name);
+				for (int i = 0; i < child->name.size(); i++) {
+					res.push_back(command_manager.get_command_with_name(child->name[i]));
+				}
+				return res;
 			}
 			else{
 				current_node = child;
-				return nullptr;
+				return {};
 			}
 		}
 	}
 	std::wcout << "Warning: invalid command (key:" << (char)key << "); resetting to root" << std::endl;
 	number_stack.clear();
 	current_node = root;
-	return nullptr;
+	return {};
 }
 
 void InputHandler::delete_current_parse_tree(InputParseTreeNode* node_to_delete)
@@ -541,7 +568,14 @@ void InputHandler::add_command_key_mappings(InputParseTreeNode* thisroot,
 	std::vector<InputParseTreeNode*> prefix) const {
 
 	if (thisroot->is_final) {
-		map[thisroot->name].push_back(get_key_string_from_tree_node_sequence(prefix));
+		if (thisroot->name.size() == 1) {
+			map[thisroot->name[0]].push_back(get_key_string_from_tree_node_sequence(prefix));
+		}
+		else if (thisroot->name.size() > 1) {
+			for (const auto& name : thisroot->name) {
+				map[name].push_back("{" + get_key_string_from_tree_node_sequence(prefix) + "}");
+			}
+		}
 	}
 	else{
 		for (int i = 0; i < thisroot->children.size(); i++) {

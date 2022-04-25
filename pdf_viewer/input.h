@@ -39,7 +39,7 @@ struct InputParseTreeNode {
 	std::vector<InputParseTreeNode*> children;
 	//char command;
 	int command;
-	std::string name = "";
+	std::vector<std::string> name;
 	bool shift_modifier = false;
 	bool control_modifier = false;
 	bool alt_modifier = false;
@@ -76,7 +76,7 @@ public:
 
 	InputHandler(const Path& default_path, const std::vector<Path>& user_paths);
 	void reload_config_files(const Path& default_path, const std::vector<Path>& user_path);
-	const Command* handle_key(int key, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
+	std::vector<const Command*> handle_key(int key, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
 	std::optional<Path> get_or_create_user_keys_path();
