@@ -235,6 +235,11 @@ void configure_paths(){
 
 #ifdef Q_OS_LINUX
 	QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
+	for (int i = all_config_paths.size()-1; i >= 0; i--) {
+		user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
+		user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
+	}
+
 #ifdef LINUX_STANDARD_PATHS
 	Path home_path(QDir::homePath().toStdWString());
 	Path standard_data_path = home_path.slash(L".local").slash(L"share").slash(L"sioyek");
@@ -244,11 +249,6 @@ void configure_paths(){
 
 	default_config_path = standard_config_path.slash(L"prefs.config");
 	default_keys_path = standard_config_path.slash(L"keys.config");
-
-	for (int i = all_config_paths.size()-1; i >= 0; i--) {
-		user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
-		user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
-	}
 
 	database_file_path = standard_data_path.slash(L"test.db");
 	local_database_file_path = standard_data_path.slash(L"local.db");
