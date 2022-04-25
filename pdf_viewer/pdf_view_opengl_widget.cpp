@@ -497,14 +497,9 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 	page_uvs[7] = uv_max_y;
 
 	if (texture != 0) {
-		//if (is_dark_mode) {
-		//	glUseProgram(shared_gl_objects.rendered_dark_program);
-		//	glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
-		//}
-		//else {
-		//	glUseProgram(shared_gl_objects.rendered_program);
-		//}
+
 		bind_program();
+		glDisable(GL_BLEND);
 
 		glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -525,6 +520,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 	}
 
 	//draw the border
+
 	glDisable(GL_BLEND);
 	glUseProgram(shared_gl_objects.highlight_program);
 	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
