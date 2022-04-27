@@ -1688,7 +1688,12 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
 
     if (command->name == "goto_end") {
-        main_document_view->goto_end();
+        if (num_repeats) {
+            main_document_view->goto_page(num_repeats - 1 + main_document_view->get_page_offset());
+        }
+        else {
+			main_document_view->goto_end();
+        }
     }
 
     if (command->name == "toggle_select_highlight") {
