@@ -2818,14 +2818,18 @@ void MainWidget::execute_command(std::wstring command) {
         // %n should be filled with the first argument and so on. what follows is a hack to get around this
 
         for (int i = 0; i < command_parts.size(); i++) {
-            bool part_requires_only_second = (command_parts[i].arg("%1", "%2") != command_parts[i]);
+            command_parts[i].replace("%1", qfile_path);
+            command_parts[i].replace("%2", qfile_name);
+            command_parts[i].replace("%3", QString::fromStdWString(selected_text));
+            command_args.push_back(command_parts[i]);
 
-            if (part_requires_only_second) {
-                command_args.push_back(command_parts.at(i).arg(qfile_name));
-            }
-            else {
-                command_args.push_back(command_parts.at(i).arg(qfile_path, qfile_name));
-            }
+            //bool part_requires_only_second = (command_parts[i].arg("%1", "%2") != command_parts[i]);
+            //if (part_requires_only_second) {
+            //    command_args.push_back(command_parts.at(i).arg(qfile_name));
+            //}
+            //else {
+            //    command_args.push_back(command_parts.at(i).arg(qfile_path, qfile_name));
+            //}
         }
 
         run_command(command_name.toStdWString(), command_args.join(" ").toStdWString(), false);
