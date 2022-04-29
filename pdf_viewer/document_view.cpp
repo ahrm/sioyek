@@ -812,7 +812,6 @@ float DocumentView::view_height_in_document_space() {
 void DocumentView::set_vertical_line_pos(float pos, float begin_pos) {
 	vertical_line_pos = pos;
 	vertical_line_begin_pos = begin_pos;
-
 }
 
 void DocumentView::get_vertical_line_pos(float* begin_pos, float* end_pos) {
@@ -897,4 +896,31 @@ void DocumentView::goto_bottom_of_page() {
 	int current_page = get_current_page_number();
 	float offset_y = get_document()->get_accum_page_height(current_page+1) - static_cast<float>(view_height) / 2.0f / zoom_level;
 	set_offset_y(offset_y);
+}
+
+int DocumentView::get_line_index() {
+	if (line_index == -1) {
+		return get_line_index_of_vertical_pos();
+	}
+	else {
+		return line_index;
+	}
+}
+
+void DocumentView::set_line_index(int index) {
+	line_index = index;
+}
+
+int DocumentView::get_line_index_of_vertical_pos() {
+	DocumentPos line_doc_pos = current_document->absolute_to_page_pos({0, vertical_line_pos});
+	auto rects = current_document->get_page_lines(line_doc_pos.page);
+	int index = 0;
+	while (index < rects.size() && rects[index].y0 < vertical_line_pos) {
+		index++;
+	}
+	return index-1;
+}
+
+int DocumentView::get_vertical_line_page() {
+	return current_document->absolute_to_page_pos({ 0, vertical_line_pos }).page;
 }

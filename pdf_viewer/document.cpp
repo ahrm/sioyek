@@ -24,6 +24,7 @@ extern bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE;
 extern bool ENABLE_EXPERIMENTAL_FEATURES;
 extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
 extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
+extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 
 int Document::get_mark_index(char symbol) {
 	for (int i = 0; i < marks.size(); i++) {
@@ -2011,54 +2012,184 @@ float Document::document_to_absolute_y(int page, float doc_y) {
 	return 0;
 }
 
-void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
-	auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
+//void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
+//	auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
+//
+//	fz_pixmap* pixmap = get_small_pixmap(page);
+//	std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
+//	std::vector<unsigned int> line_locations;
+//	std::vector<unsigned int> line_locations_begins;
+//	get_line_begins_and_ends_from_histogram(hist, line_locations_begins, line_locations);
+//	int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
+//
+//	int index = find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y - 0.3f), i);
+//
+//	if (index > -1) {
+//		int best_vertical_loc = line_locations[index];
+//		int best_vertical_loc_begin = line_locations_begins[index];
+//
+//		float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
+//		float best_vertical_loc_begin_doc_pos = best_vertical_loc_begin / SMALL_PIXMAP_SCALE;
+//
+//		float abs_doc_y = document_to_absolute_y(page, best_vertical_loc_doc_pos);
+//		float abs_doc_begin_y = document_to_absolute_y(page, best_vertical_loc_begin_doc_pos);
+//		*out_begin = abs_doc_begin_y;
+//		*out_end = abs_doc_y;
+//	}
+//	else {
+//		if (!cont) {
+//			*out_begin = absolute_y;
+//			*out_end = absolute_y;
+//			return;
+//		}
+//
+//		int next_page;
+//		if (i > 0) {
+//			//next_page = main_document_view->get_current_page_number() + 1;
+//			next_page = get_offset_page_number(absolute_y) + 1;
+//			if (next_page < num_pages()) {
+//				return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) + 0.5, 1, false, out_begin, out_end);
+//			}
+//		}
+//		else {
+//			next_page = get_offset_page_number(absolute_y);
+//			if (next_page > 0) {
+//				return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) - 0.5f, -1, false, out_begin, out_end);
+//			}
+//		}
+//		*out_begin = absolute_y;
+//		*out_end = absolute_y;
+//		return;
+//	}
+//
+//}
 
-	fz_pixmap* pixmap = get_small_pixmap(page);
-	std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
-	std::vector<unsigned int> line_locations;
-	std::vector<unsigned int> line_locations_begins;
-	get_line_begins_and_ends_from_histogram(hist, line_locations_begins, line_locations);
-	int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
+//void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
+void Document::get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, float* out_begin, float* out_end, int* out_index, int* out_page) {
+	//auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
 
-	int index = find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y - 0.3f), i);
+	auto line_rects = get_page_lines(page);
+	//int index = 0;
+	//while ((index < line_rects.size()) && (line_rects[index].y0 < absolute_y)) {
+	//	index++;
+	//}
+	if (line_index < 0) {
+		line_index = line_index + line_rects.size();
+	}
 
-	if (index > -1) {
-		int best_vertical_loc = line_locations[index];
-		int best_vertical_loc_begin = line_locations_begins[index];
-
-		float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
-		float best_vertical_loc_begin_doc_pos = best_vertical_loc_begin / SMALL_PIXMAP_SCALE;
-
-		float abs_doc_y = document_to_absolute_y(page, best_vertical_loc_doc_pos);
-		float abs_doc_begin_y = document_to_absolute_y(page, best_vertical_loc_begin_doc_pos);
-		*out_begin = abs_doc_begin_y;
-		*out_end = abs_doc_y;
+	int new_index = line_index + i;
+	if ((new_index >= 0) && (new_index < line_rects.size())) {
+		*out_begin = line_rects[new_index].y0;
+		*out_end = line_rects[new_index].y1;
+		*out_page = page;
+		*out_index = new_index;
+		return;
 	}
 	else {
 		if (!cont) {
-			*out_begin = absolute_y;
-			*out_end = absolute_y;
+			if (line_index > 0 && line_index < line_rects.size()) {
+				*out_begin = line_rects[line_index].y0;
+				*out_end = line_rects[line_index].y1;
+				*out_page = page;
+				*out_index = line_index;
+			}
+			else {
+				*out_begin = accum_page_heights[page];
+				*out_end = accum_page_heights[page];
+				*out_index = 0;
+				*out_page = page;
+			}
 			return;
 		}
 
-		int next_page;
 		if (i > 0) {
 			//next_page = main_document_view->get_current_page_number() + 1;
-			next_page = get_offset_page_number(absolute_y) + 1;
+			int next_page = page + 1;
 			if (next_page < num_pages()) {
-				return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) + 0.5, 1, false, out_begin, out_end);
+				return get_ith_next_line_from_absolute_y(next_page, 0, 0, false, out_begin, out_end, out_index, out_page);
 			}
 		}
 		else {
-			next_page = get_offset_page_number(absolute_y);
-			if (next_page > 0) {
-				return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) - 0.5f, -1, false, out_begin, out_end);
+			int next_page = page - 1;
+			if (next_page >= 0) {
+				return get_ith_next_line_from_absolute_y(next_page, -1, 0, false, out_begin, out_end, out_index, out_page);
 			}
 		}
-		*out_begin = absolute_y;
-		*out_end = absolute_y;
+		*out_begin = line_rects[line_index].y0;
+		*out_end = line_rects[line_index].y1;
+		*out_page = page;
+		*out_index = line_index;
 		return;
 	}
 
+	//else {
+
+	//	int next_page;
+	//	if (i > 0) {
+	//		//next_page = main_document_view->get_current_page_number() + 1;
+	//		next_page = get_offset_page_number(absolute_y) + 1;
+	//		if (next_page < num_pages()) {
+	//			return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) + 0.5, 1, false, out_begin, out_end);
+	//		}
+	//	}
+	//	else {
+	//		next_page = get_offset_page_number(absolute_y);
+	//		if (next_page > 0) {
+	//			return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) - 0.5f, -1, false, out_begin, out_end);
+	//		}
+	//	}
+	//	*out_begin = absolute_y;
+	//	*out_end = absolute_y;
+	//	return;
+	//}
+
+}
+
+const std::vector<fz_rect>& Document::get_page_lines(int page) {
+	if (cached_page_line_rects.find(page) != cached_page_line_rects.end()) {
+		return cached_page_line_rects[page];
+	}
+	else {
+		fz_stext_page* stext_page = get_stext_with_page_number(page);
+		if (stext_page && stext_page->first_block && (!FORCE_CUSTOM_LINE_ALGORITHM)) {
+			std::vector<fz_rect> line_rects;
+
+			LL_ITER(block, stext_page->first_block) {
+				if (block->type == FZ_STEXT_BLOCK_TEXT) {
+					LL_ITER(line, block->u.t.first_line) {
+						fz_rect line_rect;
+						line_rect.y0 = document_to_absolute_y(page, line->bbox.y0);
+						line_rect.y1 = document_to_absolute_y(page, line->bbox.y1);
+						if (line_rects.size() > 0) {
+							fz_rect prev_rect = line_rects[line_rects.size() - 1];
+							if ((std::abs(prev_rect.y0 - line_rect.y0) < 1.0f) || (std::abs(prev_rect.y1 - line_rect.y1) < 1.0f)) {
+								continue;
+							}
+						}
+						line_rects.push_back(line_rect);
+					}
+				}
+			}
+			cached_page_line_rects[page] = line_rects;
+		}
+		else {
+			fz_pixmap* pixmap = get_small_pixmap(page);
+			std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
+			std::vector<unsigned int> line_locations;
+			std::vector<unsigned int> line_locations_begins;
+			get_line_begins_and_ends_from_histogram(hist, line_locations_begins, line_locations);
+
+			std::vector<fz_rect> line_rects;
+			for (int i = 0; i < line_locations_begins.size(); i++) {
+				fz_rect line_rect;
+				line_rect.x0 = 0;
+				line_rect.x1 = static_cast<float>(pixmap->w) / SMALL_PIXMAP_SCALE;
+				line_rect.y0 = document_to_absolute_y(page, static_cast<float>(line_locations_begins[i]) / SMALL_PIXMAP_SCALE);
+				line_rect.y1 = document_to_absolute_y(page, static_cast<float>(line_locations[i]) / SMALL_PIXMAP_SCALE);
+				line_rects.push_back(line_rect);
+			}
+			cached_page_line_rects[page] = line_rects;
+		}
+		return cached_page_line_rects[page];
+	}
 }

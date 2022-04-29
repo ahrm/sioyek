@@ -46,6 +46,7 @@ private:
 
 	float vertical_line_begin_pos = 0;
 	float vertical_line_pos = 0;
+	int line_index = -1;
 
 	int view_width = 0;
 	int view_height = 0;
@@ -144,4 +145,8 @@ public:
 	void rotate();
 	void goto_top_of_page();
 	void goto_bottom_of_page();
+	int get_line_index_of_vertical_pos();
+	int get_line_index();
+	void set_line_index(int index);
+	int get_vertical_line_page();
 };
