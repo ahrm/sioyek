@@ -2472,7 +2472,7 @@ void MainWidget::visual_mark_under_pos(WindowPos pos){
         float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
         WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels({document_pos.page, 0, best_vertical_loc_doc_pos});
         auto [abs_doc_x, abs_doc_y] = main_document_view->window_to_absolute_document_pos(window_pos);
-        main_document_view->set_vertical_line_pos(abs_doc_y, abs_doc_x);
+        main_document_view->set_vertical_line_pos(abs_doc_y);
         main_document_view->set_line_index(main_document_view->get_line_index_of_vertical_pos());
         validate_render();
     }
@@ -2758,15 +2758,21 @@ void MainWidget::set_current_widget(QWidget* new_widget) {
 }
 
 bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
-    float window_x, window_y;
+    //float window_x, window_y;
+
+    if (!main_document_view->get_ruler_window_rect().has_value()) {
+		return false;
+    }
+
     float thresh = 1 - VISUAL_MARK_NEXT_PAGE_THRESHOLD;
-    main_document_view->absolute_to_window_pos(0, main_document_view->get_vertical_line_end_pos(), &window_x, &window_y);
+    fz_rect ruler_window_rect = main_document_view->get_ruler_window_rect().value();
+    //main_document_view->absolute_to_window_pos(0, main_document_view->get_vertical_line_pos(), &window_x, &window_y);
     //if ((window_y < -thresh) || (window_y > thresh)) {
-    if (window_y < -1 || window_y > 1) {
+    if (ruler_window_rect.y0 < -1 || ruler_window_rect.y1 > 1) {
         main_document_view->goto_vertical_line_pos();
         return true;
     }
-    if ((moving_down && (window_y < -thresh)) || ((!moving_down) && (window_y > thresh))) {
+    if ((moving_down && (ruler_window_rect.y0 < -thresh)) || ((!moving_down) && (ruler_window_rect.y1 > thresh))) {
         main_document_view->goto_vertical_line_pos();
         //float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION;
         //main_document_view->move_absolute(0, -distance);
@@ -3239,12 +3245,11 @@ void MainWidget::changeEvent(QEvent* event) {
 void MainWidget::move_visual_mark_down() {
 
     int prev_line_index = main_document_view->get_line_index();
-    float begin, end;
     int new_line_index, new_page;
     int vertical_line_page = main_document_view->get_vertical_line_page();
-    doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 1, true, &begin, &end, &new_line_index, &new_page);
+    fz_rect ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 1, true, &new_line_index, &new_page);
     main_document_view->set_line_index(new_line_index);
-	main_document_view->set_vertical_line_pos(end, begin);
+	main_document_view->set_vertical_line_rect(ruler_rect);
 	if (focus_on_visual_mark_pos(true)) {
 		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
 		main_document_view->move_absolute(0, distance);
@@ -3253,12 +3258,11 @@ void MainWidget::move_visual_mark_down() {
 
 void MainWidget::move_visual_mark_up() {
     int prev_line_index = main_document_view->get_line_index();
-    float begin, end;
     int new_line_index, new_page;
     int vertical_line_page = main_document_view->get_vertical_line_page();
-    doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, -1, true, &begin, &end, &new_line_index, &new_page);
+    fz_rect ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, -1, true, &new_line_index, &new_page);
     main_document_view->set_line_index(new_line_index);
-	main_document_view->set_vertical_line_pos(end, begin);
+	main_document_view->set_vertical_line_rect(ruler_rect);
 	if (focus_on_visual_mark_pos(false)) {
 		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
 		main_document_view->move_absolute(0, distance);

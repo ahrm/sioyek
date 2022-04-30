@@ -151,7 +151,7 @@ protected:
 	void initializeGL() override;
 	void resizeGL(int w, int h) override;
 	void render_highlight_window(GLuint program, fz_rect window_rect, bool draw_border=true);
-	void render_line_window(GLuint program, float vertical_pos, float vertical_begin_pos);
+	void render_line_window(GLuint program, float vertical_pos, std::optional<fz_rect> ruler_rect = {});
 	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border=true);
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
 	void paintGL() override;

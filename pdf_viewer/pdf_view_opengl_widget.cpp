@@ -234,7 +234,7 @@ void PdfViewOpenGLWidget::resizeGL(int w, int h) {
 	}
 }
 
-void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_pos, float gl_vertical_begin_pos) {
+void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_pos, std::optional<fz_rect> ruler_rect) {
 
 
 	float bar_height = 4.0f;
@@ -246,12 +246,6 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 		1, gl_vertical_pos - bar_height
 	};
 
-	float top_bar_data[] = {
-		-1, gl_vertical_begin_pos + bar_height,
-		1, gl_vertical_begin_pos + bar_height,
-		-1, gl_vertical_begin_pos,
-		1, gl_vertical_begin_pos 
-	};
 
 	glDisable(GL_CULL_FACE);
 	glUseProgram(program);
@@ -276,8 +270,37 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 	glBufferData(GL_ARRAY_BUFFER, sizeof(bar_data), bar_data, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	if (RULER_MODE) {
+	if (RULER_MODE && ruler_rect.has_value()) {
+		float gl_vertical_begin_pos = ruler_rect.value().y0;
+		float ruler_left_pos = ruler_rect.value().x0;
+		float ruler_right_pos = ruler_rect.value().x1;
+		float top_bar_data[] = {
+			-1, gl_vertical_begin_pos + bar_height,
+			1, gl_vertical_begin_pos + bar_height,
+			-1, gl_vertical_begin_pos,
+			1, gl_vertical_begin_pos
+		};
+
+		float left_bar_data[] = {
+			-1, gl_vertical_begin_pos,
+			ruler_left_pos, gl_vertical_begin_pos,
+			-1, gl_vertical_pos,
+			ruler_left_pos, gl_vertical_pos
+		};
+		float right_bar_data[] = {
+			ruler_right_pos, gl_vertical_begin_pos,
+			1, gl_vertical_begin_pos,
+			ruler_right_pos, gl_vertical_pos,
+			1, gl_vertical_pos
+		};
+
 		glBufferData(GL_ARRAY_BUFFER, sizeof(top_bar_data), top_bar_data, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+		glBufferData(GL_ARRAY_BUFFER, sizeof(left_bar_data), left_bar_data, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+		glBufferData(GL_ARRAY_BUFFER, sizeof(right_bar_data), right_bar_data, GL_DYNAMIC_DRAW);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
 
@@ -755,14 +778,14 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (should_draw_vertical_line) {
 		//render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
-		float vertical_line_begin, vertical_line_end;
-		document_view->get_vertical_line_window_y(&vertical_line_begin, &vertical_line_end);
+		float vertical_line_end = document_view->get_ruler_window_y();
+		std::optional<fz_rect> ruler_rect = document_view->get_ruler_window_rect();
 
 		if (color_mode == ColorPalette::Dark) {
-			render_line_window(shared_gl_objects.vertical_line_dark_program , vertical_line_end, vertical_line_begin);
+			render_line_window(shared_gl_objects.vertical_line_dark_program , vertical_line_end, ruler_rect);
 		}
 		else {
-			render_line_window(shared_gl_objects.vertical_line_program , vertical_line_end, vertical_line_begin);
+			render_line_window(shared_gl_objects.vertical_line_program , vertical_line_end, ruler_rect);
 		}
 	}
 	if (overview_page) {

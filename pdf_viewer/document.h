@@ -224,7 +224,7 @@ public:
 
 	float document_to_absolute_y(int page, float doc_y);
 	//void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
-	void get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, float* out_begin, float* out_end, int* out_index, int* out_page);
+	fz_rect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);
 	const std::vector<fz_rect>& get_page_lines(int page);
 
 	friend class DocumentManager;

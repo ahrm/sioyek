@@ -4,6 +4,7 @@
 extern float MOVE_SCREEN_PERCENTAGE;
 extern float FIT_TO_PAGE_WIDTH_RATIO;
 extern float RULER_PADDING;
+extern float RULER_X_PADDING;
 
 
 DocumentView::DocumentView( fz_context* mupdf_context,
@@ -809,41 +810,82 @@ float DocumentView::view_height_in_document_space() {
 	return static_cast<float>(view_height) / zoom_level;
 }
 
-void DocumentView::set_vertical_line_pos(float pos, float begin_pos) {
-	vertical_line_pos = pos;
-	vertical_line_begin_pos = begin_pos;
+void DocumentView::set_vertical_line_pos(float pos) {
+	ruler_pos = pos;
+	ruler_rect = {};
 }
 
-void DocumentView::get_vertical_line_pos(float* begin_pos, float* end_pos) {
-	*end_pos = vertical_line_pos;
-	*begin_pos = vertical_line_begin_pos;
+void DocumentView::set_vertical_line_rect(fz_rect rect) {
+	ruler_rect = rect;
 }
 
-float DocumentView::get_vertical_line_end_pos() {
-	float begin_pos, end_pos;
-	get_vertical_line_pos(&begin_pos, &end_pos);
-	return end_pos;
+//float DocumentView::get_vertical_line_pos() {
+//	return vertical_line_pos;
+//}
+
+float DocumentView::get_ruler_pos() {
+	if (ruler_rect.has_value()) {
+		return ruler_rect.value().y1;
+	}
+	else {
+		return ruler_pos;
+	}
 }
 
-void DocumentView::get_vertical_line_window_y(float* begin_y, float* end_y) {
+std::optional<fz_rect> DocumentView::get_ruler_rect() {
+	return ruler_rect;
+}
 
-	float absol_begin_y, absol_end_y;
-	get_vertical_line_pos(&absol_begin_y, &absol_end_y);
-	absol_begin_y -= RULER_PADDING;
+bool DocumentView::has_ruler_rect() {
+	return ruler_rect.has_value();
+}
+
+float DocumentView::get_ruler_window_y() {
+
+	float absol_end_y = get_ruler_pos();
+
 	absol_end_y += RULER_PADDING;
 
 	float window_begin_x, window_begin_y;
 	float window_end_x, window_end_y;
-	absolute_to_window_pos(0.0, absol_begin_y, &window_begin_x, &window_begin_y);
 	absolute_to_window_pos(0.0, absol_end_y, &window_end_x, &window_end_y);
 
-	*begin_y = window_begin_y;
-	*end_y = window_end_y;
+	return window_end_y;
 }
+
+std::optional<fz_rect> DocumentView::get_ruler_window_rect() {
+	if (has_ruler_rect()) {
+
+		fz_rect absol_ruler_rect = get_ruler_rect().value();
+
+		absol_ruler_rect.y0 -= RULER_PADDING;
+		absol_ruler_rect.y1 += RULER_PADDING;
+
+		absol_ruler_rect.x0 -= RULER_X_PADDING;
+		absol_ruler_rect.x1 += RULER_X_PADDING;
+
+		return absolute_to_window_rect(absol_ruler_rect);
+	}
+	return {};
+}
+
+//float DocumentView::get_vertical_line_window_y() {
+//
+//	float absol_end_y = get_vertical_line_pos();
+//
+//	absol_end_y += RULER_PADDING;
+//
+//	float window_begin_x, window_begin_y;
+//	float window_end_x, window_end_y;
+//	absolute_to_window_pos(0.0, absol_end_y, &window_end_x, &window_end_y);
+//
+//	return window_end_y;
+//}
 
 void DocumentView::goto_vertical_line_pos() {
 	if (current_document) {
-		float new_y_offset = vertical_line_pos;
+		//float new_y_offset = vertical_line_pos;
+		float new_y_offset = get_ruler_pos();
 		set_offset_y(new_y_offset);
 	}
 }
@@ -912,15 +954,15 @@ void DocumentView::set_line_index(int index) {
 }
 
 int DocumentView::get_line_index_of_vertical_pos() {
-	DocumentPos line_doc_pos = current_document->absolute_to_page_pos({0, vertical_line_pos});
+	DocumentPos line_doc_pos = current_document->absolute_to_page_pos({0, get_ruler_pos()});
 	auto rects = current_document->get_page_lines(line_doc_pos.page);
 	int index = 0;
-	while (index < rects.size() && rects[index].y0 < vertical_line_pos) {
+	while (index < rects.size() && rects[index].y0 < get_ruler_pos()) {
 		index++;
 	}
 	return index-1;
 }
 
 int DocumentView::get_vertical_line_page() {
-	return current_document->absolute_to_page_pos({ 0, vertical_line_pos }).page;
+	return current_document->absolute_to_page_pos({ 0, get_ruler_pos()}).page;
 }

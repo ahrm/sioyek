@@ -56,6 +56,7 @@ extern int SINGLE_MAIN_WINDOW_SIZE[2];
 extern int SINGLE_MAIN_WINDOW_MOVE[2];
 extern float FIT_TO_PAGE_WIDTH_RATIO;
 extern float RULER_PADDING;
+extern float RULER_X_PADDING;
 extern std::wstring TEXT_HIGHLIGHT_URL;
 extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE;
 extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL;
@@ -263,6 +264,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"collapsed_toc", &SMALL_TOC, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"ruler_mode", &RULER_MODE, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"ruler_padding", &RULER_PADDING, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"ruler_x_padding", &RULER_X_PADDING, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"text_summary_url", &TEXT_HIGHLIGHT_URL, string_serializer, string_deserializer, nullptr });
 	configs.push_back({ L"text_summary_should_refine", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"text_summary_should_fill", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL, bool_serializer, bool_deserializer, bool_validator });

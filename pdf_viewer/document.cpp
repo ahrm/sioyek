@@ -2065,7 +2065,7 @@ float Document::document_to_absolute_y(int page, float doc_y) {
 //}
 
 //void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
-void Document::get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, float* out_begin, float* out_end, int* out_index, int* out_page) {
+fz_rect Document::get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page) {
 	//auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
 
 	auto line_rects = get_page_lines(page);
@@ -2079,47 +2079,48 @@ void Document::get_ith_next_line_from_absolute_y(int page, int line_index, int i
 
 	int new_index = line_index + i;
 	if ((new_index >= 0) && (new_index < line_rects.size())) {
-		*out_begin = line_rects[new_index].y0;
-		*out_end = line_rects[new_index].y1;
 		*out_page = page;
 		*out_index = new_index;
-		return;
+		return line_rects[new_index];
 	}
 	else {
 		if (!cont) {
 			if (line_index > 0 && line_index < line_rects.size()) {
-				*out_begin = line_rects[line_index].y0;
-				*out_end = line_rects[line_index].y1;
 				*out_page = page;
 				*out_index = line_index;
+				return line_rects[line_index];
 			}
 			else {
-				*out_begin = accum_page_heights[page];
-				*out_end = accum_page_heights[page];
+				fz_rect res;
+				//*out_begin = accum_page_heights[page];
+				//*out_end = accum_page_heights[page];
+				res.y0 = accum_page_heights[page];
+				res.y1 = accum_page_heights[page];
+				res.x0 = 0;
+				res.x1 = page_widths[page];
+
 				*out_index = 0;
 				*out_page = page;
+				return res;
 			}
-			return;
 		}
 
 		if (i > 0) {
 			//next_page = main_document_view->get_current_page_number() + 1;
 			int next_page = page + 1;
 			if (next_page < num_pages()) {
-				return get_ith_next_line_from_absolute_y(next_page, 0, 0, false, out_begin, out_end, out_index, out_page);
+				return get_ith_next_line_from_absolute_y(next_page, 0, 0, false, out_index, out_page);
 			}
 		}
 		else {
 			int next_page = page - 1;
 			if (next_page >= 0) {
-				return get_ith_next_line_from_absolute_y(next_page, -1, 0, false, out_begin, out_end, out_index, out_page);
+				return get_ith_next_line_from_absolute_y(next_page, -1, 0, false, out_index, out_page);
 			}
 		}
-		*out_begin = line_rects[line_index].y0;
-		*out_end = line_rects[line_index].y1;
 		*out_page = page;
 		*out_index = line_index;
-		return;
+		return line_rects[line_index];
 	}
 
 	//else {
@@ -2158,11 +2159,15 @@ const std::vector<fz_rect>& Document::get_page_lines(int page) {
 				if (block->type == FZ_STEXT_BLOCK_TEXT) {
 					LL_ITER(line, block->u.t.first_line) {
 						fz_rect line_rect;
+						line_rect.x0 = line->bbox.x0 - page_widths[page] / 2;
+						line_rect.x1 = line->bbox.x1 - page_widths[page] / 2;
 						line_rect.y0 = document_to_absolute_y(page, line->bbox.y0);
 						line_rect.y1 = document_to_absolute_y(page, line->bbox.y1);
 						if (line_rects.size() > 0) {
 							fz_rect prev_rect = line_rects[line_rects.size() - 1];
 							if ((std::abs(prev_rect.y0 - line_rect.y0) < 1.0f) || (std::abs(prev_rect.y1 - line_rect.y1) < 1.0f)) {
+								line_rects[line_rects.size() - 1].x0 = std::min(prev_rect.x0, line_rect.x0);
+								line_rects[line_rects.size() - 1].x1 = std::max(prev_rect.x1, line_rect.x1);
 								continue;
 							}
 						}
@@ -2182,8 +2187,8 @@ const std::vector<fz_rect>& Document::get_page_lines(int page) {
 			std::vector<fz_rect> line_rects;
 			for (int i = 0; i < line_locations_begins.size(); i++) {
 				fz_rect line_rect;
-				line_rect.x0 = 0;
-				line_rect.x1 = static_cast<float>(pixmap->w) / SMALL_PIXMAP_SCALE;
+				line_rect.x0 = 0 - page_widths[page] / 2;
+				line_rect.x1 = static_cast<float>(pixmap->w) / SMALL_PIXMAP_SCALE - page_widths[page] / 2;
 				line_rect.y0 = document_to_absolute_y(page, static_cast<float>(line_locations_begins[i]) / SMALL_PIXMAP_SCALE);
 				line_rect.y1 = document_to_absolute_y(page, static_cast<float>(line_locations[i]) / SMALL_PIXMAP_SCALE);
 				line_rects.push_back(line_rect);
