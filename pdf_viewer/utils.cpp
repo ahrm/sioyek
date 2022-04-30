@@ -779,7 +779,13 @@ void run_command(std::wstring command, std::wstring parameters, bool wait){
 #ifdef Q_OS_WIN
 	SHELLEXECUTEINFO ShExecInfo = { 0 };
 	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-	ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	if (wait) {
+		ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	}
+	else {
+		ShExecInfo.fMask = SEE_MASK_ASYNCOK;
+	}
+
 	ShExecInfo.hwnd = NULL;
 	ShExecInfo.lpVerb = NULL;
 	ShExecInfo.lpFile = command.c_str();
@@ -790,8 +796,10 @@ void run_command(std::wstring command, std::wstring parameters, bool wait){
 	ShExecInfo.lpParameters = parameters.c_str();
 
 	ShellExecuteExW(&ShExecInfo);
-	WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
-	CloseHandle(ShExecInfo.hProcess);
+	if (wait) {
+		WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
+		CloseHandle(ShExecInfo.hProcess);
+	}
 #else
 	QProcess* process = new QProcess;
 	QString qcommand = QString::fromStdWString(command);
