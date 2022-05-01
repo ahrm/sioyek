@@ -676,7 +676,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 					config_manager->get_config<float>(L"link_highlight_color"));
 				fz_link* links = document_view->get_document()->get_page_links(page);
 				while (links != nullptr) {
-					//render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
+					render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
 					all_visible_links.push_back(std::make_pair(page, links));
 					links = links->next;
 				}

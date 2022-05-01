@@ -7,10 +7,7 @@
 #include <qkeyevent.h>
 #include <qstring.h>
 #include <qstringlist.h>
-//#include <SDL.h>
 #include "input.h"
-
-
 
 CommandManager::CommandManager() {
 	commands.push_back({ "goto_begining",		false,	false,	false,	true});
