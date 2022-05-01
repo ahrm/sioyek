@@ -32,6 +32,7 @@ bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char);
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages);
 int mod(int a, int b);
 bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end);
+bool rects_intersect(fz_rect rect1, fz_rect rect2);
 ParsedUri parse_uri(std::string uri);
 char get_symbol(int key, bool is_shift_pressed, const std::vector<char>&special_symbols);
 
@@ -153,3 +154,5 @@ void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*
 void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::wstring& string_res, std::vector<int>& indices);
 bool is_string_titlish(const std::wstring& str);
 bool is_title_parent_of(const std::wstring& parent_title, const std::wstring& child_title, bool* are_same);
+std::wstring find_first_regex_match(const std::wstring& haystack, const std::wstring& regex_string);
+void merge_lines(const std::vector<fz_stext_line*>& lines, std::vector<fz_rect>& out_rects, std::vector<std::wstring>& out_texts);

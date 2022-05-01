@@ -157,4 +157,6 @@ public:
 	int get_line_index();
 	void set_line_index(int index);
 	int get_vertical_line_page();
+	bool goto_definition();
+	std::optional<DocumentPos> find_line_definition();
 };

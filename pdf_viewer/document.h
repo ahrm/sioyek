@@ -40,6 +40,7 @@ private:
 	std::vector<int> flat_toc_pages;
 	QNetworkAccessManager* network_access_manager = nullptr;
 	std::map<int, std::vector<fz_rect>> cached_page_line_rects;
+	std::map<int, std::vector<std::wstring>> cached_line_texts;
 
 	int page_offset = 0;
 
@@ -215,6 +216,7 @@ public:
 	fz_rect get_page_rect_no_cache(int page);
 	std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
 	std::optional<PdfLink> get_link_in_pos(const DocumentPos& pos);
+	std::optional<PdfLink> get_link_in_page_rect(int page, fz_rect rect);
 
 	//void create_table_of_contents(std::vector<TocNode*>& top_nodes);
 	int add_stext_page_to_created_toc(fz_stext_page* stext_page,
@@ -225,7 +227,7 @@ public:
 	float document_to_absolute_y(int page, float doc_y);
 	//void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
 	fz_rect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);
-	const std::vector<fz_rect>& get_page_lines(int page);
+	const std::vector<fz_rect>& get_page_lines(int page, std::vector<std::wstring>* line_texts=nullptr);
 
 	friend class DocumentManager;
 };

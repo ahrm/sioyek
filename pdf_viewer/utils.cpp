@@ -100,6 +100,10 @@ bool range_intersects(float range1_start, float range1_end, float range2_start, 
 	return true;
 }
 
+bool rects_intersect(fz_rect rect1, fz_rect rect2) {
+	return range_intersects(rect1.x0, rect1.x1, rect2.x0, rect2.x1) && range_intersects(rect1.y0, rect1.y1, rect2.y0, rect2.y1);
+}
+
 ParsedUri parse_uri(std::string uri) {
 	int comma_index = -1;
 
@@ -893,6 +897,15 @@ void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std
 	}
 }
 
+
+std::wstring find_first_regex_match(const std::wstring& haystack, const std::wstring& regex_string) {
+	std::wregex regex(regex_string);
+	std::wsmatch match;
+	if (std::regex_search(haystack, match, regex)) {
+		return match.str();
+	}
+	return L"";
+}
 
 void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_chars,
 	const std::wregex &regex,
@@ -1722,3 +1735,100 @@ bool is_title_parent_of(const std::wstring& parent_title, const std::wstring& ch
 	return true;
 }
 
+struct Range {
+	float begin;
+	float end;
+
+	float size() {
+		return end - begin;
+	}
+};
+
+Range merge_range(Range range1, Range range2) {
+	Range res;
+	res.begin = std::min(range1.begin, range2.begin);
+	res.end = std::max(range1.end, range2.end);
+	return res;
+}
+
+float line_num_penalty(int num) {
+	if (num == 1) {
+		return 1.0f;
+	}
+	return 1.0f + static_cast<float>(num) / 5.0f;
+}
+
+float height_increase_penalty(float ratio) {
+	return ratio * ratio;
+}
+
+float width_increase_bonus(float ratio) {
+	return 1.0f / ratio * ratio;
+}
+
+int find_best_merge_index_for_line_index(const std::vector<fz_stext_line*>& lines, int index) {
+
+	int max_merged_lines = 40;
+	Range current_range = { lines[index]->bbox.y0, lines[index]->bbox.y1 };
+	Range current_range_x = { lines[index]->bbox.x0, lines[index]->bbox.x1 };
+	float maximum_height = current_range.size();
+	float maximum_width = current_range_x.size();
+	float min_cost = current_range.size() * line_num_penalty(1) / current_range_x.size();
+	int min_index = index;
+
+	for (int j = index + 1; (j < lines.size()) && ((j - index) < max_merged_lines); j++) {
+		float line_height = lines[j]->bbox.y1 - lines[j]->bbox.y0;
+		float line_width = lines[j]->bbox.x1 - lines[j]->bbox.x0;
+		if (line_height > maximum_height) {
+			maximum_height = line_height;
+		}
+		if (line_width > maximum_width) {
+			maximum_width = line_width;
+		}
+		current_range = merge_range(current_range, { lines[j]->bbox.y0, lines[j]->bbox.y1 });
+		current_range_x = merge_range(current_range, { lines[j]->bbox.x0, lines[j]->bbox.x1 });
+		float cost = current_range.size() / (j - index + 1) * line_num_penalty(j - index + 1) / current_range_x.size() * height_increase_penalty(current_range.size() / maximum_height) * width_increase_bonus(current_range_x.size() / maximum_width);
+		if (cost < min_cost) {
+			min_cost = cost;
+			min_index = j;
+		}
+	}
+	return min_index;
+}
+
+
+void merge_lines(const std::vector<fz_stext_line*>& lines, std::vector<fz_rect>& out_rects, std::vector<std::wstring>& out_texts) {
+
+	std::vector<fz_rect> temp_rects;
+	std::vector<std::wstring> temp_texts;
+
+	for (int i = 0; i < lines.size(); i++) {
+		int best_index = find_best_merge_index_for_line_index(lines, i);
+		fz_rect rect = lines[i]->bbox;
+		std::wstring text = get_string_from_stext_line(lines[i]);
+		for (int j = i+1; j <= best_index; j++) {
+			rect = fz_union_rect(rect, lines[j]->bbox);
+			text = text + get_string_from_stext_line(lines[j]);
+		}
+		temp_rects.push_back(rect);
+		temp_texts.push_back(text);
+		i = best_index;
+	}
+	for (int i = 0; i < temp_rects.size(); i++) {
+		if (i > 0 && out_rects.size() > 0) {
+			fz_rect prev_rect = out_rects[out_rects.size() - 1];
+			fz_rect current_rect = temp_rects[i];
+			if ((std::abs(prev_rect.y0 - current_rect.y0) < 1.0f) || (std::abs(prev_rect.y1 - current_rect.y1) < 1.0f)) {
+				out_rects[out_rects.size() - 1].x0 = std::min(prev_rect.x0, current_rect.x0);
+				out_rects[out_rects.size() - 1].x1 = std::max(prev_rect.x1, current_rect.x1);
+
+				out_rects[out_rects.size() - 1].y0 = std::min(prev_rect.y0, current_rect.y0);
+				out_rects[out_rects.size() - 1].y1 = std::max(prev_rect.y1, current_rect.y1);
+				out_texts[out_texts.size() - 1] = out_texts[out_texts.size() - 1] + temp_texts[i];
+				continue;
+			}
+		}
+		out_rects.push_back(temp_rects[i]);
+		out_texts.push_back(temp_texts[i]);
+	}
+}

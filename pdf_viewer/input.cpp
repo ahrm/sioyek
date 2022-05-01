@@ -15,7 +15,9 @@
 CommandManager::CommandManager() {
 	commands.push_back({ "goto_begining",		false,	false,	false,	true});
 	commands.push_back({ "goto_end",			false,	false,	false,	true});
-	commands.push_back({ "goto_definition",		false,	false,	false,	true});
+	commands.push_back({ "goto_definition",		false,	false,	false,	false});
+	commands.push_back({ "overview_definition",		false,	false,	false,	false});
+	commands.push_back({ "portal_to_definition",		false,	false,	false,	false});
 	commands.push_back({ "next_item",			false,	false,	false,	true});
 	commands.push_back({ "previous_item", false, false , false, true});
 	commands.push_back({ "set_mark", false, true , false, false});
@@ -92,6 +94,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "prefs_user", false, false , false, false});
 	commands.push_back({ "import", false, false , false, false});
 	commands.push_back({ "export", false, false , false, false});
+	commands.push_back({ "enter_visual_mark_mode", false, false , false, false});
 	commands.push_back({ "move_visual_mark_down", false, false , false, false});
 	commands.push_back({ "move_visual_mark_up", false, false , false, false});
 	commands.push_back({ "set_page_offset", true, false , false, false});

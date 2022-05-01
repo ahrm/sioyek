@@ -135,9 +135,11 @@ std::optional<std::wstring> get_last_opened_file_name() {
 }
 
 void MainWidget::set_overview_position(int page, float offset) {
-    float page_height = main_document_view->get_document()->get_page_height(page);
-    opengl_widget->set_overview_page(OverviewState{ page, offset, page_height });
-    invalidate_render();
+    if (page >= 0) {
+		float page_height = main_document_view->get_document()->get_page_height(page);
+		opengl_widget->set_overview_page(OverviewState{ page, offset, page_height });
+		invalidate_render();
+    }
 }
 
 void MainWidget::set_overview_link(PdfLink link) {
@@ -516,15 +518,30 @@ void MainWidget::handle_escape() {
         current_widget = nullptr;
     }
 
+
     if (main_document_view) {
         main_document_view->handle_escape();
         opengl_widget->handle_escape();
     }
+    
     if (opengl_widget) {
+		bool done_anything = false;
+        if (opengl_widget->get_overview_page()) {
+            done_anything = true;
+        }
+        if (opengl_widget->selected_character_rects.size() > 0) {
+            done_anything = true;
+        }
+
         opengl_widget->set_overview_page({});
 		opengl_widget->selected_character_rects.clear();
 		selected_text.clear();
+
+        if (!done_anything) {
+            opengl_widget->set_should_draw_vertical_line(false);
+        }
     }
+    //if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
 
     text_command_line_edit_container->hide();
 
@@ -1512,14 +1529,10 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     if ((!is_control_pressed) && (!is_shift_pressed)) {
         if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
             if (wevent->angleDelta().y() > 0) {
-                OverviewState state = opengl_widget->get_overview_page().value();
-                state.offset_y -= 36.0f * vertical_move_amount;
-                opengl_widget->set_overview_page(state);
+                scroll_overview_up();
             }
             if (wevent->angleDelta().y() < 0) {
-                OverviewState state = opengl_widget->get_overview_page().value();
-                state.offset_y += 36.0f * vertical_move_amount;
-                opengl_widget->set_overview_page(state);
+                scroll_overview_down();
             }
             validate_render();
         }
@@ -1720,11 +1733,23 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         if (command->name == "screen_up") {
             move_document_screens(-1 * rp);
         }
-        if (command->name == "move_down") {
-            move_document(0.0f, 72.0f * rp * VERTICAL_MOVE_AMOUNT);
+        if (opengl_widget->get_overview_page()) {
+            // if overview page is opened, scroll in overview
+			if (command->name == "move_down") {
+                scroll_overview_down();
+			}
+			if (command->name == "move_up") {
+                scroll_overview_up();
+			}
         }
-        if (command->name == "move_up") {
-            move_document(0.0f, -72.0f * rp * VERTICAL_MOVE_AMOUNT);
+        else {
+			
+			if (command->name == "move_down") {
+				move_document(0.0f, 72.0f * rp * VERTICAL_MOVE_AMOUNT);
+			}
+			if (command->name == "move_up") {
+				move_document(0.0f, -72.0f * rp * VERTICAL_MOVE_AMOUNT);
+			}
         }
 
         if (command->name == "move_right") {
@@ -1857,6 +1882,31 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "prev_chapter") {
         main_document_view->goto_chapter(-rp);
+    }
+    else if (command->name == "goto_definition") {
+        if (main_document_view->goto_definition()) {
+            opengl_widget->set_should_draw_vertical_line(false);
+        }
+    }
+    else if (command->name == "overview_definition") {
+		std::optional<DocumentPos> defpos = main_document_view->find_line_definition();
+        if (defpos) {
+            set_overview_position(defpos.value().page, defpos.value().y);
+        }
+    }
+    else if (command->name == "portal_to_definition") {
+		std::optional<DocumentPos> defpos = main_document_view->find_line_definition();
+        if (defpos) {
+            AbsoluteDocumentPos abspos;
+            doc()->page_pos_to_absolute_pos(defpos.value().page, defpos.value().x, defpos.value().y, &abspos.x, &abspos.y);
+            Link link;
+            link.dst.document_checksum = doc()->get_checksum();
+            link.dst.book_state.offset_x = abspos.x;
+            link.dst.book_state.offset_y = abspos.y;
+            link.dst.book_state.zoom_level = main_document_view->get_zoom_level();
+            link.src_offset_y = main_document_view->get_ruler_pos();
+            doc()->add_link(link, true);
+        }
     }
 
 
@@ -2349,6 +2399,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
         visual_mark_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
+    else if (command->name == "enter_visual_mark_mode") {
+        visual_mark_under_pos({ width()/2, height()/2});
+    }
     else if (command->name == "close_visual_mark") {
         opengl_widget->set_should_draw_vertical_line(false);
     }
@@ -2356,7 +2409,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         horizontal_scroll_locked = !horizontal_scroll_locked;
     }
     else if (command->name == "move_visual_mark_down") {
-		if (is_visual_mark_mode()) {
+		if (opengl_widget->get_overview_page()) {
+            scroll_overview_down();
+        }
+		else if (is_visual_mark_mode()) {
             move_visual_mark_down();
         }
         else {
@@ -2365,7 +2421,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		validate_render();
     }
     else if (command->name == "move_visual_mark_up") {
-		if (is_visual_mark_mode()) {
+		if (opengl_widget->get_overview_page()) {
+            scroll_overview_up();
+        }
+		else if (is_visual_mark_mode()) {
             move_visual_mark_up();
         }
         else {
@@ -3280,4 +3339,19 @@ void MainWidget::move_visual_mark_up() {
 
 bool MainWidget::is_visual_mark_mode() {
     return opengl_widget->get_should_draw_vertical_line();
+}
+
+void MainWidget::scroll_overview_down() {
+    float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
+	OverviewState state = opengl_widget->get_overview_page().value();
+	state.offset_y += 36.0f * vertical_move_amount;
+	opengl_widget->set_overview_page(state);
+}
+
+void MainWidget::scroll_overview_up() {
+    float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
+	OverviewState state = opengl_widget->get_overview_page().value();
+	state.offset_y -= 36.0f * vertical_move_amount;
+	opengl_widget->set_overview_page(state);
+
 }

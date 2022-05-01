@@ -863,7 +863,6 @@ std::optional<fz_rect> DocumentView::get_ruler_window_rect() {
 
 		absol_ruler_rect.x0 -= RULER_X_PADDING;
 		absol_ruler_rect.x1 += RULER_X_PADDING;
-
 		return absolute_to_window_rect(absol_ruler_rect);
 	}
 	return {};
@@ -965,4 +964,84 @@ int DocumentView::get_line_index_of_vertical_pos() {
 
 int DocumentView::get_vertical_line_page() {
 	return current_document->absolute_to_page_pos({ 0, get_ruler_pos()}).page;
+}
+
+std::optional<DocumentPos> DocumentView::find_line_definition() {
+	if (line_index > 0) {
+		std::vector<std::wstring> lines;
+		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_current_page_number(), &lines);
+		if (line_index < lines.size()) {
+			std::wstring content = lines[line_index];
+
+			std::wstring item_regex(L"[a-zA-Z]{2,}[ \t]+[0-9]+(\.[0-9]+)*");
+			std::wstring reference_regex(L"\\[[a-zA-Z0-9]+\\]");
+			std::wstring equation_regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
+
+			std::wstring generic_item_text = find_first_regex_match(content, item_regex);
+			std::wstring reference_text = find_first_regex_match(content, reference_regex);
+			std::wstring equation_text = find_first_regex_match(content, equation_regex);
+
+			int page = -1;
+			float yloc = 0;
+			bool found = false;
+
+			std::optional<PdfLink> pdf_link = current_document->get_link_in_page_rect(get_current_page_number(), line_rects[line_index]);
+			if (pdf_link.has_value()) {
+				auto parsed_uri = parse_uri(pdf_link.value().uri);
+				DocumentPos res;
+				res.page = parsed_uri.page-1;
+				res.x = parsed_uri.x;
+				res.y = parsed_uri.y;
+				return res;
+			}
+
+			if (generic_item_text.size() > 0) {
+				auto qtext = QString::fromStdWString(generic_item_text);
+				QStringList parts = qtext.split(' ');
+				if (parts.size() == 2) {
+					std::wstring type = parts.at(0).toStdWString();
+					std::wstring ref = parts.at(1).toStdWString();
+					current_document->find_generic_location(type, ref, &page, &yloc);
+					found = true;
+				}
+			}
+			else if (reference_text.size() > 0) {
+				reference_text = reference_text.substr(1, reference_text.size() - 2);
+				auto index = current_document->find_reference_with_string(reference_text);
+				if (index.has_value()) {
+					page = index.value().page;
+					yloc = index.value().y_offset;
+					found = true;
+				}
+			}
+			else if (equation_text.size() > 0) {
+				equation_text = equation_text.substr(1, equation_text.size() - 2);
+				auto index = current_document->find_equation_with_string(equation_text, get_current_page_number());
+				if (index.has_value()) {
+					page = index.value().page;
+					yloc = index.value().y_offset;
+					found = true;
+				}
+			}
+
+			if (found) {
+				DocumentPos res;
+				res.page = page;
+				res.y = yloc;
+				res.x = 0;
+				return res;
+			}
+			return {};
+		}
+	}
+	return {};
+}
+
+bool DocumentView::goto_definition() {
+	std::optional<DocumentPos> defloc = find_line_definition();
+	if (defloc) {
+		goto_offset_within_page(defloc.value().page, defloc.value().y);
+		return true;
+	}
+	return false;
 }
