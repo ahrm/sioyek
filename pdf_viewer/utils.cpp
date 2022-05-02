@@ -1797,6 +1797,48 @@ int find_best_merge_index_for_line_index(const std::vector<fz_stext_line*>& line
 }
 
 
+fz_rect get_line_rect(fz_stext_line* line) {
+	fz_rect res;
+	res.x0 = res.x1 = res.y0 = res.y1 = 0;
+
+	std::vector<float> char_x_begins;
+	std::vector<float> char_x_ends;
+	std::vector<float> char_y_begins;
+	std::vector<float> char_y_ends;
+
+	int num_chars = 0;
+	LL_ITER(chr, line->first_char) {
+		fz_rect char_rect = fz_union_rect(res, fz_rect_from_quad(chr->quad));
+		char_x_begins.push_back(char_rect.x0);
+		char_x_ends.push_back(char_rect.x1);
+		char_y_begins.push_back(char_rect.y0);
+		char_y_ends.push_back(char_rect.y1);
+		num_chars++;
+	}
+
+
+	int percentile_index = static_cast<int>(0.5f * num_chars);
+	int first_percentile_index = percentile_index;
+	int last_percentile_index = num_chars - percentile_index;
+
+	if (last_percentile_index >= num_chars) {
+		last_percentile_index = num_chars - 1;
+	}
+
+	res.x0 = *std::min_element(char_x_begins.begin(), char_x_begins.end());
+	res.x1 = *std::max_element(char_x_ends.begin(), char_x_ends.end());
+	//res.y0 = *std::min_element(char_y_begins.begin(), char_y_begins.end());
+	//res.y1 = *std::max_element(char_y_ends.begin(), char_y_ends.end());
+
+	std::nth_element(char_y_begins.begin(), char_y_begins.begin() + first_percentile_index, char_y_begins.end());
+	std::nth_element(char_y_ends.begin(), char_y_ends.begin() + last_percentile_index, char_y_ends.end());
+
+	res.y0 = *(char_y_begins.begin() + first_percentile_index);
+	res.y1 = *(char_y_ends.begin() + last_percentile_index);
+
+	return res;
+}
+
 void merge_lines(const std::vector<fz_stext_line*>& lines, std::vector<fz_rect>& out_rects, std::vector<std::wstring>& out_texts) {
 
 	std::vector<fz_rect> temp_rects;
@@ -1804,7 +1846,7 @@ void merge_lines(const std::vector<fz_stext_line*>& lines, std::vector<fz_rect>&
 
 	for (int i = 0; i < lines.size(); i++) {
 		int best_index = find_best_merge_index_for_line_index(lines, i);
-		fz_rect rect = lines[i]->bbox;
+		fz_rect rect = get_line_rect(lines[i]);
 		std::wstring text = get_string_from_stext_line(lines[i]);
 		for (int j = i+1; j <= best_index; j++) {
 			rect = fz_union_rect(rect, lines[j]->bbox);
