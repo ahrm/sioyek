@@ -30,6 +30,12 @@ vec3 hsv2rgb(vec3 c)
 void main(){
     vec3 tempcolor = texture(pdf_texture, uvs).rgb;
     vec3 hsvcolor = rgb2hsv(tempcolor);
-    vec3 newcolor = hsv2rgb(vec3(hsvcolor.rg, 1-hsvcolor.b));
+
+    float hsv_lightness = hsvcolor.b;
+    float rgb_lightness = (tempcolor.r + tempcolor.g + tempcolor.b) / 3.0;
+    float new_lightness = (rgb_lightness + hsv_lightness) / 2.0;
+
+    //vec3 newcolor = hsv2rgb(vec3(hsvcolor.rg, 1-hsvcolor.b));
+    vec3 newcolor = hsv2rgb(vec3(hsvcolor.rg, 1-new_lightness));
     color = vec4(newcolor * contrast, 1.0);
 }

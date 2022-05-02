@@ -1823,10 +1823,13 @@ fz_rect get_line_rect(fz_stext_line* line) {
 	int num_chars = 0;
 	LL_ITER(chr, line->first_char) {
 		fz_rect char_rect = fz_union_rect(res, fz_rect_from_quad(chr->quad));
-		char_x_begins.push_back(char_rect.x0);
 		char_x_ends.push_back(char_rect.x1);
 		char_y_begins.push_back(char_rect.y0);
 		char_y_ends.push_back(char_rect.y1);
+
+		if (char_rect.x0 > 0) {
+			char_x_begins.push_back(char_rect.x0);
+		}
 		num_chars++;
 	}
 
