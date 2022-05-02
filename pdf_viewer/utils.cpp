@@ -1752,42 +1752,56 @@ Range merge_range(Range range1, Range range2) {
 }
 
 float line_num_penalty(int num) {
-	if (num == 1) {
-		return 1.0f;
-	}
-	return 1.0f + static_cast<float>(num) / 5.0f;
+	return 1.0f;
+	//if (num == 1) {
+	//	return 1.0f;
+	//}
+	//return 1.0f + static_cast<float>(num) / 5.0f;
 }
 
 float height_increase_penalty(float ratio) {
-	return ratio * ratio;
+	return  50 * ratio;
 }
 
 float width_increase_bonus(float ratio) {
-	return 1.0f / ratio * ratio;
+	return -50 * ratio;
 }
 
-int find_best_merge_index_for_line_index(const std::vector<fz_stext_line*>& lines, int index) {
+int find_best_merge_index_for_line_index(const std::vector<fz_stext_line*>& lines,
+	const std::vector<fz_rect>& line_rects,
+	const std::vector<int> char_counts,
+	int index) {
 
+	return index;
 	int max_merged_lines = 40;
-	Range current_range = { lines[index]->bbox.y0, lines[index]->bbox.y1 };
-	Range current_range_x = { lines[index]->bbox.x0, lines[index]->bbox.x1 };
+	//Range current_range = { lines[index]->bbox.y0, lines[index]->bbox.y1 };
+	//Range current_range_x = { lines[index]->bbox.x0, lines[index]->bbox.x1 };
+	Range current_range = { line_rects[index].y0, line_rects[index].y1 };
+	Range current_range_x = { line_rects[index].x0, line_rects[index].x1 };
 	float maximum_height = current_range.size();
 	float maximum_width = current_range_x.size();
 	float min_cost = current_range.size() * line_num_penalty(1) / current_range_x.size();
 	int min_index = index;
 
 	for (int j = index + 1; (j < lines.size()) && ((j - index) < max_merged_lines); j++) {
-		float line_height = lines[j]->bbox.y1 - lines[j]->bbox.y0;
-		float line_width = lines[j]->bbox.x1 - lines[j]->bbox.x0;
+		float line_height = line_rects[j].y1 - line_rects[j].y0;
+		float line_width = line_rects[j].x1 - line_rects[j].x0;
 		if (line_height > maximum_height) {
 			maximum_height = line_height;
 		}
 		if (line_width > maximum_width) {
 			maximum_width = line_width;
 		}
-		current_range = merge_range(current_range, { lines[j]->bbox.y0, lines[j]->bbox.y1 });
-		current_range_x = merge_range(current_range, { lines[j]->bbox.x0, lines[j]->bbox.x1 });
-		float cost = current_range.size() / (j - index + 1) * line_num_penalty(j - index + 1) / current_range_x.size() * height_increase_penalty(current_range.size() / maximum_height) * width_increase_bonus(current_range_x.size() / maximum_width);
+		if (char_counts[j] > 10) {
+			current_range = merge_range(current_range, { line_rects[j].y0, line_rects[j].y1 });
+		}
+
+		current_range_x = merge_range(current_range, { line_rects[j].x0, line_rects[j].x1 });
+
+		float cost = current_range.size() / (j - index + 1) +
+			line_num_penalty(j - index + 1) / current_range_x.size() +
+			height_increase_penalty(current_range.size() / maximum_height) +
+			width_increase_bonus(current_range_x.size() / maximum_width);
 		if (cost < min_cost) {
 			min_cost = cost;
 			min_index = j;
@@ -1839,14 +1853,44 @@ fz_rect get_line_rect(fz_stext_line* line) {
 	return res;
 }
 
-void merge_lines(const std::vector<fz_stext_line*>& lines, std::vector<fz_rect>& out_rects, std::vector<std::wstring>& out_texts) {
+int line_num_chars(fz_stext_line* line) {
+	int res = 0;
+	LL_ITER(chr, line->first_char) {
+		res++;
+	}
+	return res;
+}
+
+
+void merge_lines(const std::vector<fz_stext_line*>& lines_, std::vector<fz_rect>& out_rects, std::vector<std::wstring>& out_texts) {
+
+	std::vector<fz_stext_line*> lines = lines_;
 
 	std::vector<fz_rect> temp_rects;
 	std::vector<std::wstring> temp_texts;
 
+	std::vector<fz_rect> custom_line_rects;
+	std::vector<int> char_counts;
+
+	std::vector<int> indices_to_delete;
 	for (int i = 0; i < lines.size(); i++) {
-		int best_index = find_best_merge_index_for_line_index(lines, i);
-		fz_rect rect = get_line_rect(lines[i]);
+		if (line_num_chars(lines[i]) < 5) {
+			indices_to_delete.push_back(i);
+		}
+	}
+
+	for (int i = indices_to_delete.size() - 1; i >= 0; i--) {
+		lines.erase(lines.begin() + indices_to_delete[i]);
+	}
+
+	for (auto line : lines) {
+		custom_line_rects.push_back(get_line_rect(line));
+		char_counts.push_back(line_num_chars(line));
+	}
+
+	for (int i = 0; i < lines.size(); i++) {
+		fz_rect rect = custom_line_rects[i];
+		int best_index = find_best_merge_index_for_line_index(lines, custom_line_rects, char_counts, i);
 		std::wstring text = get_string_from_stext_line(lines[i]);
 		for (int j = i+1; j <= best_index; j++) {
 			rect = fz_union_rect(rect, lines[j]->bbox);
