@@ -293,7 +293,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
 
     if (DISPLAY_RESOLUTION_SCALE <= 0){
-        pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QApplication::desktop()->devicePixelRatioF());
+        pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, get_max_display_scaling());
     }
     else {
         pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, DISPLAY_RESOLUTION_SCALE);

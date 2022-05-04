@@ -21,6 +21,7 @@
 #include <qnetworkaccessmanager.h>
 #include <qnetworkrequest.h>
 #include <qnetworkreply.h>
+#include <qscreen.h>
 
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
@@ -1921,3 +1922,15 @@ void merge_lines(const std::vector<fz_stext_line*>& lines_, std::vector<fz_rect>
 		out_texts.push_back(temp_texts[i]);
 	}
 }
+float get_max_display_scaling() {
+	float scale = 1.0f;
+	auto screens = QGuiApplication::screens();
+	for (int i = 0; i < screens.size(); i++) {
+		float display_scale = screens.at(i)->devicePixelRatio();
+		if (display_scale > scale) {
+			scale = display_scale;
+		}
+	}
+	return scale;
+}
+
