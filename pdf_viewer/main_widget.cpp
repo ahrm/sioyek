@@ -1130,7 +1130,7 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down) {
 
     if ((down == true) && opengl_widget->get_overview_page()) {
         opengl_widget->set_overview_page({});
-        main_document_view->set_line_index(-1);
+        //main_document_view->set_line_index(-1);
         invalidate_render();
         return;
     }
