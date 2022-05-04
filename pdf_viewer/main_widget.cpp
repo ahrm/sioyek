@@ -293,7 +293,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
 
     if (DISPLAY_RESOLUTION_SCALE <= 0){
-        pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, get_max_display_scaling());
+        pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QApplication::desktop()->devicePixelRatioF());
     }
     else {
         pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, DISPLAY_RESOLUTION_SCALE);
@@ -1889,9 +1889,14 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         }
     }
     else if (command->name == "overview_definition") {
-		std::optional<DocumentPos> defpos = main_document_view->find_line_definition();
-        if (defpos) {
-            set_overview_position(defpos.value().page, defpos.value().y);
+		if (!opengl_widget->get_overview_page()) {
+			std::optional<DocumentPos> defpos = main_document_view->find_line_definition();
+			if (defpos) {
+				set_overview_position(defpos.value().page, defpos.value().y);
+			}
+        }
+        else {
+			opengl_widget->set_overview_page({});
         }
     }
     else if (command->name == "portal_to_definition") {
