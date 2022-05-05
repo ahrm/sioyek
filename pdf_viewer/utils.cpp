@@ -1816,6 +1816,12 @@ fz_rect get_line_rect(fz_stext_line* line) {
 	fz_rect res;
 	res.x0 = res.x1 = res.y0 = res.y1 = 0;
 
+	if (line == nullptr || line->first_char == nullptr) {
+		return res;
+	}
+
+	res = fz_rect_from_quad(line->first_char->quad);
+
 	std::vector<float> char_x_begins;
 	std::vector<float> char_x_ends;
 	std::vector<float> char_y_begins;
@@ -1843,16 +1849,16 @@ fz_rect get_line_rect(fz_stext_line* line) {
 		last_percentile_index = num_chars - 1;
 	}
 
-	res.x0 = *std::min_element(char_x_begins.begin(), char_x_begins.end());
-	res.x1 = *std::max_element(char_x_ends.begin(), char_x_ends.end());
-	//res.y0 = *std::min_element(char_y_begins.begin(), char_y_begins.end());
-	//res.y1 = *std::max_element(char_y_ends.begin(), char_y_ends.end());
-
-	std::nth_element(char_y_begins.begin(), char_y_begins.begin() + first_percentile_index, char_y_begins.end());
-	std::nth_element(char_y_ends.begin(), char_y_ends.begin() + last_percentile_index, char_y_ends.end());
-
-	res.y0 = *(char_y_begins.begin() + first_percentile_index);
-	res.y1 = *(char_y_ends.begin() + last_percentile_index);
+	if (char_x_begins.size() > 0) {
+		res.x0 = *std::min_element(char_x_begins.begin(), char_x_begins.end());
+		res.x1 = *std::max_element(char_x_ends.begin(), char_x_ends.end());
+	}
+	if (char_y_begins.size() > 0) {
+		std::nth_element(char_y_begins.begin(), char_y_begins.begin() + first_percentile_index, char_y_begins.end());
+		std::nth_element(char_y_ends.begin(), char_y_ends.begin() + last_percentile_index, char_y_ends.end());
+		res.y0 = *(char_y_begins.begin() + first_percentile_index);
+		res.y1 = *(char_y_ends.begin() + last_percentile_index);
+	}
 
 	return res;
 }
