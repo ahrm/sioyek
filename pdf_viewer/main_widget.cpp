@@ -1841,6 +1841,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         int current_page = main_document_view->get_current_page_number();
         last_smart_fit_page = current_page;
     }
+    else if (command->name == "fit_to_page_height_smart") {
+        main_document_view->fit_to_page_height_smart();
+    }
 
     else if (command->name == "next_state") {
         next_state();

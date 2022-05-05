@@ -386,7 +386,7 @@ void DocumentView::goto_left_smart() {
 
 	float left_ratio, right_ratio;
 	int normal_page_width;
-	float page_width = current_document->get_page_width_smart(get_current_page_number(), &left_ratio, &right_ratio, &normal_page_width);
+	float page_width = current_document->get_page_size_smart(true, get_current_page_number(), &left_ratio, &right_ratio, &normal_page_width);
 
 	float right_leftover = 1.0f - right_ratio;
 	float imbalance = left_ratio - right_leftover;
@@ -406,7 +406,7 @@ void DocumentView::goto_right_smart() {
 
 	float left_ratio, right_ratio;
 	int normal_page_width;
-	float page_width = current_document->get_page_width_smart(get_current_page_number(), &left_ratio, &right_ratio, &normal_page_width);
+	float page_width = current_document->get_page_size_smart(true, get_current_page_number(), &left_ratio, &right_ratio, &normal_page_width);
 
 	float right_leftover = 1.0f - right_ratio;
 	float imbalance = left_ratio - right_leftover;
@@ -662,6 +662,21 @@ void DocumentView::goto_page(int page) {
 //	set_offset_y(get_page_offset(page) + view_height_in_document_space()/2);
 //}
 
+void DocumentView::fit_to_page_height_smart() {
+	int cp = get_current_page_number();
+	if (cp == -1) return;
+
+	float top_ratio, bottom_ratio;
+	int normal_page_height;
+	int page_height = current_document->get_page_size_smart(false, cp, &top_ratio, &bottom_ratio, &normal_page_height);
+	float bottom_leftover = 1.0f - bottom_ratio;
+	float imbalance = top_ratio - bottom_leftover;
+
+	set_zoom_level(static_cast<float>(view_height - 20) / page_height);
+	//set_offset_y(-imbalance * normal_page_height / 2.0f);
+	goto_offset_within_page(cp, ( imbalance / 2.0f  + 0.5f) * normal_page_height);
+}	
+
 void DocumentView::fit_to_page_width(bool smart, bool ratio) {
 	int cp = get_current_page_number();
 	if (cp == -1) return;
@@ -671,7 +686,7 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
 
 		float left_ratio, right_ratio;
 		int normal_page_width;
-		int page_width = current_document->get_page_width_smart(cp, &left_ratio, &right_ratio, &normal_page_width);
+		int page_width = current_document->get_page_size_smart(true, cp, &left_ratio, &right_ratio, &normal_page_width);
 		float right_leftover = 1.0f - right_ratio;
 		float imbalance = left_ratio - right_leftover;
 

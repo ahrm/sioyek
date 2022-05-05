@@ -156,7 +156,8 @@ public:
 	float get_page_height(int page_index);
 	fz_pixmap* get_small_pixmap(int page);
 	float get_page_width(int page_index);
-	float get_page_width_smart(int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
+	//float get_page_width_smart(int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
+	float get_page_size_smart(bool width, int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
 	float get_accum_page_height(int page_index);
 	void rotate();
 	//const vector<float>& get_page_heights();
