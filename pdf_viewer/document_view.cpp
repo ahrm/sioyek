@@ -386,7 +386,7 @@ void DocumentView::goto_left_smart() {
 
 	float left_ratio, right_ratio;
 	int normal_page_width;
-	float page_width = current_document->get_page_size_smart(true, get_current_page_number(), &left_ratio, &right_ratio, &normal_page_width);
+	float page_width = current_document->get_page_size_smart(true, get_center_page_number(), &left_ratio, &right_ratio, &normal_page_width);
 
 	float right_leftover = 1.0f - right_ratio;
 	float imbalance = left_ratio - right_leftover;
@@ -397,7 +397,7 @@ void DocumentView::goto_left_smart() {
 }
 
 void DocumentView::goto_left() {
-	float page_width = current_document->get_page_width(get_current_page_number());
+	float page_width = current_document->get_page_width(get_center_page_number());
 	float view_left_offset = (page_width / 2 -  view_width / zoom_level / 2);
 	set_offset_x(view_left_offset);
 }
@@ -406,7 +406,7 @@ void DocumentView::goto_right_smart() {
 
 	float left_ratio, right_ratio;
 	int normal_page_width;
-	float page_width = current_document->get_page_size_smart(true, get_current_page_number(), &left_ratio, &right_ratio, &normal_page_width);
+	float page_width = current_document->get_page_size_smart(true, get_center_page_number(), &left_ratio, &right_ratio, &normal_page_width);
 
 	float right_leftover = 1.0f - right_ratio;
 	float imbalance = left_ratio - right_leftover;
@@ -417,7 +417,7 @@ void DocumentView::goto_right_smart() {
 }
 
 void DocumentView::goto_right() {
-	float page_width = current_document->get_page_width(get_current_page_number());
+	float page_width = current_document->get_page_width(get_center_page_number());
 	float view_left_offset = -(page_width / 2 -  view_width / zoom_level / 2);
 	set_offset_x(view_left_offset);
 }
@@ -478,7 +478,7 @@ void DocumentView::get_absolute_delta_from_doc_delta(float dx, float dy, float* 
 	*abs_dy = (dy / zoom_level);
 }
 
-int DocumentView::get_current_page_number() {
+int DocumentView::get_center_page_number() {
 	return current_document->get_offset_page_number(get_offset_y());
 }
 
@@ -543,7 +543,7 @@ void DocumentView::get_visible_pages(int window_height, std::vector<int>& visibl
 
 void DocumentView::move_pages(int num_pages) {
 	if (!current_document) return;
-	int current_page = get_current_page_number();
+	int current_page = get_center_page_number();
 	if (current_page == -1) {
 		current_page = 0;
 	}
@@ -663,7 +663,7 @@ void DocumentView::goto_page(int page) {
 //}
 
 void DocumentView::fit_to_page_height_smart() {
-	int cp = get_current_page_number();
+	int cp = get_center_page_number();
 	if (cp == -1) return;
 
 	float top_ratio, bottom_ratio;
@@ -678,7 +678,7 @@ void DocumentView::fit_to_page_height_smart() {
 }	
 
 void DocumentView::fit_to_page_width(bool smart, bool ratio) {
-	int cp = get_current_page_number();
+	int cp = get_center_page_number();
 	if (cp == -1) return;
 
 	//int page_width = current_document->get_page_width(cp);
@@ -706,7 +706,7 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
 }
 
 void DocumentView::fit_to_page_height_width_minimum() {
-	int cp = get_current_page_number();
+	int cp = get_center_page_number();
 	if (cp == -1) return;
 
 	int page_width = current_document->get_page_width(cp);
@@ -732,7 +732,7 @@ int DocumentView::get_current_chapter_index() {
 		return -1;
 	}
 
-	int cp = get_current_page_number();
+	int cp = get_center_page_number();
 
 	int current_chapter_index = 0;
 
@@ -792,7 +792,7 @@ void DocumentView::get_page_chapter_index(int page, std::vector<TocNode*> nodes,
 
 }
 std::vector<int> DocumentView::get_current_chapter_recursive_index() {
-	int curr_page = get_current_page_number();
+	int curr_page = get_center_page_number();
 	std::vector<TocNode*> nodes = current_document->get_toc();
 	std::vector<int> res;
 	get_page_chapter_index(curr_page, nodes, res);
@@ -801,7 +801,7 @@ std::vector<int> DocumentView::get_current_chapter_recursive_index() {
 
 void DocumentView::goto_chapter(int diff) {
 	const std::vector<int>& chapter_pages = current_document->get_flat_toc_pages();
-	int curr_page = get_current_page_number();
+	int curr_page = get_center_page_number();
 
 	int index = 0;
 
@@ -925,17 +925,17 @@ void DocumentView::set_page_offset(int new_offset) {
 }
 
 float DocumentView::get_max_valid_x() {
-	float page_width = current_document->get_page_width(get_current_page_number());
+	float page_width = current_document->get_page_width(get_center_page_number());
 	return std::abs(-view_width / zoom_level / 2 + page_width / 2);
 }
 
 float DocumentView::get_min_valid_x() {
-	float page_width = current_document->get_page_width(get_current_page_number());
+	float page_width = current_document->get_page_width(get_center_page_number());
 	return -std::abs(-view_width / zoom_level / 2 + page_width / 2);
 }
 
 void DocumentView::rotate() {
-	int current_page = get_current_page_number();
+	int current_page = get_center_page_number();
 
 	current_document->rotate();
 	float new_offset = current_document->get_accum_page_height(current_page) + current_document->get_page_height(current_page) / 2;
@@ -943,13 +943,13 @@ void DocumentView::rotate() {
 }
 
 void DocumentView::goto_top_of_page() {
-	int current_page = get_current_page_number();
+	int current_page = get_center_page_number();
 	float offset_y = get_document()->get_accum_page_height(current_page) + static_cast<float>(view_height) / 2.0f / zoom_level;
 	set_offset_y(offset_y);
 }
 
 void DocumentView::goto_bottom_of_page() {
-	int current_page = get_current_page_number();
+	int current_page = get_center_page_number();
 	float offset_y = get_document()->get_accum_page_height(current_page+1) - static_cast<float>(view_height) / 2.0f / zoom_level;
 	set_offset_y(offset_y);
 }
@@ -984,7 +984,7 @@ int DocumentView::get_vertical_line_page() {
 std::optional<DocumentPos> DocumentView::find_line_definition() {
 	if (line_index > 0) {
 		std::vector<std::wstring> lines;
-		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_current_page_number(), &lines);
+		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
 		if (line_index < lines.size()) {
 			std::wstring content = lines[line_index];
 
@@ -1000,7 +1000,7 @@ std::optional<DocumentPos> DocumentView::find_line_definition() {
 			float yloc = 0;
 			bool found = false;
 
-			std::optional<PdfLink> pdf_link = current_document->get_link_in_page_rect(get_current_page_number(), line_rects[line_index]);
+			std::optional<PdfLink> pdf_link = current_document->get_link_in_page_rect(get_center_page_number(), line_rects[line_index]);
 			if (pdf_link.has_value()) {
 				auto parsed_uri = parse_uri(pdf_link.value().uri);
 				DocumentPos res;
@@ -1031,7 +1031,7 @@ std::optional<DocumentPos> DocumentView::find_line_definition() {
 			}
 			else if (equation_text.size() > 0) {
 				equation_text = equation_text.substr(1, equation_text.size() - 2);
-				auto index = current_document->find_equation_with_string(equation_text, get_current_page_number());
+				auto index = current_document->find_equation_with_string(equation_text, get_center_page_number());
 				if (index.has_value()) {
 					page = index.value().page;
 					yloc = index.value().y_offset;

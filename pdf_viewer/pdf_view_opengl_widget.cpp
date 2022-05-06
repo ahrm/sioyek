@@ -694,12 +694,12 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	if (fastread_mode) {
 
-		auto rects = document_view->get_document()->get_highlighted_character_masks(document_view->get_current_page_number());
+		auto rects = document_view->get_document()->get_highlighted_character_masks(document_view->get_center_page_number());
 
 		if (rects.size() > 0) {
 			enable_stencil();
 			write_to_stencil();
-			draw_stencil_rects(document_view->get_current_page_number(), rects);
+			draw_stencil_rects(document_view->get_center_page_number(), rects);
 			use_stencil_to_write();
 			render_transparent_background();
 			disable_stencil();
@@ -885,7 +885,7 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, std::optional<st
 	is_searching = true;
 	is_search_cancelled = false;
 
-	int current_page = document_view->get_current_page_number();
+	int current_page = document_view->get_center_page_number();
 	if (current_page >= 0) {
 		pdf_renderer->add_request(
 			document_view->get_document()->get_path(),

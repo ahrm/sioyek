@@ -441,7 +441,7 @@ std::wstring MainWidget::get_status_string() {
     if (main_document_view->get_document() == nullptr) return L"";
     std::wstring chapter_name = main_document_view->get_current_chapter_name();
 
-    ss << "Page " << main_document_view->get_current_page_number() + 1 << " / " << main_document_view->get_document()->num_pages();
+    ss << "Page " << get_current_page_number() + 1 << " / " << main_document_view->get_document()->num_pages();
     if (chapter_name.size() > 0) {
         ss << " [ " << chapter_name << " ] ";
     }
@@ -569,14 +569,14 @@ void MainWidget::validate_render() {
         return;
     }
     if (last_smart_fit_page) {
-        int current_page = main_document_view->get_current_page_number();
+        int current_page = get_current_page_number();
         if (current_page != last_smart_fit_page) {
             main_document_view->fit_to_page_width(true);
             last_smart_fit_page = current_page;
         }
     }
     if (opengl_widget->is_presentation_mode()) {
-        int current_page = main_document_view->get_current_page_number();
+        int current_page = get_current_page_number();
         opengl_widget->set_visible_page_number(current_page);
         main_document_view->set_offset_y(main_document_view->get_document()->get_accum_page_height(current_page) + main_document_view->get_document()->get_page_height(current_page)/2);
         if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
@@ -1415,7 +1415,7 @@ void MainWidget::handle_click(WindowPos click_pos) {
 bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int* out_page, float* out_offset) {
 
     auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
-    int current_page_number = main_document_view->get_current_page_number();
+    int current_page_number = get_current_page_number();
 
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
@@ -1853,7 +1853,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "fit_to_page_width_smart") {
         main_document_view->fit_to_page_width(true);
-        int current_page = main_document_view->get_current_page_number();
+        int current_page = get_current_page_number();
         last_smart_fit_page = current_page;
     }
     else if (command->name == "fit_to_page_height_smart") {
@@ -2514,7 +2514,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos){
     if (equation_text_on_pointer) {
         std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(
                     equation_text_on_pointer.value(),
-                    main_document_view->get_current_page_number());
+                    get_current_page_number());
         if (eqdata_) {
             IndexedData refdata = eqdata_.value();
             long_jump_to_destination(refdata.page, refdata.y_offset);
@@ -2783,7 +2783,7 @@ void MainWidget::toggle_presentation_mode() {
         opengl_widget->set_visible_page_number({});
     }
     else {
-        opengl_widget->set_visible_page_number(main_document_view->get_current_page_number());
+        opengl_widget->set_visible_page_number(get_current_page_number());
     }
 }
 
@@ -3147,7 +3147,7 @@ void MainWidget::dropEvent(QDropEvent* event)
 
 void MainWidget::highlight_words() {
 
-    int page = main_document_view->get_current_page_number();
+    int page = get_current_page_number();
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     std::vector<fz_rect> word_rects;
@@ -3164,13 +3164,13 @@ void MainWidget::highlight_words() {
 }
 
 std::vector<fz_rect> MainWidget::get_flat_words() {
-    int page = main_document_view->get_current_page_number();
+    int page = get_current_page_number();
     return main_document_view->get_document()->get_page_flat_words(page);
 }
 
 fz_irect MainWidget::get_tag_window_rect(std::string tag) {
 
-    int page = main_document_view->get_current_page_number();
+    int page = get_current_page_number();
     fz_rect rect = get_tag_rect(tag);
 
     fz_irect window_rect;
@@ -3390,4 +3390,14 @@ void MainWidget::scroll_overview_up() {
 	state.offset_y -= 36.0f * vertical_move_amount;
 	opengl_widget->set_overview_page(state);
 
+}
+
+int MainWidget::get_current_page_number() const {
+    // 
+    if (opengl_widget->get_should_draw_vertical_line()) {
+        return main_document_view->get_vertical_line_page();
+    }
+    else {
+        return main_document_view->get_center_page_number();
+    }
 }

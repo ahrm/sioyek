@@ -259,5 +259,6 @@ public:
 	void on_new_paper_added(const std::wstring& file_path);
 	void scroll_overview_down();
 	void scroll_overview_up();
+	int get_current_page_number() const;
 
 };
