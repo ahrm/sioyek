@@ -17,6 +17,8 @@ extern bool RULER_MODE;
 extern float PAGE_SEPARATOR_WIDTH;
 extern float PAGE_SEPARATOR_COLOR[3];
 extern float RULER_PADDING;
+extern float OVERVIEW_SIZE[2];
+extern float OVERVIEW_OFFSET[2];
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -384,6 +386,12 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 	format.setVersion(3, 3);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	this->setFormat(format);
+
+	overview_half_width = OVERVIEW_SIZE[0];
+	overview_half_height = OVERVIEW_SIZE[1];
+
+	overview_offset_x = OVERVIEW_OFFSET[0];
+	overview_offset_y = OVERVIEW_OFFSET[1];
 }
 
 void PdfViewOpenGLWidget::cancel_search() {
@@ -1387,4 +1395,9 @@ void PdfViewOpenGLWidget::draw_stencil_rects(int page, const std::vector<fz_rect
 
 void PdfViewOpenGLWidget::toggle_fastread_mode() {
 	fastread_mode = !fastread_mode;
+}
+
+void PdfViewOpenGLWidget::get_overview_size(float* width, float* height) {
+	*width = overview_half_width;
+	*height = overview_half_height;
 }

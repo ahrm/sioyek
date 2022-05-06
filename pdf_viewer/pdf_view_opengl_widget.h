@@ -222,6 +222,7 @@ public:
 	bool is_window_point_in_overview_border(float window_x, float window_y, OverviewSide *which_border);
 
 	void get_overview_offsets(float* offset_x, float* offset_y);
+	void get_overview_size(float* width, float* height);
 
 	float get_overview_side_pos(int index);
 	void set_overview_side_pos(int index, fz_rect original_rect, fvec2 diff);

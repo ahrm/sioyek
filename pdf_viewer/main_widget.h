@@ -185,6 +185,7 @@ protected:
 	void handle_link_click(const PdfLink& link);
 
 	std::wstring get_window_configuration_string();
+	std::wstring get_serialized_configuration_string();
 	void save_auto_config();
 
 	void handle_close_event();

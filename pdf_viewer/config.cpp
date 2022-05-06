@@ -67,6 +67,8 @@ extern bool ENABLE_EXPERIMENTAL_FEATURES;
 extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
 extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
 extern bool FORCE_CUSTOM_LINE_ALGORITHM;
+extern float OVERVIEW_SIZE[2];
+extern float OVERVIEW_OFFSET[2];
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -201,6 +203,8 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	user_config_paths = user_paths;
 	auto ivec2_serializer = vec_n_serializer<2, int>;
 	auto ivec2_deserializer = vec_n_deserializer<2, int>;
+	auto fvec2_serializer = vec_n_serializer<2, float>;
+	auto fvec2_deserializer = vec_n_deserializer<2, float>;
 	auto vec3_serializer = vec_n_serializer<3, float>;
 	auto vec4_serializer = vec_n_serializer<4, float>;
 	auto vec3_deserializer = vec_n_deserializer<3, float>;
@@ -275,6 +279,8 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"create_table_of_contents_if_not_exists", &CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"max_created_toc_size", &MAX_CREATED_TABLE_OF_CONTENTS_SIZE, int_serializer, int_deserializer, nullptr });
 	configs.push_back({ L"force_custom_line_algorithm", &FORCE_CUSTOM_LINE_ALGORITHM, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"overview_size", &OVERVIEW_SIZE, fvec2_serializer, fvec2_deserializer, nullptr });
+	configs.push_back({ L"overview_offset", &OVERVIEW_OFFSET, fvec2_serializer, fvec2_deserializer, nullptr });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

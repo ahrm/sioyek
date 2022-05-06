@@ -88,6 +88,8 @@ extern int HELPER_WINDOW_MOVE[2];
 extern float TOUCHPAD_SENSITIVITY;
 extern int SINGLE_MAIN_WINDOW_SIZE[2];
 extern int SINGLE_MAIN_WINDOW_MOVE[2];
+extern float OVERVIEW_SIZE[2];
+extern float OVERVIEW_OFFSET[2];
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -3239,10 +3241,23 @@ void MainWidget::handle_link_click(const PdfLink& link) {
 
 void MainWidget::save_auto_config() {
     std::wofstream outfile(auto_config_path.get_path_utf8());
-    outfile << get_window_configuration_string();
+    outfile << get_serialized_configuration_string();
     outfile.close();
 }
 
+std::wstring MainWidget::get_serialized_configuration_string() {
+    float overview_size[2];
+    float overview_offset[2];
+    opengl_widget->get_overview_offsets(&overview_offset[0], &overview_offset[1]);
+    opengl_widget->get_overview_size(&overview_size[0], &overview_size[1]);
+
+    QString overview_config = "overview_size %1 %2\noverview_offset %3 %4\n";
+    std::wstring overview_config_string = overview_config.arg(QString::number(overview_size[0]),
+        QString::number(overview_size[1]),
+        QString::number(overview_offset[0]),
+        QString::number(overview_offset[1])).toStdWString();
+    return overview_config_string + get_window_configuration_string();
+}
 std::wstring MainWidget::get_window_configuration_string() {
 	
 	QString config_string_multi = "main_window_size    %1 %2\nmain_window_move     %3 %4\nhelper_window_size    %5 %6\nhelper_window_move     %7 %8";
