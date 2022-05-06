@@ -69,6 +69,7 @@ extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
 extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
+extern bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -215,6 +216,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 
 	configs.push_back({ L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
 	configs.push_back({ L"vertical_line_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, vec4_deserializer, color_4_validator });
+	configs.push_back({ L"visual_mark_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, vec4_deserializer, color_4_validator });
 	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
 	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
 	configs.push_back({ L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
@@ -281,6 +283,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"force_custom_line_algorithm", &FORCE_CUSTOM_LINE_ALGORITHM, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"overview_size", &OVERVIEW_SIZE, fvec2_serializer, fvec2_deserializer, nullptr });
 	configs.push_back({ L"overview_offset", &OVERVIEW_OFFSET, fvec2_serializer, fvec2_deserializer, nullptr });
+	configs.push_back({ L"ignore_whitespace_in_presentation_mode", &IGNORE_WHITESPACE_IN_PRESENTATION_MODE, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

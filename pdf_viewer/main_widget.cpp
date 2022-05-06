@@ -90,6 +90,7 @@ extern int SINGLE_MAIN_WINDOW_SIZE[2];
 extern int SINGLE_MAIN_WINDOW_MOVE[2];
 extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
+extern bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -488,6 +489,10 @@ std::wstring MainWidget::get_status_string() {
     }
     ss << " [ h:" << select_highlight_type << " ] ";
 
+  //  if (last_command != nullptr) {
+		//ss << " [ " << last_command->name.c_str() << " ] ";
+  //  }
+
     return ss.str();
 }
 
@@ -574,7 +579,12 @@ void MainWidget::validate_render() {
         int current_page = main_document_view->get_current_page_number();
         opengl_widget->set_visible_page_number(current_page);
         main_document_view->set_offset_y(main_document_view->get_document()->get_accum_page_height(current_page) + main_document_view->get_document()->get_page_height(current_page)/2);
-        main_document_view->fit_to_page_height_width_minimum();
+        if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
+            main_document_view->fit_to_page_height_smart();
+        }
+        else {
+			main_document_view->fit_to_page_height_width_minimum();
+        }
     }
 
     if (main_document_view && main_document_view->get_document()) {
@@ -856,6 +866,7 @@ void MainWidget::invalidate_ui() {
 void MainWidget::handle_command_with_symbol(const Command* command, char symbol) {
     assert(symbol);
     assert(command->requires_symbol);
+
     if (command->name == "set_mark") {
         assert(main_document_view);
 
@@ -1053,6 +1064,8 @@ bool MainWidget::is_waiting_for_symbol() {
 void MainWidget::handle_command_types(const Command* command, int num_repeats) {
 
     if (command == nullptr) return;
+
+    last_command = command;
 
     if (command->requires_symbol) {
         current_pending_command = command;
