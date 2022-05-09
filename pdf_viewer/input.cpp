@@ -18,7 +18,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "next_item",			false,	false,	false,	true});
 	commands.push_back({ "previous_item", false, false , false, true});
 	commands.push_back({ "set_mark", false, true , false, false});
-	commands.push_back({ "goto_mark", false, true , false, false, {'`', '\''}});
+	commands.push_back({ "goto_mark", false, true , false, false, {'`', '\'', '/'}});
 	commands.push_back({ "goto_page_with_page_number", true, false , false, false});
 	commands.push_back({ "search", true, false , false, false});
 	commands.push_back({ "ranged_search", true, false , false, false});

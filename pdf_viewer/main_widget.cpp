@@ -2627,7 +2627,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         current_pending_command->name == "chapter_search" ) {
 
         // When searching, the start position before search is saved in a mark named '0'
-        main_document_view->add_mark('0');
+        main_document_view->add_mark('/');
 
         int range_begin, range_end;
         std::wstring search_term;
