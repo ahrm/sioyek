@@ -5,6 +5,7 @@ extern float MOVE_SCREEN_PERCENTAGE;
 extern float FIT_TO_PAGE_WIDTH_RATIO;
 extern float RULER_PADDING;
 extern float RULER_X_PADDING;
+extern bool EXACT_HIGHLIGHT_SELECT;
 
 
 DocumentView::DocumentView( fz_context* mupdf_context,
@@ -275,7 +276,7 @@ void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDo
 		std::vector<fz_rect> merged_characters;
 		std::wstring selected_text;
 
-		get_text_selection(selection_begin, selection_end, true, selected_characters, selected_text);
+		get_text_selection(selection_begin, selection_end, !EXACT_HIGHLIGHT_SELECT, selected_characters, selected_text);
 		merge_selected_character_rects(selected_characters, merged_characters);
 		if (selected_text.size() > 0) {
 			current_document->add_highlight(selected_text, merged_characters, selection_begin, selection_end, type);

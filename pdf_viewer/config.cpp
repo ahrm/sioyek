@@ -70,6 +70,7 @@ extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
 extern bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE;
+extern bool EXACT_HIGHLIGHT_SELECT;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -285,6 +286,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"overview_size", &OVERVIEW_SIZE, fvec2_serializer, fvec2_deserializer, nullptr });
 	configs.push_back({ L"overview_offset", &OVERVIEW_OFFSET, fvec2_serializer, fvec2_deserializer, nullptr });
 	configs.push_back({ L"ignore_whitespace_in_presentation_mode", &IGNORE_WHITESPACE_IN_PRESENTATION_MODE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"exact_highlight_select", &EXACT_HIGHLIGHT_SELECT, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";
