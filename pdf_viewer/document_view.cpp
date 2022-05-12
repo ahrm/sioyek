@@ -158,6 +158,10 @@ void DocumentView::delete_closest_bookmark() {
 	}
 }
 
+Highlight DocumentView::get_highlight_with_index(int index) {
+	return current_document->get_highlights()[index];
+}
+
 void DocumentView::delete_highlight_with_index(int index) {
 	current_document->delete_highlight_with_index(index);
 }

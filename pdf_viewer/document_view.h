@@ -69,6 +69,7 @@ public:
 	void goto_link(Link* link);
 	void delete_closest_link();
 	void delete_closest_bookmark();
+	Highlight get_highlight_with_index(int index);
 	void delete_highlight_with_index(int index);
 	void delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y);
 	void delete_closest_bookmark_to_offset(float offset);

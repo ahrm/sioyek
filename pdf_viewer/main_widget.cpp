@@ -892,6 +892,12 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
             opengl_widget->selected_character_rects.clear();
             selected_text.clear();
         }
+        else if (selected_highlight_index != -1) {
+            Highlight new_highlight = main_document_view->get_highlight_with_index(selected_highlight_index);
+            main_document_view->delete_highlight_with_index(selected_highlight_index);
+            main_document_view->add_highlight(new_highlight.selection_begin, new_highlight.selection_end, symbol);
+            selected_highlight_index = -1;
+        }
     }
     else if (command->name == "external_search") {
         if ((symbol >= 'a') && (symbol <= 'z')) {
