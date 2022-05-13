@@ -824,7 +824,7 @@ void run_command(std::wstring command, std::wstring parameters, bool wait){
 
 
 void open_url(const QString& url_string) {
-	QDesktopServices::openUrl(url_string);
+	QDesktopServices::openUrl(QUrl::fromLocalFile(url_string));
 }
 
 void open_url(const std::string &url_string) {
