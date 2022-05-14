@@ -78,7 +78,7 @@ std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;
 int FONT_SIZE = -1;
 int STATUS_BAR_FONT_SIZE = -1;
-std::string APPLICATION_VERSION = "1.2.0";
+std::string APPLICATION_VERSION = "1.3.0";
 float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float CUSTOM_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
