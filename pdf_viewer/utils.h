@@ -71,7 +71,7 @@ TocNode* get_toc_node_from_indices(const std::vector<TocNode*>& roots, const std
 fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_char*> flat_chars, fz_point document_point, int* location_index);
 void merge_selected_character_rects(const std::vector<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects);
 void split_key_string(std::string haystack, const std::string& needle, std::vector<std::string>& res);
-void run_command(std::wstring command, std::wstring parameters, bool wait=true);
+void run_command(std::wstring command, QStringList parameters, bool wait=true);
 
 std::wstring get_string_from_stext_line(fz_stext_line* line);
 void sleep_ms(unsigned int ms);

@@ -778,10 +778,11 @@ void split_key_string(std::string haystack, const std::string& needle, std::vect
 }
 
 
-void run_command(std::wstring command, std::wstring parameters, bool wait){
+void run_command(std::wstring command, QStringList parameters, bool wait){
 
 
 #ifdef Q_OS_WIN
+	std::wstring parameters_string = parameters.join(" ").toStdWString();
 	SHELLEXECUTEINFO ShExecInfo = { 0 };
 	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 	if (wait) {
@@ -798,7 +799,7 @@ void run_command(std::wstring command, std::wstring parameters, bool wait){
 	ShExecInfo.lpDirectory = NULL;
 	ShExecInfo.nShow = SW_SHOW;
 	ShExecInfo.hInstApp = NULL;
-	ShExecInfo.lpParameters = parameters.c_str();
+	ShExecInfo.lpParameters = parameters_string.c_str();
 
 	ShellExecuteExW(&ShExecInfo);
 	if (wait) {
@@ -809,7 +810,11 @@ void run_command(std::wstring command, std::wstring parameters, bool wait){
 	QProcess* process = new QProcess;
 	QString qcommand = QString::fromStdWString(command);
 	QStringList qparameters; 
-	qparameters.append(QString::fromStdWString(parameters));
+
+	for (int i = 0; i < parameters.size(); i++) {
+		qparameters.append(parameters[i]);
+	}
+	//qparameters.append(QString::fromStdWString(parameters));
 
 	process->start(qcommand, qparameters);
 	if (wait) {

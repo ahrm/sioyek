@@ -2937,7 +2937,7 @@ void MainWidget::execute_command(std::wstring command) {
             //}
         }
 
-        run_command(command_name.toStdWString(), command_args.join(" ").toStdWString(), false);
+        run_command(command_name.toStdWString(), command_args, false);
     }
 
 }
