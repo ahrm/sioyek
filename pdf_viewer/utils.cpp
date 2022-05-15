@@ -5,6 +5,7 @@
 #include <cassert>
 #include "utils.h"
 #include <optional>
+#include <cstring>
 #include <string>
 #include <qclipboard.h>
 #include <qguiapplication.h>
