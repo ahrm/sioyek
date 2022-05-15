@@ -2926,6 +2926,7 @@ void MainWidget::execute_command(std::wstring command) {
             command_parts[i].replace("%1", qfile_path);
             command_parts[i].replace("%2", qfile_name);
             command_parts[i].replace("%3", QString::fromStdWString(selected_text));
+            command_parts[i].replace("%4", QString::number(get_current_page_number()));
             command_args.push_back(command_parts[i]);
 
             //bool part_requires_only_second = (command_parts[i].arg("%1", "%2") != command_parts[i]);
