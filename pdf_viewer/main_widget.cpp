@@ -2296,7 +2296,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         search_google_scholar(selected_text);
     }
     else if (command->name == "open_selected_url") {
-        open_url((selected_text).c_str());
+        open_web_url((selected_text).c_str());
     }
     else if (command->name == "search_selected_text_in_libgen") {
         search_libgen(selected_text);
@@ -3248,7 +3248,7 @@ void MainWidget::on_new_paper_added(const std::wstring& file_path) {
 void MainWidget::handle_link_click(const PdfLink& link) {
 
 	if (link.uri.substr(0, 4).compare("http") == 0) {
-		open_url(link.uri.c_str());
+		open_web_url(utf8_decode(link.uri));
 		return;
 	}
 

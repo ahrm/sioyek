@@ -829,13 +829,22 @@ void run_command(std::wstring command, QStringList parameters, bool wait){
 }
 
 
-void open_url(const QString& url_string) {
+void open_file_url(const QString& url_string) {
 	QDesktopServices::openUrl(QUrl::fromLocalFile(url_string));
 }
 
-void open_url(const std::string &url_string) {
-	QString qurl_string = QString::fromStdString(url_string);
-	open_url(qurl_string);
+void open_file_url(const std::wstring &url_string) {
+	QString qurl_string = QString::fromStdWString(url_string);
+	open_file_url(qurl_string);
+}
+
+void open_web_url(const QString& url_string) {
+	QDesktopServices::openUrl(QUrl(url_string));
+}
+
+void open_web_url(const std::wstring &url_string) {
+	QString qurl_string = QString::fromStdWString(url_string);
+	open_web_url(qurl_string);
 }
 
 
@@ -843,7 +852,7 @@ void search_custom_engine(const std::wstring& search_string, const std::wstring&
 
 	if (search_string.size() > 0) {
 		QString qurl_string = QString::fromStdWString(custom_engine_url + search_string);
-		open_url(qurl_string);
+		open_web_url(qurl_string);
 	}
 }
 
@@ -857,14 +866,14 @@ void search_libgen(const std::wstring& search_string) {
 
 
 
-void open_url(const std::wstring& url_string) {
-
-	if (url_string.size() > 0) {
-		QString qurl_string = QString::fromStdWString(url_string);
-		open_url(qurl_string);
-	}
-}
-
+//void open_url(const std::wstring& url_string) {
+//
+//	if (url_string.size() > 0) {
+//		QString qurl_string = QString::fromStdWString(url_string);
+//		open_url(qurl_string);
+//	}
+//}
+//
 void create_file_if_not_exists(const std::wstring& path) {
 	std::string path_utf8 = utf8_encode(path);
 	if (!QFile::exists(QString::fromStdWString(path))) {
@@ -877,7 +886,7 @@ void create_file_if_not_exists(const std::wstring& path) {
 
 void open_file(const std::wstring& path) {
 	std::wstring canon_path = get_canonical_path(path);
-	open_url(canon_path);
+	open_file_url(canon_path);
 
 }
 
@@ -1591,7 +1600,7 @@ void check_for_updates(QWidget* parent, std::string current_version) {
 					QMessageBox::Ok | QMessageBox::Cancel,
 					QMessageBox::Cancel);
 				if (ret == QMessageBox::Ok) {
-					open_url(url);
+					open_web_url(url);
 				}
 			}
 

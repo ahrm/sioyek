@@ -75,8 +75,12 @@ void run_command(std::wstring command, QStringList parameters, bool wait=true);
 
 std::wstring get_string_from_stext_line(fz_stext_line* line);
 void sleep_ms(unsigned int ms);
-void open_url(const std::string& url_string);
-void open_url(const std::wstring& url_string);
+//void open_url(const std::string& url_string);
+//void open_url(const std::wstring& url_string);
+
+void open_file_url(const std::wstring& file_url);
+void open_web_url(const std::wstring& web_url);
+
 void open_file(const std::wstring& path);
 void search_custom_engine(const std::wstring& search_string, const std::wstring& custom_engine_url);
 void search_google_scholar(const std::wstring& search_string);
