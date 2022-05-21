@@ -10,6 +10,7 @@
 #include <optional>
 #include <utility>
 #include <memory>
+#include <filesystem>
 
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -191,6 +192,8 @@ Path tutorial_path(L"");
 Path last_opened_file_address_path(L"");
 Path shader_path(L"");
 Path auto_config_path(L"");
+
+std::vector<MainWidget*> windows;
 
 
 QStringList convert_arguments(QStringList input_args){
@@ -376,6 +379,133 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
     }
 }
 
+MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
+	for (auto window : windows) {
+		//if (window->doc() && window->doc()->get_path() == file_path) {
+		if (window->doc() && std::filesystem::equivalent(window->doc()->get_path(), file_path)) {
+			return window;
+		}
+	}
+	return nullptr;
+}
+
+std::optional<std::wstring> get_last_opened_file_name() {
+    char file_path[MAX_PATH] = { 0 };
+    std::string file_path_;
+    std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
+    std::getline(last_state_file, file_path_);
+    last_state_file.close();
+
+    if (file_path_.size() > 0) {
+        return utf8_decode(file_path_);
+    }
+    else {
+        return {};
+    }
+}
+
+void invalidate_render() {
+	for (auto window : windows) {
+		window->invalidate_render();
+	}
+}
+
+MainWidget* handle_args(const QStringList& arguments) {
+    std::optional<int> page = -1;
+    std::optional<float> x_loc, y_loc;
+    std::optional<float> zoom_level;
+
+	std::vector<std::wstring> aarguments;
+	for (int i = 0; i < arguments.size(); i++) {
+		aarguments.push_back(arguments.at(i).toStdWString());
+	}
+
+    //todo: handle out of bounds error
+
+    QCommandLineParser* parser = get_command_line_parser();
+
+    if (!parser->parse(arguments)) {
+        std::wcout << parser->errorText().toStdWString() << L"\n";
+        return nullptr;
+    }
+
+    std::wstring pdf_file_name = L"";
+
+    if (parser->positionalArguments().size() > 0) {
+        pdf_file_name = parser->positionalArguments().at(0).toStdWString();
+    }
+    else {
+        if (windows[0]->doc() == nullptr) {
+            // when no file is specified, and no current file is open, use the last opened file or tutorial
+            pdf_file_name = get_last_opened_file_name().value_or(tutorial_path.get_path());
+        }
+    }
+
+    std::optional<std::wstring> latex_file_name = {};
+    std::optional<int> latex_line = {};
+
+    if (parser->isSet("forward-search-file")) {
+        latex_file_name = parser->value("forward-search-file").toStdWString();
+    }
+
+    if (parser->isSet("forward-search-line")) {
+        latex_line = parser->value("forward-search-line").toInt();
+    }
+
+    if (parser->isSet("page")) {
+
+        int page_int = parser->value("page").toInt();
+        // 1 is the index for the first page (not 0)
+        if (page_int > 0) page_int--;
+        page = page_int;
+    }
+
+    if (parser->isSet("zoom")) {
+        zoom_level = parser->value("zoom").toFloat();
+    }
+
+    if (parser->isSet("xloc")) {
+        x_loc = parser->value("xloc").toFloat();
+    }
+
+    if (parser->isSet("yloc")) {
+        y_loc = parser->value("yloc").toFloat();
+    }
+
+	MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
+    if (parser->isSet("inverse-search")) {
+		if (target_window) {
+			target_window->set_inverse_search_command(parser->value("inverse-search").toStdWString());
+			target_window->raise();
+			//target_window->activateWindow();
+		}
+    }
+
+    // if no file is specified, use the previous file
+    if (pdf_file_name == L"" && (windows[0]->doc() != nullptr)) {
+        pdf_file_name = windows[0]->doc()->get_path();
+    }
+
+    if (page != -1) {
+		if (target_window) {
+			target_window->open_document_at_location(pdf_file_name, page.value_or(0), x_loc, y_loc, zoom_level);
+		}
+    }
+    else if (latex_file_name) {
+		if (target_window) {
+			target_window->do_synctex_forward_search(pdf_file_name, latex_file_name.value(), latex_line.value_or(0));
+		}
+    }
+    else {
+        windows[0]->open_document(pdf_file_name);
+    }
+
+    invalidate_render();
+
+    delete parser;
+	return target_window;
+}
+
 int main(int argc, char* args[]) {
 
 	QSurfaceFormat format;
@@ -479,48 +609,51 @@ int main(int argc, char* args[]) {
 	add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
 
 
-	MainWidget main_widget(mupdf_context, &db_manager, &document_manager, &config_manager, &input_handler, &checksummer, &quit);
+	MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, &input_handler, &checksummer, &quit);
+	windows.push_back(main_widget);
 
 	if (DEFAULT_DARK_MODE) {
-		main_widget.toggle_dark_mode();
+		main_widget->toggle_dark_mode();
 	}
 
 	QString startup_commands_list = QString::fromStdWString(STARTUP_COMMANDS);
 	QStringList startup_commands = startup_commands_list.split(";");
-	CommandManager* command_manager = main_widget.get_command_manager();
-	NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, &main_widget);
+	CommandManager* command_manager = main_widget->get_command_manager();
+	NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, main_widget);
 
 	for (auto command : startup_commands) {
-		main_widget.handle_command(command_manager->get_command_with_name(command.toStdString()), 1);
+		main_widget->handle_command(command_manager->get_command_with_name(command.toStdString()), 1);
 	}
 
 	if (use_single_instance) {
 		if (guard.isPrimary()) {
 			QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
 				QStringList args = deserialize_string_array(message);
-				main_widget.handle_args(args);
-				main_widget.activateWindow();
+				MainWidget* target = handle_args(args);
+				if (target) {
+					target->activateWindow();
+				}
 				});
 		}
 	}
 
 
-	main_widget.topLevelWidget()->resize(500, 500);
+	main_widget->topLevelWidget()->resize(500, 500);
 
 	if (HELPER_WINDOW_SIZE[0] > -1) {
-		main_widget.apply_window_params_for_two_window_mode();
+		main_widget->apply_window_params_for_two_window_mode();
 	}
 	else {
-		main_widget.apply_window_params_for_one_window_mode();
+		main_widget->apply_window_params_for_one_window_mode();
 	}
 
-	main_widget.show();
+	main_widget->show();
 
-	main_widget.handle_args(app.arguments());
+	handle_args(app.arguments());
 
 	// load input file from `QFileOpenEvent` for macOS drag and drop & "open with"
 	QObject::connect(&app, &OpenWithApplication::file_ready, [&main_widget](const QString& file_name) {
-		main_widget.handle_args(QStringList() << QCoreApplication::applicationFilePath() << file_name);
+		handle_args(QStringList() << QCoreApplication::applicationFilePath() << file_name);
 	});
 
     // live reload the config files
@@ -529,7 +662,7 @@ int main(int argc, char* args[]) {
 		config_manager.deserialize(default_config_path, auto_config_path, user_config_paths);
 
 		ConfigFileChangeListener::notify_config_file_changed(&config_manager);
-		main_widget.validate_render();
+		main_widget->validate_render();
 		add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
 		});
 
@@ -540,11 +673,20 @@ int main(int argc, char* args[]) {
 
 
 	if (SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP) {
-		check_for_updates(&main_widget, APPLICATION_VERSION);
+		check_for_updates(main_widget, APPLICATION_VERSION);
 	}
 
 	app.exec();
 
 	quit = true;
+
+	std::vector<MainWidget*> windows_to_delete;
+	for (int i = 0; i < windows.size(); i++) {
+		windows_to_delete.push_back(windows[i]);
+	}
+	for (int i = 0; i < windows_to_delete.size(); i++) {
+		delete windows_to_delete[i];
+	}
+
 	return 0;
 }

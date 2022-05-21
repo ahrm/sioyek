@@ -91,6 +91,7 @@ extern int SINGLE_MAIN_WINDOW_MOVE[2];
 extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
 extern bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE;
+extern std::vector<MainWidget*> windows;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -122,20 +123,6 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
 }
 
-std::optional<std::wstring> get_last_opened_file_name() {
-    char file_path[MAX_PATH] = { 0 };
-    std::string file_path_;
-    std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
-    std::getline(last_state_file, file_path_);
-    last_state_file.close();
-
-    if (file_path_.size() > 0) {
-        return utf8_decode(file_path_);
-    }
-    else {
-        return {};
-    }
-}
 
 void MainWidget::set_overview_position(int page, float offset) {
     if (page >= 0) {
@@ -286,7 +273,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     document_manager(document_manager),
     config_manager(config_manager),
     input_handler(input_handler),
-    checksummer(checksummer)
+    checksummer(checksummer),
+    should_quit(should_quit_ptr)
 {
     setMouseTracking(true);
     setAcceptDrops(true);
@@ -408,7 +396,16 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 }
 
 MainWidget::~MainWidget() {
-    pdf_renderer->join_threads();
+    for (int i = 0; i < windows.size(); i++) {
+        if (windows[i] == this) {
+            windows.erase(windows.begin() + i);
+            break;
+        }
+    }
+
+    if (windows.size() == 0) {
+		pdf_renderer->join_threads();
+    }
 
     // todo: use a reference counting pointer for document so we can delete main_doc
     // and helper_doc in DocumentView's destructor, not here.
@@ -416,14 +413,14 @@ MainWidget::~MainWidget() {
     //		delete main_document_view;
     //		if(helper_document_view != main_document_view) delete helper_document_view;
     if (main_document_view != nullptr) {
-        Document* main_doc = main_document_view->get_document();
-        if (main_doc != nullptr) delete main_doc;
+        //Document* main_doc = main_document_view->get_document();
+        //if (main_doc != nullptr) delete main_doc;
 
-        Document* helper_doc = nullptr;
-        if (helper_document_view != nullptr) {
-            helper_doc = helper_document_view->get_document();
-        }
-        if (helper_doc != nullptr && helper_doc != main_doc) delete helper_doc;
+        //Document* helper_doc = nullptr;
+        //if (helper_document_view != nullptr) {
+        //    helper_doc = helper_document_view->get_document();
+        //}
+        //if (helper_doc != nullptr && helper_doc != main_doc) delete helper_doc;
     }
 
     if (helper_document_view != nullptr && helper_document_view != main_document_view) {
@@ -744,92 +741,6 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
     synctex_scanner_free(scanner);
 }
 
-void MainWidget::on_new_instance_message(qint32 instance_id, QByteArray arguments_str) {
-    QStringList arguments = deserialize_string_array(arguments_str);
-
-    handle_args(arguments);
-}
-
-void MainWidget::handle_args(const QStringList& arguments) {
-    std::optional<int> page = -1;
-    std::optional<float> x_loc, y_loc;
-    std::optional<float> zoom_level;
-
-    //todo: handle out of bounds error
-
-    QCommandLineParser* parser = get_command_line_parser();
-
-    if (!parser->parse(arguments)) {
-        std::wcout << parser->errorText().toStdWString() << L"\n";
-        return;
-    }
-
-    std::wstring pdf_file_name = L"";
-
-    if (parser->positionalArguments().size() > 0) {
-        pdf_file_name = parser->positionalArguments().at(0).toStdWString();
-    }
-    else {
-        if (main_document_view->get_document() == nullptr) {
-            // when no file is specified, and no current file is open, use the last opened file or tutorial
-            pdf_file_name = get_last_opened_file_name().value_or(tutorial_path.get_path());
-        }
-    }
-
-    std::optional<std::wstring> latex_file_name = {};
-    std::optional<int> latex_line = {};
-
-    if (parser->isSet("forward-search-file")) {
-        latex_file_name = parser->value("forward-search-file").toStdWString();
-    }
-
-    if (parser->isSet("forward-search-line")) {
-        latex_line = parser->value("forward-search-line").toInt();
-    }
-
-    if (parser->isSet("page")) {
-
-        int page_int = parser->value("page").toInt();
-        // 1 is the index for the first page (not 0)
-        if (page_int > 0) page_int--;
-        page = page_int;
-    }
-
-    if (parser->isSet("zoom")) {
-        zoom_level = parser->value("zoom").toFloat();
-    }
-
-    if (parser->isSet("xloc")) {
-        x_loc = parser->value("xloc").toFloat();
-    }
-
-    if (parser->isSet("yloc")) {
-        y_loc = parser->value("yloc").toFloat();
-    }
-
-    if (parser->isSet("inverse-search")) {
-        inverse_search_command =  parser->value("inverse-search").toStdWString();
-    }
-
-    // if no file is specified, use the previous file
-    if (pdf_file_name == L"" && (main_document_view->get_document() != nullptr)) {
-        pdf_file_name = main_document_view->get_document()->get_path();
-    }
-
-    if (page != -1) {
-        open_document_at_location(pdf_file_name, page.value_or(0), x_loc, y_loc, zoom_level);
-    }
-    else if (latex_file_name) {
-        do_synctex_forward_search(pdf_file_name, latex_file_name.value(), latex_line.value_or(0));
-    }
-    else {
-        open_document(pdf_file_name);
-    }
-
-    invalidate_render();
-
-    delete parser;
-}
 
 void MainWidget::update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state) {
     std::wstring docpath = main_document_view->get_document()->get_path();
@@ -1816,6 +1727,18 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
     if (command->name == "link" || command->name == "portal") {
         handle_link();
+    }
+    else if (command->name == "new_window") {
+
+		MainWidget* new_widget = new MainWidget(mupdf_context,
+            db_manager,
+            document_manager,
+            config_manager,
+            input_handler,
+            checksummer,
+            should_quit);
+        new_widget->open_document(main_document_view->get_state());
+        windows.push_back(new_widget);
     }
 
     else if (command->name == "goto_link" || command->name == "goto_portal") {
@@ -3152,7 +3075,8 @@ void MainWidget::dropEvent(QDropEvent* event)
 #else
         path = path.substr(7, path.size() - 7);
 #endif
-        handle_args(QStringList() << QApplication::applicationFilePath() << QString::fromStdWString(path));
+        //handle_args(QStringList() << QApplication::applicationFilePath() << QString::fromStdWString(path));
+        open_document(path, &is_render_invalidated);
     }
 }
 #endif
@@ -3412,4 +3336,8 @@ int MainWidget::get_current_page_number() const {
     else {
         return main_document_view->get_center_page_number();
     }
+}
+
+void MainWidget::set_inverse_search_command(const std::wstring& new_command) {
+    inverse_search_command = new_command;
 }

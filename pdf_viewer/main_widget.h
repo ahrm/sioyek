@@ -55,6 +55,7 @@ private:
 	std::vector<DocumentViewState> history;
 	int current_history_index = -1;
 
+	bool* should_quit = nullptr;
 	// last position when mouse was clicked in absolute document space
 	AbsoluteDocumentPos last_mouse_down;
 	AbsoluteDocumentPos last_mouse_down_document_offset;
@@ -138,8 +139,6 @@ protected:
 	void handle_escape();
 	void keyPressEvent(QKeyEvent* kevent) override;
 	void keyReleaseEvent(QKeyEvent* kevent) override;
-	void invalidate_render();
-	void invalidate_ui();
 	void handle_command_with_symbol(const Command* command, char symbol);
 	void handle_command_with_file_name(const Command* command, std::wstring file_name);
 	bool is_waiting_for_symbol();
@@ -191,13 +190,13 @@ protected:
 	void save_auto_config();
 
 	void handle_close_event();
-	Document* doc();
 	void return_to_last_visual_mark();
 	void move_visual_mark_down();
 	void move_visual_mark_up();
 	bool is_visual_mark_mode();
 
 public:
+	Document* doc();
 
 	void handle_command(const Command* command, int num_repeats);
 
@@ -214,6 +213,8 @@ public:
 
 	~MainWidget();
 
+	void invalidate_render();
+	void invalidate_ui();
 	void open_document(const Path& path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
 	void open_document_with_hash(const std::string& hash, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
 	void open_document_at_location(const Path& path, int page, std::optional<float> x_loc, std::optional<float> y_loc, std::optional<float> zoom_level);
@@ -228,8 +229,7 @@ public:
 	void toggle_mouse_drag_mode();
 	void toggle_dark_mode();
 	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line);
-	void on_new_instance_message(qint32 instance_id, QByteArray arguments);
-	void handle_args(const QStringList &arguments);
+	//void handle_args(const QStringList &arguments);
 	void update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state);
 	void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
 	void set_current_widget(QWidget* new_widget);
@@ -260,5 +260,6 @@ public:
 	void scroll_overview_down();
 	void scroll_overview_up();
 	int get_current_page_number() const;
+	void set_inverse_search_command(const std::wstring& new_command);
 
 };

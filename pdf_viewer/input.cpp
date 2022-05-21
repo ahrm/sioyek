@@ -132,6 +132,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "toggle_fastread", false, false , false, false});
 	commands.push_back({ "goto_top_of_page", false, false , false, false});
 	commands.push_back({ "goto_bottom_of_page", false, false , false, false});
+	commands.push_back({ "new_window", false, false , false, false});
 }
 
 const Command* CommandManager::get_command_with_name(std::string name) {
