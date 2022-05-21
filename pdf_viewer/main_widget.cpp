@@ -259,6 +259,10 @@ void MainWidget::closeEvent(QCloseEvent* close_event) {
     handle_close_event();
 }
 
+MainWidget::MainWidget(MainWidget* other) : MainWidget(other->mupdf_context, other->db_manager, other->document_manager, other->config_manager, other->input_handler, other->checksummer, other->should_quit) {
+
+}
+
 MainWidget::MainWidget(fz_context* mupdf_context,
     DatabaseManager* db_manager,
     DocumentManager* document_manager,
@@ -278,6 +282,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 {
     setMouseTracking(true);
     setAcceptDrops(true);
+    setAttribute(Qt::WA_DeleteOnClose);
 
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
@@ -404,6 +409,7 @@ MainWidget::~MainWidget() {
     }
 
     if (windows.size() == 0) {
+        *should_quit = true;
 		pdf_renderer->join_threads();
     }
 

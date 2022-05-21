@@ -210,6 +210,7 @@ public:
 		bool* should_quit_ptr,
 		QWidget* parent=nullptr
 	);
+	MainWidget(MainWidget* other);
 
 	~MainWidget();
 

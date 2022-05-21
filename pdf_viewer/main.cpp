@@ -475,6 +475,14 @@ MainWidget* handle_args(const QStringList& arguments) {
     }
 
 	MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
+	if (target_window == nullptr) {
+		target_window = windows[0];
+	}
+	if ((pdf_file_name.size() > 0) && parser->isSet("new-window")) {
+		target_window = new MainWidget(windows[0]);
+		windows.push_back(target_window);
+	}
+
     if (parser->isSet("inverse-search")) {
 		if (target_window) {
 			target_window->set_inverse_search_command(parser->value("inverse-search").toStdWString());
@@ -485,7 +493,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 
     // if no file is specified, use the previous file
     if (pdf_file_name == L"" && (windows[0]->doc() != nullptr)) {
-        pdf_file_name = windows[0]->doc()->get_path();
+        pdf_file_name = target_window->doc()->get_path();
     }
 
     if (page != -1) {
@@ -499,7 +507,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 		}
     }
     else {
-        windows[0]->open_document(pdf_file_name);
+        target_window->open_document(pdf_file_name);
     }
 
     invalidate_render();
