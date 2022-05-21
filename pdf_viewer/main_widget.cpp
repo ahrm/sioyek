@@ -2976,7 +2976,7 @@ void MainWidget::get_window_params_for_two_window_mode(int* main_window_size, in
     }
 }
 
-void MainWidget::apply_window_params_for_one_window_mode(){
+void MainWidget::apply_window_params_for_one_window_mode(bool force_resize){
 
     QWidget* main_window = get_top_level_widget(opengl_widget);
 
@@ -2991,6 +2991,9 @@ void MainWidget::apply_window_params_for_one_window_mode(){
 
     if (should_maximize) {
         main_window->hide();
+        if (force_resize) {
+			main_window->resize(main_window_size[0], main_window_size[1]);
+        }
         main_window->showMaximized();
     }
     else {
