@@ -380,10 +380,12 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
 }
 
 MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
-	for (auto window : windows) {
-		//if (window->doc() && window->doc()->get_path() == file_path) {
-		if (window->doc() && std::filesystem::equivalent(window->doc()->get_path(), file_path)) {
-			return window;
+	if (file_path.size() > 0){
+		for (auto window : windows) {
+			//if (window->doc() && window->doc()->get_path() == file_path) {
+			if (window->doc() && std::filesystem::equivalent(window->doc()->get_path(), file_path)) {
+				return window;
+			}
 		}
 	}
 	return nullptr;
@@ -632,6 +634,9 @@ int main(int argc, char* args[]) {
 				MainWidget* target = handle_args(args);
 				if (target) {
 					target->activateWindow();
+				}
+				else if (windows.size() > 0) {
+					windows[0]->activateWindow();
 				}
 				});
 		}
