@@ -1464,6 +1464,12 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
 		if (i == page_end) {
 			char_end = find_closest_char_to_document_point(flat_chars, page_point2, &location_index2);
 		}
+		if (char_begin == nullptr) {
+			char_begin = flat_chars[0];
+		}
+		if (char_end == nullptr) {
+			char_end = flat_chars[flat_chars.size()-1];
+		}
 
 		if ((char_begin == nullptr) || (char_end == nullptr)) {
 			return;
