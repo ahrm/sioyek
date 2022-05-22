@@ -478,14 +478,15 @@ MainWidget* handle_args(const QStringList& arguments) {
     }
 
 	MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
-	if (target_window == nullptr) {
-		target_window = windows[0];
-	}
-	if ((pdf_file_name.size() > 0) && parser->isSet("new-window") && (windows[0]->doc() != nullptr)) {
+
+	if ((pdf_file_name.size() > 0) && parser->isSet("new-window") && (target_window == nullptr) && (windows[0]->doc() != nullptr)) {
 		target_window = new MainWidget(windows[0]);
 		target_window->apply_window_params_for_one_window_mode(true);
 		target_window->show();
 		windows.push_back(target_window);
+	}
+	if (target_window == nullptr) {
+		target_window = windows[0];
 	}
 
     if (parser->isSet("inverse-search")) {
