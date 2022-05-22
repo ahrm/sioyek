@@ -49,9 +49,6 @@
 
 #include "main_widget.h"
 
-#ifndef MAX_PATH
-#define MAX_PATH PATH_MAX
-#endif
 
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;

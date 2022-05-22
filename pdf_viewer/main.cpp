@@ -71,6 +71,9 @@
 #include "fts_fuzzy_match.h"
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
 
+#ifndef MAX_PATH
+#define MAX_PATH PATH_MAX
+#endif
 //#define LINUX_STANDARD_PATHS
 
 
