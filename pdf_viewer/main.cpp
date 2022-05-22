@@ -481,7 +481,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 	if (target_window == nullptr) {
 		target_window = windows[0];
 	}
-	if ((pdf_file_name.size() > 0) && parser->isSet("new-window")) {
+	if ((pdf_file_name.size() > 0) && parser->isSet("new-window") && (windows[0]->doc() != nullptr)) {
 		target_window = new MainWidget(windows[0]);
 		target_window->apply_window_params_for_one_window_mode(true);
 		target_window->show();
