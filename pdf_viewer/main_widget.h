@@ -42,7 +42,7 @@ private:
 	PdfViewOpenGLWidget* opengl_widget = nullptr;
 	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
 
-	const Command* current_pending_command = nullptr;
+	std::optional<Command> current_pending_command;
 
 	DocumentView* main_document_view = nullptr;
 	DocumentView* helper_document_view = nullptr;
@@ -111,6 +111,8 @@ private:
 	std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
 	std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
 
+	std::optional<char> command_to_be_executed_symbol = {};
+
 	QTime last_text_select_time = QTime::currentTime();
 
 	bool main_document_view_has_document();
@@ -139,7 +141,7 @@ protected:
 	void handle_escape();
 	void keyPressEvent(QKeyEvent* kevent) override;
 	void keyReleaseEvent(QKeyEvent* kevent) override;
-	void handle_command_with_symbol(const Command* command, char symbol);
+	bool handle_command_with_symbol(const Command* command, char symbol);
 	void handle_command_with_file_name(const Command* command, std::wstring file_name);
 	bool is_waiting_for_symbol();
 	void key_event(bool released, QKeyEvent* kevent);
@@ -172,7 +174,7 @@ protected:
 	void long_jump_to_destination(DocumentPos pos);
 	void long_jump_to_destination(int page, float offset_y);
 	void long_jump_to_destination(float abs_offset_y);
-	void execute_command(std::wstring command);
+	void execute_command(std::wstring command, std::wstring text=L"");
 	QString get_status_stylesheet();
 	int get_status_bar_height();
     void smart_jump_under_pos(WindowPos pos);
@@ -181,6 +183,7 @@ protected:
 
 	QRect get_main_window_rect();
 	QRect get_helper_window_rect();
+
 
 	void show_password_prompt_if_required();
 	void handle_link_click(const PdfLink& link);

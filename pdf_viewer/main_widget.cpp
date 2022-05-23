@@ -462,8 +462,8 @@ std::wstring MainWidget::get_status_string() {
     if (link_to_edit) {
         ss << " | editing link ...";
     }
-    if (current_pending_command && current_pending_command->requires_symbol) {
-        std::wstring wcommand_name = utf8_decode(current_pending_command->name.c_str());
+    if (current_pending_command && current_pending_command.value().requires_symbol) {
+        std::wstring wcommand_name = utf8_decode(current_pending_command.value().name.c_str());
         ss << " | " << wcommand_name << " waiting for symbol";
     }
     if (main_document_view != nullptr && main_document_view->get_document() != nullptr &&
@@ -518,7 +518,7 @@ void MainWidget::handle_escape() {
 
     text_command_line_edit->setText("");
     pending_link = {};
-    current_pending_command = nullptr;
+    current_pending_command = {};
 
     if (current_widget != nullptr) {
         delete current_widget;
@@ -777,7 +777,7 @@ void MainWidget::invalidate_ui() {
     is_render_invalidated = true;
 }
 
-void MainWidget::handle_command_with_symbol(const Command* command, char symbol) {
+bool MainWidget::handle_command_with_symbol(const Command* command, char symbol) {
     assert(symbol);
     assert(command->requires_symbol);
 
@@ -825,7 +825,16 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
     }
     else if (command->name == "execute_predefined_command" ) {
         if ((symbol >= 'a') && (symbol <= 'z')) {
-            execute_command(EXECUTE_COMMANDS[symbol - 'a']);
+            if (EXECUTE_COMMANDS[symbol - 'a'].find(L"%5") == std::wstring::npos) {
+				execute_command(EXECUTE_COMMANDS[symbol - 'a']);
+            }
+            else {
+                current_pending_command.value().requires_text = true;
+                current_pending_command.value().requires_symbol = false;
+                command_to_be_executed_symbol = symbol;
+                handle_command(&current_pending_command.value(), 0);
+                return false;
+            }
         }
     }
     else if (command->name == "goto_mark") {
@@ -848,6 +857,7 @@ void MainWidget::handle_command_with_symbol(const Command* command, char symbol)
             main_document_view->goto_mark(symbol);
         }
     }
+    return true;
 }
 
 void MainWidget::open_document(const LinkViewState& lvs) {
@@ -988,7 +998,7 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
     last_command = command;
 
     if (command->requires_symbol) {
-        current_pending_command = command;
+        current_pending_command = *command;
         return;
     }
     if (command->requires_file_name) {
@@ -1036,8 +1046,9 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
             char symb = get_symbol(kevent->key(), kevent->modifiers() & Qt::ShiftModifier, current_pending_command->special_symbols);
             if (symb) {
-                handle_command_with_symbol(current_pending_command, symb);
-                current_pending_command = nullptr;
+                if (handle_command_with_symbol(&current_pending_command.value(), symb)) {
+					current_pending_command = {};
+                }
             }
             return;
         }
@@ -1610,7 +1621,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     if (command == nullptr) return;
 
     if (command->requires_text) {
-        current_pending_command = command;
+        current_pending_command = *command;
         bool should_fill_text_bar_with_selected_text = false;
         if (command->name == "search" || command->name == "chapter_search" || command->name == "ranged_search" || command->name == "add_bookmark") {
             should_fill_text_bar_with_selected_text = true;
@@ -2601,6 +2612,14 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 
         execute_command(text);
     }
+    if (current_pending_command->name == "execute_predefined_command") {
+        if (command_to_be_executed_symbol.has_value()) {
+            if (command_to_be_executed_symbol.value() >= 'a' && command_to_be_executed_symbol.value() <= 'z') {
+				execute_command(EXECUTE_COMMANDS[command_to_be_executed_symbol.value() - 'a'], text);
+            }
+        }
+    }
+
 
     if (current_pending_command->name == "open_link") {
         std::vector<int> visible_pages;
@@ -2825,7 +2844,7 @@ void MainWidget::toggle_dark_mode() {
     this->opengl_widget->toggle_dark_mode();
 }
 
-void MainWidget::execute_command(std::wstring command) {
+void MainWidget::execute_command(std::wstring command, std::wstring text) {
 
     std::wstring file_path = main_document_view->get_document()->get_path();
     QString qfile_path = QString::fromStdWString(file_path);
@@ -2857,6 +2876,7 @@ void MainWidget::execute_command(std::wstring command) {
             command_parts[i].replace("%2", qfile_name);
             command_parts[i].replace("%3", QString::fromStdWString(selected_text));
             command_parts[i].replace("%4", QString::number(get_current_page_number()));
+            command_parts[i].replace("%5", QString::fromStdWString(text));
             command_args.push_back(command_parts[i]);
 
             //bool part_requires_only_second = (command_parts[i].arg("%1", "%2") != command_parts[i]);
@@ -3145,7 +3165,7 @@ bool MainWidget::is_rotated() {
 void MainWidget::show_password_prompt_if_required() {
 	if (main_document_view && (main_document_view->get_document() != nullptr)) {
 		if (main_document_view->get_document()->needs_authentication()) {
-			if (current_pending_command == nullptr || current_pending_command->name != "enter_password") {
+            if ((!current_pending_command.has_value()) || (current_pending_command->name != "enter_password")) {
 				handle_command(command_manager.get_command_with_name("enter_password"), 1);
 			}
 		}
@@ -3269,7 +3289,7 @@ Document* MainWidget::doc() {
 void MainWidget::return_to_last_visual_mark() {
 	main_document_view->goto_vertical_line_pos();
 	opengl_widget->set_should_draw_vertical_line(true);
-	current_pending_command = nullptr;
+    current_pending_command = {};
 	validate_render();
 }
 
