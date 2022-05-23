@@ -2240,6 +2240,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         QApplication::quit();
         return;
     }
+    else if (command->name == "close_window" ) {
+		close();
+        return;
+    }
     else if (command->name == "command") {
         QStringList command_names = command_manager.get_all_command_names();
         set_current_widget(new CommandSelector(
