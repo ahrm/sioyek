@@ -3371,3 +3371,16 @@ int MainWidget::get_current_page_number() const {
 void MainWidget::set_inverse_search_command(const std::wstring& new_command) {
     inverse_search_command = new_command;
 }
+
+void MainWidget::focusInEvent(QFocusEvent* ev) {
+    int index = -1;
+    for (int i = 0; i < windows.size(); i++) {
+        if (windows[i] == this) {
+			index = i;
+			break;
+        }
+    }
+    if (index > 0) {
+        std::swap(windows[0], windows[index]);
+    }
+}

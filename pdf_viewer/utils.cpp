@@ -1472,7 +1472,7 @@ QCommandLineParser* get_command_line_parser() {
 	parser->addOption(new_instance_option);
 
 	QCommandLineOption new_window_option("new-window");
-	new_instance_option.setDescription("Open the file in a new window but within the same sioyek instance.");
+	new_window_option.setDescription("Open the file in a new window but within the same sioyek instance.");
 	parser->addOption(new_window_option);
 
 	QCommandLineOption page_option("page", "Which page to open.", "page");

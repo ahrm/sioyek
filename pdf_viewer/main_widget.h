@@ -122,6 +122,8 @@ private:
 
 protected:
 
+	void focusInEvent(QFocusEvent* ev);
+
 	void handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed);
 	//void paintEvent(QPaintEvent* paint_event) override;
 	void resizeEvent(QResizeEvent* resize_event) override;
