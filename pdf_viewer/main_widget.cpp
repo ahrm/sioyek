@@ -1752,6 +1752,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             checksummer,
             should_quit);
         new_widget->open_document(main_document_view->get_state());
+        new_widget->show();
         windows.push_back(new_widget);
     }
 
