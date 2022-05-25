@@ -476,7 +476,7 @@ std::vector<const Command*> InputHandler::handle_key(int key, bool shift_pressed
 	}
 
 	if (current_node == root && is_digit(key)) {
-		if (!(key == '0' && (number_stack.size() == 0))) {
+		if (!(key == '0' && (number_stack.size() == 0)) && (!control_pressed) && (!shift_pressed) && (!alt_pressed)) {
 			number_stack.push_back('0' + key - Qt::Key::Key_0);
 			return {};
 		}
