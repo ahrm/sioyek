@@ -15,6 +15,7 @@ extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE;
+extern bool SHOULD_LAUNCH_NEW_WINDOW;
 extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP;
 extern bool SHOULD_DRAW_UNRENDERED_PAGES;
 extern bool HOVER_OVERVIEW;
@@ -238,6 +239,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"should_load_tutorial_when_no_other_file", &SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"should_launch_new_instance", &SHOULD_LAUNCH_NEW_INSTANCE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"should_launch_new_window", &SHOULD_LAUNCH_NEW_WINDOW, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"should_draw_unrendered_pages", &SHOULD_DRAW_UNRENDERED_PAGES, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"check_for_updates_on_startup", &SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"sort_bookmarks_by_location", &SORT_BOOKMARKS_BY_LOCATION, bool_serializer, bool_deserializer, bool_validator });
