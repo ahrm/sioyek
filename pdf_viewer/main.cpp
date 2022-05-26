@@ -480,7 +480,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 
 	MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
 
-	if ((pdf_file_name.size() > 0) && (parser->isSet("new-window") || SHOULD_LAUNCH_NEW_WINDOW) && (target_window == nullptr) && (windows[0]->doc() != nullptr)) {
+	if ((pdf_file_name.size() > 0) && (parser->isSet("new-window") || SHOULD_LAUNCH_NEW_WINDOW) && (!parser->isSet("reuse-window")) && (target_window == nullptr) && (windows[0]->doc() != nullptr)) {
 		target_window = new MainWidget(windows[0]);
 		target_window->apply_window_params_for_one_window_mode(true);
 		target_window->show();
