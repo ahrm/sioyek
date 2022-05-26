@@ -1616,7 +1616,7 @@ void check_for_updates(QWidget* parent, std::string current_version) {
 QString expand_home_dir(QString path) {
 	if (path.size() > 0) {
 		if (path.at(0) == '~') {
-			return QDir::homePath() + QDir::separator() + path.remove(0, 1);
+			return QDir::homePath() + QDir::separator() + path.remove(0, 2);
 		}
 	}
 	return path;

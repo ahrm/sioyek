@@ -652,7 +652,7 @@ public:
 	void on_select(const QModelIndex& index) {
 		QString name = list_model->data(index).toString();
 		QChar sep = QDir::separator();
-		QString full_path = expand_home_dir(last_root + sep + name);
+		QString full_path = expand_home_dir((last_root.size() > 0) ? (last_root + sep + name) : name);
 
 		if (QFileInfo(full_path).isFile()) {
 			on_done(full_path.toStdWString());
