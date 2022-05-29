@@ -1951,6 +1951,7 @@ void merge_lines(const std::vector<fz_stext_line*>& lines_, std::vector<fz_rect>
 		out_texts.push_back(temp_texts[i]);
 	}
 }
+
 float get_max_display_scaling() {
 	float scale = 1.0f;
 	auto screens = QGuiApplication::screens();

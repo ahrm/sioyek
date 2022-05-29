@@ -1028,7 +1028,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
             handle_escape();
         }
 
-        if (kevent->key() == Qt::Key::Key_Return) {
+        if (kevent->key() == Qt::Key::Key_Return || kevent->key() == Qt::Key::Key_Enter) {
             if (text_command_line_edit_container->isVisible()) {
                 text_command_line_edit_container->hide();
                 setFocus();
