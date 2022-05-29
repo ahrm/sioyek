@@ -90,6 +90,8 @@ private:
 	bool synctex_mode = false;
 	bool is_dragging = false;
 
+	bool should_show_status_label = true;
+
 	int main_window_width = 0;
 	int main_window_height = 0;
 
@@ -124,6 +126,7 @@ protected:
 
 	void focusInEvent(QFocusEvent* ev);
 
+	void toggle_statusbar();
 	void handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed);
 	//void paintEvent(QPaintEvent* paint_event) override;
 	void resizeEvent(QResizeEvent* resize_event) override;

@@ -110,7 +110,9 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         int status_bar_height = get_status_bar_height();
         status_label->move(0, main_window_height - status_bar_height);
         status_label->resize(main_window_width, status_bar_height);
-        status_label->show();
+        if (should_show_status_label) {
+			status_label->show();
+        }
     }
 
     if ((main_document_view->get_document() != nullptr) && (main_document_view->get_zoom_level() == 0)) {
@@ -2360,6 +2362,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "toggle_fastread") {
 		opengl_widget->toggle_fastread_mode();
 	}
+    else if (command->name == "toggle_statusbar") {
+		toggle_statusbar();
+	}
     else if (command->name == "smart_jump_under_cursor") {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
         smart_jump_under_pos({ mouse_pos.x(), mouse_pos.y() });
@@ -3383,5 +3388,16 @@ void MainWidget::focusInEvent(QFocusEvent* ev) {
     }
     if (index > 0) {
         std::swap(windows[0], windows[index]);
+    }
+}
+
+void MainWidget::toggle_statusbar() {
+    should_show_status_label = !should_show_status_label;
+
+    if (!should_show_status_label) {
+        status_label->hide();
+    }
+    else {
+        status_label->show();
     }
 }
