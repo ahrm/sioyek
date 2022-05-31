@@ -89,6 +89,7 @@ extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
 extern bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE;
 extern std::vector<MainWidget*> windows;
+extern bool SHOW_DOC_PATH;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -1941,7 +1942,12 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         for (const auto& doc_hash_ : opened_docs_hashes_) {
             std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
             if (path) {
-                opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
+                if (SHOW_DOC_PATH) {
+                    opened_docs_names.push_back(path.value_or(L"<ERROR>"));
+                }
+                else {
+					opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
+                }
                 opened_docs_hashes.push_back(utf8_encode(doc_hash_));
             }
         }

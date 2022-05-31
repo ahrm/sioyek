@@ -181,6 +181,7 @@ float OVERVIEW_SIZE[2] = { 0.8f, 0.4f };
 float OVERVIEW_OFFSET[2] = { 0.0f, 0.0f };
 bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE = false;
 bool EXACT_HIGHLIGHT_SELECT = false;
+bool SHOW_DOC_PATH = false;
 
 float PAGE_SEPARATOR_WIDTH = 0.0f;
 float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
