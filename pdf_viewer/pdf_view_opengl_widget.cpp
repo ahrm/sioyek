@@ -19,6 +19,7 @@ extern float PAGE_SEPARATOR_COLOR[3];
 extern float RULER_PADDING;
 extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
+extern float FASTREAD_OPACITY;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -1331,7 +1332,7 @@ void PdfViewOpenGLWidget::render_transparent_background() {
 	glDisable(GL_CULL_FACE);
 	glUseProgram(shared_gl_objects.vertical_line_program);
 
-	float background_color[4] = { 1.0f, 1.0f, 1.0f, 0.5f };
+	float background_color[4] = { 1.0f, 1.0f, 1.0f, 1-FASTREAD_OPACITY };
 
 	if (this->color_mode == ColorPalette::Normal) {
 	}
