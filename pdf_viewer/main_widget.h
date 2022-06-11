@@ -270,5 +270,6 @@ public:
 	void scroll_overview_up();
 	int get_current_page_number() const;
 	void set_inverse_search_command(const std::wstring& new_command);
+	void execute_predefined_command(char symbol);
 
 };

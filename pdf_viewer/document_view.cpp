@@ -986,6 +986,16 @@ int DocumentView::get_vertical_line_page() {
 	return current_document->absolute_to_page_pos({ 0, get_ruler_pos()}).page;
 }
 
+std::optional<std::wstring> DocumentView::get_selected_line_text () {
+	if (line_index > 0) {
+		std::vector<std::wstring> lines;
+		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
+		std::wstring content = lines[line_index];
+		return content;
+	}
+	return {};
+}
+
 std::optional<DocumentPos> DocumentView::find_line_definition() {
 	if (line_index > 0) {
 		std::vector<std::wstring> lines;

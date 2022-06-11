@@ -827,18 +827,7 @@ bool MainWidget::handle_command_with_symbol(const Command* command, char symbol)
         //}
     }
     else if (command->name == "execute_predefined_command" ) {
-        if ((symbol >= 'a') && (symbol <= 'z')) {
-            if (EXECUTE_COMMANDS[symbol - 'a'].find(L"%5") == std::wstring::npos) {
-				execute_command(EXECUTE_COMMANDS[symbol - 'a']);
-            }
-            else {
-                current_pending_command.value().requires_text = true;
-                current_pending_command.value().requires_symbol = false;
-                command_to_be_executed_symbol = symbol;
-                handle_command(&current_pending_command.value(), 0);
-                return false;
-            }
-        }
+        execute_predefined_command(symbol);
     }
     else if (command->name == "goto_mark") {
         assert(main_document_view);
@@ -1884,7 +1873,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         }
     }
 
-
+    else if (QString::fromStdString(command->name).startsWith("execute_command_")) {
+        char symbol = command->name[command->name.size() - 1];
+        execute_predefined_command(symbol);
+    }
     else if (command->name == "goto_toc") {
         if (main_document_view->get_document()->has_toc()) {
             if (FLAT_TABLE_OF_CONTENTS) {
@@ -2889,6 +2881,15 @@ void MainWidget::execute_command(std::wstring command, std::wstring text) {
             command_parts[i].replace("%3", QString::fromStdWString(selected_text));
             command_parts[i].replace("%4", QString::number(get_current_page_number()));
             command_parts[i].replace("%5", QString::fromStdWString(text));
+            std::wstring selected_line_text;
+            if (main_document_view) {
+                selected_line_text = main_document_view->get_selected_line_text().value_or(L"");
+            }
+
+            if (selected_line_text.size() > 0) {
+				command_parts[i].replace("%6", QString::fromStdWString(selected_line_text));
+			}
+
             command_args.push_back(command_parts[i]);
 
             //bool part_requires_only_second = (command_parts[i].arg("%1", "%2") != command_parts[i]);
@@ -3406,4 +3407,18 @@ void MainWidget::toggle_statusbar() {
     else {
         status_label->show();
     }
+}
+void MainWidget::execute_predefined_command(char symbol) {
+	if ((symbol >= 'a') && (symbol <= 'z')) {
+		if (EXECUTE_COMMANDS[symbol - 'a'].find(L"%5") == std::wstring::npos) {
+			execute_command(EXECUTE_COMMANDS[symbol - 'a']);
+		}
+		else {
+			current_pending_command.value().requires_text = true;
+			current_pending_command.value().requires_symbol = false;
+			command_to_be_executed_symbol = symbol;
+			handle_command(&current_pending_command.value(), 0);
+			return;
+		}
+	}
 }
