@@ -817,12 +817,12 @@ void run_command(std::wstring command, QStringList parameters, bool wait){
 	}
 	//qparameters.append(QString::fromStdWString(parameters));
 
-	process->start(qcommand, qparameters);
 	if (wait) {
+		process->start(qcommand, qparameters);
 		process->waitForFinished();
 	}
 	else {
-		QObject::connect(process, SIGNAL(finished(int)), process, SLOT(deleteLater()));
+		process->startDetached(qcommand, qparameters);
 	}
 #endif
 
