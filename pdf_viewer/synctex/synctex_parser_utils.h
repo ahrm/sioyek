@@ -48,6 +48,7 @@ authorization from the copyright holder.
 
 #include "synctex_version.h"
 
+
 typedef int synctex_bool_t;
 #	define synctex_YES (0==0)
 #	define synctex_NO (0==1)
@@ -61,6 +62,10 @@ typedef int synctex_bool_t;
 #   define __SYNCTEX_PARSER_UTILS__
 
 #include <stdlib.h>
+
+#if defined(_WIN32)
+#define __attribute__(x)
+#endif
 
 #ifdef __cplusplus
 extern "C" {

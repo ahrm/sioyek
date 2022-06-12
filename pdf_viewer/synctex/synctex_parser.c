@@ -86,6 +86,7 @@
 /* Declare _GNU_SOURCE for accessing vasprintf. For MSC compiler, vasprintf is
  * defined in this file
  */
+
 #define _GNU_SOURCE
 
 #   if defined(SYNCTEX_USE_LOCAL_HEADER)
@@ -595,7 +596,7 @@ static synctex_open_s __synctex_open_v2(const char * output, synctex_io_mode_t i
         goto return_on_error;
     }
     /*  now insert quotes. */
-    if (add_quotes) {
+    if (add_quotes > 0) {
         char * quoted = NULL;
         if (_synctex_copy_with_quoting_last_path_component(open.synctex,&quoted,size) || quoted == NULL) {
             /*	There was an error or quoting does not make sense: */
