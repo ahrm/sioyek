@@ -16,7 +16,7 @@
 #include <qopengl.h>
 
 #include <mupdf/fitz.h>
-#include "sqlite3.h"
+#include <sqlite3.h>
 
 #include "pdf_renderer.h"
 #include "document.h"

@@ -17,7 +17,7 @@
 #include <qurlquery.h>
 
 #include <mupdf/fitz.h>
-#include "sqlite3.h"
+#include <sqlite3.h>
 
 #include "database.h"
 #include "utils.h"

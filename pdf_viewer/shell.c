@@ -78,7 +78,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
-#include "sqlite3.h"
+#include <sqlite3.h>
 typedef sqlite3_int64 i64;
 typedef sqlite3_uint64 u64;
 typedef unsigned char u8;
@@ -983,7 +983,7 @@ static void shellAddSchemaName(
 ** We need several support functions from the SQLite core.
 */
 
-/* #include "sqlite3.h" */
+/* #include <sqlite3.h> */
 
 /*
 ** We need several things from the ANSI and MSVCRT headers.
@@ -6547,7 +6547,7 @@ int sqlite3_sqlar_init(
 */
 #if !defined(SQLITEEXPERT_H)
 #define SQLITEEXPERT_H 1
-/* #include "sqlite3.h" */
+/* #include <sqlite3.h> */
 
 typedef struct sqlite3expert sqlite3expert;
 
