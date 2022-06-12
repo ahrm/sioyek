@@ -678,7 +678,7 @@ void MainWidget::toggle_mouse_drag_mode(){
     this->mouse_drag_mode = !this->mouse_drag_mode;
 }
 
-void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line) {
+void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line, int column) {
 
     std::wstring latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path.get_path());
 
@@ -686,23 +686,23 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
     std::string latex_file_with_redundant_dot_string = utf8_encode(latex_file_path_with_redundant_dot);
     std::string pdf_file_string = pdf_file_path.get_path_utf8();
 
-    synctex_scanner_t scanner = synctex_scanner_new_with_output_file(pdf_file_string.c_str(), nullptr, 1);
+    synctex_scanner_p scanner = synctex_scanner_new_with_output_file(pdf_file_string.c_str(), nullptr, 1);
 
-    int stat = synctex_display_query(scanner, latex_file_string.c_str(), line, 0);
+    int stat = synctex_display_query(scanner, latex_file_string.c_str(), line, 0, 0);
     int target_page = -1;
 
     if (stat <= 0) {
-        stat = synctex_display_query(scanner, latex_file_with_redundant_dot_string.c_str(), line, 0);
+        stat = synctex_display_query(scanner, latex_file_with_redundant_dot_string.c_str(), line, column, 0);
     }
 
     if (stat > 0) {
-        synctex_node_t node;
+        synctex_node_p node;
 
         std::vector<std::pair<int, fz_rect>> highlight_rects;
 
         std::optional<fz_rect> first_rect = {};
 
-        while ((node = synctex_next_result(scanner))) {
+        while ((node = synctex_scanner_next_result(scanner))) {
             int page = synctex_node_page(node);
             target_page = page-1;
 
@@ -1097,13 +1097,13 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down) {
                 auto [page, doc_x, doc_y] = main_document_view->window_to_document_pos(click_pos);
                 std::wstring docpath = main_document_view->get_document()->get_path();
                 std::string docpath_utf8 = utf8_encode(docpath);
-                synctex_scanner_t scanner = synctex_scanner_new_with_output_file(docpath_utf8.c_str(), nullptr, 1);
+                synctex_scanner_p scanner = synctex_scanner_new_with_output_file(docpath_utf8.c_str(), nullptr, 1);
 
                 int stat = synctex_edit_query(scanner, page + 1, doc_x, doc_y);
 
                 if (stat > 0) {
-                    synctex_node_t node;
-                    while ((node = synctex_next_result(scanner))) {
+                    synctex_node_p node;
+                    while ((node = synctex_scanner_next_result(scanner))) {
                         int line = synctex_node_line(node);
                         int column = synctex_node_column(node);
                         if (column < 0) column = 0;

@@ -1492,6 +1492,9 @@ QCommandLineParser* get_command_line_parser() {
 	QCommandLineOption forward_search_line_option("forward-search-line", "Perform forward search on line <line> must also include --forward-search-file to specify the file", "file");
 	parser->addOption(forward_search_line_option);
 
+	QCommandLineOption forward_search_column_option("forward-search-column", "Perform forward search on column <column> must also include --forward-search-file to specify the file", "file");
+	parser->addOption(forward_search_column_option);
+
 	QCommandLineOption zoom_level_option("zoom", "Set zoom level to <zoom>.", "zoom");
 	parser->addOption(zoom_level_option);
 
