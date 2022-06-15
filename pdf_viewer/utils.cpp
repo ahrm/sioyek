@@ -1482,9 +1482,13 @@ QCommandLineParser* get_command_line_parser() {
 	QCommandLineOption page_option("page", "Which page to open.", "page");
 	parser->addOption(page_option);
 
+
 	QCommandLineOption inverse_search_option("inverse-search", "The command to execute when performing inverse search.\
  In <command>, %1 is filled with the file name and %2 is filled with the line number.", "command");
 	parser->addOption(inverse_search_option);
+
+	QCommandLineOption command_option("execute-command", "The command to execute on running instance of sioyek", "execute-command");
+	parser->addOption(command_option);
 
 	QCommandLineOption forward_search_file_option("forward-search-file", "Perform forward search on file <file> must also include --forward-search-line to specify the line", "file");
 	parser->addOption(forward_search_file_option);

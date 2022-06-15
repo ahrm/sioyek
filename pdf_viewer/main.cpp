@@ -504,6 +504,12 @@ MainWidget* handle_args(const QStringList& arguments) {
 			//target_window->activateWindow();
 		}
     }
+	if (parser->isSet("execute-command")) {
+		 QStringList commands= parser->value("execute-command").split(';');
+		 for (int i = 0; i < commands.size(); i++) {
+			 target_window->handle_command(target_window->get_command_manager()->get_command_with_name(commands.at(i).toStdString()), 1);
+		 }
+	}
 
     // if no file is specified, use the previous file
     if (pdf_file_name == L"" && (windows[0]->doc() != nullptr)) {
