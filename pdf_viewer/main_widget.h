@@ -237,7 +237,7 @@ public:
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_mouse_drag_mode();
 	void toggle_dark_mode();
-	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line);
+	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line, int column);
 	//void handle_args(const QStringList &arguments);
 	void update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state);
 	void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);

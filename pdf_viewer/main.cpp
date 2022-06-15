@@ -451,6 +451,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 
     std::optional<std::wstring> latex_file_name = {};
     std::optional<int> latex_line = {};
+    std::optional<int> latex_column = {};
 
     if (parser->isSet("forward-search-file")) {
         latex_file_name = parser->value("forward-search-file").toStdWString();
@@ -458,6 +459,10 @@ MainWidget* handle_args(const QStringList& arguments) {
 
     if (parser->isSet("forward-search-line")) {
         latex_line = parser->value("forward-search-line").toInt();
+    }
+
+    if (parser->isSet("forward-search-column")) {
+        latex_line = parser->value("forward-search-column").toInt();
     }
 
     if (parser->isSet("page")) {
@@ -512,7 +517,7 @@ MainWidget* handle_args(const QStringList& arguments) {
     }
     else if (latex_file_name) {
 		if (target_window) {
-			target_window->do_synctex_forward_search(pdf_file_name, latex_file_name.value(), latex_line.value_or(0));
+			target_window->do_synctex_forward_search(pdf_file_name, latex_file_name.value(), latex_line.value_or(0), latex_column.value_or(0));
 		}
     }
     else {

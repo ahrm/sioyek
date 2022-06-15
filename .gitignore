@@ -352,7 +352,7 @@ moc*
 
 # Linux and Mac build files
 Makefile
-./sioyek
+sioyek
 libs/*
 *.rc
 pdf_viewer/fonts/*
