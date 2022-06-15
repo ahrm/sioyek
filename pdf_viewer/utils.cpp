@@ -1490,13 +1490,13 @@ QCommandLineParser* get_command_line_parser() {
 	QCommandLineOption command_option("execute-command", "The command to execute on running instance of sioyek", "execute-command");
 	parser->addOption(command_option);
 
-	QCommandLineOption forward_search_file_option("forward-search-file", "Perform forward search on file <file> must also include --forward-search-line to specify the line", "file");
+	QCommandLineOption forward_search_file_option("forward-search-file", "Perform forward search on file <file>. You must also include --forward-search-line to specify the line", "file");
 	parser->addOption(forward_search_file_option);
 
-	QCommandLineOption forward_search_line_option("forward-search-line", "Perform forward search on line <line> must also include --forward-search-file to specify the file", "file");
+	QCommandLineOption forward_search_line_option("forward-search-line", "Perform forward search on line <line>. You must also include --forward-search-file to specify the file", "line");
 	parser->addOption(forward_search_line_option);
 
-	QCommandLineOption forward_search_column_option("forward-search-column", "Perform forward search on column <column> must also include --forward-search-file to specify the file", "file");
+	QCommandLineOption forward_search_column_option("forward-search-column", "Perform forward search on column <column>. You must also include --forward-search-file to specify the file", "column");
 	parser->addOption(forward_search_column_option);
 
 	QCommandLineOption zoom_level_option("zoom", "Set zoom level to <zoom>.", "zoom");
