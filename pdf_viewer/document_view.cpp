@@ -623,6 +623,7 @@ void DocumentView::open_document(const std::wstring& doc_path,
 			if (current_document) {
 				// automatically adjust width
 				fit_to_page_width();
+				set_offset_y(view_height / 2 / zoom_level);
 			}
 		}
 	}
