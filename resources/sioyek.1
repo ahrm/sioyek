@@ -673,36 +673,137 @@
 .\" Public License instead of this License.  But first, please read
 .\" <https://www.gnu.org/licenses/why-not-lgpl.html>.
 .\"
-.Dd $Mdocdate$
-.Dt SIOYEK 1
-.Os
-.Sh NAME
-.Nm sioyek
-.Nd a PDF viewer designed for reading research papers and technical books.
-.Sh SYNOPSIS
-.Nm cwm
-.Op filename
-.Sh DESCRIPTION
-.Nm
-is a document viewer capable of displaying multi-page PDF documents.
-It loads its system-wide configuration files, followed by the user-specific
-configuration files (see below).
-.Sh FILES
-.Bl -tag -width "$XDG_CONFIG_HOME/sioyek/prefs_user.configX" --compact
-.It Pa /etc/sioyek/keys.config
+.TH SIOYEK 1 2022-06-16 "SIOYEK" "User Commands"
+.SH NAME
+sioyek \- a PDF viewer designed for reading research papers and technical books.
+.SH SYNOPSIS
+.B sioyek
+[OPTIONS] [FILENAME]
+.SH DESCRIPTION
+.PP
+With no arguments, open the most recent document by default. If none exists and
+.B should_load_tutorial_when_no_other_file
+is set in a preference file (see below), then open a tutorial pdf.
+
+.SH OPTIONS
+.HP
+.B -v, --version
+
+Displays version information
+.HP
+.B --reuse-instance
+
+When opening a new file, reuse the previous instance of sioyek instead
+of opening a new window.
+.HP
+.B --new-instance
+
+When opening a new file, create a new instance of sioyek.
+.HP
+.B --new-window
+
+Open the file in a new window but within the same sioyek instance.
+.HP
+.B --reuse-window
+
+Force sioyek to reuse the current window even when should_launch_new_window is set.
+.HP
+.B --page
+.I PAGE
+
+Which page to open.
+.HP
+.B --inverse-search
+.I COMMAND
+
+The command to execute when performing inverse search.
+In
+.I COMMAND
+%1 is filled with the file name and %2 is filled with the line number.
+.HP
+.B --forward-search-file
+.I FILE
+
+Perform forward search on file
+.I FILE
+must also include
+.B --forward-search-line
+to specify the line
+.HP
+.B --forward-search-line
+.I LINE
+
+Perform forward search on line
+.I LINE must also include
+.B --forward-search-file
+to specify the file
+
+.HP
+.B --forward-search-column
+.I COLUMN
+
+Perform forward search on column
+.I COLUMN
+must also include
+.B --forward-search-file
+to specify the file
+.HP
+.B --zoom
+.I ZOOM
+
+Set zoom level to
+.I ZOOM
+.HP
+.B --xloc
+.I XLOC
+
+Set x position within page to
+.I XLOC
+.HP
+.B --yloc
+.I YLOC
+
+Set y position within page to
+.I YLOC
+.HP
+.B --shared-database-path
+.I PATH
+
+Specify which file to use for shared data (bookmarks, highlights, etc.)
+.HP
+.B -h, --help
+
+Displays help on commandline options
+.HP
+.B --help-all
+
+Displays help including Qt specific options
+
+.SH FILES
+.HP
+.B /etc/sioyek/keys.config
+
 Default key bindings
-.It Pa /etc/sioyek/prefs.config
+.HP
+.B /etc/sioyek/prefs.config
+
 Default preferences
-.It Pa /usr/share/sioyek/shaders
+.HP
+.B /usr/share/sioyek/shaders
+
 Default shader files
-.It Pa /usr/share/sioyek/tutorial.pdf
-.Nm
-tutorial pdf
-.It Pa $XDG_CONFIG_HOME/sioyek/keys_user.config
+.HP
+.B /usr/share/sioyek/tutorial.pdf
+
+sioyek tutorial pdf
+.HP
+.B $XDG_CONFIG_HOME/sioyek/keys_user.config
+
 User key bindings
-.It Pa $XDG_CONFIG_HOME/sioyek/prefs_user.config
+.HP
+.B $XDG_CONFIG_HOME/sioyek/prefs_user.config
+
 User preferences
-.Sh BUGS
-If you find a bug in
-.Nm
-please report it at https://github.com/ahrm/sioyek/issues
+.SH BUGS
+If you find a bug in sioyek please report it at
+https://github.com/ahrm/sioyek/issues
