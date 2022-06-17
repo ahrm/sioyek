@@ -9,6 +9,7 @@
 #include <qstringlist.h>
 #include "input.h"
 
+extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 CommandManager::CommandManager() {
 	commands.push_back({ "goto_begining",		false,	false,	false,	true});
 	commands.push_back({ "goto_end",			false,	false,	false,	true});
@@ -312,16 +313,15 @@ InputParseTreeNode* parse_lines(
 			}
 			if (!existing_node) {
 				if ((tokens[i] != "sym") && (tokens[i] != "txt")) {
-
 					if (parent_node->is_final) {
-						std::wcout << L"Warning: key defined in " << parent_node->defining_file_path << L" line " 
-							<< parent_node->defining_file_line << L" is being overwritten in file " << command_file_names[j]
-							<< L" line " << command_line_numbers[j] << L"\n";
-						if (parent_node->name.size() > 0) {
-							std::wcout << L"Warning: Adding child command to a final command: " << utf8_decode(parent_node->name[0]) << L"\n";
-						}
+                        std::wcout
+                            << L"Warning: key defined in " << command_file_names[j]
+                            << L":" << command_line_numbers[j]
+                            << L" for " << utf8_decode(command_names[j][0])
+                            << L" is unreachable, shadowed by final key sequence defined in "
+                            << parent_node->defining_file_path
+                            << L":" << parent_node->defining_file_line << L"\n";
 					}
-
 					auto new_node = new InputParseTreeNode(node);
 					new_node->defining_file_line = command_line_numbers[j];
 					new_node->defining_file_path = command_file_names[j];
@@ -340,19 +340,25 @@ InputParseTreeNode* parse_lines(
 					}
 				}
 			}
-			else if (i == (tokens.size() - 1)) {
-				std::wcout << L"Warning: key defined in " << parent_node->defining_file_path << L" line "
-					<< parent_node->defining_file_line << L" is being overwritten in file " << command_file_names[j]
-					<< L" line " << command_line_numbers[j] << L"\n";
+			else if ((i == (tokens.size() - 1)) &&
+                     (SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
+                      (command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
+				std::wcout << L"Warning: key defined in " << parent_node->defining_file_path
+                           << L":" << parent_node->defining_file_line
+                           << L" overwritten by " << command_file_names[j]
+                           << L":" << command_line_numbers[j];
 				if (parent_node->name.size() > 0) {
-					std::wcout << L"Warning: overriding command for " << utf8_decode(line) << L" : replacing " <<
-						utf8_decode(parent_node->name[0]) << L" with " << utf8_decode(command_names[j][0]) << L"\n";
+					std::wcout << L". Overriding command: " << utf8_decode(line)
+                               << L": replacing " << utf8_decode(parent_node->name[0])
+                               << L" with " << utf8_decode(command_names[j][0]);
 				}
+                std::wcout << L"\n";
 			}
-
 			if (i == (tokens.size() - 1)) {
 				parent_node->is_final = true;
 				parent_node->name.clear();
+                parent_node->defining_file_line = command_line_numbers[j];
+                parent_node->defining_file_path = command_file_names[j];
 				for (int k = 0; k < command_names[j].size(); k++) {
 					parent_node->name.push_back(command_names[j][k]);
 				}
