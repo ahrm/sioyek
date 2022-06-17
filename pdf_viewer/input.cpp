@@ -354,10 +354,11 @@ InputParseTreeNode* parse_lines(
 				}
                 std::wcout << L"\n";
 			}
-
 			if (i == (tokens.size() - 1)) {
 				parent_node->is_final = true;
 				parent_node->name.clear();
+                parent_node->defining_file_line = command_line_numbers[j];
+                parent_node->defining_file_path = command_file_names[j];
 				for (int k = 0; k < command_names[j].size(); k++) {
 					parent_node->name.push_back(command_names[j][k]);
 				}
