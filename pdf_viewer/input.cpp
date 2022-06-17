@@ -9,6 +9,7 @@
 #include <qstringlist.h>
 #include "input.h"
 
+extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 CommandManager::CommandManager() {
 	commands.push_back({ "goto_begining",		false,	false,	false,	true});
 	commands.push_back({ "goto_end",			false,	false,	false,	true});
@@ -339,7 +340,9 @@ InputParseTreeNode* parse_lines(
 					}
 				}
 			}
-			else if (i == (tokens.size() - 1)) {
+			else if ((i == (tokens.size() - 1)) &&
+                     (SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
+                      (command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
 				std::wcout << L"Warning: key defined in " << parent_node->defining_file_path
                            << L":" << parent_node->defining_file_line
                            << L" overwritten by " << command_file_names[j]
