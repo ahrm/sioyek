@@ -341,18 +341,18 @@ InputParseTreeNode* parse_lines(
 				}
 			}
 			else if ((i == (tokens.size() - 1)) &&
-                     (SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
-                      (command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
+				(SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
+					(command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
 				std::wcout << L"Warning: key defined in " << parent_node->defining_file_path
-                           << L":" << parent_node->defining_file_line
-                           << L" overwritten by " << command_file_names[j]
-                           << L":" << command_line_numbers[j];
+					<< L":" << parent_node->defining_file_line
+					<< L" overwritten by " << command_file_names[j]
+					<< L":" << command_line_numbers[j];
 				if (parent_node->name.size() > 0) {
 					std::wcout << L". Overriding command: " << utf8_decode(line)
-                               << L": replacing " << utf8_decode(parent_node->name[0])
-                               << L" with " << utf8_decode(command_names[j][0]);
+						<< L": replacing " << utf8_decode(parent_node->name[0])
+						<< L" with " << utf8_decode(command_names[j][0]);
 				}
-                std::wcout << L"\n";
+				std::wcout << L"\n";
 			}
 			if (i == (tokens.size() - 1)) {
 				parent_node->is_final = true;
