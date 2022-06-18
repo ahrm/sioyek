@@ -673,36 +673,627 @@
 .\" Public License instead of this License.  But first, please read
 .\" <https://www.gnu.org/licenses/why-not-lgpl.html>.
 .\"
-.Dd $Mdocdate$
-.Dt SIOYEK 1
-.Os
-.Sh NAME
-.Nm sioyek
-.Nd a PDF viewer designed for reading research papers and technical books.
-.Sh SYNOPSIS
-.Nm cwm
-.Op filename
-.Sh DESCRIPTION
-.Nm
-is a document viewer capable of displaying multi-page PDF documents.
-It loads its system-wide configuration files, followed by the user-specific
-configuration files (see below).
-.Sh FILES
-.Bl -tag -width "$XDG_CONFIG_HOME/sioyek/prefs_user.configX" --compact
-.It Pa /etc/sioyek/keys.config
+.TH SIOYEK 1 2022-06-18 "SIOYEK" "User Commands"
+.SH NAME
+sioyek \- a PDF viewer designed for reading research papers and technical books.
+.SH SYNOPSIS
+.B sioyek
+[OPTIONS] [FILENAME]
+.SH DESCRIPTION
+.PP
+With no arguments, open the most recent document by default. If none exists and
+.B should_load_tutorial_when_no_other_file
+is set in a preference file (see below), then open a tutorial PDF.
+
+.SH OPTIONS
+.HP
+.B -v, --version
+
+Displays version information
+.HP
+.B --reuse-instance
+
+When opening a new file, reuse the previous instance of sioyek instead
+of opening a new window.
+.HP
+.B --new-instance
+
+When opening a new file, create a new instance of sioyek.
+.HP
+.B --new-window
+
+Open the file in a new window but within the same sioyek instance.
+.HP
+.B --reuse-window
+
+Force sioyek to reuse the current window even when should_launch_new_window is set.
+.HP
+.B --page
+.I PAGE
+
+Which page to open.
+.HP
+.B --inverse-search
+.I COMMAND
+
+The command to execute when performing inverse search.
+In
+.I COMMAND
+%1 is filled with the file name and %2 is filled with the line number.
+.HP
+.B --forward-search-file
+.I FILE
+
+Perform forward search on file
+.I FILE
+must also include
+.B --forward-search-line
+to specify the line
+.HP
+.B --forward-search-line
+.I LINE
+
+Perform forward search on line
+.I LINE must also include
+.B --forward-search-file
+to specify the file
+
+.HP
+.B --forward-search-column
+.I COLUMN
+
+Perform forward search on column
+.I COLUMN
+must also include
+.B --forward-search-file
+to specify the file
+.HP
+.B --zoom
+.I ZOOM
+
+Set zoom level to
+.I ZOOM
+.HP
+.B --xloc
+.I XLOC
+
+Set x position within page to
+.I XLOC
+.HP
+.B --yloc
+.I YLOC
+
+Set y position within page to
+.I YLOC
+.HP
+.B --shared-database-path
+.I PATH
+
+Specify which file to use for shared data (bookmarks, highlights, etc.)
+.HP
+.B -h, --help
+
+Displays help on commandline options
+.HP
+.B --help-all
+
+Displays help including Qt specific options
+
+.SH FILES
+.HP
+.B /etc/sioyek/keys.config
+
 Default key bindings
-.It Pa /etc/sioyek/prefs.config
+.HP
+.B /etc/sioyek/prefs.config
+
 Default preferences
-.It Pa /usr/share/sioyek/shaders
+.HP
+.B /usr/share/sioyek/shaders
+
 Default shader files
-.It Pa /usr/share/sioyek/tutorial.pdf
-.Nm
-tutorial pdf
-.It Pa $XDG_CONFIG_HOME/sioyek/keys_user.config
+.HP
+.B /usr/share/sioyek/tutorial.pdf
+
+sioyek tutorial PDF
+.HP
+.B $XDG_CONFIG_HOME/sioyek/keys_user.config
+
 User key bindings
-.It Pa $XDG_CONFIG_HOME/sioyek/prefs_user.config
+.HP
+.B $XDG_CONFIG_HOME/sioyek/prefs_user.config
+
 User preferences
-.Sh BUGS
-If you find a bug in
-.Nm
-please report it at https://github.com/ahrm/sioyek/issues
+
+.SH CONFIGURATION
+.PP
+Sioyek supports many preferences that can be set in a file as
+described above.
+.PP
+Each preference is a token, some whitespace, and a value. A value can
+be a
+
+.IP \[bu]
+integer
+
+.IP \[bu]
+boolean: integer which is exactly either 0 or 1
+
+.IP \[bu]
+float: period separated decimal value
+
+.IP \[bu]
+string: sequence of characters, without quotes
+
+.IP \[bu]
+fvec[n]: space separated list of n floats
+
+.IP \[bu]
+ivec[n]: space separated list of n integers
+
+.IP \[bu]
+color_3: space separated list of 3 floats or integers between 0 and 1,
+representing RGB values.
+
+.IP \[bu]
+color_4: space separated list of 4 floats or integers between 0 and
+1. The first three are RGB values, and the last one is opacity.
+
+.HP
+.B text_highlight_color
+.I color_3
+
+Highlight color when text is selected using mouse
+.HP
+.B vertical_line_color
+.I color_4
+
+Color of the highlight bar when right click is pressed (to bring up
+the reading guide). Alias preference: visual_mark_color.
+.HP
+.B search_highlight_color
+.I color_3
+
+Highlight color when text is a search match
+.HP
+.B link_highlight_color
+.I color_3
+
+Highlight color for PDF links (note that highlight is off by default
+and can only be seen by performing a toggle_highlight command. See
+keys.config for more details)
+
+.HP
+.B synctex_highlight_color
+.I color_3
+
+Highlight color for synctex forward search highlights
+.HP
+.B background_color
+.I color_3
+
+Background color
+.HP
+.B dark_mode_background_color
+.I color_3
+
+Background color in dark mode
+.HP
+.B dark_mode_contrast
+.I float
+
+Contrast in dark mode. Higher values render the PDF with dimmer text
+.HP
+.B default_dark_mode
+.I boolean
+
+Start in dark mode if 1, light mode if 0
+.HP
+.B item_list_prefix
+.I string
+
+Text to prefix every bookmark in bookmark lists
+.HP
+.B inverse_search_command
+.I string
+
+The command to use when trying to do inverse search into a LaTeX
+document. Uncomment and provide your own command. %1 expands to the
+name of the file and %2 expands to the line number.
+.HP
+.B zoom_inc_factor
+.I float
+
+The factor by which we increase/decrease zoom when performing zoom_in
+or zoom_out
+.HP
+.B vertical_move_amount
+.I float
+
+How many (screen) inches we move vertically/horizontally when performing
+move_up/down commands
+.HP
+.B horizontal_move_amount
+.I float
+
+How many (screen) inches we move vertically/horizontally when performing
+move_left/right commands
+.HP
+.B move_screen_ratio
+.I float
+
+How many inches we move vertically/horizontally when performing
+move_left/right commands
+.HP
+.B flat_toc
+.I boolean
+
+If 0, Table of Contents is shown in a hierarchial tree, otherwise it
+is a flat list (can improve performance for extremely large table of
+contents)
+.HP
+.B should_use_multiple_monitors
+.I boolean
+
+If it is 1, when launching the application if we detect multiple
+monitors, we automatically launch the helper window in second monitor
+.HP
+.B should_load_tutorial_when_no_other_file
+.I boolean
+
+If the last opened document is empty, load the tutorial pdf instead.
+
+.HP
+.B should_launch_new_instance
+.I boolean
+
+If it is 0, then we use the previous instance of sioyek when launching
+a new file.  otherwise a new instance is launched every time we open a
+new file.
+.HP
+.B should_launch_new_window
+.I boolean
+
+Open the file in a new window but within the same sioyek instance..HP
+.B should_launch_new_window
+.I boolean
+
+Open the file in a new window but within the same sioyek instance.
+.HP
+.B should_draw_unrendered_pages
+.I boolean
+
+If set, we display a checkerboard pattern for unrendered pages (by
+default we display nothing)
+
+.HP
+.B check_for_updates_on_startup
+.I boolean
+
+If set, shows a notification on startup if a new version of sioyek is
+available
+.HP
+.B sort_bookmarks_by_location
+.I boolean
+
+If set, we sort the bookmarks by their location instead of their
+creation time
+.HP
+.B shared_database_path
+.I string
+
+Path to shared.db database file. If not set, we use the default path.
+you can set this to be a file in a synced folder (e.g. dropbox folder)
+to automatically sync sioyek across multiple computers.
+
+On GNU/Linux, this refers to ~/.local/share/sioyek/shared.db.
+.HP
+.B hover_overview
+.I boolean
+
+Displays an overview of destination when hovering over a link with
+mouse (no need to right click)
+.HP
+.B visual_mark_next_page_fraction
+.I float
+
+When moving to the next line using visual marker, this setting
+specifies the distance of the market to the top of the screen in
+fractions of screen size
+.HP
+.B visual_mark_next_page_threshold
+.I float
+
+When moving to the next line using visual marker, this setting
+determines at which point we move the screen
+.HP
+.B ui_font
+.I string
+
+Font to use for user interface (file browser, bookmarks, etc.)
+.HP
+.B font_size
+.I integer
+
+Font size
+.HP
+.B middle_click_search_engine
+.I string
+
+Search engine to use for middle click lookup. This value should be a
+string corresponding to the letters, *, in another string preference which
+specifies the url, search_url_*.
+
+For example,
+
+.IP \[bu]
+search_url_g https://www.duckduckgo.com/search?q=
+
+.IP \[bu]
+middle_click_search_engine g
+
+Will use the duckduckgo address for middle click search.
+.HP
+.B shift_middle_click_search_engine
+.I string
+
+Search engine to use for shift middle click lookup. Value is analogous
+to middle_click_search_engine
+.HP
+.B startup_commands
+.I string
+
+Semicolon separated list of commands to run on startup
+.HP
+.B status_bar_font_size
+.I integer
+
+Font size for text in the status bar
+.HP
+.B custom_background_color
+.I color_3
+
+Background color to use when executing the command toggle_custom_color.
+.HP
+.B custom_text_color
+.I color_3
+
+Text color to use when executing the command toggle_custom_color.
+.HP
+.B rerender_overview
+.I boolean
+
+If 0, we use the previous renders for overview window which may cause
+it to be blurry if it is 1, we rerender with the proper resolution for
+overview window which looks better but may increase power consumption
+.HP
+.B wheel_zoom_on_cursor
+.I boolean
+
+Normally mouse wheel zooms in on the middle of the screen, but if this
+is set to 1, we zoom in on the cursor
+.HP
+.B linear_filter
+.I boolean
+
+Apply linear texture filtering by passing GL_LINEAR to
+glTexParameteri. This means that for a pixture being textured, we use
+the weighted average of the four texture elements closest to its
+center.
+.HP
+.B display_resolution_scale
+.I float
+
+Resolution multiplier for PDF viewer.
+.HP
+.B status_bar_color
+.I color_3
+
+Color of the status bar background
+.HP
+.B status_bar_text_color
+.I color_3
+
+Color of the status bar text
+.HP
+.B main_window_size
+.I ivec[2]
+
+Default size (in width and height) of the main window when a helper
+window is opened. You can copy the value of this config using the
+copy_window_size_config command.
+
+If this is not set, then we use the full size of the first screen if
+there are multiple monitors, otherwise we use half of the width of the
+screen and the whole height -- a vertical split in half.
+.HP
+.B main_window_move
+.I ivec[2]
+
+Location to snap the main window to in x and y co-ordinates when the
+helper window is opened.
+
+If not set, use (0, 0), top left of the first screen.
+.HP
+.B helper_window_size
+.I ivec[2]
+
+Default size (in width and height) of the helper window when it is
+opened.
+
+If not set, use the full size of the second screen if there are
+mulitple monitors, otherwise use half of the width of the first screen
+and the whole height.
+.HP
+.B helper_window_move
+.I ivec[2]
+
+Location to snap the helper window to in x and y co-ordinates when the
+helper window is opened.
+
+If not set, then use (first screen width/2, 0) if there is only one monitor, and
+(second screen width, 0) if there are two.
+.HP
+.B touchpad_sensitivity
+.I float
+
+Touchpad sensitivity
+.HP
+.B page_separator_width
+.I float
+
+Width of the page separator
+.HP
+.B page_separator_color
+.I color_3
+
+Color of the page separator
+.HP
+.B single_main_window_size
+.I ivec[2]
+
+Default size of the main window when the helper window has been closed.
+
+If not set, uses the size of the whole screen.
+.HP
+.B single_main_window_move
+.I ivec[2]
+
+Location to snap the main window to when the helper window has been closed.
+
+If not set, uses (0, 0)
+.HP
+.B fit_page_to_width_ratio
+.I float
+
+Ratio of page width to use for fit_to_page_width_ratio command. A
+value of 1 would use the whole window width for the page.
+.HP
+.B collapsed_toc
+.I boolean
+
+If set, we initially collapse table of content entries
+.HP
+.B ruler_mode
+.I boolean
+
+If set, we highlight the current line in visual_scroll_mode by masking
+above and below the current line. If not set, we only mask below the
+line
+.HP
+.B ruler_padding
+.I float
+
+Ruler padding between the edges of the top and bottom of the text and the ruler
+.HP
+.B ruler_x_padding
+.I float
+
+Ruler padding between the edges of the left and right of the text and the ruler.
+.HP
+.B text_summary_url
+.I string
+
+Text summary url for fastread
+.HP
+.B text_summary_should_refine
+.I boolean
+
+Refine highlights for fastread
+.HP
+.B text_summary_should_fill
+.I boolean
+
+Fill highlights for fastread
+.HP
+.B text_summary_context_size
+.I integer
+
+Context size to use for fastread
+.HP
+.B use_heuristic_if_text_summary_not_available
+.I boolean
+
+Use heuristic if text summary url does not return highlights. The
+heuristic involves choosing ceiling(length*0.3) characters of
+every word to emphasize.
+.HP
+.B papers_folder_path
+.I string
+
+A directory which sioyek watches for new papers. If a new paper added
+to this directory while we are creating a portal from another
+document, this new document will automatically be used as the
+destination of the portal.
+.HP
+.B enable_experimental_features
+.I boolean
+
+Enable possibly unstable experimental features
+.HP
+.B create_table_of_contents_if_not_exists
+.I boolean
+
+Automatically create a table of contents for the document if it
+doesn't already have one
+.HP
+.B max_created_toc_size
+.I integer
+
+Limits the maximum size of created table of contents
+.HP
+.B force_custom_line_algorithm
+.I boolean
+
+Use custom algorithm based on pixmaps to compute rectangles around the
+lines of the document
+.HP
+.B overview_size
+.I fvec[2]
+
+Size, width and height, of the overview window. The overview window is
+triggered by right clicking on an internal link, or hovering if
+hover_overview is set to 1.
+
+.HP
+.B overview_offset
+.I fvec[2]
+
+Offset of the overview window as floats from the center of the page.
+.HP
+.B ignore_whitespace_in_presentation_mode
+.I boolean
+
+Always use fit_to_page_smart (ignoring whitespace) in presentation view
+.HP
+.B exact_highlight_select
+.I boolean
+
+If set to 0, then in word select mode, select the whole word even if
+the cursor is only partially on the word. If set to 1, then select the word only if the range of the cursor's selection fully includes the word.
+.HP
+.B show_doc_path
+.I boolean
+
+If set to 0, then only show the filename in the dialog to choose to
+open a previous doc (open_prev_doc). If 1, then show the entire file path.
+.HP
+.B fastread_opacity
+.I float
+
+Opacity of the dimmed portion of words in fastread mode.
+.HP
+.B highlight_color_*
+.I color_3
+
+Color of the highlight color bound to symbol * (should be one character)
+.HP
+.B should_warn_about_user_key_override
+.I boolean
+
+If set to 0, then don't warn the user about key definition overrides
+when the two definitions are in different files. If set to 1, then
+always warn the user when keys are overridden.
+.SH BUGS
+If you find a bug in sioyek please report it at
+https://github.com/ahrm/sioyek/issues
