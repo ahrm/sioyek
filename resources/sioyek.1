@@ -843,7 +843,7 @@ color_4: space separated list of 4 floats or integers between 0 and
 .B text_highlight_color
 .I color_3
 
-Highlight color when text is selected using mouse
+Highlight color when text is selected using mouse.
 .HP
 .B vertical_line_color
 .I color_4
@@ -854,45 +854,45 @@ the reading guide). Alias preference: visual_mark_color.
 .B search_highlight_color
 .I color_3
 
-Highlight color when text is a search match
+Highlight color when text is a search match.
 .HP
 .B link_highlight_color
 .I color_3
 
 Highlight color for PDF links (note that highlight is off by default
 and can only be seen by performing a toggle_highlight command. See
-keys.config for more details)
+keys.config for more details).
 
 .HP
 .B synctex_highlight_color
 .I color_3
 
-Highlight color for synctex forward search highlights
+Highlight color for synctex forward search highlights.
 .HP
 .B background_color
 .I color_3
 
-Background color
+Background color.
 .HP
 .B dark_mode_background_color
 .I color_3
 
-Background color in dark mode
+Background color in dark mode.
 .HP
 .B dark_mode_contrast
 .I float
 
-Contrast in dark mode. Higher values render the PDF with dimmer text
+Contrast in dark mode. Higher values render the PDF with dimmer text.
 .HP
 .B default_dark_mode
 .I boolean
 
-Start in dark mode if 1, light mode if 0
+Start in dark mode if 1, light mode if 0.
 .HP
 .B item_list_prefix
 .I string
 
-Text to prefix every bookmark in bookmark lists
+Text to prefix every bookmark in bookmark lists.
 .HP
 .B inverse_search_command
 .I string
@@ -905,44 +905,43 @@ name of the file and %2 expands to the line number.
 .I float
 
 The factor by which we increase/decrease zoom when performing zoom_in
-or zoom_out
+or zoom_out.
 .HP
 .B vertical_move_amount
 .I float
 
 How many (screen) inches we move vertically/horizontally when performing
-move_up/down commands
+move_up/down commands.
 .HP
 .B horizontal_move_amount
 .I float
 
 How many (screen) inches we move vertically/horizontally when performing
-move_left/right commands
+move_left/right commands.
 .HP
 .B move_screen_ratio
 .I float
 
 How many inches we move vertically/horizontally when performing
-move_left/right commands
+move_left/right commands.
 .HP
 .B flat_toc
 .I boolean
 
 If 0, Table of Contents is shown in a hierarchial tree, otherwise it
 is a flat list (can improve performance for extremely large table of
-contents)
+contents).
 .HP
 .B should_use_multiple_monitors
 .I boolean
 
 If it is 1, when launching the application if we detect multiple
-monitors, we automatically launch the helper window in second monitor
+monitors, we automatically launch the helper window in second monitor.
 .HP
 .B should_load_tutorial_when_no_other_file
 .I boolean
 
-If the last opened document is empty, load the tutorial pdf instead.
-
+If the last opened document is empty, load the tutorial pdf instead..
 .HP
 .B should_launch_new_instance
 .I boolean
@@ -954,30 +953,25 @@ new file.
 .B should_launch_new_window
 .I boolean
 
-Open the file in a new window but within the same sioyek instance..HP
-.B should_launch_new_window
-.I boolean
-
 Open the file in a new window but within the same sioyek instance.
 .HP
 .B should_draw_unrendered_pages
 .I boolean
 
 If set, we display a checkerboard pattern for unrendered pages (by
-default we display nothing)
-
+default we display nothing).
 .HP
 .B check_for_updates_on_startup
 .I boolean
 
 If set, shows a notification on startup if a new version of sioyek is
-available
+available.
 .HP
 .B sort_bookmarks_by_location
 .I boolean
 
 If set, we sort the bookmarks by their location instead of their
-creation time
+creation time.
 .HP
 .B shared_database_path
 .I string
@@ -992,25 +986,25 @@ On GNU/Linux, this refers to ~/.local/share/sioyek/shared.db.
 .I boolean
 
 Displays an overview of destination when hovering over a link with
-mouse (no need to right click)
+mouse (no need to right click).
 .HP
 .B visual_mark_next_page_fraction
 .I float
 
 When moving to the next line using visual marker, this setting
 specifies the distance of the market to the top of the screen in
-fractions of screen size
+fractions of screen size.
 .HP
 .B visual_mark_next_page_threshold
 .I float
 
 When moving to the next line using visual marker, this setting
-determines at which point we move the screen
+determines at which point we move the screen.
 .HP
 .B ui_font
 .I string
 
-Font to use for user interface (file browser, bookmarks, etc.)
+Font to use for user interface (file browser, bookmarks, etc.).
 .HP
 .B font_size
 .I integer
@@ -1038,17 +1032,17 @@ Will use the duckduckgo address for middle click search.
 .I string
 
 Search engine to use for shift middle click lookup. Value is analogous
-to middle_click_search_engine
+to middle_click_search_engine.
 .HP
 .B startup_commands
 .I string
 
-Semicolon separated list of commands to run on startup
+Semicolon separated list of commands to run on startup.
 .HP
 .B status_bar_font_size
 .I integer
 
-Font size for text in the status bar
+Font size for text in the status bar.
 .HP
 .B custom_background_color
 .I color_3
@@ -1065,13 +1059,13 @@ Text color to use when executing the command toggle_custom_color.
 
 If 0, we use the previous renders for overview window which may cause
 it to be blurry if it is 1, we rerender with the proper resolution for
-overview window which looks better but may increase power consumption
+overview window which looks better but may increase power consumption.
 .HP
 .B wheel_zoom_on_cursor
 .I boolean
 
 Normally mouse wheel zooms in on the middle of the screen, but if this
-is set to 1, we zoom in on the cursor
+is set to 1, we zoom in on the cursor.
 .HP
 .B linear_filter
 .I boolean
@@ -1089,12 +1083,12 @@ Resolution multiplier for PDF viewer.
 .B status_bar_color
 .I color_3
 
-Color of the status bar background
+Color of the status bar background.
 .HP
 .B status_bar_text_color
 .I color_3
 
-Color of the status bar text
+Color of the status bar text.
 .HP
 .B main_window_size
 .I ivec[2]
@@ -1137,17 +1131,17 @@ If not set, then use (first screen width/2, 0) if there is only one monitor, and
 .B touchpad_sensitivity
 .I float
 
-Touchpad sensitivity
+Touchpad sensitivity.
 .HP
 .B page_separator_width
 .I float
 
-Width of the page separator
+Width of the page separator.
 .HP
 .B page_separator_color
 .I color_3
 
-Color of the page separator
+Color of the page separator.
 .HP
 .B single_main_window_size
 .I ivec[2]
@@ -1161,7 +1155,7 @@ If not set, uses the size of the whole screen.
 
 Location to snap the main window to when the helper window has been closed.
 
-If not set, uses (0, 0)
+If not set, uses (0, 0).
 .HP
 .B fit_page_to_width_ratio
 .I float
@@ -1172,19 +1166,19 @@ value of 1 would use the whole window width for the page.
 .B collapsed_toc
 .I boolean
 
-If set, we initially collapse table of content entries
+If set, we initially collapse table of content entries.
 .HP
 .B ruler_mode
 .I boolean
 
 If set, we highlight the current line in visual_scroll_mode by masking
 above and below the current line. If not set, we only mask below the
-line
+line.
 .HP
 .B ruler_padding
 .I float
 
-Ruler padding between the edges of the top and bottom of the text and the ruler
+Ruler padding between the edges of the top and bottom of the text and the ruler.
 .HP
 .B ruler_x_padding
 .I float
@@ -1194,22 +1188,35 @@ Ruler padding between the edges of the left and right of the text and the ruler.
 .B text_summary_url
 .I string
 
-Text summary url for fastread
+Text summary url for fastread. Fastread mode (turned on with the
+command toggle_fastread) by default queries a url for information
+about which characters of each word on the page to highlight. An
+implementation of such a server based on a language model is available
+here:
+https://github.com/ahrm/sioyek/blob/main/scripts/summary_highlight_server.py.
+
+By default, both this script and sioyek will bind to localhost:5000.
+
 .HP
 .B text_summary_should_refine
 .I boolean
 
-Refine highlights for fastread
+Language model option for the fastread server program. If 1, then
+prevent highlights in the middle of words by always highlighting
+starting from the beginning of the word until the first mispredicted
+character.
 .HP
 .B text_summary_should_fill
 .I boolean
 
-Fill highlights for fastread
+Language model option for the fastread server program. If 1, then
+highlight the entire word when over 50% of it is highlighted.
 .HP
 .B text_summary_context_size
 .I integer
 
-Context size to use for fastread
+Context size to use on the fastread server. Number of characters in
+context for next character prediction.
 .HP
 .B use_heuristic_if_text_summary_not_available
 .I boolean
@@ -1235,18 +1242,18 @@ Enable possibly unstable experimental features
 .I boolean
 
 Automatically create a table of contents for the document if it
-doesn't already have one
+doesn't already have one.
 .HP
 .B max_created_toc_size
 .I integer
 
-Limits the maximum size of created table of contents
+Limits the maximum size of created table of contents.
 .HP
 .B force_custom_line_algorithm
 .I boolean
 
 Use custom algorithm based on pixmaps to compute rectangles around the
-lines of the document
+lines of the document.
 .HP
 .B overview_size
 .I fvec[2]
@@ -1254,7 +1261,6 @@ lines of the document
 Size, width and height, of the overview window. The overview window is
 triggered by right clicking on an internal link, or hovering if
 hover_overview is set to 1.
-
 .HP
 .B overview_offset
 .I fvec[2]
@@ -1264,7 +1270,7 @@ Offset of the overview window as floats from the center of the page.
 .B ignore_whitespace_in_presentation_mode
 .I boolean
 
-Always use fit_to_page_smart (ignoring whitespace) in presentation view
+Always use fit_to_page_smart (ignoring whitespace) in presentation view.
 .HP
 .B exact_highlight_select
 .I boolean
@@ -1286,7 +1292,7 @@ Opacity of the dimmed portion of words in fastread mode.
 .B highlight_color_*
 .I color_3
 
-Color of the highlight color bound to symbol * (should be one character)
+Color of the highlight color bound to symbol * (should be one character).
 .HP
 .B should_warn_about_user_key_override
 .I boolean
