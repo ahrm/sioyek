@@ -304,9 +304,9 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		search_url_config_string[search_url_config_string.size() - 1] = letter;
 		execute_command_config_string[execute_command_config_string.size() - 1] = letter;
 
-		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(letter - 'a') * 3], vec3_serializer, vec3_deserializer });
-		configs.push_back({ search_url_config_string, &SEARCH_URLS[letter - 'a'], string_serializer, string_deserializer });
-		configs.push_back({ execute_command_config_string, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer });
+		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(letter - 'a') * 3], vec3_serializer, vec3_deserializer, nullptr });
+		configs.push_back({ search_url_config_string, &SEARCH_URLS[letter - 'a'], string_serializer, string_deserializer, nullptr });
+		configs.push_back({ execute_command_config_string, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer, nullptr });
 	}
 
 	deserialize(default_path, auto_path, user_paths);

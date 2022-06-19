@@ -1616,7 +1616,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
 		created_annotations.push_back(std::make_pair(pdf_page, bookmark_annot));
 	}
 
-	pdf_write_options pwo = {0};
+	pdf_write_options pwo {};
 	pdf_write_document(context, pdf_doc, output_file, &pwo);
 	fz_close_output(context, output_file);
 	fz_drop_output(context, output_file);
@@ -1917,7 +1917,7 @@ std::optional<std::string> Document::get_page_fastread_highlights(int page) {
 }
 
 fz_rect Document::get_page_rect_no_cache(int page_number) {
-	fz_rect res = {0};
+	fz_rect res {};
 	fz_try(context) {
 		int n_pages = num_pages();
 		if (page_number < n_pages) {
