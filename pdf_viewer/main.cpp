@@ -399,7 +399,6 @@ MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
 }
 
 std::optional<std::wstring> get_last_opened_file_name() {
-    char file_path[MAX_PATH] = { 0 };
     std::string file_path_;
     std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
     std::getline(last_state_file, file_path_);

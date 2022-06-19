@@ -191,7 +191,6 @@ bool color_4_validator(const std::wstring& str) {
 bool bool_validator(const std::wstring& str) {
 	QString qstr = QString::fromStdWString(str);
 	auto parts = qstr.trimmed().split(' ', Qt::SplitBehaviorFlags::SkipEmptyParts);
-	int is_correct = true;
 	std::wstring msg = L"Bool values should be either 0 or 1, but got ";
 	if (parts.size() != 1) {
 		std::wcout << msg << str << L"\n";

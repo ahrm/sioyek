@@ -624,7 +624,6 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 	fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
 	rect_to_quad(separator_window_rect, page_vertices);
 
-	float backcolor[] = { 0.0f, 0.0f, 0.0f };
 	glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
 
 	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
@@ -829,7 +828,6 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			int window_x0 = static_cast<int>(window_rect.x0 * view_width / 2 + view_width / 2);
 			int window_y0 = static_cast<int>(-window_rect.y0 * view_height / 2 + view_height / 2);
 
-			int window_x1 = static_cast<int>(window_rect.x1 * view_width / 2 + view_width / 2);
 			int window_y1 = static_cast<int>(-window_rect.y1 * view_height / 2 + view_height / 2);
 
 			painter->drawText(window_x0, (window_y0 + window_y1) / 2, tags[i].c_str());
@@ -864,7 +862,6 @@ bool PdfViewOpenGLWidget::get_is_searching(float* prog) {
 	}
 
 	search_results_mutex.lock();
-	bool res = is_searching;
 	if (is_searching) {
 		if (prog) {
 			*prog = percent_done;

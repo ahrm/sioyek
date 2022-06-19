@@ -91,7 +91,6 @@ protected:
 			tree_view->resizeColumnToContents(0);
 			tree_view->header()->setSectionResizeMode(0, QHeaderView::Stretch);
 		}
-		QSortFilterProxyModel* sort_filter_proxy_model = dynamic_cast<QSortFilterProxyModel*>(proxy_model);
 		if (proxy_model) {
 			proxy_model->setRecursiveFilteringEnabled(true);
 		}
@@ -370,7 +369,6 @@ public:
 	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) override {
 		if (on_delete_function) {
 			on_delete_function(&values[source_index.row()]);
-			int delete_row = selected_index.row();
 			this->proxy_model->removeRow(selected_index.row());
 			values.erase(values.begin() + source_index.row());
 		}
@@ -426,7 +424,6 @@ public:
 	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) override {
 		if (on_delete_function) {
 			on_delete_function(&values[source_index.row()]);
-			int delete_row = selected_index.row();
 			this->proxy_model->removeRow(selected_index.row());
 			values.erase(values.begin() + source_index.row());
 		}

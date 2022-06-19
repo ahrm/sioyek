@@ -415,7 +415,6 @@ fz_rect create_word_rect(const std::vector<fz_rect>& chars) {
 	if (chars.size() == 0) return res;
 	res = chars[0];
 
-	float min_x;
 	for (int i = 1; i < chars.size(); i++) {
 		if (res.x0 > chars[i].x0) res.x0 = chars[i].x0;
 		if (res.x1 < chars[i].x1) res.x1 = chars[i].x1;
@@ -455,7 +454,6 @@ fz_rect create_word_rect(const std::vector<fz_stext_char*>& chars) {
 	if (chars.size() == 0) return res;
 	res = fz_rect_from_quad(chars[0]->quad);
 
-	float min_x;
 	for (int i = 1; i < chars.size(); i++) {
 		fz_rect current_char_rect = fz_rect_from_quad(chars[i]->quad);
 		if (res.x0 > current_char_rect.x0) res.x0 = current_char_rect.x0;
@@ -1073,9 +1071,6 @@ void index_references(fz_stext_page* page, int page_number, std::map<std::wstrin
 	char end_char = ']';
 	char delim_char = ',';
 
-	bool is_in_reference = false;
-	const int MAX_REFERENCE_SIZE = 10;
-
 	bool started = false;
 	std::vector<IndexedData> temp_indices;
 	std::wstring current_text = L"";
@@ -1359,7 +1354,6 @@ int find_best_vertical_line_location(fz_pixmap* pixmap, int doc_x, int doc_y) {
 	int start_index, end_index;
 	largest_contigous_ones(is_max_list, &start_index, &end_index);
 
-	int test = (start_index + end_index) / 2;
 	//return doc_y + (start_index + end_index) / 2;
 	return doc_y + start_index ;
 }

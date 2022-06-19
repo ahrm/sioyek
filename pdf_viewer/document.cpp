@@ -908,7 +908,6 @@ void Document::set_page_offset(int new_offset) {
 }
 
 fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page) {
-	float page_x0, page_x1, page_y0, page_y1;
 	int page_number = -1;
 	DocumentPos bottom_left = absolute_to_page_pos({ absolute_rect.x0, absolute_rect.y0 });
 	DocumentPos top_right = absolute_to_page_pos({ absolute_rect.x1, absolute_rect.y1 });
@@ -1041,8 +1040,6 @@ void Document::index_figures(bool* invalid_flag) {
 			if (document_needs_password) {
 				fz_authenticate_password(context_, doc_, correct_password.c_str());
 			}
-
-			bool focus_next = false;
 			for (int i = 0; i < n; i++) {
 				// when we close a document before its indexing is finished, we should stop indexing as soon as posible
 				if (!is_figure_indexing_required) {
@@ -1562,8 +1559,6 @@ void Document::embed_annotations(std::wstring new_file_path) {
 	fz_output* output_file = fz_new_output_with_path(context, new_file_path_utf8.c_str(), 0);
 
 	pdf_document* pdf_doc = pdf_specifics(context, doc);
-	int page_count = num_pages();
-
 	const std::vector<Highlight>& doc_highlights = get_highlights();
 	const std::vector<BookMark>& doc_bookmarks = get_bookmarks();
 
@@ -1970,8 +1965,6 @@ std::optional<PdfLink> Document::get_link_in_page_rect(int page, fz_rect rect) {
 	if (page != -1) {
 		fz_link* links = get_page_links(page);
 		std::optional<PdfLink> res = {};
-
-		bool found = false;
 		while (links != nullptr) {
 			if (rects_intersect(doc_rect, links->rect))
 			{
@@ -1992,8 +1985,6 @@ std::optional<PdfLink> Document::get_link_in_pos(int page, float doc_x, float do
 		fz_link* links = get_page_links(page);
 		fz_point point = { doc_x, doc_y };
 		std::optional<PdfLink> res = {};
-
-		bool found = false;
 		while (links != nullptr) {
 			if (fz_is_point_inside_rect(point, links->rect)) {
 				res = { links->rect, links->uri };

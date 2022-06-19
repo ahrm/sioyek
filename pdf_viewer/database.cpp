@@ -850,8 +850,6 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 	//we should only split when we have the same local and global database
 	assert(local_db == global_db);
 
-	sqlite3* prev_database = local_db;
-
 	// ---------------------- EXPORT PREVIOUS DATABASE ----------------------------
 	std::vector<std::pair<std::wstring, std::wstring>> path_hash;
 	get_prev_path_hash_pairs(path_hash);
