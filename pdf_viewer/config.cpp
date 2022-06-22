@@ -75,6 +75,7 @@ extern bool EXACT_HIGHLIGHT_SELECT;
 extern bool SHOW_DOC_PATH;
 extern float FASTREAD_OPACITY;
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
+extern bool DEFAULT_WORD_SELECTION;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -295,6 +296,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"show_doc_path", &SHOW_DOC_PATH, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"fastread_opacity", &FASTREAD_OPACITY, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"should_warn_about_user_key_override", &SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"default_word_selection", &DEFAULT_WORD_SELECTION, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";
