@@ -248,8 +248,8 @@ int DocumentView::get_highlight_index_in_pos(WindowPos window_pos) {
 	if (current_document->can_use_highlights()) {
 		const std::vector<Highlight>& highlights = current_document->get_highlights();
 
-		for (int i = 0; i < highlights.size(); i++) {
-			for (int j = 0; j < highlights[i].highlight_rects.size(); j++) {
+		for (size_t i = 0; i < highlights.size(); i++) {
+			for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
 				if (fz_is_point_inside_rect(pos, highlights[i].highlight_rects[j])) {
 					return i;
 				}
@@ -763,7 +763,7 @@ std::optional<std::pair<int, int>> DocumentView::get_current_page_range() {
 	int range_begin = chapter_pages[ci];
 	int range_end = current_document->num_pages()-1;
 
-	if (ci < chapter_pages.size() - 1) {
+	if ((size_t) ci < chapter_pages.size() - 1) {
 		range_end = chapter_pages[ci + 1];
 	}
 
@@ -773,7 +773,7 @@ std::optional<std::pair<int, int>> DocumentView::get_current_page_range() {
 void DocumentView::get_page_chapter_index(int page, std::vector<TocNode*> nodes, std::vector<int>& res) {
 
 
-	for (int i = 0; i < nodes.size(); i++) {
+	for (size_t i = 0; i < nodes.size(); i++) {
 		if ((i == nodes.size() - 1) && (nodes[i]->page <= page)) {
 			res.push_back(i);
 			get_page_chapter_index(page, nodes[i]->children, res);
@@ -803,7 +803,7 @@ void DocumentView::goto_chapter(int diff) {
 
 	int index = 0;
 
-	while (index < chapter_pages.size() && chapter_pages[index] < curr_page) {
+	while ((size_t) index < chapter_pages.size() && chapter_pages[index] < curr_page) {
 		index++;
 	}
 
@@ -811,7 +811,7 @@ void DocumentView::goto_chapter(int diff) {
 	if (new_index < 0) {
 		goto_page(0);
 	}
-	else if (new_index >= chapter_pages.size()) {
+	else if ((size_t) new_index >= chapter_pages.size()) {
 		goto_end();
 	}
 	else {
@@ -967,7 +967,7 @@ int DocumentView::get_line_index_of_vertical_pos() {
 	DocumentPos line_doc_pos = current_document->absolute_to_page_pos({0, get_ruler_pos()});
 	auto rects = current_document->get_page_lines(line_doc_pos.page);
 	int index = 0;
-	while (index < rects.size() && rects[index].y0 < get_ruler_pos()) {
+	while ((size_t) index < rects.size() && rects[index].y0 < get_ruler_pos()) {
 		index++;
 	}
 	return index-1;
@@ -981,7 +981,7 @@ std::optional<std::wstring> DocumentView::get_selected_line_text () {
 	if (line_index > 0) {
 		std::vector<std::wstring> lines;
 		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
-		if (line_index < lines.size()) {
+		if ((size_t) line_index < lines.size()) {
 			std::wstring content = lines[line_index];
 			return content;
 		}
@@ -996,7 +996,7 @@ std::optional<DocumentPos> DocumentView::find_line_definition() {
 	if (line_index > 0) {
 		std::vector<std::wstring> lines;
 		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
-		if (line_index < lines.size()) {
+		if ((size_t) line_index < lines.size()) {
 			std::wstring content = lines[line_index];
 
 			std::wstring item_regex(L"[a-zA-Z]{2,}[ \t]+[0-9]+(\.[0-9]+)*");

@@ -752,7 +752,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	if (document_view->get_document()->can_use_highlights()) {
 		const std::vector<Highlight>& highlights = document_view->get_document()->get_highlights();
-		for (int i = 0; i < highlights.size(); i++) {
+		for (size_t i = 0; i < highlights.size(); i++) {
 			float selection_begin_window_x, selection_begin_window_y;
 			float selection_end_window_x, selection_end_window_y;
 
@@ -775,7 +775,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			bool is_selection_in_window = range_intersects(selection_begin_window_y, selection_end_window_y, -1.0f, 1.0f);
 
 			if (is_selection_in_window) {
-				for (int j = 0; j < highlights[i].highlight_rects.size(); j++) {
+				for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
 					glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
 					render_highlight_absolute(shared_gl_objects.highlight_program, highlights[i].highlight_rects[j], false);
 				}
@@ -816,7 +816,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 		std::vector<std::string> tags = get_tags(word_rects.size());
 
-		for (int i = 0; i < word_rects.size(); i++) {
+		for (size_t i = 0; i < word_rects.size(); i++) {
 
 			auto [rect, page] = word_rects[i];
 
@@ -834,7 +834,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		}
 	}
 	if (should_highlight_links && should_show_numbers && (!overview_page)) {
-		for (int i = 0; i < all_visible_links.size(); i++) {
+		for (size_t i = 0; i < all_visible_links.size(); i++) {
 			std::stringstream ss;
 			ss << i;
 			std::string index_string = ss.str();
@@ -1138,7 +1138,7 @@ bool PdfViewOpenGLWidget::is_window_point_in_overview_border(float window_x, flo
 
 	fz_point point{ window_x, window_y };
 	std::vector<fz_rect> rects = get_overview_border_rects();
-	for (int i = 0; i < rects.size(); i++) {
+	for (size_t i = 0; i < rects.size(); i++) {
 		if (fz_is_point_inside_rect(point, rects[i])) {
 			*which_border = static_cast<OverviewSide>(i);
 			return true;

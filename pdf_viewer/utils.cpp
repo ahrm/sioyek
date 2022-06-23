@@ -415,7 +415,7 @@ fz_rect create_word_rect(const std::vector<fz_rect>& chars) {
 	if (chars.size() == 0) return res;
 	res = chars[0];
 
-	for (int i = 1; i < chars.size(); i++) {
+	for (size_t i = 1; i < chars.size(); i++) {
 		if (res.x0 > chars[i].x0) res.x0 = chars[i].x0;
 		if (res.x1 < chars[i].x1) res.x1 = chars[i].x1;
 		if (res.y0 > chars[i].y0) res.y0 = chars[i].y0;
@@ -432,7 +432,7 @@ std::vector<fz_rect> create_word_rects_multiline(const std::vector<fz_rect>& cha
 	if (chars.size() == 0) return res;
 	current_line_chars.push_back(chars[0]);
 
-	for (int i = 1; i < chars.size(); i++) {
+	for (size_t i = 1; i < chars.size(); i++) {
 		if (chars[i].x0 < chars[i - 1].x0) { // a new line has begun
 			res.push_back(create_word_rect(current_line_chars));
 			current_line_chars.clear();
@@ -454,7 +454,7 @@ fz_rect create_word_rect(const std::vector<fz_stext_char*>& chars) {
 	if (chars.size() == 0) return res;
 	res = fz_rect_from_quad(chars[0]->quad);
 
-	for (int i = 1; i < chars.size(); i++) {
+	for (size_t i = 1; i < chars.size(); i++) {
 		fz_rect current_char_rect = fz_rect_from_quad(chars[i]->quad);
 		if (res.x0 > current_char_rect.x0) res.x0 = current_char_rect.x0;
 		if (res.x1 < current_char_rect.x1) res.x1 = current_char_rect.x1;
@@ -473,7 +473,7 @@ void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_char
 	std::vector<fz_stext_char*> pending_word;
 	pending_word.push_back(flat_chars[0]);
 
-	for (int i = 1; i < flat_chars.size(); i++) {
+	for (size_t i = 1; i < flat_chars.size(); i++) {
 		if (is_start_of_new_word(flat_chars[i - 1], flat_chars[i])) {
 			flat_word_rects.push_back(create_word_rect(pending_word));
 			if (is_start_of_new_line(flat_chars[i - 1], flat_chars[i])) {
@@ -513,7 +513,7 @@ void get_word_rect_list_from_flat_chars(const std::vector<fz_stext_char*>& flat_
 		return res;
 	};
 
-	for (int i = 1; i < flat_chars.size(); i++) {
+	for (size_t i = 1; i < flat_chars.size(); i++) {
 		if (is_start_of_new_word(flat_chars[i - 1], flat_chars[i])) {
 			flat_word_rects.push_back(get_rects());
 			words.push_back(get_word());
@@ -555,7 +555,7 @@ int get_index_from_tag(const std::string& tag) {
 	int res = 0;
 	int mult = 1;
 
-	for (int i = 0; i < tag.size(); i++) {
+	for (size_t i = 0; i < tag.size(); i++) {
 		res += (tag[i] - 'a') * mult;
 		mult = mult * 26;
 	}
@@ -671,7 +671,7 @@ void merge_selected_character_rects(const std::vector<fz_rect>& selected_charact
 	fz_rect last_rect = selected_character_rects[0];
 	line_rects.push_back(selected_character_rects[0]);
 
-	for (int i = 1; i < selected_character_rects.size(); i++) {
+	for (size_t i = 1; i < selected_character_rects.size(); i++) {
 		if (is_consequtive(last_rect, selected_character_rects[i])) {
 			last_rect = selected_character_rects[i];
 			line_rects.push_back(selected_character_rects[i]);
@@ -691,7 +691,7 @@ void merge_selected_character_rects(const std::vector<fz_rect>& selected_charact
 	}
 
 	// avoid overlapping rects
-	for (int i = 0; i < resulting_rects.size() - 1; i++) {
+	for (size_t i = 0; i < resulting_rects.size() - 1; i++) {
 		// we don't need to do this across columns of document
 		float height = std::abs(resulting_rects[i].y1 - resulting_rects[i].y0);
 		if (std::abs(resulting_rects[i + 1].y0 - resulting_rects[i].y0) < (0.5 * height)) {
@@ -722,7 +722,8 @@ int next_path_separator_position(const std::wstring& path) {
 void split_path(std::wstring path, std::vector<std::wstring> &res) {
 
 	size_t loc = -1;
-	while ((loc = next_path_separator_position(path)) != -1) {
+        // overflows
+	while ((loc = next_path_separator_position(path)) != (size_t) -1) {
 
 		int skiplen = loc + 1;
 		if (loc != 0) {
@@ -755,7 +756,7 @@ void split_key_string(std::string haystack, const std::string& needle, std::vect
 
 	size_t loc = -1;
 	size_t needle_size = needle.size();
-	while ((loc = haystack.find(needle)) != -1) {
+	while ((loc = haystack.find(needle)) != (size_t) -1) {
 
 		if ((loc < (haystack.size()-1)) &&  (haystack.substr(needle.size(), needle.size()) == needle)) {
 			// if needle is repeated, one of them is added as a token for example
@@ -893,7 +894,7 @@ void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std
 	string_res.clear();
 	indices.clear();
 
-	for (int i = 0; i < flat_chars.size(); i++) {
+	for (size_t i = 0; i < flat_chars.size(); i++) {
 		fz_stext_char* ch = flat_chars[i];
 
 		if (ch->next == nullptr) { // add a space after the last character in a line, igonre hyphenated characters
@@ -975,7 +976,7 @@ std::wstring strip_string(std::wstring& input_string) {
 
 	while ( is_whitespace(input_string[start_index])) {
 		start_index++;
-		if (start_index == input_string.size()) {
+		if ((size_t) start_index == input_string.size()) {
 			return L"";
 		}
 	}
@@ -1038,7 +1039,7 @@ void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_num
 
 	find_regex_matches_in_stext_page(flat_chars, regex, match_ranges, match_texts);
 
-	for (int i = 0; i < match_ranges.size(); i++) {
+	for (size_t i = 0; i < match_ranges.size(); i++) {
 		auto [start_index, end_index] = match_ranges[i];
 		if (start_index == -1 || end_index == -1) {
 			break;
@@ -1210,7 +1211,7 @@ bool largest_contigous_ones(std::vector<int>& arr, int* start_index, int* end_in
 
 	int count = 0;
 
-	for (int i = 0; i < arr.size(); i++) {
+	for (size_t i = 0; i < arr.size(); i++) {
 		if (arr[i] == 1) {
 			count++;
 		}
@@ -1283,7 +1284,7 @@ void get_line_begins_and_ends_from_histogram(std::vector<unsigned int> histogram
 		normalized_histogram.push_back((x - mean_width) / std);
 	}
 
-	int i = 0;
+	size_t i = 0;
 
 	while (i < histogram.size()) {
 
@@ -1303,13 +1304,13 @@ void get_line_begins_and_ends_from_histogram(std::vector<unsigned int> histogram
 	if (res.size() > 5) {
 		std::vector<float> line_distances;
 
-		for (int i = 0; i < res.size() - 1; i++) {
+		for (size_t i = 0; i < res.size() - 1; i++) {
 			line_distances.push_back(res[i + 1] - res[i]);
 		}
 		std::nth_element(line_distances.begin(), line_distances.begin() + line_distances.size() / 2, line_distances.end());
 		additional_distance = line_distances[line_distances.size() / 2];
 
-		for (int i = 0; i < res.size(); i++) {
+		for (size_t i = 0; i < res.size(); i++) {
 			res[i] += static_cast<unsigned int>(additional_distance / 5.0f);
 			res_begins[i] -= static_cast<unsigned int>(additional_distance / 5.0f);
 		}
@@ -1376,7 +1377,7 @@ bool is_string_numeric_float(const std::wstring& str) {
 	}
 	int dot_count = 0;
 
-	for (int i = 0; i < str.size(); i++) {
+	for (size_t i = 0; i < str.size(); i++) {
 		if (i == 0) {
 			if (str[i] == '-') continue;
 		}
@@ -1550,7 +1551,7 @@ std::wstring add_redundant_dot_to_path(const std::wstring& path) {
 		res = L"/";
 	}
 
-	for (int i = 0; i < parts.size(); i++) {
+	for (size_t i = 0; i < parts.size(); i++) {
 		res.append(parts[i]);
 		if (i < parts.size() - 1) {
 			res.append(L"/");
@@ -1577,7 +1578,7 @@ QWidget* get_top_level_widget(QWidget* widget) {
 float type_name_similarity_score(std::wstring name1, std::wstring name2) {
 	name1 = to_lower(name1);
 	name2 = to_lower(name2);
-	int common_prefix_index = 0;
+	size_t common_prefix_index = 0;
 
 	while (name1[common_prefix_index] == name2[common_prefix_index]){
 		common_prefix_index++;
@@ -1709,10 +1710,10 @@ std::wifstream open_wifstream(const std::wstring& file_name) {
 }
 
 std::wstring truncate_string(const std::wstring& inp, int size) {
-	if (inp.size() <= size) {
+        if (inp.size() <= (size_t) size) {
 		return inp;
 	}
-	else {
+        else {
 		return inp.substr(0, size - 3) + L"...";
 	}
  
@@ -1808,7 +1809,7 @@ int find_best_merge_index_for_line_index(const std::vector<fz_stext_line*>& line
 	float min_cost = current_range.size() * line_num_penalty(1) / current_range_x.size();
 	int min_index = index;
 
-	for (int j = index + 1; (j < lines.size()) && ((j - index) < max_merged_lines); j++) {
+	for (size_t j = index + 1; (j < lines.size()) && ((j - index) < (size_t) max_merged_lines); j++) {
 		float line_height = line_rects[j].y1 - line_rects[j].y0;
 		float line_width = line_rects[j].x1 - line_rects[j].x0;
 		if (line_height > maximum_height) {
@@ -1907,7 +1908,7 @@ void merge_lines(const std::vector<fz_stext_line*>& lines_, std::vector<fz_rect>
 	std::vector<int> char_counts;
 
 	std::vector<int> indices_to_delete;
-	for (int i = 0; i < lines.size(); i++) {
+	for (size_t i = 0; i < lines.size(); i++) {
 		if (line_num_chars(lines[i]) < 5) {
 			indices_to_delete.push_back(i);
 		}
@@ -1922,7 +1923,7 @@ void merge_lines(const std::vector<fz_stext_line*>& lines_, std::vector<fz_rect>
 		char_counts.push_back(line_num_chars(line));
 	}
 
-	for (int i = 0; i < lines.size(); i++) {
+	for (size_t i = 0; i < lines.size(); i++) {
 		fz_rect rect = custom_line_rects[i];
 		int best_index = find_best_merge_index_for_line_index(lines, custom_line_rects, char_counts, i);
 		std::wstring text = get_string_from_stext_line(lines[i]);
@@ -1934,7 +1935,7 @@ void merge_lines(const std::vector<fz_stext_line*>& lines_, std::vector<fz_rect>
 		temp_texts.push_back(text);
 		i = best_index;
 	}
-	for (int i = 0; i < temp_rects.size(); i++) {
+	for (size_t i = 0; i < temp_rects.size(); i++) {
 		if (i > 0 && out_rects.size() > 0) {
 			fz_rect prev_rect = out_rects[out_rects.size() - 1];
 			fz_rect current_rect = temp_rects[i];

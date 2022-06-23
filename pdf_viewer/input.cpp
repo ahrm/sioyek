@@ -198,7 +198,7 @@ InputParseTreeNode parse_token(std::string token) {
 	std::vector<std::string> subcommands;
 	split_key_string(token, "-", subcommands);
 
-	for (int i = 0; i < subcommands.size() - 1; i++) {
+	for (size_t i = 0; i < subcommands.size() - 1; i++) {
 		if (subcommands[i] == "C") {
 			res.control_modifier = true;
 		}
@@ -292,7 +292,7 @@ InputParseTreeNode* parse_lines(
 	const std::vector<int>& command_line_numbers
 	) {
 
-	for (int j = 0; j < lines.size(); j++) {
+	for (size_t j = 0; j < lines.size(); j++) {
 		std::string line = lines[j];
 
 		// for example convert "<a-<space>> to ["a", "space"]
@@ -301,7 +301,7 @@ InputParseTreeNode* parse_lines(
 
 		InputParseTreeNode* parent_node = root;
 
-		for (int i = 0; i < tokens.size(); i++) {
+		for (size_t i = 0; i < tokens.size(); i++) {
 			InputParseTreeNode node = parse_token(tokens[i]);
 			bool existing_node = false;
 			for (InputParseTreeNode* child : parent_node->children) {
@@ -340,7 +340,7 @@ InputParseTreeNode* parse_lines(
 					}
 				}
 			}
-			else if ((i == (tokens.size() - 1)) &&
+			else if (((size_t) i == (tokens.size() - 1)) &&
 				(SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
 					(command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
 				std::wcout << L"Warning: key defined in " << parent_node->defining_file_path
@@ -354,12 +354,12 @@ InputParseTreeNode* parse_lines(
 				}
 				std::wcout << L"\n";
 			}
-			if (i == (tokens.size() - 1)) {
+			if ((size_t) i == (tokens.size() - 1)) {
 				parent_node->is_final = true;
 				parent_node->name.clear();
                 parent_node->defining_file_line = command_line_numbers[j];
                 parent_node->defining_file_path = command_file_names[j];
-				for (int k = 0; k < command_names[j].size(); k++) {
+				for (size_t k = 0; k < command_names[j].size(); k++) {
 					parent_node->name.push_back(command_names[j][k]);
 				}
 			}
@@ -432,7 +432,7 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	default_infile.close();
 
 
-	for (int i = 0; i < user_paths.size(); i++) {
+	for (size_t i = 0; i < user_paths.size(); i++) {
 		line_number = 0;
 		std::wstring user_path_name = user_paths[i].get_path();
 
@@ -506,7 +506,7 @@ std::vector<const Command*> InputHandler::handle_key(int key, bool shift_pressed
 				}
 
 				//return command_manager.get_command_with_name(child->name);
-				for (int i = 0; i < child->name.size(); i++) {
+				for (size_t i = 0; i < child->name.size(); i++) {
 					res.push_back(command_manager.get_command_with_name(child->name[i]));
 				}
 				return res;
@@ -530,7 +530,7 @@ void InputHandler::delete_current_parse_tree(InputParseTreeNode* node_to_delete)
 	if (node_to_delete != nullptr) {
 		is_root = node_to_delete->is_root;
 
-		for (int i = 0; i < node_to_delete->children.size(); i++) {
+		for (size_t i = 0; i < node_to_delete->children.size(); i++) {
 			delete_current_parse_tree(node_to_delete->children[i]);
 		}
 		delete node_to_delete;
@@ -592,7 +592,7 @@ void InputHandler::add_command_key_mappings(InputParseTreeNode* thisroot,
 		}
 	}
 	else{
-		for (int i = 0; i < thisroot->children.size(); i++) {
+		for (size_t i = 0; i < thisroot->children.size(); i++) {
 			prefix.push_back(thisroot->children[i]);
 			add_command_key_mappings(thisroot->children[i], map, prefix);
 			prefix.pop_back();
@@ -637,7 +637,7 @@ std::string InputHandler::get_key_name_from_key_code(int key_code) const{
 
 std::string InputHandler::get_key_string_from_tree_node_sequence(const std::vector<InputParseTreeNode*> seq) const{
 	std::string res;
-	for (int i = 0; i < seq.size(); i++) {
+	for (size_t i = 0; i < seq.size(); i++) {
 		if (seq[i]->alt_modifier || seq[i]->shift_modifier || seq[i]->control_modifier ) {
 			res += "<";
 		}

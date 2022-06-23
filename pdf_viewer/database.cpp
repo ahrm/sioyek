@@ -998,7 +998,7 @@ void DatabaseManager::export_json(std::wstring json_file_path, CachedChecksummer
 
 	QJsonArray document_data_array;
 
-	for (int i = 0; i < prev_doc_checksums.size(); i++) {
+	for (size_t i = 0; i < prev_doc_checksums.size(); i++) {
 
 		const auto& document_checksum = utf8_encode(prev_doc_checksums[i]);
 		std::optional<std::wstring> path = checksummer->get_path(document_checksum);
@@ -1160,9 +1160,9 @@ std::string create_select_query(std::string table_name,
 	std::wstringstream ss;
 
 	ss << L"SELECT ";
-	for (int i = 0; i < selections.size(); i++) {
+	for (size_t i = 0; i < selections.size(); i++) {
 		ss << utf8_decode(selections[i]);
-		if (i < (selections.size() - 1)) {
+		if ((size_t) i < (selections.size() - 1)) {
 			ss << ", ";
 		}
 	}
@@ -1194,7 +1194,7 @@ std::string create_select_query(std::string table_name,
 		}
 
 		index++;
-		if (index != values.size()) {
+		if ((size_t) index != values.size()) {
 			ss << ", ";
 		}
 	}

@@ -26,8 +26,10 @@ extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
 extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
 extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 
+#define TO_FVEC_SIZE(a) static_cast<std::vector<int>::size_type>(a)
+
 int Document::get_mark_index(char symbol) {
-	for (int i = 0; i < marks.size(); i++) {
+	for (size_t i = 0; i < marks.size(); i++) {
 		if (marks[i].symbol == symbol) {
 			return i;
 		}
@@ -61,7 +63,7 @@ void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 
 void Document::fill_highlight_rects(fz_context* ctx) {
 
-	for (int i = 0; i < highlights.size(); i++) {
+	for (size_t i = 0; i < highlights.size(); i++) {
 
 		const Highlight& highlight = highlights[i];
 		std::vector<fz_rect> highlight_rects;
@@ -191,7 +193,7 @@ void Document::delete_highlight_with_index(int index) {
 
 void Document::delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y) {
 	int index_to_delete = -1;
-	for (int i = 0; i < highlights.size(); i++) {
+	for (size_t i = 0; i < highlights.size(); i++) {
 		if (
 			(highlights[i].selection_begin.x == begin_x) &&
 			(highlights[i].selection_begin.y == begin_y) &&
@@ -295,7 +297,7 @@ void Document::add_mark(char symbol, float y_offset) {
 }
 
 bool Document::remove_mark(char symbol) {
-	for (int i = 0; i < marks.size(); i++) {
+	for (size_t i = 0; i < marks.size(); i++) {
 		if (marks[i].symbol == symbol) {
 			marks.erase(marks.begin() + i);
 			return true;
@@ -354,7 +356,7 @@ void Document::count_chapter_pages_accum(std::vector<int> &accum_page_counts) {
 
 	int accum = 0;
 
-	for (int i = 0; i < raw_page_count.size(); i++) {
+	for (size_t i = 0; i < raw_page_count.size(); i++) {
 		accum_page_counts.push_back(accum);
 		accum += raw_page_count[i];
 	}
@@ -384,7 +386,7 @@ const std::vector<int>& Document::get_flat_toc_pages() {
 
 float Document::get_page_height(int page_index) {
 	std::lock_guard guard(page_dims_mutex);
-	if ((page_index >= 0) && (page_index < page_heights.size())) {
+	if ((page_index >= 0) && (TO_FVEC_SIZE(page_index) < page_heights.size())) {
 		return page_heights[page_index];
 	}
 	else {
@@ -393,7 +395,7 @@ float Document::get_page_height(int page_index) {
 }
 
 float Document::get_page_width(int page_index) {
-	if ((page_index >= 0) && (page_index < page_widths.size())) {
+	if ((page_index >= 0) && (TO_FVEC_SIZE(page_index) < page_widths.size())) {
 		return page_widths[page_index];
 	}
 	else {
@@ -491,7 +493,7 @@ float Document::get_page_size_smart(bool width, int page_index, float* left_rati
 
 float Document::get_accum_page_height(int page_index) {
 	std::lock_guard guard(page_dims_mutex);
-	if (page_index < 0 || (page_index >= accum_page_heights.size())) {
+	if (page_index < 0 || (TO_FVEC_SIZE(page_index) >= accum_page_heights.size())) {
 		return 0.0f;
 	}
 	return accum_page_heights[page_index];
@@ -694,7 +696,7 @@ void Document::get_visible_pages(float doc_y_range_begin, float doc_y_range_end,
 
 	float page_begin = 0.0f;
 
-	for (int i = 0; i < page_heights.size(); i++) {
+	for (size_t i = 0; i < page_heights.size(); i++) {
 		float page_end = page_begin + page_heights[i];
 
 		if (range_intersects(doc_y_range_begin, doc_y_range_end, page_begin, page_end)) {
@@ -800,7 +802,7 @@ fz_rect Document::get_page_absolute_rect(int page) {
 
 	fz_rect res;
 
-	if (page >= page_widths.size()) {
+	if (TO_FVEC_SIZE(page) >= page_widths.size()) {
 		res.x0 = 0;
 		res.y0 = 0;
 		res.x1 = 1;
@@ -936,7 +938,7 @@ DocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp){
 
 	float acc_page_heights_i = 0.0f;
 	float page_width_i = 0.0f;
-	if (i < accum_page_heights.size()) {
+	if (TO_FVEC_SIZE(i) < accum_page_heights.size()) {
 		acc_page_heights_i = accum_page_heights[i];
 		page_width_i = page_widths[i];
 		float remaining_y = absp.y - acc_page_heights_i;
@@ -976,7 +978,7 @@ QStandardItemModel* Document::get_toc_model() {
 
 void Document::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
 	std::lock_guard guard(page_dims_mutex);
-	if ((page_widths.size() == 0) || (page >= page_widths.size())) {
+	if ((page_widths.size() == 0) || (TO_FVEC_SIZE(page) >= page_widths.size())) {
 		*abs_x = 0;
 		*abs_y = 0;
 		return;
@@ -1156,7 +1158,7 @@ std::optional<std::wstring> Document::get_regex_match_at_position(const std::wre
 
 	find_regex_matches_in_stext_page(flat_chars, regex, match_ranges, match_texts);
 
-	for (int i = 0; i < match_ranges.size(); i++) {
+	for (size_t i = 0; i < match_ranges.size(); i++) {
 		auto [start_index, end_index] = match_ranges[i];
 		for (int index = start_index; index <= end_index; index++) {
 			if (fz_contains_rect(fz_rect_from_quad(flat_chars[index]->quad), selected_rect)) {
@@ -1172,7 +1174,7 @@ bool Document::find_generic_location(const std::wstring& type, const std::wstrin
 	int best_y_offset = 0.0f;
 	float best_score = -1000;
 
-	for (int i = 0; i < generic_indices.size(); i++) {
+	for (size_t i = 0; i < generic_indices.size(); i++) {
 		std::vector<std::wstring> parts = split_whitespace(generic_indices[i].text);
 
 		if (parts.size() == 2) {
@@ -1738,7 +1740,7 @@ std::vector<fz_rect> Document::get_page_flat_words(int page) {
 void Document::rotate() {
 	std::swap(page_heights, page_widths);
 	float acc_height = 0;
-	for (int i = 0; i < page_heights.size(); i++) {
+	for (size_t i = 0; i < page_heights.size(); i++) {
 		accum_page_heights[i] = acc_height;
 		acc_height += page_heights[i];
 	}
@@ -1759,7 +1761,7 @@ std::optional<Highlight> Document::get_next_highlight(float abs_y, char type, in
 	}
 
 	// now index points the the next highlight
-	if ((index+offset) < sorted_highlights.size()) {
+	if ((size_t) (index+offset) < sorted_highlights.size()) {
 		return sorted_highlights[index + offset];
 	}
 
@@ -1831,7 +1833,7 @@ std::vector<fz_rect> Document::get_highlighted_character_masks(int page) {
 		}
 
 		std::vector<fz_rect> highlighted_characters;
-		for (int i = 0; i < flat_chars.size(); i++) {
+		for (size_t i = 0; i < flat_chars.size(); i++) {
 			if (fastread_highlights[i] == '0') {
 				if (highlighted_characters.size() > 0) {
 					auto word_rects = create_word_rects_multiline(highlighted_characters);
@@ -1855,7 +1857,7 @@ std::vector<fz_rect> Document::get_highlighted_character_masks(int page) {
 		get_word_rect_list_from_flat_chars(flat_chars, words, word_rects);
 
 
-		for (int i = 0; i < words.size(); i++) {
+		for (size_t i = 0; i < words.size(); i++) {
 
 			std::vector<fz_rect> highlighted_characters;
 
@@ -2051,7 +2053,7 @@ int Document::add_stext_page_to_created_toc(fz_stext_page* stext_page,
 }
 
 float Document::document_to_absolute_y(int page, float doc_y) {
-	if ((page < accum_page_heights.size()) && (page >= 0)) {
+	if ((TO_FVEC_SIZE(page) < accum_page_heights.size()) && (page >= 0)) {
 		return doc_y + accum_page_heights[page];
 	}
 	return 0;
@@ -2123,14 +2125,14 @@ fz_rect Document::get_ith_next_line_from_absolute_y(int page, int line_index, in
 	}
 
 	int new_index = line_index + i;
-	if ((new_index >= 0) && (new_index < line_rects.size())) {
+	if ((new_index >= 0) && ((size_t) new_index < line_rects.size())) {
 		*out_page = page;
 		*out_index = new_index;
 		return line_rects[new_index];
 	}
 	else {
 		if (!cont) {
-			if (line_index > 0 && line_index < line_rects.size()) {
+                        if (line_index > 0 && (size_t) line_index < line_rects.size()) {
 				*out_page = page;
 				*out_index = line_index;
 				return line_rects[line_index];
@@ -2214,7 +2216,7 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
 				}
 			}
 			merge_lines(flat_lines, line_rects, line_texts_);
-			for (int i = 0; i < line_rects.size(); i++) {
+			for (size_t i = 0; i < line_rects.size(); i++) {
 				line_rects[i].x0 = line_rects[i].x0 - page_widths[page] / 2;
 				line_rects[i].x1 = line_rects[i].x1 - page_widths[page] / 2;
 				line_rects[i].y0 = document_to_absolute_y(page, line_rects[i].y0);
@@ -2237,7 +2239,7 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
 			get_line_begins_and_ends_from_histogram(hist, line_locations_begins, line_locations);
 
 			std::vector<fz_rect> line_rects;
-			for (int i = 0; i < line_locations_begins.size(); i++) {
+			for (size_t i = 0; i < line_locations_begins.size(); i++) {
 				fz_rect line_rect;
 				line_rect.x0 = 0 - page_widths[page] / 2;
 				line_rect.x1 = static_cast<float>(pixmap->w) / SMALL_PIXMAP_SCALE - page_widths[page] / 2;

@@ -336,7 +336,7 @@ public:
 
 		QStandardItemModel* model = new QStandardItemModel();
 
-		for (int i = 0; i < std_string_list.size(); i++) {
+		for (size_t i = 0; i < std_string_list.size(); i++) {
 			QStandardItem* name_item = new QStandardItem(QString::fromStdWString(std_string_list[i]));
 			QStandardItem* key_item = new QStandardItem(QString::fromStdWString(std_string_list_right[i]));
 			key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
@@ -450,7 +450,7 @@ private:
 
 		if (key_map.find(command_name) != key_map.end()) {
 			const std::vector<std::string>& command_keys = key_map[command_name];
-			for (int i = 0; i < command_keys.size(); i++) {
+			for (size_t i = 0; i < command_keys.size(); i++) {
 				const std::string& ck = command_keys[i];
 				if (i > 0) {
 					command_key += " | ";
@@ -469,7 +469,7 @@ private:
 
 		QStandardItemModel* res = new QStandardItemModel();
 
-		for (int i = 0; i < command_names.size(); i++) {
+		for (size_t i = 0; i < command_names.size(); i++) {
 			res->appendRow(get_item(command_names[i]));
 		}
 		return res;

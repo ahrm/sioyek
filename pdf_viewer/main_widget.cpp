@@ -399,7 +399,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 }
 
 MainWidget::~MainWidget() {
-    for (int i = 0; i < windows.size(); i++) {
+    for (size_t i = 0; i < windows.size(); i++) {
         if (windows[i] == this) {
             windows.erase(windows.begin() + i);
             break;
@@ -3382,7 +3382,7 @@ void MainWidget::set_inverse_search_command(const std::wstring& new_command) {
 
 void MainWidget::focusInEvent(QFocusEvent* ev) {
     int index = -1;
-    for (int i = 0; i < windows.size(); i++) {
+    for (size_t i = 0; i < windows.size(); i++) {
         if (windows[i] == this) {
 			index = i;
 			break;
