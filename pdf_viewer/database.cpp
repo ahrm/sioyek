@@ -865,7 +865,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 		path_to_hash[path] = hash;
 	}
 
-	for (const auto [path, hash_] : path_hash) {
+	for (const auto &[path, hash_] : path_hash) {
 		std::string hash = utf8_encode(hash_);
 		std::string key;
 		if (was_using_hashes) {
@@ -925,20 +925,20 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 
 	// ---------------------- IMPORT PREVIOUS DATA ----------------------------
 	create_tables();
-	for (const auto [path, hash] : path_hash) {
+	for (const auto &[path, hash] : path_hash) {
 		insert_document_hash(path, utf8_encode(hash));
 	}
 
-	for (const auto [hash, book_state] : opened_book_states) {
+	for (const auto &[hash, book_state] : opened_book_states) {
 		update_book(hash, book_state.zoom_level, book_state.offset_x, book_state.offset_y);
 	}
-	for (const auto [hash, mark] : marks) {
+	for (const auto &[hash, mark] : marks) {
 		insert_mark(hash, mark.symbol, mark.y_offset);
 	}
-	for (const auto [hash, bookmark] : bookmarks) {
+	for (const auto &[hash, bookmark] : bookmarks) {
 		insert_bookmark(hash, bookmark.description, bookmark.y_offset);
 	}
-	for (const auto [hash, highlight] : highlights) {
+	for (const auto &[hash, highlight] : highlights) {
 		insert_highlight(
 			hash,
 			highlight.description,
@@ -949,7 +949,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 			highlight.type
 		);
 	}
-	for (const auto [hash, portal] : portals) {
+	for (const auto &[hash, portal] : portals) {
 		insert_link(
 			hash,
 			portal.dst.document_checksum,
