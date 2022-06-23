@@ -555,7 +555,7 @@ void Document::convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output)
 
 
 		output.push_back(current_node);
-	} while (root = root->next);
+	} while ((root = root->next));
 }
 
 fz_link* Document::get_page_links(int page_number) {
