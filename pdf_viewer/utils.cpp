@@ -359,7 +359,7 @@ std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line) {
 			return lhs->quad.ll.x < rhs->quad.ll.x;
 			});
 	}
-	return std::move(reordered_chars);
+	return reordered_chars;
 }
 
 void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*>& flat_chars) {
@@ -1527,7 +1527,7 @@ std::wstring concatenate_path(const std::wstring& prefix, const std::wstring& su
 		result.push_back(separator);
 	}
 	result.append(suffix);
-	return std::move(result);
+	return result;
 }
 
 std::wstring get_canonical_path(const std::wstring& path) {
@@ -1557,7 +1557,7 @@ std::wstring add_redundant_dot_to_path(const std::wstring& path) {
 			res.append(L"/");
 		}
 	}
-	return std::move(res);
+	return res;
 }
 
 float manhattan_distance(float x1, float y1, float x2, float y2) {
