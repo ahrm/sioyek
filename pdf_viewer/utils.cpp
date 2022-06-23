@@ -1686,7 +1686,7 @@ QString get_color_qml_string(float r, float g, float b) {
 
 void copy_file(std::wstring src_path, std::wstring dst_path) {
 	std::ifstream  src(utf8_encode(src_path), std::ios::binary);
-	std::ofstream  dst(utf8_encode(src_path), std::ios::binary);
+	std::ofstream  dst(utf8_encode(dst_path), std::ios::binary);
 
 	dst << src.rdbuf();
 }
