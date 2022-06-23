@@ -504,8 +504,8 @@ public:
 		QStringList elements,
 		std::unordered_map<std::string,
 		std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, QSortFilterProxyModel>(nullptr, parent),
-		on_done(on_done),
-		key_map(key_map)
+                key_map(key_map),
+                on_done(on_done)
 	{
 		string_elements = elements;
 		standard_item_model = get_standard_item_model(string_elements);

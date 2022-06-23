@@ -13,10 +13,10 @@ DocumentView::DocumentView( fz_context* mupdf_context,
 	DocumentManager* document_manager,
 	ConfigManager* config_manager,
 	CachedChecksummer* checksummer) :
-	mupdf_context(mupdf_context),
+        mupdf_context(mupdf_context),
 	db_manager(db_manager),
-	document_manager(document_manager),
 	config_manager(config_manager),
+	document_manager(document_manager),
 	checksummer(checksummer)
 {
 

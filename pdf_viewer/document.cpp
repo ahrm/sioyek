@@ -316,11 +316,11 @@ bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
 }
 
 Document::Document(fz_context* context, std::wstring file_name, DatabaseManager* db, CachedChecksummer* checksummer) :
+	db_manager(db),
 	context(context),
 	file_name(file_name),
-	doc(nullptr),
-	db_manager(db),
-	checksummer(checksummer){
+	checksummer(checksummer),
+	doc(nullptr){
 	last_update_time = QDateTime::currentDateTime();
 
 	if (ENABLE_EXPERIMENTAL_FEATURES) {

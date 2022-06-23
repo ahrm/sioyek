@@ -6,10 +6,10 @@ extern bool LINEAR_TEXTURE_FILTERING;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone, float display_scale) : context_to_clone(context_to_clone),
-should_quit_pointer(should_quit_pointer),
-num_threads(num_threads),
 pixmaps_to_drop(num_threads),
 pixmap_drop_mutex(num_threads),
+should_quit_pointer(should_quit_pointer),
+num_threads(num_threads),
 display_scale(display_scale)
 {
 

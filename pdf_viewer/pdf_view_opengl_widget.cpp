@@ -377,8 +377,8 @@ void PdfViewOpenGLWidget::paintGL() {
 PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent) :
 	QOpenGLWidget(parent),
 	document_view(document_view),
-	config_manager(config_manager),
 	pdf_renderer(pdf_renderer),
+	config_manager(config_manager),
 	is_helper(is_helper)
 {
 	creation_time = QDateTime::currentDateTime();
