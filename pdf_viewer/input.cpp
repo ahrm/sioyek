@@ -11,134 +11,134 @@
 
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 CommandManager::CommandManager() {
-	commands.push_back({ "goto_begining",		false,	false,	false,	true});
-	commands.push_back({ "goto_end",			false,	false,	false,	true});
-	commands.push_back({ "goto_definition",		false,	false,	false,	false});
-	commands.push_back({ "overview_definition",		false,	false,	false,	false});
-	commands.push_back({ "portal_to_definition",		false,	false,	false,	false});
-	commands.push_back({ "next_item",			false,	false,	false,	true});
-	commands.push_back({ "previous_item", false, false , false, true});
-	commands.push_back({ "set_mark", false, true , false, false});
+	commands.push_back({ "goto_begining",		false,	false,	false,	true, {}});
+	commands.push_back({ "goto_end",			false,	false,	false,	true, {}});
+	commands.push_back({ "goto_definition",		false,	false,	false,	false, {}});
+	commands.push_back({ "overview_definition",		false,	false,	false,	false, {}});
+	commands.push_back({ "portal_to_definition",		false,	false,	false,	false, {}});
+	commands.push_back({ "next_item",			false,	false,	false,	true, {}});
+	commands.push_back({ "previous_item", false, false , false, true, {}});
+	commands.push_back({ "set_mark", false, true , false, false, {}});
 	commands.push_back({ "goto_mark", false, true , false, false, {'`', '\'', '/'}});
-	commands.push_back({ "goto_page_with_page_number", true, false , false, false});
-	commands.push_back({ "search", true, false , false, false});
-	commands.push_back({ "ranged_search", true, false , false, false});
-	commands.push_back({ "chapter_search", true, false , false, false});
-	commands.push_back({ "move_down", false, false , false, false});
-	commands.push_back({ "move_up", false, false , false, false});
-	commands.push_back({ "move_left", false, false , false, false});
-	commands.push_back({ "move_right", false, false , false, false});
-	commands.push_back({ "zoom_in", false, false , false, false});
-	commands.push_back({ "zoom_out", false, false , false, false});
-	commands.push_back({ "fit_to_page_width", false, false , false, false});
-	commands.push_back({ "fit_to_page_height_smart", false, false , false, false});
-	commands.push_back({ "fit_to_page_width_smart", false, false , false, false});
-	commands.push_back({ "next_page", false, false , false, false});
-	commands.push_back({ "previous_page", false, false , false, false});
-	commands.push_back({ "open_document", false, false , true, true});
-	commands.push_back({ "debug", false, false , false, false});
-	commands.push_back({ "add_bookmark", true, false , false, false});
-	commands.push_back({ "add_highlight", false, true , false, false});
-	commands.push_back({ "goto_toc", false, false , false, false});
-	commands.push_back({ "goto_highlight", false, false , false, false});
-	commands.push_back({ "goto_bookmark", false, false , false, false});
-	commands.push_back({ "goto_bookmark_g", false, false , false, false});
-	commands.push_back({ "goto_highlight_g", false, false , false, false});
-	commands.push_back({ "goto_highlight_ranged", false, false , false, false});
-	commands.push_back({ "link", false, false , false, false});
-	commands.push_back({ "portal", false, false , false, false});
-	commands.push_back({ "next_state", false, false , false, false});
-	commands.push_back({ "prev_state", false, false , false, false});
-	commands.push_back({ "pop_state", false, false , false, false});
-	commands.push_back({ "test_command", false, false , false, false});
-	commands.push_back({ "delete_link", false, false , false, false});
-	commands.push_back({ "delete_portal", false, false , false, false});
-	commands.push_back({ "delete_bookmark", false, false , false, false});
-	commands.push_back({ "delete_highlight", false, false , false, false});
-	//commands.push_back({ "delete", false, true , false, false});
-	commands.push_back({ "goto_link", false, false , false, false});
-	commands.push_back({ "goto_portal", false, false , false, false});
-	commands.push_back({ "edit_link", false, false , false, false});
-	commands.push_back({ "edit_portal", false, false , false, false});
-	commands.push_back({ "open_prev_doc", false, false , false, false});
-	commands.push_back({ "open_document_embedded", false, false , false, false});
-	commands.push_back({ "open_document_embedded_from_current_path", false, false , false, false});
-	commands.push_back({ "copy", false, false , false, false});
-	commands.push_back({ "toggle_fullscreen", false, false , false, false});
-	commands.push_back({ "toggle_one_window", false, false , false, false});
-	commands.push_back({ "toggle_highlight", false, false , false, false});
-	commands.push_back({ "toggle_synctex", false, false , false, false});
-	//commands.push_back({ "command", true, false , false, false});
-	commands.push_back({ "command", false, false , false, false});
-	//commands.push_back({ "search_selected_text_in_google_scholar", false, false , false, false});
-	//commands.push_back({ "search_selected_text_in_libgen", false, false , false, false});
-	commands.push_back({ "external_search", false, true , false, false});
-	commands.push_back({ "open_selected_url", false, false , false, false});
-	commands.push_back({ "screen_down", false, false , false, false});
-	commands.push_back({ "screen_up", false, false , false, false});
-	commands.push_back({ "next_chapter", false, false , false, true});
-	commands.push_back({ "prev_chapter", false, false , false, true});
-	commands.push_back({ "toggle_dark_mode", false, false , false, false});
-	commands.push_back({ "toggle_presentation_mode", false, false , false, false});
-	commands.push_back({ "toggle_mouse_drag_mode", false, false , false, false});
-	commands.push_back({ "close_window", false, false , false, false});
-	commands.push_back({ "quit", false, false , false, false});
-	commands.push_back({ "q", false, false , false, false});
-	commands.push_back({ "open_link", true, false , false, false});
-	commands.push_back({ "keyboard_select", true, false , false, false});
-	commands.push_back({ "keyboard_smart_jump", true, false , false, false});
-	commands.push_back({ "keyboard_overview", true, false , false, false});
-	commands.push_back({ "keys", false, false , false, false});
-	commands.push_back({ "keys_user", false, false , false, false});
-	commands.push_back({ "prefs", false, false , false, false});
-	commands.push_back({ "prefs_user", false, false , false, false});
-	commands.push_back({ "import", false, false , false, false});
-	commands.push_back({ "export", false, false , false, false});
-	commands.push_back({ "enter_visual_mark_mode", false, false , false, false});
-	commands.push_back({ "move_visual_mark_down", false, false , false, false});
-	commands.push_back({ "move_visual_mark_up", false, false , false, false});
-	commands.push_back({ "set_page_offset", true, false , false, false});
-	commands.push_back({ "toggle_visual_scroll", false, false , false, false});
-	commands.push_back({ "toggle_horizontal_scroll_lock", false, false , false, false});
-	commands.push_back({ "toggle_custom_color", false, false , false, false});
-	commands.push_back({ "execute", true, false , false, false});
-	commands.push_back({ "execute_predefined_command", false, true, false, false});
-	commands.push_back({ "embed_annotations", false, false, false, false});
-	commands.push_back({ "copy_window_size_config", false, false, false, false});
-	commands.push_back({ "toggle_select_highlight", false, false, false, false});
-	commands.push_back({ "set_select_highlight_type", false, true, false, false});
-	commands.push_back({ "open_last_document", false, false, false, false});
-	commands.push_back({ "toggle_window_configuration", false, false, false, false});
-	commands.push_back({ "prefs_user_all", false, false, false, false});
-	commands.push_back({ "keys_user_all", false, false, false, false});
-	commands.push_back({ "fit_to_page_width_ratio", false, false, false, false});
-    commands.push_back({ "smart_jump_under_cursor", false, false, false, false});
-    commands.push_back({ "overview_under_cursor", false, false, false, false});
-    commands.push_back({ "close_overview", false, false, false, false});
-    commands.push_back({ "visual_mark_under_cursor", false, false, false, false});
-    commands.push_back({ "close_visual_mark", false, false, false, false});
-    commands.push_back({ "zoom_in_cursor", false, false, false, false});
-    commands.push_back({ "zoom_out_cursor", false, false, false, false});
-    commands.push_back({ "goto_left", false, false, false, false});
-    commands.push_back({ "goto_left_smart", false, false, false, false});
-    commands.push_back({ "goto_right", false, false, false, false});
-    commands.push_back({ "goto_right_smart", false, false, false, false});
-    commands.push_back({ "rotate_clockwise", false, false, false, false});
-    commands.push_back({ "rotate_counterclockwise", false, false, false, false});
-    commands.push_back({ "goto_next_highlight", false, false, false, false});
-    commands.push_back({ "goto_prev_highlight", false, false, false, false});
-    commands.push_back({ "goto_next_highlight_of_type", false, false, false, false});
-    commands.push_back({ "goto_prev_highlight_of_type", false, false, false, false});
-    commands.push_back({ "add_highlight_with_current_type", false, false, false, false});
-	commands.push_back({ "enter_password", true, false , false, false});
-	commands.push_back({ "toggle_fastread", false, false , false, false});
-	commands.push_back({ "goto_top_of_page", false, false , false, false});
-	commands.push_back({ "goto_bottom_of_page", false, false , false, false});
-	commands.push_back({ "new_window", false, false , false, false});
-	commands.push_back({ "toggle_statusbar", false, false , false, false});
+	commands.push_back({ "goto_page_with_page_number", true, false , false, false, {}});
+	commands.push_back({ "search", true, false , false, false, {}});
+	commands.push_back({ "ranged_search", true, false , false, false, {}});
+	commands.push_back({ "chapter_search", true, false , false, false, {}});
+	commands.push_back({ "move_down", false, false , false, false, {}});
+	commands.push_back({ "move_up", false, false , false, false, {}});
+	commands.push_back({ "move_left", false, false , false, false, {}});
+	commands.push_back({ "move_right", false, false , false, false, {}});
+	commands.push_back({ "zoom_in", false, false , false, false, {}});
+	commands.push_back({ "zoom_out", false, false , false, false, {}});
+	commands.push_back({ "fit_to_page_width", false, false , false, false, {}});
+	commands.push_back({ "fit_to_page_height_smart", false, false , false, false, {}});
+	commands.push_back({ "fit_to_page_width_smart", false, false , false, false, {}});
+	commands.push_back({ "next_page", false, false , false, false, {}});
+	commands.push_back({ "previous_page", false, false , false, false, {}});
+	commands.push_back({ "open_document", false, false , true, true, {}});
+	commands.push_back({ "debug", false, false , false, false, {}});
+	commands.push_back({ "add_bookmark", true, false , false, false, {}});
+	commands.push_back({ "add_highlight", false, true , false, false, {}});
+	commands.push_back({ "goto_toc", false, false , false, false, {}});
+	commands.push_back({ "goto_highlight", false, false , false, false, {}});
+	commands.push_back({ "goto_bookmark", false, false , false, false, {}});
+	commands.push_back({ "goto_bookmark_g", false, false , false, false, {}});
+	commands.push_back({ "goto_highlight_g", false, false , false, false, {}});
+	commands.push_back({ "goto_highlight_ranged", false, false , false, false, {}});
+	commands.push_back({ "link", false, false , false, false, {}});
+	commands.push_back({ "portal", false, false , false, false, {}});
+	commands.push_back({ "next_state", false, false , false, false, {}});
+	commands.push_back({ "prev_state", false, false , false, false, {}});
+	commands.push_back({ "pop_state", false, false , false, false, {}});
+	commands.push_back({ "test_command", false, false , false, false, {}});
+	commands.push_back({ "delete_link", false, false , false, false, {}});
+	commands.push_back({ "delete_portal", false, false , false, false, {}});
+	commands.push_back({ "delete_bookmark", false, false , false, false, {}});
+	commands.push_back({ "delete_highlight", false, false , false, false, {}});
+	//commands.push_back({ "delete", false, true , false, false, {}});
+	commands.push_back({ "goto_link", false, false , false, false, {}});
+	commands.push_back({ "goto_portal", false, false , false, false, {}});
+	commands.push_back({ "edit_link", false, false , false, false, {}});
+	commands.push_back({ "edit_portal", false, false , false, false, {}});
+	commands.push_back({ "open_prev_doc", false, false , false, false, {}});
+	commands.push_back({ "open_document_embedded", false, false , false, false, {}});
+	commands.push_back({ "open_document_embedded_from_current_path", false, false , false, false, {}});
+	commands.push_back({ "copy", false, false , false, false, {}});
+	commands.push_back({ "toggle_fullscreen", false, false , false, false, {}});
+	commands.push_back({ "toggle_one_window", false, false , false, false, {}});
+	commands.push_back({ "toggle_highlight", false, false , false, false, {}});
+	commands.push_back({ "toggle_synctex", false, false , false, false, {}});
+	//commands.push_back({ "command", true, false , false, false, {}});
+	commands.push_back({ "command", false, false , false, false, {}});
+	//commands.push_back({ "search_selected_text_in_google_scholar", false, false , false, false, {}});
+	//commands.push_back({ "search_selected_text_in_libgen", false, false , false, false, {}});
+	commands.push_back({ "external_search", false, true , false, false, {}});
+	commands.push_back({ "open_selected_url", false, false , false, false, {}});
+	commands.push_back({ "screen_down", false, false , false, false, {}});
+	commands.push_back({ "screen_up", false, false , false, false, {}});
+	commands.push_back({ "next_chapter", false, false , false, true, {}});
+	commands.push_back({ "prev_chapter", false, false , false, true, {}});
+	commands.push_back({ "toggle_dark_mode", false, false , false, false, {}});
+	commands.push_back({ "toggle_presentation_mode", false, false , false, false, {}});
+	commands.push_back({ "toggle_mouse_drag_mode", false, false , false, false, {}});
+	commands.push_back({ "close_window", false, false , false, false, {}});
+	commands.push_back({ "quit", false, false , false, false, {}});
+	commands.push_back({ "q", false, false , false, false, {}});
+	commands.push_back({ "open_link", true, false , false, false, {}});
+	commands.push_back({ "keyboard_select", true, false , false, false, {}});
+	commands.push_back({ "keyboard_smart_jump", true, false , false, false, {}});
+	commands.push_back({ "keyboard_overview", true, false , false, false, {}});
+	commands.push_back({ "keys", false, false , false, false, {}});
+	commands.push_back({ "keys_user", false, false , false, false, {}});
+	commands.push_back({ "prefs", false, false , false, false, {}});
+	commands.push_back({ "prefs_user", false, false , false, false, {}});
+	commands.push_back({ "import", false, false , false, false, {}});
+	commands.push_back({ "export", false, false , false, false, {}});
+	commands.push_back({ "enter_visual_mark_mode", false, false , false, false, {}});
+	commands.push_back({ "move_visual_mark_down", false, false , false, false, {}});
+	commands.push_back({ "move_visual_mark_up", false, false , false, false, {}});
+	commands.push_back({ "set_page_offset", true, false , false, false, {}});
+	commands.push_back({ "toggle_visual_scroll", false, false , false, false, {}});
+	commands.push_back({ "toggle_horizontal_scroll_lock", false, false , false, false, {}});
+	commands.push_back({ "toggle_custom_color", false, false , false, false, {}});
+	commands.push_back({ "execute", true, false , false, false, {}});
+	commands.push_back({ "execute_predefined_command", false, true, false, false, {}});
+	commands.push_back({ "embed_annotations", false, false, false, false, {}});
+	commands.push_back({ "copy_window_size_config", false, false, false, false, {}});
+	commands.push_back({ "toggle_select_highlight", false, false, false, false, {}});
+	commands.push_back({ "set_select_highlight_type", false, true, false, false, {}});
+	commands.push_back({ "open_last_document", false, false, false, false, {}});
+	commands.push_back({ "toggle_window_configuration", false, false, false, false, {}});
+	commands.push_back({ "prefs_user_all", false, false, false, false, {}});
+	commands.push_back({ "keys_user_all", false, false, false, false, {}});
+	commands.push_back({ "fit_to_page_width_ratio", false, false, false, false, {}});
+    commands.push_back({ "smart_jump_under_cursor", false, false, false, false, {}});
+    commands.push_back({ "overview_under_cursor", false, false, false, false, {}});
+    commands.push_back({ "close_overview", false, false, false, false, {}});
+    commands.push_back({ "visual_mark_under_cursor", false, false, false, false, {}});
+    commands.push_back({ "close_visual_mark", false, false, false, false, {}});
+    commands.push_back({ "zoom_in_cursor", false, false, false, false, {}});
+    commands.push_back({ "zoom_out_cursor", false, false, false, false, {}});
+    commands.push_back({ "goto_left", false, false, false, false, {}});
+    commands.push_back({ "goto_left_smart", false, false, false, false, {}});
+    commands.push_back({ "goto_right", false, false, false, false, {}});
+    commands.push_back({ "goto_right_smart", false, false, false, false, {}});
+    commands.push_back({ "rotate_clockwise", false, false, false, false, {}});
+    commands.push_back({ "rotate_counterclockwise", false, false, false, false, {}});
+    commands.push_back({ "goto_next_highlight", false, false, false, false, {}});
+    commands.push_back({ "goto_prev_highlight", false, false, false, false, {}});
+    commands.push_back({ "goto_next_highlight_of_type", false, false, false, false, {}});
+    commands.push_back({ "goto_prev_highlight_of_type", false, false, false, false, {}});
+    commands.push_back({ "add_highlight_with_current_type", false, false, false, false, {}});
+	commands.push_back({ "enter_password", true, false , false, false, {}});
+	commands.push_back({ "toggle_fastread", false, false , false, false, {}});
+	commands.push_back({ "goto_top_of_page", false, false , false, false, {}});
+	commands.push_back({ "goto_bottom_of_page", false, false , false, false, {}});
+	commands.push_back({ "new_window", false, false , false, false, {}});
+	commands.push_back({ "toggle_statusbar", false, false , false, false, {}});
 
 	for (char c = 'a'; c <= 'z'; c++) {
-		commands.push_back({ "execute_command_"  +  std::string(1, c), false, false , false, false});
+		commands.push_back({ "execute_command_"  +  std::string(1, c), false, false , false, false, {}});
 	}
 }
 
@@ -198,7 +198,7 @@ InputParseTreeNode parse_token(std::string token) {
 	std::vector<std::string> subcommands;
 	split_key_string(token, "-", subcommands);
 
-	for (int i = 0; i < subcommands.size() - 1; i++) {
+	for (size_t i = 0; i < subcommands.size() - 1; i++) {
 		if (subcommands[i] == "C") {
 			res.control_modifier = true;
 		}
@@ -292,7 +292,7 @@ InputParseTreeNode* parse_lines(
 	const std::vector<int>& command_line_numbers
 	) {
 
-	for (int j = 0; j < lines.size(); j++) {
+	for (size_t j = 0; j < lines.size(); j++) {
 		std::string line = lines[j];
 
 		// for example convert "<a-<space>> to ["a", "space"]
@@ -301,7 +301,7 @@ InputParseTreeNode* parse_lines(
 
 		InputParseTreeNode* parent_node = root;
 
-		for (int i = 0; i < tokens.size(); i++) {
+		for (size_t i = 0; i < tokens.size(); i++) {
 			InputParseTreeNode node = parse_token(tokens[i]);
 			bool existing_node = false;
 			for (InputParseTreeNode* child : parent_node->children) {
@@ -340,7 +340,7 @@ InputParseTreeNode* parse_lines(
 					}
 				}
 			}
-			else if ((i == (tokens.size() - 1)) &&
+			else if (((size_t) i == (tokens.size() - 1)) &&
 				(SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
 					(command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
 				std::wcout << L"Warning: key defined in " << parent_node->defining_file_path
@@ -354,12 +354,12 @@ InputParseTreeNode* parse_lines(
 				}
 				std::wcout << L"\n";
 			}
-			if (i == (tokens.size() - 1)) {
+			if ((size_t) i == (tokens.size() - 1)) {
 				parent_node->is_final = true;
 				parent_node->name.clear();
                 parent_node->defining_file_line = command_line_numbers[j];
                 parent_node->defining_file_path = command_file_names[j];
-				for (int k = 0; k < command_names[j].size(); k++) {
+				for (size_t k = 0; k < command_names[j].size(); k++) {
 					parent_node->name.push_back(command_names[j][k]);
 				}
 			}
@@ -432,7 +432,7 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	default_infile.close();
 
 
-	for (int i = 0; i < user_paths.size(); i++) {
+	for (size_t i = 0; i < user_paths.size(); i++) {
 		line_number = 0;
 		std::wstring user_path_name = user_paths[i].get_path();
 
@@ -506,7 +506,7 @@ std::vector<const Command*> InputHandler::handle_key(int key, bool shift_pressed
 				}
 
 				//return command_manager.get_command_with_name(child->name);
-				for (int i = 0; i < child->name.size(); i++) {
+				for (size_t i = 0; i < child->name.size(); i++) {
 					res.push_back(command_manager.get_command_with_name(child->name[i]));
 				}
 				return res;
@@ -530,7 +530,7 @@ void InputHandler::delete_current_parse_tree(InputParseTreeNode* node_to_delete)
 	if (node_to_delete != nullptr) {
 		is_root = node_to_delete->is_root;
 
-		for (int i = 0; i < node_to_delete->children.size(); i++) {
+		for (size_t i = 0; i < node_to_delete->children.size(); i++) {
 			delete_current_parse_tree(node_to_delete->children[i]);
 		}
 		delete node_to_delete;
@@ -592,7 +592,7 @@ void InputHandler::add_command_key_mappings(InputParseTreeNode* thisroot,
 		}
 	}
 	else{
-		for (int i = 0; i < thisroot->children.size(); i++) {
+		for (size_t i = 0; i < thisroot->children.size(); i++) {
 			prefix.push_back(thisroot->children[i]);
 			add_command_key_mappings(thisroot->children[i], map, prefix);
 			prefix.pop_back();
@@ -637,7 +637,7 @@ std::string InputHandler::get_key_name_from_key_code(int key_code) const{
 
 std::string InputHandler::get_key_string_from_tree_node_sequence(const std::vector<InputParseTreeNode*> seq) const{
 	std::string res;
-	for (int i = 0; i < seq.size(); i++) {
+	for (size_t i = 0; i < seq.size(); i++) {
 		if (seq[i]->alt_modifier || seq[i]->shift_modifier || seq[i]->control_modifier ) {
 			res += "<";
 		}

@@ -41,7 +41,7 @@ int argminf(const std::vector<T> &collection, std::function<float(T)> f) {
 
 	float min = std::numeric_limits<float>::infinity();
 	int min_index = -1;
-	for (int i = 0; i < collection.size(); i++) {
+	for (size_t i = 0; i < collection.size(); i++) {
 		float element_value = f(collection[i]);
 		if (element_value < min){
 			min = element_value;

@@ -13,10 +13,10 @@ DocumentView::DocumentView( fz_context* mupdf_context,
 	DocumentManager* document_manager,
 	ConfigManager* config_manager,
 	CachedChecksummer* checksummer) :
-	mupdf_context(mupdf_context),
+        mupdf_context(mupdf_context),
 	db_manager(db_manager),
-	document_manager(document_manager),
 	config_manager(config_manager),
+	document_manager(document_manager),
 	checksummer(checksummer)
 {
 
@@ -248,8 +248,8 @@ int DocumentView::get_highlight_index_in_pos(WindowPos window_pos) {
 	if (current_document->can_use_highlights()) {
 		const std::vector<Highlight>& highlights = current_document->get_highlights();
 
-		for (int i = 0; i < highlights.size(); i++) {
-			for (int j = 0; j < highlights[i].highlight_rects.size(); j++) {
+		for (size_t i = 0; i < highlights.size(); i++) {
+			for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
 				if (fz_is_point_inside_rect(pos, highlights[i].highlight_rects[j])) {
 					return i;
 				}
@@ -392,10 +392,6 @@ void DocumentView::goto_left_smart() {
 	float left_ratio, right_ratio;
 	int normal_page_width;
 	float page_width = current_document->get_page_size_smart(true, get_center_page_number(), &left_ratio, &right_ratio, &normal_page_width);
-
-	float right_leftover = 1.0f - right_ratio;
-	float imbalance = left_ratio - right_leftover;
-
 	float view_left_offset = (page_width / 2 -  view_width / zoom_level / 2);
 
 	set_offset_x(view_left_offset);
@@ -412,10 +408,6 @@ void DocumentView::goto_right_smart() {
 	float left_ratio, right_ratio;
 	int normal_page_width;
 	float page_width = current_document->get_page_size_smart(true, get_center_page_number(), &left_ratio, &right_ratio, &normal_page_width);
-
-	float right_leftover = 1.0f - right_ratio;
-	float imbalance = left_ratio - right_leftover;
-
 	float view_left_offset = -(page_width / 2 -  view_width / zoom_level / 2);
 
 	set_offset_x(view_left_offset);
@@ -771,7 +763,7 @@ std::optional<std::pair<int, int>> DocumentView::get_current_page_range() {
 	int range_begin = chapter_pages[ci];
 	int range_end = current_document->num_pages()-1;
 
-	if (ci < chapter_pages.size() - 1) {
+	if ((size_t) ci < chapter_pages.size() - 1) {
 		range_end = chapter_pages[ci + 1];
 	}
 
@@ -781,7 +773,7 @@ std::optional<std::pair<int, int>> DocumentView::get_current_page_range() {
 void DocumentView::get_page_chapter_index(int page, std::vector<TocNode*> nodes, std::vector<int>& res) {
 
 
-	for (int i = 0; i < nodes.size(); i++) {
+	for (size_t i = 0; i < nodes.size(); i++) {
 		if ((i == nodes.size() - 1) && (nodes[i]->page <= page)) {
 			res.push_back(i);
 			get_page_chapter_index(page, nodes[i]->children, res);
@@ -811,7 +803,7 @@ void DocumentView::goto_chapter(int diff) {
 
 	int index = 0;
 
-	while (index < chapter_pages.size() && chapter_pages[index] < curr_page) {
+	while ((size_t) index < chapter_pages.size() && chapter_pages[index] < curr_page) {
 		index++;
 	}
 
@@ -819,7 +811,7 @@ void DocumentView::goto_chapter(int diff) {
 	if (new_index < 0) {
 		goto_page(0);
 	}
-	else if (new_index >= chapter_pages.size()) {
+	else if ((size_t) new_index >= chapter_pages.size()) {
 		goto_end();
 	}
 	else {
@@ -867,7 +859,6 @@ float DocumentView::get_ruler_window_y() {
 
 	absol_end_y += RULER_PADDING;
 
-	float window_begin_x, window_begin_y;
 	float window_end_x, window_end_y;
 	absolute_to_window_pos(0.0, absol_end_y, &window_end_x, &window_end_y);
 
@@ -876,7 +867,6 @@ float DocumentView::get_ruler_window_y() {
 
 std::optional<fz_rect> DocumentView::get_ruler_window_rect() {
 	if (has_ruler_rect()) {
-
 		fz_rect absol_ruler_rect = get_ruler_rect().value();
 
 		absol_ruler_rect.y0 -= RULER_PADDING;
@@ -977,7 +967,7 @@ int DocumentView::get_line_index_of_vertical_pos() {
 	DocumentPos line_doc_pos = current_document->absolute_to_page_pos({0, get_ruler_pos()});
 	auto rects = current_document->get_page_lines(line_doc_pos.page);
 	int index = 0;
-	while (index < rects.size() && rects[index].y0 < get_ruler_pos()) {
+	while ((size_t) index < rects.size() && rects[index].y0 < get_ruler_pos()) {
 		index++;
 	}
 	return index-1;
@@ -991,7 +981,7 @@ std::optional<std::wstring> DocumentView::get_selected_line_text () {
 	if (line_index > 0) {
 		std::vector<std::wstring> lines;
 		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
-		if (line_index < lines.size()) {
+		if ((size_t) line_index < lines.size()) {
 			std::wstring content = lines[line_index];
 			return content;
 		}
@@ -1006,7 +996,7 @@ std::optional<DocumentPos> DocumentView::find_line_definition() {
 	if (line_index > 0) {
 		std::vector<std::wstring> lines;
 		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
-		if (line_index < lines.size()) {
+		if ((size_t) line_index < lines.size()) {
 			std::wstring content = lines[line_index];
 
 			std::wstring item_regex(L"[a-zA-Z]{2,}[ \t]+[0-9]+(\.[0-9]+)*");

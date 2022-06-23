@@ -6,10 +6,10 @@ extern bool LINEAR_TEXTURE_FILTERING;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone, float display_scale) : context_to_clone(context_to_clone),
-should_quit_pointer(should_quit_pointer),
-num_threads(num_threads),
 pixmaps_to_drop(num_threads),
 pixmap_drop_mutex(num_threads),
+should_quit_pointer(should_quit_pointer),
+num_threads(num_threads),
 display_scale(display_scale)
 {
 
@@ -58,7 +58,7 @@ void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_l
 
 		pending_requests_mutex.lock();
 		bool should_add = true;
-		for (int i = 0; i < pending_render_requests.size(); i++) {
+		for (size_t i = 0; i < pending_render_requests.size(); i++) {
 			if (pending_render_requests[i] == req) {
 				should_add = false;
 			}
@@ -66,7 +66,7 @@ void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_l
 		if (should_add) {
 			pending_render_requests.push_back(req);
 		}
-		if (pending_render_requests.size() > MAX_PENDING_REQUESTS) {
+		if (pending_render_requests.size() > (size_t) MAX_PENDING_REQUESTS) {
 			pending_render_requests.erase(pending_render_requests.begin());
 		}
 		pending_requests_mutex.unlock();
@@ -210,25 +210,25 @@ void PdfRenderer::delete_old_pages(bool force_all, bool invalidate_all) {
 	unsigned int now = QDateTime::currentMSecsSinceEpoch();
 	std::vector<int> cached_response_times;
 
-	for (int i = 0; i < cached_responses.size(); i++) {
+	for (size_t i = 0; i < cached_responses.size(); i++) {
 		cached_response_times.push_back(now - cached_responses[i].last_access_time);
 	}
 	int N = 5;
 
 	if (invalidate_all) {
-		for (int i = 0; i < cached_responses.size(); i++) {
+		for (size_t i = 0; i < cached_responses.size(); i++) {
 			cached_responses[i].invalid = true;
 		}
 		are_documents_invalidated = true;
 	}
 
 	if (force_all) {
-		for (int i = 0; i < cached_responses.size(); i++) {
+		for (size_t i = 0; i < cached_responses.size(); i++) {
 			indices_to_delete.push_back(i);
 		}
 		are_documents_invalidated = true;
 	}
-	else if (cached_response_times.size() > N) {
+	else if (cached_response_times.size() > (size_t) N) {
 		// we never delete N most recent pages
 		// todo: make this configurable
 		std::nth_element(cached_response_times.begin(), cached_response_times.begin() + N - 1, cached_response_times.end());
@@ -236,7 +236,7 @@ void PdfRenderer::delete_old_pages(bool force_all, bool invalidate_all) {
 
 		unsigned int time_threshold = now - cached_response_times[N - 1];
 
-		for (int i = 0; i < cached_responses.size(); i++) {
+		for (size_t i = 0; i < cached_responses.size(); i++) {
 			if ((cached_responses[i].last_access_time < time_threshold)
 				&& ((now - cached_responses[i].last_access_time) > CACHE_INVALID_MILIES)) {
 				indices_to_delete.push_back(i);
@@ -388,7 +388,7 @@ fz_document* PdfRenderer::get_document_with_path(int thread_index, fz_context* m
 void PdfRenderer::delete_old_pixmaps(int thread_index, fz_context* mupdf_context) {
 	// this function should only be called from the worker thread
 	pixmap_drop_mutex[thread_index].lock();
-	for (int i = 0; i < pixmaps_to_drop[thread_index].size(); i++) {
+	for (size_t i = 0; i < pixmaps_to_drop[thread_index].size(); i++) {
 		fz_try(mupdf_context) {
 			fz_drop_pixmap(mupdf_context, pixmaps_to_drop[thread_index][i]);
 		}

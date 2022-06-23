@@ -91,7 +91,6 @@ protected:
 			tree_view->resizeColumnToContents(0);
 			tree_view->header()->setSectionResizeMode(0, QHeaderView::Stretch);
 		}
-		QSortFilterProxyModel* sort_filter_proxy_model = dynamic_cast<QSortFilterProxyModel*>(proxy_model);
 		if (proxy_model) {
 			proxy_model->setRecursiveFilteringEnabled(true);
 		}
@@ -337,7 +336,7 @@ public:
 
 		QStandardItemModel* model = new QStandardItemModel();
 
-		for (int i = 0; i < std_string_list.size(); i++) {
+		for (size_t i = 0; i < std_string_list.size(); i++) {
 			QStandardItem* name_item = new QStandardItem(QString::fromStdWString(std_string_list[i]));
 			QStandardItem* key_item = new QStandardItem(QString::fromStdWString(std_string_list_right[i]));
 			key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
@@ -370,7 +369,6 @@ public:
 	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) override {
 		if (on_delete_function) {
 			on_delete_function(&values[source_index.row()]);
-			int delete_row = selected_index.row();
 			this->proxy_model->removeRow(selected_index.row());
 			values.erase(values.begin() + source_index.row());
 		}
@@ -426,7 +424,6 @@ public:
 	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) override {
 		if (on_delete_function) {
 			on_delete_function(&values[source_index.row()]);
-			int delete_row = selected_index.row();
 			this->proxy_model->removeRow(selected_index.row());
 			values.erase(values.begin() + source_index.row());
 		}
@@ -453,7 +450,7 @@ private:
 
 		if (key_map.find(command_name) != key_map.end()) {
 			const std::vector<std::string>& command_keys = key_map[command_name];
-			for (int i = 0; i < command_keys.size(); i++) {
+			for (size_t i = 0; i < command_keys.size(); i++) {
 				const std::string& ck = command_keys[i];
 				if (i > 0) {
 					command_key += " | ";
@@ -472,7 +469,7 @@ private:
 
 		QStandardItemModel* res = new QStandardItemModel();
 
-		for (int i = 0; i < command_names.size(); i++) {
+		for (size_t i = 0; i < command_names.size(); i++) {
 			res->appendRow(get_item(command_names[i]));
 		}
 		return res;
@@ -507,8 +504,8 @@ public:
 		QStringList elements,
 		std::unordered_map<std::string,
 		std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, QSortFilterProxyModel>(nullptr, parent),
-		on_done(on_done),
-		key_map(key_map)
+                key_map(key_map),
+                on_done(on_done)
 	{
 		string_elements = elements;
 		standard_item_model = get_standard_item_model(string_elements);

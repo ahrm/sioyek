@@ -191,7 +191,6 @@ bool color_4_validator(const std::wstring& str) {
 bool bool_validator(const std::wstring& str) {
 	QString qstr = QString::fromStdWString(str);
 	auto parts = qstr.trimmed().split(' ', Qt::SplitBehaviorFlags::SkipEmptyParts);
-	int is_correct = true;
 	std::wstring msg = L"Bool values should be either 0 or 1, but got ";
 	if (parts.size() != 1) {
 		std::wcout << msg << str << L"\n";
@@ -305,9 +304,9 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		search_url_config_string[search_url_config_string.size() - 1] = letter;
 		execute_command_config_string[execute_command_config_string.size() - 1] = letter;
 
-		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(letter - 'a') * 3], vec3_serializer, vec3_deserializer });
-		configs.push_back({ search_url_config_string, &SEARCH_URLS[letter - 'a'], string_serializer, string_deserializer });
-		configs.push_back({ execute_command_config_string, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer });
+		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(letter - 'a') * 3], vec3_serializer, vec3_deserializer, nullptr });
+		configs.push_back({ search_url_config_string, &SEARCH_URLS[letter - 'a'], string_serializer, string_deserializer, nullptr });
+		configs.push_back({ execute_command_config_string, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer, nullptr });
 	}
 
 	deserialize(default_path, auto_path, user_paths);

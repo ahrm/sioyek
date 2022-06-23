@@ -286,8 +286,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
-    int first_screen_width = QApplication::desktop()->screenGeometry(0).width();
-
     if (DISPLAY_RESOLUTION_SCALE <= 0){
         pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QApplication::desktop()->devicePixelRatioF());
     }
@@ -401,7 +399,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 }
 
 MainWidget::~MainWidget() {
-    for (int i = 0; i < windows.size(); i++) {
+    for (size_t i = 0; i < windows.size(); i++) {
         if (windows[i] == this) {
             windows.erase(windows.begin() + i);
             break;
@@ -2353,9 +2351,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         opengl_widget->rotate_counterclockwise();
     }
     else if (command->name == "debug") {
-    status_label->show();
-    int swidth = status_label->width();
-    int sheight = status_label->height();
+        status_label->show();
     }
     else if (command->name == "toggle_fastread") {
 		opengl_widget->toggle_fastread_mode();
@@ -2605,7 +2601,6 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 
     if (current_pending_command->name == "enter_password") {
         std::string password = utf8_encode(text);
-        bool success = main_document_view->get_document()->apply_password(password.c_str());
         pdf_renderer->add_password(main_document_view->get_document()->get_path(), password);
     }
 
@@ -3387,7 +3382,7 @@ void MainWidget::set_inverse_search_command(const std::wstring& new_command) {
 
 void MainWidget::focusInEvent(QFocusEvent* ev) {
     int index = -1;
-    for (int i = 0; i < windows.size(); i++) {
+    for (size_t i = 0; i < windows.size(); i++) {
         if (windows[i] == this) {
 			index = i;
 			break;

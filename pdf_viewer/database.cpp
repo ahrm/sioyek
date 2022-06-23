@@ -850,8 +850,6 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 	//we should only split when we have the same local and global database
 	assert(local_db == global_db);
 
-	sqlite3* prev_database = local_db;
-
 	// ---------------------- EXPORT PREVIOUS DATABASE ----------------------------
 	std::vector<std::pair<std::wstring, std::wstring>> path_hash;
 	get_prev_path_hash_pairs(path_hash);
@@ -867,7 +865,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 		path_to_hash[path] = hash;
 	}
 
-	for (const auto [path, hash_] : path_hash) {
+	for (const auto &[path, hash_] : path_hash) {
 		std::string hash = utf8_encode(hash_);
 		std::string key;
 		if (was_using_hashes) {
@@ -927,20 +925,20 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 
 	// ---------------------- IMPORT PREVIOUS DATA ----------------------------
 	create_tables();
-	for (const auto [path, hash] : path_hash) {
+	for (const auto &[path, hash] : path_hash) {
 		insert_document_hash(path, utf8_encode(hash));
 	}
 
-	for (const auto [hash, book_state] : opened_book_states) {
+	for (const auto &[hash, book_state] : opened_book_states) {
 		update_book(hash, book_state.zoom_level, book_state.offset_x, book_state.offset_y);
 	}
-	for (const auto [hash, mark] : marks) {
+	for (const auto &[hash, mark] : marks) {
 		insert_mark(hash, mark.symbol, mark.y_offset);
 	}
-	for (const auto [hash, bookmark] : bookmarks) {
+	for (const auto &[hash, bookmark] : bookmarks) {
 		insert_bookmark(hash, bookmark.description, bookmark.y_offset);
 	}
-	for (const auto [hash, highlight] : highlights) {
+	for (const auto &[hash, highlight] : highlights) {
 		insert_highlight(
 			hash,
 			highlight.description,
@@ -951,7 +949,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 			highlight.type
 		);
 	}
-	for (const auto [hash, portal] : portals) {
+	for (const auto &[hash, portal] : portals) {
 		insert_link(
 			hash,
 			portal.dst.document_checksum,
@@ -1000,7 +998,7 @@ void DatabaseManager::export_json(std::wstring json_file_path, CachedChecksummer
 
 	QJsonArray document_data_array;
 
-	for (int i = 0; i < prev_doc_checksums.size(); i++) {
+	for (size_t i = 0; i < prev_doc_checksums.size(); i++) {
 
 		const auto& document_checksum = utf8_encode(prev_doc_checksums[i]);
 		std::optional<std::wstring> path = checksummer->get_path(document_checksum);
@@ -1162,9 +1160,9 @@ std::string create_select_query(std::string table_name,
 	std::wstringstream ss;
 
 	ss << L"SELECT ";
-	for (int i = 0; i < selections.size(); i++) {
+	for (size_t i = 0; i < selections.size(); i++) {
 		ss << utf8_decode(selections[i]);
-		if (i < (selections.size() - 1)) {
+		if ((size_t) i < (selections.size() - 1)) {
 			ss << ", ";
 		}
 	}
@@ -1196,7 +1194,7 @@ std::string create_select_query(std::string table_name,
 		}
 
 		index++;
-		if (index != values.size()) {
+		if ((size_t) index != values.size()) {
 			ss << ", ";
 		}
 	}
