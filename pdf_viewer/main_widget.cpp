@@ -90,7 +90,7 @@ extern float OVERVIEW_OFFSET[2];
 extern bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE;
 extern std::vector<MainWidget*> windows;
 extern bool SHOW_DOC_PATH;
-extern bool DEFAULT_WORD_SELECTION;
+extern bool SINGLE_CLICK_SELECTS_WORDS;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -1184,9 +1184,9 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down) {
 
         if (!mouse_drag_mode) {
             is_selecting = true;
-	    if (!DEFAULT_WORD_SELECTION) {
-		is_word_selecting = true;
-	    }
+			if (SINGLE_CLICK_SELECTS_WORDS) {
+				is_word_selecting = true;
+			}
         }
         else {
             is_dragging = true;
@@ -1418,12 +1418,15 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 }
 
 void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
-    if (mevent->button() == Qt::MouseButton::LeftButton) {
-        is_selecting = true;
-        if (DEFAULT_WORD_SELECTION) {
-            is_word_selecting = true;
+	if (mevent->button() == Qt::MouseButton::LeftButton) {
+		is_selecting = true;
+		if (SINGLE_CLICK_SELECTS_WORDS) {
+			is_word_selecting = false;
+		}
+        else {
+			is_word_selecting = true;
+		}
 	}
-    }
 }
 
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
