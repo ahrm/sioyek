@@ -512,6 +512,12 @@ MainWidget* handle_args(const QStringList& arguments) {
 		 }
 	}
 
+	if (parser->isSet("focus-text")) {
+		QString text = parser->value("focus-text");
+		int page = parser->value("focus-text-page").toInt();
+		target_window->focus_text(page, text.toStdWString());
+	}
+
     // if no file is specified, use the previous file
     if (pdf_file_name == L"" && (windows[0]->doc() != nullptr)) {
         pdf_file_name = target_window->doc()->get_path();
@@ -660,12 +666,15 @@ int main(int argc, char* args[]) {
 		if (guard.isPrimary()) {
 			QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
 				QStringList args = deserialize_string_array(message);
+				bool nofocus = args.indexOf("--nofocus") != -1;
 				MainWidget* target = handle_args(args);
-				if (target) {
-					target->activateWindow();
-				}
-				else if (windows.size() > 0) {
-					windows[0]->activateWindow();
+				if (!nofocus) {
+					if (target) {
+						target->activateWindow();
+					}
+					else if (windows.size() > 0) {
+						windows[0]->activateWindow();
+					}
 				}
 				});
 		}

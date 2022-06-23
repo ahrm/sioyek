@@ -3422,3 +3422,30 @@ void MainWidget::execute_predefined_command(char symbol) {
 		}
 	}
 }
+
+void MainWidget::focus_text(int page, const std::wstring& text) {
+    std::vector<std::wstring> line_texts;
+    std::vector<fz_rect> line_rects;
+    line_rects = main_document_view->get_document()->get_page_lines(page, &line_texts);
+
+    std::string encoded_text = utf8_encode(text);
+
+    int max_score = -1;
+    int max_index = -1;
+
+    for (int i = 0; i < line_texts.size(); i++) {
+        std::string encoded_line = utf8_encode(line_texts[i]);
+        int score = lcs(encoded_text.c_str(), encoded_line.c_str(), encoded_text.size(), encoded_line.size());
+        //fts::fuzzy_match(encoded_line.c_str(), encoded_text.c_str(), score);
+        if (score > max_score) {
+            max_index = i;
+            max_score = score;
+        }
+    }
+    main_document_view->set_line_index(max_index);
+	main_document_view->set_vertical_line_rect(line_rects[max_index]);
+	if (focus_on_visual_mark_pos(true)) {
+		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
+		main_document_view->move_absolute(0, distance);
+	}
+}

@@ -199,8 +199,6 @@ protected:
 
 	void handle_close_event();
 	void return_to_last_visual_mark();
-	void move_visual_mark_down();
-	void move_visual_mark_up();
 	bool is_visual_mark_mode();
 
 public:
@@ -233,6 +231,9 @@ public:
 	void validate_ui();
 	void move_document(float dx, float dy);
 	void move_document_screens(int num_screens);
+	void focus_text(int page, const std::wstring& text);
+	void move_visual_mark_down();
+	void move_visual_mark_up();
 
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_mouse_drag_mode();

@@ -1475,12 +1475,22 @@ QCommandLineParser* get_command_line_parser() {
 	new_window_option.setDescription("Open the file in a new window but within the same sioyek instance.");
 	parser->addOption(new_window_option);
 
+	QCommandLineOption nofocus_option("nofocus");
+	nofocus_option.setDescription("Do not bring the sioyek instance to foreground.");
+	parser->addOption(nofocus_option);
+
 	QCommandLineOption reuse_window_option("reuse-window");
 	reuse_window_option.setDescription("Force sioyek to reuse the current window even when should_launch_new_window is set.");
 	parser->addOption(reuse_window_option);
 
 	QCommandLineOption page_option("page", "Which page to open.", "page");
 	parser->addOption(page_option);
+
+	QCommandLineOption focus_option("focus-text", "Set a visual mark on line including <text>.", "focus-text");
+	parser->addOption(focus_option);
+
+	QCommandLineOption focus_page_option("focus-text-page", "Specifies the page which is used for focus-text", "focus-text-page");
+	parser->addOption(focus_page_option);
 
 
 	QCommandLineOption inverse_search_option("inverse-search", "The command to execute when performing inverse search.\
@@ -1971,3 +1981,31 @@ float get_max_display_scaling() {
 	return scale;
 }
 
+int lcs(const char* X, const char* Y, int m, int n)
+{
+	//int L[m + 1][n + 1];
+	std::vector<std::vector<int>> L;
+	for (int i = 0; i < m + 1; i++) {
+		L.push_back(std::vector<int>(n + 1));
+	}
+
+	int i, j;
+
+	/* Following steps build L[m+1][n+1] in bottom up fashion. Note
+	  that L[i][j] contains length of LCS of X[0..i-1] and Y[0..j-1] */
+	for (i = 0; i <= m; i++) {
+		for (j = 0; j <= n; j++) {
+			if (i == 0 || j == 0)
+				L[i][j] = 0;
+
+			else if (X[i - 1] == Y[j - 1])
+				L[i][j] = L[i - 1][j - 1] + 1;
+
+			else
+				L[i][j] = std::max(L[i - 1][j], L[i][j - 1]);
+		}
+	}
+
+	/* L[m][n] contains length of LCS for X[0..n-1] and Y[0..m-1] */
+	return L[m][n];
+}
