@@ -1049,9 +1049,7 @@ void Document::index_figures(bool* invalid_flag) {
 				}
 
 				// we don't use get_stext_with_page_number here on purpose because it would lead to many unnecessary allocations
-				fz_stext_options options;
-				options.flags = FZ_STEXT_PRESERVE_IMAGES;
-				fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, &options);
+				fz_stext_page* stext_page = fz_new_stext_page_from_page_number(context_, doc_, i, nullptr);
 
 				std::vector<fz_stext_char*> flat_chars;
 				get_flat_chars_from_stext_page(stext_page, flat_chars);
