@@ -609,7 +609,7 @@ int main(int argc, char* args[]) {
 	locks.lock = lock_mutex;
 	locks.unlock = unlock_mutex;
 
-	fz_context* mupdf_context = fz_new_context(nullptr, &locks, FZ_STORE_UNLIMITED);
+	fz_context* mupdf_context = fz_new_context(nullptr, &locks, FZ_STORE_DEFAULT);
 
 	if (!mupdf_context) {
 		std::cerr << "could not create mupdf context" << std::endl;
