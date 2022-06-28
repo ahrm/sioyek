@@ -1013,7 +1013,7 @@ std::optional<DocumentPos> DocumentView::find_line_definition() {
 
 			std::optional<PdfLink> pdf_link = current_document->get_link_in_page_rect(get_center_page_number(), line_rects[line_index]);
 			if (pdf_link.has_value()) {
-				auto parsed_uri = parse_uri(pdf_link.value().uri);
+				auto parsed_uri = parse_uri(mupdf_context, pdf_link.value().uri);
 				DocumentPos res;
 				res.page = parsed_uri.page-1;
 				res.x = parsed_uri.x;
