@@ -315,7 +315,7 @@ void PdfRenderer::run_search(int thread_index)
 
 				const int max_hits_per_page = 20;
 				fz_quad hitboxes[max_hits_per_page];
-				int num_results = fz_search_page(mupdf_context, page, utf8_encode(req.search_term).c_str(), hitboxes, max_hits_per_page);
+				int num_results = fz_search_page(mupdf_context, page, utf8_encode(req.search_term).c_str(), nullptr, hitboxes, max_hits_per_page);
 
 				if (num_results > 0) {
 					req.search_results_mutex->lock();
