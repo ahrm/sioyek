@@ -296,8 +296,11 @@ void configure_paths(){
 	tutorial_path = standard_data_path.slash(L"tutorial.pdf");
 	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
 
-	user_keys_paths.push_back(linux_home_path.slash(L"keys_user.config"));
-	user_config_paths.push_back(linux_home_path.slash(L"prefs_user.config"));
+	Path linux_standard_config_path = linux_home_path.slash(L".config").slash(L"sioyek");
+	//user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
+	//user_config_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
+	user_keys_paths.push_back(linux_standard_config_path.slash(L"keys_user.config"));
+	user_config_paths.push_back(linux_standard_config_path.slash(L"prefs_user.config"));
 
 	if (!tutorial_path.file_exists()) {
 		copy_file(parent_path.slash(L"tutorial.pdf"), tutorial_path);
