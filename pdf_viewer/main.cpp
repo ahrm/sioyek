@@ -275,6 +275,7 @@ void configure_paths(){
 	shader_path = read_only_data_path.slash(L"shaders");
 #else
 	char* APPDIR = std::getenv("XDG_CONFIG_HOME");
+	Path linux_home_path(QDir::homePath().toStdWString());
 
 	if (!APPDIR){
 		APPDIR = std::getenv("HOME");
@@ -294,6 +295,9 @@ void configure_paths(){
 	global_database_file_path = standard_data_path.slash(L"shared.db");
 	tutorial_path = standard_data_path.slash(L"tutorial.pdf");
 	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
+
+	user_keys_paths.push_back(linux_home_path.slash(L"keys_user.config"));
+	user_config_paths.push_back(linux_home_path.slash(L"prefs_user.config"));
 
 	if (!tutorial_path.file_exists()) {
 		copy_file(parent_path.slash(L"tutorial.pdf"), tutorial_path);
