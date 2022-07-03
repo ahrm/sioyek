@@ -660,7 +660,7 @@ void DocumentView::goto_page(int page) {
 //	set_offset_y(get_page_offset(page) + view_height_in_document_space()/2);
 //}
 
-void DocumentView::fit_to_page_height_smart() {
+void DocumentView::fit_to_page_height(bool smart) {
 	int cp = get_center_page_number();
 	if (cp == -1) return;
 
@@ -669,6 +669,11 @@ void DocumentView::fit_to_page_height_smart() {
 	int page_height = current_document->get_page_size_smart(false, cp, &top_ratio, &bottom_ratio, &normal_page_height);
 	float bottom_leftover = 1.0f - bottom_ratio;
 	float imbalance = top_ratio - bottom_leftover;
+
+	if (!smart) {
+		page_height = current_document->get_page_height(cp);
+		imbalance = 0;
+	}
 
 	set_zoom_level(static_cast<float>(view_height - 20) / page_height);
 	//set_offset_y(-imbalance * normal_page_height / 2.0f);

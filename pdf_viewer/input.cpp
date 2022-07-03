@@ -31,6 +31,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "zoom_in", false, false , false, false, {}});
 	commands.push_back({ "zoom_out", false, false , false, false, {}});
 	commands.push_back({ "fit_to_page_width", false, false , false, false, {}});
+	commands.push_back({ "fit_to_page_height", false, false , false, false, {}});
 	commands.push_back({ "fit_to_page_height_smart", false, false , false, false, {}});
 	commands.push_back({ "fit_to_page_width_smart", false, false , false, false, {}});
 	commands.push_back({ "next_page", false, false , false, false, {}});

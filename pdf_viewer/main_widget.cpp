@@ -582,7 +582,7 @@ void MainWidget::validate_render() {
         opengl_widget->set_visible_page_number(current_page);
         main_document_view->set_offset_y(main_document_view->get_document()->get_accum_page_height(current_page) + main_document_view->get_document()->get_page_height(current_page)/2);
         if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
-            main_document_view->fit_to_page_height_smart();
+            main_document_view->fit_to_page_height(true);
         }
         else {
 			main_document_view->fit_to_page_height_width_minimum();
@@ -1798,6 +1798,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         main_document_view->fit_to_page_width();
         last_smart_fit_page = {};
     }
+    else if (command->name == "fit_to_page_height") {
+        main_document_view->fit_to_page_height();
+        last_smart_fit_page = {};
+    }
     else if (command->name == "fit_to_page_width_ratio") {
         main_document_view->fit_to_page_width(false, true);
         last_smart_fit_page = {};
@@ -1808,7 +1812,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         last_smart_fit_page = current_page;
     }
     else if (command->name == "fit_to_page_height_smart") {
-        main_document_view->fit_to_page_height_smart();
+        main_document_view->fit_to_page_height(true);
     }
 
     else if (command->name == "next_state") {

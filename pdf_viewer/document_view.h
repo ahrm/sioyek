@@ -128,7 +128,7 @@ public:
 	void goto_offset_within_page(int page, float offset_y);
 	void goto_page(int page);
 	void fit_to_page_width(bool smart=false, bool ratio=false);
-	void fit_to_page_height_smart();
+	void fit_to_page_height(bool smart=false);
 	void fit_to_page_height_width_minimum();
 	void persist();
 	std::wstring get_current_chapter_name();
