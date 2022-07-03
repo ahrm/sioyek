@@ -1640,6 +1640,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
                 text_command_line_edit->setText(search_range_string.str().c_str() + text_command_line_edit->text());
             }
         }
+        if (command->pushes_state) {
+            push_state();
+        }
         return;
     }
     if (command->name == "goto_begining") {
@@ -3123,6 +3126,7 @@ void MainWidget::dropEvent(QDropEvent* event)
         path = path.substr(7, path.size() - 7);
 #endif
         //handle_args(QStringList() << QApplication::applicationFilePath() << QString::fromStdWString(path));
+        push_state();
         open_document(path, &is_render_invalidated);
     }
 }
