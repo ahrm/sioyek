@@ -31,6 +31,7 @@
 #include <qprocess.h>
 #include <qguiapplication.h>
 #include <qmimedata.h>
+#include <qscreen.h>
 
 
 #include "input.h"
@@ -2994,8 +2995,8 @@ void MainWidget::get_window_params_for_two_window_mode(int* main_window_size, in
     }
     else {
         int num_screens = QApplication::desktop()->numScreens();
-        int main_window_width = QApplication::desktop()->screenGeometry(0).width();
-        int main_window_height = QApplication::desktop()->screenGeometry(0).height();
+        int main_window_width = get_current_monitor_width();
+        int main_window_height = get_current_monitor_height();
         if (num_screens > 1) {
             int second_window_width = QApplication::desktop()->screenGeometry(1).width();
             int second_window_height = QApplication::desktop()->screenGeometry(1).height();
@@ -3025,7 +3026,7 @@ void MainWidget::apply_window_params_for_one_window_mode(bool force_resize){
 
     QWidget* main_window = get_top_level_widget(opengl_widget);
 
-    int main_window_width = QApplication::desktop()->screenGeometry(0).width();
+    int main_window_width = get_current_monitor_width();
 
     int main_window_size[2];
     int main_window_move[2];
@@ -3058,7 +3059,8 @@ void MainWidget::apply_window_params_for_two_window_mode() {
     QWidget* main_window = get_top_level_widget(opengl_widget);
     QWidget* helper_window = get_top_level_widget(helper_opengl_widget);
 
-    int main_window_width = QApplication::desktop()->screenGeometry(0).width();
+    //int main_window_width = QApplication::desktop()->screenGeometry(0).width();
+    int main_window_width = get_current_monitor_width();
 
     int main_window_size[2];
     int main_window_move[2];
@@ -3321,8 +3323,8 @@ void MainWidget::return_to_last_visual_mark() {
 void MainWidget::changeEvent(QEvent* event) {
     if (event->type() == QEvent::WindowStateChange) {
         if (isMaximized()) {
-			main_window_width = QApplication::desktop()->screenGeometry(0).width();
-			main_window_height = QApplication::desktop()->screenGeometry(0).height();
+            main_window_width = get_current_monitor_width();
+            main_window_height = get_current_monitor_height();
 		}
     }
     QWidget::changeEvent(event);
@@ -3461,3 +3463,21 @@ void MainWidget::focus_text(int page, const std::wstring& text) {
 		main_document_view->move_absolute(0, distance);
 	}
 }
+int MainWidget::get_current_monitor_width() {
+    if (this->window()->windowHandle() != nullptr) {
+		return this->window()->windowHandle()->screen()->geometry().width();
+    }
+    else {
+		return QApplication::desktop()->screenGeometry(0).width();
+    }
+}
+
+int MainWidget::get_current_monitor_height() {
+    if (this->window()->windowHandle() != nullptr) {
+		return this->window()->windowHandle()->screen()->geometry().height();
+    }
+    else {
+		return QApplication::desktop()->screenGeometry(0).height();
+    }
+}
+
