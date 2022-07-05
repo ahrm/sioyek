@@ -398,6 +398,7 @@ MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
 	if (file_path.size() > 0){
 		for (auto window : windows) {
 			//if (window->doc() && window->doc()->get_path() == file_path) {
+
 			if (window->doc() && std::filesystem::equivalent(window->doc()->get_path(), file_path)) {
 				return window;
 			}

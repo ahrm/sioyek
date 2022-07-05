@@ -333,6 +333,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     text_command_line_edit_label->setFont(QFont("Monaco"));
     text_command_line_edit->setFont(QFont("Monaco"));
 
+    text_command_line_edit_label->setStyleSheet(get_status_stylesheet());
+    text_command_line_edit->setStyleSheet(get_status_stylesheet());
+
     text_command_line_edit_container_layout->addWidget(text_command_line_edit_label);
     text_command_line_edit_container_layout->addWidget(text_command_line_edit);
     text_command_line_edit_container_layout->setContentsMargins(10, 0, 10, 0);
