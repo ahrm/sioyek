@@ -619,6 +619,9 @@ Document::~Document() {
 void Document::reload(std::string password) {
 	fz_drop_document(context, doc);
 	cached_num_pages = {};
+	cached_fastread_highlights.clear();
+	cached_line_texts.clear();
+	cached_page_line_rects.clear();
 
 	for (auto [_, cached_small_pixmap] : cached_small_pixmaps) {
 		fz_drop_pixmap(context, cached_small_pixmap);

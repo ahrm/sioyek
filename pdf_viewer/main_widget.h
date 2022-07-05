@@ -200,6 +200,7 @@ protected:
 	void handle_close_event();
 	void return_to_last_visual_mark();
 	bool is_visual_mark_mode();
+	void reload();
 
 public:
 	Document* doc();
@@ -272,7 +273,6 @@ public:
 	int get_current_page_number() const;
 	void set_inverse_search_command(const std::wstring& new_command);
 	void execute_predefined_command(char symbol);
-	int get_current_monitor_width();
-	int get_current_monitor_height();
+	int get_current_monitor_width(); int get_current_monitor_height();
 
 };
