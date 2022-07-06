@@ -640,6 +640,7 @@ void Document::reload(std::string password) {
 
 	delete cached_toc_model;
 	cached_toc_model = nullptr;
+	clear_toc_nodes();
 
 	doc = nullptr;
 
@@ -2252,4 +2253,17 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
 		}
 		return cached_page_line_rects[page];
 	}
+}
+void Document::clear_toc_nodes() {
+	for (auto node : top_level_toc_nodes) {
+		clear_toc_node(node);
+	}
+	top_level_toc_nodes.clear();
+}
+
+void Document::clear_toc_node(TocNode* node) {
+	for (auto child : node->children) {
+		clear_toc_node(child);
+	}
+	delete node;
 }

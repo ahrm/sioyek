@@ -99,6 +99,8 @@ private:
 	void create_toc_tree(std::vector<TocNode*>& toc);
 
 	Document(fz_context* context, std::wstring file_name, DatabaseManager* db_manager, CachedChecksummer* checksummer);
+	void clear_toc_nodes();
+	void clear_toc_node(TocNode* node);
 public:
 	fz_document* doc = nullptr;
 
