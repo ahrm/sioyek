@@ -556,6 +556,11 @@ MainWidget* handle_args(const QStringList& arguments) {
 	return target_window;
 }
 
+void focus_on_widget(QWidget* widget) {
+	widget->activateWindow();
+	widget->setWindowState(widget->windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
+}
+
 int main(int argc, char* args[]) {
 
 	QSurfaceFormat format;
@@ -683,10 +688,12 @@ int main(int argc, char* args[]) {
 				MainWidget* target = handle_args(args);
 				if (!nofocus) {
 					if (target) {
-						target->activateWindow();
+						//target->activateWindow();
+						focus_on_widget(target);
 					}
 					else if (windows.size() > 0) {
-						windows[0]->activateWindow();
+						//windows[0]->activateWindow();
+						focus_on_widget(windows[0]);
 					}
 				}
 				});
