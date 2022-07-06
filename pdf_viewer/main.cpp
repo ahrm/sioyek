@@ -201,6 +201,11 @@ Path last_opened_file_address_path(L"");
 Path shader_path(L"");
 Path auto_config_path(L"");
 
+std::wstring SHIFT_CLICK_COMMAND = L"overview_under_cursor";
+std::wstring CONTROL_CLICK_COMMAND = L"smart_jump_under_cursor";
+std::wstring SHIFT_RIGHT_CLICK_COMMAND = L"";
+std::wstring CONTROL_RIGHT_CLICK_COMMAND = L"";
+
 std::vector<MainWidget*> windows;
 
 
