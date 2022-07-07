@@ -1434,6 +1434,15 @@ char* get_argv_value(int argc, char** argv, std::string key) {
 	}
 	return nullptr;
 }
+
+bool has_arg(int argc, char** argv, std::string key) {
+	for (int i = 0; i < argc; i++) {
+		if (key == argv[i]) {
+			return true;
+		}
+	}
+	return false;
+}
 bool should_reuse_instance(int argc, char** argv) {
 	for (int i = 0; i < argc; i++) {
 		if (std::strcmp(argv[i], "--reuse-instance") == 0) return true;
@@ -1455,7 +1464,7 @@ QCommandLineParser* get_command_line_parser() {
 	QCommandLineParser* parser = new QCommandLineParser();
 
 	parser->setApplicationDescription("Sioyek is a PDF reader designed for reading research papers and technical books.");
-	parser->addVersionOption();
+	//parser->addVersionOption();
 
 
 	QCommandLineOption reuse_instance_option("reuse-instance");
@@ -1473,6 +1482,10 @@ QCommandLineParser* get_command_line_parser() {
 	QCommandLineOption nofocus_option("nofocus");
 	nofocus_option.setDescription("Do not bring the sioyek instance to foreground.");
 	parser->addOption(nofocus_option);
+
+	QCommandLineOption version_option("version");
+	version_option.setDescription("Print sioyek version.");
+	parser->addOption(version_option);
 
 	QCommandLineOption reuse_window_option("reuse-window");
 	reuse_window_option.setDescription("Force sioyek to reuse the current window even when should_launch_new_window is set.");

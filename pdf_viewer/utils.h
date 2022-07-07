@@ -162,3 +162,4 @@ std::wstring find_first_regex_match(const std::wstring& haystack, const std::wst
 void merge_lines(const std::vector<fz_stext_line*>& lines, std::vector<fz_rect>& out_rects, std::vector<std::wstring>& out_texts);
 float get_max_display_scaling();
 int lcs(const char* X, const char* Y, int m, int n);
+bool has_arg(int argc, char** argv, std::string key);
