@@ -476,7 +476,12 @@ void DocumentView::get_absolute_delta_from_doc_delta(float dx, float dy, float* 
 }
 
 int DocumentView::get_center_page_number() {
-	return current_document->get_offset_page_number(get_offset_y());
+	if (current_document) {
+		return current_document->get_offset_page_number(get_offset_y());
+	}
+	else {
+		return -1;
+	}
 }
 
 //void DocumentView::search_text(const wchar_t* text) {
