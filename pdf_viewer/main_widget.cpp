@@ -2927,12 +2927,21 @@ void MainWidget::execute_command(std::wstring command, std::wstring text) {
         // and you would be wrong, for some reason qt decided the lowest numbered
         // %n should be filled with the first argument and so on. what follows is a hack to get around this
 
+		QPoint mouse_pos_ = mapFromGlobal(QCursor::pos());
+        WindowPos mouse_pos = { mouse_pos_.x(), mouse_pos_.y() };
+        DocumentPos mouse_pos_document = main_document_view->window_to_document_pos(mouse_pos);
+
         for (int i = 0; i < command_parts.size(); i++) {
             command_parts[i].replace("%1", qfile_path);
             command_parts[i].replace("%2", qfile_name);
             command_parts[i].replace("%3", QString::fromStdWString(selected_text));
             command_parts[i].replace("%4", QString::number(get_current_page_number()));
             command_parts[i].replace("%5", QString::fromStdWString(text));
+            command_parts[i].replace("%{mouse_pos_window}", QString::number(mouse_pos.x) + " " + QString::number(mouse_pos.y));
+            //command_parts[i].replace("%{mouse_pos_window}", QString("%1 %2").arg(mouse_pos.x, mouse_pos.y));
+            command_parts[i].replace("%{mouse_pos_document}", QString::number(mouse_pos_document.page) + " " + QString::number(mouse_pos_document.x) + " " + QString::number(mouse_pos_document.y));
+            //command_parts[i].replace("%{mouse_pos_document}", QString("%1 %2 %3").arg(mouse_pos_document.page, mouse_pos_document.x, mouse_pos_document.y));
+
             std::wstring selected_line_text;
             if (main_document_view) {
                 selected_line_text = main_document_view->get_selected_line_text().value_or(L"");
@@ -2942,6 +2951,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text) {
 				command_parts[i].replace("%6", QString::fromStdWString(selected_line_text));
 			}
 
+            std::wstring command_parts_ = command_parts[i].toStdWString();
             command_args.push_back(command_parts[i]);
 
             //bool part_requires_only_second = (command_parts[i].arg("%1", "%2") != command_parts[i]);
