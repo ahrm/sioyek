@@ -521,7 +521,24 @@ MainWidget* handle_args(const QStringList& arguments) {
 	if (parser->isSet("execute-command")) {
 		 QStringList commands= parser->value("execute-command").split(';');
 		 for (int i = 0; i < commands.size(); i++) {
-			 target_window->handle_command(target_window->get_command_manager()->get_command_with_name(commands.at(i).toStdString()), 1);
+			 auto command = target_window->get_command_manager()->get_command_with_name(commands.at(i).toStdString());
+			 if (command) {
+
+				 if (command->requires_text) {
+					 std::wstring command_data = parser->value("execute-command-data").toStdWString();
+					 target_window->handle_command_with_text(command, command_data);
+				 }
+				 else if (command->requires_symbol) {
+					 char symbol = parser->value("execute-command-data").toStdString()[0];
+					 //target_window->handle_command_types(command, 1);
+					 target_window->handle_command_with_symbol(command, symbol);
+				 }
+				 else {
+					 target_window->handle_command(command, 1);
+				 }
+			 }
+			 //if (command->requires_text) {
+			 //}
 		 }
 	}
 

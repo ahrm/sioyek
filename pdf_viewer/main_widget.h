@@ -146,7 +146,6 @@ protected:
 	void handle_escape();
 	void keyPressEvent(QKeyEvent* kevent) override;
 	void keyReleaseEvent(QKeyEvent* kevent) override;
-	bool handle_command_with_symbol(const Command* command, char symbol);
 	void handle_command_with_file_name(const Command* command, std::wstring file_name);
 	bool is_waiting_for_symbol();
 	void key_event(bool released, QKeyEvent* kevent);
@@ -169,9 +168,8 @@ protected:
 	void wheelEvent(QWheelEvent* wevent) override;
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
 	void toggle_two_window_mode();
-	void toggle_window_configuration(); void handle_command_types(const Command* command, int num_repeats);
+	void toggle_window_configuration();
 	void handle_link();
-	void handle_pending_text_command(std::wstring text);
 	void toggle_fullscreen();
 	void toggle_presentation_mode();
     void toggle_synctex_mode();
@@ -205,8 +203,6 @@ protected:
 public:
 	Document* doc();
 
-	void handle_command(const Command* command, int num_repeats);
-
 	MainWidget(
 		fz_context* mupdf_context,
 		DatabaseManager* db_manager,
@@ -220,6 +216,12 @@ public:
 	MainWidget(MainWidget* other);
 
 	~MainWidget();
+
+	void handle_command(const Command* command, int num_repeats);
+	void handle_command_types(const Command* command, int num_repeats);
+	bool handle_command_with_symbol(const Command* command, char symbol);
+	void handle_pending_text_command(std::wstring text);
+	void handle_command_with_text(const Command* command, std::wstring text);
 
 	void invalidate_render();
 	void invalidate_ui();

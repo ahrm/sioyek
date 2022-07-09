@@ -1508,6 +1508,9 @@ QCommandLineParser* get_command_line_parser() {
 	QCommandLineOption command_option("execute-command", "The command to execute on running instance of sioyek", "execute-command");
 	parser->addOption(command_option);
 
+	QCommandLineOption command_data_option("execute-command-data", "Optional data for execute-command command", "execute-command-data");
+	parser->addOption(command_data_option);
+
 	QCommandLineOption forward_search_file_option("forward-search-file", "Perform forward search on file <file>. You must also include --forward-search-line to specify the line", "file");
 	parser->addOption(forward_search_file_option);
 

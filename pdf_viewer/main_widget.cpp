@@ -3537,3 +3537,8 @@ void MainWidget::reload() {
 		doc()->reload();
     }
 }
+
+void MainWidget::handle_command_with_text(const Command* command, std::wstring text) {
+    current_pending_command = *command;
+    handle_pending_text_command(text);
+}
