@@ -1106,38 +1106,7 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
         }
         else {
             if (this->synctex_mode) {
-                auto [page, doc_x, doc_y] = main_document_view->window_to_document_pos(click_pos);
-                std::wstring docpath = main_document_view->get_document()->get_path();
-                std::string docpath_utf8 = utf8_encode(docpath);
-                synctex_scanner_p scanner = synctex_scanner_new_with_output_file(docpath_utf8.c_str(), nullptr, 1);
-
-                int stat = synctex_edit_query(scanner, page + 1, doc_x, doc_y);
-
-                if (stat > 0) {
-                    synctex_node_p node;
-                    while ((node = synctex_scanner_next_result(scanner))) {
-                        int line = synctex_node_line(node);
-                        int column = synctex_node_column(node);
-                        if (column < 0) column = 0;
-                        int tag = synctex_node_tag(node);
-                        const char* file_name = synctex_scanner_get_name(scanner, tag);
-
-                        std::string line_string = std::to_string(line);
-                        std::string column_string = std::to_string(column);
-
-                        if (inverse_search_command.size() > 0) {
-							QString command = QString::fromStdWString(inverse_search_command).arg(file_name, line_string.c_str(), column_string.c_str());
-							QProcess::startDetached(command);
-                        }
-                        else{
-                            show_error_message(L"inverse_search_command is not set in prefs_user.config");
-                        }
-
-                    }
-
-                }
-                synctex_scanner_free(scanner);
-
+                synctex_under_pos(click_pos);
             }
         }
 
@@ -2417,6 +2386,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
         smart_jump_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
+    else if (command->name == "synctex_under_cursor") {
+        QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+        synctex_under_pos({ mouse_pos.x(), mouse_pos.y() });
+    }
     else if (command->name == "overview_under_cursor") {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
         overview_under_pos({ mouse_pos.x(), mouse_pos.y() });
@@ -3541,4 +3514,39 @@ void MainWidget::reload() {
 void MainWidget::handle_command_with_text(const Command* command, std::wstring text) {
     current_pending_command = *command;
     handle_pending_text_command(text);
+}
+
+void MainWidget::synctex_under_pos(WindowPos position) {
+	auto [page, doc_x, doc_y] = main_document_view->window_to_document_pos(position);
+	std::wstring docpath = main_document_view->get_document()->get_path();
+	std::string docpath_utf8 = utf8_encode(docpath);
+	synctex_scanner_p scanner = synctex_scanner_new_with_output_file(docpath_utf8.c_str(), nullptr, 1);
+
+	int stat = synctex_edit_query(scanner, page + 1, doc_x, doc_y);
+
+	if (stat > 0) {
+		synctex_node_p node;
+		while ((node = synctex_scanner_next_result(scanner))) {
+			int line = synctex_node_line(node);
+			int column = synctex_node_column(node);
+			if (column < 0) column = 0;
+			int tag = synctex_node_tag(node);
+			const char* file_name = synctex_scanner_get_name(scanner, tag);
+
+			std::string line_string = std::to_string(line);
+			std::string column_string = std::to_string(column);
+
+			if (inverse_search_command.size() > 0) {
+				QString command = QString::fromStdWString(inverse_search_command).arg(file_name, line_string.c_str(), column_string.c_str());
+				QProcess::startDetached(command);
+			}
+			else {
+				show_error_message(L"inverse_search_command is not set in prefs_user.config");
+			}
+
+		}
+
+	}
+	synctex_scanner_free(scanner);
+
 }

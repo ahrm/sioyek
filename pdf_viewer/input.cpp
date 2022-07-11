@@ -138,6 +138,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "new_window", false, false , false, false, {}});
 	commands.push_back({ "toggle_statusbar", false, false , false, false, {}});
 	commands.push_back({ "reload", false, false , false, false, {}});
+	commands.push_back({ "synctex_under_cursor", false, false , false, false, {}});
 
 	for (char c = 'a'; c <= 'z'; c++) {
 		commands.push_back({ "execute_command_"  +  std::string(1, c), false, false , false, false, {}});
