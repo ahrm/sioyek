@@ -149,8 +149,8 @@ protected:
 	void handle_command_with_file_name(const Command* command, std::wstring file_name);
 	bool is_waiting_for_symbol();
 	void key_event(bool released, QKeyEvent* kevent);
-	void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed);
-	void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed);
+	void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
+	void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
 
 	void update_history_state();
 	void push_state();

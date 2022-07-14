@@ -96,6 +96,8 @@ extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
 extern std::wstring SHIFT_RIGHT_CLICK_COMMAND;
 extern std::wstring CONTROL_RIGHT_CLICK_COMMAND;
+extern std::wstring ALT_CLICK_COMMAND;
+extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -1069,12 +1071,12 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
 }
 
-void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed) {
+void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed) {
 
     if (is_rotated()) {
         return;
     }
-    if (is_shift_pressed || is_control_pressed) {
+    if (is_shift_pressed || is_control_pressed || is_alt_pressed) {
         return;
     }
 
@@ -1114,12 +1116,12 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
 
 }
 
-void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed) {
+void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed) {
 
     if (is_rotated()) {
         return;
     }
-    if (is_shift_pressed || is_control_pressed) {
+    if (is_shift_pressed || is_control_pressed || is_alt_pressed) {
         return;
     }
 
@@ -1378,6 +1380,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
+    bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
 
 	if (is_rotated()) {
 		return;
@@ -1390,8 +1393,11 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         else if (is_control_pressed) {
             handle_command(command_manager.get_command_with_name(utf8_encode(CONTROL_CLICK_COMMAND)), 1);
         }
+        else if (is_alt_pressed) {
+            handle_command(command_manager.get_command_with_name(utf8_encode(ALT_CLICK_COMMAND)), 1);
+        }
         else {
-			handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed);
+			handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
 			if (is_select_highlight_mode && (opengl_widget->selected_character_rects.size() > 0)) {
 				main_document_view->add_highlight(selection_begin, selection_end, select_highlight_type);
 			}
@@ -1409,8 +1415,11 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         else if (is_control_pressed) {
             handle_command(command_manager.get_command_with_name(utf8_encode(CONTROL_RIGHT_CLICK_COMMAND)), 1);
         }
+        else if (is_alt_pressed) {
+            handle_command(command_manager.get_command_with_name(utf8_encode(ALT_RIGHT_CLICK_COMMAND)), 1);
+        }
         else {
-			handle_right_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed);
+			handle_right_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
         }
     }
 
@@ -1435,13 +1444,14 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
+    bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
 
     if (mevent->button() == Qt::MouseButton::LeftButton) {
-        handle_left_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed);
+        handle_left_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_alt_pressed);
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
-        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed);
+        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_alt_pressed);
     }
 
     if (mevent->button() == Qt::MouseButton::XButton1) {
@@ -2683,8 +2693,8 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
             fz_irect srect = get_tag_window_rect(parts.at(0).toStdString());
             fz_irect erect = get_tag_window_rect(parts.at(1).toStdString());
 
-            handle_left_click({ srect.x0 + 5, (srect.y0 + srect.y1) / 2 }, true, false, false);
-            handle_left_click({ erect.x0 - 5 , (erect.y0 + erect.y1) / 2 }, false, false, false);
+            handle_left_click({ srect.x0 + 5, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
+            handle_left_click({ erect.x0 - 5 , (erect.y0 + erect.y1) / 2 }, false, false, false, false);
             opengl_widget->set_should_highlight_words(false);
 		}
 	}
