@@ -10,6 +10,8 @@
 #include "input.h"
 
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
+extern bool USE_LEGACY_KEYBINDS;
+
 CommandManager::CommandManager() {
 	commands.push_back({ "goto_begining",		false,	false,	false,	true, {}});
 	commands.push_back({ "goto_end",			false,	false,	false,	true, {}});
@@ -482,11 +484,35 @@ bool is_digit(int key) {
 	return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-std::vector<const Command*> InputHandler::handle_key(int key, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+std::vector<const Command*> InputHandler::handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
 	std::vector<const Command*> res;
 
-	if (key >= 'A' && key <= 'Z') {
-		key = key - 'A' + 'a';
+	int key = 0;
+	if (!USE_LEGACY_KEYBINDS){
+		if (key_event->text().size() > 0) {
+			if (!control_pressed && !alt_pressed) {
+				// shift is already handled in the returned text
+				shift_pressed = false;
+				std::string text = key_event->text().toStdString();
+				key = key_event->text().toStdString()[0];
+			}
+			else {
+				key = key_event->key();
+				if (key >= 'A' && key <= 'Z') {
+					key = key - 'A' + 'a';
+				}
+			}
+		}
+		else {
+			key = key_event->key();
+		}
+	}
+	else {
+		key = key_event->key();
+		if (key >= 'A' && key <= 'Z') {
+			key = key - 'A' + 'a';
+		}
+
 	}
 
 	if (current_node == root && is_digit(key)) {

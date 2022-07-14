@@ -1056,7 +1056,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
         int num_repeats = 0;
         bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier) || (kevent->modifiers() & Qt::MetaModifier);
         std::vector<const Command*> commands = input_handler->handle_key(
-            kevent->key(),
+            kevent,
             kevent->modifiers() & Qt::ShiftModifier,
             is_control_pressed,
             kevent->modifiers() & Qt::AltModifier,
