@@ -83,6 +83,7 @@ extern std::wstring CONTROL_RIGHT_CLICK_COMMAND;
 extern std::wstring ALT_CLICK_COMMAND;
 extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern bool USE_LEGACY_KEYBINDS;
+extern bool MULTILINE_MENUS;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -310,6 +311,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"use_legacy_keybinds", &USE_LEGACY_KEYBINDS, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"alt_click_command", &ALT_CLICK_COMMAND, string_serializer, string_deserializer, nullptr });
 	configs.push_back({ L"alt_right_click_command", &ALT_RIGHT_CLICK_COMMAND, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"multiline_menus", &MULTILINE_MENUS, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";
