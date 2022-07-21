@@ -3465,6 +3465,9 @@ bool MainWidget::execute_predefined_command(char symbol) {
             return true;
 		}
 		else {
+            if (!current_pending_command) {
+                current_pending_command = *command_manager.get_command_with_name("execute_predefined_command");
+            }
 			current_pending_command.value().requires_text = true;
 			current_pending_command.value().requires_symbol = false;
 			command_to_be_executed_symbol = symbol;
@@ -3528,6 +3531,7 @@ void MainWidget::reload() {
 void MainWidget::handle_command_with_text(const Command* command, std::wstring text) {
     current_pending_command = *command;
     handle_pending_text_command(text);
+    current_pending_command = {};
 }
 
 void MainWidget::synctex_under_pos(WindowPos position) {
