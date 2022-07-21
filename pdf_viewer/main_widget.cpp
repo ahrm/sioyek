@@ -838,7 +838,9 @@ bool MainWidget::handle_command_with_symbol(const Command* command, char symbol)
         //}
     }
     else if (command->name == "execute_predefined_command" ) {
-        execute_predefined_command(symbol);
+        if (execute_predefined_command(symbol) == false) {
+            return false;
+        }
     }
     else if (command->name == "goto_mark") {
         assert(main_document_view);
@@ -3455,17 +3457,19 @@ void MainWidget::toggle_statusbar() {
         status_label->show();
     }
 }
-void MainWidget::execute_predefined_command(char symbol) {
+
+bool MainWidget::execute_predefined_command(char symbol) {
 	if ((symbol >= 'a') && (symbol <= 'z')) {
 		if (EXECUTE_COMMANDS[symbol - 'a'].find(L"%5") == std::wstring::npos) {
 			execute_command(EXECUTE_COMMANDS[symbol - 'a']);
+            return true;
 		}
 		else {
 			current_pending_command.value().requires_text = true;
 			current_pending_command.value().requires_symbol = false;
 			command_to_be_executed_symbol = symbol;
 			handle_command(&current_pending_command.value(), 0);
-			return;
+			return false;
 		}
 	}
 }
