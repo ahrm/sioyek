@@ -19,6 +19,7 @@ If you prefer to install sioyek with a package manager, you can look at this lis
 Distro | Link | Maintainer
 ------- | ----- | -------------
 Flathub | [sioyek](https://flathub.org/apps/details/com.github.ahrm.sioyek) | [@nbenitez](https://flathub.org/apps/details/com.github.ahrm.sioyek)
+Alpine | [sioyek](https://pkgs.alpinelinux.org/packages?name=sioyek) | [@jirutka](https://github/com/jirutka)
 Arch | [AUR Sioyek-git](https://aur.archlinux.org/packages/sioyek-git/) | [@randomn4me](https://github.com/randomn4me)
 Arch | [AUR sioyek-appimage](https://aur.archlinux.org/packages/sioyek-appimage/) | [@DhruvaSambrani](https://github.com/DhruvaSambrani)
 Fedora | [Copr endle/sioyek](https://copr.fedorainfracloud.org/coprs/endle/sioyek/) | [@Endle](https://github.com/Endle)
