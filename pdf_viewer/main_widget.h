@@ -277,5 +277,6 @@ public:
 	bool execute_predefined_command(char symbol);
 	int get_current_monitor_width(); int get_current_monitor_height();
 	void synctex_under_pos(WindowPos position);
+	std::optional<std::wstring> get_paper_name_under_cursor();
 
 };
