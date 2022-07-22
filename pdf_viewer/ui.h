@@ -523,10 +523,17 @@ public:
 	}
 
 	void on_select(const QModelIndex& index) {
+		bool is_numeric = false;
+		line_edit->text().toInt(&is_numeric);
 		QString name = standard_item_model->data(index).toString();
 		hide();
 		parentWidget()->setFocus();
-		(*on_done)(name.toStdString());
+		if (!is_numeric) {
+			(*on_done)(name.toStdString());
+		}
+		else{
+			(*on_done)(line_edit->text().toStdString());
+		}
 	}
 
 	CommandSelector(std::function<void(std::string)>* on_done,

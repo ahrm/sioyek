@@ -350,8 +350,17 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     text_command_line_edit_container->hide();
 
     on_command_done = [&](std::string command_name) {
-        const Command* command = command_manager.get_command_with_name(command_name);
-        handle_command_types(command, 1);
+        bool is_numeric = false;
+        int page_number = QString::fromStdString(command_name).toInt(&is_numeric);
+        if (is_numeric) {
+            if (main_document_view) {
+                main_document_view->goto_page(page_number - 1);
+            }
+        }
+        else {
+			const Command* command = command_manager.get_command_with_name(command_name);
+			handle_command_types(command, 1);
+        }
     };
 
     // when pdf renderer's background threads finish rendering a page or find a new search result
