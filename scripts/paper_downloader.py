@@ -15,6 +15,7 @@ Now, you can control+click on paper names to download them and open them in sioy
 # where to put downloaded papers, if it is None, we use a papers folder next to this script
 PAPERS_FOLDER_PATH = None
 SIOYEK_PATH = None
+PYTHON_EXECUTABLE = 'python'
 
 import os
 import pathlib
@@ -91,7 +92,7 @@ def download_paper_with_doi(doi_string, doi_map):
     download_dir = get_papers_folder_path()
     with ListingDiff(download_dir) as listing_diff:
 
-        subprocess.run(['python', '-m', 'PyPaperBot', '--doi={}'.format(doi_string), '--dwn-dir={}'.format(download_dir)])
+        subprocess.run([PYTHON_EXECUTABLE, '-m', 'PyPaperBot', '--doi={}'.format(doi_string), '--dwn-dir={}'.format(download_dir)])
         pdf_files = listing_diff.new_pdf_files()
         if len(pdf_files) > 0:
             returned_file = download_dir / pdf_files[0]
