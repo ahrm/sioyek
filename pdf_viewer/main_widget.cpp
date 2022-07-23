@@ -510,6 +510,10 @@ std::wstring MainWidget::get_status_string() {
     }
     ss << " [ h:" << select_highlight_type << " ] ";
 
+    if (custom_status_message.size() > 0) {
+        ss << "[ " << custom_status_message << " ] ";
+    }
+
   //  if (last_command != nullptr) {
 		//ss << " [ " << last_command->name.c_str() << " ] ";
   //  }
@@ -1842,6 +1846,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "fit_to_page_height_smart") {
         main_document_view->fit_to_page_height(true);
     }
+    else if (command->name == "clear_status_string") {
+        set_status_message(L"");
+    }
 
     else if (command->name == "next_state") {
         next_state();
@@ -2679,6 +2686,9 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 
         execute_command(text);
     }
+    if (current_pending_command->name == "set_status_string") {
+        set_status_message(text);
+    }
     if (current_pending_command->name == "execute_predefined_command") {
         if (command_to_be_executed_symbol.has_value()) {
             if (command_to_be_executed_symbol.value() >= 'a' && command_to_be_executed_symbol.value() <= 'z') {
@@ -2958,6 +2968,8 @@ void MainWidget::execute_command(std::wstring command, std::wstring text) {
                     command_parts[i].replace("%{paper_name}", QString::fromStdWString(maybe_paper_name.value()));
                 }
             }
+
+            command_parts[i].replace("%{sioyek_path}", QCoreApplication::applicationFilePath());
 
             std::wstring selected_line_text;
             if (main_document_view) {
@@ -3599,4 +3611,8 @@ void MainWidget::synctex_under_pos(WindowPos position) {
 	}
 	synctex_scanner_free(scanner);
 
+}
+
+void MainWidget::set_status_message(std::wstring new_status_string) {
+    custom_status_message = new_status_string;
 }
