@@ -281,5 +281,6 @@ public:
 	void synctex_under_pos(WindowPos position);
 	std::optional<std::wstring> get_paper_name_under_cursor();
 	void set_status_message(std::wstring new_status_string);
+	void remove_self_from_windows();
 
 };

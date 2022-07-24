@@ -88,11 +88,18 @@ def get_doi_with_name(paper_name):
         return None
     return response['message']['items'][0]['DOI']
 
-def download_paper_with_doi(doi_string, doi_map):
+def download_paper_with_doi(doi_string, paper_name, doi_map):
     download_dir = get_papers_folder_path()
     with ListingDiff(download_dir) as listing_diff:
 
-        subprocess.run([PYTHON_EXECUTABLE, '-m', 'PyPaperBot', '--doi={}'.format(doi_string), '--dwn-dir={}'.format(download_dir)])
+        show_status('trying to download "{}" from google scholar'.format(paper_name))
+        subprocess.run([PYTHON_EXECUTABLE, '-m', 'PyPaperBot', '--query="{}"'.format(paper_name), '--scholar-pages=1', '--scholar-results=1', '--dwn-dir={}'.format(download_dir)])
+        pdf_files = listing_diff.new_pdf_files()
+
+        if len(pdf_files) == 0:
+            show_status('trying to download "{}" from scihub'.format(paper_name))
+            subprocess.run([PYTHON_EXECUTABLE, '-m', 'PyPaperBot', '--doi={}'.format(doi_string), '--dwn-dir={}'.format(download_dir)])
+
         pdf_files = listing_diff.new_pdf_files()
         if len(pdf_files) > 0:
             returned_file = download_dir / pdf_files[0]
@@ -101,13 +108,13 @@ def download_paper_with_doi(doi_string, doi_map):
             return returned_file
     return None
 
-def get_paper_file_name_with_doi(doi):
+def get_paper_file_name_with_doi_and_name(doi, paper_name):
 
     doi_map = get_cached_doi_map()
     if doi in doi_map.keys():
         if os.path.exists(doi_map[doi]):
             return doi_map[doi]
-    return download_paper_with_doi(doi, doi_map)
+    return download_paper_with_doi(doi, paper_name, doi_map)
 
 
 if __name__ == '__main__':
@@ -118,8 +125,8 @@ if __name__ == '__main__':
     try:
         doi = get_doi_with_name(sys.argv[2])
         if doi:
-            show_status('downloading doi: {}'.format(doi))
-            file_name = get_paper_file_name_with_doi(doi)
+            # show_status('downloading doi: {}'.format(doi))
+            file_name = get_paper_file_name_with_doi_and_name(doi, sys.argv[2])
             show_status("")
             if file_name:
                 subprocess.run([SIOYEK_PATH, str(file_name), '--new-window'])

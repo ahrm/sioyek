@@ -921,7 +921,7 @@ void PdfViewOpenGLWidget::on_document_view_reset() {
 
 PdfViewOpenGLWidget::~PdfViewOpenGLWidget() {
 	if (is_opengl_initialized) {
-		glDeleteVertexArrays(1, &vertex_array_object);
+		//glDeleteVertexArrays(1, &vertex_array_object);
 	}
 }
 

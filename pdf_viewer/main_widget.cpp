@@ -419,12 +419,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 }
 
 MainWidget::~MainWidget() {
-    for (size_t i = 0; i < windows.size(); i++) {
-        if (windows[i] == this) {
-            windows.erase(windows.begin() + i);
-            break;
-        }
-    }
+    remove_self_from_windows();
 
     if (windows.size() == 0) {
         *should_quit = true;
@@ -3386,6 +3381,7 @@ void MainWidget::handle_close_event() {
 	// we need to delete this here (instead of destructor) to ensure that application
 	// closes immediately after the main window is closed
 	delete helper_opengl_widget;
+    helper_opengl_widget = nullptr;
 }
 
 Document* MainWidget::doc() {
@@ -3615,4 +3611,13 @@ void MainWidget::synctex_under_pos(WindowPos position) {
 
 void MainWidget::set_status_message(std::wstring new_status_string) {
     custom_status_message = new_status_string;
+}
+
+void MainWidget::remove_self_from_windows() {
+    for (size_t i = 0; i < windows.size(); i++) {
+        if (windows[i] == this) {
+            windows.erase(windows.begin() + i);
+            break;
+        }
+    }
 }
