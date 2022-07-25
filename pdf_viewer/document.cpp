@@ -38,17 +38,29 @@ int Document::get_mark_index(char symbol) {
 }
 
 void Document::load_document_metadata_from_db() {
-	std::string checksum = get_checksum();
-	db_manager->insert_document_hash(get_path(), checksum);
+
 	marks.clear();
 	bookmarks.clear();
 	highlights.clear();
 	links.clear();
 	links.clear();
-	db_manager->select_mark(checksum, marks);
-	db_manager->select_bookmark(checksum, bookmarks);
-	db_manager->select_highlight(checksum, highlights);
-	db_manager->select_links(checksum, links);
+
+	std::optional<std::string> checksum_ = get_checksum_fast();
+	if (checksum_) {
+		std::string checksum = checksum_.value();
+		db_manager->select_mark(checksum, marks);
+		db_manager->select_bookmark(checksum, bookmarks);
+		db_manager->select_highlight(checksum, highlights);
+		db_manager->select_links(checksum, links);
+	}
+	else {
+		auto checksum_thread = std::thread([&]() {
+				std::string checksum = get_checksum();
+				db_manager->insert_document_hash(get_path(), checksum);
+			});
+		checksum_thread.detach();
+		//checksum_thread.join();
+	}
 }
 
 
@@ -135,6 +147,11 @@ std::wstring Document::get_path() {
 std::string Document::get_checksum() {
 
 	return checksummer->get_checksum(get_path());
+}
+
+std::optional<std::string> Document::get_checksum_fast() {
+
+	return checksummer->get_checksum_fast(get_path());
 }
 
 int Document::find_closest_bookmark_index(float to_offset_y) {
@@ -739,7 +756,7 @@ void Document::load_page_dimensions(bool force_load_now) {
 		}
 	}
 
-	auto load_page_dimensions_function = [this, n]() {
+	auto load_page_dimensions_function = [this, n, force_load_now]() {
 		std::vector<float> accum_page_heights_;
 		std::vector<float> page_heights_;
 		std::vector<float> page_widths_;

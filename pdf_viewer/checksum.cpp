@@ -39,9 +39,18 @@ CachedChecksummer::CachedChecksummer(const std::vector<std::pair<std::wstring, s
     }
 }
 
+std::optional<std::string> CachedChecksummer::get_checksum_fast(std::wstring file_path) {
+    if (cached_checksums.find(file_path) != cached_checksums.end()) {
+        return cached_checksums[file_path];
+    }
+    return {};
+}
+
 std::string CachedChecksummer::get_checksum(std::wstring file_path) {
 
-		if (cached_checksums.find(file_path) == cached_checksums.end()) {
+		auto cached_checksum = get_checksum_fast(file_path);
+
+		if (!cached_checksum) {
 			std::string checksum = compute_checksum(QString::fromStdWString(file_path), QCryptographicHash::Md5);
 			cached_checksums[file_path] = checksum;
             cached_paths[checksum].push_back(file_path);

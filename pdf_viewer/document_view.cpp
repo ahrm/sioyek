@@ -602,9 +602,9 @@ void DocumentView::open_document(const std::wstring& doc_path,
 	}
 	else if (load_prev_state) {
 
-		std::string checksum = checksummer->get_checksum(canonical_path);
+		std::optional<std::string> checksum = checksummer->get_checksum_fast(canonical_path);
 		std::vector<OpenedBookState> prev_state;
-		if (db_manager->select_opened_book(checksum, prev_state)) {
+		if (checksum && db_manager->select_opened_book(checksum.value(), prev_state)) {
 			if (prev_state.size() > 1) {
 				std::cerr << "more than one file with one path, this should not happen!" << std::endl;
 			}
