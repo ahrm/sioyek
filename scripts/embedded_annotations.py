@@ -1,4 +1,6 @@
 '''
+This script was tested with PyMuPDF version 1.17.6. Other versions may require slight modification of the code.
+
 This script can be used to embed annotations as you create them, so they are viewable in other
 PDF viewers.
 This is basically a script that can either add a bookmark or a highlight to a page based on the command line arguments.
@@ -24,7 +26,7 @@ import fitz
 import subprocess
 
 # if set to true, we re-add the bookmarks into sioyek, so we have both types of bookmarks
-ADD_BOOKMARKS_TO_SIOYEK = True
+ADD_BOOKMARKS_TO_SIOYEK = False
 PATH_TO_SIOYEK = r'path/to/sioyek.exe'
 
 def add_bookmark(doc_path, page_number, location, text):
