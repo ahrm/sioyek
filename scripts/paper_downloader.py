@@ -60,7 +60,7 @@ def clean_paper_name(paper_name):
 
 def is_file_a_paper_with_name(file_name, paper_name):
     doc = fitz.open(file_name)
-    page_text = doc.getPageText(0)
+    page_text = doc.get_page_text(0)
     doc.close()
     if regex.search('(' + regex.escape(paper_name) + '){e<=6}', page_text, flags=regex.IGNORECASE):
         return True
