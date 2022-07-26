@@ -98,6 +98,8 @@ extern std::wstring SHIFT_RIGHT_CLICK_COMMAND;
 extern std::wstring CONTROL_RIGHT_CLICK_COMMAND;
 extern std::wstring ALT_CLICK_COMMAND;
 extern std::wstring ALT_RIGHT_CLICK_COMMAND;
+extern Path local_database_file_path;
+extern Path global_database_file_path;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -2965,10 +2967,13 @@ void MainWidget::execute_command(std::wstring command, std::wstring text) {
             }
 
             command_parts[i].replace("%{sioyek_path}", QCoreApplication::applicationFilePath());
+            command_parts[i].replace("%{local_database}", QString::fromStdWString(local_database_file_path.get_path()));
+            command_parts[i].replace("%{shared_database}", QString::fromStdWString(global_database_file_path.get_path()));
 
             std::wstring selected_line_text;
             if (main_document_view) {
                 selected_line_text = main_document_view->get_selected_line_text().value_or(L"");
+				command_parts[i].replace("%{zoom_level}", QString::number(main_document_view->get_zoom_level()));
             }
 
             if (selected_line_text.size() > 0) {

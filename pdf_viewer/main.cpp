@@ -187,6 +187,7 @@ bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE = true;
 bool SINGLE_CLICK_SELECTS_WORDS = false;
 bool USE_LEGACY_KEYBINDS = true;
 bool MULTILINE_MENUS = false;
+bool START_WITH_HELPER_WINDOW = false;
 
 float PAGE_SEPARATOR_WIDTH = 0.0f;
 float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
@@ -730,7 +731,7 @@ int main(int argc, char* args[]) {
 
 	main_widget->topLevelWidget()->resize(500, 500);
 
-	if (HELPER_WINDOW_SIZE[0] > -1) {
+	if (START_WITH_HELPER_WINDOW && (HELPER_WINDOW_SIZE[0] > -1)) {
 		main_widget->apply_window_params_for_two_window_mode();
 	}
 	else {
