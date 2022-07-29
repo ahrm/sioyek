@@ -763,7 +763,9 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
                 main_document_view->goto_offset_within_page({ target_page, main_document_view->get_offset_x(), first_rect.value().y0 });
             }
         }
-
+    }
+    else {
+        open_document(pdf_file_path);
     }
     synctex_scanner_free(scanner);
 }
