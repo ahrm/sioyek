@@ -143,6 +143,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "synctex_under_cursor", false, false , false, false, {}});
 	commands.push_back({ "set_status_string", true, false , false, false, {}});
 	commands.push_back({ "clear_status_string", false, false , false, false, {}});
+	commands.push_back({ "toggle_titlebar", false, false , false, false, {}});
 
 	for (char c = 'a'; c <= 'z'; c++) {
 		commands.push_back({ "execute_command_"  +  std::string(1, c), false, false , false, false, {}});

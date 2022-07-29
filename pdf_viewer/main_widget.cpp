@@ -2409,6 +2409,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "toggle_statusbar") {
 		toggle_statusbar();
 	}
+    else if (command->name == "toggle_titlebar") {
+		toggle_titlebar();
+	}
     else if (command->name == "smart_jump_under_cursor") {
         QPoint mouse_pos = mapFromGlobal(QCursor::pos());
         smart_jump_under_pos({ mouse_pos.x(), mouse_pos.y() });
@@ -3503,6 +3506,18 @@ void MainWidget::toggle_statusbar() {
     else {
         status_label->show();
     }
+}
+
+void MainWidget::toggle_titlebar() {
+
+    Qt::WindowFlags window_flags = windowFlags();
+    if (window_flags.testFlag(Qt::FramelessWindowHint)) {
+        setWindowFlag(Qt::FramelessWindowHint, false);
+    }
+    else {
+        setWindowFlag(Qt::FramelessWindowHint, true);
+    }
+    show();
 }
 
 bool MainWidget::execute_predefined_command(char symbol) {
