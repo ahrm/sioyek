@@ -163,3 +163,4 @@ void merge_lines(const std::vector<fz_stext_line*>& lines, std::vector<fz_rect>&
 float get_max_display_scaling();
 int lcs(const char* X, const char* Y, int m, int n);
 bool has_arg(int argc, char** argv, std::string key);
+std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack, const std::wstring& regex_string);

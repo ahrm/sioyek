@@ -1923,9 +1923,11 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "overview_definition") {
 		if (!opengl_widget->get_overview_page()) {
-			std::optional<DocumentPos> defpos = main_document_view->find_line_definition();
-			if (defpos) {
-				set_overview_position(defpos.value().page, defpos.value().y);
+			std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
+			if (defpos.size() > 0) {
+				set_overview_position(defpos[0].page, defpos[0].y);
+                smart_view_candidates = defpos;
+                index_into_candidates = 0;
 			}
         }
         else {
@@ -1933,7 +1935,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         }
     }
     else if (command->name == "portal_to_definition") {
-		std::optional<DocumentPos> defpos = main_document_view->find_line_definition();
+		std::optional<DocumentPos> defpos = main_document_view->find_line_definitions()[0];
         if (defpos) {
             AbsoluteDocumentPos abspos;
             doc()->page_pos_to_absolute_pos(defpos.value().page, defpos.value().x, defpos.value().y, &abspos.x, &abspos.y);

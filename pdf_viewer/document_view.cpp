@@ -1002,9 +1002,11 @@ std::optional<std::wstring> DocumentView::get_selected_line_text () {
 	return {};
 }
 
-std::optional<DocumentPos> DocumentView::find_line_definition() {
+std::vector<DocumentPos> DocumentView::find_line_definitions() {
 	//todo: remove duplicate code from this function, this just needs to find the location of the
 	// reference, the rest can be handled by find_definition_of_location
+
+	std::vector<DocumentPos> result;
 
 	if (line_index > 0) {
 		std::vector<std::wstring> lines;
@@ -1016,73 +1018,72 @@ std::optional<DocumentPos> DocumentView::find_line_definition() {
 			std::wstring reference_regex(L"\\[[a-zA-Z0-9]+\\]");
 			std::wstring equation_regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
 
-			std::wstring generic_item_text = find_first_regex_match(content, item_regex);
-			std::wstring reference_text = find_first_regex_match(content, reference_regex);
-			std::wstring equation_text = find_first_regex_match(content, equation_regex);
+			std::vector<std::wstring> generic_item_texts = find_all_regex_matches(content, item_regex);
+			std::vector<std::wstring> reference_texts = find_all_regex_matches(content, reference_regex);
+			std::vector<std::wstring> equation_texts = find_all_regex_matches(content, equation_regex);
 
-			int page = -1;
-			float yloc = 0;
-			bool found = false;
+			std::vector<DocumentPos> generic_positions;
+			std::vector<DocumentPos> reference_positions;
+			std::vector<DocumentPos> equation_positions;
 
 			std::optional<PdfLink> pdf_link = current_document->get_link_in_page_rect(get_center_page_number(), line_rects[line_index]);
 			if (pdf_link.has_value()) {
 				auto parsed_uri = parse_uri(pdf_link.value().uri);
-				DocumentPos res;
-				res.page = parsed_uri.page-1;
-				res.x = parsed_uri.x;
-				res.y = parsed_uri.y;
-				return res;
+				result.push_back({ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y });
+				return result;
 			}
 
-			if (generic_item_text.size() > 0) {
+			for (auto generic_item_text : generic_item_texts) {
 				auto qtext = QString::fromStdWString(generic_item_text);
 				QStringList parts = qtext.split(' ');
 				if (parts.size() == 2) {
 					std::wstring type = parts.at(0).toStdWString();
 					std::wstring ref = parts.at(1).toStdWString();
-					auto res = current_document->find_generic_locations(type, ref);
-					if (res.size() > 0) {
-						page = res[0].page;
-						yloc = res[0].y;
-					}
+					generic_positions = current_document->find_generic_locations(type, ref);
 
-					found = true;
 				}
 			}
-			else if (reference_text.size() > 0) {
+			for (auto reference_text : reference_texts) {
 				reference_text = reference_text.substr(1, reference_text.size() - 2);
 				auto index = current_document->find_reference_with_string(reference_text);
 				if (index.has_value()) {
-					page = index.value().page;
-					yloc = index.value().y_offset;
-					found = true;
+					reference_positions.push_back({ index.value().page, 0, index.value().y_offset });
 				}
 			}
-			else if (equation_text.size() > 0) {
+			for (auto equation_text : equation_texts) {
 				equation_text = equation_text.substr(1, equation_text.size() - 2);
 				auto index = current_document->find_equation_with_string(equation_text, get_center_page_number());
 				if (index.has_value()) {
-					page = index.value().page;
-					yloc = index.value().y_offset;
-					found = true;
+					equation_positions.push_back({ index.value().page, 0, index.value().y_offset });
 				}
 			}
 
-			if (found) {
-				DocumentPos res;
-				res.page = page;
-				res.y = yloc;
-				res.x = 0;
-				return res;
+			std::vector<std::vector<DocumentPos>*> res_vectors = {&equation_positions, &reference_positions, &generic_positions};
+			int index = 0;
+			int max_size = 0;
+
+			for (auto vec : res_vectors) {
+				if (vec->size() > max_size) {
+					max_size = vec->size();
+				}
 			}
-			return {};
+			// interleave the results
+			for (int i = 0; i < max_size; i++) {
+				for (auto vec : res_vectors) {
+					if (i < vec->size()) {
+						result.push_back(vec->at(i));
+					}
+				}
+			}
+
+			return result;
 		}
 	}
-	return {};
+	return result;
 }
 
 bool DocumentView::goto_definition() {
-	std::optional<DocumentPos> defloc = find_line_definition();
+	std::optional<DocumentPos> defloc = find_line_definitions()[0];
 	if (defloc) {
 		goto_offset_within_page(defloc.value().page, defloc.value().y);
 		return true;

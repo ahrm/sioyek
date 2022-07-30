@@ -160,6 +160,6 @@ public:
 	void set_line_index(int index);
 	int get_vertical_line_page();
 	bool goto_definition();
-	std::optional<DocumentPos> find_line_definition();
+	std::vector<DocumentPos> find_line_definitions();
 	std::optional<std::wstring> get_selected_line_text();
 };

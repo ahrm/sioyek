@@ -922,6 +922,20 @@ std::wstring find_first_regex_match(const std::wstring& haystack, const std::wst
 	return L"";
 }
 
+std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack, const std::wstring& regex_string) {
+
+	std::wregex regex(regex_string);
+	std::wsmatch match;
+	std::vector<std::wstring> res;
+	if (std::regex_search(haystack, match, regex)) {
+		for (size_t i = 0; i < match.size(); i++) {
+			res.push_back(match[i].str());
+		}
+	}
+	return res;
+
+}
+
 void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_chars,
 	const std::wregex &regex,
 	std::vector<std::pair<int, int>> &match_ranges, std::vector<std::wstring> &match_texts){
