@@ -117,6 +117,9 @@ private:
 
 	std::optional<char> command_to_be_executed_symbol = {};
 
+	std::vector<DocumentPos> smart_view_candidates;
+	int index_into_candidates = 0;
+
 	QTime last_text_select_time = QTime::currentTime();
 
 	bool main_document_view_has_document();
@@ -253,7 +256,7 @@ public:
 	void toggle_visual_scroll_mode();
 	void set_overview_link(PdfLink link);
 	void set_overview_position(int page, float offset);
-	bool find_location_of_text_under_pointer(WindowPos pos, int* out_page, float* out_offset);
+	bool find_location_of_text_under_pointer(WindowPos pos, int* out_page, float* out_offset, bool update_candidates=false);
 	std::optional<std::wstring> get_current_file_name();
 	CommandManager* get_command_manager();
 

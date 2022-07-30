@@ -1003,6 +1003,9 @@ std::optional<std::wstring> DocumentView::get_selected_line_text () {
 }
 
 std::optional<DocumentPos> DocumentView::find_line_definition() {
+	//todo: remove duplicate code from this function, this just needs to find the location of the
+	// reference, the rest can be handled by find_definition_of_location
+
 	if (line_index > 0) {
 		std::vector<std::wstring> lines;
 		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
@@ -1037,7 +1040,12 @@ std::optional<DocumentPos> DocumentView::find_line_definition() {
 				if (parts.size() == 2) {
 					std::wstring type = parts.at(0).toStdWString();
 					std::wstring ref = parts.at(1).toStdWString();
-					current_document->find_generic_location(type, ref, &page, &yloc);
+					auto res = current_document->find_generic_locations(type, ref);
+					if (res.size() > 0) {
+						page = res[0].page;
+						yloc = res[0].y;
+					}
+
 					found = true;
 				}
 			}

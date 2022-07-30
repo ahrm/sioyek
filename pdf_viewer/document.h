@@ -193,7 +193,7 @@ public:
 	std::optional<std::wstring> get_equation_text_at_position(int page, float offset_x, float offset_y);
 	std::optional<std::pair<std::wstring, std::wstring>> get_generic_link_name_at_position(int page, float offset_x, float offset_y);
 	std::optional<std::wstring> get_regex_match_at_position(const std::wregex& regex, int page, float offset_x, float offset_y);
-	bool find_generic_location(const std::wstring& type, const std::wstring& name, int* page, float* y_offset);
+	std::vector<DocumentPos> find_generic_locations(const std::wstring& type, const std::wstring& name);
 	bool can_use_highlights();
 
 	void get_text_selection(AbsoluteDocumentPos selection_begin,

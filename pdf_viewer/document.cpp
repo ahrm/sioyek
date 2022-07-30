@@ -1188,10 +1188,12 @@ std::optional<std::wstring> Document::get_regex_match_at_position(const std::wre
 	return {};
 }
 
-bool Document::find_generic_location(const std::wstring& type, const std::wstring& name, int* page, float* y_offset) {
-	int best_page = -1;
-	int best_y_offset = 0.0f;
-	float best_score = -1000;
+std::vector<DocumentPos> Document::find_generic_locations(const std::wstring& type, const std::wstring& name) {
+	//int best_page = -1;
+	//int best_y_offset = 0.0f;
+	//float best_score = -1000;
+
+	std::vector<std::pair<int, DocumentPos>> pos_scores;
 
 	for (size_t i = 0; i < generic_indices.size(); i++) {
 		std::vector<std::wstring> parts = split_whitespace(generic_indices[i].text);
@@ -1202,23 +1204,37 @@ bool Document::find_generic_location(const std::wstring& type, const std::wstrin
 
 			if (current_name == name) {
 				int score = type_name_similarity_score(current_type, type);
-				if (score > best_score) {
-					best_page = generic_indices[i].page;
-					best_y_offset = generic_indices[i].y_offset;
-					best_score = score;
-				}
+				DocumentPos pos {generic_indices[i].page, 0, generic_indices[i].y_offset};
+				pos_scores.push_back(std::make_pair(score, pos));
+				//if (score > best_score) {
+				//	best_page = generic_indices[i].page;
+				//	best_y_offset = generic_indices[i].y_offset;
+				//	best_score = score;
+				//}
 			}
 
 		}
 	}
 
-	if (best_page != -1) {
-		*page = best_page;
-		*y_offset = best_y_offset;
-		return true;
-	}
+	auto  by_score = [](std::pair<int, DocumentPos> const & a, std::pair<int, DocumentPos> const & b)  {
+		return a.first < b.first;
+	};
 
-	return false;
+	std::sort(pos_scores.begin(), pos_scores.end(), by_score);
+
+	std::vector<DocumentPos> res;
+	for (int i = pos_scores.size() - 1; i >= 0; i--) {
+		res.push_back(pos_scores[i].second);
+	}
+	return res;
+
+	//if (best_page != -1) {
+	//	*page = best_page;
+	//	*y_offset = best_y_offset;
+	//	return true;
+	//}
+
+	//return false;
 }
 
 bool Document::can_use_highlights() {

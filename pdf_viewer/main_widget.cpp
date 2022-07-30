@@ -1344,7 +1344,7 @@ void MainWidget::handle_click(WindowPos click_pos) {
         handle_link_click(link.value());
     }
 }
-bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int* out_page, float* out_offset) {
+bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int* out_page, float* out_offset, bool update_candidates) {
 
     auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
     int current_page_number = get_current_page_number();
@@ -1356,16 +1356,21 @@ bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int*
     std::optional<std::pair<std::wstring, std::wstring>> generic_pair =\
         main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
 
-    //std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
-    std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
     std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
     std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
 
     if (generic_pair) {
-        return main_document_view->get_document()->find_generic_location(generic_pair.value().first,
-            generic_pair.value().second,
-            out_page,
-            out_offset);
+        std::vector<DocumentPos> candidates = main_document_view->get_document()->find_generic_locations(generic_pair.value().first,
+            generic_pair.value().second);
+        if (candidates.size() > 0) {
+            if (update_candidates) {
+                smart_view_candidates = candidates;
+                index_into_candidates = 0;
+            }
+            *out_page = candidates[index_into_candidates].page;
+            *out_offset = candidates[index_into_candidates].y;
+            return true;
+        }
     }
     if (equation_text_on_pointer) {
          std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(equation_text_on_pointer.value(), current_page_number);
@@ -1870,6 +1875,22 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         if (num_repeats == 0) num_repeats++;
         opengl_widget->goto_search_result(-num_repeats);
     }
+    else if (command->name == "next_preview") {
+        if (smart_view_candidates.size() > 0) {
+            index_into_candidates = (index_into_candidates + 1) % smart_view_candidates.size();
+            set_overview_position(smart_view_candidates[index_into_candidates].page, smart_view_candidates[index_into_candidates].y);
+        }
+
+    }
+    else if (command->name == "previous_preview") {
+        if (smart_view_candidates.size() > 0) {
+            index_into_candidates = mod(index_into_candidates - 1, smart_view_candidates.size());
+            set_overview_position(smart_view_candidates[index_into_candidates].page, smart_view_candidates[index_into_candidates].y);
+        }
+
+    }
+
+
     else if (command->name == "push_state") {
         push_state();
     }
@@ -2524,47 +2545,53 @@ void MainWidget::smart_jump_under_pos(WindowPos pos){
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
 
-    std::optional<std::pair<std::wstring, std::wstring>> generic_pair =\
-            main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
+    int target_page;
+    float target_y_offset;
+    if (find_location_of_text_under_pointer(pos, &target_page, &target_y_offset)) {
+        long_jump_to_destination(page, target_y_offset);
+    }
+
+    //std::optional<std::pair<std::wstring, std::wstring>> generic_pair =\
+    //        main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
 
     //std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
     std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
-    std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
-    std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
+    //std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
+    //std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
 
-    if (generic_pair) {
-        int page;
-        float y_offset;
+    //if (generic_pair) {
+    //    int page;
+    //    float y_offset;
 
-        if (main_document_view->get_document()->find_generic_location(generic_pair.value().first,
-                                                                      generic_pair.value().second,
-                                                                      &page,
-                                                                      &y_offset)) {
+    //    if (main_document_view->get_document()->find_generic_location(generic_pair.value().first,
+    //                                                                  generic_pair.value().second,
+    //                                                                  &page,
+    //                                                                  &y_offset)) {
 
-            long_jump_to_destination(page, y_offset);
-            return;
-        }
-    }
-    if (equation_text_on_pointer) {
-        std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(
-                    equation_text_on_pointer.value(),
-                    get_current_page_number());
-        if (eqdata_) {
-            IndexedData refdata = eqdata_.value();
-            long_jump_to_destination(refdata.page, refdata.y_offset);
-            return;
-        }
-    }
+    //        long_jump_to_destination(page, y_offset);
+    //        return;
+    //    }
+    //}
+    //if (equation_text_on_pointer) {
+    //    std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(
+    //                equation_text_on_pointer.value(),
+    //                get_current_page_number());
+    //    if (eqdata_) {
+    //        IndexedData refdata = eqdata_.value();
+    //        long_jump_to_destination(refdata.page, refdata.y_offset);
+    //        return;
+    //    }
+    //}
 
-    if (reference_text_on_pointer) {
-        std::optional<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
-        if (refdata_) {
-            IndexedData refdata = refdata_.value();
-            long_jump_to_destination(refdata.page, refdata.y_offset);
-            return;
-        }
+    //if (reference_text_on_pointer) {
+    //    std::optional<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
+    //    if (refdata_) {
+    //        IndexedData refdata = refdata_.value();
+    //        long_jump_to_destination(refdata.page, refdata.y_offset);
+    //        return;
+    //    }
 
-    }
+    //}
     if (paper_name_on_pointer) {
         handle_paper_name_on_pointer(paper_name_on_pointer.value(), is_shift_pressed);
     }
@@ -2598,6 +2625,9 @@ void MainWidget::visual_mark_under_pos(WindowPos pos){
 bool MainWidget::overview_under_pos(WindowPos pos){
 
     std::optional<PdfLink> link;
+    smart_view_candidates.clear();
+    index_into_candidates = 0;
+
     if (main_document_view && (link = main_document_view->get_link_in_pos(pos))) {
         set_overview_link(link.value());
         return true;
@@ -2605,7 +2635,7 @@ bool MainWidget::overview_under_pos(WindowPos pos){
 
     int autoreference_page;
     float autoreference_offset;
-    if (find_location_of_text_under_pointer(pos, &autoreference_page, &autoreference_offset)) {
+    if (find_location_of_text_under_pointer(pos, &autoreference_page, &autoreference_offset, true)) {
         set_overview_position(autoreference_page, autoreference_offset);
         return true;
     }
@@ -2681,7 +2711,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         opengl_widget->search_text(search_term, search_range);
     }
 
-    if (current_pending_command->name.starts_with("_")) {
+    if (current_pending_command->name[0] == '_') {
         execute_command(ADDITIONAL_COMMANDS[utf8_decode(current_pending_command->name)], text);
     }
     if (current_pending_command->name == "enter_password") {
