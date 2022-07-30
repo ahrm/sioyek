@@ -11,6 +11,7 @@
 #include <utility>
 #include <memory>
 #include <filesystem>
+#include <map>
 
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -188,6 +189,7 @@ bool SINGLE_CLICK_SELECTS_WORDS = false;
 bool USE_LEGACY_KEYBINDS = true;
 bool MULTILINE_MENUS = false;
 bool START_WITH_HELPER_WINDOW = false;
+std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 
 float PAGE_SEPARATOR_WIDTH = 0.0f;
 float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};

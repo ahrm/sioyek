@@ -1,6 +1,7 @@
 #include "config.h"
 #include "utils.h"
 #include <cassert>
+#include <map>
 
 extern float ZOOM_INC_FACTOR;
 extern float VERTICAL_MOVE_AMOUNT;
@@ -85,6 +86,7 @@ extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern bool USE_LEGACY_KEYBINDS;
 extern bool MULTILINE_MENUS;
 extern bool START_WITH_HELPER_WINDOW;
+extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -358,31 +360,46 @@ void ConfigManager::deserialize_file(const Path& file_path) {
 		std::wstringstream ss{ line };
 		std::wstring conf_name;
 		ss >> conf_name;
-		Config* conf = get_mut_config_with_name(conf_name);
-		if (conf == nullptr) {
-			std::wcout << L"Error: " << conf_name << L" is not a valid configuration name\n";
-			continue;
+		//special handling for new_command 
+		if (conf_name == L"new_command") {
+			std::wstring config_value;
+			std::getline(ss, config_value);
+			config_value = strip_string(config_value);
+			int space_index = config_value.find(L" ");
+			std::wstring new_command_name = config_value.substr(0, space_index);
+			if (new_command_name[0] == '_') {
+				std::wstring new_command_shell_command = config_value.substr(space_index + 1, config_value.size() - space_index - 1);
+				ADDITIONAL_COMMANDS[new_command_name] = new_command_shell_command;
+			}
 		}
+		else {
 
-		std::wstring config_value;
-		std::getline(ss, config_value);
-
-		std::wstringstream config_value_stream(config_value);
-
-		if ((conf != nullptr) && (conf->validator != nullptr)) {
-			if (!conf->validator(config_value)) {
-				std::wcout << L"Error in config file " << file_path.get_path() << L" at line " << line_number << L" : " << line << L"\n";
+			Config* conf = get_mut_config_with_name(conf_name);
+			if (conf == nullptr) {
+				std::wcout << L"Error: " << conf_name << L" is not a valid configuration name\n";
 				continue;
 			}
-		}
 
-		if (conf) {
-			auto deserialization_result = conf->deserialize(config_value_stream, conf->value);
-			if (deserialization_result != nullptr) {
-				conf->value = deserialization_result;
+			std::wstring config_value;
+			std::getline(ss, config_value);
+
+			std::wstringstream config_value_stream(config_value);
+
+			if ((conf != nullptr) && (conf->validator != nullptr)) {
+				if (!conf->validator(config_value)) {
+					std::wcout << L"Error in config file " << file_path.get_path() << L" at line " << line_number << L" : " << line << L"\n";
+					continue;
+				}
 			}
-			else {
-				std::wcout << L"Error in config file " << file_path.get_path() << L" at line " << line_number << L" : " << line << L"\n";
+
+			if (conf) {
+				auto deserialization_result = conf->deserialize(config_value_stream, conf->value);
+				if (deserialization_result != nullptr) {
+					conf->value = deserialization_result;
+				}
+				else {
+					std::wcout << L"Error in config file " << file_path.get_path() << L" at line " << line_number << L" : " << line << L"\n";
+				}
 			}
 		}
 
@@ -391,6 +408,8 @@ void ConfigManager::deserialize_file(const Path& file_path) {
 }
 
 void ConfigManager::deserialize(const Path& default_file_path, const Path& auto_path ,const std::vector<Path>& user_file_paths) {
+
+	ADDITIONAL_COMMANDS.clear();
 
 	deserialize_file(default_file_path);
 	deserialize_file(auto_path);

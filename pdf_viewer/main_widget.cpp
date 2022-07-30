@@ -100,6 +100,7 @@ extern std::wstring ALT_CLICK_COMMAND;
 extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern Path local_database_file_path;
 extern Path global_database_file_path;
+extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -1676,6 +1677,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         }
         return;
     }
+    if (command->name[0] == '_') {
+        //user-defined commands start with underscore
+        handle_additional_command(utf8_decode(command->name));
+    }
     if (command->name == "goto_begining") {
         if (num_repeats) {
             main_document_view->goto_page(num_repeats - 1 + main_document_view->get_page_offset());
@@ -2676,6 +2681,9 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         opengl_widget->search_text(search_term, search_range);
     }
 
+    if (current_pending_command->name.starts_with("_")) {
+        execute_command(ADDITIONAL_COMMANDS[utf8_decode(current_pending_command->name)], text);
+    }
     if (current_pending_command->name == "enter_password") {
         std::string password = utf8_encode(text);
         pdf_renderer->add_password(main_document_view->get_document()->get_path(), password);
@@ -3642,4 +3650,23 @@ void MainWidget::remove_self_from_windows() {
             break;
         }
     }
+}
+
+void MainWidget::handle_additional_command(std::wstring command_name) {
+
+	if (ADDITIONAL_COMMANDS.find(command_name) != ADDITIONAL_COMMANDS.end()) {
+		std::wstring command_to_execute = ADDITIONAL_COMMANDS[command_name];
+		if (command_to_execute.find(L"%5") != -1) {
+			if (!current_pending_command) {
+				current_pending_command = *command_manager.get_command_with_name(utf8_encode(command_name));
+			}
+			current_pending_command.value().requires_text = true;
+			current_pending_command.value().requires_symbol = false;
+
+			handle_command(&current_pending_command.value(), 0);
+		}
+		else {
+			execute_command(command_to_execute);
+		}
+	}
 }

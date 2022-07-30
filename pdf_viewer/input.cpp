@@ -11,6 +11,7 @@
 
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
+extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 
 CommandManager::CommandManager() {
 	commands.push_back({ "goto_begining",		false,	false,	false,	true, {}});
@@ -144,6 +145,10 @@ CommandManager::CommandManager() {
 	commands.push_back({ "set_status_string", true, false , false, false, {}});
 	commands.push_back({ "clear_status_string", false, false , false, false, {}});
 	commands.push_back({ "toggle_titlebar", false, false , false, false, {}});
+
+	for (auto [command_name, _] : ADDITIONAL_COMMANDS) {
+		commands.push_back({ utf8_encode(command_name) , false, false, false, false});
+	}
 
 	for (char c = 'a'; c <= 'z'; c++) {
 		commands.push_back({ "execute_command_"  +  std::string(1, c), false, false , false, false, {}});
