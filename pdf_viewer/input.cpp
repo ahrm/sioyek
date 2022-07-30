@@ -147,6 +147,8 @@ CommandManager::CommandManager() {
 	commands.push_back({ "toggle_titlebar", false, false , false, false, {}});
 	commands.push_back({ "next_preview", false, false , false, false, {}});
 	commands.push_back({ "previous_preview", false, false , false, false, {}});
+	commands.push_back({ "goto_overview", false, false , false, false, {}});
+	commands.push_back({ "portal_to_overview", false, false , false, false, {}});
 
 	for (auto [command_name, _] : ADDITIONAL_COMMANDS) {
 		commands.push_back({ utf8_encode(command_name) , false, false, false, false});

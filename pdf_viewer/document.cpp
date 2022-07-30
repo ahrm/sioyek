@@ -2094,6 +2094,12 @@ float Document::document_to_absolute_y(int page, float doc_y) {
 	return 0;
 }
 
+AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos) {
+	float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
+	AbsoluteDocumentPos res = {doc_pos.x, absolute_y};
+	return res;
+}
+
 //void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
 //	auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
 //

@@ -175,7 +175,8 @@ protected:
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
 	void toggle_two_window_mode();
 	void toggle_window_configuration();
-	void handle_link();
+	void handle_portal();
+	void add_portal(std::wstring source_path, Link new_link);
 	void toggle_fullscreen();
 	void toggle_presentation_mode();
     void toggle_synctex_mode();
@@ -287,5 +288,6 @@ public:
 	void set_status_message(std::wstring new_status_string);
 	void remove_self_from_windows();
 	void handle_additional_command(std::wstring command_name);
+	std::optional<DocumentPos> get_overview_position();
 
 };
