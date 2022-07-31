@@ -489,6 +489,11 @@ std::wstring MainWidget::get_status_string() {
         main_document_view->get_document()->get_is_indexing()) {
         ss << " | indexing ... ";
     }
+    if (opengl_widget && opengl_widget->get_overview_page()) {
+        if (index_into_candidates > 0 && smart_view_candidates.size() > 0) {
+            ss << " [ preview " << index_into_candidates + 1 << " / " << smart_view_candidates.size() << " ]";
+        }
+    }
     if (this->synctex_mode) {
         ss << " [ synctex ]";
     }
@@ -496,20 +501,20 @@ std::wstring MainWidget::get_status_string() {
         ss << " [ drag ]";
     }
     if (opengl_widget->is_presentation_mode()) {
-        ss << " [ presentation ] ";
+        ss << " [ presentation ]";
     }
 
     if (visual_scroll_mode) {
-        ss << " [ visual scroll ] ";
+        ss << " [ visual scroll ]";
     }
 
     if (horizontal_scroll_locked) {
-        ss << " [ locked horizontal scroll ] ";
+        ss << " [ locked horizontal scroll ]";
     }
-    ss << " [ h:" << select_highlight_type << " ] ";
+    ss << " [ h:" << select_highlight_type << " ]";
 
     if (custom_status_message.size() > 0) {
-        ss << "[ " << custom_status_message << " ] ";
+        ss << " [ " << custom_status_message << " ]";
     }
 
   //  if (last_command != nullptr) {
