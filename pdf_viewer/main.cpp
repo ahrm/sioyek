@@ -190,6 +190,7 @@ bool USE_LEGACY_KEYBINDS = true;
 bool MULTILINE_MENUS = false;
 bool START_WITH_HELPER_WINDOW = false;
 std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
+bool PRERENDER_NEXT_PAGE = false;
 
 float PAGE_SEPARATOR_WIDTH = 0.0f;
 float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};

@@ -20,6 +20,7 @@ extern float RULER_PADDING;
 extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
 extern float FASTREAD_OPACITY;
+extern bool PRERENDER_NEXT_PAGE;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -670,6 +671,9 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	std::vector<std::pair<int, fz_link*>> all_visible_links;
 
 	if (is_presentation_mode()) {
+		if (PRERENDER_NEXT_PAGE) {
+			render_page(visible_page_number.value() + 1);
+		}
 		render_page(visible_page_number.value());
 	}
 	else {
