@@ -2577,14 +2577,19 @@ void MainWidget::smart_jump_under_pos(WindowPos pos){
     int target_page;
     float target_y_offset;
     if (find_location_of_text_under_pointer(pos, &target_page, &target_y_offset)) {
-        long_jump_to_destination(page, target_y_offset);
+        long_jump_to_destination(target_page, target_y_offset);
+    }
+    else {
+		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
+		if (paper_name_on_pointer) {
+			handle_paper_name_on_pointer(paper_name_on_pointer.value(), is_shift_pressed);
+		}
     }
 
     //std::optional<std::pair<std::wstring, std::wstring>> generic_pair =\
     //        main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
 
     //std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
-    std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
     //std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
     //std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
 
@@ -2621,9 +2626,6 @@ void MainWidget::smart_jump_under_pos(WindowPos pos){
     //    }
 
     //}
-    if (paper_name_on_pointer) {
-        handle_paper_name_on_pointer(paper_name_on_pointer.value(), is_shift_pressed);
-    }
 }
 
 void MainWidget::visual_mark_under_pos(WindowPos pos){
