@@ -2034,3 +2034,10 @@ int lcs(const char* X, const char* Y, int m, int n)
 	/* L[m][n] contains length of LCS for X[0..n-1] and Y[0..m-1] */
 	return L[m][n];
 }
+
+bool command_requires_text(std::wstring command) {
+	if ((command.find(L"%5") != -1) || (command.find(L"command_text") != -1)) {
+		return true;
+	}
+	return false;
+}

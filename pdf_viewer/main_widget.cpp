@@ -3573,7 +3573,7 @@ void MainWidget::toggle_titlebar() {
 
 bool MainWidget::execute_predefined_command(char symbol) {
 	if ((symbol >= 'a') && (symbol <= 'z')) {
-		if (EXECUTE_COMMANDS[symbol - 'a'].find(L"%5") == std::wstring::npos) {
+		if (command_requires_text(EXECUTE_COMMANDS[symbol - 'a'])) {
 			execute_command(EXECUTE_COMMANDS[symbol - 'a']);
             return true;
 		}
@@ -3699,7 +3699,7 @@ void MainWidget::handle_additional_command(std::wstring command_name) {
 
 	if (ADDITIONAL_COMMANDS.find(command_name) != ADDITIONAL_COMMANDS.end()) {
 		std::wstring command_to_execute = ADDITIONAL_COMMANDS[command_name];
-		if (command_to_execute.find(L"%5") != -1) {
+		if (command_requires_text(command_to_execute)) {
 			if (!current_pending_command) {
 				current_pending_command = *command_manager.get_command_with_name(utf8_encode(command_name));
 			}
