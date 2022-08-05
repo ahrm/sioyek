@@ -541,6 +541,10 @@ MainWidget* handle_args(const QStringList& arguments) {
 					 //target_window->handle_command_types(command, 1);
 					 target_window->handle_command_with_symbol(command, symbol);
 				 }
+				 else if (command->requires_file_name) {
+					 std::wstring filename = parser->value("execute-command-data").toStdWString();
+					 target_window->handle_command_with_file_name(command, filename);
+				 }
 				 else {
 					 target_window->handle_command(command, 1);
 				 }

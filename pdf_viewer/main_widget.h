@@ -152,7 +152,6 @@ protected:
 	void handle_escape();
 	void keyPressEvent(QKeyEvent* kevent) override;
 	void keyReleaseEvent(QKeyEvent* kevent) override;
-	void handle_command_with_file_name(const Command* command, std::wstring file_name);
 	bool is_waiting_for_symbol();
 	void key_event(bool released, QKeyEvent* kevent);
 	void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
@@ -229,6 +228,7 @@ public:
 	bool handle_command_with_symbol(const Command* command, char symbol);
 	void handle_pending_text_command(std::wstring text);
 	void handle_command_with_text(const Command* command, std::wstring text);
+	void handle_command_with_file_name(const Command* command, std::wstring file_name);
 
 	void invalidate_render();
 	void invalidate_ui();
