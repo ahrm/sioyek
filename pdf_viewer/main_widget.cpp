@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <optional>
 #include <memory>
+#include <cctype>
 
 
 #include <qscrollarea.h>
@@ -162,6 +163,12 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     //int x = mouse_event->pos().x();
     //int y = mouse_event->pos().y();
     WindowPos mpos = { mouse_event->pos().x(), mouse_event->pos().y() };
+    if (debug_mode) {
+        DocumentPos doc_pos = main_document_view->window_to_document_pos(mpos);
+        std::wstring status_message = QString("%1,%2,%3").arg(QString::number(doc_pos.page), QString::number(doc_pos.x), QString::number(doc_pos.y)).toStdWString();
+        set_status_message(status_message);
+        invalidate_ui();
+    }
 
     std::optional<PdfLink> link = {};
 
@@ -1701,7 +1708,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
 
     if (command->name == "goto_end") {
-        if (num_repeats) {
+        if (num_repeats > 1) {
             main_document_view->goto_page(num_repeats - 1 + main_document_view->get_page_offset());
         }
         else {
@@ -2434,7 +2441,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         opengl_widget->rotate_counterclockwise();
     }
     else if (command->name == "debug") {
-        status_label->show();
+		debug_mode = !debug_mode;
     }
     else if (command->name == "toggle_fastread") {
 		opengl_widget->toggle_fastread_mode();
@@ -2781,17 +2788,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
     }
     if (current_pending_command->name == "keyboard_select") {
 
-        QStringList parts = QString::fromStdWString(text).split(' ');
-
-        if (parts.size() == 2) {
-
-            fz_irect srect = get_tag_window_rect(parts.at(0).toStdString());
-            fz_irect erect = get_tag_window_rect(parts.at(1).toStdString());
-
-            handle_left_click({ srect.x0 + 5, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
-            handle_left_click({ erect.x0 - 5 , (erect.y0 + erect.y1) / 2 }, false, false, false, false);
-            opengl_widget->set_should_highlight_words(false);
-		}
+        handle_keyboard_select(text);
 	}
     if (current_pending_command->name == "keyboard_smart_jump") {
 		fz_irect rect = get_tag_window_rect(utf8_encode(text));
@@ -3573,7 +3570,7 @@ void MainWidget::toggle_titlebar() {
 
 bool MainWidget::execute_predefined_command(char symbol) {
 	if ((symbol >= 'a') && (symbol <= 'z')) {
-		if (command_requires_text(EXECUTE_COMMANDS[symbol - 'a'])) {
+		if (!command_requires_text(EXECUTE_COMMANDS[symbol - 'a'])) {
 			execute_command(EXECUTE_COMMANDS[symbol - 'a']);
             return true;
 		}
@@ -3742,5 +3739,54 @@ void MainWidget::add_portal(std::wstring source_path, Link new_link) {
 			new_link.dst.book_state.offset_y,
 			new_link.dst.book_state.zoom_level,
 			new_link.src_offset_y);
+	}
+}
+
+void MainWidget::handle_keyboard_select(const std::wstring& text) {
+	if (std::isdigit(text[0])) {
+        // we can select text 
+		QStringList parts = QString::fromStdWString(text).split(' ');
+        if (parts.size() == 2) {
+            QString begin_text = parts.at(0);
+            QString end_text = parts.at(1);
+            QStringList begin_parts = begin_text.split(',');
+            QStringList end_parts = end_text.split(',');
+            if ((begin_parts.size() == 3) && (end_parts.size() == 3)) {
+
+                int begin_page_number = begin_parts.at(0).toInt();
+                float begin_offset_x = begin_parts.at(1).toFloat();
+                float begin_offset_y = begin_parts.at(2).toFloat();
+
+                int end_page_number = end_parts.at(0).toInt();
+                float end_offset_x = end_parts.at(1).toFloat();
+                float end_offset_y = end_parts.at(2).toFloat();
+
+                DocumentPos begin_doc_pos = { begin_page_number, begin_offset_x, begin_offset_y };
+                DocumentPos end_doc_pos = { end_page_number, end_offset_x, end_offset_y };
+
+                WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels(begin_doc_pos);
+                WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels(end_doc_pos);
+
+				handle_left_click(begin_window_pos, true, false, false, false);
+				handle_left_click(end_window_pos, false, false, false, false);
+				opengl_widget->set_should_highlight_words(false);
+
+            }
+
+        }
+	}
+	else {
+
+		QStringList parts = QString::fromStdWString(text).split(' ');
+
+		if (parts.size() == 2) {
+
+			fz_irect srect = get_tag_window_rect(parts.at(0).toStdString());
+			fz_irect erect = get_tag_window_rect(parts.at(1).toStdString());
+
+			handle_left_click({ srect.x0 + 5, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
+			handle_left_click({ erect.x0 - 5 , (erect.y0 + erect.y1) / 2 }, false, false, false, false);
+			opengl_widget->set_should_highlight_words(false);
+		}
 	}
 }

@@ -71,6 +71,7 @@ private:
 
 	// when set, mouse wheel moves the visual mark
 	bool visual_scroll_mode = false;
+	bool debug_mode = false;
 
 	bool horizontal_scroll_locked = false;
 
@@ -289,5 +290,6 @@ public:
 	void remove_self_from_windows();
 	void handle_additional_command(std::wstring command_name);
 	std::optional<DocumentPos> get_overview_position();
+	void handle_keyboard_select(const std::wstring& text);
 
 };
