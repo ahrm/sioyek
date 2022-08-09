@@ -716,13 +716,18 @@ class Document:
             return annot.type[1] == 'Highlight'
         return [annot for annot in self.get_page_pdf_annotations(page_number) if is_highlight(annot)]
 
-    def embed_highlight(self, highlight):
+    def embed_highlight(self, highlight, colormap=None):
         docpos = highlight.get_begin_document_pos()
         page = self.get_page(docpos.page)
         # quads = page.search_for(highlight.text, flags=fitz.TEXT_PRESERVE_WHITESPACE, hit_max=50)
         quads = self.get_best_selection_rects(docpos.page, highlight.text, merge=True)
 
-        page.add_highlight_annot(quads)
+        annot = page.add_highlight_annot(quads)
+        if colormap is not None:
+            if highlight.highlight_type in colormap.keys():
+                color = colormap[highlight.highlight_type]
+                annot.set_colors(stroke=color, fill=color)
+                annot.update()
 
     def embed_bookmark(self, bookmark):
         page_number, offset_y = bookmark.get_document_position()
@@ -735,14 +740,14 @@ class Document:
         for bookmark in new_bookmarks:
             self.embed_bookmark(bookmark)
     
-    def embed_new_highlights(self):
+    def embed_new_highlights(self, colormap=None):
         new_highlights = self.get_non_embedded_highlights()
         for highlight in new_highlights:
-            self.embed_highlight(highlight)
+            self.embed_highlight(highlight, colormap)
     
-    def embed_new_annotations(self, save=False):
+    def embed_new_annotations(self, save=False, colormap=None):
         self.embed_new_bookmarks()
-        self.embed_new_highlights()
+        self.embed_new_highlights(colormap=colormap)
 
         if save:
             self.save_changes()
