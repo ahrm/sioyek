@@ -708,12 +708,9 @@ int main(int argc, char* args[]) {
 
 	QString startup_commands_list = QString::fromStdWString(STARTUP_COMMANDS);
 	QStringList startup_commands = startup_commands_list.split(";");
-	CommandManager* command_manager = main_widget->get_command_manager();
 	NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, main_widget);
 
-	for (auto command : startup_commands) {
-		main_widget->handle_command(command_manager->get_command_with_name(command.toStdString()), 1);
-	}
+	main_widget->run_multiple_commands(STARTUP_COMMANDS);
 
 	if (use_single_instance) {
 		if (guard.isPrimary()) {

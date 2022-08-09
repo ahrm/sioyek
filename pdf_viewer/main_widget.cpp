@@ -327,7 +327,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
 
-    if ((num_screens > 1) && (HELPER_WINDOW_SIZE[0] > 0)) {
+    if ((num_screens > 1) && (HELPER_WINDOW_SIZE[0] > 0) && (SHOULD_USE_MULTIPLE_MONITORS)) {
         apply_window_params_for_two_window_mode();
     }
     else {
@@ -635,8 +635,14 @@ void MainWidget::validate_render() {
     }
     validate_ui();
     update();
-    opengl_widget->update();
-    helper_opengl_widget->update();
+    if (opengl_widget != nullptr) {
+		opengl_widget->update();
+    }
+
+    if (helper_opengl_widget != nullptr) {
+		helper_opengl_widget->update();
+    }
+
     is_render_invalidated = false;
 }
 
@@ -2471,6 +2477,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			opengl_widget->set_overview_page({});
         }
     }
+    else if (command->name == "goto_selected_text") {
+		long_jump_to_destination(selection_begin.y);
+    }
     else if (command->name == "portal_to_overview") {
 		std::optional<DocumentPos> maybe_overview_position = get_overview_position();
         if (maybe_overview_position.has_value()) {
@@ -2975,7 +2984,7 @@ void MainWidget::toggle_dark_mode() {
     this->opengl_widget->toggle_dark_mode();
 }
 
-void MainWidget::execute_command(std::wstring command, std::wstring text) {
+void MainWidget::execute_command(std::wstring command, std::wstring text, bool wait) {
 
     std::wstring file_path = main_document_view->get_document()->get_path();
     QString qfile_path = QString::fromStdWString(file_path);
@@ -3045,7 +3054,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text) {
             command_args.push_back(command_parts[i]);
         }
 
-        run_command(command_name.toStdWString(), command_args, false);
+        run_command(command_name.toStdWString(), command_args, wait);
     }
 
 }
@@ -3692,7 +3701,7 @@ void MainWidget::remove_self_from_windows() {
     }
 }
 
-void MainWidget::handle_additional_command(std::wstring command_name) {
+void MainWidget::handle_additional_command(std::wstring command_name, bool wait) {
 
 	if (ADDITIONAL_COMMANDS.find(command_name) != ADDITIONAL_COMMANDS.end()) {
 		std::wstring command_to_execute = ADDITIONAL_COMMANDS[command_name];
@@ -3706,7 +3715,7 @@ void MainWidget::handle_additional_command(std::wstring command_name) {
 			handle_command(&current_pending_command.value(), 0);
 		}
 		else {
-			execute_command(command_to_execute);
+			execute_command(command_to_execute, L"", wait);
 		}
 	}
 }
@@ -3789,4 +3798,11 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
 			opengl_widget->set_should_highlight_words(false);
 		}
 	}
+}
+
+void MainWidget::run_multiple_commands(const std::wstring& commands) {
+    QStringList command_list = QString::fromStdWString(commands).split(';');
+    for (auto command : command_list) {
+		handle_command(command_manager.get_command_with_name(command.toStdString()), 1);
+    }
 }

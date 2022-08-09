@@ -184,7 +184,7 @@ protected:
 	void long_jump_to_destination(DocumentPos pos);
 	void long_jump_to_destination(int page, float offset_y);
 	void long_jump_to_destination(float abs_offset_y);
-	void execute_command(std::wstring command, std::wstring text=L"");
+	void execute_command(std::wstring command, std::wstring text=L"", bool wait=false);
 	QString get_status_stylesheet();
 	int get_status_bar_height();
     void smart_jump_under_pos(WindowPos pos);
@@ -288,8 +288,9 @@ public:
 	std::optional<std::wstring> get_paper_name_under_cursor();
 	void set_status_message(std::wstring new_status_string);
 	void remove_self_from_windows();
-	void handle_additional_command(std::wstring command_name);
+	void handle_additional_command(std::wstring command_name, bool wait=false);
 	std::optional<DocumentPos> get_overview_position();
 	void handle_keyboard_select(const std::wstring& text);
+	void run_multiple_commands(const std::wstring& commands);
 
 };

@@ -36,6 +36,7 @@ extern std::wstring UI_FONT_FACE_NAME;
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring STARTUP_COMMANDS;
+extern std::wstring SHUTDOWN_COMMANDS;
 extern int FONT_SIZE;
 extern float CUSTOM_BACKGROUND_COLOR[3];
 extern float CUSTOM_TEXT_COLOR[3];
