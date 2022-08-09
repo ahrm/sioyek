@@ -2789,8 +2789,13 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
             }
             if ((link_index >= 0) && (link_index < static_cast<int>(visible_page_links.size()))) {
                 auto [selected_page, selected_link] = visible_page_links[link_index];
-                auto [page, offset_x, offset_y] = parse_uri(selected_link->uri);
-                long_jump_to_destination(page-1, offset_y);
+                if (QString(selected_link->uri).startsWith("http")) {
+					open_web_url(utf8_decode(selected_link->uri));
+                }
+                else{
+					auto [page, offset_x, offset_y] = parse_uri(selected_link->uri);
+					long_jump_to_destination(page-1, offset_y);
+                }
             }
         }
         opengl_widget->set_highlight_links(false, false);
