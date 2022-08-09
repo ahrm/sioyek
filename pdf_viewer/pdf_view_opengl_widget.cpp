@@ -1,6 +1,7 @@
 #include "pdf_view_opengl_widget.h"
 #include "path.h"
 #include <qcolor.h>
+#include <cmath>
 
 extern Path shader_path;
 extern float BACKGROUND_COLOR[3];
@@ -837,13 +838,29 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			painter->drawText(window_x0, (window_y0 + window_y1) / 2, tags[i].c_str());
 		}
 	}
+
 	if (should_highlight_links && should_show_numbers && (!overview_page)) {
+
 		for (size_t i = 0; i < all_visible_links.size(); i++) {
 			std::stringstream ss;
 			ss << i;
 			std::string index_string = ss.str();
 
 			auto [page, link] = all_visible_links[i];
+
+			bool should_draw = true;
+
+			// some malformed doucments have multiple overlapping links which makes reading
+			// the link labels difficult. Here we only draw the link text if there are no
+			// other close links. This has quadratic runtime but it should not matter since
+			// there are not many links in a single PDF page.
+			for (int j = i+1; j < all_visible_links.size(); j++) {
+				auto [other_page, other_link] = all_visible_links[j];
+				float distance = std::abs(other_link->rect.x0 - link->rect.x0) + std::abs(other_link->rect.y0 - link->rect.y0);
+				if (distance < 10) {
+					should_draw = false;
+				}
+			}
 
 			//document_view->document_to_window_pos_in_pixels(page, link->rect.x0, link->rect.x1, &window_x, &window_y);
 			fz_rect window_rect = document_view->document_to_window_rect(page, link->rect);
@@ -854,7 +871,9 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			int window_x = static_cast<int>(window_rect.x0 * view_width / 2 + view_width / 2);
 			int window_y = static_cast<int>(-window_rect.y0 * view_height / 2 + view_height / 2);
 
-			painter->drawText(window_x, window_y, index_string.c_str());
+			if (should_draw) {
+				painter->drawText(window_x, window_y, index_string.c_str());
+			}
 		}
 	}
 
