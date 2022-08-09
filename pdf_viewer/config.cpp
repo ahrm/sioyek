@@ -89,6 +89,7 @@ extern bool MULTILINE_MENUS;
 extern bool START_WITH_HELPER_WINDOW;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 extern bool PRERENDER_NEXT_PAGE;
+extern bool EMACS_MODE;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -319,6 +320,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"multiline_menus", &MULTILINE_MENUS, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"start_with_helper_window", &START_WITH_HELPER_WINDOW, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"prerender_next_page_presentation", &PRERENDER_NEXT_PAGE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"emacs_mode_menus", &EMACS_MODE, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

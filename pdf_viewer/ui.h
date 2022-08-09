@@ -44,6 +44,7 @@ extern int FONT_SIZE;
 const int max_select_size = 100;
 extern bool SMALL_TOC;
 extern bool MULTILINE_MENUS;
+extern bool EMACS_MODE;
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
 protected:
@@ -165,6 +166,7 @@ public:
 			if (event->type() == QEvent::KeyPress) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
 				bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
+				bool is_alt_pressed = key_event->modifiers().testFlag(Qt::AltModifier);
 
 				if (key_event->key() == Qt::Key_Down ||
 					key_event->key() == Qt::Key_Up ||
@@ -180,6 +182,18 @@ public:
 					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
 					QCoreApplication::postEvent(get_view(), new_key_event);
 					return true;
+				}
+				if (EMACS_MODE) {
+					if (((key_event->key() == Qt::Key_V)) && is_control_pressed) {
+						QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
+						QCoreApplication::postEvent(get_view(), new_key_event);
+						return true;
+					}
+					if (((key_event->key() == Qt::Key_V)) && is_alt_pressed) {
+						QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
+						QCoreApplication::postEvent(get_view(), new_key_event);
+						return true;
+					}
 				}
 				if (((key_event->key() == Qt::Key_N) || (key_event->key() == Qt::Key_J)) && is_control_pressed) {
 					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
