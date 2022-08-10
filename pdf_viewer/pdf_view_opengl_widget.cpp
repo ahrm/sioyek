@@ -809,15 +809,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	painter->endNativePainting();
 
 	if (should_highlight_words && (!overview_page)) {
-
-		QBrush background_brush = QBrush(QColor(236, 200, 0));
-		QFont font;
-		font.setPixelSize(20);
-
-		painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
-		painter->setBackground(background_brush);
-		painter->setPen(QColor(0, 0, 128));
-		painter->setFont(font);
+		setup_text_painter(painter);
 
 		std::vector<std::string> tags = get_tags(word_rects.size());
 
@@ -841,6 +833,8 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	if (should_highlight_links && should_show_numbers && (!overview_page)) {
 
+
+		setup_text_painter(painter);
 		for (size_t i = 0; i < all_visible_links.size(); i++) {
 			std::stringstream ss;
 			ss << i;
@@ -1421,4 +1415,15 @@ void PdfViewOpenGLWidget::toggle_fastread_mode() {
 void PdfViewOpenGLWidget::get_overview_size(float* width, float* height) {
 	*width = overview_half_width;
 	*height = overview_half_height;
+}
+
+void PdfViewOpenGLWidget::setup_text_painter(QPainter* painter) {
+	QBrush background_brush = QBrush(QColor(236, 200, 0));
+	QFont font;
+	font.setPixelSize(20);
+	painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
+	painter->setBackground(background_brush);
+	painter->setPen(QColor(0, 0, 128));
+	painter->setFont(font);
+
 }

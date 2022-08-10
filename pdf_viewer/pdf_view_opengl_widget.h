@@ -240,6 +240,7 @@ public:
 
 	bool is_rotated();
 	void toggle_fastread_mode();
+	void setup_text_painter(QPainter* painter);
 
 
 };
