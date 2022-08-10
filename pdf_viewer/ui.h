@@ -308,6 +308,9 @@ public:
             tree_view->expand(index);
         }
 
+		tree_view->header()->setStretchLastSection(false);
+		tree_view->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+		tree_view->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 		tree_view->setCurrentIndex(index);
 
 	}
