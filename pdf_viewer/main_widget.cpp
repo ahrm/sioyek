@@ -2751,6 +2751,22 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         std::string password = utf8_encode(text);
         pdf_renderer->add_password(main_document_view->get_document()->get_path(), password);
     }
+    if (current_pending_command->name == "focus_text") {
+
+        if ((text.size() > 0) && (text[0] == '#')) {
+            std::wstringstream ss(text.substr(1, text.size() - 1));
+            std::wstring actual_text;
+            int page_number;
+            ss >> page_number;
+            std::getline(ss, actual_text);
+			focus_text(page_number, actual_text);
+        }
+        else {
+			int page_number = main_document_view->get_center_page_number();
+			focus_text(page_number, text);
+        }
+
+    }
 
     if (current_pending_command->name == "add_bookmark") {
         main_document_view->add_bookmark(text);
