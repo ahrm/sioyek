@@ -711,7 +711,6 @@ int main(int argc, char* args[]) {
 	QStringList startup_commands = startup_commands_list.split(";");
 	NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, main_widget);
 
-	main_widget->run_multiple_commands(STARTUP_COMMANDS);
 
 	if (use_single_instance) {
 		if (guard.isPrimary()) {
@@ -746,6 +745,7 @@ int main(int argc, char* args[]) {
 	main_widget->show();
 
 	handle_args(app.arguments());
+	main_widget->run_multiple_commands(STARTUP_COMMANDS);
 
 	// load input file from `QFileOpenEvent` for macOS drag and drop & "open with"
 	QObject::connect(&app, &OpenWithApplication::file_ready, [&main_widget](const QString& file_name) {
