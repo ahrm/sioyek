@@ -273,8 +273,8 @@ public:
 
 	std::vector<fz_rect> get_flat_words();
 
-	fz_rect get_tag_rect(std::string tag);
-	fz_irect get_tag_window_rect(std::string tag);
+	std::optional<fz_rect> get_tag_rect(std::string tag);
+	std::optional<fz_irect> get_tag_window_rect(std::string tag);
 
 	bool is_rotated();
 	void on_new_paper_added(const std::wstring& file_path);
