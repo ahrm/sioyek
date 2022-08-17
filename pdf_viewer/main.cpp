@@ -512,6 +512,10 @@ MainWidget* handle_args(const QStringList& arguments) {
         y_loc = parser->value("yloc").toFloat();
     }
 
+	if (!std::filesystem::exists(pdf_file_name)) {
+		return nullptr;
+	}
+
 	MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
 
 	if ((pdf_file_name.size() > 0) && (parser->isSet("new-window") || SHOULD_LAUNCH_NEW_WINDOW) && (!parser->isSet("reuse-window")) && (target_window == nullptr) && (windows[0]->doc() != nullptr)) {
