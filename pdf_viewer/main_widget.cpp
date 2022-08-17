@@ -163,12 +163,6 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     //int x = mouse_event->pos().x();
     //int y = mouse_event->pos().y();
     WindowPos mpos = { mouse_event->pos().x(), mouse_event->pos().y() };
-    if (debug_mode) {
-        DocumentPos doc_pos = main_document_view->window_to_document_pos(mpos);
-        std::wstring status_message = QString("%1,%2,%3").arg(QString::number(doc_pos.page), QString::number(doc_pos.x), QString::number(doc_pos.y)).toStdWString();
-        set_status_message(status_message);
-        invalidate_ui();
-    }
 
     std::optional<PdfLink> link = {};
 
@@ -919,7 +913,6 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     //save the previous document state
     if (main_document_view) {
         main_document_view->persist();
-        update_history_state();
     }
 
     main_document_view->on_view_size_change(main_window_width, main_window_height);
@@ -935,7 +928,6 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
             setWindowTitle(QString::fromStdWString(path.get_path()));
         }
 
-        push_state();
     }
 
     if ((path.get_path().size() > 0) && (!has_document)) {
@@ -970,7 +962,6 @@ void MainWidget::open_document_at_location(const Path& path_,
     //save the previous document state
     if (main_document_view) {
         main_document_view->persist();
-        update_history_state();
     }
     std::wstring path = path_.get_path();
 
@@ -1033,6 +1024,9 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
 
     last_command = command;
 
+    if (command->pushes_state) {
+        push_state();
+    }
     if (command->requires_symbol) {
         current_pending_command = *command;
         return;
@@ -1246,15 +1240,8 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
     }
 }
 
-void MainWidget::update_history_state() {
-    if (!main_document_view_has_document()) return; // we don't add empty document to history
-    if (history.size() == 0) return; // this probably should never execute
 
-    DocumentViewState dvs = main_document_view->get_state();
-    history[current_history_index] = dvs;
-}
-
-void MainWidget::push_state() {
+void MainWidget::push_state(bool update) {
 
     if (!main_document_view_has_document()) return; // we don't add empty document to history
 
@@ -1271,24 +1258,29 @@ void MainWidget::push_state() {
     //}
 
     // delete all history elements after the current history point
-    history.erase(history.begin() + (1 + current_history_index), history.end());
-    history.push_back(dvs);
-    current_history_index = static_cast<int>(history.size() - 1);
+	history.erase(history.begin() + (1 + current_history_index), history.end());
+    if (!((history.size() > 0) && (history.back() == dvs))) {
+		history.push_back(dvs);
+    }
+    if (update) {
+		current_history_index = static_cast<int>(history.size() - 1);
+    }
 }
 
 void MainWidget::next_state() {
-    update_current_history_index();
+    //update_current_history_index();
     if (current_history_index < (static_cast<int>(history.size())-1)) {
         current_history_index++;
-        set_main_document_view_state(history[current_history_index]);
+        if (current_history_index + 1 < history.size()) {
+			set_main_document_view_state(history[current_history_index + 1]);
+        }
 
     }
 }
 
 void MainWidget::prev_state() {
-    update_current_history_index();
-    if (current_history_index > 0) {
-        current_history_index--;
+    //update_current_history_index();
+    if (current_history_index >= 0) {
 
         /*
         Goto previous history
@@ -1314,15 +1306,28 @@ void MainWidget::prev_state() {
             link_to_edit = {};
         }
 
-        set_main_document_view_state(history[current_history_index]);
+        if (current_history_index == (history.size() - 1)) {
+            if (!(history[history.size() - 1] == main_document_view->get_state())) {
+                push_state(false);
+            }
+        }
+        if (history[current_history_index] == main_document_view->get_state()) {
+            current_history_index--;
+        }
+        if (current_history_index >= 0) {
+			set_main_document_view_state(history[current_history_index]);
+			current_history_index--;
+        }
     }
 }
 
 void MainWidget::update_current_history_index() {
     if (main_document_view_has_document()) {
-        DocumentViewState current_state = main_document_view->get_state();
-        history[current_history_index] = current_state;
-
+        int index_to_update = current_history_index + 1;
+        if (index_to_update < history.size()-1) {
+			DocumentViewState current_state = main_document_view->get_state();
+			history[index_to_update] = current_state;
+        }
     }
 }
 
@@ -1695,9 +1700,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
                 text_command_line_edit->setText(search_range_string.str().c_str() + text_command_line_edit->text());
             }
         }
-        if (command->pushes_state) {
-            push_state();
-        }
         return;
     }
     if (command->name[0] == '_') {
@@ -1980,9 +1982,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
                 set_current_widget(new FilteredSelectWindowClass<int>(flat_toc, current_document_toc_pages, [&](int* page_value) {
                     if (page_value) {
                         validate_render();
-                        update_history_state();
-                        main_document_view->goto_page(*page_value);
+
                         push_state();
+                        main_document_view->goto_page(*page_value);
                     }
                     }, this));
                 current_widget->show();
@@ -1996,10 +1998,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
                             indices);
                         if (toc_node) {
                             validate_render();
-                            update_history_state();
                             //main_document_view->goto_page(toc_node->page);
-                            main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
                             push_state();
+                            main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
                         }
                     }, this, selected_index));
                 current_widget->show();
@@ -2108,9 +2109,8 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             [&](float* offset_value) {
                 if (offset_value) {
                     validate_render();
-                    update_history_state();
-                    main_document_view->set_offset_y(*offset_value);
                     push_state();
+                    main_document_view->set_offset_y(*offset_value);
                 }
             },
             this,
@@ -2178,9 +2178,8 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             [&](std::vector<float>* offset_values) {
                 if (offset_values) {
                     validate_render();
-                    update_history_state();
-                    main_document_view->set_offset_y((*offset_values)[1]);
                     push_state();
+                    main_document_view->set_offset_y((*offset_values)[1]);
                 }
             },
             this,
@@ -2537,10 +2536,6 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             move_document(0.0f, -72.0f * rp * VERTICAL_MOVE_AMOUNT);
         }
 		validate_render();
-    }
-
-    if (command->pushes_state) {
-        push_state();
     }
 
     validate_render();
@@ -2935,9 +2930,8 @@ void MainWidget::long_jump_to_destination(float abs_offset_y) {
 
 void MainWidget::long_jump_to_destination(DocumentPos pos) {
     if (!is_pending_link_source_filled()) {
-        update_history_state();
-        main_document_view->goto_offset_within_page({ pos.page, pos.x, pos.y });
         push_state();
+        main_document_view->goto_offset_within_page({ pos.page, pos.x, pos.y });
     }
     else {
         // if we press the link button and then click on a pdf link, we automatically link to the
