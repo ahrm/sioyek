@@ -1024,6 +1024,9 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
 
     last_command = command;
 
+    if (command->requires_document && (!main_document_view_has_document())) {
+        return;
+    }
     if (command->pushes_state) {
         push_state();
     }
@@ -1333,13 +1336,13 @@ void MainWidget::update_current_history_index() {
 
 void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) {
 
-    if (main_document_view->get_document()->get_path() != new_view_state.document_path) {
-        open_document(new_view_state.document_path, &this->is_ui_invalidated);
-        //setWindowTitle(QString::fromStdWString(new_view_state.document_path));
-    }
+	if ((!main_document_view_has_document()) || (main_document_view->get_document()->get_path() != new_view_state.document_path)) {
+		open_document(new_view_state.document_path, &this->is_ui_invalidated);
+		//setwindowtitle(qstring::fromstdwstring(new_view_state.document_path));
+	}
 
-    main_document_view->on_view_size_change(main_window_width, main_window_height);
-    main_document_view->set_book_state(new_view_state.book_state);
+	main_document_view->on_view_size_change(main_window_width, main_window_height);
+	main_document_view->set_book_state(new_view_state.book_state);
 }
 
 void MainWidget::handle_click(WindowPos click_pos) {

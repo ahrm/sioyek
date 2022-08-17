@@ -158,7 +158,6 @@ protected:
 	void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
 	void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
 
-	void push_state(bool update=true);
 	void next_state();
 	void prev_state();
 	void update_current_history_index();
@@ -291,5 +290,6 @@ public:
 	std::optional<DocumentPos> get_overview_position();
 	void handle_keyboard_select(const std::wstring& text);
 	void run_multiple_commands(const std::wstring& commands);
+	void push_state(bool update=true);
 
 };

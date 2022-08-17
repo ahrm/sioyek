@@ -409,6 +409,10 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
 }
 
 MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
+	if (!std::filesystem::exists(file_path)) {
+		return nullptr;
+	}
+
 	if (file_path.size() > 0){
 		for (auto window : windows) {
 			//if (window->doc() && window->doc()->get_path() == file_path) {
@@ -568,6 +572,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 
     if (page != -1) {
 		if (target_window) {
+			target_window->push_state();
 			target_window->open_document_at_location(pdf_file_name, page.value_or(0), x_loc, y_loc, zoom_level);
 		}
     }
@@ -577,6 +582,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 		}
     }
     else {
+		target_window->push_state();
         target_window->open_document(pdf_file_name);
     }
 

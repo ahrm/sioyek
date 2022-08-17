@@ -20,6 +20,7 @@ struct Command {
 	bool requires_symbol;
 	bool requires_file_name;
 	bool pushes_state;
+	bool requires_document;
 	std::vector<char> special_symbols;
 };
 
