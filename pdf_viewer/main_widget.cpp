@@ -3031,7 +3031,21 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
 
     qtext.arg(qfile_path);
 
-    QStringList command_parts = qtext.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+    QStringList command_parts_ = qtext.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+    QStringList command_parts;
+    while (command_parts_.size() > 0) {
+        if ((command_parts_.size() <= 1) || (!command_parts_.at(0).endsWith("\\"))) {
+            command_parts.append(command_parts_.at(0));
+            command_parts_.pop_front();
+        }
+        else {
+            QString first_part = command_parts_.at(0);
+            QString second_part = command_parts_.at(1);
+            QString new_command_part = first_part.left(first_part.size() - 1) + " " + second_part;
+            command_parts_.pop_front();
+            command_parts_.replace(0, new_command_part);
+        }
+    }
     if (command_parts.size() > 0) {
         QString command_name = command_parts[0];
         QStringList command_args;
