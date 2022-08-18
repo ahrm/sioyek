@@ -102,6 +102,7 @@ extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern Path local_database_file_path;
 extern Path global_database_file_path;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
+extern bool SHOULD_APPLY_MULTIMONITOR_FIX;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -3494,7 +3495,7 @@ void MainWidget::return_to_last_visual_mark() {
 
 void MainWidget::changeEvent(QEvent* event) {
     if (event->type() == QEvent::WindowStateChange) {
-        if (isMaximized()) {
+        if (isMaximized() && SHOULD_APPLY_MULTIMONITOR_FIX) {
             main_window_width = get_current_monitor_width();
             main_window_height = get_current_monitor_height();
 		}
