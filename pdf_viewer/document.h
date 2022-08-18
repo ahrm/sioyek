@@ -252,4 +252,5 @@ public:
 	void free_document(Document* document);
 	const std::unordered_map<std::wstring, Document*>& get_cached_documents();
 	void delete_global_mark(char symbol);
+	~DocumentManager();
 };

@@ -1108,7 +1108,7 @@ void Document::index_figures(bool* invalid_flag) {
 
 		figure_indices_mutex.unlock();
 		is_indexing = false;
-		if (invalid_flag) {
+		if (is_figure_indexing_required && invalid_flag) {
 			*invalid_flag = true;
 		}
 		});
@@ -2305,4 +2305,11 @@ void Document::clear_toc_node(TocNode* node) {
 		clear_toc_node(child);
 	}
 	delete node;
+}
+
+DocumentManager::~DocumentManager() {
+	for (auto [path, doc] : cached_documents) {
+		delete doc;
+	}
+	cached_documents.clear();
 }
