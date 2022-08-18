@@ -1027,13 +1027,13 @@ void PdfViewOpenGLWidget::wheelEvent(QWheelEvent* wevent) {
 			if (wevent->angleDelta().y() > 0) {
 				float pev_zoom_level = document_view->get_zoom_level();
 				float new_zoom_level = pev_zoom_level * ZOOM_INC_FACTOR;
-				document_view->set_zoom_level(new_zoom_level);
+				document_view->set_zoom_level(new_zoom_level, true);
 			}
 
 			if (wevent->angleDelta().y() < 0) {
 				float pev_zoom_level = document_view->get_zoom_level();
 				float new_zoom_level = pev_zoom_level / ZOOM_INC_FACTOR;
-				document_view->set_zoom_level(new_zoom_level);
+				document_view->set_zoom_level(new_zoom_level, true);
 			}
 		}
 		else {

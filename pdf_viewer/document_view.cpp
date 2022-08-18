@@ -77,7 +77,7 @@ LinkViewState DocumentView::get_checksum_state() {
 
 void DocumentView::set_opened_book_state(const OpenedBookState& state) {
 	set_offsets(state.offset_x, state.offset_y);
-	set_zoom_level(state.zoom_level);
+	set_zoom_level(state.zoom_level, true);
 }
 
 
@@ -86,7 +86,7 @@ void DocumentView::handle_escape() {
 
 void DocumentView::set_book_state(OpenedBookState state) {
 	set_offsets(state.offset_x, state.offset_y);
-	set_zoom_level(state.zoom_level);
+	set_zoom_level(state.zoom_level, true);
 }
 void DocumentView::set_offsets(float new_offset_x, float new_offset_y) {
 	if (current_document == nullptr) return;
@@ -419,7 +419,10 @@ void DocumentView::goto_right() {
 	set_offset_x(view_left_offset);
 }
 
-float DocumentView::set_zoom_level(float zl) {
+float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode) {
+	if (should_exit_auto_resize_mode) {
+		this->is_auto_resize_mode = false;
+	}
 	zoom_level = zl;
 	return zoom_level;
 }
@@ -432,10 +435,10 @@ float DocumentView::zoom_in() {
 		new_zoom_level = max_zoom_level;
 	}
 	
-	return set_zoom_level(new_zoom_level);
+	return set_zoom_level(new_zoom_level, true);
 }
 float DocumentView::zoom_out() {
-	return set_zoom_level(zoom_level / ZOOM_INC_FACTOR);
+	return set_zoom_level(zoom_level / ZOOM_INC_FACTOR, true);
 }
 
 float DocumentView::zoom_in_cursor(WindowPos mouse_pos) {
@@ -599,6 +602,7 @@ void DocumentView::open_document(const std::wstring& doc_path,
 		offset_x = prev_state.value().offset_x;
 		offset_y = prev_state.value().offset_y;
 		set_offsets(offset_x, offset_y);
+		is_auto_resize_mode = false;
 	}
 	else if (load_prev_state) {
 
@@ -615,11 +619,13 @@ void DocumentView::open_document(const std::wstring& doc_path,
 			offset_x = previous_state.offset_x;
 			offset_y = previous_state.offset_y;
 			set_offsets(previous_state.offset_x, previous_state.offset_y);
+			is_auto_resize_mode = false;
 		}
 		else {
 			if (current_document) {
 				// automatically adjust width
 				fit_to_page_width();
+				is_auto_resize_mode = true;
 				set_offset_y(view_height / 2 / zoom_level);
 			}
 		}
@@ -680,7 +686,7 @@ void DocumentView::fit_to_page_height(bool smart) {
 		imbalance = 0;
 	}
 
-	set_zoom_level(static_cast<float>(view_height - 20) / page_height);
+	set_zoom_level(static_cast<float>(view_height - 20) / page_height, true);
 	//set_offset_y(-imbalance * normal_page_height / 2.0f);
 	goto_offset_within_page(cp, ( imbalance / 2.0f  + 0.5f) * normal_page_height);
 }	
@@ -698,7 +704,7 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
 		float right_leftover = 1.0f - right_ratio;
 		float imbalance = left_ratio - right_leftover;
 
-		set_zoom_level(static_cast<float>(view_width) / page_width);
+		set_zoom_level(static_cast<float>(view_width) / page_width, false);
 		set_offset_x(-imbalance * normal_page_width / 2.0f);
 	}
 	else {
@@ -708,7 +714,7 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
 			virtual_view_width = static_cast<int>(static_cast<float>(view_width) * FIT_TO_PAGE_WIDTH_RATIO);
 		}
 		set_offset_x(0);
-		set_zoom_level(static_cast<float>(virtual_view_width) / page_width);
+		set_zoom_level(static_cast<float>(virtual_view_width) / page_width, true);
 	}
 
 }
@@ -724,7 +730,7 @@ void DocumentView::fit_to_page_height_width_minimum() {
 	float y_zoom_level = static_cast<float>(view_height) / page_height;
 
 	set_offset_x(0);
-	set_zoom_level(std::min(x_zoom_level, y_zoom_level));
+	set_zoom_level(std::min(x_zoom_level, y_zoom_level), true);
 
 }
 
@@ -1089,4 +1095,12 @@ bool DocumentView::goto_definition() {
 		return true;
 	}
 	return false;
+}
+
+bool DocumentView::get_is_auto_resize_mode() {
+	return is_auto_resize_mode;
+}
+
+void DocumentView::disable_auto_resize_mode() {
+	this->is_auto_resize_mode = false;
 }

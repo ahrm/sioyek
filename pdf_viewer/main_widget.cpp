@@ -102,7 +102,6 @@ extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern Path local_database_file_path;
 extern Path global_database_file_path;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
-extern bool SHOULD_APPLY_MULTIMONITOR_FIX;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -114,6 +113,11 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
     main_window_width = size().width();
     main_window_height = size().height();
+
+    if (main_document_view->get_is_auto_resize_mode()) {
+        main_document_view->fit_to_page_width();
+		main_document_view->set_offset_y(main_window_height / 2 / main_document_view->get_zoom_level());
+    }
 
     if (text_command_line_edit_container != nullptr) {
         text_command_line_edit_container->move(0, 0);
@@ -943,7 +947,7 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     }
 
     if (zoom_level) {
-        main_document_view->set_zoom_level(zoom_level.value());
+        main_document_view->set_zoom_level(zoom_level.value(), true);
     }
 
     // reset smart fit when changing documents
@@ -994,7 +998,7 @@ void MainWidget::open_document_at_location(const Path& path_,
     main_document_view->set_offset_y(absolute_y_loc);
 
     if (zoom_level) {
-        main_document_view->set_zoom_level(zoom_level.value());
+        main_document_view->set_zoom_level(zoom_level.value(), true);
     }
 
     // reset smart fit when changing documents
@@ -1028,6 +1032,10 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
     if (command->requires_document && (!main_document_view_has_document())) {
         return;
     }
+    if (main_document_view_has_document()) {
+        main_document_view->disable_auto_resize_mode();
+    }
+
     if (command->pushes_state) {
         push_state();
     }
@@ -1522,6 +1530,9 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     //	vertical_move_amount *= TOUCHPAD_SENSITIVITY;
     //	horizontal_move_amount *= TOUCHPAD_SENSITIVITY;
     //}
+    if (main_document_view_has_document()) {
+        main_document_view->disable_auto_resize_mode();
+    }
 
     bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier) ||
         QApplication::queryKeyboardModifiers().testFlag(Qt::MetaModifier);
@@ -2049,21 +2060,19 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         //	opened_docs_hashes.push_back(utf8_encode(hash));
         //}
 
-        if (opened_docs_hashes.size() > 0) {
-            set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
-                opened_docs_hashes,
-                [&](std::string* doc_hash) {
-                    if (doc_hash->size() > 0) {
-                        validate_render();
-                        open_document_with_hash(*doc_hash);
-                    }
-                },
-                    this,
-                    [&](std::string* doc_hash) {
-                    db_manager->delete_opened_book(*doc_hash);
-                }));
-            current_widget->show();
-        }
+		set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
+			opened_docs_hashes,
+			[&](std::string* doc_hash) {
+				if (doc_hash->size() > 0) {
+					validate_render();
+					open_document_with_hash(*doc_hash);
+				}
+			},
+				this,
+				[&](std::string* doc_hash) {
+				db_manager->delete_opened_book(*doc_hash);
+			}));
+		current_widget->show();
     }
     else if (command->name == "open_document_embedded") {
 
@@ -3495,9 +3504,11 @@ void MainWidget::return_to_last_visual_mark() {
 
 void MainWidget::changeEvent(QEvent* event) {
     if (event->type() == QEvent::WindowStateChange) {
-        if (isMaximized() && SHOULD_APPLY_MULTIMONITOR_FIX) {
-            main_window_width = get_current_monitor_width();
-            main_window_height = get_current_monitor_height();
+        if (isMaximized() ) {
+            //int width = size().width();
+            //int height = size().height();
+            //main_window_width = get_current_monitor_width();
+            //main_window_height = get_current_monitor_height();
 		}
     }
     QWidget::changeEvent(event);

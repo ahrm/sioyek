@@ -51,6 +51,7 @@ private:
 
 	int view_width = 0;
 	int view_height = 0;
+	bool is_auto_resize_mode = true;
 
 public:
 	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer);
@@ -109,7 +110,7 @@ public:
 	float get_max_valid_x();
 	float get_min_valid_x();
 
-	float set_zoom_level(float zl);
+	float set_zoom_level(float zl, bool should_exit_auto_resize_mode);
 	float zoom_in();
 	float zoom_out();
 	float zoom_in_cursor(WindowPos mouse_pos);
@@ -162,4 +163,6 @@ public:
 	bool goto_definition();
 	std::vector<DocumentPos> find_line_definitions();
 	std::optional<std::wstring> get_selected_line_text();
+	bool get_is_auto_resize_mode();
+	void disable_auto_resize_mode();
 };

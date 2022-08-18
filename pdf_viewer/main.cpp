@@ -192,7 +192,6 @@ bool START_WITH_HELPER_WINDOW = false;
 std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 bool PRERENDER_NEXT_PAGE = false;
 bool EMACS_MODE = false;
-bool SHOULD_APPLY_MULTIMONITOR_FIX = false;
 
 float PAGE_SEPARATOR_WIDTH = 0.0f;
 float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
