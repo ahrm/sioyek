@@ -1,6 +1,6 @@
 TEMPLATE = app
 TARGET = sioyek
-VERSION = 1.4.0
+VERSION = 1.5.0
 INCLUDEPATH += ./pdf_viewer\
               mupdf/include \
               zlib
