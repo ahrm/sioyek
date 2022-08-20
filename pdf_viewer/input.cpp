@@ -61,7 +61,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "delete_highlight",			false,	false,	false,	false,	true,	{}});
 	commands.push_back({ "goto_link",					false,	false,	false,	true,	true,	{}});
 	commands.push_back({ "goto_portal",					false,	false,	false,	true,	true,	{}});
-	commands.push_back({ "edit_link",					false,	false,	false,	false,	true,	{}});
+	commands.push_back({ "edit_link",					false,	false,	false,	true,	true,	{}});
 	commands.push_back({ "edit_portal",					false,	false,	false,	true,	true,	{}});
 	commands.push_back({ "open_prev_doc",				false,	false,	false,	true,	false,	{}});
 	commands.push_back({ "open_document_embedded",		false,	false,	false,	true,	false,	{}});
