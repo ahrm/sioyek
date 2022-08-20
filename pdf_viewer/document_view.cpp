@@ -989,6 +989,22 @@ int DocumentView::get_line_index_of_vertical_pos() {
 	return index-1;
 }
 
+int DocumentView::get_line_index_of_pos(DocumentPos line_doc_pos) {
+	fz_point document_point = { line_doc_pos.x, line_doc_pos.y };
+	auto rects = current_document->get_page_lines(line_doc_pos.page, nullptr);
+	int page_width = current_document->get_page_width(line_doc_pos.page);
+
+	for (int i = 0; i < rects.size(); i++) {
+		rects[i] = current_document->absolute_to_page_rect(rects[i], nullptr);
+	}
+	for (int i = 0; i < rects.size(); i++) {
+		if (fz_is_point_inside_rect(document_point, rects[i])) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 int DocumentView::get_vertical_line_page() {
 	return current_document->absolute_to_page_pos({ 0, get_ruler_pos()}).page;
 }

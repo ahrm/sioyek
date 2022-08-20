@@ -157,6 +157,7 @@ public:
 	void goto_top_of_page();
 	void goto_bottom_of_page();
 	int get_line_index_of_vertical_pos();
+	int get_line_index_of_pos(DocumentPos docpos);
 	int get_line_index();
 	void set_line_index(int index);
 	int get_vertical_line_page();

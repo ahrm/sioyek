@@ -2671,7 +2671,13 @@ void MainWidget::visual_mark_under_pos(WindowPos pos){
         WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels({document_pos.page, 0, best_vertical_loc_doc_pos});
         auto [abs_doc_x, abs_doc_y] = main_document_view->window_to_absolute_document_pos(window_pos);
         main_document_view->set_vertical_line_pos(abs_doc_y);
-        main_document_view->set_line_index(main_document_view->get_line_index_of_vertical_pos());
+        int container_line_index = main_document_view->get_line_index_of_pos(document_pos);
+        if (container_line_index == -1) {
+			main_document_view->set_line_index(main_document_view->get_line_index_of_vertical_pos());
+        }
+        else {
+			main_document_view->set_line_index(container_line_index);
+        }
         validate_render();
     }
 }
