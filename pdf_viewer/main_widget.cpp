@@ -2033,6 +2033,24 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             open_document_with_hash(last_opened_file.value());
         }
     }
+    else if (command->name == "goto_window") {
+        std::vector<std::wstring> window_names;
+        std::vector<int> window_ids;
+        for (int i = 0; i < windows.size(); i++) {
+            window_names.push_back(windows[i]->windowTitle().toStdWString());
+            window_ids.push_back(i);
+        }
+		set_current_widget(new FilteredSelectWindowClass<int>(window_names,
+			window_ids,
+			[&](int* window_id) {
+				if (*window_id < windows.size()) {
+                    windows[*window_id]->raise();
+                    windows[*window_id]->activateWindow();
+				}
+			},
+				this));
+		current_widget->show();
+    }
     else if (command->name == "open_prev_doc") {
         //std::vector<std::pair<std::wstring, std::wstring>> opened_docs_hash_path_pairs;
         std::vector<std::wstring> opened_docs_names;
