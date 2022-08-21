@@ -963,6 +963,10 @@ void DocumentView::goto_top_of_page() {
 void DocumentView::goto_bottom_of_page() {
 	int current_page = get_center_page_number();
 	float offset_y = get_document()->get_accum_page_height(current_page+1) - static_cast<float>(view_height) / 2.0f / zoom_level;
+
+	if (current_page + 1 == current_document->num_pages()) {
+		offset_y = get_document()->get_accum_page_height(current_page) + get_document()->get_page_height(current_page) - static_cast<float>(view_height) / 2.0f / zoom_level;
+	}
 	set_offset_y(offset_y);
 }
 
