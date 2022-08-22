@@ -125,6 +125,7 @@ void* string_deserializer(std::wstringstream& stream, void* res_) {
 	return res;
 }
 
+
 template<int N, typename T>
 void vec_n_serializer(void* vec_n_pointer, std::wstringstream& stream) {
 	for (int i = 0; i < N; i++) {
@@ -141,6 +142,31 @@ void* vec_n_deserializer(std::wstringstream& stream, void* res_) {
 	}
 	for (int i = 0; i < N; i++) {
 		stream >> *(res + i);
+	}
+
+	return res;
+}
+
+template <int N>
+void* colorn_deserializer(std::wstringstream& stream, void* res_) {
+
+	assert(res_ != nullptr);
+	float* res = (float*)res_;
+	if (res == nullptr) {
+		res = new float[N];
+	}
+	while (std::isspace(stream.peek())) {
+		stream.ignore();
+	}
+	if (stream.peek() == '#') {
+		std::wstring rest;
+		std::getline(stream, rest);
+		hexademical_to_normalized_color(rest, res, N);
+	}
+	else {
+		for (int i = 0; i < N; i++) {
+			stream >> *(res + i);
+		}
 	}
 
 	return res;
@@ -233,6 +259,8 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	auto float_deserializer = generic_deserializer<float>;
 	auto int_deserializer = generic_deserializer<int>;
 	auto bool_deserializer = generic_deserializer<bool>;
+	auto color3_deserializer = colorn_deserializer<3>;
+	auto color4_deserializer = colorn_deserializer<4>;
 
 	configs.push_back({ L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
 	configs.push_back({ L"vertical_line_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, vec4_deserializer, color_4_validator });
@@ -240,7 +268,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
 	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
 	configs.push_back({ L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
-	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, color3_deserializer, nullptr });
 	configs.push_back({ L"dark_mode_background_color", DARK_MODE_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
 	configs.push_back({ L"dark_mode_contrast", &DARK_MODE_CONTRAST, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"default_dark_mode", &DEFAULT_DARK_MODE, bool_serializer, bool_deserializer, bool_validator });

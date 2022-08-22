@@ -1700,6 +1700,37 @@ void split_root_file(QString path, QString& out_root, QString& out_partial) {
 }
 
 
+std::wstring lowercase(const std::wstring& input) {
+
+	std::wstring res;
+	for (int i = 0; i < input.size(); i++) {
+		if ((input[i] >= 'A') && (input[i] <= 'Z')) {
+			res.push_back(input[i] + 'a' - 'A');
+		}
+		else {
+			res.push_back(input[i]);
+		}
+	}
+	return res;
+}
+
+int hex2int(int hex) {
+	if (hex >= '0' && hex <= '9') {
+		return hex - '0';
+	}
+	else {
+		return (hex - 'a') + 10;
+	}
+}
+float get_color_component_from_hex(std::wstring hexcolor) {
+	hexcolor = lowercase(hexcolor);
+
+	if (hexcolor.size() < 2) {
+		return 0;
+	}
+	return static_cast<float>(hex2int(hexcolor[0]) * 16 + hex2int(hexcolor[1]) ) / 255.0f;
+}
+
 QString get_color_hexadecimal(float color) {
 	QString hex_map[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f" };
 	int val = static_cast<int>(color * 255);
@@ -1712,6 +1743,16 @@ QString get_color_hexadecimal(float color) {
 QString get_color_qml_string(float r, float g, float b) {
 	QString res =  QString("#%1%2%3").arg(get_color_hexadecimal(r), get_color_hexadecimal(g), get_color_hexadecimal(b));
 	return res;
+}
+
+void hexademical_to_normalized_color(std::wstring color_string, float* color, int n_components) {
+	if (color_string[0] == '#') {
+		color_string = color_string.substr(1, color_string.size() - 1);
+	}
+
+	for (int i = 0; i < n_components; i++) {
+		*(color + i) = get_color_component_from_hex(color_string.substr(i * 2, 2));
+	}
 }
 
 void copy_file(std::wstring src_path, std::wstring dst_path) {
