@@ -103,6 +103,7 @@ extern Path local_database_file_path;
 extern Path global_database_file_path;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
+extern std::wstring STARTUP_COMMANDS;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -1839,6 +1840,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             should_quit);
         new_widget->open_document(main_document_view->get_state());
         new_widget->show();
+        new_widget->run_multiple_commands(STARTUP_COMMANDS);
         windows.push_back(new_widget);
     }
 

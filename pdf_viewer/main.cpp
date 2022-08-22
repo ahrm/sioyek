@@ -521,6 +521,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 
 	if ((pdf_file_name.size() > 0) && (parser->isSet("new-window") || SHOULD_LAUNCH_NEW_WINDOW) && (!parser->isSet("reuse-window")) && (target_window == nullptr) && (windows[0]->doc() != nullptr)) {
 		target_window = new MainWidget(windows[0]);
+		target_window->run_multiple_commands(STARTUP_COMMANDS);
 		target_window->apply_window_params_for_one_window_mode(true);
 		target_window->show();
 		windows.push_back(target_window);
