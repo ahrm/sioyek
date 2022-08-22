@@ -1479,7 +1479,13 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
-        smart_jump_under_pos({ mevent->pos().x(), mevent->pos().y() });
+        if (opengl_widget->selected_character_rects.size() > 0 &&
+            !(opengl_widget && opengl_widget->get_overview_page())) {
+          handle_command(command_manager.get_command_with_name("add_highlight_with_current_type"), 1);
+        }
+        else {
+          smart_jump_under_pos({ mevent->pos().x(), mevent->pos().y() });
+        }
     }
 
 }
