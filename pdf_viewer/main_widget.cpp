@@ -1980,10 +1980,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         }
     }
     else if (command->name == "portal_to_definition") {
-		std::optional<DocumentPos> defpos = main_document_view->find_line_definitions()[0];
-        if (defpos) {
+		std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
+        if (defpos.size() > 0) {
             AbsoluteDocumentPos abspos;
-            doc()->page_pos_to_absolute_pos(defpos.value().page, defpos.value().x, defpos.value().y, &abspos.x, &abspos.y);
+            doc()->page_pos_to_absolute_pos(defpos[0].page, defpos[0].x, defpos[0].y, &abspos.x, &abspos.y);
             Link link;
             link.dst.document_checksum = doc()->get_checksum();
             link.dst.book_state.offset_x = abspos.x;
