@@ -35,6 +35,12 @@ You can view the official documentation [here](https://sioyek-documentation.read
 
 [![Sioyek feature overview](https://img.youtube.com/vi/yTmCI0Xp5vI/0.jpg)](https://www.youtube.com/watch?v=yTmCI0Xp5vI)
 
+## Sponsors
+
+I would like to thank [macstadium](https://macstadium.com) for providing cloud mac instances. I don't have a mac computer myself, so these help a lot with Mac builds.
+
+<img src="https://uploads-ssl.webflow.com/5ac3c046c82724970fc60918/5c019d917bba312af7553b49_MacStadium-developerlogo.png" width="300">
+
 ## Features
 
 ### Quick Open
