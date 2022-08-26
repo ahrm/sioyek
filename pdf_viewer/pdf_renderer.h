@@ -46,6 +46,8 @@ struct RenderResponse {
 	unsigned int last_access_time;
 	int thread;
 	fz_pixmap* pixmap = nullptr;
+	int width = -1;
+	int height = -1;
 	GLuint texture = 0;
 	bool invalid = false;
 };

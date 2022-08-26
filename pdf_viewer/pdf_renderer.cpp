@@ -121,8 +121,8 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
 			if ((cached_resp.request == req) && (cached_resp.invalid == false)) {
 				cached_resp.last_access_time = QDateTime::currentMSecsSinceEpoch();
 
-				if (page_width) *page_width = cached_resp.pixmap->w;
-				if (page_height) *page_height = cached_resp.pixmap->h;
+				if (page_width) *page_width = cached_resp.width;
+				if (page_height) *page_height = cached_resp.height;
 
 				// We can only use OpenGL in the main thread, so we can not upload the rendered
 				// pixmap into a texture in the worker thread, so whenever we get a rendered page
@@ -190,8 +190,8 @@ GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, f
 			if (diff <= min_diff) {
 				min_diff = diff;
 				best_texture = cached_resp.texture;
-				if (page_width) *page_width = static_cast<int>(cached_resp.pixmap->w * zoom_level / cached_resp.request.zoom_level);
-				if (page_height) *page_height = static_cast<int>(cached_resp.pixmap->h * zoom_level / cached_resp.request.zoom_level);
+				if (page_width) *page_width = static_cast<int>(cached_resp.width * zoom_level / cached_resp.request.zoom_level);
+				if (page_height) *page_height = static_cast<int>(cached_resp.height * zoom_level / cached_resp.request.zoom_level);
 			}
 		}
 	}
@@ -462,6 +462,8 @@ void PdfRenderer::run(int thread_index) {
 				resp.request = req;
 				resp.last_access_time = QDateTime::currentMSecsSinceEpoch();
 				resp.pixmap = rendered_pixmap;
+				resp.width = rendered_pixmap->w;
+				resp.height = rendered_pixmap->h;
 				resp.texture = 0;
 				resp.invalid = false;
 

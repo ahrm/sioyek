@@ -315,23 +315,22 @@ fz_rect DocumentView::absolute_to_window_rect(fz_rect doc_rect) {
 NormalizedWindowPos DocumentView::document_to_window_pos(DocumentPos doc_pos) {
 
 	if (current_document) {
-		double doc_rect_y_offset = -current_document->get_accum_page_height(doc_pos.page);
+		WindowPos window_pos = document_to_window_pos_in_pixels(doc_pos);
+		double halfwidth = static_cast<double>(view_width) / 2;
+		double halfheight = static_cast<double>(view_height) / 2;
 
-		float half_width = static_cast<float>(view_width) / zoom_level / 2;
-		float half_height = static_cast<float>(view_height) / zoom_level / 2;
-
-		float window_y = (doc_rect_y_offset + offset_y - doc_pos.y) / half_height;
-		float window_x = (doc_pos.x + offset_x - current_document->get_page_width(doc_pos.page) / 2) / half_width;
-		return { window_x, window_y };
+		float window_x = static_cast<float>((window_pos.x - halfwidth) / halfwidth);
+		float window_y = static_cast<float>((window_pos.y - halfheight) / halfheight);
+		return { window_x, -window_y };
 	}
 }
 
 WindowPos DocumentView::document_to_window_pos_in_pixels(DocumentPos doc_pos){
-	//float opengl_window_pos_x, opengl_window_pos_y;
-	NormalizedWindowPos normal_window_pos = document_to_window_pos(doc_pos);
-	int window_x = static_cast<int>(normal_window_pos.x * view_width / 2 + view_width / 2);
-	int window_y = static_cast<int>(-normal_window_pos.y * view_height / 2 + view_height / 2);
-	return { window_x, window_y };
+	AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
+	WindowPos window_pos;
+	window_pos.y = (abspos.y - offset_y)* zoom_level + view_height / 2;
+	window_pos.x = (abspos.x + offset_x - current_document->get_page_width(doc_pos.page) / 2) * zoom_level + view_width / 2;
+	return window_pos;
 }
 
 fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
@@ -344,6 +343,30 @@ fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
 	res.x1 = p1.x;
 	res.y0 = p0.y;
 	res.y1 = p1.y;
+
+	return res;
+}
+
+fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height) {
+
+	if ((pixel_width <= 0) || (pixel_height <= 0)) {
+		return document_to_window_rect(page, doc_rect);
+	}
+
+	WindowPos w0 = document_to_window_pos_in_pixels({ page, doc_rect.x0, doc_rect.y0 });
+	WindowPos w1 = document_to_window_pos_in_pixels({ page, doc_rect.x1, doc_rect.y1 });
+
+	w1.x -= ((w1.x - w0.x) - pixel_width);
+	w1.y -= ((w1.y - w0.y) - pixel_height);
+
+	NormalizedWindowPos p0 = window_to_normalized_window_pos(w0);
+	NormalizedWindowPos p1 = window_to_normalized_window_pos(w1);
+
+	fz_rect res;
+	res.x0 = p0.x;
+	res.x1 = p1.x;
+	res.y0 = -p0.y;
+	res.y1 = -p1.y;
 
 	return res;
 }

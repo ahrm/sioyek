@@ -95,6 +95,7 @@ public:
 	NormalizedWindowPos document_to_window_pos(DocumentPos pos);
 	WindowPos document_to_window_pos_in_pixels(DocumentPos doc_pos);
 	fz_rect document_to_window_rect(int page, fz_rect doc_rect);
+	fz_rect document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height);
 	DocumentPos window_to_document_pos(WindowPos window_pos);
 	AbsoluteDocumentPos window_to_absolute_document_pos(WindowPos window_pos);
 	NormalizedWindowPos window_to_normalized_window_pos(WindowPos window_pos);
