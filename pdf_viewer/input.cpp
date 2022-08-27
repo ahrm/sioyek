@@ -365,7 +365,7 @@ InputParseTreeNode* parse_lines(
 			else if (((size_t)i == (tokens.size() - 1)) &&
 				(SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
 					(command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
-				if (parent_node->name[0].compare(command_names[j][0]) != 0) {
+				if ((parent_node->name.size() == 0) || parent_node->name[0].compare(command_names[j][0]) != 0) {
 
 					std::wcout << L"Warning: key defined in " << parent_node->defining_file_path
 						<< L":" << parent_node->defining_file_line
