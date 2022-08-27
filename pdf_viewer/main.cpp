@@ -35,7 +35,7 @@
 #include <qlabel.h>
 #include <qtextedit.h>
 #include <qfilesystemwatcher.h>
-#include <qdesktopwidget.h>
+//#include <qdesktopwidget.h>
 #include <qfontdatabase.h>
 #include <qstandarditemmodel.h>
 #include <qscrollarea.h>

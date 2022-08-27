@@ -1081,8 +1081,9 @@ void PdfViewOpenGLWidget::draw_empty_helper_message(QPainter* painter) {
 
 	QString message = "No portals yet";
 	QFontMetrics fm(QApplication::font());
-	int message_width = fm.width(message);
-	int message_height = fm.height();
+	auto textsize = fm.size(Qt::TextSingleLine, message);
+	int message_width = textsize.width();
+	int message_height = textsize.height();
 
 	int view_width = document_view->get_view_width();
 	int view_height = document_view->get_view_height();

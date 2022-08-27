@@ -34,7 +34,7 @@
 #include <qlabel.h>
 #include <qtextedit.h>
 #include <qfilesystemwatcher.h>
-#include <qdesktopwidget.h>
+//#include <qdesktopwidget.h>
 #include <qpainter.h>
 
 #include "document_view.h"
