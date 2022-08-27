@@ -410,7 +410,7 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
 }
 
 MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
-	if (!std::filesystem::exists(file_path)) {
+	if (!QFile::exists(QString::fromStdWString(file_path))) {
 		return nullptr;
 	}
 
@@ -513,7 +513,7 @@ MainWidget* handle_args(const QStringList& arguments) {
         y_loc = parser->value("yloc").toFloat();
     }
 
-	if ((pdf_file_name.size() > 0) && (!std::filesystem::exists(pdf_file_name))) {
+	if ((pdf_file_name.size() > 0) && (!QFile::exists(QString::fromStdWString(pdf_file_name)))) {
 		return nullptr;
 	}
 
