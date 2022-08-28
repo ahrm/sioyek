@@ -204,10 +204,19 @@ bool ensure_between_0_and_1(const QStringList& parts) {
 	return true;
 }
 
-bool color_3_validator(const std::wstring& str) {
+template <int N>
+bool colorn_validator(const std::wstring& str) {
 	QString qstr = QString::fromStdWString(str);
 	auto parts = qstr.trimmed().split(' ', Qt::SplitBehaviorFlags::SkipEmptyParts);
-	if (parts.size() != 3) {
+	if (parts.size() != N) {
+		if (parts.size() == 1) {
+			if (parts.at(0).at(0) == '#') {
+				if (parts.at(0).size() == (1 + 2 * N)) {
+					return true;
+				}
+			}
+
+		}
 		std::wcout << L"Error: required 3 values for color, but got " << parts.size() << "\n";
 		return false;
 	}
@@ -216,19 +225,31 @@ bool color_3_validator(const std::wstring& str) {
 	}
 	return true;
 }
-
-bool color_4_validator(const std::wstring& str) {
-	QString qstr = QString::fromStdWString(str);
-	auto parts = qstr.trimmed().split(' ', Qt::SplitBehaviorFlags::SkipEmptyParts);
-	if (parts.size() != 4) {
-		std::wcout << L"Error: required 4 values for color, but got " << parts.size() << "\n";
-		return false;
-	}
-	if (!ensure_between_0_and_1(parts)) {
-		return false;
-	}
-	return true;
-}
+//bool color_3_validator(const std::wstring& str) {
+//	QString qstr = QString::fromStdWString(str);
+//	auto parts = qstr.trimmed().split(' ', Qt::SplitBehaviorFlags::SkipEmptyParts);
+//	if (parts.size() != 3) {
+//		std::wcout << L"Error: required 3 values for color, but got " << parts.size() << "\n";
+//		return false;
+//	}
+//	if (!ensure_between_0_and_1(parts)) {
+//		return false;
+//	}
+//	return true;
+//}
+//
+//bool color_4_validator(const std::wstring& str) {
+//	QString qstr = QString::fromStdWString(str);
+//	auto parts = qstr.trimmed().split(' ', Qt::SplitBehaviorFlags::SkipEmptyParts);
+//	if (parts.size() != 4) {
+//		std::wcout << L"Error: required 4 values for color, but got " << parts.size() << "\n";
+//		return false;
+//	}
+//	if (!ensure_between_0_and_1(parts)) {
+//		return false;
+//	}
+//	return true;
+//}
 
 bool bool_validator(const std::wstring& str) {
 	QString qstr = QString::fromStdWString(str);
@@ -261,15 +282,17 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	auto bool_deserializer = generic_deserializer<bool>;
 	auto color3_deserializer = colorn_deserializer<3>;
 	auto color4_deserializer = colorn_deserializer<4>;
+	auto color_3_validator = colorn_validator<3>;
+	auto color_4_validator = colorn_validator<4>;
 
-	configs.push_back({ L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
-	configs.push_back({ L"vertical_line_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, vec4_deserializer, color_4_validator });
-	configs.push_back({ L"visual_mark_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, vec4_deserializer, color_4_validator });
-	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
-	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
-	configs.push_back({ L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
-	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, color3_deserializer, nullptr });
-	configs.push_back({ L"dark_mode_background_color", DARK_MODE_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"vertical_line_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, color4_deserializer, color_4_validator });
+	configs.push_back({ L"visual_mark_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, color4_deserializer, color_4_validator });
+	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"dark_mode_background_color", DARK_MODE_BACKGROUND_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"dark_mode_contrast", &DARK_MODE_CONTRAST, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"default_dark_mode", &DEFAULT_DARK_MODE, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"google_scholar_address", &GOOGLE_SCHOLAR_ADDRESS, string_serializer, string_deserializer, nullptr });
@@ -299,21 +322,21 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"startup_commands", &STARTUP_COMMANDS, string_serializer, string_deserializer, nullptr });
 	configs.push_back({ L"font_size", &FONT_SIZE, int_serializer, int_deserializer, nullptr });
 	configs.push_back({ L"status_bar_font_size", &STATUS_BAR_FONT_SIZE, int_serializer, int_deserializer, nullptr });
-	configs.push_back({ L"custom_background_color", CUSTOM_BACKGROUND_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
-	configs.push_back({ L"custom_text_color", CUSTOM_TEXT_COLOR, vec3_serializer, vec3_deserializer, color_3_validator });
+	configs.push_back({ L"custom_background_color", CUSTOM_BACKGROUND_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"custom_text_color", CUSTOM_TEXT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"rerender_overview", &RERENDER_OVERVIEW, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"wheel_zoom_on_cursor", &WHEEL_ZOOM_ON_CURSOR, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"linear_filter", &LINEAR_TEXTURE_FILTERING, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"display_resolution_scale", &DISPLAY_RESOLUTION_SCALE, float_serializer, float_deserializer, nullptr });
-	configs.push_back({ L"status_bar_color", STATUS_BAR_COLOR, vec3_serializer, vec3_deserializer, nullptr });
-	configs.push_back({ L"status_bar_text_color", STATUS_BAR_TEXT_COLOR, vec3_serializer, vec3_deserializer, nullptr });
+	configs.push_back({ L"status_bar_color", STATUS_BAR_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"status_bar_text_color", STATUS_BAR_TEXT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"main_window_size", &MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer, nullptr });
 	configs.push_back({ L"helper_window_size", &HELPER_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer, nullptr });
 	configs.push_back({ L"main_window_move", &MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer, nullptr });
 	configs.push_back({ L"helper_window_move", &HELPER_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer, nullptr });
 	configs.push_back({ L"touchpad_sensitivity", &TOUCHPAD_SENSITIVITY, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"page_separator_width", &PAGE_SEPARATOR_WIDTH, float_serializer, float_deserializer, nullptr });
-	configs.push_back({ L"page_separator_color", PAGE_SEPARATOR_COLOR, vec3_serializer, vec3_deserializer, nullptr });
+	configs.push_back({ L"page_separator_color", PAGE_SEPARATOR_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"single_main_window_size", &SINGLE_MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer, nullptr });
 	configs.push_back({ L"single_main_window_move", &SINGLE_MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer, nullptr });
 	configs.push_back({ L"fit_to_page_width_ratio", &FIT_TO_PAGE_WIDTH_RATIO, float_serializer, float_deserializer, nullptr });
@@ -361,7 +384,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		search_url_config_string[search_url_config_string.size() - 1] = letter;
 		execute_command_config_string[execute_command_config_string.size() - 1] = letter;
 
-		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(letter - 'a') * 3], vec3_serializer, vec3_deserializer, nullptr });
+		configs.push_back({ highlight_config_string, &HIGHLIGHT_COLORS[(letter - 'a') * 3], vec3_serializer, color3_deserializer, color_3_validator });
 		configs.push_back({ search_url_config_string, &SEARCH_URLS[letter - 'a'], string_serializer, string_deserializer, nullptr });
 		configs.push_back({ execute_command_config_string, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer, nullptr });
 	}
