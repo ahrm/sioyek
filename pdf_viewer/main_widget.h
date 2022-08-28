@@ -107,6 +107,7 @@ private:
 	bool is_ui_invalidated = false;
 
 	const Command* last_command = nullptr;
+	bool should_show_last_command = false;
 
 	//std::optional<std::pair<std::wstring, int>> last_smart_fit_state = {};
 	std::optional<int> last_smart_fit_page = {};

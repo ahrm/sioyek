@@ -525,6 +525,12 @@ std::wstring MainWidget::get_status_string() {
         ss << " [ " << custom_status_message << " ]";
     }
 
+    if (should_show_last_command) {
+        if (last_command != nullptr) {
+			ss << " [ last command: " << utf8_decode(last_command->name) << " ]";
+        }
+    }
+
   //  if (last_command != nullptr) {
 		//ss << " [ " << last_command->name.c_str() << " ] ";
   //  }
@@ -1081,7 +1087,8 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
         std::vector<int> ignored_codes = {
             Qt::Key::Key_Shift,
-            Qt::Key::Key_Control
+            Qt::Key::Key_Control,
+            Qt::Key::Key_Alt
         };
         if (std::find(ignored_codes.begin(), ignored_codes.end(), kevent->key()) != ignored_codes.end()) {
             return;
@@ -2341,6 +2348,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
     else if (command->name == "toggle_synctex") {
         toggle_synctex_mode();
+    }
+    else if (command->name == "toggle_show_last_command") {
+		should_show_last_command = !should_show_last_command;
     }
 
     else if (command->name == "delete_link" || command->name == "delete_portal") {
