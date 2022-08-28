@@ -585,6 +585,10 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		&rendered_width,
 		&rendered_height);
 
+	if (rotation_index % 2 == 1) {
+		std::swap(rendered_width, rendered_height);
+	}
+
 	float page_vertices[4 * 2];
 	fz_rect page_rect = { 0,
 		0,
