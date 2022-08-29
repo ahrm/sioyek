@@ -104,7 +104,7 @@ mac {
     QMAKE_CXXFLAGS += -std=c++17
     LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lz
     CONFIG+=sdk_no_version_check
-    QMAKE_MACOSX_DEPLOYMENT_TARGET = 11
+    QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.5
     ICON = pdf_viewer\icon2.ico
     QMAKE_INFO_PLIST = resources/Info.plist
 }
