@@ -153,7 +153,7 @@ void MainWidget::set_overview_position(int page, float offset) {
 
 void MainWidget::set_overview_link(PdfLink link) {
 
-    auto [page, offset_x, offset_y] = parse_uri(link.uri);
+    auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
     if (page >= 1) {
         set_overview_position(page - 1, offset_y);
     }
@@ -2861,7 +2861,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 					open_web_url(utf8_decode(selected_link->uri));
                 }
                 else{
-					auto [page, offset_x, offset_y] = parse_uri(selected_link->uri);
+					auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
 					long_jump_to_destination(page-1, offset_y);
                 }
             }
@@ -3472,7 +3472,7 @@ void MainWidget::handle_link_click(const PdfLink& link) {
 		return;
 	}
 
-	auto [page, offset_x, offset_y] = parse_uri(link.uri);
+	auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
 
 	// convert one indexed page to zero indexed page
 	page--;

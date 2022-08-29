@@ -33,7 +33,7 @@ void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>&
 int mod(int a, int b);
 bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end);
 bool rects_intersect(fz_rect rect1, fz_rect rect2);
-ParsedUri parse_uri(std::string uri);
+ParsedUri parse_uri(fz_context* mupdf_context, std::string uri);
 char get_symbol(int key, bool is_shift_pressed, const std::vector<char>&special_symbols);
 
 template<typename T>

@@ -24,6 +24,8 @@
 #include <qnetworkreply.h>
 #include <qscreen.h>
 
+#include <mupdf/pdf.h>
+
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
 extern std::ofstream LOG_FILE;
@@ -106,21 +108,9 @@ bool rects_intersect(fz_rect rect1, fz_rect rect2) {
 	return range_intersects(rect1.x0, rect1.x1, rect2.x0, rect2.x1) && range_intersects(rect1.y0, rect1.y1, rect2.y0, rect2.y1);
 }
 
-ParsedUri parse_uri(std::string uri) {
-	int comma_index = -1;
-
-	uri = uri.substr(1, uri.size() - 1);
-	comma_index = static_cast<int>(uri.find(","));
-	int page = atoi(uri.substr(0, comma_index ).c_str());
-
-	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
-	comma_index = static_cast<int>(uri.find(","));
-	float offset_x = atof(uri.substr(0, comma_index ).c_str());
-
-	uri = uri.substr(comma_index+1, uri.size() - comma_index-1);
-	float offset_y = atof(uri.c_str());
-
-	return { page, offset_x, offset_y };
+ParsedUri parse_uri(fz_context* mupdf_context, std::string uri) {
+	fz_link_dest dest = pdf_parse_link_uri(mupdf_context, uri.c_str());
+	return { dest.loc.page + 1, dest.x, dest.y };
 }
 
 char get_symbol(int key, bool is_shift_pressed, const std::vector<char>& special_symbols) {
