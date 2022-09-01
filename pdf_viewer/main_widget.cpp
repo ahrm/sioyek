@@ -572,7 +572,7 @@ void MainWidget::handle_escape() {
         main_document_view->handle_escape();
         opengl_widget->handle_escape();
     }
-    
+
     if (opengl_widget) {
 		bool done_anything = false;
         if (opengl_widget->get_overview_page()) {
@@ -1740,7 +1740,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         //user-defined commands start with underscore
         handle_additional_command(utf8_decode(command->name));
     }
-    if (command->name == "goto_begining") {
+    if (command->name == "goto_beginning") {
         if (num_repeats) {
             main_document_view->goto_page(num_repeats - 1 + main_document_view->get_page_offset());
         }
@@ -1791,7 +1791,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 			}
         }
         else {
-			
+
 			if (command->name == "move_down") {
 				move_document(0.0f, 72.0f * rp * VERTICAL_MOVE_AMOUNT);
 			}
@@ -3361,7 +3361,7 @@ void MainWidget::dropEvent(QDropEvent* event)
     if (event->mimeData()->hasUrls()) {
         auto urls = event->mimeData()->urls();
         std::wstring path = urls.at(0).toString().toStdWString();
-        // ignore file:/// at the begining of the URL
+        // ignore file:/// at the beginning of the URL
 #ifdef Q_OS_WIN
         path = path.substr(8, path.size() - 8);
 #else
@@ -3460,7 +3460,7 @@ void MainWidget::on_new_paper_added(const std::wstring& file_path) {
         if (helper_document_view) {
             float helper_view_width = helper_document_view->get_view_width();
             float helper_view_height = helper_document_view->get_view_height();
-            float zoom_level = helper_view_width / first_page_width; 
+            float zoom_level = helper_view_width / first_page_width;
             dst_view_state.book_state.zoom_level = zoom_level;
 			dst_view_state.book_state.offset_y = -std::abs(-helper_view_height / zoom_level / 2 + first_page_height / 2);
         }
@@ -3507,7 +3507,7 @@ std::wstring MainWidget::get_serialized_configuration_string() {
     return overview_config_string + get_window_configuration_string();
 }
 std::wstring MainWidget::get_window_configuration_string() {
-	
+
 	QString config_string_multi = "main_window_size    %1 %2\nmain_window_move     %3 %4\nhelper_window_size    %5 %6\nhelper_window_move     %7 %8";
 	QString config_string_single = "single_main_window_size    %1 %2\nsingle_main_window_move     %3 %4";
 
@@ -3631,7 +3631,7 @@ void MainWidget::scroll_overview_up() {
 }
 
 int MainWidget::get_current_page_number() const {
-    // 
+    //
     if (opengl_widget->get_should_draw_vertical_line()) {
         return main_document_view->get_vertical_line_page();
     }
@@ -3856,7 +3856,7 @@ void MainWidget::add_portal(std::wstring source_path, Link new_link) {
 
 void MainWidget::handle_keyboard_select(const std::wstring& text) {
 	if (std::isdigit(text[0])) {
-        // we can select text 
+        // we can select text
 		QStringList parts = QString::fromStdWString(text).split(' ');
         if (parts.size() == 2) {
             QString begin_text = parts.at(0);

@@ -481,7 +481,7 @@ void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_char
 void get_word_rect_list_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars,
 	std::vector<std::wstring>& words,
 	std::vector<std::vector<fz_rect>>& flat_word_rects) {
-	
+
 	if (flat_chars.size() == 0) return;
 
 	std::vector<fz_stext_char*> pending_word;
@@ -736,7 +736,7 @@ std::vector<std::wstring> split_whitespace(std::wstring const& input) {
 }
 
 void split_key_string(std::string haystack, const std::string& needle, std::vector<std::string> &res) {
-	//todo: we can significantly reduce string allocations in this function if it turns out to be a 
+	//todo: we can significantly reduce string allocations in this function if it turns out to be a
 	//performance bottleneck.
 
 	if (haystack == needle){
@@ -799,7 +799,7 @@ void run_command(std::wstring command, QStringList parameters, bool wait){
 #else
 	QProcess* process = new QProcess;
 	QString qcommand = QString::fromStdWString(command);
-	QStringList qparameters; 
+	QStringList qparameters;
 
 	for (int i = 0; i < parameters.size(); i++) {
 		qparameters.append(parameters[i]);
@@ -1013,7 +1013,7 @@ void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_numbe
 
 	int offset = 0;
 	while (std::regex_search(page_string, match, index_dst_regex)) {
-		
+
 		IndexedData new_data;
 		new_data.page = page_number;
 		std::wstring match_string = match.str();
@@ -1096,7 +1096,7 @@ void index_references(fz_stext_page* page, int page_number, std::map<std::wstrin
 				//	current_text.clear();
 				//}
 
-				// refernces are usually at the begining of the line, we consider the possibility
+				// references are usually at the beginning of the line, we consider the possibility
 				// of up to 3 extra characters before the reference (e.g. numbers, extra spaces, etc.)
 				if ((ch->c == start_char) && (chars_in_line < 4)) {
 					temp_indices.clear();
@@ -1623,13 +1623,13 @@ void check_for_updates(QWidget* parent, std::string current_version) {
 
 	QString url = "https://github.com/ahrm/sioyek/releases/latest";
 	QNetworkAccessManager* manager = new QNetworkAccessManager;
-	
+
 	QObject::connect(manager, &QNetworkAccessManager::finished, [=](QNetworkReply *reply) {
 		std::string response_text = reply->readAll().toStdString();
 		int first_index = response_text.find("\"");
 		int last_index = response_text.rfind("\"");
 		std::string url_string = response_text.substr(first_index + 1, last_index - first_index - 1);
-		
+
 		std::vector<std::wstring> parts;
 		split_path(utf8_decode(url_string), parts);
 		if (parts.size() > 0) {
@@ -1727,7 +1727,7 @@ QString get_color_hexadecimal(float color) {
 	int high = val / 16;
 	int low = val % 16;
 	return QString("%1%2").arg(hex_map[high], hex_map[low]);
-	
+
 }
 
 QString get_color_qml_string(float r, float g, float b) {
@@ -1787,7 +1787,7 @@ std::wstring truncate_string(const std::wstring& inp, int size) {
         else {
 		return inp.substr(0, size - 3) + L"...";
 	}
- 
+
 }
 
 std::wstring get_page_formatted_string(int page) {
