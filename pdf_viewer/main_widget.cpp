@@ -1452,13 +1452,16 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
     if (mevent->button() == Qt::MouseButton::LeftButton) {
         if (is_shift_pressed) {
-            handle_command(command_manager.get_command_with_name(utf8_encode(SHIFT_CLICK_COMMAND)), 1);
+            //handle_command(command_manager.get_command_with_name(utf8_encode(SHIFT_CLICK_COMMAND)), 1);
+            run_multiple_commands(SHIFT_CLICK_COMMAND);
         }
         else if (is_control_pressed) {
-            handle_command(command_manager.get_command_with_name(utf8_encode(CONTROL_CLICK_COMMAND)), 1);
+            //handle_command(command_manager.get_command_with_name(utf8_encode(CONTROL_CLICK_COMMAND)), 1);
+            run_multiple_commands(CONTROL_CLICK_COMMAND);
         }
         else if (is_alt_pressed) {
-            handle_command(command_manager.get_command_with_name(utf8_encode(ALT_CLICK_COMMAND)), 1);
+            //handle_command(command_manager.get_command_with_name(utf8_encode(ALT_CLICK_COMMAND)), 1);
+            run_multiple_commands(ALT_CLICK_COMMAND);
         }
         else {
 			handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
@@ -1474,13 +1477,13 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
         if (is_shift_pressed) {
-            handle_command(command_manager.get_command_with_name(utf8_encode(SHIFT_RIGHT_CLICK_COMMAND)), 1);
+            run_multiple_commands(SHIFT_RIGHT_CLICK_COMMAND);
         }
         else if (is_control_pressed) {
-            handle_command(command_manager.get_command_with_name(utf8_encode(CONTROL_RIGHT_CLICK_COMMAND)), 1);
+            run_multiple_commands(CONTROL_RIGHT_CLICK_COMMAND);
         }
         else if (is_alt_pressed) {
-            handle_command(command_manager.get_command_with_name(utf8_encode(ALT_RIGHT_CLICK_COMMAND)), 1);
+            run_multiple_commands(ALT_RIGHT_CLICK_COMMAND);
         }
         else {
 			handle_right_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
@@ -1747,7 +1750,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
 
     if (command->name == "goto_end") {
-        if (num_repeats > 1) {
+        if (num_repeats > 0) {
             main_document_view->goto_page(num_repeats - 1 + main_document_view->get_page_offset());
         }
         else {
