@@ -15,6 +15,7 @@ extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 
 CommandManager::CommandManager() {
 	commands.push_back({ "goto_beginning",				false,	false,	false,	true,	true,	{}});
+	commands.push_back({ "goto_begining",				false,	false,	false,	true,	true,	{}});
 	commands.push_back({ "goto_end",					false,	false,	false,	true,	true,	{}});
 	commands.push_back({ "goto_definition",				false,	false,	false,	true,	true,	{}});
 	commands.push_back({ "overview_definition",			false,	false,	false,	false,	true,	{}});
