@@ -6,6 +6,7 @@
 #include "utils.h"
 #include <optional>
 #include <cstring>
+#include <sstream>
 #include <string>
 #include <qclipboard.h>
 #include <qguiapplication.h>
@@ -2071,4 +2072,32 @@ bool command_requires_text(std::wstring command) {
 		return true;
 	}
 	return false;
+}
+
+void parse_command_string(std::wstring command_string, std::string& command_name, std::wstring& command_data) {
+	int lindex = command_string.find(L"(");
+	int rindex = command_string.rfind(L")");
+	if (lindex < rindex) {
+		command_name = utf8_encode(command_string.substr(0, lindex));
+		command_data = command_string.substr(lindex + 1, rindex - lindex - 1);
+	}
+	else {
+		command_data = L"";
+		command_name = utf8_encode(command_string);
+	}
+}
+
+void parse_color(std::wstring color_string, float* out_color, int n_components) {
+	if (color_string.size() > 0) {
+		if (color_string[0] == '#') {
+			hexademical_to_normalized_color(color_string, out_color, n_components);
+		}
+		else {
+			std::wstringstream ss(color_string);
+
+			for (int i = 0; i < n_components; i++) {
+				ss >> *(out_color + i);
+			}
+		}
+	}
 }

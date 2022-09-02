@@ -190,6 +190,7 @@ bool USE_LEGACY_KEYBINDS = true;
 bool MULTILINE_MENUS = false;
 bool START_WITH_HELPER_WINDOW = false;
 std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
+std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 bool PRERENDER_NEXT_PAGE = false;
 bool EMACS_MODE = false;
 bool HIGHLIGHT_MIDDLE_CLICK = false;

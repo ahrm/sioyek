@@ -12,6 +12,7 @@
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
+extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 
 CommandManager::CommandManager() {
 	commands.push_back({ "goto_beginning",				false,	false,	false,	true,	true,	{}});
@@ -156,8 +157,14 @@ CommandManager::CommandManager() {
 	commands.push_back({ "goto_selected_text",			false,	false,	false,	false,	true,	{}});
 	commands.push_back({ "focus_text",					true,	false,	false,	false,	true,	{}});
 	commands.push_back({ "goto_window",					false,	false,	false,	false,	false,	{}});
+	commands.push_back({ "set_custom_text_color",		true,	false,	false,	false,	false,	{}});
+	commands.push_back({ "set_custom_background_color",	true,	false,	false,	false,	false,	{}});
 
 	for (auto [command_name, _] : ADDITIONAL_COMMANDS) {
+		commands.push_back({ utf8_encode(command_name) , false, false, false, false, true});
+	}
+
+	for (auto [command_name, _] : ADDITIONAL_MACROS) {
 		commands.push_back({ utf8_encode(command_name) , false, false, false, false, true});
 	}
 

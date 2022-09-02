@@ -88,6 +88,7 @@ extern bool USE_LEGACY_KEYBINDS;
 extern bool MULTILINE_MENUS;
 extern bool START_WITH_HELPER_WINDOW;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
+extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern bool PRERENDER_NEXT_PAGE;
 extern bool EMACS_MODE;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
@@ -419,15 +420,20 @@ void ConfigManager::deserialize_file(const Path& file_path) {
 		std::wstring conf_name;
 		ss >> conf_name;
 		//special handling for new_command 
-		if (conf_name == L"new_command") {
+		if ((conf_name == L"new_command") || (conf_name == L"new_macro")) {
 			std::wstring config_value;
 			std::getline(ss, config_value);
 			config_value = strip_string(config_value);
 			int space_index = config_value.find(L" ");
 			std::wstring new_command_name = config_value.substr(0, space_index);
 			if (new_command_name[0] == '_') {
-				std::wstring new_command_shell_command = config_value.substr(space_index + 1, config_value.size() - space_index - 1);
-				ADDITIONAL_COMMANDS[new_command_name] = new_command_shell_command;
+				std::wstring command_value = config_value.substr(space_index + 1, config_value.size() - space_index - 1);
+				if (conf_name == L"new_command") {
+					ADDITIONAL_COMMANDS[new_command_name] = command_value;
+				}
+				if (conf_name == L"new_macro") {
+					ADDITIONAL_MACROS[new_command_name] = command_value;
+				}
 			}
 		}
 		else {

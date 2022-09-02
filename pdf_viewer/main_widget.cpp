@@ -102,8 +102,11 @@ extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern Path local_database_file_path;
 extern Path global_database_file_path;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
+extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
 extern std::wstring STARTUP_COMMANDS;
+extern float CUSTOM_BACKGROUND_COLOR[3];
+extern float CUSTOM_TEXT_COLOR[3];
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -2902,6 +2905,12 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         }
     }
 
+    if (current_pending_command->name == "set_custom_text_color") {
+        parse_color(text, CUSTOM_TEXT_COLOR, 3);
+    }
+    if (current_pending_command->name == "set_custom_background_color") {
+        parse_color(text, CUSTOM_BACKGROUND_COLOR, 3);
+    }
     if (current_pending_command->name == "set_page_offset") {
 
         if (is_string_numeric(text.c_str()) && text.size() < 6) { // make sure the page number is valid
@@ -3822,6 +3831,9 @@ void MainWidget::handle_additional_command(std::wstring command_name, bool wait)
 			execute_command(command_to_execute, L"", wait);
 		}
 	}
+    else if (ADDITIONAL_MACROS.find(command_name) != ADDITIONAL_MACROS.end()) {
+        run_multiple_commands(ADDITIONAL_MACROS[command_name]);
+    }
 }
 
 std::optional<DocumentPos> MainWidget::get_overview_position() {
@@ -3912,6 +3924,27 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
 void MainWidget::run_multiple_commands(const std::wstring& commands) {
     QStringList command_list = QString::fromStdWString(commands).split(';');
     for (auto command : command_list) {
-		handle_command(command_manager.get_command_with_name(command.toStdString()), 1);
+        std::string command_name;
+        std::wstring command_arg;
+
+        parse_command_string(command.toStdWString(), command_name, command_arg);
+
+        const Command* com = command_manager.get_command_with_name(command_name);
+        if (com) {
+			if (com->requires_text) {
+				handle_command_with_text(com, command_arg);
+				continue;
+			}
+			else if (com->requires_symbol && command_arg.size() > 0) {
+				handle_command_with_symbol(com, command_arg[0]);
+				continue;
+			}
+			else{
+				handle_command(com, 0);
+				continue;
+			}
+			//handle_command(command_manager.get_command_with_name(command.toStdString()), 1);
+
+        }
     }
 }
