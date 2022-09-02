@@ -159,6 +159,7 @@ CommandManager::CommandManager() {
 	commands.push_back({ "goto_window",					false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "set_custom_text_color",		true,	false,	false,	false,	false,	{}});
 	commands.push_back({ "set_custom_background_color",	true,	false,	false,	false,	false,	{}});
+	commands.push_back({ "toggle_hyperdrive_mode",		false,	false,	false,	false,	false,	{}});
 
 	for (auto [command_name, _] : ADDITIONAL_COMMANDS) {
 		commands.push_back({ utf8_encode(command_name) , false, false, false, false, true});

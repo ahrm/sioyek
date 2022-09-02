@@ -107,6 +107,7 @@ extern bool HIGHLIGHT_MIDDLE_CLICK;
 extern std::wstring STARTUP_COMMANDS;
 extern float CUSTOM_BACKGROUND_COLOR[3];
 extern float CUSTOM_TEXT_COLOR[3];
+extern float HYPERDRIVE_SPEED_FACTOR;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -532,6 +533,17 @@ std::wstring MainWidget::get_status_string() {
         if (last_command != nullptr) {
 			ss << " [ last command: " << utf8_decode(last_command->name) << " ]";
         }
+    }
+    if (is_hyperdrive_mode && main_document_view_has_document()) {
+        std::wstring location_string = L"[ -------------------- ]";
+        int page_number = main_document_view->get_center_page_number();
+        int num_pages = main_document_view->get_document()->num_pages();
+        int index = ((page_number+1) * 20 / num_pages) + 1;
+        if (index == location_string.size()) {
+            index--;
+        }
+        location_string[index] = '*';
+        ss << location_string;
     }
 
   //  if (last_command != nullptr) {
@@ -1547,6 +1559,9 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     //bool is_touchpad = true;
     float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
     float horizontal_move_amount = HORIZONTAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
+    if (is_hyperdrive_mode) {
+        vertical_move_amount *= HYPERDRIVE_SPEED_FACTOR;
+    }
 
     //if (is_touchpad) {
     //	vertical_move_amount *= TOUCHPAD_SENSITIVITY;
@@ -1762,6 +1777,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         }
     }
 
+    if (command->name == "toggle_hyperdrive_mode") {
+        is_hyperdrive_mode = !is_hyperdrive_mode;
+    }
     if (command->name == "toggle_select_highlight") {
         is_select_highlight_mode = !is_select_highlight_mode;
     }

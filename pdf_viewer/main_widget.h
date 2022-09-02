@@ -81,6 +81,7 @@ private:
 	bool is_word_selecting = false;
 	std::wstring selected_text;
 
+	bool is_hyperdrive_mode = false;
 	bool is_select_highlight_mode = false;
 	char select_highlight_type = 'a';
 

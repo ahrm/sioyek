@@ -92,6 +92,7 @@ extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern bool PRERENDER_NEXT_PAGE;
 extern bool EMACS_MODE;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
+extern float HYPERDRIVE_SPEED_FACTOR;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -375,6 +376,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"prerender_next_page_presentation", &PRERENDER_NEXT_PAGE, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"emacs_mode_menus", &EMACS_MODE, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"highlight_middle_click", &HIGHLIGHT_MIDDLE_CLICK, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"hyperdrive_speed_factor", &HYPERDRIVE_SPEED_FACTOR, float_serializer, float_deserializer, nullptr });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

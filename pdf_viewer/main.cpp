@@ -194,6 +194,7 @@ std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 bool PRERENDER_NEXT_PAGE = false;
 bool EMACS_MODE = false;
 bool HIGHLIGHT_MIDDLE_CLICK = false;
+float HYPERDRIVE_SPEED_FACTOR = 10.0f;
 
 float PAGE_SEPARATOR_WIDTH = 0.0f;
 float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
