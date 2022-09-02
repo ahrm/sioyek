@@ -1740,16 +1740,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         //user-defined commands start with underscore
         handle_additional_command(utf8_decode(command->name));
     }
-    if (command->name == "goto_beginning") {
-
-        if (num_repeats) {
-            main_document_view->goto_page(num_repeats - 1 + main_document_view->get_page_offset());
-        }
-        else {
-            main_document_view->set_offset_y(0.0f);
-        }
-    }
-    if (command->name == "goto_begining") {
+    if ((command->name == "goto_beginning") || (command->name ==  "goto_begining")) {
 
         if (num_repeats) {
             main_document_view->goto_page(num_repeats - 1 + main_document_view->get_page_offset());

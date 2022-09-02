@@ -399,6 +399,10 @@ public:
 			table_view->setWordWrap(true);
 			table_view->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 		}
+
+		if (selected_index != -1) {
+			table_view->scrollTo(this->proxy_model->mapFromSource(table_view->currentIndex()), QAbstractItemView::EnsureVisible);
+		}
 	}
 
 	virtual std::wstring get_selected_text(){
