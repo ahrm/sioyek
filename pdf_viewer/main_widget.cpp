@@ -108,6 +108,8 @@ extern std::wstring STARTUP_COMMANDS;
 extern float CUSTOM_BACKGROUND_COLOR[3];
 extern float CUSTOM_TEXT_COLOR[3];
 extern float HYPERDRIVE_SPEED_FACTOR;
+extern float SMOOTH_SCROLL_SPEED;
+extern float SMOOTH_SCROLL_DRAG;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -386,10 +388,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     // this is done so that thousands of search results only trigger
     // a few rerenders
     // todo: make interval time configurable
-    QTimer* timer = new QTimer(this);
+    validation_interval_timer = new QTimer(this);
     unsigned int INTERVAL_TIME = 200;
-    timer->setInterval(INTERVAL_TIME);
-    connect(timer, &QTimer::timeout, [&, INTERVAL_TIME]() {
+    validation_interval_timer->setInterval(INTERVAL_TIME);
+    connect(validation_interval_timer , &QTimer::timeout, [&, INTERVAL_TIME]() {
 
 
         if (is_render_invalidated) {
@@ -420,7 +422,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             }
         }
         });
-    timer->start();
+    validation_interval_timer->start();
 
 
     QVBoxLayout* layout = new QVBoxLayout;
@@ -622,6 +624,40 @@ void MainWidget::keyReleaseEvent(QKeyEvent* kevent) {
 }
 
 void MainWidget::validate_render() {
+    if (smooth_scroll_mode) {
+        if (main_document_view_has_document()) {
+            float secs = static_cast<float>(-QTime::currentTime().msecsTo(last_speed_update_time)) / 1000.0f;
+
+            if (secs > 0.1f) {
+                secs = 0.0f;
+            }
+
+            if (!opengl_widget->get_overview_page()) {
+				float current_offset = main_document_view->get_offset_y();
+				main_document_view->set_offset_y(current_offset + smooth_scroll_speed * secs);
+            }
+            else {
+                OverviewState state = opengl_widget->get_overview_page().value();
+                //opengl_widget->get_overview_offsets(&overview_offset_x, &overview_offset_y);
+                //opengl_widget->set_overview_offsets(overview_offset_x, overview_offset_y + smooth_scroll_speed * secs);
+                state.offset_y += smooth_scroll_speed * secs;
+                opengl_widget->set_overview_page(state);
+            }
+            float accel = SMOOTH_SCROLL_DRAG;
+            if (smooth_scroll_speed > 0) {
+                smooth_scroll_speed -= secs * accel;
+                if (smooth_scroll_speed < 0) smooth_scroll_speed = 0;
+                
+            }
+            else {
+                smooth_scroll_speed += secs * accel;
+                if (smooth_scroll_speed > 0) smooth_scroll_speed = 0;
+            }
+
+
+            last_speed_update_time = QTime::currentTime();
+        }
+    }
     if (!isVisible()) {
         return;
     }
@@ -666,6 +702,9 @@ void MainWidget::validate_render() {
     }
 
     is_render_invalidated = false;
+    if (smooth_scroll_mode && (smooth_scroll_speed != 0)) {
+        is_render_invalidated = true;
+    }
 }
 
 void MainWidget::validate_ui() {
@@ -1777,6 +1816,16 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         }
     }
 
+    if (command->name == "toggle_smooth_scroll_mode") {
+        smooth_scroll_mode = !smooth_scroll_mode;
+
+        if (smooth_scroll_mode) {
+            validation_interval_timer->setInterval(16);
+        }
+        else {
+            validation_interval_timer->setInterval(200);
+        }
+    }
     if (command->name == "toggle_hyperdrive_mode") {
         is_hyperdrive_mode = !is_hyperdrive_mode;
     }
@@ -3197,8 +3246,14 @@ void MainWidget::handle_paper_name_on_pointer(std::wstring paper_name, bool is_s
 
 }
 void MainWidget::move_vertical(float amount) {
-    move_document(0, amount);
-    validate_render();
+    if (!smooth_scroll_mode) {
+		move_document(0, amount);
+		validate_render();
+    }
+    else {
+        smooth_scroll_speed += amount * SMOOTH_SCROLL_SPEED;
+		validate_render();
+    }
 }
 
 void MainWidget::move_horizontal(float amount){

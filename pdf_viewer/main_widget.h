@@ -85,6 +85,11 @@ private:
 	bool is_select_highlight_mode = false;
 	char select_highlight_type = 'a';
 
+	bool smooth_scroll_mode = false;
+	float smooth_scroll_speed = 0.0f;
+
+	QTimer* validation_interval_timer = nullptr;
+
 	std::optional<Link> link_to_edit = {};
 	int selected_highlight_index = -1;
 
@@ -124,6 +129,7 @@ private:
 	int index_into_candidates = 0;
 
 	QTime last_text_select_time = QTime::currentTime();
+	QTime last_speed_update_time = QTime::currentTime();
 
 	bool main_document_view_has_document();
 	std::optional<std::string> get_last_opened_file_checksum();
