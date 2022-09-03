@@ -513,3 +513,18 @@ std::vector<Path> ConfigManager::get_all_user_config_files(){
 	}
 	return  res;
 }
+
+std::vector<Config> ConfigManager::get_configs() {
+	return configs;
+}
+
+void ConfigManager::deserialize_config(std::string config_name, std::wstring config_value) {
+
+	std::wstringstream config_value_stream(config_value);
+	Config* conf = get_mut_config_with_name(utf8_decode(config_name));
+	auto deserialization_result = conf->deserialize(config_value_stream, conf->value);
+	if (deserialization_result != nullptr) {
+		conf->value = deserialization_result;
+	}
+
+}

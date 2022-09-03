@@ -630,6 +630,7 @@ int main(int argc, char* args[]) {
 	verify_paths();
 
 	ConfigManager config_manager(default_config_path, auto_config_path, user_config_paths);
+	CommandManager* command_manager = new CommandManager(&config_manager);
 
 	if (SHARED_DATABASE_PATH.size() > 0) {
 		global_database_file_path = SHARED_DATABASE_PATH;
@@ -700,7 +701,7 @@ int main(int argc, char* args[]) {
 
 	bool quit = false;
 
-	InputHandler input_handler(default_keys_path, user_keys_paths);
+	InputHandler input_handler(default_keys_path, user_keys_paths, command_manager);
 
 	std::vector<std::pair<std::wstring, std::wstring>> prev_path_hash_pairs;
 	db_manager.get_prev_path_hash_pairs(prev_path_hash_pairs);
@@ -716,7 +717,7 @@ int main(int argc, char* args[]) {
 	add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
 
 
-	MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, &input_handler, &checksummer, &quit);
+	MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, command_manager, &input_handler, &checksummer, &quit);
 	windows.push_back(main_widget);
 
 	if (DEFAULT_DARK_MODE) {

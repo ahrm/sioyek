@@ -9,10 +9,9 @@
 #include <optional>
 #include <unordered_map>
 
-//#include <SDL.h>
-
 #include "utils.h"
 #include "path.h"
+#include "config.h"
 
 struct Command {
 	std::string name;
@@ -30,7 +29,7 @@ private:
 	std::vector<Command> commands;
 public:
 
-	CommandManager();
+	CommandManager(ConfigManager* config_manager);
 	const Command* get_command_with_name(std::string name);
 	QStringList get_all_command_names();
 };
@@ -63,7 +62,7 @@ class InputHandler {
 private:
 	InputParseTreeNode* root = nullptr;
 	InputParseTreeNode* current_node = nullptr;
-	CommandManager command_manager;
+	CommandManager* command_manager;
 	std::string number_stack;
 	std::vector<Path> user_key_paths;
 
@@ -75,7 +74,7 @@ public:
 	//char create_link_sumbol = 0;
 	//char create_bookmark_symbol = 0;
 
-	InputHandler(const Path& default_path, const std::vector<Path>& user_paths);
+	InputHandler(const Path& default_path, const std::vector<Path>& user_paths, CommandManager* cm);
 	void reload_config_files(const Path& default_path, const std::vector<Path>& user_path);
 	std::vector<const Command*> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);

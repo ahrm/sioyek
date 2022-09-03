@@ -51,4 +51,6 @@ public:
 	}
 	std::optional<Path> get_or_create_user_config_file();
 	std::vector<Path> get_all_user_config_files();
+	std::vector<Config> get_configs();
+	void deserialize_config(std::string config_name, std::wstring config_value);
 };

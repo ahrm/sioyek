@@ -33,7 +33,7 @@ private:
 	fz_context* mupdf_context = nullptr;
 	DatabaseManager* db_manager = nullptr;
 	DocumentManager* document_manager = nullptr;
-	CommandManager command_manager;
+	CommandManager* command_manager = nullptr;
 	ConfigManager* config_manager = nullptr;
 	PdfRenderer* pdf_renderer = nullptr;
 	InputHandler* input_handler = nullptr;
@@ -221,6 +221,7 @@ public:
 		DatabaseManager* db_manager,
 		DocumentManager* document_manager,
 		ConfigManager* config_manager,
+		CommandManager* command_manager,
 		InputHandler* input_handler,
 		CachedChecksummer* checksummer,
 		bool* should_quit_ptr,
