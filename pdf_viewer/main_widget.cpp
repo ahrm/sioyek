@@ -3028,7 +3028,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         }
     }
     std::string config_prefix = "setconfig_";
-    if (current_pending_command->name.starts_with(config_prefix)) {
+    if (current_pending_command->name.find(config_prefix) == 0) {
         std::string config_name = current_pending_command->name.substr(config_prefix.size(), current_pending_command->name.size() - config_prefix.size());
         config_manager->deserialize_config(config_name, text);
     }
