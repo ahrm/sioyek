@@ -628,22 +628,25 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	// render page separator
-	glUseProgram(shared_gl_objects.separator_program);
+	if (!is_presentation_mode()) {
 
-	fz_rect separator_rect = { 0,
-		document_view->get_document()->get_page_height(page_number) - PAGE_SEPARATOR_WIDTH / 2,
-		document_view->get_document()->get_page_width(page_number),
-		document_view->get_document()->get_page_height(page_number) + PAGE_SEPARATOR_WIDTH / 2};
+		// render page separator
+		glUseProgram(shared_gl_objects.separator_program);
 
-	fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
-	rect_to_quad(separator_window_rect, page_vertices);
+		fz_rect separator_rect = { 0,
+			document_view->get_document()->get_page_height(page_number) - PAGE_SEPARATOR_WIDTH / 2,
+			document_view->get_document()->get_page_width(page_number),
+			document_view->get_document()->get_page_height(page_number) + PAGE_SEPARATOR_WIDTH / 2};
 
-	glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
+		fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
+		rect_to_quad(separator_window_rect, page_vertices);
 
-	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
+
+		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	}
 
 }
 
@@ -686,7 +689,11 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	if (is_presentation_mode()) {
 		if (PRERENDER_NEXT_PAGE) {
-			render_page(visible_page_number.value() + 1);
+			GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+				visible_page_number.value() + 1,
+				document_view->get_zoom_level(),
+				nullptr,
+				nullptr);
 		}
 		render_page(visible_page_number.value());
 	}

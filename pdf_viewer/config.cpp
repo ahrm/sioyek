@@ -95,6 +95,7 @@ extern bool HIGHLIGHT_MIDDLE_CLICK;
 extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
+extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -381,6 +382,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"hyperdrive_speed_factor", &HYPERDRIVE_SPEED_FACTOR, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"smooth_scroll_speed", &SMOOTH_SCROLL_SPEED, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"smooth_scroll_drag", &SMOOTH_SCROLL_DRAG, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"ignore_statusbar_in_presentation_mode", &IGNORE_STATUSBAR_IN_PRESENTATION_MODE, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

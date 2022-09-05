@@ -30,6 +30,8 @@
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
 extern std::ofstream LOG_FILE;
+extern int STATUS_BAR_FONT_SIZE;
+
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
@@ -2100,4 +2102,13 @@ void parse_color(std::wstring color_string, float* out_color, int n_components) 
 			}
 		}
 	}
+}
+
+int get_status_bar_height() {
+    if (STATUS_BAR_FONT_SIZE > 0) {
+        return STATUS_BAR_FONT_SIZE + 5;
+    }
+    else {
+        return 20;
+    }
 }

@@ -110,6 +110,7 @@ extern float CUSTOM_TEXT_COLOR[3];
 extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
+extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -674,7 +675,17 @@ void MainWidget::validate_render() {
         int current_page = get_current_page_number();
         if (current_page >= 0){
 			opengl_widget->set_visible_page_number(current_page);
-			main_document_view->set_offset_y(main_document_view->get_document()->get_accum_page_height(current_page) + main_document_view->get_document()->get_page_height(current_page) / 2);
+            if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
+                main_document_view->set_offset_y(
+                    main_document_view->get_document()->get_accum_page_height(current_page) +
+                    main_document_view->get_document()->get_page_height(current_page) / 2);
+            }
+            else {
+				main_document_view->set_offset_y(
+					main_document_view->get_document()->get_accum_page_height(current_page) +
+					main_document_view->get_document()->get_page_height(current_page) / 2 +
+					static_cast<float>(get_status_bar_height() / 2 / main_document_view->get_zoom_level()));
+            }
 			if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
 				main_document_view->fit_to_page_height(true);
 			}
@@ -746,14 +757,6 @@ QString MainWidget::get_status_stylesheet() {
     }
 }
 
-int MainWidget::get_status_bar_height() {
-    if (STATUS_BAR_FONT_SIZE > 0) {
-        return STATUS_BAR_FONT_SIZE + 5;
-    }
-    else {
-        return 20;
-    }
-}
 
 void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 

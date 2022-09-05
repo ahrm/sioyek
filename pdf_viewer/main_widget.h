@@ -192,7 +192,6 @@ protected:
 	void long_jump_to_destination(float abs_offset_y);
 	void execute_command(std::wstring command, std::wstring text=L"", bool wait=false);
 	QString get_status_stylesheet();
-	int get_status_bar_height();
     void smart_jump_under_pos(WindowPos pos);
     bool overview_under_pos(WindowPos pos);
     void visual_mark_under_pos(WindowPos pos);

@@ -6,6 +6,7 @@ extern float FIT_TO_PAGE_WIDTH_RATIO;
 extern float RULER_PADDING;
 extern float RULER_X_PADDING;
 extern bool EXACT_HIGHLIGHT_SELECT;
+extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 
 
 DocumentView::DocumentView( fz_context* mupdf_context,
@@ -750,7 +751,13 @@ void DocumentView::fit_to_page_height_width_minimum() {
 	int page_height = current_document->get_page_height(cp);
 
 	float x_zoom_level = static_cast<float>(view_width) / page_width;
-	float y_zoom_level = static_cast<float>(view_height) / page_height;
+	float y_zoom_level;
+	if (IGNORE_STATUSBAR_IN_PRESENTATION_MODE) {
+		y_zoom_level = (static_cast<float>(view_height)) / page_height;
+	}
+	else {
+		y_zoom_level = (static_cast<float>(view_height) - get_status_bar_height()) / page_height;
+	}
 
 	set_offset_x(0);
 	set_zoom_level(std::min(x_zoom_level, y_zoom_level), true);
