@@ -364,7 +364,7 @@ void configure_paths(){
 	// user_config_paths.insert(user_config_paths.begin(), auto_config_path);
 }
 
-void verify_paths(){
+void verify_config_paths(){
 #define CHECK_DIR_EXIST(path) do{ if(!(path).dir_exists() ) std::wcout << L"Error: " << #path << ": " << path << L" doesn't exist!\n"; } while(false)
 #define CHECK_FILE_EXIST(path) do{ if(!(path).file_exists() ) std::wcout << L"Error: " << #path << ": " << path << L" doesn't exist!\n"; } while(false)
 
@@ -378,6 +378,9 @@ void verify_paths(){
     for (size_t i = 0; i < user_keys_paths.size(); i++) {
         std::wcout << L"user_keys_path: [ " << i << " ] " << user_keys_paths[i] << L"\n";
     }
+}
+
+void verify_paths(){
     std::wcout << L"database_file_path: " << database_file_path << L"\n";
     std::wcout << L"local_database_file_path: " << local_database_file_path << L"\n";
     std::wcout << L"global_database_file_path: " << global_database_file_path << L"\n";
@@ -385,10 +388,9 @@ void verify_paths(){
     std::wcout << L"last_opened_file_address_path: " << last_opened_file_address_path << L"\n";
     std::wcout << L"shader_path: " << shader_path << L"\n";
     CHECK_DIR_EXIST(shader_path);
-
+}
 #undef CHECK_DIR_EXIST
 #undef CHECK_FILE_EXIST
-}
 
 std::mutex mupdf_mutexes[FZ_LOCK_MAX];
 
@@ -628,7 +630,7 @@ int main(int argc, char* args[]) {
     parser->process(app.arguments());
 
 	configure_paths();
-	verify_paths();
+	verify_config_paths();
 
 	ConfigManager config_manager(default_config_path, auto_config_path, user_config_paths);
 	CommandManager* command_manager = new CommandManager(&config_manager);
@@ -640,6 +642,8 @@ int main(int argc, char* args[]) {
 	if (shared_database_path_arg) {
 		global_database_file_path = utf8_decode(std::string(shared_database_path_arg));
 	}
+
+	verify_paths();
 
 	// should we launche a new instance each time the user opens a PDF or should we reuse the previous instance
 	bool use_single_instance = !SHOULD_LAUNCH_NEW_INSTANCE;
