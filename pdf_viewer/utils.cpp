@@ -575,6 +575,17 @@ fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_ch
 	return res;
 }
 
+bool is_line_separator(fz_stext_char* last_char, fz_stext_char* current_char) {
+	if (last_char == nullptr) {
+		return false;
+	}
+	float dist = abs(last_char->quad.ll.y - current_char->quad.ll.y);
+	if (dist > 1.0f) {
+		return true;
+	}
+	return false;
+}
+
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char) {
 	if (last_char == nullptr) {
 		return false;
@@ -2114,9 +2125,24 @@ int get_status_bar_height() {
 }
 
 void flat_char_prism(const std::vector<fz_stext_char*> chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<fz_rect>& rects) {
+	fz_stext_char* last_char = nullptr;
+
 	for (int j = 0; j < chars.size(); j++) {
+		if (is_line_separator(last_char, chars[j])) {
+			if (last_char->c == '-') {
+				pages.pop_back();
+				rects.pop_back();
+				output_text.pop_back();
+			}
+			else {
+				pages.push_back(page);
+				rects.push_back(fz_rect_from_quad(chars[j]->quad));
+				output_text.push_back(' ');
+			}
+		}
 		pages.push_back(page);
 		rects.push_back(fz_rect_from_quad(chars[j]->quad));
 		output_text.push_back(chars[j]->c);
+		last_char = chars[j];
 	}
 }
