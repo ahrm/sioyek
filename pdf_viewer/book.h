@@ -95,7 +95,7 @@ struct Link {
 bool operator==(DocumentViewState& lhs, const DocumentViewState& rhs);
 
 struct SearchResult {
-	fz_rect rect;
+	std::vector<fz_rect> rects;
 	int page;
 };
 
