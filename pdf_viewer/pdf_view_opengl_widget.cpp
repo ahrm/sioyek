@@ -453,10 +453,10 @@ void PdfViewOpenGLWidget::goto_search_result(int offset) {
 	int target_index = mod(current_search_result_index + offset, search_results.size());
 	current_search_result_index = target_index;
 
-	auto [rect, target_page] = search_results[target_index];
+	auto [rects, target_page] = search_results[target_index];
 	search_results_mutex.unlock();
 
-	float new_offset_y = rect.y0 + document_view->get_document()->get_accum_page_height(target_page);
+	float new_offset_y = rects.front().y0 + document_view->get_document()->get_accum_page_height(target_page);
 
 	document_view->set_offset_y(new_offset_y);
 }
@@ -755,7 +755,9 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		glUseProgram(shared_gl_objects.highlight_program);
 		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
 		//glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
-		render_highlight_document(shared_gl_objects.highlight_program, current_search_result.page, current_search_result.rect);
+		for (auto rect : current_search_result.rects) {
+			render_highlight_document(shared_gl_objects.highlight_program, current_search_result.page, rect);
+		}
 	}
 	search_results_mutex.unlock();
 

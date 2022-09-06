@@ -315,12 +315,17 @@ void PdfRenderer::run_search(int thread_index)
 
 				const int max_hits_per_page = 20;
 				fz_quad hitboxes[max_hits_per_page];
-				int num_results = fz_search_page(mupdf_context, page, utf8_encode(req.search_term).c_str(), nullptr, hitboxes, max_hits_per_page);
+                                int hit_mark[max_hits_per_page];
+				int num_results = fz_search_page(mupdf_context, page, utf8_encode(req.search_term).c_str(), hit_mark, hitboxes, max_hits_per_page);
 
 				if (num_results > 0) {
 					req.search_results_mutex->lock();
 					for (int j = 0; j < num_results; j++) {
-						req.search_results->push_back(SearchResult{ fz_rect_from_quad(hitboxes[j]), i });
+						if (hit_mark[j] == 1) {
+							// Hit box belongs to new entry
+							req.search_results->push_back(SearchResult{ std::vector<fz_rect>(), i });
+						}
+						req.search_results->back().rects.push_back(fz_rect_from_quad(hitboxes[j]));
 					}
 					req.search_results_mutex->unlock();
 				}
