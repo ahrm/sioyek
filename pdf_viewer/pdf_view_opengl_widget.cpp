@@ -908,7 +908,7 @@ bool PdfViewOpenGLWidget::get_is_searching(float* prog) {
 	return true;
 }
 
-void PdfViewOpenGLWidget::search_text(const std::wstring& text, std::optional<std::pair<int,int>> range) {
+void PdfViewOpenGLWidget::search_text(const std::wstring& text, bool regex, std::optional<std::pair<int,int>> range) {
 
 	if (!document_view) return;
 
@@ -917,21 +917,45 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, std::optional<st
 	current_search_result_index = -1;
 	search_results_mutex.unlock();
 
-	is_searching = true;
-	is_search_cancelled = false;
+	int min_page = -1;
+	int max_page = 2147483647;
+	if (range.has_value()) {
+		min_page = range.value().first;
+		max_page = range.value().second;
+	}
 
-	int current_page = document_view->get_center_page_number();
-	if (current_page >= 0) {
-		pdf_renderer->add_request(
-			document_view->get_document()->get_path(),
-			current_page,
-			text,
-			&search_results,
-			&percent_done,
-			&is_searching,
-			&search_results_mutex,
-			range);
+	if (document_view->get_document()->is_super_fast_index_ready()) {
+		int current_page = document_view->get_center_page_number();
+		std::vector<SearchResult> results;
+		if (regex) {
+			results = document_view->get_document()->search_regex(text, current_page, min_page, max_page);
+		}
+		else {
+			results = document_view->get_document()->search_text(text, current_page, min_page, max_page);
+		}
+		search_results = std::move(results);
+		is_searching = false;
+		is_search_cancelled = false;
+		percent_done = 1.0f;
+	}
+	else {
 
+		is_searching = true;
+		is_search_cancelled = false;
+
+		int current_page = document_view->get_center_page_number();
+		if (current_page >= 0) {
+			pdf_renderer->add_request(
+				document_view->get_document()->get_path(),
+				current_page,
+				text,
+				&search_results,
+				&percent_done,
+				&is_searching,
+				&search_results_mutex,
+				range);
+
+		}
 	}
 }
 

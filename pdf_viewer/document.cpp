@@ -25,6 +25,7 @@ extern bool ENABLE_EXPERIMENTAL_FEATURES;
 extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
 extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
 extern bool FORCE_CUSTOM_LINE_ALGORITHM;
+extern bool SUPER_FAST_SEARCH;
 
 #define TO_FVEC_SIZE(a) static_cast<std::vector<int>::size_type>(a)
 
@@ -1051,6 +1052,10 @@ void Document::index_figures(bool* invalid_flag) {
 		std::map<std::wstring, IndexedData> local_reference_data;
 		std::map<std::wstring, std::vector<IndexedData>> local_equation_data;
 
+		std::wstring local_super_fast_search_index;
+		std::vector<int> local_super_fast_search_pages;
+		std::vector<fz_rect> local_super_fast_search_rects;
+
 		std::vector<TocNode*> toc_stack;
 		std::vector<TocNode*> top_level_nodes;
 		int num_added_toc_entries = 0;
@@ -1074,6 +1079,10 @@ void Document::index_figures(bool* invalid_flag) {
 
 				std::vector<fz_stext_char*> flat_chars;
 				get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+				if (SUPER_FAST_SEARCH) {
+					flat_char_prism(flat_chars, i, local_super_fast_search_index, local_super_fast_search_pages, local_super_fast_search_rects);
+				}
 
 				index_references(stext_page, i, local_reference_data);
 				index_equations(flat_chars, i, local_equation_data);
@@ -1103,6 +1112,13 @@ void Document::index_figures(bool* invalid_flag) {
 		reference_indices = std::move(local_reference_data);
 		equation_indices = std::move(local_equation_data);
 		generic_indices = std::move(local_generic_data);
+
+		super_fast_search_index = std::move(local_super_fast_search_index);
+		super_fast_search_index_pages = std::move(local_super_fast_search_pages);
+		super_fast_search_rects = std::move(local_super_fast_search_rects);
+		if (SUPER_FAST_SEARCH) {
+			super_fast_search_index_ready = true;
+		}
 
 		created_top_level_toc_nodes = std::move(top_level_nodes);
 
@@ -2312,4 +2328,130 @@ DocumentManager::~DocumentManager() {
 		delete doc;
 	}
 	cached_documents.clear();
+}
+
+bool Document::is_super_fast_index_ready() {
+	return super_fast_search_index_ready;
+}
+std::vector<SearchResult> Document::search_text(std::wstring query, int begin_page, int min_page, int max_page)
+{
+	std::vector<SearchResult> output;
+
+	std::vector<SearchResult> before_results;
+	bool is_before = true;
+
+	int offset = 0;
+
+	int start_index = super_fast_search_index.find(query, offset);
+	QString something;
+
+	while (start_index != -1) {
+		std::vector<fz_rect> match_rects;
+		std::vector<fz_rect> compressed_match_rects;
+
+		int match_page = super_fast_search_index_pages[start_index];
+
+		if (match_page >= begin_page) {
+			is_before = false;
+		}
+
+		int end_index = start_index + query.size();
+
+
+		for (int j = start_index; j < end_index; j++) {
+			fz_rect rect = super_fast_search_rects[j];
+			match_rects.push_back(rect);
+		}
+
+		merge_selected_character_rects(match_rects, compressed_match_rects);
+		SearchResult res;
+		res.page = match_page;
+		res.rect = compressed_match_rects[0];
+
+		if (!((match_page < min_page) || (match_page > max_page))) {
+			if (is_before) {
+				before_results.push_back(res);
+			}
+			else {
+				output.push_back(res);
+			}
+		}
+
+		offset = end_index;
+		start_index = super_fast_search_index.find(query, offset);
+	}
+	output.insert(output.end(), before_results.begin(), before_results.end());
+	return output;
+}
+
+std::vector<SearchResult> Document::search_regex(std::wstring query, int begin_page, int min_page, int max_page)
+{
+	std::vector<SearchResult> output;
+
+	std::wregex regex;
+	try {
+		regex = std::wregex(query);
+	}
+	catch (const std::regex_error&) {
+		return output;
+	}
+
+
+	std::vector<SearchResult> before_results;
+	bool is_before = true;
+
+	int offset = 0;
+
+	std::wstring::const_iterator search_start(super_fast_search_index.begin());
+	std::wsmatch match;
+	int empty_tolerance = 1000;
+
+
+	while (std::regex_search(search_start, super_fast_search_index.cend(), match, regex)) {
+		std::vector<fz_rect> match_rects;
+		std::vector<fz_rect> compressed_match_rects;
+
+		int match_page = super_fast_search_index_pages[offset + match.position()];
+
+		if (match_page >= begin_page) {
+			is_before = false;
+		}
+
+		int start_index = offset + match.position();
+		int end_index = offset + match.position() + match.length();
+		if (start_index < end_index) {
+
+
+			for (int j = start_index; j < end_index; j++) {
+				fz_rect rect = super_fast_search_rects[j];
+				match_rects.push_back(rect);
+			}
+
+			merge_selected_character_rects(match_rects, compressed_match_rects);
+			SearchResult res;
+			res.page = match_page;
+			res.rect = compressed_match_rects[0];
+
+			if (!((match_page < min_page) || (match_page > max_page))) {
+				if (is_before) {
+					before_results.push_back(res);
+				}
+				else {
+					output.push_back(res);
+				}
+			}
+		}
+		else {
+			empty_tolerance--;
+			if (empty_tolerance == 0) {
+				break;
+			}
+		}
+
+		offset = end_index;
+		search_start = match.suffix().first;
+	}
+	output.insert(output.end(), before_results.begin(), before_results.end());
+	return output;
+
 }

@@ -26,6 +26,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	commands.push_back({ "goto_mark",					false,	true,	false,	true,	true,	{'`', '\'', '/'}});
 	commands.push_back({ "goto_page_with_page_number",	true,	false,	false,	true,	true,	{}});
 	commands.push_back({ "search",						true,	false,	false,	true,	true,	{}});
+	commands.push_back({ "regex_search",				true,	false,	false,	true,	true,	{}});
 	commands.push_back({ "ranged_search",				true,	false,	false,	false,	true,	{}});
 	commands.push_back({ "chapter_search",				true,	false,	false,	false,	true,	{}});
 	commands.push_back({ "move_down",					false,	false,	false,	false,	true,	{}});

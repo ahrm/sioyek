@@ -111,6 +111,7 @@ extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
 extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
+extern bool SUPER_FAST_SEARCH;
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -2853,7 +2854,8 @@ void MainWidget::handle_portal() {
 void MainWidget::handle_pending_text_command(std::wstring text) {
     if (current_pending_command->name == "search" ||
         current_pending_command->name == "ranged_search" ||
-        current_pending_command->name == "chapter_search" ) {
+        current_pending_command->name == "chapter_search" ||
+        current_pending_command->name == "regex_search" ) {
 
         // When searching, the start position before search is saved in a mark named '0'
         main_document_view->add_mark('/');
@@ -2873,7 +2875,11 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
             }
         }
 
-        opengl_widget->search_text(search_term, search_range);
+        bool is_regex = current_pending_command->name == "regex_search";
+        if (is_regex && (!SUPER_FAST_SEARCH)) {
+            show_error_message(L"regex search only works when super_fast_search is enabled in prefs_user.config");
+        }
+        opengl_widget->search_text(search_term, is_regex, search_range);
     }
 
     if (current_pending_command->name[0] == '_') {

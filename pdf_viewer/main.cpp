@@ -201,6 +201,7 @@ float SMOOTH_SCROLL_DRAG = 3000.0f;
 float PAGE_SEPARATOR_WIDTH = 0.0f;
 float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
 bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE = false;
+bool SUPER_FAST_SEARCH = false;
 
 Path default_config_path(L"");
 Path default_keys_path(L"");

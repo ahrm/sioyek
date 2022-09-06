@@ -42,6 +42,11 @@ private:
 	std::map<int, std::vector<fz_rect>> cached_page_line_rects;
 	std::map<int, std::vector<std::wstring>> cached_line_texts;
 
+	bool super_fast_search_index_ready = false;
+	std::wstring super_fast_search_index;
+	std::vector<int> super_fast_search_index_pages;
+	std::vector<fz_rect> super_fast_search_rects;
+
 	int page_offset = 0;
 
 
@@ -233,6 +238,10 @@ public:
 	//void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
 	fz_rect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);
 	const std::vector<fz_rect>& get_page_lines(int page, std::vector<std::wstring>* line_texts=nullptr);
+
+	bool is_super_fast_index_ready();
+	std::vector<SearchResult> search_text(std::wstring query, int begin_page, int min_page, int max_page);
+	std::vector<SearchResult> search_regex(std::wstring query, int begin_page, int min_page, int max_page);
 
 	friend class DocumentManager;
 };

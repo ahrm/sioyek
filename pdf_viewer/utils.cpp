@@ -2112,3 +2112,11 @@ int get_status_bar_height() {
         return 20;
     }
 }
+
+void flat_char_prism(const std::vector<fz_stext_char*> chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<fz_rect>& rects) {
+	for (int j = 0; j < chars.size(); j++) {
+		pages.push_back(page);
+		rects.push_back(fz_rect_from_quad(chars[j]->quad));
+		output_text.push_back(chars[j]->c);
+	}
+}

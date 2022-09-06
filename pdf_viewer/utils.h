@@ -169,3 +169,4 @@ void hexademical_to_normalized_color(std::wstring color_string, float* color, in
 void parse_command_string(std::wstring command_string, std::string& command_name, std::wstring& command_data);
 void parse_color(std::wstring color_string, float* out_color, int n_components);
 int get_status_bar_height();
+void flat_char_prism(const std::vector<fz_stext_char*> chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<fz_rect>& rects);

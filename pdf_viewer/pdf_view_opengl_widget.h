@@ -199,7 +199,7 @@ public:
 	void render_overview(OverviewState overview);
 	void render_page(int page_number);
 	bool get_is_searching(float* prog);
-	void search_text(const std::wstring& text, std::optional<std::pair<int, int>> range = {});
+	void search_text(const std::wstring& text, bool regex=false, std::optional<std::pair<int, int>> range = {});
 	void set_dark_mode(bool mode);
 	void toggle_dark_mode();
 	void set_custom_color_mode(bool mode);
