@@ -153,8 +153,9 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
 void MainWidget::set_overview_position(int page, float offset) {
     if (page >= 0) {
+        auto abspos = main_document_view->get_document()->document_to_absolute_pos({ page, 0, offset });
 		float page_height = main_document_view->get_document()->get_page_height(page);
-		opengl_widget->set_overview_page(OverviewState{ page, offset, page_height });
+		opengl_widget->set_overview_page(OverviewState{abspos.y});
 		invalidate_render();
     }
 }
@@ -644,7 +645,7 @@ void MainWidget::validate_render() {
                 OverviewState state = opengl_widget->get_overview_page().value();
                 //opengl_widget->get_overview_offsets(&overview_offset_x, &overview_offset_y);
                 //opengl_widget->set_overview_offsets(overview_offset_x, overview_offset_y + smooth_scroll_speed * secs);
-                state.offset_y += smooth_scroll_speed * secs;
+                state.absolute_offset_y += smooth_scroll_speed * secs;
                 opengl_widget->set_overview_page(state);
             }
             float accel = SMOOTH_SCROLL_DRAG;
@@ -3718,14 +3719,14 @@ bool MainWidget::is_visual_mark_mode() {
 void MainWidget::scroll_overview_down() {
     float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
 	OverviewState state = opengl_widget->get_overview_page().value();
-	state.offset_y += 36.0f * vertical_move_amount;
+	state.absolute_offset_y += 36.0f * vertical_move_amount;
 	opengl_widget->set_overview_page(state);
 }
 
 void MainWidget::scroll_overview_up() {
     float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
 	OverviewState state = opengl_widget->get_overview_page().value();
-	state.offset_y -= 36.0f * vertical_move_amount;
+	state.absolute_offset_y -= 36.0f * vertical_move_amount;
 	opengl_widget->set_overview_page(state);
 
 }
@@ -3930,8 +3931,9 @@ std::optional<DocumentPos> MainWidget::get_overview_position() {
     auto overview_state_ = opengl_widget->get_overview_page();
     if (overview_state_.has_value()){
         OverviewState overview_state = overview_state_.value();
-        DocumentPos pos = { overview_state.page, 0.0f, overview_state.offset_y };
-        return pos;
+        return main_document_view->get_document()->absolute_to_page_pos({ 0, overview_state.absolute_offset_y });
+        //DocumentPos pos = { overview_state.page, 0.0f, overview_state.offset_y };
+        //return pos;
     }
     return {};
 }

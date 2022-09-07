@@ -69,9 +69,9 @@ struct OpenGLSharedResources {
 };
 
 struct OverviewState {
-	int page;
-	float offset_y;
-	float page_height;
+	//int page;
+	float absolute_offset_y;
+	//float page_height;
 };
 
 class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions {
@@ -159,8 +159,8 @@ protected:
 
 	void enable_stencil();
 	void write_to_stencil();
-	void draw_stencil_rects(int page, const std::vector<fz_rect>& rects);
-	void use_stencil_to_write();
+	void draw_stencil_rects(const std::vector<fz_rect>& rects, bool is_window_rect=false, int page=-1);
+	void use_stencil_to_write(bool eq);
 	void disable_stencil();
 
 	void render_transparent_background();
@@ -241,6 +241,7 @@ public:
 	bool is_rotated();
 	void toggle_fastread_mode();
 	void setup_text_painter(QPainter* painter);
+	void get_overview_window_vertices(float out_vertices[2*4]);
 
 
 };

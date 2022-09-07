@@ -463,82 +463,86 @@ void PdfViewOpenGLWidget::goto_search_result(int offset) {
 
 
 void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
-
 	if (!valid_document()) return;
+	DocumentPos docpos = document_view->get_document()->absolute_to_page_pos({ 0, overview.absolute_offset_y });
 
-	float zoom_level = document_view->get_zoom_level();
-
-	if (RERENDER_OVERVIEW) {
-		float view_width = document_view->get_view_width() * overview_half_width;
-		float page_width = document_view->get_document()->get_page_width(overview.page);
-		zoom_level = view_width / page_width;
-	}
+	float view_width = document_view->get_view_width() * overview_half_width;
+	float page_width = document_view->get_document()->get_page_width(docpos.page);
+	float page_height = document_view->get_document()->get_page_height(docpos.page);
+	float zoom_level = view_width / page_width;
 
 	GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-		overview.page,
+		docpos.page,
 		zoom_level,
 		nullptr,
 		nullptr);
 
+	fz_rect window_rect = get_overview_rect();
+	window_rect.y0 = -window_rect.y0;
+	window_rect.y1 = -window_rect.y1;
 
 	float page_vertices[4 * 2];
-	float border_vertices[4 * 2];
 	float page_uvs[4 * 2];
-	fz_rect page_rect = { 0,
-		0,
-		document_view->get_document()->get_page_width(overview.page),
-		document_view->get_document()->get_page_height(overview.page) };
+	float border_vertices[4 * 2];
 
-	fz_rect window_rect = document_view->document_to_window_rect(overview.page, page_rect);
+	float offset_diff = 2 * (document_view->get_document()->get_accum_page_height(docpos.page) + document_view->get_document()->get_page_height(docpos.page) - overview.absolute_offset_y)
+		* zoom_level / document_view->get_view_height();
 
-	float page_window_width = abs(window_rect.x1 - window_rect.x0);
-	float page_window_height = abs(window_rect.y1 - window_rect.y0);
+	float page_min_x = window_rect.x0;
+	float page_max_x = window_rect.x1;
+	float page_max_y = (window_rect.y0 + window_rect.y1) / 2 - offset_diff;
+	float page_min_y = (window_rect.y0 + window_rect.y1) / 2 - offset_diff +  2 * page_height * zoom_level / document_view->get_view_height();
 
+	page_vertices[0] = page_min_x;
+	page_vertices[1] = page_min_y;
+	page_vertices[2] = page_max_x;
+	page_vertices[3] = page_min_y;
+	page_vertices[4] = page_min_x;
+	page_vertices[5] = page_max_y;
+	page_vertices[6] = page_max_x;
+	page_vertices[7] = page_max_y;
 
-	page_vertices[0] = overview_offset_x - overview_half_width;
-	page_vertices[1] = overview_offset_y + overview_half_height;
-	page_vertices[2] = overview_offset_x + overview_half_width;
-	page_vertices[3] = overview_offset_y + overview_half_height;
-	page_vertices[4] = overview_offset_x - overview_half_width;
-	page_vertices[5] = overview_offset_y - overview_half_height;
-	page_vertices[6] = overview_offset_x + overview_half_width;
-	page_vertices[7] = overview_offset_y - overview_half_height;
+	page_uvs[0] = 0.0f;
+	page_uvs[1] = 0.0f;
+	page_uvs[2] = 1.0f;
+	page_uvs[3] = 0.0f;
+	page_uvs[4] = 0.0f;
+	page_uvs[5] = 1.0f;
+	page_uvs[6] = 1.0f;
+	page_uvs[7] = 1.0f;
 
-	border_vertices[0] = overview_offset_x - overview_half_width;
-	border_vertices[1] = overview_offset_y + overview_half_height;
-	border_vertices[2] = overview_offset_x - overview_half_width;
-	border_vertices[3] = overview_offset_y -overview_half_height;
-	border_vertices[4] = overview_offset_x + overview_half_width;
-	border_vertices[5] = overview_offset_y - overview_half_height;
-	border_vertices[6] = overview_offset_x + overview_half_width;
-	border_vertices[7] = overview_offset_y + overview_half_height;
+	get_overview_window_vertices(border_vertices);
 
-	float overview_y_span = 1 * page_window_width / page_window_height * overview_half_height / overview_half_width;
+	enable_stencil();
+	write_to_stencil();
+	draw_stencil_rects({window_rect}, true);
+	use_stencil_to_write(true);
 
-	float uv_min_y = overview.offset_y / overview.page_height - overview_y_span / 2;
-	float uv_max_y = overview.offset_y / overview.page_height + overview_y_span / 2;
+	fz_rect page_rect;
+	page_rect.x0 = window_rect.x0;
+	page_rect.x1 = window_rect.x1;
+	page_rect.y0 = window_rect.y0;
+	page_rect.y1 = window_rect.y1;
 
-	float uv_min_x = 0.0f;
-	float uv_max_x = 1.0f;
+	float gray_color[] = { 0.5f, 0.5f, 0.5f };
+	float white_color[] = { 1.0f, 1.0f, 1.0f };
+	glDisable(GL_BLEND);
 
-	page_uvs[0] = uv_min_x;
-	page_uvs[1] = uv_min_y;
-	page_uvs[2] = uv_max_x;
-	page_uvs[3] = uv_min_y;
-	page_uvs[4] = uv_min_x;
-	page_uvs[5] = uv_max_y;
-	page_uvs[6] = uv_max_x;
-	page_uvs[7] = uv_max_y;
+	{ // draw background
+		glUseProgram(shared_gl_objects.highlight_program);
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(border_vertices), border_vertices, GL_DYNAMIC_DRAW);
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, white_color);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	}
 
-	if (texture != 0) {
-
-		bind_program();
-		glDisable(GL_BLEND);
-
+	bind_program();
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	if (texture) {
 		glBindTexture(GL_TEXTURE_2D, texture);
 
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
 		//draw the overview
 		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
@@ -546,32 +550,23 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(page_uvs), page_uvs, GL_DYNAMIC_DRAW);
 
-		if (!RERENDER_OVERVIEW) {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		}
-
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-		if (!RERENDER_OVERVIEW) {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		}
 	}
 
-	//draw the border
+	disable_stencil();
 
-	glDisable(GL_BLEND);
+	//draw the border
 	glUseProgram(shared_gl_objects.highlight_program);
 	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(border_vertices), border_vertices, GL_DYNAMIC_DRAW);
-	float gray_color[] = { 0.5f, 0.5f, 0.5f };
 	glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, gray_color);
 	glDrawArrays(GL_LINE_LOOP, 0, 4);
 
 	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_uvs), g_quad_uvs, GL_DYNAMIC_DRAW);
+
 }
+
 void PdfViewOpenGLWidget::render_page(int page_number) {
 
 	if (!valid_document()) return;
@@ -724,8 +719,8 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		if (rects.size() > 0) {
 			enable_stencil();
 			write_to_stencil();
-			draw_stencil_rects(document_view->get_center_page_number(), rects);
-			use_stencil_to_write();
+			draw_stencil_rects(rects, false, document_view->get_center_page_number());
+			use_stencil_to_write(false);
 			render_transparent_background();
 			disable_stencil();
 
@@ -1108,6 +1103,16 @@ void PdfViewOpenGLWidget::register_on_link_edit_listener(std::function<void(cons
 	this->on_link_edit = listener;
 }
 void PdfViewOpenGLWidget::set_overview_page(std::optional<OverviewState> overview) {
+	if (overview.has_value()) {
+		float offset = overview.value().absolute_offset_y;
+		if (offset < 0) {
+			overview.value().absolute_offset_y = 0;
+		}
+		if (offset > document_view->get_document()->max_y_offset()) {
+			overview.value().absolute_offset_y = document_view->get_document()->max_y_offset();
+		}
+	}
+	
 	this->overview_page = overview;
 }
 
@@ -1319,8 +1324,9 @@ DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos 
 	float window_height = static_cast<float>(size().height());
 	int window_x = static_cast<int>((1.0f + window_pos.x) / 2 * window_width);
 	int window_y = static_cast<int>((1.0f + window_pos.y) / 2 * window_height);
+	DocumentPos docpos = document_view->get_document()->absolute_to_page_pos({ 0, get_overview_page().value().absolute_offset_y });
 	float overview_width = document_view->get_view_width() * overview_half_width;
-	float page_width = document_view->get_document()->get_page_width(get_overview_page().value().page);
+	float page_width = document_view->get_document()->get_page_width(docpos.page);
 	float zoom_level = overview_width / page_width;
 
 	int overview_left = (-overview_half_width + overview_offset_x) * window_width / 2 + window_width / 2;
@@ -1330,8 +1336,8 @@ DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos 
 	int relative_window_y = static_cast<int>(static_cast<float>(window_y - overview_mid) / zoom_level);
 
 	float doc_offset_x = relative_window_x;
-	float doc_offset_y = overview_page.value().offset_y + relative_window_y;
-	int doc_page = get_overview_page().value().page;
+	float doc_offset_y = docpos.y + relative_window_y;
+	int doc_page = docpos.page;
 	return {doc_page, doc_offset_x, doc_offset_y};
 }
 
@@ -1372,9 +1378,14 @@ void PdfViewOpenGLWidget::write_to_stencil() {
 	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 }
 
-void PdfViewOpenGLWidget::use_stencil_to_write() {
+void PdfViewOpenGLWidget::use_stencil_to_write(bool eq) {
 	//glStencilFunc(GL_EQUAL, 1, 0xFF);
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	if (eq) {
+		glStencilFunc(GL_EQUAL, 1, 0xFF);
+	}
+	else {
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	}
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 }
 
@@ -1428,11 +1439,18 @@ void PdfViewOpenGLWidget::render_transparent_background() {
 	glDisable(GL_BLEND);
 }
 
-void PdfViewOpenGLWidget::draw_stencil_rects(int page, const std::vector<fz_rect>& rects) {
+void PdfViewOpenGLWidget::draw_stencil_rects(const std::vector<fz_rect>& rects, bool is_window_rect, int page) {
 
 	std::vector<float> window_rects;
 	for (auto rect : rects) {
-		fz_rect window_rect = document_view->document_to_window_rect(page, rect);
+		fz_rect window_rect;
+		if (is_window_rect) {
+			window_rect = rect;
+		}
+		else {
+
+			window_rect = document_view->document_to_window_rect(page, rect);
+		}
 		float triangle1[6] = {
 			window_rect.x0, window_rect.y0,
 			window_rect.x0, window_rect.y1,
@@ -1474,4 +1492,16 @@ void PdfViewOpenGLWidget::setup_text_painter(QPainter* painter) {
 	painter->setPen(QColor(0, 0, 128));
 	painter->setFont(font);
 
+}
+
+void PdfViewOpenGLWidget::get_overview_window_vertices(float out_vertices[2*4]) {
+
+	out_vertices[0] = overview_offset_x - overview_half_width;
+	out_vertices[1] = overview_offset_y + overview_half_height;
+	out_vertices[2] = overview_offset_x - overview_half_width;
+	out_vertices[3] = overview_offset_y -overview_half_height;
+	out_vertices[4] = overview_offset_x + overview_half_width;
+	out_vertices[5] = overview_offset_y - overview_half_height;
+	out_vertices[6] = overview_offset_x + overview_half_width;
+	out_vertices[7] = overview_offset_y + overview_half_height;
 }

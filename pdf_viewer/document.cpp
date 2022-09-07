@@ -2451,3 +2451,10 @@ std::vector<SearchResult> Document::search_regex(std::wstring query, int begin_p
 	return output;
 
 }
+
+float Document::max_y_offset() {
+	int np = num_pages();
+
+	return get_accum_page_height(np - 1) + get_page_height(np - 1);
+
+}
