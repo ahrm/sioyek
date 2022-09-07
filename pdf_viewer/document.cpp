@@ -2336,9 +2336,6 @@ bool Document::is_super_fast_index_ready() {
 std::vector<SearchResult> Document::search_text(std::wstring query, int begin_page, int min_page, int max_page)
 {
 	std::vector<SearchResult> output;
-	if (query.empty()) {
-		return output;
-        }
 
 	std::vector<SearchResult> before_results;
 	bool is_before = true;
@@ -2388,9 +2385,6 @@ std::vector<SearchResult> Document::search_text(std::wstring query, int begin_pa
 std::vector<SearchResult> Document::search_regex(std::wstring query, int begin_page, int min_page, int max_page)
 {
 	std::vector<SearchResult> output;
-	if (query.empty()) {
-		return output;
-        }
 
 	std::wregex regex;
 	try {

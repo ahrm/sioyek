@@ -927,18 +927,20 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, bool regex, std:
 	}
 
 	if (document_view->get_document()->is_super_fast_index_ready()) {
-		int current_page = document_view->get_center_page_number();
-		std::vector<SearchResult> results;
-		if (regex) {
-			results = document_view->get_document()->search_regex(text, current_page, min_page, max_page);
+		if (!text.empty()) {
+			int current_page = document_view->get_center_page_number();
+			std::vector<SearchResult> results;
+			if (regex) {
+				results = document_view->get_document()->search_regex(text, current_page, min_page, max_page);
+			}
+			else {
+				results = document_view->get_document()->search_text(text, current_page, min_page, max_page);
+			}
+			search_results = std::move(results);
+			is_searching = false;
+			is_search_cancelled = false;
+			percent_done = 1.0f;
 		}
-		else {
-			results = document_view->get_document()->search_text(text, current_page, min_page, max_page);
-		}
-		search_results = std::move(results);
-		is_searching = false;
-		is_search_cancelled = false;
-		percent_done = 1.0f;
 	}
 	else {
 
