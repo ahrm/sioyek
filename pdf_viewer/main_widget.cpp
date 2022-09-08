@@ -789,7 +789,7 @@ void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 
     int status_bar_height = get_status_bar_height();
     status_label->move(0, main_window_height - status_bar_height);
-    status_label->resize(main_window_width, status_bar_height);
+    status_label->resize(size().width(), status_bar_height);
 
     text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
 }
@@ -4084,6 +4084,7 @@ void MainWidget::toggle_scrollbar() {
     else {
         scroll_bar->show();
     }
+    main_window_width = opengl_widget->width();
 }
 
 void MainWidget::update_scrollbar() {
