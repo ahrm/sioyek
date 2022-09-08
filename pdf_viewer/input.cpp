@@ -162,6 +162,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	commands.push_back({ "toggle_hyperdrive_mode",		false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "toggle_smooth_scroll_mode",	false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "goto_begining",				false,	false,	false,	true,	true,	{}});
+	commands.push_back({ "toggle_scrollbar",			false,	false,	false,	false,	false,	{}});
 
 	for (auto [command_name, _] : ADDITIONAL_COMMANDS) {
 		commands.push_back({ utf8_encode(command_name) , false, false, false, false, true});

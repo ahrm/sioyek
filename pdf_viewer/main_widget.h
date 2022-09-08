@@ -11,6 +11,7 @@
 #include <qtimer.h>
 #include <qbytearray.h>
 #include <qdrag.h>
+#include <qscrollbar.h>
 
 #include <mupdf/fitz.h>
 #include "document_view.h"
@@ -41,6 +42,7 @@ private:
 
 	PdfViewOpenGLWidget* opengl_widget = nullptr;
 	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
+	QScrollBar* scroll_bar = nullptr;
 
 	std::optional<Command> current_pending_command;
 
@@ -299,5 +301,7 @@ public:
 	void handle_keyboard_select(const std::wstring& text);
 	void run_multiple_commands(const std::wstring& commands);
 	void push_state(bool update=true);
+	void toggle_scrollbar();
+	void update_scrollbar();
 
 };

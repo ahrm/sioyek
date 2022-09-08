@@ -113,6 +113,8 @@ extern float SMOOTH_SCROLL_DRAG;
 extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 extern bool SUPER_FAST_SEARCH;
 
+const int MAX_SCROLLBAR = 10000;
+
 bool MainWidget::main_document_view_has_document()
 {
     return (main_document_view != nullptr) && (doc() != nullptr);
@@ -430,12 +432,33 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer->start();
 
 
+    scroll_bar = new QScrollBar(this);
     QVBoxLayout* layout = new QVBoxLayout;
+    QHBoxLayout* hlayout = new QHBoxLayout;
+
+    hlayout->addWidget(opengl_widget);
+    hlayout->addWidget(scroll_bar);
+
     layout->setSpacing(0);
     layout->setContentsMargins(0, 0, 0, 0);
     opengl_widget->setAttribute(Qt::WA_TransparentForMouseEvents);
-    layout->addWidget(opengl_widget);
+    layout->addLayout(hlayout);
     setLayout(layout);
+
+    scroll_bar->setMinimum(0);
+    scroll_bar->setMaximum(MAX_SCROLLBAR);
+
+    scroll_bar->connect(scroll_bar, &QScrollBar::actionTriggered, [this](int action) {
+        int value = scroll_bar->value();
+        if (main_document_view_has_document()) {
+            float offset = doc()->max_y_offset() * value / static_cast<float>(scroll_bar->maximum());
+            main_document_view->set_offset_y(offset);
+            validate_render();
+        }
+        });
+
+
+    scroll_bar->hide();
 
     setFocus();
 }
@@ -1024,6 +1047,12 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     opengl_widget->on_document_view_reset();
     show_password_prompt_if_required();
 
+    if (main_document_view_has_document()) {
+        scroll_bar->setSingleStep(std::max(MAX_SCROLLBAR / doc()->num_pages() / 10, 1));
+        scroll_bar->setPageStep(MAX_SCROLLBAR / doc()->num_pages());
+        update_scrollbar();
+    }
+
 
 }
 
@@ -1125,6 +1154,7 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
     else {
         handle_command(command, num_repeats);
     }
+    update_scrollbar();
 }
 
 void MainWidget::key_event(bool released, QKeyEvent* kevent) {
@@ -1653,6 +1683,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                 }
                 else {
                     move_vertical(-72.0f * vertical_move_amount * num_repeats);
+					update_scrollbar();
                     return;
                 }
             }
@@ -1663,6 +1694,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                 }
                 else {
                     move_vertical(72.0f * vertical_move_amount * num_repeats);
+					update_scrollbar();
                     return;
                 }
             }
@@ -1821,6 +1853,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         else {
 			main_document_view->goto_end();
         }
+    }
+
+    if (command->name == "toggle_scrollbar") {
+        toggle_scrollbar();
     }
 
     if (command->name == "toggle_smooth_scroll_mode") {
@@ -4038,5 +4074,22 @@ void MainWidget::run_multiple_commands(const std::wstring& commands) {
 			//handle_command(command_manager.get_command_with_name(command.toStdString()), 1);
 
         }
+    }
+}
+
+void MainWidget::toggle_scrollbar() {
+    if (scroll_bar->isVisible()) {
+        scroll_bar->hide();
+    }
+    else {
+        scroll_bar->show();
+    }
+}
+
+void MainWidget::update_scrollbar() {
+    if (main_document_view_has_document()) {
+        float offset = main_document_view->get_offset_y();
+        int scroll = static_cast<int>(MAX_SCROLLBAR * offset / doc()->max_y_offset());
+        scroll_bar->setValue(scroll);
     }
 }
