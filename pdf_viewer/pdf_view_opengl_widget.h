@@ -71,6 +71,7 @@ struct OpenGLSharedResources {
 struct OverviewState {
 	//int page;
 	float absolute_offset_y;
+	Document* doc = nullptr;
 	//float page_height;
 };
 

@@ -303,5 +303,6 @@ public:
 	void push_state(bool update=true);
 	void toggle_scrollbar();
 	void update_scrollbar();
+	void handle_portal_overview_update();
 
 };

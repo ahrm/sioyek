@@ -2091,6 +2091,29 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             opengl_widget->set_should_draw_vertical_line(false);
         }
     }
+    else if (command->name == "overview_to_portal") {
+		if (opengl_widget->get_overview_page()) {
+            opengl_widget->set_overview_page({});
+		}
+		else {
+
+			OverviewState overview_state;
+			std::optional<Link> portal_ = main_document_view->find_closest_link();
+			if (portal_) {
+				Link portal = portal_.value();
+				auto destination_path = checksummer->get_path(portal.dst.document_checksum);
+				if (destination_path) {
+					Document* doc = document_manager->get_document(destination_path.value());
+					if (doc) {
+						overview_state.absolute_offset_y = portal.dst.book_state.offset_y;
+						overview_state.doc = doc;
+						opengl_widget->set_overview_page(overview_state);
+					}
+				}
+			}
+		}
+
+	}
     else if (command->name == "overview_definition") {
 		if (!opengl_widget->get_overview_page()) {
 			std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
@@ -3757,6 +3780,7 @@ void MainWidget::scroll_overview_down() {
 	OverviewState state = opengl_widget->get_overview_page().value();
 	state.absolute_offset_y += 36.0f * vertical_move_amount;
 	opengl_widget->set_overview_page(state);
+    handle_portal_overview_update();
 }
 
 void MainWidget::scroll_overview_up() {
@@ -3764,7 +3788,7 @@ void MainWidget::scroll_overview_up() {
 	OverviewState state = opengl_widget->get_overview_page().value();
 	state.absolute_offset_y -= 36.0f * vertical_move_amount;
 	opengl_widget->set_overview_page(state);
-
+    handle_portal_overview_update();
 }
 
 int MainWidget::get_current_page_number() const {
@@ -4092,5 +4116,21 @@ void MainWidget::update_scrollbar() {
         float offset = main_document_view->get_offset_y();
         int scroll = static_cast<int>(MAX_SCROLLBAR * offset / doc()->max_y_offset());
         scroll_bar->setValue(scroll);
+    }
+}
+
+void MainWidget::handle_portal_overview_update() {
+    std::optional<OverviewState> current_state_ = opengl_widget->get_overview_page();
+    if (current_state_) {
+        OverviewState current_state = current_state_.value();
+        if (current_state.doc != nullptr) {
+            std::optional<Link> link_ = main_document_view->find_closest_link();
+            if (link_) {
+                Link link = link_.value();
+                OpenedBookState link_new_state = link.dst.book_state;
+                link_new_state.offset_y = current_state.absolute_offset_y;
+                update_link_with_opened_book_state(link, link_new_state);
+            }
+        }
     }
 }
