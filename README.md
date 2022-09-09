@@ -1,6 +1,10 @@
 # Sioyek
 
 Sioyek is a PDF viewer designed for reading research papers and technical books.
+
+## Help Wanted
+I want to do a video tutorial on sioyek, but I am not very good at making videos. If you are interested in collaborating on doing an official video tutorial for sioyek, please contact me at a.hr.mostafavi@gmail.com .
+
 ## Contents
 * [Installation](#install)
 * [Documentation](#documentation)
