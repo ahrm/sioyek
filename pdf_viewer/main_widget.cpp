@@ -2662,11 +2662,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         overview_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
     else if (command->name == "goto_overview") {
-		std::optional<DocumentPos> maybe_overview_position = get_overview_position();
-        if (maybe_overview_position.has_value()) {
-            long_jump_to_destination(maybe_overview_position.value());
-			opengl_widget->set_overview_page({});
-        }
+		goto_overview();
     }
     else if (command->name == "goto_selected_text") {
 		long_jump_to_destination(selection_begin.y);
@@ -4132,5 +4128,26 @@ void MainWidget::handle_portal_overview_update() {
                 update_link_with_opened_book_state(link, link_new_state);
             }
         }
+    }
+}
+
+void MainWidget::goto_overview() {
+    if (opengl_widget->get_overview_page()) {
+        OverviewState overview = opengl_widget->get_overview_page().value();
+        if (overview.doc != nullptr) {
+            std::optional<Link> closest_link_ = main_document_view->find_closest_link();
+            if (closest_link_) {
+                push_state();
+                open_document(closest_link_.value().dst);
+            }
+        }
+        else {
+			std::optional<DocumentPos> maybe_overview_position = get_overview_position();
+			if (maybe_overview_position.has_value()) {
+				long_jump_to_destination(maybe_overview_position.value());
+			}
+        }
+		opengl_widget->set_overview_page({});
+
     }
 }

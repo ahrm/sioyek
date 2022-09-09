@@ -304,5 +304,6 @@ public:
 	void toggle_scrollbar();
 	void update_scrollbar();
 	void handle_portal_overview_update();
+	void goto_overview();
 
 };
