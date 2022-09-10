@@ -91,11 +91,23 @@ unix:!mac {
     target.path = $$PREFIX/bin
     shortcutfiles.files = resources/sioyek.desktop
     shortcutfiles.path = $$PREFIX/share/applications/
-    data.files = resources/sioyek-icon-linux.png
-    data.path = $$PREFIX/share/pixmaps/
-    INSTALLS += shortcutfiles
-    INSTALLS += data
+    icon.files = resources/sioyek-icon-linux.png
+    icon.path = $$PREFIX/share/pixmaps/
+    shaders.files = pdf_viewer/shaders/
+    shaders.path = $$PREFIX/share/sioyek/
+    tutorial.files = tutorial.pdf
+    tutorial.path = $$PREFIX/share/sioyek/
+    keys.files = pdf_viewer/keys.config
+    keys.path = /etc/sioyek
+    prefs.files = pdf_viewer/prefs.config
+    prefs.path = /etc/sioyek
     INSTALLS += target
+    INSTALLS += shortcutfiles
+    INSTALLS += icon
+    INSTALLS += shaders
+    INSTALLS += tutorial
+    INSTALLS += keys
+    INSTALLS += prefs	
     DISTFILES += resources/sioyek.desktop\
         resources/sioyek-icon-linux.png
 }
