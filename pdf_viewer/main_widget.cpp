@@ -112,6 +112,7 @@ extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
 extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 extern bool SUPER_FAST_SEARCH;
+extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -555,6 +556,13 @@ std::wstring MainWidget::get_status_string() {
     }
     ss << " [ h:" << select_highlight_type << " ]";
 
+    if (SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR) {
+        std::optional<BookMark> closest_bookmark = main_document_view->find_closest_bookmark();
+        if (closest_bookmark) {
+            ss << " [ " << closest_bookmark.value().description << " ] ";
+        }
+    }
+
     if (custom_status_message.size() > 0) {
         ss << " [ " << custom_status_message << " ]";
     }
@@ -722,6 +730,7 @@ void MainWidget::validate_render() {
 
     if (main_document_view && main_document_view->get_document()) {
         std::optional<Link> link = main_document_view->find_closest_link();
+
         if (link) {
             helper_document_view->goto_link(&link.value());
         }

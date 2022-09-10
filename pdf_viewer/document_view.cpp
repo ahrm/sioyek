@@ -131,6 +131,20 @@ std::optional<Link> DocumentView::find_closest_link() {
 	return {};
 }
 
+std::optional<BookMark> DocumentView::find_closest_bookmark() {
+
+	if (current_document) {
+		int bookmark_index = current_document->find_closest_bookmark_index(offset_y);
+		const std::vector<BookMark>& bookmarks = current_document->get_bookmarks();
+		if ((bookmark_index >= 0) && (bookmark_index < bookmarks.size())) {
+			if (std::abs(bookmarks[bookmark_index].y_offset - offset_y) < 1000.0f) {
+				return bookmarks[bookmark_index];
+			}
+		}
+	}
+	return {};
+}
+
 void DocumentView::goto_link(Link* link) {
 	if (link) {
 		if (get_document() &&

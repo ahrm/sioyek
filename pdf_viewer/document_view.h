@@ -67,6 +67,7 @@ public:
 	void set_offsets(float new_offset_x, float new_offset_y);
 	Document* get_document();
 	std::optional<Link> find_closest_link();
+	std::optional<BookMark> find_closest_bookmark();
 	void goto_link(Link* link);
 	void delete_closest_link();
 	void delete_closest_bookmark();
