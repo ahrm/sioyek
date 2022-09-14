@@ -533,7 +533,7 @@ std::vector<const Command*> InputHandler::handle_key(QKeyEvent* key_event, bool 
 
 	int key = 0;
 	if (!USE_LEGACY_KEYBINDS){
-		if (key_event->text().size() > 0) {
+		if ((key_event->text().size() > 0) && (key_event->text() != "\b") && (key_event->text() != "\t")) {
 			if (!control_pressed && !alt_pressed) {
 				// shift is already handled in the returned text
 				shift_pressed = false;
@@ -549,6 +549,10 @@ std::vector<const Command*> InputHandler::handle_key(QKeyEvent* key_event, bool 
 		}
 		else {
 			key = key_event->key();
+
+			if (key == Qt::Key::Key_Backtab) {
+				key = Qt::Key::Key_Tab;
+			}
 		}
 	}
 	else {
@@ -687,8 +691,8 @@ std::string InputHandler::get_key_name_from_key_code(int key_code) const{
 		{Qt::Key::Key_PageDown, "pagedown"},
 		{Qt::Key::Key_Home, "home"},
 		{Qt::Key::Key_End, "end"},
-		{Qt::Key::Key_End, "pagedown"},
 		{Qt::Key::Key_Tab, "tab"},
+		{Qt::Key::Key_Backtab, "tab"},
 	};
 
 	//if (((key_code <= 'z') && (key_code >= 'a')) || ((key_code <= 'Z') && (key_code >= 'A'))) {
