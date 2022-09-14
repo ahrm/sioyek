@@ -359,3 +359,5 @@ pdf_viewer/fonts/*
 *.stash
 pdf_viewer/todo.txt
 sioyek_log.txt
+fast/*
+debuglibs/*

@@ -3437,6 +3437,7 @@ void MainWidget::apply_window_params_for_one_window_mode(bool force_resize){
     bool should_maximize = main_window_width == main_window_size[0];
 
     if (should_maximize) {
+        main_window->move(main_window_move[0], main_window_move[1]);
         main_window->hide();
         if (force_resize) {
 			main_window->resize(main_window_size[0], main_window_size[1]);
