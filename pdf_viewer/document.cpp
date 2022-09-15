@@ -2116,6 +2116,19 @@ AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos) {
 	return res;
 }
 
+fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect) {
+	fz_rect res;
+	AbsoluteDocumentPos x0y0 = document_to_absolute_pos({ page, doc_rect.x0, doc_rect.y0 });
+	AbsoluteDocumentPos x1y1 = document_to_absolute_pos({ page, doc_rect.x1, doc_rect.y1 });
+
+	res.x0 = x0y0.x;
+	res.y0 = x0y0.y;
+	res.x1 = x1y1.x;
+	res.y1 = x1y1.y;
+
+	return res;
+}
+
 //void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
 //	auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
 //
@@ -2252,6 +2265,7 @@ fz_rect Document::get_ith_next_line_from_absolute_y(int page, int line_index, in
 
 const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::wstring>* line_texts) {
 
+
 	if (cached_page_line_rects.find(page) != cached_page_line_rects.end()) {
 		if (line_texts != nullptr) {
 			*line_texts = cached_line_texts[page];
@@ -2261,6 +2275,15 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
 	else {
 		fz_stext_page* stext_page = get_stext_with_page_number(page);
 		if (stext_page && stext_page->first_block && (!FORCE_CUSTOM_LINE_ALGORITHM)) {
+
+			fz_page* mupdf_page = fz_load_page(context, doc, page);
+			fz_rect bound = fz_bound_page(context, mupdf_page);
+			bound = document_to_absolute_rect(page, bound);
+			int halfwidth = (bound.x1 - bound.x0) / 2;
+			bound.x0 -= halfwidth;
+			bound.x1 -= halfwidth;
+			fz_drop_page(context, mupdf_page);
+
 			std::vector<fz_rect> line_rects;
 			std::vector<std::wstring> line_texts_;
 			std::vector<fz_stext_line*> flat_lines;
@@ -2280,7 +2303,16 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
 				line_rects[i].y1 = document_to_absolute_y(page, line_rects[i].y1);
 			}
 
-			cached_page_line_rects[page] = line_rects;
+			std::vector<fz_rect> line_rects_;
+
+			for (int i = 0; i < line_rects.size(); i++) {
+				if (fz_contains_rect(bound, line_rects[i])) {
+					line_rects_.push_back(line_rects[i]);
+				}
+			}
+
+
+			cached_page_line_rects[page] = line_rects_;
 			cached_line_texts[page] = line_texts_;
 
 			if (line_texts != nullptr) {
