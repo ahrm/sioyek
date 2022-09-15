@@ -3885,12 +3885,15 @@ void MainWidget::focus_text(int page, const std::wstring& text) {
             max_score = score;
         }
     }
-    main_document_view->set_line_index(max_index);
-	main_document_view->set_vertical_line_rect(line_rects[max_index]);
-	if (focus_on_visual_mark_pos(true)) {
-		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
-		main_document_view->move_absolute(0, distance);
-	}
+
+    if (max_index < line_rects.size()) {
+		main_document_view->set_line_index(max_index);
+		main_document_view->set_vertical_line_rect(line_rects[max_index]);
+		if (focus_on_visual_mark_pos(true)) {
+			float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
+			main_document_view->move_absolute(0, distance);
+		}
+    }
 }
 int MainWidget::get_current_monitor_width() {
     if (this->window()->windowHandle() != nullptr) {

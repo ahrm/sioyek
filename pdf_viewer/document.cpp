@@ -2263,12 +2263,12 @@ fz_rect Document::get_ith_next_line_from_absolute_y(int page, int line_index, in
 
 }
 
-const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::wstring>* line_texts) {
+const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::wstring>* out_line_texts) {
 
 
 	if (cached_page_line_rects.find(page) != cached_page_line_rects.end()) {
-		if (line_texts != nullptr) {
-			*line_texts = cached_line_texts[page];
+		if (out_line_texts != nullptr) {
+			*out_line_texts = cached_line_texts[page];
 		}
 		return cached_page_line_rects[page];
 	}
@@ -2285,7 +2285,7 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
 			fz_drop_page(context, mupdf_page);
 
 			std::vector<fz_rect> line_rects;
-			std::vector<std::wstring> line_texts_;
+			std::vector<std::wstring> line_texts;
 			std::vector<fz_stext_line*> flat_lines;
 
 			LL_ITER(block, stext_page->first_block) {
@@ -2295,7 +2295,7 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
 					}
 				}
 			}
-			merge_lines(flat_lines, line_rects, line_texts_);
+			merge_lines(flat_lines, line_rects, line_texts);
 			for (size_t i = 0; i < line_rects.size(); i++) {
 				line_rects[i].x0 = line_rects[i].x0 - page_widths[page] / 2;
 				line_rects[i].x1 = line_rects[i].x1 - page_widths[page] / 2;
@@ -2304,10 +2304,12 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
 			}
 
 			std::vector<fz_rect> line_rects_;
+			std::vector<std::wstring> line_texts_;
 
 			for (int i = 0; i < line_rects.size(); i++) {
 				if (fz_contains_rect(bound, line_rects[i])) {
 					line_rects_.push_back(line_rects[i]);
+					line_texts_.push_back(line_texts[i]);
 				}
 			}
 
@@ -2315,8 +2317,8 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
 			cached_page_line_rects[page] = line_rects_;
 			cached_line_texts[page] = line_texts_;
 
-			if (line_texts != nullptr) {
-				*line_texts = line_texts_;
+			if (out_line_texts != nullptr) {
+				*out_line_texts = line_texts_;
 			}
 			
 		}
