@@ -527,8 +527,21 @@ MainWidget* handle_args(const QStringList& arguments) {
 	}
 
 	MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
+	bool should_create_new_window = false;
+	if (pdf_file_name.size() > 0) {
+		if (parser->isSet("new-window")) {
+			should_create_new_window = true;
+		}
+		if (SHOULD_LAUNCH_NEW_WINDOW && (target_window == nullptr) && (!parser->isSet("reuse-window"))) {
+			should_create_new_window = true;
+		}
+		if (windows[0]->doc() == nullptr) {
+			should_create_new_window = false;
+		}
 
-	if ((pdf_file_name.size() > 0) && (parser->isSet("new-window") || SHOULD_LAUNCH_NEW_WINDOW) && (!parser->isSet("reuse-window")) && (target_window == nullptr) && (windows[0]->doc() != nullptr)) {
+	}
+
+	if (should_create_new_window) {
 		target_window = new MainWidget(windows[0]);
 		target_window->run_multiple_commands(STARTUP_COMMANDS);
 		target_window->apply_window_params_for_one_window_mode(true);
@@ -648,7 +661,7 @@ int main(int argc, char* args[]) {
 	verify_paths();
 
 	// should we launche a new instance each time the user opens a PDF or should we reuse the previous instance
-	bool use_single_instance = !SHOULD_LAUNCH_NEW_INSTANCE;
+	bool use_single_instance = (!SHOULD_LAUNCH_NEW_INSTANCE) && (!SHOULD_LAUNCH_NEW_WINDOW);
 
 	if (should_reuse_instance(argc, args)) {
 		use_single_instance = true;
@@ -659,12 +672,10 @@ int main(int argc, char* args[]) {
 
 	RunGuard guard("sioyek");
 
-	if (use_single_instance) {
-		if (!guard.isPrimary()) {
-            QStringList sent_args = convert_arguments(app.arguments());
-            guard.sendMessage(serialize_string_array(sent_args));
-			return 0;
-		}
+	if (!guard.isPrimary()) {
+		QStringList sent_args = convert_arguments(app.arguments());
+		guard.sendMessage(serialize_string_array(sent_args));
+		return 0;
 	}
 
 	QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
@@ -736,24 +747,22 @@ int main(int argc, char* args[]) {
 	NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, main_widget);
 
 
-	if (use_single_instance) {
-		if (guard.isPrimary()) {
-			QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
-				QStringList args = deserialize_string_array(message);
-				bool nofocus = args.indexOf("--nofocus") != -1;
-				MainWidget* target = handle_args(args);
-				if (!nofocus) {
-					if (target) {
-						//target->activateWindow();
-						focus_on_widget(target);
-					}
-					else if (windows.size() > 0) {
-						//windows[0]->activateWindow();
-						focus_on_widget(windows[0]);
-					}
+	if (guard.isPrimary()) {
+		QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
+			QStringList args = deserialize_string_array(message);
+			bool nofocus = args.indexOf("--nofocus") != -1;
+			MainWidget* target = handle_args(args);
+			if (!nofocus) {
+				if (target) {
+					//target->activateWindow();
+					focus_on_widget(target);
 				}
-				});
-		}
+				else if (windows.size() > 0) {
+					//windows[0]->activateWindow();
+					focus_on_widget(windows[0]);
+				}
+			}
+			});
 	}
 
 
