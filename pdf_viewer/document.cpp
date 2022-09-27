@@ -2377,19 +2377,25 @@ DocumentManager::~DocumentManager() {
 bool Document::is_super_fast_index_ready() {
 	return super_fast_search_index_ready;
 }
-std::vector<SearchResult> Document::search_text(std::wstring query, int begin_page, int min_page, int max_page)
-{
+
+std::vector<SearchResult> Document::search_text(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page) {
 	std::vector<SearchResult> output;
 
 	std::vector<SearchResult> before_results;
 	bool is_before = true;
 
-	int offset = 0;
+        auto pred = case_sensitive
+		? [](const wchar_t& c1, const wchar_t& c2) { return c1 == c2; }
+		: [](const wchar_t& c1, const wchar_t& c2) { return std::tolower(c1) == std::tolower(c2); };
 
-	int start_index = super_fast_search_index.find(query, offset);
-	QString something;
+        auto searcher = std::default_searcher(query.begin(), query.end(), pred);
+        auto it = std::search(
+		super_fast_search_index.begin(),
+		super_fast_search_index.end(),
+                searcher);
 
-	while (start_index != -1) {
+	for ( ; it != super_fast_search_index.end(); it = std::search(it+1, super_fast_search_index.end(), searcher)) {
+		int start_index = it - super_fast_search_index.begin();
 		std::vector<fz_rect> match_rects;
 		std::vector<fz_rect> compressed_match_rects;
 
@@ -2418,21 +2424,22 @@ std::vector<SearchResult> Document::search_text(std::wstring query, int begin_pa
 				output.push_back(res);
 			}
 		}
-
-		offset = end_index;
-		start_index = super_fast_search_index.find(query, offset);
 	}
 	output.insert(output.end(), before_results.begin(), before_results.end());
 	return output;
 }
 
-std::vector<SearchResult> Document::search_regex(std::wstring query, int begin_page, int min_page, int max_page)
+std::vector<SearchResult> Document::search_regex(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page)
 {
 	std::vector<SearchResult> output;
 
 	std::wregex regex;
 	try {
-		regex = std::wregex(query);
+		if (case_sensitive) {
+			regex = std::wregex(query);
+		} else {
+			regex = std::wregex(query, std::regex_constants::icase);
+		}
 	}
 	catch (const std::regex_error&) {
 		return output;
