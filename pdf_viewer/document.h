@@ -61,6 +61,7 @@ private:
 	std::wstring file_name;
 	std::unordered_map<int, fz_link*> cached_page_links;
 	std::unordered_map<int, std::vector<fz_rect>> cached_flat_words;
+	std::unordered_map<int, std::vector<std::vector<fz_rect>>> cached_flat_word_chars;
 	QStandardItemModel* cached_toc_model = nullptr;
 
 	std::vector<float> accum_page_heights;
@@ -216,6 +217,7 @@ public:
 	void set_page_offset(int new_offset);
 	void embed_annotations(std::wstring new_file_path);
 	std::vector<fz_rect> get_page_flat_words(int page);
+	std::vector<std::vector<fz_rect>> get_page_flat_word_chars(int page);
 
 	bool needs_password();
 	bool needs_authentication();

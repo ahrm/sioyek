@@ -279,10 +279,10 @@ public:
 	bool helper_window_overlaps_main_window();
 	void highlight_words();
 
-	std::vector<fz_rect> get_flat_words();
+	std::vector<fz_rect> get_flat_words(std::vector<std::vector<fz_rect>>* flat_word_chars=nullptr);
 
-	std::optional<fz_rect> get_tag_rect(std::string tag);
-	std::optional<fz_irect> get_tag_window_rect(std::string tag);
+	std::optional<fz_rect> get_tag_rect(std::string tag, std::vector<fz_rect>* word_chars=nullptr);
+	std::optional<fz_irect> get_tag_window_rect(std::string tag, std::vector<fz_irect>* char_rects=nullptr);
 
 	bool is_rotated();
 	void on_new_paper_added(const std::wstring& file_path);

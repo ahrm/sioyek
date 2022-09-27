@@ -3558,36 +3558,50 @@ void MainWidget::highlight_words() {
 
 }
 
-std::vector<fz_rect> MainWidget::get_flat_words() {
+std::vector<fz_rect> MainWidget::get_flat_words(std::vector<std::vector<fz_rect>>* flat_word_chars) {
     int page = get_current_page_number();
-    return main_document_view->get_document()->get_page_flat_words(page);
+    auto res = main_document_view->get_document()->get_page_flat_words(page);
+    if (flat_word_chars != nullptr) {
+        *flat_word_chars = main_document_view->get_document()->get_page_flat_word_chars(page);
+    }
+    return res;
 }
 
-std::optional<fz_irect> MainWidget::get_tag_window_rect(std::string tag) {
+std::optional<fz_irect> MainWidget::get_tag_window_rect(std::string tag, std::vector<fz_irect>* char_rects) {
 
     int page = get_current_page_number();
-    std::optional<fz_rect> rect = get_tag_rect(tag);
+    std::vector<fz_rect> word_char_rects;
+    std::optional<fz_rect> rect = get_tag_rect(tag, &word_char_rects);
 
     if (rect.has_value()) {
 
-		fz_irect window_rect;
-
-		WindowPos bottom_left =  main_document_view->document_to_window_pos_in_pixels({ page, rect.value().x0, rect.value().y0});
-		WindowPos top_right = main_document_view->document_to_window_pos_in_pixels({ page, rect.value().x1, rect.value().y1});
-		window_rect.x0 = bottom_left.x;
-		window_rect.y0 = bottom_left.y;
-		window_rect.x1 = top_right.x;
-		window_rect.y1 = top_right.y;
-
+        fz_irect window_rect = main_document_view->document_to_window_irect(page, rect.value());
+        if (char_rects != nullptr) {
+            for (auto c : word_char_rects) {
+				char_rects->push_back(main_document_view->document_to_window_irect(page, c));
+            }
+        }
 		return window_rect;
     }
     return {};
 }
 
-std::optional<fz_rect> MainWidget::get_tag_rect(std::string tag) {
-	std::vector<fz_rect> word_rects = get_flat_words();
+std::optional<fz_rect> MainWidget::get_tag_rect(std::string tag, std::vector<fz_rect>* word_chars) {
+    std::vector<std::vector<fz_rect>> all_word_chars;
+    std::vector<fz_rect> word_rects;
+    if (word_chars == nullptr) {
+		word_rects = get_flat_words(nullptr);
+    }
+    else {
+		word_rects = get_flat_words(&all_word_chars);
+    }
+    
+
 	int index = get_index_from_tag(tag);
     if (index < word_rects.size()) {
+        if (word_chars != nullptr) {
+            *word_chars = all_word_chars[index];
+        }
 		return word_rects[index];
     }
     return {};
@@ -4030,7 +4044,8 @@ void MainWidget::add_portal(std::wstring source_path, Link new_link) {
 
 void MainWidget::handle_keyboard_select(const std::wstring& text) {
 	if (std::isdigit(text[0])) {
-        // we can select text
+        // we can select text using window-space coordinates.
+        // this is not something that the user should be able to do, but it's useful for scripts.
 		QStringList parts = QString::fromStdWString(text).split(' ');
         if (parts.size() == 2) {
             QString begin_text = parts.at(0);
@@ -4062,14 +4077,41 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
         }
 	}
 	else {
+        // here we select with "user-friendly" tags
 
 		QStringList parts = QString::fromStdWString(text).split(' ');
 
-		if (parts.size() == 2) {
+        if (parts.size() == 1) {
+            std::vector<fz_irect> schar_rects;
+            std::optional<fz_irect> srect_ = get_tag_window_rect(parts.at(0).toStdString(), &schar_rects);
+            if (schar_rects.size() > 1){
+                fz_irect srect = schar_rects[0];
+                fz_irect erect = schar_rects[schar_rects.size() - 2];
+                int w = erect.x1 - erect.x0;
 
-			std::optional<fz_irect> srect_ = get_tag_window_rect(parts.at(0).toStdString());
-			std::optional<fz_irect> erect_ = get_tag_window_rect(parts.at(1).toStdString());
-            if (srect_.has_value() && erect_.has_value()) {
+				handle_left_click({ (srect.x0 + srect.x1) / 2 - 1, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
+				handle_left_click({ erect.x0 , (erect.y0 + erect.y1) / 2 }, false, false, false, false);
+				opengl_widget->set_should_highlight_words(false);
+            }
+        }
+        if (parts.size() == 2) {
+
+            std::vector<fz_irect> schar_rects;
+            std::vector<fz_irect> echar_rects;
+
+            std::optional<fz_irect> srect_ = get_tag_window_rect(parts.at(0).toStdString(), &schar_rects);
+            std::optional<fz_irect> erect_ = get_tag_window_rect(parts.at(1).toStdString(), &echar_rects);
+
+            if ((schar_rects.size() > 0) && (echar_rects.size() > 0)) {
+                fz_irect srect = schar_rects[0];
+                fz_irect erect = echar_rects[0];
+                int w = erect.x1 - erect.x0;
+
+				handle_left_click({ (srect.x0 + srect.x1) / 2 - 1, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
+				handle_left_click({ erect.x0 - w/2 , (erect.y0 + erect.y1) / 2 }, false, false, false, false);
+				opengl_widget->set_should_highlight_words(false);
+            }
+            else if (srect_.has_value() && erect_.has_value()) {
                 fz_irect srect = srect_.value();
                 fz_irect erect = erect_.value();
 

@@ -348,6 +348,19 @@ WindowPos DocumentView::document_to_window_pos_in_pixels(DocumentPos doc_pos){
 	return window_pos;
 }
 
+fz_irect DocumentView::document_to_window_irect(int page, fz_rect doc_rect) {
+
+	fz_irect window_rect;
+
+	WindowPos bottom_left =  document_to_window_pos_in_pixels({ page, doc_rect.x0, doc_rect.y0});
+	WindowPos top_right = document_to_window_pos_in_pixels({ page, doc_rect.x1, doc_rect.y1});
+	window_rect.x0 = bottom_left.x;
+	window_rect.y0 = bottom_left.y;
+	window_rect.x1 = top_right.x;
+	window_rect.y1 = top_right.y;
+	return window_rect;
+}
+
 fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
 	fz_rect res;
 
