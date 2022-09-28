@@ -2378,16 +2378,21 @@ bool Document::is_super_fast_index_ready() {
 	return super_fast_search_index_ready;
 }
 
+bool pred_case_sensitive(const wchar_t& c1, const wchar_t& c2) {
+	return c1 == c2;
+}
+
+bool pred_case_insensitive(const wchar_t& c1, const wchar_t& c2) {
+	return std::tolower(c1) == std::tolower(c2);
+}
+
 std::vector<SearchResult> Document::search_text(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page) {
 	std::vector<SearchResult> output;
 
 	std::vector<SearchResult> before_results;
 	bool is_before = true;
 
-        auto pred = case_sensitive
-		? [](const wchar_t& c1, const wchar_t& c2) { return c1 == c2; }
-		: [](const wchar_t& c1, const wchar_t& c2) { return std::tolower(c1) == std::tolower(c2); };
-
+        auto pred = case_sensitive ? pred_case_sensitive : pred_case_insensitive;
         auto searcher = std::default_searcher(query.begin(), query.end(), pred);
         auto it = std::search(
 		super_fast_search_index.begin(),
