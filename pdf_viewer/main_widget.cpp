@@ -113,6 +113,7 @@ extern float SMOOTH_SCROLL_DRAG;
 extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 extern bool SUPER_FAST_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
+extern bool CASE_SENSITIVE_SEARCH;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -2945,7 +2946,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
         if (is_regex && (!SUPER_FAST_SEARCH)) {
             show_error_message(L"regex search only works when super_fast_search is enabled in prefs_user.config");
         }
-        opengl_widget->search_text(search_term, is_regex, search_range);
+        opengl_widget->search_text(search_term, CASE_SENSITIVE_SEARCH, is_regex, search_range);
     }
 
     if (current_pending_command->name[0] == '_') {

@@ -203,6 +203,7 @@ float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
 bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE = false;
 bool SUPER_FAST_SEARCH = false;
 bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR = false;
+bool CASE_SENSITIVE_SEARCH = true;
 
 Path default_config_path(L"");
 Path default_keys_path(L"");

@@ -244,8 +244,8 @@ public:
 	const std::vector<fz_rect>& get_page_lines(int page, std::vector<std::wstring>* line_texts=nullptr);
 
 	bool is_super_fast_index_ready();
-	std::vector<SearchResult> search_text(std::wstring query, int begin_page, int min_page, int max_page);
-	std::vector<SearchResult> search_regex(std::wstring query, int begin_page, int min_page, int max_page);
+	std::vector<SearchResult> search_text(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page);
+	std::vector<SearchResult> search_regex(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page);
 	float max_y_offset();
 
 	friend class DocumentManager;

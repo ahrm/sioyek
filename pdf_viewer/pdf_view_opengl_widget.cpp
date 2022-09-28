@@ -912,7 +912,7 @@ bool PdfViewOpenGLWidget::get_is_searching(float* prog) {
 	return true;
 }
 
-void PdfViewOpenGLWidget::search_text(const std::wstring& text, bool regex, std::optional<std::pair<int,int>> range) {
+void PdfViewOpenGLWidget::search_text(const std::wstring& text, bool case_sensitive, bool regex, std::optional<std::pair<int,int>> range) {
 
 	if (!document_view) return;
 
@@ -933,10 +933,10 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, bool regex, std:
 			int current_page = document_view->get_center_page_number();
 			std::vector<SearchResult> results;
 			if (regex) {
-				results = document_view->get_document()->search_regex(text, current_page, min_page, max_page);
+				results = document_view->get_document()->search_regex(text, case_sensitive, current_page, min_page, max_page);
 			}
 			else {
-				results = document_view->get_document()->search_text(text, current_page, min_page, max_page);
+				results = document_view->get_document()->search_text(text, case_sensitive, current_page, min_page, max_page);
 			}
 			search_results = std::move(results);
 			is_searching = false;
