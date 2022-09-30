@@ -597,7 +597,8 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		document_view->get_document()->get_page_width(page_number),
 		document_view->get_document()->get_page_height(page_number) };
 
-	fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number, page_rect, rendered_width, rendered_height);
+	float device_pixel_ratio = QApplication::desktop()->devicePixelRatio();
+	fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number, page_rect, rendered_width / device_pixel_ratio, rendered_height / device_pixel_ratio);
 	rect_to_quad(window_rect, page_vertices);
 
 	if (texture != 0) {
