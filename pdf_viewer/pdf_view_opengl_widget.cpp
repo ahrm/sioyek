@@ -22,6 +22,7 @@ extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
 extern float FASTREAD_OPACITY;
 extern bool PRERENDER_NEXT_PAGE;
+extern int PRERENDERED_PAGE_COUNT;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -597,7 +598,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		document_view->get_document()->get_page_width(page_number),
 		document_view->get_document()->get_page_height(page_number) };
 
-	float device_pixel_ratio = QApplication::desktop()->devicePixelRatio();
+	int device_pixel_ratio = QApplication::desktop()->devicePixelRatio();
 	fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number, page_rect, rendered_width / device_pixel_ratio, rendered_height / device_pixel_ratio);
 	rect_to_quad(window_rect, page_vertices);
 
@@ -716,6 +717,17 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 					all_visible_links.push_back(std::make_pair(page, links));
 					links = links->next;
 				}
+			}
+		}
+		// prerender pages
+		if (visible_pages.size() > 0) {
+			int max_page = visible_pages[visible_pages.size() - 1];
+			for (int i = 1; i < (PRERENDERED_PAGE_COUNT + 1); i++) {
+				pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+					max_page + i,
+					document_view->get_zoom_level(),
+					nullptr,
+					nullptr);
 			}
 		}
 	}
