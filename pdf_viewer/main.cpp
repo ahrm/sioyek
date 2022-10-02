@@ -205,6 +205,7 @@ bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE = false;
 bool SUPER_FAST_SEARCH = false;
 bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR = false;
 bool CASE_SENSITIVE_SEARCH = true;
+bool SHOW_DOCUMENT_NAME_IN_STATUSBAR = false;
 
 Path default_config_path(L"");
 Path default_keys_path(L"");

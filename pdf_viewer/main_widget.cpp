@@ -114,6 +114,7 @@ extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 extern bool SUPER_FAST_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern bool CASE_SENSITIVE_SEARCH;
+extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -509,6 +510,14 @@ std::wstring MainWidget::get_status_string() {
     if (chapter_name.size() > 0) {
         ss << " [ " << chapter_name << " ] ";
     }
+
+    if (SHOW_DOCUMENT_NAME_IN_STATUSBAR) {
+        std::optional<std::wstring> file_name = Path(main_document_view->get_document()->get_path()).filename();
+        if (file_name) {
+			ss << L" [ " << file_name.value() << L" ] ";
+        }
+    }
+
     int num_search_results = opengl_widget->get_num_search_results();
     float progress = -1;
     if (opengl_widget->get_is_searching(&progress)) {
