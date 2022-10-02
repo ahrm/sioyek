@@ -99,6 +99,7 @@ extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 extern bool SUPER_FAST_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern int PRERENDERED_PAGE_COUNT;
+extern bool CASE_SENSITIVE_SEARCH;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -389,6 +390,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"super_fast_search", &SUPER_FAST_SEARCH, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"show_closest_bookmark_in_statusbar", &SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"prerendered_page_count", &PRERENDERED_PAGE_COUNT, int_serializer, int_deserializer, nullptr });
+	configs.push_back({ L"case_sensitive_search", &CASE_SENSITIVE_SEARCH, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

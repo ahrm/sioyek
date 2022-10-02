@@ -5,4 +5,6 @@ MimeType=application/pdf;
 Name=Sioyek
 Exec=sioyek
 Icon=sioyek-icon-linux
-Categories=Development;
+Comment=PDF viewer for reading research papers and technical books
+Categories=Development;Viewer;
+Keywords=pdf;viewer;reader;research
