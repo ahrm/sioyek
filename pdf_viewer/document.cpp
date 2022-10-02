@@ -544,9 +544,9 @@ unsigned int Document::get_milies_since_last_edit_time() {
 }
 
 Document::~Document() {
-	if (figure_indexing_thread.has_value()) {
+	if (document_indexing_thread.has_value()) {
 		stop_indexing();
-		figure_indexing_thread.value().join();
+		document_indexing_thread.value().join();
 	}
 
 	if (doc != nullptr) {
@@ -615,7 +615,7 @@ bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string 
 			invalid_flag_pointer = invalid_flag;
 
 			// we don't need to index figures in helper documents
-			index_figures(invalid_flag);
+			index_document(invalid_flag);
 			return true;
 		}
 
@@ -822,9 +822,6 @@ fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_nu
 	fz_stext_page* stext_page = nullptr;
 
 	fz_try(ctx) {
-		//if (needs_authentication()) {
-		//	fz_authenticate_password(context, doc, correct_password.c_str());
-		//}
 		stext_page = fz_new_stext_page_from_page_number(ctx, doc, page_number, nullptr);
 	}
 	fz_catch(ctx) {
@@ -917,18 +914,18 @@ int Document::get_offset_page_number(float y_offset) {
 	return (it - accum_page_heights.begin());
 }
 
-void Document::index_figures(bool* invalid_flag) {
+void Document::index_document(bool* invalid_flag) {
 	int n = num_pages();
 
-	if (this->figure_indexing_thread.has_value()) {
+	if (this->document_indexing_thread.has_value()) {
 		// if we are already indexing figures, we should wait for the previous thread to finish
-		this->figure_indexing_thread.value().join();
+		this->document_indexing_thread.value().join();
 	}
 
-	is_figure_indexing_required = true;
+	is_document_indexing_required = true;
 	is_indexing = true;
 
-	this->figure_indexing_thread = std::thread([this, n, invalid_flag]() {
+	this->document_indexing_thread = std::thread([this, n, invalid_flag]() {
 		std::vector<IndexedData> local_generic_data;
 		std::map<std::wstring, IndexedData> local_reference_data;
 		std::map<std::wstring, std::vector<IndexedData>> local_equation_data;
@@ -951,7 +948,7 @@ void Document::index_figures(bool* invalid_flag) {
 			}
 			for (int i = 0; i < n; i++) {
 				// when we close a document before its indexing is finished, we should stop indexing as soon as posible
-				if (!is_figure_indexing_required) {
+				if (!is_document_indexing_required) {
 					break;
 				}
 
@@ -988,7 +985,7 @@ void Document::index_figures(bool* invalid_flag) {
 
 		fz_drop_context(context_);
 
-		figure_indices_mutex.lock();
+		document_indexing_mutex.lock();
 
 		reference_indices = std::move(local_reference_data);
 		equation_indices = std::move(local_equation_data);
@@ -1003,9 +1000,9 @@ void Document::index_figures(bool* invalid_flag) {
 
 		created_top_level_toc_nodes = std::move(top_level_nodes);
 
-		figure_indices_mutex.unlock();
+		document_indexing_mutex.unlock();
 		is_indexing = false;
-		if (is_figure_indexing_required && invalid_flag) {
+		if (is_document_indexing_required && invalid_flag) {
 			*invalid_flag = true;
 		}
 		});
@@ -1013,7 +1010,7 @@ void Document::index_figures(bool* invalid_flag) {
 }
 
 void Document::stop_indexing() {
-	is_figure_indexing_required = false;
+	is_document_indexing_required = false;
 }
 
 

@@ -80,9 +80,9 @@ private:
 	//std::map<std::wstring, IndexedData> equation_indices;
 	std::map<std::wstring, std::vector<IndexedData>> equation_indices;
 
-	std::mutex figure_indices_mutex;
-	std::optional<std::thread> figure_indexing_thread = {};
-	bool is_figure_indexing_required = true;
+	std::mutex document_indexing_mutex;
+	std::optional<std::thread> document_indexing_thread = {};
+	bool is_document_indexing_required = true;
 	bool is_indexing = false;
 	bool are_highlights_loaded = false;
 
@@ -176,7 +176,7 @@ public:
 	fz_rect absolute_to_page_rect(const fz_rect& absolute_rect, int* page);
 	QStandardItemModel* get_toc_model();
 	int get_offset_page_number(float y_offset);
-	void index_figures(bool* invalid_flag);
+	void index_document(bool* invalid_flag);
 	void stop_indexing();
 	std::optional<IndexedData> find_reference_with_string(std::wstring reference_name);
 	std::optional<IndexedData> find_equation_with_string(std::wstring equation_name, int page_number);
