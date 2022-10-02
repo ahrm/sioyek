@@ -161,9 +161,9 @@ void DocumentView::goto_link(Portal* link) {
 	}
 }
 
-void DocumentView::delete_closest_link() {
+void DocumentView::delete_closest_portal() {
 	if (current_document) {
-		current_document->delete_closest_link(offset_y);
+		current_document->delete_closest_portal(offset_y);
 	}
 }
 

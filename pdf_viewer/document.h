@@ -38,7 +38,6 @@ private:
 	std::vector<TocNode*> created_top_level_toc_nodes;
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
-	QNetworkAccessManager* network_access_manager = nullptr;
 	std::map<int, std::vector<fz_rect>> cached_page_line_rects;
 	std::map<int, std::vector<std::wstring>> cached_line_texts;
 
@@ -138,7 +137,7 @@ public:
 	std::optional<Portal> find_closest_portal(float to_offset_y, int* index = nullptr);
 	bool update_portal(Portal new_link);
 	void delete_closest_bookmark(float to_y_offset);
-	void delete_closest_link(float to_offset_y);
+	void delete_closest_portal(float to_offset_y);
 	const std::vector<BookMark>& get_bookmarks() const;
 	std::vector<BookMark> get_sorted_bookmarks() const;
 	const std::vector<Highlight>& get_highlights() const;
@@ -222,7 +221,7 @@ public:
 	bool needs_password();
 	bool needs_authentication();
 	bool apply_password(const char* password);
-	std::optional<std::string> get_page_fastread_highlights(int page);
+	//std::optional<std::string> get_page_fastread_highlights(int page);
 	std::vector<fz_rect> get_highlighted_character_masks(int page);
 	fz_rect get_page_rect_no_cache(int page);
 	std::optional<PdfLink> get_link_in_pos(int page, float x, float y);

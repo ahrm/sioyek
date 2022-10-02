@@ -217,7 +217,7 @@ bool Document::update_portal(Portal new_portal) {
 	return false;
 }
 
-void Document::delete_closest_link(float to_offset_y) {
+void Document::delete_closest_portal(float to_offset_y) {
 	int closest_index = -1;
 	if (find_closest_portal(to_offset_y, &closest_index)) {
 		db_manager->delete_link( get_checksum(), portals[closest_index].src_offset_y);
@@ -306,22 +306,6 @@ Document::Document(fz_context* context, std::wstring file_name, DatabaseManager*
 	checksummer(checksummer),
 	doc(nullptr){
 	last_update_time = QDateTime::currentDateTime();
-
-	if (ENABLE_EXPERIMENTAL_FEATURES) {
-		network_access_manager = new QNetworkAccessManager;
-
-		QObject::connect(network_access_manager, &QNetworkAccessManager::finished, [&](QNetworkReply* reply) {
-			QJsonDocument responsedoc = QJsonDocument::fromJson(reply->readAll());
-			std::string page_string = responsedoc.object().value("page").toString().toStdString();
-			int page = atoi(page_string.c_str());
-			std::string highlights = responsedoc.object().value("text").toString().toStdString();
-			cached_fastread_highlights[page] = highlights;
-			reply->deleteLater();
-			if (invalid_flag_pointer != nullptr) {
-				*invalid_flag_pointer = true;
-			}
-		});
-	}
 }
 
 void Document::count_chapter_pages(std::vector<int> &page_counts) {
@@ -595,10 +579,6 @@ Document::~Document() {
 			std::cerr << "Error: could not drop documnet" << std::endl;
 		}
 	}
-	if (network_access_manager != nullptr) {
-		delete network_access_manager;
-	}
-	//this->figure_indexing_thread.join();
 }
 void Document::reload(std::string password) {
 	fz_drop_document(context, doc);
@@ -1844,106 +1824,26 @@ bool Document::needs_authentication() {
 }
 
 std::vector<fz_rect> Document::get_highlighted_character_masks(int page) {
-
 	fz_stext_page* stext_page = get_stext_with_page_number(page);
 	std::vector<fz_stext_char*> flat_chars;
 	get_flat_chars_from_stext_page(stext_page, flat_chars);
 	std::vector<fz_rect> res;
+	std::vector<std::wstring> words;
+	std::vector<std::vector<fz_rect>> word_rects;
+	get_word_rect_list_from_flat_chars(flat_chars, words, word_rects);
 
-	auto fastread_highlights_ = get_page_fastread_highlights(page);
-	if (fastread_highlights_) {
-		auto fastread_highlights = fastread_highlights_.value();
-
-		if (fastread_highlights.size() != flat_chars.size()) {
-			std::wcout << L"Error: invalid highlight received\n";
-			return res;
-		}
-
+	for (size_t i = 0; i < words.size(); i++) {
 		std::vector<fz_rect> highlighted_characters;
-		for (size_t i = 0; i < flat_chars.size(); i++) {
-			if (fastread_highlights[i] == '0') {
-				if (highlighted_characters.size() > 0) {
-					auto word_rects = create_word_rects_multiline(highlighted_characters);
-					for (auto rect : word_rects) {
-						res.push_back(rect);
-					}
-					highlighted_characters.clear();
-				}
-			}
-			else {
-				highlighted_characters.push_back(fz_rect_from_quad(flat_chars[i]->quad));
-			}
+		int num_highlighted = static_cast<int>(std::ceil(words[i].size() * 0.3f));
+		for (int j = 0; j < num_highlighted; j++) {
+			highlighted_characters.push_back(word_rects[i][j]);
 		}
-		return res;
-	}
-	else {
-		if (!USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE) return res;
-
-		std::vector<std::wstring> words;
-		std::vector<std::vector<fz_rect>> word_rects;
-		get_word_rect_list_from_flat_chars(flat_chars, words, word_rects);
-
-
-		for (size_t i = 0; i < words.size(); i++) {
-
-			std::vector<fz_rect> highlighted_characters;
-
-			int num_highlighted = static_cast<int>(std::ceil(words[i].size() * 0.3f));
-			for (int j = 0; j < num_highlighted; j++) {
-				highlighted_characters.push_back(word_rects[i][j]);
-			}
-
-			res.push_back(create_word_rect(highlighted_characters));
-		}
-		return res;
+		res.push_back(create_word_rect(highlighted_characters));
 	}
 
+	return res;
 }
 
-std::optional<std::string> Document::get_page_fastread_highlights(int page) {
-	if (cached_fastread_highlights.find(page) != cached_fastread_highlights.end()) {
-		return cached_fastread_highlights[page];
-	}
-	else {
-		cached_fastread_highlights[page] = {};
-		std::vector<fz_stext_char*> chars;
-		auto stext_page = get_stext_with_page_number(page);
-		std::wstring page_text;
-		get_flat_chars_from_stext_page(stext_page, chars);
-		for (auto chr : chars) {
-			page_text.push_back(chr->c);
-		}
-
-		const QUrl url = QString::fromStdWString(TEXT_HIGHLIGHT_URL);
-		QNetworkRequest request(url);
-        request.setHeader(QNetworkRequest::ContentTypeHeader,
-            "application/x-www-form-urlencoded");
-        QUrlQuery postData;
-        postData.addQueryItem("text", QString::fromStdWString(page_text));
-        postData.addQueryItem("page", QString::number(page));
-
-		if (TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE) {
-			postData.addQueryItem("refine", QString::number(1));
-		}
-		else {
-			postData.addQueryItem("refine", QString::number(0));
-		}
-		
-		if (TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL) {
-			postData.addQueryItem("fill", QString::number(1));
-		}
-		else {
-			postData.addQueryItem("fill", QString::number(0));
-		}
-		postData.addQueryItem("context_size", QString::number(TEXT_SUMMARY_CONTEXT_SIZE));
-
-
-		if (network_access_manager != nullptr) {
-			network_access_manager->post(request, postData.toString(QUrl::FullyEncoded).toUtf8());
-		}
-		return {};
-	}
-}
 
 fz_rect Document::get_page_rect_no_cache(int page_number) {
 	fz_rect res {};

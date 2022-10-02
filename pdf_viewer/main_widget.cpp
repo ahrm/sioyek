@@ -2500,7 +2500,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
     else if (command->name == "delete_link" || command->name == "delete_portal") {
 
-        main_document_view->delete_closest_link();
+        main_document_view->delete_closest_portal();
         validate_render();
     }
 
