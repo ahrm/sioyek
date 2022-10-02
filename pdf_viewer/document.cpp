@@ -369,9 +369,8 @@ float Document::get_page_width(int page_index) {
 }
 
 float Document::get_page_size_smart(bool width, int page_index, float* left_ratio, float* right_ratio, int* normal_page_width) {
-	//fz_pixmap* rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
-	//fz_matrix ctm = fz_scale(0.3, 0.3);
 	fz_matrix ctm = fz_identity;
+	ctm = fz_pre_scale(ctm, 0.25f, 0.25f);
 
 	fz_pixmap* pixmap = fz_new_pixmap_from_page_number(context, doc, page_index, ctm, fz_device_rgb(context), 0);
 
@@ -383,22 +382,6 @@ float Document::get_page_size_smart(bool width, int page_index, float* left_rati
 	else {
 		histogram.resize(pixmap->h);
 	}
-		
-
-	//float brightness_sum = 0.0f;
-	//for (int i = 0; i < pixmap->w; i++) {
-	//	for (int j = 0; j < pixmap->h; j++) {
-	//		int index = 3 * pixmap->w * j + 3 * i;
-
-	//		int r = pixmap->samples[index];
-	//		int g = pixmap->samples[index + 1];
-	//		int b = pixmap->samples[index + 2];
-
-	//		float brightness = static_cast<float>(r + g + b) / 3.0f;
-	//		vertical_histogram[i] += brightness;
-	//		brightness_sum += brightness;
-	//	}
-	//}
 
 	float total_nonzero = 0.0f;
 	for (int i = 0; i < pixmap->w; i++) {
