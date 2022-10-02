@@ -730,7 +730,7 @@ void MainWidget::validate_render() {
     }
 
     if (main_document_view && main_document_view->get_document()) {
-        std::optional<Portal> link = main_document_view->find_closest_link();
+        std::optional<Portal> link = main_document_view->find_closest_portal();
 
         if (link) {
             helper_document_view->goto_link(&link.value());
@@ -898,17 +898,17 @@ void MainWidget::update_link_with_opened_book_state(Portal lnk, const OpenedBook
     lnk.dst.book_state = new_state;
 
     if (link_owner) {
-        link_owner->update_link(lnk);
+        link_owner->update_portal(lnk);
     }
 
-    db_manager->update_link(link_owner->get_checksum(),
+    db_manager->update_portal(link_owner->get_checksum(),
         new_state.offset_x, new_state.offset_y, new_state.zoom_level, lnk.src_offset_y);
 
     link_to_edit = {};
 }
 
 void MainWidget::update_closest_link_with_opened_book_state(const OpenedBookState& new_state) {
-    std::optional<Portal> closest_link = main_document_view->find_closest_link();
+    std::optional<Portal> closest_link = main_document_view->find_closest_portal();
     if (closest_link) {
         update_link_with_opened_book_state(closest_link.value(), new_state);
     }
@@ -1420,10 +1420,10 @@ void MainWidget::prev_state() {
             link_to_edit.value().dst.book_state = state;
 
             if (link_owner) {
-                link_owner->update_link(link_to_edit.value());
+                link_owner->update_portal(link_to_edit.value());
             }
 
-            db_manager->update_link(checksummer->get_checksum(history[current_history_index].document_path),
+            db_manager->update_portal(checksummer->get_checksum(history[current_history_index].document_path),
                 state.offset_x, state.offset_y, state.zoom_level, link_to_edit->src_offset_y);
             link_to_edit = {};
         }
@@ -1980,13 +1980,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
 
     else if (command->name == "goto_link" || command->name == "goto_portal") {
-        std::optional<Portal> link = main_document_view->find_closest_link();
+        std::optional<Portal> link = main_document_view->find_closest_portal();
         if (link) {
             open_document(link->dst);
         }
     }
     else if (command->name == "edit_link" || command->name == "edit_portal") {
-        std::optional<Portal> link = main_document_view->find_closest_link();
+        std::optional<Portal> link = main_document_view->find_closest_portal();
         if (link) {
             link_to_edit = link;
             open_document(link->dst);
@@ -2108,7 +2108,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		else {
 
 			OverviewState overview_state;
-			std::optional<Portal> portal_ = main_document_view->find_closest_link();
+			std::optional<Portal> portal_ = main_document_view->find_closest_portal();
 			if (portal_) {
 				Portal portal = portal_.value();
 				auto destination_path = checksummer->get_path(portal.dst.document_checksum);
@@ -4170,7 +4170,7 @@ void MainWidget::handle_portal_overview_update() {
     if (current_state_) {
         OverviewState current_state = current_state_.value();
         if (current_state.doc != nullptr) {
-            std::optional<Portal> link_ = main_document_view->find_closest_link();
+            std::optional<Portal> link_ = main_document_view->find_closest_portal();
             if (link_) {
                 Portal link = link_.value();
                 OpenedBookState link_new_state = link.dst.book_state;
@@ -4185,7 +4185,7 @@ void MainWidget::goto_overview() {
     if (opengl_widget->get_overview_page()) {
         OverviewState overview = opengl_widget->get_overview_page().value();
         if (overview.doc != nullptr) {
-            std::optional<Portal> closest_link_ = main_document_view->find_closest_link();
+            std::optional<Portal> closest_link_ = main_document_view->find_closest_portal();
             if (closest_link_) {
                 push_state();
                 open_document(closest_link_.value().dst);

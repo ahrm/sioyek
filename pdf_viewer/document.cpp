@@ -195,7 +195,7 @@ void Document::delete_highlight(Highlight hl) {
 	}
 }
 
-std::optional<Portal> Document::find_closest_link(float to_offset_y, int* index) {
+std::optional<Portal> Document::find_closest_portal(float to_offset_y, int* index) {
 	int min_index = argminf<Portal>(portals, [to_offset_y](Portal l) {
 		return abs(l.src_offset_y - to_offset_y);
 		});
@@ -207,12 +207,10 @@ std::optional<Portal> Document::find_closest_link(float to_offset_y, int* index)
 	return {};
 }
 
-bool Document::update_link(Portal new_link) {
-	for (auto& link : portals) {
-		if (link.src_offset_y == new_link.src_offset_y) {
-			link.dst.book_state.offset_x = new_link.dst.book_state.offset_x;
-			link.dst.book_state.offset_y = new_link.dst.book_state.offset_y;
-			link.dst.book_state.zoom_level = new_link.dst.book_state.zoom_level;
+bool Document::update_portal(Portal new_portal) {
+	for (auto& portal : portals) {
+		if (portal.src_offset_y == new_portal.src_offset_y) {
+			portal.dst.book_state = new_portal.dst.book_state;
 			return true;
 		}
 	}
@@ -221,7 +219,7 @@ bool Document::update_link(Portal new_link) {
 
 void Document::delete_closest_link(float to_offset_y) {
 	int closest_index = -1;
-	if (find_closest_link(to_offset_y, &closest_index)) {
+	if (find_closest_portal(to_offset_y, &closest_index)) {
 		db_manager->delete_link( get_checksum(), portals[closest_index].src_offset_y);
 		portals.erase(portals.begin() + closest_index);
 	}

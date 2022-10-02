@@ -527,7 +527,7 @@ bool DatabaseManager::insert_portal(const std::string& src_document_path, const 
 		error_message);
 }
 
-bool DatabaseManager::update_link(const std::string& src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
+bool DatabaseManager::update_portal(const std::string& src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
 
 	std::wstringstream ss;
 	ss << "UPDATE links SET dst_offset_x=" << dst_offset_x << ", dst_offset_y=" << dst_offset_y <<

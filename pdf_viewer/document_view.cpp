@@ -124,9 +124,9 @@ Document* DocumentView::get_document() {
 //	return current_search_result_index;
 //}
 
-std::optional<Portal> DocumentView::find_closest_link() {
+std::optional<Portal> DocumentView::find_closest_portal() {
 	if (current_document) {
-		return current_document->find_closest_link(offset_y);
+		return current_document->find_closest_portal(offset_y);
 	}
 	return {};
 }
