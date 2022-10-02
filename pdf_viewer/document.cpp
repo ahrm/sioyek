@@ -372,7 +372,7 @@ float Document::get_page_size_smart(bool width, int page_index, float* left_rati
 	fz_matrix ctm = fz_identity;
 	ctm = fz_pre_scale(ctm, 0.25f, 0.25f);
 
-	fz_pixmap* pixmap = fz_new_pixmap_from_page_number(context, doc, page_index, ctm, fz_device_rgb(context), 0);
+	fz_pixmap* pixmap = get_small_pixmap(page_index);
 
 	std::vector<float> histogram;
 
@@ -418,8 +418,6 @@ float Document::get_page_size_smart(bool width, int page_index, float* left_rati
 	int border = 10;
 	start_index = std::max<int>(start_index - border, 0);
 	end_index = std::min<int>(end_index + border, histogram.size()-1);
-
-	fz_drop_pixmap(context, pixmap);
 
 	*left_ratio = static_cast<float>(start_index) / histogram.size();
 	*right_ratio = static_cast<float>(end_index) / histogram.size();
