@@ -187,16 +187,12 @@ void Document::delete_highlight_with_index(int index) {
 }
 
 void Document::delete_highlight(Highlight hl) {
-	int index_to_delete = -1;
-	for (size_t i = 0; i < highlights.size(); i++) {
+	for (size_t i = (highlights.size()-1); i >= 0; i--) {
 		if (highlights[i] == hl) {
-			index_to_delete = i;
+			delete_highlight_with_index(i);
+			return;
 		}
 	}
-	if (index_to_delete != -1) {
-		delete_highlight_with_index(index_to_delete);
-	}
-
 }
 
 std::optional<Portal> Document::find_closest_link(float to_offset_y, int* index) {
