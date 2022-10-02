@@ -32,7 +32,7 @@ private:
 	std::vector<Mark> marks;
 	std::vector<BookMark> bookmarks;
 	std::vector<Highlight> highlights;
-	std::vector<Link> links;
+	std::vector<Portal> portals;
 	DatabaseManager* db_manager = nullptr;
 	std::vector<TocNode*> top_level_toc_nodes;
 	std::vector<TocNode*> created_top_level_toc_nodes;
@@ -126,7 +126,7 @@ public:
 	bool get_is_indexing();
 	fz_stext_page* get_stext_with_page_number(fz_context* ctx, int page_number);
 	fz_stext_page* get_stext_with_page_number(int page_number);
-	void add_link(Link link, bool insert_into_database = true);
+	void add_portal(Portal link, bool insert_into_database = true);
 	std::wstring get_path();
 	std::string get_checksum();
 	std::optional<std::string> get_checksum_fast();
@@ -135,8 +135,8 @@ public:
 	int find_closest_sorted_bookmark_index(const std::vector<BookMark>& sorted_bookmarks, float to_offset_y) const;
 	int find_closest_sorted_highlight_index(const std::vector<Highlight>& sorted_highlights, float to_offset_y) const;
 
-	std::optional<Link> find_closest_link(float to_offset_y, int* index = nullptr);
-	bool update_link(Link new_link);
+	std::optional<Portal> find_closest_link(float to_offset_y, int* index = nullptr);
+	bool update_link(Portal new_link);
 	void delete_closest_bookmark(float to_y_offset);
 	void delete_closest_link(float to_offset_y);
 	const std::vector<BookMark>& get_bookmarks() const;

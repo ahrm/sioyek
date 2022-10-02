@@ -60,15 +60,15 @@ public:
 	~DocumentView();
 	float get_zoom_level();
 	DocumentViewState get_state();
-	LinkViewState get_checksum_state();
+	PortalViewState get_checksum_state();
 	void set_opened_book_state(const OpenedBookState& state);
 	void handle_escape();
 	void set_book_state(OpenedBookState state);
 	void set_offsets(float new_offset_x, float new_offset_y);
 	Document* get_document();
-	std::optional<Link> find_closest_link();
+	std::optional<Portal> find_closest_link();
 	std::optional<BookMark> find_closest_bookmark();
-	void goto_link(Link* link);
+	void goto_link(Portal* link);
 	void delete_closest_link();
 	void delete_closest_bookmark();
 	Highlight get_highlight_with_index(int index);

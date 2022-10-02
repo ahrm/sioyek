@@ -70,7 +70,7 @@ struct DocumentViewState {
 	OpenedBookState book_state;
 };
 
-struct LinkViewState {
+struct PortalViewState {
 	std::string document_checksum;
 	OpenedBookState book_state;
 };
@@ -81,10 +81,10 @@ struct LinkViewState {
 	Also if helper window is opened, it automatically displays the closest link to the current location.
 	Note that this is different from PdfLink which is the built-in link functionality in PDF file format.
 */
-struct Link {
-	static Link with_src_offset(float src_offset);
+struct Portal {
+	static Portal with_src_offset(float src_offset);
 
-	LinkViewState dst;
+	PortalViewState dst;
 	float src_offset_y;
 
 	QJsonObject to_json() const;
@@ -154,4 +154,4 @@ struct IndexedData {
 bool operator==(const Mark& lhs, const Mark& rhs);
 bool operator==(const BookMark& lhs, const BookMark& rhs);
 bool operator==(const Highlight& lhs, const Highlight& rhs);
-bool operator==(const Link& lhs, const Link& rhs);
+bool operator==(const Portal& lhs, const Portal& rhs);

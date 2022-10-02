@@ -711,23 +711,26 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 				glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
 					1,
 					config_manager->get_config<float>(L"link_highlight_color"));
-				fz_link* links = document_view->get_document()->get_page_links(page);
-				while (links != nullptr) {
-					render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
-					all_visible_links.push_back(std::make_pair(page, links));
-					links = links->next;
+				fz_link* portals = document_view->get_document()->get_page_links(page);
+				while (portals != nullptr) {
+					render_highlight_document(shared_gl_objects.highlight_program, page, portals->rect);
+					all_visible_links.push_back(std::make_pair(page, portals));
+					portals = portals->next;
 				}
 			}
 		}
 		// prerender pages
 		if (visible_pages.size() > 0) {
+			int num_pages = document_view->get_document()->num_pages();
 			int max_page = visible_pages[visible_pages.size() - 1];
 			for (int i = 1; i < (PRERENDERED_PAGE_COUNT + 1); i++) {
-				pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-					max_page + i,
-					document_view->get_zoom_level(),
-					nullptr,
-					nullptr);
+				if (max_page + i < num_pages) {
+					pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+						max_page + i,
+						document_view->get_zoom_level(),
+						nullptr,
+						nullptr);
+				}
 			}
 		}
 	}

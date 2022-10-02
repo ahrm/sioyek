@@ -730,7 +730,7 @@ void MainWidget::validate_render() {
     }
 
     if (main_document_view && main_document_view->get_document()) {
-        std::optional<Link> link = main_document_view->find_closest_link();
+        std::optional<Portal> link = main_document_view->find_closest_link();
 
         if (link) {
             helper_document_view->goto_link(&link.value());
@@ -891,7 +891,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
 }
 
 
-void MainWidget::update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state) {
+void MainWidget::update_link_with_opened_book_state(Portal lnk, const OpenedBookState& new_state) {
     std::wstring docpath = main_document_view->get_document()->get_path();
     Document* link_owner = document_manager->get_document(docpath);
 
@@ -908,7 +908,7 @@ void MainWidget::update_link_with_opened_book_state(Link lnk, const OpenedBookSt
 }
 
 void MainWidget::update_closest_link_with_opened_book_state(const OpenedBookState& new_state) {
-    std::optional<Link> closest_link = main_document_view->find_closest_link();
+    std::optional<Portal> closest_link = main_document_view->find_closest_link();
     if (closest_link) {
         update_link_with_opened_book_state(closest_link.value(), new_state);
     }
@@ -997,7 +997,7 @@ bool MainWidget::handle_command_with_symbol(const Command* command, char symbol)
     return true;
 }
 
-void MainWidget::open_document(const LinkViewState& lvs) {
+void MainWidget::open_document(const PortalViewState& lvs) {
     DocumentViewState dvs;
     auto path = checksummer->get_path(lvs.document_checksum);
     if (path) {
@@ -1980,13 +1980,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
 
     else if (command->name == "goto_link" || command->name == "goto_portal") {
-        std::optional<Link> link = main_document_view->find_closest_link();
+        std::optional<Portal> link = main_document_view->find_closest_link();
         if (link) {
             open_document(link->dst);
         }
     }
     else if (command->name == "edit_link" || command->name == "edit_portal") {
-        std::optional<Link> link = main_document_view->find_closest_link();
+        std::optional<Portal> link = main_document_view->find_closest_link();
         if (link) {
             link_to_edit = link;
             open_document(link->dst);
@@ -2108,9 +2108,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		else {
 
 			OverviewState overview_state;
-			std::optional<Link> portal_ = main_document_view->find_closest_link();
+			std::optional<Portal> portal_ = main_document_view->find_closest_link();
 			if (portal_) {
-				Link portal = portal_.value();
+				Portal portal = portal_.value();
 				auto destination_path = checksummer->get_path(portal.dst.document_checksum);
 				if (destination_path) {
 					Document* doc = document_manager->get_document(destination_path.value());
@@ -2142,13 +2142,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         if (defpos.size() > 0) {
             AbsoluteDocumentPos abspos;
             doc()->page_pos_to_absolute_pos(defpos[0].page, defpos[0].x, defpos[0].y, &abspos.x, &abspos.y);
-            Link link;
+            Portal link;
             link.dst.document_checksum = doc()->get_checksum();
             link.dst.book_state.offset_x = abspos.x;
             link.dst.book_state.offset_y = abspos.y;
             link.dst.book_state.zoom_level = main_document_view->get_zoom_level();
             link.src_offset_y = main_document_view->get_ruler_pos();
-            doc()->add_link(link, true);
+            doc()->add_portal(link, true);
         }
     }
 
@@ -2682,7 +2682,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         if (maybe_overview_position.has_value()) {
             AbsoluteDocumentPos abs_pos = doc()->document_to_absolute_pos(maybe_overview_position.value());
             std::string document_checksum = main_document_view->get_document()->get_checksum();
-            Link new_portal;
+            Portal new_portal;
             new_portal.dst.document_checksum = document_checksum;
             new_portal.dst.book_state.offset_x = abs_pos.x;
             new_portal.dst.book_state.offset_y = abs_pos.y;
@@ -2911,8 +2911,8 @@ void MainWidget::handle_portal() {
         pending_link = {};
     }
     else {
-        pending_link = std::make_pair<std::wstring, Link>(main_document_view->get_document()->get_path(),
-            Link::with_src_offset(main_document_view->get_offset_y()));
+        pending_link = std::make_pair<std::wstring, Portal>(main_document_view->get_document()->get_path(),
+            Portal::with_src_offset(main_document_view->get_offset_y()));
     }
     validate_render();
 }
@@ -3129,10 +3129,10 @@ void MainWidget::toggle_presentation_mode() {
     }
 }
 
-void MainWidget::complete_pending_link(const LinkViewState& destination_view_state) {
-    Link& pl = pending_link.value().second;
+void MainWidget::complete_pending_link(const PortalViewState& destination_view_state) {
+    Portal& pl = pending_link.value().second;
     pl.dst = destination_view_state;
-    main_document_view->get_document()->add_link(pl);
+    main_document_view->get_document()->add_portal(pl);
     pending_link = {};
 }
 
@@ -3157,7 +3157,7 @@ void MainWidget::long_jump_to_destination(DocumentPos pos) {
         // if we press the link button and then click on a pdf link, we automatically link to the
         // link's destination
 
-        LinkViewState dest_state;
+        PortalViewState dest_state;
         dest_state.document_checksum = main_document_view->get_document()->get_checksum();
         dest_state.book_state.offset_x = pos.x;
         dest_state.book_state.offset_y = main_document_view->get_page_offset(pos.page) + pos.y;
@@ -3624,7 +3624,7 @@ void MainWidget::show_password_prompt_if_required() {
 
 void MainWidget::on_new_paper_added(const std::wstring& file_path) {
     if (is_pending_link_source_filled()) {
-        LinkViewState dst_view_state;
+        PortalViewState dst_view_state;
 
         dst_view_state.book_state.offset_x = 0;
         dst_view_state.book_state.offset_y = 0;
@@ -4022,19 +4022,19 @@ std::optional<DocumentPos> MainWidget::get_overview_position() {
     return {};
 }
 
-void MainWidget::add_portal(std::wstring source_path, Link new_link) {
+void MainWidget::add_portal(std::wstring source_path, Portal new_link) {
 	if (source_path == main_document_view->get_document()->get_path()) {
-		main_document_view->get_document()->add_link(new_link);
+		main_document_view->get_document()->add_portal(new_link);
 	}
 	else {
 		const std::unordered_map<std::wstring, Document*> cached_documents = document_manager->get_cached_documents();
 		for (auto [doc_path, doc] : cached_documents) {
 			if (source_path == doc_path) {
-				doc->add_link(new_link, false);
+				doc->add_portal(new_link, false);
 			}
 		}
 
-		db_manager->insert_link(checksummer->get_checksum(source_path),
+		db_manager->insert_portal(checksummer->get_checksum(source_path),
 			new_link.dst.document_checksum,
 			new_link.dst.book_state.offset_x,
 			new_link.dst.book_state.offset_y,
@@ -4176,9 +4176,9 @@ void MainWidget::handle_portal_overview_update() {
     if (current_state_) {
         OverviewState current_state = current_state_.value();
         if (current_state.doc != nullptr) {
-            std::optional<Link> link_ = main_document_view->find_closest_link();
+            std::optional<Portal> link_ = main_document_view->find_closest_link();
             if (link_) {
-                Link link = link_.value();
+                Portal link = link_.value();
                 OpenedBookState link_new_state = link.dst.book_state;
                 link_new_state.offset_y = current_state.absolute_offset_y;
                 update_link_with_opened_book_state(link, link_new_state);
@@ -4191,7 +4191,7 @@ void MainWidget::goto_overview() {
     if (opengl_widget->get_overview_page()) {
         OverviewState overview = opengl_widget->get_overview_page().value();
         if (overview.doc != nullptr) {
-            std::optional<Link> closest_link_ = main_document_view->find_closest_link();
+            std::optional<Portal> closest_link_ = main_document_view->find_closest_link();
             if (closest_link_) {
                 push_state();
                 open_document(closest_link_.value().dst);

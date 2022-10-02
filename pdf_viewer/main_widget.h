@@ -92,10 +92,10 @@ private:
 
 	QTimer* validation_interval_timer = nullptr;
 
-	std::optional<Link> link_to_edit = {};
+	std::optional<Portal> link_to_edit = {};
 	int selected_highlight_index = -1;
 
-	std::optional<std::pair<std::optional<std::wstring>, Link>> pending_link;
+	std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_link;
 
 	bool mouse_drag_mode = false;
 	bool synctex_mode = false;
@@ -184,11 +184,11 @@ protected:
 	void toggle_two_window_mode();
 	void toggle_window_configuration();
 	void handle_portal();
-	void add_portal(std::wstring source_path, Link new_link);
+	void add_portal(std::wstring source_path, Portal new_link);
 	void toggle_fullscreen();
 	void toggle_presentation_mode();
     void toggle_synctex_mode();
-    void complete_pending_link(const LinkViewState& destination_view_state);
+    void complete_pending_link(const PortalViewState& destination_view_state);
 	void long_jump_to_destination(DocumentPos pos);
 	void long_jump_to_destination(int page, float offset_y);
 	void long_jump_to_destination(float abs_offset_y);
@@ -245,7 +245,7 @@ public:
 	void open_document_with_hash(const std::string& hash, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
 	void open_document_at_location(const Path& path, int page, std::optional<float> x_loc, std::optional<float> y_loc, std::optional<float> zoom_level);
 	void open_document(const DocumentViewState& state);
-	void open_document(const LinkViewState& checksum);
+	void open_document(const PortalViewState& checksum);
 	void validate_render();
 	void validate_ui();
 	void move_document(float dx, float dy);
@@ -259,7 +259,7 @@ public:
 	void toggle_dark_mode();
 	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line, int column);
 	//void handle_args(const QStringList &arguments);
-	void update_link_with_opened_book_state(Link lnk, const OpenedBookState& new_state);
+	void update_link_with_opened_book_state(Portal lnk, const OpenedBookState& new_state);
 	void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
 	void set_current_widget(QWidget* new_widget);
 	bool focus_on_visual_mark_pos(bool moving_down);

@@ -43,8 +43,8 @@ void Document::load_document_metadata_from_db() {
 	marks.clear();
 	bookmarks.clear();
 	highlights.clear();
-	links.clear();
-	links.clear();
+	portals.clear();
+	portals.clear();
 
 	std::optional<std::string> checksum_ = get_checksum_fast();
 	if (checksum_) {
@@ -52,7 +52,7 @@ void Document::load_document_metadata_from_db() {
 		db_manager->select_mark(checksum, marks);
 		db_manager->select_bookmark(checksum, bookmarks);
 		db_manager->select_highlight(checksum, highlights);
-		db_manager->select_links(checksum, links);
+		db_manager->select_links(checksum, portals);
 	}
 	else {
 		auto checksum_thread = std::thread([&]() {
@@ -69,23 +69,20 @@ void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 	BookMark bookmark{ y_offset, desc };
 	bookmarks.push_back(bookmark);
 	db_manager->insert_bookmark(get_checksum(), desc, y_offset);
-	//if (AUTO_EMBED_ANNOTATIONS) {
-	//	add_bookmark_annotation(bookmark);
-	//}
 }
 
 void Document::fill_highlight_rects(fz_context* ctx) {
+	// Fill the `highlight_rects` attribute of all highlights with a vector of merged highlight rects of
+	// individual characters in the highlighted area (we merge the rects of characters in a single line
+	// which makes the result look nicer)
 
 	for (size_t i = 0; i < highlights.size(); i++) {
-
 		const Highlight& highlight = highlights[i];
 		std::vector<fz_rect> highlight_rects;
 		std::vector<fz_rect> merged_rects;
 		std::wstring highlight_text;
 		get_text_selection(ctx, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text);
-
 		merge_selected_character_rects(highlight_rects, merged_rects);
-
 		highlights[i].highlight_rects = std::move(merged_rects);
 	}
 }
@@ -117,20 +114,16 @@ void Document::add_highlight(const std::wstring& desc,
 		selection_end.x,
 		selection_end.y,
 		highlight.type);
-
-	//if (AUTO_EMBED_ANNOTATIONS) {
-	//	add_highlight_annotation(highlight, highlight_rects);
-	//}
 }
 
 bool Document::get_is_indexing() {
 	return is_indexing;
 }
 
-void Document::add_link(Link link, bool insert_into_database) {
-	links.push_back(link);
+void Document::add_portal(Portal link, bool insert_into_database) {
+	portals.push_back(link);
 	if (insert_into_database) {
-		db_manager->insert_link(
+		db_manager->insert_portal(
 			get_checksum(),
 			link.dst.document_checksum,
 			link.dst.book_state.offset_x,
@@ -227,20 +220,20 @@ void Document::delete_highlight_with_offsets(float begin_x, float begin_y, float
 
 }
 
-std::optional<Link> Document::find_closest_link(float to_offset_y, int* index) {
-	int min_index = argminf<Link>(links, [to_offset_y](Link l) {
+std::optional<Portal> Document::find_closest_link(float to_offset_y, int* index) {
+	int min_index = argminf<Portal>(portals, [to_offset_y](Portal l) {
 		return abs(l.src_offset_y - to_offset_y);
 		});
 
 	if (min_index >= 0) {
 		if (index) *index = min_index;
-		return links[min_index];
+		return portals[min_index];
 	}
 	return {};
 }
 
-bool Document::update_link(Link new_link) {
-	for (auto& link : links) {
+bool Document::update_link(Portal new_link) {
+	for (auto& link : portals) {
 		if (link.src_offset_y == new_link.src_offset_y) {
 			link.dst.book_state.offset_x = new_link.dst.book_state.offset_x;
 			link.dst.book_state.offset_y = new_link.dst.book_state.offset_y;
@@ -254,8 +247,8 @@ bool Document::update_link(Link new_link) {
 void Document::delete_closest_link(float to_offset_y) {
 	int closest_index = -1;
 	if (find_closest_link(to_offset_y, &closest_index)) {
-		db_manager->delete_link( get_checksum(), links[closest_index].src_offset_y);
-		links.erase(links.begin() + closest_index);
+		db_manager->delete_link( get_checksum(), portals[closest_index].src_offset_y);
+		portals.erase(portals.begin() + closest_index);
 	}
 }
 
@@ -2026,15 +2019,15 @@ std::optional<PdfLink> Document::get_link_in_page_rect(int page, fz_rect rect) {
 	fz_rect doc_rect = absolute_to_page_rect(rect, &rect_page);
 
 	if (page != -1) {
-		fz_link* links = get_page_links(page);
+		fz_link* portals = get_page_links(page);
 		std::optional<PdfLink> res = {};
-		while (links != nullptr) {
-			if (rects_intersect(doc_rect, links->rect))
+		while (portals != nullptr) {
+			if (rects_intersect(doc_rect, portals->rect))
 			{
-				res = { links->rect, links->uri };
+				res = { portals->rect, portals->uri };
 				return res;
 			}
-			links = links->next;
+			portals = portals->next;
 		}
 	}
 
@@ -2045,15 +2038,15 @@ std::optional<PdfLink> Document::get_link_in_pos(int page, float doc_x, float do
 	if (!doc) return {};
 
 	if (page != -1) {
-		fz_link* links = get_page_links(page);
+		fz_link* portals = get_page_links(page);
 		fz_point point = { doc_x, doc_y };
 		std::optional<PdfLink> res = {};
-		while (links != nullptr) {
-			if (fz_is_point_inside_rect(point, links->rect)) {
-				res = { links->rect, links->uri };
+		while (portals != nullptr) {
+			if (fz_is_point_inside_rect(point, portals->rect)) {
+				res = { portals->rect, portals->uri };
 				return res;
 			}
-			links = links->next;
+			portals = portals->next;
 		}
 
 	}

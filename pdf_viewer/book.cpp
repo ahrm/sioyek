@@ -16,9 +16,9 @@ bool operator==(const CachedPageData& lhs, const CachedPageData& rhs) {
 	return true;
 }
 
-Link Link::with_src_offset(float src_offset)
+Portal Portal::with_src_offset(float src_offset)
 {
-	Link res = Link();
+	Portal res = Portal();
 	res.src_offset_y = src_offset;
 	return res;
 }
@@ -74,7 +74,7 @@ void Highlight::from_json(const QJsonObject& json_object)
 	type = static_cast<char>(json_object["type"].toInt());
 }
 
-QJsonObject Link::to_json() const
+QJsonObject Portal::to_json() const
 {
 	QJsonObject res;
 	res["src_offset_y"] = src_offset_y;
@@ -85,7 +85,7 @@ QJsonObject Link::to_json() const
 	return res;
 }
 
-void Link::from_json(const QJsonObject& json_object)
+void Portal::from_json(const QJsonObject& json_object)
 {
 	src_offset_y = json_object["src_offset_y"].toDouble();
 	dst.document_checksum = json_object["dst_checksum"].toString().toStdString();
@@ -114,7 +114,7 @@ bool operator==(const Highlight& lhs, const Highlight& rhs)
 		  (lhs.selection_begin.y == rhs.selection_begin.y) && (lhs.selection_end.y == rhs.selection_end.y) ;
 }
 
-bool operator==(const Link& lhs, const Link& rhs)
+bool operator==(const Portal& lhs, const Portal& rhs)
 {
 	return  (lhs.src_offset_y == rhs.src_offset_y) && (lhs.dst.document_checksum == rhs.dst.document_checksum);
 }

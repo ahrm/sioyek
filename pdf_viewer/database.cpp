@@ -193,7 +193,7 @@ static int highlight_select_callback(void* res_vector, int argc, char** argv, ch
 
 static int link_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
-	std::vector<Link>* res = (std::vector<Link>*)res_vector;
+	std::vector<Portal>* res = (std::vector<Portal>*)res_vector;
 	assert(argc == 5);
 
 	std::string dst_path = argv[0];
@@ -202,7 +202,7 @@ static int link_select_callback(void* res_vector, int argc, char** argv, char** 
 	float dst_offset_y = atof(argv[3]);
 	float dst_zoom_level = atof(argv[4]);
 
-	Link link;
+	Portal link;
 	link.dst.document_checksum = dst_path;
 	link.src_offset_y = src_offset_y;
 	link.dst.book_state.offset_x = dst_offset_x;
@@ -514,7 +514,7 @@ bool DatabaseManager::insert_highlight(const std::string& document_path,
 		error_message);
 }
 
-bool DatabaseManager::insert_link(const std::string& src_document_path, const std::string& dst_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
+bool DatabaseManager::insert_portal(const std::string& src_document_path, const std::string& dst_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
 
 	std::wstringstream ss;
 	ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level) VALUES ('" <<
@@ -768,7 +768,7 @@ bool DatabaseManager::global_select_bookmark(std::vector<std::pair<std::string, 
 			error_message);
 }
 
-bool DatabaseManager::select_links(const std::string& src_document_path, std::vector<Link> &out_result) {
+bool DatabaseManager::select_links(const std::string& src_document_path, std::vector<Portal> &out_result) {
 		std::wstringstream ss;
 		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level from links where src_document='" << esc(src_document_path) << "';";
 
@@ -857,7 +857,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 	std::vector<std::pair<std::string, Mark>> marks;
 	std::vector<std::pair<std::string, BookMark>> bookmarks;
 	std::vector<std::pair<std::string, Highlight>> highlights;
-	std::vector<std::pair<std::string, Link>> portals;
+	std::vector<std::pair<std::string, Portal>> portals;
 
 	std::unordered_map<std::wstring, std::wstring> path_to_hash;
 
@@ -878,7 +878,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 		std::vector<Mark> current_marks;
 		std::vector<BookMark> current_bookmarks;
 		std::vector<Highlight> current_highlights;
-		std::vector<Link> current_portals;
+		std::vector<Portal> current_portals;
 
 		select_opened_book(key, current_book_state);
 		if (current_book_state.size() > 0) {
@@ -950,7 +950,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 		);
 	}
 	for (const auto &[hash, portal] : portals) {
-		insert_link(
+		insert_portal(
 			hash,
 			portal.dst.document_checksum,
 			portal.dst.book_state.offset_x,
@@ -1010,7 +1010,7 @@ void DatabaseManager::export_json(std::wstring json_file_path, CachedChecksummer
 		std::vector<BookMark> bookmarks;
 		std::vector<Highlight> highlights;
 		std::vector<Mark> marks;
-		std::vector<Link> portals;
+		std::vector<Portal> portals;
 		std::vector<OpenedBookState> opened_book_state_;
 
 		select_opened_book(document_checksum, opened_book_state_);
@@ -1102,12 +1102,12 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
 		auto bookmarks = std::move(load_from_json_array<BookMark>(current_json_doc["bookmarks"].toArray()));
 		auto marks = load_from_json_array<Mark>(current_json_doc["marks"].toArray());
 		auto highlights = load_from_json_array<Highlight>(current_json_doc["highlights"].toArray());
-		auto portals = load_from_json_array<Link>(current_json_doc["portals"].toArray());
+		auto portals = load_from_json_array<Portal>(current_json_doc["portals"].toArray());
 
 		std::vector<BookMark> prev_bookmarks;
 		std::vector<Mark> prev_marks;
 		std::vector<Highlight> prev_highlights;
-		std::vector<Link> prev_portals;
+		std::vector<Portal> prev_portals;
 
 
 		select_bookmark(checksum, prev_bookmarks);
@@ -1118,7 +1118,7 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
 		std::vector<BookMark> new_bookmarks = get_new_elements(prev_bookmarks, bookmarks);
 		std::vector<Mark> new_marks = get_new_elements(prev_marks, marks);
 		std::vector<Highlight> new_highlights = get_new_elements(prev_highlights, highlights);
-		std::vector<Link> new_portals = get_new_elements(prev_portals, portals);
+		std::vector<Portal> new_portals = get_new_elements(prev_portals, portals);
 
 		std::optional<std::wstring> path = checksummer->get_path(checksum);
 
@@ -1143,7 +1143,7 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
 				hl.type);
 		}
 		for (const auto& portal : new_portals) {
-			insert_link(checksum,
+			insert_portal(checksum,
 				portal.dst.document_checksum,
 				portal.dst.book_state.offset_x,
 				portal.dst.book_state.offset_y,
