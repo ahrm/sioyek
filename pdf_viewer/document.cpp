@@ -27,7 +27,6 @@ extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
 extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 extern bool SUPER_FAST_SEARCH;
 
-#define TO_FVEC_SIZE(a) static_cast<std::vector<int>::size_type>(a)
 
 int Document::get_mark_index(char symbol) {
 	for (size_t i = 0; i < marks.size(); i++) {
@@ -315,7 +314,6 @@ void Document::count_chapter_pages(std::vector<int> &page_counts) {
 		int num_pages = fz_count_chapter_pages(context, doc, i);
 		page_counts.push_back(num_pages);
 	}
-
 }
 
 void Document::count_chapter_pages_accum(std::vector<int> &accum_page_counts) {
@@ -328,7 +326,6 @@ void Document::count_chapter_pages_accum(std::vector<int> &accum_page_counts) {
 		accum_page_counts.push_back(accum);
 		accum += raw_page_count[i];
 	}
-
 }
 
 const std::vector<TocNode*>& Document::get_toc() {
@@ -354,7 +351,7 @@ const std::vector<int>& Document::get_flat_toc_pages() {
 
 float Document::get_page_height(int page_index) {
 	std::lock_guard guard(page_dims_mutex);
-	if ((page_index >= 0) && (TO_FVEC_SIZE(page_index) < page_heights.size())) {
+	if ((page_index >= 0) && (page_index < page_heights.size())) {
 		return page_heights[page_index];
 	}
 	else {
@@ -363,7 +360,7 @@ float Document::get_page_height(int page_index) {
 }
 
 float Document::get_page_width(int page_index) {
-	if ((page_index >= 0) && (TO_FVEC_SIZE(page_index) < page_widths.size())) {
+	if ((page_index >= 0) && (page_index < page_widths.size())) {
 		return page_widths[page_index];
 	}
 	else {
@@ -461,7 +458,7 @@ float Document::get_page_size_smart(bool width, int page_index, float* left_rati
 
 float Document::get_accum_page_height(int page_index) {
 	std::lock_guard guard(page_dims_mutex);
-	if (page_index < 0 || (TO_FVEC_SIZE(page_index) >= accum_page_heights.size())) {
+	if (page_index < 0 || (page_index >= accum_page_heights.size())) {
 		return 0.0f;
 	}
 	return accum_page_heights[page_index];
@@ -770,7 +767,7 @@ fz_rect Document::get_page_absolute_rect(int page) {
 
 	fz_rect res;
 
-	if (TO_FVEC_SIZE(page) >= page_widths.size()) {
+	if (page >= page_widths.size()) {
 		res.x0 = 0;
 		res.y0 = 0;
 		res.x1 = 1;
@@ -906,7 +903,7 @@ DocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp){
 
 	float acc_page_heights_i = 0.0f;
 	float page_width_i = 0.0f;
-	if (TO_FVEC_SIZE(i) < accum_page_heights.size()) {
+	if (i < accum_page_heights.size()) {
 		acc_page_heights_i = accum_page_heights[i];
 		page_width_i = page_widths[i];
 		float remaining_y = absp.y - acc_page_heights_i;
@@ -946,7 +943,7 @@ QStandardItemModel* Document::get_toc_model() {
 
 void Document::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
 	std::lock_guard guard(page_dims_mutex);
-	if ((page_widths.size() == 0) || (TO_FVEC_SIZE(page) >= page_widths.size())) {
+	if ((page_widths.size() == 0) || (page >= page_widths.size())) {
 		*abs_x = 0;
 		*abs_y = 0;
 		return;
@@ -1980,7 +1977,7 @@ int Document::add_stext_page_to_created_toc(fz_stext_page* stext_page,
 }
 
 float Document::document_to_absolute_y(int page, float doc_y) {
-	if ((TO_FVEC_SIZE(page) < accum_page_heights.size()) && (page >= 0)) {
+	if ((page < accum_page_heights.size()) && (page >= 0)) {
 		return doc_y + accum_page_heights[page];
 	}
 	return 0;
