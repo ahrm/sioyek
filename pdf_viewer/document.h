@@ -168,9 +168,6 @@ public:
 	float get_page_size_smart(bool width, int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
 	float get_accum_page_height(int page_index);
 	void rotate();
-	//const vector<float>& get_page_heights();
-	//const vector<float>& get_page_widths();
-	//const vector<float>& get_accum_page_heights();
 	void get_visible_pages(float doc_y_range_begin, float doc_y_range_end, std::vector<int>& visible_pages);
 	void load_page_dimensions(bool force_load_now);
 	int num_pages();
@@ -178,8 +175,6 @@ public:
 	DocumentPos absolute_to_page_pos(AbsoluteDocumentPos absolute_pos);
 	fz_rect absolute_to_page_rect(const fz_rect& absolute_rect, int* page);
 	QStandardItemModel* get_toc_model();
-	void page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y);
-	fz_rect page_rect_to_absolute_rect(int page, fz_rect page_rect);
 	int get_offset_page_number(float y_offset);
 	void index_figures(bool* invalid_flag);
 	void stop_indexing();
@@ -235,8 +230,8 @@ public:
 		std::vector<TocNode*>& top_level_node);
 
 	float document_to_absolute_y(int page, float doc_y);
-	AbsoluteDocumentPos document_to_absolute_pos(DocumentPos);
-	fz_rect document_to_absolute_rect(int page, fz_rect doc_rect);
+	AbsoluteDocumentPos document_to_absolute_pos(DocumentPos, bool center_mid=false);
+	fz_rect document_to_absolute_rect(int page, fz_rect doc_rect, bool center_mid=false);
 
 	//void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
 	fz_rect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);

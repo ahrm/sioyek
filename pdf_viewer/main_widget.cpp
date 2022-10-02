@@ -1092,18 +1092,13 @@ void MainWidget::open_document_at_location(const Path& path_,
 
     main_document_view->on_view_size_change(main_window_width, main_window_height);
 
-
-    float absolute_x_loc, absolute_y_loc;
-    main_document_view->get_document()->page_pos_to_absolute_pos(page,
-        x_loc.value_or(0),
-        y_loc.value_or(0),
-        &absolute_x_loc,
-        &absolute_y_loc);
+    AbsoluteDocumentPos absolute_pos = main_document_view->get_document()->document_to_absolute_pos(
+        { page, x_loc.value_or(0), y_loc.value_or(0) }, true);
 
     if (x_loc) {
-        main_document_view->set_offset_x(absolute_x_loc);
+        main_document_view->set_offset_x(absolute_pos.x);
     }
-    main_document_view->set_offset_y(absolute_y_loc);
+    main_document_view->set_offset_y(absolute_pos.y);
 
     if (zoom_level) {
         main_document_view->set_zoom_level(zoom_level.value(), true);
@@ -2140,8 +2135,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "portal_to_definition") {
 		std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
         if (defpos.size() > 0) {
-            AbsoluteDocumentPos abspos;
-            doc()->page_pos_to_absolute_pos(defpos[0].page, defpos[0].x, defpos[0].y, &abspos.x, &abspos.y);
+            AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
             Portal link;
             link.dst.document_checksum = doc()->get_checksum();
             link.dst.book_state.offset_x = abspos.x;

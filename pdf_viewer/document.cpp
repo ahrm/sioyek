@@ -369,11 +369,11 @@ float Document::get_page_width(int page_index) {
 }
 
 float Document::get_page_size_smart(bool width, int page_index, float* left_ratio, float* right_ratio, int* normal_page_width) {
-	fz_matrix ctm = fz_identity;
-	ctm = fz_pre_scale(ctm, 0.25f, 0.25f);
 
 	fz_pixmap* pixmap = get_small_pixmap(page_index);
 
+	// project the small pixmap into a histogram (the `width` parameter determines whether we do this
+	// horizontally or vertically)
 	std::vector<float> histogram;
 
 	if (width) {
@@ -411,6 +411,7 @@ float Document::get_page_size_smart(bool width, int page_index, float* left_rati
 	int start_index = 0;
 	int end_index = histogram.size()-1;
 
+	// find the first index in both directions where the histogram is nonzero
 	while ((start_index < end_index) && (histogram[start_index++] < nonzero_threshold));
 	while ((start_index < end_index) && (histogram[end_index--] < nonzero_threshold));
 
@@ -666,14 +667,14 @@ void Document::load_page_dimensions(bool force_load_now) {
 			fz_page* page = fz_load_page(context, doc, n / 2);
 			fz_rect bounds = fz_bound_page(context, page);
 			fz_drop_page(context, page);
-			for (int i = 0; i < n; i++) {
-				int height = bounds.y1 - bounds.y0;
-				int width = bounds.x1 - bounds.x0;
+			int height = bounds.y1 - bounds.y0;
+			int width = bounds.x1 - bounds.x0;
 
+			for (int i = 0; i < n; i++) {
 				page_heights.push_back(height);
 				accum_page_heights.push_back(acc_height);
-				acc_height += height;
 				page_widths.push_back(width);
+				acc_height += height;
 			}
 		}
 		fz_catch(context) {
@@ -746,13 +747,9 @@ void Document::load_page_dimensions(bool force_load_now) {
 fz_rect Document::get_page_absolute_rect(int page) {
 	std::lock_guard guard(page_dims_mutex);
 
-	fz_rect res;
+	fz_rect res = {0, 0, 1, 1};
 
 	if (page >= page_widths.size()) {
-		res.x0 = 0;
-		res.y0 = 0;
-		res.x1 = 1;
-		res.y1 = 1;
 		return res;
 	}
 
@@ -882,13 +879,10 @@ DocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp){
 		accum_page_heights.end(), absp.y) -  accum_page_heights.begin()) - 1;
 	i = std::max(0, i);
 
-	float acc_page_heights_i = 0.0f;
-	float page_width_i = 0.0f;
 	if (i < accum_page_heights.size()) {
-		acc_page_heights_i = accum_page_heights[i];
-		page_width_i = page_widths[i];
+		float acc_page_heights_i = accum_page_heights[i];
+		float page_width = page_widths[i];
 		float remaining_y = absp.y - acc_page_heights_i;
-		float page_width = page_width_i;
 
 		return {i, page_width / 2 + absp.x, remaining_y};
 	}
@@ -904,43 +898,6 @@ QStandardItemModel* Document::get_toc_model() {
 	return cached_toc_model;
 }
 
-//void Document::absolute_to_page_rects(fz_rect absolute_rect, vector<fz_rect>& resulting_rects, vector<int>& resulting_pages)
-//{
-//	fz_rect res;
-//	int page_begin, page_end;
-//	absolute_to_page_pos(absolute_rect.x0, absolute_rect.y0, &res.x0, &res.y0, &page_begin);
-//	absolute_to_page_pos(absolute_rect.x1, absolute_rect.y1, &res.x1, &res.y1, &page_end);
-//
-//	for (int i = page_begin; i <= page_end; i++) {
-//		fz_rect page_absolute_rect = get_page_absolute_rect(i);
-//		fz_rect intersection = fz_intersect_rect(absolute_rect, page_absolute_rect);
-//		intersection.y0 -= page_absolute_rect.y0;
-//		intersection.y1 -= page_absolute_rect.y0;
-//
-//		resulting_rects.push_back(intersection);
-//		resulting_pages.push_back(i);
-//	}
-//}
-
-void Document::page_pos_to_absolute_pos(int page, float page_x, float page_y, float* abs_x, float* abs_y) {
-	std::lock_guard guard(page_dims_mutex);
-	if ((page_widths.size() == 0) || (page >= page_widths.size())) {
-		*abs_x = 0;
-		*abs_y = 0;
-		return;
-	}
-
-	*abs_x = page_x - page_widths[page] / 2;
-	*abs_y = page_y + accum_page_heights[page];
-}
-
-fz_rect Document::page_rect_to_absolute_rect(int page, fz_rect page_rect) {
-	fz_rect res;
-	page_pos_to_absolute_pos(page, page_rect.x0, page_rect.y0, &res.x0, &res.y0);
-	page_pos_to_absolute_pos(page, page_rect.x1, page_rect.y1, &res.x1, &res.y1);
-
-	return res;
-}
 
 int Document::get_offset_page_number(float y_offset) {
 	std::lock_guard guard(page_dims_mutex);
@@ -1493,7 +1450,7 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
 			if (selecting || word_selecting) {
 				if (!(current_char->c == ' ' && selected_text.size() == 0)) {
 					selected_text.push_back(current_char->c);
-					fz_rect charrect = page_rect_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
+					fz_rect charrect = document_to_absolute_rect(i, fz_rect_from_quad(current_char->quad), true);
 					selected_characters.push_back(charrect);
 				}
 				if ((current_char->next == nullptr)) {
@@ -1964,16 +1921,19 @@ float Document::document_to_absolute_y(int page, float doc_y) {
 	return 0;
 }
 
-AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos) {
+AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos, bool center_mid) {
 	float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
 	AbsoluteDocumentPos res = {doc_pos.x, absolute_y};
+	if (center_mid) {
+		res.x -= page_widths[doc_pos.page] / 2;
+	}
 	return res;
 }
 
-fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect) {
+fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect, bool center_mid) {
 	fz_rect res;
-	AbsoluteDocumentPos x0y0 = document_to_absolute_pos({ page, doc_rect.x0, doc_rect.y0 });
-	AbsoluteDocumentPos x1y1 = document_to_absolute_pos({ page, doc_rect.x1, doc_rect.y1 });
+	AbsoluteDocumentPos x0y0 = document_to_absolute_pos({ page, doc_rect.x0, doc_rect.y0 }, center_mid);
+	AbsoluteDocumentPos x1y1 = document_to_absolute_pos({ page, doc_rect.x1, doc_rect.y1 }, center_mid);
 
 	res.x0 = x0y0.x;
 	res.y0 = x0y0.y;
