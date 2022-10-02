@@ -116,7 +116,7 @@ public:
 	void add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
 	//void add_highlight_annotation(const Highlight& highlight, const std::vector<fz_rect>& selected_rects);
 	void delete_highlight_with_index(int index);
-	void delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y);
+	void delete_highlight(Highlight hl);
 	//void delete_highlight_annotation(const Highlight& highlight);
 
 	void fill_highlight_rects(fz_context* ctx);

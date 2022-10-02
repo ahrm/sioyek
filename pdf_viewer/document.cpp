@@ -184,20 +184,12 @@ void Document::delete_highlight_with_index(int index) {
 		highlight_to_delete.selection_end.x,
 		highlight_to_delete.selection_end.y);
 	highlights.erase(highlights.begin() + index);
-	//if (AUTO_EMBED_ANNOTATIONS) {
-	//	delete_highlight_annotation(highlight_to_delete);
-	//}
 }
 
-void Document::delete_highlight_with_offsets(float begin_x, float begin_y, float end_x, float end_y) {
+void Document::delete_highlight(Highlight hl) {
 	int index_to_delete = -1;
 	for (size_t i = 0; i < highlights.size(); i++) {
-		if (
-			(highlights[i].selection_begin.x == begin_x) &&
-			(highlights[i].selection_begin.y == begin_y) &&
-			(highlights[i].selection_end.x == end_x) &&
-			(highlights[i].selection_end.y == end_y)
-			) {
+		if (highlights[i] == hl) {
 			index_to_delete = i;
 		}
 	}

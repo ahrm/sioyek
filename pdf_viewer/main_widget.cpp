@@ -2355,8 +2355,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "goto_highlight") {
         std::vector<std::wstring> option_names;
         std::vector<std::wstring> option_location_strings;
-        std::vector<std::vector<float>> option_locations;
-        const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights_sorted();
+        std::vector<Highlight> highlights = main_document_view->get_document()->get_highlights_sorted();
 
         int closest_highlight_index = main_document_view->get_document()->find_closest_highlight_index(highlights, main_document_view->get_offset_y());
 
@@ -2364,31 +2363,26 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             std::wstring type_name = L"a";
             type_name[0] = highlight.type;
             option_names.push_back(L"[" + type_name + L"] " + highlight.description + L"]");
-            option_locations.push_back({highlight.selection_begin.x, highlight.selection_begin.y, highlight.selection_end.x, highlight.selection_end.y});
             auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin);
             option_location_strings.push_back(get_page_formatted_string(page + 1));
         }
 
-        set_current_widget(new FilteredSelectTableWindowClass<std::vector<float>>(
+        set_current_widget(new FilteredSelectTableWindowClass<Highlight>(
             option_names,
             option_location_strings,
-            option_locations,
+            highlights,
             closest_highlight_index,
-            [&](std::vector<float>* offset_values) {
-                if (offset_values) {
+            [&](Highlight* hl) {
+                if (hl) {
                     validate_render();
                     push_state();
-                    main_document_view->set_offset_y((*offset_values)[1]);
+                    main_document_view->set_offset_y(hl->selection_begin.y);
                 }
             },
             this,
-                [&](std::vector<float>* offset_values) {
-                if (offset_values) {
-                    float begin_x = (*(offset_values))[0];
-                    float begin_y = (*(offset_values))[1];
-                    float end_x = (*(offset_values))[2];
-                    float end_y = (*(offset_values))[3];
-                    main_document_view->delete_highlight_with_offsets(begin_x, begin_y, end_x, end_y);
+                [&](Highlight* hl) {
+                if (hl) {
+                    main_document_view->delete_highlight(*hl);
                 }
             }));
         current_widget->show();
