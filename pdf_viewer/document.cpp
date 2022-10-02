@@ -120,16 +120,16 @@ bool Document::get_is_indexing() {
 	return is_indexing;
 }
 
-void Document::add_portal(Portal link, bool insert_into_database) {
-	portals.push_back(link);
+void Document::add_portal(Portal portal, bool insert_into_database) {
+	portals.push_back(portal);
 	if (insert_into_database) {
 		db_manager->insert_portal(
 			get_checksum(),
-			link.dst.document_checksum,
-			link.dst.book_state.offset_x,
-			link.dst.book_state.offset_y,
-			link.dst.book_state.zoom_level,
-			link.src_offset_y);
+			portal.dst.document_checksum,
+			portal.dst.book_state.offset_x,
+			portal.dst.book_state.offset_y,
+			portal.dst.book_state.zoom_level,
+			portal.src_offset_y);
 	}
 }
 
@@ -148,16 +148,7 @@ std::optional<std::string> Document::get_checksum_fast() {
 	return checksummer->get_checksum_fast(get_path());
 }
 
-int Document::find_closest_bookmark_index(float to_offset_y) {
-
-	int min_index = argminf<BookMark>(bookmarks, [to_offset_y](BookMark bm) {
-		return abs(bm.y_offset - to_offset_y);
-		});
-
-	return min_index;
-}
-
-int Document::find_closest_sorted_bookmark_index(const std::vector<BookMark>& sorted_bookmarks, float to_offset_y) const {
+int Document::find_closest_bookmark_index(const std::vector<BookMark>& sorted_bookmarks, float to_offset_y) const {
 
 	int min_index = argminf<BookMark>(sorted_bookmarks, [to_offset_y](BookMark bm) {
 		return abs(bm.y_offset - to_offset_y);
@@ -166,7 +157,7 @@ int Document::find_closest_sorted_bookmark_index(const std::vector<BookMark>& so
 	return min_index;
 }
 
-int Document::find_closest_sorted_highlight_index(const std::vector<Highlight>& sorted_highlights, float to_offset_y) const {
+int Document::find_closest_highlight_index(const std::vector<Highlight>& sorted_highlights, float to_offset_y) const {
 
 	int min_index = argminf<Highlight>(sorted_highlights, [to_offset_y](Highlight hl) {
 		return abs(hl.selection_begin.y - to_offset_y);
@@ -176,14 +167,10 @@ int Document::find_closest_sorted_highlight_index(const std::vector<Highlight>& 
 }
 
 void Document::delete_closest_bookmark(float to_y_offset) {
-	int closest_index = find_closest_bookmark_index(to_y_offset);
+	int closest_index = find_closest_bookmark_index(bookmarks, to_y_offset);
 	if (closest_index > -1) {
-		BookMark deleted_bookmark = bookmarks[closest_index];
 		db_manager->delete_bookmark( get_checksum(), bookmarks[closest_index].y_offset);
 		bookmarks.erase(bookmarks.begin() + closest_index);
-		//if (AUTO_EMBED_ANNOTATIONS) {
-		//	delete_bookmark_annotation(deleted_bookmark);
-		//}
 	}
 }
 

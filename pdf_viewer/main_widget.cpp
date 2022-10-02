@@ -2298,7 +2298,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             option_location_strings.push_back(get_page_formatted_string(page + 1));
         }
 
-        int closest_bookmark_index = main_document_view->get_document()->find_closest_sorted_bookmark_index(bookmarks, main_document_view->get_offset_y());
+        int closest_bookmark_index = main_document_view->get_document()->find_closest_bookmark_index(bookmarks, main_document_view->get_offset_y());
 
         set_current_widget(new FilteredSelectTableWindowClass<float>(
             option_names,
@@ -2358,7 +2358,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         std::vector<std::vector<float>> option_locations;
         const std::vector<Highlight>& highlights = main_document_view->get_document()->get_highlights_sorted();
 
-        int closest_highlight_index = main_document_view->get_document()->find_closest_sorted_highlight_index(highlights, main_document_view->get_offset_y());
+        int closest_highlight_index = main_document_view->get_document()->find_closest_highlight_index(highlights, main_document_view->get_offset_y());
 
         for (auto highlight : highlights){
             std::wstring type_name = L"a";

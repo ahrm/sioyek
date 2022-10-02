@@ -28,7 +28,6 @@ std::string compute_checksum(const QString &file_name, QCryptographicHash::Algor
 	return "";
 }
 
-//CachedChecksummer::CachedChecksummer(const std::vector<std::pair<std::wstring, std::string>>& loaded_checksums) {
 CachedChecksummer::CachedChecksummer(const std::vector<std::pair<std::wstring, std::wstring>>* loaded_checksums){
     if (loaded_checksums) {
 		for (const auto& [path, checksum_] : *loaded_checksums) {
@@ -40,6 +39,7 @@ CachedChecksummer::CachedChecksummer(const std::vector<std::pair<std::wstring, s
 }
 
 std::optional<std::string> CachedChecksummer::get_checksum_fast(std::wstring file_path) {
+    // return the checksum only if it is alreay precomputed in cache
     if (cached_checksums.find(file_path) != cached_checksums.end()) {
         return cached_checksums[file_path];
     }
