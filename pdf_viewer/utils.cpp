@@ -772,17 +772,17 @@ void split_key_string(std::string haystack, const std::string& needle, std::vect
 	size_t needle_size = needle.size();
 	while ((loc = haystack.find(needle)) != (size_t) -1) {
 
-		if ((loc < (haystack.size()-1)) &&  (haystack.substr(needle.size(), needle.size()) == needle)) {
-			// if needle is repeated, one of them is added as a token for example
-			// <C-->
-			// means [C, -]
-			res.push_back(needle);
-		}
 
 		int skiplen = loc + needle_size;
 		if (loc != 0) {
 			std::string part = haystack.substr(0, loc);
 			res.push_back(part);
+		}
+		if ((loc < (haystack.size()-1)) &&  (haystack.substr(needle.size(), needle.size()) == needle)) {
+			// if needle is repeated, one of them is added as a token for example
+			// <C-->
+			// means [C, -]
+			res.push_back(needle);
 		}
 		haystack = haystack.substr(skiplen, haystack.size() - skiplen);
 	}
