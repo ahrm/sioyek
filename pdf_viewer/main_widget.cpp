@@ -1130,6 +1130,9 @@ void MainWidget::handle_command_with_file_name(const Command* command, std::wstr
     if (command->name == "open_document") {
         open_document(file_name);
     }
+    else if (command->name == "source_config") {
+        config_manager->deserialize_file(file_name);
+    }
 }
 
 bool MainWidget::is_waiting_for_symbol() {
@@ -1157,7 +1160,8 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
         return;
     }
     if (command->requires_file_name) {
-        std::wstring file_name = select_document_file_name();
+        std::wstring file_name = select_command_file_name(command->name);
+
         if (file_name.size() > 0) {
             handle_command_with_file_name(command, file_name);
         }
@@ -4137,6 +4141,10 @@ void MainWidget::run_multiple_commands(const std::wstring& commands) {
 				handle_command_with_text(com, command_arg);
 				continue;
 			}
+            else if (com->requires_file_name) {
+                handle_command_with_file_name(com, command_arg);
+                continue;
+            }
 			else if (com->requires_symbol && command_arg.size() > 0) {
 				handle_command_with_symbol(com, command_arg[0]);
 				continue;

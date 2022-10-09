@@ -1,6 +1,18 @@
 #include "ui.h"
 #include <qfiledialog.h>
 
+std::wstring select_command_file_name(std::string command_name) {
+	if (command_name == "open_document") {
+		return select_document_file_name();
+	}
+	else if (command_name == "source_config") {
+		return select_any_file_name();
+	}
+	else {
+		return select_any_file_name();
+	}
+}
+
 std::wstring select_document_file_name() {
 	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.pdf *.epub *.cbz)");
 	return file_name.toStdWString();
@@ -8,6 +20,11 @@ std::wstring select_document_file_name() {
 
 std::wstring select_json_file_name() {
 	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.json )");
+	return file_name.toStdWString();
+}
+
+std::wstring select_any_file_name() {
+	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select File", "", "Any (*)");
 	return file_name.toStdWString();
 }
 

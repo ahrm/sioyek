@@ -722,5 +722,7 @@ public:
 
 std::wstring select_document_file_name();
 std::wstring select_json_file_name();
+std::wstring select_any_file_name();
+std::wstring select_command_file_name(std::string command_name);
 std::wstring select_new_json_file_name();
 std::wstring select_new_pdf_file_name();
