@@ -1829,7 +1829,7 @@ bool is_string_titlish(const std::wstring& str) {
 	if (str.size() <= 5 || str.size() >= 60) {
 		return false;
 	}
-	std::wregex regex(L"([0-9]+\\.)+([0-9]+)*");
+	std::wregex regex(L"([0-9IVXC]+\\.)+([0-9IVXC]+)*");
 	std::wsmatch match;
 
 	std::regex_search(str, match, regex);
