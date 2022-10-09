@@ -2162,34 +2162,34 @@ void flat_char_prism(const std::vector<fz_stext_char*> chars, int page, std::wst
 	}
 }
 
-QString get_status_stylesheet() {
-    if (STATUS_BAR_FONT_SIZE > -1) {
+QString get_status_stylesheet(bool nofont) {
+    if ((!nofont) && (STATUS_BAR_FONT_SIZE > -1)) {
         QString	font_size_stylesheet = QString("font-size: %1px").arg(STATUS_BAR_FONT_SIZE);
-        return QString("background-color: %1; color: %2; border: 0; %3").arg(
+        return QString("background-color: %1; color: %2; border: 0; %3;").arg(
             get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
             get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2]),
             font_size_stylesheet
         );
     }
     else{
-        return QString("background-color: %1; color: %2; border: 0").arg(
+        return QString("background-color: %1; color: %2; border: 0;").arg(
             get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
             get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2])
         );
     }
 }
 
-QString get_selected_stylesheet() {
-    if (STATUS_BAR_FONT_SIZE > -1) {
+QString get_selected_stylesheet(bool nofont) {
+    if ((!nofont) && STATUS_BAR_FONT_SIZE > -1) {
         QString	font_size_stylesheet = QString("font-size: %1px").arg(STATUS_BAR_FONT_SIZE);
-        return QString("background-color: %1; color: %2; border: 0; %3").arg(
+        return QString("background-color: %1; color: %2; border: 0; %3;").arg(
             get_color_qml_string(UI_SELECTED_BACKGROUND_COLOR[0], UI_SELECTED_BACKGROUND_COLOR[1], UI_SELECTED_BACKGROUND_COLOR[2]),
             get_color_qml_string(UI_SELECTED_TEXT_COLOR[0], UI_SELECTED_TEXT_COLOR[1], UI_SELECTED_TEXT_COLOR[2]),
             font_size_stylesheet
         );
     }
     else{
-        return QString("background-color: %1; color: %2; border: 0").arg(
+        return QString("background-color: %1; color: %2; border: 0;").arg(
             get_color_qml_string(UI_SELECTED_BACKGROUND_COLOR[0], UI_SELECTED_BACKGROUND_COLOR[1], UI_SELECTED_BACKGROUND_COLOR[2]),
             get_color_qml_string(UI_SELECTED_TEXT_COLOR[0], UI_SELECTED_TEXT_COLOR[1], UI_SELECTED_TEXT_COLOR[2])
         );
