@@ -146,6 +146,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	commands.push_back({ "new_window",					false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "toggle_statusbar",			false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "reload",						false,	false,	false,	false,	true,	{}});
+	commands.push_back({ "reload_config",				false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "synctex_under_cursor",		false,	false,	false,	false,	true,	{}});
 	commands.push_back({ "set_status_string",			true,	false,	false,	false,	false,	{}});
 	commands.push_back({ "clear_status_string",			false,	false,	false,	false,	false,	{}});

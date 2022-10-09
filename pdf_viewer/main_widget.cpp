@@ -2721,6 +2721,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "reload") {
         reload();
     }
+    else if (command->name == "reload_config") {
+		on_config_file_changed(config_manager);
+    }
     else if (command->name == "move_visual_mark_down") {
 		if (opengl_widget->get_overview_page()) {
             scroll_overview_down();
