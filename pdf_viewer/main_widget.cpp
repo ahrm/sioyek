@@ -806,11 +806,18 @@ void MainWidget::move_document_screens(int num_screens) {
 
 void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 
+    status_label->setStyleSheet(get_status_stylesheet());
+    status_label->setFont(QFont(get_font_face_name()));
+    text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
+    text_command_line_edit->setFont(QFont(get_font_face_name()));
+
+    text_command_line_edit_label->setStyleSheet(get_status_stylesheet());
+    text_command_line_edit->setStyleSheet(get_status_stylesheet());
     //status_label->setStyleSheet(get_status_stylesheet());
 
-    //int status_bar_height = get_status_bar_height();
-    //status_label->move(0, main_window_height - status_bar_height);
-    //status_label->resize(size().width(), status_bar_height);
+    int status_bar_height = get_status_bar_height();
+    status_label->move(0, main_window_height - status_bar_height);
+    status_label->resize(size().width(), status_bar_height);
 
     //text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
 }
