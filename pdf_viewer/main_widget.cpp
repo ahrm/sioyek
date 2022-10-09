@@ -1140,6 +1140,7 @@ void MainWidget::handle_command_with_file_name(const Command* command, std::wstr
     }
     else if (command->name == "source_config") {
         config_manager->deserialize_file(file_name);
+        on_config_file_changed(config_manager);
     }
 }
 
