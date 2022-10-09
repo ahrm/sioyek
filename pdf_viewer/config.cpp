@@ -47,6 +47,8 @@ extern bool LINEAR_TEXTURE_FILTERING;
 extern float DISPLAY_RESOLUTION_SCALE;
 extern float STATUS_BAR_COLOR[3];
 extern float STATUS_BAR_TEXT_COLOR[3];
+extern float UI_SELECTED_TEXT_COLOR[3];
+extern float UI_SELECTED_BACKGROUND_COLOR[3];
 extern int STATUS_BAR_FONT_SIZE;
 extern int MAIN_WINDOW_SIZE[2];
 extern int HELPER_WINDOW_SIZE[2];
@@ -393,6 +395,10 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"prerendered_page_count", &PRERENDERED_PAGE_COUNT, int_serializer, int_deserializer, nullptr });
 	configs.push_back({ L"case_sensitive_search", &CASE_SENSITIVE_SEARCH, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"show_document_name_in_statusbar", &SHOW_DOCUMENT_NAME_IN_STATUSBAR, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"ui_selected_background_color", UI_SELECTED_BACKGROUND_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"ui_selected_text_color", UI_SELECTED_TEXT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"ui_background_color", STATUS_BAR_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"ui_text_color", STATUS_BAR_TEXT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

@@ -263,8 +263,10 @@ public:
 			font_size_stylesheet = QString("font-size: %1px").arg(FONT_SIZE);
 		}
 
-		setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
-		get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{background-color: white; color: black;}");
+		//setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
+		setStyleSheet(get_status_stylesheet() + font_size_stylesheet);
+		//get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{background-color: white; color: black;}");
+		get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{" + get_selected_stylesheet() + "}");
 	}
 
 	void resizeEvent(QResizeEvent* resize_event) override {

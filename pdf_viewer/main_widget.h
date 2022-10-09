@@ -193,7 +193,7 @@ protected:
 	void long_jump_to_destination(int page, float offset_y);
 	void long_jump_to_destination(float abs_offset_y);
 	void execute_command(std::wstring command, std::wstring text=L"", bool wait=false);
-	QString get_status_stylesheet();
+	//QString get_status_stylesheet();
     void smart_jump_under_pos(WindowPos pos);
     bool overview_under_pos(WindowPos pos);
     void visual_mark_under_pos(WindowPos pos);
@@ -214,6 +214,7 @@ protected:
 	bool is_visual_mark_mode();
 	void reload();
 
+	QString get_font_face_name(); 
 public:
 	Document* doc();
 

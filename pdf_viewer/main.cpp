@@ -90,6 +90,9 @@ float CUSTOM_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 float CUSTOM_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float STATUS_BAR_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+float UI_SELECTED_TEXT_COLOR[3] = {0.0f, 0.0f, 0.0f};
+float UI_SELECTED_BACKGROUND_COLOR[3] = {1.0f, 1.0f, 1.0f};
+
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];
 std::wstring TEXT_HIGHLIGHT_URL = L"http://localhost:5000/";

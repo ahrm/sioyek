@@ -115,6 +115,7 @@ extern bool SUPER_FAST_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
+extern std::wstring UI_FONT_FACE_NAME;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -340,7 +341,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
-    status_label->setFont(QFont("Monaco"));
+    status_label->setFont(QFont(get_font_face_name()));
 
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
@@ -357,15 +358,15 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         });
 
     text_command_line_edit_container = new QWidget(this);
-    text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
+    text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
 
     QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
 
     text_command_line_edit_label = new QLabel();
     text_command_line_edit = new QLineEdit();
 
-    text_command_line_edit_label->setFont(QFont("Monaco"));
-    text_command_line_edit->setFont(QFont("Monaco"));
+    text_command_line_edit_label->setFont(QFont(get_font_face_name()));
+    text_command_line_edit->setFont(QFont(get_font_face_name()));
 
     text_command_line_edit_label->setStyleSheet(get_status_stylesheet());
     text_command_line_edit->setStyleSheet(get_status_stylesheet());
@@ -785,33 +786,33 @@ void MainWidget::move_document_screens(int num_screens) {
     move_document(0, move_amount);
 }
 
-QString MainWidget::get_status_stylesheet() {
-    if (STATUS_BAR_FONT_SIZE > -1) {
-        QString	font_size_stylesheet = QString("font-size: %1px").arg(STATUS_BAR_FONT_SIZE);
-        return QString("background-color: %1; color: %2; border: 0; %3").arg(
-            get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
-            get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2]),
-            font_size_stylesheet
-        );
-    }
-    else{
-        return QString("background-color: %1; color: %2; border: 0").arg(
-            get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
-            get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2])
-        );
-    }
-}
-
+//QString MainWidget::get_status_stylesheet() {
+//    if (STATUS_BAR_FONT_SIZE > -1) {
+//        QString	font_size_stylesheet = QString("font-size: %1px").arg(STATUS_BAR_FONT_SIZE);
+//        return QString("background-color: %1; color: %2; border: 0; %3").arg(
+//            get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
+//            get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2]),
+//            font_size_stylesheet
+//        );
+//    }
+//    else{
+//        return QString("background-color: %1; color: %2; border: 0").arg(
+//            get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
+//            get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2])
+//        );
+//    }
+//}
+//
 
 void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 
-    status_label->setStyleSheet(get_status_stylesheet());
+    //status_label->setStyleSheet(get_status_stylesheet());
 
-    int status_bar_height = get_status_bar_height();
-    status_label->move(0, main_window_height - status_bar_height);
-    status_label->resize(size().width(), status_bar_height);
+    //int status_bar_height = get_status_bar_height();
+    //status_label->move(0, main_window_height - status_bar_height);
+    //status_label->resize(size().width(), status_bar_height);
 
-    text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
+    //text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
 }
 
 //void MainWidget::toggle_dark_mode()
@@ -4211,5 +4212,14 @@ void MainWidget::goto_overview() {
         }
 		opengl_widget->set_overview_page({});
 
+    }
+}
+
+QString MainWidget::get_font_face_name() {
+    if (UI_FONT_FACE_NAME.empty()) {
+        return "Monaco";
+    }
+    else {
+        return QString::fromStdWString(UI_FONT_FACE_NAME);
     }
 }
