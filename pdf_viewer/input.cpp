@@ -535,7 +535,7 @@ std::vector<const Command*> InputHandler::handle_key(QKeyEvent* key_event, bool 
 
 	int key = 0;
 	if (!USE_LEGACY_KEYBINDS){
-		if ((key_event->text().size() > 0) && (key_event->text() != "\b") && (key_event->text() != "\t")) {
+		if ((key_event->text().size() > 0) && (key_event->text() != "\b") && (key_event->text() != "\t") && (key_event->text() != " ")) {
 			if (!control_pressed && !alt_pressed) {
 				// shift is already handled in the returned text
 				shift_pressed = false;
