@@ -6,15 +6,16 @@ Path::Path() : Path(L"")
 {
 }
 
-Path::Path(const std::wstring& pathname)
+Path::Path(std::wstring pathname)
 {
+	pathname = strip_string(pathname);
 	canon_path = get_canonical_path(pathname);
 }
 
 Path Path::slash(const std::wstring& suffix) const
 {
 	std::wstring new_path = concatenate_path(get_path(), suffix);
-	return Path(std::move(new_path));
+	return Path(new_path);
 }
 
 std::optional<std::wstring> Path::filename() const

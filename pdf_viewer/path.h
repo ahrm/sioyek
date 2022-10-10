@@ -10,7 +10,7 @@ private:
 
 public:
 	Path();
-	Path(const std::wstring& pathname);
+	Path(std::wstring pathname);
 
 	void parts(std::vector<std::wstring> &res) const;
 	Path slash(const std::wstring& suffix) const;

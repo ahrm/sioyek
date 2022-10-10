@@ -2,6 +2,7 @@
 #include "utils.h"
 #include <cassert>
 #include <map>
+#include <qdir.h>
 
 extern float ZOOM_INC_FACTOR;
 extern float VERTICAL_MOVE_AMOUNT;
@@ -428,11 +429,16 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 //	}
 //}
 
-void ConfigManager::deserialize_file(const Path& file_path) {
+void ConfigManager::deserialize_file(const Path& file_path, bool warn_if_not_exists) {
 
 	std::wstring line;
 	std::wifstream default_file = open_wifstream(file_path.get_path());
 	int line_number = 0;
+
+	if (warn_if_not_exists && (!default_file.good())) {
+		std::wcout << "Error: Could not open config file " << file_path.get_path() << std::endl;
+	}
+
 	while (std::getline(default_file, line)) {
 		line_number++;
 
@@ -444,7 +450,20 @@ void ConfigManager::deserialize_file(const Path& file_path) {
 		std::wstring conf_name;
 		ss >> conf_name;
 		//special handling for new_command 
-		if ((conf_name == L"new_command") || (conf_name == L"new_macro")) {
+		if (conf_name == L"source") {
+			std::wstring path;
+			std::getline(ss, path);
+			path = strip_string(path);
+			if (path.size() > 0) {
+				if (path[0] == '.') {
+					auto parent_dir = QDir(QString::fromStdWString(file_path.file_parent().get_path()));
+					path = parent_dir.absoluteFilePath(QString::fromStdWString(path)).toStdWString();
+				}
+
+				deserialize_file(path, true);
+			}
+		}
+		else if ((conf_name == L"new_command") || (conf_name == L"new_macro")) {
 			std::wstring config_value;
 			std::getline(ss, config_value);
 			config_value = strip_string(config_value);
