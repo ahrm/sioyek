@@ -1688,6 +1688,8 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(mouse_window_pos);
 
 	int num_repeats = abs(wevent->delta() / 120);
+	float num_repeats_f = abs(wevent->delta() / 120.0);
+
     if (num_repeats == 0) {
         num_repeats = 1;
     }
@@ -1710,7 +1712,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     command = command_manager->get_command_with_name("move_visual_mark_up");
                 }
                 else {
-                    move_vertical(-72.0f * vertical_move_amount * num_repeats);
+                    move_vertical(-72.0f * vertical_move_amount * num_repeats_f);
 					update_scrollbar();
                     return;
                 }
@@ -1721,18 +1723,18 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     command = command_manager->get_command_with_name("move_visual_mark_down");
                 }
                 else {
-                    move_vertical(72.0f * vertical_move_amount * num_repeats);
+                    move_vertical(72.0f * vertical_move_amount * num_repeats_f);
 					update_scrollbar();
                     return;
                 }
             }
 
             if (wevent->angleDelta().x() > 0) {
-                move_horizontal(-72.0f * horizontal_move_amount);
+                move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f);
                 return;
             }
             if (wevent->angleDelta().x() < 0) {
-                move_horizontal(72.0f * horizontal_move_amount);
+                move_horizontal(72.0f * horizontal_move_amount * num_repeats_f);
                 return;
             }
         }
