@@ -98,9 +98,9 @@ unix:!mac {
     tutorial.files = tutorial.pdf
     tutorial.path = $$PREFIX/share/sioyek/
     keys.files = pdf_viewer/keys.config
-    keys.path = /etc/sioyek
+    keys.path = $$PREFIX/etc/sioyek
     prefs.files = pdf_viewer/prefs.config
-    prefs.path = /etc/sioyek
+    prefs.path = $$PREFIX/etc/sioyek
     INSTALLS += target
     INSTALLS += shortcutfiles
     INSTALLS += icon
