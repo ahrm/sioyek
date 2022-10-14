@@ -1499,18 +1499,21 @@ QCommandLineParser* get_command_line_parser() {
 	parser->setApplicationDescription("Sioyek is a PDF reader designed for reading research papers and technical books.");
 	//parser->addVersionOption();
 
+	//QCommandLineOption reuse_instance_option("reuse-instance");
+	//reuse_instance_option.setDescription("When opening a new file, reuse the previous instance of sioyek instead of opening a new window.");
+	//parser->addOption(reuse_instance_option);
 
-	QCommandLineOption reuse_instance_option("reuse-instance");
-	reuse_instance_option.setDescription("When opening a new file, reuse the previous instance of sioyek instead of opening a new window.");
-	parser->addOption(reuse_instance_option);
-
-	QCommandLineOption new_instance_option("new-instance");
-	new_instance_option.setDescription("When opening a new file, create a new instance of sioyek.");
-	parser->addOption(new_instance_option);
+	//QCommandLineOption new_instance_option("new-instance");
+	//new_instance_option.setDescription("When opening a new file, create a new instance of sioyek.");
+	//parser->addOption(new_instance_option);
 
 	QCommandLineOption new_window_option("new-window");
 	new_window_option.setDescription("Open the file in a new window but within the same sioyek instance.");
 	parser->addOption(new_window_option);
+
+	QCommandLineOption reuse_window_option("reuse-window");
+	reuse_window_option.setDescription("Force sioyek to reuse the current window even when should_launch_new_window is set.");
+	parser->addOption(reuse_window_option);
 
 	QCommandLineOption nofocus_option("nofocus");
 	nofocus_option.setDescription("Do not bring the sioyek instance to foreground.");
@@ -1520,9 +1523,6 @@ QCommandLineParser* get_command_line_parser() {
 	version_option.setDescription("Print sioyek version.");
 	parser->addOption(version_option);
 
-	QCommandLineOption reuse_window_option("reuse-window");
-	reuse_window_option.setDescription("Force sioyek to reuse the current window even when should_launch_new_window is set.");
-	parser->addOption(reuse_window_option);
 
 	QCommandLineOption page_option("page", "Which page to open.", "page");
 	parser->addOption(page_option);
