@@ -202,7 +202,7 @@ void install_app(const char *argv0)
 #endif
 }
 
-int get_f_key(std::string name) {
+int get_f_key(std::wstring name) {
 	if (name[0] == '<') {
 		name = name.substr(1, name.size() - 2);
 	}
@@ -215,7 +215,7 @@ int get_f_key(std::string name) {
 	}
 
 	int num;
-	std::stringstream ss(name);
+	std::wstringstream ss(name);
 	ss >> num;
 	return  num;
 }
@@ -763,12 +763,12 @@ std::vector<std::wstring> split_whitespace(std::wstring const& input) {
 	return ret;
 }
 
-void split_key_string(std::string haystack, const std::string& needle, std::vector<std::string> &res) {
+void split_key_string(std::wstring haystack, const std::wstring& needle, std::vector<std::wstring> &res) {
 	//todo: we can significantly reduce string allocations in this function if it turns out to be a
 	//performance bottleneck.
 
 	if (haystack == needle){
-		res.push_back("-");
+		res.push_back(L"-");
 		return;
 	}
 
@@ -779,7 +779,7 @@ void split_key_string(std::string haystack, const std::string& needle, std::vect
 
 		int skiplen = loc + needle_size;
 		if (loc != 0) {
-			std::string part = haystack.substr(0, loc);
+			std::wstring part = haystack.substr(0, loc);
 			res.push_back(part);
 		}
 		if ((loc < (haystack.size()-1)) &&  (haystack.substr(needle.size(), needle.size()) == needle)) {

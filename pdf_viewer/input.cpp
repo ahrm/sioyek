@@ -230,36 +230,36 @@ void print_tree_node(InputParseTreeNode node) {
 	std::wcout << node.command << std::endl;
 }
 
-InputParseTreeNode parse_token(std::string token) {
+InputParseTreeNode parse_token(std::wstring token) {
 	InputParseTreeNode res;
 
-	if (token == "sym") {
+	if (token == L"sym") {
 		res.requires_symbol = true;
 		return res;
 	}
-	if (token == "txt") {
+	if (token == L"txt") {
 		res.requires_text = true;
 		return res;
 	}
 
-	std::vector<std::string> subcommands;
-	split_key_string(token, "-", subcommands);
+	std::vector<std::wstring> subcommands;
+	split_key_string(token, L"-", subcommands);
 
 	for (size_t i = 0; i < subcommands.size() - 1; i++) {
-		if (subcommands[i] == "C") {
+		if (subcommands[i] == L"C") {
 			res.control_modifier = true;
 		}
 
-		if (subcommands[i] == "S") {
+		if (subcommands[i] == L"S") {
 			res.shift_modifier = true;
 		}
 
-		if (subcommands[i] == "A") {
+		if (subcommands[i] == L"A") {
 			res.alt_modifier = true;
 		}
 	}
 
-	std::string command_string = subcommands[subcommands.size() - 1];
+	std::wstring command_string = subcommands[subcommands.size() - 1];
 	if (command_string.size() == 1) {
 		res.command = subcommands[subcommands.size() - 1][0];
 	}
@@ -270,26 +270,26 @@ InputParseTreeNode parse_token(std::string token) {
 		}
 		else {
 
-			std::map<std::string, Qt::Key> keymap_temp = {
-				{"up", Qt::Key::Key_Up},
-				{"down", Qt::Key::Key_Down},
-				{"left", Qt::Key::Key_Left},
-				{"right", Qt::Key::Key_Right},
-				{"backspace", Qt::Key::Key_Backspace},
-				{"space", Qt::Key::Key_Space},
-				{"pageup", Qt::Key::Key_PageUp},
-				{"pagedown", Qt::Key::Key_PageDown},
-				{"home", Qt::Key::Key_Home},
-				{"end", Qt::Key::Key_End},
-				{"pagedown", Qt::Key::Key_End},
-				{"tab", Qt::Key::Key_Tab},
-				{"return", Qt::Key::Key_Return},
+			std::map<std::wstring, Qt::Key> keymap_temp = {
+				{L"up", Qt::Key::Key_Up},
+				{L"down", Qt::Key::Key_Down},
+				{L"left", Qt::Key::Key_Left},
+				{L"right", Qt::Key::Key_Right},
+				{L"backspace", Qt::Key::Key_Backspace},
+				{L"space", Qt::Key::Key_Space},
+				{L"pageup", Qt::Key::Key_PageUp},
+				{L"pagedown", Qt::Key::Key_PageDown},
+				{L"home", Qt::Key::Key_Home},
+				{L"end", Qt::Key::Key_End},
+				{L"pagedown", Qt::Key::Key_End},
+				{L"tab", Qt::Key::Key_Tab},
+				{L"return", Qt::Key::Key_Return},
 			};
-			std::map<std::string, Qt::Key> keymap;
+			std::map<std::wstring, Qt::Key> keymap;
 
 			for (auto item : keymap_temp) {
 				keymap[item.first] = item.second;
-				keymap["<" + item.first + ">"] = item.second;
+				keymap[L"<" + item.first + L">"] = item.second;
 			}
 
 			res.command = keymap[command_string];
@@ -299,12 +299,12 @@ InputParseTreeNode parse_token(std::string token) {
 
 	return res;
 }
-void get_tokens(std::string line, std::vector<std::string>& tokens) {
-	std::string stack;
+void get_tokens(std::wstring line, std::vector<std::wstring>& tokens) {
+	std::wstring stack;
 
 	int stack_depth = 0;
 
-	for (char c : line) {
+	for (wchar_t c : line) {
 		if (stack_depth && (c != '>') && (c != '<')) {
 			stack.push_back(c);
 		}
@@ -325,7 +325,7 @@ void get_tokens(std::string line, std::vector<std::string>& tokens) {
 			stack_depth++;
 		}
 		else {
-			tokens.push_back(std::string(1, c));
+			tokens.push_back(std::wstring(1, c));
 		}
 
 	}
@@ -333,17 +333,17 @@ void get_tokens(std::string line, std::vector<std::string>& tokens) {
 
 InputParseTreeNode* parse_lines(
 	InputParseTreeNode* root,
-	const std::vector<std::string>& lines,
+	const std::vector<std::wstring>& lines,
 	const std::vector<std::vector<std::string>>& command_names,
 	const std::vector<std::wstring>& command_file_names,
 	const std::vector<int>& command_line_numbers
 	) {
 
 	for (size_t j = 0; j < lines.size(); j++) {
-		std::string line = lines[j];
+		std::wstring line = lines[j];
 
 		// for example convert "<a-<space>> to ["a", "space"]
-		std::vector<std::string> tokens;
+		std::vector<std::wstring> tokens;
 		get_tokens(line, tokens);
 
 		InputParseTreeNode* parent_node = root;
@@ -359,7 +359,7 @@ InputParseTreeNode* parse_lines(
 				}
 			}
 			if (!existing_node) {
-				if ((tokens[i] != "sym") && (tokens[i] != "txt")) {
+				if ((tokens[i] != L"sym") && (tokens[i] != L"txt")) {
 					if (parent_node->is_final) {
                         std::wcout
                             << L"Warning: key defined in " << command_file_names[j]
@@ -376,12 +376,12 @@ InputParseTreeNode* parse_lines(
 					parent_node = parent_node->children[parent_node->children.size() - 1];
 				}
 				else {
-					if (tokens[i] == "sym") {
+					if (tokens[i] == L"sym") {
 						parent_node->requires_symbol = true;
 						parent_node->is_final = true;
 					}
 
-					if (tokens[i] == "txt") {
+					if (tokens[i] == L"txt") {
 						parent_node->requires_text = true;
 						parent_node->is_final = true;
 					}
@@ -397,7 +397,7 @@ InputParseTreeNode* parse_lines(
 						<< L" overwritten by " << command_file_names[j]
 						<< L":" << command_line_numbers[j];
 					if (parent_node->name.size() > 0) {
-						std::wcout << L". Overriding command: " << utf8_decode(line)
+						std::wcout << L". Overriding command: " << line 
 							<< L": replacing " << utf8_decode(parent_node->name[0])
 							<< L" with " << utf8_decode(command_names[j][0]);
 					}
@@ -421,7 +421,7 @@ InputParseTreeNode* parse_lines(
 }
 
 InputParseTreeNode* parse_lines(
-	const std::vector<std::string>& lines,
+	const std::vector<std::wstring>& lines,
 	const std::vector<std::vector<std::string>>& command_names,
 	const std::vector<std::wstring>& command_file_names,
 	const std::vector<int>& command_line_numbers
@@ -446,25 +446,23 @@ std::vector<std::string> parse_command_name(const std::wstring& command_names) {
 	return res;
 }
 
-InputParseTreeNode* parse_key_config_files(const Path& default_path,
-	const std::vector<Path>& user_paths) {
+void get_keys_file_lines(const Path& file_path,
+	std::vector<std::vector<std::string>>& command_names,
+	std::vector<std::wstring>& command_keys,
+	std::vector<std::wstring>& command_files,
+	std::vector<int>& command_line_numbers) {
 
-	//std::wstring default_path_wstring = default_path.get_path();
-	std::wifstream default_infile = open_wifstream(default_path.get_path());
-
-
-	std::vector<std::vector<std::string>> command_names;
-	std::vector<std::string> command_keys;
-
-	std::vector<std::wstring> command_files;
-	std::vector<int> command_line_numbers;
+	std::ifstream infile = std::ifstream(utf8_encode(file_path.get_path()));
 
 	int line_number = 0;
-	std::wstring default_path_name = default_path.get_path();
-	while (default_infile.good()) {
+	std::wstring default_path_name = file_path.get_path();
+	while (infile.good()) {
 		line_number++;
+		std::string line_;
 		std::wstring line;
-		std::getline(default_infile, line);
+		std::getline(infile, line_);
+		line = utf8_decode(line_);
+
 		if (line.size() == 0 || line[0] == '#') {
 			continue;
 		}
@@ -474,38 +472,27 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 		ss >> command_name >> command_key;
 		//command_names.push_back(utf8_encode(command_name));
 		command_names.push_back(parse_command_name(command_name));
-		command_keys.push_back(utf8_encode(command_key));
+		command_keys.push_back(command_key);
 		command_files.push_back(default_path_name);
 		command_line_numbers.push_back(line_number);
 	}
 
-	default_infile.close();
+	infile.close();
+}
 
+InputParseTreeNode* parse_key_config_files(const Path& default_path,
+	const std::vector<Path>& user_paths) {
 
-	for (size_t i = 0; i < user_paths.size(); i++) {
-		line_number = 0;
-		std::wstring user_path_name = user_paths[i].get_path();
+	std::wifstream default_infile = open_wifstream(default_path.get_path());
 
-		if (user_paths[i].file_exists()) {
-			std::wifstream user_infile = open_wifstream(user_paths[i].get_path());
-			while (user_infile.good()) {
-				line_number++;
-				std::wstring line;
-				std::getline(user_infile, line);
-				if (line.size() == 0 || line[0] == '#') {
-					continue;
-				}
-				std::wstringstream ss(line);
-				std::wstring command_name;
-				std::wstring command_key;
-				ss >> command_name >> command_key;
-				command_names.push_back(parse_command_name(command_name));
-				command_keys.push_back(utf8_encode(command_key));
-				command_files.push_back(user_path_name);
-				command_line_numbers.push_back(line_number);
-			}
-			user_infile.close();
-		}
+	std::vector<std::vector<std::string>> command_names;
+	std::vector<std::wstring> command_keys;
+	std::vector<std::wstring> command_files;
+	std::vector<int> command_line_numbers;
+
+	get_keys_file_lines(default_path, command_names, command_keys, command_files, command_line_numbers);
+	for (auto upath : user_paths) {
+		get_keys_file_lines(upath, command_names, command_keys, command_files, command_line_numbers);
 	}
 
 	return parse_lines(command_keys, command_names, command_files, command_line_numbers);
@@ -539,8 +526,8 @@ std::vector<const Command*> InputHandler::handle_key(QKeyEvent* key_event, bool 
 			if (!control_pressed && !alt_pressed) {
 				// shift is already handled in the returned text
 				shift_pressed = false;
-				std::string text = key_event->text().toStdString();
-				key = key_event->text().toStdString()[0];
+				std::wstring text = key_event->text().toStdWString();
+				key = key_event->text().toStdWString()[0];
 			}
 			else {
 				key = key_event->key();
