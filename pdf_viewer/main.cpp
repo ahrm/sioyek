@@ -15,7 +15,6 @@
 
 #include <qapplication.h>
 #include <qpushbutton.h>
-#include <qopenglwidget.h>
 #include <qopenglextrafunctions.h>
 #include <qopenglfunctions.h>
 #include <qopengl.h>
@@ -35,7 +34,6 @@
 #include <qlabel.h>
 #include <qtextedit.h>
 #include <qfilesystemwatcher.h>
-#include <qdesktopwidget.h>
 #include <qfontdatabase.h>
 #include <qstandarditemmodel.h>
 #include <qscrollarea.h>

@@ -173,7 +173,7 @@ public:
 					key_event->key() == Qt::Key_Left ||
 					key_event->key() == Qt::Key_Right
 					) {
-					QKeyEvent* newEvent = new QKeyEvent(*key_event);
+					QKeyEvent* newEvent = key_event->clone();
 					QCoreApplication::postEvent(get_view(), newEvent);
 					//QCoreApplication::postEvent(tree_view, key_event);
 					return true;

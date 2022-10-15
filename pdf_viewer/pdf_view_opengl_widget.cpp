@@ -598,7 +598,9 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		document_view->get_document()->get_page_width(page_number),
 		document_view->get_document()->get_page_height(page_number) };
 
-	int device_pixel_ratio = QApplication::desktop()->devicePixelRatio();
+	//int device_pixel_ratio = QApplication::desktop()->devicePixelRatio();
+	int device_pixel_ratio = static_cast<int>(QGuiApplication::primaryScreen()->devicePixelRatio());
+
 	fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number, page_rect, rendered_width / device_pixel_ratio, rendered_height / device_pixel_ratio);
 	rect_to_quad(window_rect, page_vertices);
 
@@ -1153,7 +1155,7 @@ void PdfViewOpenGLWidget::draw_empty_helper_message(QPainter* painter) {
 
 	QString message = "No portals yet";
 	QFontMetrics fm(QApplication::font());
-	int message_width = fm.width(message);
+	int message_width = fm.boundingRect(message).width();
 	int message_height = fm.height();
 
 	int view_width = document_view->get_view_width();
