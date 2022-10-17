@@ -112,13 +112,10 @@ You can customize all key bindings and some UI elements by editing `keys_user.co
 
 Run the following commands to install dependencies, clone the repository and compile sioyek on Fedora (tested on Fedora Workstation 36).
 
-Notice that we change `qmake` into `qmake-qt5` in `build_linux.sh` since in Fedora `qmake` points to qmake for Qt 3.x, while we need qmake for Qt 5.x:
-
 ```
 sudo dnf install qt5-qtbase-devel qt5-qtbase-static qt5-qt3d-devel harfbuzz-devel
 git clone --recursive https://github.com/ahrm/sioyek
 cd sioyek
-sed -i "s/qmake/qmake-qt5/g" build_linux.sh
 ./build_linux.sh
 ``` 
 

@@ -1,9 +1,25 @@
+#!/usr/bin/env bash
+
+# Compile mupdf
 cd mupdf
 make USE_SYSTEM_HARFBUZZ=yes
 cd ..
-qmake "CONFIG+=linux_app_image" pdf_viewer_build_config.pro
+
+# Compile sioyek
+if [ -f "/usr/bin/qmake-qt5" ]; 
+then
+	QMAKE="/usr/bin/qmake-qt5"
+elif [ -f "/usr/bin/qmake" ]; 
+then
+	QMAKE="/usr/bin/qmake"
+else
+	QMAKE="qmake"
+fi
+
+$QMAKE "CONFIG+=linux_app_image" pdf_viewer_build_config.pro
 make
 
+# Copy files in build/ subdirectory
 rm -r build 2> /dev/null
 mkdir build
 cp sioyek build/sioyek
