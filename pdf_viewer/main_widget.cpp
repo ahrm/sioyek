@@ -3291,6 +3291,14 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
             command_parts[i].replace("%{file_path}", qfile_path);
             command_parts[i].replace("%{file_name}", qfile_name);
             command_parts[i].replace("%{selected_text}", QString::fromStdWString(selected_text));
+            if (selected_text.size() > 0) {
+                auto selection_begin_document = main_document_view->get_document()->absolute_to_page_pos(selection_begin);
+                command_parts[i].replace("%{selection_begin_document}",
+                        QString::number(selection_begin_document.page) + " " + QString::number(selection_begin_document.x) + " " + QString::number(selection_begin_document.y));
+                auto selection_end_document = main_document_view->get_document()->absolute_to_page_pos(selection_end);
+                command_parts[i].replace("%{selection_end_document}",
+                        QString::number(selection_end_document.page) + " " + QString::number(selection_end_document.x) + " " + QString::number(selection_end_document.y));
+            }
             command_parts[i].replace("%{page_number}", QString::number(get_current_page_number()));
             command_parts[i].replace("%{command_text}", QString::fromStdWString(text));
 
