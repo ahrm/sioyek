@@ -478,9 +478,9 @@ float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode) 
 	return zoom_level;
 }
 
-float DocumentView::zoom_in() {
+float DocumentView::zoom_in(float zoom_factor) {
 	const float max_zoom_level = 10.0f;
-	float new_zoom_level = zoom_level * ZOOM_INC_FACTOR;
+	float new_zoom_level = zoom_level * zoom_factor;
 
 	if (new_zoom_level > max_zoom_level) {
 		new_zoom_level = max_zoom_level;
@@ -488,15 +488,15 @@ float DocumentView::zoom_in() {
 	
 	return set_zoom_level(new_zoom_level, true);
 }
-float DocumentView::zoom_out() {
-	return set_zoom_level(zoom_level / ZOOM_INC_FACTOR, true);
+float DocumentView::zoom_out(float zoom_factor) {
+	return set_zoom_level(zoom_level / zoom_factor, true);
 }
 
-float DocumentView::zoom_in_cursor(WindowPos mouse_pos) {
+float DocumentView::zoom_in_cursor(WindowPos mouse_pos, float zoom_factor) {
 
 	AbsoluteDocumentPos prev_doc_pos = window_to_absolute_document_pos(mouse_pos);
 
-	float res = zoom_in();
+	float res = zoom_in(zoom_factor);
 
 	AbsoluteDocumentPos new_doc_pos = window_to_absolute_document_pos(mouse_pos);
 
@@ -505,10 +505,10 @@ float DocumentView::zoom_in_cursor(WindowPos mouse_pos) {
 	return res;
 }
 
-float DocumentView::zoom_out_cursor(WindowPos mouse_pos) {
+float DocumentView::zoom_out_cursor(WindowPos mouse_pos, float zoom_factor) {
 	auto [prev_doc_x, prev_doc_y] = window_to_absolute_document_pos(mouse_pos);
 
-	float res = zoom_out();
+	float res = zoom_out(zoom_factor);
 
 	auto [new_doc_x, new_doc_y] = window_to_absolute_document_pos(mouse_pos);
 

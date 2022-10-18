@@ -114,10 +114,10 @@ public:
 	float get_min_valid_x();
 
 	float set_zoom_level(float zl, bool should_exit_auto_resize_mode);
-	float zoom_in();
-	float zoom_out();
-	float zoom_in_cursor(WindowPos mouse_pos);
-	float zoom_out_cursor(WindowPos mouse_pos);
+	float zoom_in(float zoom_factor = ZOOM_INC_FACTOR);
+	float zoom_out(float zoom_factor = ZOOM_INC_FACTOR);
+	float zoom_in_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
+	float zoom_out_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
 	void move_absolute(float dx, float dy);
 	void move(float dx, float dy);
 	void get_absolute_delta_from_doc_delta(float doc_dx, float doc_dy, float* abs_dx, float* abs_dy);
