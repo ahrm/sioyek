@@ -1741,30 +1741,18 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     }
 
     if (is_control_pressed) {
-        if (wevent->angleDelta().y() > 0) {
-            if (WHEEL_ZOOM_ON_CURSOR) {
-				command = command_manager->get_command_with_name("zoom_in_cursor");
-            }
-			else {
-				command = command_manager->get_command_with_name("zoom_in");
-            }
-        }
-        if (wevent->angleDelta().y() < 0) {
-            if (WHEEL_ZOOM_ON_CURSOR) {
-				command = command_manager->get_command_with_name("zoom_out_cursor");
-            }
-            else {
-				command = command_manager->get_command_with_name("zoom_out");
-            }
-        }
-
+        float zoom_factor = 1.0f + num_repeats_f * (ZOOM_INC_FACTOR - 1.0f);
+        zoom(mouse_window_pos, zoom_factor, wevent->angleDelta().y() > 0);
+        return;
     }
     if (is_shift_pressed) {
         if (wevent->angleDelta().y() > 0) {
-            command = command_manager->get_command_with_name("move_left");
+            move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f);
+            return;
         }
         if (wevent->angleDelta().y() < 0) {
-            command = command_manager->get_command_with_name("move_right");
+            move_horizontal(72.0f * horizontal_move_amount * num_repeats_f);
+            return;
         }
 
     }
@@ -3353,6 +3341,25 @@ void MainWidget::move_vertical(float amount) {
         smooth_scroll_speed += amount * SMOOTH_SCROLL_SPEED;
 		validate_render();
     }
+}
+
+void MainWidget::zoom(WindowPos pos, float zoom_factor, bool zoom_in) {
+    if (zoom_in) {
+        if (WHEEL_ZOOM_ON_CURSOR) {
+            main_document_view->zoom_in_cursor(pos, zoom_factor);
+        }
+        else {
+            main_document_view->zoom_in(zoom_factor);
+        }
+    } else {
+        if (WHEEL_ZOOM_ON_CURSOR) {
+            main_document_view->zoom_out_cursor(pos, zoom_factor);
+        }
+        else {
+            main_document_view->zoom_out(zoom_factor);
+        }
+    }
+    validate_render();
 }
 
 void MainWidget::move_horizontal(float amount){

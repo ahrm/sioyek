@@ -249,6 +249,7 @@ public:
 	void open_document(const PortalViewState& checksum);
 	void validate_render();
 	void validate_ui();
+	void zoom(WindowPos pos, float zoom_factor, bool zoom_in);
 	void move_document(float dx, float dy);
 	void move_document_screens(int num_screens);
 	void focus_text(int page, const std::wstring& text);
