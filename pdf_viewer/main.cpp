@@ -644,7 +644,6 @@ int main(int argc, char* args[]) {
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	QSurfaceFormat::setDefaultFormat(format);
 
-
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
 	OpenWithApplication app(argc, args);
 

@@ -1166,9 +1166,9 @@ std::vector<DocumentPos> DocumentView::find_line_definitions() {
 }
 
 bool DocumentView::goto_definition() {
-	std::optional<DocumentPos> defloc = find_line_definitions()[0];
-	if (defloc) {
-		goto_offset_within_page(defloc.value().page, defloc.value().y);
+	std::vector<DocumentPos> defloc = find_line_definitions();
+	if (defloc.size() > 0) {
+		goto_offset_within_page(defloc[0].page, defloc[0].y);
 		return true;
 	}
 	return false;
