@@ -1275,7 +1275,9 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
         }
         else {
             if (this->synctex_mode) {
-                synctex_under_pos(click_pos);
+                if (down == false) {
+					synctex_under_pos(click_pos);
+                }
             }
         }
 
