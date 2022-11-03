@@ -532,7 +532,7 @@ bool DatabaseManager::update_portal(const std::string& src_document_path, float 
 	std::wstringstream ss;
 	ss << "UPDATE links SET dst_offset_x=" << dst_offset_x << ", dst_offset_y=" << dst_offset_y <<
 		", dst_zoom_level=" << dst_zoom_level << " WHERE src_document='" <<
-		esc(src_document_path) << "' AND src_offset_y=" << src_offset_y << ";";
+		esc(src_document_path) << "' AND abs(src_offset_y-(" << src_offset_y << ")) < 0.01;";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -544,7 +544,7 @@ bool DatabaseManager::update_portal(const std::string& src_document_path, float 
 bool DatabaseManager::delete_link(const std::string& src_document_path, float src_offset_y) {
 
 	std::wstringstream ss;
-	ss << "DELETE FROM links where src_document='" << esc(src_document_path) << "'AND src_offset_y=" << src_offset_y << ";";
+	ss << "DELETE FROM links where src_document='" << esc(src_document_path) << "'AND abs(src_offset_y-(" << src_offset_y << ")) < 0.01;";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -556,7 +556,7 @@ bool DatabaseManager::delete_link(const std::string& src_document_path, float sr
 bool DatabaseManager::delete_bookmark(const std::string& src_document_path, float src_offset_y) {
 
 	std::wstringstream ss;
-	ss << "DELETE FROM bookmarks where document_path='" << esc(src_document_path) << "'AND offset_y=" << src_offset_y << ";";
+	ss << "DELETE FROM bookmarks where document_path='" << esc(src_document_path) << "'AND abs(offset_y-(" << src_offset_y << ")) < 0.01;";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -569,10 +569,10 @@ bool DatabaseManager::delete_highlight(const std::string& src_document_path, flo
 
 	std::wstringstream ss;
 	ss << "DELETE FROM highlights where document_path='" << esc(src_document_path) <<
-		"'AND begin_x=" << begin_x <<
-		" AND begin_y=" << begin_y <<
-		" AND end_x=" << end_x <<
-		" AND end_y=" << end_y << ";";
+		"'AND abs(begin_x-(" << begin_x << ")) < 0.01" <<
+		" AND abs(begin_y-(" << begin_y << ")) < 0.01" <<
+		" AND abs(end_x-(" << end_x << ")) < 0.01" << 
+		" AND abs(end_y-(" << end_y << ")) < 0.01;";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
