@@ -506,7 +506,7 @@ MainWidget* handle_args(const QStringList& arguments) {
     }
 
     if (parser->isSet("forward-search-column")) {
-        latex_line = parser->value("forward-search-column").toInt();
+        latex_column = parser->value("forward-search-column").toInt();
     }
 
     if (parser->isSet("page")) {

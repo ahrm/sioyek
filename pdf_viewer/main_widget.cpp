@@ -847,7 +847,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
 
     synctex_scanner_p scanner = synctex_scanner_new_with_output_file(pdf_file_string.c_str(), nullptr, 1);
 
-    int stat = synctex_display_query(scanner, latex_file_string.c_str(), line, 0, 0);
+    int stat = synctex_display_query(scanner, latex_file_string.c_str(), line, column, 0);
     int target_page = -1;
 
     if (stat <= 0) {
