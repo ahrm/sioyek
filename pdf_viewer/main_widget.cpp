@@ -113,6 +113,7 @@ extern float SMOOTH_SCROLL_DRAG;
 extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 extern bool SUPER_FAST_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
+extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 extern std::wstring UI_FONT_FACE_NAME;
@@ -571,7 +572,14 @@ std::wstring MainWidget::get_status_string() {
     if (SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR) {
         std::optional<BookMark> closest_bookmark = main_document_view->find_closest_bookmark();
         if (closest_bookmark) {
-            ss << " [ " << closest_bookmark.value().description << " ] ";
+            ss << " [ " << closest_bookmark.value().description << " ]";
+        }
+    }
+
+    if (SHOW_CLOSE_PORTAL_IN_STATUSBAR) {
+        std::optional<Portal> close_portal = main_document_view->find_closest_portal(true);
+        if (close_portal) {
+            ss << " [ PORTAL ]";
         }
     }
 

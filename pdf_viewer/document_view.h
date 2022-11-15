@@ -66,7 +66,7 @@ public:
 	void set_book_state(OpenedBookState state);
 	void set_offsets(float new_offset_x, float new_offset_y);
 	Document* get_document();
-	std::optional<Portal> find_closest_portal();
+	std::optional<Portal> find_closest_portal(bool limit=false);
 	std::optional<BookMark> find_closest_bookmark();
 	void goto_link(Portal* link);
 	void delete_closest_portal();
