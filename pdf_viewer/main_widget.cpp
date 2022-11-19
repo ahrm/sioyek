@@ -4085,10 +4085,10 @@ void MainWidget::add_portal(std::wstring source_path, Portal new_link) {
 }
 
 void MainWidget::handle_keyboard_select(const std::wstring& text) {
-	if (std::isdigit(text[0])) {
+    if (text[0] == '#') {
         // we can select text using window-space coordinates.
         // this is not something that the user should be able to do, but it's useful for scripts.
-		QStringList parts = QString::fromStdWString(text).split(' ');
+		QStringList parts = QString::fromStdWString(text.substr(1, text.size()-1)).split(' ');
         if (parts.size() == 2) {
             QString begin_text = parts.at(0);
             QString end_text = parts.at(1);
@@ -4112,11 +4112,10 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
 
 				handle_left_click(begin_window_pos, true, false, false, false);
 				handle_left_click(end_window_pos, false, false, false, false);
-				opengl_widget->set_should_highlight_words(false);
-
             }
-
         }
+
+		opengl_widget->set_should_highlight_words(false);
 	}
 	else {
         // here we select with "user-friendly" tags

@@ -35,6 +35,7 @@ extern float STATUS_BAR_COLOR[3];
 extern float STATUS_BAR_TEXT_COLOR[3];
 extern float UI_SELECTED_TEXT_COLOR[3];
 extern float UI_SELECTED_BACKGROUND_COLOR[3];
+extern bool NUMERIC_TAGS;
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -549,9 +550,14 @@ std::vector<std::string> get_tags(int n) {
 	for (int i = 0; i < n; i++) {
 		int current_n = i;
 		std::string tag;
-		for (int i = 0; i < n_digits; i++) {
-			tag.push_back('a' + (current_n % 26));
-			current_n = current_n / 26;
+		if (!NUMERIC_TAGS) {
+			for (int i = 0; i < n_digits; i++) {
+				tag.push_back('a' + (current_n % 26));
+				current_n = current_n / 26;
+			}
+		}
+		else{
+			tag = std::to_string(i);
 		}
 		res.push_back(tag);
 	}
@@ -562,9 +568,14 @@ int get_index_from_tag(const std::string& tag) {
 	int res = 0;
 	int mult = 1;
 
-	for (size_t i = 0; i < tag.size(); i++) {
-		res += (tag[i] - 'a') * mult;
-		mult = mult * 26;
+	if (!NUMERIC_TAGS) {
+		for (size_t i = 0; i < tag.size(); i++) {
+			res += (tag[i] - 'a') * mult;
+			mult = mult * 26;
+		}
+	}
+	else {
+		res = std::stoi(tag);
 	}
 	return res;
 }
