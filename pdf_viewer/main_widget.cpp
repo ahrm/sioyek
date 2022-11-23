@@ -4384,8 +4384,13 @@ bool MainWidget::get_selected_rect_document(int& out_page, fz_rect& out_rect) {
     std::optional<fz_rect> absrect = get_selected_rect_absolute();
     if (absrect) {
 
-        AbsoluteDocumentPos top_left(absrect.value().x0, absrect.value().y0);
-        AbsoluteDocumentPos bottom_right(absrect.value().x1, absrect.value().y1);
+        AbsoluteDocumentPos top_left;
+        AbsoluteDocumentPos bottom_right;
+
+        top_left.x = absrect.value().x0;
+        top_left.y = absrect.value().y0;
+        bottom_right.x = absrect.value().x1;
+        bottom_right.y = absrect.value().y1;
 
         DocumentPos top_left_document =  main_document_view->get_document()->absolute_to_page_pos(top_left);
         DocumentPos bottom_right_document =  main_document_view->get_document()->absolute_to_page_pos(bottom_right);
