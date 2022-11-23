@@ -414,6 +414,7 @@ void PdfViewOpenGLWidget::handle_escape() {
 	}
 	should_highlight_words = false;
 	should_show_numbers = false;
+	character_highlight_rect = {};
 }
 
 void PdfViewOpenGLWidget::toggle_highlight_links() {
@@ -912,6 +913,11 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 				painter->drawText(window_x, window_y, index_string.c_str());
 			}
 		}
+	}
+	if (character_highlight_rect) {
+		float rectangle_color[] = {0.0f, 1.0f, 1.0f};
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
+		render_highlight_absolute(shared_gl_objects.highlight_program, character_highlight_rect.value());
 	}
 	if (selected_rectangle) {
 		enable_stencil();
@@ -1566,4 +1572,10 @@ void PdfViewOpenGLWidget::clear_selected_rectangle() {
 }
 std::optional<fz_rect> PdfViewOpenGLWidget::get_selected_rectangle() {
 	return selected_rectangle;
+}
+
+void PdfViewOpenGLWidget::set_typing_rect(int page, fz_rect rect) {
+	fz_rect absrect = document_view->get_document()->document_to_absolute_rect(page, rect, true);
+	character_highlight_rect = absrect;
+
 }

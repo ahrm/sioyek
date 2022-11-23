@@ -122,6 +122,7 @@ private:
 	bool is_helper = false;
 	float percent_done = 0.0f;
 	std::optional<int> visible_page_number = {};
+	std::optional<fz_rect> character_highlight_rect = {};
 
 	int rotation_index = 0;
 	bool is_dragging = false;
@@ -249,5 +250,7 @@ public:
 	void clear_selected_rectangle();
 
 	std::optional<fz_rect> get_selected_rectangle();
+
+	void set_typing_rect(int page, fz_rect rect);
 
 };

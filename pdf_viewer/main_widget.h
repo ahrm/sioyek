@@ -28,6 +28,7 @@
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 
+
 class MainWidget : public QWidget, ConfigFileChangeListener{
 
 private:
@@ -105,6 +106,8 @@ private:
 	bool is_dragging = false;
 
 	bool should_show_status_label = true;
+
+	std::optional<CharacterAddress> typing_location;
 
 	int main_window_width = 0;
 	int main_window_height = 0;

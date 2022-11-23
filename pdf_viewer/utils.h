@@ -27,6 +27,23 @@ struct ParsedUri {
 	float y;
 };
 
+struct CharacterAddress {
+	int page;
+	fz_stext_block* block;
+	fz_stext_line* line;
+	fz_stext_char* character;
+	Document* doc;
+
+	bool advance(char c);
+	bool next_char();
+	bool next_line();
+	bool next_block();
+	bool next_page();
+
+	float focus_offset();
+
+};
+
 std::wstring to_lower(const std::wstring& inp);
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char);
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages);

@@ -656,6 +656,7 @@ void MainWidget::handle_escape() {
         }
     }
 
+    typing_location = {};
     text_command_line_edit->setText("");
     pending_link = {};
     current_pending_command = {};
@@ -1222,6 +1223,31 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
 
 void MainWidget::key_event(bool released, QKeyEvent* kevent) {
     validate_render();
+
+    if (typing_location.has_value()) {
+
+        if (released == false) {
+			if (kevent->key() == Qt::Key::Key_Escape) {
+				handle_escape();
+                return;
+			}
+			if (kevent->key() == Qt::Key::Key_Return) {
+				typing_location.value().next_char();
+			}
+		}
+
+        if (kevent->text().size() > 0) {
+			char c = kevent->text().at(0).unicode();
+            bool should_focus = typing_location.value().advance(c);
+			int page = typing_location.value().page;
+			fz_rect character_rect = fz_rect_from_quad(typing_location.value().character->quad);
+            if (should_focus) {
+                main_document_view->set_offset_y(typing_location.value().focus_offset());
+            }
+			opengl_widget->set_typing_rect(page, character_rect);
+        }
+        return;
+    }
 
 
     if (released == false) {
@@ -1949,6 +1975,17 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     if (command->name == "select_rect") {
         set_rect_select_mode(true);
+    }
+    if (command->name == "toggle_typing_mode") {
+        if (!typing_location.has_value()) {
+            int page = main_document_view->get_center_page_number();
+            CharacterAddress charaddr;
+            charaddr.doc = main_document_view->get_document();
+            charaddr.page = page - 1;
+            charaddr.next_page();
+            typing_location = charaddr;
+			main_document_view->set_offset_y(typing_location.value().focus_offset());
+        }
     }
 
     if (command->name == "toggle_smooth_scroll_mode") {
@@ -4409,4 +4446,67 @@ bool MainWidget::get_selected_rect_document(int& out_page, fz_rect& out_rect) {
     else {
         return false;
     }
+}
+
+
+bool CharacterAddress::advance(char c) {
+	if (character->c == c) {
+		return next_char();
+	}
+    else {
+        return false;
+    }
+}
+
+bool CharacterAddress::next_char() {
+	if (character->next) {
+		character = character->next;
+        return false;
+	}
+	else {
+		next_line();
+        return true;
+	}
+}
+
+bool CharacterAddress::next_line() {
+	if (line->next) {
+		line = line->next;
+		character = line->first_char;
+        return false;
+	}
+	else {
+		next_block();
+        return true;
+	}
+}
+
+bool CharacterAddress::next_block() {
+	if (block->next) {
+		block = block->next;
+		line = block->u.t.first_line;
+		character = line->first_char;
+        return false;
+	}
+	else {
+		next_page();
+        return true;
+	}
+}
+
+bool CharacterAddress::next_page() {
+    if (page < doc->num_pages() - 1) {
+		page = page + 1;
+		block = doc->get_stext_with_page_number(page)->first_block;
+		line = block->u.t.first_line;
+		character = line->first_char;
+		return true;
+    }
+    return false;
+}
+
+float CharacterAddress::focus_offset() {
+
+    fz_rect character_rect = fz_rect_from_quad(character->quad);
+	return doc->document_to_absolute_y(page, character_rect.y0);
 }
