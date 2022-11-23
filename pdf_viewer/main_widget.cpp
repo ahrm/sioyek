@@ -192,6 +192,22 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     NormalizedWindowPos normal_mpos = main_document_view->window_to_normalized_window_pos(mpos);
 
+    if (rect_select_mode) {
+        if (rect_select_begin.has_value()) {
+			AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(mpos);
+			rect_select_end = abspos;
+			fz_rect selected_rect;
+			selected_rect.x0 = rect_select_begin.value().x;
+			selected_rect.y0 = rect_select_begin.value().y;
+			selected_rect.x1 = rect_select_end.value().x;
+			selected_rect.y1 = rect_select_end.value().y;
+			opengl_widget->set_selected_rectangle(selected_rect);
+
+			validate_render();
+        }
+        return;
+    }
+
     if (overview_resize_data) {
         // if we are resizing overview page, set the selected side of the overview window to the mosue position
         //float offset_diff_x = normal_x - overview_resize_data.value().original_mouse_pos.first;
@@ -588,6 +604,10 @@ std::wstring MainWidget::get_status_string() {
         }
     }
 
+    if (rect_select_mode) {
+        ss << " [ select box ]";
+    }
+
     if (custom_status_message.size() > 0) {
         ss << " [ " << custom_status_message << " ]";
     }
@@ -671,6 +691,8 @@ void MainWidget::handle_escape() {
     //if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
 
     text_command_line_edit_container->hide();
+
+    clear_selected_rect();
 
     validate_render();
     setFocus();
@@ -1313,6 +1335,40 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
     if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
 
+    if (rect_select_mode) {
+        if (down == true) {
+            if (rect_select_end.has_value()) {
+                //clicked again after selecting, we should clear the selected rectangle
+                clear_selected_rect();
+            }
+            else {
+                rect_select_begin = abs_doc_pos;
+            }
+        }
+        else {
+            if (rect_select_begin.has_value() && rect_select_end.has_value()) {
+				rect_select_end = abs_doc_pos;
+				fz_rect selected_rectangle;
+				selected_rectangle.x0 = rect_select_begin.value().x;
+				selected_rectangle.y0 = rect_select_begin.value().y;
+				selected_rectangle.x1 = rect_select_end.value().x;
+				selected_rectangle.y1 = rect_select_end.value().y;
+				opengl_widget->set_selected_rectangle(selected_rectangle);
+
+				this->rect_select_mode = false;
+				this->rect_select_begin = {};
+				this->rect_select_end = {};
+            }
+			
+        }
+		return;
+    }
+    else {
+        if (down == true) {
+            clear_selected_rect();
+        }
+    }
+
     if (down == true) {
 
         PdfViewOpenGLWidget::OverviewSide border_index = static_cast<PdfViewOpenGLWidget::OverviewSide>(-1);
@@ -1890,6 +1946,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
     if (command->name == "toggle_scrollbar") {
         toggle_scrollbar();
+    }
+    if (command->name == "select_rect") {
+        set_rect_select_mode(true);
     }
 
     if (command->name == "toggle_smooth_scroll_mode") {
@@ -3321,6 +3380,20 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
             command_parts[i].replace("%{local_database}", QString::fromStdWString(local_database_file_path.get_path()));
             command_parts[i].replace("%{shared_database}", QString::fromStdWString(global_database_file_path.get_path()));
 
+            int selected_rect_page = -1;
+            fz_rect selected_rect_rect;
+            if (get_selected_rect_document(selected_rect_page, selected_rect_rect)) {
+                QString format_string = "%1,%2,%3,%4,%5";
+                QString rect_string = format_string
+                    .arg(QString::number(selected_rect_page))
+                    .arg(QString::number(selected_rect_rect.x0))
+                    .arg(QString::number(selected_rect_rect.y0))
+                    .arg(QString::number(selected_rect_rect.x1))
+                    .arg(QString::number(selected_rect_rect.y1));
+				command_parts[i].replace("%{selected_rect}", rect_string);
+            }
+
+
             std::wstring selected_line_text;
             if (main_document_view) {
                 selected_line_text = main_document_view->get_selected_line_text().value_or(L"");
@@ -3910,7 +3983,15 @@ void MainWidget::toggle_titlebar() {
 
 bool MainWidget::execute_predefined_command(char symbol) {
 	if ((symbol >= 'a') && (symbol <= 'z')) {
-		if (!command_requires_text(EXECUTE_COMMANDS[symbol - 'a'])) {
+        bool needs_text = command_requires_text(EXECUTE_COMMANDS[symbol - 'a']);
+        bool needs_rect = command_requires_rect(EXECUTE_COMMANDS[symbol - 'a']);
+
+        if (needs_rect && !opengl_widget->get_selected_rectangle().has_value()) {
+            show_error_message(L"You must select a rectangle for this command");
+            return false;
+        }
+
+		if ((!needs_text)) {
 			execute_command(EXECUTE_COMMANDS[symbol - 'a']);
             return true;
 		}
@@ -4039,6 +4120,12 @@ void MainWidget::handle_additional_command(std::wstring command_name, bool wait)
 
 	if (ADDITIONAL_COMMANDS.find(command_name) != ADDITIONAL_COMMANDS.end()) {
 		std::wstring command_to_execute = ADDITIONAL_COMMANDS[command_name];
+        bool needs_rect = command_requires_rect(command_to_execute);
+        if (needs_rect && !opengl_widget->get_selected_rectangle().has_value()) {
+            //show_error_message(L"You must select a rectangle for this command");
+            set_rect_select_mode(true);
+            return;
+        }
 		if (command_requires_text(command_to_execute)) {
 			if (!current_pending_command) {
 				current_pending_command = *command_manager->get_command_with_name(utf8_encode(command_name));
@@ -4272,5 +4359,49 @@ void MainWidget::reset_highlight_links() {
     }
     else {
         opengl_widget->set_highlight_links(false, false);
+    }
+}
+
+void MainWidget::set_rect_select_mode(bool mode) {
+    rect_select_mode = mode;
+    if (mode == true) {
+        opengl_widget->set_selected_rectangle({ 0, 0, 0, 0 });
+    }
+}
+
+void MainWidget::clear_selected_rect() {
+    opengl_widget->clear_selected_rectangle();
+    //rect_select_mode = false;
+    //rect_select_begin = {};
+    //rect_select_end = {};
+}
+
+std::optional<fz_rect> MainWidget::get_selected_rect_absolute() {
+    return opengl_widget->get_selected_rectangle();
+}
+
+bool MainWidget::get_selected_rect_document(int& out_page, fz_rect& out_rect) {
+    std::optional<fz_rect> absrect = get_selected_rect_absolute();
+    if (absrect) {
+
+        AbsoluteDocumentPos top_left(absrect.value().x0, absrect.value().y0);
+        AbsoluteDocumentPos bottom_right(absrect.value().x1, absrect.value().y1);
+
+        DocumentPos top_left_document =  main_document_view->get_document()->absolute_to_page_pos(top_left);
+        DocumentPos bottom_right_document =  main_document_view->get_document()->absolute_to_page_pos(bottom_right);
+
+        fz_rect document_rect;
+        document_rect.x0 = top_left_document.x;
+        document_rect.y0 = top_left_document.y;
+        document_rect.x1 = bottom_right_document.x;
+        document_rect.y1 = bottom_right_document.y;
+
+        out_rect = document_rect;
+        out_page = top_left_document.page;
+
+        return true;
+    }
+    else {
+        return false;
     }
 }

@@ -166,6 +166,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	commands.push_back({ "toggle_scrollbar",			false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "overview_to_portal",			false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "source_config",				false,	false,	true,	false ,	false,	{} });
+	commands.push_back({ "select_rect",				false,	false,	false,	false ,	false,	{} });
 
 	for (auto [command_name, _] : ADDITIONAL_COMMANDS) {
 		commands.push_back({ utf8_encode(command_name) , false, false, false, false, true});

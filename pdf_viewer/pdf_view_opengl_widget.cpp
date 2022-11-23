@@ -913,6 +913,19 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			}
 		}
 	}
+	if (selected_rectangle) {
+		enable_stencil();
+		write_to_stencil();
+		float rectangle_color[] = {0.0f, 0.0f, 0.0f};
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
+		render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value());
+
+		use_stencil_to_write(false);
+		fz_rect window_rect = {-1, -1, 1, 1};
+		render_highlight_window(shared_gl_objects.highlight_program, window_rect, true);
+
+		disable_stencil();
+	}
 
 }
 
@@ -1542,4 +1555,15 @@ void PdfViewOpenGLWidget::get_overview_window_vertices(float out_vertices[2*4]) 
 	out_vertices[5] = overview_offset_y - overview_half_height;
 	out_vertices[6] = overview_offset_x + overview_half_width;
 	out_vertices[7] = overview_offset_y + overview_half_height;
+}
+
+void PdfViewOpenGLWidget::set_selected_rectangle(fz_rect selected) {
+	selected_rectangle = selected;
+}
+
+void PdfViewOpenGLWidget::clear_selected_rectangle() {
+	selected_rectangle = {};
+}
+std::optional<fz_rect> PdfViewOpenGLWidget::get_selected_rectangle() {
+	return selected_rectangle;
 }

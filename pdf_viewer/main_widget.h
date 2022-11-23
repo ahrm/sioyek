@@ -71,7 +71,10 @@ private:
 	AbsoluteDocumentPos selection_begin;
 	AbsoluteDocumentPos selection_end;
 
-	// when set, mouse wheel moves the visual mark
+	bool rect_select_mode = false;
+	std::optional<AbsoluteDocumentPos> rect_select_begin = {};
+	std::optional<AbsoluteDocumentPos> rect_select_end = {};
+ // when set, mouse wheel moves the visual mark
 	bool visual_scroll_mode = false;
 	bool debug_mode = false;
 
@@ -217,6 +220,11 @@ protected:
 	QString get_font_face_name(); 
 
 	void reset_highlight_links();
+	void set_rect_select_mode(bool mode);
+	void clear_selected_rect();
+
+	std::optional<fz_rect> get_selected_rect_absolute();
+	bool get_selected_rect_document(int& out_page, fz_rect& out_rect);
 public:
 	Document* doc();
 

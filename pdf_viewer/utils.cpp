@@ -2106,8 +2106,15 @@ int lcs(const char* X, const char* Y, int m, int n)
 	return L[m][n];
 }
 
-bool command_requires_text(std::wstring command) {
+bool command_requires_text(const std::wstring& command) {
 	if ((command.find(L"%5") != -1) || (command.find(L"command_text") != -1)) {
+		return true;
+	}
+	return false;
+}
+
+bool command_requires_rect(const std::wstring& command) {
+	if (command.find(L"%{selected_rect}") != -1) {
 		return true;
 	}
 	return false;

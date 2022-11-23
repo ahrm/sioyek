@@ -79,10 +79,10 @@ class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunction
 public:
 
 	enum OverviewSide {
-		bottom=0,
-		top=1,
-		left=2,
-		right=3
+		bottom = 0,
+		top = 1,
+		left = 2,
+		right = 3
 	};
 
 	struct OverviewResizeData {
@@ -146,9 +146,10 @@ private:
 	float overview_offset_x = 0.0f;
 	float overview_offset_y = 0.0f;
 
-	GLuint LoadShaders(Path vertex_file_path_, Path fragment_file_path_);
-protected:
+	std::optional<fz_rect> selected_rectangle = {};
 
+	GLuint LoadShaders(Path vertex_file_path_, Path fragment_file_path_);
+protected: 
 	void initializeGL() override;
 	void resizeGL(int w, int h) override;
 	void render_highlight_window(GLuint program, fz_rect window_rect, bool draw_border=true);
@@ -244,5 +245,9 @@ public:
 	void setup_text_painter(QPainter* painter);
 	void get_overview_window_vertices(float out_vertices[2*4]);
 
+	void set_selected_rectangle(fz_rect selected);
+	void clear_selected_rectangle();
+
+	std::optional<fz_rect> get_selected_rectangle();
 
 };
