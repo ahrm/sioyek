@@ -215,6 +215,8 @@ protected:
 	void reload();
 
 	QString get_font_face_name(); 
+
+	void reset_highlight_links();
 public:
 	Document* doc();
 

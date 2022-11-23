@@ -212,6 +212,7 @@ bool SHOW_CLOSE_PORTAL_IN_STATUSBAR = false;
 bool CASE_SENSITIVE_SEARCH = true;
 bool SHOW_DOCUMENT_NAME_IN_STATUSBAR = false;
 bool NUMERIC_TAGS = false;
+bool SHOULD_HIGHLIGHT_LINKS = false;
 
 Path default_config_path(L"");
 Path default_keys_path(L"");

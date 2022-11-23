@@ -106,6 +106,7 @@ extern bool CASE_SENSITIVE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool NUMERIC_TAGS;
+extern bool SHOULD_HIGHLIGHT_LINKS;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -404,6 +405,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"ui_background_color", STATUS_BAR_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"ui_text_color", STATUS_BAR_TEXT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"numeric_tags", &NUMERIC_TAGS, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"highlight_links", &SHOULD_HIGHLIGHT_LINKS, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

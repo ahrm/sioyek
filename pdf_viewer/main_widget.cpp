@@ -117,6 +117,7 @@ extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 extern std::wstring UI_FONT_FACE_NAME;
+extern bool SHOULD_HIGHLIGHT_LINKS;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -465,6 +466,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
 
     scroll_bar->hide();
+
+    if (SHOULD_HIGHLIGHT_LINKS) {
+        opengl_widget->set_highlight_links(true, false);
+    }
 
     setFocus();
 }
@@ -3032,7 +3037,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
                 }
             }
         }
-        opengl_widget->set_highlight_links(false, false);
+        reset_highlight_links();
     }
     if (current_pending_command->name == "keyboard_select") {
 
@@ -4258,5 +4263,14 @@ QString MainWidget::get_font_face_name() {
     }
     else {
         return QString::fromStdWString(UI_FONT_FACE_NAME);
+    }
+}
+
+void MainWidget::reset_highlight_links() {
+    if (SHOULD_HIGHLIGHT_LINKS) {
+        opengl_widget->set_highlight_links(true, false);
+    }
+    else {
+        opengl_widget->set_highlight_links(false, false);
     }
 }

@@ -23,6 +23,7 @@ extern float OVERVIEW_OFFSET[2];
 extern float FASTREAD_OPACITY;
 extern bool PRERENDER_NEXT_PAGE;
 extern int PRERENDERED_PAGE_COUNT;
+extern bool SHOULD_HIGHLIGHT_LINKS;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -408,7 +409,9 @@ void PdfViewOpenGLWidget::cancel_search() {
 void PdfViewOpenGLWidget::handle_escape() {
 	cancel_search();
 	synctex_highlights.clear();
-	should_highlight_links = false;
+	if (!SHOULD_HIGHLIGHT_LINKS) {
+		should_highlight_links = false;
+	}
 	should_highlight_words = false;
 	should_show_numbers = false;
 }
