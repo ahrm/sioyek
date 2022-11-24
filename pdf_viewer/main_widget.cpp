@@ -1231,22 +1231,35 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 				handle_escape();
                 return;
 			}
+
+            bool should_focus = false;
 			if (kevent->key() == Qt::Key::Key_Return) {
 				typing_location.value().next_char();
 			}
-		}
+			else if (kevent->key() == Qt::Key::Key_Backspace) {
+                typing_location.value().backspace();
+			}
+			else if (kevent->text().size() > 0) {
+				char c = kevent->text().at(0).unicode();
+				should_focus = typing_location.value().advance(c);
+			}
 
-        if (kevent->text().size() > 0) {
-			char c = kevent->text().at(0).unicode();
-            bool should_focus = typing_location.value().advance(c);
 			int page = typing_location.value().page;
 			fz_rect character_rect = fz_rect_from_quad(typing_location.value().character->quad);
-            if (should_focus) {
-                main_document_view->set_offset_y(typing_location.value().focus_offset());
-            }
-			opengl_widget->set_typing_rect(page, character_rect);
-        }
+			std::optional<fz_rect> wrong_rect = {};
+
+			if (typing_location.value().previous_character) {
+				wrong_rect = fz_rect_from_quad(typing_location.value().previous_character->character->quad);
+			}
+
+			if (should_focus) {
+				main_document_view->set_offset_y(typing_location.value().focus_offset());
+			}
+			opengl_widget->set_typing_rect(page, character_rect, wrong_rect);
+
+		}
         return;
+
     }
 
 
@@ -1983,8 +1996,12 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
             charaddr.doc = main_document_view->get_document();
             charaddr.page = page - 1;
             charaddr.next_page();
-            typing_location = charaddr;
+            
+            opengl_widget->set_typing_rect(charaddr.page, fz_rect_from_quad(charaddr.character->quad), {});
+
+            typing_location = std::move(charaddr);
 			main_document_view->set_offset_y(typing_location.value().focus_offset());
+
         }
     }
 
@@ -4449,13 +4466,38 @@ bool MainWidget::get_selected_rect_document(int& out_page, fz_rect& out_rect) {
 }
 
 
-bool CharacterAddress::advance(char c) {
-	if (character->c == c) {
-		return next_char();
-	}
-    else {
-        return false;
+bool CharacterAddress::backspace() {
+    if (previous_character) {
+        CharacterAddress& prev = *previous_character;
+
+        this->page = prev.page;
+        this->block = prev.block;
+        this->line = prev.line;
+        this->character = prev.character;
+        delete previous_character;
+        this->previous_character = nullptr;
     }
+    else {
+		return false;
+    }
+}
+
+bool CharacterAddress::advance(char c) {
+    if (!previous_character) {
+		if (character->c == c) {
+			return next_char();
+		}
+		else {
+            previous_character = new CharacterAddress();
+            previous_character->page = page;
+            previous_character->block = block;
+            previous_character->line = line;
+            previous_character->character = character;
+            next_char();
+			return false;
+		}
+    }
+    return false;
 }
 
 bool CharacterAddress::next_char() {

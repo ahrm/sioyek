@@ -8,6 +8,8 @@
 #include <vector>
 #include <map>
 #include <regex>
+#include <optional>
+#include <memory>
 #include <qcommandlineparser.h>
 
 #include <qstandarditemmodel.h>
@@ -34,7 +36,10 @@ struct CharacterAddress {
 	fz_stext_char* character;
 	Document* doc;
 
+	CharacterAddress* previous_character = nullptr;
+
 	bool advance(char c);
+	bool backspace();
 	bool next_char();
 	bool next_line();
 	bool next_block();
