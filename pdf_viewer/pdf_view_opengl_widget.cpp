@@ -710,7 +710,6 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		for (int page : visible_pages) {
 			render_page(page);
 
-
 			if (should_highlight_links) {
 				glUseProgram(shared_gl_objects.highlight_program);
 				glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
@@ -768,6 +767,8 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	}
 #endif
 
+
+	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
 
 	search_results_mutex.lock();
 	if (search_results.size() > 0) {
