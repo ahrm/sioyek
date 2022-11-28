@@ -3101,6 +3101,7 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 			int page_number = main_document_view->get_center_page_number();
 			focus_text(page_number, text);
         }
+		opengl_widget->set_should_draw_vertical_line(true);
 
     }
 
