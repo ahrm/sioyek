@@ -3007,8 +3007,14 @@ bool MainWidget::overview_under_pos(WindowPos pos){
     index_into_candidates = 0;
 
     if (main_document_view && (link = main_document_view->get_link_in_pos(pos))) {
-        set_overview_link(link.value());
-        return true;
+        if (QString::fromStdString(link.value().uri).startsWith("http")) {
+            // can't open overview to web links
+            return false;
+        }
+        else {
+			set_overview_link(link.value());
+			return true;
+        }
     }
 
     int autoreference_page;
