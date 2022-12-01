@@ -134,13 +134,6 @@ cd sioyek
 ./build_linux.sh
 ```
 
-#### Non-US keyboard layout
-
-If you adopt a non-US keyboard layout, run the following after compiling sioyek:
-```
-./linux_non_us_keyboard.sh
-```
-
 ### Windows
 1. Install Visual Studio (tested on 2019, other relatively recent versions should work too)
 2. Install Qt 5 and make sure qmake is in `PATH`.
