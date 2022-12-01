@@ -22,7 +22,7 @@ make
 # Copy files in build/ subdirectory
 rm -r build 2> /dev/null
 mkdir build
-cp sioyek build/sioyek
+mv sioyek build/sioyek
 cp pdf_viewer/prefs.config build/prefs.config
 cp pdf_viewer/prefs_user.config build/prefs_user.config
 cp pdf_viewer/keys.config build/keys.config
