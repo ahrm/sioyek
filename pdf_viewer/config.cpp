@@ -465,6 +465,9 @@ void ConfigManager::deserialize_file(const Path& file_path, bool warn_if_not_exi
 					auto parent_dir = QDir(QString::fromStdWString(file_path.file_parent().get_path()));
 					path = parent_dir.absoluteFilePath(QString::fromStdWString(path)).toStdWString();
 				}
+				if (path[0] == '~') {
+					path = QDir::homePath().toStdWString() + path.substr(1, path.size() - 1);
+				}
 
 				deserialize_file(path, true);
 			}
