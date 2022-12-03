@@ -421,8 +421,27 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer = new QTimer(this);
     unsigned int INTERVAL_TIME = 200;
     validation_interval_timer->setInterval(INTERVAL_TIME);
-    connect(validation_interval_timer , &QTimer::timeout, [&, INTERVAL_TIME]() {
 
+    scrollbar_timer = new QTimer(this);
+    scrollbar_timer->setSingleShot(true);
+
+    // dirty hack!
+    // really the content of this closure should be in toggle_scrollbar method, however,
+	// for some unknown reason if we do that, new windows are created very small when 
+	// toggle_scrollbar is in startup_commands. Strangely the culprit seems to be this line:
+    // scroll_bar->show()
+    // todo: figure out why this is the case and fix it
+    QObject::connect(scrollbar_timer, &QTimer::timeout, [&]() {
+			if (scroll_bar->isVisible()) {
+				scroll_bar->hide();
+			}
+			else {
+				scroll_bar->show();
+			}
+			main_window_width = opengl_widget->width();
+        });
+
+    connect(validation_interval_timer , &QTimer::timeout, [&, INTERVAL_TIME]() {
 
         if (is_render_invalidated) {
             validate_render();
@@ -4098,6 +4117,7 @@ void MainWidget::focus_text(int page, const std::wstring& text) {
 		}
     }
 }
+
 int MainWidget::get_current_monitor_width() {
     if (this->window()->windowHandle() != nullptr) {
 		return this->window()->windowHandle()->screen()->geometry().width();
@@ -4351,13 +4371,7 @@ void MainWidget::run_multiple_commands(const std::wstring& commands) {
 }
 
 void MainWidget::toggle_scrollbar() {
-    if (scroll_bar->isVisible()) {
-        scroll_bar->hide();
-    }
-    else {
-        scroll_bar->show();
-    }
-    main_window_width = opengl_widget->width();
+    scrollbar_timer->start(100);
 }
 
 void MainWidget::update_scrollbar() {
