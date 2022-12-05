@@ -835,10 +835,20 @@ void run_command(std::wstring command, QStringList parameters, bool wait){
 		WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
 		CloseHandle(ShExecInfo.hProcess);
 	}
+
 #else
 	QProcess* process = new QProcess;
 	QString qcommand = QString::fromStdWString(command);
 	QStringList qparameters;
+
+	QObject::connect(process, &QProcess::errorOccurred, [&](QProcess::ProcessError error) {
+		auto msg = process->errorString().toStdWString();
+		show_error_message(msg);
+	});
+
+	QObject::connect(process, qOverload<int, QProcess::ExitStatus >(&QProcess::finished), [&](int exit_code, QProcess::ExitStatus stat) {
+		process->deleteLater();
+	});
 
 	for (int i = 0; i < parameters.size(); i++) {
 		qparameters.append(parameters[i]);
