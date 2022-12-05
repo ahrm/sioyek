@@ -841,12 +841,12 @@ void run_command(std::wstring command, QStringList parameters, bool wait){
 	QString qcommand = QString::fromStdWString(command);
 	QStringList qparameters;
 
-	QObject::connect(process, &QProcess::errorOccurred, [&](QProcess::ProcessError error) {
+	QObject::connect(process, &QProcess::errorOccurred, [process](QProcess::ProcessError error) {
 		auto msg = process->errorString().toStdWString();
 		show_error_message(msg);
 	});
 
-	QObject::connect(process, qOverload<int, QProcess::ExitStatus >(&QProcess::finished), [&](int exit_code, QProcess::ExitStatus stat) {
+	QObject::connect(process, qOverload<int, QProcess::ExitStatus >(&QProcess::finished), [process](int exit_code, QProcess::ExitStatus stat) {
 		process->deleteLater();
 	});
 
