@@ -3520,6 +3520,7 @@ void MainWidget::move_vertical(float amount) {
 }
 
 void MainWidget::zoom(WindowPos pos, float zoom_factor, bool zoom_in) {
+    last_smart_fit_page = {};
     if (zoom_in) {
         if (WHEEL_ZOOM_ON_CURSOR) {
             main_document_view->zoom_in_cursor(pos, zoom_factor);
