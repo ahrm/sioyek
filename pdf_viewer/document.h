@@ -118,12 +118,12 @@ public:
 	void delete_highlight(Highlight hl);
 	//void delete_highlight_annotation(const Highlight& highlight);
 
-	void fill_highlight_rects(fz_context* ctx);
+	void fill_highlight_rects(fz_context* ctx, fz_document* doc);
 	void count_chapter_pages(std::vector<int> &page_counts);
 	void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
 	void count_chapter_pages_accum(std::vector<int> &page_counts);
 	bool get_is_indexing();
-	fz_stext_page* get_stext_with_page_number(fz_context* ctx, int page_number);
+	fz_stext_page* get_stext_with_page_number(fz_context* ctx, int page_number, fz_document* doc=nullptr);
 	fz_stext_page* get_stext_with_page_number(int page_number);
 	void add_portal(Portal link, bool insert_into_database = true);
 	std::wstring get_path();
@@ -205,7 +205,8 @@ public:
 		AbsoluteDocumentPos selection_end,
 		bool is_word_selection,
 		std::vector<fz_rect>& selected_characters,
-		std::wstring& selected_text);
+		std::wstring& selected_text,
+		fz_document* doc=nullptr);
 
 	int get_page_offset();
 	void set_page_offset(int new_offset);

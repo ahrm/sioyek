@@ -70,19 +70,25 @@ void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 	db_manager->insert_bookmark(get_checksum(), desc, y_offset);
 }
 
-void Document::fill_highlight_rects(fz_context* ctx) {
+void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
 	// Fill the `highlight_rects` attribute of all highlights with a vector of merged highlight rects of
 	// individual characters in the highlighted area (we merge the rects of characters in a single line
 	// which makes the result look nicer)
 
 	for (size_t i = 0; i < highlights.size(); i++) {
-		const Highlight& highlight = highlights[i];
+		const Highlight highlight = highlights[i];
 		std::vector<fz_rect> highlight_rects;
 		std::vector<fz_rect> merged_rects;
 		std::wstring highlight_text;
-		get_text_selection(ctx, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text);
+		get_text_selection(ctx, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text, doc_);
 		merge_selected_character_rects(highlight_rects, merged_rects);
-		highlights[i].highlight_rects = std::move(merged_rects);
+
+		if (i < highlights.size()) {
+			highlights[i].highlight_rects = std::move(merged_rects);
+		}
+		else {
+			break;
+		}
 	}
 }
 
@@ -481,7 +487,7 @@ void Document::convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output)
 	count_chapter_pages_accum(accum_chapter_pages);
 
 	do {
-		if (root == nullptr) {
+		if (root == nullptr || root->title == nullptr) {
 			break;
 		}
 
@@ -710,24 +716,26 @@ void Document::load_page_dimensions(bool force_load_now) {
 				fz_drop_page(context_, page);
 			}
 
+
+			page_dims_mutex.lock();
+
+			page_heights = std::move(page_heights_);
+			accum_page_heights = std::move(accum_page_heights_);
+			page_widths = std::move(page_widths_);
+
+			if (invalid_flag_pointer) {
+				*invalid_flag_pointer = true;
+			}
+			page_dims_mutex.unlock();
+
+			fill_highlight_rects(context_, doc_);
+
 			fz_drop_document(context_, doc_);
 		}
 		fz_catch(context_) {
 			std::wcout << L"Error: could not load page dimensions\n";
 		}
 
-		page_dims_mutex.lock();
-
-		page_heights = std::move(page_heights_);
-		accum_page_heights = std::move(accum_page_heights_);
-		page_widths = std::move(page_widths_);
-
-		if (invalid_flag_pointer) {
-			*invalid_flag_pointer = true;
-		}
-		page_dims_mutex.unlock();
-
-		fill_highlight_rects(context_);
 		fz_drop_context(context_);
 
 		are_highlights_loaded = true;
@@ -810,31 +818,50 @@ fz_stext_page* Document::get_stext_with_page_number(int page_number) {
 	return get_stext_with_page_number(context, page_number);
 }
 
-fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_number) {
+fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_number, fz_document* doc_) {
+	// shouldn't cache when the request is coming from the worker thread
+	// as the stext pages generated in the other thread is not usable in
+	// main thread's context
+	bool nocache = false;
+	if (doc_ == nullptr) {
+		doc_ = doc;
+	}
+	else {
+		nocache = true;
+	}
+
 	const int MAX_CACHED_STEXT_PAGES = 10;
 
-	for (auto [page, cached_stext_page] : cached_stext_pages) {
-		if (page == page_number) {
-			return cached_stext_page;
+	if (!nocache) {
+		for (auto [page, cached_stext_page] : cached_stext_pages) {
+			if (page == page_number) {
+				return cached_stext_page;
+			}
 		}
 	}
 
 	fz_stext_page* stext_page = nullptr;
 
+	bool failed = false;
 	fz_try(ctx) {
-		stext_page = fz_new_stext_page_from_page_number(ctx, doc, page_number, nullptr);
+		stext_page = fz_new_stext_page_from_page_number(ctx, doc_, page_number, nullptr);
 	}
 	fz_catch(ctx) {
-
+		failed = true;
+	}
+	if (failed) {
+		return nullptr;
 	}
 
 	if (stext_page != nullptr) {
 
-		if (cached_stext_pages.size() == MAX_CACHED_STEXT_PAGES) {
-			fz_drop_stext_page(ctx, cached_stext_pages[0].second);
-			cached_stext_pages.erase(cached_stext_pages.begin());
+		if (!nocache) {
+			if (cached_stext_pages.size() == MAX_CACHED_STEXT_PAGES) {
+				fz_drop_stext_page(ctx, cached_stext_pages[0].second);
+				cached_stext_pages.erase(cached_stext_pages.begin());
+			}
+			cached_stext_pages.push_back(std::make_pair(page_number, stext_page));
 		}
-		cached_stext_pages.push_back(std::make_pair(page_number, stext_page));
 		return stext_page;
 	}
 
@@ -1336,10 +1363,15 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
 	AbsoluteDocumentPos selection_end,
 	bool is_word_selection,
 	std::vector<fz_rect>& selected_characters,
-	std::wstring& selected_text) {
+	std::wstring& selected_text,
+	fz_document* doc_) {
 
 	selected_characters.clear();
 	selected_text.clear();
+
+	if (doc_ == nullptr) {
+		doc_ = doc;
+	}
 
 
 	DocumentPos page_pos1 = absolute_to_page_pos(selection_begin);
@@ -1376,7 +1408,7 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
 	for (int i = page_begin; i <= page_end; i++) {
 
 		// for now, let's assume there is only one page
-		fz_stext_page* stext_page = get_stext_with_page_number(ctx, i);
+		fz_stext_page* stext_page = get_stext_with_page_number(ctx, i, doc_);
 		if (!stext_page) continue;
 
 		std::vector<fz_stext_char*> flat_chars;
@@ -1921,7 +1953,7 @@ float Document::document_to_absolute_y(int page, float doc_y) {
 AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos, bool center_mid) {
 	float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
 	AbsoluteDocumentPos res = {doc_pos.x, absolute_y};
-	if (center_mid) {
+	if (center_mid && (doc_pos.page < page_widths.size())) {
 		res.x -= page_widths[doc_pos.page] / 2;
 	}
 	return res;
