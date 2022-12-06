@@ -4166,12 +4166,27 @@ void MainWidget::synctex_under_pos(WindowPos position) {
 			if (column < 0) column = 0;
 			int tag = synctex_node_tag(node);
 			const char* file_name = synctex_scanner_get_name(scanner, tag);
+#ifdef Q_OS_WIN
+            // the path returned by synctex is formatted in unix style, for example it is something like this
+			// in windows: d:/some/path/file.pdf
+            // this doesn't work with Vimtex for some reason, so here we have to convert the path separators
+			// to windows style and make sure the driver letter is capitalized
+            QDir file_path = QDir(file_name);
+            QString new_path = QDir::toNativeSeparators(file_path.absolutePath());
+            new_path[0] = new_path[0].toUpper();
+
+#endif
 
 			std::string line_string = std::to_string(line);
 			std::string column_string = std::to_string(column);
 
 			if (inverse_search_command.size() > 0) {
+#ifdef Q_OS_WIN
+				QString command = QString::fromStdWString(inverse_search_command).arg(new_path, line_string.c_str(), column_string.c_str());
+#else
 				QString command = QString::fromStdWString(inverse_search_command).arg(file_name, line_string.c_str(), column_string.c_str());
+#endif
+                std::wstring res = command.toStdWString();
 				QProcess::startDetached(command);
 			}
 			else {
