@@ -2008,6 +2008,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     if (command->name == "select_rect") {
         set_rect_select_mode(true);
     }
+    if (command->name == "donate") {
+        open_web_url(L"https://www.buymeacoffee.com/ahrm");
+    }
     if (command->name == "toggle_typing_mode") {
         if (!typing_location.has_value()) {
             int page = main_document_view->get_center_page_number();
