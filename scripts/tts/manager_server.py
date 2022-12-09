@@ -154,7 +154,7 @@ class Manager:
             align_text_file_name = DATA_FOLDER + digest + "_align.text"
             align_output_file_name = DATA_FOLDER + digest + "_alignment.json"
             audio_file_name = DATA_FOLDER + digest + ".wav"
-            mp3_file_name = DATA_FOLDER + digest + ".mp3"
+            ogg_file_name = DATA_FOLDER + digest + ".ogg"
 
             tts_text = self.get_page_text_tts(path, page_number)
             align_text = self.get_page_text(path, page_number)
@@ -170,8 +170,8 @@ class Manager:
             else:
                 subprocess.run(["powershell", os.path.dirname(__file__) + "\\generator2.ps1", tts_text_file_name, audio_file_name])
 
-            subprocess.run(["sox", audio_file_name, mp3_file_name, 'tempo', '1.5'])
-            subprocess.run([os.path.dirname(__file__) + "\\aligner.bat", mp3_file_name, align_text_file_name, align_output_file_name])
+            subprocess.run(["sox", audio_file_name, ogg_file_name, 'tempo', '1.5'])
+            subprocess.run([os.path.dirname(__file__) + "\\aligner.bat", ogg_file_name, align_text_file_name, align_output_file_name])
 
     def find_background_job(self, path, page_number, fast):
         for thread_path, thread_page, thread_fast, thread in self.worker_threads:
@@ -202,7 +202,7 @@ class Manager:
         return best_line_index
 
     def set_track_with_digest(self, digest):
-        file_path = DATA_FOLDER + digest + ".mp3"
+        file_path = DATA_FOLDER + digest + ".ogg"
         if self.current_track != file_path:
             mixer.music.stop()
             mixer.music.unload()
@@ -232,7 +232,7 @@ class Manager:
         line_begin = alignment[line_index][0]
         self.set_track_with_digest(digest)
         mixer.music.play()
-        mixer.music.set_pos(line_begin / 2) #!!!!!!!!!!!!!!!!!
+        mixer.music.set_pos(line_begin) #!!!!!!!!!!!!!!!!! ogg processing is accurate no need for hack mp3
         self.offset = line_begin
         self.current_state = (path, page_number, line_index, digest)
         self.enable_line_follow()
