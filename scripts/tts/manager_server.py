@@ -104,7 +104,7 @@ class Manager:
         return self.doc_cache[path]
     
     def get_page_text(self, path, page):
-        return self.get_doc(path).getPageText(page)
+        return self.get_doc(path).get_page_text(page)
 
     def get_page_text_tts(self, path, page):
         return convert_text_to_appropriate_format_for_tts(self.get_page_text(path, page))
