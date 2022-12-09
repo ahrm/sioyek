@@ -19,9 +19,6 @@ example `keys_user.config`:
     move_visual_mark_down;execute_command_d j
     move_visual_mark_up;execute_command_d k
 '''
-# cached audio files will be stored in this directory
-DATA_FOLDER = "D:\\tts-output\\"
-SIOYEK_PATH = "sioyek.exe"
 
 from flask import Flask
 from flask import request
@@ -37,7 +34,21 @@ import os
 import fitz
 import pygame
 from pygame import mixer
+import platform
 
+if (platform.system() == "Darwin"):
+    # cached audio files will be stored in this directory
+    DATA_FOLDER = "./tts-output/"
+    SIOYEK_PATH = "sioyek"
+    POWER_SHELL = "pwsh"
+else:
+    # cached audio files will be stored in this directory
+    DATA_FOLDER = "D:\\tts-output\\"
+    SIOYEK_PATH = "sioyek.exe"
+    POWER_SHELL = "powershell"
+
+if(not os.path.exists(DATA_FOLDER)):
+    os.mkdir(DATA_FOLDER)
 
 def lcs(pattern_1, pattern_2):
     m = len(pattern_1)
@@ -153,7 +164,7 @@ class Manager:
             tts_text_file_name = DATA_FOLDER + digest + "_tts.txt"
             align_text_file_name = DATA_FOLDER + digest + "_align.text"
             align_output_file_name = DATA_FOLDER + digest + "_alignment.json"
-            audio_file_name = DATA_FOLDER + digest + ".wav"
+            audio_file_name = DATA_FOLDER + digest + ".wave"
             ogg_file_name = DATA_FOLDER + digest + ".ogg"
 
             tts_text = self.get_page_text_tts(path, page_number)
@@ -166,12 +177,12 @@ class Manager:
                 outfile.write(align_text)
 
             if fast:
-                subprocess.run(["powershell", os.path.dirname(__file__) + "\\generator.ps1", tts_text_file_name, audio_file_name])
+                subprocess.run([POWER_SHELL, os.path.dirname(__file__) + "\\generator.ps1", tts_text_file_name, audio_file_name])
             else:
-                subprocess.run(["powershell", os.path.dirname(__file__) + "\\generator2.ps1", tts_text_file_name, audio_file_name])
+                subprocess.run([POWER_SHELL, os.path.dirname(__file__) + "\\generator2.ps1", tts_text_file_name, audio_file_name])
 
             subprocess.run(["sox", audio_file_name, ogg_file_name, 'tempo', '1.5'])
-            subprocess.run([os.path.dirname(__file__) + "\\aligner.bat", ogg_file_name, align_text_file_name, align_output_file_name])
+            subprocess.run([POWER_SHELL, os.path.dirname(__file__) + "\\aligner.ps1", ogg_file_name, align_text_file_name, align_output_file_name])
 
     def find_background_job(self, path, page_number, fast):
         for thread_path, thread_page, thread_fast, thread in self.worker_threads:
