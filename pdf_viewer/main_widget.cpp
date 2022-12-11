@@ -422,25 +422,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     unsigned int INTERVAL_TIME = 200;
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
-    scrollbar_timer = new QTimer(this);
-    scrollbar_timer->setSingleShot(true);
-
-    // dirty hack!
-    // really the content of this closure should be in toggle_scrollbar method, however,
-	// for some unknown reason if we do that, new windows are created very small when 
-	// toggle_scrollbar is in startup_commands. Strangely the culprit seems to be this line:
-    // scroll_bar->show()
-    // todo: figure out why this is the case and fix it
-    QObject::connect(scrollbar_timer, &QTimer::timeout, [&]() {
-			if (scroll_bar->isVisible()) {
-				scroll_bar->hide();
-			}
-			else {
-				scroll_bar->show();
-			}
-			main_window_width = opengl_widget->width();
-        });
-
     connect(validation_interval_timer , &QTimer::timeout, [&, INTERVAL_TIME]() {
 
         if (is_render_invalidated) {
@@ -1093,6 +1074,10 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     //save the previous document state
     if (main_document_view) {
         main_document_view->persist();
+    }
+
+    if (main_document_view->get_view_width() > main_window_width) {
+        main_window_width = main_document_view->get_view_width();
     }
 
     main_document_view->on_view_size_change(main_window_width, main_window_height);
@@ -4390,7 +4375,22 @@ void MainWidget::run_multiple_commands(const std::wstring& commands) {
 }
 
 void MainWidget::toggle_scrollbar() {
-    scrollbar_timer->start(100);
+
+    // dirty hack!
+    // really the content of this closure should be in toggle_scrollbar method, however,
+	// for some unknown reason if we do that, new windows are created very small when 
+	// toggle_scrollbar is in startup_commands. Strangely the culprit seems to be this line:
+    // scroll_bar->show()
+    // todo: figure out why this is the case and fix it
+    QTimer::singleShot(100, [&]() {
+			if (scroll_bar->isVisible()) {
+				scroll_bar->hide();
+			}
+			else {
+				scroll_bar->show();
+			}
+			main_window_width = opengl_widget->width();
+        });
 }
 
 void MainWidget::update_scrollbar() {
