@@ -2198,6 +2198,15 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         if (num_repeats == 0) num_repeats++;
         opengl_widget->goto_search_result(-num_repeats);
     }
+    else if (command->name == "overview_next_item") {
+        if (num_repeats == 0) num_repeats++;
+        opengl_widget->goto_search_result(num_repeats, true);
+    }
+
+    else if (command->name == "overview_prev_item") {
+        if (num_repeats == 0) num_repeats++;
+        opengl_widget->goto_search_result(-num_repeats, true);
+    }
     else if (command->name == "next_preview") {
         if (smart_view_candidates.size() > 0) {
             index_into_candidates = (index_into_candidates + 1) % smart_view_candidates.size();

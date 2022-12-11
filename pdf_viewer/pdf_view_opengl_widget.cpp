@@ -447,24 +447,52 @@ bool PdfViewOpenGLWidget::valid_document() {
 	return false;
 }
 
-void PdfViewOpenGLWidget::goto_search_result(int offset) {
-	if (!valid_document()) return;
 
+std::optional<SearchResult> PdfViewOpenGLWidget::get_current_search_result() {
+	if (!valid_document()) return {};
+	if (current_search_result_index == -1) return {};
 	search_results_mutex.lock();
 	if (search_results.size() == 0) {
 		search_results_mutex.unlock();
-		return;
+		return {};
 	}
+	SearchResult res = search_results[current_search_result_index];
+	search_results_mutex.unlock();
+	return res;
+}
 
+std::optional<SearchResult> PdfViewOpenGLWidget::set_search_result_offset(int offset) {
+	if (!valid_document()) return {};
+	search_results_mutex.lock();
+	if (search_results.size() == 0) {
+		search_results_mutex.unlock();
+		return {};
+	}
 	int target_index = mod(current_search_result_index + offset, search_results.size());
 	current_search_result_index = target_index;
 
-	auto [rects, target_page] = search_results[target_index];
+	SearchResult res = search_results[target_index];
 	search_results_mutex.unlock();
+	return res;
 
-	float new_offset_y = rects.front().y0 + document_view->get_document()->get_accum_page_height(target_page);
+}
 
-	document_view->set_offset_y(new_offset_y);
+
+void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
+	if (!valid_document()) return;
+
+	std::optional<SearchResult> result_ = set_search_result_offset(offset);
+	if (result_) {
+		SearchResult result = result_.value();
+		float new_offset_y = result.rects.front().y0 + document_view->get_document()->get_accum_page_height(result.page);
+		if (overview) {
+			OverviewState state = { new_offset_y, nullptr };
+			set_overview_page(state);
+		}
+		else {
+			document_view->set_offset_y(new_offset_y);
+		}
+	}
 }
 
 
@@ -564,6 +592,19 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 		glBufferData(GL_ARRAY_BUFFER, sizeof(page_uvs), page_uvs, GL_DYNAMIC_DRAW);
 
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+		std::optional<SearchResult> highlighted_result_ = get_current_search_result();
+		if (highlighted_result_) {
+			SearchResult highlighted_result = highlighted_result_.value();
+			glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+			glUseProgram(shared_gl_objects.highlight_program);
+			glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
+			//glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
+			for (auto rect : highlighted_result.rects) {
+				fz_rect target = document_to_overview_rect(highlighted_result.page, rect);
+				render_highlight_window(shared_gl_objects.highlight_program, target);
+			}
+		}
 	}
 
 	disable_stencil();
@@ -1594,4 +1635,58 @@ void PdfViewOpenGLWidget::set_typing_rect(int page, fz_rect highlight_rect, std:
 		wrong_character_rect = {};
 	}
 
+}
+
+Document* PdfViewOpenGLWidget::get_current_overview_document() {
+	if (overview_page) {
+		if (overview_page.value().doc) {
+			return overview_page->doc;
+		}
+		else {
+			return document_view->get_document();
+		}
+	}
+	else {
+		return document_view->get_document();
+	}
+
+}
+
+NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(DocumentPos pos) {
+	NormalizedWindowPos res;
+
+	if (overview_page) {
+		OverviewState overview = overview_page.value();
+		Document* target_doc = get_current_overview_document();
+		DocumentPos docpos = target_doc->absolute_to_page_pos({ 0, overview.absolute_offset_y });
+
+		AbsoluteDocumentPos abspos = target_doc->document_to_absolute_pos(pos);
+
+		float overview_zoom_level = (2 * overview_half_width) / target_doc->get_page_width(docpos.page);
+
+		float relative_x = abspos.x * overview_zoom_level;
+		float aspect = static_cast<float>(width()) / static_cast<float>(height());
+		float relative_y = (abspos.y - overview.absolute_offset_y) * overview_zoom_level * aspect;
+		float left = overview_offset_x - overview_half_width;
+		float top = overview_offset_y;
+		return {left + relative_x, top - relative_y};
+
+		return res;
+	}
+	else {
+		return res;
+	}
+}
+
+fz_rect PdfViewOpenGLWidget::document_to_overview_rect(int page, fz_rect document_rect) {
+	fz_rect res;
+	DocumentPos top_left = { page, document_rect.x0, document_rect.y0 };
+	DocumentPos bottom_right = { page, document_rect.x1, document_rect.y1 };
+	NormalizedWindowPos top_left_pos = document_to_overview_pos(top_left);
+	NormalizedWindowPos bottom_right_pos = document_to_overview_pos(bottom_right);
+	res.x0 = top_left_pos.x;
+	res.y0 = top_left_pos.y;
+	res.x1 = bottom_right_pos.x;
+	res.y1 = bottom_right_pos.y;
+	return res;
 }

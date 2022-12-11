@@ -200,7 +200,9 @@ public:
 	int get_num_search_results();
 	int get_current_search_result_index();
 	bool valid_document();
-	void goto_search_result(int offset);
+	std::optional<SearchResult> set_search_result_offset(int offset);
+	std::optional<SearchResult> get_current_search_result();
+	void goto_search_result(int offset, bool overview=false);
 	void render_overview(OverviewState overview);
 	void render_page(int page_number);
 	bool get_is_searching(float* prog);
@@ -254,5 +256,9 @@ public:
 	std::optional<fz_rect> get_selected_rectangle();
 
 	void set_typing_rect(int page, fz_rect rect, std::optional<fz_rect> wrong_rect);
+
+	Document* get_current_overview_document();
+	NormalizedWindowPos document_to_overview_pos(DocumentPos pos);
+	fz_rect document_to_overview_rect(int page, fz_rect document_rect);
 
 };
