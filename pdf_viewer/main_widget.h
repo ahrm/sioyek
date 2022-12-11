@@ -96,10 +96,6 @@ private:
 
 	QTimer* validation_interval_timer = nullptr;
 
-	// used for a dirty hack to prevent the bug where new windows are very small when
-	// toggle_scrollbar is in startup_commands
-	QTimer* scrollbar_timer = nullptr;
-
 	std::optional<Portal> link_to_edit = {};
 	int selected_highlight_index = -1;
 
