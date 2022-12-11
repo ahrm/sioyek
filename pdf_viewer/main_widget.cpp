@@ -1076,6 +1076,10 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
         main_document_view->persist();
     }
 
+    if (main_document_view->get_view_width() > main_window_width) {
+        main_window_width = main_document_view->get_view_width();
+    }
+
     main_document_view->on_view_size_change(main_window_width, main_window_height);
     main_document_view->open_document(path.get_path(), &this->is_render_invalidated);
     bool has_document = main_document_view_has_document();
