@@ -487,6 +487,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         opengl_widget->set_highlight_links(true, false);
     }
 
+    setMinimumWidth(500);
+    setMinimumHeight(500);
     setFocus();
 }
 
