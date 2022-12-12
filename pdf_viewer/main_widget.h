@@ -266,9 +266,8 @@ public:
 	void move_document(float dx, float dy);
 	void move_document_screens(int num_screens);
 	void focus_text(int page, const std::wstring& text);
-	void move_visual_mark_down();
-	void move_visual_mark_up();
 
+	void move_visual_mark(int offset);
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_mouse_drag_mode();
 	void toggle_dark_mode();
