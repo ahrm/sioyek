@@ -1017,7 +1017,12 @@ bool MainWidget::handle_command_with_symbol(const Command* command, char symbol)
     }
     else if (command->name == "external_search") {
         if ((symbol >= 'a') && (symbol <= 'z')) {
-            search_custom_engine(selected_text, SEARCH_URLS[symbol - 'a']);
+            if (SEARCH_URLS[symbol - 'a'].size() > 0) {
+				search_custom_engine(selected_text, SEARCH_URLS[symbol - 'a']);
+            }
+            else {
+                std::wcout << L"No search engine defined for symbol " << symbol << std::endl;
+            }
         }
         //if (opengl_widget->selected_character_rects.size() > 0) {
         //	main_document_view->add_highlight({ selection_begin_x, selection_begin_y }, { selection_end_x, selection_end_y }, symbol);
