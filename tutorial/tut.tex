@@ -1,0 +1,214 @@
+\documentclass{article}
+
+\usepackage[textwidth=16cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{upquote}
+\usepackage[implicit=false]{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=blue,      
+    urlcolor=blue,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+	linktoc=None
+    }
+
+\makeatletter
+\g@addto@macro\thesection.
+\makeatother
+
+
+\usetikzlibrary{backgrounds}
+\usetikzlibrary{calc}
+
+\date{}
+\newcommand*\keystroke[1]{%
+  \begin{tikzpicture}[baseline=(key.base), very thin, line cap=round, black, rounded corners=0pt]%
+    \node [draw, fill=white, fill opacity=1, rectangle, rounded corners=2pt, inner sep=1pt, minimum width=1.2em, font=\scriptsize\sffamily] (key) {#1\strut};
+
+    \begin{scope}[on background layer]
+      \draw [rounded corners=1pt, fill=white] ($ (key.north west) + (-2pt, 2pt) $) rectangle ($ (key.south east) + (2pt, -2pt) $);
+
+      \fill [gray!60] ($ (key.south west) + (2pt, 0.1pt) $) -- ($ (key.south west) + (-1pt, -2pt) $)
+                  -- ($ (key.south east) + (1pt, -2pt) $)  -- ($ (key.south east) + (-2pt, 0.1pt) $) -- cycle;
+
+      \fill [gray!60] ($ (key.south east) + (-0.1pt, 2pt) $) -- ($ (key.south east) + (2pt, -1pt) $)
+                  -- ($ (key.north east) + (2pt, 1pt) $)    -- ($ (key.north east) + (-0.1pt, -2pt) $) -- cycle;
+    \end{scope}
+
+    \draw ($ (key.north west) + (0.1pt, -2pt) $) -- ($ (key.north west) + (-2pt, 1pt) $);
+    \draw ($ (key.north west) + (2pt, -0.1pt) $) -- ($ (key.north west) + (-1pt, 2pt) $);
+
+    \draw ($ (key.north east) + (-0.1pt, -2pt) $) -- ($ (key.north east) + (2pt, 1pt) $);
+    \draw ($ (key.north east) + (-2pt, -0.1pt) $) -- ($ (key.north east) + (1pt, 2pt) $);
+
+    \draw ($ (key.south west) + (0.1pt, 2pt) $) -- ($ (key.south west) + (-2pt, -1pt) $);
+    \draw ($ (key.south west) + (2pt, 0.1pt) $) -- ($ (key.south west) + (-1pt, -2pt) $);
+
+    \draw ($ (key.south east) + (-0.1pt, 2pt) $) -- ($ (key.south east) + (2pt, -1pt) $);
+    \draw ($ (key.south east) + (-2pt, 0.1pt) $) -- ($ (key.south east) + (1pt, -2pt) $);
+  \end{tikzpicture}%
+}
+
+
+
+
+\title{Sioyek Tutorial}
+\begin{document}
+\maketitle
+
+\begin{figure}
+	\begin{center}
+	\includegraphics[width=10cm]{mandlebrot_small.jpg}
+	\end{center}
+	\caption{Mandlebrot Set}\label{fig:mandle}
+\end{figure}
+
+\section{Basics}
+\begin{itemize}
+	\item Press \keystroke{o} to open a new document or \keystroke{Shift}+\keystroke{o} to open a previously opened document.
+	\item Use the arrow keys for navigation.
+	\item Use \keystroke{Ctrl}+\keystroke{PageDown}/\keystroke{Ctrl}+\keystroke{PageUp} to go to previous/next page.
+	\item Press \keystroke{Space}/\keystroke{Shift}+\keystroke{Space} to go to the next/previous screen (which is equivalent to scrolling down half of screen width). You can also use \keystroke{PageDown} and \keystroke{PageUp}.
+	\item Press \keystroke{-} to zoom out and \keystroke{Shift}+\keystroke{=} (\keystroke{+}) to zoom in.
+	\item Press \keystroke{F11} to enter fullscreen mode.
+	\item Press \keystroke{F10} to fit the document to screen ignoring white page margins.
+	\item Press \keystroke{F9} to fit the document to screen (including white margins).
+	\item Press \keystroke{f8} to toggle dark mode.
+	\item Enter \keystroke{gg} (press \keystroke{g} two times) to go to the first page. In order to go to a specific page, enter \verb [NUM] \keystroke{gg} where \verb [NUM] \ is the page number. For example in order to go to page 31, enter \keystroke{31gg}. You can also press \keystroke{Home} to go to a specific page.
+	\item Press \keystroke{Shift}+\keystroke{g} (\keystroke{G}) or \keystroke{End} to go to the last page.
+	\item Press \keystroke{t} to open table of contents (if it exists).
+	\item Use \keystroke{backspace} to go back in history. You can also use \keystroke{Ctrl}+\keystroke{left arrow} and \keystroke{Ctrl}+\keystroke{right arrow} to navigate backward/forward in history. Also extra mouse buttons can be used to navigate history.
+	\item  With some text selected, press \keystroke{ss} to search the text in google scholar and \keystroke{sl} to search it in library genesis. Try it out on the following texts:\\
+		Vaswani, Ashish, et al. "{\color{red} Attention is all you need}." Advances in neural information processing systems. 2017.
+\end{itemize}
+\section{Command Palette}
+\begin{itemize}
+	\item Press \keystroke{:} to open a searchable list of all sioyek commands
+	\item If the command is bound to a key, the keybinding is shown in the left (multiple keybinds are separated by | symbol)
+\end{itemize}
+\section{Search}
+\begin{itemize}
+	\item Press \keystroke{Ctrl}+\keystroke{f} or \keystroke{/}  to search.
+	\item Press \keystroke{n}/\keystroke{Shift}+\keystroke{n} to go to the next/previous match.
+	\item In order to quickly jump in search results, you can use \verb [NUM] \keystroke{n} where \verb [NUM] \ is a number. For example in order to jump to the 10th next occurance of current search term, enter \keystroke{10n}. In fact most commands in sioyek can be prefixed with a number \verb N \ which is equivalent to repeating them \verb N \ times.
+\end{itemize}
+\section{Marks}
+\begin{itemize}
+	\item Press \keystroke{m} to set a mark in current location. After you press m, sioyek waits for you to press another symbol which is the name of the mark. For example to create a mark named u, enter \keystroke{mu}.
+	\item In order to go to a mark, press \keystroke{\`} followed by the name of the mark. For example in order to go to the mark in previous example, we enter \keystroke{\`\ u}. Note that \keystroke{\`} is different from the single quote character which is \keystroke{'}. \keystroke{\`} is usually located in the top-left of the keyboard near the escape button.
+	\item Note that marks are persistent (they are saved even after sioyek is closed). Lower case marks are local to each file but upper case marks are global.
+	\item You can right click on any line to create a visual mark which highlights below the line. This highlight has multiple functions.
+	 First, it can reduce disorientation when scrolling by first right clicking the line we are reading and then scrolling.
+	  It also acts as a mark so we can jump back to the location where we last put the highlight by pressing \keystroke{\`} and then right clicking. You can try it out here:\\
+	  {\color{red} Right click on me!}
+	\item You can move this visual mark to the next/previous line by pressing \keystroke{j} and \keystroke{k}. You can also press \keystroke{F7} to enable visual scroll mode. In this mode, mouse wheel moves this visual mark.
+
+\end{itemize}
+
+\section{Bookmarks}
+\begin{itemize}
+	\item Press \keystroke{b} to create a bookmark in the current location.
+	\item Press \keystroke{gb} to search the bookmarks in the current file and \keystroke{gB} (that is g followed by capital B) to search all the bookmarks.
+	\item In order to delete a bookmark, first goto the bookmark and then enter \keystroke{db} (delete the closest bookmark).
+	\item If you select a piece of text and then press \keystroke{b} then the selected text will automatically be used as the bookmark text. You can try it on the following text:\\
+	{\color{red} Bookmark me!}
+
+\end{itemize}
+
+\section{Highlights}
+\begin{itemize}
+	\item Select a piece of text and then press \keystroke{h} followed by a lower case letter to highlight the selected text (the letter can be though of as the "type" of the highlight). For example you can press \keystroke{hh} to create a highlight of type "h". (different types of highlight are colored differently, the color is configurable in \verb prefs.config \ file)
+	\item Press \keystroke{gh} to search the highlights in the current file and \keystroke{gH} (that is g followed by capital H) to search all the highlights.
+	\item In order to delete a highlight, you can click on a highlight and then press \keystroke{dh}.
+
+\end{itemize}
+
+\section{Smart Jump}
+
+
+\begin{itemize}
+	\item You can middle click on the name of figures (for example on `1' in `Figure 1') to jump to the location where figure is located (this works even if the document is not linked). You can also click on cited references (for example on `2' in `\cite{branner1989mandelbrot,mandelbrot2004fractals}' to go to the reference.
+	\item You can middle click on the name of the papers to search them in google scholar or \keystroke{shift}+middle click to search them in library genesis. Try it out by middle clicking on reference numbers in the following text :\\
+	 You can see a beautiful colorization of mandlebrot set in Figure \ref{fig:mandle}. For more information about the mandlebrot set, see \cite{branner1989mandelbrot}.
+	\item Instead of middle clicking, you can right-click on references to open a quick overview of their location instead of jumping to it.
+\end{itemize}
+
+
+
+\section{Portals}
+\begin{itemize}
+	\item Press \keystroke{f12} to open the helper window. This window automatically displays the closest portal to the current location.
+	\item In order to create a portal, press \keystroke{p} to enter the current location as the source of the portal. Now you navigate to the portal destination and press \keystroke{p} again to mark that location as the destination of the portal.
+	 (note that source and destination don't have to be in the same document, for example you can create a portal from a reference to a paper to the actual paper).
+	\item You can also create a portal by pressing \keystroke{p} and then clicking (or middle clicking using smart jumps) on a link. This automatically creates a link between the current location and the destination of the link.
+	\item In order to delete a portal, press \keystroke{dp}. This deletes the closest portal to the current location (the portal that is being displayed in the helper window).
+	\item Sometimes you need to slightly edit a portal (especially when creating a portal using links, because sometimes for example a link to a figure doesn't center the figure properly in the screen). In order to do this, press \keystroke{shift}+\keystroke{p}(\keystroke{P}) while the portal is active. This takes you to the portal's destination. Now you can adjust the destination and once you are done press the back button (by default it is \keystroke{backspace}) to go back to where you were.
+	\item You can also use the mouse wheel to adjust the portal in helper window. You can also pan it using mouse drag or zoom using mouse wheel while holding control.
+\end{itemize}
+
+
+\section{Configuration}
+\begin{itemize}
+	\item  There are four configuration files, two of which are not meant to be edited by the user (\verb keys.config \ and \verb prefs.config ) and two of which are user-editable (\verb keys_user.config \ and \verb prefs_user.config ).
+\item In order to edit any configuration, copy the config to the user editable config file and change it there. For example suppose we want to change the key that opens the table of contents. We search for `table of contents' in \verb keys.config \ and find the following:
+\begin{verbatim}
+# Open table of contents.
+goto_toc t
+\end{verbatim}
+We copy this line to \verb keys_user.config \ and change the key. For example in suppose we want to use capital \keystroke{T} to open the table of contents. We can put the following line in \verb keys_user.config :
+\begin{verbatim}
+goto_toc <S-t>
+\end{verbatim}
+\item In portable builds, the config files are located in the same place where \verb sioyek \ executable file is located. In non-portable builds, their location is OS-dependent. You can also open them by pressing \keystroke{:} to open the command window and then entering one of the following:
+\begin{itemize}
+	\item \verb prefs \ 
+	\item \verb prefs_user \ 
+	\item \verb keys \ 
+	\item \verb keys_user \
+\end{itemize}
+\end{itemize}
+
+\section{Synctex}
+
+\begin{itemize}
+	\item Press \keystroke{F4} to enable "synctex mode". While in synctex mode, right clicking on a piece of texts opens the corresponding latex file location.
+	\item You can configure the synctex inverse search command using \verb inverse_search_command \ config in \verb prefs.config \ . Here is an example for VsCode:
+
+\begin{verbatim}
+inverse_search_command 		"C:\path\to\vscode\Code.exe" -r -g %1:%2
+\end{verbatim}
+\%1 stands for the name of the file and \%2 stands for the line number in the file.
+\item Here is the forward search configuration for Latex Workshop for VsCode:
+\begin{verbatim}
+"latex-workshop.view.pdf.external.synctex.command": "C:\\path\\to\\sioyek.exe",
+"latex-workshop.view.pdf.external.synctex.args": [
+	"--inverse-search",
+	"\"C:\\path\\to\\vscode\\Code.exe\" -r -g %1:%2",
+	"--reuse-instance",
+	"--forward-search-file",
+	"%TEX%",
+	"--forward-search-line",
+	"%LINE%",
+	"%PDF%"
+]
+\end{verbatim}
+And here is example configuration for VimTeX:
+
+\begin{verbatim}
+let g:vimtex_view_method = 'sioyek'
+\end{verbatim}
+\end{itemize}
+
+\section{Extensions}
+You can extend sioyek by writing your own extensions. See \href{https://sioyek-documentation.readthedocs.io/en/latest/scripting.html}{the documentation} on how to do it.
+We also have some extensions \href{https://github.com/ahrm/sioyek-python-extensions}{available here}. For example we have an extension that downloads the paper from google scholar just by control+clicking on its name.
+
+\bibliographystyle{unsrt}
+\bibliography{bibs}
+
+\end{document}
