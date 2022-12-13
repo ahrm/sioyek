@@ -224,6 +224,7 @@ public:
 	void set_visible_page_number(std::optional<int> val);
 	bool is_presentation_mode();
 	fz_rect	get_overview_rect();
+	fz_rect	get_overview_rect_pixel_perfect(int widget_width, int widget_height, int view_width, int view_height);
 	std::vector<fz_rect> get_overview_border_rects();
 	bool is_window_point_in_overview(fvec2 window_point);
 	bool is_window_point_in_overview_border(float window_x, float window_y, OverviewSide *which_border);

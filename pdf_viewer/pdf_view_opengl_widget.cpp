@@ -506,7 +506,8 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 
 	DocumentPos docpos = target_doc->absolute_to_page_pos({ 0, overview.absolute_offset_y });
 
-	float view_width = document_view->get_view_width() * overview_half_width;
+	float view_width = static_cast<int>(document_view->get_view_width() * overview_half_width);
+	float view_height = static_cast<int>(document_view->get_view_height() * overview_half_height);
 	float page_width = target_doc->get_page_width(docpos.page);
 	float page_height = target_doc->get_page_height(docpos.page);
 	float zoom_level = view_width / page_width;
@@ -517,8 +518,12 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 		nullptr,
 		nullptr);
 
+	fz_rect window_rect = get_overview_rect_pixel_perfect(
+		document_view->get_view_width(),
+		document_view->get_view_height(),
+		view_width,
+		view_height);
 
-	fz_rect window_rect = get_overview_rect();
 	window_rect.y0 = -window_rect.y0;
 	window_rect.y1 = -window_rect.y1;
 
@@ -1250,6 +1255,21 @@ fz_rect	PdfViewOpenGLWidget::get_overview_rect() {
 	res.y0 = -overview_offset_y - overview_half_height;
 	res.x1 = overview_offset_x + overview_half_width;
 	res.y1 = -overview_offset_y + overview_half_height;
+	return res;
+}
+
+fz_rect	PdfViewOpenGLWidget::get_overview_rect_pixel_perfect(int widget_width, int widget_height, int view_width, int view_height) {
+	fz_rect res;
+	int x0_pixel = static_cast<int>((((overview_offset_x - overview_half_width) + 1.0f) / 2.0f) * widget_width);
+	int x1_pixel = x0_pixel + view_width;
+	int y0_pixel = static_cast<int>((((-overview_offset_y - overview_half_height) + 1.0f) / 2.0f) * widget_height);
+	int y1_pixel = y0_pixel + view_height;
+
+	res.x0 = (static_cast<float>(x0_pixel) / static_cast<float>(widget_width)) * 2.0f - 1.0f;
+	res.x1 = (static_cast<float>(x1_pixel) / static_cast<float>(widget_width)) * 2.0f - 1.0f;
+	res.y0 = (static_cast<float>(y0_pixel) / static_cast<float>(widget_height)) * 2.0f - 1.0f;
+	res.y1 = (static_cast<float>(y1_pixel) / static_cast<float>(widget_height)) * 2.0f - 1.0f;
+
 	return res;
 }
 
