@@ -79,7 +79,7 @@
 	\item Press \keystroke{F10} to fit the document to screen ignoring white page margins.
 	\item Press \keystroke{F9} to fit the document to screen (including white margins).
 	\item Press \keystroke{f8} to toggle dark mode.
-	\item Enter \keystroke{gg} (press \keystroke{g} two times) to go to the first page. In order to go to a specific page, enter \verb [NUM] \keystroke{gg} where \verb [NUM] \ is the page number. For example in order to go to page 31, enter \keystroke{31gg}. You can also press \keystroke{Home} to go to a specific page.
+	\item Enter \keystroke{gg} (press \keystroke{g} two times) to go to the first page. In order to go to a specific page, enter \verb+[NUM]+\keystroke{gg} where \verb+[NUM]+ is the page number. For example in order to go to page 31, enter \keystroke{31gg}. You can also press \keystroke{Home} to go to a specific page.
 	\item Press \keystroke{Shift}+\keystroke{g} (\keystroke{G}) or \keystroke{End} to go to the last page.
 	\item Press \keystroke{t} to open table of contents (if it exists).
 	\item Use \keystroke{backspace} to go back in history. You can also use \keystroke{Ctrl}+\keystroke{left arrow} and \keystroke{Ctrl}+\keystroke{right arrow} to navigate backward/forward in history. Also extra mouse buttons can be used to navigate history.
@@ -95,7 +95,7 @@
 \begin{itemize}
 	\item Press \keystroke{Ctrl}+\keystroke{f} or \keystroke{/}  to search.
 	\item Press \keystroke{n}/\keystroke{Shift}+\keystroke{n} to go to the next/previous match.
-	\item In order to quickly jump in search results, you can use \verb [NUM] \keystroke{n} where \verb [NUM] \ is a number. For example in order to jump to the 10th next occurance of current search term, enter \keystroke{10n}. In fact most commands in sioyek can be prefixed with a number \verb N \ which is equivalent to repeating them \verb N \ times.
+	\item In order to quickly jump in search results, you can use \verb+[NUM]+\keystroke{n} where \verb+[NUM]+ is a number. For example in order to jump to the 10th next occurance of current search term, enter \keystroke{10n}. In fact most commands in sioyek can be prefixed with a number \verb+N+ which is equivalent to repeating them \verb+N+ times.
 \end{itemize}
 \section{Marks}
 \begin{itemize}
@@ -122,7 +122,7 @@
 
 \section{Highlights}
 \begin{itemize}
-	\item Select a piece of text and then press \keystroke{h} followed by a lower case letter to highlight the selected text (the letter can be though of as the "type" of the highlight). For example you can press \keystroke{hh} to create a highlight of type "h". (different types of highlight are colored differently, the color is configurable in \verb prefs.config \ file)
+	\item Select a piece of text and then press \keystroke{h} followed by a lower case letter to highlight the selected text (the letter can be though of as the "type" of the highlight). For example you can press \keystroke{hh} to create a highlight of type "h". (different types of highlight are colored differently, the color is configurable in \verb+prefs.config+ file)
 	\item Press \keystroke{gh} to search the highlights in the current file and \keystroke{gH} (that is g followed by capital H) to search all the highlights.
 	\item In order to delete a highlight, you can click on a highlight and then press \keystroke{dh}.
 
@@ -154,22 +154,22 @@
 
 \section{Configuration}
 \begin{itemize}
-	\item  There are four configuration files, two of which are not meant to be edited by the user (\verb keys.config \ and \verb prefs.config ) and two of which are user-editable (\verb keys_user.config \ and \verb prefs_user.config ).
-\item In order to edit any configuration, copy the config to the user editable config file and change it there. For example suppose we want to change the key that opens the table of contents. We search for `table of contents' in \verb keys.config \ and find the following:
+	\item  There are four configuration files, two of which are not meant to be edited by the user (\verb+keys.config+ and \verb+prefs.config+) and two of which are user-editable (\verb+keys_user.config+ and \verb+prefs_user.config+).
+\item In order to edit any configuration, copy the config to the user editable config file and change it there. For example suppose we want to change the key that opens the table of contents. We search for `table of contents' in \verb+keys.config+ and find the following:
 \begin{verbatim}
 # Open table of contents.
 goto_toc t
 \end{verbatim}
-We copy this line to \verb keys_user.config \ and change the key. For example in suppose we want to use capital \keystroke{T} to open the table of contents. We can put the following line in \verb keys_user.config :
+We copy this line to \verb+keys_user.config+ and change the key. For example in suppose we want to use capital \keystroke{T} to open the table of contents. We can put the following line in \verb+keys_user.config+:
 \begin{verbatim}
 goto_toc <S-t>
 \end{verbatim}
-\item In portable builds, the config files are located in the same place where \verb sioyek \ executable file is located. In non-portable builds, their location is OS-dependent. You can also open them by pressing \keystroke{:} to open the command window and then entering one of the following:
+\item In portable builds, the config files are located in the same place where \verb+sioyek+ executable file is located. In non-portable builds, their location is OS-dependent. You can also open them by pressing \keystroke{:} to open the command window and then entering one of the following:
 \begin{itemize}
-	\item \verb prefs \ 
-	\item \verb prefs_user \ 
-	\item \verb keys \ 
-	\item \verb keys_user \
+	\item \verb+prefs+ 
+	\item \verb+prefs_user+ 
+	\item \verb+keys+ 
+	\item \verb+keys_user+
 \end{itemize}
 \end{itemize}
 
@@ -177,7 +177,7 @@ goto_toc <S-t>
 
 \begin{itemize}
 	\item Press \keystroke{F4} to enable "synctex mode". While in synctex mode, right clicking on a piece of texts opens the corresponding latex file location.
-	\item You can configure the synctex inverse search command using \verb inverse_search_command \ config in \verb prefs.config \ . Here is an example for VsCode:
+	\item You can configure the synctex inverse search command using \verb+inverse_search_command+ config in \verb+prefs.config+ . Here is an example for VsCode:
 
 \begin{verbatim}
 inverse_search_command 		"C:\path\to\vscode\Code.exe" -r -g %1:%2
