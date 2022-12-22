@@ -361,3 +361,10 @@ pdf_viewer/todo.txt
 sioyek_log.txt
 fast/*
 debuglibs/*
+tutorial/*.aux
+tutorial/*.fdb_latexmk
+tutorial/*.fls
+tutorial/*.pdf
+tutorial/*.synctex.gz
+tutorial/*.bbl
+tutorial/*.blg
