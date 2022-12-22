@@ -29,13 +29,9 @@ vec3 hsv2rgb(vec3 c)
 
 void main(){
     vec3 tempcolor = texture(pdf_texture, uvs).rgb;
-    vec3 hsvcolor = rgb2hsv(tempcolor);
-
-    float hsv_lightness = hsvcolor.b;
-    float rgb_lightness = min(min(tempcolor.r, tempcolor.g), tempcolor.b);
-    float new_lightness = (rgb_lightness + hsv_lightness) / 2.0;
-
-    //vec3 newcolor = hsv2rgb(vec3(hsvcolor.rg, 1-hsvcolor.b));
-    vec3 newcolor = hsv2rgb(vec3(hsvcolor.rg, 1-new_lightness));
-    color = vec4(newcolor * contrast, 1.0);
+    vec3 inv = (0.5-tempcolor)*contrast+0.5; //Invert colors and shift colors from range 0.0 - 1.0 to -0.5 - 0.5, apply contrast and shift back to 0.0 - 1.0. This way contrast applies on both whites and blacks
+    vec3 hsvcolor = rgb2hsv(inv); //transform to hsv
+    float new_hue = mod(hsvcolor.r + 0.5, 1.0); // shift hue 180 degrees to compensate hue shift from inverting colors 
+    vec3 newcolor = hsv2rgb(vec3(new_hue,hsvcolor.gb)); 
+    color = vec4(newcolor, 1.0);
 }
