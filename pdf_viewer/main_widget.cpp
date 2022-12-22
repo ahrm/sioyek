@@ -2682,6 +2682,14 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         }
         validate_render();
     }
+    else if (command->name == "delete_highlight_under_cursor") {
+		QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+		WindowPos window_pos = WindowPos{ mouse_pos.x(), mouse_pos.y() };
+		int sel_highlight = main_document_view->get_highlight_index_in_pos(window_pos);
+		if (sel_highlight != -1) {
+			main_document_view->delete_highlight_with_index(sel_highlight);
+		}
+	}
 
     else if (command->name == "delete_bookmark") {
 
