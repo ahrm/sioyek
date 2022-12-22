@@ -155,9 +155,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         main_document_view->fit_to_page_width();
         update_current_history_index();
     }
-
 }
-
 
 void MainWidget::set_overview_position(int page, float offset) {
     if (page >= 0) {
@@ -546,6 +544,10 @@ std::wstring MainWidget::get_status_string() {
     int num_search_results = opengl_widget->get_num_search_results();
     float progress = -1;
     if (opengl_widget->get_is_searching(&progress)) {
+        // Make sure statusbar is visible if we are searching
+        if (!status_label->isVisible()) {
+            status_label->show();
+        }
 
         // show the 0th result if there are no results and the index + 1 otherwise
         int result_index = opengl_widget->get_num_search_results() > 0 ? opengl_widget->get_current_search_result_index() + 1 : 0;
@@ -554,6 +556,13 @@ std::wstring MainWidget::get_status_string() {
             ss << " (" << ((int)(progress * 100)) << "%%" << ")";
         }
     }
+    else {
+        // Make sure statusbar is hidden if it should be
+        if (!should_show_status_label) {
+            status_label->hide();
+        }
+    }
+
     if (is_pending_link_source_filled()) {
         ss << " | linking ...";
     }
