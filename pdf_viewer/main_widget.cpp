@@ -2653,6 +2653,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "toggle_presentation_mode") {
         toggle_presentation_mode();
     }
+    else if (command->name == "turn_on_presentation_mode") {
+        set_presentation_mode(true);
+    }
     else if (command->name == "toggle_one_window") {
         toggle_two_window_mode();
     }
@@ -3316,10 +3319,19 @@ void MainWidget::toggle_fullscreen() {
 
 void MainWidget::toggle_presentation_mode() {
     if (opengl_widget->is_presentation_mode()) {
-        opengl_widget->set_visible_page_number({});
+        set_presentation_mode(false);
     }
     else {
+        set_presentation_mode(true);
+    }
+}
+
+void MainWidget::set_presentation_mode(bool mode) {
+    if (mode) {
         opengl_widget->set_visible_page_number(get_current_page_number());
+    }
+    else {
+        opengl_widget->set_visible_page_number({});
     }
 }
 

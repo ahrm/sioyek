@@ -88,6 +88,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	commands.push_back({ "prev_chapter",				false,	false,	false,	false,	true,	{}});
 	commands.push_back({ "toggle_dark_mode",			false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "toggle_presentation_mode",	false,	false,	false,	false,	true,	{}});
+	commands.push_back({ "turn_on_presentation_mode",	false,	false,	false,	false,	true,	{}});
 	commands.push_back({ "toggle_mouse_drag_mode",		false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "close_window",				false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "quit",						false,	false,	false,	false,  false,	{}});
