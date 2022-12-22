@@ -226,6 +226,7 @@ protected:
 	void reset_highlight_links();
 	void set_rect_select_mode(bool mode);
 	void clear_selected_rect();
+	void clear_selected_text();
 
 	std::optional<fz_rect> get_selected_rect_absolute();
 	bool get_selected_rect_document(int& out_page, fz_rect& out_rect);

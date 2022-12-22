@@ -599,7 +599,13 @@ std::wstring MainWidget::get_status_string() {
     if (horizontal_scroll_locked) {
         ss << " [ locked horizontal scroll ]";
     }
-    ss << " [ h:" << select_highlight_type << " ]";
+    std::wstring highlight_select_char = L"";
+
+    if (is_select_highlight_mode) {
+        highlight_select_char = L"s";
+    }
+
+    ss << " [ h" << highlight_select_char << ":" << select_highlight_type << " ]";
 
     if (SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR) {
         std::optional<BookMark> closest_bookmark = main_document_view->find_closest_bookmark();
@@ -1503,8 +1509,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         }
         else {
             handle_click(click_pos);
-            opengl_widget->selected_character_rects.clear();
-            selected_text.clear();
+            clear_selected_text();
         }
         validate_render();
     }
@@ -1716,6 +1721,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 			handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
 			if (is_select_highlight_mode && (opengl_widget->selected_character_rects.size() > 0)) {
 				main_document_view->add_highlight(selection_begin, selection_end, select_highlight_type);
+                clear_selected_text();
 			}
 			if (opengl_widget->selected_character_rects.size() > 0) {
 				copy_to_clipboard(selected_text, true);
@@ -4612,4 +4618,9 @@ float CharacterAddress::focus_offset() {
 
     fz_rect character_rect = fz_rect_from_quad(character->quad);
 	return doc->document_to_absolute_y(page, character_rect.y0);
+}
+
+void MainWidget::clear_selected_text() {
+	opengl_widget->selected_character_rects.clear();
+	selected_text.clear();
 }
