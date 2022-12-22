@@ -169,4 +169,5 @@ public:
 	std::optional<std::wstring> get_selected_line_text();
 	bool get_is_auto_resize_mode();
 	void disable_auto_resize_mode();
+	void readjust_to_screen();
 };

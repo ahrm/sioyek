@@ -485,6 +485,7 @@ float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode) 
 		this->is_auto_resize_mode = false;
 	}
 	zoom_level = zl;
+	this->readjust_to_screen();
 	return zoom_level;
 }
 
@@ -1190,4 +1191,8 @@ bool DocumentView::get_is_auto_resize_mode() {
 
 void DocumentView::disable_auto_resize_mode() {
 	this->is_auto_resize_mode = false;
+}
+
+void DocumentView::readjust_to_screen() {
+	this->set_offsets(this->get_offset_x(), this->get_offset_y());
 }
