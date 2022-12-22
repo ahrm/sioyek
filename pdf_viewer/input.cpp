@@ -74,6 +74,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	commands.push_back({ "toggle_one_window",			false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "toggle_highlight",			false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "toggle_synctex",				false,	false,	false,	false,	false,	{}});
+	commands.push_back({ "turn_on_synctex",				false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "toggle_show_last_command",	false,	false,	false,	false,	false,	{}});
 	//commands.push_back({ "command", true, false , false, false, {}});
 	commands.push_back({ "command",						false,	false,	false,	false,	false,	{}});

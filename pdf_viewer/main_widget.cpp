@@ -2664,6 +2664,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "toggle_synctex") {
         toggle_synctex_mode();
     }
+    else if (command->name == "turn_on_synctex") {
+        set_synctex_mode(true);
+    }
     else if (command->name == "toggle_show_last_command") {
 		should_show_last_command = !should_show_last_command;
     }
@@ -3070,12 +3073,15 @@ bool MainWidget::overview_under_pos(WindowPos pos){
     return false;
 }
 
-void MainWidget::toggle_synctex_mode(){
-    this->synctex_mode = !this->synctex_mode;
-    if (this->synctex_mode){
-        // we disable overview image in synctex mode
+void MainWidget::set_synctex_mode(bool mode) {
+    if (mode) {
         this->opengl_widget->set_overview_page({});
     }
+    this->synctex_mode = mode;
+}
+
+void MainWidget::toggle_synctex_mode(){
+    this->set_synctex_mode(!this->synctex_mode);
 }
 
 void MainWidget::handle_portal() {
