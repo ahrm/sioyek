@@ -1413,7 +1413,7 @@ int find_best_vertical_line_location(fz_pixmap* pixmap, int doc_x, int doc_y) {
 	return doc_y + start_index ;
 }
 
-bool is_string_numeric(const std::wstring& str) {
+bool is_string_numeric_(const std::wstring& str) {
 	if (str.size() == 0) {
 		return false;
 	}
@@ -1424,6 +1424,20 @@ bool is_string_numeric(const std::wstring& str) {
 	}
 	return true;
 }
+
+bool is_string_numeric(const std::wstring& str) {
+	if (str.size() == 0) {
+		return false;
+	}
+
+	if (str[0] == '-') {
+		return is_string_numeric_(str.substr(1, str.length() - 1));
+	}
+	else {
+		return is_string_numeric_(str);
+	}
+}
+
 
 bool is_string_numeric_float(const std::wstring& str) {
 	if (str.size() == 0) {
