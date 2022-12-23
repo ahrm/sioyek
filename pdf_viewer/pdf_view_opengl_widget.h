@@ -261,5 +261,11 @@ public:
 	Document* get_current_overview_document();
 	NormalizedWindowPos document_to_overview_pos(DocumentPos pos);
 	fz_rect document_to_overview_rect(int page, fz_rect document_rect);
+	std::vector<int> get_visible_search_results(std::vector<int>& visible_pages);
+	int find_search_index_for_visible_pages(std::vector<int>& visible_pages);
+	int find_search_index_for_visible_page(int page, int breakpoint);
+	int find_search_result_for_page_range(int page, int range_begin, int range_end);
+	int find_search_results_breakpoint();
+	int find_search_results_breakpoint_helper(int begin_index, int end_index);
 
 };

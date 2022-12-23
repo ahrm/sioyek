@@ -9,6 +9,7 @@ extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 extern float MOVE_SCREEN_PERCENTAGE;
 extern float BACKGROUND_COLOR[3];
+extern float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3];
 extern float DARK_MODE_BACKGROUND_COLOR[3];
 extern float DARK_MODE_CONTRAST;
 extern bool FLAT_TABLE_OF_CONTENTS;
@@ -107,6 +108,7 @@ extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool NUMERIC_TAGS;
 extern bool SHOULD_HIGHLIGHT_LINKS;
+extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -305,6 +307,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"vertical_line_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, color4_deserializer, color_4_validator });
 	configs.push_back({ L"visual_mark_color", DEFAULT_VERTICAL_LINE_COLOR, vec4_serializer, color4_deserializer, color_4_validator });
 	configs.push_back({ L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"unselected_search_highlight_color", UNSELECTED_SEARCH_HIGHLIGHT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"background_color", BACKGROUND_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
@@ -406,6 +409,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"ui_text_color", STATUS_BAR_TEXT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"numeric_tags", &NUMERIC_TAGS, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"highlight_links", &SHOULD_HIGHLIGHT_LINKS, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"should_highlight_unselected_search", &SHOULD_HIGHLIGHT_UNSELECTED_SEARCH, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

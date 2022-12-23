@@ -24,6 +24,8 @@ extern float FASTREAD_OPACITY;
 extern bool PRERENDER_NEXT_PAGE;
 extern int PRERENDERED_PAGE_COUNT;
 extern bool SHOULD_HIGHLIGHT_LINKS;
+extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
+extern float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3];
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -818,13 +820,29 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	search_results_mutex.lock();
 	if (search_results.size() > 0) {
+
 		int index = current_search_result_index;
 		if (index == -1) index = 0;
 
 		SearchResult current_search_result = search_results[index];
 		glUseProgram(shared_gl_objects.highlight_program);
-		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
 		//glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
+
+		if (SHOULD_HIGHLIGHT_UNSELECTED_SEARCH) {
+
+			std::vector<int> visible_search_indices = get_visible_search_results(visible_pages);
+			glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, UNSELECTED_SEARCH_HIGHLIGHT_COLOR);
+			for (int visible_search_index : visible_search_indices) {
+				if (visible_search_index != current_search_result_index) {
+					SearchResult res = search_results[visible_search_index];
+					for (auto rect : res.rects) {
+						render_highlight_document(shared_gl_objects.highlight_program, res.page, rect);
+					}
+				}
+			}
+		}
+
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
 		for (auto rect : current_search_result.rects) {
 			render_highlight_document(shared_gl_objects.highlight_program, current_search_result.page, rect);
 		}
@@ -1709,4 +1727,128 @@ fz_rect PdfViewOpenGLWidget::document_to_overview_rect(int page, fz_rect documen
 	res.x1 = bottom_right_pos.x;
 	res.y1 = bottom_right_pos.y;
 	return res;
+}
+
+std::vector<int> PdfViewOpenGLWidget::get_visible_search_results(std::vector<int>& visible_pages) {
+	std::vector<int> res;
+
+	int index = find_search_index_for_visible_pages(visible_pages);
+	if (index == -1) return res;
+
+	auto next_index = [&](int ind) {
+		return (ind + 1) % search_results.size();
+	};
+
+	auto prev_index = [&](int ind) {
+		int res = ind - 1;
+		if (res == -1) {
+			return static_cast<int>(search_results.size()-1);
+		}
+		return res;
+	};
+
+	auto is_page_visible = [&](int page) {
+		return std::find(visible_pages.begin(), visible_pages.end(), search_results[page].page) != visible_pages.end();
+	};
+
+	res.push_back(index);
+	if (search_results.size() > 0) {
+		int next = next_index(index);
+		while ((next != index) && is_page_visible(next)){
+			res.push_back(next);
+			next = next_index(next);
+		}
+		if (next != index) {
+			int prev = prev_index(index);
+			while (is_page_visible(prev)){
+				res.push_back(prev);
+				prev = prev_index(prev);
+			}
+
+		}
+	}
+
+	return res;
+}
+
+int PdfViewOpenGLWidget::find_search_index_for_visible_pages(std::vector<int>& visible_pages) {
+	// finds some search index located in the visible pages
+
+	int breakpoint = find_search_results_breakpoint();
+	for (int page : visible_pages) {
+		int index = find_search_index_for_visible_page(page, breakpoint);
+		if (index != -1) {
+			return index;
+		}
+	}
+	return -1;
+}
+
+int PdfViewOpenGLWidget::find_search_index_for_visible_page(int page, int breakpoint) {
+	// array is sorted, only one binary search
+	if ((breakpoint == search_results.size()-1) || (search_results.size() == 1)) {
+		return find_search_result_for_page_range(page, 0, breakpoint);
+	}
+	else {
+		int index = find_search_result_for_page_range(page, 0, breakpoint);
+		if (index != -1) return index;
+		return find_search_result_for_page_range(page, breakpoint + 1, search_results.size() - 1);
+	}
+}
+
+int PdfViewOpenGLWidget::find_search_results_breakpoint() {
+	if (search_results.size() > 0) {
+		int begin_index = 0;
+		int end_index = search_results.size() - 1;
+		return find_search_results_breakpoint_helper(begin_index, end_index);
+	}
+	else {
+		return -1;
+	}
+}
+
+int PdfViewOpenGLWidget::find_search_result_for_page_range(int page, int range_begin, int range_end) {
+	if (range_begin > range_end) {
+		return find_search_result_for_page_range(page, range_end, range_begin);
+	}
+
+	int midpoint = (range_begin + range_end) / 2;
+	if (midpoint == range_begin) {
+		if (search_results[range_begin].page == page) {
+			return range_begin;
+		}
+		if (search_results[range_end].page == page) {
+			return range_end;
+		}
+		return -1;
+	}
+	else {
+		if (search_results[midpoint].page >= page) {
+			return find_search_result_for_page_range(page, range_begin, midpoint);
+		}
+		else {
+			return find_search_result_for_page_range(page, midpoint, range_end);
+		}
+	}
+
+}
+
+int PdfViewOpenGLWidget::find_search_results_breakpoint_helper(int begin_index, int end_index) {
+	int midpoint = (begin_index + end_index) / 2;
+	if (midpoint == begin_index) {
+		if (search_results[end_index].page > search_results[begin_index].page) {
+			return end_index;
+		}
+		else{
+			return begin_index;
+		}
+	}
+	else {
+		if (search_results[midpoint].page >= search_results[begin_index].page) {
+			return find_search_results_breakpoint_helper(midpoint, end_index);
+		}
+		else{
+			return find_search_results_breakpoint_helper(begin_index, midpoint);
+		}
+	}
 }

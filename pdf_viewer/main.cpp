@@ -93,6 +93,7 @@ float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float STATUS_BAR_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 float UI_SELECTED_TEXT_COLOR[3] = {0.0f, 0.0f, 0.0f};
 float UI_SELECTED_BACKGROUND_COLOR[3] = {1.0f, 1.0f, 1.0f};
+float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = {0.0f, 0.5f, 0.5f};
 
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];
@@ -213,6 +214,7 @@ bool CASE_SENSITIVE_SEARCH = true;
 bool SHOW_DOCUMENT_NAME_IN_STATUSBAR = false;
 bool NUMERIC_TAGS = false;
 bool SHOULD_HIGHLIGHT_LINKS = false;
+bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH = false;
 
 Path default_config_path(L"");
 Path default_keys_path(L"");
