@@ -3795,13 +3795,21 @@ void MainWidget::highlight_words() {
     std::vector<fz_stext_char*> flat_chars;
     std::vector<fz_rect> word_rects;
     std::vector<std::pair<fz_rect, int>> word_rects_with_page;
+    std::vector<std::pair<fz_rect, int>> visible_word_rects;
 
     get_flat_chars_from_stext_page(stext_page, flat_chars);
     get_flat_words_from_flat_chars(flat_chars, word_rects);
     for (auto rect : word_rects) {
         word_rects_with_page.push_back(std::make_pair(rect, page));
     }
-    opengl_widget->set_highlight_words(word_rects_with_page);
+
+    for (auto [rect, page] : word_rects_with_page) {
+        if (is_rect_visible(page, rect)) {
+			visible_word_rects.push_back(std::make_pair(rect, page));
+		}
+    }
+
+    opengl_widget->set_highlight_words(visible_word_rects);
     opengl_widget->set_should_highlight_words(true);
 
 }
@@ -3835,6 +3843,8 @@ std::optional<fz_irect> MainWidget::get_tag_window_rect(std::string tag, std::ve
 }
 
 std::optional<fz_rect> MainWidget::get_tag_rect(std::string tag, std::vector<fz_rect>* word_chars) {
+
+    int page = get_current_page_number();
     std::vector<std::vector<fz_rect>> all_word_chars;
     std::vector<fz_rect> word_rects;
     if (word_chars == nullptr) {
@@ -3843,14 +3853,25 @@ std::optional<fz_rect> MainWidget::get_tag_rect(std::string tag, std::vector<fz_
     else {
 		word_rects = get_flat_words(&all_word_chars);
     }
-    
+
+    std::vector<std::vector<fz_rect>> visible_word_chars;
+    std::vector<fz_rect> visible_word_rects;
+
+    for (int i = 0; i < word_rects.size(); i++) {
+        if (is_rect_visible(page, word_rects[i])) {
+            visible_word_rects.push_back(word_rects[i]);
+            if (word_chars != nullptr) {
+                visible_word_chars.push_back(all_word_chars[i]);
+            }
+        }
+    }
 
 	int index = get_index_from_tag(tag);
-    if (index < word_rects.size()) {
+    if (index < visible_word_rects.size()) {
         if (word_chars != nullptr) {
-            *word_chars = all_word_chars[index];
+            *word_chars = visible_word_chars[index];
         }
-		return word_rects[index];
+		return visible_word_rects[index];
     }
     return {};
 }
@@ -4634,4 +4655,14 @@ float CharacterAddress::focus_offset() {
 void MainWidget::clear_selected_text() {
 	opengl_widget->selected_character_rects.clear();
 	selected_text.clear();
+}
+
+bool MainWidget::is_rect_visible(int page, fz_rect rect) {
+	fz_irect window_rect = main_document_view->document_to_window_irect(page, rect);
+	if (window_rect.x0 > 0 && window_rect.x1 < main_window_width && window_rect.y0 > 0 && window_rect.y1 < main_window_height) {
+        return true;
+	}
+    else {
+        return false;
+    }
 }

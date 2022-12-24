@@ -1858,3 +1858,7 @@ int PdfViewOpenGLWidget::find_search_results_breakpoint_helper(int begin_index, 
 		}
 	}
 }
+
+std::vector<std::pair<fz_rect, int>> PdfViewOpenGLWidget::get_highlight_word_rects() {
+	return word_rects;
+}

@@ -322,5 +322,6 @@ public:
 	void update_scrollbar();
 	void handle_portal_overview_update();
 	void goto_overview();
+	bool is_rect_visible(int page, fz_rect rect);
 
 };

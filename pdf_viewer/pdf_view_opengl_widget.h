@@ -196,6 +196,7 @@ public:
 	void toggle_highlight_words();
 	void set_highlight_words(std::vector<std::pair<fz_rect, int>>& rects);
 	void set_should_highlight_words(bool should_highlight);
+	std::vector<std::pair<fz_rect, int>> get_highlight_word_rects();
 
 	int get_num_search_results();
 	int get_current_search_result_index();
