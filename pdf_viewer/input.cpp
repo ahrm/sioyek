@@ -174,6 +174,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	commands.push_back({ "overview_next_item",			false,	false,	false,	false,	false,	{}});
 	commands.push_back({ "overview_prev_item",			false,	false,	false,	false,	false,	{}});
 	commands.push_back({"delete_highlight_under_cursor",false,	false,	false,	false,	false,	{}});
+	commands.push_back({"noop",false,	false,	false,	false,	false,	{}});
 
 	for (auto [command_name, _] : ADDITIONAL_COMMANDS) {
 		commands.push_back({ utf8_encode(command_name) , false, false, false, false, true});

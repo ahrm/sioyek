@@ -2833,6 +2833,9 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     else if (command->name == "debug") {
 		debug_mode = !debug_mode;
     }
+    else if (command->name == "noop") {
+        // do nothing
+    }
     else if (command->name == "toggle_fastread") {
 		opengl_widget->toggle_fastread_mode();
 	}
