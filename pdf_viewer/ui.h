@@ -205,6 +205,16 @@ public:
 					QCoreApplication::postEvent(get_view(), new_key_event);
 					return true;
 				}
+				if ((key_event->key() == Qt::Key_J) && is_alt_pressed) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_End, Qt::KeyboardModifier::NoModifier);
+					QCoreApplication::postEvent(get_view(), new_key_event);
+					return true;
+				}
+				if ((key_event->key() == Qt::Key_K) && is_alt_pressed) {
+					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Home, Qt::KeyboardModifier::NoModifier);
+					QCoreApplication::postEvent(get_view(), new_key_event);
+					return true;
+				}
 				if ((key_event->key() == Qt::Key_PageDown)) {
 					QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageDown, key_event->modifiers());
 					QCoreApplication::postEvent(get_view(), new_key_event);
