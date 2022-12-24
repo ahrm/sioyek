@@ -924,8 +924,8 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		std::vector<std::string> tags = get_tags(word_rects.size());
 
 		for (size_t i = 0; i < word_rects.size(); i++) {
-
 			auto [rect, page] = word_rects[i];
+
 
 			fz_rect window_rect = document_view->document_to_window_rect(page, rect);
 
@@ -934,6 +934,12 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			
 			int window_x0 = static_cast<int>(window_rect.x0 * view_width / 2 + view_width / 2);
 			int window_y0 = static_cast<int>(-window_rect.y0 * view_height / 2 + view_height / 2);
+
+			if (i > 0) {
+				if (std::abs(word_rects[i - 1].first.x0 - rect.x0) < 5) {
+					window_y0 = static_cast<int>(-window_rect.y1 * view_height / 2 + view_height / 2);
+				}
+			}
 
 			int window_y1 = static_cast<int>(-window_rect.y1 * view_height / 2 + view_height / 2);
 

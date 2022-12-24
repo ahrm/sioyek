@@ -482,9 +482,12 @@ void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_char
 				out_char_rects->push_back(chars);
 			}
 			if (is_start_of_new_line(flat_chars[i - 1], flat_chars[i])) {
-				flat_word_rects.push_back(fz_rect_from_quad(flat_chars[i - 1]->quad));
+				fz_rect new_rect = fz_rect_from_quad(flat_chars[i - 1]->quad);
+
+				new_rect.x0 = (new_rect.x0 + 2 * new_rect.x1) / 3;
+				flat_word_rects.push_back(new_rect);
 				if (out_char_rects != nullptr) {
-					out_char_rects->push_back({ fz_rect_from_quad(flat_chars[i - 1]->quad) });
+					out_char_rects->push_back({ new_rect });
 				}
 			}
 			pending_word.clear();
