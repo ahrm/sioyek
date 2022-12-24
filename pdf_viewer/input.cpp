@@ -421,6 +421,12 @@ InputParseTreeNode* parse_lines(
 					parent_node->name.push_back(command_names[j][k]);
 				}
 			}
+			else {
+				if (parent_node->is_final && (parent_node->name.size() > 0)) {
+					std::wcout << L"Warning: unmapping " << utf8_decode(parent_node->name[0]) << L" because of " << utf8_decode(command_names[j][0]) << L" which uses " << line << L"\n";
+				}
+				parent_node->is_final = false;
+			}
 
 		}
 	}
