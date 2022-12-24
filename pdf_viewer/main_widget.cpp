@@ -260,6 +260,9 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         ivec2 diff = ivec2(mpos) - ivec2(last_mouse_down_window_pos);
 
         fvec2 diff_doc = diff / main_document_view->get_zoom_level();
+        if (horizontal_scroll_locked) {
+            diff_doc.values[0] = 0;
+        }
 
         main_document_view->set_offsets(last_mouse_down_document_offset.x + diff_doc.x(),
             last_mouse_down_document_offset.y - diff_doc.y());
@@ -2093,17 +2096,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         }
 
         if (command->name == "move_right") {
-            if (!horizontal_scroll_locked) {
-                main_document_view->move(72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
-                last_smart_fit_page = {};
-            }
+			main_document_view->move(72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+			last_smart_fit_page = {};
         }
 
         if (command->name == "move_left") {
-            if (!horizontal_scroll_locked) {
-                main_document_view->move(-72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
-                last_smart_fit_page = {};
-            }
+			main_document_view->move(-72.0f * rp * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+			last_smart_fit_page = {};
         }
     }
     else {
