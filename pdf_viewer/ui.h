@@ -32,6 +32,8 @@
 #include <qfilesystemmodel.h>
 #include <qheaderview.h>
 
+#include "rapidfuzz_amalgamated.hpp"
+
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
@@ -604,8 +606,9 @@ public:
 
 		for (int i = 0; i < string_elements.size(); i++) {
 			std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
-			int score = 0;
-			fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
+			//int score = 0;
+			//fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
+			int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
 			match_score_pairs.push_back(std::make_pair(encoded, score));
 		}
 		std::sort(match_score_pairs.begin(), match_score_pairs.end(), [](std::pair<std::string, int> lhs, std::pair<std::string, int> rhs) {
@@ -618,11 +621,13 @@ public:
 			}
 		}
 
-		if (matching_element_names.size() == 0) {
-			for (auto [command, _] : match_score_pairs) {
-				matching_element_names.push_back(command);
+		//if (matching_element_names.size() == 0) {
+			for (auto [command, score] : match_score_pairs) {
+				if (score > 60 && (!QString::fromStdString(command).startsWith(text))) {
+					matching_element_names.push_back(command);
+				}
 			}
-		}
+		//}
 
 		QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
 		dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
@@ -701,8 +706,9 @@ public:
 
 			for (auto file : all_directory_files) {
 				std::string encoded_file = utf8_encode(file.toStdWString());
-				int score = 0;
-				fts::fuzzy_match(encoded_prefix.c_str(), encoded_file.c_str(), score);
+				//int score = 0;
+				//fts::fuzzy_match(encoded_prefix.c_str(), encoded_file.c_str(), score);
+				int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(encoded_prefix, encoded_file));
 				file_scores.push_back(std::make_pair(file, score));
 			}
 			std::sort(file_scores.begin(), file_scores.end(), [](std::pair<QString, int> lhs, std::pair<QString, int> rhs) {

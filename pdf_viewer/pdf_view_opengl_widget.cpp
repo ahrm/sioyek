@@ -4,6 +4,7 @@
 #include <cmath>
 
 extern Path shader_path;
+extern float GAMMA;
 extern float BACKGROUND_COLOR[3];
 extern float DARK_MODE_BACKGROUND_COLOR[3];
 extern float DARK_MODE_CONTRAST;
@@ -202,6 +203,7 @@ void PdfViewOpenGLWidget::initializeGL() {
 		shared_gl_objects.stencil_program = LoadShaders(shader_path.slash(L"stencil.vertex"),  shader_path.slash(L"stencil.fragment"));
 
 		shared_gl_objects.dark_mode_contrast_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_dark_program, "contrast");
+		shared_gl_objects.gamma_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_program, "gamma");
 
 		shared_gl_objects.highlight_color_uniform_location = glGetUniformLocation(shared_gl_objects.highlight_program, "highlight_color");
 

@@ -60,6 +60,8 @@ struct OpenGLSharedResources {
 	GLint line_color_uniform_location;
 	GLint line_time_uniform_location;
 
+	GLint gamma_uniform_location;
+
 	GLint custom_color_background_uniform_location;
 	GLint custom_color_text_uniform_location;
 

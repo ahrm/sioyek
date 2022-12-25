@@ -5,6 +5,7 @@
 #include <qdir.h>
 
 extern float ZOOM_INC_FACTOR;
+extern float GAMMA;
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 extern float MOVE_SCREEN_PERCENTAGE;
@@ -410,6 +411,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"numeric_tags", &NUMERIC_TAGS, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"highlight_links", &SHOULD_HIGHLIGHT_LINKS, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"should_highlight_unselected_search", &SHOULD_HIGHLIGHT_UNSELECTED_SEARCH, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"gamma", &GAMMA, float_serializer, float_deserializer, nullptr });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";
