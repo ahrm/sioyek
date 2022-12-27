@@ -21,6 +21,7 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/document.h \
            pdf_viewer/document_view.h \
            pdf_viewer/fts_fuzzy_match.h \
+           pdf_viewer/rapidfuzz_amalgamated.hpp \
            pdf_viewer/input.h \
            pdf_viewer/main_widget.h \
            pdf_viewer/pdf_renderer.h \

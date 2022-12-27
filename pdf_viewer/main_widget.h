@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef MAIN_WIDGET_DEFINE
+#define MAIN_WIDGET_DEFINE
+
 #include <string>
 #include <memory>
 #include <vector>
@@ -31,7 +34,7 @@ extern float HORIZONTAL_MOVE_AMOUNT;
 
 class MainWidget : public QWidget, ConfigFileChangeListener{
 
-private:
+public:
 	fz_context* mupdf_context = nullptr;
 	DatabaseManager* db_manager = nullptr;
 	DocumentManager* document_manager = nullptr;
@@ -45,7 +48,8 @@ private:
 	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
 	QScrollBar* scroll_bar = nullptr;
 
-	std::optional<Command> current_pending_command;
+	//std::optional<Command> current_pending_command;
+	NewCommand* pending_command_instance = nullptr;
 
 	DocumentView* main_document_view = nullptr;
 	DocumentView* helper_document_view = nullptr;
@@ -144,31 +148,16 @@ private:
 
 	void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions=false);
 
-protected:
 
-	void focusInEvent(QFocusEvent* ev);
 
 	void toggle_statusbar();
 	void toggle_titlebar();
 	void handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed);
 	//void paintEvent(QPaintEvent* paint_event) override;
-	void resizeEvent(QResizeEvent* resize_event) override;
-	void changeEvent(QEvent* event) override;
-	void mouseMoveEvent(QMouseEvent* mouse_event) override;
-
-	// we already handle drag and drop on macos elsewhere
-#ifndef Q_OS_MACOS
-	void dragEnterEvent(QDragEnterEvent* e);
-	void dropEvent(QDropEvent* event);
-#endif
-
-	void closeEvent(QCloseEvent* close_event) override;
 	void persist() ;
 	bool is_pending_link_source_filled();
 	std::wstring get_status_string();
 	void handle_escape();
-	void keyPressEvent(QKeyEvent* kevent) override;
-	void keyReleaseEvent(QKeyEvent* kevent) override;
 	bool is_waiting_for_symbol();
 	void key_event(bool released, QKeyEvent* kevent);
 	void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
@@ -180,12 +169,8 @@ protected:
 
 	void set_main_document_view_state(DocumentViewState new_view_state);
 	void handle_click(WindowPos pos);
-	void mouseReleaseEvent(QMouseEvent* mevent) override;
-	void mousePressEvent(QMouseEvent* mevent) override;
-	void mouseDoubleClickEvent(QMouseEvent* mevent) override;
 
 	//bool eventFilter(QObject* obj, QEvent* event) override;
-	void wheelEvent(QWheelEvent* wevent) override;
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
 	void toggle_two_window_mode();
 	void toggle_window_configuration();
@@ -231,7 +216,6 @@ protected:
 
 	std::optional<fz_rect> get_selected_rect_absolute();
 	bool get_selected_rect_document(int& out_page, fz_rect& out_rect);
-public:
 	Document* doc();
 
 	MainWidget(
@@ -303,8 +287,7 @@ public:
 
 	bool is_rotated();
 	void on_new_paper_added(const std::wstring& file_path);
-	void scroll_overview_down();
-	void scroll_overview_up();
+	void scroll_overview(int amount);
 	int get_current_page_number() const;
 	void set_inverse_search_command(const std::wstring& new_command);
 	bool execute_predefined_command(char symbol);
@@ -323,5 +306,49 @@ public:
 	void handle_portal_overview_update();
 	void goto_overview();
 	bool is_rect_visible(int page, fz_rect rect);
+	void set_mark_in_current_location(char symbol);
+	void goto_mark(char symbol);
+	void advance_command(NewCommand* command);
+	void perform_search(std::wstring text, bool is_regex=false);
+	void overview_to_definition();
+	void portal_to_definition();
+	void move_visual_mark_command(int amount);
+
+	void handle_vertical_move(int amount);
+	void handle_horizontal_move(int amount);
+	void handle_goto_bookmark();
+	void handle_goto_bookmark_global();
+	void handle_add_highlight(char symbol);
+	void handle_goto_highlight();
+	void handle_goto_highlight_global();
+	void handle_goto_toc();
+	void handle_open_prev_doc();
+	void handle_move_screen(int amount);
+	void handle_new_window();
+	void handle_open_link(const std::wstring& text);
+	void handle_keys_user_all();
+	void handle_prefs_user_all();
+
+	protected:
+	void focusInEvent(QFocusEvent* ev);
+	void resizeEvent(QResizeEvent* resize_event) override;
+	void changeEvent(QEvent* event) override;
+	void mouseMoveEvent(QMouseEvent* mouse_event) override;
+
+	// we already handle drag and drop on macos elsewhere
+#ifndef Q_OS_MACOS
+	void dragEnterEvent(QDragEnterEvent* e);
+	void dropEvent(QDropEvent* event);
+#endif
+
+	void closeEvent(QCloseEvent* close_event) override;
+	void keyPressEvent(QKeyEvent* kevent) override;
+	void keyReleaseEvent(QKeyEvent* kevent) override;
+	void mouseReleaseEvent(QMouseEvent* mevent) override;
+	void mousePressEvent(QMouseEvent* mevent) override;
+	void mouseDoubleClickEvent(QMouseEvent* mevent) override;
+	void wheelEvent(QWheelEvent* wevent) override;
 
 };
+
+#endif

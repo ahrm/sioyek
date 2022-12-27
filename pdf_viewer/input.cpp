@@ -8,11 +8,403 @@
 #include <qstring.h>
 #include <qstringlist.h>
 #include "input.h"
+#include "main_widget.h"
+#include "ui.h"
 
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
+extern std::wstring SEARCH_URLS[26];
+
+extern Path default_config_path;
+extern Path default_keys_path;
+extern std::vector<Path> user_config_paths;
+extern std::vector<Path> user_keys_paths;
+
+class ToggleFullscreenCommand : public NewCommand {
+	void perform(MainWidget* widget) {
+		widget->toggle_fullscreen();
+	}
+	std::string get_name() {
+		return "toggle_fullscreen";
+	}
+};
+
+class ToggleOneWindowCommand : public NewCommand {
+	void perform(MainWidget* widget) {
+		widget->toggle_two_window_mode();
+	}
+	std::string get_name() {
+		return "toggle_one_window";
+	}
+};
+
+class ToggleHighlightCommand : public NewCommand {
+	void perform(MainWidget* widget) {
+		widget->opengl_widget->toggle_highlight_links();
+	}
+	std::string get_name() {
+		return "toggle_highlight";
+	}
+};
+
+class ToggleSynctexCommand : public NewCommand {
+	void perform(MainWidget* widget) {
+		widget->toggle_synctex_mode();
+	}
+	std::string get_name() {
+		return "toggle_synctex";
+	}
+};
+
+class TurnOnSynctexCommand : public NewCommand {
+	void perform(MainWidget* widget) {
+		widget->set_synctex_mode(true);
+	}
+	std::string get_name() {
+		return "turn_on_synctex";
+	}
+};
+
+class ToggleShowLastCommand : public NewCommand {
+	void perform(MainWidget* widget) {
+		widget->should_show_last_command = !widget->should_show_last_command;
+	}
+	std::string get_name() {
+		return "toggle_show_last_command";
+	}
+};
+
+class ExternalSearchCommand : public SymbolCommand {
+	void perform(MainWidget* widget) {
+		if ((symbol >= 'a') && (symbol <= 'z')) {
+			if (SEARCH_URLS[symbol - 'a'].size() > 0) {
+				search_custom_engine(widget->selected_text, SEARCH_URLS[symbol - 'a']);
+			}
+			else {
+				std::wcout << L"No search engine defined for symbol " << symbol << std::endl;
+			}
+		}
+	}
+
+	std::string get_name() {
+		return "external_search";
+	}
+};
+
+class OpenSelectedUrlCommand : public NewCommand {
+	void perform(MainWidget* widget) {
+		open_web_url((widget->selected_text).c_str());
+	}
+	std::string get_name() {
+		return "open_selected_url";
+	}
+};
+
+class ScreenDownCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		int rp = num_repeats == 0 ? 1 : num_repeats;
+		widget->handle_move_screen(rp);
+	}
+
+	std::string get_name() {
+		return "screen_down";
+	}
+};
+
+class ScreenUpCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		int rp = num_repeats == 0 ? 1 : num_repeats;
+		widget->handle_move_screen(-rp);
+	}
+
+	std::string get_name() {
+		return "screen_up";
+	}
+};
+
+class NextChapterCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		int rp = num_repeats == 0 ? 1 : num_repeats;
+		widget->main_document_view->goto_chapter(rp);
+	}
+
+	std::string get_name() {
+		return "next_chapter";
+	}
+};
+
+class PrevChapterCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		int rp = num_repeats == 0 ? 1 : num_repeats;
+		widget->main_document_view->goto_chapter(-rp);
+	}
+
+	std::string get_name() {
+		return "prev_chapter";
+	}
+};
+
+class ToggleDarkModeCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->opengl_widget->toggle_dark_mode();
+		widget->helper_opengl_widget->toggle_dark_mode();
+	}
+
+	std::string get_name() {
+		return "toggle_dark_mode";
+	}
+};
+
+class ToggleCustomColorMode : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->opengl_widget->toggle_custom_color_mode();
+		widget->helper_opengl_widget->toggle_custom_color_mode();
+	}
+
+	std::string get_name() {
+		return "toggle_custom_color";
+	}
+};
+
+class TogglePresentationModeCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->toggle_presentation_mode();
+	}
+
+	std::string get_name() {
+		return "toggle_presentation_mode";
+	}
+};
+
+class TurnOnPresentationModeCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->set_presentation_mode(true);
+	}
+
+	std::string get_name() {
+		return "turn_on_presentation_mode";
+	}
+};
+
+class ToggleMouseDragMode : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->toggle_mouse_drag_mode();
+	}
+
+	std::string get_name() {
+		return "toggle_mouse_drag_mode";
+	}
+};
+
+class CloseWindowCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->close();
+	}
+
+	std::string get_name() {
+		return "close_window";
+	}
+};
+
+class NewWindowCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->handle_new_window();
+	}
+
+	std::string get_name() {
+		return "new_window";
+	}
+};
+
+class QuitCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->handle_close_event();
+		QApplication::quit();
+	}
+
+	std::string get_name() {
+		return "quit";
+	}
+};
+
+class OpenLinkCommand : public TextCommand {
+
+	void perform(MainWidget* widget) {
+		widget->handle_open_link(text.value());
+	}
+
+	void pre_perform(MainWidget* widget) {
+		widget->opengl_widget->set_highlight_links(true, true);
+
+	}
+
+	std::string get_name() {
+		return "open_link";
+	}
+
+	std::string text_requirement_name() {
+		return "Label";
+	}
+};
+
+class KeyboardSelectCommand : public TextCommand {
+
+	void perform(MainWidget* widget) {
+		widget->handle_keyboard_select(text.value());
+	}
+
+	void pre_perform(MainWidget* widget) {
+		widget->highlight_words();
+
+	}
+
+	std::string get_name() {
+		return "keyboard_select";
+	}
+
+	std::string text_requirement_name() {
+		return "Labels";
+	}
+};
+
+class KeyboardOverviewCommand : public TextCommand {
+
+	void perform(MainWidget* widget) {
+		std::optional<fz_irect> rect_ = widget->get_tag_window_rect(utf8_encode(text.value()));
+       if (rect_) {
+           fz_irect rect = rect_.value();
+           widget->overview_under_pos({ (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 });
+           widget->opengl_widget->set_should_highlight_words(false);
+       }
+	}
+
+	void pre_perform(MainWidget* widget) {
+		widget->highlight_words();
+
+	}
+
+	std::string get_name() {
+		return "keyboard_overview";
+	}
+
+	std::string text_requirement_name() {
+		return "Label";
+	}
+};
+
+class KeyboardSmartjumpCommand : public TextCommand {
+
+	void perform(MainWidget* widget) {
+	   	std::optional<fz_irect> rect_ = widget->get_tag_window_rect(utf8_encode(text.value()));
+       if (rect_) {
+           fz_irect rect = rect_.value();
+   		widget->smart_jump_under_pos({ (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 });
+   		widget->opengl_widget->set_should_highlight_words(false);
+       }
+	}
+
+	void pre_perform(MainWidget* widget) {
+		widget->highlight_words();
+	}
+
+	bool pushes_state() {
+		return true;
+	}
+
+	std::string get_name() {
+		return "keyboard_smart_jump";
+	}
+
+	std::string text_requirement_name() {
+		return "Label";
+	}
+};
+
+class KeysCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		open_file(default_keys_path.get_path());
+	}
+
+	std::string get_name() {
+		return "keys";
+	}
+};
+
+class KeysUserCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		std::optional<Path> key_file_path = widget->input_handler->get_or_create_user_keys_path();
+		if (key_file_path) {
+			open_file(key_file_path.value().get_path());
+		}
+	}
+
+	std::string get_name() {
+		return "keys_user";
+	}
+};
+
+class KeysUserAllCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->handle_keys_user_all();
+	}
+
+	std::string get_name() {
+		return "keys_user_all";
+	}
+};
+
+class PrefsCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		open_file(default_config_path.get_path());
+	}
+
+	std::string get_name() {
+		return "prefs";
+	}
+};
+
+class PrefsUserCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		std::optional<Path> pref_file_path = widget->config_manager->get_or_create_user_config_file();
+		if (pref_file_path) {
+			open_file(pref_file_path.value().get_path());
+		}
+	}
+
+	std::string get_name() {
+		return "prefs_user";
+	}
+};
+
+class PrefsUserAllCommand : public NewCommand {
+
+	void perform(MainWidget* widget) {
+		widget->handle_prefs_user_all();
+	}
+
+	std::string get_name() {
+		return "prefs_user_all";
+	}
+};
 
 CommandManager::CommandManager(ConfigManager* config_manager) {
 	commands.push_back({ "goto_beginning",				false,	false,	false,	true,	true,	{}});
@@ -754,3 +1146,869 @@ std::vector<Path> InputHandler::get_all_user_keys_paths() {
 	return res;
 }
 
+std::optional<Requirement> NewCommand::next_requirement() {
+	return {};
+}
+void NewCommand::set_text_requirement(std::wstring value) {}
+void NewCommand::set_symbol_requirement(char value) {}
+void NewCommand::set_file_requirement(std::wstring value) {}
+void NewCommand::set_rect_requirement(fz_rect value) {}
+
+bool NewCommand::pushes_state() {
+	return false;
+}
+
+void NewCommand::set_num_repeats(int nr) {
+	num_repeats = nr;
+}
+
+void NewCommand::pre_perform(MainWidget* widget) {
+
+}
+
+void GotoBeginningCommand::perform(MainWidget* main_widget) {
+	if (num_repeats) {
+		main_widget->main_document_view->goto_page(num_repeats - 1 + main_widget->main_document_view->get_page_offset());
+	}
+	else {
+		main_widget->main_document_view->set_offset_y(0.0f);
+	}
+}
+
+void GotoEndCommand::perform(MainWidget* main_widget) {
+	if (num_repeats > 0) {
+		main_widget->main_document_view->goto_page(num_repeats - 1 + main_widget->main_document_view->get_page_offset());
+	}
+	else {
+		main_widget->main_document_view->goto_end();
+	}
+}
+
+std::string GotoEndCommand::get_name() {
+	return "goto_end";
+}
+
+NewCommand* get_command_with_name(std::string name) {
+
+	if (name == "goto_beginning" || name == "goto_begining") {
+		return new GotoBeginningCommand;
+	}
+	if (name == "goto_end") {
+		return new GotoEndCommand;
+	}
+	if (name == "goto_mark") {
+		return new GotoMark;
+	}
+	if (name == "set_mark") {
+		return new SetMark;
+	}
+	if (name == "search") {
+		return new SearchCommand;
+	}
+	if (name == "chapter_search") {
+		return new ChapterSearchCommand;
+	}
+	if (name == "regex_search") {
+		return new RegexSearchCommand;
+	}
+	if (name == "next_item") {
+		return new NextItemCommand;
+	}
+	if (name == "previous_item") {
+		return new PrevItemCommand;
+	}
+	if (name == "command") {
+		return new CommandCommand;
+	}
+	if (name == "open_document") {
+		return new OpenDocumentCommand;
+	}
+	if (name == "goto_definition") {
+		return new GotoDefinitionCommand;
+	}
+	if (name == "portal_to_definition") {
+		return new PortalToDefinitionCommand;
+	}
+	if (name == "overview_definition") {
+		return new OverviewDefinitionCommand;
+	}
+	if (name == "move_visual_mark_down") {
+		return new MoveVisualMarkDownCommand;
+	}
+	if (name == "move_visual_mark_up") {
+		return new MoveVisualMarkUpCommand;
+	}
+	if (name == "move_down") {
+		return new MoveDownCommand;
+	}
+	if (name == "move_up") {
+		return new MoveUpCommand;
+	}
+	if (name == "move_left") {
+		return new MoveLeftCommand;
+	}
+	if (name == "move_right") {
+		return new MoveRightCommand;
+	}
+	if (name == "goto_page_with_page_number") {
+		return new GotoPageWithPageNumberCommand;
+	}
+	if (name == "zoom_in") {
+		return new ZoomInCommand;
+	}
+	if (name == "zoom_out") {
+		return new ZoomOutCommand;
+	}
+	if (name == "fit_to_page_width") {
+		return new FitToPageWidthCommand;
+	}
+	if (name == "fit_to_page_width_smart") {
+		return new FitToPageWidthSmartCommand;
+	}
+	if (name == "fit_to_page_height") {
+		return new FitToPageHeightCommand;
+	}
+	if (name == "fit_to_page_height_smart") {
+		return new FitToPageHeightSmartCommand;
+	}
+	if (name == "next_page") {
+		return new NextPageCommand;
+	}
+	if (name == "previous_page") {
+		return new PreviousPageCommand;
+	}
+	if (name == "add_bookmark") {
+		return new AddBookmarkCommand;
+	}
+	if (name == "goto_bookmark") {
+		return new GotoBookmarkCommand;
+	}
+	if (name == "goto_bookmark_g") {
+		return new GotoBookmarkGlobalCommand;
+	}
+	if (name == "add_highlight") {
+		return new AddHighlightCommand;
+	}
+	if (name == "goto_highlight") {
+		return new GotoHighlightCommand;
+	}
+	if (name == "goto_highlight_g") {
+		return new GotoHighlightGlobalCommand;
+	}
+	if (name == "goto_toc") {
+		return new GotoTableOfContentsCommand;
+	}
+	if (name == "portal" || name == "link") {
+		return new PortalCommand;
+	}
+	if (name == "toggle_window_configuration") {
+		return new ToggleWindowConfigurationCommand;
+	}
+	if (name == "next_state") {
+		return new NextStateCommand;
+	}
+	if (name == "prev_state") {
+		return new PrevStateCommand;
+	}
+	if (name == "delete_portal" || name == "delete_link") {
+		return new DeletePortalCommand;
+	}
+	if (name == "delete_bookmark") {
+		return new DeleteBookmarkCommand;
+	}
+	if (name == "delete_highlight") {
+		return new DeleteHighlightCommand;
+	}
+	if (name == "goto_portal" || name == "goto_link") {
+		return new GotoPortalCommand;
+	}
+	if (name == "open_prev_doc") {
+		return new OpenPrevDocCommand;
+	}
+	if (name == "open_document_embedded") {
+		return new OpenDocumentEmbeddedCommand;
+	}
+	if (name == "open_document_embedded_from_current_path") {
+		return new OpenDocumentEmbeddedFromCurrentPathCommand;
+	}
+	if (name == "copy") {
+		return new CopyCommand;
+	}
+	if (name == "toggle_fullscreen") {
+		return new ToggleFullscreenCommand;
+	}
+	if (name == "toggle_one_window") {
+		return new ToggleOneWindowCommand;
+	}
+	if (name == "toggle_highlight") {
+		return new ToggleHighlightCommand;
+	}
+	if (name == "toggle_synctex") {
+		return new ToggleSynctexCommand;
+	}
+	if (name == "turn_on_synctex") {
+		return new TurnOnSynctexCommand;
+	}
+	if (name == "toggle_show_last_command") {
+		return new ToggleShowLastCommand;
+	}
+	if (name == "external_search") {
+		return new ExternalSearchCommand;
+	}
+	if (name == "open_selected_url") {
+		return new OpenSelectedUrlCommand;
+	}
+	if (name == "screen_down") {
+		return new ScreenDownCommand;
+	}
+	if (name == "screen_up") {
+		return new ScreenUpCommand;
+	}
+	if (name == "next_chapter") {
+		return new NextChapterCommand;
+	}
+	if (name == "prev_chapter") {
+		return new PrevChapterCommand;
+	}
+	if (name == "toggle_dark_mode") {
+		return new ToggleDarkModeCommand;
+	}
+	if (name == "toggle_custom_color") {
+		return new ToggleCustomColorMode;
+	}
+	if (name == "toggle_presentation_mode") {
+		return new TogglePresentationModeCommand;
+	}
+	if (name == "turn_on_presentation_mode") {
+		return new TurnOnPresentationModeCommand;
+	}
+	if (name == "toggle_mouse_drag_mode") {
+		return new ToggleMouseDragMode;
+	}
+	if (name == "close_window") {
+		return new CloseWindowCommand;
+	}
+	if (name == "new_window") {
+		return new NewWindowCommand;
+	}
+	if (name == "quit" || name == "q") {
+		return new QuitCommand;
+	}
+	if (name == "open_link") {
+		return new OpenLinkCommand;
+	}
+	if (name == "keyboard_select") {
+		return new KeyboardSelectCommand;
+	}
+	if (name == "keyboard_overview") {
+		return new KeyboardOverviewCommand;
+	}
+	if (name == "keyboard_smart_jump") {
+		return new KeyboardSmartjumpCommand;
+	}
+	if (name == "keys") {
+		return new KeysCommand;
+	}
+	if (name == "keys_user") {
+		return new KeysUserCommand;
+	}
+	if (name == "keys_user_all") {
+		return new KeysUserAllCommand;
+	}
+	if (name == "prefs") {
+		return new PrefsCommand;
+	}
+	if (name == "prefs_user") {
+		return new PrefsUserCommand;
+	}
+	if (name == "prefs_user_all") {
+		return new PrefsUserAllCommand;
+	}
+
+	return nullptr;
+}
+
+std::optional<Requirement> SymbolCommand::next_requirement() {
+	if (symbol == 0) {
+		return Requirement{ RequirementType::Symbol, "symbol"};
+	}
+	else {
+		return {};
+	}
+}
+
+void SymbolCommand::set_symbol_requirement(char value) {
+	this->symbol = value;
+}
+
+void SetMark::perform(MainWidget* widget) {
+	assert(this->symbol != 0);
+	widget->set_mark_in_current_location(this->symbol);
+}
+
+void GotoMark::perform(MainWidget* widget) {
+	assert(this->symbol != 0);
+	widget->goto_mark(this->symbol);
+}
+
+std::vector<char> NewCommand::special_symbols() {
+	std::vector<char> res;
+	return res;
+}
+
+std::vector<char> GotoMark::special_symbols() {
+	std::vector<char> res = { '`', '\'', '/' };
+	return res;
+}
+
+std::string NewCommand::get_name() {
+	return "";
+}
+
+std::string GotoBeginningCommand::get_name() {
+	return "goto_beginning";
+}
+
+std::string GotoMark::get_name() {
+	return "goto_mark";
+}
+
+std::string SetMark::get_name() {
+	return "set_mark";
+}
+
+void NextItemCommand::perform(MainWidget* widget) {
+	if (num_repeats == 0) num_repeats++;
+	widget->opengl_widget->goto_search_result(num_repeats);
+}
+
+std::string NextItemCommand::get_name() {
+	return "next_item";
+}
+
+void PrevItemCommand::perform(MainWidget* widget) {
+	if (num_repeats == 0) num_repeats++;
+	widget->opengl_widget->goto_search_result(-num_repeats);
+}
+
+std::string PrevItemCommand::get_name() {
+	return "previous_item";
+}
+
+std::string TextCommand::text_requirement_name() {
+	return "text";
+}
+
+std::optional<Requirement> TextCommand::next_requirement() {
+	if (text.has_value()) {
+		return {};
+	}
+	else {
+		return Requirement { RequirementType::Text, text_requirement_name()};
+	}
+}
+
+void TextCommand::set_text_requirement(std::wstring value) {
+	this->text = value;
+}
+
+void SearchCommand::perform(MainWidget* widget) {
+	widget->perform_search(this->text.value(), false);
+}
+
+std::string SearchCommand::get_name() {
+	return "search";
+}
+
+std::string SearchCommand::text_requirement_name() {
+	return "Search Term";
+}
+
+void ChapterSearchCommand::perform(MainWidget* widget) {
+	widget->perform_search(this->text.value(), false);
+}
+
+void ChapterSearchCommand::pre_perform(MainWidget* widget) {
+	std::optional<std::pair<int, int>> chapter_range = widget->main_document_view->get_current_page_range();
+	if (chapter_range) {
+		std::stringstream search_range_string;
+		search_range_string << "<" << chapter_range.value().first << "," << chapter_range.value().second << ">";
+		widget->text_command_line_edit->setText(search_range_string.str().c_str() + widget->text_command_line_edit->text());
+	}
+
+}
+std::string ChapterSearchCommand::get_name() {
+	return "chapter_search";
+}
+
+std::string ChapterSearchCommand::text_requirement_name() {
+	return "Search Term";
+}
+
+void RegexSearchCommand::perform(MainWidget* widget) {
+	widget->perform_search(this->text.value(), true);
+}
+
+std::string RegexSearchCommand::get_name() {
+	return "regex_search";
+}
+
+std::string RegexSearchCommand::text_requirement_name() {
+	return "regex";
+}
+
+
+void CommandCommand::perform(MainWidget* widget) {
+	QStringList command_names = widget->command_manager->get_all_command_names();
+	widget->set_current_widget(new CommandSelector(
+		&widget->on_command_done, widget, command_names, widget->input_handler->get_command_key_mappings()));
+	widget->current_widget->show();
+}
+
+std::string CommandCommand::get_name() {
+	return "command";
+}
+
+std::optional<Requirement> OpenDocumentCommand::next_requirement() {
+	if (file_name.size() == 0) {
+		return Requirement{ RequirementType::File, "File" };
+	}
+	else {
+		return {};
+	}
+}
+
+void OpenDocumentCommand::set_file_requirement(std::wstring value) {
+	file_name = value;
+}
+
+void OpenDocumentCommand::perform(MainWidget* widget) {
+	widget->open_document(file_name);
+}
+
+std::string OpenDocumentCommand::get_name() {
+	return "open_document";
+}
+
+void GotoDefinitionCommand::perform(MainWidget* widget) {
+	if (widget->main_document_view->goto_definition()) {
+		widget->opengl_widget->set_should_draw_vertical_line(false);
+	}
+}
+
+std::string GotoDefinitionCommand::get_name() {
+	return "goto_definition";
+}
+
+void OverviewDefinitionCommand::perform(MainWidget* widget) {
+	widget->overview_to_definition();
+}
+
+std::string OverviewDefinitionCommand::get_name() {
+	return "overview_definition";
+}
+
+void PortalToDefinitionCommand::perform(MainWidget* widget) {
+	widget->portal_to_definition();
+}
+
+std::string PortalToDefinitionCommand::get_name() {
+	return "portak_to_definition";
+}
+
+void MoveVisualMarkDownCommand::perform(MainWidget* widget) {
+	int rp = num_repeats == 0 ? 1 : num_repeats;
+	widget->move_visual_mark_command(rp);
+}
+
+std::string MoveVisualMarkDownCommand::get_name() {
+	return "move_visual_mark_down";
+}
+
+void MoveVisualMarkUpCommand::perform(MainWidget* widget) {
+	int rp = num_repeats == 0 ? 1 : num_repeats;
+	widget->move_visual_mark_command(-rp);
+}
+
+std::string MoveVisualMarkUpCommand::get_name() {
+	return "move_visual_mark_up";
+}
+
+void GotoPageWithPageNumberCommand::perform(MainWidget* widget) {
+	std::wstring text_ = text.value();
+	if (is_string_numeric(text_.c_str()) && text_.size() < 6) { // make sure the page number is valid
+		int dest = std::stoi(text_.c_str()) - 1;
+		widget->main_document_view->goto_page(dest + widget->main_document_view->get_page_offset());
+	}
+}
+
+std::string GotoPageWithPageNumberCommand::get_name() {
+	return "goto_page_with_page_number";
+}
+
+std::string GotoPageWithPageNumberCommand::text_requirement_name() {
+	return "Page Number";
+}
+
+void MoveDownCommand::perform(MainWidget* widget) {
+	int rp = num_repeats == 0 ? 1 : num_repeats;
+	widget->handle_vertical_move(rp);
+}
+
+std::string MoveDownCommand::get_name() {
+	return "move_down";
+}
+
+void MoveUpCommand::perform(MainWidget* widget) {
+	int rp = num_repeats == 0 ? 1 : num_repeats;
+	widget->handle_vertical_move(-rp);
+}
+std::string MoveUpCommand::get_name() {
+
+	return "move_up";
+}
+
+void MoveLeftCommand::perform(MainWidget* widget) {
+	int rp = num_repeats == 0 ? 1 : num_repeats;
+	widget->handle_horizontal_move(-rp);
+}
+std::string MoveLeftCommand::get_name() {
+
+	return "move_left";
+}
+
+void MoveRightCommand::perform(MainWidget* widget) {
+	int rp = num_repeats == 0 ? 1 : num_repeats;
+	widget->handle_horizontal_move(rp);
+}
+std::string MoveRightCommand::get_name() {
+
+	return "move_right";
+}
+
+void ZoomInCommand::perform(MainWidget* widget) {
+	widget->main_document_view->zoom_in();
+	widget->last_smart_fit_page = {};
+}
+
+std::string ZoomInCommand::get_name() {
+	return "zoom_in";
+}
+
+void ZoomOutCommand::perform(MainWidget* widget) {
+	widget->main_document_view->zoom_out();
+	widget->last_smart_fit_page = {};
+}
+
+std::string ZoomOutCommand::get_name() {
+	return "zoom_out";
+}
+
+void FitToPageWidthCommand::perform(MainWidget* widget) {
+	widget->main_document_view->fit_to_page_width();
+	widget->last_smart_fit_page = {};
+}
+
+std::string FitToPageWidthCommand::get_name() {
+	return "fit_to_page_width";
+}
+
+void FitToPageWidthSmartCommand::perform(MainWidget* widget) {
+	widget->main_document_view->fit_to_page_width(true);
+	int current_page = widget->get_current_page_number();
+	widget->last_smart_fit_page = current_page;
+}
+
+std::string FitToPageWidthSmartCommand::get_name() {
+	return "fit_to_page_width_smart";
+}
+
+void FitToPageHeightCommand::perform(MainWidget* widget) {
+	widget->main_document_view->fit_to_page_height();
+	widget->last_smart_fit_page = {};
+}
+
+std::string FitToPageHeightCommand::get_name() {
+	return "fit_to_page_height";
+}
+
+void FitToPageHeightSmartCommand::perform(MainWidget* widget) {
+	widget->main_document_view->fit_to_page_height(true);
+}
+
+std::string FitToPageHeightSmartCommand::get_name() {
+	return "fit_to_page_height_smart";
+}
+
+void NextPageCommand::perform(MainWidget* widget) {
+	widget->main_document_view->move_pages(1 + num_repeats);
+}
+std::string NextPageCommand::get_name() {
+	return "next_page";
+}
+
+void PreviousPageCommand::perform(MainWidget* widget) {
+	widget->main_document_view->move_pages(-1 - num_repeats);
+}
+
+std::string PreviousPageCommand::get_name() {
+	return "previous_page";
+}
+
+void AddBookmarkCommand::perform(MainWidget* widget) {
+	widget->main_document_view->add_bookmark(text.value());
+}
+
+std::string AddBookmarkCommand::get_name() {
+	return "add_bookmark";
+}
+
+std::string AddBookmarkCommand::text_requirement_name() {
+	return "Bookmark Text";
+}
+void GotoBookmarkCommand::perform(MainWidget* widget) {
+	widget->handle_goto_bookmark();
+}
+std::string GotoBookmarkCommand::get_name() {
+	return "goto_bookmark";
+}
+
+void GotoBookmarkGlobalCommand::perform(MainWidget* widget) {
+	widget->handle_goto_bookmark_global();
+}
+
+std::string GotoBookmarkGlobalCommand::get_name() {
+	return "goto_bookmark_g";
+}
+
+void AddHighlightCommand::perform(MainWidget* widget) {
+	widget->handle_add_highlight(symbol);
+}
+
+std::string AddHighlightCommand::get_name() {
+	return "add_highlight";
+}
+
+void GotoHighlightCommand::perform(MainWidget* widget) {
+	widget->handle_goto_highlight();
+}
+std::string GotoHighlightCommand::get_name() {
+	return "goto_highlight";
+}
+
+void GotoHighlightGlobalCommand::perform(MainWidget* widget) {
+	widget->handle_goto_highlight_global();
+}
+
+std::string GotoHighlightGlobalCommand::get_name() {
+	return "goto_highlight_g";
+}
+
+void GotoTableOfContentsCommand::perform(MainWidget* widget) {
+	widget->handle_goto_toc();
+}
+
+std::string GotoTableOfContentsCommand::get_name() {
+	return "goto_toc";
+}
+
+void PortalCommand::perform(MainWidget* widget) {
+	widget->handle_portal();
+}
+
+std::string PortalCommand::get_name() {
+	return "portal";
+}
+void ToggleWindowConfigurationCommand::perform(MainWidget* widget) {
+	widget->toggle_window_configuration();
+}
+
+std::string ToggleWindowConfigurationCommand::get_name() {
+	return "toggle_window_configuration";
+
+}
+void NextStateCommand::perform(MainWidget* widget) {
+	widget->next_state();
+}
+std::string NextStateCommand::get_name() {
+	return "next_state";
+
+}
+
+void PrevStateCommand::perform(MainWidget* widget) {
+	widget->prev_state();
+}
+
+std::string PrevStateCommand::get_name() {
+	return "prev_state";
+
+}
+
+bool ChapterSearchCommand::pushes_state() {
+	return true;
+}
+
+bool GotoBookmarkCommand::pushes_state() {
+	return true;
+}
+
+bool GotoBookmarkGlobalCommand::pushes_state() {
+	return true;
+}
+
+bool GotoDefinitionCommand::pushes_state() {
+	return true;
+}
+
+bool GotoHighlightCommand::pushes_state() {
+	return true;
+}
+
+bool GotoHighlightGlobalCommand::pushes_state() {
+	return true;
+}
+
+bool GotoMark::pushes_state() {
+	return true;
+}
+
+bool GotoPageWithPageNumberCommand::pushes_state() {
+	return true;
+}
+
+bool OpenDocumentCommand::pushes_state() {
+	return true;
+}
+
+bool RegexSearchCommand::pushes_state() {
+	return true;
+}
+
+bool SearchCommand::pushes_state() {
+	return true;
+}
+
+bool GotoBeginningCommand::pushes_state() {
+	return true;
+}
+
+bool GotoEndCommand::pushes_state() {
+	return true;
+}
+
+void DeletePortalCommand::perform(MainWidget* widget) {
+	widget->main_document_view->delete_closest_portal();
+	widget->validate_render();
+}
+
+std::string DeletePortalCommand::get_name() {
+	return "delete_portal";
+}
+
+void DeleteBookmarkCommand::perform(MainWidget* widget) {
+	widget->main_document_view->delete_closest_bookmark();
+	widget->validate_render();
+}
+
+std::string DeleteBookmarkCommand::get_name() {
+	return "delete_bookmark";
+}
+
+void DeleteHighlightCommand::perform(MainWidget* widget) {
+	if (widget->selected_highlight_index != -1) {
+		widget->main_document_view->delete_highlight_with_index(widget->selected_highlight_index);
+		widget->selected_highlight_index = -1;
+	}
+	widget->validate_render();
+}
+
+std::string DeleteHighlightCommand::get_name() {
+	return "delete_highlight";
+}
+
+void GotoPortalCommand::perform(MainWidget* widget) {
+	std::optional<Portal> link = widget->main_document_view->find_closest_portal();
+	if (link) {
+		widget->open_document(link->dst);
+	}
+}
+
+bool GotoPortalCommand::pushes_state() {
+	return true;
+}
+
+std::string GotoPortalCommand::get_name() {
+	return "goto_link";
+}
+
+void EditPortalCommand::perform(MainWidget* widget) {
+	std::optional<Portal> link = widget->main_document_view->find_closest_portal();
+	if (link) {
+		widget->link_to_edit = link;
+		widget->open_document(link->dst);
+	}
+}
+
+bool EditPortalCommand::pushes_state() {
+	return true;
+}
+
+std::string EditPortalCommand::get_name() {
+	return "edit_portal";
+}
+
+void OpenPrevDocCommand::perform(MainWidget* widget) {
+	widget->handle_open_prev_doc();
+}
+
+bool OpenPrevDocCommand::pushes_state() {
+	return true;
+}
+
+std::string OpenPrevDocCommand::get_name() {
+	return "open_prev_doc";
+}
+
+void OpenDocumentEmbeddedCommand::perform(MainWidget* widget) {
+	widget->set_current_widget(new FileSelector(
+		[widget](std::wstring doc_path) {
+			widget->validate_render();
+			widget->open_document(doc_path);
+		}, widget, ""));
+	widget->current_widget->show();
+}
+
+bool OpenDocumentEmbeddedCommand::pushes_state() {
+	return true;
+}
+
+std::string OpenDocumentEmbeddedCommand::get_name() {
+	return "open_document_embedded";
+}
+
+void OpenDocumentEmbeddedFromCurrentPathCommand::perform(MainWidget* widget) {
+	std::wstring last_file_name = widget->get_current_file_name().value_or(L"");
+
+	widget->set_current_widget(new FileSelector(
+		[widget](std::wstring doc_path) {
+			widget->validate_render();
+			widget->open_document(doc_path);
+		}, widget, QString::fromStdWString(last_file_name)));
+	widget->current_widget->show();
+}
+
+bool OpenDocumentEmbeddedFromCurrentPathCommand::pushes_state() {
+	return true;
+}
+
+std::string OpenDocumentEmbeddedFromCurrentPathCommand::get_name() {
+	return "open_document_embedded_from_current_path";
+}
+
+void CopyCommand::perform(MainWidget* widget) {
+	copy_to_clipboard(widget->selected_text);
+}
+
+std::string CopyCommand::get_name() {
+	return "copy";
+}

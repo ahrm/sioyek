@@ -572,8 +572,9 @@ std::wstring MainWidget::get_status_string() {
     if (link_to_edit) {
         ss << " | editing link ...";
     }
-    if (current_pending_command && current_pending_command.value().requires_symbol) {
-        std::wstring wcommand_name = utf8_decode(current_pending_command.value().name.c_str());
+    //if (current_pending_command && current_pending_command.value().requires_symbol) {
+    if (is_waiting_for_symbol()) {
+        std::wstring wcommand_name = utf8_decode(pending_command_instance->next_requirement().value().name);
         ss << " | " << wcommand_name << " waiting for symbol";
     }
     if (main_document_view != nullptr && main_document_view->get_document() != nullptr &&
@@ -679,7 +680,8 @@ void MainWidget::handle_escape() {
     typing_location = {};
     text_command_line_edit->setText("");
     pending_link = {};
-    current_pending_command = {};
+    pending_command_instance = nullptr;
+    //current_pending_command = {};
 
     if (current_widget != nullptr) {
         delete current_widget;
@@ -998,40 +1000,25 @@ void MainWidget::invalidate_ui() {
 }
 
 bool MainWidget::handle_command_with_symbol(const Command* command, char symbol) {
+    assert(pending_command_instance);
+    assert(pending_command_instance->next_requirement().value().type == RequirementType::Symbol);
+    pending_command_instance->set_symbol_requirement(symbol);
+    advance_command(pending_command_instance);
+
+    return false;
+
     assert(symbol);
     assert(command->requires_symbol);
 
     if (command->name == "set_mark") {
         assert(main_document_view);
-
-        // it is a global mark, we delete other marks with the same symbol from database and add the new mark
-        if (isupper(symbol)) {
-            db_manager->delete_mark_with_symbol(symbol);
-            // we should also delete the cached marks
-            document_manager->delete_global_mark(symbol);
-            main_document_view->add_mark(symbol);
-        }
-        else{
-            main_document_view->add_mark(symbol);
-            validate_render();
-        }
-
+        set_mark_in_current_location(symbol);
     }
     else if (command->name == "set_select_highlight_type") {
         select_highlight_type = symbol;
     }
     else if (command->name == "add_highlight") {
-        if (opengl_widget->selected_character_rects.size() > 0) {
-            main_document_view->add_highlight(selection_begin, selection_end, symbol);
-            opengl_widget->selected_character_rects.clear();
-            selected_text.clear();
-        }
-        else if (selected_highlight_index != -1) {
-            Highlight new_highlight = main_document_view->get_highlight_with_index(selected_highlight_index);
-            main_document_view->delete_highlight_with_index(selected_highlight_index);
-            main_document_view->add_highlight(new_highlight.selection_begin, new_highlight.selection_end, symbol);
-            selected_highlight_index = -1;
-        }
+        handle_add_highlight(symbol);
     }
     else if (command->name == "external_search") {
         if ((symbol >= 'a') && (symbol <= 'z')) {
@@ -1055,23 +1042,7 @@ bool MainWidget::handle_command_with_symbol(const Command* command, char symbol)
     }
     else if (command->name == "goto_mark") {
         assert(main_document_view);
-
-        if (symbol == '`' || symbol == '\'') {
-            return_to_last_visual_mark();
-        }
-        else if (isupper(symbol)) { // global mark
-            std::vector<std::pair<std::string, float>> mark_vector;
-            db_manager->select_global_mark(symbol, mark_vector);
-            if (mark_vector.size() > 0) {
-                assert(mark_vector.size() == 1); // we can not have more than one global mark with the same name
-                std::wstring doc_path = checksummer->get_path(mark_vector[0].first).value();
-                open_document(doc_path, {}, mark_vector[0].second);
-            }
-
-        }
-        else{
-            main_document_view->goto_mark(symbol);
-        }
+        goto_mark(symbol);
     }
     return true;
 }
@@ -1199,21 +1170,43 @@ void MainWidget::open_document(const DocumentViewState& state)
 }
 
 void MainWidget::handle_command_with_file_name(const Command* command, std::wstring file_name) {
-    assert(command->requires_file_name);
-    if (command->name == "open_document") {
-        open_document(file_name);
+
+    if (pending_command_instance) {
+        pending_command_instance->set_file_requirement(file_name);
+        advance_command(pending_command_instance);
     }
-    else if (command->name == "source_config") {
-        config_manager->deserialize_file(file_name);
-        on_config_file_changed(config_manager);
-    }
+    //assert(command->requires_file_name);
+    //if (command->name == "open_document") {
+    //    open_document(file_name);
+    //}
+    //else if (command->name == "source_config") {
+    //    config_manager->deserialize_file(file_name);
+    //    on_config_file_changed(config_manager);
+    //}
 }
 
+//bool MainWidget::is_waiting_for_symbol() {
+//    return (current_pending_command && current_pending_command->requires_symbol);
+//}
+
 bool MainWidget::is_waiting_for_symbol() {
-    return (current_pending_command && current_pending_command->requires_symbol);
+	return ((pending_command_instance != nullptr) &&
+		pending_command_instance->next_requirement().has_value() &&
+		(pending_command_instance->next_requirement().value().type == RequirementType::Symbol));
 }
 
 void MainWidget::handle_command_types(const Command* command, int num_repeats) {
+
+    NewCommand* new_command = get_command_with_name(command->name);
+
+    if (new_command) {
+		new_command->set_num_repeats(num_repeats);
+        if (new_command->pushes_state()) {
+            push_state();
+        }
+        advance_command(new_command);
+    }
+    return;
 
     if (command == nullptr) return;
 
@@ -1230,7 +1223,7 @@ void MainWidget::handle_command_types(const Command* command, int num_repeats) {
         push_state();
     }
     if (command->requires_symbol) {
-        current_pending_command = *command;
+        //current_pending_command = *command;
         return;
     }
     if (command->requires_file_name) {
@@ -1317,11 +1310,10 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
         }
         if (is_waiting_for_symbol()) {
 
-            char symb = get_symbol(kevent->key(), kevent->modifiers() & Qt::ShiftModifier, current_pending_command->special_symbols);
+            char symb = get_symbol(kevent->key(), kevent->modifiers() & Qt::ShiftModifier, pending_command_instance->special_symbols());
             if (symb) {
-                if (handle_command_with_symbol(&current_pending_command.value(), symb)) {
-					current_pending_command = {};
-                }
+                pending_command_instance->set_symbol_requirement(symb);
+                advance_command(pending_command_instance);
             }
             return;
         }
@@ -1364,7 +1356,7 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
         // we can always use middle click to jump to a destination which is probably what we
         // need anyway
         if (down == true && (!this->synctex_mode)) {
-            if (current_pending_command && (current_pending_command->name == "goto_mark")) {
+            if (pending_command_instance && (pending_command_instance->get_name() == "goto_mark")) {
                 return_to_last_visual_mark();
                 return;
             }
@@ -1836,10 +1828,10 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     if ((!is_control_pressed) && (!is_shift_pressed)) {
         if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
             if (wevent->angleDelta().y() > 0) {
-                scroll_overview_up();
+                scroll_overview(-1);
             }
             if (wevent->angleDelta().y() < 0) {
-                scroll_overview_down();
+                scroll_overview(1);
             }
             validate_render();
         }
@@ -1964,13 +1956,15 @@ void MainWidget::toggle_two_window_mode() {
 }
 
 void MainWidget::handle_command(const Command* command, int num_repeats) {
+    assert(false);
+    
     if (command == nullptr) return;
 
     // always greater than zero
     int num_repeats_prime = num_repeats == 0 ? 1 : num_repeats;
 
     if (command->requires_text) {
-        current_pending_command = *command;
+        //!!current_pending_command = *command;
         bool should_fill_text_bar_with_selected_text = false;
         if (command->name == "search" || command->name == "chapter_search" || command->name == "ranged_search" || command->name == "add_bookmark") {
             should_fill_text_bar_with_selected_text = true;
@@ -2079,10 +2073,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         if (opengl_widget->get_overview_page()) {
             // if overview page is opened, scroll in overview
 			if (command->name == "move_down") {
-                scroll_overview_down();
+                scroll_overview(1);
 			}
 			if (command->name == "move_up") {
-                scroll_overview_up();
+                scroll_overview(-1);
 			}
         }
         else {
@@ -2132,18 +2126,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "new_window") {
 
-		MainWidget* new_widget = new MainWidget(mupdf_context,
-            db_manager,
-            document_manager,
-            config_manager,
-            command_manager,
-            input_handler,
-            checksummer,
-            should_quit);
-        new_widget->open_document(main_document_view->get_state());
-        new_widget->show();
-        new_widget->run_multiple_commands(STARTUP_COMMANDS);
-        windows.push_back(new_widget);
+        handle_new_window();
     }
 
     else if (command->name == "goto_link" || command->name == "goto_portal") {
@@ -2301,30 +2284,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 
 	}
     else if (command->name == "overview_definition") {
-		if (!opengl_widget->get_overview_page()) {
-			std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
-			if (defpos.size() > 0) {
-				set_overview_position(defpos[0].page, defpos[0].y);
-                smart_view_candidates = defpos;
-                index_into_candidates = 0;
-			}
-        }
-        else {
-			opengl_widget->set_overview_page({});
-        }
+		overview_to_definition();
     }
     else if (command->name == "portal_to_definition") {
-		std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
-        if (defpos.size() > 0) {
-            AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
-            Portal link;
-            link.dst.document_checksum = doc()->get_checksum();
-            link.dst.book_state.offset_x = abspos.x;
-            link.dst.book_state.offset_y = abspos.y;
-            link.dst.book_state.zoom_level = main_document_view->get_zoom_level();
-            link.src_offset_y = main_document_view->get_ruler_pos();
-            doc()->add_portal(link, true);
-        }
+		portal_to_definition();
     }
 
     else if (QString::fromStdString(command->name).startsWith("execute_command_")) {
@@ -2332,42 +2295,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         execute_predefined_command(symbol);
     }
     else if (command->name == "goto_toc") {
-        if (main_document_view->get_document()->has_toc()) {
-            if (FLAT_TABLE_OF_CONTENTS) {
-                std::vector<std::wstring> flat_toc;
-                std::vector<int> current_document_toc_pages;
-                get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
-                set_current_widget(new FilteredSelectWindowClass<int>(flat_toc, current_document_toc_pages, [&](int* page_value) {
-                    if (page_value) {
-                        validate_render();
-
-                        push_state();
-                        main_document_view->goto_page(*page_value);
-                    }
-                    }, this));
-                current_widget->show();
-            }
-            else {
-
-                std::vector<int> selected_index = main_document_view->get_current_chapter_recursive_index();
-                set_current_widget(new FilteredTreeSelect<int>(main_document_view->get_document()->get_toc_model(),
-                    [&](const std::vector<int>& indices) {
-                        TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
-                            indices);
-                        if (toc_node) {
-                            validate_render();
-                            //main_document_view->goto_page(toc_node->page);
-                            push_state();
-                            main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
-                        }
-                    }, this, selected_index));
-                current_widget->show();
-            }
-
-        }
-        else {
-            show_error_message(L"This document doesn't have a table of contents");
-        }
+		handle_goto_toc();
     }
     else if (command->name == "open_last_document") {
 
@@ -2395,45 +2323,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		current_widget->show();
     }
     else if (command->name == "open_prev_doc") {
-        //std::vector<std::pair<std::wstring, std::wstring>> opened_docs_hash_path_pairs;
-        std::vector<std::wstring> opened_docs_names;
-        std::vector<std::wstring> opened_docs_hashes_;
-        std::vector<std::string> opened_docs_hashes;
-
-        db_manager->select_opened_books_path_values(opened_docs_hashes_);
-
-        for (const auto& doc_hash_ : opened_docs_hashes_) {
-            std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
-            if (path) {
-                if (SHOW_DOC_PATH) {
-                    opened_docs_names.push_back(path.value_or(L"<ERROR>"));
-                }
-                else {
-					opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
-                }
-                opened_docs_hashes.push_back(utf8_encode(doc_hash_));
-            }
-        }
-        //db_manager->get_prev_path_hash_pairs(opened_docs_hash_path_pairs);
-
-        //for (const auto& [path, hash] : opened_docs_hash_path_pairs) {
-        //	opened_docs_names.push_back(Path(path).filename().value_or(L"<ERROR>"));
-        //	opened_docs_hashes.push_back(utf8_encode(hash));
-        //}
-
-		set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
-			opened_docs_hashes,
-			[&](std::string* doc_hash) {
-				if (doc_hash->size() > 0) {
-					validate_render();
-					open_document_with_hash(*doc_hash);
-				}
-			},
-				this,
-				[&](std::string* doc_hash) {
-				db_manager->delete_opened_book(*doc_hash);
-			}));
-		current_widget->show();
+    handle_open_prev_doc();
     }
     else if (command->name == "open_document_embedded") {
 
@@ -2455,45 +2345,7 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
         current_widget->show();
     }
     else if (command->name == "goto_bookmark") {
-        std::vector<std::wstring> option_names;
-        std::vector<std::wstring> option_location_strings;
-        std::vector<float> option_locations;
-        std::vector<BookMark> bookmarks;
-        if (SORT_BOOKMARKS_BY_LOCATION) {
-            bookmarks = main_document_view->get_document()->get_sorted_bookmarks();
-        }
-        else {
-            bookmarks = main_document_view->get_document()->get_bookmarks();
-        }
-
-        for (auto bookmark : bookmarks){
-            option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmark.description);
-            option_locations.push_back(bookmark.y_offset);
-            auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos({ 0, bookmark.y_offset });
-            option_location_strings.push_back(get_page_formatted_string(page + 1));
-        }
-
-        int closest_bookmark_index = main_document_view->get_document()->find_closest_bookmark_index(bookmarks, main_document_view->get_offset_y());
-
-        set_current_widget(new FilteredSelectTableWindowClass<float>(
-            option_names,
-            option_location_strings,
-            option_locations,
-            closest_bookmark_index,
-            [&](float* offset_value) {
-                if (offset_value) {
-                    validate_render();
-                    push_state();
-                    main_document_view->set_offset_y(*offset_value);
-                }
-            },
-            this,
-                [&](float* offset_value) {
-                if (offset_value) {
-                    main_document_view->delete_closest_bookmark_to_offset(*offset_value);
-                }
-            }));
-        current_widget->show();
+		handle_goto_bookmark();
     }
     else if (command->name == "add_highlight_with_current_type") {
         if (opengl_widget->selected_character_rects.size() > 0) {
@@ -2528,118 +2380,13 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 	}
 
     else if (command->name == "goto_highlight") {
-        std::vector<std::wstring> option_names;
-        std::vector<std::wstring> option_location_strings;
-        std::vector<Highlight> highlights = main_document_view->get_document()->get_highlights_sorted();
-
-        int closest_highlight_index = main_document_view->get_document()->find_closest_highlight_index(highlights, main_document_view->get_offset_y());
-
-        for (auto highlight : highlights){
-            std::wstring type_name = L"a";
-            type_name[0] = highlight.type;
-            option_names.push_back(L"[" + type_name + L"] " + highlight.description + L"]");
-            auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin);
-            option_location_strings.push_back(get_page_formatted_string(page + 1));
-        }
-
-        set_current_widget(new FilteredSelectTableWindowClass<Highlight>(
-            option_names,
-            option_location_strings,
-            highlights,
-            closest_highlight_index,
-            [&](Highlight* hl) {
-                if (hl) {
-                    validate_render();
-                    push_state();
-                    main_document_view->set_offset_y(hl->selection_begin.y);
-                }
-            },
-            this,
-                [&](Highlight* hl) {
-                if (hl) {
-                    main_document_view->delete_highlight(*hl);
-                }
-            }));
-        current_widget->show();
+		handle_goto_highlight();
     }
     else if (command->name == "goto_bookmark_g") {
-        std::vector<std::pair<std::string, BookMark>> global_bookmarks;
-        db_manager->global_select_bookmark(global_bookmarks);
-        std::vector<std::wstring> descs;
-        std::vector<std::wstring> file_names;
-        std::vector<BookState> book_states;
-
-        for (const auto& desc_bm_pair : global_bookmarks) {
-            std::string checksum = desc_bm_pair.first;
-            std::optional<std::wstring> path = checksummer->get_path(checksum);
-            if (path) {
-                BookMark bm = desc_bm_pair.second;
-                std::wstring file_name = Path(path.value()).filename().value_or(L"");
-                descs.push_back(ITEM_LIST_PREFIX + L" " + bm.description);
-                file_names.push_back(truncate_string(file_name, 50));
-                book_states.push_back({ path.value(), bm.y_offset });
-            }
-        }
-        set_current_widget(new FilteredSelectTableWindowClass<BookState>(
-            descs,
-            file_names,
-            book_states,
-            -1,
-            [&](BookState* book_state) {
-                if (book_state) {
-                    validate_render();
-                    open_document(book_state->document_path, 0.0f, book_state->offset_y);
-                }
-            },
-            this,
-            [&](BookState* book_state) {
-                if (book_state) {
-                    db_manager->delete_bookmark(checksummer->get_checksum(book_state->document_path), book_state->offset_y);
-                }
-            }));
-        current_widget->show();
-
+		handle_goto_bookmark_global();
     }
     else if (command->name == "goto_highlight_g") {
-        std::vector<std::pair<std::string, Highlight>> global_highlights;
-        db_manager->global_select_highlight(global_highlights);
-        std::vector<std::wstring> descs;
-        std::vector<std::wstring> file_names;
-        std::vector<BookState> book_states;
-
-        for (const auto& desc_hl_pair : global_highlights) {
-            std::string checksum = desc_hl_pair.first;
-            std::optional<std::wstring> path = checksummer->get_path(checksum);
-            if (path) {
-                Highlight hl = desc_hl_pair.second;
-
-                std::wstring file_name = Path(path.value()).filename().value_or(L"");
-
-                std::wstring highlight_type_string = L"a";
-                highlight_type_string[0] = hl.type;
-
-                //descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
-                descs.push_back(L"[" + highlight_type_string + L"]" + hl.description);
-
-				file_names.push_back(truncate_string(file_name, 50));
-
-                book_states.push_back({ path.value(), hl.selection_begin.y });
-
-            }
-        }
-        set_current_widget(new FilteredSelectTableWindowClass<BookState>(
-            descs,
-            file_names,
-            book_states,
-            -1,
-            [&](BookState* book_state) {
-                if (book_state) {
-                    validate_render();
-                    open_document(book_state->document_path, 0.0f, book_state->offset_y);
-                }
-            },
-                this));
-        current_widget->show();
+		handle_goto_highlight_global();
 
     }
 
@@ -2760,41 +2507,11 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
     }
     else if (command->name == "prefs_user_all") {
 
-        std::vector<Path> prefs_paths = config_manager->get_all_user_config_files();
-        std::vector<std::wstring> prefs_paths_wstring;
-        for (auto path : prefs_paths) {
-            prefs_paths_wstring.push_back(path.get_path());
-        }
-
-        set_current_widget(new FilteredSelectWindowClass<std::wstring>(
-            prefs_paths_wstring,
-            prefs_paths_wstring,
-            [&](std::wstring* path) {
-                if (path) {
-                    open_file(*path);
-                }
-            },
-                this));
-        current_widget->show();
+		handle_prefs_user_all();
     }
     else if (command->name == "keys_user_all") {
+		handle_keys_user_all();
 
-        std::vector<Path> keys_paths = input_handler->get_all_user_keys_paths();
-        std::vector<std::wstring> keys_paths_wstring;
-        for (auto path : keys_paths) {
-            keys_paths_wstring.push_back(path.get_path());
-        }
-
-        set_current_widget(new FilteredSelectWindowClass<std::wstring>(
-            keys_paths_wstring,
-            keys_paths_wstring,
-            [&](std::wstring* path) {
-                if (path) {
-                    open_file(*path);
-                }
-            },
-                this));
-        current_widget->show();
     }
     else if (command->name == "embed_annotations") {
         std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
@@ -2901,28 +2618,10 @@ void MainWidget::handle_command(const Command* command, int num_repeats) {
 		on_config_file_changed(config_manager);
     }
     else if (command->name == "move_visual_mark_down") {
-		if (opengl_widget->get_overview_page()) {
-            scroll_overview_down();
-        }
-		else if (is_visual_mark_mode()) {
-            move_visual_mark(num_repeats_prime);
-        }
-        else {
-            move_document(0.0f, 72.0f * rp * VERTICAL_MOVE_AMOUNT);
-        }
-		validate_render();
+		move_visual_mark_command(rp);
     }
     else if (command->name == "move_visual_mark_up") {
-		if (opengl_widget->get_overview_page()) {
-            scroll_overview_up();
-        }
-		else if (is_visual_mark_mode()) {
-            move_visual_mark(-num_repeats_prime);
-        }
-        else {
-            move_document(0.0f, -72.0f * rp * VERTICAL_MOVE_AMOUNT);
-        }
-		validate_render();
+		move_visual_mark_command(-rp);
     }
 
     validate_render();
@@ -3116,196 +2815,200 @@ void MainWidget::handle_portal() {
 }
 
 void MainWidget::handle_pending_text_command(std::wstring text) {
-    if (current_pending_command->name == "search" ||
-        current_pending_command->name == "ranged_search" ||
-        current_pending_command->name == "chapter_search" ||
-        current_pending_command->name == "regex_search" ) {
-
-        // When searching, the start position before search is saved in a mark named '0'
-        main_document_view->add_mark('/');
-
-        int range_begin, range_end;
-        std::wstring search_term;
-        std::optional<std::pair<int, int>> search_range = {};
-        if (parse_search_command(text, &range_begin, &range_end, &search_term)) {
-            search_range = std::make_pair(range_begin, range_end);
-        }
-
-        if (search_term.size() > 0) {
-            // in mupdf RTL documents are reversed, so we reverse the search string
-            //todo: better (or any!) handling of mixed RTL and LTR text
-            if (is_rtl(search_term[0])) {
-                search_term = reverse_wstring(search_term);
-            }
-        }
-
-        bool is_regex = current_pending_command->name == "regex_search";
-        if (is_regex && (!SUPER_FAST_SEARCH)) {
-            show_error_message(L"regex search only works when super_fast_search is enabled in prefs_user.config");
-        }
-        opengl_widget->search_text(search_term, CASE_SENSITIVE_SEARCH, is_regex, search_range);
+    if (pending_command_instance) {
+        pending_command_instance->set_text_requirement(text);
+        advance_command(pending_command_instance);
     }
+ //   if (current_pending_command->name == "search" ||
+ //       current_pending_command->name == "ranged_search" ||
+ //       current_pending_command->name == "chapter_search" ||
+ //       current_pending_command->name == "regex_search" ) {
 
-    if (current_pending_command->name[0] == '_') {
-        execute_command(ADDITIONAL_COMMANDS[utf8_decode(current_pending_command->name)], text);
-    }
-    if (current_pending_command->name == "enter_password") {
-        std::string password = utf8_encode(text);
-        pdf_renderer->add_password(main_document_view->get_document()->get_path(), password);
-    }
-    if (current_pending_command->name == "focus_text") {
+ //       // When searching, the start position before search is saved in a mark named '0'
+ //       main_document_view->add_mark('/');
 
-        if ((text.size() > 0) && (text[0] == '#')) {
-            std::wstringstream ss(text.substr(1, text.size() - 1));
-            std::wstring actual_text;
-            int page_number;
-            ss >> page_number;
-            std::getline(ss, actual_text);
-			focus_text(page_number, actual_text);
-        }
-        else {
-			int page_number = main_document_view->get_center_page_number();
-			focus_text(page_number, text);
-        }
-		opengl_widget->set_should_draw_vertical_line(true);
+ //       int range_begin, range_end;
+ //       std::wstring search_term;
+ //       std::optional<std::pair<int, int>> search_range = {};
+ //       if (parse_search_command(text, &range_begin, &range_end, &search_term)) {
+ //           search_range = std::make_pair(range_begin, range_end);
+ //       }
 
-    }
+ //       if (search_term.size() > 0) {
+ //           // in mupdf RTL documents are reversed, so we reverse the search string
+ //           //todo: better (or any!) handling of mixed RTL and LTR text
+ //           if (is_rtl(search_term[0])) {
+ //               search_term = reverse_wstring(search_term);
+ //           }
+ //       }
 
-    if (current_pending_command->name == "add_bookmark") {
-        main_document_view->add_bookmark(text);
-    }
-    if (current_pending_command->name == "execute") {
+ //       bool is_regex = current_pending_command->name == "regex_search";
+ //       if (is_regex && (!SUPER_FAST_SEARCH)) {
+ //           show_error_message(L"regex search only works when super_fast_search is enabled in prefs_user.config");
+ //       }
+ //       opengl_widget->search_text(search_term, CASE_SENSITIVE_SEARCH, is_regex, search_range);
+ //   }
 
-        execute_command(text);
-    }
-    if (current_pending_command->name == "set_status_string") {
-        set_status_message(text);
-    }
-    if (current_pending_command->name == "execute_predefined_command") {
-        if (command_to_be_executed_symbol.has_value()) {
-            if (command_to_be_executed_symbol.value() >= 'a' && command_to_be_executed_symbol.value() <= 'z') {
-				execute_command(EXECUTE_COMMANDS[command_to_be_executed_symbol.value() - 'a'], text);
-            }
-        }
-    }
+ //   if (current_pending_command->name[0] == '_') {
+ //       execute_command(ADDITIONAL_COMMANDS[utf8_decode(current_pending_command->name)], text);
+ //   }
+ //   if (current_pending_command->name == "enter_password") {
+ //       std::string password = utf8_encode(text);
+ //       pdf_renderer->add_password(main_document_view->get_document()->get_path(), password);
+ //   }
+ //   if (current_pending_command->name == "focus_text") {
+
+ //       if ((text.size() > 0) && (text[0] == '#')) {
+ //           std::wstringstream ss(text.substr(1, text.size() - 1));
+ //           std::wstring actual_text;
+ //           int page_number;
+ //           ss >> page_number;
+ //           std::getline(ss, actual_text);
+	//		focus_text(page_number, actual_text);
+ //       }
+ //       else {
+	//		int page_number = main_document_view->get_center_page_number();
+	//		focus_text(page_number, text);
+ //       }
+	//	opengl_widget->set_should_draw_vertical_line(true);
+
+ //   }
+
+ //   if (current_pending_command->name == "add_bookmark") {
+ //       main_document_view->add_bookmark(text);
+ //   }
+ //   if (current_pending_command->name == "execute") {
+
+ //       execute_command(text);
+ //   }
+ //   if (current_pending_command->name == "set_status_string") {
+ //       set_status_message(text);
+ //   }
+ //   if (current_pending_command->name == "execute_predefined_command") {
+ //       if (command_to_be_executed_symbol.has_value()) {
+ //           if (command_to_be_executed_symbol.value() >= 'a' && command_to_be_executed_symbol.value() <= 'z') {
+	//			execute_command(EXECUTE_COMMANDS[command_to_be_executed_symbol.value() - 'a'], text);
+ //           }
+ //       }
+ //   }
 
 
-    if (current_pending_command->name == "open_link") {
-        std::vector<int> visible_pages;
-        std::vector<std::pair<int, fz_link*>> visible_page_links;
+ //   if (current_pending_command->name == "open_link") {
+ //       std::vector<int> visible_pages;
+ //       std::vector<std::pair<int, fz_link*>> visible_page_links;
 
-        if (is_string_numeric(text)) {
+ //       if (is_string_numeric(text)) {
 
-            int link_index = std::stoi(text);
+ //           int link_index = std::stoi(text);
 
-            main_document_view->get_visible_pages(main_document_view->get_view_height(), visible_pages);
-            for (auto page : visible_pages){
-                fz_link* link = main_document_view->get_document()->get_page_links(page);
-                while (link) {
-                    visible_page_links.push_back(std::make_pair(page, link));
-                    link = link->next;
-                }
-            }
-            if ((link_index >= 0) && (link_index < static_cast<int>(visible_page_links.size()))) {
-                auto [selected_page, selected_link] = visible_page_links[link_index];
-                if (QString(selected_link->uri).startsWith("http")) {
-					open_web_url(utf8_decode(selected_link->uri));
-                }
-                else{
-					auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
-					long_jump_to_destination(page-1, offset_y);
-                }
-            }
-        }
-        reset_highlight_links();
-    }
-    if (current_pending_command->name == "keyboard_select") {
+ //           main_document_view->get_visible_pages(main_document_view->get_view_height(), visible_pages);
+ //           for (auto page : visible_pages){
+ //               fz_link* link = main_document_view->get_document()->get_page_links(page);
+ //               while (link) {
+ //                   visible_page_links.push_back(std::make_pair(page, link));
+ //                   link = link->next;
+ //               }
+ //           }
+ //           if ((link_index >= 0) && (link_index < static_cast<int>(visible_page_links.size()))) {
+ //               auto [selected_page, selected_link] = visible_page_links[link_index];
+ //               if (QString(selected_link->uri).startsWith("http")) {
+	//				open_web_url(utf8_decode(selected_link->uri));
+ //               }
+ //               else{
+	//				auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
+	//				long_jump_to_destination(page-1, offset_y);
+ //               }
+ //           }
+ //       }
+ //       reset_highlight_links();
+ //   }
+ //   if (current_pending_command->name == "keyboard_select") {
 
-        handle_keyboard_select(text);
-	}
-    if (current_pending_command->name == "keyboard_smart_jump") {
-		std::optional<fz_irect> rect_ = get_tag_window_rect(utf8_encode(text));
-        if (rect_) {
-            fz_irect rect = rect_.value();
-			smart_jump_under_pos({ (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 });
-			opengl_widget->set_should_highlight_words(false);
-        }
-	}
+ //       handle_keyboard_select(text);
+	//}
+ //   if (current_pending_command->name == "keyboard_smart_jump") {
+	//	std::optional<fz_irect> rect_ = get_tag_window_rect(utf8_encode(text));
+ //       if (rect_) {
+ //           fz_irect rect = rect_.value();
+	//		smart_jump_under_pos({ (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 });
+	//		opengl_widget->set_should_highlight_words(false);
+ //       }
+	//}
 
-    if (current_pending_command->name == "keyboard_overview") {
-		std::optional<fz_irect> rect_ = get_tag_window_rect(utf8_encode(text));
-        if (rect_) {
-            fz_irect rect = rect_.value();
-            overview_under_pos({ (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 });
-            opengl_widget->set_should_highlight_words(false);
-        }
-	}
+ //   if (current_pending_command->name == "keyboard_overview") {
+	//	std::optional<fz_irect> rect_ = get_tag_window_rect(utf8_encode(text));
+ //       if (rect_) {
+ //           fz_irect rect = rect_.value();
+ //           overview_under_pos({ (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 });
+ //           opengl_widget->set_should_highlight_words(false);
+ //       }
+	//}
 
-    if (current_pending_command->name == "goto_page_with_page_number") {
+ //   if (current_pending_command->name == "goto_page_with_page_number") {
 
-        if (is_string_numeric(text.c_str()) && text.size() < 6) { // make sure the page number is valid
-            int dest = std::stoi(text.c_str()) - 1;
-            main_document_view->goto_page(dest + main_document_view->get_page_offset());
-        }
-    }
+ //       if (is_string_numeric(text.c_str()) && text.size() < 6) { // make sure the page number is valid
+ //           int dest = std::stoi(text.c_str()) - 1;
+ //           main_document_view->goto_page(dest + main_document_view->get_page_offset());
+ //       }
+ //   }
 
-    if (current_pending_command->name == "set_custom_text_color") {
-        parse_color(text, CUSTOM_TEXT_COLOR, 3);
-    }
-    if (current_pending_command->name == "set_custom_background_color") {
-        parse_color(text, CUSTOM_BACKGROUND_COLOR, 3);
-    }
-    if (current_pending_command->name == "set_page_offset") {
+ //   if (current_pending_command->name == "set_custom_text_color") {
+ //       parse_color(text, CUSTOM_TEXT_COLOR, 3);
+ //   }
+ //   if (current_pending_command->name == "set_custom_background_color") {
+ //       parse_color(text, CUSTOM_BACKGROUND_COLOR, 3);
+ //   }
+ //   if (current_pending_command->name == "set_page_offset") {
 
-        if (is_string_numeric(text.c_str()) && text.size() < 6) { // make sure the page number is valid
-            main_document_view->set_page_offset(std::stoi(text.c_str()));
-        }
-    }
+ //       if (is_string_numeric(text.c_str()) && text.size() < 6) { // make sure the page number is valid
+ //           main_document_view->set_page_offset(std::stoi(text.c_str()));
+ //       }
+ //   }
 
-    if (current_pending_command->name == "command") {
-        //Path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+ //   if (current_pending_command->name == "command") {
+ //       //Path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
 
-        if (text == L"q") {
-            close();
-        }
-        else if (text == L"keys") {
-            open_file(default_keys_path.get_path());
-        }
-        else if (text == L"keys_user") {
-            std::optional<Path> key_file_path = input_handler->get_or_create_user_keys_path();
-            if (key_file_path) {
-                open_file(key_file_path.value().get_path());
-            }
-        }
-        else if (text == L"prefs") {
-            open_file(default_config_path.get_path());
-        }
-        else if (text == L"prefs_user") {
-            std::optional<Path> pref_file_path = config_manager->get_or_create_user_config_file();
-            if (pref_file_path) {
-                open_file(pref_file_path.value().get_path());
-            }
-        }
-        else if (text == L"export") {
-            std::wstring export_file_name = select_new_json_file_name();
-            db_manager->export_json(export_file_name, checksummer);
-        }
-        else if (text == L"import") {
-            std::wstring import_file_name = select_json_file_name();
-            db_manager->import_json(import_file_name, checksummer);
-        }
-        else{
-            const Command* command = command_manager->get_command_with_name(utf8_encode(text));
-            if (command != nullptr) {
-                handle_command(command, 1);
-            }
-        }
-    }
-    std::string config_prefix = "setconfig_";
-    if (current_pending_command->name.find(config_prefix) == 0) {
-        std::string config_name = current_pending_command->name.substr(config_prefix.size(), current_pending_command->name.size() - config_prefix.size());
-        config_manager->deserialize_config(config_name, text);
-    }
+ //       if (text == L"q") {
+ //           close();
+ //       }
+ //       else if (text == L"keys") {
+ //           open_file(default_keys_path.get_path());
+ //       }
+ //       else if (text == L"keys_user") {
+ //           std::optional<Path> key_file_path = input_handler->get_or_create_user_keys_path();
+ //           if (key_file_path) {
+ //               open_file(key_file_path.value().get_path());
+ //           }
+ //       }
+ //       else if (text == L"prefs") {
+ //           open_file(default_config_path.get_path());
+ //       }
+ //       else if (text == L"prefs_user") {
+ //           std::optional<Path> pref_file_path = config_manager->get_or_create_user_config_file();
+ //           if (pref_file_path) {
+ //               open_file(pref_file_path.value().get_path());
+ //           }
+ //       }
+ //       else if (text == L"export") {
+ //           std::wstring export_file_name = select_new_json_file_name();
+ //           db_manager->export_json(export_file_name, checksummer);
+ //       }
+ //       else if (text == L"import") {
+ //           std::wstring import_file_name = select_json_file_name();
+ //           db_manager->import_json(import_file_name, checksummer);
+ //       }
+ //       else{
+ //           const Command* command = command_manager->get_command_with_name(utf8_encode(text));
+ //           if (command != nullptr) {
+ //               handle_command(command, 1);
+ //           }
+ //       }
+ //   }
+ //   std::string config_prefix = "setconfig_";
+ //   if (current_pending_command->name.find(config_prefix) == 0) {
+ //       std::string config_name = current_pending_command->name.substr(config_prefix.size(), current_pending_command->name.size() - config_prefix.size());
+ //       config_manager->deserialize_config(config_name, text);
+ //   }
 }
 
 void MainWidget::toggle_fullscreen() {
@@ -3886,7 +3589,7 @@ bool MainWidget::is_rotated() {
 void MainWidget::show_password_prompt_if_required() {
 	if (main_document_view && (main_document_view->get_document() != nullptr)) {
 		if (main_document_view->get_document()->needs_authentication()) {
-            if ((!current_pending_command.has_value()) || (current_pending_command->name != "enter_password")) {
+            if ((pending_command_instance == nullptr) || (pending_command_instance->get_name() != "enter_password")) {
 				handle_command(command_manager->get_command_with_name("enter_password"), 1);
 			}
 		}
@@ -4011,7 +3714,7 @@ Document* MainWidget::doc() {
 void MainWidget::return_to_last_visual_mark() {
 	main_document_view->goto_vertical_line_pos();
 	opengl_widget->set_should_draw_vertical_line(true);
-    current_pending_command = {};
+    pending_command_instance = nullptr;
 	validate_render();
 }
 
@@ -4046,18 +3749,10 @@ bool MainWidget::is_visual_mark_mode() {
     return opengl_widget->get_should_draw_vertical_line();
 }
 
-void MainWidget::scroll_overview_down() {
+void MainWidget::scroll_overview(int amount) {
     float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
 	OverviewState state = opengl_widget->get_overview_page().value();
-	state.absolute_offset_y += 36.0f * vertical_move_amount;
-	opengl_widget->set_overview_page(state);
-    handle_portal_overview_update();
-}
-
-void MainWidget::scroll_overview_up() {
-    float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
-	OverviewState state = opengl_widget->get_overview_page().value();
-	state.absolute_offset_y -= 36.0f * vertical_move_amount;
+	state.absolute_offset_y += 36.0f * vertical_move_amount * amount;
 	opengl_widget->set_overview_page(state);
     handle_portal_overview_update();
 }
@@ -4127,13 +3822,15 @@ bool MainWidget::execute_predefined_command(char symbol) {
             return true;
 		}
 		else {
-            if (!current_pending_command) {
-                current_pending_command = *command_manager->get_command_with_name("execute_predefined_command");
-            }
-			current_pending_command.value().requires_text = true;
-			current_pending_command.value().requires_symbol = false;
-			command_to_be_executed_symbol = symbol;
-			handle_command(&current_pending_command.value(), 0);
+            // todo: fix this. We should create a dynamic command that requires text
+
+   //         if (pending_command_instance == nullptr) {
+   //             current_pending_command = *command_manager->get_command_with_name("execute_predefined_command");
+   //         }
+			//current_pending_command.value().requires_text = true;
+			//current_pending_command.value().requires_symbol = false;
+			//command_to_be_executed_symbol = symbol;
+			//handle_command(&current_pending_command.value(), 0);
 			return false;
 		}
 	}
@@ -4195,9 +3892,13 @@ void MainWidget::reload() {
 }
 
 void MainWidget::handle_command_with_text(const Command* command, std::wstring text) {
-    current_pending_command = *command;
-    handle_pending_text_command(text);
-    current_pending_command = {};
+    if (pending_command_instance) {
+        pending_command_instance->set_text_requirement(text);
+        advance_command(pending_command_instance);
+    }
+    //current_pending_command = *command;
+    //handle_pending_text_command(text);
+    //current_pending_command = {};
 }
 
 void MainWidget::synctex_under_pos(WindowPos position) {
@@ -4274,13 +3975,15 @@ void MainWidget::handle_additional_command(std::wstring command_name, bool wait)
             return;
         }
 		if (command_requires_text(command_to_execute)) {
-			if (!current_pending_command) {
-				current_pending_command = *command_manager->get_command_with_name(utf8_encode(command_name));
-			}
-			current_pending_command.value().requires_text = true;
-			current_pending_command.value().requires_symbol = false;
+            //todo: fix this
+			//if (pending_command_instance == nullptr) {
+   //             pending_command_instance = get_command_with_name(utf8_encode(command_name));
+			//	//current_pending_command = *command_manager->get_command_with_name(utf8_encode(command_name));
+			//}
+			//current_pending_command.value().requires_text = true;
+			//current_pending_command.value().requires_symbol = false;
 
-			handle_command(&current_pending_command.value(), 0);
+			//handle_command(&current_pending_command.value(), 0);
 		}
 		else {
 			execute_command(command_to_execute, L"", wait);
@@ -4668,4 +4371,505 @@ bool MainWidget::is_rect_visible(int page, fz_rect rect) {
     else {
         return false;
     }
+}
+
+void MainWidget::set_mark_in_current_location(char symbol) {
+	// it is a global mark, we delete other marks with the same symbol from database and add the new mark
+	if (isupper(symbol)) {
+		db_manager->delete_mark_with_symbol(symbol);
+		// we should also delete the cached marks
+		document_manager->delete_global_mark(symbol);
+		main_document_view->add_mark(symbol);
+	}
+	else {
+		main_document_view->add_mark(symbol);
+		validate_render();
+	}
+}
+
+void MainWidget::goto_mark(char symbol) {
+	if (symbol == '`' || symbol == '\'') {
+		return_to_last_visual_mark();
+	}
+	else if (isupper(symbol)) { // global mark
+		std::vector<std::pair<std::string, float>> mark_vector;
+		db_manager->select_global_mark(symbol, mark_vector);
+		if (mark_vector.size() > 0) {
+			assert(mark_vector.size() == 1); // we can not have more than one global mark with the same name
+			std::wstring doc_path = checksummer->get_path(mark_vector[0].first).value();
+			open_document(doc_path, {}, mark_vector[0].second);
+		}
+
+	}
+	else {
+		main_document_view->goto_mark(symbol);
+	}
+}
+
+void MainWidget::advance_command(NewCommand* new_command){
+	if (new_command) {
+		if (!new_command->next_requirement().has_value()) {
+			new_command->perform(this);
+            pending_command_instance = nullptr;
+		}
+		else {
+			pending_command_instance = new_command;
+
+			Requirement next_requirement = new_command->next_requirement().value();
+			if (next_requirement.type == RequirementType::Text) {
+				show_textbar(utf8_decode(next_requirement.name), true);
+			}
+			else if (next_requirement.type == RequirementType::Symbol) {
+			}
+			else if (next_requirement.type == RequirementType::File) {
+				std::wstring file_name = select_command_file_name(new_command->get_name());
+                if (file_name.size() > 0) {
+					new_command->set_file_requirement(file_name);
+					advance_command(new_command);
+                }
+			}
+			else if (next_requirement.type == RequirementType::Rect) {
+			}
+            new_command->pre_perform(this);
+
+		}
+	}
+}
+
+void MainWidget::perform_search(std::wstring text, bool is_regex) {
+
+   // When searching, the start position before search is saved in a mark named '0'
+   main_document_view->add_mark('/');
+
+   int range_begin, range_end;
+   std::wstring search_term;
+   std::optional<std::pair<int, int>> search_range = {};
+   if (parse_search_command(text, &range_begin, &range_end, &search_term)) {
+	   search_range = std::make_pair(range_begin, range_end);
+   }
+
+   if (search_term.size() > 0) {
+	   // in mupdf RTL documents are reversed, so we reverse the search string
+	   //todo: better (or any!) handling of mixed RTL and LTR text
+	   if (is_rtl(search_term[0])) {
+		   search_term = reverse_wstring(search_term);
+	   }
+   }
+
+   if (is_regex && (!SUPER_FAST_SEARCH)) {
+	   show_error_message(L"regex search only works when super_fast_search is enabled in prefs_user.config");
+   }
+   opengl_widget->search_text(search_term, CASE_SENSITIVE_SEARCH, is_regex, search_range);
+}
+
+void MainWidget::overview_to_definition() {
+	if (!opengl_widget->get_overview_page()) {
+		std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
+		if (defpos.size() > 0) {
+			set_overview_position(defpos[0].page, defpos[0].y);
+			smart_view_candidates = defpos;
+			index_into_candidates = 0;
+		}
+	}
+	else {
+		opengl_widget->set_overview_page({});
+	}
+}
+
+void MainWidget::portal_to_definition() {
+	std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
+	if (defpos.size() > 0) {
+		AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
+		Portal link;
+		link.dst.document_checksum = doc()->get_checksum();
+		link.dst.book_state.offset_x = abspos.x;
+		link.dst.book_state.offset_y = abspos.y;
+		link.dst.book_state.zoom_level = main_document_view->get_zoom_level();
+		link.src_offset_y = main_document_view->get_ruler_pos();
+		doc()->add_portal(link, true);
+	}
+}
+
+void MainWidget::move_visual_mark_command(int amount) {
+    if (opengl_widget->get_overview_page()) {
+        if (amount > 0) {
+			scroll_overview(amount);
+        }
+        else {
+			scroll_overview(amount);
+        }
+    }
+    else if (is_visual_mark_mode()) {
+        move_visual_mark(amount);
+    }
+    else {
+        move_document(0.0f, 72.0f * amount * VERTICAL_MOVE_AMOUNT);
+    }
+    validate_render();
+}
+
+void MainWidget::handle_vertical_move(int amount) {
+    if (opengl_widget->get_overview_page()) {
+        scroll_overview(amount);
+    }
+    else if (opengl_widget->is_presentation_mode()) {
+        main_document_view->move_pages(amount);
+    }
+    else {
+        move_document(0.0f, 72.0f * amount * VERTICAL_MOVE_AMOUNT);
+    }
+}
+
+void MainWidget::handle_horizontal_move(int amount) {
+    if (opengl_widget->get_overview_page()) {
+        return;
+    }
+    else if (opengl_widget->is_presentation_mode()) {
+        main_document_view->move_pages(-amount);
+    }
+    else {
+        main_document_view->move(72.0f * amount * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+        last_smart_fit_page = {};
+    }
+}
+
+void MainWidget::handle_goto_bookmark() {
+	std::vector<std::wstring> option_names;
+	std::vector<std::wstring> option_location_strings;
+	std::vector<float> option_locations;
+	std::vector<BookMark> bookmarks;
+	if (SORT_BOOKMARKS_BY_LOCATION) {
+		bookmarks = main_document_view->get_document()->get_sorted_bookmarks();
+	}
+	else {
+		bookmarks = main_document_view->get_document()->get_bookmarks();
+	}
+
+	for (auto bookmark : bookmarks) {
+		option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmark.description);
+		option_locations.push_back(bookmark.y_offset);
+		auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos({ 0, bookmark.y_offset });
+		option_location_strings.push_back(get_page_formatted_string(page + 1));
+	}
+
+	int closest_bookmark_index = main_document_view->get_document()->find_closest_bookmark_index(bookmarks, main_document_view->get_offset_y());
+
+	set_current_widget(new FilteredSelectTableWindowClass<float>(
+		option_names,
+		option_location_strings,
+		option_locations,
+		closest_bookmark_index,
+		[&](float* offset_value) {
+			if (offset_value) {
+				validate_render();
+				push_state();
+				main_document_view->set_offset_y(*offset_value);
+			}
+		},
+		this,
+			[&](float* offset_value) {
+			if (offset_value) {
+				main_document_view->delete_closest_bookmark_to_offset(*offset_value);
+			}
+		}));
+	current_widget->show();
+}
+
+void MainWidget::handle_goto_bookmark_global() {
+	std::vector<std::pair<std::string, BookMark>> global_bookmarks;
+	db_manager->global_select_bookmark(global_bookmarks);
+	std::vector<std::wstring> descs;
+	std::vector<std::wstring> file_names;
+	std::vector<BookState> book_states;
+
+	for (const auto& desc_bm_pair : global_bookmarks) {
+		std::string checksum = desc_bm_pair.first;
+		std::optional<std::wstring> path = checksummer->get_path(checksum);
+		if (path) {
+			BookMark bm = desc_bm_pair.second;
+			std::wstring file_name = Path(path.value()).filename().value_or(L"");
+			descs.push_back(ITEM_LIST_PREFIX + L" " + bm.description);
+			file_names.push_back(truncate_string(file_name, 50));
+			book_states.push_back({ path.value(), bm.y_offset });
+		}
+	}
+	set_current_widget(new FilteredSelectTableWindowClass<BookState>(
+		descs,
+		file_names,
+		book_states,
+		-1,
+		[&](BookState* book_state) {
+			if (book_state) {
+				validate_render();
+				open_document(book_state->document_path, 0.0f, book_state->offset_y);
+			}
+		},
+		this,
+			[&](BookState* book_state) {
+			if (book_state) {
+				db_manager->delete_bookmark(checksummer->get_checksum(book_state->document_path), book_state->offset_y);
+			}
+		}));
+	current_widget->show();
+}
+
+void MainWidget::handle_add_highlight(char symbol) {
+	if (opengl_widget->selected_character_rects.size() > 0) {
+		main_document_view->add_highlight(selection_begin, selection_end, symbol);
+		opengl_widget->selected_character_rects.clear();
+		selected_text.clear();
+	}
+	else if (selected_highlight_index != -1) {
+		Highlight new_highlight = main_document_view->get_highlight_with_index(selected_highlight_index);
+		main_document_view->delete_highlight_with_index(selected_highlight_index);
+		main_document_view->add_highlight(new_highlight.selection_begin, new_highlight.selection_end, symbol);
+		selected_highlight_index = -1;
+	}
+}
+
+void MainWidget::handle_goto_highlight() {
+	std::vector<std::wstring> option_names;
+	std::vector<std::wstring> option_location_strings;
+	std::vector<Highlight> highlights = main_document_view->get_document()->get_highlights_sorted();
+
+	int closest_highlight_index = main_document_view->get_document()->find_closest_highlight_index(highlights, main_document_view->get_offset_y());
+
+	for (auto highlight : highlights) {
+		std::wstring type_name = L"a";
+		type_name[0] = highlight.type;
+		option_names.push_back(L"[" + type_name + L"] " + highlight.description + L"]");
+		auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin);
+		option_location_strings.push_back(get_page_formatted_string(page + 1));
+	}
+
+	set_current_widget(new FilteredSelectTableWindowClass<Highlight>(
+		option_names,
+		option_location_strings,
+		highlights,
+		closest_highlight_index,
+		[&](Highlight* hl) {
+			if (hl) {
+				validate_render();
+				push_state();
+				main_document_view->set_offset_y(hl->selection_begin.y);
+			}
+		},
+		this,
+			[&](Highlight* hl) {
+			if (hl) {
+				main_document_view->delete_highlight(*hl);
+			}
+		}));
+	current_widget->show();
+}
+
+void MainWidget::handle_goto_highlight_global() {
+	std::vector<std::pair<std::string, Highlight>> global_highlights;
+	db_manager->global_select_highlight(global_highlights);
+	std::vector<std::wstring> descs;
+	std::vector<std::wstring> file_names;
+	std::vector<BookState> book_states;
+
+	for (const auto& desc_hl_pair : global_highlights) {
+		std::string checksum = desc_hl_pair.first;
+		std::optional<std::wstring> path = checksummer->get_path(checksum);
+		if (path) {
+			Highlight hl = desc_hl_pair.second;
+
+			std::wstring file_name = Path(path.value()).filename().value_or(L"");
+
+			std::wstring highlight_type_string = L"a";
+			highlight_type_string[0] = hl.type;
+
+			//descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
+			descs.push_back(L"[" + highlight_type_string + L"]" + hl.description);
+
+			file_names.push_back(truncate_string(file_name, 50));
+
+			book_states.push_back({ path.value(), hl.selection_begin.y });
+
+		}
+	}
+	set_current_widget(new FilteredSelectTableWindowClass<BookState>(
+		descs,
+		file_names,
+		book_states,
+		-1,
+		[&](BookState* book_state) {
+			if (book_state) {
+				validate_render();
+				open_document(book_state->document_path, 0.0f, book_state->offset_y);
+			}
+		},
+		this));
+	current_widget->show();
+}
+
+void MainWidget::handle_goto_toc() {
+
+	if (main_document_view->get_document()->has_toc()) {
+		if (FLAT_TABLE_OF_CONTENTS) {
+			std::vector<std::wstring> flat_toc;
+			std::vector<int> current_document_toc_pages;
+			get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
+			set_current_widget(new FilteredSelectWindowClass<int>(flat_toc, current_document_toc_pages, [&](int* page_value) {
+				if (page_value) {
+					validate_render();
+
+					push_state();
+					main_document_view->goto_page(*page_value);
+				}
+				}, this));
+			current_widget->show();
+		}
+		else {
+
+			std::vector<int> selected_index = main_document_view->get_current_chapter_recursive_index();
+			set_current_widget(new FilteredTreeSelect<int>(main_document_view->get_document()->get_toc_model(),
+				[&](const std::vector<int>& indices) {
+					TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
+						indices);
+					if (toc_node) {
+						validate_render();
+						//main_document_view->goto_page(toc_node->page);
+						push_state();
+						main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
+					}
+				}, this, selected_index));
+			current_widget->show();
+		}
+
+	}
+	else {
+		show_error_message(L"This document doesn't have a table of contents");
+	}
+}
+
+void MainWidget::handle_open_prev_doc() {
+
+	std::vector<std::wstring> opened_docs_names;
+	std::vector<std::wstring> opened_docs_hashes_;
+	std::vector<std::string> opened_docs_hashes;
+
+	db_manager->select_opened_books_path_values(opened_docs_hashes_);
+
+	for (const auto& doc_hash_ : opened_docs_hashes_) {
+		std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
+		if (path) {
+			if (SHOW_DOC_PATH) {
+				opened_docs_names.push_back(path.value_or(L"<ERROR>"));
+			}
+			else {
+				opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
+			}
+			opened_docs_hashes.push_back(utf8_encode(doc_hash_));
+		}
+	}
+
+	set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
+		opened_docs_hashes,
+		[&](std::string* doc_hash) {
+			if (doc_hash->size() > 0) {
+				validate_render();
+				open_document_with_hash(*doc_hash);
+			}
+		},
+		this,
+			[&](std::string* doc_hash) {
+			db_manager->delete_opened_book(*doc_hash);
+		}));
+	current_widget->show();
+}
+
+void MainWidget::handle_move_screen(int amount) {
+	if (!opengl_widget->is_presentation_mode()) {
+		move_document_screens(amount);
+	}
+	else {
+		main_document_view->move_pages(amount);
+	}
+}
+
+void MainWidget::handle_new_window() {
+	MainWidget* new_widget = new MainWidget(mupdf_context,
+		db_manager,
+		document_manager,
+		config_manager,
+		command_manager,
+		input_handler,
+		checksummer,
+		should_quit);
+	new_widget->open_document(main_document_view->get_state());
+	new_widget->show();
+	new_widget->run_multiple_commands(STARTUP_COMMANDS);
+	windows.push_back(new_widget);
+}
+
+void MainWidget::handle_open_link(const std::wstring& text) {
+
+	std::vector<int> visible_pages;
+	std::vector<std::pair<int, fz_link*>> visible_page_links;
+
+	if (is_string_numeric(text)) {
+
+		int link_index = std::stoi(text);
+
+		main_document_view->get_visible_pages(main_document_view->get_view_height(), visible_pages);
+		for (auto page : visible_pages) {
+			fz_link* link = main_document_view->get_document()->get_page_links(page);
+			while (link) {
+				visible_page_links.push_back(std::make_pair(page, link));
+				link = link->next;
+			}
+		}
+		if ((link_index >= 0) && (link_index < static_cast<int>(visible_page_links.size()))) {
+			auto [selected_page, selected_link] = visible_page_links[link_index];
+			if (QString(selected_link->uri).startsWith("http")) {
+				open_web_url(utf8_decode(selected_link->uri));
+			}
+			else {
+				auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
+				long_jump_to_destination(page - 1, offset_y);
+			}
+		}
+	}
+	reset_highlight_links();
+}
+
+void MainWidget::handle_keys_user_all() {
+	std::vector<Path> keys_paths = input_handler->get_all_user_keys_paths();
+	std::vector<std::wstring> keys_paths_wstring;
+	for (auto path : keys_paths) {
+		keys_paths_wstring.push_back(path.get_path());
+	}
+
+	set_current_widget(new FilteredSelectWindowClass<std::wstring>(
+		keys_paths_wstring,
+		keys_paths_wstring,
+		[&](std::wstring* path) {
+			if (path) {
+				open_file(*path);
+			}
+		},
+		this));
+	current_widget->show();
+}
+
+void MainWidget::handle_prefs_user_all() {
+	std::vector<Path> prefs_paths = config_manager->get_all_user_config_files();
+	std::vector<std::wstring> prefs_paths_wstring;
+	for (auto path : prefs_paths) {
+		prefs_paths_wstring.push_back(path.get_path());
+	}
+
+	set_current_widget(new FilteredSelectWindowClass<std::wstring>(
+		prefs_paths_wstring,
+		prefs_paths_wstring,
+		[&](std::wstring* path) {
+			if (path) {
+				open_file(*path);
+			}
+		},
+		this));
+	current_widget->show();
 }
