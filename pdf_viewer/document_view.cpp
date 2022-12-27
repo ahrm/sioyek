@@ -481,6 +481,10 @@ void DocumentView::goto_right() {
 }
 
 float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode) {
+	const float max_zoom_level = 10.0f;
+	if (zl > max_zoom_level) {
+		zl = max_zoom_level;
+	}
 	if (should_exit_auto_resize_mode) {
 		this->is_auto_resize_mode = false;
 	}
