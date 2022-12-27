@@ -74,22 +74,22 @@
 	\item Use the arrow keys for navigation.
 	\item Use \keystroke{Ctrl}+\keystroke{PageDown}/\keystroke{Ctrl}+\keystroke{PageUp} to go to previous/next page.
 	\item Press \keystroke{Space}/\keystroke{Shift}+\keystroke{Space} to go to the next/previous screen (which is equivalent to scrolling down half of screen width). You can also use \keystroke{PageDown} and \keystroke{PageUp}.
-	\item Press \keystroke{-} to zoom out and \keystroke{Shift}+\keystroke{=} (\keystroke{+}) to zoom in.
+	\item Press \keystroke{-} to zoom out and \keystroke{+} to zoom in.
 	\item Press \keystroke{F11} to enter fullscreen mode.
 	\item Press \keystroke{F10} to fit the document to screen ignoring white page margins.
 	\item Press \keystroke{F9} to fit the document to screen (including white margins).
-	\item Press \keystroke{f8} to toggle dark mode.
+	\item Press \keystroke{F8} to toggle dark mode.
 	\item Enter \keystroke{gg} (press \keystroke{g} two times) to go to the first page. In order to go to a specific page, enter \verb+[NUM]+\keystroke{gg} where \verb+[NUM]+ is the page number. For example in order to go to page 31, enter \keystroke{31gg}. You can also press \keystroke{Home} to go to a specific page.
 	\item Press \keystroke{Shift}+\keystroke{g} (\keystroke{G}) or \keystroke{End} to go to the last page.
 	\item Press \keystroke{t} to open table of contents (if it exists).
 	\item Use \keystroke{backspace} to go back in history. You can also use \keystroke{Ctrl}+\keystroke{left arrow} and \keystroke{Ctrl}+\keystroke{right arrow} to navigate backward/forward in history. Also extra mouse buttons can be used to navigate history.
-	\item  With some text selected, press \keystroke{ss} to search the text in google scholar and \keystroke{sl} to search it in library genesis. Try it out on the following texts:\\
+	\item  With some text selected, press \keystroke{ss} to search the text in Google Scholar and \keystroke{sl} to search it in Library Genesis. Try it out on the following texts:\\
 		Vaswani, Ashish, et al. "{\color{red} Attention is all you need}." Advances in neural information processing systems. 2017.
 \end{itemize}
 \section{Command Palette}
 \begin{itemize}
 	\item Press \keystroke{:} to open a searchable list of all sioyek commands
-	\item If the command is bound to a key, the keybinding is shown in the left (multiple keybinds are separated by | symbol)
+	\item If the command is bound to a key, the keybinding is shown on the right (multiple keybinds are separated by | symbol)
 \end{itemize}
 \section{Search}
 \begin{itemize}
@@ -100,13 +100,12 @@
 \section{Marks}
 \begin{itemize}
 	\item Press \keystroke{m} to set a mark in current location. After you press m, sioyek waits for you to press another symbol which is the name of the mark. For example to create a mark named u, enter \keystroke{mu}.
-	\item In order to go to a mark, press \keystroke{\`} followed by the name of the mark. For example in order to go to the mark in previous example, we enter \keystroke{\`\ u}. Note that \keystroke{\`} is different from the single quote character which is \keystroke{'}. \keystroke{\`} is usually located in the top-left of the keyboard near the escape button.
-	\item Note that marks are persistent (they are saved even after sioyek is closed). Lower case marks are local to each file but upper case marks are global.
+	\item In order to go to a mark, press \keystroke{\`} (backtick) followed by the name of the mark. For example in order to go to the mark in previous example, we enter \keystroke{\`\ u}. Note that the backtick character \keystroke{\`} is different from the single quote character \keystroke{'}.
+	\item Note that marks are persistent (they are saved even after sioyek is closed). Lower case marks are local to each file, while upper case marks are global.
 	\item You can right click on any line to create a visual mark which highlights below the line. This highlight has multiple functions.
-	 First, it can reduce disorientation when scrolling by first right clicking the line we are reading and then scrolling.
-	  It also acts as a mark so we can jump back to the location where we last put the highlight by pressing \keystroke{\`} and then right clicking. You can try it out here:\\
+	 First, it can reduce disorientation when scrolling by first right clicking the line we are reading and then scrolling. Second, it can also act as a mark, so we can jump back to the location where we last put the highlight by pressing \keystroke{\`} and then right clicking. You can try it out here:\\
 	  {\color{red} Right click on me!}
-	\item You can move this visual mark to the next/previous line by pressing \keystroke{j} and \keystroke{k}. You can also press \keystroke{F7} to enable visual scroll mode. In this mode, mouse wheel moves this visual mark.
+	\item You can move this visual mark to the next/previous line by pressing \keystroke{j} and \keystroke{k}. You can also press \keystroke{F7} to enable visual scroll mode. In this mode, scrolling the mouse wheel moves this visual mark.
 
 \end{itemize}
 
@@ -122,7 +121,7 @@
 
 \section{Highlights}
 \begin{itemize}
-	\item Select a piece of text and then press \keystroke{h} followed by a lower case letter to highlight the selected text (the letter can be though of as the "type" of the highlight). For example you can press \keystroke{hh} to create a highlight of type "h". (different types of highlight are colored differently, the color is configurable in \verb+prefs.config+ file)
+	\item Select a piece of text and then press \keystroke{h} followed by a lower case letter to highlight the selected text (the letter can be though of as the "type" of the highlight). For example you can press \keystroke{hh} to create a highlight of type "h". Different types of highlight are colored differently, and the color is configurable in the \verb+prefs.config+ file.
 	\item Press \keystroke{gh} to search the highlights in the current file and \keystroke{gH} (that is g followed by capital H) to search all the highlights.
 	\item In order to delete a highlight, you can click on a highlight and then press \keystroke{dh}.
 
@@ -132,17 +131,17 @@
 
 
 \begin{itemize}
-	\item You can middle click on the name of figures (for example on `1' in `Figure 1') to jump to the location where figure is located (this works even if the document is not linked). You can also click on cited references (for example on `2' in `\cite{branner1989mandelbrot,mandelbrot2004fractals}' to go to the reference.
-	\item You can middle click on the name of the papers to search them in google scholar or \keystroke{shift}+middle click to search them in library genesis. Try it out by middle clicking on reference numbers in the following text :\\
+	\item You can middle click on figure names (for example on `1' in `Figure 1') to jump to the location where that figure is located. This works even if the document is not linked. You can also middle click on in-line references (for example on `2' in `\cite{branner1989mandelbrot,mandelbrot2004fractals}') to go to the corresponding entry in the "References" section.
+	\item You can also right click on figure names or in-line references to open a quick overview of their location instead of jumping to them.
+	\item Try it out by middle / right clicking on the figure name / in-line reference in the following text :\\
 	 You can see a beautiful colorization of mandlebrot set in Figure \ref{fig:mandle}. For more information about the mandlebrot set, see \cite{branner1989mandelbrot}.
-	\item Instead of middle clicking, you can right-click on references to open a quick overview of their location instead of jumping to it.
+	\item You can also middle click on the full-citation of a paper to search it in Google Scholar, or you can  \keystroke{shift}+middle click on it to search it in Library Genesis. You can use this feature, for example, while in the "References" section of a document.
 \end{itemize}
-
 
 
 \section{Portals}
 \begin{itemize}
-	\item Press \keystroke{f12} to open the helper window. This window automatically displays the closest portal to the current location.
+	\item Press \keystroke{F12} to open the helper window. This window automatically displays the closest portal to the current location.
 	\item In order to create a portal, press \keystroke{p} to enter the current location as the source of the portal. Now you navigate to the portal destination and press \keystroke{p} again to mark that location as the destination of the portal.
 	 (note that source and destination don't have to be in the same document, for example you can create a portal from a reference to a paper to the actual paper).
 	\item You can also create a portal by pressing \keystroke{p} and then clicking (or middle clicking using smart jumps) on a link. This automatically creates a link between the current location and the destination of the link.
@@ -154,15 +153,16 @@
 
 \section{Configuration}
 \begin{itemize}
-	\item  There are four configuration files, two of which are not meant to be edited by the user (\verb+keys.config+ and \verb+prefs.config+) and two of which are user-editable (\verb+keys_user.config+ and \verb+prefs_user.config+).
-\item In order to edit any configuration, copy the config to the user editable config file and change it there. For example suppose we want to change the key that opens the table of contents. We search for `table of contents' in \verb+keys.config+ and find the following:
+\item There are four configuration files: two of them are system-wide and are not meant to be edited by the user (\verb+keys.config+ and \verb+prefs.config+), while the other two are user-editable (\verb+keys_user.config+ and \verb+prefs_user.config+).
+\item The former (i.e., the system-wide configuration files) are always loaded by sioyek before the latter. This implies that configuration options set in the user-editable configuration files always overwrite the ones in the system-wide files.
+\item In order to edit any configuration, copy the configuration line you want to edit to the user-editable config file and change it there. \\ For example, suppose we want to change the key that opens the table of contents. We search for `table of contents' in \verb+keys.config+ and find the following:
 \begin{verbatim}
 # Open table of contents.
 goto_toc t
 \end{verbatim}
-We copy this line to \verb+keys_user.config+ and change the key. For example in suppose we want to use capital \keystroke{T} to open the table of contents. We can put the following line in \verb+keys_user.config+:
+We copy this line to \verb+keys_user.config+ and change the key. For example, suppose we want to use capital \keystroke{T} to open the table of contents. We can put the following line in \verb+keys_user.config+:
 \begin{verbatim}
-goto_toc <S-t>
+goto_toc T
 \end{verbatim}
 \item In portable builds, the config files are located in the same place where \verb+sioyek+ executable file is located. In non-portable builds, their location is OS-dependent. You can also open them by pressing \keystroke{:} to open the command window and then entering one of the following:
 \begin{itemize}
