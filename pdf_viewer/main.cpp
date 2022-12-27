@@ -87,6 +87,7 @@ int STATUS_BAR_FONT_SIZE = -1;
 std::string APPLICATION_VERSION = "2.0.0";
 float BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float CUSTOM_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 float CUSTOM_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
