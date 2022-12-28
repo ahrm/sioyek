@@ -13,24 +13,52 @@
 #include "path.h"
 #include "config.h"
 
-struct Command {
+class MainWidget;
+
+enum RequirementType {
+	Text,
+	Symbol,
+	File,
+	Rect
+};
+
+struct Requirement {
+	RequirementType type;
 	std::string name;
-	bool requires_text;
-	bool requires_symbol;
-	bool requires_file_name;
-	bool pushes_state;
-	bool requires_document;
-	std::vector<char> special_symbols;
+};
+
+class Command {
+private:
+	virtual void perform(MainWidget* widget) = 0;
+protected:
+	int num_repeats = 1;
+public:
+	virtual std::optional<Requirement> next_requirement();
+
+	virtual void set_text_requirement(std::wstring value);
+	virtual void set_symbol_requirement(char value);
+	virtual void set_file_requirement(std::wstring value);
+	virtual void set_rect_requirement(fz_rect value);
+	virtual void set_num_repeats(int nr);
+	virtual std::vector<char> special_symbols();
+	virtual void pre_perform(MainWidget* widget);
+	virtual bool pushes_state();
+	virtual bool requires_document();
+
+	virtual void run(MainWidget* widget);
+	virtual std::string get_name();
 };
 
 
 class CommandManager {
 private:
-	std::vector<Command> commands;
+	//std::vector<Command> commands;
+	std::map < std::string, std::function<std::unique_ptr<Command>()> > new_commands;
 public:
 
 	CommandManager(ConfigManager* config_manager);
-	const Command* get_command_with_name(std::string name);
+	std::unique_ptr<Command> get_command_with_name(std::string name);
+	std::unique_ptr<Command> create_macro_command(std::string name, std::wstring macro_string);
 	QStringList get_all_command_names();
 };
 
@@ -76,7 +104,7 @@ public:
 
 	InputHandler(const Path& default_path, const std::vector<Path>& user_paths, CommandManager* cm);
 	void reload_config_files(const Path& default_path, const std::vector<Path>& user_path);
-	std::vector<const Command*> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
+	std::vector<std::unique_ptr<Command>> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
 	std::optional<Path> get_or_create_user_keys_path();
