@@ -609,7 +609,7 @@ public:
 			int score = 0;
 			fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
 			//int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
-			//match_score_pairs.push_back(std::make_pair(encoded, score));
+			match_score_pairs.push_back(std::make_pair(encoded, score));
 		}
 		std::sort(match_score_pairs.begin(), match_score_pairs.end(), [](std::pair<std::string, int> lhs, std::pair<std::string, int> rhs) {
 			return lhs.second > rhs.second;
@@ -709,7 +709,7 @@ public:
 				int score = 0;
 				fts::fuzzy_match(encoded_prefix.c_str(), encoded_file.c_str(), score);
 				//int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(encoded_prefix, encoded_file));
-				//file_scores.push_back(std::make_pair(file, score));
+				file_scores.push_back(std::make_pair(file, score));
 			}
 			std::sort(file_scores.begin(), file_scores.end(), [](std::pair<QString, int> lhs, std::pair<QString, int> rhs) {
 				return lhs.second > rhs.second;

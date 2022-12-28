@@ -48,8 +48,8 @@ public:
 	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
 	QScrollBar* scroll_bar = nullptr;
 
-	//std::optional<Command> current_pending_command;
-	NewCommand* pending_command_instance = nullptr;
+	//sgd::optional<Command> current_pending_command;
+	std::unique_ptr<Command> pending_command_instance = nullptr;
 
 	DocumentView* main_document_view = nullptr;
 	DocumentView* helper_document_view = nullptr;
@@ -91,7 +91,6 @@ public:
 	bool is_word_selecting = false;
 	std::wstring selected_text;
 
-	bool is_hyperdrive_mode = false;
 	bool is_select_highlight_mode = false;
 	char select_highlight_type = 'a';
 
@@ -124,7 +123,6 @@ public:
 	bool is_render_invalidated = false;
 	bool is_ui_invalidated = false;
 
-	const Command* last_command = nullptr;
 	bool should_show_last_command = false;
 
 	//std::optional<std::pair<std::wstring, int>> last_smart_fit_state = {};
@@ -233,12 +231,9 @@ public:
 
 	~MainWidget();
 
-	void handle_command(const Command* command, int num_repeats);
-	void handle_command_types(const Command* command, int num_repeats);
-	bool handle_command_with_symbol(const Command* command, char symbol);
+	//void handle_command(NewCommand* command, int num_repeats);
+	void handle_command_types(std::unique_ptr<Command> command, int num_repeats);
 	void handle_pending_text_command(std::wstring text);
-	void handle_command_with_text(const Command* command, std::wstring text);
-	void handle_command_with_file_name(const Command* command, std::wstring file_name);
 
 	void invalidate_render();
 	void invalidate_ui();
@@ -290,16 +285,15 @@ public:
 	void scroll_overview(int amount);
 	int get_current_page_number() const;
 	void set_inverse_search_command(const std::wstring& new_command);
-	bool execute_predefined_command(char symbol);
 	int get_current_monitor_width(); int get_current_monitor_height();
 	void synctex_under_pos(WindowPos position);
 	std::optional<std::wstring> get_paper_name_under_cursor();
 	void set_status_message(std::wstring new_status_string);
 	void remove_self_from_windows();
-	void handle_additional_command(std::wstring command_name, bool wait=false);
+	//void handle_additional_command(std::wstring command_name, bool wait=false);
 	std::optional<DocumentPos> get_overview_position();
 	void handle_keyboard_select(const std::wstring& text);
-	void run_multiple_commands(const std::wstring& commands);
+	//void run_multiple_commands(const std::wstring& commands);
 	void push_state(bool update=true);
 	void toggle_scrollbar();
 	void update_scrollbar();
@@ -308,7 +302,7 @@ public:
 	bool is_rect_visible(int page, fz_rect rect);
 	void set_mark_in_current_location(char symbol);
 	void goto_mark(char symbol);
-	void advance_command(NewCommand* command);
+	void advance_command(std::unique_ptr<Command> command);
 	void perform_search(std::wstring text, bool is_regex=false);
 	void overview_to_definition();
 	void portal_to_definition();
@@ -328,6 +322,13 @@ public:
 	void handle_open_link(const std::wstring& text);
 	void handle_keys_user_all();
 	void handle_prefs_user_all();
+	void handle_portal_to_overview();
+	void handle_focus_text(const std::wstring& text);
+	void handle_goto_window();
+	void handle_toggle_smooth_scroll_mode();
+	void handle_overview_to_portal();
+	void handle_toggle_typing_mode();
+	void handle_delete_highlight_under_cursor();
 
 	protected:
 	void focusInEvent(QFocusEvent* ev);

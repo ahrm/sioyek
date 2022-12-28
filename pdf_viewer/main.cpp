@@ -578,7 +578,8 @@ MainWidget* handle_args(const QStringList& arguments) {
 
 	if (should_create_new_window) {
 		target_window = new MainWidget(windows[0]);
-		target_window->run_multiple_commands(STARTUP_COMMANDS);
+		//target_window->run_multiple_commands(STARTUP_COMMANDS);
+		target_window->command_manager->create_macro_command("", STARTUP_COMMANDS)->run(target_window);
 		target_window->apply_window_params_for_one_window_mode(true);
 		target_window->show();
 		windows.push_back(target_window);
@@ -595,31 +596,14 @@ MainWidget* handle_args(const QStringList& arguments) {
 		}
     }
 	if (parser->isSet("execute-command")) {
-		 QStringList commands= parser->value("execute-command").split(';');
-		 for (int i = 0; i < commands.size(); i++) {
-			 auto command = target_window->get_command_manager()->get_command_with_name(commands.at(i).toStdString());
-			 if (command) {
+		QString command_string = parser->value("execute-command");
+		QString command_data = parser->value("execute-command-data");
+		if (command_data.size() > 0) {
+			command_string += QString::fromStdString("(") + command_data + QString::fromStdString(")");
+		}
 
-				 if (command->requires_text) {
-					 std::wstring command_data = parser->value("execute-command-data").toStdWString();
-					 target_window->handle_command_with_text(command, command_data);
-				 }
-				 else if (command->requires_symbol) {
-					 char symbol = parser->value("execute-command-data").toStdString()[0];
-					 //target_window->handle_command_types(command, 1);
-					 target_window->handle_command_with_symbol(command, symbol);
-				 }
-				 else if (command->requires_file_name) {
-					 std::wstring filename = parser->value("execute-command-data").toStdWString();
-					 target_window->handle_command_with_file_name(command, filename);
-				 }
-				 else {
-					 target_window->handle_command(command, 1);
-				 }
-			 }
-			 //if (command->requires_text) {
-			 //}
-		 }
+		auto command = target_window->command_manager->create_macro_command("", command_string.toStdWString());
+		command->run(target_window);
 	}
 
 	if (parser->isSet("focus-text")) {
@@ -812,7 +796,8 @@ int main(int argc, char* args[]) {
 	main_widget->show();
 
 	handle_args(app.arguments());
-	main_widget->run_multiple_commands(STARTUP_COMMANDS);
+	main_widget->command_manager->create_macro_command("", STARTUP_COMMANDS)->run(main_widget);
+	//main_widget->run_multiple_commands(STARTUP_COMMANDS);
 
 	// load input file from `QFileOpenEvent` for macOS drag and drop & "open with"
 	QObject::connect(&app, &OpenWithApplication::file_ready, [&main_widget](const QString& file_name) {
