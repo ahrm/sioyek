@@ -111,6 +111,7 @@ extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool NUMERIC_TAGS;
 extern bool SHOULD_HIGHLIGHT_LINKS;
 extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
+extern int KEYBOARD_SELECT_FONT_SIZE;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -343,6 +344,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"shift_middle_click_search_engine", &SHIFT_MIDDLE_CLICK_SEARCH_ENGINE, string_serializer, string_deserializer, nullptr });
 	configs.push_back({ L"startup_commands", &STARTUP_COMMANDS, string_serializer, string_deserializer, nullptr });
 	configs.push_back({ L"font_size", &FONT_SIZE, int_serializer, int_deserializer, nullptr });
+	configs.push_back({ L"keyboard_select_font_size", &KEYBOARD_SELECT_FONT_SIZE, int_serializer, int_deserializer, nullptr });
 	configs.push_back({ L"status_bar_font_size", &STATUS_BAR_FONT_SIZE, int_serializer, int_deserializer, nullptr });
 	configs.push_back({ L"custom_background_color", CUSTOM_BACKGROUND_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"custom_text_color", CUSTOM_TEXT_COLOR, vec3_serializer, color3_deserializer, color_3_validator });

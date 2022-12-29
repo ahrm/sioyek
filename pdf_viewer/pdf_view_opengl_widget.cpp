@@ -28,6 +28,7 @@ extern int PRERENDERED_PAGE_COUNT;
 extern bool SHOULD_HIGHLIGHT_LINKS;
 extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
 extern float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3];
+extern int KEYBOARD_SELECT_FONT_SIZE;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -1638,7 +1639,7 @@ void PdfViewOpenGLWidget::get_overview_size(float* width, float* height) {
 void PdfViewOpenGLWidget::setup_text_painter(QPainter* painter) {
 	QBrush background_brush = QBrush(QColor(236, 200, 0));
 	QFont font;
-	font.setPixelSize(20);
+	font.setPixelSize(KEYBOARD_SELECT_FONT_SIZE);
 	painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
 	painter->setBackground(background_brush);
 	painter->setPen(QColor(0, 0, 128));
