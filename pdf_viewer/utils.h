@@ -195,3 +195,15 @@ int get_status_bar_height();
 void flat_char_prism(const std::vector<fz_stext_char*> chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<fz_rect>& rects);
 QString get_status_stylesheet(bool nofont=false);
 QString get_selected_stylesheet(bool nofont=false);
+
+template<int d1, int d2, int d3>
+void matmul(float m1[], float m2[], float result[]) {
+	for (int i = 0; i < d1; i++) {
+		for (int j = 0; j < d3; j++) {
+			result[i * d3 + j] = 0;
+			for (int k = 0; k < d2; k++) {
+				result[i * d3 + j] += m1[i * d2 + k] * m2[k * d3 + j];
+			}
+		}
+	}
+}

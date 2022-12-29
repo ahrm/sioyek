@@ -211,8 +211,7 @@ void PdfViewOpenGLWidget::initializeGL() {
 		shared_gl_objects.line_color_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "line_color");
 		shared_gl_objects.line_time_uniform_location = glGetUniformLocation(shared_gl_objects.vertical_line_program, "time");
 
-		shared_gl_objects.custom_color_background_uniform_location = glGetUniformLocation(shared_gl_objects.custom_color_program, "background_color");
-		shared_gl_objects.custom_color_text_uniform_location = glGetUniformLocation(shared_gl_objects.custom_color_program, "text_color");
+		shared_gl_objects.custom_color_transform_uniform_location = glGetUniformLocation(shared_gl_objects.custom_color_program, "transform_matrix");
 
 		shared_gl_objects.separator_background_color_uniform_location = glGetUniformLocation(shared_gl_objects.separator_program, "background_color");
 
@@ -1455,10 +1454,10 @@ void PdfViewOpenGLWidget::bind_program() {
 	}
 	else if (color_mode == ColorPalette::Custom) {
 		glUseProgram(shared_gl_objects.custom_color_program);
+		float transform_matrix[16];
+		get_custom_color_transform_matrix(transform_matrix);
+		glUniformMatrix4fv(shared_gl_objects.custom_color_transform_uniform_location, 1, GL_TRUE, transform_matrix);
 
-
-		glUniform3fv(shared_gl_objects.custom_color_background_uniform_location, 1, CUSTOM_BACKGROUND_COLOR);
-		glUniform3fv(shared_gl_objects.custom_color_text_uniform_location, 1, CUSTOM_TEXT_COLOR);
 	}
 	else {
 		glUseProgram(shared_gl_objects.rendered_program);
@@ -1864,4 +1863,16 @@ int PdfViewOpenGLWidget::find_search_results_breakpoint_helper(int begin_index, 
 
 std::vector<std::pair<fz_rect, int>> PdfViewOpenGLWidget::get_highlight_word_rects() {
 	return word_rects;
+}
+
+void PdfViewOpenGLWidget::get_custom_color_transform_matrix(float matrix_data[16]) {
+	float inputs_inverse[16] = { 0, 1, 0, 0, -1, 1, -1, 1, 1, -1, 0, 0, 0, -1, 1, 0 };
+	float outputs[16] = {
+		CUSTOM_BACKGROUND_COLOR[0], CUSTOM_TEXT_COLOR[0], 1, 0,
+		CUSTOM_BACKGROUND_COLOR[1], CUSTOM_TEXT_COLOR[1], 0, 0,
+		CUSTOM_BACKGROUND_COLOR[2], CUSTOM_TEXT_COLOR[2], 0, 1,
+		CUSTOM_BACKGROUND_COLOR[3], CUSTOM_TEXT_COLOR[3], 1, 1,
+	};
+
+	matmul<4,4,4>(outputs, inputs_inverse, matrix_data);
 }

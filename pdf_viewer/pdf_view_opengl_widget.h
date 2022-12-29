@@ -62,8 +62,7 @@ struct OpenGLSharedResources {
 
 	GLint gamma_uniform_location;
 
-	GLint custom_color_background_uniform_location;
-	GLint custom_color_text_uniform_location;
+	GLint custom_color_transform_uniform_location;
 
 	GLint separator_background_color_uniform_location;
 
@@ -270,5 +269,6 @@ public:
 	int find_search_result_for_page_range(int page, int range_begin, int range_end);
 	int find_search_results_breakpoint();
 	int find_search_results_breakpoint_helper(int begin_index, int end_index);
+	void get_custom_color_transform_matrix(float matrix_data[16]);
 
 };
