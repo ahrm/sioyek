@@ -698,14 +698,18 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 			document_view->get_document()->get_page_width(page_number),
 			document_view->get_document()->get_page_height(page_number) + PAGE_SEPARATOR_WIDTH / 2};
 
-		fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
-		rect_to_quad(separator_window_rect, page_vertices);
+//fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height) {
+		if (PAGE_SEPARATOR_WIDTH > 0) {
 
-		glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
+			fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
+			rect_to_quad(separator_window_rect, page_vertices);
 
-		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
+
+			glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		}
 	}
 
 }

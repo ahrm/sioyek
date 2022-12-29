@@ -112,6 +112,7 @@ extern bool NUMERIC_TAGS;
 extern bool SHOULD_HIGHLIGHT_LINKS;
 extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
 extern int KEYBOARD_SELECT_FONT_SIZE;
+extern bool FUZZY_SEARCHING;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -416,6 +417,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"highlight_links", &SHOULD_HIGHLIGHT_LINKS, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"should_highlight_unselected_search", &SHOULD_HIGHLIGHT_UNSELECTED_SEARCH, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"gamma", &GAMMA, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"fuzzy_searching", &FUZZY_SEARCHING, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

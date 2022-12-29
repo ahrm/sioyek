@@ -47,6 +47,7 @@ const int max_select_size = 100;
 extern bool SMALL_TOC;
 extern bool MULTILINE_MENUS;
 extern bool EMACS_MODE;
+extern bool FUZZY_SEARCHING;
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
 protected:
@@ -64,6 +65,16 @@ public:
 	~ConfigFileChangeListener();
 	virtual void on_config_file_changed(ConfigManager* new_config_manager) = 0;
 	static void notify_config_file_changed(ConfigManager* new_config_manager);
+};
+
+class MySortFilterProxyModel : public QSortFilterProxyModel {
+	QString filterString;
+public:
+	MySortFilterProxyModel();
+	bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const;
+	void setFilterCustom(QString filterString);
+	bool lessThan(const QModelIndex& left, const QModelIndex& right) const;
+
 };
 
 template <typename T, typename ViewType, typename ProxyModelType>
@@ -112,7 +123,8 @@ protected:
 		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
 			if (!on_text_change(text)) {
 				// generic text change handling when we don't explicitly handle text change events
-				proxy_model->setFilterFixedString(text);
+				//proxy_model->setFilterFixedString(text);
+				proxy_model->setFilterCustom(text);
 				QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
 				if (t_view) {
 					t_view->expandAll();
@@ -127,7 +139,8 @@ protected:
 	}
 
 	QLineEdit* line_edit = nullptr;
-	QSortFilterProxyModel* proxy_model = nullptr;
+	//QSortFilterProxyModel* proxy_model = nullptr;
+	MySortFilterProxyModel* proxy_model = nullptr;
 	ViewType* abstract_item_view;
 
 	virtual void on_select(const QModelIndex& value) = 0;
@@ -294,7 +307,7 @@ public:
 };
 
 template<typename T>
-class FilteredTreeSelect : public BaseSelectorWidget<T, QTreeView, QSortFilterProxyModel> {
+class FilteredTreeSelect : public BaseSelectorWidget<T, QTreeView, MySortFilterProxyModel> {
 private:
 	std::function<void(const std::vector<int>&)> on_done;
 
@@ -309,7 +322,7 @@ public:
 	FilteredTreeSelect(QStandardItemModel* item_model,
 		std::function<void(const std::vector<int>&)> on_done,
 		QWidget* parent,
-		std::vector<int> selected_index) : BaseSelectorWidget<T, QTreeView, QSortFilterProxyModel>(item_model, parent),
+		std::vector<int> selected_index) : BaseSelectorWidget<T, QTreeView, MySortFilterProxyModel>(item_model, parent),
 		on_done(on_done)
 	{
 		auto index = QModelIndex();
@@ -344,7 +357,7 @@ public:
 };
 
 template<typename T>
-class FilteredSelectTableWindowClass : public BaseSelectorWidget<T, QTableView, QSortFilterProxyModel> {
+class FilteredSelectTableWindowClass : public BaseSelectorWidget<T, QTableView, MySortFilterProxyModel> {
 private:
 
 	QStringListModel* string_list_model = nullptr;
@@ -368,7 +381,7 @@ public:
 		int selected_index,
 		std::function<void(T*)> on_done,
 		QWidget* parent,
-		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView, QSortFilterProxyModel>(nullptr, parent),
+		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView, MySortFilterProxyModel>(nullptr, parent),
 		values(values),
 		on_done(on_done),
 		on_delete_function(on_delete_function)
@@ -449,7 +462,7 @@ public:
 };
 
 template<typename T>
-class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView, QSortFilterProxyModel> {
+class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView, MySortFilterProxyModel> {
 private:
 
 	QStringListModel* string_list_model = nullptr;
@@ -470,7 +483,7 @@ public:
 		std::vector<T> values,
 		std::function<void(T*)> on_done,
 		QWidget* parent,
-		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QListView, QSortFilterProxyModel>(nullptr, parent),
+		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QListView, MySortFilterProxyModel>(nullptr, parent),
 		values(values),
 		on_done(on_done),
 		on_delete_function(on_delete_function)
@@ -503,7 +516,7 @@ public:
 	}
 };
 
-class CommandSelector : public BaseSelectorWidget<std::string, QTableView, QSortFilterProxyModel> {
+class CommandSelector : public BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel> {
 private:
 	QStringList string_elements;
 	QStandardItemModel* standard_item_model = nullptr;
@@ -576,7 +589,7 @@ public:
 		QWidget* parent,
 		QStringList elements,
 		std::unordered_map<std::string,
-		std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, QSortFilterProxyModel>(nullptr, parent),
+		std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel>(nullptr, parent),
                 key_map(key_map),
                 on_done(on_done)
 	{
@@ -607,8 +620,12 @@ public:
 		for (int i = 0; i < string_elements.size(); i++) {
 			std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
 			int score = 0;
-			fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
-			//int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
+			if (FUZZY_SEARCHING) {
+				score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
+			}
+			else {
+				fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
+			}
 			match_score_pairs.push_back(std::make_pair(encoded, score));
 		}
 		std::sort(match_score_pairs.begin(), match_score_pairs.end(), [](std::pair<std::string, int> lhs, std::pair<std::string, int> rhs) {
@@ -638,7 +655,8 @@ public:
 
 };
 
-class FileSelector : public BaseSelectorWidget<std::wstring, QListView, QSortFilterProxyModel> {
+//class FileSelector : public BaseSelectorWidget<std::wstring, QListView, QSortFilterProxyModel> {
+class FileSelector : public BaseSelectorWidget<std::wstring, QListView, MySortFilterProxyModel> {
 private:
 
 	QStringListModel* list_model = nullptr;
@@ -654,7 +672,7 @@ public:
 	}
 
 	FileSelector(std::function<void(std::wstring)> on_done, QWidget* parent, QString last_path) :
-		BaseSelectorWidget<std::wstring, QListView, QSortFilterProxyModel>(nullptr, parent),
+		BaseSelectorWidget<std::wstring, QListView, MySortFilterProxyModel>(nullptr, parent),
 		on_done(on_done)
 	{
 
@@ -707,8 +725,12 @@ public:
 			for (auto file : all_directory_files) {
 				std::string encoded_file = utf8_encode(file.toStdWString());
 				int score = 0;
-				fts::fuzzy_match(encoded_prefix.c_str(), encoded_file.c_str(), score);
-				//int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(encoded_prefix, encoded_file));
+				if (FUZZY_SEARCHING) {
+					score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(encoded_prefix, encoded_file));
+				}
+				else {
+					fts::fuzzy_match(encoded_prefix.c_str(), encoded_file.c_str(), score);
+				}
 				file_scores.push_back(std::make_pair(file, score));
 			}
 			std::sort(file_scores.begin(), file_scores.end(), [](std::pair<QString, int> lhs, std::pair<QString, int> rhs) {
