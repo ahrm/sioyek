@@ -3211,6 +3211,7 @@ bool CharacterAddress::backspace() {
         this->page = prev.page;
         this->block = prev.block;
         this->line = prev.line;
+        this->doc = prev.doc;
         this->character = prev.character;
         delete previous_character;
         this->previous_character = nullptr;
@@ -3230,6 +3231,7 @@ bool CharacterAddress::advance(char c) {
             previous_character->page = page;
             previous_character->block = block;
             previous_character->line = line;
+            previous_character->doc = doc;
             previous_character->character = character;
             next_char();
 			return false;
