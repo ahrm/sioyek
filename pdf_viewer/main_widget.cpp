@@ -3215,6 +3215,7 @@ bool CharacterAddress::backspace() {
         this->character = prev.character;
         delete previous_character;
         this->previous_character = nullptr;
+        return false;
     }
     else {
 		return false;
