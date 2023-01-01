@@ -113,6 +113,7 @@ extern bool SHOULD_HIGHLIGHT_LINKS;
 extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
 extern int KEYBOARD_SELECT_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
+extern float CUSTOM_COLOR_CONTRAST;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -318,6 +319,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"dark_mode_background_color", DARK_MODE_BACKGROUND_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"custom_color_mode_empty_background_color", CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"dark_mode_contrast", &DARK_MODE_CONTRAST, float_serializer, float_deserializer, nullptr });
+	configs.push_back({ L"custom_color_contrast", &CUSTOM_COLOR_CONTRAST, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"default_dark_mode", &DEFAULT_DARK_MODE, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"google_scholar_address", &GOOGLE_SCHOLAR_ADDRESS, string_serializer, string_deserializer, nullptr });
 	configs.push_back({ L"item_list_prefix", &ITEM_LIST_PREFIX, string_serializer, string_deserializer, nullptr });
