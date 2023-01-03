@@ -6,6 +6,7 @@
 #include <optional>
 #include <unordered_map>
 #include <variant>
+#include <iomanip>
 
 #include <qfile.h>
 #include <qjsonarray.h>
