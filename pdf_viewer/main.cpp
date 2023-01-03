@@ -96,6 +96,7 @@ float UI_SELECTED_TEXT_COLOR[3] = {0.0f, 0.0f, 0.0f};
 float UI_SELECTED_BACKGROUND_COLOR[3] = {1.0f, 1.0f, 1.0f};
 float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = {0.0f, 0.5f, 0.5f};
 float GAMMA = 1.0f;
+bool DEBUG = false;
 
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];

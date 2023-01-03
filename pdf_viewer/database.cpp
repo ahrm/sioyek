@@ -15,6 +15,7 @@
 
 #include "checksum.h"
 
+extern bool DEBUG;
 
 std::wstring esc(const std::wstring& inp) {
 	char* data = sqlite3_mprintf("%q", utf8_encode(inp).c_str());
@@ -574,6 +575,10 @@ bool DatabaseManager::delete_highlight(const std::string& src_document_path, flo
 		" AND abs(end_x-(" << end_x << ")) < 0.01" << 
 		" AND abs(end_y-(" << end_y << ")) < 0.01;";
 	char* error_message = nullptr;
+
+	if (DEBUG) {
+		std::wcout << ss.str() << L"\n";
+	}
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
 	return handle_error(
