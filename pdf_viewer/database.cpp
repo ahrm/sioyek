@@ -569,7 +569,7 @@ bool DatabaseManager::delete_bookmark(const std::string& src_document_path, floa
 bool DatabaseManager::delete_highlight(const std::string& src_document_path, float begin_x, float begin_y, float end_x, float end_y) {
 
 	std::wstringstream ss;
-	ss << "DELETE FROM highlights where document_path='" << esc(src_document_path) <<
+	ss << std::setprecision(10) << "DELETE FROM highlights where document_path='" << esc(src_document_path) <<
 		"'AND abs(begin_x-(" << begin_x << ")) < 0.01" <<
 		" AND abs(begin_y-(" << begin_y << ")) < 0.01" <<
 		" AND abs(end_x-(" << end_x << ")) < 0.01" << 
