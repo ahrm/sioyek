@@ -2243,12 +2243,14 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
 		std::string command_name = utf8_encode(command_name_);
-		new_commands[command_name] = [command_name, command_value]() {return  std::make_unique<CustomCommand>(command_name, command_value); };
+		std::wstring local_command_value = command_value;
+		new_commands[command_name] = [command_name, local_command_value]() {return  std::make_unique<CustomCommand>(command_name, local_command_value); };
 	}
 
 	for (auto [command_name_, macro_value] : ADDITIONAL_MACROS) {
 		std::string command_name = utf8_encode(command_name_);
-		new_commands[command_name] = [command_name, macro_value, this]() {return std::make_unique<MacroCommand>(this, command_name, macro_value); };
+		std::wstring local_macro_value = macro_value;
+		new_commands[command_name] = [command_name, local_macro_value, this]() {return std::make_unique<MacroCommand>(this, command_name, local_macro_value); };
 	}
 
 	std::vector<Config> configs = config_manager->get_configs();
