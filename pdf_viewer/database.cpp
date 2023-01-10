@@ -17,6 +17,7 @@
 #include "checksum.h"
 
 extern bool DEBUG;
+extern float HIGHLIGHT_DELETE_THRESHOLD;
 
 std::wstring esc(const std::wstring& inp) {
 	char* data = sqlite3_mprintf("%q", utf8_encode(inp).c_str());
@@ -570,11 +571,12 @@ bool DatabaseManager::delete_bookmark(const std::string& src_document_path, floa
 bool DatabaseManager::delete_highlight(const std::string& src_document_path, float begin_x, float begin_y, float end_x, float end_y) {
 
 	std::wstringstream ss;
+	std::wstring threshold = QString::number(HIGHLIGHT_DELETE_THRESHOLD).toStdWString();
 	ss << std::setprecision(10) << "DELETE FROM highlights where document_path='" << esc(src_document_path) <<
-		"'AND abs(begin_x-(" << begin_x << ")) < 0.01" <<
-		" AND abs(begin_y-(" << begin_y << ")) < 0.01" <<
-		" AND abs(end_x-(" << end_x << ")) < 0.01" << 
-		" AND abs(end_y-(" << end_y << ")) < 0.01;";
+		"'AND abs(begin_x-(" << begin_x << ")) < " << threshold <<
+		" AND abs(begin_y-(" << begin_y << ")) < " << threshold <<
+		" AND abs(end_x-(" << end_x << ")) < " << threshold << 
+		" AND abs(end_y-(" << end_y << ")) < " << threshold ;
 	char* error_message = nullptr;
 
 	if (DEBUG) {

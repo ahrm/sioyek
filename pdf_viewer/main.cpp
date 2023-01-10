@@ -221,6 +221,7 @@ bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH = false;
 int KEYBOARD_SELECT_FONT_SIZE = 20;
 bool FUZZY_SEARCHING = false;
 float CUSTOM_COLOR_CONTRAST = 0.5f;
+float HIGHLIGHT_DELETE_THRESHOLD = 0.01f;
 
 Path default_config_path(L"");
 Path default_keys_path(L"");
