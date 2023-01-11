@@ -462,8 +462,13 @@ MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
 
 			if (window->doc()) {
 
+#ifdef Q_OS_WIN
 				std::wstring path1 = window->doc()->get_path();
 				std::wstring path2 = file_path;
+#else
+				std::string path1 = utf8_encode(window->doc()->get_path());
+				std::string path2 = utf8_encode(file_path);
+#endif
 				if (std::filesystem::equivalent(path1, path2)) {
 					return window;
 				}
