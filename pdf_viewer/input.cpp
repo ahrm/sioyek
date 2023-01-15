@@ -2101,7 +2101,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["overview_definition"] = []() {return std::make_unique< OverviewDefinitionCommand>(); };
 	new_commands["portal_to_definition"] = []() {return std::make_unique< PortalToDefinitionCommand>(); };
 	new_commands["next_item"] = []() {return std::make_unique< NextItemCommand>(); };
-	new_commands["previous_item"] = []() {return std::make_unique< PreviousPageCommand>(); };
+	new_commands["previous_item"] = []() {return std::make_unique< PrevItemCommand>(); };
 	new_commands["set_mark"] = []() {return std::make_unique< SetMark>(); };
 	new_commands["goto_mark"] = []() {return std::make_unique< GotoMark>(); };
 	new_commands["goto_page_with_page_number"] = []() {return std::make_unique< GotoPageWithPageNumberCommand>(); };
