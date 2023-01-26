@@ -30,6 +30,7 @@ extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
 extern float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3];
 extern int KEYBOARD_SELECT_FONT_SIZE;
 extern float CUSTOM_COLOR_CONTRAST;
+extern float DISPLAY_RESOLUTION_SCALE;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -645,6 +646,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		&rendered_width,
 		&rendered_height);
 
+
 	if (rotation_index % 2 == 1) {
 		std::swap(rendered_width, rendered_height);
 	}
@@ -655,8 +657,17 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		document_view->get_document()->get_page_width(page_number),
 		document_view->get_document()->get_page_height(page_number) };
 
-	int device_pixel_ratio = QApplication::desktop()->devicePixelRatio();
-	fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number, page_rect, rendered_width / device_pixel_ratio, rendered_height / device_pixel_ratio);
+	float device_pixel_ratio = QApplication::desktop()->devicePixelRatioF();
+
+	if (DISPLAY_RESOLUTION_SCALE > 0) {
+		device_pixel_ratio *= DISPLAY_RESOLUTION_SCALE;
+	}
+
+	fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number,
+		page_rect,
+		static_cast<int>(rendered_width / device_pixel_ratio),
+		static_cast<int>(rendered_height / device_pixel_ratio)
+	);
 	rect_to_quad(window_rect, page_vertices);
 
 	if (texture != 0) {
