@@ -1037,6 +1037,26 @@ class OpenLinkCommand : public TextCommand {
 	}
 };
 
+class CopyLinkCommand : public TextCommand {
+
+	void perform(MainWidget* widget) {
+		widget->handle_open_link(text.value(), true);
+	}
+
+	void pre_perform(MainWidget* widget) {
+		widget->opengl_widget->set_highlight_links(true, true);
+
+	}
+
+	std::string get_name() {
+		return "copy_link";
+	}
+
+	std::string text_requirement_name() {
+		return "Label";
+	}
+};
+
 class KeyboardSelectCommand : public TextCommand {
 
 	void perform(MainWidget* widget) {
@@ -2165,6 +2185,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["quit"] = []() {return std::make_unique< QuitCommand>(); };
 	new_commands["q"] = []() {return std::make_unique< QuitCommand>(); };
 	new_commands["open_link"] = []() {return std::make_unique< OpenLinkCommand>(); };
+	new_commands["copy_link"] = []() {return std::make_unique< CopyLinkCommand>(); };
 	new_commands["keyboard_select"] = []() {return std::make_unique< KeyboardSelectCommand>(); };
 	new_commands["keyboard_smart_jump"] = []() {return std::make_unique< KeyboardSmartjumpCommand>(); };
 	new_commands["keyboard_overview"] = []() {return std::make_unique< KeyboardOverviewCommand>(); };

@@ -3748,7 +3748,7 @@ void MainWidget::handle_new_window() {
 	windows.push_back(new_widget);
 }
 
-void MainWidget::handle_open_link(const std::wstring& text) {
+void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
 
 	std::vector<int> visible_pages;
 	std::vector<std::pair<int, fz_link*>> visible_page_links;
@@ -3767,13 +3767,18 @@ void MainWidget::handle_open_link(const std::wstring& text) {
 		}
 		if ((link_index >= 0) && (link_index < static_cast<int>(visible_page_links.size()))) {
 			auto [selected_page, selected_link] = visible_page_links[link_index];
-			if (QString(selected_link->uri).startsWith("http")) {
-				open_web_url(utf8_decode(selected_link->uri));
-			}
-			else {
-				auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
-				long_jump_to_destination(page - 1, offset_y);
-			}
+            if (copy) {
+                copy_to_clipboard(utf8_decode(selected_link->uri));
+            }
+            else {
+				if (QString(selected_link->uri).startsWith("http")) {
+					open_web_url(utf8_decode(selected_link->uri));
+				}
+				else {
+					auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
+					long_jump_to_destination(page - 1, offset_y);
+				}
+            }
 		}
 	}
 	reset_highlight_links();

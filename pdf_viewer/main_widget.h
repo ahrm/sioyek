@@ -319,7 +319,7 @@ public:
 	void handle_open_prev_doc();
 	void handle_move_screen(int amount);
 	void handle_new_window();
-	void handle_open_link(const std::wstring& text);
+	void handle_open_link(const std::wstring& text, bool copy=false);
 	void handle_keys_user_all();
 	void handle_prefs_user_all();
 	void handle_portal_to_overview();
