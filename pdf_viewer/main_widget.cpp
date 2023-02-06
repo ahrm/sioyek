@@ -118,6 +118,7 @@ extern bool CASE_SENSITIVE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 extern std::wstring UI_FONT_FACE_NAME;
 extern bool SHOULD_HIGHLIGHT_LINKS;
+extern float SCROLL_VIEW_SENSITIVITY;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -2781,7 +2782,7 @@ bool MainWidget::is_visual_mark_mode() {
 }
 
 void MainWidget::scroll_overview(int amount) {
-    float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
+    float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY * SCROLL_VIEW_SENSITIVITY;
 	OverviewState state = opengl_widget->get_overview_page().value();
 	state.absolute_offset_y += 36.0f * vertical_move_amount * amount;
 	opengl_widget->set_overview_page(state);
