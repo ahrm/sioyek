@@ -578,7 +578,8 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 	page_rect.y1 = window_rect.y1;
 
 	float gray_color[] = { 0.5f, 0.5f, 0.5f };
-	float white_color[] = { 1.0f, 1.0f, 1.0f };
+	float bg_color[] = { 1.0f, 1.0f, 1.0f };
+	get_background_color(bg_color);
 	glDisable(GL_BLEND);
 
 	{ // draw background
@@ -586,7 +587,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(border_vertices), border_vertices, GL_DYNAMIC_DRAW);
-		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, white_color);
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, bg_color);
 		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	}
 
@@ -1892,4 +1893,19 @@ void PdfViewOpenGLWidget::get_custom_color_transform_matrix(float matrix_data[16
 	};
 
 	matmul<4,4,4>(outputs, inputs_inverse, matrix_data);
+}
+
+void PdfViewOpenGLWidget::get_background_color(float out_background[3]) {
+
+	if (this->color_mode == ColorPalette::Normal) {
+		out_background[0] = out_background[1] = out_background[2] = 1;
+	}
+	else if (this->color_mode == ColorPalette::Dark) {
+		out_background[0] = out_background[1] = out_background[2] = 0;
+	}
+	else {
+		out_background[0] = CUSTOM_BACKGROUND_COLOR[0];
+		out_background[1] = CUSTOM_BACKGROUND_COLOR[1];
+		out_background[2] = CUSTOM_BACKGROUND_COLOR[2];
+	}
 }
