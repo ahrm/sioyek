@@ -1,6 +1,8 @@
 #include "ui.h"
 #include <qfiledialog.h>
 
+extern std::wstring DEFAULT_OPEN_FILE_PATH;
+
 std::wstring select_command_file_name(std::string command_name) {
 	if (command_name == "open_document") {
 		return select_document_file_name();
@@ -14,8 +16,25 @@ std::wstring select_command_file_name(std::string command_name) {
 }
 
 std::wstring select_document_file_name() {
-	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.pdf *.epub *.cbz)");
-	return file_name.toStdWString();
+	if (DEFAULT_OPEN_FILE_PATH.size() == 0) {
+
+		QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.pdf *.epub *.cbz)");
+		return file_name.toStdWString();
+	}
+	else {
+
+		QFileDialog fd = QFileDialog(nullptr, "Select Document", "", "Documents (*.pdf *.epub *.cbz)");
+		fd.setDirectory(QString::fromStdWString(DEFAULT_OPEN_FILE_PATH));
+		if (fd.exec()) {
+			
+			QString file_name = fd.selectedFiles().first();
+			return file_name.toStdWString();
+		}
+		else {
+			return L"";
+		}
+	}
+
 }
 
 std::wstring select_json_file_name() {

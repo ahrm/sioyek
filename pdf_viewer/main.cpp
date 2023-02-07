@@ -152,6 +152,7 @@ std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 std::wstring INVERSE_SEARCH_COMMAND = L"";
 std::wstring SHARED_DATABASE_PATH = L"";
 std::wstring UI_FONT_FACE_NAME = L"";
+std::wstring DEFAULT_OPEN_FILE_PATH = L"";
 bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
 bool SHOULD_LAUNCH_NEW_INSTANCE = false;
 bool SHOULD_LAUNCH_NEW_WINDOW = false;
