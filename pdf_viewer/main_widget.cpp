@@ -1676,10 +1676,12 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 
     if (mevent->button() == Qt::MouseButton::XButton1) {
         handle_command_types(command_manager->get_command_with_name("prev_state"), 0);
+        invalidate_render();
     }
 
     if (mevent->button() == Qt::MouseButton::XButton2) {
         handle_command_types(command_manager->get_command_with_name("next_state"), 0);
+        invalidate_render();
     }
 }
 
