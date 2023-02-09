@@ -119,6 +119,7 @@ extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 extern std::wstring UI_FONT_FACE_NAME;
 extern bool SHOULD_HIGHLIGHT_LINKS;
 extern float SCROLL_VIEW_SENSITIVITY;
+extern std::wstring STATUS_BAR_FORMAT;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -529,19 +530,22 @@ bool MainWidget::is_pending_link_source_filled() {
 
 std::wstring MainWidget::get_status_string() {
 
-    std::wstringstream ss;
+    QString status_string = QString::fromStdWString(STATUS_BAR_FORMAT);
+
     if (main_document_view->get_document() == nullptr) return L"";
     std::wstring chapter_name = main_document_view->get_current_chapter_name();
 
-    ss << "Page " << get_current_page_number() + 1 << " / " << main_document_view->get_document()->num_pages();
+    status_string.replace("%{current_page}", QString::number(get_current_page_number() + 1));
+    status_string.replace("%{num_pages}", QString::number(main_document_view->get_document()->num_pages()));
+
     if (chapter_name.size() > 0) {
-        ss << " [ " << chapter_name << " ] ";
+        status_string.replace("%{chapter_name}", " [ " + QString::fromStdWString(chapter_name) + " ] ");
     }
 
     if (SHOW_DOCUMENT_NAME_IN_STATUSBAR) {
         std::optional<std::wstring> file_name = Path(main_document_view->get_document()->get_path()).filename();
         if (file_name) {
-			ss << L" [ " << file_name.value() << L" ] ";
+            status_string.replace("%{document_name}", " [ " + QString::fromStdWString(file_name.value()) + " ] ");
         }
     }
 
@@ -555,9 +559,9 @@ std::wstring MainWidget::get_status_string() {
 
         // show the 0th result if there are no results and the index + 1 otherwise
         int result_index = opengl_widget->get_num_search_results() > 0 ? opengl_widget->get_current_search_result_index() + 1 : 0;
-        ss << " | showing result " << result_index << " / " << num_search_results;
+        status_string.replace("%{search_results}", " | showing result " + QString::number(result_index) + " / " + QString::number(num_search_results));
         if (progress > 0) {
-            ss << " (" << ((int)(progress * 100)) << "%%" << ")";
+            status_string.replace("%{search_progress}", " (" + QString::number((int)(progress * 100)) + "%%" + ")");
         }
     }
     else {
@@ -568,41 +572,42 @@ std::wstring MainWidget::get_status_string() {
     }
 
     if (is_pending_link_source_filled()) {
-        ss << " | linking ...";
+        status_string.replace("%{link_status}", " | linking ...");
     }
     if (link_to_edit) {
-        ss << " | editing link ...";
+        status_string.replace("%{link_status}", " | editing link ...");
     }
     //if (current_pending_command && current_pending_command.value().requires_symbol) {
     if (is_waiting_for_symbol()) {
         std::wstring wcommand_name = utf8_decode(pending_command_instance->next_requirement().value().name);
-        ss << " | " << wcommand_name << " waiting for symbol";
+        status_string.replace("%{waiting_for_symbol}", " waiting for symbol");
     }
     if (main_document_view != nullptr && main_document_view->get_document() != nullptr &&
         main_document_view->get_document()->get_is_indexing()) {
-        ss << " | indexing ... ";
+        status_string.replace("%{indexing}", " | indexing ... ");
     }
     if (opengl_widget && opengl_widget->get_overview_page()) {
         if (index_into_candidates > 0 && smart_view_candidates.size() > 0) {
-            ss << " [ preview " << index_into_candidates + 1 << " / " << smart_view_candidates.size() << " ]";
+            status_string.replace("%{preview_index}", " [ preview " + QString::number(index_into_candidates + 1) + " / " + QString::number(smart_view_candidates.size()) + " ]");
+
         }
     }
     if (this->synctex_mode) {
-        ss << " [ synctex ]";
+        status_string.replace("%{synctex}", " [ synctex ]");
     }
     if (this->mouse_drag_mode) {
-        ss << " [ drag ]";
+        status_string.replace("%{drag}", " [ drag ]");
     }
     if (opengl_widget->is_presentation_mode()) {
-        ss << " [ presentation ]";
+        status_string.replace("%{presentation}", " [ presentation ]");
     }
 
     if (visual_scroll_mode) {
-        ss << " [ visual scroll ]";
+        status_string.replace("%{visual_scroll}", " [ visual scroll ]");
     }
 
     if (horizontal_scroll_locked) {
-        ss << " [ locked horizontal scroll ]";
+        status_string.replace("%{locked_scroll}", " [ locked horizontal scroll ]");
     }
     std::wstring highlight_select_char = L"";
 
@@ -610,32 +615,57 @@ std::wstring MainWidget::get_status_string() {
         highlight_select_char = L"s";
     }
 
-    ss << " [ h" << highlight_select_char << ":" << select_highlight_type << " ]";
+    status_string.replace("%{highlight}", " [ h" + QString::fromStdWString(highlight_select_char) + ":" + select_highlight_type + " ]");
+
 
     if (SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR) {
         std::optional<BookMark> closest_bookmark = main_document_view->find_closest_bookmark();
         if (closest_bookmark) {
-            ss << " [ " << closest_bookmark.value().description << " ]";
+            status_string.replace("%{closest_bookmark}", " [ " + QString::fromStdWString(closest_bookmark.value().description) + " ]");
         }
     }
+
 
     if (SHOW_CLOSE_PORTAL_IN_STATUSBAR) {
         std::optional<Portal> close_portal = main_document_view->find_closest_portal(true);
         if (close_portal) {
-            ss << " [ PORTAL ]";
+            status_string.replace("%{close_portal}", " [ PORTAL ]");
         }
     }
 
+
     if (rect_select_mode) {
-        ss << " [ select box ]";
+        status_string.replace("%{rect_select}", " [ select box ]");
     }
+
 
     if (custom_status_message.size() > 0) {
-        ss << " [ " << custom_status_message << " ]";
+        status_string.replace("%{custom_message}", " [ " + QString::fromStdWString(custom_status_message) + " ]");
     }
 
+    status_string.replace("%{current_page}", "");
+    status_string.replace("%{num_pages}", "");
+    status_string.replace("%{chapter_name}", "");
+    status_string.replace("%{search_results}", "");
+    status_string.replace("%{link_status}", "");
+    status_string.replace("%{waiting_for_symbol}", "");
+    status_string.replace("%{indexing}", "");
+    status_string.replace("%{preview_index}", "");
+    status_string.replace("%{synctex}", "");
+    status_string.replace("%{drag}", "");
+    status_string.replace("%{presentation}", "");
+    status_string.replace("%{visual_scroll}", "");
+    status_string.replace("%{locked_scroll}", "");
+    status_string.replace("%{highlight}", "");
+    status_string.replace("%{closest_bookmark}", "");
+    status_string.replace("%{close_portal}", "");
+    status_string.replace("%{rect_select}", "");
+    status_string.replace("%{custom_message}", "");
+    status_string.replace("%{search_progress}", "");
 
-    return ss.str();
+
+    //return ss.str();
+    return status_string.toStdWString();
 }
 
 void MainWidget::handle_escape() {
