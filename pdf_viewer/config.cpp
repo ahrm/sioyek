@@ -119,6 +119,7 @@ extern bool DEBUG;
 extern float HIGHLIGHT_DELETE_THRESHOLD;
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern std::wstring STATUS_BAR_FORMAT;
+extern bool INVERTED_HORIZONTAL_SCROLLING;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -430,6 +431,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"highlight_delete_threshold", &HIGHLIGHT_DELETE_THRESHOLD, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"default_open_file_path", &DEFAULT_OPEN_FILE_PATH, string_serializer, string_deserializer, nullptr });
 	configs.push_back({ L"status_bar_format", &STATUS_BAR_FORMAT, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"inverted_horizontal_scrolling", &INVERTED_HORIZONTAL_SCROLLING, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

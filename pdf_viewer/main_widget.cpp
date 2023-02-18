@@ -120,6 +120,7 @@ extern std::wstring UI_FONT_FACE_NAME;
 extern bool SHOULD_HIGHLIGHT_LINKS;
 extern float SCROLL_VIEW_SENSITIVITY;
 extern std::wstring STATUS_BAR_FORMAT;
+extern bool INVERTED_HORIZONTAL_SCROLLING;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -1802,12 +1803,14 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
         return;
     }
     if (is_shift_pressed) {
+        float inverse_factor = INVERTED_HORIZONTAL_SCROLLING ? -1.0f : 1.0f;
+
         if (wevent->angleDelta().y() > 0) {
-            move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f);
+            move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
             return;
         }
         if (wevent->angleDelta().y() < 0) {
-            move_horizontal(72.0f * horizontal_move_amount * num_repeats_f);
+            move_horizontal(72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
             return;
         }
 
