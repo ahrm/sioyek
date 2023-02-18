@@ -123,6 +123,7 @@ extern std::wstring STATUS_BAR_FORMAT;
 extern bool INVERTED_HORIZONTAL_SCROLLING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern bool AUTOCENTER_VISUAL_SCROLL;
+extern bool ALPHABETIC_LINK_TAGS;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -3801,9 +3802,16 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
 	std::vector<int> visible_pages;
 	std::vector<std::pair<int, fz_link*>> visible_page_links;
 
-	if (is_string_numeric(text)) {
+	if (ALPHABETIC_LINK_TAGS || is_string_numeric(text)) {
 
-		int link_index = std::stoi(text);
+        int link_index = 0;
+
+        if (ALPHABETIC_LINK_TAGS) {
+            link_index = get_index_from_tag(utf8_encode(text));
+        }
+        else {
+			link_index = std::stoi(text);
+        }
 
 		main_document_view->get_visible_pages(main_document_view->get_view_height(), visible_pages);
 		for (auto page : visible_pages) {

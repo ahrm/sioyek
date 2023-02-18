@@ -33,6 +33,7 @@ extern float CUSTOM_COLOR_CONTRAST;
 extern float DISPLAY_RESOLUTION_SCALE;
 extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
 extern float KEYBOARD_SELECT_TEXT_COLOR[4];
+extern bool ALPHABETIC_LINK_TAGS;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -977,6 +978,10 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			std::stringstream ss;
 			ss << i;
 			std::string index_string = ss.str();
+
+			if (ALPHABETIC_LINK_TAGS) {
+				index_string = get_aplph_tag(i, all_visible_links.size());
+			}
 
 			auto [page, link] = all_visible_links[i];
 

@@ -547,6 +547,16 @@ int get_num_tag_digits(int n) {
 	return res;
 }
 
+std::string get_aplph_tag(int n, int max_n) {
+		int n_digits = get_num_tag_digits(max_n);
+		std::string tag;
+		for (int i = 0; i < n_digits; i++) {
+			tag.push_back('a' + (n % 26));
+			n = n / 26;
+		}
+		return tag;
+}
+
 std::vector<std::string> get_tags(int n) {
 	std::vector<std::string> res;
 	int n_digits = get_num_tag_digits(n);
