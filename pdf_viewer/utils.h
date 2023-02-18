@@ -207,3 +207,5 @@ void matmul(float m1[], float m2[], float result[]) {
 		}
 	}
 }
+
+void convert_color4(float* in_color, int* out_color);

@@ -31,6 +31,8 @@ extern float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3];
 extern int KEYBOARD_SELECT_FONT_SIZE;
 extern float CUSTOM_COLOR_CONTRAST;
 extern float DISPLAY_RESOLUTION_SCALE;
+extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
+extern float KEYBOARD_SELECT_TEXT_COLOR[4];
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -1654,12 +1656,19 @@ void PdfViewOpenGLWidget::get_overview_size(float* width, float* height) {
 }
 
 void PdfViewOpenGLWidget::setup_text_painter(QPainter* painter) {
-	QBrush background_brush = QBrush(QColor(236, 200, 0));
+
+	int bgcolor[4];
+	int textcolor[4];
+
+	convert_color4(KEYBOARD_SELECT_BACKGROUND_COLOR, bgcolor);
+	convert_color4(KEYBOARD_SELECT_TEXT_COLOR, textcolor);
+
+	QBrush background_brush = QBrush(QColor(bgcolor[0], bgcolor[1], bgcolor[2], bgcolor[3]));
 	QFont font;
 	font.setPixelSize(KEYBOARD_SELECT_FONT_SIZE);
 	painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
 	painter->setBackground(background_brush);
-	painter->setPen(QColor(0, 0, 128));
+	painter->setPen(QColor(textcolor[0], textcolor[1], textcolor[2], textcolor[3]));
 	painter->setFont(font);
 
 }

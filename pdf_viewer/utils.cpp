@@ -2240,3 +2240,10 @@ QString get_selected_stylesheet(bool nofont) {
         );
     }
 }
+
+void convert_color4(float* in_color, int* out_color) {
+	out_color[0] = (int)(in_color[0] * 255);
+	out_color[1] = (int)(in_color[1] * 255);
+	out_color[2] = (int)(in_color[2] * 255);
+	out_color[3] = (int)(in_color[3] * 255);
+}
