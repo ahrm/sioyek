@@ -170,4 +170,6 @@ public:
 	bool get_is_auto_resize_mode();
 	void disable_auto_resize_mode();
 	void readjust_to_screen();
+	float get_half_screen_offset();
+	void scroll_mid_to_top();
 };

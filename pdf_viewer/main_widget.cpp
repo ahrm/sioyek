@@ -121,6 +121,7 @@ extern bool SHOULD_HIGHLIGHT_LINKS;
 extern float SCROLL_VIEW_SENSITIVITY;
 extern std::wstring STATUS_BAR_FORMAT;
 extern bool INVERTED_HORIZONTAL_SCROLLING;
+extern bool TOC_JUMP_ALIGN_TOP;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -3693,6 +3694,10 @@ void MainWidget::handle_goto_toc() {
 
 					push_state();
 					main_document_view->goto_page(*page_value);
+                    if (TOC_JUMP_ALIGN_TOP) {
+                        main_document_view->scroll_mid_to_top();
+                    }
+
 				}
 				}, this));
 			current_widget->show();
@@ -3709,6 +3714,9 @@ void MainWidget::handle_goto_toc() {
 						//main_document_view->goto_page(toc_node->page);
 						push_state();
 						main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
+						if (TOC_JUMP_ALIGN_TOP) {
+							main_document_view->scroll_mid_to_top();
+						}
 					}
 				}, this, selected_index));
 			current_widget->show();

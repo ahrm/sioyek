@@ -1200,3 +1200,12 @@ void DocumentView::disable_auto_resize_mode() {
 void DocumentView::readjust_to_screen() {
 	this->set_offsets(this->get_offset_x(), this->get_offset_y());
 }
+
+float DocumentView::get_half_screen_offset() {
+	return (static_cast<float>(view_height) / 2.0f);
+}
+
+void DocumentView::scroll_mid_to_top() {
+	float offset = get_half_screen_offset();
+	move(0, offset);
+}
