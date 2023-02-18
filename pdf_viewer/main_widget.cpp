@@ -122,6 +122,7 @@ extern float SCROLL_VIEW_SENSITIVITY;
 extern std::wstring STATUS_BAR_FORMAT;
 extern bool INVERTED_HORIZONTAL_SCROLLING;
 extern bool TOC_JUMP_ALIGN_TOP;
+extern bool AUTOCENTER_VISUAL_SCROLL;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -3480,6 +3481,9 @@ void MainWidget::move_visual_mark_command(int amount) {
     }
     else {
         move_document(0.0f, 72.0f * amount * VERTICAL_MOVE_AMOUNT);
+    }
+    if (AUTOCENTER_VISUAL_SCROLL) {
+        return_to_last_visual_mark();
     }
     validate_render();
 }

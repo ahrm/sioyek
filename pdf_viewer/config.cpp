@@ -123,6 +123,7 @@ extern bool INVERTED_HORIZONTAL_SCROLLING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
 extern float KEYBOARD_SELECT_TEXT_COLOR[4];
+extern bool AUTOCENTER_VISUAL_SCROLL;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -438,7 +439,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"toc_jump_align_top", &TOC_JUMP_ALIGN_TOP, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"keyboard_select_background_color", &KEYBOARD_SELECT_BACKGROUND_COLOR, vec4_serializer, vec4_deserializer, nullptr });
 	configs.push_back({ L"keyboard_select_text_color", &KEYBOARD_SELECT_TEXT_COLOR, vec4_serializer, vec4_deserializer, nullptr });
-
+	configs.push_back({ L"autocenter_visual_scroll", &AUTOCENTER_VISUAL_SCROLL, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";
