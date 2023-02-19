@@ -125,6 +125,7 @@ extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
 extern float KEYBOARD_SELECT_TEXT_COLOR[4];
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
+extern bool VIMTEX_WSL_FIX;
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -442,6 +443,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"keyboard_select_text_color", &KEYBOARD_SELECT_TEXT_COLOR, vec4_serializer, vec4_deserializer, nullptr });
 	configs.push_back({ L"autocenter_visual_scroll", &AUTOCENTER_VISUAL_SCROLL, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"alphabetic_link_tags", &ALPHABETIC_LINK_TAGS, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"vimtex_wsl_fix", &VIMTEX_WSL_FIX, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

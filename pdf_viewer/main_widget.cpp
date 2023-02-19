@@ -124,6 +124,7 @@ extern bool INVERTED_HORIZONTAL_SCROLLING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
+extern bool VIMTEX_WSL_FIX;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -2957,6 +2958,10 @@ void MainWidget::synctex_under_pos(WindowPos position) {
             QDir file_path = QDir(file_name);
             QString new_path = QDir::toNativeSeparators(file_path.absolutePath());
             new_path[0] = new_path[0].toUpper();
+
+            if (VIMTEX_WSL_FIX) {
+                new_path = file_path.absolutePath();
+            }
 
 #endif
 
