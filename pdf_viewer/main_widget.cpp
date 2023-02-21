@@ -585,7 +585,7 @@ std::wstring MainWidget::get_status_string() {
     //if (current_pending_command && current_pending_command.value().requires_symbol) {
     if (is_waiting_for_symbol()) {
         std::wstring wcommand_name = utf8_decode(pending_command_instance->next_requirement(this).value().name);
-        status_string.replace("%{waiting_for_symbol}", " waiting for symbol");
+        status_string.replace("%{waiting_for_symbol}", " " + QString::fromStdString(pending_command_instance->get_name()) + " waiting for symbol");
     }
     if (main_document_view != nullptr && main_document_view->get_document() != nullptr &&
         main_document_view->get_document()->get_is_indexing()) {

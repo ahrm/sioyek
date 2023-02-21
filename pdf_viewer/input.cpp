@@ -1035,6 +1035,9 @@ public:
 			if ((widget->num_visible_links() < 26) && ALPHABETIC_LINK_TAGS) {
 				return Requirement{ RequirementType::Symbol, "Label"};
 			}
+			else if ((widget->num_visible_links() < 10) && (!ALPHABETIC_LINK_TAGS)) {
+				return Requirement{ RequirementType::Symbol, "Label"};
+			}
 			else {
 				return Requirement{ RequirementType::Text, text_requirement_name() };
 			}
