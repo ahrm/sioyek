@@ -696,6 +696,7 @@ void MainWidget::handle_escape() {
     typing_location = {};
     text_command_line_edit->setText("");
     pending_link = {};
+    synchronize_pending_link();
     pending_command_instance = nullptr;
     //current_pending_command = {};
 
@@ -2068,10 +2069,13 @@ void MainWidget::handle_portal() {
 
         pending_link = {};
     }
-    else {
-        pending_link = std::make_pair<std::wstring, Portal>(main_document_view->get_document()->get_path(),
-            Portal::with_src_offset(main_document_view->get_offset_y()));
-    }
+	else {
+		pending_link = std::make_pair<std::wstring, Portal>(main_document_view->get_document()->get_path(),
+			Portal::with_src_offset(main_document_view->get_offset_y()));
+	}
+
+	synchronize_pending_link();
+	refresh_all_windows();
     validate_render();
 }
 
@@ -3992,4 +3996,19 @@ void MainWidget::handle_delete_highlight_under_cursor() {
 	if (sel_highlight != -1) {
 		main_document_view->delete_highlight_with_index(sel_highlight);
 	}
+}
+
+void MainWidget::synchronize_pending_link() {
+    for (auto window : windows) {
+        if (window != this) {
+			window->pending_link = pending_link;
+        }
+    }
+    refresh_all_windows();
+}
+
+void MainWidget::refresh_all_windows(){
+    for (auto window : windows) {
+        window->invalidate_ui();
+    }
 }

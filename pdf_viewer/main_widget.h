@@ -329,6 +329,8 @@ public:
 	void handle_overview_to_portal();
 	void handle_toggle_typing_mode();
 	void handle_delete_highlight_under_cursor();
+	void synchronize_pending_link();
+	void refresh_all_windows();
 
 	protected:
 	void focusInEvent(QFocusEvent* ev);
