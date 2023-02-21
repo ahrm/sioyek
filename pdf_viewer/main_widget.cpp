@@ -2705,6 +2705,23 @@ void MainWidget::handle_link_click(const PdfLink& link) {
 		return;
 	}
 
+	if (link.uri.substr(0, 4).compare("file") == 0) {
+        QString path_uri = QString::fromStdString(link.uri.substr(7, link.uri.size() - 7));
+        auto parts = path_uri.split('#');
+        std::wstring path_part = parts.at(0).toStdWString();
+        auto docpath = doc()->get_path();
+        Path linked_file_path = Path(doc()->get_path()).file_parent().slash(path_part);
+        int page = 0;
+        if (parts.size() > 0) {
+            std::string page_string = parts.at(1).toStdString();
+            page_string = page_string.substr(5, page_string.size() - 5);
+            page = QString::fromStdString(page_string).toInt() - 1;
+        }
+        push_state();
+        open_document_at_location(linked_file_path, page, {}, {}, {});
+		return;
+	}
+
 	auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
 
 	// convert one indexed page to zero indexed page
