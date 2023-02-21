@@ -2962,10 +2962,9 @@ void MainWidget::synctex_under_pos(WindowPos position) {
             QDir file_path = QDir(file_name);
             QString new_path = QDir::toNativeSeparators(file_path.absolutePath());
             new_path[0] = new_path[0].toUpper();
-
-            if (VIMTEX_WSL_FIX) {
-                new_path = file_path.absolutePath();
-            }
+	    if (VIMTEX_WSL_FIX) {
+				new_path = file_name;
+	    }
 
 #endif
 
