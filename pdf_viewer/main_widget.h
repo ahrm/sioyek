@@ -320,6 +320,8 @@ public:
 	void handle_move_screen(int amount);
 	void handle_new_window();
 	void handle_open_link(const std::wstring& text, bool copy=false);
+	void handle_overview_link(const std::wstring& text);
+	void handle_portal_to_link(const std::wstring& text);
 	void handle_keys_user_all();
 	void handle_prefs_user_all();
 	void handle_portal_to_overview();
@@ -331,6 +333,9 @@ public:
 	void handle_delete_highlight_under_cursor();
 	void synchronize_pending_link();
 	void refresh_all_windows();
+	std::optional<std::pair<int, fz_link*>> get_selected_link(const std::wstring& text);
+
+	int num_visible_links();
 
 	protected:
 	void focusInEvent(QFocusEvent* ev);

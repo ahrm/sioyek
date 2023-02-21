@@ -786,12 +786,12 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 				glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
 					1,
 					config_manager->get_config<float>(L"link_highlight_color"));
-				fz_link* portals = document_view->get_document()->get_page_links(page);
-				while (portals != nullptr) {
-					render_highlight_document(shared_gl_objects.highlight_program, page, portals->rect);
-					all_visible_links.push_back(std::make_pair(page, portals));
-					portals = portals->next;
-				}
+				//fz_link* links = document_view->get_document()->get_page_links(page);
+				//while (links != nullptr) {
+				//	render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
+				//	all_visible_links.push_back(std::make_pair(page, links));
+				//	links = links->next;
+				//}
 			}
 		}
 		// prerender pages
@@ -972,7 +972,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	if (should_highlight_links && should_show_numbers && (!overview_page)) {
 
-
+		document_view->get_visible_links(all_visible_links);
 		setup_text_painter(painter);
 		for (size_t i = 0; i < all_visible_links.size(); i++) {
 			std::stringstream ss;

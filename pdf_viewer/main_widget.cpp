@@ -584,7 +584,7 @@ std::wstring MainWidget::get_status_string() {
     }
     //if (current_pending_command && current_pending_command.value().requires_symbol) {
     if (is_waiting_for_symbol()) {
-        std::wstring wcommand_name = utf8_decode(pending_command_instance->next_requirement().value().name);
+        std::wstring wcommand_name = utf8_decode(pending_command_instance->next_requirement(this).value().name);
         status_string.replace("%{waiting_for_symbol}", " waiting for symbol");
     }
     if (main_document_view != nullptr && main_document_view->get_document() != nullptr &&
@@ -1141,8 +1141,8 @@ void MainWidget::open_document(const DocumentViewState& state)
 
 bool MainWidget::is_waiting_for_symbol() {
 	return ((pending_command_instance != nullptr) &&
-		pending_command_instance->next_requirement().has_value() &&
-		(pending_command_instance->next_requirement().value().type == RequirementType::Symbol));
+		pending_command_instance->next_requirement(this).has_value() &&
+		(pending_command_instance->next_requirement(this).value().type == RequirementType::Symbol));
 }
 
 void MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int num_repeats) {
@@ -3408,14 +3408,14 @@ void MainWidget::goto_mark(char symbol) {
 
 void MainWidget::advance_command(std::unique_ptr<Command> new_command){
 	if (new_command) {
-		if (!new_command->next_requirement().has_value()) {
+		if (!new_command->next_requirement(this).has_value()) {
 			new_command->run(this);
             pending_command_instance = nullptr;
 		}
 		else {
 			pending_command_instance = std::move(new_command);
 
-			Requirement next_requirement = pending_command_instance->next_requirement().value();
+			Requirement next_requirement = pending_command_instance->next_requirement(this).value();
 			if (next_requirement.type == RequirementType::Text) {
 				show_textbar(utf8_decode(next_requirement.name), true);
 			}
@@ -3822,11 +3822,8 @@ void MainWidget::handle_new_window() {
 	windows.push_back(new_widget);
 }
 
-void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
-
-	std::vector<int> visible_pages;
+std::optional<std::pair<int, fz_link*>> MainWidget::get_selected_link(const std::wstring& text) {
 	std::vector<std::pair<int, fz_link*>> visible_page_links;
-
 	if (ALPHABETIC_LINK_TAGS || is_string_numeric(text)) {
 
         int link_index = 0;
@@ -3838,30 +3835,78 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
 			link_index = std::stoi(text);
         }
 
-		main_document_view->get_visible_pages(main_document_view->get_view_height(), visible_pages);
-		for (auto page : visible_pages) {
-			fz_link* link = main_document_view->get_document()->get_page_links(page);
-			while (link) {
-				visible_page_links.push_back(std::make_pair(page, link));
-				link = link->next;
+        main_document_view->get_visible_links(visible_page_links);
+		if ((link_index >= 0) && (link_index < static_cast<int>(visible_page_links.size()))) {
+            return visible_page_links[link_index];
+		}
+        return {};
+	}
+}
+
+void MainWidget::handle_overview_link(const std::wstring& text) {
+
+    auto selected_link_ = get_selected_link(text);
+    if (selected_link_) {
+        PdfLink pdf_link;
+        pdf_link.rect = selected_link_.value().second->rect;
+        pdf_link.uri = selected_link_.value().second->uri;
+        set_overview_link(pdf_link);
+    }
+	reset_highlight_links();
+}
+
+void MainWidget::handle_portal_to_link(const std::wstring& text) {
+
+    auto selected_link_ = get_selected_link(text);
+    if (selected_link_) {
+        auto [page, link] = selected_link_.value();
+        PdfLink pdf_link;
+        pdf_link.rect = link->rect;
+        pdf_link.uri = link->uri;
+        ParsedUri parsed_uri = parse_uri(mupdf_context, pdf_link.uri);
+
+		//AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
+        DocumentPos link_source_document_pos;
+        link_source_document_pos.page = page;
+        link_source_document_pos.x = 0;
+        link_source_document_pos.y = link->rect.x0;
+        DocumentPos dst_docpos;
+        dst_docpos.page = parsed_uri.page - 1;
+        dst_docpos.x = parsed_uri.x;
+        dst_docpos.y = parsed_uri.y;
+
+        auto src_abspos = doc()->document_to_absolute_pos(link_source_document_pos, true);
+        auto dst_abspos = doc()->document_to_absolute_pos(dst_docpos, true);
+
+		Portal portal;
+		portal.dst.document_checksum = doc()->get_checksum();
+		portal.dst.book_state.offset_x = dst_abspos.x;
+		portal.dst.book_state.offset_y = dst_abspos.y;
+		portal.dst.book_state.zoom_level = main_document_view->get_zoom_level();
+        portal.src_offset_y = src_abspos.y;
+		doc()->add_portal(portal, true);
+    }
+	reset_highlight_links();
+}
+
+void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
+
+    auto selected_link_ = get_selected_link(text);
+    if (selected_link_) {
+        auto [selected_page, selected_link] = selected_link_.value();
+		if (copy) {
+			copy_to_clipboard(utf8_decode(selected_link->uri));
+		}
+		else {
+			if (QString(selected_link->uri).startsWith("http")) {
+				open_web_url(utf8_decode(selected_link->uri));
+			}
+			else {
+				auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
+				long_jump_to_destination(page - 1, offset_y);
 			}
 		}
-		if ((link_index >= 0) && (link_index < static_cast<int>(visible_page_links.size()))) {
-			auto [selected_page, selected_link] = visible_page_links[link_index];
-            if (copy) {
-                copy_to_clipboard(utf8_decode(selected_link->uri));
-            }
-            else {
-				if (QString(selected_link->uri).startsWith("http")) {
-					open_web_url(utf8_decode(selected_link->uri));
-				}
-				else {
-					auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
-					long_jump_to_destination(page - 1, offset_y);
-				}
-            }
-		}
-	}
+    }
 	reset_highlight_links();
 }
 
@@ -4027,4 +4072,11 @@ void MainWidget::refresh_all_windows(){
     for (auto window : windows) {
         window->invalidate_ui();
     }
+}
+
+
+int MainWidget::num_visible_links() {
+	std::vector<std::pair<int, fz_link*>> visible_page_links;
+    main_document_view->get_visible_links(visible_page_links);
+    return visible_page_links.size();
 }

@@ -16,6 +16,7 @@ extern bool USE_LEGACY_KEYBINDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern std::wstring SEARCH_URLS[26];
+extern bool ALPHABETIC_LINK_TAGS;
 
 extern Path default_config_path;
 extern Path default_keys_path;
@@ -26,7 +27,7 @@ class SymbolCommand : public Command {
 protected:
 	char symbol = 0;
 public:
-	virtual std::optional<Requirement> next_requirement() {
+	virtual std::optional<Requirement> next_requirement(MainWidget* widget) {
 		if (symbol == 0) {
 			return Requirement{ RequirementType::Symbol, "symbol" };
 		}
@@ -49,7 +50,7 @@ public:
 		return "text";
 	}
 
-	virtual std::optional<Requirement> next_requirement() {
+	virtual std::optional<Requirement> next_requirement(MainWidget* widget) {
 		if (text.has_value()) {
 			return {};
 		}
@@ -351,7 +352,7 @@ class OpenDocumentCommand : public Command {
 		return true;
 	}
 
-	std::optional<Requirement> next_requirement() {
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
 		if (file_name.size() == 0) {
 			return Requirement{ RequirementType::File, "File" };
 		}
@@ -1017,9 +1018,30 @@ class QuitCommand : public Command {
 	bool requires_document() { return false; }
 };
 
-class OpenLinkCommand : public TextCommand {
+class OpenLinkCommand : public Command {
+protected:
+	std::optional<std::wstring> text = {};
+public:
+	
+	virtual std::string text_requirement_name() {
+		return "Label";
+	}
 
-	void perform(MainWidget* widget) {
+	virtual std::optional<Requirement> next_requirement(MainWidget* widget) {
+		if (text.has_value()) {
+			return {};
+		}
+		else {
+			if ((widget->num_visible_links() < 26) && ALPHABETIC_LINK_TAGS) {
+				return Requirement{ RequirementType::Symbol, "Label"};
+			}
+			else {
+				return Requirement{ RequirementType::Text, text_requirement_name() };
+			}
+		}
+	}
+
+	virtual void perform(MainWidget* widget) {
 		widget->handle_open_link(text.value());
 	}
 
@@ -1028,13 +1050,43 @@ class OpenLinkCommand : public TextCommand {
 
 	}
 
-	std::string get_name() {
+	virtual std::string get_name() {
 		return "open_link";
 	}
 
-	std::string text_requirement_name() {
-		return "Label";
+	virtual void set_text_requirement(std::wstring value) {
+		this->text = value;
 	}
+
+	virtual void set_symbol_requirement(char value){
+		std::wstring val;
+		val.push_back(value);
+		this->text = val;
+	}
+};
+
+class OverviewLinkCommand : public OpenLinkCommand {
+
+	void perform(MainWidget* widget) {
+		widget->handle_overview_link(text.value());
+	}
+
+	std::string get_name() {
+		return "overview_link";
+	}
+
+};
+
+class PortalToLinkCommand : public OpenLinkCommand {
+
+	void perform(MainWidget* widget) {
+		widget->handle_portal_to_link(text.value());
+	}
+
+	std::string get_name() {
+		return "portal_to_link";
+	}
+
 };
 
 class CopyLinkCommand : public TextCommand {
@@ -1936,6 +1988,7 @@ class ToggleStatusbarCommand : public Command {
 class LazyCommand : public Command {
 private:
 	CommandManager* command_manager;
+	MainWidget* widget;
 	std::string command_name;
 	std::wstring command_params;
 	std::unique_ptr<Command> actual_command = nullptr;
@@ -1960,7 +2013,7 @@ private:
 			actual_command = std::move(command_manager->get_command_with_name(command_name));
 			if (!actual_command) return &noop;
 
-			auto req = actual_command->next_requirement();
+			auto req = actual_command->next_requirement(widget);
 			if (req) {
 				if (req.value().type == RequirementType::Text) {
 					actual_command->set_text_requirement(command_params);
@@ -1995,10 +2048,10 @@ public:
 	bool pushes_state() { return get_command()->pushes_state(); }
 	bool requires_document() { return get_command()->requires_document(); }
 
-	virtual void perform(MainWidget* widget) {
+	virtual void perform(MainWidget* w) {
 		auto com = get_command();
 		if (com) {
-			com->run(widget);
+			com->run(w);
 		}
 	}
 
@@ -2029,7 +2082,7 @@ public:
 		name = name_;
 	}
 
-	std::optional<Requirement> next_requirement() {
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
 		if (command_requires_rect(raw_command) && (!command_rect.has_value())) {
 			Requirement req = { RequirementType::Rect, "Command Rect"};
 			return req;
@@ -2185,6 +2238,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["quit"] = []() {return std::make_unique< QuitCommand>(); };
 	new_commands["q"] = []() {return std::make_unique< QuitCommand>(); };
 	new_commands["open_link"] = []() {return std::make_unique< OpenLinkCommand>(); };
+	new_commands["overview_link"] = []() {return std::make_unique< OverviewLinkCommand>(); };
+	new_commands["portal_to_link"] = []() {return std::make_unique< PortalToLinkCommand>(); };
 	new_commands["copy_link"] = []() {return std::make_unique< CopyLinkCommand>(); };
 	new_commands["keyboard_select"] = []() {return std::make_unique< KeyboardSelectCommand>(); };
 	new_commands["keyboard_smart_jump"] = []() {return std::make_unique< KeyboardSmartjumpCommand>(); };
@@ -2848,7 +2903,7 @@ std::vector<Path> InputHandler::get_all_user_keys_paths() {
 	return res;
 }
 
-std::optional<Requirement> Command::next_requirement() {
+std::optional<Requirement> Command::next_requirement(MainWidget* widget) {
 	return {};
 }
 void Command::set_text_requirement(std::wstring value) {}

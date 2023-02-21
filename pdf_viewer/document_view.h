@@ -172,4 +172,5 @@ public:
 	void readjust_to_screen();
 	float get_half_screen_offset();
 	void scroll_mid_to_top();
+	void get_visible_links(std::vector<std::pair<int, fz_link*>>& visible_page_links);
 };

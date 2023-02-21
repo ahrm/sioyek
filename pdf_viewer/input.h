@@ -32,8 +32,9 @@ private:
 	virtual void perform(MainWidget* widget) = 0;
 protected:
 	int num_repeats = 1;
+	MainWidget* widget = nullptr;
 public:
-	virtual std::optional<Requirement> next_requirement();
+	virtual std::optional<Requirement> next_requirement(MainWidget* widget);
 
 	virtual void set_text_requirement(std::wstring value);
 	virtual void set_symbol_requirement(char value);

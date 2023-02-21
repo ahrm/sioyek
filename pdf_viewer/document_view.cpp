@@ -1209,3 +1209,20 @@ void DocumentView::scroll_mid_to_top() {
 	float offset = get_half_screen_offset();
 	move(0, offset);
 }
+
+void DocumentView::get_visible_links(std::vector<std::pair<int, fz_link*>>& visible_page_links) {
+
+    std::vector<int> visible_pages;
+	get_visible_pages(get_view_height(), visible_pages);
+	for (auto page : visible_pages) {
+		fz_link* link = get_document()->get_page_links(page);
+		while (link) {
+            ParsedUri parsed_uri = parse_uri(mupdf_context, link->uri);
+            fz_rect window_rect = document_to_window_rect(page, link->rect);
+            if ((window_rect.x0 >= -1) && (window_rect.x0 <= 1) && (window_rect.y0 >= -1) && (window_rect.y0 <= 1)) {
+                visible_page_links.push_back(std::make_pair(page, link));
+            }
+			link = link->next;
+		}
+	}
+}
