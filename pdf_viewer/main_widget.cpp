@@ -566,7 +566,7 @@ std::wstring MainWidget::get_status_string() {
         int result_index = opengl_widget->get_num_search_results() > 0 ? opengl_widget->get_current_search_result_index() + 1 : 0;
         status_string.replace("%{search_results}", " | showing result " + QString::number(result_index) + " / " + QString::number(num_search_results));
         if (progress > 0) {
-            status_string.replace("%{search_progress}", " (" + QString::number((int)(progress * 100)) + "%%" + ")");
+            status_string.replace("%{search_progress}", " (" + QString::number((int)(progress * 100)) + "%" + ")");
         }
     }
     else {
