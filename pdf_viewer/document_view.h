@@ -53,7 +53,10 @@ private:
 	int view_height = 0;
 	bool is_auto_resize_mode = true;
 
+
 public:
+	std::vector<fz_rect> selected_character_rects;
+
 	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer);
 	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer, bool* invalid_flag,
 		std::wstring path, int view_width, int view_height, float offset_x, float offset_y);
@@ -173,4 +176,6 @@ public:
 	float get_half_screen_offset();
 	void scroll_mid_to_top();
 	void get_visible_links(std::vector<std::pair<int, fz_link*>>& visible_page_links);
+
+	std::vector<fz_rect>* get_selected_character_rects();
 };

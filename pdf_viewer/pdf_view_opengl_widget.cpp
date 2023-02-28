@@ -875,7 +875,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	glUseProgram(shared_gl_objects.highlight_program);
 	glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"text_highlight_color"));
 	std::vector<fz_rect> bounding_rects;
-	merge_selected_character_rects(selected_character_rects, bounding_rects);
+	merge_selected_character_rects(*document_view->get_selected_character_rects(), bounding_rects);
 	//for (auto rect : selected_character_rects) {
 	//	render_highlight_absolute(shared_gl_objects.highlight_program, rect);
 	//}
@@ -1922,4 +1922,9 @@ void PdfViewOpenGLWidget::get_background_color(float out_background[3]) {
 		out_background[1] = CUSTOM_BACKGROUND_COLOR[1];
 		out_background[2] = CUSTOM_BACKGROUND_COLOR[2];
 	}
+}
+
+void PdfViewOpenGLWidget::clear_all_selections() {
+	cancel_search();
+	document_view->selected_character_rects.clear();
 }

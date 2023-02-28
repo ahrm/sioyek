@@ -1226,3 +1226,7 @@ void DocumentView::get_visible_links(std::vector<std::pair<int, fz_link*>>& visi
 		}
 	}
 }
+
+std::vector<fz_rect>* DocumentView::get_selected_character_rects() {
+	return &this->selected_character_rects;
+}

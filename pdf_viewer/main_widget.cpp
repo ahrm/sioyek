@@ -293,7 +293,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
             main_document_view->get_text_selection(selection_begin,
                 selection_end,
                 is_word_selecting,
-                opengl_widget->selected_character_rects,
+                main_document_view->selected_character_rects,
                 selected_text);
 
             validate_render();
@@ -716,12 +716,12 @@ void MainWidget::handle_escape() {
         if (opengl_widget->get_overview_page()) {
             done_anything = true;
         }
-        if (opengl_widget->selected_character_rects.size() > 0) {
+        if (main_document_view->selected_character_rects.size() > 0) {
             done_anything = true;
         }
 
         opengl_widget->set_overview_page({});
-		opengl_widget->selected_character_rects.clear();
+		main_document_view->selected_character_rects.clear();
 		selected_text.clear();
 
         if (!done_anything) {
@@ -1035,6 +1035,8 @@ void MainWidget::open_document_with_hash(const std::string& path, std::optional<
 }
 
 void MainWidget::open_document(const Path& path, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
+
+    opengl_widget->clear_all_selections();
 
     //save the previous document state
     if (main_document_view) {
@@ -1392,7 +1394,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         //last_mouse_down_window_x = x;
         //last_mouse_down_window_y = y;
 
-        opengl_widget->selected_character_rects.clear();
+        main_document_view->selected_character_rects.clear();
 
         if (!mouse_drag_mode) {
             is_selecting = true;
@@ -1427,7 +1429,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             main_document_view->get_text_selection(last_mouse_down,
                 abs_doc_pos,
                 is_word_selecting,
-                opengl_widget->selected_character_rects,
+                main_document_view->selected_character_rects,
                 selected_text);
             is_word_selecting = false;
         }
@@ -1534,6 +1536,7 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
 
 	if ((!main_document_view_has_document()) || (main_document_view->get_document()->get_path() != new_view_state.document_path)) {
 		open_document(new_view_state.document_path, &this->is_ui_invalidated);
+
 		//setwindowtitle(qstring::fromstdwstring(new_view_state.document_path));
 	}
 
@@ -1643,11 +1646,11 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         }
         else {
 			handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
-			if (is_select_highlight_mode && (opengl_widget->selected_character_rects.size() > 0)) {
+			if (is_select_highlight_mode && (main_document_view->selected_character_rects.size() > 0)) {
 				main_document_view->add_highlight(selection_begin, selection_end, select_highlight_type);
                 clear_selected_text();
 			}
-			if (opengl_widget->selected_character_rects.size() > 0) {
+			if (main_document_view->selected_character_rects.size() > 0) {
 				copy_to_clipboard(selected_text, true);
 			}
         }
@@ -1674,7 +1677,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
         if (HIGHLIGHT_MIDDLE_CLICK
-            && opengl_widget->selected_character_rects.size() > 0
+            && main_document_view->selected_character_rects.size() > 0
             && !(opengl_widget && opengl_widget->get_overview_page())) {
             command_manager->get_command_with_name("add_highlight_with_current_type")->run(this);
         }
@@ -2536,6 +2539,8 @@ void MainWidget::open_document(const std::wstring& doc_path,
     bool load_prev_state,
     std::optional<OpenedBookState> prev_state,
     bool force_load_dimensions) {
+    opengl_widget->clear_all_selections();
+
     main_document_view->open_document(doc_path, invalid_flag, load_prev_state, prev_state, force_load_dimensions);
 
     std::optional<std::wstring> filename = Path(doc_path).filename();
@@ -3359,7 +3364,7 @@ float CharacterAddress::focus_offset() {
 }
 
 void MainWidget::clear_selected_text() {
-	opengl_widget->selected_character_rects.clear();
+	main_document_view->selected_character_rects.clear();
 	selected_text.clear();
 }
 
@@ -3620,9 +3625,9 @@ void MainWidget::handle_goto_bookmark_global() {
 }
 
 void MainWidget::handle_add_highlight(char symbol) {
-	if (opengl_widget->selected_character_rects.size() > 0) {
+	if (main_document_view->selected_character_rects.size() > 0) {
 		main_document_view->add_highlight(selection_begin, selection_end, symbol);
-		opengl_widget->selected_character_rects.clear();
+		main_document_view->selected_character_rects.clear();
 		selected_text.clear();
 	}
 	else if (selected_highlight_index != -1) {

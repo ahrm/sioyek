@@ -1516,9 +1516,9 @@ class SetSelectHighlightTypeCommand : public SymbolCommand {
 
 class AddHighlightWithCurrentTypeCommand : public Command {
 	void perform(MainWidget* widget) {
-        if (widget->opengl_widget->selected_character_rects.size() > 0) {
+        if (widget->main_document_view->selected_character_rects.size() > 0) {
             widget->main_document_view->add_highlight(widget->selection_begin, widget->selection_end, widget->select_highlight_type);
-            widget->opengl_widget->selected_character_rects.clear();
+            widget->main_document_view->selected_character_rects.clear();
             widget->selected_text.clear();
         }
 	}

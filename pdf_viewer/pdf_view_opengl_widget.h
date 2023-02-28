@@ -179,7 +179,6 @@ public:
 	std::optional<fz_rect> last_selected_block = {};
 #endif
 
-	std::vector<fz_rect> selected_character_rects;
 	std::vector<std::pair<fz_rect, int>> word_rects;
 	std::vector<std::pair<int, fz_rect>> synctex_highlights;
 
@@ -255,6 +254,7 @@ public:
 
 	void set_selected_rectangle(fz_rect selected);
 	void clear_selected_rectangle();
+	void clear_all_selections();
 
 	std::optional<fz_rect> get_selected_rectangle();
 
