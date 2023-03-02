@@ -284,3 +284,45 @@ jobs:
       with:
         name: uploads
         path: sioyek-release-mac.zip
+
+  build-mac-arm:
+
+    runs-on: macos-11
+
+    steps:
+
+    - uses: actions/checkout@v2
+      with:
+            submodules: 'recursive'
+
+    - name: Cache Homebrew packages
+      uses: actions/cache@v2
+      env:
+        cache-name: homebrew
+      with:
+        path: ~/Library/Caches/Homebrew
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install dependencies
+      run:  brew install freeglut mesa harfbuzz 
+      
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: '6.4.*'
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        chmod +x build_mac_arm.sh
+        MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) ./build_mac_arm.sh
+        
+    - name: upload mac artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: uploads
+        path: sioyek-release-mac-arm.zip
