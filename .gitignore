@@ -354,6 +354,8 @@ moc*
 Makefile
 sioyek
 libs/*
+lib_debug/*
+lib_release/*
 *.rc
 pdf_viewer/fonts/*
 *.stash

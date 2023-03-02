@@ -15,7 +15,9 @@
 
 #include <qapplication.h>
 #include <qpushbutton.h>
+#ifndef SIOYEK_QT6
 #include <qopenglwidget.h>
+#endif
 #include <qopenglextrafunctions.h>
 #include <qopenglfunctions.h>
 #include <qopengl.h>
@@ -35,7 +37,11 @@
 #include <qlabel.h>
 #include <qtextedit.h>
 #include <qfilesystemwatcher.h>
+
+#ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
+#endif
+
 #include <qfontdatabase.h>
 #include <qstandarditemmodel.h>
 #include <qscrollarea.h>
@@ -668,6 +674,7 @@ void focus_on_widget(QWidget* widget) {
 
 int main(int argc, char* args[]) {
 
+	std::cout << "this is a test\n";
 	if (has_arg(argc, args, "--version")) {
 		std::cout << "sioyek " << APPLICATION_VERSION << "\n";
 		return 0;

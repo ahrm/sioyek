@@ -15,7 +15,11 @@
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qdatetime.h>
+
+#ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
+#endif
+
 #include <qkeyevent.h>
 #include <qlabel.h>
 #include <qlineedit.h>
@@ -350,7 +354,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
     if (DISPLAY_RESOLUTION_SCALE <= 0){
+#ifdef SIOYEK_QT6
+        pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QGuiApplication::primaryScreen()->devicePixelRatio());
+#else
         pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QApplication::desktop()->devicePixelRatioF());
+#endif
     }
     else {
         pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, DISPLAY_RESOLUTION_SCALE);
@@ -1747,13 +1755,24 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     bool is_visual_mark_mode = opengl_widget->get_should_draw_vertical_line() && visual_scroll_mode;
 
 
+#ifdef SIOYEK_QT6
+    int x = wevent->position().x();
+    int y = wevent->position().y();
+#else
     int x = wevent->pos().x();
     int y = wevent->pos().y();
+#endif
+
     WindowPos mouse_window_pos = { x, y };
     auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(mouse_window_pos);
 
+#ifdef SIOYEK_QT6
+	int num_repeats = abs(wevent->angleDelta().y() / 120);
+	float num_repeats_f = abs(wevent->angleDelta().y() / 120.0);
+#else
 	int num_repeats = abs(wevent->delta() / 120);
 	float num_repeats_f = abs(wevent->delta() / 120.0);
+#endif
 
     if (num_repeats == 0) {
         num_repeats = 1;
@@ -2227,7 +2246,12 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
 
     qtext.arg(qfile_path);
 
+#ifdef SIOYEK_QT6
+    QStringList command_parts_ = qtext.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+#else
     QStringList command_parts_ = qtext.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+#endif
+
     QStringList command_parts;
     while (command_parts_.size() > 0) {
         if ((command_parts_.size() <= 1) || (!command_parts_.at(0).endsWith("\\"))) {
@@ -2407,8 +2431,14 @@ void MainWidget::get_window_params_for_one_window_mode(int* main_window_size, in
         main_window_move[1] = SINGLE_MAIN_WINDOW_MOVE[1];
     }
     else{
+#ifdef SIOYEK_QT6
+        int window_width = QGuiApplication::primaryScreen()->geometry().width();
+        int window_height = QGuiApplication::primaryScreen()->geometry().height();
+#else
         int window_width = QApplication::desktop()->screenGeometry(0).width();
         int window_height = QApplication::desktop()->screenGeometry(0).height();
+#endif
+
         main_window_size[0] = window_width;
         main_window_size[1] = window_height;
         main_window_move[0] = 0;
@@ -2427,12 +2457,21 @@ void MainWidget::get_window_params_for_two_window_mode(int* main_window_size, in
         helper_window_move[1] = HELPER_WINDOW_MOVE[1];
     }
     else {
+#ifdef SIOYEK_QT6
+        int num_screens = QGuiApplication::screens().size();
+#else
         int num_screens = QApplication::desktop()->numScreens();
+#endif
         int main_window_width = get_current_monitor_width();
         int main_window_height = get_current_monitor_height();
         if (num_screens > 1) {
+#ifdef SIOYEK_QT6
+            int second_window_width = QGuiApplication::screens().at(1)->geometry().width();
+            int second_window_height = QGuiApplication::screens().at(1)->geometry().height();
+#else
             int second_window_width = QApplication::desktop()->screenGeometry(1).width();
             int second_window_height = QApplication::desktop()->screenGeometry(1).height();
+#endif
             main_window_size[0] = main_window_width;
             main_window_size[1] = main_window_height;
             main_window_move[0] = 0;
@@ -2939,7 +2978,11 @@ int MainWidget::get_current_monitor_width() {
 		return this->window()->windowHandle()->screen()->geometry().width();
     }
     else {
+#ifdef SIOYEK_QT6
+        return QGuiApplication::primaryScreen()->geometry().width();
+#else
 		return QApplication::desktop()->screenGeometry(0).width();
+#endif
     }
 }
 
@@ -2948,7 +2991,11 @@ int MainWidget::get_current_monitor_height() {
 		return this->window()->windowHandle()->screen()->geometry().height();
     }
     else {
+#ifdef SIOYEK_QT6
+        return QGuiApplication::primaryScreen()->geometry().height();
+#else
 		return QApplication::desktop()->screenGeometry(0).height();
+#endif
     }
 }
 

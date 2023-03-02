@@ -661,7 +661,11 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		document_view->get_document()->get_page_width(page_number),
 		document_view->get_document()->get_page_height(page_number) };
 
+#ifdef SIOYEK_QT6
+	float device_pixel_ratio = static_cast<float>(QGuiApplication::primaryScreen()->devicePixelRatio());
+#else
 	float device_pixel_ratio = QApplication::desktop()->devicePixelRatioF();
+#endif
 
 	if (DISPLAY_RESOLUTION_SCALE > 0) {
 		device_pixel_ratio *= DISPLAY_RESOLUTION_SCALE;
@@ -1280,7 +1284,11 @@ void PdfViewOpenGLWidget::draw_empty_helper_message(QPainter* painter) {
 
 	QString message = "No portals yet";
 	QFontMetrics fm(QApplication::font());
+#ifdef SIOYEK_QT6
+	int message_width = fm.boundingRect(message).width();
+#else
 	int message_width = fm.width(message);
+#endif
 	int message_height = fm.height();
 
 	int view_width = document_view->get_view_width();

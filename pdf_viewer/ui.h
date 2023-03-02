@@ -188,7 +188,11 @@ public:
 					key_event->key() == Qt::Key_Left ||
 					key_event->key() == Qt::Key_Right
 					) {
+#ifdef SIOYEK_QT6
+					QKeyEvent* newEvent = key_event->clone();
+#else
 					QKeyEvent* newEvent = new QKeyEvent(*key_event);
+#endif
 					QCoreApplication::postEvent(get_view(), newEvent);
 					//QCoreApplication::postEvent(tree_view, key_event);
 					return true;

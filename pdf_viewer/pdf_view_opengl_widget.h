@@ -34,7 +34,11 @@
 #include <qlabel.h>
 #include <qtextedit.h>
 #include <qfilesystemwatcher.h>
+
+#ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
+#endif
+
 #include <qpainter.h>
 
 #include "document_view.h"
