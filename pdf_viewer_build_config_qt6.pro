@@ -114,7 +114,7 @@ unix:!mac {
 }
 
 mac {
-    QMAKE_APPLE_DEVICE_ARCHS = x86_64 arm64
+    QMAKE_APPLE_DEVICE_ARCHS = arm64
     QMAKE_CXXFLAGS += -std=c++17
     LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lz
     CONFIG+=sdk_no_version_check
