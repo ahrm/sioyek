@@ -67,13 +67,7 @@ jobs:
           ${{ runner.os }}-
 
     - name: Install dependencies
-      run:  brew install freeglut mesa harfbuzz 
-      
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: '6.2.0'
-        modules: 'qt3d'
+      run:  brew install freeglut mesa harfbuzz qt
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
