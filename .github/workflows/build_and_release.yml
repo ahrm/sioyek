@@ -73,6 +73,7 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         version: '6.2.0'
+        modules: 'qt3d'
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
