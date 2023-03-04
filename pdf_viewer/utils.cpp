@@ -1479,7 +1479,7 @@ bool is_string_numeric_float(const std::wstring& str) {
 QByteArray serialize_string_array(const QStringList& string_list) {
 	QByteArray result;
 	QDataStream stream(&result, QIODevice::WriteOnly);
-	stream << string_list.size();
+	stream << static_cast<int>(string_list.size());
 	for (int i = 0; i < string_list.size(); i++) {
 		stream << string_list.at(i);
 	}
@@ -1493,7 +1493,6 @@ QStringList deserialize_string_array(const QByteArray &byte_array) {
 
 	int size;
 	stream >> size;
-
 
 	for (int i = 0; i < size; i++) {
 		QString string;
