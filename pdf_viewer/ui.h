@@ -49,6 +49,7 @@ extern bool MULTILINE_MENUS;
 extern bool EMACS_MODE;
 extern bool FUZZY_SEARCHING;
 
+
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
 protected:
 	bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const;
@@ -178,6 +179,14 @@ public:
 
 	bool eventFilter(QObject* obj, QEvent* event) override {
 		if (obj == line_edit) {
+#ifdef SIOYEK_QT6
+			if (event->type() == QEvent::KeyRelease) {
+				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+				if (key_event->key() == Qt::Key_Delete) {
+					handle_delete();
+				}
+			}
+#endif
 			if (event->type() == QEvent::KeyPress) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
 				bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
@@ -272,19 +281,25 @@ public:
 		return false;
 	}
 
+	void handle_delete() {
+		QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
+		if (selected_index_list.size() > 0) {
+			QModelIndex selected_index = selected_index_list.at(0);
+			if (proxy_model->hasIndex(selected_index.row(), selected_index.column())) {
+				QModelIndex source_index = proxy_model->mapToSource(selected_index);
+				on_delete(source_index, selected_index);
+			}
+		}
+	}
+
+#ifndef SIOYEK_QT6
 	void keyReleaseEvent(QKeyEvent* event) override {
 		if (event->key() == Qt::Key_Delete) {
-			QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
-			if (selected_index_list.size() > 0) {
-				QModelIndex selected_index = selected_index_list.at(0);
-				if (proxy_model->hasIndex(selected_index.row(), selected_index.column())) {
-					QModelIndex source_index = proxy_model->mapToSource(selected_index);
-					on_delete(source_index, selected_index);
-				}
-			}
+			handle_delete();
 		}
 		QWidget::keyReleaseEvent(event);
 	}
+#endif
 
 	virtual void on_config_file_changed() {
 		QString font_size_stylesheet = "";

@@ -375,7 +375,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
-    status_label->setFont(QFont(get_font_face_name()));
+    QFont label_font = QFont(get_font_face_name());
+    label_font.setStyleHint(QFont::TypeWriter);
+    status_label->setFont(label_font);
 
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
@@ -2811,7 +2813,7 @@ std::wstring MainWidget::get_window_configuration_string() {
 	QString helper_window_move_x = QString::number(-1);
 	QString helper_window_move_y = QString::number(-1);
 
-	if (helper_opengl_widget->isVisible()) {
+	if ((helper_opengl_widget != nullptr) && helper_opengl_widget->isVisible()) {
 		helper_window_size_w = QString::number(helper_opengl_widget->size().width());
 		helper_window_size_h = QString::number(helper_opengl_widget->size().height());
 		helper_window_move_x = QString::number(helper_opengl_widget->pos().x());
