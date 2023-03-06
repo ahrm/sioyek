@@ -1690,6 +1690,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
             && main_document_view->selected_character_rects.size() > 0
             && !(opengl_widget && opengl_widget->get_overview_page())) {
             command_manager->get_command_with_name("add_highlight_with_current_type")->run(this);
+            invalidate_render();
         }
         else {
           smart_jump_under_pos({ mevent->pos().x(), mevent->pos().y() });
