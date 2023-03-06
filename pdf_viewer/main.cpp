@@ -603,6 +603,11 @@ MainWidget* handle_args(const QStringList& arguments) {
 		}
 
 	}
+	else {
+		if (parser->isSet("new-window")) {
+			should_create_new_window = true;
+		}
+	}
 
 	if (should_create_new_window) {
 		target_window = new MainWidget(windows[0]);
@@ -642,7 +647,19 @@ MainWidget* handle_args(const QStringList& arguments) {
 
     // if no file is specified, use the previous file
     if (pdf_file_name == L"" && (windows[0]->doc() != nullptr)) {
-        pdf_file_name = target_window->doc()->get_path();
+		if (target_window->doc()) {
+			pdf_file_name = target_window->doc()->get_path();
+		}
+		else {
+			if (windows.size() > 1) {
+				if (windows[windows.size() - 2]->doc()) {
+					pdf_file_name = windows[windows.size() - 2]->doc()->get_path();
+				}
+			}
+			else{
+				pdf_file_name = tutorial_path.get_path();
+			}
+		}
     }
 
     if (page != -1) {

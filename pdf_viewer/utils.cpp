@@ -1555,7 +1555,7 @@ QCommandLineParser* get_command_line_parser() {
 	//parser->addOption(new_instance_option);
 
 	QCommandLineOption new_window_option("new-window");
-	new_window_option.setDescription("Open the file in a new window but within the same sioyek instance.");
+	new_window_option.setDescription("Open the file in a new window but within the same sioyek instance (reuses the previous window if a sioyek window with the same file already exists).");
 	parser->addOption(new_window_option);
 
 	QCommandLineOption reuse_window_option("reuse-window");
