@@ -691,7 +691,6 @@ void focus_on_widget(QWidget* widget) {
 
 int main(int argc, char* args[]) {
 
-	std::cout << "this is a test\n";
 	if (has_arg(argc, args, "--version")) {
 		std::cout << "sioyek " << APPLICATION_VERSION << "\n";
 		return 0;
