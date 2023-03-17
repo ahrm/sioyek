@@ -3452,7 +3452,7 @@ void MainWidget::goto_mark(char symbol) {
 		if (mark_vector.size() > 0) {
 			assert(mark_vector.size() == 1); // we can not have more than one global mark with the same name
 			std::wstring doc_path = checksummer->get_path(mark_vector[0].first).value();
-			open_document(doc_path, {}, mark_vector[0].second);
+			open_document(doc_path, 0.0f, mark_vector[0].second);
 		}
 
 	}

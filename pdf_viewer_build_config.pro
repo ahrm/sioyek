@@ -6,7 +6,16 @@ INCLUDEPATH += ./pdf_viewer\
               zlib
           
 
-QT += core opengl gui widgets network 3dinput openglextensions
+QT += core opengl gui widgets network 3dinput 
+
+greaterThan(QT_MAJOR_VERSION, 5){
+	QT += openglwidgets
+	DEFINES += SIOYEK_QT6
+}
+else{
+	QT += openglextensions
+}
+
 CONFIG += c++17
 DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
 
