@@ -307,7 +307,30 @@ QStringList convert_arguments(QStringList input_args){
     return output_args;
 }
 
+void configure_paths_android(){
+
+    char* APPDIR = std::getenv("XDG_CONFIG_HOME");
+    Path linux_home_path(QDir::homePath().toStdWString());
+
+    if (!APPDIR){
+        APPDIR = std::getenv("HOME");
+    }
+
+    Path standard_data_path = Path(utf8_decode(APPDIR));
+    standard_data_path = standard_data_path.slash(L".local").slash(L"share").slash(L"Sioyek");
+    standard_data_path.create_directories();
+
+    database_file_path = standard_data_path.slash(L"test.db");
+    local_database_file_path = standard_data_path.slash(L"local.db");
+    global_database_file_path = standard_data_path.slash(L"shared.db");
+    tutorial_path = Path(L":/tutorial.pdf");
+}
+
 void configure_paths(){
+#ifdef SIOYEK_ANDROID
+    configure_paths_android();
+#else
+
 
 	Path parent_path(QCoreApplication::applicationDirPath().toStdWString());
 	std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
@@ -414,6 +437,7 @@ void configure_paths(){
 #endif
 	auto_config_path = standard_data_path.slash(L"auto.config");
 	// user_config_paths.insert(user_config_paths.begin(), auto_config_path);
+#endif
 }
 
 void verify_config_paths(){
@@ -697,7 +721,7 @@ int main(int argc, char* args[]) {
 	}
 
 	QSurfaceFormat format;
-	format.setVersion(3, 3);
+    format.setVersion(3, 0);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	QSurfaceFormat::setDefaultFormat(format);
 
@@ -733,13 +757,14 @@ int main(int argc, char* args[]) {
 		use_single_instance = false;
 	}
 
+#ifndef SIOYEK_ANDROID
 	RunGuard guard("sioyek");
-
-	if (!guard.isPrimary()) {
-		QStringList sent_args = convert_arguments(app.arguments());
-		guard.sendMessage(serialize_string_array(sent_args));
-		return 0;
-	}
+    if (!guard.isPrimary()) {
+        QStringList sent_args = convert_arguments(app.arguments());
+        guard.sendMessage(serialize_string_array(sent_args));
+        return 0;
+    }
+#endif
 
 	QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
 	QCoreApplication::setApplicationVersion(QString::fromStdString(APPLICATION_VERSION));
@@ -810,6 +835,7 @@ int main(int argc, char* args[]) {
 	NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, main_widget);
 
 
+#ifndef SIOYEK_ANDROID
 	if (guard.isPrimary()) {
 		QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
 			QStringList args = deserialize_string_array(message);
@@ -827,6 +853,7 @@ int main(int argc, char* args[]) {
 			}
 			});
 	}
+#endif
 
 
 	main_widget->topLevelWidget()->resize(500, 500);

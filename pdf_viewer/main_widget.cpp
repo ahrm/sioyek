@@ -923,6 +923,7 @@ void MainWidget::toggle_mouse_drag_mode(){
 }
 
 void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line, int column) {
+#ifndef SIOYEK_ANDROID
 
     std::wstring latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path.get_path());
 
@@ -991,6 +992,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
         open_document(pdf_file_path);
     }
     synctex_scanner_free(scanner);
+#endif
 }
 
 
@@ -3011,6 +3013,7 @@ void MainWidget::reload() {
 
 
 void MainWidget::synctex_under_pos(WindowPos position) {
+#ifndef SIOYEK_ANDROID
 	auto [page, doc_x, doc_y] = main_document_view->window_to_document_pos(position);
 	std::wstring docpath = main_document_view->get_document()->get_path();
 	std::string docpath_utf8 = utf8_encode(docpath);
@@ -3061,6 +3064,7 @@ void MainWidget::synctex_under_pos(WindowPos position) {
 	}
 	synctex_scanner_free(scanner);
 
+#endif
 }
 
 void MainWidget::set_status_message(std::wstring new_status_string) {

@@ -398,7 +398,7 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 	creation_time = QDateTime::currentDateTime();
 
 	QSurfaceFormat format;
-	format.setVersion(3, 3);
+    format.setVersion(3, 0);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	this->setFormat(format);
 

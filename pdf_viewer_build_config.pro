@@ -1,9 +1,13 @@
 TEMPLATE = app
 TARGET = sioyek
 VERSION = 2.0.0
-INCLUDEPATH += ./pdf_viewer\
-              mupdf/include \
-              zlib
+
+INCLUDEPATH += ./pdf_viewer \
+               mupdf/include
+
+!android{
+    INCLUDEPATH += zlib
+}
           
 
 QT += core opengl gui widgets network 3dinput 
@@ -16,8 +20,13 @@ else{
 	QT += openglextensions
 }
 
+
 CONFIG += c++17
 DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
+
+android{
+    DEFINES += SIOYEK_ANDROID
+}
 
 CONFIG(non_portable){
     DEFINES += NON_PORTABLE
@@ -47,10 +56,9 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/utf8/checked.h \
            pdf_viewer/utf8/core.h \
            pdf_viewer/utf8/unchecked.h \
-           pdf_viewer/synctex/synctex_parser.h \
-           pdf_viewer/synctex/synctex_parser_utils.h \
            pdf_viewer/RunGuard.h \
            pdf_viewer/OpenWithApplication.h
+
 
 SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/config.cpp \
@@ -69,10 +77,16 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/ui.cpp \
            pdf_viewer/path.cpp \
            pdf_viewer/utils.cpp \
-           pdf_viewer/synctex/synctex_parser.c \
-           pdf_viewer/synctex/synctex_parser_utils.c \
            pdf_viewer/RunGuard.cpp \
            pdf_viewer/OpenWithApplication.cpp
+
+!android{
+           HEADERS += pdf_viewer/synctex/synctex_parser.h \
+           pdf_viewer/synctex/synctex_parser_utils.h
+           
+           SOURCES += pdf_viewer/synctex/synctex_parser.c \
+           pdf_viewer/synctex/synctex_parser_utils.c
+}
 
 
 win32{
@@ -83,7 +97,7 @@ win32{
     LIBS += opengl32.lib
 }
 
-unix:!mac {
+unix:!mac:!android {
 
     QMAKE_CXXFLAGS += -std=c++17
 
@@ -131,3 +145,11 @@ mac {
     QMAKE_INFO_PLIST = resources/Info.plist
 }
 
+android{
+    !isEmpty(target.path): INSTALLS += target
+    LIBS += -L$$PWD/libs/ -lmupdf_java
+    ANDROID_EXTRA_LIBS += $$PWD/libs/libmupdf_java.so
+
+#    RESOURCES += resources.qrc
+
+}

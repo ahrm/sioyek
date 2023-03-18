@@ -174,32 +174,32 @@ void copy_to_clipboard(const std::wstring& text, bool selection) {
 void install_app(const char *argv0)
 {
 #ifdef Q_OS_WIN
-	char buf[512];
-	HKEY software, classes, testpdf, dotpdf;
-	HKEY shell, open, command, supported_types;
-	HKEY pdf_progids;
+    char buf[512];
+    HKEY software, classes, testpdf, dotpdf;
+    HKEY shell, open, command, supported_types;
+    HKEY pdf_progids;
 
-	OPEN_KEY(HKEY_CURRENT_USER, "Software", software);
-	OPEN_KEY(software, "Classes", classes);
-	OPEN_KEY(classes, ".pdf", dotpdf);
-	OPEN_KEY(dotpdf, "OpenWithProgids", pdf_progids);
-	OPEN_KEY(classes, "Sioyek", testpdf);
-	OPEN_KEY(testpdf, "SupportedTypes", supported_types);
-	OPEN_KEY(testpdf, "shell", shell);
-	OPEN_KEY(shell, "open", open);
-	OPEN_KEY(open, "command", command);
+    OPEN_KEY(HKEY_CURRENT_USER, "Software", software);
+    OPEN_KEY(software, "Classes", classes);
+    OPEN_KEY(classes, ".pdf", dotpdf);
+    OPEN_KEY(dotpdf, "OpenWithProgids", pdf_progids);
+    OPEN_KEY(classes, "Sioyek", testpdf);
+    OPEN_KEY(testpdf, "SupportedTypes", supported_types);
+    OPEN_KEY(testpdf, "shell", shell);
+    OPEN_KEY(shell, "open", open);
+    OPEN_KEY(open, "command", command);
 
-	sprintf(buf, "\"%s\" \"%%1\"", argv0);
+    sprintf(buf, "\"%s\" \"%%1\"", argv0);
 
-	SET_KEY(open, "FriendlyAppName", "Sioyek");
-	SET_KEY(command, "", buf);
-	SET_KEY(supported_types, ".pdf", "");
-	SET_KEY(pdf_progids, "sioyek", "");
+    SET_KEY(open, "FriendlyAppName", "Sioyek");
+    SET_KEY(command, "", buf);
+    SET_KEY(supported_types, ".pdf", "");
+    SET_KEY(pdf_progids, "sioyek", "");
 
-	RegCloseKey(dotpdf);
-	RegCloseKey(testpdf);
-	RegCloseKey(classes);
-	RegCloseKey(software);
+    RegCloseKey(dotpdf);
+    RegCloseKey(testpdf);
+    RegCloseKey(classes);
+    RegCloseKey(software);
 #endif
 }
 
