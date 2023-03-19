@@ -1018,6 +1018,19 @@ class QuitCommand : public Command {
 	bool requires_document() { return false; }
 };
 
+class EscapeCommand : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->handle_escape();
+	}
+
+	std::string get_name() {
+		return "escape";
+	}
+
+	bool requires_document() { return false; }
+};
+
 class OpenLinkCommand : public Command {
 protected:
 	std::optional<std::wstring> text = {};
@@ -2239,6 +2252,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["toggle_mouse_drag_mode"] = []() {return std::make_unique< ToggleMouseDragMode>(); };
 	new_commands["close_window"] = []() {return std::make_unique< CloseWindowCommand>(); };
 	new_commands["quit"] = []() {return std::make_unique< QuitCommand>(); };
+	new_commands["escape"] = []() {return std::make_unique< EscapeCommand>(); };
 	new_commands["q"] = []() {return std::make_unique< QuitCommand>(); };
 	new_commands["open_link"] = []() {return std::make_unique< OpenLinkCommand>(); };
 	new_commands["overview_link"] = []() {return std::make_unique< OverviewLinkCommand>(); };
