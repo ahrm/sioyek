@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/">
+        <file>tutorial.pdf</file>
+        <file>pdf_viewer/keys.config</file>
+        <file>pdf_viewer/prefs.config</file>
+        <file>pdf_viewer/shaders/custom_colors.fragment</file>
+        <file>pdf_viewer/shaders/dark_mode.fragment</file>
+        <file>pdf_viewer/shaders/debug.fragment</file>
+        <file>pdf_viewer/shaders/highlight.fragment</file>
+        <file>pdf_viewer/shaders/separator.fragment</file>
+        <file>pdf_viewer/shaders/simple.fragment</file>
+        <file>pdf_viewer/shaders/simple.vertex</file>
+        <file>pdf_viewer/shaders/stencil.fragment</file>
+        <file>pdf_viewer/shaders/stencil.vertex</file>
+        <file>pdf_viewer/shaders/unrendered_page.fragment</file>
+        <file>pdf_viewer/shaders/vertical_bar.fragment</file>
+        <file>pdf_viewer/shaders/vertical_bar_dark.fragment</file>
+    </qresource>
+</RCC>
