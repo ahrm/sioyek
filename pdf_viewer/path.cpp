@@ -36,6 +36,11 @@ Path Path::file_parent() const
 
 std::wstring Path::get_path() const
 {
+#ifdef SIOYEK_ANDROID
+    if (canon_path.substr(0, 2) == L"/:"){
+        return canon_path.substr(1, canon_path.size()-1);
+    }
+#endif
 
 	if (canon_path.size() == 0) return canon_path;
 

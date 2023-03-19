@@ -1,4 +1,4 @@
-#version 330 core
+#version 300 es
 
 out vec2 screen_pos;
 out vec2 uvs;

@@ -1,5 +1,5 @@
 
-#version 330 core
+#version 300 es
 
 out vec4 color;
 in vec2 screen_pos;

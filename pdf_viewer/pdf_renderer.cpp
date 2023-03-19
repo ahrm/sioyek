@@ -378,7 +378,8 @@ fz_document* PdfRenderer::get_document_with_path(int thread_index, fz_context* m
 
 	fz_document* ret_val = nullptr;
 	fz_try(mupdf_context) {
-		ret_val = fz_open_document(mupdf_context, utf8_encode(path).c_str());
+//		ret_val = fz_open_document(mupdf_context, utf8_encode(path).c_str());
+        ret_val = open_document_with_file_name(mupdf_context, path);
 
 		if (fz_needs_password(mupdf_context, ret_val)) {
 			if (document_passwords.find(path) != document_passwords.end()) {

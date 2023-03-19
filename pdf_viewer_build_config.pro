@@ -25,6 +25,7 @@ CONFIG += c++17
 DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
 
 android{
+    CONFIG += debug
     DEFINES += SIOYEK_ANDROID
 }
 
@@ -150,6 +151,6 @@ android{
     LIBS += -L$$PWD/libs/ -lmupdf_java
     ANDROID_EXTRA_LIBS += $$PWD/libs/libmupdf_java.so
 
-#    RESOURCES += resources.qrc
+    RESOURCES += resources.qrc
 
 }

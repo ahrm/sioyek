@@ -1,6 +1,10 @@
 //#include <Windows.h>
 #include <cwctype>
 
+#ifdef SIOYEK_ANDROID
+#include <unistd.h>
+#endif
+
 #include <cmath>
 #include <cassert>
 #include "utils.h"
@@ -1637,9 +1641,24 @@ std::wstring concatenate_path(const std::wstring& prefix, const std::wstring& su
 }
 
 std::wstring get_canonical_path(const std::wstring& path) {
+#ifdef SIOYEK_ANDROID
+    if (path.size() > 0){
+        if (path[0] == ':'){ // it is a resouce file
+            return path;
+        }
+        else{
+            QDir dir(QString::fromStdWString(path));
+            return std::move(dir.absolutePath().toStdWString());
+        }
+    }
+    else {
+        return L"";
+    }
+#else
 	QDir dir(QString::fromStdWString(path));
 	//return std::move(dir.canonicalPath().toStdWString());
 	return std::move(dir.absolutePath().toStdWString());
+#endif
 
 }
 
@@ -2255,4 +2274,32 @@ void convert_color4(float* in_color, int* out_color) {
 	out_color[1] = (int)(in_color[1] * 255);
 	out_color[2] = (int)(in_color[2] * 255);
 	out_color[3] = (int)(in_color[3] * 255);
+}
+
+fz_document* open_document_with_file_name(fz_context* context, std::wstring file_name){
+
+#ifdef SIOYEK_ANDROID
+    QFile pdf_qfile(QString::fromStdWString(file_name));
+
+    pdf_qfile.open(QIODeviceBase::ReadOnly);
+    int qfile_handle = pdf_qfile.handle();
+    fz_stream* stream = nullptr;
+
+    if (qfile_handle != -1){
+        FILE* file_ptr = fdopen(dup(qfile_handle), "rb");
+        qDebug() << "file ptr : " << file_ptr << "\n";
+        stream = fz_open_file_ptr_no_close(context, file_ptr);
+    }
+    else{
+        QByteArray bytes = pdf_qfile.readAll();
+        int size = bytes.size();
+        unsigned char* new_buffer = new unsigned char[size];
+        memcpy(new_buffer, bytes.data(), bytes.size());
+        stream = fz_open_memory(context, new_buffer, bytes.size());
+    }
+
+    return fz_open_document_with_stream(context, "application/pdf", stream);
+#else
+    return  fz_open_document(context, utf8_encode(file_name).c_str());
+#endif
 }

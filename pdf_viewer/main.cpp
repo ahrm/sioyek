@@ -247,7 +247,11 @@ std::vector<Path> user_keys_paths = {};
 Path database_file_path(L"");
 Path local_database_file_path(L"");
 Path global_database_file_path(L"");
+#ifdef SIOYEK_ANDROID
+Path tutorial_path(L":/tutorial.pdf");
+#else
 Path tutorial_path(L"");
+#endif
 Path last_opened_file_address_path(L"");
 Path shader_path(L"");
 Path auto_config_path(L"");
@@ -609,7 +613,13 @@ MainWidget* handle_args(const QStringList& arguments) {
 	pdf_file_name = strip_uri(pdf_file_name);
 
 	if ((pdf_file_name.size() > 0) && (!QFile::exists(QString::fromStdWString(pdf_file_name)))) {
-		return nullptr;
+#ifdef SIOYEK_ANDROID
+        if (!((pdf_file_name[0] == ':') || (pdf_file_name.substr(0, 2) == L"/:"))){
+            return nullptr;
+        }
+#else
+        return nullptr;
+#endif
 	}
 
 	MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
