@@ -356,6 +356,7 @@ public:
 	void mousePressEvent(QMouseEvent* mevent) override;
 	void mouseDoubleClickEvent(QMouseEvent* mevent) override;
 	void wheelEvent(QWheelEvent* wevent) override;
+    bool event(QEvent *event);
 
 };
 

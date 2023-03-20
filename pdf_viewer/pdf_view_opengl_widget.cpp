@@ -87,6 +87,7 @@ OpenGLSharedResources PdfViewOpenGLWidget::shared_gl_objects;
 
 std::string read_file_contents(const Path& path){
 #ifdef SIOYEK_ANDROID
+    std::wstring actual_path = path.get_path();
     QFile qfile(QString::fromStdWString(path.get_path()));
     qfile.open(QIODeviceBase::Text | QIODeviceBase::ReadOnly);
     std::string content = qfile.readAll().toStdString();
@@ -200,15 +201,15 @@ void PdfViewOpenGLWidget::initializeGL() {
 		//shared_gl_objects.vertical_line_dark_program = LoadShaders(concatenate_path(shader_path , L"simple.vertex"),  concatenate_path(shader_path , L"vertical_bar_dark.fragment"));
 
 #ifdef SIOYEK_ANDROID
-        shared_gl_objects.rendered_program = LoadShaders(Path(L":/shaders/simple.vertex"),  Path(L":/shaders/simple.fragment"));
-        shared_gl_objects.rendered_dark_program = LoadShaders(Path(L":/shaders/simple.vertex"),  Path(L":/shaders/dark_mode.fragment"));
-        shared_gl_objects.unrendered_program = LoadShaders(Path(L":/shaders/simple.vertex"),  Path(L":/shaders/unrendered_page.fragment"));
-        shared_gl_objects.highlight_program = LoadShaders( Path(L":/shaders/simple.vertex"),  Path(L":/shaders/highlight.fragment"));
-        shared_gl_objects.vertical_line_program = LoadShaders(Path(L":/shaders/simple.vertex"),  Path(L":/shaders/vertical_bar.fragment"));
-        shared_gl_objects.vertical_line_dark_program = LoadShaders(Path(L":/shaders/simple.vertex"),  Path(L":/shaders/vertical_bar_dark.fragment"));
-        shared_gl_objects.custom_color_program = LoadShaders(Path(L":/shaders/simple.vertex"),  Path(L":/shaders/custom_colors.fragment"));
-        shared_gl_objects.separator_program = LoadShaders(Path(L":/shaders/simple.vertex"),  Path(L":/shaders/separator.fragment"));
-        shared_gl_objects.stencil_program = LoadShaders(Path(L":/shaders/stencil.vertex"),  Path(L":/shaders/stencil.fragment"));
+        shared_gl_objects.rendered_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/simple.fragment"));
+        shared_gl_objects.rendered_dark_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/dark_mode.fragment"));
+        shared_gl_objects.unrendered_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/unrendered_page.fragment"));
+        shared_gl_objects.highlight_program = LoadShaders( Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/highlight.fragment"));
+        shared_gl_objects.vertical_line_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/vertical_bar.fragment"));
+        shared_gl_objects.vertical_line_dark_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/vertical_bar_dark.fragment"));
+        shared_gl_objects.custom_color_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/custom_colors.fragment"));
+        shared_gl_objects.separator_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/separator.fragment"));
+        shared_gl_objects.stencil_program = LoadShaders(Path(L":/pdf_viewer/shaders/stencil.vertex"),  Path(L":/pdf_viewer/shaders/stencil.fragment"));
 #else
 		shared_gl_objects.rendered_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"simple.fragment"));
 		shared_gl_objects.rendered_dark_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"dark_mode.fragment"));

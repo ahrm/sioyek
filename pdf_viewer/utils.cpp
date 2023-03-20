@@ -2252,6 +2252,10 @@ QString get_status_stylesheet(bool nofont) {
     }
 }
 
+QString get_list_item_stylesheet() {
+    return QString("background-color: red; padding-bottom: 20px; padding-top: 20px;");
+}
+
 QString get_selected_stylesheet(bool nofont) {
     if ((!nofont) && STATUS_BAR_FONT_SIZE > -1) {
         QString	font_size_stylesheet = QString("font-size: %1px").arg(STATUS_BAR_FONT_SIZE);

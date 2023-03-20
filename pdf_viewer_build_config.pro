@@ -27,6 +27,7 @@ DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
 android{
     CONFIG += debug
     DEFINES += SIOYEK_ANDROID
+    QT += core-private
 }
 
 CONFIG(non_portable){

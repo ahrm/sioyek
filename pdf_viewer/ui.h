@@ -6,6 +6,8 @@
 #include <optional>
 #include <unordered_map>
 
+#include <QListWidget>
+#include <QScroller>
 #include <qsizepolicy.h>
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -15,6 +17,7 @@
 #include <qopengl.h>
 #include <qwindow.h>
 #include <qkeyevent.h>
+#include <qinputmethod.h>
 #include <qlineedit.h>
 #include <qtreeview.h>
 #include <qsortfilterproxymodel.h>
@@ -41,6 +44,7 @@
 #include "utils.h"
 #include "config.h"
 
+class MainWidget;
 extern std::wstring UI_FONT_FACE_NAME;
 extern int FONT_SIZE;
 const int max_select_size = 100;
@@ -100,13 +104,31 @@ protected:
 		abstract_item_view->setModel(proxy_model);
 		abstract_item_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+#ifdef SIOYEK_ANDROID
+        QScroller::grabGesture(abstract_item_view->viewport(), QScroller::TouchGesture);
+        abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+        QObject::connect(abstract_item_view, &QListView::pressed, [&](const QModelIndex& index){
+            pressed_row = index.row();
+            pressed_pos = QCursor::pos();
+        });
+
+        QObject::connect(abstract_item_view, &QListView::clicked, [&](const QModelIndex& index){
+            QPoint current_pos = QCursor::pos();
+            if (index.row() == pressed_row){
+                if ((current_pos - pressed_pos).manhattanLength() < 10){
+                    on_select(index);
+                }
+            }
+        });
+#endif
+
 		QTreeView* tree_view = dynamic_cast<QTreeView*>(abstract_item_view);
 		if (tree_view) {
 			tree_view->expandAll();
 			tree_view->setHeaderHidden(true);
 			tree_view->resizeColumnToContents(0);
 			tree_view->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-		}
+        }
 		if (proxy_model) {
 			proxy_model->setRecursiveFilteringEnabled(true);
 		}
@@ -117,22 +139,35 @@ protected:
 		line_edit->installEventFilter(this);
 		line_edit->setFocus();
 
+#ifndef SIOYEK_ANDROID
 		QObject::connect(abstract_item_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
 			on_select(index);
 			});
+#endif
 
-		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
-			if (!on_text_change(text)) {
-				// generic text change handling when we don't explicitly handle text change events
-				//proxy_model->setFilterFixedString(text);
-				proxy_model->setFilterCustom(text);
-				QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
-				if (t_view) {
-					t_view->expandAll();
-				}
-			}
-			});
-	}
+        QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text){
+            on_text_changed(text);
+        } );
+
+#ifdef SIOYEK_ANDROID
+        QScroller::grabGesture(abstract_item_view, QScroller::TouchGesture);
+        abstract_item_view->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+        abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+#endif
+    }
+
+    void on_text_changed(const QString& text){
+        if (!on_text_change(text)) {
+            // generic text change handling when we don't explicitly handle text change events
+            //proxy_model->setFilterFixedString(text);
+            proxy_model->setFilterCustom(text);
+            QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
+            if (t_view) {
+                t_view->expandAll();
+            }
+        }
+    }
+
 
 
 	virtual QAbstractItemView* get_view() {
@@ -142,6 +177,10 @@ protected:
 	QLineEdit* line_edit = nullptr;
 	//QSortFilterProxyModel* proxy_model = nullptr;
 	MySortFilterProxyModel* proxy_model = nullptr;
+#ifdef SIOYEK_ANDROID
+    int pressed_row = -1;
+    QPoint pressed_pos;
+#endif
 	ViewType* abstract_item_view;
 
 	virtual void on_select(const QModelIndex& value) = 0;
@@ -178,6 +217,7 @@ public:
 	}
 
 	bool eventFilter(QObject* obj, QEvent* event) override {
+        qDebug() << "Sioyek: Even happened! type: " << event->type() << "\n";
 		if (obj == line_edit) {
 #ifdef SIOYEK_QT6
 			if (event->type() == QEvent::KeyRelease) {
@@ -187,11 +227,26 @@ public:
 				}
 			}
 #endif
-			if (event->type() == QEvent::KeyPress) {
+            if (event->type() == QEvent::InputMethod){
+                QInputMethodEvent* input_event = static_cast<QInputMethodEvent*>(event);
+                QString text = input_event->preeditString();
+                if (input_event->commitString().size() > 0){
+                    text = input_event->commitString();
+                }
+                if (text.size() > 0){
+                    on_text_changed(text);
+                }
+            }
+            if ((event->type() == QEvent::KeyPress) ) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
 				bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
 				bool is_alt_pressed = key_event->modifiers().testFlag(Qt::AltModifier);
 
+#ifdef SIOYEK_ANDROID
+                if (key_event->key() == Qt::Key_Back){
+                    return false;
+                }
+#endif
 				if (key_event->key() == Qt::Key_Down ||
 					key_event->key() == Qt::Key_Up ||
 					key_event->key() == Qt::Key_Left ||
@@ -309,10 +364,11 @@ public:
 
 		//setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
 		std::wstring ss = (get_status_stylesheet(true) + font_size_stylesheet).toStdWString();
-		setStyleSheet(get_status_stylesheet(true) + font_size_stylesheet);
+        setStyleSheet(get_status_stylesheet() + font_size_stylesheet);
 		//get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{background-color: white; color: black;}");
 		get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{" + get_selected_stylesheet() + "}");
-	}
+//        get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item{" + get_list_item_stylesheet() + "}");
+    }
 
 	void resizeEvent(QResizeEvent* resize_event) override {
 		QWidget::resizeEvent(resize_event);
@@ -424,6 +480,10 @@ public:
 		this->proxy_model->setSourceModel(model);
 
 		QTableView* table_view = dynamic_cast<QTableView*>(this->get_view());
+//        QScroller::grabGesture(table_view, QScroller::LeftMouseButtonGesture);
+//        table_view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+//        table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
 
 		if (selected_index != -1) {
 			table_view->selectionModel()->setCurrentIndex(model->index(selected_index, 0), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
@@ -587,7 +647,7 @@ protected:
 public:
 
 	QString get_view_stylesheet_type_name() {
-		return "QTableView";
+        return "QTableView";
 	}
 
 	void on_select(const QModelIndex& index) {
@@ -608,24 +668,24 @@ public:
 		QWidget* parent,
 		QStringList elements,
 		std::unordered_map<std::string,
-		std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel>(nullptr, parent),
+        std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel>(nullptr, parent),
                 key_map(key_map),
                 on_done(on_done)
 	{
 		string_elements = elements;
 		standard_item_model = get_standard_item_model(string_elements);
 
-		QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+        QTableView* table_view = dynamic_cast<QTableView*>(get_view());
 
 		table_view->setSelectionMode(QAbstractItemView::SingleSelection);
 		table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
 		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 		table_view->setModel(standard_item_model);
 
-		table_view->horizontalHeader()->setStretchLastSection(true);
-		table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-		table_view->horizontalHeader()->hide();
-		table_view->verticalHeader()->hide();
+        table_view->horizontalHeader()->setStretchLastSection(true);
+        table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        table_view->horizontalHeader()->hide();
+        table_view->verticalHeader()->hide();
 
 	}
 
@@ -666,7 +726,7 @@ public:
 		//}
 
 		QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
-		dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
+        dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
 		delete standard_item_model;
 		standard_item_model = new_standard_item_model;
 		return true;
@@ -778,6 +838,23 @@ public:
 			line_edit->setText(full_path + sep);
 		}
 	}
+};
+
+class AndroidSelector : public QWidget{
+public:
+
+    AndroidSelector(QWidget* parent) ;
+
+    void resizeEvent(QResizeEvent* resize_event) override;
+//    bool event(QEvent *event) override;
+private:
+    QVBoxLayout* layout;
+    QPushButton* fullscreen_button;
+    QPushButton* select_text_button;
+    QPushButton* open_document_button;
+    QPushButton* command_button;
+    MainWidget* main_widget;
+
 };
 
 std::wstring select_document_file_name();

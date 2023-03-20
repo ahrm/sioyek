@@ -37,6 +37,7 @@
 #include <qguiapplication.h>
 #include <qmimedata.h>
 #include <qscreen.h>
+#include <QGestureEvent>
 
 
 #include "input.h"
@@ -505,6 +506,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         opengl_widget->set_highlight_links(true, false);
     }
 
+#ifdef SIOYEK_ANDROID
+    grabGesture(Qt::TapAndHoldGesture, Qt::DontStartGestureOnChildren);
+    grabGesture(Qt::PinchGesture, Qt::DontStartGestureOnChildren | Qt::ReceivePartialGestures);
+#endif
+
     setMinimumWidth(500);
     setMinimumHeight(500);
     setFocus();
@@ -749,6 +755,15 @@ void MainWidget::handle_escape() {
 }
 
 void MainWidget::keyPressEvent(QKeyEvent* kevent) {
+#ifdef SIOYEK_ANDROID
+    if (kevent->key() == Qt::Key_Back){
+        if (current_widget){
+            current_widget->hide();
+            delete current_widget;
+            current_widget = nullptr;
+        }
+    }
+#endif
     key_event(false, kevent);
 }
 
@@ -2183,6 +2198,7 @@ void MainWidget::long_jump_to_destination(DocumentPos pos) {
 
 void MainWidget::set_current_widget(QWidget* new_widget) {
     if (current_widget != nullptr) {
+        current_widget->hide();
         garbage_widgets.push_back(current_widget);
     }
     current_widget = new_widget;
@@ -4138,4 +4154,44 @@ int MainWidget::num_visible_links() {
 	std::vector<std::pair<int, fz_link*>> visible_page_links;
     main_document_view->get_visible_links(visible_page_links);
     return visible_page_links.size();
+}
+bool MainWidget::event(QEvent *event){
+
+
+#ifdef SIOYEK_ANDROID
+    if (event->type() == QEvent::Gesture){
+        auto gesture = (static_cast<QGestureEvent*>(event));
+
+        if (gesture->gesture(Qt::TapAndHoldGesture)){
+            QTapAndHoldGesture *tapgest = static_cast<QTapAndHoldGesture *>(gesture->gesture(Qt::TapAndHoldGesture));
+            if (tapgest->state() == Qt::GestureFinished){
+
+                is_dragging = false;
+//                persist();
+//                toggle_fullscreen();
+//                toggle_statusbar();
+//                std::unique_ptr<Command> command = this->command_manager->get_command_with_name("command");
+//                handle_command_types(std::move(command), 0);
+//                invalidate_render();
+
+                set_current_widget(new AndroidSelector(this));
+                current_widget->show();
+
+//                set_current_widget(new MyList(this));
+//                current_widget->show();
+                return true;
+            }
+        }
+        if (gesture->gesture(Qt::PinchGesture)){
+            QPinchGesture *pinch = static_cast<QPinchGesture *>(gesture->gesture(Qt::PinchGesture));
+            float scale = pinch->scaleFactor();
+            main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
+            return true;
+        }
+        return QWidget::event(event);
+
+    }
+#endif
+
+    return QWidget::event(event);
 }

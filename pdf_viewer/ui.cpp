@@ -1,6 +1,10 @@
 #include "ui.h"
 #include <qfiledialog.h>
 
+#include <QItemSelectionModel>
+#include <QTapGesture>
+#include <main_widget.h>
+
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
 
 std::wstring select_command_file_name(std::string command_name) {
@@ -172,4 +176,55 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
 	 if (FUZZY_SEARCHING) {
 		 setDynamicSortFilter(true);
 	 }
+}
+
+ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent){
+     layout = new QVBoxLayout();
+
+     main_widget = dynamic_cast<MainWidget*>(parent);
+
+
+    fullscreen_button = new QPushButton("Fullscreen");
+    select_text_button = new QPushButton("Select Text");
+    open_document_button = new QPushButton("Open Document");
+    command_button = new QPushButton("Command");
+
+    layout->addWidget(fullscreen_button);
+    layout->addWidget(select_text_button);
+    layout->addWidget(open_document_button);
+    layout->addWidget(command_button);
+
+    QObject::connect(fullscreen_button, &QPushButton::pressed, [&](){
+        main_widget->toggle_fullscreen();
+    });
+
+    QObject::connect(select_text_button, &QPushButton::pressed, [&](){
+        main_widget->toggle_dark_mode();
+        main_widget->invalidate_render();
+    });
+
+    QObject::connect(open_document_button, &QPushButton::pressed, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("open_document");
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(command_button, &QPushButton::pressed, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("command");
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+     layout->insertStretch(-1, 1);
+
+     this->setLayout(layout);
+ }
+
+void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    setFixedSize(parent_width * 0.9f, parent_height);
+//    list_view->setFixedSize(parent_width * 0.9f, parent_height);
+    move(parent_width * 0.05f, 0);
+
 }

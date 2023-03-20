@@ -13,6 +13,11 @@
 #include <filesystem>
 #include <map>
 
+#ifdef SIOYEK_ANDROID
+#include <QtCore/private/qandroidextras_p.h>
+#endif
+
+#include <QDebug>
 #include <qapplication.h>
 #include <qpushbutton.h>
 #ifndef SIOYEK_QT6
@@ -180,7 +185,13 @@ float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
 float RULER_PADDING = 0.0f;
 float RULER_X_PADDING = 0.0f;
 std::wstring ITEM_LIST_PREFIX = L">";
+
+#ifdef SIOYEK_ANDROID
+std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode";
+#else
 std::wstring STARTUP_COMMANDS = L"";
+#endif
+
 float SMALL_PIXMAP_SCALE = 0.75f;
 float DISPLAY_RESOLUTION_SCALE = -1;
 float FIT_TO_PAGE_WIDTH_RATIO = 1;
@@ -725,7 +736,19 @@ void focus_on_widget(QWidget* widget) {
 
 int main(int argc, char* args[]) {
 
-	if (has_arg(argc, args, "--version")) {
+#ifdef SIOYEK_ANDROID
+    auto r = QtAndroidPrivate::checkPermission(QtAndroidPrivate::Storage).result();
+    if (r == QtAndroidPrivate::Denied){
+        r = QtAndroidPrivate::requestPermission(QtAndroidPrivate::Storage).result();
+
+        if (r == QtAndroidPrivate::Denied){
+            qDebug() << "Could not get storage permission\n";
+        }
+
+    }
+#endif
+
+    if (has_arg(argc, args, "--version")) {
 		std::cout << "sioyek " << APPLICATION_VERSION << "\n";
 		return 0;
 	}
