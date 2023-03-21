@@ -228,6 +228,7 @@ public:
 			}
 #endif
             if (event->type() == QEvent::InputMethod){
+#ifdef SIOYEK_ANDROID
                 QInputMethodEvent* input_event = static_cast<QInputMethodEvent*>(event);
                 QString text = input_event->preeditString();
                 if (input_event->commitString().size() > 0){
@@ -236,6 +237,7 @@ public:
                 if (text.size() > 0){
                     on_text_changed(text);
                 }
+#endif
             }
             if ((event->type() == QEvent::KeyPress) ) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);

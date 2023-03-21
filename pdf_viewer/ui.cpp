@@ -199,7 +199,7 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
     });
 
     QObject::connect(select_text_button, &QPushButton::pressed, [&](){
-        main_widget->toggle_dark_mode();
+        main_widget->handle_mobile_selection();
         main_widget->invalidate_render();
     });
 

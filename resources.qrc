@@ -15,5 +15,7 @@
         <file>pdf_viewer/shaders/unrendered_page.fragment</file>
         <file>pdf_viewer/shaders/vertical_bar.fragment</file>
         <file>pdf_viewer/shaders/vertical_bar_dark.fragment</file>
+        <file>begin.png</file>
+        <file>end.png</file>
     </qresource>
 </RCC>

@@ -390,6 +390,7 @@ void PdfViewOpenGLWidget::render_highlight_document(GLuint program, int page, fz
 
 void PdfViewOpenGLWidget::paintGL() {
 
+    qDebug() << "painted!\n";
 	QPainter painter(this);
 	QTextOption option;
 

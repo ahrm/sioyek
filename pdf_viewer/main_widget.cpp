@@ -1,4 +1,7 @@
-﻿
+﻿//todo:
+// handle single tap (to clear text selection among other stuff)
+// handle document opening
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -10,6 +13,7 @@
 #include <cctype>
 
 
+#include <qpainterpath.h>
 #include <qscrollarea.h>
 #include <qabstractitemmodel.h>
 #include <qapplication.h>
@@ -138,6 +142,125 @@ bool MainWidget::main_document_view_has_document()
     return (main_document_view != nullptr) && (doc() != nullptr);
 }
 
+class SelectionIndicator : public QWidget{
+public:
+    SelectionIndicator(QWidget* parent, bool begin, MainWidget* w, AbsoluteDocumentPos pos) : QWidget(parent) {
+        is_begin = begin;
+        main_widget = w;
+        docpos = main_widget->doc()->absolute_to_page_pos(pos);
+
+        begin_pixmap = QPixmap(":/begin.png");
+        end_pixmap = QPixmap(":/end.png");
+//        qDebug() << "Indicator created!\n";
+
+//        setAttribute(Qt::WA_StyledBackground);
+    }
+
+    void update_pos(){
+        WindowPos window_pos = main_widget->main_document_view->document_to_window_pos_in_pixels(docpos);
+        if (is_begin){
+            move(window_pos.x - width(), window_pos.y - height());
+        }
+        else{
+            move(window_pos.x, window_pos.y);
+        }
+    }
+
+
+    void mousePressEvent(QMouseEvent* mevent) {
+        is_dragging = true;
+    }
+
+    QPoint get_actual_pos(QPoint pos){
+        if (is_begin){
+            return pos + QPoint(width(), height() );
+        }
+        else{
+            return pos - QPoint(width() / 2, height() / 2);
+        }
+    }
+
+    void mouseMoveEvent(QMouseEvent* mouse_event) {
+        if (is_dragging){
+            QPoint mouse_pos = get_actual_pos(mapToParent(mouse_event->pos()));
+
+            WindowPos window_pos;
+            window_pos.x = mouse_pos.x();
+            window_pos.y = mouse_pos.y();
+
+            docpos = main_widget->main_document_view->window_to_document_pos(window_pos);
+            if (is_begin){
+                move(mapToParent(mouse_event->pos()));
+            }
+            else{
+                move(mouse_pos);
+            }
+            main_widget->update_mobile_selection();
+        }
+    }
+
+    void mouseReleaseEvent(QMouseEvent* mevent) {
+        if (is_dragging){
+            QPoint parent_pos = get_actual_pos(mapToParent(mevent->pos()));
+
+            WindowPos window_pos;
+            window_pos.x = parent_pos.x();
+            window_pos.y = parent_pos.y();
+
+            docpos = main_widget->main_document_view->window_to_document_pos(window_pos);
+            main_widget->update_mobile_selection();
+        }
+        is_dragging = false;
+    }
+
+    void paintEvent(QPaintEvent* event){
+//        WindowPos window_pos = main_widget->get_selected_rect_absolute()
+        QPainterPath begin_path;
+        begin_path.moveTo(width(), 0);
+        begin_path.lineTo(0, 0);
+        begin_path.arcTo(0, 0, width(), height(), 90, 180);
+        begin_path.closeSubpath();
+
+        QPainterPath end_path;
+        end_path.moveTo(0, height());
+        end_path.lineTo(width(), height());
+        end_path.arcTo(0, 0, width(), height(), 270, 360);
+        end_path.closeSubpath();
+
+
+        QPainter painter(this);
+        QPoint pos = this->pos();
+        QRect rect;
+
+        QColor red_color = QColor::fromRgb(255, 0, 0);
+        painter.setPen(red_color);
+
+        rect.setBottom(0);
+        rect.setTop(height());
+        rect.setLeft(0);
+        rect.setRight(width());
+
+//        painter.fillRect(rect, red_color);
+        if (is_begin){
+//            painter.fillPath(begin_path, red_color);
+            painter.drawPixmap(0, 0, width(), height(), begin_pixmap);
+        }
+        else{
+
+//            painter.fillPath(end_path, red_color);
+            painter.drawPixmap(0, 0, width(), height(), end_pixmap);
+        }
+    }
+
+    DocumentPos docpos;
+private:
+    bool is_dragging = false;
+    bool is_begin;
+    MainWidget* main_widget;
+    QPixmap begin_pixmap;
+    QPixmap end_pixmap;
+};
+
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
 
@@ -187,6 +310,11 @@ void MainWidget::set_overview_link(PdfLink link) {
 }
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
+
+    if (selection_begin_indicator){
+        selection_begin_indicator->update_pos();
+        selection_end_indicator->update_pos();
+    }
 
     if (is_rotated()) {
         // we don't handle mouse events while document is rotated becausae proper handling
@@ -761,6 +889,12 @@ void MainWidget::keyPressEvent(QKeyEvent* kevent) {
             current_widget->hide();
             delete current_widget;
             current_widget = nullptr;
+        }
+        else if (selection_begin_indicator){
+            delete selection_begin_indicator;
+            delete selection_end_indicator;
+            selection_begin_indicator = nullptr;
+            selection_end_indicator = nullptr;
         }
     }
 #endif
@@ -1421,7 +1555,9 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         //last_mouse_down_window_x = x;
         //last_mouse_down_window_y = y;
 
+#ifndef SIOYEK_ANDROID
         main_document_view->selected_character_rects.clear();
+#endif
 
         if (!mouse_drag_mode) {
             is_selecting = true;
@@ -1462,7 +1598,9 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         }
         else {
             handle_click(click_pos);
+#ifndef SIOYEK_ANDROID
             clear_selected_text();
+#endif
         }
         validate_render();
     }
@@ -1572,6 +1710,7 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
 }
 
 void MainWidget::handle_click(WindowPos click_pos) {
+
 
     if (!main_document_view_has_document()) {
         return;
@@ -1930,6 +2069,28 @@ void MainWidget::toggle_two_window_mode() {
     else {
         helper_window->hide();
     }
+}
+
+fz_stext_char* MainWidget::get_character_under_cursor(QPoint pos){
+//    QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+    WindowPos window_pos = { pos.x(), pos.y() };
+    DocumentPos doc_pos = main_document_view->window_to_document_pos(window_pos);
+    int current_page = get_current_page_number();
+    fz_stext_page* stext_page = doc()->get_stext_with_page_number(current_page);
+    std::vector<fz_stext_char*> flat_chars;
+    get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+    fz_point doc_point;
+    doc_point.x = doc_pos.x;
+    doc_point.y = doc_pos.y;
+
+    for (fz_stext_char* ch : flat_chars){
+        fz_rect character_rect = fz_rect_from_quad(ch->quad);
+        if (fz_is_point_inside_rect(doc_point, character_rect)){
+            return ch;
+        }
+    }
+    return nullptr;
 }
 
 std::optional<std::wstring> MainWidget::get_paper_name_under_cursor() {
@@ -4163,6 +4324,8 @@ bool MainWidget::event(QEvent *event){
         auto gesture = (static_cast<QGestureEvent*>(event));
 
         if (gesture->gesture(Qt::TapAndHoldGesture)){
+            last_hold_point = QCursor::pos();
+
             QTapAndHoldGesture *tapgest = static_cast<QTapAndHoldGesture *>(gesture->gesture(Qt::TapAndHoldGesture));
             if (tapgest->state() == Qt::GestureFinished){
 
@@ -4195,3 +4358,100 @@ bool MainWidget::event(QEvent *event){
 
     return QWidget::event(event);
 }
+
+#ifdef SIOYEK_ANDROID
+void MainWidget::handle_mobile_selection(){
+//    QPoint selection_position = last_hold_point;
+    fz_stext_char* character_under = get_character_under_cursor(last_hold_point);
+    if (character_under){
+        int current_page = get_current_page_number();
+        fz_rect uncentered_rect =doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad), false);
+        fz_rect centered_rect =doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad), true);
+        main_document_view->selected_character_rects.push_back(centered_rect);
+
+
+        fz_rect rect = centered_rect;
+        int page;
+        fz_rect document_rect = doc()->absolute_to_page_rect(rect, &page);
+//        fz_rect window_rect = main_document_view->absolute_to_window_rect(rect);
+        DocumentPos begin_document_pos, end_document_pos;
+
+        begin_document_pos.x = document_rect.x0;
+        begin_document_pos.y = document_rect.y0;
+        begin_document_pos.page = page;
+        end_document_pos.x = document_rect.x1;
+        end_document_pos.y = document_rect.y1;
+        end_document_pos.page = page;
+
+        AbsoluteDocumentPos begin_abspos;
+        begin_abspos.x = rect.x0;
+        begin_abspos.y = rect.y0;
+
+        AbsoluteDocumentPos end_abspos;
+        end_abspos.x = rect.x1;
+        end_abspos.y = rect.y1;
+
+        WindowPos begin_window_pos =  main_document_view->document_to_window_pos_in_pixels(begin_document_pos);
+        WindowPos end_window_pos =  main_document_view->document_to_window_pos_in_pixels(end_document_pos);
+
+        QPoint begin_pos;
+        begin_pos.setX(begin_window_pos.x - 40);
+        begin_pos.setY(begin_window_pos.y - 40);
+
+        QPoint end_pos;
+        end_pos.setX(end_window_pos.x);
+        end_pos.setY(end_window_pos.y);
+
+        selection_begin_indicator = new SelectionIndicator(this, true, this, begin_abspos);
+        selection_end_indicator = new SelectionIndicator(this, false, this, end_abspos);
+
+
+//        int window_width = width();
+//        int window_height = height();
+        float pixel_ratio = QGuiApplication::primaryScreen()->devicePixelRatio();
+
+//        begin_pos = begin_pos / pixel_ratio;
+//        end_pos = end_pos / pixel_ratio;
+
+//        float real_height = pixel_ratio * window_height;
+//        float real_width = pixel_ratio * window_width;
+
+        selection_begin_indicator->move(begin_pos);
+        selection_end_indicator->move(end_pos);
+
+//        selection_begin_indicator->move(QPoint(0, 0));
+//        selection_end_indicator->move(QPoint(20, 20));
+
+        selection_begin_indicator->resize(40, 40);
+        selection_end_indicator->resize(40, 40);
+
+        selection_begin_indicator->raise();
+        selection_end_indicator->raise();
+
+        selection_begin_indicator->show();
+        selection_end_indicator->show();
+
+        invalidate_render();
+    }
+//    selected_character
+//    smart_jump_under_pos(window_pos);
+
+//    main_document_view->window_to_absolute_document_pos();
+}
+
+void MainWidget::update_mobile_selection(){
+//				handle_left_click(begin_window_pos, true, false, false, false);
+//				handle_left_click(end_window_pos, false, false, false, false);
+    DocumentPos begin = selection_begin_indicator->docpos;
+    DocumentPos end = selection_end_indicator->docpos;
+    AbsoluteDocumentPos begin_absolute = doc()->document_to_absolute_pos(begin, true);
+    AbsoluteDocumentPos end_absolute = doc()->document_to_absolute_pos(end, true);
+
+    main_document_view->get_text_selection(begin_absolute,
+    end_absolute,
+    false,
+    main_document_view->selected_character_rects,
+    selected_text);
+    validate_render();
+}
+#endif

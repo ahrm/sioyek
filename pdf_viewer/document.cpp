@@ -879,11 +879,10 @@ void Document::set_page_offset(int new_offset) {
 }
 
 fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page) {
-	int page_number = -1;
 	DocumentPos bottom_left = absolute_to_page_pos({ absolute_rect.x0, absolute_rect.y0 });
 	DocumentPos top_right = absolute_to_page_pos({ absolute_rect.x1, absolute_rect.y1 });
 	if (page != nullptr) {
-		*page = page_number;
+        *page = bottom_left.page;
 	}
 	fz_rect res;
 	res.x0 = bottom_left.x;

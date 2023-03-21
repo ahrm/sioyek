@@ -31,6 +31,8 @@
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 
+class SelectionIndicator;
+
 
 class MainWidget : public QWidget, ConfigFileChangeListener{
 
@@ -109,6 +111,10 @@ public:
 	bool is_dragging = false;
 
 	bool should_show_status_label = true;
+
+#ifdef SIOYEK_ANDROID
+    QPoint last_hold_point;
+#endif
 
 	std::optional<CharacterAddress> typing_location;
 
@@ -288,7 +294,8 @@ public:
 	int get_current_monitor_width(); int get_current_monitor_height();
 	void synctex_under_pos(WindowPos position);
 	std::optional<std::wstring> get_paper_name_under_cursor();
-	void set_status_message(std::wstring new_status_string);
+    fz_stext_char* get_character_under_cursor(QPoint pos);
+    void set_status_message(std::wstring new_status_string);
 	void remove_self_from_windows();
 	//void handle_additional_command(std::wstring command_name, bool wait=false);
 	std::optional<DocumentPos> get_overview_position();
@@ -331,6 +338,14 @@ public:
 	void handle_overview_to_portal();
 	void handle_toggle_typing_mode();
 	void handle_delete_highlight_under_cursor();
+
+#ifdef SIOYEK_ANDROID
+    void handle_mobile_selection();
+    void update_mobile_selection();
+    SelectionIndicator* selection_begin_indicator = nullptr;
+    SelectionIndicator *selection_end_indicator = nullptr;
+#endif
+
 	void synchronize_pending_link();
 	void refresh_all_windows();
 	std::optional<std::pair<int, fz_link*>> get_selected_link(const std::wstring& text);
