@@ -173,7 +173,7 @@ bool SHOULD_DRAW_UNRENDERED_PAGES = true;
 bool HOVER_OVERVIEW = false;
 bool RERENDER_OVERVIEW = false;
 bool LINEAR_TEXTURE_FILTERING = false;
-bool RULER_MODE = false;
+bool RULER_MODE = true;
 bool SMALL_TOC = false;
 bool WHEEL_ZOOM_ON_CURSOR = false;
 bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE = true;
@@ -336,6 +336,7 @@ void configure_paths_android(){
     standard_data_path.create_directories();
 
     database_file_path = standard_data_path.slash(L"test.db");
+    last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
     local_database_file_path = standard_data_path.slash(L"local.db");
     global_database_file_path = standard_data_path.slash(L"shared.db");
     tutorial_path = Path(L":/tutorial.pdf");
@@ -754,7 +755,15 @@ int main(int argc, char* args[]) {
 	}
 
 	QSurfaceFormat format;
+#ifdef SIOYEK_ANDROID
     format.setVersion(3, 0);
+#else
+    format.setVersion(3, 3);
+#endif
+
+//    auto behaviour = format.swapBehavior();
+//    format.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
+//    format.setSwapInterval(0);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	QSurfaceFormat::setDefaultFormat(format);
 
@@ -798,6 +807,11 @@ int main(int argc, char* args[]) {
         return 0;
     }
 #endif
+
+#ifdef SIOYEK_ANDROID
+    qputenv("QT_ANDROID_VOLUME_KEYS", "1");
+#endif
+
 
 	QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
 	QCoreApplication::setApplicationVersion(QString::fromStdString(APPLICATION_VERSION));

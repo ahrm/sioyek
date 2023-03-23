@@ -842,10 +842,12 @@ public:
 	}
 };
 
+#ifdef SIOYEK_ANDROID
 class AndroidSelector : public QWidget{
 public:
 
     AndroidSelector(QWidget* parent) ;
+    ~AndroidSelector();
 
     void resizeEvent(QResizeEvent* resize_event) override;
 //    bool event(QEvent *event) override;
@@ -854,10 +856,15 @@ private:
     QPushButton* fullscreen_button;
     QPushButton* select_text_button;
     QPushButton* open_document_button;
+    QPushButton* open_prev_document_button;
     QPushButton* command_button;
+    QPushButton* visual_mode_button;
+    QPushButton* move_visual_mark_down_button;
+    QPushButton* move_visual_mark_up_button;
     MainWidget* main_widget;
 
 };
+#endif
 
 std::wstring select_document_file_name();
 std::wstring select_json_file_name();

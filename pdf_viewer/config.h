@@ -26,7 +26,7 @@ class ConfigManager {
 
 	Config* get_mut_config_with_name(std::wstring config_name);
 	float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
-	float DEFAULT_VERTICAL_LINE_COLOR[4];
+    float DEFAULT_VERTICAL_LINE_COLOR[4] = {0.0f, 0.0f, 0.0f, 0.5f};
 	float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3];
 	float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
 	float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];

@@ -569,6 +569,27 @@ class MoveVisualMarkUpCommand : public Command {
 	}
 };
 
+class MoveVisualMarkNextCommand : public Command {
+	void perform(MainWidget* widget) {
+		widget->move_visual_mark_next();
+	}
+
+	std::string get_name() {
+		return "move_visual_mark_next";
+	}
+};
+
+class MoveVisualMarkPrevCommand : public Command {
+	void perform(MainWidget* widget) {
+		widget->move_visual_mark_prev();
+	}
+
+	std::string get_name() {
+		return "move_visual_mark_prev";
+	}
+};
+
+
 class GotoPageWithPageNumberCommand : public TextCommand {
 
 	void perform(MainWidget* widget) {
@@ -2253,6 +2274,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["prefs_user"] = []() {return std::make_unique< PrefsUserCommand>(); };
 	new_commands["move_visual_mark_down"] = []() {return std::make_unique< MoveVisualMarkDownCommand>(); };
 	new_commands["move_visual_mark_up"] = []() {return std::make_unique< MoveVisualMarkUpCommand>(); };
+	new_commands["move_visual_mark_next"] = []() {return std::make_unique< MoveVisualMarkNextCommand>(); };
+	new_commands["move_visual_mark_prev"] = []() {return std::make_unique< MoveVisualMarkPrevCommand>(); };
 	new_commands["toggle_custom_color"] = []() {return std::make_unique< ToggleCustomColorMode>(); };
 	new_commands["set_select_highlight_type"] = []() {return std::make_unique< SetSelectHighlightTypeCommand>(); };
 	new_commands["toggle_window_configuration"] = []() {return std::make_unique< ToggleWindowConfigurationCommand>(); };

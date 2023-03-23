@@ -178,38 +178,84 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
 	 }
 }
 
+#ifdef SIOYEK_ANDROID
  AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent){
      layout = new QVBoxLayout();
 
      main_widget = dynamic_cast<MainWidget*>(parent);
 
 
-    fullscreen_button = new QPushButton("Fullscreen");
-    select_text_button = new QPushButton("Select Text");
-    open_document_button = new QPushButton("Open Document");
-    command_button = new QPushButton("Command");
+    fullscreen_button = new QPushButton("Fullscreen", this);
+    select_text_button = new QPushButton("Select Text", this);
+    open_document_button = new QPushButton("Open New Document", this);
+    open_prev_document_button = new QPushButton("Open Previous Document", this);
+    command_button = new QPushButton("Command", this);
+    visual_mode_button = new QPushButton("Visual Mark Mode", this);
+    move_visual_mark_down_button = new QPushButton("Visual Down", this);
+    move_visual_mark_up_button = new QPushButton("Visual Up", this);
 
     layout->addWidget(fullscreen_button);
     layout->addWidget(select_text_button);
     layout->addWidget(open_document_button);
+    layout->addWidget(open_prev_document_button);
     layout->addWidget(command_button);
+    layout->addWidget(visual_mode_button);
+    layout->addWidget(move_visual_mark_down_button);
+    layout->addWidget(move_visual_mark_up_button);
 
     QObject::connect(fullscreen_button, &QPushButton::pressed, [&](){
+        main_widget->current_widget = {};
+        deleteLater();
         main_widget->toggle_fullscreen();
     });
 
     QObject::connect(select_text_button, &QPushButton::pressed, [&](){
+        main_widget->current_widget = {};
+        deleteLater();
         main_widget->handle_mobile_selection();
         main_widget->invalidate_render();
     });
 
     QObject::connect(open_document_button, &QPushButton::pressed, [&](){
+        main_widget->current_widget = {};
+        deleteLater();
         auto command = main_widget->command_manager->get_command_with_name("open_document");
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(open_prev_document_button, &QPushButton::pressed, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("open_prev_doc");
+        main_widget->current_widget = {};
+        deleteLater();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(command_button, &QPushButton::pressed, [&](){
         auto command = main_widget->command_manager->get_command_with_name("command");
+        main_widget->current_widget = {};
+        deleteLater();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(visual_mode_button, &QPushButton::pressed, [&](){
+        main_widget->android_handle_visual_mode();
+        main_widget->current_widget = {};
+        deleteLater();
+    });
+
+    QObject::connect(move_visual_mark_down_button, &QPushButton::pressed, [&](){
+        main_widget->current_widget = {};
+        deleteLater();
+
+        auto command = main_widget->command_manager->get_command_with_name("move_visual_mark_down");
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(move_visual_mark_up_button, &QPushButton::pressed, [&](){
+        main_widget->current_widget = {};
+        deleteLater();
+
+        auto command = main_widget->command_manager->get_command_with_name("move_visual_mark_up");
         main_widget->handle_command_types(std::move(command), 0);
     });
 
@@ -228,3 +274,8 @@ void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
     move(parent_width * 0.05f, 0);
 
 }
+
+AndroidSelector::~AndroidSelector(){
+    qDebug() << "destructor called\n";
+}
+#endif

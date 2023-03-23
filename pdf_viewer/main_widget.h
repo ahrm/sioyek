@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <deque>
 
 #include <qwidget.h>
 #include <qlineedit.h>
@@ -99,7 +100,7 @@ public:
 	bool smooth_scroll_mode = false;
 	float smooth_scroll_speed = 0.0f;
 
-	QTimer* validation_interval_timer = nullptr;
+    QTimer* validation_interval_timer = nullptr;
 
 	std::optional<Portal> link_to_edit = {};
 	int selected_highlight_index = -1;
@@ -112,9 +113,6 @@ public:
 
 	bool should_show_status_label = true;
 
-#ifdef SIOYEK_ANDROID
-    QPoint last_hold_point;
-#endif
 
 	std::optional<CharacterAddress> typing_location;
 
@@ -251,11 +249,13 @@ public:
 	void validate_render();
 	void validate_ui();
 	void zoom(WindowPos pos, float zoom_factor, bool zoom_in);
-	void move_document(float dx, float dy);
+	bool move_document(float dx, float dy, bool force=false);
 	void move_document_screens(int num_screens);
 	void focus_text(int page, const std::wstring& text);
 
-	void move_visual_mark(int offset);
+	void move_visual_mark_next();
+	void move_visual_mark_prev();
+	fz_rect move_visual_mark(int offset);
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_mouse_drag_mode();
 	void toggle_dark_mode();
@@ -273,7 +273,7 @@ public:
 	CommandManager* get_command_manager();
 
 	void move_vertical(float amount);
-	void move_horizontal(float amount);
+	bool move_horizontal(float amount, bool force=false);
 	void get_window_params_for_one_window_mode(int* main_window_size, int* main_window_move);
 	void get_window_params_for_two_window_mode(int* main_window_size, int* main_window_move, int* helper_window_size, int* helper_window_move);
 	void apply_window_params_for_one_window_mode(bool force_resize=false);
@@ -307,6 +307,7 @@ public:
 	void handle_portal_overview_update();
 	void goto_overview();
 	bool is_rect_visible(int page, fz_rect rect);
+	bool is_point_visible(int page, fz_point point);
 	void set_mark_in_current_location(char symbol);
 	void goto_mark(char symbol);
 	void advance_command(std::unique_ptr<Command> command);
@@ -340,10 +341,25 @@ public:
 	void handle_delete_highlight_under_cursor();
 
 #ifdef SIOYEK_ANDROID
-    void handle_mobile_selection();
-    void update_mobile_selection();
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator *selection_end_indicator = nullptr;
+    QPoint last_hold_point;
+    QPoint last_press_point;
+    qint64 last_press_msecs = 0;
+    bool is_pressed = false;
+    std::deque<std::pair<QTime, QPoint>> position_buffer;
+    float velocity_x = 0;
+    float velocity_y = 0;
+
+    void handle_mobile_selection();
+    void update_mobile_selection();
+    void handle_quick_tap();
+    void android_handle_visual_mode();
+    void clear_selection_indicators();
+    bool is_moving();
+    void update_position_buffer();
+    bool is_flicking(QPointF* out_velocity);
+
 #endif
 
 	void synchronize_pending_link();

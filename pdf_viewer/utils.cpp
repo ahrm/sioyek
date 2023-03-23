@@ -29,6 +29,11 @@
 #include <qnetworkreply.h>
 #include <qscreen.h>
 
+#ifdef SIOYEK_ANDROID
+#include <QtCore/private/qandroidextras_p.h>
+#include <qjniobject.h>
+#endif
+
 #include <mupdf/pdf.h>
 
 extern std::wstring LIBGEN_ADDRESS;
@@ -2307,3 +2312,71 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
     return  fz_open_document(context, utf8_encode(file_name).c_str());
 #endif
 }
+
+#ifdef SIOYEK_ANDROID
+
+
+// modified from https://github.com/mahdize/CrossQFile/blob/main/CrossQFile.cpp
+
+QJniObject parseUriString(const QString& uriString){
+    return QJniObject::callStaticObjectMethod
+                ("android/net/Uri" , "parse",
+                 "(Ljava/lang/String;)Landroid/net/Uri;",
+                 QJniObject::fromString(uriString).object());
+}
+
+QString android_file_name_from_uri(QString uri){
+
+//    mainActivityObj = QtAndroid::androidActivity();
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+
+    QJniObject contentResolverObj = activity.callObjectMethod
+            ("getContentResolver","()Landroid/content/ContentResolver;");
+
+
+//	QAndroidJniObject cursorObj {contentResolverObj.callObjectMethod
+//		("query",
+//		 "(Landroid/net/Uri;[Ljava/lang/String;Landroid/os/Bundle;Landroid/os/CancellationSignal;)Landroid/database/Cursor;",
+//		 parseUriString(fileName()).object(), QAndroidJniObject().object(), QAndroidJniObject().object(),
+//		 QAndroidJniObject().object(), QAndroidJniObject().object())};
+
+    QJniObject cursorObj {contentResolverObj.callObjectMethod
+        ("query",
+         "(Landroid/net/Uri;[Ljava/lang/String;Landroid/os/Bundle;Landroid/os/CancellationSignal;)Landroid/database/Cursor;",
+         parseUriString(uri).object(), QJniObject().object(), QJniObject().object(),
+         QJniObject().object(), QJniObject().object())};
+
+    cursorObj.callMethod<jboolean>("moveToFirst");
+
+    QJniObject retObj{cursorObj.callObjectMethod
+        ("getString","(I)Ljava/lang/String;", cursorObj.callMethod<jint>
+         ("getColumnIndex","(Ljava/lang/String;)I",
+          QJniObject::getStaticObjectField<jstring>
+          ("android/provider/OpenableColumns","DISPLAY_NAME").object()))};
+
+    QString ret {retObj.toString()};
+    return ret;
+}
+
+float dampen_velocity(float v, float dt){
+    if (v == 0) return 0;
+    dt = -dt;
+
+    float accel = 3000.0f;
+    if (v > 0){
+        v -= accel * dt;
+        if (v < 0){
+            v = 0;
+        }
+    }
+    else{
+        v += accel * dt;
+        if (v > 0){
+            v = 0;
+        }
+    }
+    return v;
+}
+
+
+#endif

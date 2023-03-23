@@ -131,6 +131,8 @@ private:
 	std::optional<fz_rect> character_highlight_rect = {};
 	std::optional<fz_rect> wrong_character_rect = {};
 
+	std::optional<AbsoluteDocumentPos> underline = {};
+
 	int rotation_index = 0;
 	bool is_dragging = false;
 	bool fastread_mode = false;
@@ -275,5 +277,7 @@ public:
 	int find_search_results_breakpoint_helper(int begin_index, int end_index);
 	void get_custom_color_transform_matrix(float matrix_data[16]);
 	void get_background_color(float out_background[3]);
+	void set_underline(AbsoluteDocumentPos abspos);
+	void clear_underline();
 
 };

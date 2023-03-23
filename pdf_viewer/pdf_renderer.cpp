@@ -171,7 +171,13 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
 		}
 		cached_response_mutex.unlock();
 		if (result == 0) {
+#ifdef SIOYEK_ANDROID
+            if (!no_rerender){
+                add_request(path, page, zoom_level);
+            }
+#else
 			add_request(path, page, zoom_level);
+#endif
 			return try_closest_rendered_page(path, page, zoom_level, page_width, page_height);
 		}
 		return result;

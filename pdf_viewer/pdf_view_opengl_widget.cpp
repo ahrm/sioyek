@@ -390,7 +390,6 @@ void PdfViewOpenGLWidget::render_highlight_document(GLuint program, int page, fz
 
 void PdfViewOpenGLWidget::paintGL() {
 
-    qDebug() << "painted!\n";
 	QPainter painter(this);
 	QTextOption option;
 
@@ -412,7 +411,13 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 	creation_time = QDateTime::currentDateTime();
 
 	QSurfaceFormat format;
+#ifdef SIOYEK_ANDROID
     format.setVersion(3, 0);
+#else
+    format.setVersion(3, 3);
+#endif
+//    format.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
+//    format.setSwapInterval(0);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	this->setFormat(format);
 
@@ -904,6 +909,20 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"synctex_highlight_color"));
 	for (auto [page, rect] : synctex_highlights) {
 		render_highlight_document(shared_gl_objects.highlight_program, page, rect);
+	}
+
+	if (underline) {
+		float underline_color[] = {1.0f, 0.0f, 0.0f, 0.9};
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, underline_color);
+
+		fz_rect underline_rect;
+		underline_rect.x0 = underline.value().x - 3.0f;
+		underline_rect.x1 = underline.value().x + 3.0f;
+
+		underline_rect.y0 = underline.value().y - 1.0f;
+		underline_rect.y1 = underline.value().y + 1.0f;
+
+		render_highlight_absolute(shared_gl_objects.highlight_program, underline_rect, false);
 	}
 
 	if (document_view->get_document()->can_use_highlights()) {
@@ -1949,4 +1968,12 @@ void PdfViewOpenGLWidget::get_background_color(float out_background[3]) {
 void PdfViewOpenGLWidget::clear_all_selections() {
 	cancel_search();
 	document_view->selected_character_rects.clear();
+}
+
+void PdfViewOpenGLWidget::set_underline(AbsoluteDocumentPos abspos) {
+	underline = abspos;
+}
+
+void PdfViewOpenGLWidget::clear_underline() {
+	underline = {};
 }

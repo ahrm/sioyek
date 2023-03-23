@@ -213,3 +213,17 @@ std::string get_aplph_tag(int n, int max_n);
 fz_document* open_document_with_file_name(fz_context* context, std::wstring file_name);
 
 QString get_list_item_stylesheet();
+
+QString android_file_name_from_uri(QString uri);
+
+float dampen_velocity(float v, float dt);
+
+template<typename T>
+T compute_average(std::vector<T> items){
+
+    T acc = items[0];
+    for (int i = 1; i < items.size(); i++){
+        acc += items[i];
+    }
+    return acc / items.size();
+}

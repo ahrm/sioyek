@@ -452,8 +452,8 @@ bool DatabaseManager::update_book(const std::string& path, float zoom_level, flo
 		esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'));";
 
 	char* error_message = nullptr;
-	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
-	return handle_error(
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
 		error_code,
 		error_message);
 }

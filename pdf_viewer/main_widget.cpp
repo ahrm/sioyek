@@ -1,8 +1,4 @@
-﻿//todo:
-// handle single tap (to clear text selection among other stuff)
-// handle document opening
-
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -137,11 +133,14 @@ extern bool VIMTEX_WSL_FIX;
 
 const int MAX_SCROLLBAR = 10000;
 
+const unsigned int INTERVAL_TIME = 200;
+
 bool MainWidget::main_document_view_has_document()
 {
     return (main_document_view != nullptr) && (doc() != nullptr);
 }
 
+#ifdef SIOYEK_ANDROID
 class SelectionIndicator : public QWidget{
 public:
     SelectionIndicator(QWidget* parent, bool begin, MainWidget* w, AbsoluteDocumentPos pos) : QWidget(parent) {
@@ -260,6 +259,7 @@ private:
     QPixmap begin_pixmap;
     QPixmap end_pixmap;
 };
+#endif
 
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
@@ -311,10 +311,15 @@ void MainWidget::set_overview_link(PdfLink link) {
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
+#ifdef SIOYEK_ANDROID
     if (selection_begin_indicator){
         selection_begin_indicator->update_pos();
         selection_end_indicator->update_pos();
     }
+    if (is_pressed){
+        update_position_buffer();
+    }
+#endif
 
     if (is_rotated()) {
         // we don't handle mouse events while document is rotated becausae proper handling
@@ -433,7 +438,6 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
             last_text_select_time = QTime::currentTime();
         }
     }
-
 }
 
 void MainWidget::persist() {
@@ -566,11 +570,16 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     // a few rerenders
     // todo: make interval time configurable
     validation_interval_timer = new QTimer(this);
-    unsigned int INTERVAL_TIME = 200;
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
-    connect(validation_interval_timer , &QTimer::timeout, [&, INTERVAL_TIME]() {
+    connect(validation_interval_timer , &QTimer::timeout, [&]() {
 
+#ifdef SIOYEK_ANDROID
+        if (selection_begin_indicator){
+            selection_begin_indicator->update_pos();
+            selection_end_indicator->update_pos();
+        }
+#endif
         if (is_render_invalidated) {
             validate_render();
         }
@@ -637,6 +646,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 #ifdef SIOYEK_ANDROID
     grabGesture(Qt::TapAndHoldGesture, Qt::DontStartGestureOnChildren);
     grabGesture(Qt::PinchGesture, Qt::DontStartGestureOnChildren | Qt::ReceivePartialGestures);
+    QObject::connect((QGuiApplication*)QGuiApplication::instance(), &QGuiApplication::applicationStateChanged, [&](Qt::ApplicationState state){
+        if ((state == Qt::ApplicationState::ApplicationSuspended) || (state == Qt::ApplicationState::ApplicationInactive)){
+            persist();
+        }
+
+    });
 #endif
 
     setMinimumWidth(500);
@@ -891,10 +906,7 @@ void MainWidget::keyPressEvent(QKeyEvent* kevent) {
             current_widget = nullptr;
         }
         else if (selection_begin_indicator){
-            delete selection_begin_indicator;
-            delete selection_end_indicator;
-            selection_begin_indicator = nullptr;
-            selection_end_indicator = nullptr;
+            clear_selection_indicators();
         }
     }
 #endif
@@ -906,6 +918,7 @@ void MainWidget::keyReleaseEvent(QKeyEvent* kevent) {
 }
 
 void MainWidget::validate_render() {
+
     if (smooth_scroll_mode) {
         if (main_document_view_has_document()) {
             float secs = static_cast<float>(-QTime::currentTime().msecsTo(last_speed_update_time)) / 1000.0f;
@@ -940,6 +953,23 @@ void MainWidget::validate_render() {
             last_speed_update_time = QTime::currentTime();
         }
     }
+#ifdef SIOYEK_ANDROID
+    if (is_moving()){
+        auto current_time = QTime::currentTime();
+        float secs = current_time.msecsTo(last_speed_update_time) / 1000.0f;
+        float move_x = secs * velocity_x;
+        float move_y = secs * velocity_y;
+        main_document_view->move(move_x, move_y);
+
+        velocity_x = dampen_velocity(velocity_x, secs);
+        velocity_y = dampen_velocity(velocity_y, secs);
+        if (!is_moving()){
+            validation_interval_timer->setInterval(INTERVAL_TIME);
+        }
+        last_speed_update_time = current_time;
+
+    }
+#endif
     if (!isVisible()) {
         return;
     }
@@ -998,6 +1028,11 @@ void MainWidget::validate_render() {
     if (smooth_scroll_mode && (smooth_scroll_speed != 0)) {
         is_render_invalidated = true;
     }
+#ifdef SIOYEK_ANDROID
+    if (is_moving()){
+        is_render_invalidated = true;
+    }
+#endif
 }
 
 void MainWidget::validate_ui() {
@@ -1005,13 +1040,14 @@ void MainWidget::validate_ui() {
     is_ui_invalidated = false;
 }
 
-void MainWidget::move_document(float dx, float dy) {
+bool MainWidget::move_document(float dx, float dy, bool force) {
     if (main_document_view_has_document()) {
-        main_document_view->move(dx, dy);
+        return main_document_view->move(dx, dy, force);
         //float prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
         //float new_vertical_line_pos = prev_vertical_line_pos - dy;
         //opengl_widget->set_vertical_line_pos(new_vertical_line_pos);
     }
+    return false;
 }
 
 void MainWidget::move_document_screens(int num_screens) {
@@ -1373,6 +1409,16 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
     if (released == false) {
 
+#ifdef SIOYEK_ANDROID
+            if (kevent->key() == Qt::Key::Key_VolumeDown) {
+                move_visual_mark_next();
+            }
+            if (kevent->key() == Qt::Key::Key_VolumeUp) {
+                move_visual_mark_prev();
+            }
+#endif
+
+
         if (kevent->key() == Qt::Key::Key_Escape) {
             handle_escape();
         }
@@ -1475,11 +1521,58 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         return;
     }
 
+#ifdef SIOYEK_ANDROID
+    if (down){
+        last_press_point = QCursor::pos();
+        last_press_msecs = QDateTime::currentMSecsSinceEpoch();
+        velocity_x = 0;
+        velocity_y = 0;
+        is_pressed = true;
+    }
+    if (!down){
+        is_pressed = false;
+        QPoint current_pos = QCursor::pos();
+        qint64 current_time = QDateTime::currentMSecsSinceEpoch();
+        QPointF vel;
+        if (((current_pos-last_press_point).manhattanLength() < 10) && ((current_time - last_press_msecs) < 200)){
+            handle_quick_tap();
+        }
+        else if (is_flicking(&vel)){
+//            float time_msecs = current_time - last_press_msecs;
+//            QPoint diff_vector = current_pos - last_press_point;
+//            QPoint velocity = diff_vector / (time_msecs / 1000.0f) * 2;
+            velocity_x = -vel.x();
+            velocity_y = vel.y();
+            if (is_moving()){
+                validation_interval_timer->setInterval(0);
+            }
+            last_speed_update_time = QTime::currentTime();
+        }
+    }
+    if (down && is_visual_mark_mode()){
+        int window_width = width();
+        int window_height = height();
+
+        int threshold = window_height * 2 / 3;
+        if (click_pos.y > threshold){
+            if (click_pos.x > window_width / 2){
+                move_visual_mark_next();
+            }
+            else{
+                move_visual_mark_prev();
+            }
+        }
+    }
+
+#endif
+
     AbsoluteDocumentPos abs_doc_pos = main_document_view->window_to_absolute_document_pos(click_pos);
 
     auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(click_pos);
 
+#ifndef SIOYEK_ANDROID
     if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
+#endif
 
     if (rect_select_mode) {
         if (down == true) {
@@ -1792,6 +1885,9 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
+#ifdef SIOYEK_ANDROID
+    pdf_renderer->no_rerender = false;
+#endif
 
 	if (is_rotated()) {
 		return;
@@ -2576,11 +2672,13 @@ void MainWidget::zoom(WindowPos pos, float zoom_factor, bool zoom_in) {
     validate_render();
 }
 
-void MainWidget::move_horizontal(float amount){
+bool MainWidget::move_horizontal(float amount, bool force){
     if (!horizontal_scroll_locked) {
-        move_document(amount, 0);
+        bool ret = move_document(amount, 0, force);
         validate_render();
+        return ret;
     }
+    return true;
 }
 
 std::optional<std::string> MainWidget::get_last_opened_file_checksum() {
@@ -3016,8 +3114,10 @@ std::wstring MainWidget::get_window_configuration_string() {
 }
 
 void MainWidget::handle_close_event() {
-	save_auto_config();
-	persist();
+    save_auto_config();
+#ifndef SIOYEK_ANDROID
+    persist();
+#endif
 
 	// we need to delete this here (instead of destructor) to ensure that application
 	// closes immediately after the main window is closed
@@ -3048,7 +3148,76 @@ void MainWidget::changeEvent(QEvent* event) {
     QWidget::changeEvent(event);
 }
 
-void MainWidget::move_visual_mark(int offset) {
+void MainWidget::move_visual_mark_next() {
+    opengl_widget->clear_underline();
+
+    int prev_line_index = main_document_view->get_line_index();
+    int vertical_line_page = main_document_view->get_vertical_line_page();
+    int current_line_index, current_page;
+
+    fz_rect current_ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page);
+    current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
+
+    if (current_ruler_rect.x1 <= 1.0f) {
+        fz_rect new_rect = move_visual_mark(1);
+		fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
+        if (new_ruler_rect.x0 < -1) {
+            float offset = (new_ruler_rect.x0 + 0.9f) * main_window_width / 2;
+            move_horizontal(-offset);
+        }
+
+        if (new_ruler_rect.x0 > 1) {
+            float offset = (new_ruler_rect.x0 - 0.1f) * main_window_width / 2;
+            move_horizontal(-offset);
+        }
+
+    }
+    else {
+        
+        WindowPos pos;
+
+        pos.x = main_window_width;
+        pos.y = main_window_height - static_cast<int>((current_ruler_rect.y1 + 1) * main_window_height / 2);
+
+        AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
+
+        if (false) {
+			bool is_truncated = move_horizontal(-static_cast<float>(main_window_width));
+
+			if (is_truncated) {
+				opengl_widget->set_underline(abspos);
+			}
+        }
+        else {
+			 move_horizontal(-static_cast<float>(main_window_width), true);
+        }
+
+    }
+}
+
+void MainWidget::move_visual_mark_prev() {
+    int prev_line_index = main_document_view->get_line_index();
+    int vertical_line_page = main_document_view->get_vertical_line_page();
+    int current_line_index, current_page;
+
+    fz_rect current_ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page);
+    current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
+
+    if (current_ruler_rect.x0 >= -1.0f) {
+        fz_rect new_rect = move_visual_mark(-1);
+		fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
+        if (new_ruler_rect.x1 > 1) {
+            float offset = (new_ruler_rect.x1 - 0.9f) * main_window_width / 2;
+            move_horizontal(-offset); //todo: fix this
+        }
+
+    }
+    else {
+        move_horizontal(static_cast<float>(main_window_width));
+    }
+}
+
+fz_rect MainWidget::move_visual_mark(int offset) {
     bool moving_down = offset >= 0;
 
     int prev_line_index = main_document_view->get_line_index();
@@ -3061,6 +3230,7 @@ void MainWidget::move_visual_mark(int offset) {
 		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
 		main_document_view->move_absolute(0, distance);
 	}
+    return ruler_rect;
 }
 
 bool MainWidget::is_visual_mark_mode() {
@@ -3609,6 +3779,25 @@ bool MainWidget::is_rect_visible(int page, fz_rect rect) {
     }
 }
 
+bool MainWidget::is_point_visible(int page, fz_point point) {
+    //Document
+    DocumentPos docpos;
+    docpos.page = page;
+    docpos.x = point.x;
+    docpos.y = point.y;
+    WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels(docpos);
+	//fz_irect window_rect = main_document_view->document_to_window_pos(page, rect);
+	if ((window_pos.x > 0)
+        && (window_pos.x < main_window_width)
+        && (window_pos.y > 0)
+        && (window_pos.y < main_window_height)) {
+        return true;
+	}
+    else {
+        return false;
+    }
+}
+
 void MainWidget::set_mark_in_current_location(char symbol) {
 	// it is a global mark, we delete other marks with the same symbol from database and add the new mark
 	if (isupper(symbol)) {
@@ -4005,12 +4194,21 @@ void MainWidget::handle_open_prev_doc() {
 	for (const auto& doc_hash_ : opened_docs_hashes_) {
 		std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
 		if (path) {
+
 			if (SHOW_DOC_PATH) {
 				opened_docs_names.push_back(path.value_or(L"<ERROR>"));
 			}
 			else {
-				opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
-			}
+#ifdef SIOYEK_ANDROID
+            std::wstring path_value = path.value();
+            if (path_value.substr(0, 10) == L"content://"){
+                path_value = android_file_name_from_uri(QString::fromStdWString(path_value)).toStdWString();
+            }
+                opened_docs_names.push_back(path_value);
+#else
+                opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
+#endif
+            }
 			opened_docs_hashes.push_back(utf8_encode(doc_hash_));
 		}
 	}
@@ -4242,7 +4440,7 @@ void MainWidget::handle_toggle_smooth_scroll_mode() {
         validation_interval_timer->setInterval(16);
     }
     else {
-        validation_interval_timer->setInterval(200);
+        validation_interval_timer->setInterval(INTERVAL_TIME);
     }
 }
 
@@ -4324,6 +4522,10 @@ bool MainWidget::event(QEvent *event){
         auto gesture = (static_cast<QGestureEvent*>(event));
 
         if (gesture->gesture(Qt::TapAndHoldGesture)){
+            if ((QCursor::pos() - last_press_point).manhattanLength() > 10){
+                return QWidget::event(event);
+            }
+
             last_hold_point = QCursor::pos();
 
             QTapAndHoldGesture *tapgest = static_cast<QTapAndHoldGesture *>(gesture->gesture(Qt::TapAndHoldGesture));
@@ -4346,6 +4548,7 @@ bool MainWidget::event(QEvent *event){
             }
         }
         if (gesture->gesture(Qt::PinchGesture)){
+            pdf_renderer->no_rerender = true;
             QPinchGesture *pinch = static_cast<QPinchGesture *>(gesture->gesture(Qt::PinchGesture));
             float scale = pinch->scaleFactor();
             main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
@@ -4453,5 +4656,101 @@ void MainWidget::update_mobile_selection(){
     main_document_view->selected_character_rects,
     selected_text);
     validate_render();
+}
+#endif
+
+#ifdef SIOYEK_ANDROID
+void MainWidget::clear_selection_indicators(){
+    if (selection_begin_indicator){
+        delete selection_begin_indicator;
+        delete selection_end_indicator;
+        selection_begin_indicator = nullptr;
+        selection_end_indicator = nullptr;
+    }
+}
+
+void MainWidget::handle_quick_tap(){
+    clear_selected_text();
+    clear_selection_indicators();
+
+    if (current_widget != nullptr) {
+        delete current_widget;
+        current_widget = nullptr;
+    }
+    text_command_line_edit_container->hide();
+}
+
+//void MainWidget::applicationStateChanged(Qt::ApplicationState state){
+//    qDebug() << "application state changed\n";
+//    if ((state == Qt::ApplicationState::ApplicationSuspended) || (state == Qt::ApplicationState::ApplicationInactive)){
+//        persist();
+//    }
+//}
+
+void MainWidget::android_handle_visual_mode(){
+//	last_hold_point
+    WindowPos pos;
+    pos.x = last_hold_point.x();
+    pos.y = last_hold_point.y();
+
+    visual_mark_under_pos(pos);
+}
+
+bool MainWidget::is_moving(){
+    return (velocity_x != 0) || (velocity_y != 0);
+}
+
+void MainWidget::update_position_buffer(){
+    QPoint pos = QCursor::pos();
+    QTime time = QTime::currentTime();
+
+    position_buffer.push_back(std::make_pair(time, pos));
+
+    if (position_buffer.size() > 5){
+        position_buffer.pop_front();
+    }
+}
+
+bool MainWidget::is_flicking(QPointF* out_velocity){
+    std::vector<float> speeds;
+    std::vector<float> dts;
+    std::vector<QPointF> velocities;
+    if (position_buffer.size() == 0){
+        *out_velocity = QPointF(0, 0);
+        return false;
+    }
+    for (int i = 0; i < position_buffer.size()-1; i++){
+        float dt = (static_cast<float>(position_buffer[i].first.msecsTo(position_buffer[i+1].first)) / 1000.0f);
+//        dts.push_back(dt);
+        if (dt < (1.0f / 120.0f)){
+            dt = 1.0f / 120.0f;
+        }
+
+        if (dt != 0){
+            QPointF velocity = (position_buffer[i+1].second - position_buffer[i].second).toPointF() /  dt;
+            velocities.push_back(velocity);
+            speeds.push_back(sqrt(QPointF::dotProduct(velocity, velocity)));
+        }
+    }
+    if (speeds.size() == 0){
+        *out_velocity = QPointF(0, 0);
+        return false;
+    }
+    float average_speed = compute_average<float>(speeds);
+
+    if (out_velocity){
+        *out_velocity = 2 * compute_average<QPointF>(velocities);
+    }
+
+    qDebug() << "average speed : " << average_speed << "\n";
+    qDebug() << "vels: " << velocities << "\n";
+    qDebug() << "dts: " << dts << "\n";
+    qDebug() << "velocity magnitude : " << sqrt(QPointF::dotProduct(*out_velocity, *out_velocity)) << "\n";
+    if (average_speed > 500.0f){
+        return true;
+    }
+    else{
+        return false;
+    }
 }
 #endif
