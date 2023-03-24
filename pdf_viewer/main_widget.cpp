@@ -4560,7 +4560,14 @@ bool MainWidget::event(QEvent *event){
             main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
             return true;
         }
-        return QWidget::event(event);
+        QTime before = QTime::currentTime();
+        auto res = QWidget::event(event);
+        QTime after = QTime::currentTime();
+        auto dt = before.msecsTo(after);
+        if (dt > 1){
+            qDebug() << event->type() << " took " << dt << " ms\n";
+        }
+        return res;
 
     }
 #endif
