@@ -1,4 +1,13 @@
-﻿#include <iostream>
+﻿//todo:
+// add smartjump
+// add back button
+// add text seleciton UI
+// add mobile-specific document selection UI
+// add mobile-specific settings
+// banded page rendering
+// maybe the frame rate issue was not becasue of QWidget but because we had an explicit += debug in .pro file for android builds
+
+#include <iostream>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -470,7 +479,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     CachedChecksummer* checksummer,
     bool* should_quit_ptr,
     QWidget* parent):
+#ifdef SIOYEK_ANDROID
+    QQuickWidget(parent),
+#else
     QWidget(parent),
+#endif
     mupdf_context(mupdf_context),
     db_manager(db_manager),
     document_manager(document_manager),
@@ -4571,19 +4584,9 @@ bool MainWidget::event(QEvent *event){
 
     }
 #endif
+    return QWidget::event(event);
 
-    //if (event->type() == QEvent::UpdateRequest){
-    //    int a = 2;
-    //}
-    //QTime before_event = QTime::currentTime();
-    //auto res = QWidget::event(event);
-    //QTime after_event = QTime::currentTime();
 
-    //if (before_event.msecsTo(after_event) > 1){
-    //    qDebug() << "event of type " << event->type() << " took " << before_event.msecsTo(after_event) << "\n";
-    //}
-
-	return QWidget::event(event);
 }
 
 #ifdef SIOYEK_ANDROID
@@ -4686,6 +4689,8 @@ void MainWidget::update_mobile_selection(){
 #ifdef SIOYEK_ANDROID
 void MainWidget::clear_selection_indicators(){
     if (selection_begin_indicator){
+        selection_begin_indicator->hide();
+        selection_end_indicator->hide();
         delete selection_begin_indicator;
         delete selection_end_indicator;
         selection_begin_indicator = nullptr;

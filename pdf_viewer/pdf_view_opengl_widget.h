@@ -166,8 +166,8 @@ protected:
 	void render_line_window(GLuint program, float vertical_pos, std::optional<fz_rect> ruler_rect = {});
 	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border=true);
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
-	void paintGL() override;
-	void render(QPainter* painter);
+    void paintGL() override;
+    void render(QPainter* painter);
 
 	void enable_stencil();
 	void write_to_stencil();

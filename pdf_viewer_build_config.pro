@@ -10,7 +10,7 @@ INCLUDEPATH += ./pdf_viewer \
 }
           
 
-QT += core opengl gui widgets network 3dinput 
+QT += core opengl gui widgets network 3dinput
 
 greaterThan(QT_MAJOR_VERSION, 5){
 	QT += openglwidgets
@@ -27,7 +27,7 @@ DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
 android{
     CONFIG += debug
     DEFINES += SIOYEK_ANDROID
-    QT += core-private
+    QT += core-private quickwidgets
 }
 
 CONFIG(non_portable){

@@ -29,13 +29,21 @@
 #include "path.h"
 #include "checksum.h"
 
+#include <QQuickWidget>
+
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 
 class SelectionIndicator;
 
 
+
+// if we inherit from QWidget there are problems on high refresh rate smartphone displays
+#ifdef SIOYEK_ANDROID
+class MainWidget : public QQuickWidget, ConfigFileChangeListener{
+#else
 class MainWidget : public QWidget, ConfigFileChangeListener{
+#endif
 
 public:
     QTime debug_last_timer;
