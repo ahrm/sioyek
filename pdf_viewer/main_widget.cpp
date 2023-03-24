@@ -1,6 +1,6 @@
 ﻿//todo:
-// add back button
 // add text seleciton UI
+// add search UI
 // add mobile-specific document selection UI
 // add mobile-specific settings
 // banded page rendering
@@ -1567,9 +1567,10 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             last_speed_update_time = QTime::currentTime();
         }
     }
+    int window_width = width();
+    int window_height = height();
+
     if (down && is_visual_mark_mode()){
-        int window_width = width();
-        int window_height = height();
 
         int threshold = window_height * 2 / 3;
         if (click_pos.y > threshold){
@@ -1579,6 +1580,19 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             else{
                 move_visual_mark_prev();
             }
+        }
+
+    }
+
+    if (down){ // handle touch history navigation
+
+        int back_threshold = window_height / 5;
+
+        if ((click_pos.y < back_threshold) && (click_pos.x < window_width / 5)){
+            prev_state();
+        }
+        if ((click_pos.y < back_threshold) && (click_pos.x > 4 * window_width / 5)){
+            next_state();
         }
     }
 
