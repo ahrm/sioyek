@@ -38,6 +38,7 @@ class SelectionIndicator;
 class MainWidget : public QWidget, ConfigFileChangeListener{
 
 public:
+    QTime debug_last_timer;
 	fz_context* mupdf_context = nullptr;
 	DatabaseManager* db_manager = nullptr;
 	DocumentManager* document_manager = nullptr;

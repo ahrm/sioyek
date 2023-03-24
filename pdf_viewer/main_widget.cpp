@@ -522,9 +522,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         apply_window_params_for_one_window_mode();
     }
 
-    helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
-        this->update_closest_link_with_opened_book_state(state);
+    if (helper_opengl_widget){
+        helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
+            this->update_closest_link_with_opened_book_state(state);
         });
+    }
 
     text_command_line_edit_container = new QWidget(this);
     text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
@@ -586,6 +588,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         else if (is_ui_invalidated) {
             validate_ui();
         }
+
         // detect if the document file has changed and if so, reload the document
         if (main_document_view != nullptr) {
             Document* doc = nullptr;
@@ -1007,11 +1010,14 @@ void MainWidget::validate_render() {
     if (main_document_view && main_document_view->get_document()) {
         std::optional<Portal> link = main_document_view->find_closest_portal();
 
-        if (link) {
-            helper_document_view->goto_link(&link.value());
-        }
-        else {
-            helper_document_view->set_null_document();
+        if (helper_document_view){
+
+            if (link) {
+                helper_document_view->goto_link(&link.value());
+            }
+            else {
+                helper_document_view->set_null_document();
+            }
         }
     }
     validate_ui();
@@ -4559,7 +4565,18 @@ bool MainWidget::event(QEvent *event){
     }
 #endif
 
-    return QWidget::event(event);
+    //if (event->type() == QEvent::UpdateRequest){
+    //    int a = 2;
+    //}
+    //QTime before_event = QTime::currentTime();
+    //auto res = QWidget::event(event);
+    //QTime after_event = QTime::currentTime();
+
+    //if (before_event.msecsTo(after_event) > 1){
+    //    qDebug() << "event of type " << event->type() << " took " << before_event.msecsTo(after_event) << "\n";
+    //}
+
+	return QWidget::event(event);
 }
 
 #ifdef SIOYEK_ANDROID
@@ -4742,10 +4759,6 @@ bool MainWidget::is_flicking(QPointF* out_velocity){
         *out_velocity = 2 * compute_average<QPointF>(velocities);
     }
 
-    qDebug() << "average speed : " << average_speed << "\n";
-    qDebug() << "vels: " << velocities << "\n";
-    qDebug() << "dts: " << dts << "\n";
-    qDebug() << "velocity magnitude : " << sqrt(QPointF::dotProduct(*out_velocity, *out_velocity)) << "\n";
     if (average_speed > 500.0f){
         return true;
     }
