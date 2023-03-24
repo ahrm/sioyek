@@ -1816,12 +1816,14 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                 }
             }
 
+			float inverse_factor = INVERTED_HORIZONTAL_SCROLLING ? -1.0f : 1.0f;
+
             if (wevent->angleDelta().x() > 0) {
-                move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f);
+                move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
                 return;
             }
             if (wevent->angleDelta().x() < 0) {
-                move_horizontal(72.0f * horizontal_move_amount * num_repeats_f);
+                move_horizontal(72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
                 return;
             }
         }
