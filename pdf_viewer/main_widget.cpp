@@ -1,5 +1,4 @@
 ﻿//todo:
-// add smartjump
 // add back button
 // add text seleciton UI
 // add mobile-specific document selection UI
@@ -4573,14 +4572,8 @@ bool MainWidget::event(QEvent *event){
             main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
             return true;
         }
-        QTime before = QTime::currentTime();
-        auto res = QWidget::event(event);
-        QTime after = QTime::currentTime();
-        auto dt = before.msecsTo(after);
-        if (dt > 1){
-            qDebug() << event->type() << " took " << dt << " ms\n";
-        }
-        return res;
+
+        return QWidget::event(event);
 
     }
 #endif
@@ -4699,6 +4692,13 @@ void MainWidget::clear_selection_indicators(){
 }
 
 void MainWidget::handle_quick_tap(){
+    QTime now = QTime::currentTime();
+
+    if ((last_quick_tap_time.msecsTo(now) < 200) && (QCursor::pos() - last_quick_tap_position).manhattanLength() < 20){
+        handle_double_tap(last_quick_tap_position);
+        return;
+    }
+
     clear_selected_text();
     clear_selection_indicators();
 
@@ -4707,6 +4707,9 @@ void MainWidget::handle_quick_tap(){
         current_widget = nullptr;
     }
     text_command_line_edit_container->hide();
+
+    last_quick_tap_position = QCursor::pos();
+    last_quick_tap_time = now;
 }
 
 //void MainWidget::applicationStateChanged(Qt::ApplicationState state){
@@ -4778,4 +4781,12 @@ bool MainWidget::is_flicking(QPointF* out_velocity){
         return false;
     }
 }
+
+void MainWidget::handle_double_tap(QPoint pos){
+    WindowPos position;
+    position.x = pos.x();
+    position.y = pos.y();
+    smart_jump_under_pos(position);
+}
+
 #endif

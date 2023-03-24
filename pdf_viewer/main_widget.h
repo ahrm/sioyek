@@ -355,6 +355,8 @@ public:
     QPoint last_hold_point;
     QPoint last_press_point;
     qint64 last_press_msecs = 0;
+    QTime last_quick_tap_time;
+    QPoint last_quick_tap_position;
     bool is_pressed = false;
     std::deque<std::pair<QTime, QPoint>> position_buffer;
     float velocity_x = 0;
@@ -363,6 +365,7 @@ public:
     void handle_mobile_selection();
     void update_mobile_selection();
     void handle_quick_tap();
+    void handle_double_tap(QPoint pos);
     void android_handle_visual_mode();
     void clear_selection_indicators();
     bool is_moving();
