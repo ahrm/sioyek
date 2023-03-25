@@ -348,10 +348,13 @@ public:
 	void handle_overview_to_portal();
 	void handle_toggle_typing_mode();
 	void handle_delete_highlight_under_cursor();
+    void handle_delete_selected_highlight();
 
 #ifdef SIOYEK_ANDROID
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator *selection_end_indicator = nullptr;
+    TextSelectionButtons* text_selection_buttons = nullptr;
+    HighlightButtons* highlight_buttons = nullptr;
     QPoint last_hold_point;
     QPoint last_press_point;
     qint64 last_press_msecs = 0;
@@ -362,15 +365,19 @@ public:
     float velocity_x = 0;
     float velocity_y = 0;
 
+
     void handle_mobile_selection();
     void update_mobile_selection();
     void handle_quick_tap();
     void handle_double_tap(QPoint pos);
     void android_handle_visual_mode();
+    void show_highlight_buttons();
+    void clear_highlight_buttons();
     void clear_selection_indicators();
     bool is_moving();
     void update_position_buffer();
     bool is_flicking(QPointF* out_velocity);
+    void handle_touch_highlight();
 
 #endif
 

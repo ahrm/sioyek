@@ -1,5 +1,4 @@
 ﻿//todo:
-// add text seleciton UI
 // add search UI
 // add mobile-specific document selection UI
 // add mobile-specific settings
@@ -215,6 +214,16 @@ public:
             window_pos.y = parent_pos.y();
 
             docpos = main_widget->main_document_view->window_to_document_pos(window_pos);
+//            AbsoluteDocumentPos abspos = main_widget->main_document_view->window_to_absolute_document_pos(window_pos);
+//            AbsoluteDocumentPos abspos = main_widget->doc()->document_to_absolute_pos(docpos);
+
+//            if (is_begin){
+//                main_widget->selection_begin = abspos;
+//            }
+//            else{
+//                main_widget->selection_end = abspos;
+//            }
+
             main_widget->update_mobile_selection();
         }
         is_dragging = false;
@@ -1854,6 +1863,12 @@ void MainWidget::handle_click(WindowPos click_pos) {
 
     auto link = main_document_view->get_link_in_pos(click_pos);
     selected_highlight_index = main_document_view->get_highlight_index_in_pos(click_pos);
+
+#ifdef SIOYEK_ANDROID
+    if (selected_highlight_index != -1){
+        show_highlight_buttons();
+    }
+#endif
 
 
     if (link.has_value()) {
@@ -4525,6 +4540,14 @@ void MainWidget::handle_delete_highlight_under_cursor() {
 	}
 }
 
+void MainWidget::handle_delete_selected_highlight(){
+    if (selected_highlight_index != -1) {
+        main_document_view->delete_highlight_with_index(selected_highlight_index);
+        selected_highlight_index = -1;
+    }
+    validate_render();
+}
+
 void MainWidget::synchronize_pending_link() {
     for (auto window : windows) {
         if (window != this) {
@@ -4641,6 +4664,7 @@ void MainWidget::handle_mobile_selection(){
 
         selection_begin_indicator = new SelectionIndicator(this, true, this, begin_abspos);
         selection_end_indicator = new SelectionIndicator(this, false, this, end_abspos);
+        text_selection_buttons = new TextSelectionButtons(this);
 
 
 //        int window_width = width();
@@ -4667,6 +4691,7 @@ void MainWidget::handle_mobile_selection(){
 
         selection_begin_indicator->show();
         selection_end_indicator->show();
+        text_selection_buttons->show();
 
         invalidate_render();
     }
@@ -4698,10 +4723,13 @@ void MainWidget::clear_selection_indicators(){
     if (selection_begin_indicator){
         selection_begin_indicator->hide();
         selection_end_indicator->hide();
+        text_selection_buttons->hide();
         delete selection_begin_indicator;
         delete selection_end_indicator;
+        delete text_selection_buttons;
         selection_begin_indicator = nullptr;
         selection_end_indicator = nullptr;
+        text_selection_buttons = nullptr;
     }
 }
 
@@ -4715,6 +4743,8 @@ void MainWidget::handle_quick_tap(){
 
     clear_selected_text();
     clear_selection_indicators();
+    selected_highlight_index = -1;
+    clear_highlight_buttons();
 
     if (current_widget != nullptr) {
         delete current_widget;
@@ -4801,6 +4831,33 @@ void MainWidget::handle_double_tap(QPoint pos){
     position.x = pos.x();
     position.y = pos.y();
     smart_jump_under_pos(position);
+}
+
+
+void MainWidget::show_highlight_buttons(){
+    highlight_buttons = new HighlightButtons(this);
+    highlight_buttons->show();
+}
+
+void MainWidget::clear_highlight_buttons(){
+    if (highlight_buttons){
+        highlight_buttons->hide();
+        delete highlight_buttons;
+        highlight_buttons = nullptr;
+    }
+}
+
+void MainWidget::handle_touch_highlight(){
+
+    DocumentPos begin_docpos = selection_begin_indicator->docpos;
+    DocumentPos end_docpos = selection_end_indicator->docpos;
+
+    AbsoluteDocumentPos begin_abspos = doc()->document_to_absolute_pos(begin_docpos, true);
+    AbsoluteDocumentPos end_abspos = doc()->document_to_absolute_pos(end_docpos, true);
+
+    main_document_view->add_highlight(begin_abspos, end_abspos, select_highlight_type);
+
+    invalidate_render();
 }
 
 #endif

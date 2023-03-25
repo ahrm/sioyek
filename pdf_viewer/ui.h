@@ -847,8 +847,6 @@ class AndroidSelector : public QWidget{
 public:
 
     AndroidSelector(QWidget* parent) ;
-    ~AndroidSelector();
-
     void resizeEvent(QResizeEvent* resize_event) override;
 //    bool event(QEvent *event) override;
 private:
@@ -864,6 +862,34 @@ private:
     MainWidget* main_widget;
 
 };
+
+class TextSelectionButtons : public QWidget{
+public:
+    TextSelectionButtons(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+
+    MainWidget* main_widget;
+    QHBoxLayout* layout;
+    QPushButton* copy_button;
+    QPushButton* search_in_scholar_button;
+    QPushButton* search_in_google_button;
+    QPushButton* highlight_button;
+
+};
+
+class HighlightButtons : public QWidget {
+
+public:
+    HighlightButtons(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+
+    MainWidget* main_widget;
+    QHBoxLayout* layout;
+    QPushButton* delete_highlight_button;
+};
+
 #endif
 
 std::wstring select_document_file_name();

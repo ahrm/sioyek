@@ -637,11 +637,7 @@ class DeleteBookmarkCommand : public Command {
 
 class DeleteHighlightCommand : public Command {
 	void perform(MainWidget* widget) {
-		if (widget->selected_highlight_index != -1) {
-			widget->main_document_view->delete_highlight_with_index(widget->selected_highlight_index);
-			widget->selected_highlight_index = -1;
-		}
-		widget->validate_render();
+        widget->handle_delete_selected_highlight();
 	}
 
 	std::string get_name() {
