@@ -191,8 +191,7 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
     open_prev_document_button = new QPushButton("Open Previous Document", this);
     command_button = new QPushButton("Command", this);
     visual_mode_button = new QPushButton("Visual Mark Mode", this);
-    move_visual_mark_down_button = new QPushButton("Visual Down", this);
-    move_visual_mark_up_button = new QPushButton("Visual Up", this);
+    search_button = new QPushButton("Search", this);
 
     layout->addWidget(fullscreen_button);
     layout->addWidget(select_text_button);
@@ -200,8 +199,7 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
     layout->addWidget(open_prev_document_button);
     layout->addWidget(command_button);
     layout->addWidget(visual_mode_button);
-    layout->addWidget(move_visual_mark_down_button);
-    layout->addWidget(move_visual_mark_up_button);
+    layout->addWidget(search_button);
 
     QObject::connect(fullscreen_button, &QPushButton::pressed, [&](){
         main_widget->current_widget = {};
@@ -243,20 +241,12 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
         deleteLater();
     });
 
-    QObject::connect(move_visual_mark_down_button, &QPushButton::pressed, [&](){
+    QObject::connect(search_button, &QPushButton::pressed, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("search");
         main_widget->current_widget = {};
         deleteLater();
-
-        auto command = main_widget->command_manager->get_command_with_name("move_visual_mark_down");
         main_widget->handle_command_types(std::move(command), 0);
-    });
-
-    QObject::connect(move_visual_mark_up_button, &QPushButton::pressed, [&](){
-        main_widget->current_widget = {};
-        deleteLater();
-
-        auto command = main_widget->command_manager->get_command_with_name("move_visual_mark_up");
-        main_widget->handle_command_types(std::move(command), 0);
+//        main_widget->show_search_buttons();
     });
 
      layout->insertStretch(-1, 1);
@@ -337,6 +327,54 @@ HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent){
 }
 
 void HighlightButtons::resizeEvent(QResizeEvent* resize_event){
+
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    setFixedSize(parent_width, parent_height / 5);
+    move(0, 0);
+}
+
+SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent){
+    main_widget = parent;
+    layout = new QHBoxLayout();
+
+//    delete_highlight_button = new QPushButton("Delete");
+//    QObject::connect(delete_highlight_button, &QPushButton::clicked, [&](){
+//        main_widget->handle_delete_selected_highlight();
+//        hide();
+//        main_widget->highlight_buttons = nullptr;
+//        deleteLater();
+//    });
+    next_match_button = new QPushButton("next");
+    prev_match_button = new QPushButton("prev");
+    goto_initial_location_button = new QPushButton("initial");
+
+    QObject::connect(next_match_button, &QPushButton::clicked, [&](){
+        main_widget->opengl_widget->goto_search_result(1);
+        main_widget->invalidate_render();
+    });
+
+    QObject::connect(prev_match_button, &QPushButton::clicked, [&](){
+        main_widget->opengl_widget->goto_search_result(-1);
+        main_widget->invalidate_render();
+    });
+
+    QObject::connect(goto_initial_location_button, &QPushButton::clicked, [&](){
+        main_widget->goto_mark('/');
+        main_widget->invalidate_render();
+    });
+
+
+    layout->addWidget(next_match_button);
+    layout->addWidget(goto_initial_location_button);
+    layout->addWidget(prev_match_button);
+
+    this->setLayout(layout);
+}
+
+void SearchButtons::resizeEvent(QResizeEvent* resize_event){
 
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();

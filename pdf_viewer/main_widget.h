@@ -355,6 +355,7 @@ public:
     SelectionIndicator *selection_end_indicator = nullptr;
     TextSelectionButtons* text_selection_buttons = nullptr;
     HighlightButtons* highlight_buttons = nullptr;
+    SearchButtons* search_buttons = nullptr;
     QPoint last_hold_point;
     QPoint last_press_point;
     qint64 last_press_msecs = 0;
@@ -373,6 +374,8 @@ public:
     void android_handle_visual_mode();
     void show_highlight_buttons();
     void clear_highlight_buttons();
+    void show_search_buttons();
+    void clear_search_buttons();
     void clear_selection_indicators();
     bool is_moving();
     void update_position_buffer();

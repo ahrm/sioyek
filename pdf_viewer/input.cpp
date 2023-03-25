@@ -125,6 +125,9 @@ class SearchCommand : public TextCommand {
 
 	void perform(MainWidget* widget) {
 		widget->perform_search(this->text.value(), false);
+#ifdef SIOYEK_ANDROID
+        widget->show_search_buttons();
+#endif
 	}
 
 	std::string get_name() {

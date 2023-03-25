@@ -1,7 +1,7 @@
 ﻿//todo:
-// add search UI
-// add mobile-specific document selection UI
 // add mobile-specific settings
+// add mobile specific page navigation
+// add mobile-specific document selection UI
 // banded page rendering
 // maybe the frame rate issue was not becasue of QWidget but because we had an explicit += debug in .pro file for android builds
 
@@ -4745,6 +4745,8 @@ void MainWidget::handle_quick_tap(){
     clear_selection_indicators();
     selected_highlight_index = -1;
     clear_highlight_buttons();
+    clear_search_buttons();
+    opengl_widget->cancel_search();
 
     if (current_widget != nullptr) {
         delete current_widget;
@@ -4860,4 +4862,18 @@ void MainWidget::handle_touch_highlight(){
     invalidate_render();
 }
 
+void MainWidget::show_search_buttons(){
+
+    search_buttons = new SearchButtons(this);
+    search_buttons->show();
+}
+
+void MainWidget::clear_search_buttons(){
+
+    if (search_buttons){
+        search_buttons->hide();
+        delete search_buttons;
+        search_buttons = nullptr;
+    }
+}
 #endif

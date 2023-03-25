@@ -857,8 +857,8 @@ private:
     QPushButton* open_prev_document_button;
     QPushButton* command_button;
     QPushButton* visual_mode_button;
-    QPushButton* move_visual_mark_down_button;
-    QPushButton* move_visual_mark_up_button;
+    QPushButton* search_button;
+
     MainWidget* main_widget;
 
 };
@@ -888,6 +888,20 @@ private:
     MainWidget* main_widget;
     QHBoxLayout* layout;
     QPushButton* delete_highlight_button;
+};
+
+class SearchButtons : public QWidget {
+
+public:
+    SearchButtons(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+
+    MainWidget* main_widget;
+    QHBoxLayout* layout;
+    QPushButton* prev_match_button;
+    QPushButton* next_match_button;
+    QPushButton* goto_initial_location_button;
 };
 
 #endif
