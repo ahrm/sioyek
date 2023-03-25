@@ -264,6 +264,7 @@ Path local_database_file_path(L"");
 Path global_database_file_path(L"");
 #ifdef SIOYEK_ANDROID
 Path tutorial_path(L":/tutorial.pdf");
+Path android_config_path(L"");
 #else
 Path tutorial_path(L"");
 #endif
@@ -326,6 +327,7 @@ QStringList convert_arguments(QStringList input_args){
     return output_args;
 }
 
+#ifdef SIOYEK_ANDROID
 void configure_paths_android(){
 
     char* APPDIR = std::getenv("XDG_CONFIG_HOME");
@@ -343,8 +345,10 @@ void configure_paths_android(){
     last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
     local_database_file_path = standard_data_path.slash(L"local.db");
     global_database_file_path = standard_data_path.slash(L"shared.db");
+    android_config_path = standard_data_path.slash(L"saved.config");
     tutorial_path = Path(L":/tutorial.pdf");
 }
+#endif
 
 void configure_paths(){
 #ifdef SIOYEK_ANDROID
@@ -780,7 +784,11 @@ int main(int argc, char* args[]) {
 	configure_paths();
 	verify_config_paths();
 
-	ConfigManager config_manager(default_config_path, auto_config_path, user_config_paths);
+#ifdef SIOYEK_ANDROID
+    ConfigManager config_manager(android_config_path, auto_config_path, user_config_paths);
+#else
+    ConfigManager config_manager(default_config_path, auto_config_path, user_config_paths);
+#endif
 	CommandManager* command_manager = new CommandManager(&config_manager);
 
 	if (SHARED_DATABASE_PATH.size() > 0) {

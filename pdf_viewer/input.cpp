@@ -1778,6 +1778,17 @@ class OverviewToPortalCommand : public Command {
 	}
 };
 
+class DebugCommand : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->persist_config();
+	}
+
+	std::string get_name() {
+		return "debug";
+	}
+};
+
 class SelectRectCommand : public Command {
 
 	void perform(MainWidget* widget) {
@@ -2136,6 +2147,7 @@ public:
 };
 
 
+#ifndef SIOYEK_ANDROID
 class ConfigCommand : public TextCommand {
 	std::string config_name;
 public:
@@ -2153,6 +2165,44 @@ public:
 	
 	bool requires_document() { return false; }
 };
+#else
+
+class ConfigCommand : public Command {
+    std::string config_name;
+public:
+    ConfigCommand(std::string config_name_) {
+        config_name = config_name_;
+    }
+
+    void perform(MainWidget* widget) {
+//        widget->config_manager->deserialize_config(config_name, text.value());
+        Config* config = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
+
+
+        if (config->config_type == ConfigType::Color3){
+            widget->set_current_widget(new Color3ConfigUI(widget, (float*)config->value));
+            widget->current_widget->show();
+        }
+
+        if (config->config_type == ConfigType::Color4){
+            widget->set_current_widget(new Color4ConfigUI(widget, (float*)config->value));
+            widget->current_widget->show();
+        }
+        if (config->config_type == ConfigType::Bool){
+            widget->set_current_widget(new BoolConfigUI(widget, (bool*)config->value, QString::fromStdWString(config->name) ));
+            widget->current_widget->show();
+        }
+
+//        config->serialize
+    }
+
+    std::string get_name() {
+        return "setconfig_" + config_name;
+    }
+
+    bool requires_document() { return false; }
+};
+#endif
 
 class MacroCommand : public Command {
 	std::vector<std::unique_ptr<Command>> commands;
@@ -2340,6 +2390,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["toggle_select_highlight"] = []() {return std::make_unique< ToggleSelectHighlightCommand>(); };
 	new_commands["open_last_document"] = []() {return std::make_unique< OpenLastDocumentCommand>(); };
 	new_commands["toggle_statusbar"] = []() {return std::make_unique< ToggleStatusbarCommand>(); };
+	new_commands["debug"] = []() {return std::make_unique< DebugCommand>(); };
 
 
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {

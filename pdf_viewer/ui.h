@@ -34,6 +34,10 @@
 #include <qstandarditemmodel.h>
 #include <qfilesystemmodel.h>
 #include <qheaderview.h>
+#include <qcolordialog.h>
+#include <qslider.h>
+#include <qlabel.h>
+#include <qcheckbox.h>
 
 #include "rapidfuzz_amalgamated.hpp"
 
@@ -858,6 +862,10 @@ private:
     QPushButton* command_button;
     QPushButton* visual_mode_button;
     QPushButton* search_button;
+    QPushButton* set_background_color;
+    QPushButton* set_dark_mode_contrast;
+    QPushButton* set_ruler_mode;
+    QPushButton* restore_default_config_button;
 
     MainWidget* main_widget;
 
@@ -904,6 +912,60 @@ private:
     QPushButton* goto_initial_location_button;
 };
 
+class ConfigUI : public QWidget{
+public:
+    ConfigUI(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+
+protected:
+    MainWidget* main_widget;
+};
+
+class Color3ConfigUI : public ConfigUI {
+public:
+    Color3ConfigUI(MainWidget* parent, float* config_location_);
+
+private:
+    float* color_location;
+    QColorDialog* color_picker;
+
+};
+
+class Color4ConfigUI : public ConfigUI {
+public:
+    Color4ConfigUI(MainWidget* parent, float* config_location_);
+
+private:
+    float* color_location;
+    QColorDialog* color_picker;
+
+};
+
+class BoolConfigUI : public ConfigUI{
+public:
+    BoolConfigUI(MainWidget* parent, bool* config_location, QString name);
+private:
+
+    bool* bool_location;
+    QHBoxLayout* layout;
+    QCheckBox* checkbox;
+    QLabel* label;
+
+};
+
+class FloatConfigUI : public ConfigUI{
+public:
+    FloatConfigUI(MainWidget* parent, float* config_location, float min_value, float max_value);
+private:
+    float* float_location;
+    QSlider* slider;
+    QLabel* current_value_label;
+    QPushButton* confirm_button;
+    QHBoxLayout* layout;
+    float min_value;
+    float max_value;
+};
+
 #endif
 
 std::wstring select_document_file_name();
@@ -912,3 +974,17 @@ std::wstring select_any_file_name();
 std::wstring select_command_file_name(std::string command_name);
 std::wstring select_new_json_file_name();
 std::wstring select_new_pdf_file_name();
+
+
+//QWidget* color3_configurator_ui(MainWidget* main_widget, void* location);
+//QWidget* color4_configurator_ui(MainWidget* main_widget, void* location);
+
+//template<float min_value, float max_value>
+//QWidget* float_configurator_ui(MainWidget* main_widget, void* location){
+//    return new FloatConfigUI(main_widget, (float*)location, min_value, max_value);
+//}
+
+//template<QString name>
+//QWidget* bool_configurator_ui(MainWidget* main_widget, void* location){
+//    return new BoolConfigUI(main_widget, (float*)location, name);
+//}

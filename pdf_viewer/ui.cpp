@@ -6,6 +6,9 @@
 #include <main_widget.h>
 
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
+extern float DARK_MODE_CONTRAST;
+extern float BACKGROUND_COLOR[3];
+extern bool RULER_MODE;
 
 std::wstring select_command_file_name(std::string command_name) {
 	if (command_name == "open_document") {
@@ -192,6 +195,10 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
     command_button = new QPushButton("Command", this);
     visual_mode_button = new QPushButton("Visual Mark Mode", this);
     search_button = new QPushButton("Search", this);
+    set_background_color = new QPushButton("Background Color", this);
+    set_dark_mode_contrast = new QPushButton("Dark Mode Contrast", this);
+    set_ruler_mode = new QPushButton("Ruler Mode", this);
+    restore_default_config_button = new QPushButton("Restore Default Config", this);
 
     layout->addWidget(fullscreen_button);
     layout->addWidget(select_text_button);
@@ -200,6 +207,10 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
     layout->addWidget(command_button);
     layout->addWidget(visual_mode_button);
     layout->addWidget(search_button);
+    layout->addWidget(set_background_color);
+    layout->addWidget(set_dark_mode_contrast);
+    layout->addWidget(set_ruler_mode);
+    layout->addWidget(restore_default_config_button);
 
     QObject::connect(fullscreen_button, &QPushButton::pressed, [&](){
         main_widget->current_widget = {};
@@ -246,7 +257,40 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
         main_widget->current_widget = {};
         deleteLater();
         main_widget->handle_command_types(std::move(command), 0);
-//        main_widget->show_search_buttons();
+    });
+
+    QObject::connect(set_background_color, &QPushButton::pressed, [&](){
+
+        auto command = main_widget->command_manager->get_command_with_name("setconfig_background_color");
+        main_widget->current_widget = {};
+        deleteLater();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(set_dark_mode_contrast, &QPushButton::pressed, [&](){
+
+        main_widget->current_widget = {};
+        deleteLater();
+
+        main_widget->current_widget = new FloatConfigUI(main_widget, &DARK_MODE_CONTRAST, 0.0f, 1.0f);
+        main_widget->current_widget->show();
+    });
+
+    QObject::connect(set_ruler_mode, &QPushButton::pressed, [&](){
+
+        auto command = main_widget->command_manager->get_command_with_name("setconfig_ruler_mode");
+        main_widget->current_widget = {};
+        deleteLater();
+        main_widget->handle_command_types(std::move(command), 0);
+
+    });
+
+    QObject::connect(restore_default_config_button, &QPushButton::pressed, [&](){
+
+        main_widget->current_widget = {};
+        deleteLater();
+        main_widget->restore_default_config();
+
     });
 
      layout->insertStretch(-1, 1);
@@ -383,5 +427,127 @@ void SearchButtons::resizeEvent(QResizeEvent* resize_event){
     setFixedSize(parent_width, parent_height / 5);
     move(0, 0);
 }
+
+ConfigUI::ConfigUI(MainWidget* parent) : QWidget(parent){
+    main_widget = parent;
+}
+
+void ConfigUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    setFixedSize(2 * parent_width / 3, parent_height / 2);
+    move(parent_width / 6, parent_height / 4);
+}
+
+Color3ConfigUI::Color3ConfigUI(MainWidget* parent, float* config_location_) : ConfigUI(parent) {
+    color_location = config_location_;
+    color_picker = new QColorDialog(this);
+    color_picker->show();
+
+    connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
+        convert_qcolor_to_float3(color, color_location);
+        main_widget->invalidate_render();
+        main_widget->persist_config();
+    });
+ }
+
+Color4ConfigUI::Color4ConfigUI(MainWidget* parent, float* config_location_) : ConfigUI(parent) {
+    color_location = config_location_;
+    color_picker = new QColorDialog(this);
+    color_picker->show();
+
+    connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
+        convert_qcolor_to_float4(color, color_location);
+        main_widget->invalidate_render();
+        main_widget->persist_config();
+    });
+ }
+
+FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float min_value_, float max_value_) : ConfigUI(parent) {
+
+    min_value = min_value_;
+    max_value = max_value_;
+
+    float_location = config_location;
+    layout = new QHBoxLayout();
+    current_value_label = new QLabel(QString::number(*float_location));
+    confirm_button = new QPushButton("Confirm", this);
+    slider = new QSlider(Qt::Orientation::Horizontal, this);
+    slider->setRange(0, 100);
+    int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
+    current_value_label->setText(QString::number(*float_location));
+    slider->setValue(current_value);
+
+    slider->setStyleSheet("QSlider::groove:horizontal {border: 1px solid;height: 10px;margin: 0px;}QSlider::handle:horizontal {background-color: black;border: 1px solid;height: 40px;width: 40px;margin: -15px 0px;}");
+
+    layout->addWidget(current_value_label);
+    layout->addWidget(slider);
+    layout->addWidget(confirm_button);
+
+
+    QObject::connect(confirm_button, &QPushButton::clicked, [&](){
+        float value = min_value + (static_cast<float>(slider->value()) / 100) * (max_value - min_value);
+        *float_location = value;
+        main_widget->invalidate_render();
+        main_widget->current_widget = nullptr;
+        hide();
+        deleteLater();
+
+//        slider->value()
+//        *float_location
+    });
+    QObject::connect(slider, &QSlider::valueChanged, [&](int val){
+        float value = min_value + (static_cast<float>(slider->value()) / 100) * (max_value - min_value);
+        *float_location = value;
+        current_value_label->setText(QString::number(value));
+        main_widget->invalidate_render();
+
+    });
+
+    setLayout(layout);
+//    slider = new QSlider(this, )
+//    color_picker->show();
+
+//    connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
+//        convert_qcolor_to_float3(color, color_location);
+//        main_widget->invalidate_render();
+//    });
+ }
+
+
+
+BoolConfigUI::BoolConfigUI(MainWidget* parent, bool* config_location, QString name) : ConfigUI(parent) {
+    bool_location = config_location;
+
+    layout = new QHBoxLayout();
+
+    label = new QLabel(name, this);
+    checkbox = new QCheckBox(this);
+    checkbox->setStyleSheet("QCheckBox::indicator {width: 50px;height: 50px;}");
+
+    checkbox->setChecked(*config_location);
+
+    layout->addWidget(label);
+    layout->addWidget(checkbox);
+
+    QObject::connect(checkbox, &QCheckBox::stateChanged, [&](int new_state){
+        *bool_location = static_cast<bool>(new_state);
+        main_widget->invalidate_render();
+        main_widget->persist_config();
+    });
+
+    setLayout(layout);
+}
+
+
+//QWidget* color3_configurator_ui(MainWidget* main_widget, void* location){
+//    return new Color3ConfigUI(main_widget, (float*)location);
+//}
+
+//QWidget* color4_configurator_ui(MainWidget* main_widget, void* location){
+//    return new Color4ConfigUI(main_widget, (float*)location);
+//}
 
 #endif

@@ -1880,6 +1880,16 @@ std::wifstream open_wifstream(const std::wstring& file_name) {
 #endif
 }
 
+std::wofstream open_wofstream(const std::wstring& file_name) {
+
+#ifdef Q_OS_WIN
+    return std::move(std::wofstream(file_name));
+#else
+    std::string encoded_file_name = utf8_encode(file_name);
+    return std::move(std::wofstream(encoded_file_name.c_str()));
+#endif
+}
+
 std::wstring truncate_string(const std::wstring& inp, int size) {
         if (inp.size() <= (size_t) size) {
 		return inp;
@@ -2311,6 +2321,19 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
 #else
     return  fz_open_document(context, utf8_encode(file_name).c_str());
 #endif
+}
+
+void convert_qcolor_to_float3(const QColor& color, float* out_floats){
+    *(out_floats + 0) = static_cast<float>(color.red()) / 255.0f;
+    *(out_floats + 1) = static_cast<float>(color.green()) / 255.0f;
+    *(out_floats + 2) = static_cast<float>(color.blue()) / 255.0f;
+}
+
+void convert_qcolor_to_float4(const QColor& color, float* out_floats){
+    *(out_floats + 0) = static_cast<float>(color.red()) / 255.0f;
+    *(out_floats + 1) = static_cast<float>(color.green()) / 255.0f;
+    *(out_floats + 2) = static_cast<float>(color.blue()) / 255.0f;
+    *(out_floats + 3) = static_cast<float>(color.alpha()) / 255.0f;
 }
 
 #ifdef SIOYEK_ANDROID

@@ -1,5 +1,6 @@
 ﻿//todo:
 // add mobile-specific settings
+// custom color mode is not working on mobile
 // add mobile specific page navigation
 // add mobile-specific document selection UI
 // banded page rendering
@@ -4767,11 +4768,17 @@ void MainWidget::handle_quick_tap(){
 
 void MainWidget::android_handle_visual_mode(){
 //	last_hold_point
-    WindowPos pos;
-    pos.x = last_hold_point.x();
-    pos.y = last_hold_point.y();
+    if (is_visual_mark_mode()){
+        opengl_widget->set_should_draw_vertical_line(false);
+    }
+    else{
 
-    visual_mark_under_pos(pos);
+        WindowPos pos;
+        pos.x = last_hold_point.x();
+        pos.y = last_hold_point.y();
+
+        visual_mark_under_pos(pos);
+    }
 }
 
 bool MainWidget::is_moving(){
@@ -4876,4 +4883,14 @@ void MainWidget::clear_search_buttons(){
         search_buttons = nullptr;
     }
 }
+
+void MainWidget::restore_default_config(){
+    config_manager->restore_default();
+}
+
+
 #endif
+
+void MainWidget::persist_config(){
+    config_manager->persist_config();
+}

@@ -29,7 +29,9 @@
 #include "path.h"
 #include "checksum.h"
 
+#ifdef SIOYEK_ANDROID
 #include <QQuickWidget>
+#endif
 
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
@@ -225,6 +227,7 @@ public:
 	void clear_selected_rect();
 	void clear_selected_text();
 
+
 	std::optional<fz_rect> get_selected_rect_absolute();
 	bool get_selected_rect_document(int& out_page, fz_rect& out_rect);
 	Document* doc();
@@ -381,8 +384,11 @@ public:
     void update_position_buffer();
     bool is_flicking(QPointF* out_velocity);
     void handle_touch_highlight();
+    void restore_default_config();
 
 #endif
+
+    void persist_config();
 
 	void synchronize_pending_link();
 	void refresh_all_windows();
