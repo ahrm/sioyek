@@ -268,48 +268,88 @@ void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
 
 }
 
-TextSelectionButtons::TextSelectionButtons(MainWidget* parent) : QWidget(parent) {
+//TextSelectionButtons::TextSelectionButtons(MainWidget* parent) : QWidget(parent) {
 
-    QHBoxLayout* layout = new QHBoxLayout();
+//    QHBoxLayout* layout = new QHBoxLayout();
 
+//    main_widget = parent;
+//    copy_button = new QPushButton("Copy");
+//    search_in_scholar_button = new QPushButton("Search Scholar");
+//    search_in_google_button = new QPushButton("Search Google");
+//    highlight_button = new QPushButton("Highlight");
+
+//    QObject::connect(copy_button, &QPushButton::clicked, [&](){
+//        copy_to_clipboard(main_widget->selected_text);
+//    });
+
+//    QObject::connect(search_in_scholar_button, &QPushButton::clicked, [&](){
+//        search_custom_engine(main_widget->selected_text, L"https://scholar.google.com/scholar?&q=");
+//    });
+
+//    QObject::connect(search_in_google_button, &QPushButton::clicked, [&](){
+//        search_custom_engine(main_widget->selected_text, L"https://www.google.com/search?q=");
+//    });
+
+//    QObject::connect(highlight_button, &QPushButton::clicked, [&](){
+//        main_widget->handle_touch_highlight();
+//    });
+
+//    layout->addWidget(copy_button);
+//    layout->addWidget(search_in_scholar_button);
+//    layout->addWidget(search_in_google_button);
+//    layout->addWidget(highlight_button);
+
+//    this->setLayout(layout);
+//}
+
+//void TextSelectionButtons::resizeEvent(QResizeEvent* resize_event) {
+//    QWidget::resizeEvent(resize_event);
+//    int parent_width = parentWidget()->width();
+//    int parent_height = parentWidget()->height();
+
+//    setFixedSize(parent_width, parent_height / 5);
+////    list_view->setFixedSize(parent_width * 0.9f, parent_height);
+//    move(0, 0);
+
+//}
+
+TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidget(parent){
     main_widget = parent;
-    copy_button = new QPushButton("Copy");
-    search_in_scholar_button = new QPushButton("Search Scholar");
-    search_in_google_button = new QPushButton("Search Google");
-    highlight_button = new QPushButton("Highlight");
+    buttons_ui = new TouchCopyOptions(this);
 
-    QObject::connect(copy_button, &QPushButton::clicked, [&](){
+    QObject::connect(buttons_ui, &TouchCopyOptions::copyClicked, [&](){
         copy_to_clipboard(main_widget->selected_text);
     });
 
-    QObject::connect(search_in_scholar_button, &QPushButton::clicked, [&](){
+    QObject::connect(buttons_ui, &TouchCopyOptions::scholarClicked, [&](){
         search_custom_engine(main_widget->selected_text, L"https://scholar.google.com/scholar?&q=");
     });
 
-    QObject::connect(search_in_google_button, &QPushButton::clicked, [&](){
+    QObject::connect(buttons_ui, &TouchCopyOptions::googleClicked, [&](){
         search_custom_engine(main_widget->selected_text, L"https://www.google.com/search?q=");
     });
 
-    QObject::connect(highlight_button, &QPushButton::clicked, [&](){
+    QObject::connect(buttons_ui, &TouchCopyOptions::highlightClicked, [&](){
         main_widget->handle_touch_highlight();
     });
-
-    layout->addWidget(copy_button);
-    layout->addWidget(search_in_scholar_button);
-    layout->addWidget(search_in_google_button);
-    layout->addWidget(highlight_button);
-
-    this->setLayout(layout);
 }
 
-void TextSelectionButtons::resizeEvent(QResizeEvent* resize_event) {
+void TouchTextSelectionButtons::resizeEvent(QResizeEvent* resize_event){
     QWidget::resizeEvent(resize_event);
-    int parent_width = parentWidget()->width();
-    int parent_height = parentWidget()->height();
+//    qDebug() << "sioyek: resize " << resize_event << "\n";
 
-    setFixedSize(parent_width, parent_height / 5);
-//    list_view->setFixedSize(parent_width * 0.9f, parent_height);
-    move(0, 0);
+//    int width = resize_event->size().width() * 2 / 3;
+//    int height = resize_event->size().height() / 4;
+
+    int pwidth = parentWidget()->width();
+    int width = parentWidget()->width() * 3 / 4;
+    int height = parentWidget()->height() / 16;
+
+    buttons_ui->move(0, 0);
+    buttons_ui->resize(width, height);
+    move((pwidth - width) / 2, height);
+//    setFixedSize(0, 0);
+    setFixedSize(width, height);
 
 }
 

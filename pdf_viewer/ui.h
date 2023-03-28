@@ -43,6 +43,7 @@
 #include "touchui/TouchSlider.h"
 #include "touchui/TouchCheckbox.h"
 #include "touchui/TouchListView.h"
+#include "touchui/TouchCopyOptions.h"
 #endif
 
 #include "mysortfilterproxymodel.h"
@@ -924,19 +925,29 @@ private:
 
 };
 
-class TextSelectionButtons : public QWidget{
+//class TextSelectionButtons : public QWidget{
+//public:
+//    TextSelectionButtons(MainWidget* parent);
+//    void resizeEvent(QResizeEvent* resize_event) override;
+//private:
+
+//    MainWidget* main_widget;
+//    QHBoxLayout* layout;
+//    QPushButton* copy_button;
+//    QPushButton* search_in_scholar_button;
+//    QPushButton* search_in_google_button;
+//    QPushButton* highlight_button;
+
+//};
+
+class TouchTextSelectionButtons : public QWidget {
 public:
-    TextSelectionButtons(MainWidget* parent);
+    TouchTextSelectionButtons(MainWidget* parent);
     void resizeEvent(QResizeEvent* resize_event) override;
 private:
-
     MainWidget* main_widget;
-    QHBoxLayout* layout;
-    QPushButton* copy_button;
-    QPushButton* search_in_scholar_button;
-    QPushButton* search_in_google_button;
-    QPushButton* highlight_button;
 
+    TouchCopyOptions* buttons_ui;
 };
 
 class HighlightButtons : public QWidget {

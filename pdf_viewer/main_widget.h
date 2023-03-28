@@ -356,7 +356,7 @@ public:
 #ifdef SIOYEK_ANDROID
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator *selection_end_indicator = nullptr;
-    TextSelectionButtons* text_selection_buttons = nullptr;
+    TouchTextSelectionButtons* text_selection_buttons = nullptr;
     HighlightButtons* highlight_buttons = nullptr;
     SearchButtons* search_buttons = nullptr;
     QPoint last_hold_point;

@@ -167,6 +167,7 @@ public:
         WindowPos window_pos = main_widget->main_document_view->document_to_window_pos_in_pixels(docpos);
         if (is_begin){
             move(window_pos.x - width(), window_pos.y - height());
+//            main_widget->text_selection_buttons->move(0, window_pos.y);
         }
         else{
             move(window_pos.x, window_pos.y);
@@ -4687,7 +4688,8 @@ void MainWidget::handle_mobile_selection(){
 
         selection_begin_indicator = new SelectionIndicator(this, true, this, begin_abspos);
         selection_end_indicator = new SelectionIndicator(this, false, this, end_abspos);
-        text_selection_buttons = new TextSelectionButtons(this);
+//        text_selection_buttons = new TextSelectionButtons(this);
+        text_selection_buttons = new TouchTextSelectionButtons(this);
 
 
 //        int window_width = width();
