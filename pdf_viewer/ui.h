@@ -38,7 +38,14 @@
 #include <qslider.h>
 #include <qlabel.h>
 #include <qcheckbox.h>
+#ifdef SIOYEK_ANDROID
+#include <QQuickWidget>
+#include "touchui/TouchSlider.h"
+#include "touchui/TouchCheckbox.h"
+#include "touchui/TouchListView.h"
+#endif
 
+#include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
@@ -76,15 +83,6 @@ public:
 	static void notify_config_file_changed(ConfigManager* new_config_manager);
 };
 
-class MySortFilterProxyModel : public QSortFilterProxyModel {
-	QString filterString;
-public:
-	MySortFilterProxyModel();
-	bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const;
-	void setFilterCustom(QString filterString);
-	bool lessThan(const QModelIndex& left, const QModelIndex& right) const;
-
-};
 
 template <typename T, typename ViewType, typename ProxyModelType>
 class BaseSelectorWidget : public QWidget {
@@ -546,6 +544,46 @@ public:
 	}
 };
 
+#ifdef SIOYEK_ANDROID
+template <typename T>
+class TouchFilteredSelectWidget : public QWidget{
+private:
+//    QStringListModel string_list_model;
+//    MySortFilterProxyModel proxy_model;
+    TouchListView* list_view = nullptr;
+    QWidget* parent_widget;
+    std::vector<T> values;
+    std::function<void(T*)> on_done;
+public:
+    TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list, std::vector<T> values_, std::function<void(T*)> on_done_, QWidget* parent) : values(values_), on_done(on_done_){
+        parent_widget = parent;
+        QStringList string_list;
+        for (auto s : std_string_list){
+            string_list.append(QString::fromStdWString(s));
+        }
+//        string_list_model.setStringList(string_list);
+//        proxy_model.setSourceModel(string_list_model);
+
+        list_view = new TouchListView(string_list, this);
+        QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
+            qDebug() << "name is : " << name << " and index is : " << index << "\n";
+            on_done(&values[index]);
+            deleteLater();
+        });
+    }
+
+    void resizeEvent(QResizeEvent* resize_event) override {
+        QWidget::resizeEvent(resize_event);
+        int parent_width = resize_event->size().width();
+        int parent_height = resize_event->size().height();
+//        setFixedSize(parent_width * 0.9f, parent_height);
+        list_view->resize(parent_width * 0.9f, parent_height);
+        list_view->move(parent_width * 0.05f, 0);
+    }
+};
+
+#endif
+
 template<typename T>
 class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView, MySortFilterProxyModel> {
 private:
@@ -600,6 +638,20 @@ public:
 		on_done(&values[source_index.row()]);
 	}
 };
+
+#ifdef SIOYEK_ANDROID
+class TouchCommandSelector : public QWidget{
+public:
+    TouchCommandSelector(const QStringList& commands, MainWidget* mw);
+    void resizeEvent(QResizeEvent* resize_event) override;
+//    void keyReleaseEvent(QKeyEvent* key_event) override;
+
+private:
+    MainWidget* main_widget;
+    TouchListView* list_view;
+
+};
+#endif
 
 class CommandSelector : public BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel> {
 private:
@@ -866,6 +918,7 @@ private:
     QPushButton* set_dark_mode_contrast;
     QPushButton* set_ruler_mode;
     QPushButton* restore_default_config_button;
+    QPushButton* toggle_dark_mode_button;
 
     MainWidget* main_widget;
 
@@ -913,6 +966,7 @@ private:
 };
 
 class ConfigUI : public QWidget{
+//class ConfigUI : public QQuickWidget{
 public:
     ConfigUI(MainWidget* parent);
     void resizeEvent(QResizeEvent* resize_event) override;
@@ -924,10 +978,12 @@ protected:
 class Color3ConfigUI : public ConfigUI {
 public:
     Color3ConfigUI(MainWidget* parent, float* config_location_);
+    void resizeEvent(QResizeEvent* resize_event) override;
 
 private:
     float* color_location;
     QColorDialog* color_picker;
+//    QQuickWidget* color_picker;
 
 };
 
@@ -944,26 +1000,31 @@ private:
 class BoolConfigUI : public ConfigUI{
 public:
     BoolConfigUI(MainWidget* parent, bool* config_location, QString name);
+    void resizeEvent(QResizeEvent* resize_event) override;
 private:
 
     bool* bool_location;
-    QHBoxLayout* layout;
-    QCheckBox* checkbox;
-    QLabel* label;
+    TouchCheckbox* checkbox;
+//   	TouchCh
+//    QHBoxLayout* layout;
+//    QCheckBox* checkbox;
+//    QLabel* label;
 
 };
 
 class FloatConfigUI : public ConfigUI{
 public:
     FloatConfigUI(MainWidget* parent, float* config_location, float min_value, float max_value);
+    void resizeEvent(QResizeEvent* resize_event) override;
 private:
     float* float_location;
-    QSlider* slider;
-    QLabel* current_value_label;
-    QPushButton* confirm_button;
-    QHBoxLayout* layout;
+//    QSlider* slider;
+//    QLabel* current_value_label;
+//    QPushButton* confirm_button;
+//    QHBoxLayout* layout;
     float min_value;
     float max_value;
+    TouchSlider* slider = nullptr;
 };
 
 #endif

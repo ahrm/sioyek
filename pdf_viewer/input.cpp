@@ -11,6 +11,10 @@
 #include "main_widget.h"
 #include "ui.h"
 
+#ifdef SIOYEK_ANDROID
+#include "touchui/TouchListView.h"
+#endif
+
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
@@ -336,9 +340,19 @@ class CommandCommand : public Command {
 
 	void perform(MainWidget* widget) {
 		QStringList command_names = widget->command_manager->get_all_command_names();
+#ifndef SIOYEK_ANDROID
 		widget->set_current_widget(new CommandSelector(
 			&widget->on_command_done, widget, command_names, widget->input_handler->get_command_key_mappings()));
+#else
+//        TouchListView* tlv = new TouchListView(command_names, widget);
+//        tlv->resize(250, 400);
+//        widget->set_current_widget(tlv);
+        TouchCommandSelector* tcs = new TouchCommandSelector(command_names, widget);
+        widget->set_current_widget(tcs);
+
+#endif
 		widget->current_widget->show();
+
 	}
 
 	std::string get_name() {

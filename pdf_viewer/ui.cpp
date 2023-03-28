@@ -5,6 +5,16 @@
 #include <QTapGesture>
 #include <main_widget.h>
 
+#ifdef SIOYEK_ANDROID
+#include <QQuickView>
+#include <QQmlComponent>
+#include <QQuickItem>
+#include <QQmlEngine>
+#include <QQuickWidget>
+#include <QFile>
+#include "touchui/TouchSlider.h"
+#endif
+
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern float DARK_MODE_CONTRAST;
 extern float BACKGROUND_COLOR[3];
@@ -121,66 +131,6 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 	return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
 }
 
-bool MySortFilterProxyModel::filterAcceptsRow(int source_row,
-	const QModelIndex& source_parent) const
-{
-	if (FUZZY_SEARCHING) {
-
-		QModelIndex source_index = sourceModel()->index(source_row, this->filterKeyColumn(), source_parent);
-		if (source_index.isValid())
-		{
-			// check current index itself :
-
-			QString key = sourceModel()->data(source_index, filterRole()).toString();
-			if (filterString.size() == 0) return true;
-			std::wstring s1 = filterString.toStdWString();
-			std::wstring s2 = key.toStdWString();
-			int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(s1, s2));
-
-			return score > 50;
-		}
-		else {
-			return false;
-		}
-	}
-	else {
-		return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
-	}
-}
-
-void MySortFilterProxyModel::setFilterCustom(QString filterString) {
-	if (FUZZY_SEARCHING) {
-		this->filterString = filterString;
-		this->setFilterFixedString(filterString);
-		sort(0);
-	}
-	else {
-		this->setFilterFixedString(filterString);
-	}
-}
-
-bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
-	const QModelIndex& right) const
-{
-	if (FUZZY_SEARCHING) {
-
-		QString leftData = sourceModel()->data(left).toString();
-		QString rightData = sourceModel()->data(right).toString();
-
-		int left_score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filterString.toStdWString(), leftData.toStdWString()));
-		int right_score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filterString.toStdWString(), rightData.toStdWString()));
-		return left_score > right_score;
-	}
-	else {
-		return QSortFilterProxyModel::lessThan(left, right);
-	}
-}
- MySortFilterProxyModel::MySortFilterProxyModel() {
-	 if (FUZZY_SEARCHING) {
-		 setDynamicSortFilter(true);
-	 }
-}
-
 #ifdef SIOYEK_ANDROID
  AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent){
      layout = new QVBoxLayout();
@@ -199,6 +149,7 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
     set_dark_mode_contrast = new QPushButton("Dark Mode Contrast", this);
     set_ruler_mode = new QPushButton("Ruler Mode", this);
     restore_default_config_button = new QPushButton("Restore Default Config", this);
+    toggle_dark_mode_button = new QPushButton("Toggle Dark Mode", this);
 
     layout->addWidget(fullscreen_button);
     layout->addWidget(select_text_button);
@@ -211,6 +162,7 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
     layout->addWidget(set_dark_mode_contrast);
     layout->addWidget(set_ruler_mode);
     layout->addWidget(restore_default_config_button);
+    layout->addWidget(toggle_dark_mode_button);
 
     QObject::connect(fullscreen_button, &QPushButton::pressed, [&](){
         main_widget->current_widget = {};
@@ -291,6 +243,13 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
         deleteLater();
         main_widget->restore_default_config();
 
+    });
+
+    QObject::connect(toggle_dark_mode_button, &QPushButton::pressed, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
+        main_widget->current_widget = {};
+        deleteLater();
+        main_widget->handle_command_types(std::move(command), 0);
     });
 
      layout->insertStretch(-1, 1);
@@ -428,6 +387,7 @@ void SearchButtons::resizeEvent(QResizeEvent* resize_event){
     move(0, 0);
 }
 
+//ConfigUI::ConfigUI(MainWidget* parent) : QQuickWidget(parent){
 ConfigUI::ConfigUI(MainWidget* parent) : QWidget(parent){
     main_widget = parent;
 }
@@ -451,7 +411,47 @@ Color3ConfigUI::Color3ConfigUI(MainWidget* parent, float* config_location_) : Co
         main_widget->invalidate_render();
         main_widget->persist_config();
     });
+
+//    QQmlEngine* engine = new QQmlEngine();
+//    QQmlComponent* component = new QQmlComponent(engine, QUrl("qrc:/pdf_viewer/qml/MyColorPicker.qml"), this);
+//    QObject *object = component->create();
+//    QQuickItem *item = qobject_cast<QQuickItem*>(object);
+
+//    QFile source_file("qrc:/pdf_viewer/qml/MyColorPicker.qml");
+//    QString source = source_file.readAll();
+
+//    QQuickWidget* quick_widget(source, this);
+//    QUrl url("qrc:/pdf_viewer/qml/MyColorPicker.qml");
+//    color_picker = new QQuickWidget(url, this);
+//    color_picker->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+//    color_picker->show();
+//    TouchSlider* slider = new TouchSlider(0, 100, 25, this);
+//    QObject::connect(slider, &TouchSlider::itemSelected, [&](int selected_value){
+//        qDebug() << "selected " << selected_value << "\n";
+
+//    });
+
+
+//    QObject::connect(color_picker, SIGNAL()
+
+//    QQuickWidget
+//    QQuickView* view = new QQuickView();
+//    view->setSource(QUrl("qrc:/pdf_viewer/qml/MyColorPicker.qml"));
+//    view->show();
+
+
  }
+
+void Color3ConfigUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    setFixedSize(2 * parent_width / 3, parent_height / 2);
+    color_picker->resize(width(), height());
+
+    move(parent_width / 6, parent_height / 4);
+}
 
 Color4ConfigUI::Color4ConfigUI(MainWidget* parent, float* config_location_) : ConfigUI(parent) {
     color_location = config_location_;
@@ -469,44 +469,53 @@ FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float m
 
     min_value = min_value_;
     max_value = max_value_;
-
     float_location = config_location;
-    layout = new QHBoxLayout();
-    current_value_label = new QLabel(QString::number(*float_location));
-    confirm_button = new QPushButton("Confirm", this);
-    slider = new QSlider(Qt::Orientation::Horizontal, this);
-    slider->setRange(0, 100);
+
     int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
-    current_value_label->setText(QString::number(*float_location));
-    slider->setValue(current_value);
-
-    slider->setStyleSheet("QSlider::groove:horizontal {border: 1px solid;height: 10px;margin: 0px;}QSlider::handle:horizontal {background-color: black;border: 1px solid;height: 40px;width: 40px;margin: -15px 0px;}");
-
-    layout->addWidget(current_value_label);
-    layout->addWidget(slider);
-    layout->addWidget(confirm_button);
-
-
-    QObject::connect(confirm_button, &QPushButton::clicked, [&](){
-        float value = min_value + (static_cast<float>(slider->value()) / 100) * (max_value - min_value);
+    slider = new TouchSlider(0, 100, current_value, this);
+    QObject::connect(slider, &TouchSlider::itemSelected, [&](int val){
+        float value = min_value + (static_cast<float>(val) / 100.0f) * (max_value - min_value);
         *float_location = value;
         main_widget->invalidate_render();
         main_widget->current_widget = nullptr;
-        hide();
         deleteLater();
-
-//        slider->value()
-//        *float_location
-    });
-    QObject::connect(slider, &QSlider::valueChanged, [&](int val){
-        float value = min_value + (static_cast<float>(slider->value()) / 100) * (max_value - min_value);
-        *float_location = value;
-        current_value_label->setText(QString::number(value));
-        main_widget->invalidate_render();
-
     });
 
-    setLayout(layout);
+//    layout = new QHBoxLayout();
+//    current_value_label = new QLabel(QString::number(*float_location));
+//    confirm_button = new QPushButton("Confirm", this);
+//    slider = new QSlider(Qt::Orientation::Horizontal, this);
+//    slider->setRange(0, 100);
+//    current_value_label->setText(QString::number(*float_location));
+//    slider->setValue(current_value);
+
+//    slider->setStyleSheet("QSlider::groove:horizontal {border: 1px solid;height: 10px;margin: 0px;}QSlider::handle:horizontal {background-color: black;border: 1px solid;height: 40px;width: 40px;margin: -15px 0px;}");
+
+//    layout->addWidget(current_value_label);
+//    layout->addWidget(slider);
+//    layout->addWidget(confirm_button);
+
+
+//    QObject::connect(confirm_button, &QPushButton::clicked, [&](){
+//        float value = min_value + (static_cast<float>(slider->value()) / 100) * (max_value - min_value);
+//        *float_location = value;
+//        main_widget->invalidate_render();
+//        main_widget->current_widget = nullptr;
+//        hide();
+//        deleteLater();
+
+////        slider->value()
+////        *float_location
+//    });
+//    QObject::connect(slider, &QSlider::valueChanged, [&](int val){
+//        float value = min_value + (static_cast<float>(slider->value()) / 100) * (max_value - min_value);
+//        *float_location = value;
+//        current_value_label->setText(QString::number(value));
+//        main_widget->invalidate_render();
+
+//    });
+
+//    setLayout(layout);
 //    slider = new QSlider(this, )
 //    color_picker->show();
 
@@ -521,26 +530,60 @@ FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float m
 BoolConfigUI::BoolConfigUI(MainWidget* parent, bool* config_location, QString name) : ConfigUI(parent) {
     bool_location = config_location;
 
-    layout = new QHBoxLayout();
-
-    label = new QLabel(name, this);
-    checkbox = new QCheckBox(this);
-    checkbox->setStyleSheet("QCheckBox::indicator {width: 50px;height: 50px;}");
-
-    checkbox->setChecked(*config_location);
-
-    layout->addWidget(label);
-    layout->addWidget(checkbox);
-
-    QObject::connect(checkbox, &QCheckBox::stateChanged, [&](int new_state){
+    checkbox = new TouchCheckbox(name, *config_location, this);
+    QObject::connect(checkbox, &TouchCheckbox::itemSelected, [&](bool new_state){
         *bool_location = static_cast<bool>(new_state);
         main_widget->invalidate_render();
         main_widget->persist_config();
-    });
 
-    setLayout(layout);
+        main_widget->current_widget = nullptr;
+        deleteLater();
+    });
+//    layout = new QHBoxLayout();
+
+//    label = new QLabel(name, this);
+//    checkbox = new QCheckBox(this);
+//    checkbox->setStyleSheet("QCheckBox::indicator {width: 50px;height: 50px;}");
+
+//    checkbox->setChecked(*config_location);
+
+//    layout->addWidget(label);
+//    layout->addWidget(checkbox);
+
+//    QObject::connect(checkbox, &QCheckBox::stateChanged, [&](int new_state){
+//        *bool_location = static_cast<bool>(new_state);
+//        main_widget->invalidate_render();
+//        main_widget->persist_config();
+//    });
+
+//    setLayout(layout);
 }
 
+void BoolConfigUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    int w = 2 * parent_width / 3;
+    int h =  parent_height / 2;
+    checkbox->resize(w, h);
+
+    setFixedSize(w, h);
+    move(parent_width / 6, parent_height / 4);
+}
+
+void FloatConfigUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    int w = 2 * parent_width / 3;
+    int h =  parent_height / 2;
+    slider->resize(w, h);
+
+    setFixedSize(w, h);
+    move(parent_width / 6, parent_height / 4);
+}
 
 //QWidget* color3_configurator_ui(MainWidget* main_widget, void* location){
 //    return new Color3ConfigUI(main_widget, (float*)location);
@@ -550,4 +593,34 @@ BoolConfigUI::BoolConfigUI(MainWidget* parent, bool* config_location, QString na
 //    return new Color4ConfigUI(main_widget, (float*)location);
 //}
 
+
+TouchCommandSelector::TouchCommandSelector(const QStringList& commands, MainWidget* mw){
+    main_widget = mw;
+    list_view = new TouchListView(commands, this);
+
+    QObject::connect(list_view, &TouchListView::itemSelected, [&](QString val, int index){
+        main_widget->on_command_done(val.toStdString());
+        main_widget->current_widget = nullptr;
+        deleteLater();
+    });
+}
+
+void TouchCommandSelector::resizeEvent(QResizeEvent* resize_event) {
+    QWidget::resizeEvent(resize_event);
+    qDebug() << "sioyek :" << resize_event << "\n";
+
+    int parent_width = resize_event->size().width();
+    int parent_height = resize_event->size().height();
+
+    list_view->resize(parent_width * 0.9f, parent_height);
+    list_view->move(parent_width * 0.05f, 0);
+}
+
+//void TouchCommandSelector::keyReleaseEvent(QKeyEvent* key_event){
+//    QWidget::keyReleaseEvent(key_event);
+//    if (key_event->key() == Qt::Key_Back){
+//        resize(geometry().width(), geometry().height()); // trigger resize event
+
+//    }
+//}
 #endif

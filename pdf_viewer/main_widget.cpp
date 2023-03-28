@@ -1,10 +1,10 @@
 ﻿//todo:
-// add mobile-specific settings
+// add mobile-specific settings (rects and stuff)
+// fix the rest of UI for mobile (current buttons are extremely bad)
 // custom color mode is not working on mobile
 // add mobile specific page navigation
-// add mobile-specific document selection UI
 // banded page rendering
-// maybe the frame rate issue was not becasue of QWidget but because we had an explicit += debug in .pro file for android builds
+// executing the copy command twice causes a crash
 
 #include <iostream>
 #include <vector>
@@ -4261,18 +4261,40 @@ void MainWidget::handle_open_prev_doc() {
 		}
 	}
 
-	set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
+//    auto prev_done_handler = [&](std::string* doc_hash) {
+//            if (doc_hash->size() > 0) {
+//                validate_render();
+//                open_document_with_hash(*doc_hash);
+//            }
+//        };
+
+#ifndef SIOYEK_ANDROID
+    set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
 		opened_docs_hashes,
-		[&](std::string* doc_hash) {
-			if (doc_hash->size() > 0) {
-				validate_render();
-				open_document_with_hash(*doc_hash);
-			}
-		},
+        [&](std::string* doc_hash) {
+            if (doc_hash->size() > 0) {
+                validate_render();
+                open_document_with_hash(*doc_hash);
+            }
+        },
 		this,
 			[&](std::string* doc_hash) {
 			db_manager->delete_opened_book(*doc_hash);
 		}));
+#else
+    set_current_widget(new TouchFilteredSelectWidget<std::string>(opened_docs_names,
+            opened_docs_hashes,
+            [&](std::string* doc_hash){
+                   if (doc_hash->size() > 0) {
+                       validate_render();
+                       open_document_with_hash(*doc_hash);
+                   }
+//                   prev_done_handler(doc_hash);
+                   current_widget = nullptr;
+
+               },
+               this ));
+#endif
 	current_widget->show();
 }
 

@@ -16,6 +16,9 @@
         <file>pdf_viewer/shaders/vertical_bar.fragment</file>
         <file>pdf_viewer/shaders/vertical_bar_dark.fragment</file>
         <file>begin.png</file>
+        <file>pdf_viewer/touchui/TouchSlider.qml</file>
+        <file>pdf_viewer/touchui/TouchCheckbox.qml</file>
+        <file>pdf_viewer/touchui/TouchListView.qml</file>
         <file>end.png</file>
     </qresource>
 </RCC>

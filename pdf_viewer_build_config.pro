@@ -28,6 +28,15 @@ android{
     CONFIG += debug
     DEFINES += SIOYEK_ANDROID
     QT += core-private quickwidgets
+    SOURCES += \
+                pdf_viewer/touchui/TouchSlider.cpp \
+                pdf_viewer/touchui/TouchCheckbox.cpp \
+                pdf_viewer/touchui/TouchListView.cpp
+
+    HEADERS += \
+            pdf_viewer/touchui/TouchSlider.h \
+            pdf_viewer/touchui/TouchCheckbox.h \
+            pdf_viewer/touchui/TouchListView.h
 }
 
 CONFIG(non_portable){
@@ -55,6 +64,7 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/path.h \
            pdf_viewer/utf8.h \
            pdf_viewer/utils.h \
+           pdf_viewer/mysortfilterproxymodel.h \
            pdf_viewer/utf8/checked.h \
            pdf_viewer/utf8/core.h \
            pdf_viewer/utf8/unchecked.h \
@@ -79,6 +89,7 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/ui.cpp \
            pdf_viewer/path.cpp \
            pdf_viewer/utils.cpp \
+           pdf_viewer/mysortfilterproxymodel.cpp \
            pdf_viewer/RunGuard.cpp \
            pdf_viewer/OpenWithApplication.cpp
 
