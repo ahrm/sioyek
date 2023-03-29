@@ -2206,6 +2206,12 @@ public:
             widget->set_current_widget(new BoolConfigUI(widget, (bool*)config->value, QString::fromStdWString(config->name) ));
             widget->current_widget->show();
         }
+        if (config->config_type == ConfigType::EnableRectangle){
+            widget->set_current_widget(new RectangleConfigUI(widget, (UIRect*)config->value));
+            widget->current_widget->show();
+//            auto w = new RectangleConfigUI(widget, (UIRect*)config->value);
+//            w->show();
+        }
 
 //        config->serialize
     }

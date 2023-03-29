@@ -4,7 +4,6 @@
 // custom color mode is not working on mobile
 // add mobile specific page navigation
 // banded page rendering
-// executing the copy command twice causes a crash
 
 #include <iostream>
 #include <vector>

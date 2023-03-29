@@ -935,7 +935,8 @@ int main(int argc, char* args[]) {
 		handle_args(QStringList() << QCoreApplication::applicationFilePath() << file_name);
 	});
 
-    // live reload the config files
+    // live reload the config files, no need to live reload on android because we are not changing config files anyway
+#ifndef SIOYEK_ANDROID
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 
 		config_manager.deserialize(default_config_path, auto_config_path, user_config_paths);
@@ -949,6 +950,7 @@ int main(int argc, char* args[]) {
 		input_handler.reload_config_files(default_keys_path, user_keys_paths);
 		add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
 		});
+#endif
 
 
 	if (SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP) {

@@ -8,7 +8,8 @@ Item{
 //    color: "white"
     id: root
 
-    signal rectangleSelected(enabled: bool, left: int, right: int, bottom: int, top: int)
+    signal rectangleSelected(enabled: bool, left: real, right: real, bottom: real, top: real)
+//    signal rectangleSelected(enabled: bool, left: int, right: int, bottom: int, top: int)
 //    Text{
 //        text: "i am the rect"
 //        anchors.centerIn: parent
@@ -19,10 +20,10 @@ Item{
 
     Rectangle{
         //        z: parent.z + 1
-        width: _width
-        height: _height
-        x: _x
-        y: _y
+        width: _width * root.width
+        height: _height * root.height
+        x: (_x + 1) / 2 * root.width
+        y: (_y + 1) / 2 * root.height
         color: enabler.status ? "#6600ff00" : "#22ff0000"
         property point lastMousePressPosition
 //        property int lastMousePressPositionY: 0
@@ -371,7 +372,11 @@ Item{
             buttons: ["Confirm", "Restore"]
             onButtonClicked: function(index, name){
                 if (index == 0){
-                    /* emit */ root.rectangleSelected(enabler.status, rect.getLeft(), rect.getRight(), rect.getTop(), rect.getBottom());
+                    /* emit */ root.rectangleSelected(enabler.status,
+                                                      (rect.getLeft() / root.width) * 2 - 1,
+                                                      (rect.getRight() / root.width) * 2 - 1,
+                                                      (rect.getTop() / root.height) * 2 - 1,
+                                                      (rect.getBottom() / root.height) * 2 - 1);
                 }
 
                 if (index == 1){

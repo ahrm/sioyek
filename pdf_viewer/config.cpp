@@ -127,6 +127,7 @@ extern float KEYBOARD_SELECT_TEXT_COLOR[4];
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
+
 #ifdef SIOYEK_ANDROID
 extern Path android_config_path;
 #endif
@@ -149,6 +150,12 @@ void bool_serializer(void* bool_pointer, std::wstringstream& stream) {
 void string_serializer(void* string_pointer, std::wstringstream& stream) {
 	stream << *(std::wstring*)string_pointer;
 }
+
+void rect_serializer(void* rect_pointer, std::wstringstream& stream) {
+    UIRect* rect = (UIRect*)rect_pointer;
+    stream << rect->enabled << " " << rect->left << " " << rect->right << " " << rect->top << " " << rect->bottom;
+}
+
 
 void* string_deserializer(std::wstringstream& stream, void* res_) {
 	assert(res_ != nullptr);
@@ -182,6 +189,17 @@ void vec_n_serializer(void* vec_n_pointer, std::wstringstream& stream) {
 //		stream << *(((T*)vec_n_pointer) + i);
 //	}
 //}
+
+void* rect_deserializer(std::wstringstream& stream, void* res_) {
+    assert(res_ != nullptr);
+    UIRect* res = (UIRect*)res_;
+    if (res == nullptr){
+        res = new UIRect;
+    }
+    stream >> res->enabled >> res->left >> res->right >> res->top >> res->bottom;
+    return res;
+
+}
 
 template<int N, typename T>
 void* vec_n_deserializer(std::wstringstream& stream, void* res_) {

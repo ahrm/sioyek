@@ -2,10 +2,10 @@
 
 
 TouchRectangleSelectUI::TouchRectangleSelectUI(bool initial_enabled,
-                                               int initial_x,
-                                               int initial_y,
-                                               int initial_width,
-                                               int initial_height,
+                                               float initial_x,
+                                               float initial_y,
+                                               float initial_width,
+                                               float initial_height,
                                                QWidget* parent) : QWidget(parent) {
 
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
@@ -25,13 +25,14 @@ TouchRectangleSelectUI::TouchRectangleSelectUI(bool initial_enabled,
 
 
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
-                     SIGNAL(rectangleSelected(bool, int, int, int, int)),
+                     SIGNAL(rectangleSelected(bool, qreal, qreal, qreal, qreal)),
                      this,
-                     SLOT(handleRectangleSelected(bool, int, int, int, int)));
+                     SLOT(handleRectangleSelected(bool, qreal, qreal, qreal, qreal)));
 
 }
 
-void TouchRectangleSelectUI::handleRectangleSelected(bool enabled, int left, int right, int top, int bottom) {
+void TouchRectangleSelectUI::handleRectangleSelected(bool enabled, qreal left, qreal right, qreal top, qreal bottom) {
+    qDebug("handler called");
     emit rectangleSelected(enabled, left, right, top, bottom);
 }
 

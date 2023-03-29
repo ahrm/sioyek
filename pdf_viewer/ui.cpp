@@ -652,8 +652,8 @@ TouchCommandSelector::TouchCommandSelector(const QStringList& commands, MainWidg
     list_view = new TouchListView(commands, this);
 
     QObject::connect(list_view, &TouchListView::itemSelected, [&](QString val, int index){
-        main_widget->on_command_done(val.toStdString());
         main_widget->current_widget = nullptr;
+        main_widget->on_command_done(val.toStdString());
         deleteLater();
     });
 }
@@ -675,28 +675,35 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
     rect_location = config_location;
 
     bool current_enabled = config_location->enabled;
-    int current_left = static_cast<int>(parentWidget()->width() * (config_location->left + 1.0f) / 2.0f);
-    int current_right = static_cast<int>( parentWidget()->width() * (config_location->right + 1.0f) / 2.0f);
-    int current_top = static_cast<int>(parentWidget()->height() * (config_location->top + 1.0f) / 2.0f);
-    int current_bottom = static_cast<int>(parentWidget()->height() * (config_location->bottom + 1.0f) / 2.0f);
+//    int current_left = static_cast<int>(parentWidget()->width() * (config_location->left + 1.0f) / 2.0f);
+//    int current_right = static_cast<int>( parentWidget()->width() * (config_location->right + 1.0f) / 2.0f);
+//    int current_top = static_cast<int>(parentWidget()->height() * (config_location->top + 1.0f) / 2.0f);
+//    int current_bottom = static_cast<int>(parentWidget()->height() * (config_location->bottom + 1.0f) / 2.0f);
+
+    float current_left = config_location->left;
+    float current_right = config_location->right;
+    float current_top = config_location->top;
+    float current_bottom = config_location->bottom;
 
     rectangle_select_ui = new TouchRectangleSelectUI(current_enabled,
                                                      current_left,
                                                      current_top,
-                                                     current_right - current_left,
-                                                     current_bottom - current_top,
+                                                     (current_right - current_left) / 2.0f,
+                                                     (current_bottom - current_top) / 2.0f,
                                                      this);
 
 //    int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
 //    slider = new TouchSlider(0, 100, current_value, this);
-    QObject::connect(rectangle_select_ui, &TouchRectangleSelectUI::rectangleSelected, [&](bool enabled, int left, int right, int top, int bottom){
+    QObject::connect(rectangle_select_ui, &TouchRectangleSelectUI::rectangleSelected, [&](bool enabled, qreal left, qreal right, qreal top, qreal bottom){
 
+        qDebug() << "final destination";
         rect_location->enabled = enabled;
-        rect_location->left = static_cast<float>(left) / width() * 2.0f - 1.0f;
-        rect_location->right = static_cast<float>(right) / width() * 2.0f - 1.0f;
-        rect_location->top = static_cast<float>(top) / height() * 2.0f - 1.0f;
-        rect_location->bottom = static_cast<float>(bottom) / height() * 2.0f - 1.0f;
+        rect_location->left = left;
+        rect_location->right = right;
+        rect_location->top = top;
+        rect_location->bottom = bottom;
 
+        main_widget->persist_config();
         main_widget->invalidate_render();
         main_widget->current_widget = nullptr;
         deleteLater();
@@ -706,15 +713,18 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
 
 void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event){
     QWidget::resizeEvent(resize_event);
-    int parent_width = parentWidget()->width();
-    int parent_height = parentWidget()->height();
 
-//    int w = 2 * parent_width / 3;
-//    int h =  parent_height / 2;
-    rectangle_select_ui->resize(parent_width, parent_height);
+    QTimer::singleShot(50, [&](){ // run after parent has resized
+        int parent_width = parentWidget()->width();
+        int parent_height = parentWidget()->height();
 
-    setFixedSize(parent_width, parent_height);
-    move(0, 0);
+    //    int w = 2 * parent_width / 3;
+    //    int h =  parent_height / 2;
+        rectangle_select_ui->resize(parent_width, parent_height);
+
+        setFixedSize(parent_width, parent_height);
+        move(0, 0);
+    });
 }
 
 //void TouchCommandSelector::keyReleaseEvent(QKeyEvent* key_event){

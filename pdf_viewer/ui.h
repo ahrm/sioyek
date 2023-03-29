@@ -1040,13 +1040,6 @@ private:
     TouchSlider* slider = nullptr;
 };
 
-struct UIRect{
-    bool enabled;
-    float left;
-    float right;
-    float top;
-    float bottom;
-};
 
 class RectangleConfigUI : public ConfigUI{
 public:

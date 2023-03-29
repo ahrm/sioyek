@@ -22,6 +22,15 @@ enum ConfigType{
     String,
     IVec2,
     FVec2,
+    EnableRectangle,
+};
+
+struct UIRect{
+    bool enabled;
+    float left;
+    float right;
+    float top;
+    float bottom;
 };
 
 struct Config {
