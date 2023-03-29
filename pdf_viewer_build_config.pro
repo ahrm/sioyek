@@ -32,13 +32,15 @@ android{
                 pdf_viewer/touchui/TouchSlider.cpp \
                 pdf_viewer/touchui/TouchCheckbox.cpp \
                 pdf_viewer/touchui/TouchListView.cpp \
-                pdf_viewer/touchui/TouchCopyOptions.cpp
+                pdf_viewer/touchui/TouchCopyOptions.cpp \
+                pdf_viewer/touchui/TouchRectangleSelectUI.cpp
 
     HEADERS += \
             pdf_viewer/touchui/TouchSlider.h \
             pdf_viewer/touchui/TouchCheckbox.h \
             pdf_viewer/touchui/TouchListView.h \
-            pdf_viewer/touchui/TouchCopyOptions.h
+            pdf_viewer/touchui/TouchCopyOptions.h \
+            pdf_viewer/touchui/TouchRectangleSelectUI.h
 }
 
 CONFIG(non_portable){

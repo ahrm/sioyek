@@ -44,6 +44,7 @@
 #include "touchui/TouchCheckbox.h"
 #include "touchui/TouchListView.h"
 #include "touchui/TouchCopyOptions.h"
+#include "touchui/TouchRectangleSelectUI.h"
 #endif
 
 #include "mysortfilterproxymodel.h"
@@ -920,6 +921,7 @@ private:
     QPushButton* set_ruler_mode;
     QPushButton* restore_default_config_button;
     QPushButton* toggle_dark_mode_button;
+//    QPushButton* test_rectangle_select_ui;
 
     MainWidget* main_widget;
 
@@ -1036,6 +1038,24 @@ private:
     float min_value;
     float max_value;
     TouchSlider* slider = nullptr;
+};
+
+struct UIRect{
+    bool enabled;
+    float left;
+    float right;
+    float top;
+    float bottom;
+};
+
+class RectangleConfigUI : public ConfigUI{
+public:
+    RectangleConfigUI(MainWidget* parent, UIRect* config_location);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    UIRect* rect_location;
+
+    TouchRectangleSelectUI* rectangle_select_ui = nullptr;
 };
 
 #endif

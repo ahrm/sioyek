@@ -150,6 +150,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     set_ruler_mode = new QPushButton("Ruler Mode", this);
     restore_default_config_button = new QPushButton("Restore Default Config", this);
     toggle_dark_mode_button = new QPushButton("Toggle Dark Mode", this);
+//    test_rectangle_select_ui = new QPushButton("Rectangle Select", this);
 
     layout->addWidget(fullscreen_button);
     layout->addWidget(select_text_button);
@@ -163,6 +164,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     layout->addWidget(set_ruler_mode);
     layout->addWidget(restore_default_config_button);
     layout->addWidget(toggle_dark_mode_button);
+//    layout->addWidget(test_rectangle_select_ui);
 
     QObject::connect(fullscreen_button, &QPushButton::pressed, [&](){
         main_widget->current_widget = {};
@@ -251,6 +253,17 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         deleteLater();
         main_widget->handle_command_types(std::move(command), 0);
     });
+
+//    QObject::connect(test_rectangle_select_ui, &QPushButton::pressed, [&](){
+////        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
+////        main_widget->current_widget = {};
+//        RectangleConfigUI* configui = new RectangleConfigUI(main_widget, &testrect);
+//        main_widget->current_widget = configui;
+//        configui->show();
+
+//        deleteLater();
+////        main_widget->handle_command_types(std::move(command), 0);
+//    });
 
      layout->insertStretch(-1, 1);
 
@@ -654,6 +667,54 @@ void TouchCommandSelector::resizeEvent(QResizeEvent* resize_event) {
 
     list_view->resize(parent_width * 0.9f, parent_height);
     list_view->move(parent_width * 0.05f, 0);
+}
+
+
+RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location) : ConfigUI(parent) {
+
+    rect_location = config_location;
+
+    bool current_enabled = config_location->enabled;
+    int current_left = static_cast<int>(parentWidget()->width() * (config_location->left + 1.0f) / 2.0f);
+    int current_right = static_cast<int>( parentWidget()->width() * (config_location->right + 1.0f) / 2.0f);
+    int current_top = static_cast<int>(parentWidget()->height() * (config_location->top + 1.0f) / 2.0f);
+    int current_bottom = static_cast<int>(parentWidget()->height() * (config_location->bottom + 1.0f) / 2.0f);
+
+    rectangle_select_ui = new TouchRectangleSelectUI(current_enabled,
+                                                     current_left,
+                                                     current_top,
+                                                     current_right - current_left,
+                                                     current_bottom - current_top,
+                                                     this);
+
+//    int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
+//    slider = new TouchSlider(0, 100, current_value, this);
+    QObject::connect(rectangle_select_ui, &TouchRectangleSelectUI::rectangleSelected, [&](bool enabled, int left, int right, int top, int bottom){
+
+        rect_location->enabled = enabled;
+        rect_location->left = static_cast<float>(left) / width() * 2.0f - 1.0f;
+        rect_location->right = static_cast<float>(right) / width() * 2.0f - 1.0f;
+        rect_location->top = static_cast<float>(top) / height() * 2.0f - 1.0f;
+        rect_location->bottom = static_cast<float>(bottom) / height() * 2.0f - 1.0f;
+
+        main_widget->invalidate_render();
+        main_widget->current_widget = nullptr;
+        deleteLater();
+    });
+
+ }
+
+void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+//    int w = 2 * parent_width / 3;
+//    int h =  parent_height / 2;
+    rectangle_select_ui->resize(parent_width, parent_height);
+
+    setFixedSize(parent_width, parent_height);
+    move(0, 0);
 }
 
 //void TouchCommandSelector::keyReleaseEvent(QKeyEvent* key_event){
