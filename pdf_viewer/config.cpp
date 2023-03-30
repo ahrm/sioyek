@@ -127,6 +127,7 @@ extern float KEYBOARD_SELECT_TEXT_COLOR[4];
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
+extern UIRect TEST_UI_RECT;
 
 #ifdef SIOYEK_ANDROID
 extern Path android_config_path;
@@ -479,6 +480,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
     configs.push_back({ L"autocenter_visual_scroll", ConfigType::Bool, &AUTOCENTER_VISUAL_SCROLL, bool_serializer, bool_deserializer, bool_validator });
     configs.push_back({ L"alphabetic_link_tags", ConfigType::Bool, &ALPHABETIC_LINK_TAGS, bool_serializer, bool_deserializer, bool_validator });
     configs.push_back({ L"vimtex_wsl_fix", ConfigType::Bool, &VIMTEX_WSL_FIX, bool_serializer, bool_deserializer, bool_validator });
+    configs.push_back({ L"test_ui_rect", ConfigType::EnableRectangle, &TEST_UI_RECT, rect_serializer, rect_deserializer, nullptr });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

@@ -308,6 +308,13 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         main_document_view->fit_to_page_width();
         update_current_history_index();
     }
+
+#ifdef SIOYEK_ANDROID
+    if (current_widget){
+
+        current_widget->resize(width(), height());
+    }
+#endif
 }
 
 void MainWidget::set_overview_position(int page, float offset) {

@@ -1044,6 +1044,7 @@ private:
 class RectangleConfigUI : public ConfigUI{
 public:
     RectangleConfigUI(MainWidget* parent, UIRect* config_location);
+
     void resizeEvent(QResizeEvent* resize_event) override;
 private:
     UIRect* rect_location;

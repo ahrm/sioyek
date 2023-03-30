@@ -685,6 +685,8 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
     float current_top = config_location->top;
     float current_bottom = config_location->bottom;
 
+//    layout = new QVBoxLayout();
+
     rectangle_select_ui = new TouchRectangleSelectUI(current_enabled,
                                                      current_left,
                                                      current_top,
@@ -692,11 +694,11 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
                                                      (current_bottom - current_top) / 2.0f,
                                                      this);
 
+
 //    int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
 //    slider = new TouchSlider(0, 100, current_value, this);
     QObject::connect(rectangle_select_ui, &TouchRectangleSelectUI::rectangleSelected, [&](bool enabled, qreal left, qreal right, qreal top, qreal bottom){
 
-        qDebug() << "final destination";
         rect_location->enabled = enabled;
         rect_location->left = left;
         rect_location->right = right;
@@ -711,27 +713,33 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
 
  }
 
-void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event){
-    QWidget::resizeEvent(resize_event);
+//bool RectangleConfigUI::eventFilter(QObject *obj, QEvent *event){
+//    if ((obj == parentWidget()) && (event->type() == QEvent::Type::Resize)){
 
-    QTimer::singleShot(50, [&](){ // run after parent has resized
-        int parent_width = parentWidget()->width();
-        int parent_height = parentWidget()->height();
+//        QResizeEvent* resize_event = static_cast<QResizeEvent*>(event);
+//        int parent_width = resize_event->size().width();
+//        int parent_height = resize_event->size().height();
 
-    //    int w = 2 * parent_width / 3;
-    //    int h =  parent_height / 2;
-        rectangle_select_ui->resize(parent_width, parent_height);
+//        bool res = QObject::eventFilter(obj, event);
 
-        setFixedSize(parent_width, parent_height);
-        move(0, 0);
-    });
-}
+//        qDebug() << "resizing to " << parent_width << " " << parent_height;
+//        rectangle_select_ui->resize(parent_width, parent_height);
+//        setFixedSize(parent_width, parent_height);
 
-//void TouchCommandSelector::keyReleaseEvent(QKeyEvent* key_event){
-//    QWidget::keyReleaseEvent(key_event);
-//    if (key_event->key() == Qt::Key_Back){
-//        resize(geometry().width(), geometry().height()); // trigger resize event
-
+////        setFixedSize(parent_width, parent_height);
+//        move(0, 0);
+//        return res;
+//    }
+//    else{
+//        return QObject::eventFilter(obj, event);
 //    }
 //}
+
+void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    move(0, 0);
+    rectangle_select_ui->resize(resize_event->size().width(), resize_event->size().height());
+
+}
+
 #endif
