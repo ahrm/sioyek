@@ -127,11 +127,18 @@ extern float KEYBOARD_SELECT_TEXT_COLOR[4];
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
-extern UIRect TEST_UI_RECT;
+extern UIRect PORTRAIT_BACK_UI_RECT;
+extern UIRect PORTRAIT_FORWARD_UI_RECT;
+extern UIRect LANDSCAPE_BACK_UI_RECT;
+extern UIRect LANDSCAPE_FORWARD_UI_RECT;
 
 #ifdef SIOYEK_ANDROID
 extern Path android_config_path;
 #endif
+
+bool UIRect::contains(NormalizedWindowPos window_pos){
+    return (window_pos.x >= left) && (window_pos.x <= right) && (window_pos.y <= bottom) && (window_pos.y >= top);
+}
 
 template<typename T>
 void* generic_deserializer(std::wstringstream& stream, void* res_) {
@@ -480,7 +487,11 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
     configs.push_back({ L"autocenter_visual_scroll", ConfigType::Bool, &AUTOCENTER_VISUAL_SCROLL, bool_serializer, bool_deserializer, bool_validator });
     configs.push_back({ L"alphabetic_link_tags", ConfigType::Bool, &ALPHABETIC_LINK_TAGS, bool_serializer, bool_deserializer, bool_validator });
     configs.push_back({ L"vimtex_wsl_fix", ConfigType::Bool, &VIMTEX_WSL_FIX, bool_serializer, bool_deserializer, bool_validator });
-    configs.push_back({ L"test_ui_rect", ConfigType::EnableRectangle, &TEST_UI_RECT, rect_serializer, rect_deserializer, nullptr });
+//    configs.push_back({ L"test_ui_rect", ConfigType::EnableRectangle, &TEST_UI_RECT, rect_serializer, rect_deserializer, nullptr });
+    configs.push_back({ L"portrait_back_ui_rect", ConfigType::EnableRectangle, &PORTRAIT_BACK_UI_RECT, rect_serializer, rect_deserializer, nullptr });
+    configs.push_back({ L"portrait_forward_ui_rect", ConfigType::EnableRectangle, &PORTRAIT_FORWARD_UI_RECT, rect_serializer, rect_deserializer, nullptr });
+    configs.push_back({ L"landscape_back_ui_rect", ConfigType::EnableRectangle,    &LANDSCAPE_BACK_UI_RECT, rect_serializer, rect_deserializer, nullptr });
+    configs.push_back({ L"landscape_forward_ui_rect", ConfigType::EnableRectangle, &LANDSCAPE_FORWARD_UI_RECT, rect_serializer, rect_deserializer, nullptr });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

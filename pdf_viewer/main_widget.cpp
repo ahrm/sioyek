@@ -137,6 +137,10 @@ extern bool TOC_JUMP_ALIGN_TOP;
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
+extern UIRect PORTRAIT_BACK_UI_RECT;
+extern UIRect PORTRAIT_FORWARD_UI_RECT;
+extern UIRect LANDSCAPE_BACK_UI_RECT;
+extern UIRect LANDSCAPE_FORWARD_UI_RECT;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -1603,14 +1607,30 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
     if (down){ // handle touch history navigation
 
+//        WindowPos pos = {click_pos.}
+        NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(click_pos);
         int back_threshold = window_height / 5;
 
-        if ((click_pos.y < back_threshold) && (click_pos.x < window_width / 5)){
-            prev_state();
+        if (screen()->orientation() == Qt::PortraitOrientation){
+
+            if (PORTRAIT_BACK_UI_RECT.enabled && PORTRAIT_BACK_UI_RECT.contains(nwp)){
+                prev_state();
+            }
+            else if (PORTRAIT_FORWARD_UI_RECT.enabled && PORTRAIT_FORWARD_UI_RECT.contains(nwp)){
+                next_state();
+            }
         }
-        if ((click_pos.y < back_threshold) && (click_pos.x > 4 * window_width / 5)){
-            next_state();
+        else{
+            if (LANDSCAPE_BACK_UI_RECT.enabled && LANDSCAPE_BACK_UI_RECT.contains(nwp)){
+                prev_state();
+            }
+            else if (LANDSCAPE_FORWARD_UI_RECT.enabled && LANDSCAPE_FORWARD_UI_RECT.contains(nwp)){
+                next_state();
+            }
+
         }
+
+
     }
 
 #endif

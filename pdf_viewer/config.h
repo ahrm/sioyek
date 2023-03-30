@@ -31,6 +31,9 @@ struct UIRect{
     float right;
     float top;
     float bottom;
+
+
+    bool contains(NormalizedWindowPos window_pos);
 };
 
 struct Config {
