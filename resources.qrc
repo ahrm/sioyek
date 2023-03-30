@@ -22,6 +22,7 @@
         <file>pdf_viewer/touchui/TouchCopyOptions.qml</file>
         <file>pdf_viewer/touchui/TouchButtonGroup.qml</file>
         <file>pdf_viewer/touchui/TouchRectangleSelectUI.qml</file>
+        <file>pdf_viewer/touchui/TouchRangeSelectUI.qml</file>
         <file>end.png</file>
     </qresource>
 </RCC>

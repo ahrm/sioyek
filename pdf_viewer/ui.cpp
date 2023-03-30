@@ -19,6 +19,8 @@ extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern float DARK_MODE_CONTRAST;
 extern float BACKGROUND_COLOR[3];
 extern bool RULER_MODE;
+extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
+extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 
 std::wstring select_command_file_name(std::string command_name) {
 	if (command_name == "open_document") {
@@ -150,6 +152,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     set_ruler_mode = new QPushButton("Ruler Mode", this);
     restore_default_config_button = new QPushButton("Restore Default Config", this);
     toggle_dark_mode_button = new QPushButton("Toggle Dark Mode", this);
+    ruler_mode_bounds_config_button = new QPushButton("Configure Ruler Mode", this);
 //    test_rectangle_select_ui = new QPushButton("Rectangle Select", this);
 
     layout->addWidget(fullscreen_button);
@@ -164,6 +167,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     layout->addWidget(set_ruler_mode);
     layout->addWidget(restore_default_config_button);
     layout->addWidget(toggle_dark_mode_button);
+    layout->addWidget(ruler_mode_bounds_config_button);
 //    layout->addWidget(test_rectangle_select_ui);
 
     QObject::connect(fullscreen_button, &QPushButton::pressed, [&](){
@@ -252,6 +256,16 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->current_widget = {};
         deleteLater();
         main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(ruler_mode_bounds_config_button, &QPushButton::pressed, [&](){
+//        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
+        main_widget->current_widget = nullptr;
+        deleteLater();
+        RangeConfigUI* config_ui = new RangeConfigUI(main_widget, &VISUAL_MARK_NEXT_PAGE_FRACTION, &VISUAL_MARK_NEXT_PAGE_THRESHOLD);
+        main_widget->current_widget = config_ui;
+        main_widget->current_widget->show();
+//        main_widget->handle_command_types(std::move(command), 0);
     });
 
 //    QObject::connect(test_rectangle_select_ui, &QPushButton::pressed, [&](){
@@ -675,10 +689,6 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
     rect_location = config_location;
 
     bool current_enabled = config_location->enabled;
-//    int current_left = static_cast<int>(parentWidget()->width() * (config_location->left + 1.0f) / 2.0f);
-//    int current_right = static_cast<int>( parentWidget()->width() * (config_location->right + 1.0f) / 2.0f);
-//    int current_top = static_cast<int>(parentWidget()->height() * (config_location->top + 1.0f) / 2.0f);
-//    int current_bottom = static_cast<int>(parentWidget()->height() * (config_location->bottom + 1.0f) / 2.0f);
 
     float current_left = config_location->left;
     float current_right = config_location->right;
@@ -742,4 +752,45 @@ void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event){
 
 }
 
+RangeConfigUI::RangeConfigUI(MainWidget* parent, float* top_config_location, float* bottom_config_location) : ConfigUI(parent) {
+
+//    range_location = config_location;
+    top_location = top_config_location;
+    bottom_location = bottom_config_location;
+
+    float current_top = -(*top_location);
+    float current_bottom = -(*bottom_location) + 1;
+
+
+    range_select_ui = new TouchRangeSelectUI(current_top, current_bottom, this);
+
+    // force a resize event in order to have correct sizes
+    resize(parent->width(), parent->height());
+
+
+    QObject::connect(range_select_ui, &TouchRangeSelectUI::rangeSelected, [&](qreal top, qreal bottom){
+
+        *top_location = -top;
+        *bottom_location = -bottom + 1;
+
+        main_widget->persist_config();
+        main_widget->invalidate_render();
+        main_widget->current_widget = nullptr;
+        deleteLater();
+    });
+
+    QObject::connect(range_select_ui, &TouchRangeSelectUI::rangeCanceled, [&](){
+        main_widget->invalidate_render();
+        main_widget->current_widget = nullptr;
+        deleteLater();
+    });
+
+ }
+
+void RangeConfigUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    move(0, 0);
+    range_select_ui->resize(resize_event->size().width(), resize_event->size().height());
+
+}
 #endif

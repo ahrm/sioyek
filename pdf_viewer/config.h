@@ -23,6 +23,12 @@ enum ConfigType{
     IVec2,
     FVec2,
     EnableRectangle,
+    Range,
+};
+
+struct UIRange{
+    float top;
+    float bottom;
 };
 
 struct UIRect{

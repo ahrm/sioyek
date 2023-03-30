@@ -45,6 +45,7 @@
 #include "touchui/TouchListView.h"
 #include "touchui/TouchCopyOptions.h"
 #include "touchui/TouchRectangleSelectUI.h"
+#include "touchui/TouchRangeSelectUI.h"
 #endif
 
 #include "mysortfilterproxymodel.h"
@@ -921,6 +922,7 @@ private:
     QPushButton* set_ruler_mode;
     QPushButton* restore_default_config_button;
     QPushButton* toggle_dark_mode_button;
+    QPushButton* ruler_mode_bounds_config_button;
 //    QPushButton* test_rectangle_select_ui;
 
     MainWidget* main_widget;
@@ -1050,6 +1052,18 @@ private:
     UIRect* rect_location;
 
     TouchRectangleSelectUI* rectangle_select_ui = nullptr;
+};
+
+class RangeConfigUI : public ConfigUI{
+public:
+    RangeConfigUI(MainWidget* parent, float* top_location, float* bottom_location);
+
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    float* top_location;
+    float* bottom_location;
+
+    TouchRangeSelectUI* range_select_ui = nullptr;
 };
 
 #endif

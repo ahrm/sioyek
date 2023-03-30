@@ -4,6 +4,8 @@
 // custom color mode is not working on mobile
 // add mobile specific page navigation
 // banded page rendering
+// don't goto links when mouse has moved too much
+// handle next visual mark rectangle specially (don't open links, don't move, don't touch and hold, when finger is moved do it again)
 
 #include <iostream>
 #include <vector>
