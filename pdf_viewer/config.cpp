@@ -132,6 +132,11 @@ extern UIRect PORTRAIT_FORWARD_UI_RECT;
 extern UIRect LANDSCAPE_BACK_UI_RECT;
 extern UIRect LANDSCAPE_FORWARD_UI_RECT;
 
+extern UIRect PORTRAIT_VISUAL_MARK_PREV;
+extern UIRect PORTRAIT_VISUAL_MARK_NEXT;
+extern UIRect LANDSCAPE_VISUAL_MARK_PREV;
+extern UIRect LANDSCAPE_VISUAL_MARK_NEXT;
+
 #ifdef SIOYEK_ANDROID
 extern Path android_config_path;
 #endif
@@ -487,11 +492,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
     configs.push_back({ L"autocenter_visual_scroll", ConfigType::Bool, &AUTOCENTER_VISUAL_SCROLL, bool_serializer, bool_deserializer, bool_validator });
     configs.push_back({ L"alphabetic_link_tags", ConfigType::Bool, &ALPHABETIC_LINK_TAGS, bool_serializer, bool_deserializer, bool_validator });
     configs.push_back({ L"vimtex_wsl_fix", ConfigType::Bool, &VIMTEX_WSL_FIX, bool_serializer, bool_deserializer, bool_validator });
-//    configs.push_back({ L"test_ui_rect", ConfigType::EnableRectangle, &TEST_UI_RECT, rect_serializer, rect_deserializer, nullptr });
     configs.push_back({ L"portrait_back_ui_rect", ConfigType::EnableRectangle, &PORTRAIT_BACK_UI_RECT, rect_serializer, rect_deserializer, nullptr });
     configs.push_back({ L"portrait_forward_ui_rect", ConfigType::EnableRectangle, &PORTRAIT_FORWARD_UI_RECT, rect_serializer, rect_deserializer, nullptr });
     configs.push_back({ L"landscape_back_ui_rect", ConfigType::EnableRectangle,    &LANDSCAPE_BACK_UI_RECT, rect_serializer, rect_deserializer, nullptr });
     configs.push_back({ L"landscape_forward_ui_rect", ConfigType::EnableRectangle, &LANDSCAPE_FORWARD_UI_RECT, rect_serializer, rect_deserializer, nullptr });
+    configs.push_back({ L"portrait_visual_mark_next", ConfigType::EnableRectangle, &PORTRAIT_VISUAL_MARK_NEXT, rect_serializer, rect_deserializer, nullptr });
+    configs.push_back({ L"portrait_visual_mark_prev", ConfigType::EnableRectangle, &PORTRAIT_VISUAL_MARK_PREV, rect_serializer, rect_deserializer, nullptr });
+    configs.push_back({ L"landscape_visual_mark_next", ConfigType::EnableRectangle, &LANDSCAPE_VISUAL_MARK_NEXT, rect_serializer, rect_deserializer, nullptr });
+    configs.push_back({ L"landscape_visual_mark_prev", ConfigType::EnableRectangle, &LANDSCAPE_VISUAL_MARK_PREV, rect_serializer, rect_deserializer, nullptr });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

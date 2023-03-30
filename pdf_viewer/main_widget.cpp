@@ -142,6 +142,11 @@ extern UIRect PORTRAIT_FORWARD_UI_RECT;
 extern UIRect LANDSCAPE_BACK_UI_RECT;
 extern UIRect LANDSCAPE_FORWARD_UI_RECT;
 
+extern UIRect PORTRAIT_VISUAL_MARK_PREV;
+extern UIRect PORTRAIT_VISUAL_MARK_NEXT;
+extern UIRect LANDSCAPE_VISUAL_MARK_PREV;
+extern UIRect LANDSCAPE_VISUAL_MARK_NEXT;
+
 const int MAX_SCROLLBAR = 10000;
 
 const unsigned int INTERVAL_TIME = 200;
@@ -1591,16 +1596,27 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
     int window_width = width();
     int window_height = height();
 
+    NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(click_pos);
+
     if (down && is_visual_mark_mode()){
 
-        int threshold = window_height * 2 / 3;
-        if (click_pos.y > threshold){
-            if (click_pos.x > window_width / 2){
+
+        if (screen()->orientation() == Qt::PortraitOrientation){
+            if (PORTRAIT_VISUAL_MARK_NEXT.enabled && PORTRAIT_VISUAL_MARK_NEXT.contains(nwp)){
                 move_visual_mark_next();
             }
-            else{
+            else if (PORTRAIT_VISUAL_MARK_PREV.enabled && PORTRAIT_VISUAL_MARK_PREV.contains(nwp)){
                 move_visual_mark_prev();
             }
+        }
+        else{
+            if (LANDSCAPE_VISUAL_MARK_NEXT.enabled && LANDSCAPE_VISUAL_MARK_NEXT.contains(nwp)){
+                move_visual_mark_next();
+            }
+            else if (LANDSCAPE_VISUAL_MARK_PREV.enabled && LANDSCAPE_VISUAL_MARK_PREV.contains(nwp)){
+                move_visual_mark_prev();
+            }
+
         }
 
     }
@@ -1608,7 +1624,6 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
     if (down){ // handle touch history navigation
 
 //        WindowPos pos = {click_pos.}
-        NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(click_pos);
         int back_threshold = window_height / 5;
 
         if (screen()->orientation() == Qt::PortraitOrientation){

@@ -260,6 +260,11 @@ UIRect PORTRAIT_FORWARD_UI_RECT = {true, 0.7f, 1.0f, -1.0f, -0.7};
 UIRect LANDSCAPE_BACK_UI_RECT = {true, -1.0f, -0.7f, -1.0f, -0.7f};
 UIRect LANDSCAPE_FORWARD_UI_RECT = {true, 0.7f, 1.0f, -1.0f, -0.7};
 
+UIRect PORTRAIT_VISUAL_MARK_PREV = {true, -1.0f, -0.7f, 0.7f, 1.0f};
+UIRect PORTRAIT_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
+UIRect LANDSCAPE_VISUAL_MARK_PREV = {true, -1.0f, -0.7f, 0.7f, 1.0f};
+UIRect LANDSCAPE_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
+
 Path default_config_path(L"");
 Path default_keys_path(L"");
 std::vector<Path> user_config_paths = {};
