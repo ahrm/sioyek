@@ -127,6 +127,8 @@ extern float KEYBOARD_SELECT_TEXT_COLOR[4];
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
+extern float RULER_AUTO_MOVE_SENSITIVITY;
+
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
 extern UIRect LANDSCAPE_BACK_UI_RECT;
@@ -432,6 +434,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
     configs.push_back({ L"ruler_mode", ConfigType::Bool, &RULER_MODE, bool_serializer, bool_deserializer, bool_validator });
     configs.push_back({ L"ruler_padding", ConfigType::Float, &RULER_PADDING, float_serializer, float_deserializer, nullptr });
     configs.push_back({ L"ruler_x_padding", ConfigType::Float, &RULER_X_PADDING, float_serializer, float_deserializer, nullptr });
+    configs.push_back({ L"ruler_auto_move_sensitivity", ConfigType::Float, &RULER_AUTO_MOVE_SENSITIVITY, float_serializer, float_deserializer, nullptr });
     configs.push_back({ L"text_summary_url", ConfigType::String, &TEXT_HIGHLIGHT_URL, string_serializer, string_deserializer, nullptr });
     configs.push_back({ L"text_summary_should_refine", ConfigType::Bool, &TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE, bool_serializer, bool_deserializer, bool_validator });
     configs.push_back({ L"text_summary_should_fill", ConfigType::Bool, &TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL, bool_serializer, bool_deserializer, bool_validator });

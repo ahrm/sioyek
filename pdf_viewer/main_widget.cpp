@@ -136,6 +136,8 @@ extern bool TOC_JUMP_ALIGN_TOP;
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
+extern float RULER_AUTO_MOVE_SENSITIVITY;
+
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
 extern UIRect LANDSCAPE_BACK_UI_RECT;
@@ -352,6 +354,30 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     if (is_pressed){
         update_position_buffer();
     }
+    if (was_last_mouse_down_in_ruler_next_rect || was_last_mouse_down_in_ruler_prev_rect){
+        WindowPos current_window_pos = { mouse_event->pos().x(), mouse_event->pos().y() };
+        int distance = abs(current_window_pos.x - ruler_moving_last_window_pos.x) + abs(current_window_pos.y - ruler_moving_last_window_pos.y);
+        ruler_moving_last_window_pos = current_window_pos;
+        ruler_moving_distance_traveled += distance;
+        int num_next = ruler_moving_distance_traveled / static_cast<int>(std::max(RULER_AUTO_MOVE_SENSITIVITY, 1.0f));
+        if (num_next > 0){
+            ruler_moving_distance_traveled = 0;
+        }
+
+        for (int i = 0; i < num_next; i++){
+
+            if (was_last_mouse_down_in_ruler_next_rect){
+                move_visual_mark_next();
+            }
+            else{
+                move_visual_mark_prev();
+            }
+
+            invalidate_render();
+        }
+        return;
+
+    }
 #endif
 
     if (is_rotated()) {
@@ -430,7 +456,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         setCursor(Qt::ArrowCursor);
         if (HOVER_OVERVIEW) {
             opengl_widget->set_overview_page({});
-            invalidate_render();
+//            invalidate_render();
         }
     }
 
@@ -1565,6 +1591,8 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
     }
 
 #ifdef SIOYEK_ANDROID
+    was_last_mouse_down_in_ruler_next_rect = false;
+    was_last_mouse_down_in_ruler_prev_rect = false;
     if (down){
         last_press_point = QCursor::pos();
         last_press_msecs = QDateTime::currentMSecsSinceEpoch();
@@ -1603,17 +1631,25 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         if (screen()->orientation() == Qt::PortraitOrientation){
             if (PORTRAIT_VISUAL_MARK_NEXT.enabled && PORTRAIT_VISUAL_MARK_NEXT.contains(nwp)){
                 move_visual_mark_next();
+                was_last_mouse_down_in_ruler_next_rect = true;
+                ruler_moving_last_window_pos = click_pos;
             }
             else if (PORTRAIT_VISUAL_MARK_PREV.enabled && PORTRAIT_VISUAL_MARK_PREV.contains(nwp)){
                 move_visual_mark_prev();
+                was_last_mouse_down_in_ruler_prev_rect = true;
+                ruler_moving_last_window_pos = click_pos;
             }
         }
         else{
             if (LANDSCAPE_VISUAL_MARK_NEXT.enabled && LANDSCAPE_VISUAL_MARK_NEXT.contains(nwp)){
                 move_visual_mark_next();
+                was_last_mouse_down_in_ruler_next_rect = true;
+                ruler_moving_last_window_pos = click_pos;
             }
             else if (LANDSCAPE_VISUAL_MARK_PREV.enabled && LANDSCAPE_VISUAL_MARK_PREV.contains(nwp)){
                 move_visual_mark_prev();
+                was_last_mouse_down_in_ruler_prev_rect = true;
+                ruler_moving_last_window_pos = click_pos;
             }
 
         }
@@ -4649,6 +4685,9 @@ bool MainWidget::event(QEvent *event){
         auto gesture = (static_cast<QGestureEvent*>(event));
 
         if (gesture->gesture(Qt::TapAndHoldGesture)){
+            if (was_last_mouse_down_in_ruler_next_rect){
+                return true;
+            }
             if ((QCursor::pos() - last_press_point).manhattanLength() > 10){
                 return QWidget::event(event);
             }

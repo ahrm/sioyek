@@ -369,6 +369,11 @@ public:
     float velocity_x = 0;
     float velocity_y = 0;
 
+    bool was_last_mouse_down_in_ruler_next_rect = false;
+    bool was_last_mouse_down_in_ruler_prev_rect = false;
+    WindowPos ruler_moving_last_window_pos;
+    int ruler_moving_distance_traveled = 0;
+
 
     void handle_mobile_selection();
     void update_mobile_selection();
