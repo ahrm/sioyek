@@ -1,11 +1,8 @@
 ﻿//todo:
-// add mobile-specific settings (rects and stuff)
+// handle next visual mark rectangle specially (don't open links, don't move, don't touch and hold, when finger is moved do it again)
 // fix the rest of UI for mobile (current buttons are extremely bad)
-// custom color mode is not working on mobile
 // add mobile specific page navigation
 // banded page rendering
-// don't goto links when mouse has moved too much
-// handle next visual mark rectangle specially (don't open links, don't move, don't touch and hold, when finger is moved do it again)
 
 #include <iostream>
 #include <vector>
@@ -1776,10 +1773,18 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             is_word_selecting = false;
         }
         else {
-            handle_click(click_pos);
+//            WindowPos current_window_pos = {};
+//            handle_click(click_pos);
 #ifndef SIOYEK_ANDROID
+            handle_click(click_pos);
             clear_selected_text();
+#else
+            int distance = abs(click_pos.x - last_mouse_down_window_pos.x) + abs(click_pos.y - last_mouse_down_window_pos.y);
+            if (distance < 20){ // we don't want to accidentally click on links when moving the document
+                handle_click(click_pos);
+            }
 #endif
+
         }
         validate_render();
     }
