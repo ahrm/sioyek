@@ -506,7 +506,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     }
 
     setMinimumWidth(500);
-    setMinimumHeight(500);
+    setMinimumHeight(200);
     setFocus();
 }
 
