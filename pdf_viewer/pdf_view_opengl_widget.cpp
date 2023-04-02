@@ -119,15 +119,24 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 
 
+#ifdef SIOYEK_ANDROID
+	std::string header = "#version 300 es\n";
+#else
+	std::string header = "#version 330 core\n";
+#endif
+
     std::string vertex_shader_code_utf8 = read_file_contents(vertex_file_path);
     if (vertex_shader_code_utf8.size() == 0){
         return 0;
     }
+	vertex_shader_code_utf8 = header + vertex_shader_code_utf8;
 
     std::string fragment_shader_code_utf8 = read_file_contents(fragment_file_path);
     if (fragment_shader_code_utf8.size() == 0){
         return 0;
     }
+
+	fragment_shader_code_utf8 = header + fragment_shader_code_utf8;
 
 	GLint Result = GL_FALSE;
 	int InfoLogLength;
