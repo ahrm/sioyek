@@ -40,7 +40,7 @@ std::wstring Path::get_path() const
     if (canon_path.substr(0, 2) == L"/:"){
         return canon_path.substr(1, canon_path.size()-1);
     }
-    if (canon_path.substr(0, 10) == L"content://"){
+    if (canon_path.substr(0, 9) == L"content:/"){
         return canon_path;
     }
     if (canon_path[0] == ':'){

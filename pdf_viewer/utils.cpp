@@ -1651,6 +1651,9 @@ std::wstring get_canonical_path(const std::wstring& path) {
         if (path[0] == ':'){ // it is a resouce file
             return path;
         }
+        if (path.substr(0, 9) == L"content:/"){
+            return path;
+        }
         else{
             QDir dir(QString::fromStdWString(path));
             return std::move(dir.absolutePath().toStdWString());

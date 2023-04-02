@@ -23,7 +23,7 @@ RowLayout{
 
         Rectangle{
             anchors.fill: parent
-            color: "black"
+            color: button_area.pressed ? "#444444" : "black"
             radius: 4
             id: mainrect
 
@@ -52,6 +52,7 @@ RowLayout{
 
             MouseArea{
                 anchors.fill: parent
+                id: button_area
                 onClicked: {
                     if (gb.gbButtonClicked){
                         gb.gbButtonClicked();
