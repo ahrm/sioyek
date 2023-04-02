@@ -85,6 +85,31 @@ GLfloat rotation_uvs[4][8] = {
 
 OpenGLSharedResources PdfViewOpenGLWidget::shared_gl_objects;
 
+std::string read_file_contents(const Path& path){
+#ifdef SIOYEK_ANDROID
+    std::wstring actual_path = path.get_path();
+    QFile qfile(QString::fromStdWString(path.get_path()));
+    qfile.open(QIODeviceBase::Text | QIODeviceBase::ReadOnly);
+    std::string content = qfile.readAll().toStdString();
+    qfile.close();
+    return content;
+#else
+    std::wifstream stream = open_wifstream(path.get_path());
+    std::wstring content;
+
+    if (stream.is_open()) {
+        std::wstringstream sstr;
+        sstr << stream.rdbuf();
+        content = sstr.str();
+        stream.close();
+        return utf8_encode(content);
+    }
+    else {
+        return "";
+    }
+#endif
+}
+
 GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_file_path) {
 
 	//const wchar_t* vertex_file_path = vertex_file_path_.c_str();
@@ -93,46 +118,24 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 
-	// Read the Vertex Shader code from the file
-	std::wstring VertexShaderCode;
-	std::string vertex_shader_code_utf8;
 
-	std::wifstream VertexShaderStream = open_wifstream(vertex_file_path.get_path());
-	if (VertexShaderStream.is_open()) {
-		std::wstringstream sstr;
-		sstr << VertexShaderStream.rdbuf();
-		VertexShaderCode = sstr.str();
-		VertexShaderStream.close();
-	}
-	else {
-		return 0;
-	}
+    std::string vertex_shader_code_utf8 = read_file_contents(vertex_file_path);
+    if (vertex_shader_code_utf8.size() == 0){
+        return 0;
+    }
 
-	// Read the Fragment Shader code from the file
-	std::wstring FragmentShaderCode;
-	std::string fragment_shader_code_utf8;
-
-	std::wifstream FragmentShaderStream = open_wifstream(fragment_file_path.get_path());
-	if (FragmentShaderStream.is_open()) {
-		std::wstringstream sstr;
-		sstr << FragmentShaderStream.rdbuf();
-		FragmentShaderCode = sstr.str();
-		FragmentShaderStream.close();
-	}
-	else {
-		return 0;
-	}
+    std::string fragment_shader_code_utf8 = read_file_contents(fragment_file_path);
+    if (fragment_shader_code_utf8.size() == 0){
+        return 0;
+    }
 
 	GLint Result = GL_FALSE;
 	int InfoLogLength;
 
-	// Compile Vertex Shader
-	vertex_shader_code_utf8 = utf8_encode(VertexShaderCode);
 	char const* VertexSourcePointer = vertex_shader_code_utf8.c_str();
 	glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
 	glCompileShader(VertexShaderID);
 
-	// Check Vertex Shader
 	glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
 	glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
 	if (InfoLogLength > 0) {
@@ -141,8 +144,6 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 		printf("%s\n", &VertexShaderErrorMessage[0]);
 	}
 
-	// Compile Fragment Shader
-	fragment_shader_code_utf8 = utf8_encode(FragmentShaderCode);
 	char const* FragmentSourcePointer = fragment_shader_code_utf8.c_str();
 	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
 	glCompileShader(FragmentShaderID);
@@ -199,6 +200,17 @@ void PdfViewOpenGLWidget::initializeGL() {
 		//shared_gl_objects.vertical_line_program = LoadShaders(concatenate_path(shader_path , L"simple.vertex"),  concatenate_path(shader_path , L"vertical_bar.fragment"));
 		//shared_gl_objects.vertical_line_dark_program = LoadShaders(concatenate_path(shader_path , L"simple.vertex"),  concatenate_path(shader_path , L"vertical_bar_dark.fragment"));
 
+#ifdef SIOYEK_ANDROID
+        shared_gl_objects.rendered_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/simple.fragment"));
+        shared_gl_objects.rendered_dark_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/dark_mode.fragment"));
+        shared_gl_objects.unrendered_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/unrendered_page.fragment"));
+        shared_gl_objects.highlight_program = LoadShaders( Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/highlight.fragment"));
+        shared_gl_objects.vertical_line_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/vertical_bar.fragment"));
+        shared_gl_objects.vertical_line_dark_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/vertical_bar_dark.fragment"));
+        shared_gl_objects.custom_color_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/custom_colors.fragment"));
+        shared_gl_objects.separator_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"),  Path(L":/pdf_viewer/shaders/separator.fragment"));
+        shared_gl_objects.stencil_program = LoadShaders(Path(L":/pdf_viewer/shaders/stencil.vertex"),  Path(L":/pdf_viewer/shaders/stencil.fragment"));
+#else
 		shared_gl_objects.rendered_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"simple.fragment"));
 		shared_gl_objects.rendered_dark_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"dark_mode.fragment"));
 		shared_gl_objects.unrendered_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"unrendered_page.fragment"));
@@ -208,6 +220,7 @@ void PdfViewOpenGLWidget::initializeGL() {
 		shared_gl_objects.custom_color_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"custom_colors.fragment"));
 		shared_gl_objects.separator_program = LoadShaders(shader_path.slash(L"simple.vertex"),  shader_path.slash(L"separator.fragment"));
 		shared_gl_objects.stencil_program = LoadShaders(shader_path.slash(L"stencil.vertex"),  shader_path.slash(L"stencil.fragment"));
+#endif
 
 		shared_gl_objects.dark_mode_contrast_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_dark_program, "contrast");
 		shared_gl_objects.gamma_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_program, "gamma");
@@ -398,7 +411,13 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 	creation_time = QDateTime::currentDateTime();
 
 	QSurfaceFormat format;
-	format.setVersion(3, 3);
+#ifdef SIOYEK_ANDROID
+    format.setVersion(3, 0);
+#else
+    format.setVersion(3, 3);
+#endif
+//    format.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
+//    format.setSwapInterval(0);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	this->setFormat(format);
 
@@ -890,6 +909,20 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"synctex_highlight_color"));
 	for (auto [page, rect] : synctex_highlights) {
 		render_highlight_document(shared_gl_objects.highlight_program, page, rect);
+	}
+
+	if (underline) {
+		float underline_color[] = {1.0f, 0.0f, 0.0f, 0.9};
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, underline_color);
+
+		fz_rect underline_rect;
+		underline_rect.x0 = underline.value().x - 3.0f;
+		underline_rect.x1 = underline.value().x + 3.0f;
+
+		underline_rect.y0 = underline.value().y - 1.0f;
+		underline_rect.y1 = underline.value().y + 1.0f;
+
+		render_highlight_absolute(shared_gl_objects.highlight_program, underline_rect, false);
 	}
 
 	if (document_view->get_document()->can_use_highlights()) {
@@ -1935,4 +1968,12 @@ void PdfViewOpenGLWidget::get_background_color(float out_background[3]) {
 void PdfViewOpenGLWidget::clear_all_selections() {
 	cancel_search();
 	document_view->selected_character_rects.clear();
+}
+
+void PdfViewOpenGLWidget::set_underline(AbsoluteDocumentPos abspos) {
+	underline = abspos;
+}
+
+void PdfViewOpenGLWidget::clear_underline() {
+	underline = {};
 }

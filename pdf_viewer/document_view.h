@@ -67,7 +67,7 @@ public:
 	void set_opened_book_state(const OpenedBookState& state);
 	void handle_escape();
 	void set_book_state(OpenedBookState state);
-	void set_offsets(float new_offset_x, float new_offset_y);
+	bool set_offsets(float new_offset_x, float new_offset_y, bool force=false);
 	Document* get_document();
 	std::optional<Portal> find_closest_portal(bool limit=false);
 	std::optional<BookMark> find_closest_bookmark();
@@ -121,8 +121,8 @@ public:
 	float zoom_out(float zoom_factor = ZOOM_INC_FACTOR);
 	float zoom_in_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
 	float zoom_out_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
-	void move_absolute(float dx, float dy);
-	void move(float dx, float dy);
+	bool move_absolute(float dx, float dy, bool force=false);
+	bool move(float dx, float dy, bool force=false);
 	void get_absolute_delta_from_doc_delta(float doc_dx, float doc_dy, float* abs_dx, float* abs_dy);
 	int get_center_page_number();
 	void get_visible_pages(int window_height, std::vector<int>& visible_pages);

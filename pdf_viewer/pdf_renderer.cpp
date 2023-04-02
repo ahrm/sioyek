@@ -171,7 +171,13 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
 		}
 		cached_response_mutex.unlock();
 		if (result == 0) {
+#ifdef SIOYEK_ANDROID
+            if (!no_rerender){
+                add_request(path, page, zoom_level);
+            }
+#else
 			add_request(path, page, zoom_level);
+#endif
 			return try_closest_rendered_page(path, page, zoom_level, page_width, page_height);
 		}
 		return result;
@@ -378,7 +384,8 @@ fz_document* PdfRenderer::get_document_with_path(int thread_index, fz_context* m
 
 	fz_document* ret_val = nullptr;
 	fz_try(mupdf_context) {
-		ret_val = fz_open_document(mupdf_context, utf8_encode(path).c_str());
+//		ret_val = fz_open_document(mupdf_context, utf8_encode(path).c_str());
+        ret_val = open_document_with_file_name(mupdf_context, path);
 
 		if (fz_needs_password(mupdf_context, ret_val)) {
 			if (document_passwords.find(path) != document_passwords.end()) {

@@ -1,5 +1,5 @@
 
-#version 330 core
+#version 300 es
 
 out vec2 screen_pos;
 layout (location=0) in vec2 vertex_pos;

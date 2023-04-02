@@ -131,6 +131,8 @@ private:
 	std::optional<fz_rect> character_highlight_rect = {};
 	std::optional<fz_rect> wrong_character_rect = {};
 
+	std::optional<AbsoluteDocumentPos> underline = {};
+
 	int rotation_index = 0;
 	bool is_dragging = false;
 	bool fastread_mode = false;
@@ -164,8 +166,8 @@ protected:
 	void render_line_window(GLuint program, float vertical_pos, std::optional<fz_rect> ruler_rect = {});
 	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border=true);
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
-	void paintGL() override;
-	void render(QPainter* painter);
+    void paintGL() override;
+    void render(QPainter* painter);
 
 	void enable_stencil();
 	void write_to_stencil();
@@ -275,5 +277,7 @@ public:
 	int find_search_results_breakpoint_helper(int begin_index, int end_index);
 	void get_custom_color_transform_matrix(float matrix_data[16]);
 	void get_background_color(float out_background[3]);
+	void set_underline(AbsoluteDocumentPos abspos);
+	void clear_underline();
 
 };

@@ -600,8 +600,9 @@ bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string 
 	last_update_time = QDateTime::currentDateTime();
 	if (doc == nullptr) {
 		fz_try(context) {
-			doc = fz_open_document(context, utf8_encode(file_name).c_str());
-			document_needs_password = fz_needs_password(context, doc);
+//			doc = fz_open_document(context, utf8_encode(file_name).c_str());
+            doc = open_document_with_file_name(context, file_name);
+            document_needs_password = fz_needs_password(context, doc);
 			if (password.size() > 0) {
 				int auth_res = fz_authenticate_password(context, doc, password.c_str());
 				if (auth_res > 0) {
@@ -696,8 +697,9 @@ void Document::load_page_dimensions(bool force_load_now) {
 		// clone the main context for use in the background thread
 		fz_context* context_ = fz_clone_context(context);
 		fz_try(context_) {
-			fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
-			//fz_layout_document(context_, doc, 600, 800, 20);
+//			fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+            fz_document* doc_ = open_document_with_file_name(context_, file_name);
+            //fz_layout_document(context_, doc, 600, 800, 20);
 			load_document_metadata_from_db();
 
 			float acc_height_ = 0.0f;
@@ -877,11 +879,10 @@ void Document::set_page_offset(int new_offset) {
 }
 
 fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page) {
-	int page_number = -1;
 	DocumentPos bottom_left = absolute_to_page_pos({ absolute_rect.x0, absolute_rect.y0 });
 	DocumentPos top_right = absolute_to_page_pos({ absolute_rect.x1, absolute_rect.y1 });
 	if (page != nullptr) {
-		*page = page_number;
+        *page = bottom_left.page;
 	}
 	fz_rect res;
 	res.x0 = bottom_left.x;
@@ -968,7 +969,8 @@ void Document::index_document(bool* invalid_flag) {
 		fz_context* context_ = fz_clone_context(context);
 		fz_try(context_) {
 
-			fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+//			fz_document* doc_ = fz_open_document(context_, utf8_encode(file_name).c_str());
+            fz_document* doc_ = open_document_with_file_name(context_, file_name);
 
 			if (document_needs_password) {
 				fz_authenticate_password(context_, doc_, correct_password.c_str());

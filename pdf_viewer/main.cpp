@@ -13,6 +13,11 @@
 #include <filesystem>
 #include <map>
 
+#ifdef SIOYEK_ANDROID
+#include <QtCore/private/qandroidextras_p.h>
+#endif
+
+#include <QDebug>
 #include <qapplication.h>
 #include <qpushbutton.h>
 #ifndef SIOYEK_QT6
@@ -168,7 +173,7 @@ bool SHOULD_DRAW_UNRENDERED_PAGES = true;
 bool HOVER_OVERVIEW = false;
 bool RERENDER_OVERVIEW = false;
 bool LINEAR_TEXTURE_FILTERING = false;
-bool RULER_MODE = false;
+bool RULER_MODE = true;
 bool SMALL_TOC = false;
 bool WHEEL_ZOOM_ON_CURSOR = false;
 bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE = true;
@@ -180,7 +185,13 @@ float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
 float RULER_PADDING = 0.0f;
 float RULER_X_PADDING = 0.0f;
 std::wstring ITEM_LIST_PREFIX = L">";
+
+#ifdef SIOYEK_ANDROID
+std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode";
+#else
 std::wstring STARTUP_COMMANDS = L"";
+#endif
+
 float SMALL_PIXMAP_SCALE = 0.75f;
 float DISPLAY_RESOLUTION_SCALE = -1;
 float FIT_TO_PAGE_WIDTH_RATIO = 1;
@@ -198,7 +209,11 @@ bool FORCE_CUSTOM_LINE_ALGORITHM = false;
 float OVERVIEW_SIZE[2] = { 0.8f, 0.4f };
 float OVERVIEW_OFFSET[2] = { 0.0f, 0.0f };
 bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE = false;
+#ifdef SIOYEK_ANDROID
+bool EXACT_HIGHLIGHT_SELECT = true;
+#else
 bool EXACT_HIGHLIGHT_SELECT = false;
+#endif
 bool SHOW_DOC_PATH = false;
 float FASTREAD_OPACITY = 0.5f;
 bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE = true;
@@ -239,6 +254,17 @@ float KEYBOARD_SELECT_TEXT_COLOR[] = { 0.0f , 0.0f, 0.5f, 1.0f};
 bool AUTOCENTER_VISUAL_SCROLL = false;
 bool ALPHABETIC_LINK_TAGS = false;
 bool VIMTEX_WSL_FIX = false;
+float RULER_AUTO_MOVE_SENSITIVITY = 40.0f;
+//UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
+UIRect PORTRAIT_BACK_UI_RECT = {true, -1.0f, -0.7f, -1.0f, -0.7f};
+UIRect PORTRAIT_FORWARD_UI_RECT = {true, 0.7f, 1.0f, -1.0f, -0.7};
+UIRect LANDSCAPE_BACK_UI_RECT = {true, -1.0f, -0.7f, -1.0f, -0.7f};
+UIRect LANDSCAPE_FORWARD_UI_RECT = {true, 0.7f, 1.0f, -1.0f, -0.7};
+
+UIRect PORTRAIT_VISUAL_MARK_PREV = {true, -1.0f, -0.7f, 0.7f, 1.0f};
+UIRect PORTRAIT_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
+UIRect LANDSCAPE_VISUAL_MARK_PREV = {true, -1.0f, -0.7f, 0.7f, 1.0f};
+UIRect LANDSCAPE_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
 
 Path default_config_path(L"");
 Path default_keys_path(L"");
@@ -247,7 +273,12 @@ std::vector<Path> user_keys_paths = {};
 Path database_file_path(L"");
 Path local_database_file_path(L"");
 Path global_database_file_path(L"");
+#ifdef SIOYEK_ANDROID
+Path tutorial_path(L":/tutorial.pdf");
+Path android_config_path(L"");
+#else
 Path tutorial_path(L"");
+#endif
 Path last_opened_file_address_path(L"");
 Path shader_path(L"");
 Path auto_config_path(L"");
@@ -307,7 +338,34 @@ QStringList convert_arguments(QStringList input_args){
     return output_args;
 }
 
+#ifdef SIOYEK_ANDROID
+void configure_paths_android(){
+
+    char* APPDIR = std::getenv("XDG_CONFIG_HOME");
+    Path linux_home_path(QDir::homePath().toStdWString());
+
+    if (!APPDIR){
+        APPDIR = std::getenv("HOME");
+    }
+
+    Path standard_data_path = Path(utf8_decode(APPDIR));
+    standard_data_path = standard_data_path.slash(L".local").slash(L"share").slash(L"Sioyek");
+    standard_data_path.create_directories();
+
+    database_file_path = standard_data_path.slash(L"test.db");
+    last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
+    local_database_file_path = standard_data_path.slash(L"local.db");
+    global_database_file_path = standard_data_path.slash(L"shared.db");
+    android_config_path = standard_data_path.slash(L"saved.config");
+    tutorial_path = Path(L":/tutorial.pdf");
+}
+#endif
+
 void configure_paths(){
+#ifdef SIOYEK_ANDROID
+    configure_paths_android();
+#else
+
 
 	Path parent_path(QCoreApplication::applicationDirPath().toStdWString());
 	std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
@@ -414,6 +472,7 @@ void configure_paths(){
 #endif
 	auto_config_path = standard_data_path.slash(L"auto.config");
 	// user_config_paths.insert(user_config_paths.begin(), auto_config_path);
+#endif
 }
 
 void verify_config_paths(){
@@ -585,7 +644,13 @@ MainWidget* handle_args(const QStringList& arguments) {
 	pdf_file_name = strip_uri(pdf_file_name);
 
 	if ((pdf_file_name.size() > 0) && (!QFile::exists(QString::fromStdWString(pdf_file_name)))) {
-		return nullptr;
+#ifdef SIOYEK_ANDROID
+        if (!((pdf_file_name[0] == ':') || (pdf_file_name.substr(0, 2) == L"/:"))){
+            return nullptr;
+        }
+#else
+        return nullptr;
+#endif
 	}
 
 	MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
@@ -691,13 +756,33 @@ void focus_on_widget(QWidget* widget) {
 
 int main(int argc, char* args[]) {
 
-	if (has_arg(argc, args, "--version")) {
+#ifdef SIOYEK_ANDROID
+    auto r = QtAndroidPrivate::checkPermission(QtAndroidPrivate::Storage).result();
+    if (r == QtAndroidPrivate::Denied){
+        r = QtAndroidPrivate::requestPermission(QtAndroidPrivate::Storage).result();
+
+        if (r == QtAndroidPrivate::Denied){
+            qDebug() << "Could not get storage permission\n";
+        }
+
+    }
+#endif
+
+    if (has_arg(argc, args, "--version")) {
 		std::cout << "sioyek " << APPLICATION_VERSION << "\n";
 		return 0;
 	}
 
 	QSurfaceFormat format;
-	format.setVersion(3, 3);
+#ifdef SIOYEK_ANDROID
+    format.setVersion(3, 0);
+#else
+    format.setVersion(3, 3);
+#endif
+
+//    auto behaviour = format.swapBehavior();
+//    format.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
+//    format.setSwapInterval(0);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	QSurfaceFormat::setDefaultFormat(format);
 
@@ -710,7 +795,11 @@ int main(int argc, char* args[]) {
 	configure_paths();
 	verify_config_paths();
 
-	ConfigManager config_manager(default_config_path, auto_config_path, user_config_paths);
+#ifdef SIOYEK_ANDROID
+    ConfigManager config_manager(android_config_path, auto_config_path, user_config_paths);
+#else
+    ConfigManager config_manager(default_config_path, auto_config_path, user_config_paths);
+#endif
 	CommandManager* command_manager = new CommandManager(&config_manager);
 
 	if (SHARED_DATABASE_PATH.size() > 0) {
@@ -733,13 +822,19 @@ int main(int argc, char* args[]) {
 		use_single_instance = false;
 	}
 
+#ifndef SIOYEK_ANDROID
 	RunGuard guard("sioyek");
+    if (!guard.isPrimary()) {
+        QStringList sent_args = convert_arguments(app.arguments());
+        guard.sendMessage(serialize_string_array(sent_args));
+        return 0;
+    }
+#endif
 
-	if (!guard.isPrimary()) {
-		QStringList sent_args = convert_arguments(app.arguments());
-		guard.sendMessage(serialize_string_array(sent_args));
-		return 0;
-	}
+#ifdef SIOYEK_ANDROID
+    qputenv("QT_ANDROID_VOLUME_KEYS", "1");
+#endif
+
 
 	QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
 	QCoreApplication::setApplicationVersion(QString::fromStdString(APPLICATION_VERSION));
@@ -810,6 +905,7 @@ int main(int argc, char* args[]) {
 	NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, main_widget);
 
 
+#ifndef SIOYEK_ANDROID
 	if (guard.isPrimary()) {
 		QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
 			QStringList args = deserialize_string_array(message);
@@ -827,6 +923,7 @@ int main(int argc, char* args[]) {
 			}
 			});
 	}
+#endif
 
 
 	main_widget->topLevelWidget()->resize(500, 500);
@@ -849,7 +946,8 @@ int main(int argc, char* args[]) {
 		handle_args(QStringList() << QCoreApplication::applicationFilePath() << file_name);
 	});
 
-    // live reload the config files
+    // live reload the config files, no need to live reload on android because we are not changing config files anyway
+#ifndef SIOYEK_ANDROID
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 
 		config_manager.deserialize(default_config_path, auto_config_path, user_config_paths);
@@ -863,6 +961,7 @@ int main(int argc, char* args[]) {
 		input_handler.reload_config_files(default_keys_path, user_keys_paths);
 		add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
 		});
+#endif
 
 
 	if (SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP) {

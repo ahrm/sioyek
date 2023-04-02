@@ -89,24 +89,31 @@ void DocumentView::set_book_state(OpenedBookState state) {
 	set_offsets(state.offset_x, state.offset_y);
 	set_zoom_level(state.zoom_level, true);
 }
-void DocumentView::set_offsets(float new_offset_x, float new_offset_y) {
-	if (current_document == nullptr) return;
+
+bool DocumentView::set_offsets(float new_offset_x, float new_offset_y, bool force) {
+	// if move was truncated
+	bool truncated = false;
+
+	if (current_document == nullptr) return false;
 
 	int num_pages = current_document->num_pages();
-	if (num_pages == 0) return;
+	if (num_pages == 0) return false;
 
 	float max_y_offset = current_document->get_accum_page_height(num_pages-1) + current_document->get_page_height(num_pages-1);
 	float min_y_offset = 0;
 	float min_x_offset = get_min_valid_x();
 	float max_x_offset = get_max_valid_x();
 
-	if (new_offset_y > max_y_offset) new_offset_y = max_y_offset;
-	if (new_offset_y < min_y_offset) new_offset_y = min_y_offset;
-	if (new_offset_x > max_x_offset) new_offset_x = max_x_offset;
-	if (new_offset_x < min_x_offset) new_offset_x = min_x_offset;
+	if (!force) {
+		if (new_offset_y > max_y_offset) { new_offset_y = max_y_offset; truncated = true; }
+		if (new_offset_y < min_y_offset) { new_offset_y = min_y_offset; truncated = true; }
+		if (new_offset_x > max_x_offset) { new_offset_x = max_x_offset; truncated = true; }
+		if (new_offset_x < min_x_offset) { new_offset_x = min_x_offset; truncated = true; }
+	}
 
 	offset_x = new_offset_x;
 	offset_y = new_offset_y;
+	return truncated;
 }
 
 Document* DocumentView::get_document() {
@@ -481,7 +488,12 @@ void DocumentView::goto_right() {
 }
 
 float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode) {
-	const float max_zoom_level = 10.0f;
+#ifdef SIOYEK_ANDROID
+    const float max_zoom_level = 4.0f;
+#else
+    const float max_zoom_level = 10.0f;
+#endif
+
 	if (zl > max_zoom_level) {
 		zl = max_zoom_level;
 	}
@@ -494,7 +506,11 @@ float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode) 
 }
 
 float DocumentView::zoom_in(float zoom_factor) {
-	const float max_zoom_level = 10.0f;
+#ifdef SIOYEK_ANDROID
+    const float max_zoom_level = 4.0f;
+#else
+    const float max_zoom_level = 10.0f;
+#endif
 	float new_zoom_level = zoom_level * zoom_factor;
 
 	if (new_zoom_level > max_zoom_level) {
@@ -530,14 +546,14 @@ float DocumentView::zoom_out_cursor(WindowPos mouse_pos, float zoom_factor) {
 	move_absolute(-prev_doc_x + new_doc_x, prev_doc_y - new_doc_y);
 	return res;
 }
-void DocumentView::move_absolute(float dx, float dy) {
-	set_offsets(offset_x + dx, offset_y + dy);
+bool DocumentView::move_absolute(float dx, float dy, bool force) {
+	return set_offsets(offset_x + dx, offset_y + dy, force);
 }
 
-void DocumentView::move(float dx, float dy) {
+bool DocumentView::move(float dx, float dy, bool force) {
 	int abs_dx = (dx / zoom_level);
 	int abs_dy = (dy / zoom_level);
-	move_absolute(abs_dx, abs_dy);
+	return move_absolute(abs_dx, abs_dy, force);
 }
 void DocumentView::get_absolute_delta_from_doc_delta(float dx, float dy, float* abs_dx, float* abs_dy) {
 	*abs_dx = (dx / zoom_level);
@@ -808,7 +824,7 @@ void DocumentView::fit_to_page_height_width_minimum() {
 
 void DocumentView::persist() {
 	if (!current_document) return;
-	db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y);
+    db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y);
 }
 
 int DocumentView::get_current_chapter_index() {

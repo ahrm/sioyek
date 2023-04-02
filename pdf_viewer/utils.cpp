@@ -1,6 +1,10 @@
 //#include <Windows.h>
 #include <cwctype>
 
+#ifdef SIOYEK_ANDROID
+#include <unistd.h>
+#endif
+
 #include <cmath>
 #include <cassert>
 #include "utils.h"
@@ -24,6 +28,11 @@
 #include <qnetworkrequest.h>
 #include <qnetworkreply.h>
 #include <qscreen.h>
+
+#ifdef SIOYEK_ANDROID
+#include <QtCore/private/qandroidextras_p.h>
+#include <qjniobject.h>
+#endif
 
 #include <mupdf/pdf.h>
 
@@ -174,32 +183,32 @@ void copy_to_clipboard(const std::wstring& text, bool selection) {
 void install_app(const char *argv0)
 {
 #ifdef Q_OS_WIN
-	char buf[512];
-	HKEY software, classes, testpdf, dotpdf;
-	HKEY shell, open, command, supported_types;
-	HKEY pdf_progids;
+    char buf[512];
+    HKEY software, classes, testpdf, dotpdf;
+    HKEY shell, open, command, supported_types;
+    HKEY pdf_progids;
 
-	OPEN_KEY(HKEY_CURRENT_USER, "Software", software);
-	OPEN_KEY(software, "Classes", classes);
-	OPEN_KEY(classes, ".pdf", dotpdf);
-	OPEN_KEY(dotpdf, "OpenWithProgids", pdf_progids);
-	OPEN_KEY(classes, "Sioyek", testpdf);
-	OPEN_KEY(testpdf, "SupportedTypes", supported_types);
-	OPEN_KEY(testpdf, "shell", shell);
-	OPEN_KEY(shell, "open", open);
-	OPEN_KEY(open, "command", command);
+    OPEN_KEY(HKEY_CURRENT_USER, "Software", software);
+    OPEN_KEY(software, "Classes", classes);
+    OPEN_KEY(classes, ".pdf", dotpdf);
+    OPEN_KEY(dotpdf, "OpenWithProgids", pdf_progids);
+    OPEN_KEY(classes, "Sioyek", testpdf);
+    OPEN_KEY(testpdf, "SupportedTypes", supported_types);
+    OPEN_KEY(testpdf, "shell", shell);
+    OPEN_KEY(shell, "open", open);
+    OPEN_KEY(open, "command", command);
 
-	sprintf(buf, "\"%s\" \"%%1\"", argv0);
+    sprintf(buf, "\"%s\" \"%%1\"", argv0);
 
-	SET_KEY(open, "FriendlyAppName", "Sioyek");
-	SET_KEY(command, "", buf);
-	SET_KEY(supported_types, ".pdf", "");
-	SET_KEY(pdf_progids, "sioyek", "");
+    SET_KEY(open, "FriendlyAppName", "Sioyek");
+    SET_KEY(command, "", buf);
+    SET_KEY(supported_types, ".pdf", "");
+    SET_KEY(pdf_progids, "sioyek", "");
 
-	RegCloseKey(dotpdf);
-	RegCloseKey(testpdf);
-	RegCloseKey(classes);
-	RegCloseKey(software);
+    RegCloseKey(dotpdf);
+    RegCloseKey(testpdf);
+    RegCloseKey(classes);
+    RegCloseKey(software);
 #endif
 }
 
@@ -1637,9 +1646,24 @@ std::wstring concatenate_path(const std::wstring& prefix, const std::wstring& su
 }
 
 std::wstring get_canonical_path(const std::wstring& path) {
+#ifdef SIOYEK_ANDROID
+    if (path.size() > 0){
+        if (path[0] == ':'){ // it is a resouce file
+            return path;
+        }
+        else{
+            QDir dir(QString::fromStdWString(path));
+            return std::move(dir.absolutePath().toStdWString());
+        }
+    }
+    else {
+        return L"";
+    }
+#else
 	QDir dir(QString::fromStdWString(path));
 	//return std::move(dir.canonicalPath().toStdWString());
 	return std::move(dir.absolutePath().toStdWString());
+#endif
 
 }
 
@@ -1853,6 +1877,16 @@ std::wifstream open_wifstream(const std::wstring& file_name) {
 #else
 	std::string encoded_file_name = utf8_encode(file_name);
 	return std::move(std::wifstream(encoded_file_name.c_str()));
+#endif
+}
+
+std::wofstream open_wofstream(const std::wstring& file_name) {
+
+#ifdef Q_OS_WIN
+    return std::move(std::wofstream(file_name));
+#else
+    std::string encoded_file_name = utf8_encode(file_name);
+    return std::move(std::wofstream(encoded_file_name.c_str()));
 #endif
 }
 
@@ -2233,6 +2267,10 @@ QString get_status_stylesheet(bool nofont) {
     }
 }
 
+QString get_list_item_stylesheet() {
+    return QString("background-color: red; padding-bottom: 20px; padding-top: 20px;");
+}
+
 QString get_selected_stylesheet(bool nofont) {
     if ((!nofont) && STATUS_BAR_FONT_SIZE > -1) {
         QString	font_size_stylesheet = QString("font-size: %1px").arg(STATUS_BAR_FONT_SIZE);
@@ -2256,3 +2294,112 @@ void convert_color4(float* in_color, int* out_color) {
 	out_color[2] = (int)(in_color[2] * 255);
 	out_color[3] = (int)(in_color[3] * 255);
 }
+
+fz_document* open_document_with_file_name(fz_context* context, std::wstring file_name){
+
+#ifdef SIOYEK_ANDROID
+    QFile pdf_qfile(QString::fromStdWString(file_name));
+
+    pdf_qfile.open(QIODeviceBase::ReadOnly);
+    int qfile_handle = pdf_qfile.handle();
+    fz_stream* stream = nullptr;
+
+    if (qfile_handle != -1){
+        FILE* file_ptr = fdopen(dup(qfile_handle), "rb");
+        qDebug() << "file ptr : " << file_ptr << "\n";
+        stream = fz_open_file_ptr_no_close(context, file_ptr);
+    }
+    else{
+        QByteArray bytes = pdf_qfile.readAll();
+        int size = bytes.size();
+        unsigned char* new_buffer = new unsigned char[size];
+        memcpy(new_buffer, bytes.data(), bytes.size());
+        stream = fz_open_memory(context, new_buffer, bytes.size());
+    }
+
+    return fz_open_document_with_stream(context, "application/pdf", stream);
+#else
+    return  fz_open_document(context, utf8_encode(file_name).c_str());
+#endif
+}
+
+void convert_qcolor_to_float3(const QColor& color, float* out_floats){
+    *(out_floats + 0) = static_cast<float>(color.red()) / 255.0f;
+    *(out_floats + 1) = static_cast<float>(color.green()) / 255.0f;
+    *(out_floats + 2) = static_cast<float>(color.blue()) / 255.0f;
+}
+
+void convert_qcolor_to_float4(const QColor& color, float* out_floats){
+    *(out_floats + 0) = static_cast<float>(color.red()) / 255.0f;
+    *(out_floats + 1) = static_cast<float>(color.green()) / 255.0f;
+    *(out_floats + 2) = static_cast<float>(color.blue()) / 255.0f;
+    *(out_floats + 3) = static_cast<float>(color.alpha()) / 255.0f;
+}
+
+#ifdef SIOYEK_ANDROID
+
+
+// modified from https://github.com/mahdize/CrossQFile/blob/main/CrossQFile.cpp
+
+QJniObject parseUriString(const QString& uriString){
+    return QJniObject::callStaticObjectMethod
+                ("android/net/Uri" , "parse",
+                 "(Ljava/lang/String;)Landroid/net/Uri;",
+                 QJniObject::fromString(uriString).object());
+}
+
+QString android_file_name_from_uri(QString uri){
+
+//    mainActivityObj = QtAndroid::androidActivity();
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+
+    QJniObject contentResolverObj = activity.callObjectMethod
+            ("getContentResolver","()Landroid/content/ContentResolver;");
+
+
+//	QAndroidJniObject cursorObj {contentResolverObj.callObjectMethod
+//		("query",
+//		 "(Landroid/net/Uri;[Ljava/lang/String;Landroid/os/Bundle;Landroid/os/CancellationSignal;)Landroid/database/Cursor;",
+//		 parseUriString(fileName()).object(), QAndroidJniObject().object(), QAndroidJniObject().object(),
+//		 QAndroidJniObject().object(), QAndroidJniObject().object())};
+
+    QJniObject cursorObj {contentResolverObj.callObjectMethod
+        ("query",
+         "(Landroid/net/Uri;[Ljava/lang/String;Landroid/os/Bundle;Landroid/os/CancellationSignal;)Landroid/database/Cursor;",
+         parseUriString(uri).object(), QJniObject().object(), QJniObject().object(),
+         QJniObject().object(), QJniObject().object())};
+
+    cursorObj.callMethod<jboolean>("moveToFirst");
+
+    QJniObject retObj{cursorObj.callObjectMethod
+        ("getString","(I)Ljava/lang/String;", cursorObj.callMethod<jint>
+         ("getColumnIndex","(Ljava/lang/String;)I",
+          QJniObject::getStaticObjectField<jstring>
+          ("android/provider/OpenableColumns","DISPLAY_NAME").object()))};
+
+    QString ret {retObj.toString()};
+    return ret;
+}
+
+float dampen_velocity(float v, float dt){
+    if (v == 0) return 0;
+    dt = -dt;
+
+    float accel = 3000.0f;
+    if (v > 0){
+        v -= accel * dt;
+        if (v < 0){
+            v = 0;
+        }
+    }
+    else{
+        v += accel * dt;
+        if (v > 0){
+            v = 0;
+        }
+    }
+    return v;
+}
+
+
+#endif

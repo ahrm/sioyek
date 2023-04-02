@@ -165,6 +165,7 @@ void copy_file(std::wstring src_path, std::wstring dst_path);
 fz_quad quad_from_rect(fz_rect r);
 std::vector<fz_quad> quads_from_rects(const std::vector<fz_rect>& rects);
 std::wifstream open_wifstream(const std::wstring& file_name);
+std::wofstream open_wofstream(const std::wstring& file_name);
 void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::vector<fz_rect>& flat_word_rects, std::vector<std::vector<fz_rect>>* out_char_rects = nullptr);
 void get_word_rect_list_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars,
 	std::vector<std::wstring>& words,
@@ -210,3 +211,23 @@ void matmul(float m1[], float m2[], float result[]) {
 
 void convert_color4(float* in_color, int* out_color);
 std::string get_aplph_tag(int n, int max_n);
+fz_document* open_document_with_file_name(fz_context* context, std::wstring file_name);
+
+QString get_list_item_stylesheet();
+
+QString android_file_name_from_uri(QString uri);
+
+float dampen_velocity(float v, float dt);
+
+template<typename T>
+T compute_average(std::vector<T> items){
+
+    T acc = items[0];
+    for (int i = 1; i < items.size(); i++){
+        acc += items[i];
+    }
+    return acc / items.size();
+}
+
+void convert_qcolor_to_float3(const QColor& color, float* out_floats);
+void convert_qcolor_to_float4(const QColor& color, float* out_floats);

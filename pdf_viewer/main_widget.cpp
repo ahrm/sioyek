@@ -1,4 +1,9 @@
-﻿
+﻿//todo:
+// handle next visual mark rectangle specially (don't open links, don't move, don't touch and hold, when finger is moved do it again)
+// fix the rest of UI for mobile (current buttons are extremely bad)
+// add mobile specific page navigation
+// banded page rendering
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -10,6 +15,7 @@
 #include <cctype>
 
 
+#include <qpainterpath.h>
 #include <qscrollarea.h>
 #include <qabstractitemmodel.h>
 #include <qapplication.h>
@@ -37,6 +43,7 @@
 #include <qguiapplication.h>
 #include <qmimedata.h>
 #include <qscreen.h>
+#include <QGestureEvent>
 
 
 #include "input.h"
@@ -129,13 +136,158 @@ extern bool TOC_JUMP_ALIGN_TOP;
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
+extern float RULER_AUTO_MOVE_SENSITIVITY;
+
+extern UIRect PORTRAIT_BACK_UI_RECT;
+extern UIRect PORTRAIT_FORWARD_UI_RECT;
+extern UIRect LANDSCAPE_BACK_UI_RECT;
+extern UIRect LANDSCAPE_FORWARD_UI_RECT;
+
+extern UIRect PORTRAIT_VISUAL_MARK_PREV;
+extern UIRect PORTRAIT_VISUAL_MARK_NEXT;
+extern UIRect LANDSCAPE_VISUAL_MARK_PREV;
+extern UIRect LANDSCAPE_VISUAL_MARK_NEXT;
 
 const int MAX_SCROLLBAR = 10000;
+
+const unsigned int INTERVAL_TIME = 200;
 
 bool MainWidget::main_document_view_has_document()
 {
     return (main_document_view != nullptr) && (doc() != nullptr);
 }
+
+#ifdef SIOYEK_ANDROID
+class SelectionIndicator : public QWidget{
+public:
+    SelectionIndicator(QWidget* parent, bool begin, MainWidget* w, AbsoluteDocumentPos pos) : QWidget(parent) {
+        is_begin = begin;
+        main_widget = w;
+        docpos = main_widget->doc()->absolute_to_page_pos(pos);
+
+        begin_pixmap = QPixmap(":/begin.png");
+        end_pixmap = QPixmap(":/end.png");
+//        qDebug() << "Indicator created!\n";
+
+//        setAttribute(Qt::WA_StyledBackground);
+    }
+
+    void update_pos(){
+        WindowPos window_pos = main_widget->main_document_view->document_to_window_pos_in_pixels(docpos);
+        if (is_begin){
+            move(window_pos.x - width(), window_pos.y - height());
+//            main_widget->text_selection_buttons->move(0, window_pos.y);
+        }
+        else{
+            move(window_pos.x, window_pos.y);
+        }
+    }
+
+
+    void mousePressEvent(QMouseEvent* mevent) {
+        is_dragging = true;
+    }
+
+    QPoint get_actual_pos(QPoint pos){
+        if (is_begin){
+            return pos + QPoint(width(), height() );
+        }
+        else{
+            return pos - QPoint(width() / 2, height() / 2);
+        }
+    }
+
+    void mouseMoveEvent(QMouseEvent* mouse_event) {
+        if (is_dragging){
+            QPoint mouse_pos = get_actual_pos(mapToParent(mouse_event->pos()));
+
+            WindowPos window_pos;
+            window_pos.x = mouse_pos.x();
+            window_pos.y = mouse_pos.y();
+
+            docpos = main_widget->main_document_view->window_to_document_pos(window_pos);
+            if (is_begin){
+                move(mapToParent(mouse_event->pos()));
+            }
+            else{
+                move(mouse_pos);
+            }
+            main_widget->update_mobile_selection();
+        }
+    }
+
+    void mouseReleaseEvent(QMouseEvent* mevent) {
+        if (is_dragging){
+            QPoint parent_pos = get_actual_pos(mapToParent(mevent->pos()));
+
+            WindowPos window_pos;
+            window_pos.x = parent_pos.x();
+            window_pos.y = parent_pos.y();
+
+            docpos = main_widget->main_document_view->window_to_document_pos(window_pos);
+//            AbsoluteDocumentPos abspos = main_widget->main_document_view->window_to_absolute_document_pos(window_pos);
+//            AbsoluteDocumentPos abspos = main_widget->doc()->document_to_absolute_pos(docpos);
+
+//            if (is_begin){
+//                main_widget->selection_begin = abspos;
+//            }
+//            else{
+//                main_widget->selection_end = abspos;
+//            }
+
+            main_widget->update_mobile_selection();
+        }
+        is_dragging = false;
+    }
+
+    void paintEvent(QPaintEvent* event){
+//        WindowPos window_pos = main_widget->get_selected_rect_absolute()
+        QPainterPath begin_path;
+        begin_path.moveTo(width(), 0);
+        begin_path.lineTo(0, 0);
+        begin_path.arcTo(0, 0, width(), height(), 90, 180);
+        begin_path.closeSubpath();
+
+        QPainterPath end_path;
+        end_path.moveTo(0, height());
+        end_path.lineTo(width(), height());
+        end_path.arcTo(0, 0, width(), height(), 270, 360);
+        end_path.closeSubpath();
+
+
+        QPainter painter(this);
+        QPoint pos = this->pos();
+        QRect rect;
+
+        QColor red_color = QColor::fromRgb(255, 0, 0);
+        painter.setPen(red_color);
+
+        rect.setBottom(0);
+        rect.setTop(height());
+        rect.setLeft(0);
+        rect.setRight(width());
+
+//        painter.fillRect(rect, red_color);
+        if (is_begin){
+//            painter.fillPath(begin_path, red_color);
+            painter.drawPixmap(0, 0, width(), height(), begin_pixmap);
+        }
+        else{
+
+//            painter.fillPath(end_path, red_color);
+            painter.drawPixmap(0, 0, width(), height(), end_pixmap);
+        }
+    }
+
+    DocumentPos docpos;
+private:
+    bool is_dragging = false;
+    bool is_begin;
+    MainWidget* main_widget;
+    QPixmap begin_pixmap;
+    QPixmap end_pixmap;
+};
+#endif
 
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
@@ -166,6 +318,13 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         main_document_view->fit_to_page_width();
         update_current_history_index();
     }
+
+#ifdef SIOYEK_ANDROID
+    if (current_widget){
+
+        current_widget->resize(width(), height());
+    }
+#endif
 }
 
 void MainWidget::set_overview_position(int page, float offset) {
@@ -186,6 +345,40 @@ void MainWidget::set_overview_link(PdfLink link) {
 }
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
+
+#ifdef SIOYEK_ANDROID
+    if (selection_begin_indicator){
+        selection_begin_indicator->update_pos();
+        selection_end_indicator->update_pos();
+    }
+    if (is_pressed){
+        update_position_buffer();
+    }
+    if (was_last_mouse_down_in_ruler_next_rect || was_last_mouse_down_in_ruler_prev_rect){
+        WindowPos current_window_pos = { mouse_event->pos().x(), mouse_event->pos().y() };
+        int distance = abs(current_window_pos.x - ruler_moving_last_window_pos.x) + abs(current_window_pos.y - ruler_moving_last_window_pos.y);
+        ruler_moving_last_window_pos = current_window_pos;
+        ruler_moving_distance_traveled += distance;
+        int num_next = ruler_moving_distance_traveled / static_cast<int>(std::max(RULER_AUTO_MOVE_SENSITIVITY, 1.0f));
+        if (num_next > 0){
+            ruler_moving_distance_traveled = 0;
+        }
+
+        for (int i = 0; i < num_next; i++){
+
+            if (was_last_mouse_down_in_ruler_next_rect){
+                move_visual_mark_next();
+            }
+            else{
+                move_visual_mark_prev();
+            }
+
+            invalidate_render();
+        }
+        return;
+
+    }
+#endif
 
     if (is_rotated()) {
         // we don't handle mouse events while document is rotated becausae proper handling
@@ -263,7 +456,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         setCursor(Qt::ArrowCursor);
         if (HOVER_OVERVIEW) {
             opengl_widget->set_overview_page({});
-            invalidate_render();
+//            invalidate_render();
         }
     }
 
@@ -304,7 +497,6 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
             last_text_select_time = QTime::currentTime();
         }
     }
-
 }
 
 void MainWidget::persist() {
@@ -337,7 +529,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     CachedChecksummer* checksummer,
     bool* should_quit_ptr,
     QWidget* parent):
+#ifdef SIOYEK_ANDROID
+    QQuickWidget(parent),
+#else
     QWidget(parent),
+#endif
     mupdf_context(mupdf_context),
     db_manager(db_manager),
     document_manager(document_manager),
@@ -389,9 +585,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         apply_window_params_for_one_window_mode();
     }
 
-    helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
-        this->update_closest_link_with_opened_book_state(state);
+    if (helper_opengl_widget){
+        helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
+            this->update_closest_link_with_opened_book_state(state);
         });
+    }
 
     text_command_line_edit_container = new QWidget(this);
     text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
@@ -437,17 +635,23 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     // a few rerenders
     // todo: make interval time configurable
     validation_interval_timer = new QTimer(this);
-    unsigned int INTERVAL_TIME = 200;
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
-    connect(validation_interval_timer , &QTimer::timeout, [&, INTERVAL_TIME]() {
+    connect(validation_interval_timer , &QTimer::timeout, [&]() {
 
+#ifdef SIOYEK_ANDROID
+        if (selection_begin_indicator){
+            selection_begin_indicator->update_pos();
+            selection_end_indicator->update_pos();
+        }
+#endif
         if (is_render_invalidated) {
             validate_render();
         }
         else if (is_ui_invalidated) {
             validate_ui();
         }
+
         // detect if the document file has changed and if so, reload the document
         if (main_document_view != nullptr) {
             Document* doc = nullptr;
@@ -504,6 +708,17 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     if (SHOULD_HIGHLIGHT_LINKS) {
         opengl_widget->set_highlight_links(true, false);
     }
+
+#ifdef SIOYEK_ANDROID
+    grabGesture(Qt::TapAndHoldGesture, Qt::DontStartGestureOnChildren);
+    grabGesture(Qt::PinchGesture, Qt::DontStartGestureOnChildren | Qt::ReceivePartialGestures);
+    QObject::connect((QGuiApplication*)QGuiApplication::instance(), &QGuiApplication::applicationStateChanged, [&](Qt::ApplicationState state){
+        if ((state == Qt::ApplicationState::ApplicationSuspended) || (state == Qt::ApplicationState::ApplicationInactive)){
+            persist();
+        }
+
+    });
+#endif
 
     setMinimumWidth(500);
     setMinimumHeight(200);
@@ -749,6 +964,18 @@ void MainWidget::handle_escape() {
 }
 
 void MainWidget::keyPressEvent(QKeyEvent* kevent) {
+#ifdef SIOYEK_ANDROID
+    if (kevent->key() == Qt::Key_Back){
+        if (current_widget){
+            current_widget->hide();
+            delete current_widget;
+            current_widget = nullptr;
+        }
+        else if (selection_begin_indicator){
+            clear_selection_indicators();
+        }
+    }
+#endif
     key_event(false, kevent);
 }
 
@@ -757,6 +984,7 @@ void MainWidget::keyReleaseEvent(QKeyEvent* kevent) {
 }
 
 void MainWidget::validate_render() {
+
     if (smooth_scroll_mode) {
         if (main_document_view_has_document()) {
             float secs = static_cast<float>(-QTime::currentTime().msecsTo(last_speed_update_time)) / 1000.0f;
@@ -791,6 +1019,23 @@ void MainWidget::validate_render() {
             last_speed_update_time = QTime::currentTime();
         }
     }
+#ifdef SIOYEK_ANDROID
+    if (is_moving()){
+        auto current_time = QTime::currentTime();
+        float secs = current_time.msecsTo(last_speed_update_time) / 1000.0f;
+        float move_x = secs * velocity_x;
+        float move_y = secs * velocity_y;
+        main_document_view->move(move_x, move_y);
+
+        velocity_x = dampen_velocity(velocity_x, secs);
+        velocity_y = dampen_velocity(velocity_y, secs);
+        if (!is_moving()){
+            validation_interval_timer->setInterval(INTERVAL_TIME);
+        }
+        last_speed_update_time = current_time;
+
+    }
+#endif
     if (!isVisible()) {
         return;
     }
@@ -828,11 +1073,14 @@ void MainWidget::validate_render() {
     if (main_document_view && main_document_view->get_document()) {
         std::optional<Portal> link = main_document_view->find_closest_portal();
 
-        if (link) {
-            helper_document_view->goto_link(&link.value());
-        }
-        else {
-            helper_document_view->set_null_document();
+        if (helper_document_view){
+
+            if (link) {
+                helper_document_view->goto_link(&link.value());
+            }
+            else {
+                helper_document_view->set_null_document();
+            }
         }
     }
     validate_ui();
@@ -849,6 +1097,11 @@ void MainWidget::validate_render() {
     if (smooth_scroll_mode && (smooth_scroll_speed != 0)) {
         is_render_invalidated = true;
     }
+#ifdef SIOYEK_ANDROID
+    if (is_moving()){
+        is_render_invalidated = true;
+    }
+#endif
 }
 
 void MainWidget::validate_ui() {
@@ -856,13 +1109,14 @@ void MainWidget::validate_ui() {
     is_ui_invalidated = false;
 }
 
-void MainWidget::move_document(float dx, float dy) {
+bool MainWidget::move_document(float dx, float dy, bool force) {
     if (main_document_view_has_document()) {
-        main_document_view->move(dx, dy);
+        return main_document_view->move(dx, dy, force);
         //float prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
         //float new_vertical_line_pos = prev_vertical_line_pos - dy;
         //opengl_widget->set_vertical_line_pos(new_vertical_line_pos);
     }
+    return false;
 }
 
 void MainWidget::move_document_screens(int num_screens) {
@@ -923,6 +1177,7 @@ void MainWidget::toggle_mouse_drag_mode(){
 }
 
 void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line, int column) {
+#ifndef SIOYEK_ANDROID
 
     std::wstring latex_file_path_with_redundant_dot = add_redundant_dot_to_path(latex_file_path.get_path());
 
@@ -991,6 +1246,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
         open_document(pdf_file_path);
     }
     synctex_scanner_free(scanner);
+#endif
 }
 
 
@@ -1222,6 +1478,16 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
     if (released == false) {
 
+#ifdef SIOYEK_ANDROID
+            if (kevent->key() == Qt::Key::Key_VolumeDown) {
+                move_visual_mark_next();
+            }
+            if (kevent->key() == Qt::Key::Key_VolumeUp) {
+                move_visual_mark_prev();
+            }
+#endif
+
+
         if (kevent->key() == Qt::Key::Key_Escape) {
             handle_escape();
         }
@@ -1324,11 +1590,108 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         return;
     }
 
+#ifdef SIOYEK_ANDROID
+    was_last_mouse_down_in_ruler_next_rect = false;
+    was_last_mouse_down_in_ruler_prev_rect = false;
+    if (down){
+        last_press_point = QCursor::pos();
+        last_press_msecs = QDateTime::currentMSecsSinceEpoch();
+        velocity_x = 0;
+        velocity_y = 0;
+        is_pressed = true;
+    }
+    if (!down){
+        is_pressed = false;
+        QPoint current_pos = QCursor::pos();
+        qint64 current_time = QDateTime::currentMSecsSinceEpoch();
+        QPointF vel;
+        if (((current_pos-last_press_point).manhattanLength() < 10) && ((current_time - last_press_msecs) < 200)){
+            handle_quick_tap();
+        }
+        else if (is_flicking(&vel)){
+//            float time_msecs = current_time - last_press_msecs;
+//            QPoint diff_vector = current_pos - last_press_point;
+//            QPoint velocity = diff_vector / (time_msecs / 1000.0f) * 2;
+            velocity_x = -vel.x();
+            velocity_y = vel.y();
+            if (is_moving()){
+                validation_interval_timer->setInterval(0);
+            }
+            last_speed_update_time = QTime::currentTime();
+        }
+    }
+    int window_width = width();
+    int window_height = height();
+
+    NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(click_pos);
+
+    if (down && is_visual_mark_mode()){
+
+
+        if (screen()->orientation() == Qt::PortraitOrientation){
+            if (PORTRAIT_VISUAL_MARK_NEXT.enabled && PORTRAIT_VISUAL_MARK_NEXT.contains(nwp)){
+                move_visual_mark_next();
+                was_last_mouse_down_in_ruler_next_rect = true;
+                ruler_moving_last_window_pos = click_pos;
+            }
+            else if (PORTRAIT_VISUAL_MARK_PREV.enabled && PORTRAIT_VISUAL_MARK_PREV.contains(nwp)){
+                move_visual_mark_prev();
+                was_last_mouse_down_in_ruler_prev_rect = true;
+                ruler_moving_last_window_pos = click_pos;
+            }
+        }
+        else{
+            if (LANDSCAPE_VISUAL_MARK_NEXT.enabled && LANDSCAPE_VISUAL_MARK_NEXT.contains(nwp)){
+                move_visual_mark_next();
+                was_last_mouse_down_in_ruler_next_rect = true;
+                ruler_moving_last_window_pos = click_pos;
+            }
+            else if (LANDSCAPE_VISUAL_MARK_PREV.enabled && LANDSCAPE_VISUAL_MARK_PREV.contains(nwp)){
+                move_visual_mark_prev();
+                was_last_mouse_down_in_ruler_prev_rect = true;
+                ruler_moving_last_window_pos = click_pos;
+            }
+
+        }
+
+    }
+
+    if (down){ // handle touch history navigation
+
+//        WindowPos pos = {click_pos.}
+        int back_threshold = window_height / 5;
+
+        if (screen()->orientation() == Qt::PortraitOrientation){
+
+            if (PORTRAIT_BACK_UI_RECT.enabled && PORTRAIT_BACK_UI_RECT.contains(nwp)){
+                prev_state();
+            }
+            else if (PORTRAIT_FORWARD_UI_RECT.enabled && PORTRAIT_FORWARD_UI_RECT.contains(nwp)){
+                next_state();
+            }
+        }
+        else{
+            if (LANDSCAPE_BACK_UI_RECT.enabled && LANDSCAPE_BACK_UI_RECT.contains(nwp)){
+                prev_state();
+            }
+            else if (LANDSCAPE_FORWARD_UI_RECT.enabled && LANDSCAPE_FORWARD_UI_RECT.contains(nwp)){
+                next_state();
+            }
+
+        }
+
+
+    }
+
+#endif
+
     AbsoluteDocumentPos abs_doc_pos = main_document_view->window_to_absolute_document_pos(click_pos);
 
     auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(click_pos);
 
+#ifndef SIOYEK_ANDROID
     if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
+#endif
 
     if (rect_select_mode) {
         if (down == true) {
@@ -1404,7 +1767,9 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         //last_mouse_down_window_x = x;
         //last_mouse_down_window_y = y;
 
+#ifndef SIOYEK_ANDROID
         main_document_view->selected_character_rects.clear();
+#endif
 
         if (!mouse_drag_mode) {
             is_selecting = true;
@@ -1444,8 +1809,18 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             is_word_selecting = false;
         }
         else {
+//            WindowPos current_window_pos = {};
+//            handle_click(click_pos);
+#ifndef SIOYEK_ANDROID
             handle_click(click_pos);
             clear_selected_text();
+#else
+            int distance = abs(click_pos.x - last_mouse_down_window_pos.x) + abs(click_pos.y - last_mouse_down_window_pos.y);
+            if (distance < 20){ // we don't want to accidentally click on links when moving the document
+                handle_click(click_pos);
+            }
+#endif
+
         }
         validate_render();
     }
@@ -1556,6 +1931,7 @@ void MainWidget::set_main_document_view_state(DocumentViewState new_view_state) 
 
 void MainWidget::handle_click(WindowPos click_pos) {
 
+
     if (!main_document_view_has_document()) {
         return;
     }
@@ -1573,6 +1949,12 @@ void MainWidget::handle_click(WindowPos click_pos) {
 
     auto link = main_document_view->get_link_in_pos(click_pos);
     selected_highlight_index = main_document_view->get_highlight_index_in_pos(click_pos);
+
+#ifdef SIOYEK_ANDROID
+    if (selected_highlight_index != -1){
+        show_highlight_buttons();
+    }
+#endif
 
 
     if (link.has_value()) {
@@ -1636,6 +2018,9 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
+#ifdef SIOYEK_ANDROID
+    pdf_renderer->no_rerender = false;
+#endif
 
 	if (is_rotated()) {
 		return;
@@ -1917,6 +2302,28 @@ void MainWidget::toggle_two_window_mode() {
     }
 }
 
+fz_stext_char* MainWidget::get_character_under_cursor(QPoint pos){
+//    QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+    WindowPos window_pos = { pos.x(), pos.y() };
+    DocumentPos doc_pos = main_document_view->window_to_document_pos(window_pos);
+    int current_page = get_current_page_number();
+    fz_stext_page* stext_page = doc()->get_stext_with_page_number(current_page);
+    std::vector<fz_stext_char*> flat_chars;
+    get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+    fz_point doc_point;
+    doc_point.x = doc_pos.x;
+    doc_point.y = doc_pos.y;
+
+    for (fz_stext_char* ch : flat_chars){
+        fz_rect character_rect = fz_rect_from_quad(ch->quad);
+        if (fz_is_point_inside_rect(doc_point, character_rect)){
+            return ch;
+        }
+    }
+    return nullptr;
+}
+
 std::optional<std::wstring> MainWidget::get_paper_name_under_cursor() {
 	QPoint mouse_pos = mapFromGlobal(QCursor::pos());
     WindowPos window_pos = { mouse_pos.x(), mouse_pos.y() };
@@ -2183,6 +2590,7 @@ void MainWidget::long_jump_to_destination(DocumentPos pos) {
 
 void MainWidget::set_current_widget(QWidget* new_widget) {
     if (current_widget != nullptr) {
+        current_widget->hide();
         garbage_widgets.push_back(current_widget);
     }
     current_widget = new_widget;
@@ -2399,11 +2807,13 @@ void MainWidget::zoom(WindowPos pos, float zoom_factor, bool zoom_in) {
     validate_render();
 }
 
-void MainWidget::move_horizontal(float amount){
+bool MainWidget::move_horizontal(float amount, bool force){
     if (!horizontal_scroll_locked) {
-        move_document(amount, 0);
+        bool ret = move_document(amount, 0, force);
         validate_render();
+        return ret;
     }
+    return true;
 }
 
 std::optional<std::string> MainWidget::get_last_opened_file_checksum() {
@@ -2839,8 +3249,10 @@ std::wstring MainWidget::get_window_configuration_string() {
 }
 
 void MainWidget::handle_close_event() {
-	save_auto_config();
-	persist();
+    save_auto_config();
+#ifndef SIOYEK_ANDROID
+    persist();
+#endif
 
 	// we need to delete this here (instead of destructor) to ensure that application
 	// closes immediately after the main window is closed
@@ -2871,7 +3283,76 @@ void MainWidget::changeEvent(QEvent* event) {
     QWidget::changeEvent(event);
 }
 
-void MainWidget::move_visual_mark(int offset) {
+void MainWidget::move_visual_mark_next() {
+    opengl_widget->clear_underline();
+
+    int prev_line_index = main_document_view->get_line_index();
+    int vertical_line_page = main_document_view->get_vertical_line_page();
+    int current_line_index, current_page;
+
+    fz_rect current_ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page);
+    current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
+
+    if (current_ruler_rect.x1 <= 1.0f) {
+        fz_rect new_rect = move_visual_mark(1);
+		fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
+        if (new_ruler_rect.x0 < -1) {
+            float offset = (new_ruler_rect.x0 + 0.9f) * main_window_width / 2;
+            move_horizontal(-offset);
+        }
+
+        if (new_ruler_rect.x0 > 1) {
+            float offset = (new_ruler_rect.x0 - 0.1f) * main_window_width / 2;
+            move_horizontal(-offset);
+        }
+
+    }
+    else {
+        
+        WindowPos pos;
+
+        pos.x = main_window_width;
+        pos.y = main_window_height - static_cast<int>((current_ruler_rect.y1 + 1) * main_window_height / 2);
+
+        AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
+
+        if (false) {
+			bool is_truncated = move_horizontal(-static_cast<float>(main_window_width));
+
+			if (is_truncated) {
+				opengl_widget->set_underline(abspos);
+			}
+        }
+        else {
+			 move_horizontal(-static_cast<float>(main_window_width), true);
+        }
+
+    }
+}
+
+void MainWidget::move_visual_mark_prev() {
+    int prev_line_index = main_document_view->get_line_index();
+    int vertical_line_page = main_document_view->get_vertical_line_page();
+    int current_line_index, current_page;
+
+    fz_rect current_ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page);
+    current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
+
+    if (current_ruler_rect.x0 >= -1.0f) {
+        fz_rect new_rect = move_visual_mark(-1);
+		fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
+        if (new_ruler_rect.x1 > 1) {
+            float offset = (new_ruler_rect.x1 - 0.9f) * main_window_width / 2;
+            move_horizontal(-offset); //todo: fix this
+        }
+
+    }
+    else {
+        move_horizontal(static_cast<float>(main_window_width));
+    }
+}
+
+fz_rect MainWidget::move_visual_mark(int offset) {
     bool moving_down = offset >= 0;
 
     int prev_line_index = main_document_view->get_line_index();
@@ -2884,6 +3365,7 @@ void MainWidget::move_visual_mark(int offset) {
 		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
 		main_document_view->move_absolute(0, distance);
 	}
+    return ruler_rect;
 }
 
 bool MainWidget::is_visual_mark_mode() {
@@ -3013,6 +3495,7 @@ void MainWidget::reload() {
 
 
 void MainWidget::synctex_under_pos(WindowPos position) {
+#ifndef SIOYEK_ANDROID
 	auto [page, doc_x, doc_y] = main_document_view->window_to_document_pos(position);
 	std::wstring docpath = main_document_view->get_document()->get_path();
 	std::string docpath_utf8 = utf8_encode(docpath);
@@ -3063,6 +3546,7 @@ void MainWidget::synctex_under_pos(WindowPos position) {
 	}
 	synctex_scanner_free(scanner);
 
+#endif
 }
 
 void MainWidget::set_status_message(std::wstring new_status_string) {
@@ -3423,6 +3907,25 @@ void MainWidget::clear_selected_text() {
 bool MainWidget::is_rect_visible(int page, fz_rect rect) {
 	fz_irect window_rect = main_document_view->document_to_window_irect(page, rect);
 	if (window_rect.x0 > 0 && window_rect.x1 < main_window_width && window_rect.y0 > 0 && window_rect.y1 < main_window_height) {
+        return true;
+	}
+    else {
+        return false;
+    }
+}
+
+bool MainWidget::is_point_visible(int page, fz_point point) {
+    //Document
+    DocumentPos docpos;
+    docpos.page = page;
+    docpos.x = point.x;
+    docpos.y = point.y;
+    WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels(docpos);
+	//fz_irect window_rect = main_document_view->document_to_window_pos(page, rect);
+	if ((window_pos.x > 0)
+        && (window_pos.x < main_window_width)
+        && (window_pos.y > 0)
+        && (window_pos.y < main_window_height)) {
         return true;
 	}
     else {
@@ -3826,28 +4329,59 @@ void MainWidget::handle_open_prev_doc() {
 	for (const auto& doc_hash_ : opened_docs_hashes_) {
 		std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
 		if (path) {
+
 			if (SHOW_DOC_PATH) {
 				opened_docs_names.push_back(path.value_or(L"<ERROR>"));
 			}
 			else {
-				opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
-			}
+#ifdef SIOYEK_ANDROID
+            std::wstring path_value = path.value();
+            if (path_value.substr(0, 10) == L"content://"){
+                path_value = android_file_name_from_uri(QString::fromStdWString(path_value)).toStdWString();
+            }
+                opened_docs_names.push_back(path_value);
+#else
+                opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
+#endif
+            }
 			opened_docs_hashes.push_back(utf8_encode(doc_hash_));
 		}
 	}
 
-	set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
+//    auto prev_done_handler = [&](std::string* doc_hash) {
+//            if (doc_hash->size() > 0) {
+//                validate_render();
+//                open_document_with_hash(*doc_hash);
+//            }
+//        };
+
+#ifndef SIOYEK_ANDROID
+    set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
 		opened_docs_hashes,
-		[&](std::string* doc_hash) {
-			if (doc_hash->size() > 0) {
-				validate_render();
-				open_document_with_hash(*doc_hash);
-			}
-		},
+        [&](std::string* doc_hash) {
+            if (doc_hash->size() > 0) {
+                validate_render();
+                open_document_with_hash(*doc_hash);
+            }
+        },
 		this,
 			[&](std::string* doc_hash) {
 			db_manager->delete_opened_book(*doc_hash);
 		}));
+#else
+    set_current_widget(new TouchFilteredSelectWidget<std::string>(opened_docs_names,
+            opened_docs_hashes,
+            [&](std::string* doc_hash){
+                   if (doc_hash->size() > 0) {
+                       validate_render();
+                       open_document_with_hash(*doc_hash);
+                   }
+//                   prev_done_handler(doc_hash);
+                   current_widget = nullptr;
+
+               },
+               this ));
+#endif
 	current_widget->show();
 }
 
@@ -4063,7 +4597,7 @@ void MainWidget::handle_toggle_smooth_scroll_mode() {
         validation_interval_timer->setInterval(16);
     }
     else {
-        validation_interval_timer->setInterval(200);
+        validation_interval_timer->setInterval(INTERVAL_TIME);
     }
 }
 
@@ -4116,6 +4650,14 @@ void MainWidget::handle_delete_highlight_under_cursor() {
 	}
 }
 
+void MainWidget::handle_delete_selected_highlight(){
+    if (selected_highlight_index != -1) {
+        main_document_view->delete_highlight_with_index(selected_highlight_index);
+        selected_highlight_index = -1;
+    }
+    validate_render();
+}
+
 void MainWidget::synchronize_pending_link() {
     for (auto window : windows) {
         if (window != this) {
@@ -4136,4 +4678,332 @@ int MainWidget::num_visible_links() {
 	std::vector<std::pair<int, fz_link*>> visible_page_links;
     main_document_view->get_visible_links(visible_page_links);
     return visible_page_links.size();
+}
+bool MainWidget::event(QEvent *event){
+
+
+#ifdef SIOYEK_ANDROID
+    if (event->type() == QEvent::Gesture){
+        auto gesture = (static_cast<QGestureEvent*>(event));
+
+        if (gesture->gesture(Qt::TapAndHoldGesture)){
+            if (was_last_mouse_down_in_ruler_next_rect){
+                return true;
+            }
+            if ((QCursor::pos() - last_press_point).manhattanLength() > 10){
+                return QWidget::event(event);
+            }
+
+            last_hold_point = QCursor::pos();
+
+            QTapAndHoldGesture *tapgest = static_cast<QTapAndHoldGesture *>(gesture->gesture(Qt::TapAndHoldGesture));
+            if (tapgest->state() == Qt::GestureFinished){
+
+                is_dragging = false;
+//                persist();
+//                toggle_fullscreen();
+//                toggle_statusbar();
+//                std::unique_ptr<Command> command = this->command_manager->get_command_with_name("command");
+//                handle_command_types(std::move(command), 0);
+//                invalidate_render();
+
+                set_current_widget(new AndroidSelector(this));
+                current_widget->show();
+
+//                set_current_widget(new MyList(this));
+//                current_widget->show();
+                return true;
+            }
+        }
+        if (gesture->gesture(Qt::PinchGesture)){
+            pdf_renderer->no_rerender = true;
+            QPinchGesture *pinch = static_cast<QPinchGesture *>(gesture->gesture(Qt::PinchGesture));
+            float scale = pinch->scaleFactor();
+            main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
+            return true;
+        }
+
+        return QWidget::event(event);
+
+    }
+#endif
+    return QWidget::event(event);
+
+
+}
+
+#ifdef SIOYEK_ANDROID
+void MainWidget::handle_mobile_selection(){
+//    QPoint selection_position = last_hold_point;
+    fz_stext_char* character_under = get_character_under_cursor(last_hold_point);
+    if (character_under){
+        int current_page = get_current_page_number();
+        fz_rect uncentered_rect =doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad), false);
+        fz_rect centered_rect =doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad), true);
+        main_document_view->selected_character_rects.push_back(centered_rect);
+
+
+        fz_rect rect = centered_rect;
+        int page;
+        fz_rect document_rect = doc()->absolute_to_page_rect(rect, &page);
+//        fz_rect window_rect = main_document_view->absolute_to_window_rect(rect);
+        DocumentPos begin_document_pos, end_document_pos;
+
+        begin_document_pos.x = document_rect.x0;
+        begin_document_pos.y = document_rect.y0;
+        begin_document_pos.page = page;
+        end_document_pos.x = document_rect.x1;
+        end_document_pos.y = document_rect.y1;
+        end_document_pos.page = page;
+
+        AbsoluteDocumentPos begin_abspos;
+        begin_abspos.x = rect.x0;
+        begin_abspos.y = rect.y0;
+
+        AbsoluteDocumentPos end_abspos;
+        end_abspos.x = rect.x1;
+        end_abspos.y = rect.y1;
+
+        WindowPos begin_window_pos =  main_document_view->document_to_window_pos_in_pixels(begin_document_pos);
+        WindowPos end_window_pos =  main_document_view->document_to_window_pos_in_pixels(end_document_pos);
+
+        QPoint begin_pos;
+        begin_pos.setX(begin_window_pos.x - 40);
+        begin_pos.setY(begin_window_pos.y - 40);
+
+        QPoint end_pos;
+        end_pos.setX(end_window_pos.x);
+        end_pos.setY(end_window_pos.y);
+
+        selection_begin_indicator = new SelectionIndicator(this, true, this, begin_abspos);
+        selection_end_indicator = new SelectionIndicator(this, false, this, end_abspos);
+//        text_selection_buttons = new TextSelectionButtons(this);
+        text_selection_buttons = new TouchTextSelectionButtons(this);
+
+
+//        int window_width = width();
+//        int window_height = height();
+        float pixel_ratio = QGuiApplication::primaryScreen()->devicePixelRatio();
+
+//        begin_pos = begin_pos / pixel_ratio;
+//        end_pos = end_pos / pixel_ratio;
+
+//        float real_height = pixel_ratio * window_height;
+//        float real_width = pixel_ratio * window_width;
+
+        selection_begin_indicator->move(begin_pos);
+        selection_end_indicator->move(end_pos);
+
+//        selection_begin_indicator->move(QPoint(0, 0));
+//        selection_end_indicator->move(QPoint(20, 20));
+
+        selection_begin_indicator->resize(40, 40);
+        selection_end_indicator->resize(40, 40);
+
+        selection_begin_indicator->raise();
+        selection_end_indicator->raise();
+
+        selection_begin_indicator->show();
+        selection_end_indicator->show();
+        text_selection_buttons->show();
+
+        invalidate_render();
+    }
+//    selected_character
+//    smart_jump_under_pos(window_pos);
+
+//    main_document_view->window_to_absolute_document_pos();
+}
+
+void MainWidget::update_mobile_selection(){
+//				handle_left_click(begin_window_pos, true, false, false, false);
+//				handle_left_click(end_window_pos, false, false, false, false);
+    DocumentPos begin = selection_begin_indicator->docpos;
+    DocumentPos end = selection_end_indicator->docpos;
+    AbsoluteDocumentPos begin_absolute = doc()->document_to_absolute_pos(begin, true);
+    AbsoluteDocumentPos end_absolute = doc()->document_to_absolute_pos(end, true);
+
+    main_document_view->get_text_selection(begin_absolute,
+    end_absolute,
+    false,
+    main_document_view->selected_character_rects,
+    selected_text);
+    validate_render();
+}
+#endif
+
+#ifdef SIOYEK_ANDROID
+void MainWidget::clear_selection_indicators(){
+    if (selection_begin_indicator){
+        selection_begin_indicator->hide();
+        selection_end_indicator->hide();
+        text_selection_buttons->hide();
+        delete selection_begin_indicator;
+        delete selection_end_indicator;
+        delete text_selection_buttons;
+        selection_begin_indicator = nullptr;
+        selection_end_indicator = nullptr;
+        text_selection_buttons = nullptr;
+    }
+}
+
+void MainWidget::handle_quick_tap(){
+    QTime now = QTime::currentTime();
+
+    if ((last_quick_tap_time.msecsTo(now) < 200) && (QCursor::pos() - last_quick_tap_position).manhattanLength() < 20){
+        handle_double_tap(last_quick_tap_position);
+        return;
+    }
+
+    clear_selected_text();
+    clear_selection_indicators();
+    selected_highlight_index = -1;
+    clear_highlight_buttons();
+    clear_search_buttons();
+    opengl_widget->cancel_search();
+
+    if (current_widget != nullptr) {
+        delete current_widget;
+        current_widget = nullptr;
+    }
+    text_command_line_edit_container->hide();
+
+    last_quick_tap_position = QCursor::pos();
+    last_quick_tap_time = now;
+}
+
+//void MainWidget::applicationStateChanged(Qt::ApplicationState state){
+//    qDebug() << "application state changed\n";
+//    if ((state == Qt::ApplicationState::ApplicationSuspended) || (state == Qt::ApplicationState::ApplicationInactive)){
+//        persist();
+//    }
+//}
+
+void MainWidget::android_handle_visual_mode(){
+//	last_hold_point
+    if (is_visual_mark_mode()){
+        opengl_widget->set_should_draw_vertical_line(false);
+    }
+    else{
+
+        WindowPos pos;
+        pos.x = last_hold_point.x();
+        pos.y = last_hold_point.y();
+
+        visual_mark_under_pos(pos);
+    }
+}
+
+bool MainWidget::is_moving(){
+    return (velocity_x != 0) || (velocity_y != 0);
+}
+
+void MainWidget::update_position_buffer(){
+    QPoint pos = QCursor::pos();
+    QTime time = QTime::currentTime();
+
+    position_buffer.push_back(std::make_pair(time, pos));
+
+    if (position_buffer.size() > 5){
+        position_buffer.pop_front();
+    }
+}
+
+bool MainWidget::is_flicking(QPointF* out_velocity){
+    std::vector<float> speeds;
+    std::vector<float> dts;
+    std::vector<QPointF> velocities;
+    if (position_buffer.size() == 0){
+        *out_velocity = QPointF(0, 0);
+        return false;
+    }
+    for (int i = 0; i < position_buffer.size()-1; i++){
+        float dt = (static_cast<float>(position_buffer[i].first.msecsTo(position_buffer[i+1].first)) / 1000.0f);
+//        dts.push_back(dt);
+        if (dt < (1.0f / 120.0f)){
+            dt = 1.0f / 120.0f;
+        }
+
+        if (dt != 0){
+            QPointF velocity = (position_buffer[i+1].second - position_buffer[i].second).toPointF() /  dt;
+            velocities.push_back(velocity);
+            speeds.push_back(sqrt(QPointF::dotProduct(velocity, velocity)));
+        }
+    }
+    if (speeds.size() == 0){
+        *out_velocity = QPointF(0, 0);
+        return false;
+    }
+    float average_speed = compute_average<float>(speeds);
+
+    if (out_velocity){
+        *out_velocity = 2 * compute_average<QPointF>(velocities);
+    }
+
+    if (average_speed > 500.0f){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+void MainWidget::handle_double_tap(QPoint pos){
+    WindowPos position;
+    position.x = pos.x();
+    position.y = pos.y();
+    smart_jump_under_pos(position);
+}
+
+
+void MainWidget::show_highlight_buttons(){
+    highlight_buttons = new HighlightButtons(this);
+    highlight_buttons->show();
+}
+
+void MainWidget::clear_highlight_buttons(){
+    if (highlight_buttons){
+        highlight_buttons->hide();
+        delete highlight_buttons;
+        highlight_buttons = nullptr;
+    }
+}
+
+void MainWidget::handle_touch_highlight(){
+
+    DocumentPos begin_docpos = selection_begin_indicator->docpos;
+    DocumentPos end_docpos = selection_end_indicator->docpos;
+
+    AbsoluteDocumentPos begin_abspos = doc()->document_to_absolute_pos(begin_docpos, true);
+    AbsoluteDocumentPos end_abspos = doc()->document_to_absolute_pos(end_docpos, true);
+
+    main_document_view->add_highlight(begin_abspos, end_abspos, select_highlight_type);
+
+    invalidate_render();
+}
+
+void MainWidget::show_search_buttons(){
+
+    search_buttons = new SearchButtons(this);
+    search_buttons->show();
+}
+
+void MainWidget::clear_search_buttons(){
+
+    if (search_buttons){
+        search_buttons->hide();
+        delete search_buttons;
+        search_buttons = nullptr;
+    }
+}
+
+void MainWidget::restore_default_config(){
+    config_manager->restore_default();
+}
+
+
+#endif
+
+void MainWidget::persist_config(){
+    config_manager->persist_config();
 }

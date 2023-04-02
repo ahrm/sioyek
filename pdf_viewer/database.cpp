@@ -8,6 +8,7 @@
 #include <variant>
 #include <iomanip>
 
+#include <QDebug>
 #include <qfile.h>
 #include <qjsonarray.h>
 #include <qjsondocument.h>
@@ -277,7 +278,7 @@ static int link_select_callback(void* res_vector, int argc, char** argv, char** 
 
 bool handle_error(int error_code, char* error_message) {
 	if (error_code != SQLITE_OK) {
-		std::cerr << "SQL Error: " << error_message << std::endl;
+        qDebug() << "SQL Error: " << error_message << "\n";
 		sqlite3_free(error_message);
 		return false;
 	}
@@ -451,8 +452,8 @@ bool DatabaseManager::update_book(const std::string& path, float zoom_level, flo
 		esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'));";
 
 	char* error_message = nullptr;
-	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
-	return handle_error(
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
 		error_code,
 		error_message);
 }
@@ -578,10 +579,6 @@ bool DatabaseManager::delete_highlight(const std::string& src_document_path, flo
 		" AND abs(end_x-(" << end_x << ")) < " << threshold << 
 		" AND abs(end_y-(" << end_y << ")) < " << threshold ;
 	char* error_message = nullptr;
-
-	if (DEBUG) {
-		std::wcout << ss.str() << L"\n";
-	}
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
 	return handle_error(

@@ -6,6 +6,8 @@
 #include <optional>
 #include <unordered_map>
 
+#include <QListWidget>
+#include <QScroller>
 #include <qsizepolicy.h>
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -15,6 +17,7 @@
 #include <qopengl.h>
 #include <qwindow.h>
 #include <qkeyevent.h>
+#include <qinputmethod.h>
 #include <qlineedit.h>
 #include <qtreeview.h>
 #include <qsortfilterproxymodel.h>
@@ -31,7 +34,21 @@
 #include <qstandarditemmodel.h>
 #include <qfilesystemmodel.h>
 #include <qheaderview.h>
+#include <qcolordialog.h>
+#include <qslider.h>
+#include <qlabel.h>
+#include <qcheckbox.h>
+#ifdef SIOYEK_ANDROID
+#include <QQuickWidget>
+#include "touchui/TouchSlider.h"
+#include "touchui/TouchCheckbox.h"
+#include "touchui/TouchListView.h"
+#include "touchui/TouchCopyOptions.h"
+#include "touchui/TouchRectangleSelectUI.h"
+#include "touchui/TouchRangeSelectUI.h"
+#endif
 
+#include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
@@ -41,6 +58,7 @@
 #include "utils.h"
 #include "config.h"
 
+class MainWidget;
 extern std::wstring UI_FONT_FACE_NAME;
 extern int FONT_SIZE;
 const int max_select_size = 100;
@@ -68,15 +86,6 @@ public:
 	static void notify_config_file_changed(ConfigManager* new_config_manager);
 };
 
-class MySortFilterProxyModel : public QSortFilterProxyModel {
-	QString filterString;
-public:
-	MySortFilterProxyModel();
-	bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const;
-	void setFilterCustom(QString filterString);
-	bool lessThan(const QModelIndex& left, const QModelIndex& right) const;
-
-};
 
 template <typename T, typename ViewType, typename ProxyModelType>
 class BaseSelectorWidget : public QWidget {
@@ -100,13 +109,31 @@ protected:
 		abstract_item_view->setModel(proxy_model);
 		abstract_item_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+#ifdef SIOYEK_ANDROID
+        QScroller::grabGesture(abstract_item_view->viewport(), QScroller::TouchGesture);
+        abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+        QObject::connect(abstract_item_view, &QListView::pressed, [&](const QModelIndex& index){
+            pressed_row = index.row();
+            pressed_pos = QCursor::pos();
+        });
+
+        QObject::connect(abstract_item_view, &QListView::clicked, [&](const QModelIndex& index){
+            QPoint current_pos = QCursor::pos();
+            if (index.row() == pressed_row){
+                if ((current_pos - pressed_pos).manhattanLength() < 10){
+                    on_select(index);
+                }
+            }
+        });
+#endif
+
 		QTreeView* tree_view = dynamic_cast<QTreeView*>(abstract_item_view);
 		if (tree_view) {
 			tree_view->expandAll();
 			tree_view->setHeaderHidden(true);
 			tree_view->resizeColumnToContents(0);
 			tree_view->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-		}
+        }
 		if (proxy_model) {
 			proxy_model->setRecursiveFilteringEnabled(true);
 		}
@@ -117,22 +144,35 @@ protected:
 		line_edit->installEventFilter(this);
 		line_edit->setFocus();
 
+#ifndef SIOYEK_ANDROID
 		QObject::connect(abstract_item_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
 			on_select(index);
 			});
+#endif
 
-		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
-			if (!on_text_change(text)) {
-				// generic text change handling when we don't explicitly handle text change events
-				//proxy_model->setFilterFixedString(text);
-				proxy_model->setFilterCustom(text);
-				QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
-				if (t_view) {
-					t_view->expandAll();
-				}
-			}
-			});
-	}
+        QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text){
+            on_text_changed(text);
+        } );
+
+#ifdef SIOYEK_ANDROID
+        QScroller::grabGesture(abstract_item_view, QScroller::TouchGesture);
+        abstract_item_view->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+        abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+#endif
+    }
+
+    void on_text_changed(const QString& text){
+        if (!on_text_change(text)) {
+            // generic text change handling when we don't explicitly handle text change events
+            //proxy_model->setFilterFixedString(text);
+            proxy_model->setFilterCustom(text);
+            QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
+            if (t_view) {
+                t_view->expandAll();
+            }
+        }
+    }
+
 
 
 	virtual QAbstractItemView* get_view() {
@@ -142,6 +182,10 @@ protected:
 	QLineEdit* line_edit = nullptr;
 	//QSortFilterProxyModel* proxy_model = nullptr;
 	MySortFilterProxyModel* proxy_model = nullptr;
+#ifdef SIOYEK_ANDROID
+    int pressed_row = -1;
+    QPoint pressed_pos;
+#endif
 	ViewType* abstract_item_view;
 
 	virtual void on_select(const QModelIndex& value) = 0;
@@ -178,6 +222,7 @@ public:
 	}
 
 	bool eventFilter(QObject* obj, QEvent* event) override {
+        qDebug() << "Sioyek: Even happened! type: " << event->type() << "\n";
 		if (obj == line_edit) {
 #ifdef SIOYEK_QT6
 			if (event->type() == QEvent::KeyRelease) {
@@ -187,11 +232,28 @@ public:
 				}
 			}
 #endif
-			if (event->type() == QEvent::KeyPress) {
+            if (event->type() == QEvent::InputMethod){
+#ifdef SIOYEK_ANDROID
+                QInputMethodEvent* input_event = static_cast<QInputMethodEvent*>(event);
+                QString text = input_event->preeditString();
+                if (input_event->commitString().size() > 0){
+                    text = input_event->commitString();
+                }
+                if (text.size() > 0){
+                    on_text_changed(text);
+                }
+#endif
+            }
+            if ((event->type() == QEvent::KeyPress) ) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
 				bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
 				bool is_alt_pressed = key_event->modifiers().testFlag(Qt::AltModifier);
 
+#ifdef SIOYEK_ANDROID
+                if (key_event->key() == Qt::Key_Back){
+                    return false;
+                }
+#endif
 				if (key_event->key() == Qt::Key_Down ||
 					key_event->key() == Qt::Key_Up ||
 					key_event->key() == Qt::Key_Left ||
@@ -309,10 +371,11 @@ public:
 
 		//setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
 		std::wstring ss = (get_status_stylesheet(true) + font_size_stylesheet).toStdWString();
-		setStyleSheet(get_status_stylesheet(true) + font_size_stylesheet);
+        setStyleSheet(get_status_stylesheet() + font_size_stylesheet);
 		//get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{background-color: white; color: black;}");
 		get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{" + get_selected_stylesheet() + "}");
-	}
+//        get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item{" + get_list_item_stylesheet() + "}");
+    }
 
 	void resizeEvent(QResizeEvent* resize_event) override {
 		QWidget::resizeEvent(resize_event);
@@ -424,6 +487,10 @@ public:
 		this->proxy_model->setSourceModel(model);
 
 		QTableView* table_view = dynamic_cast<QTableView*>(this->get_view());
+//        QScroller::grabGesture(table_view, QScroller::LeftMouseButtonGesture);
+//        table_view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+//        table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
 
 		if (selected_index != -1) {
 			table_view->selectionModel()->setCurrentIndex(model->index(selected_index, 0), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
@@ -480,6 +547,46 @@ public:
 	}
 };
 
+#ifdef SIOYEK_ANDROID
+template <typename T>
+class TouchFilteredSelectWidget : public QWidget{
+private:
+//    QStringListModel string_list_model;
+//    MySortFilterProxyModel proxy_model;
+    TouchListView* list_view = nullptr;
+    QWidget* parent_widget;
+    std::vector<T> values;
+    std::function<void(T*)> on_done;
+public:
+    TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list, std::vector<T> values_, std::function<void(T*)> on_done_, QWidget* parent) : values(values_), on_done(on_done_){
+        parent_widget = parent;
+        QStringList string_list;
+        for (auto s : std_string_list){
+            string_list.append(QString::fromStdWString(s));
+        }
+//        string_list_model.setStringList(string_list);
+//        proxy_model.setSourceModel(string_list_model);
+
+        list_view = new TouchListView(string_list, this);
+        QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
+            qDebug() << "name is : " << name << " and index is : " << index << "\n";
+            on_done(&values[index]);
+            deleteLater();
+        });
+    }
+
+    void resizeEvent(QResizeEvent* resize_event) override {
+        QWidget::resizeEvent(resize_event);
+        int parent_width = resize_event->size().width();
+        int parent_height = resize_event->size().height();
+//        setFixedSize(parent_width * 0.9f, parent_height);
+        list_view->resize(parent_width * 0.9f, parent_height);
+        list_view->move(parent_width * 0.05f, 0);
+    }
+};
+
+#endif
+
 template<typename T>
 class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView, MySortFilterProxyModel> {
 private:
@@ -535,6 +642,20 @@ public:
 	}
 };
 
+#ifdef SIOYEK_ANDROID
+class TouchCommandSelector : public QWidget{
+public:
+    TouchCommandSelector(const QStringList& commands, MainWidget* mw);
+    void resizeEvent(QResizeEvent* resize_event) override;
+//    void keyReleaseEvent(QKeyEvent* key_event) override;
+
+private:
+    MainWidget* main_widget;
+    TouchListView* list_view;
+
+};
+#endif
+
 class CommandSelector : public BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel> {
 private:
 	QStringList string_elements;
@@ -587,7 +708,7 @@ protected:
 public:
 
 	QString get_view_stylesheet_type_name() {
-		return "QTableView";
+        return "QTableView";
 	}
 
 	void on_select(const QModelIndex& index) {
@@ -608,24 +729,24 @@ public:
 		QWidget* parent,
 		QStringList elements,
 		std::unordered_map<std::string,
-		std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel>(nullptr, parent),
+        std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel>(nullptr, parent),
                 key_map(key_map),
                 on_done(on_done)
 	{
 		string_elements = elements;
 		standard_item_model = get_standard_item_model(string_elements);
 
-		QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+        QTableView* table_view = dynamic_cast<QTableView*>(get_view());
 
 		table_view->setSelectionMode(QAbstractItemView::SingleSelection);
 		table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
 		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 		table_view->setModel(standard_item_model);
 
-		table_view->horizontalHeader()->setStretchLastSection(true);
-		table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-		table_view->horizontalHeader()->hide();
-		table_view->verticalHeader()->hide();
+        table_view->horizontalHeader()->setStretchLastSection(true);
+        table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        table_view->horizontalHeader()->hide();
+        table_view->verticalHeader()->hide();
 
 	}
 
@@ -666,7 +787,7 @@ public:
 		//}
 
 		QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
-		dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
+        dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
 		delete standard_item_model;
 		standard_item_model = new_standard_item_model;
 		return true;
@@ -780,9 +901,190 @@ public:
 	}
 };
 
+#ifdef SIOYEK_ANDROID
+class AndroidSelector : public QWidget{
+public:
+
+    AndroidSelector(QWidget* parent) ;
+    void resizeEvent(QResizeEvent* resize_event) override;
+//    bool event(QEvent *event) override;
+private:
+    QVBoxLayout* layout;
+    QPushButton* fullscreen_button;
+    QPushButton* select_text_button;
+    QPushButton* open_document_button;
+    QPushButton* open_prev_document_button;
+    QPushButton* command_button;
+    QPushButton* visual_mode_button;
+    QPushButton* search_button;
+    QPushButton* set_background_color;
+    QPushButton* set_dark_mode_contrast;
+    QPushButton* set_ruler_mode;
+    QPushButton* restore_default_config_button;
+    QPushButton* toggle_dark_mode_button;
+    QPushButton* ruler_mode_bounds_config_button;
+//    QPushButton* test_rectangle_select_ui;
+
+    MainWidget* main_widget;
+
+};
+
+//class TextSelectionButtons : public QWidget{
+//public:
+//    TextSelectionButtons(MainWidget* parent);
+//    void resizeEvent(QResizeEvent* resize_event) override;
+//private:
+
+//    MainWidget* main_widget;
+//    QHBoxLayout* layout;
+//    QPushButton* copy_button;
+//    QPushButton* search_in_scholar_button;
+//    QPushButton* search_in_google_button;
+//    QPushButton* highlight_button;
+
+//};
+
+class TouchTextSelectionButtons : public QWidget {
+public:
+    TouchTextSelectionButtons(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    MainWidget* main_widget;
+
+    TouchCopyOptions* buttons_ui;
+};
+
+class HighlightButtons : public QWidget {
+
+public:
+    HighlightButtons(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+
+    MainWidget* main_widget;
+    QHBoxLayout* layout;
+    QPushButton* delete_highlight_button;
+};
+
+class SearchButtons : public QWidget {
+
+public:
+    SearchButtons(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+
+    MainWidget* main_widget;
+    QHBoxLayout* layout;
+    QPushButton* prev_match_button;
+    QPushButton* next_match_button;
+    QPushButton* goto_initial_location_button;
+};
+
+class ConfigUI : public QWidget{
+//class ConfigUI : public QQuickWidget{
+public:
+    ConfigUI(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+
+protected:
+    MainWidget* main_widget;
+};
+
+class Color3ConfigUI : public ConfigUI {
+public:
+    Color3ConfigUI(MainWidget* parent, float* config_location_);
+    void resizeEvent(QResizeEvent* resize_event) override;
+
+private:
+    float* color_location;
+    QColorDialog* color_picker;
+//    QQuickWidget* color_picker;
+
+};
+
+class Color4ConfigUI : public ConfigUI {
+public:
+    Color4ConfigUI(MainWidget* parent, float* config_location_);
+
+private:
+    float* color_location;
+    QColorDialog* color_picker;
+
+};
+
+class BoolConfigUI : public ConfigUI{
+public:
+    BoolConfigUI(MainWidget* parent, bool* config_location, QString name);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+
+    bool* bool_location;
+    TouchCheckbox* checkbox;
+//   	TouchCh
+//    QHBoxLayout* layout;
+//    QCheckBox* checkbox;
+//    QLabel* label;
+
+};
+
+class FloatConfigUI : public ConfigUI{
+public:
+    FloatConfigUI(MainWidget* parent, float* config_location, float min_value, float max_value);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    float* float_location;
+//    QSlider* slider;
+//    QLabel* current_value_label;
+//    QPushButton* confirm_button;
+//    QHBoxLayout* layout;
+    float min_value;
+    float max_value;
+    TouchSlider* slider = nullptr;
+};
+
+
+class RectangleConfigUI : public ConfigUI{
+public:
+    RectangleConfigUI(MainWidget* parent, UIRect* config_location);
+
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    UIRect* rect_location;
+
+    TouchRectangleSelectUI* rectangle_select_ui = nullptr;
+};
+
+class RangeConfigUI : public ConfigUI{
+public:
+    RangeConfigUI(MainWidget* parent, float* top_location, float* bottom_location);
+
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    float* top_location;
+    float* bottom_location;
+
+    TouchRangeSelectUI* range_select_ui = nullptr;
+};
+
+#endif
+
 std::wstring select_document_file_name();
 std::wstring select_json_file_name();
 std::wstring select_any_file_name();
 std::wstring select_command_file_name(std::string command_name);
 std::wstring select_new_json_file_name();
 std::wstring select_new_pdf_file_name();
+
+
+//QWidget* color3_configurator_ui(MainWidget* main_widget, void* location);
+//QWidget* color4_configurator_ui(MainWidget* main_widget, void* location);
+
+//template<float min_value, float max_value>
+//QWidget* float_configurator_ui(MainWidget* main_widget, void* location){
+//    return new FloatConfigUI(main_widget, (float*)location, min_value, max_value);
+//}
+
+//template<QString name>
+//QWidget* bool_configurator_ui(MainWidget* main_widget, void* location){
+//    return new BoolConfigUI(main_widget, (float*)location, name);
+//}

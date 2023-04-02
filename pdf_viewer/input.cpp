@@ -11,6 +11,10 @@
 #include "main_widget.h"
 #include "ui.h"
 
+#ifdef SIOYEK_ANDROID
+#include "touchui/TouchListView.h"
+#endif
+
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
@@ -125,6 +129,9 @@ class SearchCommand : public TextCommand {
 
 	void perform(MainWidget* widget) {
 		widget->perform_search(this->text.value(), false);
+#ifdef SIOYEK_ANDROID
+        widget->show_search_buttons();
+#endif
 	}
 
 	std::string get_name() {
@@ -333,9 +340,19 @@ class CommandCommand : public Command {
 
 	void perform(MainWidget* widget) {
 		QStringList command_names = widget->command_manager->get_all_command_names();
+#ifndef SIOYEK_ANDROID
 		widget->set_current_widget(new CommandSelector(
 			&widget->on_command_done, widget, command_names, widget->input_handler->get_command_key_mappings()));
+#else
+//        TouchListView* tlv = new TouchListView(command_names, widget);
+//        tlv->resize(250, 400);
+//        widget->set_current_widget(tlv);
+        TouchCommandSelector* tcs = new TouchCommandSelector(command_names, widget);
+        widget->set_current_widget(tcs);
+
+#endif
 		widget->current_widget->show();
+
 	}
 
 	std::string get_name() {
@@ -569,6 +586,27 @@ class MoveVisualMarkUpCommand : public Command {
 	}
 };
 
+class MoveVisualMarkNextCommand : public Command {
+	void perform(MainWidget* widget) {
+		widget->move_visual_mark_next();
+	}
+
+	std::string get_name() {
+		return "move_visual_mark_next";
+	}
+};
+
+class MoveVisualMarkPrevCommand : public Command {
+	void perform(MainWidget* widget) {
+		widget->move_visual_mark_prev();
+	}
+
+	std::string get_name() {
+		return "move_visual_mark_prev";
+	}
+};
+
+
 class GotoPageWithPageNumberCommand : public TextCommand {
 
 	void perform(MainWidget* widget) {
@@ -616,11 +654,7 @@ class DeleteBookmarkCommand : public Command {
 
 class DeleteHighlightCommand : public Command {
 	void perform(MainWidget* widget) {
-		if (widget->selected_highlight_index != -1) {
-			widget->main_document_view->delete_highlight_with_index(widget->selected_highlight_index);
-			widget->selected_highlight_index = -1;
-		}
-		widget->validate_render();
+        widget->handle_delete_selected_highlight();
 	}
 
 	std::string get_name() {
@@ -1771,6 +1805,17 @@ class OverviewToPortalCommand : public Command {
 	}
 };
 
+class DebugCommand : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->persist_config();
+	}
+
+	std::string get_name() {
+		return "debug";
+	}
+};
+
 class SelectRectCommand : public Command {
 
 	void perform(MainWidget* widget) {
@@ -2129,6 +2174,7 @@ public:
 };
 
 
+#ifndef SIOYEK_ANDROID
 class ConfigCommand : public TextCommand {
 	std::string config_name;
 public:
@@ -2146,6 +2192,50 @@ public:
 	
 	bool requires_document() { return false; }
 };
+#else
+
+class ConfigCommand : public Command {
+    std::string config_name;
+public:
+    ConfigCommand(std::string config_name_) {
+        config_name = config_name_;
+    }
+
+    void perform(MainWidget* widget) {
+//        widget->config_manager->deserialize_config(config_name, text.value());
+        Config* config = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
+
+
+        if (config->config_type == ConfigType::Color3){
+            widget->set_current_widget(new Color3ConfigUI(widget, (float*)config->value));
+            widget->current_widget->show();
+        }
+
+        if (config->config_type == ConfigType::Color4){
+            widget->set_current_widget(new Color4ConfigUI(widget, (float*)config->value));
+            widget->current_widget->show();
+        }
+        if (config->config_type == ConfigType::Bool){
+            widget->set_current_widget(new BoolConfigUI(widget, (bool*)config->value, QString::fromStdWString(config->name) ));
+            widget->current_widget->show();
+        }
+        if (config->config_type == ConfigType::EnableRectangle){
+            widget->set_current_widget(new RectangleConfigUI(widget, (UIRect*)config->value));
+            widget->current_widget->show();
+//            auto w = new RectangleConfigUI(widget, (UIRect*)config->value);
+//            w->show();
+        }
+
+//        config->serialize
+    }
+
+    std::string get_name() {
+        return "setconfig_" + config_name;
+    }
+
+    bool requires_document() { return false; }
+};
+#endif
 
 class MacroCommand : public Command {
 	std::vector<std::unique_ptr<Command>> commands;
@@ -2267,6 +2357,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["prefs_user"] = []() {return std::make_unique< PrefsUserCommand>(); };
 	new_commands["move_visual_mark_down"] = []() {return std::make_unique< MoveVisualMarkDownCommand>(); };
 	new_commands["move_visual_mark_up"] = []() {return std::make_unique< MoveVisualMarkUpCommand>(); };
+	new_commands["move_visual_mark_next"] = []() {return std::make_unique< MoveVisualMarkNextCommand>(); };
+	new_commands["move_visual_mark_prev"] = []() {return std::make_unique< MoveVisualMarkPrevCommand>(); };
 	new_commands["toggle_custom_color"] = []() {return std::make_unique< ToggleCustomColorMode>(); };
 	new_commands["set_select_highlight_type"] = []() {return std::make_unique< SetSelectHighlightTypeCommand>(); };
 	new_commands["toggle_window_configuration"] = []() {return std::make_unique< ToggleWindowConfigurationCommand>(); };
@@ -2332,6 +2424,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["toggle_select_highlight"] = []() {return std::make_unique< ToggleSelectHighlightCommand>(); };
 	new_commands["open_last_document"] = []() {return std::make_unique< OpenLastDocumentCommand>(); };
 	new_commands["toggle_statusbar"] = []() {return std::make_unique< ToggleStatusbarCommand>(); };
+	new_commands["debug"] = []() {return std::make_unique< DebugCommand>(); };
 
 
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {

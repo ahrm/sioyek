@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <deque>
 
 #include <qwidget.h>
 #include <qlineedit.h>
@@ -28,13 +29,26 @@
 #include "path.h"
 #include "checksum.h"
 
+#ifdef SIOYEK_ANDROID
+#include <QQuickWidget>
+#endif
+
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 
+class SelectionIndicator;
 
+
+
+// if we inherit from QWidget there are problems on high refresh rate smartphone displays
+#ifdef SIOYEK_ANDROID
+class MainWidget : public QQuickWidget, ConfigFileChangeListener{
+#else
 class MainWidget : public QWidget, ConfigFileChangeListener{
+#endif
 
 public:
+    QTime debug_last_timer;
 	fz_context* mupdf_context = nullptr;
 	DatabaseManager* db_manager = nullptr;
 	DocumentManager* document_manager = nullptr;
@@ -97,7 +111,7 @@ public:
 	bool smooth_scroll_mode = false;
 	float smooth_scroll_speed = 0.0f;
 
-	QTimer* validation_interval_timer = nullptr;
+    QTimer* validation_interval_timer = nullptr;
 
 	std::optional<Portal> link_to_edit = {};
 	int selected_highlight_index = -1;
@@ -109,6 +123,7 @@ public:
 	bool is_dragging = false;
 
 	bool should_show_status_label = true;
+
 
 	std::optional<CharacterAddress> typing_location;
 
@@ -212,6 +227,7 @@ public:
 	void clear_selected_rect();
 	void clear_selected_text();
 
+
 	std::optional<fz_rect> get_selected_rect_absolute();
 	bool get_selected_rect_document(int& out_page, fz_rect& out_rect);
 	Document* doc();
@@ -245,11 +261,13 @@ public:
 	void validate_render();
 	void validate_ui();
 	void zoom(WindowPos pos, float zoom_factor, bool zoom_in);
-	void move_document(float dx, float dy);
+	bool move_document(float dx, float dy, bool force=false);
 	void move_document_screens(int num_screens);
 	void focus_text(int page, const std::wstring& text);
 
-	void move_visual_mark(int offset);
+	void move_visual_mark_next();
+	void move_visual_mark_prev();
+	fz_rect move_visual_mark(int offset);
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_mouse_drag_mode();
 	void toggle_dark_mode();
@@ -267,7 +285,7 @@ public:
 	CommandManager* get_command_manager();
 
 	void move_vertical(float amount);
-	void move_horizontal(float amount);
+	bool move_horizontal(float amount, bool force=false);
 	void get_window_params_for_one_window_mode(int* main_window_size, int* main_window_move);
 	void get_window_params_for_two_window_mode(int* main_window_size, int* main_window_move, int* helper_window_size, int* helper_window_move);
 	void apply_window_params_for_one_window_mode(bool force_resize=false);
@@ -288,7 +306,8 @@ public:
 	int get_current_monitor_width(); int get_current_monitor_height();
 	void synctex_under_pos(WindowPos position);
 	std::optional<std::wstring> get_paper_name_under_cursor();
-	void set_status_message(std::wstring new_status_string);
+    fz_stext_char* get_character_under_cursor(QPoint pos);
+    void set_status_message(std::wstring new_status_string);
 	void remove_self_from_windows();
 	//void handle_additional_command(std::wstring command_name, bool wait=false);
 	std::optional<DocumentPos> get_overview_position();
@@ -300,6 +319,7 @@ public:
 	void handle_portal_overview_update();
 	void goto_overview();
 	bool is_rect_visible(int page, fz_rect rect);
+	bool is_point_visible(int page, fz_point point);
 	void set_mark_in_current_location(char symbol);
 	void goto_mark(char symbol);
 	void advance_command(std::unique_ptr<Command> command);
@@ -331,6 +351,50 @@ public:
 	void handle_overview_to_portal();
 	void handle_toggle_typing_mode();
 	void handle_delete_highlight_under_cursor();
+    void handle_delete_selected_highlight();
+
+#ifdef SIOYEK_ANDROID
+    SelectionIndicator* selection_begin_indicator = nullptr;
+    SelectionIndicator *selection_end_indicator = nullptr;
+    TouchTextSelectionButtons* text_selection_buttons = nullptr;
+    HighlightButtons* highlight_buttons = nullptr;
+    SearchButtons* search_buttons = nullptr;
+    QPoint last_hold_point;
+    QPoint last_press_point;
+    qint64 last_press_msecs = 0;
+    QTime last_quick_tap_time;
+    QPoint last_quick_tap_position;
+    bool is_pressed = false;
+    std::deque<std::pair<QTime, QPoint>> position_buffer;
+    float velocity_x = 0;
+    float velocity_y = 0;
+
+    bool was_last_mouse_down_in_ruler_next_rect = false;
+    bool was_last_mouse_down_in_ruler_prev_rect = false;
+    WindowPos ruler_moving_last_window_pos;
+    int ruler_moving_distance_traveled = 0;
+
+
+    void handle_mobile_selection();
+    void update_mobile_selection();
+    void handle_quick_tap();
+    void handle_double_tap(QPoint pos);
+    void android_handle_visual_mode();
+    void show_highlight_buttons();
+    void clear_highlight_buttons();
+    void show_search_buttons();
+    void clear_search_buttons();
+    void clear_selection_indicators();
+    bool is_moving();
+    void update_position_buffer();
+    bool is_flicking(QPointF* out_velocity);
+    void handle_touch_highlight();
+    void restore_default_config();
+
+#endif
+
+    void persist_config();
+
 	void synchronize_pending_link();
 	void refresh_all_windows();
 	std::optional<std::pair<int, fz_link*>> get_selected_link(const std::wstring& text);
@@ -356,6 +420,7 @@ public:
 	void mousePressEvent(QMouseEvent* mevent) override;
 	void mouseDoubleClickEvent(QMouseEvent* mevent) override;
 	void wheelEvent(QWheelEvent* wevent) override;
+    bool event(QEvent *event);
 
 };
 

@@ -1,12 +1,16 @@
 TEMPLATE = app
 TARGET = sioyek
 VERSION = 2.0.0
-INCLUDEPATH += ./pdf_viewer\
-              mupdf/include \
-              zlib
+
+INCLUDEPATH += ./pdf_viewer \
+               mupdf/include
+
+!android{
+    INCLUDEPATH += zlib
+}
           
 
-QT += core opengl gui widgets network 3dinput 
+QT += core opengl gui widgets network 3dinput
 
 greaterThan(QT_MAJOR_VERSION, 5){
 	QT += openglwidgets
@@ -16,8 +20,30 @@ else{
 	QT += openglextensions
 }
 
+
 CONFIG += c++17
 DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
+
+android{
+    CONFIG += debug
+    DEFINES += SIOYEK_ANDROID
+    QT += core-private quickwidgets
+    SOURCES += \
+                pdf_viewer/touchui/TouchSlider.cpp \
+                pdf_viewer/touchui/TouchCheckbox.cpp \
+                pdf_viewer/touchui/TouchListView.cpp \
+                pdf_viewer/touchui/TouchCopyOptions.cpp \
+                pdf_viewer/touchui/TouchRectangleSelectUI.cpp \
+                pdf_viewer/touchui/TouchRangeSelectUI.cpp
+
+    HEADERS += \
+            pdf_viewer/touchui/TouchSlider.h \
+            pdf_viewer/touchui/TouchCheckbox.h \
+            pdf_viewer/touchui/TouchListView.h \
+            pdf_viewer/touchui/TouchCopyOptions.h \
+            pdf_viewer/touchui/TouchRectangleSelectUI.h \
+            pdf_viewer/touchui/TouchRangeSelectUI.h
+}
 
 CONFIG(non_portable){
     DEFINES += NON_PORTABLE
@@ -44,13 +70,13 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/path.h \
            pdf_viewer/utf8.h \
            pdf_viewer/utils.h \
+           pdf_viewer/mysortfilterproxymodel.h \
            pdf_viewer/utf8/checked.h \
            pdf_viewer/utf8/core.h \
            pdf_viewer/utf8/unchecked.h \
-           pdf_viewer/synctex/synctex_parser.h \
-           pdf_viewer/synctex/synctex_parser_utils.h \
            pdf_viewer/RunGuard.h \
            pdf_viewer/OpenWithApplication.h
+
 
 SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/config.cpp \
@@ -69,10 +95,17 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/ui.cpp \
            pdf_viewer/path.cpp \
            pdf_viewer/utils.cpp \
-           pdf_viewer/synctex/synctex_parser.c \
-           pdf_viewer/synctex/synctex_parser_utils.c \
+           pdf_viewer/mysortfilterproxymodel.cpp \
            pdf_viewer/RunGuard.cpp \
            pdf_viewer/OpenWithApplication.cpp
+
+!android{
+           HEADERS += pdf_viewer/synctex/synctex_parser.h \
+           pdf_viewer/synctex/synctex_parser_utils.h
+           
+           SOURCES += pdf_viewer/synctex/synctex_parser.c \
+           pdf_viewer/synctex/synctex_parser_utils.c
+}
 
 
 win32{
@@ -83,7 +116,7 @@ win32{
     LIBS += opengl32.lib
 }
 
-unix:!mac {
+unix:!mac:!android {
 
     QMAKE_CXXFLAGS += -std=c++17
 
@@ -131,3 +164,11 @@ mac {
     QMAKE_INFO_PLIST = resources/Info.plist
 }
 
+android{
+    !isEmpty(target.path): INSTALLS += target
+    LIBS += -L$$PWD/libs/ -lmupdf_java
+    ANDROID_EXTRA_LIBS += $$PWD/libs/libmupdf_java.so
+
+    RESOURCES += resources.qrc
+
+}
