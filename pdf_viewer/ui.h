@@ -46,6 +46,7 @@
 #include "touchui/TouchCopyOptions.h"
 #include "touchui/TouchRectangleSelectUI.h"
 #include "touchui/TouchRangeSelectUI.h"
+#include "touchui/TouchPageSelector.h"
 #endif
 
 #include "mysortfilterproxymodel.h"
@@ -923,6 +924,7 @@ private:
     QPushButton* restore_default_config_button;
     QPushButton* toggle_dark_mode_button;
     QPushButton* ruler_mode_bounds_config_button;
+    QPushButton* goto_page_button;
 //    QPushButton* test_rectangle_select_ui;
 
     MainWidget* main_widget;
@@ -1042,6 +1044,13 @@ private:
     TouchSlider* slider = nullptr;
 };
 
+class PageSelectorUI : public ConfigUI{
+public:
+    PageSelectorUI(MainWidget* parent, int current, int num_pages);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    TouchPageSelector* page_selector = nullptr;
+};
 
 class RectangleConfigUI : public ConfigUI{
 public:

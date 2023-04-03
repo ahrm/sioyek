@@ -1,8 +1,9 @@
 ﻿//todo:
-// handle next visual mark rectangle specially (don't open links, don't move, don't touch and hold, when finger is moved do it again)
 // fix the rest of UI for mobile (current buttons are extremely bad)
 // add mobile specific page navigation
 // banded page rendering
+// better config menu (show configs in the list view)
+// implement stacking UI
 
 #include <iostream>
 #include <vector>

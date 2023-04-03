@@ -140,6 +140,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
      main_widget = dynamic_cast<MainWidget*>(parent);
 
 
+    goto_page_button = new QPushButton("Goto Page", this);
     fullscreen_button = new QPushButton("Fullscreen", this);
     select_text_button = new QPushButton("Select Text", this);
     open_document_button = new QPushButton("Open New Document", this);
@@ -155,6 +156,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     ruler_mode_bounds_config_button = new QPushButton("Configure Ruler Mode", this);
 //    test_rectangle_select_ui = new QPushButton("Rectangle Select", this);
 
+    layout->addWidget(goto_page_button);
     layout->addWidget(fullscreen_button);
     layout->addWidget(select_text_button);
     layout->addWidget(open_document_button);
@@ -169,6 +171,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     layout->addWidget(toggle_dark_mode_button);
     layout->addWidget(ruler_mode_bounds_config_button);
 //    layout->addWidget(test_rectangle_select_ui);
+
 
     QObject::connect(fullscreen_button, &QPushButton::pressed, [&](){
         main_widget->current_widget = {};
@@ -266,6 +269,17 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->current_widget = config_ui;
         main_widget->current_widget->show();
 //        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(goto_page_button, &QPushButton::pressed, [&](){
+        main_widget->current_widget = nullptr;
+        deleteLater();
+        PageSelectorUI* page_ui = new PageSelectorUI(main_widget,
+                                                     main_widget->main_document_view->get_center_page_number(),
+                                                     main_widget->doc()->num_pages());
+
+        main_widget->current_widget = page_ui;
+        main_widget->current_widget->show();
     });
 
 //    QObject::connect(test_rectangle_select_ui, &QPushButton::pressed, [&](){
@@ -591,6 +605,30 @@ FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float m
 //        main_widget->invalidate_render();
 //    });
  }
+
+PageSelectorUI::PageSelectorUI(MainWidget* parent, int current, int num_pages) : ConfigUI(parent) {
+
+     page_selector = new TouchPageSelector(0, num_pages-1, current, this);
+
+    QObject::connect(page_selector, &TouchPageSelector::pageSelected, [&](int val){
+        main_widget->main_document_view->goto_page(val);
+        main_widget->invalidate_render();
+    });
+
+ }
+
+void PageSelectorUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    int w = 2 * parent_width / 3;
+    int h =  parent_height / 2;
+    page_selector->resize(w, h);
+
+    setFixedSize(w, h);
+    move(parent_width / 6, parent_height / 4);
+}
 
 
 
