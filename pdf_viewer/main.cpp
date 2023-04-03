@@ -109,6 +109,10 @@ float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = {0.0f, 0.5f, 0.5f};
 float GAMMA = 1.0f;
 bool DEBUG = false;
 
+bool SLICED_RENDERING = false;
+int NUM_V_SLICES = 8;
+int NUM_H_SLICES = 2;
+
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];
 std::wstring TEXT_HIGHLIGHT_URL = L"http://localhost:5000/";

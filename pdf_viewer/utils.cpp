@@ -45,6 +45,8 @@ extern float STATUS_BAR_TEXT_COLOR[3];
 extern float UI_SELECTED_TEXT_COLOR[3];
 extern float UI_SELECTED_BACKGROUND_COLOR[3];
 extern bool NUMERIC_TAGS;
+extern int NUM_H_SLICES;
+extern int NUM_V_SLICES;
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -2406,3 +2408,31 @@ float dampen_velocity(float v, float dt){
 
 
 #endif
+
+fz_irect get_index_irect(fz_rect original, int index, fz_matrix transform) {
+	fz_rect transformed = fz_transform_rect(original, transform);
+	fz_irect rounded = fz_round_rect(transformed);
+
+	int vi = index / NUM_H_SLICES;
+	int hi = index % NUM_H_SLICES;
+
+	int slice_width = (rounded.x1 - rounded.x0) / NUM_H_SLICES;
+	int slice_height = (rounded.y1 - rounded.y0) / NUM_V_SLICES;
+
+	int x0 = hi * slice_width;
+	int y0 = vi * slice_height;
+
+	int x1 = (hi == (NUM_H_SLICES - 1)) ? rounded.x1 : (hi + 1) * slice_width;
+	int y1 = (vi == (NUM_V_SLICES - 1)) ? rounded.y1 : (vi + 1) * slice_height;
+
+	fz_irect res;
+	res.x0 = x0;
+	res.x1 = x1;
+
+	res.y0 = y0;
+	res.y1 = y1;
+
+	return res;
+
+
+}

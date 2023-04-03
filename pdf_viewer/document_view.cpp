@@ -360,8 +360,19 @@ NormalizedWindowPos DocumentView::document_to_window_pos(DocumentPos doc_pos) {
 WindowPos DocumentView::document_to_window_pos_in_pixels(DocumentPos doc_pos){
 	AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
 	WindowPos window_pos;
-	window_pos.y = (abspos.y - offset_y)* zoom_level + view_height / 2;
+	window_pos.y = (abspos.y - offset_y) * zoom_level + view_height / 2;
 	window_pos.x = (abspos.x + offset_x - current_document->get_page_width(doc_pos.page) / 2) * zoom_level + view_width / 2;
+	return window_pos;
+}
+
+WindowPos DocumentView::document_to_window_pos_in_pixels_banded(DocumentPos doc_pos){
+	AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
+	WindowPos window_pos;
+	//float to_round = std::roundf((abspos.y - offset_y) * zoom_level + static_cast<float>(view_height) / 2.0f);
+	float docwidth = current_document->get_page_width(doc_pos.page);
+	window_pos.y = static_cast<int>(std::roundf((abspos.y - offset_y) * zoom_level + static_cast<float>(view_height) / 2.0f));
+	window_pos.x = static_cast<int>(std::roundf((abspos.x + offset_x - docwidth / 2.0) * zoom_level + static_cast<float>(view_width) / 2.0f));
+	//window_pos.x = static_cast<int>(std::roundf((abspos.x + offset_x - current_document->get_page_width(doc_pos.page) / 2) * zoom_level + static_cast<float>(view_width) / 2));
 	return window_pos;
 }
 
@@ -392,14 +403,22 @@ fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
 	return res;
 }
 
-fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height) {
+fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height, bool banded) {
 
 	if ((pixel_width <= 0) || (pixel_height <= 0)) {
 		return document_to_window_rect(page, doc_rect);
 	}
 
-	WindowPos w0 = document_to_window_pos_in_pixels({ page, doc_rect.x0, doc_rect.y0 });
-	WindowPos w1 = document_to_window_pos_in_pixels({ page, doc_rect.x1, doc_rect.y1 });
+
+	WindowPos w0, w1;
+	if (banded) {
+		w0 = document_to_window_pos_in_pixels_banded({ page, doc_rect.x0, doc_rect.y0 });
+		w1 = document_to_window_pos_in_pixels_banded({ page, doc_rect.x1, doc_rect.y1 });
+	}
+	else {
+		w0 = document_to_window_pos_in_pixels({ page, doc_rect.x0, doc_rect.y0 });
+		w1 = document_to_window_pos_in_pixels({ page, doc_rect.x1, doc_rect.y1 });
+	}
 
 	w1.x -= ((w1.x - w0.x) - pixel_width);
 	w1.y -= ((w1.y - w0.y) - pixel_height);

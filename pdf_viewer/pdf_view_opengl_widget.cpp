@@ -34,6 +34,9 @@ extern float DISPLAY_RESOLUTION_SCALE;
 extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
 extern float KEYBOARD_SELECT_TEXT_COLOR[4];
 extern bool ALPHABETIC_LINK_TAGS;
+extern int NUM_H_SLICES;
+extern int NUM_V_SLICES;
+extern bool SLICED_RENDERING;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -552,6 +555,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 
 	GLuint texture = pdf_renderer->find_rendered_page(target_doc->get_path(),
 		docpos.page,
+		-1,
 		zoom_level,
 		nullptr,
 		nullptr);
@@ -669,94 +673,174 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 	if (!valid_document()) return;
 
-	int rendered_width = -1;
-	int rendered_height = -1;
-
-	GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-		page_number,
-		document_view->get_zoom_level(),
-		&rendered_width,
-		&rendered_height);
-
-
-	if (rotation_index % 2 == 1) {
-		std::swap(rendered_width, rendered_height);
+	int nh = NUM_H_SLICES;
+	int nv = NUM_V_SLICES;
+	if (!SLICED_RENDERING) {
+		nh = 1;
+		nv = 1;
 	}
 
-	float page_vertices[4 * 2];
-	fz_rect page_rect = { 0,
-		0,
-		document_view->get_document()->get_page_width(page_number),
-		document_view->get_document()->get_page_height(page_number) };
+	for (int i = 0; i < NUM_H_SLICES * NUM_V_SLICES; i++) {
+		int v_index = i / NUM_H_SLICES;
+		int h_index = i % NUM_H_SLICES;
+
+		int rendered_width = -1;
+		int rendered_height = -1;
+
+		int index = i;
+
+		if (!SLICED_RENDERING) {
+			index = -1;
+		}
+
+		GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+			page_number,
+			index,
+			document_view->get_zoom_level(),
+			&rendered_width,
+			&rendered_height);
+
+
+
+		if (rotation_index % 2 == 1) {
+			std::swap(rendered_width, rendered_height);
+		}
+
+		float page_vertices[4 * 2];
+		float slice_height = document_view->get_document()->get_page_height(page_number) / NUM_V_SLICES;
+		float slice_width = document_view->get_document()->get_page_width(page_number) / NUM_H_SLICES;
+		fz_rect page_rect;
+
+		//fz_rect test_window_rect_1 = document_view->document_to_window_rect_pixel_perfect()
+
+
+		fz_rect full_page_rect = { 0,
+				0,
+				 document_view->get_document()->get_page_width(page_number),
+				 document_view->get_document()->get_page_height(page_number)
+		};
+
+		fz_irect full_page_irect = fz_round_rect(fz_transform_rect(full_page_rect,
+			fz_scale(document_view->get_zoom_level(), document_view->get_zoom_level())));
+
+		if (SLICED_RENDERING) {
+
+			page_rect = { h_index * slice_width,
+				v_index * slice_height,
+				(h_index + 1) * slice_width,
+				(v_index + 1) * slice_height
+			};
+			fz_irect page_irect;
+			page_irect.x0 = ((full_page_irect.x1 - full_page_irect.x0) / NUM_H_SLICES) * h_index;
+			page_irect.x1 = ((full_page_irect.x1 - full_page_irect.x0) / NUM_H_SLICES) * (h_index + 1);
+			if (h_index == (NUM_H_SLICES - 1)) {
+				page_irect.x1 = full_page_irect.x1;
+			}
+
+			page_irect.y0 = ((full_page_irect.y1 - full_page_irect.y0) / NUM_V_SLICES) * v_index;
+			page_irect.y1 = ((full_page_irect.y1 - full_page_irect.y0) / NUM_V_SLICES) * (v_index + 1);
+			if (v_index == (NUM_V_SLICES - 1)) {
+				//page_irect.y0 += 1;
+				page_irect.y1 = full_page_irect.y1;
+			}
+
+			//fz_irect page_irect = fz_round_rect(fz_transform_rect(page_rect,
+			//	fz_scale(document_view->get_zoom_level(), document_view->get_zoom_level())));
+			//if (v_index > 0) {
+			//	page_irect.y0 += 1;
+			//}
+
+			float w = full_page_rect.x1 - full_page_rect.x0;
+			float h = full_page_rect.y1 - full_page_rect.y0;
+
+			page_rect.x0 = static_cast<float>(page_irect.x0) / static_cast<float>(full_page_irect.x1 - full_page_irect.x0) * w;
+			page_rect.x1 = static_cast<float>(page_irect.x1) / static_cast<float>(full_page_irect.x1 - full_page_irect.x0) * w;
+			page_rect.y0 = static_cast<float>(page_irect.y0) / static_cast<float>(full_page_irect.y1 - full_page_irect.y0) * h;
+			page_rect.y1 = static_cast<float>(page_irect.y1) / static_cast<float>(full_page_irect.y1 - full_page_irect.y0) * h;
+		}
+		else {
+
+			page_rect = full_page_rect;
+		}
+
 
 #ifdef SIOYEK_QT6
-	float device_pixel_ratio = static_cast<float>(QGuiApplication::primaryScreen()->devicePixelRatio());
+		float device_pixel_ratio = static_cast<float>(QGuiApplication::primaryScreen()->devicePixelRatio());
 #else
-	float device_pixel_ratio = QApplication::desktop()->devicePixelRatioF();
+		float device_pixel_ratio = QApplication::desktop()->devicePixelRatioF();
 #endif
 
-	if (DISPLAY_RESOLUTION_SCALE > 0) {
-		device_pixel_ratio *= DISPLAY_RESOLUTION_SCALE;
-	}
-
-	fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number,
-		page_rect,
-		static_cast<int>(rendered_width / device_pixel_ratio),
-		static_cast<int>(rendered_height / device_pixel_ratio)
-	);
-	rect_to_quad(window_rect, page_vertices);
-
-	if (texture != 0) {
-
-		//if (is_dark_mode) {
-		//	glUseProgram(shared_gl_objects.rendered_dark_program);
-		//	glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
-		//}
-		//else {
-		//	glUseProgram(shared_gl_objects.rendered_program);
-		//}
-		bind_program();
-
-		glBindTexture(GL_TEXTURE_2D, texture);
-	}
-	else {
-		if (!SHOULD_DRAW_UNRENDERED_PAGES) {
-			return;
+		if (DISPLAY_RESOLUTION_SCALE > 0) {
+			device_pixel_ratio *= DISPLAY_RESOLUTION_SCALE;
 		}
-		glUseProgram(shared_gl_objects.unrendered_program);
-	}
 
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
+		bool is_not_exact = true;
+		if ((full_page_irect.y1 - full_page_irect.y0) % NUM_V_SLICES == 0) {
+			is_not_exact = false;
+		}
 
-	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_uvs), rotation_uvs[rotation_index], GL_DYNAMIC_DRAW);
+		fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number,
+			page_rect,
+			static_cast<int>(rendered_width / device_pixel_ratio),
+			static_cast<int>(rendered_height / device_pixel_ratio), SLICED_RENDERING );
 
-	glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		rect_to_quad(window_rect, page_vertices);
+		if ((v_index == 6) || (v_index == 7)) {
+			int a = 2;
+		}
 
-	if (!is_presentation_mode()) {
+		if (texture != 0) {
 
-		// render page separator
-		glUseProgram(shared_gl_objects.separator_program);
+			//if (is_dark_mode) {
+			//	glUseProgram(shared_gl_objects.rendered_dark_program);
+			//	glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
+			//}
+			//else {
+			//	glUseProgram(shared_gl_objects.rendered_program);
+			//}
+			bind_program();
 
-		fz_rect separator_rect = { 0,
-			document_view->get_document()->get_page_height(page_number) - PAGE_SEPARATOR_WIDTH / 2,
-			document_view->get_document()->get_page_width(page_number),
-			document_view->get_document()->get_page_height(page_number) + PAGE_SEPARATOR_WIDTH / 2};
+			glBindTexture(GL_TEXTURE_2D, texture);
+		}
+		else {
+			if (!SHOULD_DRAW_UNRENDERED_PAGES) {
+				break;
+			}
+			glUseProgram(shared_gl_objects.unrendered_program);
+		}
 
-//fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height) {
-		if (PAGE_SEPARATOR_WIDTH > 0) {
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
 
-			fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
-			rect_to_quad(separator_window_rect, page_vertices);
+		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.uv_buffer_object);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_uvs), rotation_uvs[rotation_index], GL_DYNAMIC_DRAW);
 
-			glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
+		glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-			glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		if (!is_presentation_mode()) {
+
+			// render page separator
+			glUseProgram(shared_gl_objects.separator_program);
+
+			fz_rect separator_rect = { 0,
+				document_view->get_document()->get_page_height(page_number) - PAGE_SEPARATOR_WIDTH / 2,
+				document_view->get_document()->get_page_width(page_number),
+				document_view->get_document()->get_page_height(page_number) + PAGE_SEPARATOR_WIDTH / 2 };
+
+			//fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height) {
+			if (PAGE_SEPARATOR_WIDTH > 0) {
+
+				fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
+				rect_to_quad(separator_window_rect, page_vertices);
+
+				glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
+
+				glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			}
 		}
 	}
 
@@ -803,6 +887,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		if (PRERENDER_NEXT_PAGE) {
 			GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
 				visible_page_number.value() + 1,
+				-1,
 				document_view->get_zoom_level(),
 				nullptr,
 				nullptr);
@@ -834,6 +919,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 				if (max_page + i < num_pages) {
 					pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
 						max_page + i,
+						0,
 						document_view->get_zoom_level(),
 						nullptr,
 						nullptr);

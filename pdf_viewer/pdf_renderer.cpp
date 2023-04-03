@@ -3,7 +3,36 @@
 #include <qdatetime.h>
 
 extern bool LINEAR_TEXTURE_FILTERING;
+extern int NUM_V_SLICES;
+extern int NUM_H_SLICES;
 //extern bool AUTO_EMBED_ANNOTATIONS;
+
+void translate_index(int index, int* h_index, int* v_index) {
+	*v_index = index / NUM_H_SLICES;
+	*h_index = index % NUM_H_SLICES;
+}
+
+void get_slice_size(float* width, float* height, fz_rect original) {
+	*width = (original.x1 - original.x0) / NUM_H_SLICES;
+	*height = (original.y1 - original.y0) / NUM_V_SLICES;
+}
+
+fz_rect get_index_rect(fz_rect original, int index) {
+
+	int h_index, v_index;
+	translate_index(index, &h_index, &v_index);
+
+	float slice_height, slice_width;
+	get_slice_size(&slice_width, &slice_height, original);
+
+	fz_rect new_rect;
+	new_rect.x0 = original.x0 + h_index * slice_width;
+	new_rect.x1 = original.x0 + (h_index + 1) * slice_width;
+	new_rect.y0 = original.y0 + v_index * slice_height;
+	new_rect.y1 = original.y0 + (v_index+1) * slice_height;
+	return new_rect;
+}
+
 
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone, float display_scale) : context_to_clone(context_to_clone),
 pixmaps_to_drop(num_threads),
@@ -48,13 +77,14 @@ void PdfRenderer::join_threads()
 }
 
 
-void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_level) {
+void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_level, int index) {
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
 		RenderRequest req;
 		req.path = document_path;
 		req.page = page;
 		req.zoom_level = zoom_level;
+		req.slice_index = index;
 
 		pending_requests_mutex.lock();
 		bool should_add = true;
@@ -108,13 +138,14 @@ void PdfRenderer::add_request(std::wstring document_path,
 
 //should only be called from the main thread
 
-GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_level, int* page_width, int* page_height) {
+GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, float zoom_level, int* page_width, int* page_height) {
 	//fz_document* doc = get_document_with_path(path);
 	if (path.size() > 0) {
 		RenderRequest req;
 		req.path = path;
 		req.page = page;
 		req.zoom_level = zoom_level;
+		req.slice_index = index;
 		cached_response_mutex.lock();
 		GLuint result = 0;
 		for (auto& cached_resp : cached_responses) {
@@ -176,16 +207,16 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, float zoom_l
                 add_request(path, page, zoom_level);
             }
 #else
-			add_request(path, page, zoom_level);
+			add_request(path, page, zoom_level, index);
 #endif
-			return try_closest_rendered_page(path, page, zoom_level, page_width, page_height);
+			return try_closest_rendered_page(path, page, index, zoom_level, page_width, page_height);
 		}
 		return result;
 	}
 	return 0;
 }
 
-GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, float zoom_level, int* page_width, int* page_height) {
+GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, int index, float zoom_level, int* page_width, int* page_height) {
 	/*
 	If the requested page is not available, we try to find the rendered page with the closest
 	possible zoom level to our request and return that instead
@@ -196,7 +227,7 @@ GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, f
 	GLuint best_texture = 0;
 
 	for (const auto& cached_resp : cached_responses) {
-		if ((cached_resp.request.path == doc_path) && (cached_resp.request.page == page) && (cached_resp.texture != 0)) {
+		if ((cached_resp.request.slice_index == index) && (cached_resp.request.path == doc_path) && (cached_resp.request.page == page) && (cached_resp.texture != 0)) {
 			float diff = cached_resp.request.zoom_level - zoom_level;
 			if (diff <= min_diff) {
 				min_diff = diff;
@@ -471,7 +502,33 @@ void PdfRenderer::run(int thread_index) {
 				//	fz_drop_page(mupdf_context, page);
 				//}
 				//else {
-				rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+				if (req.slice_index == -1) {
+					rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+				}
+				else {
+					fz_page* page = fz_load_page(mupdf_context, doc, req.page);
+					fz_rect rect = fz_bound_page(mupdf_context, page);
+					//float slice_height = (rect.y1 - rect.y0) / NUM_SLICES;
+					//float slice_height, slice_width;
+
+					//get_slice_size(&slice_width, &slice_height, rect);
+					//rect = get_index_rect(rect, req.slice_index);
+					//rect = fz_transform_rect(rect, transform_matrix);
+					//fz_irect bbox = fz_round_rect(rect);
+					fz_irect bbox = get_index_irect(rect, req.slice_index, transform_matrix);
+
+					rendered_pixmap = fz_new_pixmap_with_bbox(mupdf_context, fz_device_rgb(mupdf_context), bbox, nullptr, 0); // todo: use alpha
+					//fz_clear_pixmap(mupdf_context, rendered_pixmap);
+					fz_clear_pixmap_with_value(mupdf_context, rendered_pixmap, 0xFF);
+					fz_device* draw_device = fz_new_draw_device(mupdf_context, transform_matrix, rendered_pixmap);
+
+					//fz_run_page(mupdf_context, page, draw_device, fz_translate(0, req.slice_index * slice_height), nullptr); // todo: use cookie to report progress
+					fz_run_page(mupdf_context, page, draw_device, fz_identity, nullptr); // todo: use cookie to report progress
+
+					fz_close_device(mupdf_context, draw_device);
+					fz_drop_device(mupdf_context, draw_device);
+					fz_drop_page(mupdf_context, page);
+				}
 				//}
 
 				RenderResponse resp;
@@ -506,6 +563,9 @@ void PdfRenderer::add_password(std::wstring path, std::string password) {
 
 bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 	if (rhs.path != lhs.path) {
+		return false;
+	}
+	if (rhs.slice_index != lhs.slice_index) {
 		return false;
 	}
 	if (rhs.page != lhs.page) {

@@ -231,3 +231,4 @@ T compute_average(std::vector<T> items){
 
 void convert_qcolor_to_float3(const QColor& color, float* out_floats);
 void convert_qcolor_to_float4(const QColor& color, float* out_floats);
+fz_irect get_index_irect(fz_rect original, int index, fz_matrix transform);
