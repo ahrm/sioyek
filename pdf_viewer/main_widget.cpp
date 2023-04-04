@@ -570,6 +570,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     helper_document_view = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
     helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager, true);
 
+    // weird hack, should not be necessary but application crashes without it when toggling window configuration
+    helper_opengl_widget->show();
+    helper_opengl_widget->hide();
+
     status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
     QFont label_font = QFont(get_font_face_name());

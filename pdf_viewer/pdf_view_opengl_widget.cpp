@@ -812,7 +812,6 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		}
 
 		if (texture != 0) {
-
 			//if (is_dark_mode) {
 			//	glUseProgram(shared_gl_objects.rendered_dark_program);
 			//	glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);

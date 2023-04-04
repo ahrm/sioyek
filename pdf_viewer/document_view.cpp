@@ -421,7 +421,10 @@ fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect do
 	}
 
 	w1.x -= ((w1.x - w0.x) - pixel_width);
-	w1.y -= ((w1.y - w0.y) - pixel_height);
+	if (!banded) {
+		//w1.y -= ((w1.y - w0.y) - pixel_height);
+		w1.y -= ((w1.y - w0.y) - pixel_height);
+	}
 
 	NormalizedWindowPos p0 = window_to_normalized_window_pos(w0);
 	NormalizedWindowPos p1 = window_to_normalized_window_pos(w1);
