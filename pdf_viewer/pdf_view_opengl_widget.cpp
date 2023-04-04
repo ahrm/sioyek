@@ -693,6 +693,28 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 			index = -1;
 		}
 
+		float slice_document_width = document_view->get_document()->get_page_width(page_number);
+		float slice_document_height = document_view->get_document()->get_page_height(page_number);
+		fz_rect slice_document_rect;
+		slice_document_rect.x0 = 0;
+		slice_document_rect.x1 = slice_document_width;
+		slice_document_rect.y0 = 0;
+		slice_document_rect.y1 = slice_document_height;
+		slice_document_rect = get_index_rect(slice_document_rect, i);
+
+		fz_rect slice_window_rect = document_view->document_to_window_rect(page_number, slice_document_rect);
+		// we add some slack so we pre-render nearby slices
+		fz_rect full_window_rect;
+		full_window_rect.x0 = -1;
+		full_window_rect.x1 = 1;
+		full_window_rect.y0 = -1.5f;
+		full_window_rect.y1 = 1.5f;
+
+		// don't render invisible slices
+		if (SLICED_RENDERING && (!rects_intersect(slice_window_rect, full_window_rect))) {
+			continue;
+		}
+
 		GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
 			page_number,
 			index,
@@ -804,7 +826,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		}
 		else {
 			if (!SHOULD_DRAW_UNRENDERED_PAGES) {
-				break;
+				continue;
 			}
 			glUseProgram(shared_gl_objects.unrendered_program);
 		}

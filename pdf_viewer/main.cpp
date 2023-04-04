@@ -109,9 +109,13 @@ float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = {0.0f, 0.5f, 0.5f};
 float GAMMA = 1.0f;
 bool DEBUG = false;
 
+#ifdef SIOYEK_ANDROID
+bool SLICED_RENDERING = true;
+#else
 bool SLICED_RENDERING = false;
-int NUM_V_SLICES = 8;
-int NUM_H_SLICES = 2;
+#endif
+int NUM_V_SLICES = 5;
+int NUM_H_SLICES = 1;
 
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];

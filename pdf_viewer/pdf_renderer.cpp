@@ -7,31 +7,8 @@ extern int NUM_V_SLICES;
 extern int NUM_H_SLICES;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 
-void translate_index(int index, int* h_index, int* v_index) {
-	*v_index = index / NUM_H_SLICES;
-	*h_index = index % NUM_H_SLICES;
-}
 
-void get_slice_size(float* width, float* height, fz_rect original) {
-	*width = (original.x1 - original.x0) / NUM_H_SLICES;
-	*height = (original.y1 - original.y0) / NUM_V_SLICES;
-}
 
-fz_rect get_index_rect(fz_rect original, int index) {
-
-	int h_index, v_index;
-	translate_index(index, &h_index, &v_index);
-
-	float slice_height, slice_width;
-	get_slice_size(&slice_width, &slice_height, original);
-
-	fz_rect new_rect;
-	new_rect.x0 = original.x0 + h_index * slice_width;
-	new_rect.x1 = original.x0 + (h_index + 1) * slice_width;
-	new_rect.y0 = original.y0 + v_index * slice_height;
-	new_rect.y1 = original.y0 + (v_index+1) * slice_height;
-	return new_rect;
-}
 
 
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone, float display_scale) : context_to_clone(context_to_clone),
@@ -87,6 +64,12 @@ void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_l
 		req.slice_index = index;
 
 		pending_requests_mutex.lock();
+		// if the zoom level has changed, there is no point in previous requests with a different zoom level
+		for (int i = pending_render_requests.size() - 1; i >= 0; i--) {
+			if (pending_render_requests[i].path == req.path && pending_render_requests[i].page == req.page && (pending_render_requests[i].zoom_level != zoom_level)) {
+				pending_render_requests.erase(pending_render_requests.begin() + i);
+			}
+		}
 		bool should_add = true;
 		for (size_t i = 0; i < pending_render_requests.size(); i++) {
 			if (pending_render_requests[i] == req) {
@@ -204,7 +187,7 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, f
 		if (result == 0) {
 #ifdef SIOYEK_ANDROID
             if (!no_rerender){
-                add_request(path, page, zoom_level);
+                add_request(path, page, zoom_level, index);
             }
 #else
 			add_request(path, page, zoom_level, index);
@@ -508,28 +491,21 @@ void PdfRenderer::run(int thread_index) {
 				else {
 					fz_page* page = fz_load_page(mupdf_context, doc, req.page);
 					fz_rect rect = fz_bound_page(mupdf_context, page);
-					//float slice_height = (rect.y1 - rect.y0) / NUM_SLICES;
-					//float slice_height, slice_width;
 
-					//get_slice_size(&slice_width, &slice_height, rect);
-					//rect = get_index_rect(rect, req.slice_index);
-					//rect = fz_transform_rect(rect, transform_matrix);
-					//fz_irect bbox = fz_round_rect(rect);
 					fz_irect bbox = get_index_irect(rect, req.slice_index, transform_matrix);
 
 					rendered_pixmap = fz_new_pixmap_with_bbox(mupdf_context, fz_device_rgb(mupdf_context), bbox, nullptr, 0); // todo: use alpha
-					//fz_clear_pixmap(mupdf_context, rendered_pixmap);
+
 					fz_clear_pixmap_with_value(mupdf_context, rendered_pixmap, 0xFF);
 					fz_device* draw_device = fz_new_draw_device(mupdf_context, transform_matrix, rendered_pixmap);
 
-					//fz_run_page(mupdf_context, page, draw_device, fz_translate(0, req.slice_index * slice_height), nullptr); // todo: use cookie to report progress
 					fz_run_page(mupdf_context, page, draw_device, fz_identity, nullptr); // todo: use cookie to report progress
 
 					fz_close_device(mupdf_context, draw_device);
 					fz_drop_device(mupdf_context, draw_device);
 					fz_drop_page(mupdf_context, page);
+
 				}
-				//}
 
 				RenderResponse resp;
 				resp.thread = thread_index;

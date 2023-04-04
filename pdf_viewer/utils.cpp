@@ -117,6 +117,12 @@ int mod(int a, int b)
 }
 
 bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end) {
+	if (range1_start > range1_end) {
+		std::swap(range1_start, range1_end);
+	}
+	if (range2_start > range2_end) {
+		std::swap(range2_start, range2_end);
+	}
 	if (range2_start > range1_end || range1_start > range2_end) {
 		return false;
 	}
@@ -2435,4 +2441,30 @@ fz_irect get_index_irect(fz_rect original, int index, fz_matrix transform) {
 	return res;
 
 
+}
+
+void translate_index(int index, int* h_index, int* v_index) {
+	*v_index = index / NUM_H_SLICES;
+	*h_index = index % NUM_H_SLICES;
+}
+
+void get_slice_size(float* width, float* height, fz_rect original) {
+	*width = (original.x1 - original.x0) / NUM_H_SLICES;
+	*height = (original.y1 - original.y0) / NUM_V_SLICES;
+}
+
+fz_rect get_index_rect(fz_rect original, int index) {
+
+	int h_index, v_index;
+	translate_index(index, &h_index, &v_index);
+
+	float slice_height, slice_width;
+	get_slice_size(&slice_width, &slice_height, original);
+
+	fz_rect new_rect;
+	new_rect.x0 = original.x0 + h_index * slice_width;
+	new_rect.x1 = original.x0 + (h_index + 1) * slice_width;
+	new_rect.y0 = original.y0 + v_index * slice_height;
+	new_rect.y1 = original.y0 + (v_index+1) * slice_height;
+	return new_rect;
 }
