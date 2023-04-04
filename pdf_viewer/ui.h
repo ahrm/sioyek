@@ -925,6 +925,7 @@ private:
     QPushButton* toggle_dark_mode_button;
     QPushButton* ruler_mode_bounds_config_button;
     QPushButton* goto_page_button;
+    QPushButton* set_rect_config_button;
 //    QPushButton* test_rectangle_select_ui;
 
     MainWidget* main_widget;

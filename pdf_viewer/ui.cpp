@@ -140,6 +140,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
      main_widget = dynamic_cast<MainWidget*>(parent);
 
 
+    set_rect_config_button = new QPushButton("Rect Config", this);
     goto_page_button = new QPushButton("Goto Page", this);
     fullscreen_button = new QPushButton("Fullscreen", this);
     select_text_button = new QPushButton("Select Text", this);
@@ -156,6 +157,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     ruler_mode_bounds_config_button = new QPushButton("Configure Ruler Mode", this);
 //    test_rectangle_select_ui = new QPushButton("Rectangle Select", this);
 
+    layout->addWidget(set_rect_config_button);
     layout->addWidget(goto_page_button);
     layout->addWidget(fullscreen_button);
     layout->addWidget(select_text_button);
@@ -223,6 +225,14 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     QObject::connect(set_background_color, &QPushButton::pressed, [&](){
 
         auto command = main_widget->command_manager->get_command_with_name("setconfig_background_color");
+        main_widget->current_widget = {};
+        deleteLater();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(set_rect_config_button, &QPushButton::pressed, [&](){
+
+        auto command = main_widget->command_manager->get_command_with_name("setconfig_portrait_back_ui_rect");
         main_widget->current_widget = {};
         deleteLater();
         main_widget->handle_command_types(std::move(command), 0);
@@ -786,7 +796,9 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
 void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event){
     QWidget::resizeEvent(resize_event);
     move(0, 0);
-    rectangle_select_ui->resize(resize_event->size().width(), resize_event->size().height());
+//    rectangle_select_ui->resize(resize_event->size().width(), resize_event->size().height());
+    setFixedSize(parentWidget()->size());
+    rectangle_select_ui->resize(parentWidget()->size());
 
 }
 
