@@ -2093,3 +2093,7 @@ void PdfViewOpenGLWidget::set_underline(AbsoluteDocumentPos abspos) {
 void PdfViewOpenGLWidget::clear_underline() {
 	underline = {};
 }
+
+PdfViewOpenGLWidget::ColorPalette PdfViewOpenGLWidget::get_current_color_mode(){
+    return color_mode;
+}

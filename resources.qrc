@@ -24,6 +24,9 @@
         <file>pdf_viewer/touchui/TouchRectangleSelectUI.qml</file>
         <file>pdf_viewer/touchui/TouchRangeSelectUI.qml</file>
         <file>pdf_viewer/touchui/TouchPageSelector.qml</file>
+        <file>pdf_viewer/touchui/TouchMainMenu.qml</file>
+        <file>icons/page.svg</file>
+        <file>icons/select_text.svg</file>
         <file>end.png</file>
     </qresource>
 </RCC>

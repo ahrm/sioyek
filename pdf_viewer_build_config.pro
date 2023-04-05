@@ -35,7 +35,8 @@ android{
                 pdf_viewer/touchui/TouchCopyOptions.cpp \
                 pdf_viewer/touchui/TouchRectangleSelectUI.cpp \
                 pdf_viewer/touchui/TouchRangeSelectUI.cpp \
-                pdf_viewer/touchui/TouchPageSelector.cpp
+                pdf_viewer/touchui/TouchPageSelector.cpp \
+                pdf_viewer/touchui/TouchMainMenu.cpp
 
     HEADERS += \
             pdf_viewer/touchui/TouchSlider.h \
@@ -44,7 +45,8 @@ android{
             pdf_viewer/touchui/TouchCopyOptions.h \
             pdf_viewer/touchui/TouchRectangleSelectUI.h \
             pdf_viewer/touchui/TouchRangeSelectUI.h \
-            pdf_viewer/touchui/TouchPageSelector.h
+            pdf_viewer/touchui/TouchPageSelector.h \
+            pdf_viewer/touchui/TouchMainMenu.h
 }
 
 CONFIG(non_portable){

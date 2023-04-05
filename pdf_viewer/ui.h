@@ -47,6 +47,7 @@
 #include "touchui/TouchRectangleSelectUI.h"
 #include "touchui/TouchRangeSelectUI.h"
 #include "touchui/TouchPageSelector.h"
+#include "touchui/TouchMainMenu.h"
 #endif
 
 #include "mysortfilterproxymodel.h"
@@ -910,23 +911,25 @@ public:
     void resizeEvent(QResizeEvent* resize_event) override;
 //    bool event(QEvent *event) override;
 private:
-    QVBoxLayout* layout;
-    QPushButton* fullscreen_button;
-    QPushButton* select_text_button;
-    QPushButton* open_document_button;
-    QPushButton* open_prev_document_button;
-    QPushButton* command_button;
-    QPushButton* visual_mode_button;
-    QPushButton* search_button;
-    QPushButton* set_background_color;
-    QPushButton* set_dark_mode_contrast;
-    QPushButton* set_ruler_mode;
-    QPushButton* restore_default_config_button;
-    QPushButton* toggle_dark_mode_button;
-    QPushButton* ruler_mode_bounds_config_button;
-    QPushButton* goto_page_button;
-    QPushButton* set_rect_config_button;
+//    QVBoxLayout* layout;
+//    QPushButton* fullscreen_button;
+//    QPushButton* select_text_button;
+//    QPushButton* open_document_button;
+//    QPushButton* open_prev_document_button;
+//    QPushButton* command_button;
+//    QPushButton* visual_mode_button;
+//    QPushButton* search_button;
+//    QPushButton* set_background_color;
+//    QPushButton* set_dark_mode_contrast;
+//    QPushButton* set_ruler_mode;
+//    QPushButton* restore_default_config_button;
+//    QPushButton* toggle_dark_mode_button;
+//    QPushButton* ruler_mode_bounds_config_button;
+//    QPushButton* goto_page_button;
+//    QPushButton* set_rect_config_button;
 //    QPushButton* test_rectangle_select_ui;
+    TouchMainMenu* main_menu;
+
 
     MainWidget* main_widget;
 

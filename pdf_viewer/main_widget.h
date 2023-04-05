@@ -163,7 +163,11 @@ public:
 
 
 
-	void toggle_statusbar();
+    int get_current_colorscheme_index();
+    void set_dark_mode();
+    void set_light_mode();
+    void set_custom_color_mode();
+    void toggle_statusbar();
 	void toggle_titlebar();
 	void handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed);
 	//void paintEvent(QPaintEvent* paint_event) override;

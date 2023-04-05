@@ -107,6 +107,7 @@ public:
 		Custom
 	};
 
+    ColorPalette get_current_color_mode();
 private:
 	static OpenGLSharedResources shared_gl_objects;
 

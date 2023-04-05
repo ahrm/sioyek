@@ -135,153 +135,166 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 
 #ifdef SIOYEK_ANDROID
  AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent){
-     layout = new QVBoxLayout();
+//     layout = new QVBoxLayout();
 
      main_widget = dynamic_cast<MainWidget*>(parent);
+     int current_colorscheme_index = main_widget->get_current_colorscheme_index();
+     main_menu = new TouchMainMenu(current_colorscheme_index, this);
 
 
-    set_rect_config_button = new QPushButton("Rect Config", this);
-    goto_page_button = new QPushButton("Goto Page", this);
-    fullscreen_button = new QPushButton("Fullscreen", this);
-    select_text_button = new QPushButton("Select Text", this);
-    open_document_button = new QPushButton("Open New Document", this);
-    open_prev_document_button = new QPushButton("Open Previous Document", this);
-    command_button = new QPushButton("Command", this);
-    visual_mode_button = new QPushButton("Visual Mark Mode", this);
-    search_button = new QPushButton("Search", this);
-    set_background_color = new QPushButton("Background Color", this);
-    set_dark_mode_contrast = new QPushButton("Dark Mode Contrast", this);
-    set_ruler_mode = new QPushButton("Ruler Mode", this);
-    restore_default_config_button = new QPushButton("Restore Default Config", this);
-    toggle_dark_mode_button = new QPushButton("Toggle Dark Mode", this);
-    ruler_mode_bounds_config_button = new QPushButton("Configure Ruler Mode", this);
+//    set_rect_config_button = new QPushButton("Rect Config", this);
+//    goto_page_button = new QPushButton("Goto Page", this);
+//    fullscreen_button = new QPushButton("Fullscreen", this);
+//    select_text_button = new QPushButton("Select Text", this);
+//    open_document_button = new QPushButton("Open New Document", this);
+//    open_prev_document_button = new QPushButton("Open Previous Document", this);
+//    command_button = new QPushButton("Command", this);
+//    visual_mode_button = new QPushButton("Visual Mark Mode", this);
+//    search_button = new QPushButton("Search", this);
+//    set_background_color = new QPushButton("Background Color", this);
+//    set_dark_mode_contrast = new QPushButton("Dark Mode Contrast", this);
+//    set_ruler_mode = new QPushButton("Ruler Mode", this);
+//    restore_default_config_button = new QPushButton("Restore Default Config", this);
+//    toggle_dark_mode_button = new QPushButton("Toggle Dark Mode", this);
+//    ruler_mode_bounds_config_button = new QPushButton("Configure Ruler Mode", this);
 //    test_rectangle_select_ui = new QPushButton("Rectangle Select", this);
 
-    layout->addWidget(set_rect_config_button);
-    layout->addWidget(goto_page_button);
-    layout->addWidget(fullscreen_button);
-    layout->addWidget(select_text_button);
-    layout->addWidget(open_document_button);
-    layout->addWidget(open_prev_document_button);
-    layout->addWidget(command_button);
-    layout->addWidget(visual_mode_button);
-    layout->addWidget(search_button);
-    layout->addWidget(set_background_color);
-    layout->addWidget(set_dark_mode_contrast);
-    layout->addWidget(set_ruler_mode);
-    layout->addWidget(restore_default_config_button);
-    layout->addWidget(toggle_dark_mode_button);
-    layout->addWidget(ruler_mode_bounds_config_button);
+//    layout->addWidget(set_rect_config_button);
+//    layout->addWidget(goto_page_button);
+//    layout->addWidget(fullscreen_button);
+//    layout->addWidget(select_text_button);
+//    layout->addWidget(open_document_button);
+//    layout->addWidget(open_prev_document_button);
+//    layout->addWidget(command_button);
+//    layout->addWidget(visual_mode_button);
+//    layout->addWidget(search_button);
+//    layout->addWidget(set_background_color);
+//    layout->addWidget(set_dark_mode_contrast);
+//    layout->addWidget(set_ruler_mode);
+//    layout->addWidget(restore_default_config_button);
+//    layout->addWidget(toggle_dark_mode_button);
+//    layout->addWidget(ruler_mode_bounds_config_button);
 //    layout->addWidget(test_rectangle_select_ui);
 
 
-    QObject::connect(fullscreen_button, &QPushButton::pressed, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::fullscreenClicked, [&](){
         main_widget->current_widget = {};
         deleteLater();
         main_widget->toggle_fullscreen();
     });
 
-    QObject::connect(select_text_button, &QPushButton::pressed, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::selectTextClicked, [&](){
         main_widget->current_widget = {};
         deleteLater();
         main_widget->handle_mobile_selection();
         main_widget->invalidate_render();
     });
 
-    QObject::connect(open_document_button, &QPushButton::pressed, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::openNewDocClicked, [&](){
         main_widget->current_widget = {};
         deleteLater();
         auto command = main_widget->command_manager->get_command_with_name("open_document");
         main_widget->handle_command_types(std::move(command), 0);
     });
 
-    QObject::connect(open_prev_document_button, &QPushButton::pressed, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::openPrevDocClicked, [&](){
         auto command = main_widget->command_manager->get_command_with_name("open_prev_doc");
         main_widget->current_widget = {};
         deleteLater();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
-    QObject::connect(command_button, &QPushButton::pressed, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::commandsClicked, [&](){
         auto command = main_widget->command_manager->get_command_with_name("command");
         main_widget->current_widget = {};
         deleteLater();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
-    QObject::connect(visual_mode_button, &QPushButton::pressed, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::rulerModeClicked, [&](){
         main_widget->android_handle_visual_mode();
         main_widget->current_widget = {};
         deleteLater();
     });
 
-    QObject::connect(search_button, &QPushButton::pressed, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::searchClicked, [&](){
         auto command = main_widget->command_manager->get_command_with_name("search");
         main_widget->current_widget = {};
         deleteLater();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
-    QObject::connect(set_background_color, &QPushButton::pressed, [&](){
+//    QObject::connect(set_background_color, &QPushButton::pressed, [&](){
 
-        auto command = main_widget->command_manager->get_command_with_name("setconfig_background_color");
-        main_widget->current_widget = {};
-        deleteLater();
-        main_widget->handle_command_types(std::move(command), 0);
-    });
-
-    QObject::connect(set_rect_config_button, &QPushButton::pressed, [&](){
-
-        auto command = main_widget->command_manager->get_command_with_name("setconfig_portrait_back_ui_rect");
-        main_widget->current_widget = {};
-        deleteLater();
-        main_widget->handle_command_types(std::move(command), 0);
-    });
-
-    QObject::connect(set_dark_mode_contrast, &QPushButton::pressed, [&](){
-
-        main_widget->current_widget = {};
-        deleteLater();
-
-        main_widget->current_widget = new FloatConfigUI(main_widget, &DARK_MODE_CONTRAST, 0.0f, 1.0f);
-        main_widget->current_widget->show();
-    });
-
-    QObject::connect(set_ruler_mode, &QPushButton::pressed, [&](){
-
-        auto command = main_widget->command_manager->get_command_with_name("setconfig_ruler_mode");
-        main_widget->current_widget = {};
-        deleteLater();
-        main_widget->handle_command_types(std::move(command), 0);
-
-    });
-
-    QObject::connect(restore_default_config_button, &QPushButton::pressed, [&](){
-
-        main_widget->current_widget = {};
-        deleteLater();
-        main_widget->restore_default_config();
-
-    });
-
-    QObject::connect(toggle_dark_mode_button, &QPushButton::pressed, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
-        main_widget->current_widget = {};
-        deleteLater();
-        main_widget->handle_command_types(std::move(command), 0);
-    });
-
-    QObject::connect(ruler_mode_bounds_config_button, &QPushButton::pressed, [&](){
-//        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
-        main_widget->current_widget = nullptr;
-        deleteLater();
-        RangeConfigUI* config_ui = new RangeConfigUI(main_widget, &VISUAL_MARK_NEXT_PAGE_FRACTION, &VISUAL_MARK_NEXT_PAGE_THRESHOLD);
-        main_widget->current_widget = config_ui;
-        main_widget->current_widget->show();
+//        auto command = main_widget->command_manager->get_command_with_name("setconfig_background_color");
+//        main_widget->current_widget = {};
+//        deleteLater();
 //        main_widget->handle_command_types(std::move(command), 0);
+//    });
+
+//    QObject::connect(set_rect_config_button, &QPushButton::pressed, [&](){
+
+//        auto command = main_widget->command_manager->get_command_with_name("setconfig_portrait_back_ui_rect");
+//        main_widget->current_widget = {};
+//        deleteLater();
+//        main_widget->handle_command_types(std::move(command), 0);
+//    });
+
+//    QObject::connect(set_dark_mode_contrast, &QPushButton::pressed, [&](){
+
+//        main_widget->current_widget = {};
+//        deleteLater();
+
+//        main_widget->current_widget = new FloatConfigUI(main_widget, &DARK_MODE_CONTRAST, 0.0f, 1.0f);
+//        main_widget->current_widget->show();
+//    });
+
+//    QObject::connect(set_ruler_mode, &QPushButton::pressed, [&](){
+
+//        auto command = main_widget->command_manager->get_command_with_name("setconfig_ruler_mode");
+//        main_widget->current_widget = {};
+//        deleteLater();
+//        main_widget->handle_command_types(std::move(command), 0);
+
+//    });
+
+//    QObject::connect(restore_default_config_button, &QPushButton::pressed, [&](){
+
+//        main_widget->current_widget = {};
+//        deleteLater();
+//        main_widget->restore_default_config();
+
+//    });
+
+    QObject::connect(main_menu, &TouchMainMenu::darkColorschemeClicked, [&](){
+        main_widget->set_dark_mode();
+        main_widget->current_widget = {};
+        deleteLater();
     });
 
-    QObject::connect(goto_page_button, &QPushButton::pressed, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::lightColorschemeClicked, [&](){
+        main_widget->set_light_mode();
+        main_widget->current_widget = {};
+        deleteLater();
+    });
+
+    QObject::connect(main_menu, &TouchMainMenu::customColorschemeClicked, [&](){
+        main_widget->set_custom_color_mode();
+        main_widget->current_widget = {};
+        deleteLater();
+    });
+
+//    QObject::connect(ruler_mode_bounds_config_button, &QPushButton::pressed, [&](){
+////        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
+//        main_widget->current_widget = nullptr;
+//        deleteLater();
+//        RangeConfigUI* config_ui = new RangeConfigUI(main_widget, &VISUAL_MARK_NEXT_PAGE_FRACTION, &VISUAL_MARK_NEXT_PAGE_THRESHOLD);
+//        main_widget->current_widget = config_ui;
+//        main_widget->current_widget->show();
+////        main_widget->handle_command_types(std::move(command), 0);
+//    });
+
+    QObject::connect(main_menu, &TouchMainMenu::gotoPageClicked, [&](){
         main_widget->current_widget = nullptr;
         deleteLater();
         PageSelectorUI* page_ui = new PageSelectorUI(main_widget,
@@ -303,9 +316,9 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 ////        main_widget->handle_command_types(std::move(command), 0);
 //    });
 
-     layout->insertStretch(-1, 1);
+//     layout->insertStretch(-1, 1);
 
-     this->setLayout(layout);
+//     this->setLayout(layout);
  }
 
 void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
@@ -313,7 +326,13 @@ void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
-    setFixedSize(parent_width * 0.9f, parent_height);
+
+    int w = static_cast<int>(parent_width * 0.9f);
+    int h = parent_height;
+
+    main_menu->resize(w, h);
+    setFixedSize(w, h);
+
 //    list_view->setFixedSize(parent_width * 0.9f, parent_height);
     move(parent_width * 0.05f, 0);
 

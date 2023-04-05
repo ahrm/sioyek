@@ -1,9 +1,11 @@
 ﻿//todo:
 // fix the rest of UI for mobile (current buttons are extremely bad)
-// add mobile specific page navigation
-// banded page rendering
 // better config menu (show configs in the list view)
 // implement stacking UI
+// boolean config ui is not good (for example doesn't display properly for highlight select config)
+// picture icons not loading
+// configurations screen
+// apply colorschemes and ruler mode when selected
 
 #include <iostream>
 #include <vector>
@@ -5011,4 +5013,30 @@ void MainWidget::restore_default_config(){
 
 void MainWidget::persist_config(){
     config_manager->persist_config();
+}
+
+int MainWidget::get_current_colorscheme_index(){
+    auto colormode = opengl_widget->get_current_color_mode();
+    if (colormode == PdfViewOpenGLWidget::ColorPalette::Normal){
+        return 0;
+    }
+    if (colormode == PdfViewOpenGLWidget::ColorPalette::Dark){
+        return 1;
+    }
+    if (colormode == PdfViewOpenGLWidget::ColorPalette::Custom){
+        return 2;
+    }
+    return -1;
+}
+
+void MainWidget::set_dark_mode(){
+    opengl_widget->set_dark_mode(true);
+}
+
+void MainWidget::set_light_mode(){
+    opengl_widget->set_dark_mode(false);
+}
+
+void MainWidget::set_custom_color_mode(){
+    opengl_widget->set_custom_color_mode(true);
 }
