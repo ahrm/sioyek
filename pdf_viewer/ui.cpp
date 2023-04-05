@@ -212,6 +212,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->android_handle_visual_mode();
         main_widget->current_widget = {};
         deleteLater();
+        main_widget->invalidate_render();
     });
 
     QObject::connect(main_menu, &TouchMainMenu::searchClicked, [&](){
@@ -267,18 +268,21 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->set_dark_mode();
         main_widget->current_widget = {};
         deleteLater();
+        main_widget->invalidate_render();
     });
 
     QObject::connect(main_menu, &TouchMainMenu::lightColorschemeClicked, [&](){
         main_widget->set_light_mode();
         main_widget->current_widget = {};
         deleteLater();
+        main_widget->invalidate_render();
     });
 
     QObject::connect(main_menu, &TouchMainMenu::customColorschemeClicked, [&](){
         main_widget->set_custom_color_mode();
         main_widget->current_widget = {};
         deleteLater();
+        main_widget->invalidate_render();
     });
 
 //    QObject::connect(ruler_mode_bounds_config_button, &QPushButton::pressed, [&](){
