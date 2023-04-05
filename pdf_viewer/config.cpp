@@ -129,6 +129,7 @@ extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
 extern float RULER_AUTO_MOVE_SENSITIVITY;
 extern bool SLICED_RENDERING;
+extern bool TOUCH_MODE;
 
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
@@ -505,6 +506,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
     configs.push_back({ L"landscape_visual_mark_next", ConfigType::EnableRectangle, &LANDSCAPE_VISUAL_MARK_NEXT, rect_serializer, rect_deserializer, nullptr });
     configs.push_back({ L"landscape_visual_mark_prev", ConfigType::EnableRectangle, &LANDSCAPE_VISUAL_MARK_PREV, rect_serializer, rect_deserializer, nullptr });
     configs.push_back({ L"sliced_rendering", ConfigType::Bool, &SLICED_RENDERING, bool_serializer, bool_deserializer, bool_validator });
+    configs.push_back({ L"touch_mode", ConfigType::Bool, &TOUCH_MODE, bool_serializer, bool_deserializer, bool_validator });
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";
@@ -527,8 +529,8 @@ void ConfigManager::persist_config(){
 #ifdef SIOYEK_ANDROID
     serialize(android_config_path);
 #else
-	Path path(L"test.config");
-    serialize(path);
+	//Path path(L"test.config");
+ //   serialize(path);
 #endif
 
 }

@@ -2392,6 +2392,8 @@ QString android_file_name_from_uri(QString uri){
     return ret;
 }
 
+#endif
+
 float dampen_velocity(float v, float dt){
     if (v == 0) return 0;
     dt = -dt;
@@ -2411,9 +2413,6 @@ float dampen_velocity(float v, float dt){
     }
     return v;
 }
-
-
-#endif
 
 fz_irect get_index_irect(fz_rect original, int index, fz_matrix transform) {
 	fz_rect transformed = fz_transform_rect(original, transform);

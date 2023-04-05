@@ -11,9 +11,7 @@
 #include "main_widget.h"
 #include "ui.h"
 
-#ifdef SIOYEK_ANDROID
 #include "touchui/TouchListView.h"
-#endif
 
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
@@ -26,6 +24,7 @@ extern Path default_config_path;
 extern Path default_keys_path;
 extern std::vector<Path> user_config_paths;
 extern std::vector<Path> user_keys_paths;
+extern bool TOUCH_MODE;
 
 class SymbolCommand : public Command {
 protected:
@@ -129,9 +128,9 @@ class SearchCommand : public TextCommand {
 
 	void perform(MainWidget* widget) {
 		widget->perform_search(this->text.value(), false);
-#ifdef SIOYEK_ANDROID
-        widget->show_search_buttons();
-#endif
+		if (TOUCH_MODE) {
+			widget->show_search_buttons();
+		}
 	}
 
 	std::string get_name() {
@@ -340,17 +339,20 @@ class CommandCommand : public Command {
 
 	void perform(MainWidget* widget) {
 		QStringList command_names = widget->command_manager->get_all_command_names();
-#ifndef SIOYEK_ANDROID
-		widget->set_current_widget(new CommandSelector(
-			&widget->on_command_done, widget, command_names, widget->input_handler->get_command_key_mappings()));
-#else
-//        TouchListView* tlv = new TouchListView(command_names, widget);
-//        tlv->resize(250, 400);
-//        widget->set_current_widget(tlv);
-        TouchCommandSelector* tcs = new TouchCommandSelector(command_names, widget);
-        widget->set_current_widget(tcs);
+		if (!TOUCH_MODE) {
 
-#endif
+			widget->set_current_widget(new CommandSelector(
+				&widget->on_command_done, widget, command_names, widget->input_handler->get_command_key_mappings()));
+		}
+		else {
+
+			//        TouchListView* tlv = new TouchListView(command_names, widget);
+			//        tlv->resize(250, 400);
+			//        widget->set_current_widget(tlv);
+			TouchCommandSelector* tcs = new TouchCommandSelector(command_names, widget);
+			widget->set_current_widget(tcs);
+		}
+
 		widget->current_widget->show();
 
 	}
@@ -2174,59 +2176,86 @@ public:
 };
 
 
-#ifndef SIOYEK_ANDROID
-class ConfigCommand : public TextCommand {
-	std::string config_name;
-public:
-	ConfigCommand(std::string config_name_) {
-		config_name = config_name_;
-	}
-
-	void perform(MainWidget* widget) {
-        widget->config_manager->deserialize_config(config_name, text.value());
-	}
-
-	std::string get_name() {
-		return "setconfig_" + config_name;
-	}
-	
-	bool requires_document() { return false; }
-};
-#else
+//class ConfigCommand : public TextCommand {
+//	std::string config_name;
+//public:
+//	ConfigCommand(std::string config_name_) {
+//		config_name = config_name_;
+//	}
+//
+//	void perform(MainWidget* widget) {
+//        widget->config_manager->deserialize_config(config_name, text.value());
+//	}
+//
+//	std::string get_name() {
+//		return "setconfig_" + config_name;
+//	}
+//	
+//	bool requires_document() { return false; }
+//};
 
 class ConfigCommand : public Command {
     std::string config_name;
+	std::optional<std::wstring> text = {};
 public:
     ConfigCommand(std::string config_name_) {
         config_name = config_name_;
     }
 
+	void set_text_requirement(std::wstring value) {
+		text = value;
+	}
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+		if (TOUCH_MODE) {
+			return {};
+		}
+		else{
+			if (text.has_value()) {
+				return {};
+			}
+			else {
+
+				Requirement res;
+				res.type = RequirementType::Text;
+				res.name = "Config Value";
+				return res;
+			}
+		}
+	}
+
     void perform(MainWidget* widget) {
-//        widget->config_manager->deserialize_config(config_name, text.value());
-        Config* config = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
+
+		if (TOUCH_MODE) {
+			Config* config = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
 
 
-        if (config->config_type == ConfigType::Color3){
-            widget->set_current_widget(new Color3ConfigUI(widget, (float*)config->value));
-            widget->current_widget->show();
-        }
+			if (config->config_type == ConfigType::Color3) {
+				widget->set_current_widget(new Color3ConfigUI(widget, (float*)config->value));
+				widget->current_widget->show();
+			}
 
-        if (config->config_type == ConfigType::Color4){
-            widget->set_current_widget(new Color4ConfigUI(widget, (float*)config->value));
-            widget->current_widget->show();
-        }
-        if (config->config_type == ConfigType::Bool){
-            widget->set_current_widget(new BoolConfigUI(widget, (bool*)config->value, QString::fromStdWString(config->name) ));
-            widget->current_widget->show();
-        }
-        if (config->config_type == ConfigType::EnableRectangle){
-            widget->set_current_widget(new RectangleConfigUI(widget, (UIRect*)config->value));
-            widget->current_widget->show();
-//            auto w = new RectangleConfigUI(widget, (UIRect*)config->value);
-//            w->show();
-        }
+			if (config->config_type == ConfigType::Color4) {
+				widget->set_current_widget(new Color4ConfigUI(widget, (float*)config->value));
+				widget->current_widget->show();
+			}
+			if (config->config_type == ConfigType::Bool) {
+				widget->set_current_widget(new BoolConfigUI(widget, (bool*)config->value, QString::fromStdWString(config->name)));
+				widget->current_widget->show();
+			}
+			if (config->config_type == ConfigType::EnableRectangle) {
+				widget->set_current_widget(new RectangleConfigUI(widget, (UIRect*)config->value));
+				widget->current_widget->show();
+				//            auto w = new RectangleConfigUI(widget, (UIRect*)config->value);
+				//            w->show();
+			}
 
-//        config->serialize
+			//        config->serialize
+		}
+		else {
+
+			widget->config_manager->deserialize_config(config_name, text.value());
+		}
     }
 
     std::string get_name() {
@@ -2235,7 +2264,6 @@ public:
 
     bool requires_document() { return false; }
 };
-#endif
 
 class MacroCommand : public Command {
 	std::vector<std::unique_ptr<Command>> commands;

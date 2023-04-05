@@ -38,7 +38,6 @@
 #include <qslider.h>
 #include <qlabel.h>
 #include <qcheckbox.h>
-#ifdef SIOYEK_ANDROID
 #include <QQuickWidget>
 #include "touchui/TouchSlider.h"
 #include "touchui/TouchCheckbox.h"
@@ -48,7 +47,6 @@
 #include "touchui/TouchRangeSelectUI.h"
 #include "touchui/TouchPageSelector.h"
 #include "touchui/TouchMainMenu.h"
-#endif
 
 #include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"
@@ -68,6 +66,7 @@ extern bool SMALL_TOC;
 extern bool MULTILINE_MENUS;
 extern bool EMACS_MODE;
 extern bool FUZZY_SEARCHING;
+extern bool TOUCH_MODE;
 
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
@@ -111,23 +110,23 @@ protected:
 		abstract_item_view->setModel(proxy_model);
 		abstract_item_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-#ifdef SIOYEK_ANDROID
-        QScroller::grabGesture(abstract_item_view->viewport(), QScroller::TouchGesture);
-        abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-        QObject::connect(abstract_item_view, &QListView::pressed, [&](const QModelIndex& index){
-            pressed_row = index.row();
-            pressed_pos = QCursor::pos();
-        });
+		if (TOUCH_MODE) {
+			QScroller::grabGesture(abstract_item_view->viewport(), QScroller::TouchGesture);
+			abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+			QObject::connect(abstract_item_view, &QListView::pressed, [&](const QModelIndex& index) {
+				pressed_row = index.row();
+				pressed_pos = QCursor::pos();
+				});
 
-        QObject::connect(abstract_item_view, &QListView::clicked, [&](const QModelIndex& index){
-            QPoint current_pos = QCursor::pos();
-            if (index.row() == pressed_row){
-                if ((current_pos - pressed_pos).manhattanLength() < 10){
-                    on_select(index);
-                }
-            }
-        });
-#endif
+			QObject::connect(abstract_item_view, &QListView::clicked, [&](const QModelIndex& index) {
+				QPoint current_pos = QCursor::pos();
+				if (index.row() == pressed_row) {
+					if ((current_pos - pressed_pos).manhattanLength() < 10) {
+						on_select(index);
+					}
+				}
+				});
+		}
 
 		QTreeView* tree_view = dynamic_cast<QTreeView*>(abstract_item_view);
 		if (tree_view) {
@@ -135,7 +134,7 @@ protected:
 			tree_view->setHeaderHidden(true);
 			tree_view->resizeColumnToContents(0);
 			tree_view->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-        }
+		}
 		if (proxy_model) {
 			proxy_model->setRecursiveFilteringEnabled(true);
 		}
@@ -146,21 +145,21 @@ protected:
 		line_edit->installEventFilter(this);
 		line_edit->setFocus();
 
-#ifndef SIOYEK_ANDROID
-		QObject::connect(abstract_item_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
-			on_select(index);
+		if (!TOUCH_MODE) {
+			QObject::connect(abstract_item_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
+				on_select(index);
+				});
+		}
+
+		QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
+			on_text_changed(text);
 			});
-#endif
 
-        QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text){
-            on_text_changed(text);
-        } );
-
-#ifdef SIOYEK_ANDROID
-        QScroller::grabGesture(abstract_item_view, QScroller::TouchGesture);
-        abstract_item_view->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
-        abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
-#endif
+		if (TOUCH_MODE) {
+			QScroller::grabGesture(abstract_item_view, QScroller::TouchGesture);
+			abstract_item_view->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+			abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+		}
     }
 
     void on_text_changed(const QString& text){
@@ -184,10 +183,9 @@ protected:
 	QLineEdit* line_edit = nullptr;
 	//QSortFilterProxyModel* proxy_model = nullptr;
 	MySortFilterProxyModel* proxy_model = nullptr;
-#ifdef SIOYEK_ANDROID
     int pressed_row = -1;
     QPoint pressed_pos;
-#endif
+
 	ViewType* abstract_item_view;
 
 	virtual void on_select(const QModelIndex& value) = 0;
@@ -234,28 +232,28 @@ public:
 				}
 			}
 #endif
-            if (event->type() == QEvent::InputMethod){
-#ifdef SIOYEK_ANDROID
-                QInputMethodEvent* input_event = static_cast<QInputMethodEvent*>(event);
-                QString text = input_event->preeditString();
-                if (input_event->commitString().size() > 0){
-                    text = input_event->commitString();
-                }
-                if (text.size() > 0){
-                    on_text_changed(text);
-                }
-#endif
-            }
-            if ((event->type() == QEvent::KeyPress) ) {
+			if (event->type() == QEvent::InputMethod) {
+				if (TOUCH_MODE) {
+					QInputMethodEvent* input_event = static_cast<QInputMethodEvent*>(event);
+					QString text = input_event->preeditString();
+					if (input_event->commitString().size() > 0) {
+						text = input_event->commitString();
+					}
+					if (text.size() > 0) {
+						on_text_changed(text);
+					}
+				}
+			}
+			if ((event->type() == QEvent::KeyPress)) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
 				bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
 				bool is_alt_pressed = key_event->modifiers().testFlag(Qt::AltModifier);
 
-#ifdef SIOYEK_ANDROID
-                if (key_event->key() == Qt::Key_Back){
-                    return false;
-                }
-#endif
+				if (TOUCH_MODE) {
+					if (key_event->key() == Qt::Key_Back) {
+						return false;
+					}
+				}
 				if (key_event->key() == Qt::Key_Down ||
 					key_event->key() == Qt::Key_Up ||
 					key_event->key() == Qt::Key_Left ||
@@ -549,7 +547,6 @@ public:
 	}
 };
 
-#ifdef SIOYEK_ANDROID
 template <typename T>
 class TouchFilteredSelectWidget : public QWidget{
 private:
@@ -587,7 +584,6 @@ public:
     }
 };
 
-#endif
 
 template<typename T>
 class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView, MySortFilterProxyModel> {
@@ -644,7 +640,6 @@ public:
 	}
 };
 
-#ifdef SIOYEK_ANDROID
 class TouchCommandSelector : public QWidget{
 public:
     TouchCommandSelector(const QStringList& commands, MainWidget* mw);
@@ -656,7 +651,6 @@ private:
     TouchListView* list_view;
 
 };
-#endif
 
 class CommandSelector : public BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel> {
 private:
@@ -903,7 +897,6 @@ public:
 	}
 };
 
-#ifdef SIOYEK_ANDROID
 class AndroidSelector : public QWidget{
 public:
 
@@ -1079,7 +1072,6 @@ private:
     TouchRangeSelectUI* range_select_ui = nullptr;
 };
 
-#endif
 
 std::wstring select_document_file_name();
 std::wstring select_json_file_name();

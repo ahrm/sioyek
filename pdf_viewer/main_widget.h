@@ -29,9 +29,7 @@
 #include "path.h"
 #include "checksum.h"
 
-#ifdef SIOYEK_ANDROID
 #include <QQuickWidget>
-#endif
 
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
@@ -41,11 +39,7 @@ class SelectionIndicator;
 
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
-#ifdef SIOYEK_ANDROID
 class MainWidget : public QQuickWidget, ConfigFileChangeListener{
-#else
-class MainWidget : public QWidget, ConfigFileChangeListener{
-#endif
 
 public:
     QTime debug_last_timer;
@@ -357,7 +351,6 @@ public:
 	void handle_delete_highlight_under_cursor();
     void handle_delete_selected_highlight();
 
-#ifdef SIOYEK_ANDROID
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator *selection_end_indicator = nullptr;
     TouchTextSelectionButtons* text_selection_buttons = nullptr;
@@ -394,8 +387,6 @@ public:
     bool is_flicking(QPointF* out_velocity);
     void handle_touch_highlight();
     void restore_default_config();
-
-#endif
 
     void persist_config();
 

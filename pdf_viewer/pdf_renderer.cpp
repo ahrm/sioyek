@@ -5,6 +5,7 @@
 extern bool LINEAR_TEXTURE_FILTERING;
 extern int NUM_V_SLICES;
 extern int NUM_H_SLICES;
+extern bool TOUCH_MODE;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 
 
@@ -185,13 +186,12 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, f
 		}
 		cached_response_mutex.unlock();
 		if (result == 0) {
-#ifdef SIOYEK_ANDROID
-            if (!no_rerender){
+            if (TOUCH_MODE && (!no_rerender)){
                 add_request(path, page, zoom_level, index);
             }
-#else
-			add_request(path, page, zoom_level, index);
-#endif
+            else{
+                add_request(path, page, zoom_level, index);
+            }
 			return try_closest_rendered_page(path, page, index, zoom_level, page_width, page_height);
 		}
 		return result;

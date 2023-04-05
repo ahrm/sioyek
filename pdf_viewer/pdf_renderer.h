@@ -98,9 +98,7 @@ class PdfRenderer : public QObject{
 	void run_search(int thread_index);
 
 public:
-#ifdef SIOYEK_ANDROID
     bool no_rerender = false;
-#endif
 
 	PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone, float display_scale);
 	~PdfRenderer();

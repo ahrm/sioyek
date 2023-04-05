@@ -10,7 +10,7 @@ INCLUDEPATH += ./pdf_viewer \
 }
           
 
-QT += core opengl gui widgets network 3dinput
+QT += core opengl gui widgets network 3dinput quickwidgets
 
 greaterThan(QT_MAJOR_VERSION, 5){
 	QT += openglwidgets
@@ -24,29 +24,32 @@ else{
 CONFIG += c++17
 DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
 
+RESOURCES += resources.qrc
+
+SOURCES += \
+        pdf_viewer/touchui/TouchSlider.cpp \
+        pdf_viewer/touchui/TouchCheckbox.cpp \
+        pdf_viewer/touchui/TouchListView.cpp \
+        pdf_viewer/touchui/TouchCopyOptions.cpp \
+        pdf_viewer/touchui/TouchRectangleSelectUI.cpp \
+        pdf_viewer/touchui/TouchRangeSelectUI.cpp \
+        pdf_viewer/touchui/TouchPageSelector.cpp \
+        pdf_viewer/touchui/TouchMainMenu.cpp
+
+HEADERS += \
+    pdf_viewer/touchui/TouchSlider.h \
+    pdf_viewer/touchui/TouchCheckbox.h \
+    pdf_viewer/touchui/TouchListView.h \
+    pdf_viewer/touchui/TouchCopyOptions.h \
+    pdf_viewer/touchui/TouchRectangleSelectUI.h \
+    pdf_viewer/touchui/TouchRangeSelectUI.h \
+    pdf_viewer/touchui/TouchPageSelector.h \
+    pdf_viewer/touchui/TouchMainMenu.h
+
 android{
     CONFIG += debug
     DEFINES += SIOYEK_ANDROID
-    QT += core-private quickwidgets
-    SOURCES += \
-                pdf_viewer/touchui/TouchSlider.cpp \
-                pdf_viewer/touchui/TouchCheckbox.cpp \
-                pdf_viewer/touchui/TouchListView.cpp \
-                pdf_viewer/touchui/TouchCopyOptions.cpp \
-                pdf_viewer/touchui/TouchRectangleSelectUI.cpp \
-                pdf_viewer/touchui/TouchRangeSelectUI.cpp \
-                pdf_viewer/touchui/TouchPageSelector.cpp \
-                pdf_viewer/touchui/TouchMainMenu.cpp
-
-    HEADERS += \
-            pdf_viewer/touchui/TouchSlider.h \
-            pdf_viewer/touchui/TouchCheckbox.h \
-            pdf_viewer/touchui/TouchListView.h \
-            pdf_viewer/touchui/TouchCopyOptions.h \
-            pdf_viewer/touchui/TouchRectangleSelectUI.h \
-            pdf_viewer/touchui/TouchRangeSelectUI.h \
-            pdf_viewer/touchui/TouchPageSelector.h \
-            pdf_viewer/touchui/TouchMainMenu.h
+    QT += core-private
 }
 
 CONFIG(non_portable){
@@ -172,7 +175,5 @@ android{
     !isEmpty(target.path): INSTALLS += target
     LIBS += -L$$PWD/libs/ -lmupdf_java
     ANDROID_EXTRA_LIBS += $$PWD/libs/libmupdf_java.so
-
-    RESOURCES += resources.qrc
 
 }

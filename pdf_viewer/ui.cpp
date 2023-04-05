@@ -5,7 +5,6 @@
 #include <QTapGesture>
 #include <main_widget.h>
 
-#ifdef SIOYEK_ANDROID
 #include <QQuickView>
 #include <QQmlComponent>
 #include <QQuickItem>
@@ -13,7 +12,6 @@
 #include <QQuickWidget>
 #include <QFile>
 #include "touchui/TouchSlider.h"
-#endif
 
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern float DARK_MODE_CONTRAST;
@@ -133,7 +131,6 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 	return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
 }
 
-#ifdef SIOYEK_ANDROID
  AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent){
 //     layout = new QVBoxLayout();
 
@@ -862,4 +859,3 @@ void RangeConfigUI::resizeEvent(QResizeEvent* resize_event){
     range_select_ui->resize(resize_event->size().width(), resize_event->size().height());
 
 }
-#endif
