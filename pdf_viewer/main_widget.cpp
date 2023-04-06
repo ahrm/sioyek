@@ -4,8 +4,6 @@
 // boolean config ui is not good (for example doesn't display properly for highlight select config)
 // better config menu (show configs in the list view)
 // configurations screen
-// fix drag and drop
-// double tap is working weridly on desktop
 
 
 #include <iostream>
@@ -4882,6 +4880,7 @@ bool MainWidget::handle_quick_tap(){
     clear_highlight_buttons();
     clear_search_buttons();
     opengl_widget->cancel_search();
+    is_dragging = false;
 
     if (current_widget != nullptr) {
         delete current_widget;

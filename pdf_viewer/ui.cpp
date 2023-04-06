@@ -387,6 +387,7 @@ void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
 TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidget(parent){
     main_widget = parent;
     buttons_ui = new TouchCopyOptions(this);
+    this->setAttribute(Qt::WA_NoMousePropagation);
 
     QObject::connect(buttons_ui, &TouchCopyOptions::copyClicked, [&](){
         copy_to_clipboard(main_widget->selected_text);
