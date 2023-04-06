@@ -12,8 +12,8 @@ TouchListView::TouchListView(QStringList items_, QWidget* parent) : QWidget(pare
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);
-//    quick_widget->setAttribute(Qt::WA_AlwaysStackOnTop);
-//    quick_widget->setClearColor(Qt::transparent);
+    //quick_widget->setAttribute(Qt::WA_AlwaysStackOnTop);
+    //quick_widget->setClearColor(Qt::transparent);
 
     quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
 //    quick_widget->rootContext()->setContextProperty("_from", from);

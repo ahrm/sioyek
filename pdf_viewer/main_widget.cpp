@@ -1,11 +1,10 @@
 ﻿//todo:
 // fix the rest of UI for mobile (current buttons are extremely bad)
-// better config menu (show configs in the list view)
 // implement stacking UI
 // boolean config ui is not good (for example doesn't display properly for highlight select config)
-// picture icons not loading
+// better config menu (show configs in the list view)
 // configurations screen
-// apply colorschemes and ruler mode when selected
+
 
 #include <iostream>
 #include <vector>

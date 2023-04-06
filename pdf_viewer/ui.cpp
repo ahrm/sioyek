@@ -729,7 +729,7 @@ void FloatConfigUI::resizeEvent(QResizeEvent* resize_event){
 //}
 
 
-TouchCommandSelector::TouchCommandSelector(const QStringList& commands, MainWidget* mw){
+TouchCommandSelector::TouchCommandSelector(const QStringList& commands, MainWidget* mw): QWidget(mw){
     main_widget = mw;
     list_view = new TouchListView(commands, this);
 
@@ -744,11 +744,12 @@ void TouchCommandSelector::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     qDebug() << "sioyek :" << resize_event << "\n";
 
-    int parent_width = resize_event->size().width();
-    int parent_height = resize_event->size().height();
+    int parent_width = parentWidget()->size().width();
+    int parent_height = parentWidget()->size().height();
 
+    resize(parent_width * 0.9f, parent_height);
+    move(parent_width * 0.05f, 0);
     list_view->resize(parent_width * 0.9f, parent_height);
-    list_view->move(parent_width * 0.05f, 0);
 }
 
 
