@@ -1593,7 +1593,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         was_last_mouse_down_in_ruler_next_rect = false;
         was_last_mouse_down_in_ruler_prev_rect = false;
         if (down){
-            last_press_point = QCursor::pos();
+            last_press_point = mapFromGlobal(QCursor::pos());
             last_press_msecs = QDateTime::currentMSecsSinceEpoch();
             velocity_x = 0;
             velocity_y = 0;
@@ -1601,7 +1601,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         }
         if (!down){
             is_pressed = false;
-            QPoint current_pos = QCursor::pos();
+            QPoint current_pos = mapFromGlobal(QCursor::pos());
             qint64 current_time = QDateTime::currentMSecsSinceEpoch();
             QPointF vel;
             if (((current_pos-last_press_point).manhattanLength() < 10) && ((current_time - last_press_msecs) < 200)){
@@ -4700,7 +4700,7 @@ bool MainWidget::event(QEvent *event){
                     return true;
                 }
 
-                if ((QCursor::pos() - last_press_point).manhattanLength() > 10){
+                if ((mapFromGlobal(QCursor::pos()) - last_press_point).manhattanLength() > 10){
                     return QWidget::event(event);
                 }
 
@@ -4709,7 +4709,8 @@ bool MainWidget::event(QEvent *event){
                     return true;
                 }
 
-                last_hold_point = QCursor::pos();
+                last_hold_point = mapFromGlobal(QCursor::pos());
+                //opengl_widget->last_selected_block
 
                 QTapAndHoldGesture *tapgest = static_cast<QTapAndHoldGesture *>(gesture->gesture(Qt::TapAndHoldGesture));
                 if (tapgest->state() == Qt::GestureFinished){
