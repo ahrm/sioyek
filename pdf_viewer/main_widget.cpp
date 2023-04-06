@@ -3010,6 +3010,12 @@ void MainWidget::dragEnterEvent(QDragEnterEvent* e)
 
 }
 
+void MainWidget::dragMoveEvent(QDragMoveEvent* e)
+{
+	e->acceptProposedAction();
+
+}
+
 void MainWidget::dropEvent(QDropEvent* event)
 {
     if (event->mimeData()->hasUrls()) {
