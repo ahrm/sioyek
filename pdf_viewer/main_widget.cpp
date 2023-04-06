@@ -6,7 +6,6 @@
 // configurations screen
 // fix drag and drop
 // double tap is working weridly on desktop
-// dekstop text selection cursor location seems a bit off
 
 
 #include <iostream>
@@ -1604,8 +1603,10 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             QPoint current_pos = mapFromGlobal(QCursor::pos());
             qint64 current_time = QDateTime::currentMSecsSinceEpoch();
             QPointF vel;
-            if (((current_pos-last_press_point).manhattanLength() < 10) && ((current_time - last_press_msecs) < 200)){
-                handle_quick_tap();
+            if (((current_pos-last_press_point).manhattanLength() < 10) && ((current_time - last_press_msecs) < 500)){
+                if (handle_quick_tap()) {
+                    return;
+                }
             }
             else if (is_flicking(&vel)){
                 //            float time_msecs = current_time - last_press_msecs;
@@ -2085,15 +2086,17 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 }
 
 void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
-	if (mevent->button() == Qt::MouseButton::LeftButton) {
-		is_selecting = true;
-		if (SINGLE_CLICK_SELECTS_WORDS) {
-			is_word_selecting = false;
-		}
-        else {
-			is_word_selecting = true;
-		}
-	}
+    if (!TOUCH_MODE) {
+        if (mevent->button() == Qt::MouseButton::LeftButton) {
+            is_selecting = true;
+            if (SINGLE_CLICK_SELECTS_WORDS) {
+                is_word_selecting = false;
+            }
+            else {
+                is_word_selecting = true;
+            }
+        }
+    }
 }
 
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
@@ -4860,15 +4863,17 @@ void MainWidget::clear_selection_indicators(){
     }
 }
 
-void MainWidget::handle_quick_tap(){
+bool MainWidget::handle_quick_tap(){
+    // returns true if we double clicked
+
     QTime now = QTime::currentTime();
 
-    qDebug() << "length is : " << (QCursor::pos() - last_quick_tap_position).manhattanLength();
+    qDebug() << "length is : " << (mapFromGlobal(QCursor::pos()) - last_quick_tap_position).manhattanLength();
     qDebug() << "time is : " << last_quick_tap_time.msecsTo(now);
-    if ((last_quick_tap_time.msecsTo(now) < 200) && (QCursor::pos() - last_quick_tap_position).manhattanLength() < 20){
+    if ((last_quick_tap_time.msecsTo(now) < 200) && (mapFromGlobal(QCursor::pos()) - last_quick_tap_position).manhattanLength() < 20){
         qDebug() << "handling double tap";
         handle_double_tap(last_quick_tap_position);
-        return;
+        return true;
     }
 
     clear_selected_text();
@@ -4884,8 +4889,9 @@ void MainWidget::handle_quick_tap(){
     }
     text_command_line_edit_container->hide();
 
-    last_quick_tap_position = QCursor::pos();
+    last_quick_tap_position = mapFromGlobal(QCursor::pos());
     last_quick_tap_time = now;
+    return false;
 }
 
 //void MainWidget::applicationStateChanged(Qt::ApplicationState state){
