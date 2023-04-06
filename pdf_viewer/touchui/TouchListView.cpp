@@ -3,7 +3,7 @@
 #include "ui.h"
 
 
-TouchListView::TouchListView(QStringList items_, QWidget* parent) : QWidget(parent), items(items_), model(items){
+TouchListView::TouchListView(QStringList items_, QWidget* parent, bool deletable) : QWidget(parent), items(items_), model(items){
 
 //    proxy_model = new MySortFilterProxyModel();
     proxy_model.setSourceModel(&model);
@@ -16,6 +16,9 @@ TouchListView::TouchListView(QStringList items_, QWidget* parent) : QWidget(pare
     //quick_widget->setClearColor(Qt::transparent);
 
     quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
+    if (deletable) {
+		quick_widget->rootContext()->setContextProperty("_deletable", QVariant::fromValue(true));
+    }
 //    quick_widget->rootContext()->setContextProperty("_from", from);
 //    quick_widget->rootContext()->setContextProperty("_to", to);
 
@@ -23,12 +26,24 @@ TouchListView::TouchListView(QStringList items_, QWidget* parent) : QWidget(pare
 
 
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemSelected(QString, int)), this, SLOT(handleSelect(QString, int)));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemPressAndHold(QString, int)), this, SLOT(handlePressAndHold(QString, int)));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemDeleted(QString, int)), this, SLOT(handleDelete(QString, int)));
 
 }
 
 void TouchListView::handleSelect(QString val, int index) {
     int source_index = proxy_model.mapToSource( proxy_model.index(index, 0)).row();
     emit itemSelected(val, source_index);
+}
+
+void TouchListView::handleDelete(QString val, int index) {
+    int source_index = proxy_model.mapToSource( proxy_model.index(index, 0)).row();
+    emit itemDeleted(val, source_index);
+}
+
+void TouchListView::handlePressAndHold(QString val, int index) {
+    int source_index = proxy_model.mapToSource( proxy_model.index(index, 0)).row();
+    emit itemPressAndHold(val, source_index);
 }
 
 void TouchListView::resizeEvent(QResizeEvent* resize_event){

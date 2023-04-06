@@ -9,9 +9,11 @@ Rectangle {
 //    height: 400
     id: rootitem
     color: "black"
+    property bool deletable: _deletable || false
 
     signal itemSelected(item: string, index: int)
     signal itemPressAndHold(item: string, index: int)
+    signal itemDeleted(item: string, index: int)
 
     TextEdit{
         id: query
@@ -72,8 +74,8 @@ Rectangle {
 
         delegate: Rectangle {
             anchors {
-                left: parent.left
-                right: parent.right
+                left: parent ? parent.left : undefined
+                right: parent ? parent.right : undefined
             }
             height: inner.height * 2.5
 //            color: index % 2 == 0 ? "black" : "#080808"
@@ -92,13 +94,36 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     font.pixelSize: 15
                 }
+
             }
+			Button{
+                anchors.right: parent.right
+                anchors.top:  parent.top
+                anchors.bottom: parent.bottom
+                anchors.margins: 10
+                z: 10
+
+				id: deletebutton
+				text: "Delete"
+                visible: false
+
+                onClicked: {
+                    /* emit */ itemDeleted(model.display, index);
+                    lview.model.removeRows(index, 1);
+                }
+
+			}
 
             MouseArea {
                 anchors.fill: parent
 
-                onPressAndHold: {
-                    /* emit */ itemPressAndHold(model.display, index);
+                onPressAndHold: function(event) {
+                    if (rootitem.deletable){
+						deletebutton.visible = true;
+                    }
+                    else{
+						/* emit */ itemPressAndHold(model.display, index);
+					}
                 }
                 onClicked: {
                     lview.currentIndex = index;

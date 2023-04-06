@@ -4,6 +4,9 @@
 // boolean config ui is not good (for example doesn't display properly for highlight select config)
 // better config menu (show configs in the list view)
 // configurations screen
+// fix drag and drop
+// double tap is working weridly on desktop
+// dekstop text selection cursor location seems a bit off
 
 
 #include <iostream>
@@ -4367,18 +4370,20 @@ void MainWidget::handle_open_prev_doc() {
         }));
     }
     else{
-        set_current_widget(new TouchFilteredSelectWidget<std::string>(opened_docs_names,
-                                      opened_docs_hashes,
-                                      [&](std::string* doc_hash){
-                       if (doc_hash->size() > 0) {
-                           validate_render();
-                           open_document_with_hash(*doc_hash);
-                       }
-                       //                   prev_done_handler(doc_hash);
-                       current_widget = nullptr;
+		set_current_widget(new TouchFilteredSelectWidget<std::string>(opened_docs_names,
+			opened_docs_hashes,
+			[&](std::string* doc_hash) {
+				if (doc_hash->size() > 0) {
+					validate_render();
+					open_document_with_hash(*doc_hash);
+				}
+				//                   prev_done_handler(doc_hash);
+				current_widget = nullptr;
 
-                   },
-                   this ));
+			}, [&](std::string* doc_hash) {
+				db_manager->delete_opened_book(*doc_hash);
+			},
+				this));
     }
 	current_widget->show();
 }
@@ -4688,8 +4693,14 @@ bool MainWidget::event(QEvent *event){
                 if (was_last_mouse_down_in_ruler_next_rect){
                     return true;
                 }
+
                 if ((QCursor::pos() - last_press_point).manhattanLength() > 10){
                     return QWidget::event(event);
+                }
+
+                // only show menu when there are no other widgets
+                if (current_widget != nullptr){
+                    return true;
                 }
 
                 last_hold_point = QCursor::pos();
@@ -4845,7 +4856,10 @@ void MainWidget::clear_selection_indicators(){
 void MainWidget::handle_quick_tap(){
     QTime now = QTime::currentTime();
 
+    qDebug() << "length is : " << (QCursor::pos() - last_quick_tap_position).manhattanLength();
+    qDebug() << "time is : " << last_quick_tap_time.msecsTo(now);
     if ((last_quick_tap_time.msecsTo(now) < 200) && (QCursor::pos() - last_quick_tap_position).manhattanLength() < 20){
+        qDebug() << "handling double tap";
         handle_double_tap(last_quick_tap_position);
         return;
     }

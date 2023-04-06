@@ -556,8 +556,18 @@ private:
     QWidget* parent_widget;
     std::vector<T> values;
     std::function<void(T*)> on_done;
+	std::function<void(T*)> on_delete_function = nullptr;
 public:
-    TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list, std::vector<T> values_, std::function<void(T*)> on_done_, QWidget* parent) : values(values_), on_done(on_done_){
+    TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list,
+		std::vector<T> values_,
+		std::function<void(T*)> on_done_,
+		std::function<void(T*)> on_delete,
+		QWidget* parent) :
+		QWidget(parent),
+		values(values_),
+		on_done(on_done_),
+		on_delete_function(on_delete) {
+
         parent_widget = parent;
         QStringList string_list;
         for (auto s : std_string_list){
@@ -566,21 +576,27 @@ public:
 //        string_list_model.setStringList(string_list);
 //        proxy_model.setSourceModel(string_list_model);
 
-        list_view = new TouchListView(string_list, this);
+        list_view = new TouchListView(string_list, this, true);
         QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
             qDebug() << "name is : " << name << " and index is : " << index << "\n";
             on_done(&values[index]);
             deleteLater();
         });
+
+        QObject::connect(list_view, &TouchListView::itemDeleted, [&](QString name, int index){
+			on_delete(&values[index]);
+            //deleteLater();
+        });
     }
 
     void resizeEvent(QResizeEvent* resize_event) override {
         QWidget::resizeEvent(resize_event);
-        int parent_width = resize_event->size().width();
-        int parent_height = resize_event->size().height();
+        int parent_width = parentWidget()->size().width();
+        int parent_height = parentWidget()->size().height();
 //        setFixedSize(parent_width * 0.9f, parent_height);
         list_view->resize(parent_width * 0.9f, parent_height);
-        list_view->move(parent_width * 0.05f, 0);
+        move(parent_width * 0.05f, 0);
+		resize(parent_width * 0.9f, parent_height);
     }
 };
 
