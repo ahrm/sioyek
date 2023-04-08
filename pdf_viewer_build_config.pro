@@ -34,6 +34,7 @@ SOURCES += \
         pdf_viewer/touchui/TouchRectangleSelectUI.cpp \
         pdf_viewer/touchui/TouchRangeSelectUI.cpp \
         pdf_viewer/touchui/TouchPageSelector.cpp \
+        pdf_viewer/touchui/TouchConfigMenu.cpp \
         pdf_viewer/touchui/TouchMainMenu.cpp
 
 HEADERS += \
@@ -44,6 +45,7 @@ HEADERS += \
     pdf_viewer/touchui/TouchRectangleSelectUI.h \
     pdf_viewer/touchui/TouchRangeSelectUI.h \
     pdf_viewer/touchui/TouchPageSelector.h \
+    pdf_viewer/touchui/TouchConfigMenu.h \
     pdf_viewer/touchui/TouchMainMenu.h
 
 android{

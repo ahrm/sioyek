@@ -6,11 +6,14 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <variant>
 #include <map>
 #include "path.h"
 #include <qwidget.h>
+#include <qabstractitemmodel.h>
 
 //#include <main_widget.h>
+
 
 
 enum ConfigType{
@@ -42,6 +45,25 @@ struct UIRect{
     bool contains(NormalizedWindowPos window_pos);
 };
 
+struct FloatExtras {
+	float min_val;
+	float max_val;
+} ;
+
+struct IntExtras {
+	int min_val;
+	int max_val;
+};
+
+struct EmptyExtras {
+};
+
+//union ConfigExtras {
+//	struct Rest {
+//
+//	} rest;
+//};
+
 struct Config {
 
 	std::wstring name;
@@ -50,6 +72,7 @@ struct Config {
 	void (*serialize) (void*, std::wstringstream&) = nullptr;
 	void* (*deserialize) (std::wstringstream&, void* res) = nullptr;
     bool (*validator) (const std::wstring& value) = nullptr;
+	std::variant<FloatExtras, IntExtras, EmptyExtras> extras = EmptyExtras{};
 
 //    QWidget* (*configurator_ui)(MainWidget* main_widget, void* location);
 
@@ -58,6 +81,7 @@ struct Config {
 };
 
 class ConfigManager {
+
 	std::vector<Config> configs;
 
 	float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
@@ -91,5 +115,18 @@ public:
 	std::optional<Path> get_or_create_user_config_file();
 	std::vector<Path> get_all_user_config_files();
 	std::vector<Config> get_configs();
+	std::vector<Config>* get_configs_ptr();
 	void deserialize_config(std::string config_name, std::wstring config_value);
+};
+
+class ConfigModel : public QAbstractTableModel{
+
+private:
+    std::vector<Config>* configs;
+
+public:
+    explicit ConfigModel(std::vector<Config>* configs, QObject* parent = nullptr);
+    int rowCount(const QModelIndex& parent=QModelIndex()) const override;
+    int columnCount(const QModelIndex& parent=QModelIndex()) const override;
+    QVariant data(const QModelIndex& index, int role=Qt::DisplayRole) const;
 };

@@ -767,6 +767,7 @@ void focus_on_widget(QWidget* widget) {
 	widget->setWindowState(widget->windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
 }
 
+
 int main(int argc, char* args[]) {
 
 #ifdef SIOYEK_ANDROID

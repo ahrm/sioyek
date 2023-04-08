@@ -12,6 +12,7 @@
 #include <QQuickWidget>
 #include <QFile>
 #include "touchui/TouchSlider.h"
+#include "touchui/TouchConfigMenu.h"
 
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern float DARK_MODE_CONTRAST;
@@ -206,6 +207,16 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->current_widget = {};
         deleteLater();
         main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(main_menu, &TouchMainMenu::settingsClicked, [&](){
+        main_widget->current_widget = new TouchConfigMenu(main_widget);
+        main_widget->current_widget->show();
+        deleteLater();
+        //auto command = main_widget->command_manager->get_command_with_name("command");
+        //main_widget->current_widget = {};
+        //deleteLater();
+        //main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::rulerModeClicked, [&](){

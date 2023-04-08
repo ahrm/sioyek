@@ -2306,6 +2306,12 @@ void convert_color4(float* in_color, int* out_color) {
 	out_color[3] = (int)(in_color[3] * 255);
 }
 
+void convert_color3(float* in_color, int* out_color) {
+	out_color[0] = (int)(in_color[0] * 255);
+	out_color[1] = (int)(in_color[1] * 255);
+	out_color[2] = (int)(in_color[2] * 255);
+}
+
 fz_document* open_document_with_file_name(fz_context* context, std::wstring file_name){
 
 #ifdef SIOYEK_ANDROID
