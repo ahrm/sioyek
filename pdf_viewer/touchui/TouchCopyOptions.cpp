@@ -3,6 +3,7 @@
 
 TouchCopyOptions::TouchCopyOptions(QWidget* parent) : QWidget(parent){
 
+    setAttribute(Qt::WA_NoMousePropagation);
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     quick_widget = new QQuickWidget(this);
 

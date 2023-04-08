@@ -320,8 +320,10 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         update_current_history_index();
     }
 
-    if (TOUCH_MODE && current_widget){
-        current_widget->resize(width(), height());
+    if (TOUCH_MODE && (current_widget_stack.size() > 0)){
+        for (auto w : current_widget_stack) {
+			w->resize(width(), height());
+        }
     }
 }
 
@@ -638,7 +640,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer = new QTimer(this);
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
-    connect(validation_interval_timer , &QTimer::timeout, [&]() {
+    connect(validation_interval_timer, &QTimer::timeout, [&]() {
 
         if (TOUCH_MODE && selection_begin_indicator){
             selection_begin_indicator->update_pos();
@@ -925,11 +927,7 @@ void MainWidget::handle_escape() {
     pending_command_instance = nullptr;
     //current_pending_command = {};
 
-    if (current_widget != nullptr) {
-        delete current_widget;
-        current_widget = nullptr;
-    }
-
+    pop_current_widget();
 
     if (main_document_view) {
         main_document_view->handle_escape();
@@ -966,10 +964,8 @@ void MainWidget::handle_escape() {
 void MainWidget::keyPressEvent(QKeyEvent* kevent) {
     if (TOUCH_MODE){
         if (kevent->key() == Qt::Key_Back){
-            if (current_widget){
-                current_widget->hide();
-                delete current_widget;
-                current_widget = nullptr;
+            if (current_widget_stack.size() > 0){
+                pop_current_widget();
             }
             else if (selection_begin_indicator){
                 clear_selection_indicators();
@@ -2590,16 +2586,40 @@ void MainWidget::long_jump_to_destination(DocumentPos pos) {
 }
 
 void MainWidget::set_current_widget(QWidget* new_widget) {
-    if (current_widget != nullptr) {
-        current_widget->hide();
-        garbage_widgets.push_back(current_widget);
+    for (auto widget : current_widget_stack) {
+        widget->hide();
+        widget->deleteLater();
     }
-    current_widget = new_widget;
+    current_widget_stack.clear();
+    current_widget_stack.push_back(new_widget);
+    //if (current_widget != nullptr) {
+    //    current_widget->hide();
+    //    garbage_widgets.push_back(current_widget);
+    //}
+    //current_widget = new_widget;
 
-    if (garbage_widgets.size() > 2) {
-        delete garbage_widgets[0];
-        garbage_widgets.erase(garbage_widgets.begin());
-    }
+    //if (garbage_widgets.size() > 2) {
+    //    delete garbage_widgets[0];
+    //    garbage_widgets.erase(garbage_widgets.begin());
+    //}
+}
+
+void MainWidget::push_current_widget(QWidget* new_widget) {
+	if (current_widget_stack.size() > 0) {
+		current_widget_stack.back()->hide();
+	}
+	current_widget_stack.push_back(new_widget);
+}
+
+void MainWidget::pop_current_widget() {
+	if (current_widget_stack.size() > 0) {
+		current_widget_stack.back()->hide();
+		current_widget_stack.back()->deleteLater();
+		current_widget_stack.pop_back();
+	}
+	if (current_widget_stack.size() > 0) {
+		current_widget_stack.back()->show();
+	}
 }
 
 bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
@@ -4106,6 +4126,12 @@ void MainWidget::handle_horizontal_move(int amount) {
     }
 }
 
+void MainWidget::show_current_widget() {
+    if (current_widget_stack.size() > 0) {
+        current_widget_stack.back()->show();
+    }
+}
+
 void MainWidget::handle_goto_bookmark() {
 	std::vector<std::wstring> option_names;
 	std::vector<std::wstring> option_location_strings;
@@ -4145,7 +4171,7 @@ void MainWidget::handle_goto_bookmark() {
 				main_document_view->delete_closest_bookmark_to_offset(*offset_value);
 			}
 		}));
-	current_widget->show();
+    show_current_widget();
 }
 
 void MainWidget::handle_goto_bookmark_global() {
@@ -4183,7 +4209,7 @@ void MainWidget::handle_goto_bookmark_global() {
 				db_manager->delete_bookmark(checksummer->get_checksum(book_state->document_path), book_state->offset_y);
 			}
 		}));
-	current_widget->show();
+    show_current_widget();
 }
 
 void MainWidget::handle_add_highlight(char symbol) {
@@ -4233,7 +4259,7 @@ void MainWidget::handle_goto_highlight() {
 				main_document_view->delete_highlight(*hl);
 			}
 		}));
-	current_widget->show();
+    show_current_widget();
 }
 
 void MainWidget::handle_goto_highlight_global() {
@@ -4275,7 +4301,7 @@ void MainWidget::handle_goto_highlight_global() {
 			}
 		},
 		this));
-	current_widget->show();
+    show_current_widget();
 }
 
 void MainWidget::handle_goto_toc() {
@@ -4297,7 +4323,7 @@ void MainWidget::handle_goto_toc() {
 
 				}
 				}, this));
-			current_widget->show();
+            show_current_widget();
 		}
 		else {
 
@@ -4316,7 +4342,7 @@ void MainWidget::handle_goto_toc() {
 						}
 					}
 				}, this, selected_index));
-			current_widget->show();
+            show_current_widget();
 		}
 
 	}
@@ -4385,14 +4411,14 @@ void MainWidget::handle_open_prev_doc() {
 					open_document_with_hash(*doc_hash);
 				}
 				//                   prev_done_handler(doc_hash);
-				current_widget = nullptr;
+                pop_current_widget();
 
 			}, [&](std::string* doc_hash) {
 				db_manager->delete_opened_book(*doc_hash);
 			},
 				this));
     }
-	current_widget->show();
+    show_current_widget();
 }
 
 void MainWidget::handle_move_screen(int amount) {
@@ -4527,7 +4553,7 @@ void MainWidget::handle_keys_user_all() {
 			}
 		},
 		this));
-	current_widget->show();
+    show_current_widget();
 }
 
 void MainWidget::handle_prefs_user_all() {
@@ -4546,7 +4572,7 @@ void MainWidget::handle_prefs_user_all() {
 			}
 		},
 		this));
-	current_widget->show();
+    show_current_widget();
 }
 
 void MainWidget::handle_portal_to_overview() {
@@ -4597,7 +4623,7 @@ void MainWidget::handle_goto_window() {
 			}
 		},
 		this));
-	current_widget->show();
+    show_current_widget();
 }
 
 void MainWidget::handle_toggle_smooth_scroll_mode() {
@@ -4706,7 +4732,7 @@ bool MainWidget::event(QEvent *event){
                 }
 
                 // only show menu when there are no other widgets
-                if (current_widget != nullptr){
+                if (current_widget_stack.size() > 0){
                     return true;
                 }
 
@@ -4725,7 +4751,7 @@ bool MainWidget::event(QEvent *event){
                     //                invalidate_render();
 
                     set_current_widget(new AndroidSelector(this));
-                    current_widget->show();
+                    show_current_widget();
 
                     //                set_current_widget(new MyList(this));
                     //                current_widget->show();
@@ -4882,10 +4908,11 @@ bool MainWidget::handle_quick_tap(){
     opengl_widget->cancel_search();
     is_dragging = false;
 
-    if (current_widget != nullptr) {
-        delete current_widget;
-        current_widget = nullptr;
-    }
+    pop_current_widget();
+    //if (current_widget != nullptr) {
+    //    delete current_widget;
+    //    current_widget = nullptr;
+    //}
     text_command_line_edit_container->hide();
 
     last_quick_tap_position = mapFromGlobal(QCursor::pos());

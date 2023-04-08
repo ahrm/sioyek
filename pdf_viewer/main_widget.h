@@ -63,7 +63,8 @@ public:
 	DocumentView* helper_document_view = nullptr;
 
 	// current widget responsible for selecting an option (for example toc or bookmarks)
-	QWidget* current_widget = nullptr;
+	std::vector<QWidget*> current_widget_stack;
+	//QWidget* current_widget = nullptr;
 	std::vector<QWidget*> garbage_widgets;
 
 	std::function<void(std::string)> on_command_done = nullptr;
@@ -274,6 +275,9 @@ public:
 	void update_link_with_opened_book_state(Portal lnk, const OpenedBookState& new_state);
 	void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
 	void set_current_widget(QWidget* new_widget);
+	void push_current_widget(QWidget* new_widget);
+	void pop_current_widget();
+	void show_current_widget();
 	bool focus_on_visual_mark_pos(bool moving_down);
 	void toggle_visual_scroll_mode();
 	void set_overview_link(PdfLink link);

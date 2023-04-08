@@ -353,7 +353,7 @@ class CommandCommand : public Command {
 			widget->set_current_widget(tcs);
 		}
 
-		widget->current_widget->show();
+		widget->show_current_widget();
 
 	}
 
@@ -722,7 +722,7 @@ class OpenDocumentEmbeddedCommand : public Command {
 				widget->validate_render();
 				widget->open_document(doc_path);
 			}, widget, ""));
-		widget->current_widget->show();
+		widget->show_current_widget();
 	}
 
 	bool pushes_state() {
@@ -745,7 +745,7 @@ class OpenDocumentEmbeddedFromCurrentPathCommand : public Command {
 				widget->validate_render();
 				widget->open_document(doc_path);
 			}, widget, QString::fromStdWString(last_file_name)));
-		widget->current_widget->show();
+		widget->show_current_widget();
 	}
 
 	bool pushes_state() {
@@ -2231,21 +2231,21 @@ public:
 
 
 			if (config->config_type == ConfigType::Color3) {
-				widget->set_current_widget(new Color3ConfigUI(widget, (float*)config->value));
-				widget->current_widget->show();
+				widget->push_current_widget(new Color3ConfigUI(widget, (float*)config->value));
+				widget->show_current_widget();
 			}
 
 			if (config->config_type == ConfigType::Color4) {
-				widget->set_current_widget(new Color4ConfigUI(widget, (float*)config->value));
-				widget->current_widget->show();
+				widget->push_current_widget(new Color4ConfigUI(widget, (float*)config->value));
+				widget->show_current_widget();
 			}
 			if (config->config_type == ConfigType::Bool) {
-				widget->set_current_widget(new BoolConfigUI(widget, (bool*)config->value, QString::fromStdWString(config->name)));
-				widget->current_widget->show();
+				widget->push_current_widget(new BoolConfigUI(widget, (bool*)config->value, QString::fromStdWString(config->name)));
+				widget->show_current_widget();
 			}
 			if (config->config_type == ConfigType::EnableRectangle) {
-				widget->set_current_widget(new RectangleConfigUI(widget, (UIRect*)config->value));
-				widget->current_widget->show();
+				widget->push_current_widget(new RectangleConfigUI(widget, (UIRect*)config->value));
+				widget->show_current_widget();
 				//            auto w = new RectangleConfigUI(widget, (UIRect*)config->value);
 				//            w->show();
 			}

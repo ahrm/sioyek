@@ -176,43 +176,59 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 
 
     QObject::connect(main_menu, &TouchMainMenu::fullscreenClicked, [&](){
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
+        //deleteLater();
         main_widget->toggle_fullscreen();
     });
 
     QObject::connect(main_menu, &TouchMainMenu::selectTextClicked, [&](){
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         main_widget->handle_mobile_selection();
         main_widget->invalidate_render();
     });
 
     QObject::connect(main_menu, &TouchMainMenu::openNewDocClicked, [&](){
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         auto command = main_widget->command_manager->get_command_with_name("open_document");
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::openPrevDocClicked, [&](){
         auto command = main_widget->command_manager->get_command_with_name("open_prev_doc");
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::commandsClicked, [&](){
         auto command = main_widget->command_manager->get_command_with_name("command");
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::settingsClicked, [&](){
-        main_widget->current_widget = new TouchConfigMenu(main_widget);
-        main_widget->current_widget->show();
-        deleteLater();
+        TouchConfigMenu* config_menu = new TouchConfigMenu(main_widget);
+        //main_widget->current_widget = new TouchConfigMenu(main_widget);
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
+
+        main_widget->set_current_widget(config_menu);
+        main_widget->show_current_widget();
+
         //auto command = main_widget->command_manager->get_command_with_name("command");
         //main_widget->current_widget = {};
         //deleteLater();
@@ -221,15 +237,19 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 
     QObject::connect(main_menu, &TouchMainMenu::rulerModeClicked, [&](){
         main_widget->android_handle_visual_mode();
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         main_widget->invalidate_render();
     });
 
     QObject::connect(main_menu, &TouchMainMenu::searchClicked, [&](){
         auto command = main_widget->command_manager->get_command_with_name("search");
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
@@ -277,22 +297,28 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 
     QObject::connect(main_menu, &TouchMainMenu::darkColorschemeClicked, [&](){
         main_widget->set_dark_mode();
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         main_widget->invalidate_render();
     });
 
     QObject::connect(main_menu, &TouchMainMenu::lightColorschemeClicked, [&](){
         main_widget->set_light_mode();
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         main_widget->invalidate_render();
     });
 
     QObject::connect(main_menu, &TouchMainMenu::customColorschemeClicked, [&](){
         main_widget->set_custom_color_mode();
-        main_widget->current_widget = {};
-        deleteLater();
+        //main_widget->current_widget = {};
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         main_widget->invalidate_render();
     });
 
@@ -307,14 +333,18 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 //    });
 
     QObject::connect(main_menu, &TouchMainMenu::gotoPageClicked, [&](){
-        main_widget->current_widget = nullptr;
-        deleteLater();
+        //main_widget->current_widget = nullptr;
+        //deleteLater();
+        assert(main_widget->current_widget_stack.back() == this);
+        main_widget->pop_current_widget();
         PageSelectorUI* page_ui = new PageSelectorUI(main_widget,
                                                      main_widget->main_document_view->get_center_page_number(),
                                                      main_widget->doc()->num_pages());
 
-        main_widget->current_widget = page_ui;
-        main_widget->current_widget->show();
+        main_widget->set_current_widget(page_ui);
+        main_widget->show_current_widget();
+        //main_widget->current_widget = page_ui;
+        //main_widget->current_widget->show();
     });
 
 //    QObject::connect(test_rectangle_select_ui, &QPushButton::pressed, [&](){
@@ -600,8 +630,9 @@ FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float m
         float value = min_value + (static_cast<float>(val) / 100.0f) * (max_value - min_value);
         *float_location = value;
         main_widget->invalidate_render();
-        main_widget->current_widget = nullptr;
-        deleteLater();
+        //main_widget->current_widget = nullptr;
+        //deleteLater();
+        main_widget->pop_current_widget();
     });
 
 //    layout = new QHBoxLayout();
@@ -683,8 +714,9 @@ BoolConfigUI::BoolConfigUI(MainWidget* parent, bool* config_location, QString na
         main_widget->invalidate_render();
         main_widget->persist_config();
 
-        main_widget->current_widget = nullptr;
-        deleteLater();
+        //main_widget->current_widget = nullptr;
+        //deleteLater();
+        main_widget->pop_current_widget();
     });
 //    layout = new QHBoxLayout();
 
@@ -746,9 +778,10 @@ TouchCommandSelector::TouchCommandSelector(const QStringList& commands, MainWidg
     list_view = new TouchListView(commands, this);
 
     QObject::connect(list_view, &TouchListView::itemSelected, [&](QString val, int index){
-        main_widget->current_widget = nullptr;
+        //main_widget->current_widget = nullptr;
+        main_widget->pop_current_widget();
         main_widget->on_command_done(val.toStdString());
-        deleteLater();
+        //deleteLater();
     });
 }
 
@@ -798,8 +831,9 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
 
         main_widget->persist_config();
         main_widget->invalidate_render();
-        main_widget->current_widget = nullptr;
-        deleteLater();
+        //main_widget->current_widget = nullptr;
+        //deleteLater();
+        main_widget->pop_current_widget();
     });
 
  }
@@ -858,14 +892,16 @@ RangeConfigUI::RangeConfigUI(MainWidget* parent, float* top_config_location, flo
 
         main_widget->persist_config();
         main_widget->invalidate_render();
-        main_widget->current_widget = nullptr;
-        deleteLater();
+        //main_widget->current_widget = nullptr;
+        //deleteLater();
+        main_widget->pop_current_widget();
     });
 
     QObject::connect(range_select_ui, &TouchRangeSelectUI::rangeCanceled, [&](){
         main_widget->invalidate_render();
-        main_widget->current_widget = nullptr;
-        deleteLater();
+        //main_widget->current_widget = nullptr;
+        //deleteLater();
+        main_widget->pop_current_widget();
     });
 
  }
@@ -876,3 +912,133 @@ void RangeConfigUI::resizeEvent(QResizeEvent* resize_event){
     range_select_ui->resize(resize_event->size().width(), resize_event->size().height());
 
 }
+QList<QStandardItem*> CommandSelector::get_item(std::string command_name) {
+
+	std::string command_key = "";
+
+	if (key_map.find(command_name) != key_map.end()) {
+		const std::vector<std::string>& command_keys = key_map[command_name];
+		for (size_t i = 0; i < command_keys.size(); i++) {
+			const std::string& ck = command_keys[i];
+			if (i > 0) {
+				command_key += " | ";
+			}
+			command_key += ck;
+		}
+
+	}
+	QStandardItem* name_item = new QStandardItem(QString::fromStdString(command_name));
+	QStandardItem* key_item = new QStandardItem(QString::fromStdString(command_key));
+	key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
+	return (QList<QStandardItem*>() << name_item << key_item);
+}
+
+QStandardItemModel* CommandSelector::get_standard_item_model(std::vector<std::string> command_names) {
+
+	QStandardItemModel* res = new QStandardItemModel();
+
+	for (size_t i = 0; i < command_names.size(); i++) {
+		res->appendRow(get_item(command_names[i]));
+	}
+	return res;
+}
+
+QStandardItemModel* CommandSelector::get_standard_item_model(QStringList command_names) {
+
+	std::vector<std::string> std_command_names;
+
+	for (int i = 0; i < command_names.size(); i++) {
+		std_command_names.push_back(command_names.at(i).toStdString());
+	}
+	return get_standard_item_model(std_command_names);
+}
+
+
+QString CommandSelector::get_view_stylesheet_type_name() {
+	return "QTableView";
+}
+
+void CommandSelector::on_select(const QModelIndex& index) {
+	bool is_numeric = false;
+	line_edit->text().toInt(&is_numeric);
+	QString name = standard_item_model->data(index).toString();
+	//hide();
+    main_widget->pop_current_widget();
+	parentWidget()->setFocus();
+	if (!is_numeric) {
+		(*on_done)(name.toStdString());
+	}
+	else {
+		(*on_done)(line_edit->text().toStdString());
+	}
+}
+
+CommandSelector::CommandSelector(std::function<void(std::string)>* on_done,
+	MainWidget* parent,
+	QStringList elements,
+	std::unordered_map<std::string,
+	std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel>(nullptr, parent),
+	key_map(key_map),
+	on_done(on_done),
+    main_widget(parent)
+{
+	string_elements = elements;
+	standard_item_model = get_standard_item_model(string_elements);
+
+	QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+
+	table_view->setSelectionMode(QAbstractItemView::SingleSelection);
+	table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+	table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	table_view->setModel(standard_item_model);
+
+	table_view->horizontalHeader()->setStretchLastSection(true);
+	table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+	table_view->horizontalHeader()->hide();
+	table_view->verticalHeader()->hide();
+
+}
+
+bool CommandSelector::on_text_change(const QString& text) {
+
+	std::vector<std::string> matching_element_names;
+	std::vector<int> scores;
+	std::string search_text_string = text.toStdString();
+	std::vector<std::pair<std::string, int>> match_score_pairs;
+
+	for (int i = 0; i < string_elements.size(); i++) {
+		std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
+		int score = 0;
+		if (FUZZY_SEARCHING) {
+			score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
+		}
+		else {
+			fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
+		}
+		match_score_pairs.push_back(std::make_pair(encoded, score));
+	}
+	std::sort(match_score_pairs.begin(), match_score_pairs.end(), [](std::pair<std::string, int> lhs, std::pair<std::string, int> rhs) {
+		return lhs.second > rhs.second;
+		});
+
+	for (int i = 0; i < string_elements.size(); i++) {
+		if (string_elements.at(i).startsWith(text)) {
+			matching_element_names.push_back(string_elements.at(i).toStdString());
+		}
+	}
+
+	//if (matching_element_names.size() == 0) {
+	for (auto [command, score] : match_score_pairs) {
+		if (score > 60 && (!QString::fromStdString(command).startsWith(text))) {
+			matching_element_names.push_back(command);
+		}
+	}
+	//}
+
+	QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
+	dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
+	delete standard_item_model;
+	standard_item_model = new_standard_item_model;
+	return true;
+}
+

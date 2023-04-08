@@ -6,6 +6,7 @@ TouchRangeSelectUI::TouchRangeSelectUI(float initial_top,
                                                QWidget* parent) : QWidget(parent) {
 
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
+    setAttribute(Qt::WA_NoMousePropagation);
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);

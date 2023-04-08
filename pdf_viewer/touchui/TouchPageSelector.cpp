@@ -3,6 +3,7 @@
 
 TouchPageSelector::TouchPageSelector(int from, int to, int initial_value, QWidget* parent) : QWidget(parent){
 
+    setAttribute(Qt::WA_NoMousePropagation);
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);
