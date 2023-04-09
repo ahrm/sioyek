@@ -938,12 +938,19 @@ public:
     void resizeEvent(QResizeEvent* resize_event) override;
 private:
     float* float_location;
-//    QSlider* slider;
-//    QLabel* current_value_label;
-//    QPushButton* confirm_button;
-//    QHBoxLayout* layout;
     float min_value;
     float max_value;
+    TouchSlider* slider = nullptr;
+};
+
+class IntConfigUI : public ConfigUI{
+public:
+    IntConfigUI(MainWidget* parent, int* config_location, int min_value, int max_value);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    int* int_location;
+    int min_value;
+    int max_value;
     TouchSlider* slider = nullptr;
 };
 

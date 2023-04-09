@@ -630,54 +630,27 @@ FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float m
         float value = min_value + (static_cast<float>(val) / 100.0f) * (max_value - min_value);
         *float_location = value;
         main_widget->invalidate_render();
-        //main_widget->current_widget = nullptr;
-        //deleteLater();
         main_widget->pop_current_widget();
     });
 
-//    layout = new QHBoxLayout();
-//    current_value_label = new QLabel(QString::number(*float_location));
-//    confirm_button = new QPushButton("Confirm", this);
-//    slider = new QSlider(Qt::Orientation::Horizontal, this);
-//    slider->setRange(0, 100);
-//    current_value_label->setText(QString::number(*float_location));
-//    slider->setValue(current_value);
-
-//    slider->setStyleSheet("QSlider::groove:horizontal {border: 1px solid;height: 10px;margin: 0px;}QSlider::handle:horizontal {background-color: black;border: 1px solid;height: 40px;width: 40px;margin: -15px 0px;}");
-
-//    layout->addWidget(current_value_label);
-//    layout->addWidget(slider);
-//    layout->addWidget(confirm_button);
-
-
-//    QObject::connect(confirm_button, &QPushButton::clicked, [&](){
-//        float value = min_value + (static_cast<float>(slider->value()) / 100) * (max_value - min_value);
-//        *float_location = value;
-//        main_widget->invalidate_render();
-//        main_widget->current_widget = nullptr;
-//        hide();
-//        deleteLater();
-
-////        slider->value()
-////        *float_location
-//    });
-//    QObject::connect(slider, &QSlider::valueChanged, [&](int val){
-//        float value = min_value + (static_cast<float>(slider->value()) / 100) * (max_value - min_value);
-//        *float_location = value;
-//        current_value_label->setText(QString::number(value));
-//        main_widget->invalidate_render();
-
-//    });
-
-//    setLayout(layout);
-//    slider = new QSlider(this, )
-//    color_picker->show();
-
-//    connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
-//        convert_qcolor_to_float3(color, color_location);
-//        main_widget->invalidate_render();
-//    });
  }
+
+IntConfigUI::IntConfigUI(MainWidget* parent, int* config_location, int min_value_, int max_value_) : ConfigUI(parent) {
+
+    min_value = min_value_;
+    max_value = max_value_;
+    int_location = config_location;
+
+    int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
+    slider = new TouchSlider(min_value, max_value, current_value, this);
+    QObject::connect(slider, &TouchSlider::itemSelected, [&](int val){
+        *int_location = val;
+        main_widget->invalidate_render();
+        main_widget->pop_current_widget();
+    });
+
+ }
+
 
 PageSelectorUI::PageSelectorUI(MainWidget* parent, int current, int num_pages) : ConfigUI(parent) {
 
@@ -752,6 +725,19 @@ void BoolConfigUI::resizeEvent(QResizeEvent* resize_event){
 }
 
 void FloatConfigUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    int w = 2 * parent_width / 3;
+    int h =  parent_height / 2;
+    slider->resize(w, h);
+
+    setFixedSize(w, h);
+    move(parent_width / 6, parent_height / 4);
+}
+
+void IntConfigUI::resizeEvent(QResizeEvent* resize_event){
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();

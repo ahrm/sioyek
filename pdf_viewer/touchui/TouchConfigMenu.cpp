@@ -48,6 +48,11 @@ TouchConfigMenu::TouchConfigMenu(MainWidget* main_widget) :
 		SIGNAL(onSetConfigPressed(QString)),
 		this,
 		SLOT(handleSetConfigPressed(QString)));
+
+	QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+		SIGNAL(onSaveButtonClicked()),
+		this,
+		SLOT(handleSaveButtonClicked()));
     //QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemPressAndHold(QString, int)), this, SLOT(handlePressAndHold(QString, int)));
     //QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemDeleted(QString, int)), this, SLOT(handleDelete(QString, int)));
 
@@ -101,6 +106,11 @@ void TouchConfigMenu::handleColor4ConfigChanged(QString config_name, qreal r, qr
     *((float*)config->value + 1) = g;
     *((float*)config->value + 2) = b;
     *((float*)config->value + 3) = a;
+}
+
+void TouchConfigMenu::handleSaveButtonClicked() {
+    main_widget->persist_config();
+    main_widget->pop_current_widget();
 }
 
 //

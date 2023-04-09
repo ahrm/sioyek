@@ -47,10 +47,6 @@ Rectangle {
 
     ListView{
 //        model: MyModel {}
-        model: _model
-        id: lview
-        clip: true
-
         anchors {
             top: query.bottom
             topMargin: 10
@@ -58,6 +54,11 @@ Rectangle {
             right: rootitem.right
             bottom: rootitem.bottom
         }
+        model: _model
+        id: lview
+        clip: true
+        anchors.fill: parent
+
 
         displaced: Transition{
             PropertyAction {

@@ -52,14 +52,12 @@ Rectangle {
     signal color3ConfigChanged(configName: string, r: real, g: real, b: real);
     signal color4ConfigChanged(configName: string, r: real, g: real, b: real, a: real);
     signal onSetConfigPressed(configName: string);
+    signal onSaveButtonClicked();
     // signal itemPressAndHold(item: string, index: int)
     // signal itemDeleted(item: string, index: int)
 
-    TextEdit{
-        id: query
-        color: "white"
-        inputMethodHints: Qt.ImhSensitiveData | Qt.ImhPreferLowercase
-
+    Row{
+        id: queryrow
         anchors {
             top: rootitem.top
             left: rootitem.left
@@ -67,21 +65,47 @@ Rectangle {
             leftMargin: 10
             topMargin: 10
         }
+        height: query.height
+        TextEdit{
+            id: query
+            color: "white"
+            inputMethodHints: Qt.ImhSensitiveData | Qt.ImhPreferLowercase
 
-        font.pixelSize: 15
+            anchors {
+                left: parent.left
+                top: parent.top
+                right: savebutton.left
+            }
 
-        Text { // palceholder text
-            text: "Search"
-            color: "#888"
-            visible: !query.text
+
             font.pixelSize: 15
+
+            Text { // palceholder text
+                text: "Search"
+                color: "#888"
+                visible: !query.text
+                font.pixelSize: 15
+            }
+
+
+            onTextChanged: {
+                lview.model.setFilterRegularExpression(text);
+            }
+
         }
+        Button{
+            id: savebutton
+            anchors{
+                right: parent.right
+                top: parent.top
+            }
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Save Changes"
 
-
-        onTextChanged: {
-            lview.model.setFilterRegularExpression(text);
+            onClicked:{
+                /* emit */ rootitem.onSaveButtonClicked();
+            }
         }
-
     }
 
 
@@ -92,7 +116,7 @@ Rectangle {
         clip: true
 
         anchors {
-            top: query.bottom
+            top: queryrow.bottom
             topMargin: 10
             left: rootitem.left
             right: rootitem.right
@@ -170,7 +194,8 @@ Rectangle {
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     anchors.right: parent.right
-                    anchors.margins: 10
+                    anchors.topMargin: 10
+                    anchors.bottomMargin: 10
 //                    anchors.verticalCenter: parent.verticalCenter
                     width: 100
 //                    height: 100
@@ -212,25 +237,25 @@ Rectangle {
 
                 }
 
-                    Slider{
+//                    Slider{
 
-                        id: innerSlider
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        anchors.right: parent.right
-                        value: bg.value[0]
-                        from: bg.value[1]
-                        to: bg.value[2]
+//                        id: innerSlider
+//                        anchors.top: parent.top
+//                        anchors.bottom: parent.bottom
+//                        anchors.right: parent.right
+//                        value: bg.value[0]
+//                        from: bg.value[1]
+//                        to: bg.value[2]
 
-                        visible: bg.type == 'float'
+//                        visible: bg.type == 'float'
 
-                        onValueChanged: {
-                            if (visible){
-								/* emit */ floatConfigChanged(bg.name, value);
-                            }
-                        }
+//                        onValueChanged: {
+//                            if (visible){
+//								/* emit */ floatConfigChanged(bg.name, value);
+//                            }
+//                        }
 
-                    }
+//                    }
 
                     
                     // TextEdit{
@@ -246,62 +271,82 @@ Rectangle {
 
 
                     // }
-                    Slider{
+//                    Slider{
 
-                        id: intSlider
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        anchors.right: parent.right
-                        value: bg.value[0]
-                        from: bg.value[1]
-                        to: bg.value[2]
+//                        id: intSlider
+//                        anchors.top: parent.top
+//                        anchors.bottom: parent.bottom
+//                        anchors.right: parent.right
+//                        value: bg.value[0]
+//                        from: bg.value[1]
+//                        to: bg.value[2]
 
-                        visible: bg.type == 'int'
+//                        visible: bg.type == 'int'
 
-                        onValueChanged: {
-                            if (visible){
-								/* emit */ intConfigChanged(bg.name, Math.round(value));
-                            }
-                        }
+//                        onValueChanged: {
+//                            if (visible){
+//								/* emit */ intConfigChanged(bg.name, Math.round(value));
+//                            }
+//                        }
 
-                    }
-                Text {
-                    id: sliderValue
-                    text: bg.type == 'int' ? Math.round(intSlider.value) : innerSlider.value.toFixed(2)
-                    color: "white"
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: innerSlider.left
-                    font.pixelSize: 15
-                    visible: bg.type == 'float' || bg.type == 'int'
-                }
+//                    }
+//                Text {
+//                    id: sliderValue
+//                    text: bg.type == 'int' ? Math.round(intSlider.value) : innerSlider.value.toFixed(2)
+//                    color: "white"
+//                    anchors.verticalCenter: parent.verticalCenter
+//                    anchors.right: innerSlider.left
+//                    font.pixelSize: 15
+//                    visible: bg.type == 'float' || bg.type == 'int'
+//                }
 
 
 
-                ScrollView{
+//                ScrollView{
 
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: parent.right
-                    width: 100
+//                    anchors.verticalCenter: parent.verticalCenter
+//                    anchors.right: parent.right
+//                    width: 100
 
-                    TextArea {
-                        id: innerValue
-                        text: bg.value
-                        // color: "white"
-                        font.pixelSize: 15
-                        visible: (bg.type == 'string')
-                        onTextChanged: {
-                            if (bg.type == 'string'){
-                                /* emit */ textConfigChanged(bg.name, text);
-                            }
-                        }
-                    }
-                    visible: (bg.type == 'string')
-                }
+//                    TextArea {
+//                        id: innerValue
+//                        text: bg.value
+//                        // color: "white"
+//                        font.pixelSize: 15
+//                        visible: (bg.type == 'string')
+//                        onTextChanged: {
+//                            if (bg.type == 'string'){
+//                                /* emit */ textConfigChanged(bg.name, text);
+//                            }
+//                        }
+//                    }
+//                    visible: (bg.type == 'string')
+//                }
                 Button{
-                    text: "set"
+                    function getValue(){
+                        if (bg.type == 'string'){
+
+                            if (bg.value.length == 0){
+                                return "Set";
+                            }
+
+                            if (bg.value.length < 8){
+                                return bg.value;
+                            }
+                            else{
+                                return bg.value.slice(0, 5) + '...';
+                            }
+
+                        }
+                        if (bg.type == 'float') return bg.value[0].toFixed(2);
+                        if (bg.type == 'int') return bg.value[0];
+                        return "Set";
+                    }
+
+                    text: "" + getValue()
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
-                    visible: !(bg.type == 'string' || bg.type == 'int' || bg.type == 'float' || bg.type == 'bool' || bg.type == 'color3' || bg.type == 'color4')
+                    visible: !(bg.type == 'bool' || bg.type == 'color3' || bg.type == 'color4')
                     onClicked: {
                         /* emit */ onSetConfigPressed(bg.name);
                     }

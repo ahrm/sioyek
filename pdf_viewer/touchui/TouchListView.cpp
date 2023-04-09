@@ -6,6 +6,7 @@
 TouchListView::TouchListView(QStringList items_, QWidget* parent, bool deletable) : QWidget(parent), items(items_), model(items){
 
 //    proxy_model = new MySortFilterProxyModel();
+    setAttribute(Qt::WA_NoMousePropagation);
     proxy_model.setSourceModel(&model);
 
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);

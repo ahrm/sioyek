@@ -2246,8 +2246,17 @@ public:
 			if (config->config_type == ConfigType::EnableRectangle) {
 				widget->push_current_widget(new RectangleConfigUI(widget, (UIRect*)config->value));
 				widget->show_current_widget();
-				//            auto w = new RectangleConfigUI(widget, (UIRect*)config->value);
-				//            w->show();
+			}
+			if (config->config_type == ConfigType::Float) {
+				FloatExtras extras = std::get<FloatExtras>(config->extras);
+				widget->push_current_widget(new FloatConfigUI(widget, (float*)config->value, extras.min_val, extras.max_val));
+				widget->show_current_widget();
+
+			}
+			if (config->config_type == ConfigType::Int) {
+				IntExtras extras = std::get<IntExtras>(config->extras);
+				widget->push_current_widget(new IntConfigUI(widget, (int*)config->value, extras.min_val, extras.max_val));
+				widget->show_current_widget();
 			}
 
 			//        config->serialize

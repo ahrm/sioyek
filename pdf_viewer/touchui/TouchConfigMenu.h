@@ -29,6 +29,7 @@ public slots:
     void handleIntConfigChanged(QString config_name, int new_value);
     void handleTextConfigChanged(QString config_name, QString new_value);
     void handleSetConfigPressed(QString config_name);
+    void handleSaveButtonClicked();
     //void handlePressAndHold(QString value, int index);
     //void handleDelete(QString value, int index);
 
