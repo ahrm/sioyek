@@ -329,6 +329,9 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         if (search_buttons) {
             search_buttons->resize(width(), height());
         }
+        if (highlight_buttons) {
+            highlight_buttons->resize(width(), height());
+        }
     }
 }
 
@@ -729,6 +732,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     search_buttons = new SearchButtons(this);
     search_buttons->hide();
+    highlight_buttons = new HighlightButtons(this);
+    highlight_buttons->hide();
 	text_selection_buttons = new TouchTextSelectionButtons(this);
     text_selection_buttons->hide();
 
@@ -5044,15 +5049,15 @@ void MainWidget::handle_double_tap(QPoint pos){
 
 
 void MainWidget::show_highlight_buttons(){
-    highlight_buttons = new HighlightButtons(this);
+    //highlight_buttons = new HighlightButtons(this);
     highlight_buttons->show();
 }
 
 void MainWidget::clear_highlight_buttons(){
     if (highlight_buttons){
         highlight_buttons->hide();
-        delete highlight_buttons;
-        highlight_buttons = nullptr;
+        //delete highlight_buttons;
+        //highlight_buttons = nullptr;
     }
 }
 

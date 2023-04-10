@@ -118,6 +118,7 @@ RowLayout{
     property list<string> tips
     property bool radio: false
     property int selectedIndex : -1
+    property color color: "black"
     //        property var onButtonClicked : null
 
     spacing: 0
@@ -147,6 +148,7 @@ RowLayout{
                 roundLeft: index == 0
                 roundRight: index == row.buttons.length - 1
                 isSelected: index == selectedIndex
+                color: row.color
 //                color: "red"
                 onPressAndHold: {
                     if (row.tips.length == row.buttons.length){

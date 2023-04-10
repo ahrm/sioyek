@@ -478,29 +478,35 @@ void TouchTextSelectionButtons::resizeEvent(QResizeEvent* resize_event){
 
 HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent){
     main_widget = parent;
-    layout = new QHBoxLayout();
+    //layout = new QHBoxLayout();
 
-    delete_highlight_button = new QPushButton("Delete");
-    QObject::connect(delete_highlight_button, &QPushButton::clicked, [&](){
+    //delete_highlight_button = new QPushButton("Delete");
+    //buttons_widget = new 
+    delete_button = new TouchDeleteButton(this);
+
+    QObject::connect(delete_button, &TouchDeleteButton::deletePressed, [&](){
         main_widget->handle_delete_selected_highlight();
         hide();
-        main_widget->highlight_buttons = nullptr;
-        deleteLater();
+        //main_widget->highlight_buttons = nullptr;
+        //deleteLater();
     });
 
-    layout->addWidget(delete_highlight_button);
-    this->setLayout(layout);
+    //layout->addWidget(delete_highlight_button);
+    //this->setLayout(layout);
 }
 
 void HighlightButtons::resizeEvent(QResizeEvent* resize_event){
 
     QWidget::resizeEvent(resize_event);
+
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
-    setFixedSize(parent_width, parent_height / 5);
-    move(0, 0);
+    setFixedSize(parent_width / 4, parent_height / 5);
+    delete_button->resize(parent_width / 4, parent_height / 5);
+    move(parent_width * 3 / 8, parent_height / 5);
 }
+
 
 SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent){
     main_widget = parent;
