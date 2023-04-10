@@ -2197,8 +2197,9 @@ public:
 class ConfigCommand : public Command {
     std::string config_name;
 	std::optional<std::wstring> text = {};
+	ConfigManager* config_manager;
 public:
-    ConfigCommand(std::string config_name_) {
+    ConfigCommand(std::string config_name_, ConfigManager* config_manager_) : config_manager(config_manager_){
         config_name = config_name_;
     }
 
@@ -2208,6 +2209,13 @@ public:
 
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
 		if (TOUCH_MODE) {
+			Config* config = config_manager->get_mut_config_with_name(utf8_decode(config_name));
+			if ((!text.has_value()) && config->config_type == ConfigType::String) {
+				Requirement res;
+				res.type = RequirementType::Text;
+				res.name = "Config Value";
+				return res;
+			}
 			return {};
 		}
 		else{
@@ -2482,7 +2490,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 		std::string confname = utf8_encode(conf.name);
 		std::string config_set_command_name = "setconfig_" + confname;
 		//commands.push_back({ config_set_command_name, true, false , false, false, true, {} });
-		new_commands[config_set_command_name] = [confname]() {return std::make_unique<ConfigCommand>(confname); };
+		new_commands[config_set_command_name] = [confname, config_manager]() {return std::make_unique<ConfigCommand>(confname, config_manager); };
 
 	}
 

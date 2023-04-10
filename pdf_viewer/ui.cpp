@@ -635,6 +635,7 @@ FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float m
 
  }
 
+
 IntConfigUI::IntConfigUI(MainWidget* parent, int* config_location, int min_value_, int max_value_) : ConfigUI(parent) {
 
     min_value = min_value_;

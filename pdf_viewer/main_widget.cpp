@@ -2235,13 +2235,33 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 }
 
 void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text) {
-    text_command_line_edit->clear();
-    if (should_fill_with_selected_text) {
-        text_command_line_edit->setText(QString::fromStdWString(selected_text));
+    if (TOUCH_MODE) {
+        TouchTextEdit* edit_widget = new TouchTextEdit(QString::fromStdWString(command_name), "", this);
+
+        QObject::connect(edit_widget, &TouchTextEdit::confirmed, [&](QString text) {
+				pop_current_widget();
+                //setFocus();
+                handle_pending_text_command(text.toStdWString());
+            });
+
+        QObject::connect(edit_widget, &TouchTextEdit::cancelled, [&]() {
+            pop_current_widget();
+            });
+
+        edit_widget->resize(width() * 0.8, height() * 0.8);
+        edit_widget->move(width() * 0.1, height() * 0.1);
+        push_current_widget(edit_widget);
+        show_current_widget();
     }
-    text_command_line_edit_label->setText(QString::fromStdWString(command_name));
-    text_command_line_edit_container->show();
-    text_command_line_edit->setFocus();
+    else {
+		text_command_line_edit->clear();
+		if (should_fill_with_selected_text) {
+			text_command_line_edit->setText(QString::fromStdWString(selected_text));
+		}
+		text_command_line_edit_label->setText(QString::fromStdWString(command_name));
+		text_command_line_edit_container->show();
+		text_command_line_edit->setFocus();
+    }
 }
 
 bool MainWidget::helper_window_overlaps_main_window() {

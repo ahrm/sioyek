@@ -47,6 +47,7 @@
 #include "touchui/TouchRangeSelectUI.h"
 #include "touchui/TouchPageSelector.h"
 #include "touchui/TouchMainMenu.h"
+#include "touchui/TouchTextEdit.h"
 
 #include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"
@@ -931,6 +932,16 @@ private:
 //    QLabel* label;
 
 };
+
+
+//class TextConfigUI : public ConfigUI{
+//public:
+//	TextConfigUI(MainWidget* parent, std::wstring* config_location);
+//    void resizeEvent(QResizeEvent* resize_event) override;
+//private:
+//    std::wstring* float_location;
+//    TouchTextEdit* text_edit = nullptr;
+//};
 
 class FloatConfigUI : public ConfigUI{
 public:

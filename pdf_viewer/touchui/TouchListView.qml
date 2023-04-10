@@ -57,7 +57,7 @@ Rectangle {
         model: _model
         id: lview
         clip: true
-        anchors.fill: parent
+        //anchors.fill: parent
 
 
         displaced: Transition{
