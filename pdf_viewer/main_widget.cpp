@@ -322,6 +322,14 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 			w->resize(width(), height());
         }
     }
+    if (TOUCH_MODE) {
+        if (text_selection_buttons) {
+            text_selection_buttons->resize(width(), height());
+        }
+        if (search_buttons) {
+            search_buttons->resize(width(), height());
+        }
+    }
 }
 
 void MainWidget::set_overview_position(int page, float offset) {
@@ -718,6 +726,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         }
 
     });
+
+    search_buttons = new SearchButtons(this);
+    search_buttons->hide();
+	text_selection_buttons = new TouchTextSelectionButtons(this);
+    text_selection_buttons->hide();
 
     setMinimumWidth(500);
     setMinimumHeight(200);
@@ -2234,9 +2247,19 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     }
 }
 
-void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text) {
+void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text, const std::wstring& initial_value) {
     if (TOUCH_MODE) {
-        TouchTextEdit* edit_widget = new TouchTextEdit(QString::fromStdWString(command_name), "", this);
+        QString init = "";
+
+        if (should_fill_with_selected_text) {
+            init = QString::fromStdWString(selected_text);
+        }
+
+        if (initial_value.size() > 0 ){
+			init = QString::fromStdWString(initial_value);
+		}
+
+        TouchTextEdit* edit_widget = new TouchTextEdit(QString::fromStdWString(command_name), init, this);
 
         QObject::connect(edit_widget, &TouchTextEdit::confirmed, [&](QString text) {
 				pop_current_widget();
@@ -4021,7 +4044,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command){
 
 			Requirement next_requirement = pending_command_instance->next_requirement(this).value();
 			if (next_requirement.type == RequirementType::Text) {
-				show_textbar(utf8_decode(next_requirement.name), true);
+				show_textbar(utf8_decode(next_requirement.name), true, pending_command_instance->get_text_default_value());
 			}
 			else if (next_requirement.type == RequirementType::Symbol) {
 			}
@@ -4837,7 +4860,6 @@ void MainWidget::handle_mobile_selection(){
         selection_begin_indicator = new SelectionIndicator(this, true, this, begin_abspos);
         selection_end_indicator = new SelectionIndicator(this, false, this, end_abspos);
 //        text_selection_buttons = new TextSelectionButtons(this);
-        text_selection_buttons = new TouchTextSelectionButtons(this);
 
 
 //        int window_width = width();
@@ -4897,10 +4919,10 @@ void MainWidget::clear_selection_indicators(){
         text_selection_buttons->hide();
         delete selection_begin_indicator;
         delete selection_end_indicator;
-        delete text_selection_buttons;
+        //delete text_selection_buttons;
         selection_begin_indicator = nullptr;
         selection_end_indicator = nullptr;
-        text_selection_buttons = nullptr;
+        //text_selection_buttons = nullptr;
     }
 }
 
@@ -5048,18 +5070,12 @@ void MainWidget::handle_touch_highlight(){
 }
 
 void MainWidget::show_search_buttons(){
-
-    search_buttons = new SearchButtons(this);
     search_buttons->show();
 }
 
 void MainWidget::clear_search_buttons(){
 
-    if (search_buttons){
-        search_buttons->hide();
-        delete search_buttons;
-        search_buttons = nullptr;
-    }
+	search_buttons->hide();
 }
 
 void MainWidget::restore_default_config(){

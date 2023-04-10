@@ -19,6 +19,7 @@ Rectangle {
 		anchors.top: parent.top
 		height: 3 * parent.height / 4
 		color: "white"
+		text: _initialValue
 
 	}
 

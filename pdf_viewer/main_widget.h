@@ -183,7 +183,7 @@ public:
 	void handle_click(WindowPos pos);
 
 	//bool eventFilter(QObject* obj, QEvent* event) override;
-	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
+	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false, const std::wstring& initial_value=L"");
 	void toggle_two_window_mode();
 	void toggle_window_configuration();
 	void handle_portal();
@@ -357,9 +357,7 @@ public:
 
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator *selection_end_indicator = nullptr;
-    TouchTextSelectionButtons* text_selection_buttons = nullptr;
     HighlightButtons* highlight_buttons = nullptr;
-    SearchButtons* search_buttons = nullptr;
     QPoint last_hold_point;
     QPoint last_press_point;
     qint64 last_press_msecs = 0;
@@ -401,6 +399,9 @@ public:
 	int num_visible_links();
 
 	protected:
+    TouchTextSelectionButtons* text_selection_buttons = nullptr;
+    SearchButtons* search_buttons = nullptr;
+
 	void focusInEvent(QFocusEvent* ev);
 	void resizeEvent(QResizeEvent* resize_event) override;
 	void changeEvent(QEvent* event) override;

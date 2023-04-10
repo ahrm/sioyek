@@ -432,18 +432,28 @@ TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidg
 
     QObject::connect(buttons_ui, &TouchCopyOptions::copyClicked, [&](){
         copy_to_clipboard(main_widget->selected_text);
+        main_widget->clear_selection_indicators();
+    });
+
+    QObject::connect(buttons_ui, &TouchCopyOptions::searchClicked, [&](){
+		main_widget->perform_search(main_widget->selected_text, false);
+		main_widget->show_search_buttons();
+        main_widget->clear_selection_indicators();
     });
 
     QObject::connect(buttons_ui, &TouchCopyOptions::scholarClicked, [&](){
         search_custom_engine(main_widget->selected_text, L"https://scholar.google.com/scholar?&q=");
+        main_widget->clear_selection_indicators();
     });
 
     QObject::connect(buttons_ui, &TouchCopyOptions::googleClicked, [&](){
         search_custom_engine(main_widget->selected_text, L"https://www.google.com/search?q=");
+        main_widget->clear_selection_indicators();
     });
 
     QObject::connect(buttons_ui, &TouchCopyOptions::highlightClicked, [&](){
         main_widget->handle_touch_highlight();
+        main_widget->clear_selection_indicators();
     });
 }
 
@@ -494,7 +504,7 @@ void HighlightButtons::resizeEvent(QResizeEvent* resize_event){
 
 SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent){
     main_widget = parent;
-    layout = new QHBoxLayout();
+    //layout = new QHBoxLayout(this);
 
 //    delete_highlight_button = new QPushButton("Delete");
 //    QObject::connect(delete_highlight_button, &QPushButton::clicked, [&](){
@@ -503,41 +513,45 @@ SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent){
 //        main_widget->highlight_buttons = nullptr;
 //        deleteLater();
 //    });
-    next_match_button = new QPushButton("next");
-    prev_match_button = new QPushButton("prev");
-    goto_initial_location_button = new QPushButton("initial");
+    //next_match_button = new QPushButton("next");
+    //prev_match_button = new QPushButton("prev");
+    //goto_initial_location_button = new QPushButton("initial");
+    buttons_widget = new TouchSearchButtons(this);
 
-    QObject::connect(next_match_button, &QPushButton::clicked, [&](){
+    QObject::connect(buttons_widget, &TouchSearchButtons::nextPressed, [&](){
         main_widget->opengl_widget->goto_search_result(1);
-        main_widget->invalidate_render();
+        main_widget->validate_render();
     });
 
-    QObject::connect(prev_match_button, &QPushButton::clicked, [&](){
+    QObject::connect(buttons_widget, &TouchSearchButtons::previousPressed, [&](){
         main_widget->opengl_widget->goto_search_result(-1);
-        main_widget->invalidate_render();
+        main_widget->validate_render();
     });
 
-    QObject::connect(goto_initial_location_button, &QPushButton::clicked, [&](){
+    QObject::connect(buttons_widget, &TouchSearchButtons::initialPressed, [&](){
         main_widget->goto_mark('/');
         main_widget->invalidate_render();
     });
 
 
-    layout->addWidget(next_match_button);
-    layout->addWidget(goto_initial_location_button);
-    layout->addWidget(prev_match_button);
+    //layout->addWidget(next_match_button);
+    //layout->addWidget(goto_initial_location_button);
+    //layout->addWidget(prev_match_button);
 
-    this->setLayout(layout);
+    //this->setLayout(layout);
 }
 
 void SearchButtons::resizeEvent(QResizeEvent* resize_event){
 
     QWidget::resizeEvent(resize_event);
-    int parent_width = parentWidget()->width();
-    int parent_height = parentWidget()->height();
+    int width = parentWidget()->width() / 3;
+    int height = parentWidget()->height() / 6;
 
-    setFixedSize(parent_width, parent_height / 5);
-    move(0, 0);
+
+    buttons_widget->resize(width, height);
+    setFixedSize(width, height);
+    //layout->update();
+    move(parentWidget()->width() / 3, parentWidget()->height() - 3 * height / 2);
 }
 
 //ConfigUI::ConfigUI(MainWidget* parent) : QQuickWidget(parent){

@@ -48,6 +48,7 @@ public:
 
 	virtual void run(MainWidget* widget);
 	virtual std::string get_name();
+	virtual std::wstring get_text_default_value();
 };
 
 

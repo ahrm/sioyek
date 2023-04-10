@@ -14,12 +14,14 @@ public:
 
 public slots:
     void handleCopyClicked();
+    void handleSearchClicked();
     void handleScholarClicked();
     void handleGoogleClicked();
     void handleHighlightClicked();
 
 signals:
     void copyClicked();
+    void searchClicked();
     void scholarClicked();
     void googleClicked();
     void highlightClicked();

@@ -48,6 +48,7 @@
 #include "touchui/TouchPageSelector.h"
 #include "touchui/TouchMainMenu.h"
 #include "touchui/TouchTextEdit.h"
+#include "touchui/TouchSearchButtons.h"
 
 #include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"
@@ -880,10 +881,11 @@ public:
 private:
 
     MainWidget* main_widget;
-    QHBoxLayout* layout;
-    QPushButton* prev_match_button;
-    QPushButton* next_match_button;
-    QPushButton* goto_initial_location_button;
+	TouchSearchButtons* buttons_widget;
+    //QHBoxLayout* layout;
+    //QPushButton* prev_match_button;
+    //QPushButton* next_match_button;
+    //QPushButton* goto_initial_location_button;
 };
 
 class ConfigUI : public QWidget{

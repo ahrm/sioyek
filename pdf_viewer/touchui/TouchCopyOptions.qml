@@ -14,6 +14,7 @@ Item{
     height: 50
 
     signal copyPressed()
+    signal searchPressed()
     signal scholarPressed()
     signal googlePressed()
     signal highlightPressed()
@@ -21,21 +22,25 @@ Item{
     TouchButtonGroup{
         anchors.fill: parent
 
-        buttons: ["Copy", "Scholar", "Google", "Highlight"]
+        buttons: ["Copy", "Search", "Scholar", "Google", "Highlight"]
         onButtonClicked: function(index, val) {
             if (index == 0){
                 root.copyPressed();
             }
 
             if (index == 1){
-                root.scholarPressed();
+                root.searchPressed();
             }
 
             if (index == 2){
-                root.googlePressed();
+                root.scholarPressed();
             }
 
             if (index == 3){
+                root.googlePressed();
+            }
+
+            if (index == 4){
                 root.highlightPressed();
             }
 

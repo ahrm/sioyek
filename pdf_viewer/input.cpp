@@ -2207,6 +2207,11 @@ public:
 		text = value;
 	}
 
+	std::wstring get_text_default_value() {
+		Config* config = config_manager->get_mut_config_with_name(utf8_decode(config_name));
+		return *(std::wstring*)(config->value);
+	}
+
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
 		if (TOUCH_MODE) {
 			Config* config = config_manager->get_mut_config_with_name(utf8_decode(config_name));
@@ -3065,6 +3070,10 @@ void Command::set_text_requirement(std::wstring value) {}
 void Command::set_symbol_requirement(char value) {}
 void Command::set_file_requirement(std::wstring value) {}
 void Command::set_rect_requirement(fz_rect value) {}
+
+std::wstring Command::get_text_default_value() {
+	return L"";
+}
 
 bool Command::pushes_state() {
 	return false;
