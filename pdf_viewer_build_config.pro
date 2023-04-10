@@ -184,4 +184,20 @@ android{
     LIBS += -L$$PWD/libs/ -lmupdf_java
     ANDROID_EXTRA_LIBS += $$PWD/libs/libmupdf_java.so
 
+    DISTFILES += \
+        android/build.gradle \
+        android/gradle.properties \
+        android/gradle/wrapper/gradle-wrapper.jar \
+        android/gradle/wrapper/gradle-wrapper.properties \
+        android/gradlew \
+        android/gradlew.bat \
+        android/res/values/libs.xml\
+        android/AndroidManifest.xml
+
+}
+
+
+contains(ANDROID_TARGET_ARCH,arm64-v8a) {
+    ANDROID_PACKAGE_SOURCE_DIR = \
+        $$PWD/android
 }
