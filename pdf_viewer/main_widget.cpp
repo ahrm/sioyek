@@ -727,6 +727,14 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             persist();
 #endif
         }
+#ifdef SIOYEK_ANDROID
+    if (state == Qt::ApplicationState::ApplicationActive){
+        if (!pending_intents_checked){
+            pending_intents_checked = true;
+            check_pending_intents("");
+        }
+    }
+#endif
 
     });
 
@@ -5117,3 +5125,4 @@ void MainWidget::set_light_mode(){
 void MainWidget::set_custom_color_mode(){
     opengl_widget->set_custom_color_mode(true);
 }
+

@@ -216,7 +216,10 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
 
 QString get_list_item_stylesheet();
 
+#ifdef SIOYEK_ANDROID
 QString android_file_name_from_uri(QString uri);
+void check_pending_intents(const QString workingDirPath);
+#endif
 
 float dampen_velocity(float v, float dt);
 

@@ -35,6 +35,7 @@
 #endif
 
 #include <mupdf/pdf.h>
+#include "main_widget.h"
 
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
@@ -47,6 +48,8 @@ extern float UI_SELECTED_BACKGROUND_COLOR[3];
 extern bool NUMERIC_TAGS;
 extern int NUM_H_SLICES;
 extern int NUM_V_SLICES;
+
+extern std::vector<MainWidget*> windows;
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -1962,8 +1965,8 @@ struct Range {
 	}
 };
 
-Range merge_range(Range range1, Range range2) {
-	Range res;
+struct Range merge_range(struct Range range1, struct Range range2) {
+    struct Range res;
 	res.begin = std::min(range1.begin, range2.begin);
 	res.end = std::max(range1.end, range2.end);
 	return res;
@@ -1994,8 +1997,8 @@ int find_best_merge_index_for_line_index(const std::vector<fz_stext_line*>& line
 	int max_merged_lines = 40;
 	//Range current_range = { lines[index]->bbox.y0, lines[index]->bbox.y1 };
 	//Range current_range_x = { lines[index]->bbox.x0, lines[index]->bbox.x1 };
-	Range current_range = { line_rects[index].y0, line_rects[index].y1 };
-	Range current_range_x = { line_rects[index].x0, line_rects[index].x1 };
+    struct Range current_range = { line_rects[index].y0, line_rects[index].y1 };
+    struct Range current_range_x = { line_rects[index].x0, line_rects[index].x1 };
 	float maximum_height = current_range.size();
 	float maximum_width = current_range_x.size();
 	float min_cost = current_range.size() * line_num_penalty(1) / current_range_x.size();
@@ -2398,6 +2401,58 @@ QString android_file_name_from_uri(QString uri){
     return ret;
 }
 
+void check_pending_intents(const QString workingDirPath)
+{
+//    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    if(activity.isValid()) {
+        // create a Java String for the Working Dir Path
+        QJniObject jniWorkingDir = QJniObject::fromString(workingDirPath);
+        if(!jniWorkingDir.isValid()) {
+            qWarning() << "QAndroidJniObject jniWorkingDir not valid.";
+//            emit shareError(0, tr("Share: an Error occured\nWorkingDir not valid"));
+            return;
+        }
+        activity.callMethod<void>("checkPendingIntents","(Ljava/lang/String;)V", jniWorkingDir.object<jstring>());
+        qDebug() << "checkPendingIntents: " << workingDirPath;
+        return;
+    }
+    qDebug() << "checkPendingIntents: Activity not valid";
+}
+
+
+void setFileUrlReceived(const QString &url)
+{
+    if (windows.size() > 0){
+        windows[0]->open_document(url.toStdWString());
+    }
+}
+
+extern "C" {
+JNIEXPORT void JNICALL
+  Java_info_sioyek_sioyek_SioyekActivity_setFileUrlReceived(JNIEnv *env,
+                                        jobject obj,
+                                        jstring url)
+{
+    const char *urlStr = env->GetStringUTFChars(url, NULL);
+    Q_UNUSED (obj)
+    setFileUrlReceived(urlStr);
+    env->ReleaseStringUTFChars(url, urlStr);
+    return;
+}
+
+//JNIEXPORT void JNICALL
+//  Java_org_ekkescorner_examples_sharex_QShareActivity_setFileReceivedAndSaved(JNIEnv *env,
+//                                        jobject obj,
+//                                        jstring url)
+//{
+//    const char *urlStr = env->GetStringUTFChars(url, NULL);
+//    Q_UNUSED (obj)
+//    setFileReceivedAndSaved(urlStr);
+//    env->ReleaseStringUTFChars(url, urlStr);
+//    return;
+//}
+}
 #endif
 
 float dampen_velocity(float v, float dt){

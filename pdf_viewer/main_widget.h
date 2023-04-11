@@ -396,6 +396,10 @@ public:
 	std::optional<std::pair<int, fz_link*>> get_selected_link(const std::wstring& text);
 
 	int num_visible_links();
+#ifdef SIOYEK_ANDROID
+//    void onApplicationStateChanged(Qt::ApplicationState applicationState);
+    bool pending_intents_checked = false;
+#endif
 
 	protected:
     TouchTextSelectionButtons* text_selection_buttons = nullptr;
