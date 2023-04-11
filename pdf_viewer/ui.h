@@ -587,7 +587,7 @@ public:
         });
 
         QObject::connect(list_view, &TouchListView::itemDeleted, [&](QString name, int index){
-			on_delete(&values[index]);
+            on_delete_function(&values[index]);
             //deleteLater();
         });
     }
