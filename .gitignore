@@ -352,7 +352,6 @@ moc*
 
 # Linux and Mac build files
 Makefile
-sioyek
 libs/*
 lib_debug/*
 lib_release/*

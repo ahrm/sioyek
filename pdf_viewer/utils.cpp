@@ -2441,6 +2441,18 @@ JNIEXPORT void JNICALL
     return;
 }
 
+JNIEXPORT void JNICALL
+  Java_info_sioyek_sioyek_SioyekActivity_qDebug(JNIEnv *env,
+                                        jobject obj,
+                                        jstring url)
+{
+    const char *urlStr = env->GetStringUTFChars(url, NULL);
+    Q_UNUSED (obj)
+    qDebug() << urlStr;
+    env->ReleaseStringUTFChars(url, urlStr);
+    return;
+}
+
 //JNIEXPORT void JNICALL
 //  Java_org_ekkescorner_examples_sharex_QShareActivity_setFileReceivedAndSaved(JNIEnv *env,
 //                                        jobject obj,
