@@ -771,6 +771,8 @@ void focus_on_widget(QWidget* widget) {
 int main(int argc, char* args[]) {
 
 #ifdef SIOYEK_ANDROID
+    SEARCH_URLS['s' - 'a'] = L"https://scholar.google.com/scholar?q=";
+    SEARCH_URLS['g' - 'a'] = L"https://www.google.com/search?q=";
     auto r = QtAndroidPrivate::checkPermission(QtAndroidPrivate::Storage).result();
     if (r == QtAndroidPrivate::Denied){
         r = QtAndroidPrivate::requestPermission(QtAndroidPrivate::Storage).result();

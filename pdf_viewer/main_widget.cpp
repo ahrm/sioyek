@@ -1,6 +1,8 @@
 ﻿//todo:
 // fix the rest of UI for mobile (current buttons are extremely bad)
 // boolean config ui is not good (for example doesn't display properly for highlight select config)
+// focus text field in text inputs
+// improve text input look
 
 
 #include <iostream>
