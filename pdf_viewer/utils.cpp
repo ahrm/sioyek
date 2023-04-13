@@ -2349,6 +2349,10 @@ void convert_qcolor_to_float3(const QColor& color, float* out_floats){
     *(out_floats + 2) = static_cast<float>(color.blue()) / 255.0f;
 }
 
+QColor convert_float3_to_qcolor(float* floats) {
+	return QColor(get_color_qml_string(floats[0], floats[1], floats[2]));
+}
+
 void convert_qcolor_to_float4(const QColor& color, float* out_floats){
     *(out_floats + 0) = static_cast<float>(color.red()) / 255.0f;
     *(out_floats + 1) = static_cast<float>(color.green()) / 255.0f;

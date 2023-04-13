@@ -50,6 +50,7 @@
 #include "touchui/TouchTextEdit.h"
 #include "touchui/TouchSearchButtons.h"
 #include "touchui/TouchDeleteButton.h"
+#include "touchui/TouchHighlightButtons.h"
 
 #include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"
@@ -870,7 +871,8 @@ public:
 private:
 
     MainWidget* main_widget;
-	TouchDeleteButton* delete_button;
+	//TouchDeleteButton* delete_button;
+	TouchHighlightButtons* highlight_buttons;
 	//QQuickWidget* buttons_widget;
     //QHBoxLayout* layout;
     //QPushButton* delete_highlight_button;

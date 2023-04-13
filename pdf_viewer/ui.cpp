@@ -20,6 +20,7 @@ extern float BACKGROUND_COLOR[3];
 extern bool RULER_MODE;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
+extern float HIGHLIGHT_COLORS[26 * 3];
 
 std::wstring select_command_file_name(std::string command_name) {
 	if (command_name == "open_document") {
@@ -482,11 +483,22 @@ HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent){
 
     //delete_highlight_button = new QPushButton("Delete");
     //buttons_widget = new 
-    delete_button = new TouchDeleteButton(this);
+    highlight_buttons = new TouchHighlightButtons(this);
 
-    QObject::connect(delete_button, &TouchDeleteButton::deletePressed, [&](){
+    QObject::connect(highlight_buttons, &TouchHighlightButtons::deletePressed, [&](){
         main_widget->handle_delete_selected_highlight();
         hide();
+        //main_widget->highlight_buttons = nullptr;
+        //deleteLater();
+    });
+
+    QObject::connect(highlight_buttons, &TouchHighlightButtons::changeColorPressed, [&](int index){
+        //float* color = &HIGHLIGHT_COLORS[3 * index];
+
+        //main_widget->handle_delete_selected_highlight();
+        main_widget->change_selected_highlight_type('a' + index);
+        hide();
+        main_widget->invalidate_render();
         //main_widget->highlight_buttons = nullptr;
         //deleteLater();
     });
@@ -503,7 +515,7 @@ void HighlightButtons::resizeEvent(QResizeEvent* resize_event){
     int parent_height = parentWidget()->height();
 
     setFixedSize(parent_width / 4, parent_height / 5);
-    delete_button->resize(parent_width / 4, parent_height / 5);
+    highlight_buttons->resize(parent_width / 4, parent_height / 5);
     move(parent_width * 3 / 8, parent_height / 5);
 }
 

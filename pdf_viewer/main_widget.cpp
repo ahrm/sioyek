@@ -4265,10 +4265,16 @@ void MainWidget::handle_add_highlight(char symbol) {
 		main_document_view->selected_character_rects.clear();
 		selected_text.clear();
 	}
-	else if (selected_highlight_index != -1) {
+    else {
+        change_selected_highlight_type(symbol);
+    }
+}
+
+void MainWidget::change_selected_highlight_type(char new_type) {
+	if (selected_highlight_index != -1) {
 		Highlight new_highlight = main_document_view->get_highlight_with_index(selected_highlight_index);
 		main_document_view->delete_highlight_with_index(selected_highlight_index);
-		main_document_view->add_highlight(new_highlight.selection_begin, new_highlight.selection_end, symbol);
+		main_document_view->add_highlight(new_highlight.selection_begin, new_highlight.selection_end, new_type);
 		selected_highlight_index = -1;
 	}
 }

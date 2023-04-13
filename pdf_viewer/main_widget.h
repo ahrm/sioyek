@@ -183,6 +183,7 @@ public:
 	void handle_click(WindowPos pos);
 
 	//bool eventFilter(QObject* obj, QEvent* event) override;
+	void change_selected_highlight_type(char new_type);
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false, const std::wstring& initial_value=L"");
 	void toggle_two_window_mode();
 	void toggle_window_configuration();
