@@ -868,11 +868,11 @@ class HighlightButtons : public QWidget {
 public:
     HighlightButtons(MainWidget* parent);
     void resizeEvent(QResizeEvent* resize_event) override;
+	TouchHighlightButtons* highlight_buttons;
 private:
 
     MainWidget* main_widget;
 	//TouchDeleteButton* delete_button;
-	TouchHighlightButtons* highlight_buttons;
 	//QQuickWidget* buttons_widget;
     //QHBoxLayout* layout;
     //QPushButton* delete_highlight_button;

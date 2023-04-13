@@ -9,8 +9,9 @@
 class TouchHighlightButtons : public QWidget{
     Q_OBJECT
 public:
-    TouchHighlightButtons(QWidget* parent=nullptr);
+    TouchHighlightButtons(char selected_symbol, QWidget* parent=nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
+    void setHighlightType(char type);
 
 public slots:
     void handleDelete();

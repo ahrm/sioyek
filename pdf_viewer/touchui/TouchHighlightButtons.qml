@@ -45,6 +45,15 @@ Item{
 				root.changeColorClicked(0);
 			}
 		}
+		Rectangle{
+			anchors.centerIn: parent
+			width: parent.width * 1.1
+			height: parent.height * 1.1
+			radius: width
+			color: "blue"
+			z: -1
+			visible: _index == 0
+		}
 	}
 	Rectangle{
 		anchors.right: color_c.left
@@ -60,6 +69,15 @@ Item{
 			onClicked: {
 				root.changeColorClicked(1);
 			}
+		}
+		Rectangle{
+			anchors.centerIn: parent
+			width: parent.width * 1.1
+			height: parent.height * 1.1
+			radius: width
+			color: "blue"
+			z: -1
+			visible: _index == 1
 		}
 	}
 	Rectangle{
@@ -77,6 +95,15 @@ Item{
 				root.changeColorClicked(2);
 			}
 		}
+		Rectangle{
+			anchors.centerIn: parent
+			width: parent.width * 1.1
+			height: parent.height * 1.1
+			radius: width
+			color: "blue"
+			z: -1
+			visible: _index == 2
+		}
 	}
 	Rectangle{
 		anchors.verticalCenter: parent.verticalCenter
@@ -90,8 +117,18 @@ Item{
 		MouseArea{
 			anchors.fill: parent
 			onClicked: {
+				console.log(_index);
 				root.changeColorClicked(3);
 			}
+		}
+		Rectangle{
+			anchors.centerIn: parent
+			width: parent.width * 1.1
+			height: parent.height * 1.1
+			radius: width
+			color: "blue"
+			z: -1
+			visible: _index == 3
 		}
 	}
 }

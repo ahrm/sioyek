@@ -4279,6 +4279,13 @@ void MainWidget::change_selected_highlight_type(char new_type) {
 	}
 }
 
+char MainWidget::get_current_selected_highlight_type() {
+    if (selected_highlight_index != -1) {
+        return main_document_view->get_highlight_with_index(selected_highlight_index).type;
+    }
+    return 'a';
+}
+
 void MainWidget::handle_goto_highlight() {
 	std::vector<std::wstring> option_names;
 	std::vector<std::wstring> option_location_strings;
@@ -5058,6 +5065,7 @@ void MainWidget::handle_double_tap(QPoint pos){
 
 void MainWidget::show_highlight_buttons(){
     //highlight_buttons = new HighlightButtons(this);
+    highlight_buttons->highlight_buttons->setHighlightType(get_current_selected_highlight_type());
     highlight_buttons->show();
 }
 

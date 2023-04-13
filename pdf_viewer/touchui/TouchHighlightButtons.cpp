@@ -3,7 +3,7 @@
 
 extern float HIGHLIGHT_COLORS[26 * 3];
 
-TouchHighlightButtons::TouchHighlightButtons(QWidget* parent) : QWidget(parent){
+TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* parent) : QWidget(parent){
 
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     quick_widget = new QQuickWidget(this);
@@ -17,6 +17,7 @@ TouchHighlightButtons::TouchHighlightButtons(QWidget* parent) : QWidget(parent){
     quick_widget->rootContext()->setContextProperty("_color_b", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('b' - 'a')])));
     quick_widget->rootContext()->setContextProperty("_color_c", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('c' - 'a')])));
     quick_widget->rootContext()->setContextProperty("_color_d", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('d' - 'a')])));
+    quick_widget->rootContext()->setContextProperty("_index", selected_symbol - 'a');
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchHighlightButtons.qml"));
 
@@ -32,6 +33,9 @@ TouchHighlightButtons::TouchHighlightButtons(QWidget* parent) : QWidget(parent){
         SLOT(handleChangeColor(int)));
 
 
+}
+void TouchHighlightButtons::setHighlightType(char type) {
+    quick_widget->rootContext()->setContextProperty("_index", type - 'a');
 }
 
 void TouchHighlightButtons::handleDelete() {

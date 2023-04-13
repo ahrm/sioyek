@@ -483,7 +483,7 @@ HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent){
 
     //delete_highlight_button = new QPushButton("Delete");
     //buttons_widget = new 
-    highlight_buttons = new TouchHighlightButtons(this);
+    highlight_buttons = new TouchHighlightButtons(main_widget->get_current_selected_highlight_type(), this);
 
     QObject::connect(highlight_buttons, &TouchHighlightButtons::deletePressed, [&](){
         main_widget->handle_delete_selected_highlight();
