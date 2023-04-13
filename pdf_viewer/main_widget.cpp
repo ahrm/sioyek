@@ -2352,26 +2352,20 @@ void MainWidget::toggle_two_window_mode() {
     }
 }
 
-fz_stext_char* MainWidget::get_character_under_cursor(QPoint pos){
-//    QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+fz_stext_char* MainWidget::get_closest_character_to_cusrsor(QPoint pos){
+
     WindowPos window_pos = { pos.x(), pos.y() };
     DocumentPos doc_pos = main_document_view->window_to_document_pos(window_pos);
     int current_page = get_current_page_number();
     fz_stext_page* stext_page = doc()->get_stext_with_page_number(current_page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
+    int location_index = -1;
 
     fz_point doc_point;
     doc_point.x = doc_pos.x;
     doc_point.y = doc_pos.y;
-
-    for (fz_stext_char* ch : flat_chars){
-        fz_rect character_rect = fz_rect_from_quad(ch->quad);
-        if (fz_is_point_inside_rect(doc_point, character_rect)){
-            return ch;
-        }
-    }
-    return nullptr;
+    return find_closest_char_to_document_point(flat_chars, doc_point, &location_index);
 }
 
 std::optional<std::wstring> MainWidget::get_paper_name_under_cursor() {
@@ -4830,7 +4824,7 @@ bool MainWidget::event(QEvent *event){
 
 void MainWidget::handle_mobile_selection(){
 //    QPoint selection_position = last_hold_point;
-    fz_stext_char* character_under = get_character_under_cursor(last_hold_point);
+    fz_stext_char* character_under = get_closest_character_to_cusrsor(last_hold_point);
     if (character_under){
         int current_page = get_current_page_number();
         fz_rect uncentered_rect =doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad), false);

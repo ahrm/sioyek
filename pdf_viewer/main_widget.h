@@ -308,7 +308,7 @@ public:
 	int get_current_monitor_width(); int get_current_monitor_height();
 	void synctex_under_pos(WindowPos position);
 	std::optional<std::wstring> get_paper_name_under_cursor();
-    fz_stext_char* get_character_under_cursor(QPoint pos);
+    fz_stext_char* get_closest_character_to_cusrsor(QPoint pos);
     void set_status_message(std::wstring new_status_string);
 	void remove_self_from_windows();
 	//void handle_additional_command(std::wstring command_name, bool wait=false);
