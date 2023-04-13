@@ -1624,6 +1624,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             QPointF vel;
             if (((current_pos-last_press_point).manhattanLength() < 10) && ((current_time - last_press_msecs) < 500)){
                 if (handle_quick_tap()) {
+                    is_dragging = false;
                     return;
                 }
             }
@@ -1676,9 +1677,6 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         }
 
         if (down){ // handle touch history navigation
-
-            //        WindowPos pos = {click_pos.}
-            int back_threshold = window_height / 5;
 
             if (screen()->orientation() == Qt::PortraitOrientation){
 
