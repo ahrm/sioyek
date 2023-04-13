@@ -19,6 +19,7 @@ Rectangle {
         id: query
         color: "white"
         inputMethodHints: Qt.ImhSensitiveData | Qt.ImhPreferLowercase
+        focus: true
 
         anchors {
             top: rootitem.top
