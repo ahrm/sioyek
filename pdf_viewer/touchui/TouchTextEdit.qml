@@ -12,7 +12,7 @@ Rectangle {
 	signal cancelled();
 	id: root
 
-	TextEdit{
+	TextInput{
 		id: edit
 		anchors.left: parent.left
 		anchors.right: parent.right
@@ -20,6 +20,10 @@ Rectangle {
 		height: 3 * parent.height / 4
 		color: "white"
 		text: _initialValue
+        focus: true
+		onAccepted:{
+			root.confirmed(edit.text);
+		}
 
 	}
 

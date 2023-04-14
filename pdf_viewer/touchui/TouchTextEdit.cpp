@@ -1,4 +1,5 @@
 #include "touchui/TouchTextEdit.h"
+#include "utils.h"
 
 
 TouchTextEdit::TouchTextEdit(QString name, QString initial_value, QWidget* parent) : QWidget(parent){
@@ -24,6 +25,7 @@ TouchTextEdit::TouchTextEdit(QString name, QString initial_value, QWidget* paren
                 SIGNAL(cancelled()),
                 this,
                 SLOT(handleCancel()));
+    quick_widget->setFocus();
 
 }
 
@@ -37,7 +39,18 @@ void TouchTextEdit::handleCancel() {
 }
 
 void TouchTextEdit::resizeEvent(QResizeEvent* resize_event){
-    quick_widget->resize(resize_event->size().width(), resize_event->size().height());
     QWidget::resizeEvent(resize_event);
+
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    float five_cm = 5 * logicalDpiX() / 2.54f;
+
+    int w = static_cast<int>(std::min(parent_width * 0.8f, five_cm));
+    int h = static_cast<int>(std::min(parent_height * 0.5f, five_cm));
+
+    resize(w, h);
+    quick_widget->resize(w, h);
+    move((parent_width - w ) / 2, (parent_height - h) / 2);
 
 }
