@@ -13,10 +13,17 @@ TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* pare
     quick_widget->setClearColor(Qt::transparent);
 
     //quick_widget->rootContext()->setContextProperty("_initialValue", initial_value);
-    quick_widget->rootContext()->setContextProperty("_color_a", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('a' - 'a')])));
-    quick_widget->rootContext()->setContextProperty("_color_b", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('b' - 'a')])));
-    quick_widget->rootContext()->setContextProperty("_color_c", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('c' - 'a')])));
-    quick_widget->rootContext()->setContextProperty("_color_d", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('d' - 'a')])));
+    //quick_widget->rootContext()->setContextProperty("_color_a", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('a' - 'a')])));
+    //quick_widget->rootContext()->setContextProperty("_color_b", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('b' - 'a')])));
+    //quick_widget->rootContext()->setContextProperty("_color_c", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('c' - 'a')])));
+    //quick_widget->rootContext()->setContextProperty("_color_d", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('d' - 'a')])));
+    QList<QColor> colors;
+    colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('a' - 'a')]));
+    colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('b' - 'a')]));
+    colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('c' - 'a')]));
+    colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('d' - 'a')]));
+    quick_widget->rootContext()->setContextProperty("_colors", QVariant::fromValue(colors));
+
     quick_widget->rootContext()->setContextProperty("_index", selected_symbol - 'a');
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchHighlightButtons.qml"));

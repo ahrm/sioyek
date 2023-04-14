@@ -1,15 +1,17 @@
-
+﻿
 import QtQuick 2.2
 import QtQuick.Controls 2.15
 
 import "qrc:/pdf_viewer/touchui"
 
 
-Item{
+Rectangle{
 	signal deleteButtonClicked();
 	signal changeColorClicked(index: int);
 
 	id: root
+	color: "black"
+	radius: 5
 
 	TouchButtonGroup{
 		anchors.left: parent.left
@@ -20,7 +22,7 @@ Item{
 
 		id: deletebutton
 
-		buttons: ["delete"]
+		buttons: ["🗑️"]
 		color: "red"
 
 		onButtonClicked: function (index, name){
@@ -30,105 +32,45 @@ Item{
 		}
 	}
 
-	Rectangle{
-		anchors.right: color_b.left
-		anchors.verticalCenter: parent.verticalCenter
-		anchors.margins: 10
-		width: parent.width / 6
-		height: width
-		radius: Math.max(width,height)
-		id: color_a
-		color: _color_a
-		MouseArea{
-			anchors.fill: parent
-			onClicked: {
-				root.changeColorClicked(0);
-			}
-		}
-		Rectangle{
-			anchors.centerIn: parent
-			width: parent.width * 1.1
-			height: parent.height * 1.1
-			radius: width
-			color: "blue"
-			z: -1
-			visible: _index == 0
-		}
-	}
-	Rectangle{
-		anchors.right: color_c.left
-		anchors.verticalCenter: parent.verticalCenter
-		anchors.margins: 10
-		width: parent.width / 6
-		height: width
-		radius: Math.max(width,height)
-		id: color_b
-		color: _color_b
-		MouseArea{
-			anchors.fill: parent
-			onClicked: {
-				root.changeColorClicked(1);
-			}
-		}
-		Rectangle{
-			anchors.centerIn: parent
-			width: parent.width * 1.1
-			height: parent.height * 1.1
-			radius: width
-			color: "blue"
-			z: -1
-			visible: _index == 1
-		}
-	}
-	Rectangle{
-		anchors.right: color_d.left
-		anchors.verticalCenter: parent.verticalCenter
-		anchors.margins: 10
-		width: parent.width / 6
-		height: width
-		radius: Math.max(width,height)
-		id: color_c
-		color: _color_c
-		MouseArea{
-			anchors.fill: parent
-			onClicked: {
-				root.changeColorClicked(2);
-			}
-		}
-		Rectangle{
-			anchors.centerIn: parent
-			width: parent.width * 1.1
-			height: parent.height * 1.1
-			radius: width
-			color: "blue"
-			z: -1
-			visible: _index == 2
-		}
-	}
-	Rectangle{
-		anchors.verticalCenter: parent.verticalCenter
+	Row{
+		anchors.top: parent.top
+		anchors.bottom: parent.bottom
+		//anchors.left: deletebutton.right
 		anchors.right: parent.right
-		anchors.margins: 10
-		width: parent.width / 6
-		height: width
-		radius: Math.max(width,height)
-		id: color_d
-		color: _color_d
-		MouseArea{
-			anchors.fill: parent
-			onClicked: {
-				console.log(_index);
-				root.changeColorClicked(3);
+		anchors.margins: 2
+		width: parent.width * 3 / 4
+		layoutDirection: Qt.RightToLeft
+		spacing: parent.width / 50
+
+		Repeater{
+
+			model: 4
+
+			Rectangle{
+				//anchors.right: color_b.left
+				//anchors.verticalCenter: parent.verticalCenter
+				width: Math.min(parent.width / 4, parent.height / 1.1)
+				height: width
+				radius: Math.min(width,height)
+				anchors.verticalCenter: parent.verticalCenter
+				//id: color_a
+				color: _colors[3-index]
+				opacity: (3-index) == _index ? 1 : 0.5
+				Text{
+					text: String.fromCharCode(97 + (3 - index))
+					color: "white"
+					//anchors.centerIn: parent
+					//anchors.fill: parent
+					anchors.centerIn: parent
+					z: 10
+				}
+				MouseArea{
+					anchors.fill: parent
+					onClicked: {
+						root.changeColorClicked(3- index);
+					}
+				}
 			}
-		}
-		Rectangle{
-			anchors.centerIn: parent
-			width: parent.width * 1.1
-			height: parent.height * 1.1
-			radius: width
-			color: "blue"
-			z: -1
-			visible: _index == 3
 		}
 	}
 }

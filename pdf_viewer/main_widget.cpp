@@ -321,18 +321,18 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
     if (TOUCH_MODE && (current_widget_stack.size() > 0)){
         for (auto w : current_widget_stack) {
-			w->resize(width(), height());
+            QCoreApplication::postEvent(w, resize_event->clone());
         }
     }
     if (TOUCH_MODE) {
         if (text_selection_buttons) {
-            text_selection_buttons->resize(width(), height());
+            QCoreApplication::postEvent(text_selection_buttons, resize_event->clone());
         }
         if (search_buttons) {
-            search_buttons->resize(width(), height());
+            QCoreApplication::postEvent(search_buttons, resize_event->clone());
         }
         if (highlight_buttons) {
-            highlight_buttons->resize(width(), height());
+            QCoreApplication::postEvent(highlight_buttons, resize_event->clone());
         }
     }
 }

@@ -514,9 +514,16 @@ void HighlightButtons::resizeEvent(QResizeEvent* resize_event){
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
-    setFixedSize(parent_width / 4, parent_height / 5);
-    highlight_buttons->resize(parent_width / 4, parent_height / 5);
-    move(parent_width * 3 / 8, parent_height / 5);
+    int dpi = physicalDpiY();
+    float parent_height_in_centimeters = static_cast<float>(parent_height) / dpi * 2.54f;
+
+    int w = static_cast<int>(parent_width / 5);
+    int h = static_cast<int>( static_cast<float>(dpi) / 2.54f);
+    w = std::max(w, h * 6);
+
+    setFixedSize(w, h);
+    highlight_buttons->resize(w, h);
+    move((parent_width - w) / 2, parent_height / 5);
 }
 
 
