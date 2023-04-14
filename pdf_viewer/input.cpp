@@ -2243,6 +2243,9 @@ public:
 			Config* config = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
 
 
+			if (config->config_type == ConfigType::String) {
+				widget->config_manager->deserialize_config(config_name, text.value());
+			}
 			if (config->config_type == ConfigType::Color3) {
 				widget->push_current_widget(new Color3ConfigUI(widget, (float*)config->value));
 				widget->show_current_widget();
