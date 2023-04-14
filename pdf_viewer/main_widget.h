@@ -375,6 +375,7 @@ public:
     int ruler_moving_distance_traveled = 0;
 
 
+	void update_highlight_buttons_position();
     void handle_mobile_selection();
     void update_mobile_selection();
     bool handle_quick_tap();

@@ -361,6 +361,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
             selection_begin_indicator->update_pos();
             selection_end_indicator->update_pos();
         }
+        update_highlight_buttons_position();
         if (is_pressed){
             update_position_buffer();
         }
@@ -5066,6 +5067,7 @@ void MainWidget::handle_double_tap(QPoint pos){
 void MainWidget::show_highlight_buttons(){
     //highlight_buttons = new HighlightButtons(this);
     highlight_buttons->highlight_buttons->setHighlightType(get_current_selected_highlight_type());
+    update_highlight_buttons_position();
     highlight_buttons->show();
 }
 
@@ -5134,3 +5136,15 @@ void MainWidget::set_custom_color_mode(){
     opengl_widget->set_custom_color_mode(true);
 }
 
+void MainWidget::update_highlight_buttons_position() {
+    if (selected_highlight_index != -1) {
+		Highlight hl = main_document_view->get_highlight_with_index(selected_highlight_index);
+		AbsoluteDocumentPos hlpos;
+		hlpos.x = hl.selection_begin.x;
+		hlpos.y = hl.selection_begin.y;
+		DocumentPos docpos = doc()->absolute_to_page_pos(hlpos);
+
+		WindowPos windowpos = main_document_view->document_to_window_pos_in_pixels(docpos);
+		highlight_buttons->move(highlight_buttons->pos().x(), windowpos.y -  highlight_buttons->height());
+    }
+}
