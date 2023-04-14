@@ -89,13 +89,16 @@ public class SioyekActivity extends QtActivity{
     }
 
     private void processIntent(){
-        Intent intent = getIntent();
-        //qDebug("jsioyek: " + intent.getAction());
-        Uri intentUri = intent.getData();
-        //String realPath = getRealPathFromUri(getApplicationContext(), intentUri);
-        //Uri newUri = Uri.fromFile(new File(realPath));
 
-        setFileUrlReceived(intentUri.toString());
+        Intent intent = getIntent();
+        if (intent.getAction().equals("android.intent.action.VIEW")){
+            //qDebug("jsioyek: " + intent.getAction());
+            Uri intentUri = intent.getData();
+            //String realPath = getRealPathFromUri(getApplicationContext(), intentUri);
+            //Uri newUri = Uri.fromFile(new File(realPath));
+
+            setFileUrlReceived(intentUri.toString());
+        }
         return;
     }
 }
