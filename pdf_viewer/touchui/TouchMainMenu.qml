@@ -6,7 +6,7 @@ import QtQuick.Controls.Material
 import "qrc:/pdf_viewer/touchui"
 
 
-Column{
+ColumnLayout{
     spacing: 0
 
     signal selectTextClicked();
@@ -26,12 +26,20 @@ Column{
     signal settingsClicked();
 
     Rectangle{
+        anchors.fill: parent
+        z: -1
+        color: "#222"
+        radius: 10
+    }
+    Item{
 
-        color: "yellow"
-//        radius: 10
-        height: parent.height / 6
-        anchors.left: parent.left
-        anchors.right: parent.right
+        // color: "yellow"
+        // radius: 10
+        // height: parent.height / 6
+        Layout.preferredHeight: Math.max(parent.height / 6, 100)
+        Layout.preferredWidth: parent.width
+        // anchors.left: parent.left
+        // anchors.right: parent.right
         Column{
             anchors.fill: parent
 
@@ -39,6 +47,7 @@ Column{
             Text{
                 id: label
                 text: "Tools"
+                color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.margins: 10
@@ -79,13 +88,16 @@ Column{
         }
     }
 
-    Rectangle{
+    Item{
 
-        color: "yellow"
+        // color: "yellow"
 //        radius: 10
-        height: 5 * parent.height / 18
-        anchors.left: parent.left
-        anchors.right: parent.right
+        // Layout.preferredHeight: 5 * parent.height / 18
+        Layout.fillHeight: true
+        Layout.preferredWidth: parent.width
+        // height: 5 * parent.height / 18
+        // anchors.left: parent.left
+        // anchors.right: parent.right
         Column{
             anchors.fill: parent
 
@@ -93,6 +105,7 @@ Column{
             Text{
                 id: label0
                 text: "Color Scheme"
+                color: "white"
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.margins: 10
@@ -124,19 +137,23 @@ Column{
         }
     }
 
-    Rectangle{
+    Item{
 
-        color: "yellow"
+        // color: "yellow"
 //        radius: 10
-        height: 5 * parent.height / 18
-        anchors.left: parent.left
-        anchors.right: parent.right
+        // height: 5 * parent.height / 18
+        // Layout.preferredHeight: 5 * parent.height / 18
+        Layout.fillHeight: true
+        Layout.preferredWidth: parent.width
+        // anchors.left: parent.left
+        // anchors.right: parent.right
         Column{
             anchors.fill: parent
 
 
             Text{
                 id: label2
+                color: "white"
                 text: "Open Document"
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
@@ -165,19 +182,23 @@ Column{
         }
     }
 
-    Rectangle{
+    Item{
 
-        color: "yellow"
+        // color: "yellow"
 //        radius: 10
-        height: 5 * parent.height / 18
-        anchors.left: parent.left
-        anchors.right: parent.right
+        // height: 5 * parent.height / 18
+        // Layout.preferredHeight: 5 * parent.height / 18
+        Layout.fillHeight: true
+        Layout.preferredWidth: parent.width
+        // anchors.left: parent.left
+        // anchors.right: parent.right
         Column{
             anchors.fill: parent
 
 
             Text{
                 id: label3
+                color: "white"
                 text: "Advanced"
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
