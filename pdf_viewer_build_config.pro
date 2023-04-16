@@ -39,6 +39,7 @@ SOURCES += \
         pdf_viewer/touchui/TouchSearchButtons.cpp \
         pdf_viewer/touchui/TouchDeleteButton.cpp \
         pdf_viewer/touchui/TouchHighlightButtons.cpp \
+        pdf_viewer/touchui/TouchSettings.cpp \
         pdf_viewer/touchui/TouchMainMenu.cpp
 
 HEADERS += \
@@ -54,6 +55,7 @@ HEADERS += \
     pdf_viewer/touchui/TouchSearchButtons.h \
     pdf_viewer/touchui/TouchDeleteButton.h \
     pdf_viewer/touchui/TouchHighlightButtons.h \
+    pdf_viewer/touchui/TouchSettings.h \
     pdf_viewer/touchui/TouchMainMenu.h
 
 android{

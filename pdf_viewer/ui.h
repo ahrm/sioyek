@@ -898,9 +898,11 @@ class ConfigUI : public QWidget{
 public:
     ConfigUI(MainWidget* parent);
     void resizeEvent(QResizeEvent* resize_event) override;
+	void set_should_persist(bool val);
 
 protected:
     MainWidget* main_widget;
+	bool should_persist = true;
 };
 
 class Color3ConfigUI : public ConfigUI {

@@ -1,8 +1,6 @@
 ﻿//todo:
 // fix the rest of UI for mobile (current buttons are extremely bad)
 // boolean config ui is not good (for example doesn't display properly for highlight select config)
-// focus text field in text inputs
-// improve text input look
 // there is no way to configure ruler bounds
 // commmon configs menu
 // make highlights and bookmarks buttons work
@@ -5108,6 +5106,9 @@ void MainWidget::clear_search_buttons(){
 
 void MainWidget::restore_default_config(){
     config_manager->restore_default();
+    config_manager->restore_defaults_in_memory();
+	//config_manager->deserialize(default_config_path, auto_config_path, user_config_paths);
+    invalidate_render();
 }
 
 

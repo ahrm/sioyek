@@ -73,10 +73,13 @@ struct Config {
 	void* (*deserialize) (std::wstringstream&, void* res) = nullptr;
     bool (*validator) (const std::wstring& value) = nullptr;
 	std::variant<FloatExtras, IntExtras, EmptyExtras> extras = EmptyExtras{};
+    std::wstring default_value_string;
 
 //    QWidget* (*configurator_ui)(MainWidget* main_widget, void* location);
 
 	void* get_value();
+    void save_value_into_default();
+    void load_default();
 
 };
 
@@ -84,11 +87,6 @@ class ConfigManager {
 
 	std::vector<Config> configs;
 
-	float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
-    float DEFAULT_VERTICAL_LINE_COLOR[4] = {0.0f, 0.0f, 0.0f, 0.5f};
-	float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3];
-	float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
-	float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
 
 	std::vector<Path> user_config_paths;
 
@@ -117,6 +115,7 @@ public:
 	std::vector<Config> get_configs();
 	std::vector<Config>* get_configs_ptr();
 	void deserialize_config(std::string config_name, std::wstring config_value);
+    void restore_defaults_in_memory();
 };
 
 class ConfigModel : public QAbstractTableModel{

@@ -141,6 +141,12 @@ extern UIRect PORTRAIT_VISUAL_MARK_NEXT;
 extern UIRect LANDSCAPE_VISUAL_MARK_PREV;
 extern UIRect LANDSCAPE_VISUAL_MARK_NEXT;
 
+extern float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
+extern float DEFAULT_VERTICAL_LINE_COLOR[4];
+extern float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3];
+extern float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
+extern float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
+
 #ifdef SIOYEK_ANDROID
 extern Path android_config_path;
 #endif
@@ -1495,6 +1501,10 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
         configs.push_back({ execute_command_config_string, ConfigType::String, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer, nullptr });
 	}
 
+	for (auto& config : configs) {
+		config.save_value_into_default();
+	}
+
 	deserialize(default_path, auto_path, user_paths);
 }
 
@@ -1778,4 +1788,24 @@ QVariant ConfigModel::data(const QModelIndex& index, int role) const {
 
 	}
 	return QVariant::fromValue(QString(""));
+}
+
+void Config::save_value_into_default() {
+	default_value_string = L"";
+	std::wstringstream default_value_string_stream(default_value_string);
+	serialize(value, default_value_string_stream);
+	default_value_string = default_value_string_stream.str();
+}
+
+void Config::load_default() {
+	if (default_value_string.size() > 0) {
+		std::wstringstream default_value_string_stream(default_value_string);
+		deserialize(default_value_string_stream, value);
+	}
+}
+
+void ConfigManager::restore_defaults_in_memory() {
+	for (auto& config : configs) {
+		config.load_default();
+	}
 }

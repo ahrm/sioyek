@@ -3,6 +3,8 @@
 
 TouchMainMenu::TouchMainMenu(int current_colorscheme_index, QWidget* parent) : QWidget(parent){
 
+    setAttribute(Qt::WA_NoMousePropagation);
+
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);

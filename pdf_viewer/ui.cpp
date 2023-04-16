@@ -13,6 +13,7 @@
 #include <QFile>
 #include "touchui/TouchSlider.h"
 #include "touchui/TouchConfigMenu.h"
+#include "touchui/TouchSettings.h"
 
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern float DARK_MODE_CONTRAST;
@@ -221,7 +222,8 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     });
 
     QObject::connect(main_menu, &TouchMainMenu::settingsClicked, [&](){
-        TouchConfigMenu* config_menu = new TouchConfigMenu(main_widget);
+		//TouchConfigMenu* config_menu = new TouchConfigMenu(main_widget);
+        TouchSettings* config_menu = new TouchSettings(main_widget);
         //main_widget->current_widget = new TouchConfigMenu(main_widget);
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
@@ -590,6 +592,10 @@ ConfigUI::ConfigUI(MainWidget* parent) : QWidget(parent){
     main_widget = parent;
 }
 
+void ConfigUI::set_should_persist(bool val) {
+    this->should_persist = val;
+}
+
 void ConfigUI::resizeEvent(QResizeEvent* resize_event){
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
@@ -607,7 +613,10 @@ Color3ConfigUI::Color3ConfigUI(MainWidget* parent, float* config_location_) : Co
     connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
         convert_qcolor_to_float3(color, color_location);
         main_widget->invalidate_render();
-        main_widget->persist_config();
+
+        if (should_persist) {
+			main_widget->persist_config();
+        }
     });
 
 //    QQmlEngine* engine = new QQmlEngine();
@@ -659,7 +668,9 @@ Color4ConfigUI::Color4ConfigUI(MainWidget* parent, float* config_location_) : Co
     connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
         convert_qcolor_to_float4(color, color_location);
         main_widget->invalidate_render();
-        main_widget->persist_config();
+        if (should_persist){
+			main_widget->persist_config();
+        }
     });
  }
 
@@ -731,7 +742,9 @@ BoolConfigUI::BoolConfigUI(MainWidget* parent, bool* config_location, QString na
     QObject::connect(checkbox, &TouchCheckbox::itemSelected, [&](bool new_state){
         *bool_location = static_cast<bool>(new_state);
         main_widget->invalidate_render();
-        main_widget->persist_config();
+        if (should_persist) {
+			main_widget->persist_config();
+        }
 
         //main_widget->current_widget = nullptr;
         //deleteLater();
@@ -861,7 +874,9 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
         rect_location->top = top;
         rect_location->bottom = bottom;
 
-        main_widget->persist_config();
+        if (should_persist) {
+			main_widget->persist_config();
+        }
         main_widget->invalidate_render();
         //main_widget->current_widget = nullptr;
         //deleteLater();
@@ -922,7 +937,9 @@ RangeConfigUI::RangeConfigUI(MainWidget* parent, float* top_config_location, flo
         *top_location = -top;
         *bottom_location = -bottom + 1;
 
-        main_widget->persist_config();
+        if (should_persist) {
+			main_widget->persist_config();
+        }
         main_widget->invalidate_render();
         //main_widget->current_widget = nullptr;
         //deleteLater();

@@ -30,6 +30,7 @@
         <file>pdf_viewer/touchui/TouchSearchButtons.qml</file>
         <file>pdf_viewer/touchui/TouchDeleteButton.qml</file>
         <file>pdf_viewer/touchui/TouchHighlightButtons.qml</file>
+        <file>pdf_viewer/touchui/TouchSettings.qml</file>
         <file>icons/page.svg</file>
         <file>icons/select_text.svg</file>
         <file>end.png</file>
