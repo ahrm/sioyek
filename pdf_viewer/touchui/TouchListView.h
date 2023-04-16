@@ -16,6 +16,8 @@ class TouchListView : public QWidget{
     Q_OBJECT
 public:
     TouchListView(QStringList elements, QWidget* parent=nullptr, bool deletable=false);
+    TouchListView(QAbstractItemModel* elements, QWidget* parent=nullptr, bool deletable=false);
+    void initialize(bool deletable);
     void resizeEvent(QResizeEvent* resize_event) override;
     void set_keyboard_focus();
 
@@ -31,8 +33,7 @@ signals:
 
 private:
     QQuickWidget* quick_widget = nullptr;
-    QStringList items;
-    QStringListModel model;
+    QAbstractItemModel* model;
     MySortFilterProxyModel proxy_model;
 
 };

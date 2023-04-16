@@ -3,11 +3,9 @@
 #include "ui.h"
 
 
-TouchListView::TouchListView(QStringList items_, QWidget* parent, bool deletable) : QWidget(parent), items(items_), model(items){
-
-//    proxy_model = new MySortFilterProxyModel();
+void TouchListView::initialize(bool deletable) {
     setAttribute(Qt::WA_NoMousePropagation);
-    proxy_model.setSourceModel(&model);
+    proxy_model.setSourceModel(model);
 
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     quick_widget = new QQuickWidget(this);
@@ -31,7 +29,19 @@ TouchListView::TouchListView(QStringList items_, QWidget* parent, bool deletable
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemPressAndHold(QString, int)), this, SLOT(handlePressAndHold(QString, int)));
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemDeleted(QString, int)), this, SLOT(handleDelete(QString, int)));
     quick_widget->setFocus();
+}
 
+TouchListView::TouchListView(QAbstractItemModel* items_, QWidget* parent, bool deletable) : QWidget(parent){
+
+    model = items_;
+    items_->setParent(this);
+    initialize(deletable);
+}
+
+TouchListView::TouchListView(QStringList items_, QWidget* parent, bool deletable) : QWidget(parent){
+
+    model = new QStringListModel(items_, this);
+    initialize(deletable);
 }
 
 void TouchListView::handleSelect(QString val, int index) {

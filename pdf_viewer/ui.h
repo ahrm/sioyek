@@ -479,14 +479,16 @@ public:
 
 		}
 
-		QStandardItemModel* model = new QStandardItemModel();
 
-		for (size_t i = 0; i < std_string_list.size(); i++) {
-			QStandardItem* name_item = new QStandardItem(QString::fromStdWString(std_string_list[i]));
-			QStandardItem* key_item = new QStandardItem(QString::fromStdWString(std_string_list_right[i]));
-			key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
-			model->appendRow(QList<QStandardItem*>() << name_item << key_item);
-		}
+		QStandardItemModel* model = create_table_model(std_string_list, std_string_list_right);
+		//QStandardItemModel* model = new QStandardItemModel();
+
+		//for (size_t i = 0; i < std_string_list.size(); i++) {
+		//	QStandardItem* name_item = new QStandardItem(QString::fromStdWString(std_string_list[i]));
+		//	QStandardItem* key_item = new QStandardItem(QString::fromStdWString(std_string_list_right[i]));
+		//	key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
+		//	model->appendRow(QList<QStandardItem*>() << name_item << key_item);
+		//}
 
 		this->proxy_model->setSourceModel(model);
 
@@ -562,6 +564,19 @@ private:
     std::function<void(T*)> on_done;
 	std::function<void(T*)> on_delete_function = nullptr;
 public:
+	void initialize() {
+
+        QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
+            qDebug() << "name is : " << name << " and index is : " << index << "\n";
+            on_done(&values[index]);
+            deleteLater();
+        });
+
+        QObject::connect(list_view, &TouchListView::itemDeleted, [&](QString name, int index){
+            on_delete_function(&values[index]);
+            //deleteLater();
+        });
+	}
     TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list,
 		std::vector<T> values_,
 		std::function<void(T*)> on_done_,
@@ -581,16 +596,25 @@ public:
 //        proxy_model.setSourceModel(string_list_model);
 
         list_view = new TouchListView(string_list, this, true);
-        QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
-            qDebug() << "name is : " << name << " and index is : " << index << "\n";
-            on_done(&values[index]);
-            deleteLater();
-        });
+		initialize();
+    }
 
-        QObject::connect(list_view, &TouchListView::itemDeleted, [&](QString name, int index){
-            on_delete_function(&values[index]);
-            //deleteLater();
-        });
+    TouchFilteredSelectWidget(QAbstractItemModel* model,
+		std::vector<T> values_,
+		std::function<void(T*)> on_done_,
+		std::function<void(T*)> on_delete,
+		QWidget* parent) :
+		QWidget(parent),
+		values(values_),
+		on_done(on_done_),
+		on_delete_function(on_delete) {
+
+        parent_widget = parent;
+//        string_list_model.setStringList(string_list);
+//        proxy_model.setSourceModel(string_list_model);
+
+        list_view = new TouchListView(model, this, true);
+		initialize();
     }
 
     void resizeEvent(QResizeEvent* resize_event) override {

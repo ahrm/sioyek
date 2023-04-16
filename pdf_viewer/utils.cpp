@@ -2544,3 +2544,17 @@ fz_rect get_index_rect(fz_rect original, int index) {
 	new_rect.y1 = original.y0 + (v_index+1) * slice_height;
 	return new_rect;
 }
+
+QStandardItemModel* create_table_model(std::vector<std::wstring> lefts, std::vector<std::wstring> rights) {
+	QStandardItemModel* model = new QStandardItemModel();
+
+	assert(lefts.size() == rights.size());
+
+	for (size_t i = 0; i < lefts.size(); i++) {
+		QStandardItem* name_item = new QStandardItem(QString::fromStdWString(lefts[i]));
+		QStandardItem* key_item = new QStandardItem(QString::fromStdWString(rights[i]));
+		key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
+		model->appendRow(QList<QStandardItem*>() << name_item << key_item);
+	}
+	return model;
+}

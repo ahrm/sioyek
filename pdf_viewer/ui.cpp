@@ -212,6 +212,18 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->handle_command_types(std::move(command), 0);
     });
 
+    QObject::connect(main_menu, &TouchMainMenu::highlightsClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("goto_highlight");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(main_menu, &TouchMainMenu::bookmarksClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("goto_bookmark");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
     QObject::connect(main_menu, &TouchMainMenu::commandsClicked, [&](){
         auto command = main_widget->command_manager->get_command_with_name("command");
         //main_widget->current_widget = {};

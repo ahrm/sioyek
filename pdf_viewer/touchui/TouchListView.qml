@@ -45,7 +45,7 @@ Rectangle {
 
 		onAccepted: {
             let item = lview.model.data(lview.model.index(0, 0));
-            console.log(item);
+            //console.log(item);
 			rootitem.itemSelected(item, 0);
 		}
 
@@ -92,7 +92,8 @@ Rectangle {
 
             Item{
                 anchors.left: parent.left
-                anchors.right: parent.right
+                //anchors.right: parent.right
+                width: inner.contentWidth
                 anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
                 Text {
@@ -104,6 +105,22 @@ Rectangle {
                 }
 
             }
+            Item{
+                anchors.right: parent.right
+                width: pagetext.contentWidth
+                anchors.rightMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+                Text {
+                    id: pagetext
+                    //text: model.display
+					text: lview.model.data(lview.model.index(index, 1));
+                    color: "white"
+                    anchors.verticalCenter: parent.verticalCenter
+                    font.pixelSize: 15
+                }
+                visible: _model.columnCount() == 2
+            }
+
 			Button{
                 anchors.right: parent.right
                 anchors.top:  parent.top
