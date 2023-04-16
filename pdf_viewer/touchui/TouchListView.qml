@@ -15,11 +15,11 @@ Rectangle {
     signal itemPressAndHold(item: string, index: int)
     signal itemDeleted(item: string, index: int)
 
-    TextEdit{
+    TextInput{
         id: query
         color: "white"
         inputMethodHints: Qt.ImhSensitiveData | Qt.ImhPreferLowercase
-        focus: true
+        focus: _focus
 
         anchors {
             top: rootitem.top
@@ -42,6 +42,12 @@ Rectangle {
         onTextChanged: {
             lview.model.setFilterRegularExpression(text);
         }
+
+		onAccepted: {
+            let item = lview.model.data(lview.model.index(0, 0));
+            console.log(item);
+			rootitem.itemSelected(item, 0);
+		}
 
     }
 

@@ -1,8 +1,6 @@
 ﻿//todo:
 // fix the rest of UI for mobile (current buttons are extremely bad)
 // boolean config ui is not good (for example doesn't display properly for highlight select config)
-// there is no way to configure ruler bounds
-// commmon configs menu
 // make highlights and bookmarks buttons work
 // make toc button work
 

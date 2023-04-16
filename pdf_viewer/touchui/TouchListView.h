@@ -17,6 +17,7 @@ class TouchListView : public QWidget{
 public:
     TouchListView(QStringList elements, QWidget* parent=nullptr, bool deletable=false);
     void resizeEvent(QResizeEvent* resize_event) override;
+    void set_keyboard_focus();
 
 public slots:
     void handleSelect(QString value, int index);

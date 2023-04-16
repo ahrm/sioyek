@@ -16,6 +16,7 @@ TouchListView::TouchListView(QStringList items_, QWidget* parent, bool deletable
     //quick_widget->setAttribute(Qt::WA_AlwaysStackOnTop);
     //quick_widget->setClearColor(Qt::transparent);
 
+	quick_widget->rootContext()->setContextProperty("_focus", QVariant::fromValue(false));
     quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
     if (deletable) {
 		quick_widget->rootContext()->setContextProperty("_deletable", QVariant::fromValue(true));
@@ -54,3 +55,6 @@ void TouchListView::resizeEvent(QResizeEvent* resize_event){
 
 }
 
+void TouchListView::set_keyboard_focus() {
+		quick_widget->rootContext()->setContextProperty("_focus", QVariant::fromValue(true));
+}
