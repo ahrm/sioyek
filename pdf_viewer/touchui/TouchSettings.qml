@@ -2,7 +2,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.1
 import QtQuick.Controls.Material
-// import QtQuick.Dialogs
+import Qt.labs.platform
 import "qrc:/pdf_viewer/touchui"
 
 
@@ -31,18 +31,16 @@ ColumnLayout{
         color: "#222"
         radius: 10
     }
-    // MessageDialog {
-	// 	id: default_message
-	// 	buttons: MessageDialog.Ok | MessageDialog.Cancel
-	// 	text: "Are you sure you want to restore all settings to default?"
-    //     onButtonClicked: function(button, role){
-    //         if (role == MessageDialog.Ok){
-    //             console.log("accepted!!!!!!!!!!!!!!!!");
-    //             root.restoreDefaultsClicked();
-    //         }
-    //     }
+    MessageDialog {
+		id: default_message
+		buttons: MessageDialog.Ok | MessageDialog.Cancel
+		text: "Are you sure you want to restore all settings to default?"
+        onOkClicked: {
+            console.log("accepted!!!!!!!!!!!!!!!!");
+            root.restoreDefaultsClicked();
+        }
+	}
 
-	// }
     // MessageDialog {
 	// 	id: save_message
 	// 	buttons: MessageDialog.Ok | MessageDialog.Cancel
@@ -267,7 +265,7 @@ ColumnLayout{
             }
 
             TouchButtonGroup{
-                buttons: ["Ruler Next ", "Ruler Previous", "Back", "Forward"]
+                buttons: ["Ruler ↓", "Ruler ↑", "Back", "Forward"]
                 anchors.bottom: parent.bottom
                 anchors.top: label4.bottom
                 anchors.left: parent.left
@@ -324,8 +322,8 @@ ColumnLayout{
                         allConfigsClicked();
                     }
                     if (index == 1){
-                        // default_message.open();
-                        root.restoreDefaultsClicked();
+                        default_message.open();
+                        //root.restoreDefaultsClicked();
                     }
                 }
 

@@ -155,7 +155,7 @@ void TouchSettings::resizeEvent(QResizeEvent* resize_event){
     int h = parent_height;
 
     w = std::min(w, ten_cm);
-    h = std::min(h, ten_cm);
+    h = std::min(h, static_cast<int>(ten_cm * 1.5f));
 
     quick_widget->resize(w, h);
     setFixedSize(w, h);
