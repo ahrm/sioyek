@@ -19,6 +19,7 @@
         <file>pdf_viewer/touchui/TouchSlider.qml</file>
         <file>pdf_viewer/touchui/TouchCheckbox.qml</file>
         <file>pdf_viewer/touchui/TouchListView.qml</file>
+        <file>pdf_viewer/touchui/TouchTreeView.qml</file>
         <file>pdf_viewer/touchui/TouchCopyOptions.qml</file>
         <file>pdf_viewer/touchui/TouchButtonGroup.qml</file>
         <file>pdf_viewer/touchui/TouchRectangleSelectUI.qml</file>

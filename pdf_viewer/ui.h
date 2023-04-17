@@ -599,6 +599,21 @@ public:
 		initialize();
     }
 
+	TouchFilteredSelectWidget(QAbstractItemModel* model,
+		std::function<void(T*)> on_done_,
+		QWidget* parent) :
+		QWidget(parent),
+		on_done(on_done_) {
+        parent_widget = parent;
+        list_view = new TouchListView(model, this, false, false, true);
+
+        QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
+            qDebug() << "name is : " << name << " and index is : " << index << "\n";
+            on_done(&values[index]);
+            deleteLater();
+        });
+	}
+
     TouchFilteredSelectWidget(QAbstractItemModel* model,
 		std::vector<T> values_,
 		std::function<void(T*)> on_done_,

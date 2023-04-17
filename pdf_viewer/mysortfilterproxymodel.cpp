@@ -32,7 +32,7 @@ bool MySortFilterProxyModel::filterAcceptsRow(int source_row,
     }
 }
 
-void MySortFilterProxyModel::setFilterCustom(QString filterString) {
+void MySortFilterProxyModel::setFilterCustom(const QString& filterString) {
     if (FUZZY_SEARCHING) {
         this->filterString = filterString;
         this->setFilterFixedString(filterString);

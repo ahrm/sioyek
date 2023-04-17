@@ -3,7 +3,7 @@
 #include "ui.h"
 
 
-void TouchListView::initialize(bool deletable) {
+void TouchListView::initialize(bool deletable, bool is_tree) {
     setAttribute(Qt::WA_NoMousePropagation);
     proxy_model.setSourceModel(model);
 
@@ -15,14 +15,25 @@ void TouchListView::initialize(bool deletable) {
     //quick_widget->setClearColor(Qt::transparent);
 
 	quick_widget->rootContext()->setContextProperty("_focus", QVariant::fromValue(false));
-    quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
+    if (is_tree) {
+		quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(model));
+    }
+    else {
+		quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
+    }
+
     if (deletable) {
 		quick_widget->rootContext()->setContextProperty("_deletable", QVariant::fromValue(true));
     }
 //    quick_widget->rootContext()->setContextProperty("_from", from);
 //    quick_widget->rootContext()->setContextProperty("_to", to);
 
-    quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchListView.qml"));
+    if (is_tree) {
+		quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchTreeView.qml"));
+    }
+    else {
+		quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchListView.qml"));
+    }
 
 
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemSelected(QString, int)), this, SLOT(handleSelect(QString, int)));
@@ -31,11 +42,13 @@ void TouchListView::initialize(bool deletable) {
     quick_widget->setFocus();
 }
 
-TouchListView::TouchListView(QAbstractItemModel* items_, QWidget* parent, bool deletable) : QWidget(parent){
+TouchListView::TouchListView(QAbstractItemModel* items_, QWidget* parent, bool deletable, bool move, bool is_tree) : QWidget(parent){
 
     model = items_;
-    items_->setParent(this);
-    initialize(deletable);
+    if (move) {
+		items_->setParent(this);
+    }
+    initialize(deletable, is_tree);
 }
 
 TouchListView::TouchListView(QStringList items_, QWidget* parent, bool deletable) : QWidget(parent){

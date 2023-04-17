@@ -4450,43 +4450,100 @@ void MainWidget::handle_goto_highlight_global() {
 void MainWidget::handle_goto_toc() {
 
 	if (main_document_view->get_document()->has_toc()) {
-		if (FLAT_TABLE_OF_CONTENTS) {
+        if (TOUCH_MODE) {
 			std::vector<std::wstring> flat_toc;
 			std::vector<int> current_document_toc_pages;
 			get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
-			set_current_widget(new FilteredSelectWindowClass<int>(flat_toc, current_document_toc_pages, [&](int* page_value) {
-				if (page_value) {
-					validate_render();
+            std::vector<std::wstring> page_strings;
+            for (int i = 0; i < current_document_toc_pages.size(); i++) {
+                page_strings.push_back(("[ " + QString::number(current_document_toc_pages[i] + 1) + " ]").toStdWString());
+            }
+            QAbstractItemModel* model = create_table_model(flat_toc, page_strings);
 
-					push_state();
-					main_document_view->goto_page(*page_value);
+  //  TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list,
+		//std::vector<T> values_,
+		//std::function<void(T*)> on_done_,
+		//std::function<void(T*)> on_delete,
+            set_current_widget(new TouchFilteredSelectWidget<int>(model, current_document_toc_pages, [&](int* page_value) {
+                    if (page_value) {
+                        validate_render();
+
+                        push_state();
+                        main_document_view->goto_page(*page_value);
+                        if (TOC_JUMP_ALIGN_TOP) {
+                            main_document_view->scroll_mid_to_top();
+                        }
+                    }
+                    pop_current_widget();
+                }, [&](int* page) {}, this));
+            show_current_widget();
+        }
+        else {
+
+            if (FLAT_TABLE_OF_CONTENTS) {
+                std::vector<std::wstring> flat_toc;
+                std::vector<int> current_document_toc_pages;
+                get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
+                set_current_widget(new FilteredSelectWindowClass<int>(flat_toc, current_document_toc_pages, [&](int* page_value) {
+                    if (page_value) {
+                        validate_render();
+
+                        push_state();
+                        main_document_view->goto_page(*page_value);
+                        if (TOC_JUMP_ALIGN_TOP) {
+                            main_document_view->scroll_mid_to_top();
+                        }
+
+                    }
+                    }, this));
+                show_current_widget();
+            }
+            else {
+
+                std::vector<int> selected_index = main_document_view->get_current_chapter_recursive_index();
+                //if (!TOUCH_MODE) {
+                set_current_widget(new FilteredTreeSelect<int>(main_document_view->get_document()->get_toc_model(),
+                    [&](const std::vector<int>& indices) {
+                        TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
+                        indices);
+                if (toc_node) {
+                    validate_render();
+                    //main_document_view->goto_page(toc_node->page);
+                    push_state();
+                    main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
                     if (TOC_JUMP_ALIGN_TOP) {
                         main_document_view->scroll_mid_to_top();
                     }
+                }
+                    }, this, selected_index));
+                //        }
+                //        else {
 
-				}
-				}, this));
-            show_current_widget();
-		}
-		else {
+                //            QStandardItemModel* model = main_document_view->get_document()->get_toc_model();
+                //            MySortFilterProxyModel* proxy_model = new MySortFilterProxyModel();
+                //            proxy_model->setSourceModel(model);
+                            //proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+                //            proxy_model->setRecursiveFilteringEnabled(true);
 
-			std::vector<int> selected_index = main_document_view->get_current_chapter_recursive_index();
-			set_current_widget(new FilteredTreeSelect<int>(main_document_view->get_document()->get_toc_model(),
-				[&](const std::vector<int>& indices) {
-					TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
-						indices);
-					if (toc_node) {
-						validate_render();
-						//main_document_view->goto_page(toc_node->page);
-						push_state();
-						main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
-						if (TOC_JUMP_ALIGN_TOP) {
-							main_document_view->scroll_mid_to_top();
-						}
-					}
-				}, this, selected_index));
-            show_current_widget();
-		}
+
+                            //set_current_widget(new TouchFilteredSelectWidget<int>(proxy_model,
+                            //	[&](int* index) {
+                            //		//TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
+                            //		//	indices);
+                            //		//if (toc_node) {
+                            //		//	validate_render();
+                            //		//	//main_document_view->goto_page(toc_node->page);
+                            //		//	push_state();
+                            //		//	main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
+                            //		//	if (TOC_JUMP_ALIGN_TOP) {
+                            //		//		main_document_view->scroll_mid_to_top();
+                            //		//	}
+                            //		//}
+                            //	}, this));
+                //        }
+                show_current_widget();
+            }
+        }
 
 	}
 	else {

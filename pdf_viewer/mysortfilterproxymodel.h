@@ -7,7 +7,7 @@ class MySortFilterProxyModel : public QSortFilterProxyModel {
 public:
     MySortFilterProxyModel();
     bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const;
-    void setFilterCustom(QString filterString);
+    void setFilterCustom(const QString& filterString);
     bool lessThan(const QModelIndex& left, const QModelIndex& right) const;
 
 };
