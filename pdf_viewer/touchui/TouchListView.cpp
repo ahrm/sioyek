@@ -3,8 +3,9 @@
 #include "ui.h"
 
 
-void TouchListView::initialize(bool deletable, bool is_tree) {
+void TouchListView::initialize(int selected_index, bool deletable, bool is_tree) {
     setAttribute(Qt::WA_NoMousePropagation);
+
     proxy_model.setSourceModel(model);
 
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
@@ -14,6 +15,7 @@ void TouchListView::initialize(bool deletable, bool is_tree) {
     //quick_widget->setAttribute(Qt::WA_AlwaysStackOnTop);
     //quick_widget->setClearColor(Qt::transparent);
 
+    quick_widget->rootContext()->setContextProperty("_selected_index", QVariant::fromValue(selected_index));
 	quick_widget->rootContext()->setContextProperty("_focus", QVariant::fromValue(false));
     if (is_tree) {
 		quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(model));
@@ -42,19 +44,19 @@ void TouchListView::initialize(bool deletable, bool is_tree) {
     quick_widget->setFocus();
 }
 
-TouchListView::TouchListView(QAbstractItemModel* items_, QWidget* parent, bool deletable, bool move, bool is_tree) : QWidget(parent){
+TouchListView::TouchListView(QAbstractItemModel* items_, int selected_index, QWidget* parent, bool deletable, bool move, bool is_tree) : QWidget(parent){
 
     model = items_;
     if (move) {
 		items_->setParent(this);
     }
-    initialize(deletable, is_tree);
+    initialize(selected_index, deletable, is_tree);
 }
 
-TouchListView::TouchListView(QStringList items_, QWidget* parent, bool deletable) : QWidget(parent){
+TouchListView::TouchListView(QStringList items_, int selected_index ,QWidget* parent, bool deletable) : QWidget(parent){
 
     model = new QStringListModel(items_, this);
-    initialize(deletable);
+    initialize(selected_index, deletable);
 }
 
 void TouchListView::handleSelect(QString val, int index) {

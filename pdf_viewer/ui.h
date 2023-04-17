@@ -564,6 +564,9 @@ private:
     std::function<void(T*)> on_done;
 	std::function<void(T*)> on_delete_function = nullptr;
 public:
+	void set_selected_index(int index) {
+		list_view->set_selected_index(index);
+	}
 	void initialize() {
 
         QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
@@ -579,6 +582,7 @@ public:
 	}
     TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list,
 		std::vector<T> values_,
+		int selected_index,
 		std::function<void(T*)> on_done_,
 		std::function<void(T*)> on_delete,
 		QWidget* parent) :
@@ -595,17 +599,18 @@ public:
 //        string_list_model.setStringList(string_list);
 //        proxy_model.setSourceModel(string_list_model);
 
-        list_view = new TouchListView(string_list, this, true);
+        list_view = new TouchListView(string_list,selected_index, this, true);
 		initialize();
     }
 
 	TouchFilteredSelectWidget(QAbstractItemModel* model,
+		int selected_index,
 		std::function<void(T*)> on_done_,
 		QWidget* parent) :
 		QWidget(parent),
 		on_done(on_done_) {
         parent_widget = parent;
-        list_view = new TouchListView(model, this, false, false, true);
+        list_view = new TouchListView(model, selected_index, this, false, false, true);
 
         QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
             qDebug() << "name is : " << name << " and index is : " << index << "\n";
@@ -616,6 +621,7 @@ public:
 
     TouchFilteredSelectWidget(QAbstractItemModel* model,
 		std::vector<T> values_,
+		int selected_index,
 		std::function<void(T*)> on_done_,
 		std::function<void(T*)> on_delete,
 		QWidget* parent) :
@@ -628,7 +634,7 @@ public:
 //        string_list_model.setStringList(string_list);
 //        proxy_model.setSourceModel(string_list_model);
 
-        list_view = new TouchListView(model, this, true);
+        list_view = new TouchListView(model, selected_index, this, true);
 		initialize();
     }
 

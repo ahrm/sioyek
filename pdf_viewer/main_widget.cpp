@@ -4223,7 +4223,7 @@ void MainWidget::handle_goto_bookmark() {
     else {
         QStandardItemModel* model = create_table_model(option_names, option_location_strings);
 
-        set_current_widget(new TouchFilteredSelectWidget<float>(model, option_locations,
+        TouchFilteredSelectWidget<float>* widget = new TouchFilteredSelectWidget<float>(model, option_locations, closest_bookmark_index,
             [&](float* offset_value) {
                 if (offset_value) {
                     validate_render();
@@ -4236,7 +4236,8 @@ void MainWidget::handle_goto_bookmark() {
                 if (offset_value) {
                     main_document_view->delete_closest_bookmark_to_offset(*offset_value);
                 }
-            }, this));
+            }, this);
+        set_current_widget(widget);
     }
 
     show_current_widget();
@@ -4284,6 +4285,7 @@ void MainWidget::handle_goto_bookmark_global() {
 		set_current_widget(new TouchFilteredSelectWidget<BookState>(
 			model,
 			book_states,
+            -1,
 			[&](BookState* book_state) {
 				if (book_state) {
 					validate_render();
@@ -4366,8 +4368,9 @@ void MainWidget::handle_goto_highlight() {
     }
     else {
         QAbstractItemModel* model = create_table_model(option_names, option_location_strings);
+
         
-        set_current_widget(new TouchFilteredSelectWidget<Highlight>(model, highlights,
+        TouchFilteredSelectWidget<Highlight>* widget = new TouchFilteredSelectWidget<Highlight>(model, highlights, closest_highlight_index,
             [&](Highlight* hl) {
                 if (hl) {
                     validate_render();
@@ -4380,7 +4383,8 @@ void MainWidget::handle_goto_highlight() {
                 if (hl) {
                     main_document_view->delete_highlight(*hl);
                 }
-            }, this));
+            }, this);
+        set_current_widget(widget);
         //new TouchListView(model, )
     }
     show_current_widget();
@@ -4433,6 +4437,7 @@ void MainWidget::handle_goto_highlight_global() {
         set_current_widget(new TouchFilteredSelectWidget<BookState>(
             model,
             book_states,
+            -1,
             [&](BookState* book_state) {
                 if (book_state) {
                     validate_render();
@@ -4458,13 +4463,24 @@ void MainWidget::handle_goto_toc() {
             for (int i = 0; i < current_document_toc_pages.size(); i++) {
                 page_strings.push_back(("[ " + QString::number(current_document_toc_pages[i] + 1) + " ]").toStdWString());
             }
+            int closest_toc_index = current_document_toc_pages.size()-1;
+            int current_page = get_current_page_number();
+            for (int i = 0; i < current_document_toc_pages.size(); i++) {
+                if (current_document_toc_pages[i] > current_page) {
+					closest_toc_index = i-1;
+					break;
+				}
+            }
+            if (closest_toc_index == -1) {
+                closest_toc_index = 0;
+			}
             QAbstractItemModel* model = create_table_model(flat_toc, page_strings);
 
   //  TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list,
 		//std::vector<T> values_,
 		//std::function<void(T*)> on_done_,
 		//std::function<void(T*)> on_delete,
-            set_current_widget(new TouchFilteredSelectWidget<int>(model, current_document_toc_pages, [&](int* page_value) {
+            set_current_widget(new TouchFilteredSelectWidget<int>(model,current_document_toc_pages, closest_toc_index, [&](int* page_value) {
                     if (page_value) {
                         validate_render();
 
@@ -4605,6 +4621,7 @@ void MainWidget::handle_open_prev_doc() {
     else{
 		set_current_widget(new TouchFilteredSelectWidget<std::string>(opened_docs_names,
 			opened_docs_hashes,
+            -1,
 			[&](std::string* doc_hash) {
 				if (doc_hash->size() > 0) {
 					validate_render();

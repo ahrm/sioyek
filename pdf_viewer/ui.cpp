@@ -838,7 +838,7 @@ void IntConfigUI::resizeEvent(QResizeEvent* resize_event){
 
 TouchCommandSelector::TouchCommandSelector(const QStringList& commands, MainWidget* mw): QWidget(mw){
     main_widget = mw;
-    list_view = new TouchListView(commands, this);
+    list_view = new TouchListView(commands, -1, this);
 
     QObject::connect(list_view, &TouchListView::itemSelected, [&](QString val, int index){
         //main_widget->current_widget = nullptr;

@@ -54,6 +54,9 @@ Rectangle {
 
     ListView{
 //        model: MyModel {}
+        Component.onCompleted: {
+            positionViewAtIndex(_selected_index, ListView.Beginning);
+        }
         anchors {
             top: query.bottom
             topMargin: 10
@@ -87,7 +90,8 @@ Rectangle {
             }
             height: inner.height * 2.5
 //            color: index % 2 == 0 ? "black" : "#080808"
-            color: index % 2 == 0 ? "black" : "#111"
+            color: lview.model.mapToSource(lview.model.index(index, 0)).row == _selected_index ? "#444": (index % 2 == 0 ? "black" : "#111")
+            //color: (index % 2 == 0 ? "black" : "#111")
             id: bg
 
             Item{

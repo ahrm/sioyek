@@ -15,9 +15,9 @@
 class TouchListView : public QWidget{
     Q_OBJECT
 public:
-    TouchListView(QStringList elements, QWidget* parent=nullptr, bool deletable=false);
-    TouchListView(QAbstractItemModel* elements, QWidget* parent=nullptr, bool deletable=false, bool move=true, bool is_tree=false);
-    void initialize(bool deletable, bool is_tree=false);
+    TouchListView(QStringList elements, int selected_index, QWidget* parent=nullptr, bool deletable=false);
+    TouchListView(QAbstractItemModel* elements, int selected_index, QWidget* parent=nullptr, bool deletable=false, bool move=true, bool is_tree=false);
+    void initialize(int selected_index, bool deletable, bool is_tree=false);
     void resizeEvent(QResizeEvent* resize_event) override;
     void set_keyboard_focus();
 
