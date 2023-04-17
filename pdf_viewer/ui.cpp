@@ -793,12 +793,18 @@ void BoolConfigUI::resizeEvent(QResizeEvent* resize_event){
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
+    int five_cm = static_cast<int>(12 * logicalDpiX() / 2.54f );
+
     int w = 2 * parent_width / 3;
     int h =  parent_height / 2;
+
+    w = std::min(w, five_cm);
+    h = std::min(h, five_cm);
+    
     checkbox->resize(w, h);
 
     setFixedSize(w, h);
-    move(parent_width / 6, parent_height / 4);
+    move((parent_width - w) / 2, (parent_height - h) / 2);
 }
 
 void FloatConfigUI::resizeEvent(QResizeEvent* resize_event){
