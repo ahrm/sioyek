@@ -564,9 +564,9 @@ private:
     std::function<void(T*)> on_done;
 	std::function<void(T*)> on_delete_function = nullptr;
 public:
-	void set_selected_index(int index) {
-		list_view->set_selected_index(index);
-	}
+//	void set_selected_index(int index) {
+//		list_view->set_selected_index(index);
+//	}
 	void initialize() {
 
         QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){

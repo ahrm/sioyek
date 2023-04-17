@@ -97,8 +97,14 @@ Rectangle {
             id: savebutton
             anchors{
                 right: parent.right
-                top: parent.top
+                margins: 10
+//                top: parent.top
+//                bottom: parent.bottom
             }
+            width: 100
+            height: 40
+            font.pixelSize: 7
+            implicitHeight: query.height
             anchors.verticalCenter: parent.verticalCenter
             text: "Save Changes"
 
@@ -221,20 +227,32 @@ Rectangle {
                     }
                 }
 
-                CheckBox{
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    anchors.right: parent.right
-                    anchors.margins: 10
-                    checked: bg.value
-                    visible: (bg.type == 'bool')
+                Rectangle{
+                    color: "#444"
+					anchors.top: parent.top
+					anchors.bottom: parent.bottom
+					anchors.right: parent.right
+					anchors.margins: 10
+                    width: 2 * checkbox.width
+					visible: (bg.type == 'bool')
+					CheckBox{
+						//anchors.top: parent.top
+						//anchors.bottom: parent.bottom
+						//anchors.right: parent.right
+						//anchors.margins: 10
+                        anchors.centerIn: parent
+						checked: bg.value
+                        id: checkbox
+						visible: (bg.type == 'bool')
 
-                    onCheckedChanged: {
-                        if (visible){
-							/* emit */ boolConfigChanged(bg.name, checked);
-                        }
-                    }
 
+						onCheckedChanged: {
+							if (visible){
+								/* emit */ boolConfigChanged(bg.name, checked);
+							}
+						}
+
+					}
                 }
 
 //                    Slider{
