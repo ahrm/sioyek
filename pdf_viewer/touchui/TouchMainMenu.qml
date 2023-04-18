@@ -54,8 +54,24 @@ ColumnLayout{
             }
 
             TouchButtonGroup{
-                buttons: ["qrc:/icons/select_text.svg", "qrc:/icons/page.svg", "📗", "🔎", "↕", "📑", "✍", "📏"]
-                tips: ["Select Text", "Goto Page", "Table of Contents", "Search", "Fullscreen", "Bookmarks", "Highlights", "Toggle Ruler Mode"]
+                buttons: ["qrc:/icons/text-selection.svg",
+                "qrc:/icons/document-page-number.svg",
+                "qrc:/icons/table-of-contents.svg",
+                "qrc:/icons/search.svg",
+                "qrc:/icons/fullscreen.svg",
+                "qrc:/icons/bookmark.svg",
+                "qrc:/icons/highlight.svg",
+                "qrc:/icons/ruler.svg",
+                ]
+
+                tips: ["Select Text",
+                "Goto Page",
+                "Table of Contents",
+                "Search",
+                "Fullscreen",
+                "Bookmarks",
+                "Highlights",
+                "Toggle Ruler Mode"]
 
                 anchors.bottom: parent.bottom
                 anchors.top: label.bottom

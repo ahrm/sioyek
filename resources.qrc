@@ -34,6 +34,14 @@
         <file>pdf_viewer/touchui/TouchSettings.qml</file>
         <file>icons/page.svg</file>
         <file>icons/select_text.svg</file>
+        <file>icons/bookmark.svg</file>
+        <file>icons/document-page-number.svg</file>
+        <file>icons/fullscreen.svg</file>
+        <file>icons/highlight.svg</file>
+        <file>icons/ruler.svg</file>
+        <file>icons/search.svg</file>
+        <file>icons/table-of-contents.svg</file>
+        <file>icons/text-selection.svg</file>
         <file>end.png</file>
     </qresource>
 </RCC>

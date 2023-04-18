@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="ruler.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="27.40625"
+     inkscape:cx="16"
+     inkscape:cy="16.018244"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4" />
+  <path
+     style="text-indent:0;text-align:start;line-height:normal;text-transform:none;block-progression:tb;-inkscape-font-specification:Bitstream Vera Sans;fill:#ffffff"
+     d="M 0 8 L 0 9 L 0 23 L 0 24 L 1 24 L 31 24 L 32 24 L 32 23 L 32 9 L 32 8 L 31 8 L 1 8 L 0 8 z M 2 10 L 5 10 L 5 17 L 7 17 L 7 10 L 9 10 L 9 14 L 11 14 L 11 10 L 13 10 L 13 17 L 15 17 L 15 10 L 17 10 L 17 14 L 19 14 L 19 10 L 21 10 L 21 17 L 23 17 L 23 10 L 25 10 L 25 14 L 27 14 L 27 10 L 30 10 L 30 22 L 2 22 L 2 10 z"
+     id="path2" />
+</svg>

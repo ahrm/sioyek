@@ -1,6 +1,5 @@
 ﻿//todo:
-// fix the rest of UI for mobile (current buttons are extremely bad)
-// boolean config ui is not good (for example doesn't display properly for highlight select config)
+// make the rest of config UIs have the same theme as boolean config
 
 
 #include <iostream>

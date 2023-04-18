@@ -55,6 +55,7 @@ Rectangle {
     signal onSaveButtonClicked();
     // signal itemPressAndHold(item: string, index: int)
     // signal itemDeleted(item: string, index: int)
+    radius: 10
 
     Row{
         id: queryrow
