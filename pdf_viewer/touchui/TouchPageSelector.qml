@@ -4,9 +4,19 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.1
 import QtQuick.Controls.Material
 
-Column{
-
+Item{
     signal pageSelected(page: int);
+    id: root
+
+Rectangle{
+    //anchors.left: parent.left
+    //anchors.right: parent.right
+    //height: Math.min(slider.contentHeight + 50, root.height)
+    anchors.fill: parent
+
+    color: "black"
+    radius: 10
+
 
 
     Slider{
@@ -14,6 +24,8 @@ Column{
         to: _to
         value: _value
         id: slider
+        anchors.bottom: parent.bottom
+        anchors.margins: 10
         property int prevValue: -1;
 
         background: Rectangle {
@@ -47,15 +59,15 @@ Column{
 
             Rectangle{
 
-                color: "black"
+                color: "white"
 //                width: 40
                 height: textid.height + 10
                 width: textid.width + 10
                 radius: height
-                y: -40
+                y: -Math.min(root.height / 2, 40)
                 anchors.horizontalCenter: handle.horizontalCenter
                 TextInput{
-                    color: "white"
+                    color: "black"
                     id: textid
                     anchors.centerIn: parent
 //                    anchors.fill:  parent
@@ -92,7 +104,7 @@ Column{
                 }
             }
 
-            color: "black"
+            color: "white"
 
         }
 
@@ -110,4 +122,5 @@ Column{
 
         }
     }
+}
 }

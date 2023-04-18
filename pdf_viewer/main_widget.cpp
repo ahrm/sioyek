@@ -1,5 +1,6 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
+// add ability to create bookmarks in touch mode
 
 
 #include <iostream>

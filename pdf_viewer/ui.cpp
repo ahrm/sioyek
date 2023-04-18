@@ -744,11 +744,11 @@ void PageSelectorUI::resizeEvent(QResizeEvent* resize_event){
     int parent_height = parentWidget()->height();
 
     int w = 2 * parent_width / 3;
-    int h =  parent_height / 2;
+    int h =  parent_height / 6;
     page_selector->resize(w, h);
 
     setFixedSize(w, h);
-    move(parent_width / 6, parent_height / 4);
+    move((parent_width - w) / 2, parent_height - 2 * h);
 }
 
 
