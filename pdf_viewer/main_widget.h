@@ -121,7 +121,8 @@ public:
 	bool synctex_mode = false;
 	bool is_dragging = false;
 
-	bool should_show_status_label = true;
+	bool should_show_status_label_ = true;
+	bool should_show_status_label();
 
 
 	std::optional<CharacterAddress> typing_location;

@@ -71,7 +71,7 @@ Rectangle{
                     id: textid
                     anchors.centerIn: parent
 //                    anchors.fill:  parent
-                    text: Math.round(slider.value)
+                    text: Math.round(slider.value + 1)
                     horizontalAlignment: Text.AlignHCenter
                     inputMethodHints: Qt.ImhDigitsOnly
 

@@ -2,6 +2,7 @@
 // make the rest of config UIs have the same theme as boolean config
 // add ability to create bookmarks in touch mode
 // double clicking on the next visual mark button can cause smartjump 
+// additional buttons: add bookmark, portal, speak, fit to page width, lock horizontal scrolling, mark and goto mark
 
 
 #include <iostream>
@@ -309,7 +310,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         int status_bar_height = get_status_bar_height();
         status_label->move(0, main_window_height - status_bar_height);
         status_label->resize(main_window_width, status_bar_height);
-        if (should_show_status_label) {
+        if (should_show_status_label()) {
 			status_label->show();
         }
     }
@@ -822,22 +823,26 @@ std::wstring MainWidget::get_status_string() {
 
     int num_search_results = opengl_widget->get_num_search_results();
     float progress = -1;
-    if (opengl_widget->get_is_searching(&progress)) {
+    if (should_show_status_label()) {
         // Make sure statusbar is visible if we are searching
         if (!status_label->isVisible()) {
             status_label->show();
         }
 
         // show the 0th result if there are no results and the index + 1 otherwise
-        int result_index = opengl_widget->get_num_search_results() > 0 ? opengl_widget->get_current_search_result_index() + 1 : 0;
-        status_string.replace("%{search_results}", " | showing result " + QString::number(result_index) + " / " + QString::number(num_search_results));
-        if (progress > 0) {
-            status_string.replace("%{search_progress}", " (" + QString::number((int)(progress * 100)) + "%" + ")");
+        if (opengl_widget->get_is_searching(&progress)) {
+
+            int result_index = opengl_widget->get_num_search_results() > 0 ? opengl_widget->get_current_search_result_index() + 1 : 0;
+            status_string.replace("%{search_results}", " | showing result " + QString::number(result_index) + " / " + QString::number(num_search_results));
+            if (progress > 0) {
+                status_string.replace("%{search_progress}", " (" + QString::number((int)(progress * 100)) + "%" + ")");
+            }
         }
     }
+
     else {
         // Make sure statusbar is hidden if it should be
-        if (!should_show_status_label) {
+        if (!should_show_status_label()) {
             status_label->hide();
         }
     }
@@ -3499,9 +3504,9 @@ void MainWidget::focusInEvent(QFocusEvent* ev) {
 }
 
 void MainWidget::toggle_statusbar() {
-    should_show_status_label = !should_show_status_label;
+    should_show_status_label_ = !should_show_status_label_;
 
-    if (!should_show_status_label) {
+    if (!should_show_status_label()) {
         status_label->hide();
     }
     else {
@@ -5370,4 +5375,16 @@ void MainWidget::handle_play() {
 void MainWidget::handle_pause() {
     is_reading = false;
     tts.pause(QTextToSpeech::BoundaryHint::Immediate);
+}
+bool MainWidget::should_show_status_label() {
+	float prog;
+    if (TOUCH_MODE) {
+        if (current_widget_stack.size() > 0 || opengl_widget->get_is_searching(&prog)) {
+            return true;
+        }
+        return false;
+    }
+    else {
+        return should_show_status_label_ || opengl_widget->get_is_searching(&prog);
+    }
 }
