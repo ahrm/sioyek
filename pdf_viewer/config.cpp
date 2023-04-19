@@ -130,6 +130,7 @@ extern bool VIMTEX_WSL_FIX;
 extern float RULER_AUTO_MOVE_SENSITIVITY;
 extern bool SLICED_RENDERING;
 extern bool TOUCH_MODE;
+extern float TTS_RATE;
 
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
@@ -1485,6 +1486,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		bool_serializer,
 		bool_deserializer,
 		bool_validator
+		});
+	configs.push_back({
+		L"tts_rate",
+		ConfigType::Float,
+		&TTS_RATE,
+		float_serializer,
+		float_deserializer,
+		nullptr,
+		FloatExtras{-1.0f, 1.0f}
 		});
 
 	std::wstring highlight_config_string = L"highlight_color_a";

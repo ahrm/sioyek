@@ -1,6 +1,7 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
 // add ability to create bookmarks in touch mode
+// double clicking on the next visual mark button can cause smartjump 
 
 
 #include <iostream>
@@ -136,6 +137,7 @@ extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
 extern float RULER_AUTO_MOVE_SENSITIVITY;
+extern float TTS_RATE;
 
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
@@ -649,6 +651,15 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer = new QTimer(this);
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
+    QObject::connect(&tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
+        if (state == QTextToSpeech::Ready) {
+            if (is_reading) {
+                move_visual_mark(1);
+                //read_current_line();
+                invalidate_render();
+            }
+		}
+        });
     connect(validation_interval_timer, &QTimer::timeout, [&]() {
 
         if (TOUCH_MODE && selection_begin_indicator){
@@ -752,6 +763,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 }
 
 MainWidget::~MainWidget() {
+    if (is_reading) {
+        is_reading = false;
+        tts.stop();
+    }
     remove_self_from_windows();
 
     if (windows.size() == 0) {
@@ -3438,6 +3453,9 @@ fz_rect MainWidget::move_visual_mark(int offset) {
 		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
 		main_document_view->move_absolute(0, distance);
 	}
+    if (is_reading) {
+        read_current_line();
+    }
     return ruler_rect;
 }
 
@@ -5306,4 +5324,27 @@ void MainWidget::update_highlight_buttons_position() {
 		WindowPos windowpos = main_document_view->document_to_window_pos_in_pixels(docpos);
 		highlight_buttons->move(highlight_buttons->pos().x(), windowpos.y -  highlight_buttons->height());
     }
+}
+
+void MainWidget::handle_debug_command() {
+}
+
+void MainWidget::read_current_line() {
+	std::wstring text = main_document_view->get_selected_line_text().value_or(L"");
+    tts.setRate(TTS_RATE);
+    is_reading = false;
+    tts.stop();
+    //std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    tts.say(QString::fromStdWString(text));
+    is_reading = true;
+}
+
+void MainWidget::handle_start_reading() {
+    is_reading = true;
+    read_current_line();
+}
+
+void MainWidget::handle_stop_reading() {
+    is_reading = false;
+    tts.stop();
 }

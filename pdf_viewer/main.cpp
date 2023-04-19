@@ -268,6 +268,7 @@ bool AUTOCENTER_VISUAL_SCROLL = false;
 bool ALPHABETIC_LINK_TAGS = false;
 bool VIMTEX_WSL_FIX = false;
 float RULER_AUTO_MOVE_SENSITIVITY = 40.0f;
+float TTS_RATE = 0.0f;
 //UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
 float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
@@ -780,9 +781,9 @@ int main(int argc, char* args[]) {
 #ifdef SIOYEK_ANDROID
     SEARCH_URLS['s' - 'a'] = L"https://scholar.google.com/scholar?q=";
     SEARCH_URLS['g' - 'a'] = L"https://www.google.com/search?q=";
-    auto r = QtAndroidPrivate::checkPermission(QtAndroidPrivate::Storage).result();
+    auto r = QtAndroidPrivate::checkPermission("android.permission.READ_EXTERNAL_STORAGE").result();
     if (r == QtAndroidPrivate::Denied){
-        r = QtAndroidPrivate::requestPermission(QtAndroidPrivate::Storage).result();
+        r = QtAndroidPrivate::requestPermission("android.permission.READ_EXTERNAL_STORAGE").result();
 
         if (r == QtAndroidPrivate::Denied){
             qDebug() << "Could not get storage permission\n";

@@ -124,6 +124,28 @@ class PrevItemCommand : public Command{
 	}
 };
 
+class StartReadingCommand : public Command{
+
+	void perform(MainWidget* widget) {
+		widget->handle_start_reading();
+	}
+
+	std::string get_name() {
+		return "start_reading";
+	}
+};
+
+class StopReadingCommand : public Command{
+
+	void perform(MainWidget* widget) {
+		widget->handle_stop_reading();
+	}
+
+	std::string get_name() {
+		return "stop_reading";
+	}
+};
+
 class SearchCommand : public TextCommand {
 
 	void perform(MainWidget* widget) {
@@ -1810,7 +1832,7 @@ class OverviewToPortalCommand : public Command {
 class DebugCommand : public Command {
 
 	void perform(MainWidget* widget) {
-		widget->persist_config();
+		widget->handle_debug_command();
 	}
 
 	std::string get_name() {
@@ -2209,7 +2231,11 @@ public:
 
 	std::wstring get_text_default_value() {
 		Config* config = config_manager->get_mut_config_with_name(utf8_decode(config_name));
-		return *(std::wstring*)(config->value);
+		std::wstringstream config_stream;
+		config->serialize(config->value, config_stream);
+		std::wstring default_value = config_stream.str();
+
+		return default_value;
 	}
 
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
@@ -2477,6 +2503,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["toggle_select_highlight"] = []() {return std::make_unique< ToggleSelectHighlightCommand>(); };
 	new_commands["open_last_document"] = []() {return std::make_unique< OpenLastDocumentCommand>(); };
 	new_commands["toggle_statusbar"] = []() {return std::make_unique< ToggleStatusbarCommand>(); };
+	new_commands["start_reading"] = []() {return std::make_unique< StartReadingCommand>(); };
+	new_commands["stop_reading"] = []() {return std::make_unique< StopReadingCommand>(); };
 	new_commands["debug"] = []() {return std::make_unique< DebugCommand>(); };
 
 

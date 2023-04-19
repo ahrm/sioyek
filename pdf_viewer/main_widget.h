@@ -16,6 +16,7 @@
 #include <qbytearray.h>
 #include <qdrag.h>
 #include <qscrollbar.h>
+#include <qtexttospeech.h>
 
 #include <mupdf/fitz.h>
 #include "document_view.h"
@@ -51,6 +52,9 @@ public:
 	PdfRenderer* pdf_renderer = nullptr;
 	InputHandler* input_handler = nullptr;
 	CachedChecksummer* checksummer = nullptr;
+	QTextToSpeech tts;
+	bool is_reading = false;
+
 
 	PdfViewOpenGLWidget* opengl_widget = nullptr;
 	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
@@ -356,6 +360,10 @@ public:
 	void handle_toggle_typing_mode();
 	void handle_delete_highlight_under_cursor();
     void handle_delete_selected_highlight();
+	void handle_start_reading();
+	void read_current_line();
+	void handle_stop_reading();
+	void handle_debug_command();
 
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator *selection_end_indicator = nullptr;
