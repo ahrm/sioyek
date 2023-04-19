@@ -1,7 +1,6 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
 // add ability to create bookmarks in touch mode
-// double clicking on the next visual mark button can cause smartjump 
 // additional buttons: add bookmark, portal, speak, fit to page width, lock horizontal scrolling, mark and goto mark
 
 
@@ -5135,8 +5134,9 @@ bool MainWidget::handle_quick_tap(){
     qDebug() << "time is : " << last_quick_tap_time.msecsTo(now);
     if ((last_quick_tap_time.msecsTo(now) < 200) && (mapFromGlobal(QCursor::pos()) - last_quick_tap_position).manhattanLength() < 20){
         qDebug() << "handling double tap";
-        handle_double_tap(last_quick_tap_position);
-        return true;
+        if (handle_double_tap(last_quick_tap_position)) {
+			return true;
+        }
     }
 
     clear_selected_text();
@@ -5235,11 +5235,27 @@ bool MainWidget::is_flicking(QPointF* out_velocity){
     }
 }
 
-void MainWidget::handle_double_tap(QPoint pos){
+bool MainWidget::handle_double_tap(QPoint pos){
     WindowPos position;
     position.x = pos.x();
     position.y = pos.y();
+
+    if (is_visual_mark_mode()) {
+        NormalizedWindowPos nmp = main_document_view->window_to_normalized_window_pos(position);
+        // don't want to accidentally smart jump when quickly moving the ruler
+        if (screen()->orientation() == Qt::PortraitOrientation) {
+            if (PORTRAIT_VISUAL_MARK_NEXT.contains(nmp) || PORTRAIT_VISUAL_MARK_PREV.contains(nmp)) {
+                return false;
+            }
+        }
+        else {
+            if (LANDSCAPE_VISUAL_MARK_NEXT.contains(nmp) || LANDSCAPE_VISUAL_MARK_PREV.contains(nmp)) {
+                return false;
+            }
+        }
+    }
     smart_jump_under_pos(position);
+    return true;
 }
 
 

@@ -392,7 +392,7 @@ public:
     void handle_mobile_selection();
     void update_mobile_selection();
     bool handle_quick_tap();
-    void handle_double_tap(QPoint pos);
+    bool handle_double_tap(QPoint pos);
     void android_handle_visual_mode();
     void show_highlight_buttons();
     void clear_highlight_buttons();
