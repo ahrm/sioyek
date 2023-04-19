@@ -31,6 +31,7 @@
         <file>pdf_viewer/touchui/TouchSearchButtons.qml</file>
         <file>pdf_viewer/touchui/TouchDeleteButton.qml</file>
         <file>pdf_viewer/touchui/TouchHighlightButtons.qml</file>
+        <file>pdf_viewer/touchui/TouchAudioButtons.qml</file>
         <file>pdf_viewer/touchui/TouchSettings.qml</file>
         <file>icons/page.svg</file>
         <file>icons/select_text.svg</file>
@@ -42,6 +43,9 @@
         <file>icons/search.svg</file>
         <file>icons/table-of-contents.svg</file>
         <file>icons/text-selection.svg</file>
+        <file>icons/play.svg</file>
+        <file>icons/pause.svg</file>
+        <file>icons/stop.svg</file>
         <file>end.png</file>
     </qresource>
 </RCC>

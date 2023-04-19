@@ -1124,9 +1124,10 @@ int DocumentView::get_vertical_line_page() {
 }
 
 std::optional<std::wstring> DocumentView::get_selected_line_text () {
-	if (line_index > 0) {
+	if (line_index >= 0) {
 		std::vector<std::wstring> lines;
-		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
+		//std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
+		std::vector<fz_rect> line_rects = current_document->get_page_lines(get_vertical_line_page(), &lines);
 		if ((size_t) line_index < lines.size()) {
 			std::wstring content = lines[line_index];
 			return content;

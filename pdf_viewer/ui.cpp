@@ -22,6 +22,7 @@ extern bool RULER_MODE;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float HIGHLIGHT_COLORS[26 * 3];
+extern float TTS_RATE;
 
 std::wstring select_command_file_name(std::string command_name) {
 	if (command_name == "open_document") {
@@ -749,6 +750,50 @@ void PageSelectorUI::resizeEvent(QResizeEvent* resize_event){
 
     setFixedSize(w, h);
     move((parent_width - w) / 2, parent_height - 2 * h);
+}
+
+AudioUI::AudioUI(MainWidget* parent) : ConfigUI(parent) {
+
+     buttons = new TouchAudioButtons(this);
+
+    QObject::connect(buttons, &TouchAudioButtons::playPressed, [&](){
+        //main_widget->main_document_view->goto_page(val);
+        //main_widget->invalidate_render();
+        main_widget->handle_play();
+    });
+
+    QObject::connect(buttons, &TouchAudioButtons::stopPressed, [&](){
+        //main_widget->main_document_view->goto_page(val);
+        //main_widget->invalidate_render();
+        main_widget->handle_stop_reading();
+    });
+
+    QObject::connect(buttons, &TouchAudioButtons::pausePressed, [&](){
+        //main_widget->main_document_view->goto_page(val);
+        //main_widget->invalidate_render();
+        main_widget->handle_pause();
+    });
+
+    QObject::connect(buttons, &TouchAudioButtons::speedIncreasePressed, [&](){
+        TTS_RATE += 0.1;
+    });
+
+    QObject::connect(buttons, &TouchAudioButtons::speedDecreasePressed, [&](){
+        TTS_RATE -= 0.1;
+    });
+ }
+
+void AudioUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    int w = parent_width;
+    int h =  parent_height / 6;
+    buttons->resize(w, h);
+
+    setFixedSize(w, h);
+    move((parent_width - w) / 2, parent_height - h);
 }
 
 

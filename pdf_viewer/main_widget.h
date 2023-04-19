@@ -361,9 +361,13 @@ public:
 	void handle_delete_highlight_under_cursor();
     void handle_delete_selected_highlight();
 	void handle_start_reading();
-	void read_current_line();
 	void handle_stop_reading();
+	void handle_play();
+	void handle_pause();
+	void read_current_line();
 	void handle_debug_command();
+
+	void show_audio_buttons();
 
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator *selection_end_indicator = nullptr;

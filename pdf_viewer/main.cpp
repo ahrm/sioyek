@@ -200,7 +200,7 @@ float RULER_X_PADDING = 0.0f;
 std::wstring ITEM_LIST_PREFIX = L">";
 
 #ifdef SIOYEK_ANDROID
-std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode";
+std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";
 #else
 std::wstring STARTUP_COMMANDS = L"";
 #endif

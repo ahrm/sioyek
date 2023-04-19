@@ -652,7 +652,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
     QObject::connect(&tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
-        if (state == QTextToSpeech::Ready) {
+        if ((state == QTextToSpeech::Ready) || (state == QTextToSpeech::Error)) {
             if (is_reading) {
                 move_visual_mark(1);
                 //read_current_line();
@@ -5342,9 +5342,32 @@ void MainWidget::read_current_line() {
 void MainWidget::handle_start_reading() {
     is_reading = true;
     read_current_line();
+    if (TOUCH_MODE) {
+        set_current_widget(new AudioUI(this));
+        show_current_widget();
+    }
 }
 
 void MainWidget::handle_stop_reading() {
     is_reading = false;
     tts.stop();
+    if (TOUCH_MODE) {
+        pop_current_widget();
+    }
+}
+
+void MainWidget::handle_play() {
+    is_reading = true;
+    if (tts.state() == QTextToSpeech::Paused) {
+		tts.resume();
+    }
+    else {
+        move_visual_mark(1);
+        invalidate_render();
+    }
+}
+
+void MainWidget::handle_pause() {
+    is_reading = false;
+    tts.pause(QTextToSpeech::BoundaryHint::Immediate);
 }

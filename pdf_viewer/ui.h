@@ -51,6 +51,7 @@
 #include "touchui/TouchSearchButtons.h"
 #include "touchui/TouchDeleteButton.h"
 #include "touchui/TouchHighlightButtons.h"
+#include "touchui/TouchAudioButtons.h"
 
 #include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"
@@ -1025,6 +1026,14 @@ public:
     void resizeEvent(QResizeEvent* resize_event) override;
 private:
     TouchPageSelector* page_selector = nullptr;
+};
+
+class AudioUI : public ConfigUI{
+public:
+    AudioUI(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    TouchAudioButtons* buttons = nullptr;
 };
 
 class RectangleConfigUI : public ConfigUI{
