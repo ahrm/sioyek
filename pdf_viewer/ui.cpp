@@ -140,7 +140,12 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 
      main_widget = dynamic_cast<MainWidget*>(parent);
      int current_colorscheme_index = main_widget->get_current_colorscheme_index();
-     main_menu = new TouchMainMenu(current_colorscheme_index, this);
+     bool horizontal_locked = main_widget->horizontal_scroll_locked;
+     bool fullscreen = main_widget->isFullScreen();
+     bool ruler = main_widget->is_visual_mark_mode();
+     bool speaking = main_widget->is_reading;
+
+     main_menu = new TouchMainMenu(fullscreen, ruler, speaking, horizontal_locked, current_colorscheme_index, this);
 
 
 //    set_rect_config_button = new QPushButton("Rect Config", this);

@@ -60,10 +60,10 @@ ColumnLayout{
                 "qrc:/icons/document-page-number.svg",
                 "qrc:/icons/table-of-contents.svg",
                 "qrc:/icons/search.svg",
-                "qrc:/icons/fullscreen.svg",
+                _fullscreen ? "qrc:/icons/fullscreen-enabled.svg" : "qrc:/icons/fullscreen.svg",
                 "qrc:/icons/bookmark.svg",
                 "qrc:/icons/highlight.svg",
-                "qrc:/icons/ruler.svg",
+                _ruler ? "qrc:/icons/ruler-enabled.svg" : "qrc:/icons/ruler.svg" ,
                 ]
 
                 tips: ["Select Text",
@@ -121,8 +121,8 @@ ColumnLayout{
                 buttons: ["qrc:/icons/bookmark-add.svg",
                 "qrc:/icons/link.svg",
                 "qrc:/icons/unlink.svg",
-                "qrc:/icons/tts.svg",
-                "qrc:/icons/lock.svg",
+                _speaking ? "qrc:/icons/tts-enabled.svg" :  "qrc:/icons/tts.svg",
+                _locked ? "qrc:/icons/lock-enabled.svg" :"qrc:/icons/lock.svg",
                 "qrc:/icons/bookmark-g.svg",
                 "qrc:/icons/highlight-g.svg",
                 ]
@@ -179,16 +179,18 @@ ColumnLayout{
         // height: 5 * parent.height / 18
         // anchors.left: parent.left
         // anchors.right: parent.right
-        Column{
+        Row{
             anchors.fill: parent
 
 
             Text{
                 id: label0
-                text: "Color Scheme"
+                text: "Theme"
                 color: "white"
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
+                //anchors.horizontalCenter: parent.horizontalCenter
+                //anchors.top: parent.top
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
                 anchors.margins: 10
                 //            color: "#00B2FF"
             }
@@ -197,10 +199,16 @@ ColumnLayout{
                 buttons: ["Light", "Dark", "Custom"]
                 radio: true
                 selectedIndex: _currentColorschemeIndex
+                //anchors.bottom: parent.bottom
+                //anchors.top: label0.bottom
+                //anchors.left: parent.left
+                //anchors.right: parent.right
+
                 anchors.bottom: parent.bottom
-                anchors.top: label0.bottom
-                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.left: label0.right
                 anchors.right: parent.right
+
                 anchors.margins: 10
                 onButtonClicked: function(index, name){
                     if (index == 0){
@@ -228,25 +236,32 @@ ColumnLayout{
         Layout.preferredWidth: parent.width
         // anchors.left: parent.left
         // anchors.right: parent.right
-        Column{
+        Row{
             anchors.fill: parent
 
 
             Text{
                 id: label2
                 color: "white"
-                text: "Open Document"
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
+                text: "Open"
+                //anchors.horizontalCenter: parent.horizontalCenter
+                //anchors.top: parent.top
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
                 anchors.margins: 10
                 //            color: "#00B2FF"
             }
 
             TouchButtonGroup{
                 buttons: ["Previous", "New"]
+                //anchors.bottom: parent.bottom
+                //anchors.top: label2.bottom
+                //anchors.left: parent.left
+                //anchors.right: parent.right
+
                 anchors.bottom: parent.bottom
-                anchors.top: label2.bottom
-                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.left: label2.right
                 anchors.right: parent.right
                 anchors.margins: 10
 
@@ -277,20 +292,20 @@ ColumnLayout{
             anchors.fill: parent
 
 
-            Text{
-                id: label3
-                color: "white"
-                text: "Advanced"
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.top
-                anchors.margins: 10
-                //            color: "#00B2FF"
-            }
+            // Text{
+            //     id: label3
+            //     color: "white"
+            //     text: "Advanced"
+            //     anchors.horizontalCenter: parent.horizontalCenter
+            //     anchors.top: parent.top
+            //     anchors.margins: 10
+            //     //            color: "#00B2FF"
+            // }
 
             TouchButtonGroup{
                 buttons: ["Commands", "Settings"]
                 anchors.bottom: parent.bottom
-                anchors.top: label3.bottom
+                anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.margins: 10

@@ -1,7 +1,7 @@
 #include "touchui/TouchMainMenu.h"
 
 
-TouchMainMenu::TouchMainMenu(int current_colorscheme_index, QWidget* parent) : QWidget(parent){
+TouchMainMenu::TouchMainMenu(bool fullscreen, bool ruler, bool speaking, bool locked, int current_colorscheme_index, QWidget* parent) : QWidget(parent){
 
     setAttribute(Qt::WA_NoMousePropagation);
 
@@ -12,6 +12,10 @@ TouchMainMenu::TouchMainMenu(int current_colorscheme_index, QWidget* parent) : Q
     quick_widget->setClearColor(Qt::transparent);
 
     quick_widget->rootContext()->setContextProperty("_currentColorschemeIndex", current_colorscheme_index);
+    quick_widget->rootContext()->setContextProperty("_locked", locked);
+    quick_widget->rootContext()->setContextProperty("_fullscreen", fullscreen);
+    quick_widget->rootContext()->setContextProperty("_ruler", ruler);
+    quick_widget->rootContext()->setContextProperty("_speaking", speaking);
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchMainMenu.qml"));
 
