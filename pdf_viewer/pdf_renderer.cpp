@@ -186,8 +186,10 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, f
 		}
 		cached_response_mutex.unlock();
 		if (result == 0) {
-            if (TOUCH_MODE && (!no_rerender)){
-                add_request(path, page, zoom_level, index);
+            if (TOUCH_MODE){
+                if (!no_rerender){
+                    add_request(path, page, zoom_level, index);
+                }
             }
             else{
                 add_request(path, page, zoom_level, index);
