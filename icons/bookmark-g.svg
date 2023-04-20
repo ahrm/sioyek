@@ -5,7 +5,7 @@
    viewBox="0 0 24 24"
    version="1.1"
    id="svg4"
-   sodipodi:docname="bookmark.svg"
+   sodipodi:docname="bookmark-g.svg"
    inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -24,8 +24,8 @@
      inkscape:deskcolor="#d1d1d1"
      showgrid="false"
      inkscape:zoom="36.541667"
-     inkscape:cx="11.904219"
-     inkscape:cy="12.013683"
+     inkscape:cx="11.493729"
+     inkscape:cy="14.285063"
      inkscape:window-width="1920"
      inkscape:window-height="1057"
      inkscape:window-x="-8"
@@ -37,4 +37,24 @@
      d="M12,19.118034 L5,22.618034 L5,4 C5,2.8954305 5.8954305,2 7,2 L17,2 C18.1045695,2 19,2.8954305 19,4 L19,22.618034 L12,19.118034 Z M7,19.381966 L12,16.881966 L17,19.381966 L17,4 L7,4 L7,19.381966 Z"
      id="path2"
      style="fill:#ffffff" />
+  <text
+     xml:space="preserve"
+     style="fill:#ffffff;fill-opacity:0.93;stroke:#ffffff;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+     x="5.2542758"
+     y="11.083238"
+     id="text841"><tspan
+       sodipodi:role="line"
+       id="tspan839" /></text>
+  <text
+     xml:space="preserve"
+     style="font-size:10.3516px;fill:#ffffff;fill-opacity:0.93;stroke:#ffffff;stroke-width:4.31314;stroke-linecap:round;stroke-linejoin:round;paint-order:stroke fill markers"
+     x="7.9125004"
+     y="15.332501"
+     id="text1001"
+     transform="scale(1.0086895,0.99138538)"><tspan
+       sodipodi:role="line"
+       id="tspan999"
+       x="7.9125004"
+       y="15.332501"
+       style="fill:#ffffff;stroke-width:4.31314">G</tspan></text>
 </svg>

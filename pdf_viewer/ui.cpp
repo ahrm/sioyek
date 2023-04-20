@@ -275,6 +275,48 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->handle_command_types(std::move(command), 0);
     });
 
+    QObject::connect(main_menu, &TouchMainMenu::addBookmarkClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("add_bookmark");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(main_menu, &TouchMainMenu::portalClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("portal");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(main_menu, &TouchMainMenu::deletePortalClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("delete_portal");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(main_menu, &TouchMainMenu::globalBookmarksClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("goto_bookmark_g");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(main_menu, &TouchMainMenu::globalHighlightsClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("goto_highlight_g");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(main_menu, &TouchMainMenu::ttsClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("start_reading");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(main_menu, &TouchMainMenu::horizontalLockClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("toggle_horizontal_scroll_lock");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
 //    QObject::connect(set_background_color, &QPushButton::pressed, [&](){
 
 //        auto command = main_widget->command_manager->get_command_with_name("setconfig_background_color");

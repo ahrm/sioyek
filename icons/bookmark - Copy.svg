@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   width="24"
-   height="24"
-   viewBox="0 0 24 24"
+   width="16"
+   height="16"
+   fill="currentColor"
+   class="bi bi-bookmark"
+   viewBox="0 0 16 16"
    version="1.1"
    id="svg4"
    sodipodi:docname="bookmark.svg"
@@ -23,9 +25,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      showgrid="false"
-     inkscape:zoom="36.541667"
-     inkscape:cx="11.904219"
-     inkscape:cy="12.013683"
+     inkscape:zoom="54.8125"
+     inkscape:cx="8"
+     inkscape:cy="8.009122"
      inkscape:window-width="1920"
      inkscape:window-height="1057"
      inkscape:window-x="-8"
@@ -33,8 +35,7 @@
      inkscape:window-maximized="1"
      inkscape:current-layer="svg4" />
   <path
-     fill-rule="evenodd"
-     d="M12,19.118034 L5,22.618034 L5,4 C5,2.8954305 5.8954305,2 7,2 L17,2 C18.1045695,2 19,2.8954305 19,4 L19,22.618034 L12,19.118034 Z M7,19.381966 L12,16.881966 L17,19.381966 L17,4 L7,4 L7,19.381966 Z"
+     d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1H4z"
      id="path2"
      style="fill:#ffffff" />
 </svg>

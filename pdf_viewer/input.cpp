@@ -1988,7 +1988,7 @@ class ToggleHorizontalLockCommand : public Command {
 	}
 
 	std::string get_name() {
-		return "toggle_horizontal_lock";
+		return "toggle_horizontal_scroll_lock";
 	}
 };
 

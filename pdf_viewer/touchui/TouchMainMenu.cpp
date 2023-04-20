@@ -106,6 +106,48 @@ TouchMainMenu::TouchMainMenu(int current_colorscheme_index, QWidget* parent) : Q
                 this,
                 SLOT(handleSettings()));
 
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(addBookmarkClicked()),
+                this,
+                SLOT(handleAddBookmark()));
+
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(portalClicked()),
+                this,
+                SLOT(handlePortal()));
+
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(deletePortalClicked()),
+                this,
+                SLOT(handleDeletePortal()));
+
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(globalBookmarksClicked()),
+                this,
+                SLOT(handleGlobalBookmarks()));
+
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(globalHighlightsClicked()),
+                this,
+                SLOT(handleGlobalHighlights()));
+
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(ttsClicked()),
+                this,
+                SLOT(handleTTS()));
+
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(horizontalLockClicked()),
+                this,
+                SLOT(handleHorizontalLock()));
+
 }
 
 void TouchMainMenu::handleSelectText(){
@@ -166,6 +208,34 @@ void TouchMainMenu::handleCommands(){
 
 void TouchMainMenu::handleSettings(){
     emit settingsClicked();
+}
+
+void TouchMainMenu::handleAddBookmark(){
+    emit addBookmarkClicked();
+}
+
+void TouchMainMenu::handlePortal(){
+    emit portalClicked();
+}
+
+void TouchMainMenu::handleDeletePortal(){
+    emit deletePortalClicked();
+}
+
+void TouchMainMenu::handleGlobalBookmarks(){
+    emit globalBookmarksClicked();
+}
+
+void TouchMainMenu::handleGlobalHighlights(){
+    emit globalHighlightsClicked();
+}
+
+void TouchMainMenu::handleTTS(){
+    emit ttsClicked();
+}
+
+void TouchMainMenu::handleHorizontalLock(){
+    emit horizontalLockClicked();
 }
 //void TouchMainMenu::handleSelect(int item) {
 //    emit pageSelected(item);

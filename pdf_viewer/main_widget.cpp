@@ -1,7 +1,7 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
 // add ability to create bookmarks in touch mode
-// additional buttons: add bookmark, portal, speak, fit to page width, lock horizontal scrolling, mark and goto mark
+// additional buttons:  fit to page width, lock horizontal scrolling, mark and goto mark
 
 
 #include <iostream>
@@ -5395,7 +5395,7 @@ void MainWidget::handle_pause() {
 bool MainWidget::should_show_status_label() {
 	float prog;
     if (TOUCH_MODE) {
-        if (current_widget_stack.size() > 0 || opengl_widget->get_is_searching(&prog)) {
+        if (current_widget_stack.size() > 0 || opengl_widget->get_is_searching(&prog) || is_pending_link_source_filled()) {
             return true;
         }
         return false;

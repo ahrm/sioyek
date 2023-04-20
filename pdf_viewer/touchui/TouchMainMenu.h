@@ -28,6 +28,13 @@ public slots:
     void handleOpenNewDoc();
     void handleCommands();
     void handleSettings();
+    void handleAddBookmark();
+    void handlePortal();
+    void handleDeletePortal();
+    void handleGlobalBookmarks();
+    void handleGlobalHighlights();
+    void handleTTS();
+    void handleHorizontalLock();
 
 signals:
     void selectTextClicked();
@@ -45,6 +52,13 @@ signals:
     void openNewDocClicked();
     void commandsClicked();
     void settingsClicked();
+    void addBookmarkClicked();
+    void portalClicked();
+    void deletePortalClicked();
+    void globalBookmarksClicked();
+    void globalHighlightsClicked();
+    void ttsClicked();
+    void horizontalLockClicked();
 
 private:
     QQuickWidget* quick_widget = nullptr;

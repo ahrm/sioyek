@@ -36,9 +36,14 @@
         <file>icons/page.svg</file>
         <file>icons/select_text.svg</file>
         <file>icons/bookmark.svg</file>
+        <file>icons/bookmark-g.svg</file>
+        <file>icons/portal.svg</file>
+        <file>icons/link.svg</file>
+        <file>icons/unlink.svg</file>
         <file>icons/document-page-number.svg</file>
         <file>icons/fullscreen.svg</file>
         <file>icons/highlight.svg</file>
+        <file>icons/highlight-g.svg</file>
         <file>icons/ruler.svg</file>
         <file>icons/search.svg</file>
         <file>icons/table-of-contents.svg</file>
@@ -46,6 +51,9 @@
         <file>icons/play.svg</file>
         <file>icons/pause.svg</file>
         <file>icons/stop.svg</file>
+        <file>icons/tts.svg</file>
+        <file>icons/lock.svg</file>
+        <file>icons/bookmark-add.svg</file>
         <file>end.png</file>
     </qresource>
 </RCC>

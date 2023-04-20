@@ -15,7 +15,9 @@ ColumnLayout{
     signal searchClicked();
     signal fullscreenClicked();
     signal bookmarksClicked();
+    signal globalBookmarksClicked();
     signal highlightsClicked();
+    signal globalHighlightsClicked();
     signal rulerModeClicked();
     signal lightColorschemeClicked();
     signal darkColorschemeClicked();
@@ -24,6 +26,11 @@ ColumnLayout{
     signal openNewDocClicked();
     signal commandsClicked();
     signal settingsClicked();
+    signal addBookmarkClicked();
+    signal portalClicked();
+    signal deletePortalClicked();
+    signal ttsClicked();
+    signal horizontalLockClicked();
 
     Rectangle{
         anchors.fill: parent
@@ -33,13 +40,8 @@ ColumnLayout{
     }
     Item{
 
-        // color: "yellow"
-        // radius: 10
-        // height: parent.height / 6
         Layout.preferredHeight: Math.max(parent.height / 6, 100)
         Layout.preferredWidth: parent.width
-        // anchors.left: parent.left
-        // anchors.right: parent.right
         Column{
             anchors.fill: parent
 
@@ -73,6 +75,8 @@ ColumnLayout{
                 "Highlights",
                 "Toggle Ruler Mode"]
 
+
+                id: firsttools
                 anchors.bottom: parent.bottom
                 anchors.top: label.bottom
                 anchors.left: parent.left
@@ -101,6 +105,67 @@ ColumnLayout{
                 }
 
             }
+
+        }
+    }
+
+    Item{
+
+        //Layout.preferredHeight: Math.max(parent.height / 6, 100)
+        Layout.preferredHeight: firsttools.height + 20
+        Layout.preferredWidth: parent.width
+        Column{
+            anchors.fill: parent
+
+            TouchButtonGroup{
+                buttons: ["qrc:/icons/bookmark-add.svg",
+                "qrc:/icons/link.svg",
+                "qrc:/icons/unlink.svg",
+                "qrc:/icons/tts.svg",
+                "qrc:/icons/lock.svg",
+                "qrc:/icons/bookmark-g.svg",
+                "qrc:/icons/highlight-g.svg",
+                ]
+
+                tips: ["Add Bookmark",
+                "Portal",
+                "Delete Portal",
+                "Text to Speech",
+                "Lock Horizontal Scroll",
+                "All Bookmarks",
+                "All Highlights"]
+
+
+                id: secondtools
+                anchors.bottom: parent.bottom
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.margins: 10
+                onButtonClicked: function (index, name){
+                    switch (index){
+                        case 0:
+                            /* emit */ addBookmarkClicked(); break;
+                        case 1:
+                            /* emit */ portalClicked(); break;
+                        case 2:
+                            /* emit */ deletePortalClicked(); break;
+                        case 3:
+                            /* emit */ ttsClicked(); break;
+                        case 4:
+                            /* emit */ horizontalLockClicked(); break;
+                        case 5:
+                            /* emit */ globalBookmarksClicked(); break;
+                        case 6:
+                            /* emit */ globalHighlightsClicked(); break;
+                        case 7:
+                            /* emit */ rulerModeClicked(); break;
+                        default:
+                    }
+                }
+
+            }
+
         }
     }
 
