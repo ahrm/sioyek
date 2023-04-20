@@ -230,6 +230,12 @@ void PdfRenderer::delete_old_pages(bool force_all, bool invalidate_all) {
 	OpenGL textures are released immediately but pixmaps should be freed from the thread
 	that created them, so we add old pixmaps to pixmaps_to_delete and delete them later from the worker thread
 	*/
+
+	if (no_rerender) {
+		// don't release while resizing, can cause a blank screen
+		return;
+	}
+
 	cached_response_mutex.lock();
 	std::vector<int> indices_to_delete;
 	unsigned int now = QDateTime::currentMSecsSinceEpoch();
