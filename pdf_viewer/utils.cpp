@@ -2315,18 +2315,41 @@ void convert_color3(float* in_color, int* out_color) {
 	out_color[2] = (int)(in_color[2] * 255);
 }
 
+#ifdef SIOYEK_ANDROID
+
+QJniObject parseUriString(const QString& uriString){
+    return QJniObject::callStaticObjectMethod
+                ("android/net/Uri" , "parse",
+                 "(Ljava/lang/String;)Landroid/net/Uri;",
+                 QJniObject::fromString(uriString).object());
+}
+
+QString android_file_uri_from_content_uri(QString uri){
+
+//    mainActivityObj = QtAndroid::androidActivity();
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    QJniObject uri_object = parseUriString(uri);
+
+    QJniObject file_uri_object = QJniObject::callStaticObjectMethod("info/sioyek/sioyek/SioyekActivity",
+                                       "getPathFromUri",
+                                       "(Landroid/content/Context;Landroid/net/Uri;)Ljava/lang/String;", activity.object(), uri_object.object());
+    return file_uri_object.toString();
+}
+#endif
+
 fz_document* open_document_with_file_name(fz_context* context, std::wstring file_name){
 
 #ifdef SIOYEK_ANDROID
+
     QFile pdf_qfile(QString::fromStdWString(file_name));
 
     pdf_qfile.open(QIODeviceBase::ReadOnly);
     int qfile_handle = pdf_qfile.handle();
     fz_stream* stream = nullptr;
 
+
     if (qfile_handle != -1){
         FILE* file_ptr = fdopen(dup(qfile_handle), "rb");
-        qDebug() << "file ptr : " << file_ptr << "\n";
         stream = fz_open_file_ptr_no_close(context, file_ptr);
     }
     else{
@@ -2365,12 +2388,6 @@ void convert_qcolor_to_float4(const QColor& color, float* out_floats){
 
 // modified from https://github.com/mahdize/CrossQFile/blob/main/CrossQFile.cpp
 
-QJniObject parseUriString(const QString& uriString){
-    return QJniObject::callStaticObjectMethod
-                ("android/net/Uri" , "parse",
-                 "(Ljava/lang/String;)Landroid/net/Uri;",
-                 QJniObject::fromString(uriString).object());
-}
 
 QString android_file_name_from_uri(QString uri){
 

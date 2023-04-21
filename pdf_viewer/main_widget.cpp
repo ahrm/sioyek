@@ -4078,6 +4078,12 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command){
 			}
 			else if (next_requirement.type == RequirementType::File) {
 				std::wstring file_name = select_command_file_name(pending_command_instance->get_name());
+#ifdef SIOYEK_ANDROID
+
+                if (file_name.size() > 0 && QString::fromStdWString(file_name).startsWith("content://")) {
+                    file_name = android_file_uri_from_content_uri(QString::fromStdWString(file_name)).toStdWString();
+                }
+#endif
                 if (file_name.size() > 0) {
 					pending_command_instance->set_file_requirement(file_name);
 					advance_command(std::move(pending_command_instance));
@@ -4609,7 +4615,7 @@ void MainWidget::handle_open_prev_doc() {
             if (path_value.substr(0, 10) == L"content://"){
                 path_value = android_file_name_from_uri(QString::fromStdWString(path_value)).toStdWString();
             }
-                opened_docs_names.push_back(path_value);
+            opened_docs_names.push_back(Path(path.value()).filename_no_ext().value_or(L"<ERROR>"));
 #else
                 opened_docs_names.push_back(Path(path.value()).filename().value_or(L"<ERROR>"));
 #endif

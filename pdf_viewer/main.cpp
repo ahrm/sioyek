@@ -781,14 +781,14 @@ int main(int argc, char* args[]) {
 #ifdef SIOYEK_ANDROID
     SEARCH_URLS['s' - 'a'] = L"https://scholar.google.com/scholar?q=";
     SEARCH_URLS['g' - 'a'] = L"https://www.google.com/search?q=";
-    auto r = QtAndroidPrivate::checkPermission("android.permission.READ_EXTERNAL_STORAGE").result();
+
+    auto r = QtAndroidPrivate::checkPermission("android.permission.WRITE_EXTERNAL_STORAGE").result();
     if (r == QtAndroidPrivate::Denied){
-        r = QtAndroidPrivate::requestPermission("android.permission.READ_EXTERNAL_STORAGE").result();
+        r = QtAndroidPrivate::requestPermission("android.permission.WRITE_EXTERNAL_STORAGE").result();
 
         if (r == QtAndroidPrivate::Denied){
             qDebug() << "Could not get storage permission\n";
         }
-
     }
 #endif
 

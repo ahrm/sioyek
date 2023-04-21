@@ -28,6 +28,21 @@ std::optional<std::wstring> Path::filename() const
 	return {};
 }
 
+std::optional<std::wstring> Path::filename_no_ext() const
+{
+    std::optional<std::wstring> name_ = filename();
+    if (name_){
+        std::wstring name = name_.value();
+        if (QString::fromStdWString(name).endsWith(".pdf")){
+            return name.substr(0, name.size() - 4);
+        }
+        else{
+            return name;
+        }
+    }
+    return {};
+}
+
 Path Path::file_parent() const
 {
 	QFileInfo info(QString::fromStdWString(get_path()));
