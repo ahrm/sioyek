@@ -128,7 +128,11 @@ std::wstring TEXT_HIGHLIGHT_URL = L"http://localhost:5000/";
 std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
 std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
 std::wstring PAPERS_FOLDER_PATH = L"";
+#ifndef SIOYEK_ANDROID
 std::wstring STATUS_BAR_FORMAT = L"Page %{current_page} / %{num_pages}%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}";
+#else
+std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}";
+#endif
 
 float HIGHLIGHT_COLORS[26 * 3] = { \
 0.5182963463943647, 0.052279561076773784, 0.42942409252886155, \
