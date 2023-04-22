@@ -126,7 +126,7 @@ ColumnLayout{
                 _locked ? "qrc:/icons/lock-enabled.svg" :"qrc:/icons/lock.svg",
                 "qrc:/icons/bookmark-g.svg",
                 "qrc:/icons/highlight-g.svg",
-                "qrc:/icons/fit-horizontal.svg",
+                _fit ? "qrc:/icons/fit-horizontal-enabled.svg" :  "qrc:/icons/fit-horizontal.svg",
                 ]
 
                 tips: ["Add Bookmark",

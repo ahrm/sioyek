@@ -41,6 +41,7 @@
         <file>icons/portal.svg</file>
         <file>icons/portal-enabled.svg</file>
         <file>icons/fit-horizontal.svg</file>
+        <file>icons/fit-horizontal-enabled.svg</file>
         <file>icons/link.svg</file>
         <file>icons/link-enabled.svg</file>
         <file>icons/unlink.svg</file>

@@ -145,8 +145,9 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
      bool ruler = main_widget->is_visual_mark_mode();
      bool speaking = main_widget->is_reading;
      bool portaling = main_widget->is_pending_link_source_filled();
+     bool fit_mode = main_widget->last_smart_fit_page.has_value();
 
-     main_menu = new TouchMainMenu(portaling, fullscreen, ruler, speaking, horizontal_locked, current_colorscheme_index, this);
+     main_menu = new TouchMainMenu(fit_mode, portaling, fullscreen, ruler, speaking, horizontal_locked, current_colorscheme_index, this);
 
 
 //    set_rect_config_button = new QPushButton("Rect Config", this);
@@ -395,12 +396,19 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
 
     QObject::connect(main_menu, &TouchMainMenu::fitToPageWidthClicked, [&](){
 
-		main_widget->main_document_view->fit_to_page_width(true);
-		int current_page = main_widget->get_current_page_number();
-		main_widget->last_smart_fit_page = current_page;
+        if (main_widget->last_smart_fit_page) {
+            main_widget->last_smart_fit_page = {};
+			main_widget->pop_current_widget();
+			main_widget->invalidate_render();
+        }
+        else {
+			main_widget->main_document_view->fit_to_page_width(true);
+			int current_page = main_widget->get_current_page_number();
+			main_widget->last_smart_fit_page = current_page;
 
-        main_widget->pop_current_widget();
-        main_widget->invalidate_render();
+			main_widget->pop_current_widget();
+			main_widget->invalidate_render();
+        }
     });
 //    QObject::connect(ruler_mode_bounds_config_button, &QPushButton::pressed, [&](){
 ////        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
