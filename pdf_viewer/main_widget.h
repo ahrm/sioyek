@@ -392,7 +392,7 @@ public:
 	void update_highlight_buttons_position();
     void handle_mobile_selection();
     void update_mobile_selection();
-    bool handle_quick_tap();
+    bool handle_quick_tap(WindowPos click_pos);
     bool handle_double_tap(QPoint pos);
     void android_handle_visual_mode();
     void show_highlight_buttons();
@@ -405,6 +405,8 @@ public:
     bool is_flicking(QPointF* out_velocity);
     void handle_touch_highlight();
     void restore_default_config();
+	bool is_in_back_rect(WindowPos pos);
+	bool is_in_forward_rect(WindowPos pos);
 
     void persist_config();
 

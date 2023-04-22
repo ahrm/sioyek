@@ -1642,8 +1642,9 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             qint64 current_time = QDateTime::currentMSecsSinceEpoch();
             QPointF vel;
             if (((current_pos-last_press_point).manhattanLength() < 10) && ((current_time - last_press_msecs) < 500)){
-                if (handle_quick_tap()) {
+                if (handle_quick_tap(click_pos)) {
                     is_dragging = false;
+                    invalidate_render();
                     return;
                 }
             }
@@ -1664,60 +1665,34 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
         NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(click_pos);
 
-        if (down && is_visual_mark_mode()){
+		if (down && is_visual_mark_mode()) {
+			if (screen()->orientation() == Qt::PortraitOrientation) {
+				if (PORTRAIT_VISUAL_MARK_NEXT.enabled && PORTRAIT_VISUAL_MARK_NEXT.contains(nwp)) {
+					move_visual_mark_next();
+					was_last_mouse_down_in_ruler_next_rect = true;
+					ruler_moving_last_window_pos = click_pos;
+				}
+				else if (PORTRAIT_VISUAL_MARK_PREV.enabled && PORTRAIT_VISUAL_MARK_PREV.contains(nwp)) {
+					move_visual_mark_prev();
+					was_last_mouse_down_in_ruler_prev_rect = true;
+					ruler_moving_last_window_pos = click_pos;
+				}
+			}
+			else {
+				if (LANDSCAPE_VISUAL_MARK_NEXT.enabled && LANDSCAPE_VISUAL_MARK_NEXT.contains(nwp)) {
+					move_visual_mark_next();
+					was_last_mouse_down_in_ruler_next_rect = true;
+					ruler_moving_last_window_pos = click_pos;
+				}
+				else if (LANDSCAPE_VISUAL_MARK_PREV.enabled && LANDSCAPE_VISUAL_MARK_PREV.contains(nwp)) {
+					move_visual_mark_prev();
+					was_last_mouse_down_in_ruler_prev_rect = true;
+					ruler_moving_last_window_pos = click_pos;
+				}
 
+			}
 
-            if (screen()->orientation() == Qt::PortraitOrientation){
-                if (PORTRAIT_VISUAL_MARK_NEXT.enabled && PORTRAIT_VISUAL_MARK_NEXT.contains(nwp)){
-                    move_visual_mark_next();
-                    was_last_mouse_down_in_ruler_next_rect = true;
-                    ruler_moving_last_window_pos = click_pos;
-                }
-                else if (PORTRAIT_VISUAL_MARK_PREV.enabled && PORTRAIT_VISUAL_MARK_PREV.contains(nwp)){
-                    move_visual_mark_prev();
-                    was_last_mouse_down_in_ruler_prev_rect = true;
-                    ruler_moving_last_window_pos = click_pos;
-                }
-            }
-            else{
-                if (LANDSCAPE_VISUAL_MARK_NEXT.enabled && LANDSCAPE_VISUAL_MARK_NEXT.contains(nwp)){
-                    move_visual_mark_next();
-                    was_last_mouse_down_in_ruler_next_rect = true;
-                    ruler_moving_last_window_pos = click_pos;
-                }
-                else if (LANDSCAPE_VISUAL_MARK_PREV.enabled && LANDSCAPE_VISUAL_MARK_PREV.contains(nwp)){
-                    move_visual_mark_prev();
-                    was_last_mouse_down_in_ruler_prev_rect = true;
-                    ruler_moving_last_window_pos = click_pos;
-                }
-
-            }
-
-        }
-
-        if (down){ // handle touch history navigation
-
-            if (screen()->orientation() == Qt::PortraitOrientation){
-
-                if (PORTRAIT_BACK_UI_RECT.enabled && PORTRAIT_BACK_UI_RECT.contains(nwp)){
-                    prev_state();
-                }
-                else if (PORTRAIT_FORWARD_UI_RECT.enabled && PORTRAIT_FORWARD_UI_RECT.contains(nwp)){
-                    next_state();
-                }
-            }
-            else{
-                if (LANDSCAPE_BACK_UI_RECT.enabled && LANDSCAPE_BACK_UI_RECT.contains(nwp)){
-                    prev_state();
-                }
-                else if (LANDSCAPE_FORWARD_UI_RECT.enabled && LANDSCAPE_FORWARD_UI_RECT.contains(nwp)){
-                    next_state();
-                }
-
-            }
-
-
-        }
+		}
 
     }
 
@@ -5003,12 +4978,25 @@ bool MainWidget::event(QEvent *event){
                 }
 
                 last_hold_point = mapFromGlobal(QCursor::pos());
+                WindowPos window_pos = WindowPos{ last_hold_point.x(), last_hold_point.y() };
                 //opengl_widget->last_selected_block
 
                 QTapAndHoldGesture *tapgest = static_cast<QTapAndHoldGesture *>(gesture->gesture(Qt::TapAndHoldGesture));
                 if (tapgest->state() == Qt::GestureFinished){
 
                     is_dragging = false;
+
+                    if (is_in_back_rect(window_pos)) {
+                        handle_command_types(command_manager->get_command_with_name("goto_mark"), 0);
+                        invalidate_render();
+                        return true;
+                    }
+                    if (is_in_forward_rect(window_pos)) {
+                        handle_command_types(command_manager->get_command_with_name("set_mark"), 0);
+                        invalidate_render();
+                        return true;
+                    }
+
                     //                persist();
                     //                toggle_fullscreen();
                     //                toggle_statusbar();
@@ -5152,18 +5140,27 @@ void MainWidget::clear_selection_indicators(){
     }
 }
 
-bool MainWidget::handle_quick_tap(){
+bool MainWidget::handle_quick_tap(WindowPos click_pos){
     // returns true if we double clicked
 
     QTime now = QTime::currentTime();
 
-    qDebug() << "length is : " << (mapFromGlobal(QCursor::pos()) - last_quick_tap_position).manhattanLength();
-    qDebug() << "time is : " << last_quick_tap_time.msecsTo(now);
     if ((last_quick_tap_time.msecsTo(now) < 200) && (mapFromGlobal(QCursor::pos()) - last_quick_tap_position).manhattanLength() < 20){
-        qDebug() << "handling double tap";
         if (handle_double_tap(last_quick_tap_position)) {
 			return true;
         }
+    }
+
+    //NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(click_pos);
+
+
+    if (is_in_back_rect(click_pos)) {
+		prev_state();
+		return true;
+    }
+    if (is_in_forward_rect(click_pos)) {
+		next_state();
+		return true;
     }
 
     clear_selected_text();
@@ -5435,3 +5432,24 @@ bool MainWidget::should_show_status_label() {
         return should_show_status_label_ || opengl_widget->get_is_searching(&prog);
     }
 }
+
+bool MainWidget::is_in_back_rect(WindowPos pos) {
+    NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(pos);
+    if (screen()->orientation() == Qt::PortraitOrientation) {
+		return PORTRAIT_BACK_UI_RECT.contains(nwp);
+	}
+    else {
+		return LANDSCAPE_BACK_UI_RECT.contains(nwp);
+	}
+}
+
+bool MainWidget::is_in_forward_rect(WindowPos pos) {
+    NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(pos);
+    if (screen()->orientation() == Qt::PortraitOrientation) {
+		return PORTRAIT_FORWARD_UI_RECT.contains(nwp);
+	}
+    else {
+		return LANDSCAPE_FORWARD_UI_RECT.contains(nwp);
+	}
+}
+
