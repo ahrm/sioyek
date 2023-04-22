@@ -4081,9 +4081,11 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command){
 				std::wstring file_name = select_command_file_name(pending_command_instance->get_name());
 #ifdef SIOYEK_ANDROID
 
-                if (file_name.size() > 0 && QString::fromStdWString(file_name).startsWith("content://")) {
-                    file_name = android_file_uri_from_content_uri(QString::fromStdWString(file_name)).toStdWString();
-                }
+//                if (file_name.size() > 0 && QString::fromStdWString(file_name).startsWith("content://")) {
+//                    qDebug() << "sioyek: trying to convert " << file_name;
+//                    file_name = android_file_uri_from_content_uri(QString::fromStdWString(file_name)).toStdWString();
+//                    qDebug() << "sioyek: result was " << file_name;
+//                }
 #endif
                 if (file_name.size() > 0) {
 					pending_command_instance->set_file_requirement(file_name);
