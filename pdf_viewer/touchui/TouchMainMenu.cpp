@@ -99,6 +99,7 @@ TouchMainMenu::TouchMainMenu(bool portaling, bool fullscreen, bool ruler, bool s
                 this,
                 SLOT(handleOpenNewDoc()));
 
+
     QObject::connect(
                 dynamic_cast<QObject*>(quick_widget->rootObject()),
                 SIGNAL(commandsClicked()),
@@ -153,6 +154,11 @@ TouchMainMenu::TouchMainMenu(bool portaling, bool fullscreen, bool ruler, bool s
                 this,
                 SLOT(handleHorizontalLock()));
 
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(fitToPageWidthClicked()),
+                this,
+                SLOT(handleFitToPageWidth()));
 }
 
 void TouchMainMenu::handleSelectText(){
@@ -237,6 +243,10 @@ void TouchMainMenu::handleGlobalHighlights(){
 
 void TouchMainMenu::handleTTS(){
     emit ttsClicked();
+}
+
+void TouchMainMenu::handleFitToPageWidth(){
+    emit fitToPageWidthClicked();
 }
 
 void TouchMainMenu::handleHorizontalLock(){

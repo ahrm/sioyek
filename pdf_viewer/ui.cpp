@@ -392,6 +392,16 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->invalidate_render();
     });
 
+
+    QObject::connect(main_menu, &TouchMainMenu::fitToPageWidthClicked, [&](){
+
+		main_widget->main_document_view->fit_to_page_width(true);
+		int current_page = main_widget->get_current_page_number();
+		main_widget->last_smart_fit_page = current_page;
+
+        main_widget->pop_current_widget();
+        main_widget->invalidate_render();
+    });
 //    QObject::connect(ruler_mode_bounds_config_button, &QPushButton::pressed, [&](){
 ////        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
 //        main_widget->current_widget = nullptr;

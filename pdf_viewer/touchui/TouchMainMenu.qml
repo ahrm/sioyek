@@ -31,6 +31,7 @@ ColumnLayout{
     signal deletePortalClicked();
     signal ttsClicked();
     signal horizontalLockClicked();
+    signal fitToPageWidthClicked();
 
     Rectangle{
         anchors.fill: parent
@@ -125,6 +126,7 @@ ColumnLayout{
                 _locked ? "qrc:/icons/lock-enabled.svg" :"qrc:/icons/lock.svg",
                 "qrc:/icons/bookmark-g.svg",
                 "qrc:/icons/highlight-g.svg",
+                "qrc:/icons/fit-horizontal.svg",
                 ]
 
                 tips: ["Add Bookmark",
@@ -133,7 +135,9 @@ ColumnLayout{
                 "Text to Speech",
                 "Lock Horizontal Scroll",
                 "All Bookmarks",
-                "All Highlights"]
+                "All Highlights",
+                "Fit to Page Width"
+                ]
 
 
                 id: secondtools
@@ -159,7 +163,7 @@ ColumnLayout{
                         case 6:
                             /* emit */ globalHighlightsClicked(); break;
                         case 7:
-                            /* emit */ rulerModeClicked(); break;
+                            /* emit */ fitToPageWidthClicked(); break;
                         default:
                     }
                 }

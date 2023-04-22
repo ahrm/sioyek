@@ -88,6 +88,8 @@ public class SioyekActivity extends QtActivity{
         }
     }
     public static String getPathFromUri(Context context, Uri uri) {
+        qDebug("sioyek: running getPathFromUri");
+        qDebug("sioyek: uri: " + uri.toString());
 
         final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
@@ -119,6 +121,7 @@ public class SioyekActivity extends QtActivity{
                 final String docId = DocumentsContract.getDocumentId(uri);
                 final String[] split = docId.split(":");
                 final String type = split[0];
+                qDebug("sioyek: type is :" + type);
 
                 Uri contentUri = null;
                 if ("image".equals(type)) {

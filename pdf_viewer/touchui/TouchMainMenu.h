@@ -35,6 +35,7 @@ public slots:
     void handleGlobalHighlights();
     void handleTTS();
     void handleHorizontalLock();
+    void handleFitToPageWidth();
 
 signals:
     void selectTextClicked();
@@ -59,6 +60,7 @@ signals:
     void globalHighlightsClicked();
     void ttsClicked();
     void horizontalLockClicked();
+    void fitToPageWidthClicked();
 
 private:
     QQuickWidget* quick_widget = nullptr;
