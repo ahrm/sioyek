@@ -1066,6 +1066,9 @@ void MainWidget::validate_render() {
         float secs = current_time.msecsTo(last_speed_update_time) / 1000.0f;
         float move_x = secs * velocity_x;
         float move_y = secs * velocity_y;
+        if (horizontal_scroll_locked) {
+            move_x = 0;
+        }
         main_document_view->move(move_x, move_y);
 
         velocity_x = dampen_velocity(velocity_x, secs);
