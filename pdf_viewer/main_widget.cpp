@@ -1,7 +1,6 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
-// add ability to create bookmarks in touch mode
-// additional buttons:  fit to page width, lock horizontal scrolling, mark and goto mark
+// change portal icon if we are already linking
 
 
 #include <iostream>
@@ -139,6 +138,9 @@ extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
 extern float RULER_AUTO_MOVE_SENSITIVITY;
 extern float TTS_RATE;
+
+extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
+extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
 
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
@@ -5163,6 +5165,11 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos){
 		return true;
     }
 
+    if (is_in_edit_portal_rect(click_pos)) {
+        handle_command_types(command_manager->get_command_with_name("edit_portal"), 0);
+		return true;
+    }
+
     clear_selected_text();
     clear_selection_indicators();
     selected_highlight_index = -1;
@@ -5453,3 +5460,12 @@ bool MainWidget::is_in_forward_rect(WindowPos pos) {
 	}
 }
 
+bool MainWidget::is_in_edit_portal_rect(WindowPos pos) {
+    NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(pos);
+    if (screen()->orientation() == Qt::PortraitOrientation) {
+		return PORTRAIT_EDIT_PORTAL_UI_RECT.contains(nwp);
+	}
+    else {
+		return LANDSCAPE_EDIT_PORTAL_UI_RECT.contains(nwp);
+	}
+}

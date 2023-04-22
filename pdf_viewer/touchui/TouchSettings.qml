@@ -23,6 +23,7 @@ ColumnLayout{
     signal forwardClicked();
     signal allConfigsClicked();
     signal restoreDefaultsClicked();
+    signal portalClicked();
     signal saveConfigs();
 
     Rectangle{
@@ -265,7 +266,7 @@ ColumnLayout{
             }
 
             TouchButtonGroup{
-                buttons: ["Ruler ↓", "Ruler ↑", "Back", "Forward"]
+                buttons: ["Ruler ↓", "Ruler ↑", "Back", "Forward", "Portal"]
                 anchors.bottom: parent.bottom
                 anchors.top: label4.bottom
                 anchors.left: parent.left
@@ -283,6 +284,9 @@ ColumnLayout{
                     }
                     if (index == 3){
                         forwardClicked();
+                    }
+                    if (index == 4){
+                        portalClicked();
                     }
                 }
 

@@ -18,6 +18,8 @@ extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
 extern UIRect LANDSCAPE_BACK_UI_RECT;
 extern UIRect LANDSCAPE_FORWARD_UI_RECT;
+extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
+extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
 extern float DEFAULT_VERTICAL_LINE_COLOR[4];
 
 TouchSettings::TouchSettings(MainWidget* parent) : QWidget(parent){
@@ -90,6 +92,11 @@ TouchSettings::TouchSettings(MainWidget* parent) : QWidget(parent){
                 this,
                 SLOT(handleRulerPrev())); 
 
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(portalClicked()),
+                this,
+                SLOT(handlePortal())); 
     QObject::connect(
                 dynamic_cast<QObject*>(quick_widget->rootObject()),
                 SIGNAL(backClicked()),
@@ -234,6 +241,15 @@ void TouchSettings::handleBack() {
     }
     else{
         show_dialog_for_rect(&LANDSCAPE_BACK_UI_RECT);
+    }
+}
+
+void TouchSettings::handlePortal() {
+    if (screen()->orientation() == Qt::PortraitOrientation) {
+        show_dialog_for_rect(&PORTRAIT_EDIT_PORTAL_UI_RECT);
+    }
+    else{
+        show_dialog_for_rect(&LANDSCAPE_EDIT_PORTAL_UI_RECT);
     }
 }
 

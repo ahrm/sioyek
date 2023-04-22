@@ -26,6 +26,7 @@ public slots:
     void handleRulerPrev();
     void handleBack();
     void handleForward();
+    void handlePortal();
     void handleAllConfigs();
     void handleRestoreDefaults();
     //void handleGotoPage();

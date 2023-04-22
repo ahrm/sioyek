@@ -407,6 +407,7 @@ public:
     void restore_default_config();
 	bool is_in_back_rect(WindowPos pos);
 	bool is_in_forward_rect(WindowPos pos);
+	bool is_in_edit_portal_rect(WindowPos pos);
 
     void persist_config();
 

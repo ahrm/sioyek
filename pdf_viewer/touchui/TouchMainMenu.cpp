@@ -1,7 +1,7 @@
 #include "touchui/TouchMainMenu.h"
 
 
-TouchMainMenu::TouchMainMenu(bool fullscreen, bool ruler, bool speaking, bool locked, int current_colorscheme_index, QWidget* parent) : QWidget(parent){
+TouchMainMenu::TouchMainMenu(bool portaling, bool fullscreen, bool ruler, bool speaking, bool locked, int current_colorscheme_index, QWidget* parent) : QWidget(parent){
 
     setAttribute(Qt::WA_NoMousePropagation);
 
@@ -16,6 +16,7 @@ TouchMainMenu::TouchMainMenu(bool fullscreen, bool ruler, bool speaking, bool lo
     quick_widget->rootContext()->setContextProperty("_fullscreen", fullscreen);
     quick_widget->rootContext()->setContextProperty("_ruler", ruler);
     quick_widget->rootContext()->setContextProperty("_speaking", speaking);
+    quick_widget->rootContext()->setContextProperty("_portaling", portaling);
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchMainMenu.qml"));
 

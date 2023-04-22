@@ -119,7 +119,7 @@ ColumnLayout{
 
             TouchButtonGroup{
                 buttons: ["qrc:/icons/bookmark-add.svg",
-                "qrc:/icons/link.svg",
+                _portaling ? "qrc:/icons/link-enabled.svg" :  "qrc:/icons/link.svg",
                 "qrc:/icons/unlink.svg",
                 _speaking ? "qrc:/icons/tts-enabled.svg" :  "qrc:/icons/tts.svg",
                 _locked ? "qrc:/icons/lock-enabled.svg" :"qrc:/icons/lock.svg",

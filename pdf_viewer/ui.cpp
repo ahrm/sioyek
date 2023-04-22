@@ -144,8 +144,9 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
      bool fullscreen = main_widget->isFullScreen();
      bool ruler = main_widget->is_visual_mark_mode();
      bool speaking = main_widget->is_reading;
+     bool portaling = main_widget->is_pending_link_source_filled();
 
-     main_menu = new TouchMainMenu(fullscreen, ruler, speaking, horizontal_locked, current_colorscheme_index, this);
+     main_menu = new TouchMainMenu(portaling, fullscreen, ruler, speaking, horizontal_locked, current_colorscheme_index, this);
 
 
 //    set_rect_config_button = new QPushButton("Rect Config", this);

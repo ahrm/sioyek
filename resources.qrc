@@ -39,7 +39,9 @@
         <file>icons/bookmark.svg</file>
         <file>icons/bookmark-g.svg</file>
         <file>icons/portal.svg</file>
+        <file>icons/portal-enabled.svg</file>
         <file>icons/link.svg</file>
+        <file>icons/link-enabled.svg</file>
         <file>icons/unlink.svg</file>
         <file>icons/document-page-number.svg</file>
         <file>icons/fullscreen.svg</file>
