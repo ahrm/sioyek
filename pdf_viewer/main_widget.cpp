@@ -4971,6 +4971,9 @@ bool MainWidget::event(QEvent *event){
             auto gesture = (static_cast<QGestureEvent*>(event));
 
             if (gesture->gesture(Qt::TapAndHoldGesture)){
+                velocity_x = 0;
+                velocity_y = 0;
+
                 if (was_last_mouse_down_in_ruler_next_rect){
                     return true;
                 }
@@ -5233,6 +5236,11 @@ void MainWidget::update_position_buffer(){
 }
 
 bool MainWidget::is_flicking(QPointF* out_velocity){
+    // we never flick the background when a widget is being shown on top
+    if (current_widget_stack.size() > 0) {
+        return false;
+    }
+
     std::vector<float> speeds;
     std::vector<float> dts;
     std::vector<QPointF> velocities;
