@@ -59,6 +59,7 @@
 #include "utf8.h"
 #include "synctex/synctex_parser.h"
 #include "path.h"
+#include "touchui/TouchMarkSelector.h"
 
 #include "main_widget.h"
 
@@ -2278,6 +2279,23 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     }
 }
 
+void MainWidget::show_mark_selector() {
+    TouchMarkSelector* mark_selector = new TouchMarkSelector(this);
+
+    set_current_widget(mark_selector);
+    QObject::connect(mark_selector, &TouchMarkSelector::onMarkSelected, [&](QString mark) {
+
+        if (mark.size() > 0 && pending_command_instance) {
+            char symbol = mark.toStdString().at(0);
+			pending_command_instance->set_symbol_requirement(symbol);
+			advance_command(std::move(pending_command_instance));
+            invalidate_render();
+        }
+
+		pop_current_widget();
+        });
+}
+
 void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text, const std::wstring& initial_value) {
     if (TOUCH_MODE) {
         QString init = "";
@@ -4075,6 +4093,9 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command){
 				show_textbar(utf8_decode(next_requirement.name), true, pending_command_instance->get_text_default_value());
 			}
 			else if (next_requirement.type == RequirementType::Symbol) {
+                if (TOUCH_MODE) {
+                    show_mark_selector();
+                }
 			}
 			else if (next_requirement.type == RequirementType::File) {
 				std::wstring file_name = select_command_file_name(pending_command_instance->get_name());
@@ -5354,6 +5375,10 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
+
+    TouchMarkSelector* selector = new TouchMarkSelector(this);
+    set_current_widget(selector);
+    show_current_widget();
 }
 
 void MainWidget::read_current_line() {
