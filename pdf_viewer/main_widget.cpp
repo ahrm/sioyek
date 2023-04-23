@@ -959,6 +959,7 @@ void MainWidget::handle_escape() {
         }
         else if (opengl_widget->get_is_searching(nullptr)) {
             opengl_widget->cancel_search();
+			search_buttons->hide();
             should_return = true;
         }
         if (should_return) {
@@ -968,6 +969,7 @@ void MainWidget::handle_escape() {
         }
     }
 
+    clear_selection_indicators();
     typing_location = {};
     text_command_line_edit->setText("");
     pending_link = {};

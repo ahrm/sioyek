@@ -11,6 +11,7 @@ class TouchTextEdit : public QWidget{
 public:
     TouchTextEdit(QString name, QString initial_value, QWidget* parent=nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
+	void keyPressEvent(QKeyEvent* kevent) override;
 
 public slots:
     void handleConfirm(QString text);

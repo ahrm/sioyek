@@ -4,6 +4,7 @@
 
 TouchTextEdit::TouchTextEdit(QString name, QString initial_value, QWidget* parent) : QWidget(parent){
 
+
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);
@@ -38,6 +39,7 @@ void TouchTextEdit::handleCancel() {
     emit cancelled();
 }
 
+
 void TouchTextEdit::resizeEvent(QResizeEvent* resize_event){
     QWidget::resizeEvent(resize_event);
 
@@ -53,4 +55,13 @@ void TouchTextEdit::resizeEvent(QResizeEvent* resize_event){
     quick_widget->resize(w, h);
     move((parent_width - w ) / 2, (parent_height - h) / 2);
 
+}
+
+void TouchTextEdit::keyPressEvent(QKeyEvent* kevent) {
+    if (kevent->key() == Qt::Key_Return) {
+		kevent->accept();
+        return;
+    }
+    QWidget::keyPressEvent(kevent);
+    //return true;
 }
