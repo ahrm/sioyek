@@ -12,7 +12,8 @@ TouchButtonGroup{
     signal initialButtonClicked();
     id: root
 
-    buttons: ["<-", "initial", "->"]
+    //buttons: ["<-", "initial", "->"]
+    buttons: ["qrc:/icons/left.svg","qrc:/icons/home.svg","qrc:/icons/right.svg"]
 
     onButtonClicked: function (index, name){
         if (index == 0){

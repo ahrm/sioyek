@@ -63,6 +63,9 @@
         <file>icons/lock.svg</file>
         <file>icons/lock-enabled.svg</file>
         <file>icons/bookmark-add.svg</file>
+        <file>icons/home.svg</file>
+        <file>icons/left.svg</file>
+        <file>icons/right.svg</file>
         <file>end.png</file>
     </qresource>
 </RCC>

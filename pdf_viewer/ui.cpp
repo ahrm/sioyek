@@ -662,14 +662,17 @@ SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent){
 void SearchButtons::resizeEvent(QResizeEvent* resize_event){
 
     QWidget::resizeEvent(resize_event);
-    int width = parentWidget()->width() / 3;
-    int height = parentWidget()->height() / 6;
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    int width = 2 * parentWidget()->width() / 3;
+    int height = parentWidget()->height() / 12;
 
 
     buttons_widget->resize(width, height);
     setFixedSize(width, height);
     //layout->update();
-    move(parentWidget()->width() / 3, parentWidget()->height() - 3 * height / 2);
+    move((parent_width - width)  / 2, parent_height - 3 * height / 2);
 }
 
 //ConfigUI::ConfigUI(MainWidget* parent) : QQuickWidget(parent){
