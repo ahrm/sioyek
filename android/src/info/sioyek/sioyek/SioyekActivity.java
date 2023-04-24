@@ -12,6 +12,7 @@ import android.provider.MediaStore;
 import android.provider.DocumentsContract;
 import android.content.*;
 import android.app.*;
+import android.view.WindowManager;
 
 import java.lang.String;
 import android.content.Intent;
@@ -31,6 +32,8 @@ public class SioyekActivity extends QtActivity{
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         Intent intent = getIntent();
         if (intent != null){
             String action = intent.getAction();

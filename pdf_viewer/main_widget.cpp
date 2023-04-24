@@ -1,6 +1,5 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
-// change portal icon if we are already linking
 
 
 #include <iostream>
