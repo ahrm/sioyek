@@ -20,6 +20,7 @@ Rectangle {
         color: "white"
         inputMethodHints: Qt.ImhSensitiveData | Qt.ImhPreferLowercase
         focus: _focus
+        activeFocusOnTab: true
 
         anchors {
             top: rootitem.top

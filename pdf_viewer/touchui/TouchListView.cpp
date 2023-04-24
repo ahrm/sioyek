@@ -83,3 +83,12 @@ void TouchListView::resizeEvent(QResizeEvent* resize_event){
 void TouchListView::set_keyboard_focus() {
 		quick_widget->rootContext()->setContextProperty("_focus", QVariant::fromValue(true));
 }
+
+void TouchListView::keyPressEvent(QKeyEvent* kevent) {
+    if (kevent->key() == Qt::Key_Return) {
+		kevent->accept();
+        return;
+    }
+    QWidget::keyPressEvent(kevent);
+    //return true;
+}
