@@ -824,6 +824,7 @@ void PageSelectorUI::resizeEvent(QResizeEvent* resize_event){
 AudioUI::AudioUI(MainWidget* parent) : ConfigUI(parent) {
 
      buttons = new TouchAudioButtons(this);
+     buttons->set_rate(TTS_RATE);
 
     QObject::connect(buttons, &TouchAudioButtons::playPressed, [&](){
         //main_widget->main_document_view->goto_page(val);
@@ -843,13 +844,26 @@ AudioUI::AudioUI(MainWidget* parent) : ConfigUI(parent) {
         main_widget->handle_pause();
     });
 
-    QObject::connect(buttons, &TouchAudioButtons::speedIncreasePressed, [&](){
-        TTS_RATE += 0.1;
-    });
 
-    QObject::connect(buttons, &TouchAudioButtons::speedDecreasePressed, [&](){
-        TTS_RATE -= 0.1;
+    QObject::connect(buttons, &TouchAudioButtons::rateChanged, [&](qreal rate){
+        TTS_RATE = rate;
+        buttons->set_rate(TTS_RATE);
     });
+    //QObject::connect(buttons, &TouchAudioButtons::speedIncreasePressed, [&](){
+    //    TTS_RATE += 0.1;
+    //    if (TTS_RATE > 1.0f) {
+    //        TTS_RATE = 1.0f;
+    //    }
+    //    buttons->set_rate(TTS_RATE);
+    //});
+
+    //QObject::connect(buttons, &TouchAudioButtons::speedDecreasePressed, [&](){
+    //    TTS_RATE -= 0.1;
+    //    if (TTS_RATE < -1.0f) {
+    //        TTS_RATE = -1.0f;
+    //    }
+    //    buttons->set_rate(TTS_RATE);
+    //});
  }
 
 void AudioUI::resizeEvent(QResizeEvent* resize_event){

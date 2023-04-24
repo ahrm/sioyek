@@ -33,14 +33,19 @@ TouchAudioButtons::TouchAudioButtons(QWidget* parent) : QWidget(parent){
         SLOT(handleStop()));
 
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
-        SIGNAL(increaseSpeedClicked()),
+        SIGNAL(rateChanged(qreal)),
         this,
-        SLOT(handleIncreaseSpeed()));
+        SLOT(handleSetRate(qreal)));
 
-    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
-        SIGNAL(decreaseSpeedClicked()),
-        this,
-        SLOT(handleDecreaseSpeed()));
+    //QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+    //    SIGNAL(increaseSpeedClicked()),
+    //    this,
+    //    SLOT(handleIncreaseSpeed()));
+
+    //QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+    //    SIGNAL(decreaseSpeedClicked()),
+    //    this,
+    //    SLOT(handleDecreaseSpeed()));
 
 
 }
@@ -62,12 +67,22 @@ void TouchAudioButtons::resizeEvent(QResizeEvent* resize_event){
     QWidget::resizeEvent(resize_event);
 
 }
-void TouchAudioButtons::handleIncreaseSpeed() {
+//void TouchAudioButtons::handleIncreaseSpeed() {
+//
+//    emit speedIncreasePressed();
+//}
+//
+//void TouchAudioButtons::handleDecreaseSpeed() {
+//
+//    emit speedDecreasePressed();
+//}
+//
 
-    emit speedIncreasePressed();
+void TouchAudioButtons::handleSetRate(qreal rate) {
+
+    emit rateChanged(rate);
 }
 
-void TouchAudioButtons::handleDecreaseSpeed() {
-
-    emit speedDecreasePressed();
+void TouchAudioButtons::set_rate(float rate) {
+    quick_widget->rootContext()->setContextProperty("_rate", rate);
 }

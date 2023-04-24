@@ -11,21 +11,24 @@ class TouchAudioButtons : public QWidget{
 public:
     TouchAudioButtons(QWidget* parent=nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
+    void set_rate(float rate);
 
 public slots:
     void handlePlay();
     void handlePause();
     void handleStop();
-    void handleIncreaseSpeed();
-    void handleDecreaseSpeed();
+    void handleSetRate(qreal rate);
+    //void handleIncreaseSpeed();
+    //void handleDecreaseSpeed();
     //void handleInitial();
 
 signals:
     void playPressed();
     void pausePressed();
     void stopPressed();
-    void speedIncreasePressed();
-    void speedDecreasePressed();
+    void rateChanged(qreal rate);
+    //void speedIncreasePressed();
+    //void speedDecreasePressed();
     //void initialPressed();
 
 private:

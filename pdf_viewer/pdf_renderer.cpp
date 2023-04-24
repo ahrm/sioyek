@@ -247,9 +247,9 @@ void PdfRenderer::delete_old_pages(bool force_all, bool invalidate_all) {
 		cached_response_times.push_back(now - cached_responses[i].last_access_time);
 	}
 #ifdef SIOYEK_ANDROID
-	int N = 5;
+    int N = 10;
 #else
-	int N = 10;
+    int N = 5;
 #endif
 
 	if (invalidate_all) {
