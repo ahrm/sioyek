@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 if [ -z ${MAKE_PARALLEL+x} ]; then export MAKE_PARALLEL=1; else echo "MAKE_PARALLEL defined"; fi
 echo "MAKE_PARALLEL set to $MAKE_PARALLEL"
