@@ -676,8 +676,13 @@ void SearchButtons::resizeEvent(QResizeEvent* resize_event){
 }
 
 //ConfigUI::ConfigUI(MainWidget* parent) : QQuickWidget(parent){
-ConfigUI::ConfigUI(MainWidget* parent) : QWidget(parent){
+ConfigUI::ConfigUI(std::string name, MainWidget* parent) : QWidget(parent){
     main_widget = parent;
+    config_name = name;
+}
+
+void ConfigUI::on_change() {
+    main_widget->on_config_changed(config_name);
 }
 
 void ConfigUI::set_should_persist(bool val) {
@@ -693,7 +698,7 @@ void ConfigUI::resizeEvent(QResizeEvent* resize_event){
     move(parent_width / 6, parent_height / 4);
 }
 
-Color3ConfigUI::Color3ConfigUI(MainWidget* parent, float* config_location_) : ConfigUI(parent) {
+Color3ConfigUI::Color3ConfigUI(std::string name, MainWidget* parent, float* config_location_) : ConfigUI(name, parent) {
     color_location = config_location_;
     color_picker = new QColorDialog(this);
     color_picker->show();
@@ -701,6 +706,7 @@ Color3ConfigUI::Color3ConfigUI(MainWidget* parent, float* config_location_) : Co
     connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
         convert_qcolor_to_float3(color, color_location);
         main_widget->invalidate_render();
+        on_change();
 
         if (should_persist) {
 			main_widget->persist_config();
@@ -748,7 +754,7 @@ void Color3ConfigUI::resizeEvent(QResizeEvent* resize_event){
     move(parent_width / 6, parent_height / 4);
 }
 
-Color4ConfigUI::Color4ConfigUI(MainWidget* parent, float* config_location_) : ConfigUI(parent) {
+Color4ConfigUI::Color4ConfigUI(std::string name, MainWidget* parent, float* config_location_) : ConfigUI(name, parent) {
     color_location = config_location_;
     color_picker = new QColorDialog(this);
     color_picker->show();
@@ -756,13 +762,14 @@ Color4ConfigUI::Color4ConfigUI(MainWidget* parent, float* config_location_) : Co
     connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
         convert_qcolor_to_float4(color, color_location);
         main_widget->invalidate_render();
+        on_change();
         if (should_persist){
 			main_widget->persist_config();
         }
     });
  }
 
-FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float min_value_, float max_value_) : ConfigUI(parent) {
+FloatConfigUI::FloatConfigUI(std::string name, MainWidget* parent, float* config_location, float min_value_, float max_value_) : ConfigUI(name, parent) {
 
     min_value = min_value_;
     max_value = max_value_;
@@ -773,6 +780,7 @@ FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float m
     QObject::connect(slider, &TouchSlider::itemSelected, [&](int val){
         float value = min_value + (static_cast<float>(val) / 100.0f) * (max_value - min_value);
         *float_location = value;
+        on_change();
         main_widget->invalidate_render();
         main_widget->pop_current_widget();
     });
@@ -780,7 +788,7 @@ FloatConfigUI::FloatConfigUI(MainWidget* parent, float* config_location, float m
  }
 
 
-IntConfigUI::IntConfigUI(MainWidget* parent, int* config_location, int min_value_, int max_value_) : ConfigUI(parent) {
+IntConfigUI::IntConfigUI(std::string name, MainWidget* parent, int* config_location, int min_value_, int max_value_) : ConfigUI(name, parent) {
 
     min_value = min_value_;
     max_value = max_value_;
@@ -790,6 +798,7 @@ IntConfigUI::IntConfigUI(MainWidget* parent, int* config_location, int min_value
     slider = new TouchSlider(min_value, max_value, current_value, this);
     QObject::connect(slider, &TouchSlider::itemSelected, [&](int val){
         *int_location = val;
+        on_change();
         main_widget->invalidate_render();
         main_widget->pop_current_widget();
     });
@@ -797,7 +806,7 @@ IntConfigUI::IntConfigUI(MainWidget* parent, int* config_location, int min_value
  }
 
 
-PageSelectorUI::PageSelectorUI(MainWidget* parent, int current, int num_pages) : ConfigUI(parent) {
+PageSelectorUI::PageSelectorUI(MainWidget* parent, int current, int num_pages) : ConfigUI("", parent) {
 
      page_selector = new TouchPageSelector(0, num_pages-1, current, this);
 
@@ -821,7 +830,7 @@ void PageSelectorUI::resizeEvent(QResizeEvent* resize_event){
     move((parent_width - w) / 2, parent_height - 2 * h);
 }
 
-AudioUI::AudioUI(MainWidget* parent) : ConfigUI(parent) {
+AudioUI::AudioUI(MainWidget* parent) : ConfigUI("", parent) {
 
      buttons = new TouchAudioButtons(this);
      buttons->set_rate(TTS_RATE);
@@ -881,13 +890,14 @@ void AudioUI::resizeEvent(QResizeEvent* resize_event){
 
 
 
-BoolConfigUI::BoolConfigUI(MainWidget* parent, bool* config_location, QString name) : ConfigUI(parent) {
+BoolConfigUI::BoolConfigUI(std::string name_, MainWidget* parent, bool* config_location, QString qname) : ConfigUI(name_, parent) {
     bool_location = config_location;
 
-    checkbox = new TouchCheckbox(name, *config_location, this);
+    checkbox = new TouchCheckbox(qname, *config_location, this);
     QObject::connect(checkbox, &TouchCheckbox::itemSelected, [&](bool new_state){
         *bool_location = static_cast<bool>(new_state);
         main_widget->invalidate_render();
+        on_change();
         if (should_persist) {
 			main_widget->persist_config();
         }
@@ -995,7 +1005,7 @@ void TouchCommandSelector::resizeEvent(QResizeEvent* resize_event) {
 }
 
 
-RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location) : ConfigUI(parent) {
+RectangleConfigUI::RectangleConfigUI(std::string name, MainWidget* parent, UIRect* config_location) : ConfigUI(name, parent) {
 
     rect_location = config_location;
 
@@ -1026,6 +1036,7 @@ RectangleConfigUI::RectangleConfigUI(MainWidget* parent, UIRect* config_location
         rect_location->top = top;
         rect_location->bottom = bottom;
 
+        on_change();
         if (should_persist) {
 			main_widget->persist_config();
         }
@@ -1068,7 +1079,7 @@ void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event){
 
 }
 
-RangeConfigUI::RangeConfigUI(MainWidget* parent, float* top_config_location, float* bottom_config_location) : ConfigUI(parent) {
+RangeConfigUI::RangeConfigUI(std::string name, MainWidget* parent, float* top_config_location, float* bottom_config_location) : ConfigUI(name, parent) {
 
 //    range_location = config_location;
     top_location = top_config_location;
@@ -1089,6 +1100,7 @@ RangeConfigUI::RangeConfigUI(MainWidget* parent, float* top_config_location, flo
         *top_location = -top;
         *bottom_location = -bottom + 1;
 
+        on_change();
         if (should_persist) {
 			main_widget->persist_config();
         }

@@ -942,18 +942,20 @@ private:
 class ConfigUI : public QWidget{
 //class ConfigUI : public QQuickWidget{
 public:
-    ConfigUI(MainWidget* parent);
+    ConfigUI(std::string name, MainWidget* parent);
     void resizeEvent(QResizeEvent* resize_event) override;
 	void set_should_persist(bool val);
+	void on_change();
 
 protected:
     MainWidget* main_widget;
+	std::string config_name;
 	bool should_persist = true;
 };
 
 class Color3ConfigUI : public ConfigUI {
 public:
-    Color3ConfigUI(MainWidget* parent, float* config_location_);
+    Color3ConfigUI(std::string name, MainWidget* parent, float* config_location_);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 private:
@@ -965,7 +967,7 @@ private:
 
 class Color4ConfigUI : public ConfigUI {
 public:
-    Color4ConfigUI(MainWidget* parent, float* config_location_);
+    Color4ConfigUI(std::string name, MainWidget* parent, float* config_location_);
 
 private:
     float* color_location;
@@ -975,7 +977,7 @@ private:
 
 class BoolConfigUI : public ConfigUI{
 public:
-    BoolConfigUI(MainWidget* parent, bool* config_location, QString name);
+    BoolConfigUI(std::string name, MainWidget* parent, bool* config_location, QString name_);
     void resizeEvent(QResizeEvent* resize_event) override;
 private:
 
@@ -1000,7 +1002,7 @@ private:
 
 class FloatConfigUI : public ConfigUI{
 public:
-    FloatConfigUI(MainWidget* parent, float* config_location, float min_value, float max_value);
+    FloatConfigUI(std::string name, MainWidget* parent, float* config_location, float min_value, float max_value);
     void resizeEvent(QResizeEvent* resize_event) override;
 private:
     float* float_location;
@@ -1011,7 +1013,7 @@ private:
 
 class IntConfigUI : public ConfigUI{
 public:
-    IntConfigUI(MainWidget* parent, int* config_location, int min_value, int max_value);
+    IntConfigUI(std::string name, MainWidget* parent, int* config_location, int min_value, int max_value);
     void resizeEvent(QResizeEvent* resize_event) override;
 private:
     int* int_location;
@@ -1038,7 +1040,7 @@ private:
 
 class RectangleConfigUI : public ConfigUI{
 public:
-    RectangleConfigUI(MainWidget* parent, UIRect* config_location);
+    RectangleConfigUI(std::string name, MainWidget* parent, UIRect* config_location);
 
     void resizeEvent(QResizeEvent* resize_event) override;
 private:
@@ -1049,7 +1051,7 @@ private:
 
 class RangeConfigUI : public ConfigUI{
 public:
-    RangeConfigUI(MainWidget* parent, float* top_location, float* bottom_location);
+    RangeConfigUI(std::string name, MainWidget* parent, float* top_location, float* bottom_location);
 
     void resizeEvent(QResizeEvent* resize_event) override;
 private:

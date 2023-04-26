@@ -167,6 +167,7 @@ public:
 	float get_page_width(int page_index);
 	std::wstring get_page_label(int page_index);
 	int get_page_number_with_label(std::wstring page_label);
+	bool is_reflowable();
 	//float get_page_width_smart(int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
 	float get_page_size_smart(bool width, int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
 	float get_accum_page_height(int page_index);
@@ -216,6 +217,9 @@ public:
 	void embed_annotations(std::wstring new_file_path);
 	std::vector<fz_rect> get_page_flat_words(int page);
 	std::vector<std::vector<fz_rect>> get_page_flat_word_chars(int page);
+	void clear_document_caches();
+	void load_document_caches(bool* invalid_flag, bool force_now);
+	int reflow(int page);
 
 	bool needs_password();
 	bool needs_authentication();

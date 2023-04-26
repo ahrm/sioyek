@@ -162,9 +162,18 @@ bool UIRect::contains(NormalizedWindowPos window_pos){
 }
 
 template<typename T>
-void* generic_deserializer(std::wstringstream& stream, void* res_) {
+void* generic_deserializer(std::wstringstream& stream, void* res_, bool* changed) {
 	T* res = static_cast<T*>(res_);
+	T prev_value = *res;
 	stream >> *res;
+	if (changed != nullptr) {
+		if (prev_value != *res) {
+			*changed = true;
+		}
+		else {
+			*changed = false;
+		}
+	}
 	return res;
 }
 
@@ -186,16 +195,25 @@ void rect_serializer(void* rect_pointer, std::wstringstream& stream) {
 }
 
 
-void* string_deserializer(std::wstringstream& stream, void* res_) {
+void* string_deserializer(std::wstringstream& stream, void* res_, bool* changed) {
 	assert(res_ != nullptr);
 	//delete res_;
 
 	std::wstring* res = static_cast<std::wstring*>(res_);
+	std::wstring prev_value = *res;
 	res->clear();
 	std::getline(stream, *res);
 	while (iswspace((*res)[0])) {
 		res->erase(res->begin());
 
+	}
+	if (changed != nullptr) {
+		if (prev_value != *res) {
+			*changed = true;
+		}
+		else {
+			*changed = false;
+		}
 	}
 	return res;
 }
@@ -219,38 +237,80 @@ void vec_n_serializer(void* vec_n_pointer, std::wstringstream& stream) {
 //	}
 //}
 
-void* rect_deserializer(std::wstringstream& stream, void* res_) {
+void* rect_deserializer(std::wstringstream& stream, void* res_, bool* changed) {
     assert(res_ != nullptr);
     UIRect* res = (UIRect*)res_;
+	UIRect prev_value = *res;
     if (res == nullptr){
         res = new UIRect;
     }
     stream >> res->enabled >> res->left >> res->right >> res->top >> res->bottom;
+	if (changed) {
+		UIRect new_value = *res;
+		if ((prev_value.bottom != new_value.bottom) ||
+			(prev_value.top != new_value.top) ||
+			(prev_value.left != new_value.left) ||
+			(prev_value.right != new_value.right) ||
+			(prev_value.enabled != new_value.enabled)) {
+			*changed = true;
+		}
+		else {
+			*changed = false;
+		}
+
+	}
+
     return res;
+
+}
+template <int N, typename T>
+bool are_vecs_different(T* vec1, T* vec2) {
+	for (int i = 0; i < N; i++) {
+		if (vec1[i] != vec2[i]) {
+			return true;
+		}
+	}
+	return false;
 
 }
 
 template<int N, typename T>
-void* vec_n_deserializer(std::wstringstream& stream, void* res_) {
+void* vec_n_deserializer(std::wstringstream& stream, void* res_, bool* changed) {
 	assert(res_ != nullptr);
 	T* res = (T*)res_;
+	T prev_value[N];
+	for (int i = 0; i < N; i++) {
+		prev_value[i] = *(res + i);
+	}
+
 	if (res == nullptr) {
 		res = new T[N];
+		assert(false); // this should not happen
 	}
 	for (int i = 0; i < N; i++) {
 		stream >> *(res + i);
+	}
+	if (changed) {
+		*changed = are_vecs_different<N, T>(prev_value, res);
+
 	}
 
 	return res;
 }
 
 template <int N>
-void* colorn_deserializer(std::wstringstream& stream, void* res_) {
+void* colorn_deserializer(std::wstringstream& stream, void* res_, bool* changed) {
 
 	assert(res_ != nullptr);
 	float* res = (float*)res_;
+	float prev_value[N];
+	for (int i = 0; i < N; i++) {
+		prev_value[i] = *(res + i);
+	}
+
 	if (res == nullptr) {
 		res = new float[N];
+		assert(false); // this should not happen
 	}
 	while (std::isspace(stream.peek())) {
 		stream.ignore();
@@ -263,6 +323,14 @@ void* colorn_deserializer(std::wstringstream& stream, void* res_) {
 	else {
 		for (int i = 0; i < N; i++) {
 			stream >> *(res + i);
+		}
+	}
+	if (changed) {
+		if (are_vecs_different<N, float>(prev_value, res)) {
+			*changed = true;
+		}
+		else {
+			*changed = false;
 		}
 	}
 
@@ -1677,7 +1745,7 @@ void ConfigManager::deserialize_file(const Path& file_path, bool warn_if_not_exi
 			}
 
 			if (conf) {
-				auto deserialization_result = conf->deserialize(config_value_stream, conf->value);
+				auto deserialization_result = conf->deserialize(config_value_stream, conf->value, nullptr);
 				if (deserialization_result != nullptr) {
 					conf->value = deserialization_result;
 				}
@@ -1737,15 +1805,16 @@ std::vector<Config>* ConfigManager::get_configs_ptr() {
 	return &configs;
 }
 
-void ConfigManager::deserialize_config(std::string config_name, std::wstring config_value) {
+bool ConfigManager::deserialize_config(std::string config_name, std::wstring config_value) {
 
 	std::wstringstream config_value_stream(config_value);
 	Config* conf = get_mut_config_with_name(utf8_decode(config_name));
-	auto deserialization_result = conf->deserialize(config_value_stream, conf->value);
+	bool changed = false;
+	auto deserialization_result = conf->deserialize(config_value_stream, conf->value, &changed);
 	if (deserialization_result != nullptr) {
 		conf->value = deserialization_result;
 	}
-
+	return changed;
 }
 
 ConfigModel::ConfigModel(std::vector<Config>* configs, QObject* parent) : QAbstractTableModel(parent), configs(configs){
@@ -1849,7 +1918,7 @@ void Config::save_value_into_default() {
 void Config::load_default() {
 	if (default_value_string.size() > 0) {
 		std::wstringstream default_value_string_stream(default_value_string);
-		deserialize(default_value_string_stream, value);
+		deserialize(default_value_string_stream, value, nullptr);
 	}
 }
 

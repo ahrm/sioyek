@@ -200,7 +200,7 @@ void TouchSettings::show_dialog_for_color_n(int n, float* color_location) {
 }
 
 void TouchSettings::handleRulerModeBounds() {
-    RangeConfigUI *config_ui = new RangeConfigUI(main_widget, &VISUAL_MARK_NEXT_PAGE_FRACTION, &VISUAL_MARK_NEXT_PAGE_THRESHOLD);
+    RangeConfigUI *config_ui = new RangeConfigUI("", main_widget, &VISUAL_MARK_NEXT_PAGE_FRACTION, &VISUAL_MARK_NEXT_PAGE_THRESHOLD);
     config_ui->set_should_persist(true);
     config_ui->show();
     main_widget->push_current_widget(config_ui);
@@ -211,7 +211,7 @@ void TouchSettings::handleRulerModeColor() {
 }
 
 void TouchSettings::show_dialog_for_rect(UIRect* location) {
-    RectangleConfigUI* config_ui = new RectangleConfigUI(main_widget, location);
+    RectangleConfigUI* config_ui = new RectangleConfigUI("", main_widget, location);
     config_ui->set_should_persist(true);
     config_ui->show();
     main_widget->push_current_widget(config_ui);

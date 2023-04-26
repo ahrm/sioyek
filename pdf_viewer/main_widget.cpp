@@ -5496,3 +5496,17 @@ void MainWidget::goto_page_with_label(std::wstring label) {
 		main_document_view->goto_page(page);
     }
 }
+
+void MainWidget::on_config_changed(std::string config_name) {
+    std::vector<std::wstring> reload_requiring_configs;
+
+    if (QString::fromStdString(config_name).startsWith("epub")) {
+        bool flag = false;
+		pdf_renderer->delete_old_pages(true, true);
+        int new_page = doc()->reflow(get_current_page_number());
+        main_document_view->goto_page(new_page);
+
+    }
+
+}
+

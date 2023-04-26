@@ -70,7 +70,7 @@ struct Config {
     ConfigType config_type;
 	void* value = nullptr;
 	void (*serialize) (void*, std::wstringstream&) = nullptr;
-	void* (*deserialize) (std::wstringstream&, void* res) = nullptr;
+	void* (*deserialize) (std::wstringstream&, void* res, bool* changed) = nullptr;
     bool (*validator) (const std::wstring& value) = nullptr;
 	std::variant<FloatExtras, IntExtras, EmptyExtras> extras = EmptyExtras{};
     std::wstring default_value_string;
@@ -114,7 +114,7 @@ public:
 	std::vector<Path> get_all_user_config_files();
 	std::vector<Config> get_configs();
 	std::vector<Config>* get_configs_ptr();
-	void deserialize_config(std::string config_name, std::wstring config_value);
+	bool deserialize_config(std::string config_name, std::wstring config_value);
     void restore_defaults_in_memory();
 };
 

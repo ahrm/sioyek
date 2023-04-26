@@ -2289,34 +2289,36 @@ public:
 
 
 			if (config->config_type == ConfigType::String) {
-				widget->config_manager->deserialize_config(config_name, text.value());
+				if (widget->config_manager->deserialize_config(config_name, text.value())) {
+					widget->on_config_changed(config_name);
+				}
 			}
 			if (config->config_type == ConfigType::Color3) {
-				widget->push_current_widget(new Color3ConfigUI(widget, (float*)config->value));
+				widget->push_current_widget(new Color3ConfigUI(config_name, widget, (float*)config->value));
 				widget->show_current_widget();
 			}
 
 			if (config->config_type == ConfigType::Color4) {
-				widget->push_current_widget(new Color4ConfigUI(widget, (float*)config->value));
+				widget->push_current_widget(new Color4ConfigUI(config_name, widget, (float*)config->value));
 				widget->show_current_widget();
 			}
 			if (config->config_type == ConfigType::Bool) {
-				widget->push_current_widget(new BoolConfigUI(widget, (bool*)config->value, QString::fromStdWString(config->name)));
+				widget->push_current_widget(new BoolConfigUI(config_name, widget, (bool*)config->value, QString::fromStdWString(config->name)));
 				widget->show_current_widget();
 			}
 			if (config->config_type == ConfigType::EnableRectangle) {
-				widget->push_current_widget(new RectangleConfigUI(widget, (UIRect*)config->value));
+				widget->push_current_widget(new RectangleConfigUI(config_name, widget, (UIRect*)config->value));
 				widget->show_current_widget();
 			}
 			if (config->config_type == ConfigType::Float) {
 				FloatExtras extras = std::get<FloatExtras>(config->extras);
-				widget->push_current_widget(new FloatConfigUI(widget, (float*)config->value, extras.min_val, extras.max_val));
+				widget->push_current_widget(new FloatConfigUI(config_name, widget, (float*)config->value, extras.min_val, extras.max_val));
 				widget->show_current_widget();
 
 			}
 			if (config->config_type == ConfigType::Int) {
 				IntExtras extras = std::get<IntExtras>(config->extras);
-				widget->push_current_widget(new IntConfigUI(widget, (int*)config->value, extras.min_val, extras.max_val));
+				widget->push_current_widget(new IntConfigUI(config_name, widget, (int*)config->value, extras.min_val, extras.max_val));
 				widget->show_current_widget();
 			}
 
@@ -2324,7 +2326,9 @@ public:
 		}
 		else {
 
-			widget->config_manager->deserialize_config(config_name, text.value());
+			if (widget->config_manager->deserialize_config(config_name, text.value())) {
+				widget->on_config_changed(config_name);
+			}
 		}
     }
 

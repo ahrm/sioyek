@@ -26,7 +26,10 @@ extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
 extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
 extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 extern bool SUPER_FAST_SEARCH;
-
+extern float EPUB_WIDTH;
+extern float EPUB_HEIGHT;
+extern float EPUB_FONT_SIZE;
+extern std::wstring EPUB_CSS;
 
 int Document::get_mark_index(char symbol) {
 	for (size_t i = 0; i < marks.size(); i++) {
@@ -566,30 +569,9 @@ Document::~Document() {
 	}
 }
 void Document::reload(std::string password) {
+
 	fz_drop_document(context, doc);
-	cached_num_pages = {};
-	cached_fastread_highlights.clear();
-	cached_line_texts.clear();
-	cached_page_line_rects.clear();
-
-	for (auto [_, cached_small_pixmap] : cached_small_pixmaps) {
-		fz_drop_pixmap(context, cached_small_pixmap);
-	}
-	cached_small_pixmaps.clear();
-
-	for (auto [_, cached_stext_page] : cached_stext_pages) {
-		fz_drop_stext_page(context, cached_stext_page);
-	}
-	cached_stext_pages.clear();
-
-	for (auto page_link_pair : cached_page_links) {
-		fz_drop_link(context, page_link_pair.second);
-	}
-	cached_page_links.clear();
-
-	delete cached_toc_model;
-	cached_toc_model = nullptr;
-	clear_toc_nodes();
+	clear_document_caches();
 
 	doc = nullptr;
 
@@ -616,13 +598,7 @@ bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string 
 		}
 		if ((doc != nullptr) && (!temp)) {
 			//load_document_metadata_from_db();
-			load_page_dimensions(force_load_dimensions);
-			create_toc_tree(top_level_toc_nodes);
-			get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
-			invalid_flag_pointer = invalid_flag;
-
-			// we don't need to index figures in helper documents
-			index_document(invalid_flag);
+			load_document_caches(invalid_flag, force_load_dimensions);
 			return true;
 		}
 
@@ -2378,4 +2354,67 @@ int Document::get_page_number_with_label(std::wstring page_label) {
 	else {
 		return QString::fromStdWString(page_label).toInt();
 	}
+}
+
+
+bool Document::is_reflowable() {
+	if (doc != nullptr) {
+		return fz_is_document_reflowable(context, doc);
+	}
+	return false;
+}
+
+void Document::clear_document_caches() {
+	cached_num_pages = {};
+	cached_fastread_highlights.clear();
+	cached_line_texts.clear();
+	cached_page_line_rects.clear();
+
+	for (auto [_, cached_small_pixmap] : cached_small_pixmaps) {
+		fz_drop_pixmap(context, cached_small_pixmap);
+	}
+	cached_small_pixmaps.clear();
+
+	for (auto [_, cached_stext_page] : cached_stext_pages) {
+		fz_drop_stext_page(context, cached_stext_page);
+	}
+	cached_stext_pages.clear();
+
+	for (auto page_link_pair : cached_page_links) {
+		fz_drop_link(context, page_link_pair.second);
+	}
+	cached_page_links.clear();
+
+	delete cached_toc_model;
+	cached_toc_model = nullptr;
+	clear_toc_nodes();
+}
+
+
+void Document::load_document_caches(bool* invalid_flag, bool force_now) {
+
+	load_page_dimensions(force_now);
+	create_toc_tree(top_level_toc_nodes);
+	get_flat_toc(top_level_toc_nodes, flat_toc_names, flat_toc_pages);
+	invalid_flag_pointer = invalid_flag;
+
+	// we don't need to index figures in helper documents
+	index_document(invalid_flag);
+}
+
+int Document::reflow(int page) {
+
+	fz_bookmark last_position_bookmark = fz_make_bookmark(context,
+		doc, fz_location_from_page_number(context, doc, page));
+
+	clear_document_caches();
+	fz_layout_document(context, doc, EPUB_WIDTH, EPUB_HEIGHT, EPUB_FONT_SIZE);
+	std::string encoded = utf8_encode(EPUB_CSS);
+	fz_set_user_css(context, encoded.c_str());
+	bool flag = false;
+	load_document_caches(&flag, false);
+
+	fz_location loc = fz_lookup_bookmark(context, doc, last_position_bookmark);
+	int new_page = fz_page_number_from_location(context, doc, loc);
+	return new_page;
 }
