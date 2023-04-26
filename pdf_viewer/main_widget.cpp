@@ -810,8 +810,8 @@ std::wstring MainWidget::get_status_string() {
     if (main_document_view->get_document() == nullptr) return L"";
     std::wstring chapter_name = main_document_view->get_current_chapter_name();
 
-    //status_string.replace("%{current_page}", QString::number(get_current_page_number() + 1));
-    status_string.replace("%{current_page}",  QString::fromStdWString(get_current_page_label()));
+    status_string.replace("%{current_page}", QString::number(get_current_page_number() + 1));
+    status_string.replace("%{current_page_label}",  QString::fromStdWString(get_current_page_label()));
     status_string.replace("%{num_pages}", QString::number(main_document_view->get_document()->num_pages()));
 
     if (chapter_name.size() > 0) {
@@ -5488,4 +5488,11 @@ bool MainWidget::is_in_edit_portal_rect(WindowPos pos) {
     else {
 		return LANDSCAPE_EDIT_PORTAL_UI_RECT.contains(nwp);
 	}
+}
+
+void MainWidget::goto_page_with_label(std::wstring label) {
+    int page = doc()->get_page_number_with_label(label);
+    if (page > -1) {
+		main_document_view->goto_page(page);
+    }
 }

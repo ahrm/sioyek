@@ -313,6 +313,7 @@ public:
 	void scroll_overview(int amount);
 	int get_current_page_number() const;
 	std::wstring get_current_page_label();
+	void goto_page_with_label(std::wstring label);
 	void set_inverse_search_command(const std::wstring& new_command);
 	int get_current_monitor_width(); int get_current_monitor_height();
 	void synctex_under_pos(WindowPos position);

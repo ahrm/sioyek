@@ -2365,3 +2365,17 @@ std::wstring Document::get_page_label(int page_index) {
 		return QString::number(page_index + 1).toStdWString();
 	}
 }
+
+int Document::get_page_number_with_label(std::wstring page_label) {
+	if (page_labels.size() > 0) {
+		for (int i = 0; i < page_labels.size(); i++) {
+			if (page_labels[i] == page_label) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	else {
+		return QString::fromStdWString(page_label).toInt();
+	}
+}

@@ -168,6 +168,25 @@ class SearchCommand : public TextCommand {
 	}
 };
 
+class GotoPageWithLabel : public TextCommand {
+
+	void perform(MainWidget* widget) {
+		widget->goto_page_with_label(text.value());
+	}
+
+	std::string get_name() {
+		return "goto_page_with_label";
+	}
+
+	bool pushes_state() {
+		return true;
+	}
+
+	std::string text_requirement_name() {
+		return "Page Label";
+	}
+};
+
 class ChapterSearchCommand : public TextCommand {
 
 	void perform(MainWidget* widget) {
@@ -2364,6 +2383,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["goto_mark"] = []() {return std::make_unique< GotoMark>(); };
 	new_commands["goto_page_with_page_number"] = []() {return std::make_unique< GotoPageWithPageNumberCommand>(); };
 	new_commands["search"] = []() {return std::make_unique< SearchCommand>(); };
+	new_commands["goto_page_with_label"] = []() {return std::make_unique< GotoPageWithLabel>(); };
 	new_commands["regex_search"] = []() {return std::make_unique< RegexSearchCommand>(); };
 	new_commands["chapter_search"] = []() {return std::make_unique< ChapterSearchCommand>(); };
 	new_commands["move_down"] = []() {return std::make_unique< MoveDownCommand>(); };

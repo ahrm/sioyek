@@ -166,6 +166,7 @@ public:
 	fz_pixmap* get_small_pixmap(int page);
 	float get_page_width(int page_index);
 	std::wstring get_page_label(int page_index);
+	int get_page_number_with_label(std::wstring page_label);
 	//float get_page_width_smart(int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
 	float get_page_size_smart(bool width, int page_index, float* left_ratio, float* right_ratio, int* normal_page_width);
 	float get_accum_page_height(int page_index);
