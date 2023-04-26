@@ -49,6 +49,11 @@ extern bool NUMERIC_TAGS;
 extern int NUM_H_SLICES;
 extern int NUM_V_SLICES;
 
+extern float EPUB_WIDTH;
+extern float EPUB_HEIGHT;
+extern float EPUB_FONT_SIZE;
+extern std::wstring EPUB_CSS;
+
 extern std::vector<MainWidget*> windows;
 
 #ifdef Q_OS_WIN
@@ -2362,7 +2367,15 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
 
     return fz_open_document_with_stream(context, "application/pdf", stream);
 #else
-    return  fz_open_document(context, utf8_encode(file_name).c_str());
+    fz_document* doc =  fz_open_document(context, utf8_encode(file_name).c_str());
+	if (fz_is_document_reflowable(context, doc) ){
+		fz_layout_document(context, doc, EPUB_WIDTH, EPUB_HEIGHT, EPUB_FONT_SIZE);
+		//const char* css = fz_user_css(context);
+		std::string encoded = utf8_encode(EPUB_CSS);
+		fz_set_user_css(context, encoded.c_str());
+		//int a = 2;
+	}
+	return doc;
 #endif
 }
 

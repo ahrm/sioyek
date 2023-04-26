@@ -132,6 +132,11 @@ extern bool SLICED_RENDERING;
 extern bool TOUCH_MODE;
 extern float TTS_RATE;
 
+extern float EPUB_WIDTH;
+extern float EPUB_HEIGHT;
+extern float EPUB_FONT_SIZE;
+extern std::wstring EPUB_CSS;
+
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
 extern UIRect LANDSCAPE_BACK_UI_RECT;
@@ -1495,6 +1500,41 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		float_deserializer,
 		nullptr,
 		FloatExtras{-1.0f, 1.0f}
+		});
+	configs.push_back({
+		L"epub_width",
+		ConfigType::Float,
+		&EPUB_WIDTH,
+		float_serializer,
+		float_deserializer,
+		nullptr,
+		FloatExtras{0.0f, 1000.0f}
+		});
+	configs.push_back({
+		L"epub_height",
+		ConfigType::Float,
+		&EPUB_HEIGHT,
+		float_serializer,
+		float_deserializer,
+		nullptr,
+		FloatExtras{0.0f, 1000.0f}
+		});
+	configs.push_back({
+		L"epub_font_size",
+		ConfigType::Float,
+		&EPUB_FONT_SIZE,
+		float_serializer,
+		float_deserializer,
+		nullptr,
+		FloatExtras{0.0f, 100.0f}
+		});
+	configs.push_back({
+		L"epub_css",
+		ConfigType::String,
+		&EPUB_CSS,
+		string_serializer,
+		string_deserializer,
+		nullptr
 		});
 
 	std::wstring highlight_config_string = L"highlight_color_a";
