@@ -1579,7 +1579,6 @@ void ConfigManager::deserialize_file(const Path& file_path, bool warn_if_not_exi
 		if (line.size() == 0 || line[0] == '#') {
 			continue;
 		}
-        qDebug() << "sioyek: " << QString::fromStdWString(line) << "\n";
 
 		std::wstringstream ss{ line };
 		std::wstring conf_name;

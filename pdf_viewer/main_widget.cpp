@@ -810,7 +810,8 @@ std::wstring MainWidget::get_status_string() {
     if (main_document_view->get_document() == nullptr) return L"";
     std::wstring chapter_name = main_document_view->get_current_chapter_name();
 
-    status_string.replace("%{current_page}", QString::number(get_current_page_number() + 1));
+    //status_string.replace("%{current_page}", QString::number(get_current_page_number() + 1));
+    status_string.replace("%{current_page}",  QString::fromStdWString(get_current_page_label()));
     status_string.replace("%{num_pages}", QString::number(main_document_view->get_document()->num_pages()));
 
     if (chapter_name.size() > 0) {
@@ -3476,6 +3477,9 @@ void MainWidget::scroll_overview(int amount) {
     handle_portal_overview_update();
 }
 
+std::wstring MainWidget::get_current_page_label() { 
+    return doc()->get_page_label(main_document_view->get_center_page_number());
+}
 int MainWidget::get_current_page_number() const {
     //
     if (opengl_widget->get_should_draw_vertical_line()) {

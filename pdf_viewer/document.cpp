@@ -664,6 +664,7 @@ void Document::load_page_dimensions(bool force_load_now) {
 	page_heights.clear();
 	accum_page_heights.clear();
 	page_widths.clear();
+	page_labels.clear();
 
 	int n = num_pages();
 	float acc_height = 0.0f;
@@ -693,6 +694,9 @@ void Document::load_page_dimensions(bool force_load_now) {
 		std::vector<float> accum_page_heights_;
 		std::vector<float> page_heights_;
 		std::vector<float> page_widths_;
+		std::vector<std::wstring> page_labels_;
+		const int N = 20;
+		char label_buffer[N];
 
 		// clone the main context for use in the background thread
 		fz_context* context_ = fz_clone_context(context);
@@ -705,6 +709,8 @@ void Document::load_page_dimensions(bool force_load_now) {
 			float acc_height_ = 0.0f;
 			for (int i = 0; i < n; i++) {
 				fz_page* page = fz_load_page(context_, doc_, i);
+				fz_page_label(context_, page, label_buffer, N);
+				page_labels_.push_back(utf8_decode(label_buffer));
 				fz_rect page_rect = fz_bound_page(context_, page);
 
 				float page_height = page_rect.y1 - page_rect.y0;
@@ -724,6 +730,7 @@ void Document::load_page_dimensions(bool force_load_now) {
 			page_heights = std::move(page_heights_);
 			accum_page_heights = std::move(accum_page_heights_);
 			page_widths = std::move(page_widths_);
+			page_labels = std::move(page_labels_);
 
 			if (invalid_flag_pointer) {
 				*invalid_flag_pointer = true;
@@ -2348,4 +2355,13 @@ float Document::max_y_offset() {
 
 	return get_accum_page_height(np - 1) + get_page_height(np - 1);
 
+}
+
+std::wstring Document::get_page_label(int page_index) {
+	if (page_index >= 0 && page_index < page_labels.size()) {
+		return page_labels[page_index];
+	}
+	else {
+		return QString::number(page_index + 1).toStdWString();
+	}
 }

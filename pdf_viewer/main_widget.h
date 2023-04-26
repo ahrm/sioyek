@@ -312,6 +312,7 @@ public:
 	void on_new_paper_added(const std::wstring& file_path);
 	void scroll_overview(int amount);
 	int get_current_page_number() const;
+	std::wstring get_current_page_label();
 	void set_inverse_search_command(const std::wstring& new_command);
 	int get_current_monitor_width(); int get_current_monitor_height();
 	void synctex_under_pos(WindowPos position);
