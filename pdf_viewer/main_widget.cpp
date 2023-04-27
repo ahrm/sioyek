@@ -399,9 +399,15 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
-    //int x = mouse_event->pos().x();
-    //int y = mouse_event->pos().y();
     WindowPos mpos = { mouse_event->pos().x(), mouse_event->pos().y() };
+
+    // if the mouse has moved too much when pressing middle mouse button, we assume that the user wants to drag
+    // instead of smart jump
+    if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
+        if ((std::abs(mpos.x - last_mouse_down.x) + std::abs(mpos.y - last_mouse_down.y)) > 50) {
+            is_dragging = true;
+        }
+    }
 
     std::optional<PdfLink> link = {};
 
@@ -2092,14 +2098,21 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
-        if (HIGHLIGHT_MIDDLE_CLICK
-            && main_document_view->selected_character_rects.size() > 0
-            && !(opengl_widget && opengl_widget->get_overview_page())) {
-            command_manager->get_command_with_name("add_highlight_with_current_type")->run(this);
-            invalidate_render();
+        if (!is_dragging) {
+
+            if (HIGHLIGHT_MIDDLE_CLICK
+                && main_document_view->selected_character_rects.size() > 0
+                && !(opengl_widget && opengl_widget->get_overview_page())) {
+                command_manager->get_command_with_name("add_highlight_with_current_type")->run(this);
+                invalidate_render();
+            }
+            else {
+                smart_jump_under_pos({ mevent->pos().x(), mevent->pos().y() });
+            }
         }
-        else {
-          smart_jump_under_pos({ mevent->pos().x(), mevent->pos().y() });
+        else{
+            is_dragging = false;
+
         }
     }
 
@@ -2130,6 +2143,11 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
         handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_alt_pressed);
+    }
+
+    if (mevent->button() == Qt::MouseButton::MiddleButton) {
+        last_mouse_down_window_pos = WindowPos{mevent->pos().x(), mevent->pos().y()};
+        last_mouse_down_document_offset = main_document_view->get_offsets();
     }
 
     if (mevent->button() == Qt::MouseButton::XButton1) {
