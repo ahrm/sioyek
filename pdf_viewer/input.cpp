@@ -2076,6 +2076,45 @@ class OpenLastDocumentCommand : public Command {
 	bool requires_document() { return false; }
 };
 
+class AddMarkedDataCommand : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->handle_add_marked_data();
+	}
+
+	std::string get_name() {
+		return "add_marked_data";
+	}
+
+	bool requires_document() { return true; }
+};
+
+class RemoveMarkedDataCommand : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->handle_remove_marked_data();
+	}
+
+	std::string get_name() {
+		return "remove_marked_data";
+	}
+
+	bool requires_document() { return true; }
+};
+
+class ExportMarkedDataCommand : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->handle_export_marked_data();
+	}
+
+	std::string get_name() {
+		return "export_marked_data";
+	}
+
+	bool requires_document() { return true; }
+};
+
 class ToggleStatusbarCommand : public Command {
 
 	void perform(MainWidget* widget) {
@@ -2530,6 +2569,9 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["start_reading"] = []() {return std::make_unique< StartReadingCommand>(); };
 	new_commands["stop_reading"] = []() {return std::make_unique< StopReadingCommand>(); };
 	new_commands["debug"] = []() {return std::make_unique< DebugCommand>(); };
+	new_commands["add_marked_data"] = []() {return std::make_unique< AddMarkedDataCommand>(); };
+	new_commands["remove_marked_data"] = []() {return std::make_unique< RemoveMarkedDataCommand>(); };
+	new_commands["export_marked_data"] = []() {return std::make_unique< ExportMarkedDataCommand>(); };
 
 
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {

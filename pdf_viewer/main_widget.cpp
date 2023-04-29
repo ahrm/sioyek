@@ -1,6 +1,8 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
-
+// fix the issue with books not being added to opened_books table if we navigate away
+// from the document after opening it for the first time
+// when opening the list of opened documents in current path, highlight and navigate to the current document
 
 #include <iostream>
 #include <vector>
@@ -42,6 +44,8 @@
 #include <qmimedata.h>
 #include <qscreen.h>
 #include <QGestureEvent>
+#include <qjsonarray.h>
+#include <qjsonobject.h>
 
 
 #include "input.h"
@@ -3126,13 +3130,13 @@ void MainWidget::dropEvent(QDropEvent* event)
 {
     if (event->mimeData()->hasUrls()) {
         auto urls = event->mimeData()->urls();
-        std::wstring path = urls.at(0).toString().toStdWString();
+        std::wstring path = urls.at(0).toLocalFile().toStdWString();
         // ignore file:/// at the beginning of the URL
-#ifdef Q_OS_WIN
-        path = path.substr(8, path.size() - 8);
-#else
-        path = path.substr(7, path.size() - 7);
-#endif
+//#ifdef Q_OS_WIN
+//        path = path.substr(8, path.size() - 8);
+//#else
+//        path = path.substr(7, path.size() - 7);
+//#endif
         //handle_args(QStringList() << QApplication::applicationFilePath() << QString::fromStdWString(path));
         push_state();
         open_document(path, &is_render_invalidated);
@@ -5528,3 +5532,102 @@ void MainWidget::on_config_changed(std::string config_name) {
 
 }
 
+void MainWidget::handle_add_marked_data() {
+    std::vector<fz_rect> local_selected_rects;
+    std::wstring local_selected_text;
+
+	main_document_view->get_text_selection(selection_begin,
+		selection_end,
+		is_word_selecting,
+		local_selected_rects,
+		local_selected_text);
+    if (local_selected_rects.size() > 0) {
+        int page = -1;
+        fz_rect begin_docrect = doc()->absolute_to_page_rect(local_selected_rects[0], &page);
+        fz_rect end_docrect = doc()->absolute_to_page_rect(local_selected_rects[local_selected_rects.size()-1], &page);
+
+        MarkedDataRect begin_rect;
+        begin_rect.rect = begin_docrect;
+        begin_rect.page = page;
+        begin_rect.type = 0;
+        opengl_widget->marked_data_rects[0].push_back(begin_rect);
+
+        MarkedDataRect end_rect;
+        end_rect.rect = end_docrect;
+        end_rect.page = page;
+        end_rect.type = 1;
+        opengl_widget->marked_data_rects[1].push_back(end_rect);
+
+        invalidate_render();
+    }
+}
+
+void MainWidget::handle_remove_marked_data() {
+    opengl_widget->marked_data_rects.clear();
+}
+
+
+void MainWidget::handle_export_marked_data() {
+    fz_stext_page* stext_page = doc()->get_stext_with_page_number(get_current_page_number());
+    std::vector<fz_stext_char*> flat_chars;
+    get_flat_chars_from_stext_page(stext_page, flat_chars);
+    auto export_path = qgetenv("SIOYEK_DATA_EXPORT").toStdString();
+    QDir export_dir = QDir(QString::fromStdString(export_path));
+    std::string checksum = checksummer->get_checksum_fast(doc()->get_path()).value();
+    QString file_name = QString("%1_%2.json").arg(QString::fromStdString(checksum), QString::number(get_current_page_number()));
+    auto file_path = export_dir.filePath(file_name);
+
+    QJsonObject json;
+
+    QJsonArray rects;
+    for (auto [type, rect_objects] : opengl_widget->marked_data_rects) {
+        for (auto rect_object : rect_objects) {
+			QJsonArray rect;
+            rect.append(rect_object.type);
+			rect.append(rect_object.rect.x0);
+			rect.append(rect_object.rect.x1);
+			rect.append(rect_object.rect.y0);
+			rect.append(rect_object.rect.y1);
+			rects.append(rect);
+        }
+
+    }
+    //for (int i = 0; i < opengl_widget->marked_data_rects.size(); i++) {
+    //    QJsonArray rect;
+    //    rect.append(opengl_widget->marked_data_rects[i].first.x0);
+    //    rect.append(opengl_widget->marked_data_rects[i].first.x1);
+    //    rect.append(opengl_widget->marked_data_rects[i].first.y0);
+    //    rect.append(opengl_widget->marked_data_rects[i].first.y1);
+    //    rects.append(rect);
+    //}
+
+    json["selected_char_rects"] = rects;
+    json["schema"] = 0;
+
+    QJsonArray page_chars;
+
+    for (auto chr : flat_chars) {
+        fz_rect chr_rect = fz_rect_from_quad(chr->quad);
+        QJsonArray chr_json;
+        chr_json.append(chr->c);
+        chr_json.append(chr_rect.x0);
+        chr_json.append(chr_rect.x1);
+        chr_json.append(chr_rect.y0);
+        chr_json.append(chr_rect.y1);
+        page_chars.append(chr_json);
+    }
+    json["page_characters"] = page_chars;
+
+    QJsonDocument json_doc;
+    json_doc.setObject(json);
+
+    QFile json_file(file_path);
+    json_file.open(QFile::WriteOnly);
+    json_file.write(json_doc.toJson());
+    json_file.close();
+
+    opengl_widget->marked_data_rects.clear();
+    invalidate_render();
+
+
+}

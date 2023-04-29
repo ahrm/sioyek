@@ -371,6 +371,9 @@ public:
 	void handle_pause();
 	void read_current_line();
 	void handle_debug_command();
+	void handle_add_marked_data();
+	void handle_remove_marked_data();
+	void handle_export_marked_data();
 
 	void show_audio_buttons();
 

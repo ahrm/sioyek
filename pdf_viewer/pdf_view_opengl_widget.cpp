@@ -1092,6 +1092,15 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	}
 
 
+	for (auto [type, type_rects] : marked_data_rects) {
+		//fz_rect window_rect = document_view->document_to_window_rect(page, rect);
+
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[type * 3]);
+		for (auto rect : type_rects) {
+			render_highlight_document(shared_gl_objects.highlight_program, rect.page, rect.rect);
+		}
+	}
+
 	painter->endNativePainting();
 
 	if (should_highlight_words && (!overview_page)) {

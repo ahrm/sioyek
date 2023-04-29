@@ -45,6 +45,12 @@
 #include "path.h"
 
 
+struct MarkedDataRect {
+	fz_rect rect;
+	int page;
+	int type;
+};
+
 
 struct OpenGLSharedResources {
 	GLuint vertex_buffer_object;
@@ -188,6 +194,8 @@ public:
 
 	std::vector<std::pair<fz_rect, int>> word_rects;
 	std::vector<std::pair<int, fz_rect>> synctex_highlights;
+	//std::vector<std::pair<fz_rect, int>> marked_data_rects;
+	std::map<int, std::vector<MarkedDataRect>> marked_data_rects;
 
 	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent = nullptr);
 	~PdfViewOpenGLWidget();
