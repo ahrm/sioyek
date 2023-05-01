@@ -53,6 +53,7 @@ extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
 extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
+extern float HIGHLIGHT_COLORS[26 * 3];
 
 extern std::vector<MainWidget*> windows;
 
@@ -2587,4 +2588,14 @@ QStandardItemModel* create_table_model(std::vector<std::wstring> lefts, std::vec
 		model->appendRow(QList<QStandardItem*>() << name_item << key_item);
 	}
 	return model;
+}
+
+float* get_highlight_type_color(char type) {
+	if (type >= 'a' && type <= 'z') {
+		return &HIGHLIGHT_COLORS[(type - 'a') * 3];
+	}
+	if (type >= 'A' && type <= 'Z') {
+		return &HIGHLIGHT_COLORS[(type - 'A') * 3];
+	}
+	return &HIGHLIGHT_COLORS[0];
 }

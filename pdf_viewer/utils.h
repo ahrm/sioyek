@@ -243,3 +243,5 @@ QStandardItemModel* create_table_model(std::vector<std::wstring> lefts, std::vec
 #ifdef SIOYEK_ANDROID
 QString android_file_uri_from_content_uri(QString uri);
 #endif
+
+float* get_highlight_type_color(char type);

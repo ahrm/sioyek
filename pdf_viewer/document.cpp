@@ -102,7 +102,8 @@ void Document::add_highlight(const std::wstring& desc,
 	AbsoluteDocumentPos selection_end,
 	char type)
 {
-	if (type > 'z' || type < 'a') {
+	//if (type > 'z' || type < 'a') {
+	if (!((type <= 'z' && type >= 'a') || (type <= 'Z' && type >= 'A'))) {
 		type = 'a';
 	}
 
@@ -1529,11 +1530,14 @@ void Document::embed_annotations(std::wstring new_file_path) {
 
 		fz_page* page = load_cached_page(page_number);
 		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
-		pdf_annot* highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_HIGHLIGHT);
-		float color[] = { 1.0f, 0.0f, 0.0f };
-		color[0] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 0];
-		color[1] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 1];
-		color[2] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 2];
+		pdf_annot* highlight_annot;
+		if (std::isupper(highlight.type)) {
+			highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_UNDERLINE);
+		}
+		else {
+			highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_HIGHLIGHT);
+		}
+		float* color = get_highlight_type_color(highlight.type);
 
 		pdf_set_annot_color(context, highlight_annot, 3, color);
 		pdf_set_annot_quad_points(context, highlight_annot, selected_character_quads.size(), &selected_character_quads[0]);

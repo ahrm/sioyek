@@ -351,7 +351,7 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
 	glDisable(GL_BLEND);
 
 }
-void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect, bool draw_border) {
+void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect, bool draw_border, bool draw_underline) {
 
 	if (is_rotated()) {
 		return;
@@ -370,6 +370,11 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 		window_rect.x0, window_rect.y1
 	};
 
+	float underline_data[] = {
+		window_rect.x1, window_rect.y1,
+		window_rect.x0, window_rect.y1
+	};
+
 
 	glEnable(GL_BLEND);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
@@ -379,20 +384,30 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+	// no need to draw the fill color if we are in underline mode
+	if (!draw_underline) {
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	}
 
 	if (draw_border) {
 		glDisable(GL_BLEND);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
 		glDrawArrays(GL_LINE_LOOP, 0, 4);
 	}
+	if (draw_underline) {
+		glDisable(GL_BLEND);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(underline_data), underline_data, GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_LINE_LOOP, 0, 2);
+	}
+
 
 
 }
 
-void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border) {
+void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border, bool draw_underline) {
 	fz_rect window_rect = document_view->absolute_to_window_rect(absolute_document_rect);
-	render_highlight_window(program, window_rect, draw_border);
+	render_highlight_window(program, window_rect, draw_border, draw_underline);
 }
 
 void PdfViewOpenGLWidget::render_highlight_document(GLuint program, int page, fz_rect doc_rect) {
@@ -1067,8 +1082,12 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 			if (is_selection_in_window) {
 				for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
-					glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
-					render_highlight_absolute(shared_gl_objects.highlight_program, highlights[i].highlight_rects[j], false);
+					//glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
+					glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, get_highlight_type_color(highlights[i].type));
+					render_highlight_absolute(shared_gl_objects.highlight_program,
+						highlights[i].highlight_rects[j],
+						false,
+						std::isupper(highlights[i].type));
 				}
 			}
 		}
