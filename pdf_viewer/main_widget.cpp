@@ -13,7 +13,6 @@
 
 
 #include <qpainterpath.h>
-#include <qscrollarea.h>
 #include <qabstractitemmodel.h>
 #include <qapplication.h>
 #include <qboxlayout.h>
@@ -5525,17 +5524,25 @@ void MainWidget::goto_page_with_label(std::wstring label) {
     }
 }
 
-void MainWidget::on_config_changed(std::string config_name) {
-    std::vector<std::wstring> reload_requiring_configs;
-
-    if (QString::fromStdString(config_name).startsWith("epub")) {
+void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
+    bool should_reflow = false;
+    for (int i = 0; i < config_names->size(); i++) {
+        if (QString::fromStdString((*config_names)[i]).startsWith("epub")) {
+            should_reflow = true;
+        }
+    }
+    if (should_reflow) {
         bool flag = false;
 		pdf_renderer->delete_old_pages(true, true);
         int new_page = doc()->reflow(get_current_page_number());
         main_document_view->goto_page(new_page);
-
     }
+}
 
+void MainWidget::on_config_changed(std::string config_name) {
+    std::vector<std::string> config_names;
+    config_names.push_back(config_name);
+    on_configs_changed(&config_names);
 }
 
 void MainWidget::handle_undo_marked_data() {

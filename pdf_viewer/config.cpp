@@ -1623,7 +1623,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		config.save_value_into_default();
 	}
 
-	deserialize(default_path, auto_path, user_paths);
+	deserialize(nullptr, default_path, auto_path, user_paths);
 }
 
 void ConfigManager::persist_config(){
@@ -1671,7 +1671,7 @@ void ConfigManager::serialize(const Path& path) {
     file.close();
 }
 
-void ConfigManager::deserialize_file(const Path& file_path, bool warn_if_not_exists) {
+void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_names, const Path& file_path, bool warn_if_not_exists) {
 
 	std::wstring line;
 	std::wifstream default_file = open_wifstream(file_path.get_path());
@@ -1705,7 +1705,7 @@ void ConfigManager::deserialize_file(const Path& file_path, bool warn_if_not_exi
 					path = QDir::homePath().toStdWString() + path.substr(1, path.size() - 1);
 				}
 
-				deserialize_file(path, true);
+				deserialize_file(changed_config_names, path, true);
 			}
 		}
 		else if ((conf_name == L"new_command") || (conf_name == L"new_macro")) {
@@ -1745,12 +1745,16 @@ void ConfigManager::deserialize_file(const Path& file_path, bool warn_if_not_exi
 			}
 
 			if (conf) {
-				auto deserialization_result = conf->deserialize(config_value_stream, conf->value, nullptr);
+				bool changed = false;
+				auto deserialization_result = conf->deserialize(config_value_stream, conf->value, &changed);
 				if (deserialization_result != nullptr) {
 					conf->value = deserialization_result;
 				}
 				else {
 					std::wcout << L"Error in config file " << file_path.get_path() << L" at line " << line_number << L" : " << line << L"\n";
+				}
+				if (changed && (changed_config_names != nullptr)) {
+					changed_config_names->push_back(utf8_encode(conf->name));
 				}
 			}
 		}
@@ -1759,15 +1763,15 @@ void ConfigManager::deserialize_file(const Path& file_path, bool warn_if_not_exi
 	default_file.close();
 }
 
-void ConfigManager::deserialize(const Path& default_file_path, const Path& auto_path ,const std::vector<Path>& user_file_paths) {
+void ConfigManager::deserialize(std::vector<std::string>* changed_config_names,const Path& default_file_path, const Path& auto_path ,const std::vector<Path>& user_file_paths) {
 
 	ADDITIONAL_COMMANDS.clear();
 
-	deserialize_file(default_file_path);
-	deserialize_file(auto_path);
+	deserialize_file(changed_config_names, default_file_path);
+	deserialize_file(changed_config_names, auto_path);
 
 	for (const auto& user_file_path : user_file_paths) {
-		deserialize_file(user_file_path);
+		deserialize_file(changed_config_names, user_file_path);
 	}
 }
 

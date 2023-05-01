@@ -987,10 +987,14 @@ int main(int argc, char* args[]) {
 #ifndef SIOYEK_ANDROID
 	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 
-		config_manager.deserialize(default_config_path, auto_config_path, user_config_paths);
+		std::vector<std::string> changed_config_file_names;
+		config_manager.deserialize(&changed_config_file_names, default_config_path, auto_config_path, user_config_paths);
 
 		ConfigFileChangeListener::notify_config_file_changed(&config_manager);
-		main_widget->validate_render();
+		for (auto window : windows) {
+			window->validate_render();
+			window->on_configs_changed(&changed_config_file_names);
+		}
 		add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
 		});
 

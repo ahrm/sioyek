@@ -98,8 +98,8 @@ public:
     void restore_default();
     void clear_file(const Path& path);
     void persist_config();
-	void deserialize(const Path& default_file_path, const Path& auto_path, const std::vector<Path>& user_file_paths);
-	void deserialize_file(const Path& file_path, bool warn_if_not_exists=false);
+	void deserialize(std::vector<std::string>* changed_config_names, const Path& default_file_path, const Path& auto_path, const std::vector<Path>& user_file_paths);
+	void deserialize_file(std::vector<std::string>* changed_config_names, const Path& file_path, bool warn_if_not_exists=false);
 	template<typename T>
 	const T* get_config(std::wstring name) {
 
