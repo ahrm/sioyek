@@ -770,18 +770,33 @@ public:
 
 
 		QString root_path;
+		QString file_name;
 
 		if (last_path.size() > 0) {
-			QString file_name;
 			split_root_file(last_path, root_path, file_name);
 			root_path += QDir::separator();
 		}
 
-		list_model = new QStringListModel(get_dir_contents(root_path, ""));
+		QStringList dir_contents = get_dir_contents(root_path, "");
+		int current_index = -1;
+		for (int i = 0; i < dir_contents.size(); i++) {
+			if (dir_contents.at(i) == file_name) {
+				current_index = i;
+				break;
+			}
+		}
+
+		list_model = new QStringListModel(dir_contents);
 		last_root = root_path;
 		line_edit->setText(last_root);
 
+
 		dynamic_cast<QListView*>(get_view())->setModel(list_model);
+
+		if (current_index != -1) {
+			dynamic_cast<QListView*>(get_view())->setCurrentIndex(list_model->index(current_index));
+		}
+		//dynamic_cast<QListView*>(get_view())->setCurrentIndex();
 	}
 
 	virtual bool on_text_change(const QString& text) {

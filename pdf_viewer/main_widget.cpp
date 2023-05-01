@@ -1,8 +1,5 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
-// fix the issue with books not being added to opened_books table if we navigate away
-// from the document after opening it for the first time
-// when opening the list of opened documents in current path, highlight and navigate to the current document
 
 #include <iostream>
 #include <vector>
