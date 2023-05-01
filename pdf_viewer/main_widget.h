@@ -372,8 +372,10 @@ public:
 	void read_current_line();
 	void handle_debug_command();
 	void handle_add_marked_data();
+	void handle_undo_marked_data();
 	void handle_remove_marked_data();
 	void handle_export_marked_data();
+	void handle_goto_random_page();
 
 	void show_audio_buttons();
 

@@ -195,7 +195,7 @@ public:
 	std::vector<std::pair<fz_rect, int>> word_rects;
 	std::vector<std::pair<int, fz_rect>> synctex_highlights;
 	//std::vector<std::pair<fz_rect, int>> marked_data_rects;
-	std::map<int, std::vector<MarkedDataRect>> marked_data_rects;
+	std::vector<MarkedDataRect> marked_data_rects;
 
 	PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent = nullptr);
 	~PdfViewOpenGLWidget();
@@ -206,6 +206,7 @@ public:
 	bool get_should_draw_vertical_line();
 	void handle_escape();
 
+	std::map<int, std::vector<MarkedDataRect>> get_marked_data_rect_map();
 	void toggle_highlight_links();
 	void set_highlight_links(bool should_highlight_links, bool should_show_numbers);
 	void toggle_highlight_words();

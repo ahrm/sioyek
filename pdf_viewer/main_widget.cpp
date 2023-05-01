@@ -1933,7 +1933,12 @@ void MainWidget::prev_state() {
             current_history_index--;
         }
         if (current_history_index >= 0) {
-			set_main_document_view_state(history[current_history_index]);
+            DocumentViewState new_state = history[current_history_index];
+            // save the current document in the list of opened documents
+            if (doc() && doc()->get_path() != new_state.document_path) {
+                persist();
+            }
+			set_main_document_view_state(new_state);
 			current_history_index--;
         }
     }
@@ -3104,6 +3109,10 @@ void MainWidget::open_document(const std::wstring& doc_path,
     std::optional<OpenedBookState> prev_state,
     bool force_load_dimensions) {
     opengl_widget->clear_all_selections();
+
+    if (main_document_view) {
+        main_document_view->persist();
+    }
 
     main_document_view->open_document(doc_path, invalid_flag, load_prev_state, prev_state, force_load_dimensions);
 
@@ -5532,6 +5541,12 @@ void MainWidget::on_config_changed(std::string config_name) {
 
 }
 
+void MainWidget::handle_undo_marked_data() {
+    if (opengl_widget->marked_data_rects.size() > 0) {
+        opengl_widget->marked_data_rects.pop_back();
+    }
+}
+
 void MainWidget::handle_add_marked_data() {
     std::vector<fz_rect> local_selected_rects;
     std::wstring local_selected_text;
@@ -5550,13 +5565,13 @@ void MainWidget::handle_add_marked_data() {
         begin_rect.rect = begin_docrect;
         begin_rect.page = page;
         begin_rect.type = 0;
-        opengl_widget->marked_data_rects[0].push_back(begin_rect);
+        opengl_widget->marked_data_rects.push_back(begin_rect);
 
         MarkedDataRect end_rect;
         end_rect.rect = end_docrect;
         end_rect.page = page;
         end_rect.type = 1;
-        opengl_widget->marked_data_rects[1].push_back(end_rect);
+        opengl_widget->marked_data_rects.push_back(end_rect);
 
         invalidate_render();
     }
@@ -5580,7 +5595,7 @@ void MainWidget::handle_export_marked_data() {
     QJsonObject json;
 
     QJsonArray rects;
-    for (auto [type, rect_objects] : opengl_widget->marked_data_rects) {
+    for (auto [type, rect_objects] : opengl_widget->get_marked_data_rect_map()) {
         for (auto rect_object : rect_objects) {
 			QJsonArray rect;
             rect.append(rect_object.type);
@@ -5630,4 +5645,11 @@ void MainWidget::handle_export_marked_data() {
     invalidate_render();
 
 
+}
+
+void MainWidget::handle_goto_random_page() {
+    int num_pages = doc()->num_pages();
+    int random_page = rand() % num_pages;
+    main_document_view->goto_page(random_page);
+    invalidate_render();
 }

@@ -2089,6 +2089,32 @@ class AddMarkedDataCommand : public Command {
 	bool requires_document() { return true; }
 };
 
+class UndoMarkedDataCommand : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->handle_undo_marked_data();
+	}
+
+	std::string get_name() {
+		return "undo_marked_data";
+	}
+
+	bool requires_document() { return true; }
+};
+
+class GotoRandomPageCommand : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->handle_goto_random_page();
+	}
+
+	std::string get_name() {
+		return "goto_random_page";
+	}
+
+	bool requires_document() { return true; }
+};
+
 class RemoveMarkedDataCommand : public Command {
 
 	void perform(MainWidget* widget) {
@@ -2572,6 +2598,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["add_marked_data"] = []() {return std::make_unique< AddMarkedDataCommand>(); };
 	new_commands["remove_marked_data"] = []() {return std::make_unique< RemoveMarkedDataCommand>(); };
 	new_commands["export_marked_data"] = []() {return std::make_unique< ExportMarkedDataCommand>(); };
+	new_commands["undo_marked_data"] = []() {return std::make_unique< UndoMarkedDataCommand>(); };
+	new_commands["goto_random_page"] = []() {return std::make_unique< GotoRandomPageCommand>(); };
 
 
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {

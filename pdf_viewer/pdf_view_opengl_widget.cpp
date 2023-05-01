@@ -1092,7 +1092,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	}
 
 
-	for (auto [type, type_rects] : marked_data_rects) {
+	for (auto [type, type_rects] : get_marked_data_rect_map()) {
 		//fz_rect window_rect = document_view->document_to_window_rect(page, rect);
 
 		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[type * 3]);
@@ -2105,4 +2105,12 @@ void PdfViewOpenGLWidget::clear_underline() {
 
 PdfViewOpenGLWidget::ColorPalette PdfViewOpenGLWidget::get_current_color_mode(){
     return color_mode;
+}
+
+std::map<int, std::vector<MarkedDataRect>> PdfViewOpenGLWidget::get_marked_data_rect_map() {
+	std::map<int, std::vector<MarkedDataRect>> res;
+	for (auto mdr : marked_data_rects) {
+		res[mdr.type].push_back(mdr);
+	}
+	return res;
 }
