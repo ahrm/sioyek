@@ -1,5 +1,7 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
+// add more epub-related configs
+// fix the special case handling for download message in get_status_string
 
 #include <iostream>
 #include <vector>
@@ -70,6 +72,7 @@ extern bool WHEEL_ZOOM_ON_CURSOR;
 extern float MOVE_SCREEN_PERCENTAGE;
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring INVERSE_SEARCH_COMMAND;
+extern std::wstring PAPER_SEARCH_URL;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float SMALL_PIXMAP_SCALE;
@@ -111,6 +114,7 @@ extern std::wstring ALT_CLICK_COMMAND;
 extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern Path local_database_file_path;
 extern Path global_database_file_path;
+extern Path downloaded_papers_path;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
@@ -137,6 +141,7 @@ extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
 extern float RULER_AUTO_MOVE_SENSITIVITY;
 extern float TTS_RATE;
+extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 
 extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
 extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
@@ -661,6 +666,52 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer = new QTimer(this);
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
+    QObject::connect(&network_manager, &QNetworkAccessManager::finished, [this](QNetworkReply* reply) {
+        if (reply->url().toString().endsWith(".pdf")) {
+            QByteArray pdf_data = reply->readAll();
+            QString file_name = reply->url().fileName();
+
+            QString path = QString::fromStdWString(downloaded_papers_path.slash(file_name.toStdWString()).get_path());
+            QDir dir;
+            dir.mkpath(QString::fromStdWString(downloaded_papers_path.get_path()));
+
+            QFile file(path);
+            bool opened = file.open(QIODeviceBase::WriteOnly);
+            if (opened) {
+				file.write(pdf_data);
+				file.close();
+				MainWidget* new_window = handle_new_window();
+				new_window->open_document(path.toStdWString());
+            }
+
+
+        }
+        else {
+			std::string answer = reply->readAll().toStdString();
+			QByteArray json_data = QByteArray::fromStdString(answer);
+			QJsonDocument json_doc = QJsonDocument::fromJson(json_data);
+			QJsonArray hits = json_doc.object().value("hits").toObject().value("hits").toArray();
+			std::vector<std::wstring> hit_titles;
+			std::vector<std::wstring> hit_authors;
+			std::vector<std::wstring> hit_urls;
+			for (int i = 0; i < hits.size(); i++) {
+				std::wstring url = hits.at(i).toObject().value("_source").toObject().value("best_pdf_url").toString().toStdWString();
+
+				if (url.size() > 0) {
+					hit_titles.push_back(hits.at(i).toObject().value("_source").toObject().value("title").toString().toStdWString());
+					hit_urls.push_back(url);
+					QJsonArray contributors = hits.at(i).toObject().value("_source").toObject().value("contrib_names").toArray();
+					std::wstring contrib_string;
+					for (int j = 0; j < contributors.size(); j++) {
+						contrib_string += contributors.at(j).toString().toStdWString() + L", ";
+					}
+					hit_authors.push_back(contrib_string);
+				}
+			}
+			show_download_paper_menu(hit_titles, hit_authors, hit_urls);
+        }
+
+        });
     QObject::connect(&tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
         if ((state == QTextToSpeech::Ready) || (state == QTextToSpeech::Error)) {
             if (is_reading) {
@@ -682,6 +733,15 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         }
         else if (is_ui_invalidated) {
             validate_ui();
+        }
+
+        if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
+            if ((last_middle_down_time.msecsTo(QTime::currentTime()) > 200) && (!is_dragging)) {
+				auto commands = this->command_manager->create_macro_command("", HOLD_MIDDLE_CLICK_COMMAND);
+				commands->run(this);
+				invalidate_render();
+                is_dragging = true;
+            }
         }
 
         // detect if the document file has changed and if so, reload the document
@@ -929,6 +989,16 @@ std::wstring MainWidget::get_status_string() {
         status_string.replace("%{custom_message}", " [ " + QString::fromStdWString(custom_status_message) + " ]");
     }
 
+    bool is_downloading = false;
+    if (is_network_manager_running(&is_downloading)) {
+        if (is_downloading) {
+            status_string.replace("%{download}", " [ downloading ]");
+        }
+        else {
+            status_string.replace("%{download}", " [ searching ]");
+        }
+    }
+
     status_string.replace("%{current_page}", "");
     status_string.replace("%{num_pages}", "");
     status_string.replace("%{chapter_name}", "");
@@ -948,6 +1018,8 @@ std::wstring MainWidget::get_status_string() {
     status_string.replace("%{rect_select}", "");
     status_string.replace("%{custom_message}", "");
     status_string.replace("%{search_progress}", "");
+    status_string.replace("%{download}", "");
+
 
 
     //return ss.str();
@@ -1992,7 +2064,7 @@ void MainWidget::handle_click(WindowPos click_pos) {
         handle_link_click(link.value());
     }
 }
-bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int* out_page, float* out_offset, bool update_candidates) {
+ReferenceType MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int* out_page, float* out_offset, bool update_candidates) {
 
     auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
     int current_page_number = get_current_page_number();
@@ -2017,7 +2089,7 @@ bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int*
             }
             *out_page = candidates[index_into_candidates].page;
             *out_offset = candidates[index_into_candidates].y;
-            return true;
+            return ReferenceType::Generic;
         }
     }
     if (equation_text_on_pointer) {
@@ -2026,7 +2098,7 @@ bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int*
              IndexedData refdata = eqdata_.value();
              *out_page = refdata.page;
              *out_offset = refdata.y_offset;
-             return true;
+             return ReferenceType::Equation;
          }
     }
 
@@ -2036,12 +2108,12 @@ bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int*
              IndexedData refdata = refdata_.value();
              *out_page = refdata.page;
              *out_offset = refdata.y_offset;
-             return true;
+             return ReferenceType::Reference;
          }
 
     }
 
-    return false;
+    return ReferenceType::None;
 }
 
 void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
@@ -2112,7 +2184,11 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
                 invalidate_render();
             }
             else {
-                smart_jump_under_pos({ mevent->pos().x(), mevent->pos().y() });
+                if (last_middle_down_time.msecsTo(QTime::currentTime()) > 200) {
+                }
+                else {
+					smart_jump_under_pos({ mevent->pos().x(), mevent->pos().y() });
+                }
             }
         }
         else{
@@ -2151,6 +2227,7 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
+		last_middle_down_time = QTime::currentTime();
         last_mouse_down_window_pos = WindowPos{mevent->pos().x(), mevent->pos().y()};
         last_mouse_down_document_offset = main_document_view->get_offsets();
     }
@@ -2456,7 +2533,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos){
 
     int target_page;
     float target_y_offset;
-    if (find_location_of_text_under_pointer(pos, &target_page, &target_y_offset)) {
+    if (find_location_of_text_under_pointer(pos, &target_page, &target_y_offset) != ReferenceType::None) {
         long_jump_to_destination(target_page, target_y_offset);
     }
     else {
@@ -2558,7 +2635,7 @@ bool MainWidget::overview_under_pos(WindowPos pos){
 
     int autoreference_page;
     float autoreference_offset;
-    if (find_location_of_text_under_pointer(pos, &autoreference_page, &autoreference_offset, true)) {
+    if (find_location_of_text_under_pointer(pos, &autoreference_page, &autoreference_offset, true) != ReferenceType::None) {
         set_overview_position(autoreference_page, autoreference_offset);
         return true;
     }
@@ -4711,7 +4788,7 @@ void MainWidget::handle_move_screen(int amount) {
 	}
 }
 
-void MainWidget::handle_new_window() {
+MainWidget* MainWidget::handle_new_window() {
 	MainWidget* new_widget = new MainWidget(mupdf_context,
 		db_manager,
 		document_manager,
@@ -4728,6 +4805,7 @@ void MainWidget::handle_new_window() {
     startup_commands->run(new_widget);
 
 	windows.push_back(new_widget);
+    return new_widget;
 }
 
 std::optional<std::pair<int, fz_link*>> MainWidget::get_selected_link(const std::wstring& text) {
@@ -5426,10 +5504,68 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
+    int page = get_current_page_number();
+    std::vector<fz_rect> rects;
+    doc()->get_page_bib_candidates(page, &rects);
+    std::vector<MarkedDataRect> mdrs;
+    for (auto r : rects) {
+        MarkedDataRect mdr;
+        mdr.page = page;
+        mdr.rect = r;
+        mdr.type = 0;
+        mdrs.push_back(mdr);
+    }
+    opengl_widget->marked_data_rects = mdrs;
+    invalidate_render();
+}
 
-    TouchMarkSelector* selector = new TouchMarkSelector(this);
-    set_current_widget(selector);
-    show_current_widget();
+void MainWidget::download_paper_under_cursor() {
+	QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+    WindowPos pos(mouse_pos.x(), mouse_pos.y());
+    DocumentPos docpos = main_document_view->window_to_document_pos(pos);
+    auto [page, offset_x, offset_y] = docpos;
+    //std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
+    std::optional<PdfLink> pdf_link_ = doc()->get_link_in_pos(docpos);
+
+    std::optional<std::wstring> bib_text_ = {};
+
+    if (pdf_link_) {
+        PdfLink pdf_link = pdf_link_.value();
+        fz_rect pdf_rect = pdf_link.rect;
+        auto [link_page,offset_x,offset_y] = parse_uri(mupdf_context, pdf_link.uri);
+        std::wstring link_text = doc()->get_text_in_rect(page, pdf_rect);
+        link_text = clean_link_source_text(link_text);
+		bib_text_ = doc()->get_page_bib_with_reference(link_page-1, link_text);
+    }
+    else {
+		auto ref_ = doc()->get_reference_text_at_position(page, offset_x, offset_y);
+		int target_page = -1;
+		float target_offset;
+        if (find_location_of_text_under_pointer(pos, &target_page, &target_offset) == ReferenceType::Reference) {
+			if (ref_) {
+				std::wstring ref = ref_.value();
+				bib_text_ = doc()->get_page_bib_with_reference(target_page, ref);
+			}
+        }
+        else {
+            std::optional<std::wstring> paper_name = get_paper_name_under_cursor();
+            if (paper_name) {
+                bib_text_ = paper_name;
+            }
+        }
+    }
+
+    if (bib_text_) {
+		std::wstring bib_text = clean_bib_item(bib_text_.value());
+		QUrl get_url = QString::fromStdWString(PAPER_SEARCH_URL).replace(
+			"%{query}",
+			QUrl::toPercentEncoding(QString::fromStdWString(bib_text))
+		);
+
+		QNetworkRequest req;
+		req.setUrl(get_url);
+		network_manager.get(req);
+    }
 }
 
 void MainWidget::read_current_line() {
@@ -5656,4 +5792,47 @@ void MainWidget::handle_goto_random_page() {
     int random_page = rand() % num_pages;
     main_document_view->goto_page(random_page);
     invalidate_render();
+}
+void MainWidget::show_download_paper_menu(
+    const std::vector<std::wstring>& paper_names,
+    const std::vector<std::wstring>& contributor_names,
+    const std::vector<std::wstring>& download_urls) {
+
+	set_current_widget(new FilteredSelectTableWindowClass<std::wstring>(
+		paper_names,
+		contributor_names,
+		download_urls,
+		-1,
+		[&](std::wstring* url) {
+			qDebug() << *url;
+            download_paper_with_url(*url);
+		},
+		this,
+			[&](std::wstring* _) {
+		}));
+    show_current_widget();
+
+
+}
+
+void MainWidget::download_paper_with_url(std::wstring paper_url_) {
+    QString paper_url = QString::fromStdWString(paper_url_);
+    paper_url = paper_url.right(paper_url.size() - paper_url.lastIndexOf("http"));
+	QNetworkRequest req;
+	req.setUrl(paper_url);
+	network_manager.get(req);
+}
+
+bool MainWidget::is_network_manager_running(bool* is_downloading){
+    auto children = network_manager.findChildren<QNetworkReply*>();
+    for (int i = 0; i < children.size(); i++) {
+        if (children.at(i)->isRunning()) {
+            if (is_downloading) {
+                qDebug() << children.at(i)->url().toString();
+                *is_downloading = children.at(i)->url().toString().endsWith(".pdf");
+            }
+            return true;
+        }
+    }
+    return false;
 }

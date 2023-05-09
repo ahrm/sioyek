@@ -38,6 +38,12 @@ extern float HORIZONTAL_MOVE_AMOUNT;
 class SelectionIndicator;
 
 
+enum ReferenceType {
+	Generic,
+	Equation,
+	Reference,
+	None
+};
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 class MainWidget : public QQuickWidget, ConfigFileChangeListener{
@@ -49,6 +55,7 @@ public:
 	DocumentManager* document_manager = nullptr;
 	CommandManager* command_manager = nullptr;
 	ConfigManager* config_manager = nullptr;
+	QNetworkAccessManager network_manager;
 	PdfRenderer* pdf_renderer = nullptr;
 	InputHandler* input_handler = nullptr;
 	CachedChecksummer* checksummer = nullptr;
@@ -212,6 +219,12 @@ public:
     void smart_jump_under_pos(WindowPos pos);
     bool overview_under_pos(WindowPos pos);
     void visual_mark_under_pos(WindowPos pos);
+	bool is_network_manager_running(bool* is_downloading=nullptr);
+	void show_download_paper_menu(
+		const std::vector<std::wstring>& paper_names,
+		const std::vector<std::wstring>& contributor_names,
+		const std::vector<std::wstring>& download_urls );
+	void download_paper_with_url(std::wstring paper_url);
 
 	QRect get_main_window_rect();
 	QRect get_helper_window_rect();
@@ -292,7 +305,7 @@ public:
 	void toggle_visual_scroll_mode();
 	void set_overview_link(PdfLink link);
 	void set_overview_position(int page, float offset);
-	bool find_location_of_text_under_pointer(WindowPos pos, int* out_page, float* out_offset, bool update_candidates=false);
+	ReferenceType find_location_of_text_under_pointer(WindowPos pos, int* out_page, float* out_offset, bool update_candidates=false);
 	std::optional<std::wstring> get_current_file_name();
 	CommandManager* get_command_manager();
 
@@ -352,7 +365,7 @@ public:
 	void handle_goto_toc();
 	void handle_open_prev_doc();
 	void handle_move_screen(int amount);
-	void handle_new_window();
+	MainWidget* handle_new_window();
 	void handle_open_link(const std::wstring& text, bool copy=false);
 	void handle_overview_link(const std::wstring& text);
 	void handle_portal_to_link(const std::wstring& text);
@@ -371,6 +384,7 @@ public:
 	void handle_play();
 	void handle_pause();
 	void read_current_line();
+	void download_paper_under_cursor();
 	void handle_debug_command();
 	void handle_add_marked_data();
 	void handle_undo_marked_data();
@@ -386,6 +400,7 @@ public:
     QPoint last_press_point;
     qint64 last_press_msecs = 0;
     QTime last_quick_tap_time;
+	QTime last_middle_down_time;
     QPoint last_quick_tap_position;
     bool is_pressed = false;
     std::deque<std::pair<QTime, QPoint>> position_buffer;

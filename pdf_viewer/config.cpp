@@ -86,12 +86,15 @@ extern bool SHOW_DOC_PATH;
 extern float FASTREAD_OPACITY;
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool SINGLE_CLICK_SELECTS_WORDS;
+
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
 extern std::wstring SHIFT_RIGHT_CLICK_COMMAND;
 extern std::wstring CONTROL_RIGHT_CLICK_COMMAND;
 extern std::wstring ALT_CLICK_COMMAND;
 extern std::wstring ALT_RIGHT_CLICK_COMMAND;
+extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
+
 extern bool USE_LEGACY_KEYBINDS;
 extern bool MULTILINE_MENUS;
 extern bool START_WITH_HELPER_WINDOW;
@@ -131,6 +134,7 @@ extern float RULER_AUTO_MOVE_SENSITIVITY;
 extern bool SLICED_RENDERING;
 extern bool TOUCH_MODE;
 extern float TTS_RATE;
+extern std::wstring PAPER_SEARCH_URL;
 
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
@@ -1009,6 +1013,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		bool_validator
 		});
 	configs.push_back({
+		L"paper_search_url",
+		ConfigType::String,
+		&PAPER_SEARCH_URL,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
 		L"text_summary_should_fill",
 		ConfigType::Bool,
 		&TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL,
@@ -1151,6 +1163,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		L"control_click_command",
 		ConfigType::String,
 		&CONTROL_CLICK_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"hold_middle_click_command",
+		ConfigType::String,
+		&HOLD_MIDDLE_CLICK_COMMAND,
 		string_serializer,
 		string_deserializer,
 		nullptr

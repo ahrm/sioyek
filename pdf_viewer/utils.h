@@ -95,6 +95,7 @@ void merge_selected_character_rects(const std::vector<fz_rect>& selected_charact
 void split_key_string(std::wstring haystack, const std::wstring& needle, std::vector<std::wstring>& res);
 void run_command(std::wstring command, QStringList parameters, bool wait=true);
 
+std::wstring get_string_from_stext_block(fz_stext_block* block);
 std::wstring get_string_from_stext_line(fz_stext_line* line);
 void sleep_ms(unsigned int ms);
 //void open_url(const std::string& url_string);
@@ -245,3 +246,7 @@ QString android_file_uri_from_content_uri(QString uri);
 #endif
 
 float* get_highlight_type_color(char type);
+void get_rect_augument_data(fz_rect rect, float page_width, float page_height, std::vector<float>& res);
+bool load_npy(QString resource_name, std::vector<float>& output, int* out_rows, int* out_cols);
+std::wstring clean_bib_item(std::wstring bib_item);
+std::wstring clean_link_source_text(std::wstring link_source_text);

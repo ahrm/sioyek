@@ -14,6 +14,9 @@
 
 #include "checksum.h"
 
+const int WINDOW_SIZE = 10;
+const int EMBEDDING_DIM = 10;
+
 extern float SMALL_PIXMAP_SCALE;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern std::wstring TEXT_HIGHLIGHT_URL;
@@ -30,6 +33,8 @@ extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
 extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
+extern std::vector<float> embedding_weights;
+extern std::vector<float> linear_weights;
 
 int Document::get_mark_index(char symbol) {
 	for (size_t i = 0; i < marks.size(); i++) {
@@ -1279,6 +1284,27 @@ std::optional<std::wstring> Document::get_text_at_position(const std::vector<fz_
 	return {};
 }
 
+fz_stext_block* Document::get_text_block_at_positition(fz_stext_page* page, float offset_x, float offset_y) {
+	fz_stext_block* current_block = page->first_block;
+
+	fz_point pos = {offset_x, offset_y};
+
+	while (current_block) {
+		if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
+			fz_stext_line* current_line = current_block->u.t.first_line;
+			while (current_line) {
+				fz_rect bbox = current_line->bbox;
+				if (fz_is_point_inside_rect(pos, bbox)) {
+					return current_block;
+				}
+				current_line = current_line->next;
+			}
+		}
+		current_block = current_block->next;
+	}
+	return nullptr;
+}
+
 std::optional<std::wstring> Document::get_paper_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
 	fz_rect selected_rect;
 
@@ -1864,15 +1890,15 @@ std::optional<PdfLink> Document::get_link_in_pos(int page, float doc_x, float do
 	if (!doc) return {};
 
 	if (page != -1) {
-		fz_link* portals = get_page_links(page);
+		fz_link* page_links = get_page_links(page);
 		fz_point point = { doc_x, doc_y };
 		std::optional<PdfLink> res = {};
-		while (portals != nullptr) {
-			if (fz_is_point_inside_rect(point, portals->rect)) {
-				res = { portals->rect, portals->uri };
+		while (page_links != nullptr) {
+			if (fz_is_point_inside_rect(point, page_links->rect)) {
+				res = { page_links->rect, page_links->uri };
 				return res;
 			}
-			portals = portals->next;
+			page_links = page_links->next;
 		}
 
 	}
@@ -2421,4 +2447,211 @@ int Document::reflow(int page) {
 	fz_location loc = fz_lookup_bookmark(context, doc, last_position_bookmark);
 	int new_page = fz_page_number_from_location(context, doc, loc);
 	return new_page;
+}
+
+void push_embedding(int index, std::vector<float>& target) {
+	int offset = index * EMBEDDING_DIM;
+	for (int i = 0; i < EMBEDDING_DIM; i++) {
+		target.push_back(embedding_weights[offset + i]);
+	}
+}
+
+std::vector<float> apply_linear_weights(std::vector<float> embeddings) {
+
+	std::vector<float> outputs;
+
+	for (int j = 0; j < 2; j++) {
+		float res = 0;
+		for (int i = 0; i < embeddings.size(); i++) {
+			res += embeddings[i] * linear_weights[i + j * embeddings.size()];
+		}
+		outputs.push_back(res);
+	}
+	return outputs;
+}
+
+std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std::vector<fz_rect>* out_rects) {
+	fz_stext_page* stext_page = get_stext_with_page_number(page_number);
+	std::vector<fz_stext_char*> flat_chars;
+
+	get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+	std::vector<fz_rect> char_rects;
+	std::vector<float> augumented_rect_data;
+
+	float page_width = page_widths[page_number];
+	float page_height = page_heights[page_number];
+
+	std::vector<int> dot_indices;
+	std::vector<int> end_indices;
+	std::wstring raw_text;
+
+	for (int i = 0; i < flat_chars.size(); i++) {
+		if (flat_chars[i]->c == '.') {
+			dot_indices.push_back(i);
+		}
+		raw_text.push_back(flat_chars[i]->c);
+		char_rects.push_back(fz_rect_from_quad(flat_chars[i]->quad));
+	}
+
+	for (auto rect : char_rects) {
+		get_rect_augument_data(rect, page_width, page_height, augumented_rect_data);
+	}
+
+
+	for (int dot_index : dot_indices) {
+		std::vector<float> embeddings;
+		int start_index = dot_index - WINDOW_SIZE;
+		int end_index = dot_index + WINDOW_SIZE;
+
+		for (int index = start_index; index < end_index; index++) {
+			if (index >= 0 && index < flat_chars.size()) {
+				//embeddings.push_back(augumented_rect_data[index]);
+				push_embedding(std::min(flat_chars[index]->c, 127), embeddings);
+			}
+			else {
+				push_embedding(0, embeddings);
+			}
+
+		}
+		for (int index = start_index; index < end_index; index++) {
+			const int RECT_DIM = 4 * 8;
+			int rect_data_start_index = index * RECT_DIM;
+			if (index >= 0 && index < flat_chars.size()) {
+				for (int i = 0; i < RECT_DIM; i++) {
+					embeddings.push_back(augumented_rect_data[index * RECT_DIM + i]);
+				}
+			}
+			else {
+				for (int i = 0; i < RECT_DIM; i++) {
+					embeddings.push_back(0.0f);
+				}
+			}
+
+
+		}
+
+		auto outputs = apply_linear_weights(embeddings);
+		if (outputs[1] > outputs[0]) {
+			end_indices.push_back(dot_index);
+		}
+
+	}
+
+	std::vector<fz_rect> res;
+	for (int i = 0; i < end_indices.size(); i++) {
+		res.push_back(char_rects[end_indices[i]]);
+	}
+
+	std::vector<std::wstring> reference_texts;
+
+	reference_texts.push_back(raw_text.substr(0, end_indices[0]));
+	for (int i = 1; i < end_indices.size(); i++) {
+		reference_texts.push_back(raw_text.substr(end_indices[i-1]+1, end_indices[i] - end_indices[i-1]));
+	}
+
+	// try to remove the texts before the first bib item
+
+	int bib_index = -1;
+
+	for (int i = 0; i < std::min<int>(5, reference_texts.size()); i++) {
+		int last_bib_index = QString::fromStdWString(reference_texts[i]).toLower().lastIndexOf("bibliography");
+		int last_ref_index = QString::fromStdWString(reference_texts[i]).toLower().lastIndexOf("references");
+		int len = -1;
+
+		if (last_bib_index != -1) {
+			len = std::string("bibligraphy").size();
+		}
+		if (last_ref_index != -1) {
+			len = std::string("references").size();
+		}
+
+		int last_index = std::max(last_bib_index, last_ref_index);
+		if (last_index != -1) {
+			bib_index = i;
+			reference_texts[i] = reference_texts[i].substr(last_index + len, reference_texts[i].size() - last_index - len);
+			break;
+
+		}
+	}
+
+	for (int i = 0; i < bib_index; i++) {
+		reference_texts.erase(reference_texts.begin());
+	}
+
+	if (out_rects) {
+
+		for (int i = 0; i < end_indices.size(); i++) {
+			out_rects->push_back(char_rects[end_indices[i]]);
+		}
+
+	}
+
+	return reference_texts;
+
+}
+
+std::optional<std::wstring> Document::get_page_bib_with_reference(int page_number, std::wstring reference_text) {
+	//todo: use the reference offset as well as the page to more accurately get the reference 
+
+	std::vector<std::wstring> bib_texts_ = get_page_bib_candidates(page_number);
+	std::vector<std::wstring> bib_text_prefixes;
+	for (auto bib : bib_texts_) {
+		bib_text_prefixes.push_back(bib.substr(0, reference_text.size() + 5));
+	}
+
+	QString reference_text_qstring = QString::fromStdWString(reference_text);
+	std::string encoded_reference_text = utf8_encode(reference_text);
+
+	for (int i = 0; i < bib_text_prefixes.size(); i++) {
+		if (QString::fromStdWString(bib_text_prefixes[i]).indexOf(reference_text_qstring) != -1) {
+			return bib_texts_[i];
+		}
+	}
+
+	int score = -1;
+	int max_score = encoded_reference_text.size();
+	int max_score_index = -1;
+
+	for (int i = 0; i < bib_text_prefixes.size(); i++) {
+		std::string encoded_bib_text = utf8_encode(bib_text_prefixes[i]);
+		int current_score = lcs(&encoded_bib_text[0], &encoded_reference_text[0], encoded_bib_text.size(), encoded_reference_text.size());
+		if (current_score == max_score) {
+			return bib_texts_[i];
+		}
+		if (current_score > score) {
+			score = current_score;
+			max_score_index = i;
+		}
+	}
+	if (max_score_index >= 0) {
+		return bib_texts_[max_score_index];
+	}
+
+	return {};
+}
+
+std::wstring Document::get_text_in_rect(int page, fz_rect doc_rect) {
+	fz_stext_page* stext_page = get_stext_with_page_number(page);
+	std::vector<fz_stext_char*> flat_chars;
+	get_flat_chars_from_stext_page(stext_page, flat_chars);
+
+	std::wstring res;
+
+	for (auto ch : flat_chars) {
+
+		fz_rect scaled_rect = fz_rect_from_quad(ch->quad);
+		float width = scaled_rect.x1 - scaled_rect.x0;
+		float height = scaled_rect.y1 - scaled_rect.y0;
+		scaled_rect.x0 += width / 4;
+		scaled_rect.x1 -= width / 4;
+		scaled_rect.y0 += height / 4;
+		scaled_rect.y1 -= height / 4;
+
+		if (rects_intersect(doc_rect, scaled_rect)) {
+			res.push_back(ch->c);
+		}
+
+	}
+	return res;
 }

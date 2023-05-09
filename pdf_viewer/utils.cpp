@@ -665,6 +665,19 @@ bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char) {
 	return false;
 }
 
+
+std::wstring get_string_from_stext_block(fz_stext_block* block) {
+	if (block->type == FZ_STEXT_BLOCK_TEXT) {
+		std::wstring res;
+		LL_ITER(line, block->u.t.first_line) {
+			res += get_string_from_stext_line(line);
+		}
+		return res;
+	}
+	else {
+		return L"";
+	}
+}
 std::wstring get_string_from_stext_line(fz_stext_line* line) {
 
 	std::wstring res;
@@ -2598,4 +2611,120 @@ float* get_highlight_type_color(char type) {
 		return &HIGHLIGHT_COLORS[(type - 'A') * 3];
 	}
 	return &HIGHLIGHT_COLORS[0];
+}
+
+void get_rect_augument_data(fz_rect rect, float page_width, float page_height, std::vector<float>& res) {
+
+	std::vector<int> powers = {0, 1, 2, 3, 4, 5, 6, 7};
+	float x = rect.x0 / page_width;
+	float y = rect.y1 / page_height;
+
+	for (auto power : powers) {
+		res.push_back(std::sinf(x * std::pow(2, power) / 4.0f));
+		res.push_back(std::cosf(x * std::pow(2, power) / 4.0f));
+		res.push_back(std::sinf(y * std::pow(2, power) / 4.0f));
+		res.push_back(std::cosf(y * std::pow(2, power) / 4.0f));
+	}
+}
+
+bool parse_npy_header(std::string header_string, int* out_rows, int * out_cols) {
+	int begin_index = header_string.rfind("(");
+	int end_index = header_string.rfind(")");
+	std::string substr_ = header_string.substr(begin_index + 1, end_index - begin_index - 1);
+	QString substr = QString::fromStdString(substr_);
+	QStringList parts = substr.split(",");
+	if (parts.size() == 2) {
+		*out_rows = parts.at(0).trimmed().toInt();
+		*out_cols = parts.at(1).trimmed().toInt();
+		return true;
+	}
+	return false;
+}
+
+bool load_npy(QString resource_name, std::vector<float>& output, int* out_rows, int* out_cols) {
+	QFile input_file(resource_name);
+	bool opened = input_file.open(QIODevice::ReadOnly);
+
+	if (opened) {
+		const char* magic = "\x93NUMPY";
+		QByteArray magic_header = input_file.read(6);
+
+		// check magic header
+		for (int i = 0; i < 6; i++) {
+			if (magic_header[i] != magic[i]) {
+				return false;
+			}
+		}
+
+		QByteArray version_data = input_file.read(2);
+		QByteArray header_len_bytes = input_file.read(2);
+
+		UINT16 header_length = *(UINT16*)header_len_bytes.data();
+		QByteArray header_data = input_file.read(header_length);
+		std::string header_string = header_data.toStdString();
+
+		int shape_width, shape_height;
+
+		if (parse_npy_header(header_string, &shape_width, &shape_height)) {
+			*out_rows = shape_width;
+			*out_cols = shape_height;
+
+			int datasize = sizeof(float) * shape_width * shape_height;
+			QByteArray raw_data = input_file.read(datasize);
+			for (int i = 0; i < shape_width * shape_height; i++) {
+				float value = *(float*)(raw_data.data() + i * sizeof(float));
+				output.push_back(value);
+			}
+		}
+
+		input_file.close();
+		return true;
+	}
+	return false;
+}
+
+
+QString trim_text_after(QString source, QString needle) {
+	int needle_index = source.indexOf(needle);
+	if (needle_index != -1) {
+		return source.left(needle_index);
+	}
+	return source;
+}
+
+std::wstring clean_link_source_text(std::wstring link_source_text) {
+	QString text = QString::fromStdWString(link_source_text);
+
+	text = trim_text_after(text, "et. al.");
+	text = trim_text_after(text, "et al");
+	text = trim_text_after(text, "etal.");
+
+	std::vector<char> garbage_chars = {'[', ']', '.', ','};
+	while ((text.size() > 0) && (std::find(garbage_chars.begin(), garbage_chars.end(), text.at(0)) != garbage_chars.end())) {
+		text = text.right(text.size() - 1);
+	}
+
+	while ((text.size() > 0) && (std::find(garbage_chars.begin(), garbage_chars.end(), text.at(text.size()-1)) != garbage_chars.end())) {
+		text = text.left(text.size() - 1);
+	}
+	return text.toStdWString();
+}
+
+std::wstring clean_bib_item(std::wstring bib_item) {
+	QString bib_item_qstring = QString::fromStdWString(bib_item);
+	int bracket_index = bib_item_qstring.indexOf("]");
+	if (bracket_index >= 0 && bracket_index < 10) {
+		bib_item_qstring = bib_item_qstring.right(bib_item_qstring.size() - bracket_index - 1);
+	}
+
+	int arxiv_index = bib_item_qstring.toLower().indexOf("arxiv");
+	if (arxiv_index >= 0) {
+		bib_item_qstring = bib_item_qstring.left(arxiv_index);
+	}
+
+	std::wstring candid = bib_item_qstring.toStdWString();
+	while (candid.size() > 0 && ((candid[candid.size()-1] > 128) || !std::isalpha(candid[candid.size() - 1]))) {
+		candid = candid.substr(0, candid.size() - 1);
+	}
+	return candid;
 }

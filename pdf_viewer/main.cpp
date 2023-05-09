@@ -125,11 +125,12 @@ int NUM_H_SLICES = 1;
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];
 std::wstring TEXT_HIGHLIGHT_URL = L"http://localhost:5000/";
+std::wstring PAPER_SEARCH_URL = L"https://search.fatcat.wiki/fatcat_release/_search?q=%{query}";
 std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
 std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
 std::wstring PAPERS_FOLDER_PATH = L"";
 #ifndef SIOYEK_ANDROID
-std::wstring STATUS_BAR_FORMAT = L"Page %{current_page} / %{num_pages}%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}";
+std::wstring STATUS_BAR_FORMAT = L"Page %{current_page} / %{num_pages}%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
 #else
 std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}";
 #endif
@@ -315,6 +316,7 @@ Path tutorial_path(L"");
 Path last_opened_file_address_path(L"");
 Path shader_path(L"");
 Path auto_config_path(L"");
+Path downloaded_papers_path(L"");
 
 std::wstring SHIFT_CLICK_COMMAND = L"overview_under_cursor";
 std::wstring CONTROL_CLICK_COMMAND = L"smart_jump_under_cursor";
@@ -322,8 +324,12 @@ std::wstring SHIFT_RIGHT_CLICK_COMMAND = L"";
 std::wstring CONTROL_RIGHT_CLICK_COMMAND = L"";
 std::wstring ALT_CLICK_COMMAND = L"";
 std::wstring ALT_RIGHT_CLICK_COMMAND = L"";
+std::wstring HOLD_MIDDLE_CLICK_COMMAND = L"download_paper_under_cursor";
 
 std::vector<MainWidget*> windows;
+
+std::vector<float> embedding_weights;
+std::vector<float> linear_weights;
 
 std::wstring strip_uri(std::wstring pdf_file_name) {
 
@@ -506,6 +512,8 @@ void configure_paths(){
 	auto_config_path = standard_data_path.slash(L"auto.config");
 	// user_config_paths.insert(user_config_paths.begin(), auto_config_path);
 #endif
+	downloaded_papers_path = standard_data_path.slash(L"downloads");
+
 }
 
 void verify_config_paths(){
@@ -808,6 +816,10 @@ int main(int argc, char* args[]) {
 		std::cout << "sioyek " << APPLICATION_VERSION << "\n";
 		return 0;
 	}
+	int nrows, ncols;
+
+    load_npy(":/data/embedding.npy", embedding_weights, &nrows, &ncols);
+    load_npy(":/data/linear.npy", linear_weights, &nrows, &ncols);
 
 	QSurfaceFormat format;
 #ifdef SIOYEK_ANDROID

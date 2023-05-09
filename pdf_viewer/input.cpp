@@ -1383,6 +1383,18 @@ class SmartJumpUnderCursorCommand : public Command {
 	}
 };
 
+class DownloadPaperUnderCursorCommand : public Command {
+
+	void perform(MainWidget* widget) {
+        widget->download_paper_under_cursor();
+	}
+
+	std::string get_name() {
+		return "download_paper_under_cursor";
+	}
+};
+
+
 class OverviewUnderCursorCommand : public Command {
 
 	void perform(MainWidget* widget) {
@@ -2534,6 +2546,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["keys_user_all"] = []() {return std::make_unique< KeysUserAllCommand>(); };
 	new_commands["fit_to_page_width_ratio"] = []() {return std::make_unique< FitToPageWidthRatioCommand>(); };
 	new_commands["smart_jump_under_cursor"] = []() {return std::make_unique< SmartJumpUnderCursorCommand>(); };
+	new_commands["download_paper_under_cursor"] = []() {return std::make_unique< DownloadPaperUnderCursorCommand>(); };
 	new_commands["overview_under_cursor"] = []() {return std::make_unique< OverviewUnderCursorCommand>(); };
 	new_commands["close_overview"] = []() {return std::make_unique< CloseOverviewCommand>(); };
 	new_commands["visual_mark_under_cursor"] = []() {return std::make_unique< VisualMarkUnderCursorCommand>(); };

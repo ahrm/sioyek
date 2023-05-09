@@ -185,9 +185,11 @@ public:
 	std::optional<IndexedData> find_reference_with_string(std::wstring reference_name);
 	std::optional<IndexedData> find_equation_with_string(std::wstring equation_name, int page_number);
 
+	std::wstring get_text_in_rect(int page, fz_rect doc_rect);
 	std::optional<std::wstring> get_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_reference_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_paper_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
+	fz_stext_block* get_text_block_at_positition(fz_stext_page* page, float offset_x, float offset_y);
 	std::optional<std::wstring> get_equation_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
 	std::optional<std::pair<std::wstring, std::wstring>> get_generic_link_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
 	std::optional<std::wstring> get_regex_match_at_position(const std::wregex& regex, const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
@@ -199,6 +201,9 @@ public:
 	std::optional<std::wstring> get_regex_match_at_position(const std::wregex& regex, int page, float offset_x, float offset_y);
 	std::vector<DocumentPos> find_generic_locations(const std::wstring& type, const std::wstring& name);
 	bool can_use_highlights();
+
+	std::vector<std::wstring> get_page_bib_candidates(int page_number, std::vector<fz_rect>* out_end_rects=nullptr);
+	std::optional<std::wstring> get_page_bib_with_reference(int page_number, std::wstring reference_text);
 
 	void get_text_selection(AbsoluteDocumentPos selection_begin,
 		AbsoluteDocumentPos selection_end,

@@ -67,5 +67,7 @@
         <file>icons/left.svg</file>
         <file>icons/right.svg</file>
         <file>end.png</file>
+        <file>data/embedding.npy</file>
+        <file>data/linear.npy</file>
     </qresource>
 </RCC>
