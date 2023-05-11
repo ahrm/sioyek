@@ -584,17 +584,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
-    if (DISPLAY_RESOLUTION_SCALE <= 0){
-#ifdef SIOYEK_QT6
-        pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QGuiApplication::primaryScreen()->devicePixelRatio());
-#else
-        pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, QApplication::desktop()->devicePixelRatioF());
-#endif
-    }
-    else {
-        pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context, DISPLAY_RESOLUTION_SCALE);
-
-    }
+	pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
     pdf_renderer->start_threads();
 
 
@@ -5546,19 +5536,6 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    int page = get_current_page_number();
-    std::vector<fz_rect> rects;
-    doc()->get_page_bib_candidates(page, &rects);
-    std::vector<MarkedDataRect> mdrs;
-    for (auto r : rects) {
-        MarkedDataRect mdr;
-        mdr.page = page;
-        mdr.rect = r;
-        mdr.type = 0;
-        mdrs.push_back(mdr);
-    }
-    opengl_widget->marked_data_rects = mdrs;
-    invalidate_render();
 }
 
 void MainWidget::download_paper_under_cursor() {

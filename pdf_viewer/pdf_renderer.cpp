@@ -12,12 +12,11 @@ extern bool TOUCH_MODE;
 
 
 
-PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone, float display_scale) : context_to_clone(context_to_clone),
+PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone) : context_to_clone(context_to_clone),
 pixmaps_to_drop(num_threads),
 pixmap_drop_mutex(num_threads),
 should_quit_pointer(should_quit_pointer),
-num_threads(num_threads),
-display_scale(display_scale)
+num_threads(num_threads)
 {
 
 	// this interval must be less than cache invalidation time
@@ -55,7 +54,7 @@ void PdfRenderer::join_threads()
 }
 
 
-void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_level, int index) {
+void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_level, float display_scale, int index) {
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
 		RenderRequest req;
@@ -63,6 +62,7 @@ void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_l
 		req.page = page;
 		req.zoom_level = zoom_level;
 		req.slice_index = index;
+		req.display_scale = display_scale;
 
 		pending_requests_mutex.lock();
 		// if the zoom level has changed, there is no point in previous requests with a different zoom level
@@ -122,7 +122,7 @@ void PdfRenderer::add_request(std::wstring document_path,
 
 //should only be called from the main thread
 
-GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, float zoom_level, int* page_width, int* page_height) {
+GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, float zoom_level, float display_scale, int* page_width, int* page_height) {
 	//fz_document* doc = get_document_with_path(path);
 	if (path.size() > 0) {
 		RenderRequest req;
@@ -130,6 +130,7 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, f
 		req.page = page;
 		req.zoom_level = zoom_level;
 		req.slice_index = index;
+		req.display_scale = display_scale;
 		cached_response_mutex.lock();
 		GLuint result = 0;
 		for (auto& cached_resp : cached_responses) {
@@ -188,20 +189,20 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, f
 		if (result == 0) {
             if (TOUCH_MODE){
                 if (!no_rerender){
-                    add_request(path, page, zoom_level, index);
+                    add_request(path, page, zoom_level, display_scale, index);
                 }
             }
             else{
-                add_request(path, page, zoom_level, index);
+                add_request(path, page, zoom_level, display_scale, index);
             }
-			return try_closest_rendered_page(path, page, index, zoom_level, page_width, page_height);
+			return try_closest_rendered_page(path, page, index, zoom_level, display_scale, page_width, page_height);
 		}
 		return result;
 	}
 	return 0;
 }
 
-GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, int index, float zoom_level, int* page_width, int* page_height) {
+GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, int index, float zoom_level, float display_scale, int* page_width, int* page_height) {
 	/*
 	If the requested page is not available, we try to find the rendered page with the closest
 	possible zoom level to our request and return that instead
@@ -212,7 +213,11 @@ GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, i
 	GLuint best_texture = 0;
 
 	for (const auto& cached_resp : cached_responses) {
-		if ((cached_resp.request.slice_index == index) && (cached_resp.request.path == doc_path) && (cached_resp.request.page == page) && (cached_resp.texture != 0)) {
+		if ((cached_resp.request.slice_index == index) &&
+			(cached_resp.request.path == doc_path) &&
+			(cached_resp.request.display_scale == display_scale) &&
+			(cached_resp.request.page == page) &&
+			(cached_resp.texture != 0)) {
 			float diff = cached_resp.request.zoom_level - zoom_level;
 			if (diff <= min_diff) {
 				min_diff = diff;
@@ -487,7 +492,7 @@ void PdfRenderer::run(int thread_index) {
 		if (!is_already_rendered) {
 
 			fz_try(mupdf_context) {
-				fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level * display_scale, req.zoom_level * display_scale);
+				fz_matrix transform_matrix = fz_pre_scale(fz_identity, req.zoom_level * req.display_scale, req.zoom_level * req.display_scale);
 				fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
 				fz_pixmap* rendered_pixmap = nullptr;
 
@@ -560,6 +565,9 @@ bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 		return false;
 	}
 	if (rhs.zoom_level != lhs.zoom_level) {
+		return false;
+	}
+	if (rhs.display_scale != lhs.display_scale) {
 		return false;
 	}
 	return true;

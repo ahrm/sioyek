@@ -576,6 +576,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 		docpos.page,
 		-1,
 		zoom_level,
+		devicePixelRatioF(),
 		nullptr,
 		nullptr);
 
@@ -738,6 +739,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 			page_number,
 			index,
 			document_view->get_zoom_level(),
+			devicePixelRatioF(),
 			&rendered_width,
 			&rendered_height);
 
@@ -806,7 +808,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 
 #ifdef SIOYEK_QT6
-		float device_pixel_ratio = static_cast<float>(QGuiApplication::primaryScreen()->devicePixelRatio());
+		float device_pixel_ratio = static_cast<float>(devicePixelRatio());
 #else
 		float device_pixel_ratio = QApplication::desktop()->devicePixelRatioF();
 #endif
@@ -929,6 +931,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 				visible_page_number.value() + 1,
 				-1,
 				document_view->get_zoom_level(),
+				devicePixelRatioF(),
 				nullptr,
 				nullptr);
 		}
@@ -961,6 +964,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 						max_page + i,
 						0,
 						document_view->get_zoom_level(),
+						devicePixelRatioF(),
 						nullptr,
 						nullptr);
 				}
