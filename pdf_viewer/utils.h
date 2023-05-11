@@ -31,7 +31,7 @@ struct ParsedUri {
 
 struct FreehandDrawingPoint {
 	AbsoluteDocumentPos pos;
-	float pressure;
+	float thickness;
 };
 
 struct FreehandDrawing {

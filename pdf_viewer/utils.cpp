@@ -2659,7 +2659,7 @@ bool load_npy(QString resource_name, std::vector<float>& output, int* out_rows, 
 		QByteArray version_data = input_file.read(2);
 		QByteArray header_len_bytes = input_file.read(2);
 
-		UINT16 header_length = *(UINT16*)header_len_bytes.data();
+        uint16_t header_length = *(uint16_t*)header_len_bytes.data();
 		QByteArray header_data = input_file.read(header_length);
 		std::string header_string = header_data.toStdString();
 

@@ -397,6 +397,7 @@ void configure_paths_android(){
     global_database_file_path = standard_data_path.slash(L"shared.db");
     android_config_path = standard_data_path.slash(L"saved.config");
     tutorial_path = Path(L":/tutorial.pdf");
+    downloaded_papers_path = standard_data_path.slash(L"downloads");
 }
 #endif
 
@@ -511,8 +512,8 @@ void configure_paths(){
 #endif
 	auto_config_path = standard_data_path.slash(L"auto.config");
 	// user_config_paths.insert(user_config_paths.begin(), auto_config_path);
+    downloaded_papers_path = standard_data_path.slash(L"downloads");
 #endif
-	downloaded_papers_path = standard_data_path.slash(L"downloads");
 
 }
 

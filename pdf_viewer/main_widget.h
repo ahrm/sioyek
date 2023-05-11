@@ -114,6 +114,7 @@ public:
 	bool is_select_highlight_mode = false;
 	char select_highlight_type = 'a';
 	char current_freehand_type = 'a';
+	float freehand_thickness = 1.0f;
 
 	bool smooth_scroll_mode = false;
 	float smooth_scroll_speed = 0.0f;
@@ -399,6 +400,7 @@ public:
 	void handle_goto_random_page();
 
 	void show_audio_buttons();
+	void set_freehand_thickness(float val);
 
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator *selection_end_indicator = nullptr;

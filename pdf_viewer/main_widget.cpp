@@ -369,7 +369,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(current_window_pos);
         FreehandDrawingPoint fdp;
         fdp.pos = mouse_abspos;
-        fdp.pressure = 1.0f;
+        fdp.thickness = freehand_thickness;
         opengl_widget->current_drawing.points.push_back(fdp);
         validate_render();
         return;
@@ -5888,3 +5888,6 @@ void MainWidget::handle_undo_drawing() {
     invalidate_render();
 }
 
+void MainWidget::set_freehand_thickness(float val) {
+    freehand_thickness = val;
+}

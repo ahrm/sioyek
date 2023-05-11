@@ -168,6 +168,27 @@ class SearchCommand : public TextCommand {
 	}
 };
 
+class SetFreehandThickness : public TextCommand {
+
+	void perform(MainWidget* widget) {
+		float thickness = QString::fromStdWString(this->text.value()).toFloat();
+		widget->set_freehand_thickness(thickness);
+		//widget->perform_search(this->text.value(), false);
+		//if (TOUCH_MODE) {
+		//	widget->show_search_buttons();
+		//}
+	}
+
+	std::string get_name() {
+		return "set_freehand_thickness";
+	}
+
+
+	std::string text_requirement_name() {
+		return "Thickness";
+	}
+};
+
 class GotoPageWithLabel : public TextCommand {
 
 	void perform(MainWidget* widget) {
@@ -2501,6 +2522,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["goto_mark"] = []() {return std::make_unique< GotoMark>(); };
 	new_commands["goto_page_with_page_number"] = []() {return std::make_unique< GotoPageWithPageNumberCommand>(); };
 	new_commands["search"] = []() {return std::make_unique< SearchCommand>(); };
+	new_commands["set_freehand_thickness"] = []() {return std::make_unique< SetFreehandThickness>(); };
 	new_commands["goto_page_with_label"] = []() {return std::make_unique< GotoPageWithLabel>(); };
 	new_commands["regex_search"] = []() {return std::make_unique< RegexSearchCommand>(); };
 	new_commands["chapter_search"] = []() {return std::make_unique< ChapterSearchCommand>(); };

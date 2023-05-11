@@ -2177,8 +2177,9 @@ void PdfViewOpenGLWidget::bind_default() {
 
 void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& drawings) {
 
-	float thickness_x = 0.001f * document_view->get_zoom_level();
-	float thickness_y = thickness_x * width() / height();
+	float thickness_x = document_view->get_zoom_level() / width();
+	float thickness_y = document_view->get_zoom_level() / height();
+	//float thickness_y = thickness_x * width() / height();
 
 	for (auto drawing : drawings) {
 		std::vector<NormalizedWindowPos> window_positions;
@@ -2201,8 +2202,8 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 		first_line_x = first_line_x / first_line_size;
 		first_line_y = first_line_y / first_line_size;
 
-		float first_ortho_x = -first_line_x * thickness_x;
-		float first_ortho_y = first_line_y * thickness_y;
+		float first_ortho_x = -first_line_x * thickness_x * drawing.points[0].thickness;
+		float first_ortho_y = first_line_y * thickness_y * drawing.points[0].thickness;
 
 		coordinates.push_back(window_positions[0].x - first_ortho_x);
 		coordinates.push_back(window_positions[0].y - first_ortho_y);
@@ -2216,8 +2217,8 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 			line_direction_x = line_direction_x / line_size;
 			line_direction_y = line_direction_y / line_size;
 
-			float ortho_x = -line_direction_y * thickness_x;
-			float ortho_y = line_direction_x * thickness_y;
+			float ortho_x = -line_direction_y * thickness_x * drawing.points[line_index + 1].thickness;
+			float ortho_y = line_direction_x * thickness_y * drawing.points[line_index + 1].thickness;
 			coordinates.push_back(window_positions[line_index + 1].x - ortho_x);
 			coordinates.push_back(window_positions[line_index + 1].y - ortho_y);
 			coordinates.push_back(window_positions[line_index + 1].x + ortho_x);
