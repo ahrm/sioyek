@@ -1492,6 +1492,10 @@ void MainWidget::next_state() {
 void MainWidget::prev_state() {
     //update_current_history_index();
     if (current_history_index >= 0) {
+        // Save the previous document's state
+        if (main_document_view) {
+            main_document_view->persist();
+        }
 
         /*
         Goto previous history
