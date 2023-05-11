@@ -77,6 +77,7 @@ extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float SMALL_PIXMAP_SCALE;
 extern std::wstring EXECUTE_COMMANDS[26];
+extern float HIGHLIGHT_COLORS[26 * 3];
 extern int STATUS_BAR_FONT_SIZE;
 extern Path default_config_path;
 extern Path default_keys_path;
@@ -362,6 +363,17 @@ void MainWidget::set_overview_link(PdfLink link) {
 }
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
+
+    if (is_drawing) {
+		WindowPos current_window_pos = { mouse_event->pos().x(), mouse_event->pos().y() };
+        AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(current_window_pos);
+        FreehandDrawingPoint fdp;
+        fdp.pos = mouse_abspos;
+        fdp.pressure = 1.0f;
+        opengl_widget->current_drawing.points.push_back(fdp);
+        validate_render();
+        return;
+    }
 
     if (TOUCH_MODE){
         if (selection_begin_indicator){
@@ -2121,6 +2133,26 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
+
+    if (is_drawing) {
+        is_drawing = false;
+        //int initial_size = freehand_drawing_points.size();
+        std::vector<FreehandDrawingPoint> pruned_points = prune_freehand_drawing_points(opengl_widget->current_drawing.points);
+        opengl_widget->current_drawing.points.clear();
+
+        FreehandDrawing pruned_drawing;
+        pruned_drawing.points = pruned_points;
+        pruned_drawing.color[0] = opengl_widget->current_drawing.color[0];
+        pruned_drawing.color[1] = opengl_widget->current_drawing.color[1];
+        pruned_drawing.color[2] = opengl_widget->current_drawing.color[2];
+        pruned_drawing.color[3] = opengl_widget->current_drawing.color[3];
+        pruned_drawing.creattion_time = QDateTime::currentDateTime();
+        doc()->add_freehand_drawing(pruned_drawing);
+        //int a = 2;
+        invalidate_render();
+        return;
+    }
+
     if (TOUCH_MODE){
 
         pdf_renderer->no_rerender = false;
@@ -2217,6 +2249,16 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
+
+    if (freehand_drawing_mode && (mevent->button() == Qt::MouseButton::LeftButton)) {
+        is_drawing = true;
+        opengl_widget->current_drawing.points.clear();
+        opengl_widget->current_drawing.color[0] = HIGHLIGHT_COLORS[(current_freehand_type - 'a') * 3];
+        opengl_widget->current_drawing.color[1] = HIGHLIGHT_COLORS[(current_freehand_type - 'a') * 3 + 1];
+        opengl_widget->current_drawing.color[2] = HIGHLIGHT_COLORS[(current_freehand_type - 'a') * 3 + 2];
+        opengl_widget->current_drawing.color[3] = 1.0f;
+        return;
+    }
 
     if (mevent->button() == Qt::MouseButton::LeftButton) {
         handle_left_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_alt_pressed);
@@ -5836,3 +5878,13 @@ bool MainWidget::is_network_manager_running(bool* is_downloading){
     }
     return false;
 }
+
+void MainWidget::toggle_freehand_drawing_mode() {
+    freehand_drawing_mode = !freehand_drawing_mode;
+}
+
+void MainWidget::handle_undo_drawing() {
+    doc()->undo_freehand_drawing();
+    invalidate_render();
+}
+

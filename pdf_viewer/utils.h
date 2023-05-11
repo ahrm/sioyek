@@ -29,6 +29,17 @@ struct ParsedUri {
 	float y;
 };
 
+struct FreehandDrawingPoint {
+	AbsoluteDocumentPos pos;
+	float pressure;
+};
+
+struct FreehandDrawing {
+	std::vector<FreehandDrawingPoint> points;
+	float color[4];
+	QDateTime creattion_time;
+};
+
 struct CharacterAddress {
 	int page;
 	fz_stext_block* block;
@@ -250,3 +261,4 @@ void get_rect_augument_data(fz_rect rect, float page_width, float page_height, s
 bool load_npy(QString resource_name, std::vector<float>& output, int* out_rows, int* out_cols);
 std::wstring clean_bib_item(std::wstring bib_item);
 std::wstring clean_link_source_text(std::wstring link_source_text);
+std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vector<FreehandDrawingPoint>& points);

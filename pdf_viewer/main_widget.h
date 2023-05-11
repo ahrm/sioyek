@@ -113,6 +113,7 @@ public:
 
 	bool is_select_highlight_mode = false;
 	char select_highlight_type = 'a';
+	char current_freehand_type = 'a';
 
 	bool smooth_scroll_mode = false;
 	float smooth_scroll_speed = 0.0f;
@@ -124,9 +125,11 @@ public:
 
 	std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_link;
 
+	bool freehand_drawing_mode = false;
 	bool mouse_drag_mode = false;
 	bool synctex_mode = false;
 	bool is_dragging = false;
+	bool is_drawing = false;
 
 	bool should_show_status_label_ = true;
 	bool should_show_status_label();
@@ -292,6 +295,8 @@ public:
 	fz_rect move_visual_mark(int offset);
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_mouse_drag_mode();
+	void toggle_freehand_drawing_mode();
+
 	void toggle_dark_mode();
 	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line, int column);
 	//void handle_args(const QStringList &arguments);
@@ -382,6 +387,7 @@ public:
 	void handle_start_reading();
 	void handle_stop_reading();
 	void handle_play();
+	void handle_undo_drawing();
 	void handle_pause();
 	void read_current_line();
 	void download_paper_under_cursor();

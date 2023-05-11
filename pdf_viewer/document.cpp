@@ -1594,6 +1594,27 @@ void Document::embed_annotations(std::wstring new_file_path) {
 		created_annotations.push_back(std::make_pair(pdf_page, bookmark_annot));
 	}
 
+	for (auto [page_number, drawings] : page_freehand_drawings) {
+		for (auto drawing : drawings) {
+			fz_page* page = load_cached_page(page_number);
+			pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
+			pdf_annot* drawing_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_INK);
+			//void pdf_set_annot_ink_list(fz_context *ctx, pdf_annot *annot, int n, const int *count, const fz_point *v);
+			int count[1] = { drawing.points.size() };
+			std::vector<fz_point> points;
+
+			for (auto point : drawing.points) {
+				DocumentPos docpos = absolute_to_page_pos(point.pos);
+				points.push_back(fz_point{docpos.x, docpos.y});
+			}
+
+			pdf_set_annot_border(context, drawing_annot, 10.0f);
+			pdf_set_annot_ink_list(context, drawing_annot, 1, count, &points[0]);
+			pdf_update_annot(context, drawing_annot);
+		}
+	}
+
+
 	pdf_write_options pwo {};
 	pdf_write_document(context, pdf_doc, output_file, &pwo);
 	fz_close_output(context, output_file);
@@ -2654,4 +2675,39 @@ std::wstring Document::get_text_in_rect(int page, fz_rect doc_rect) {
 
 	}
 	return res;
+}
+
+
+void Document::add_freehand_drawing(FreehandDrawing new_drawing) {
+	if (new_drawing.points.size() > 0) {
+		DocumentPos docpos = absolute_to_page_pos(new_drawing.points[0].pos);
+		page_freehand_drawings[docpos.page].push_back(new_drawing);
+	}
+}
+
+void Document::undo_freehand_drawing() {
+	int most_recent_page_index = -1;
+	QDateTime most_recent_page_time;
+
+	for (auto& [page, drawings] : page_freehand_drawings) {
+		if (drawings.size() > 0) {
+			if (most_recent_page_index == -1) {
+				most_recent_page_index = page;
+				most_recent_page_time = drawings[drawings.size() - 1].creattion_time;
+			}
+			else {
+				if (drawings[drawings.size() - 1].creattion_time.secsTo(most_recent_page_time) > 0) {
+					most_recent_page_index = page;
+					most_recent_page_time = drawings[drawings.size() - 1].creattion_time;
+				}
+			}
+		}
+	}
+	if (most_recent_page_index >= 0) {
+		page_freehand_drawings[most_recent_page_index].pop_back();
+	}
+}
+
+const std::vector<FreehandDrawing>& Document::get_page_drawings(int page) {
+	return page_freehand_drawings[page];
 }

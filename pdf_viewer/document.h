@@ -29,6 +29,8 @@ class Document {
 
 private:
 
+	//std::vector<FreehandDrawing> drawings;
+	std::map<int, std::vector<FreehandDrawing>> page_freehand_drawings;
 	std::vector<Mark> marks;
 	std::vector<BookMark> bookmarks;
 	std::vector<Highlight> highlights;
@@ -254,6 +256,9 @@ public:
 	std::vector<SearchResult> search_text(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page);
 	std::vector<SearchResult> search_regex(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page);
 	float max_y_offset();
+	void add_freehand_drawing(FreehandDrawing new_drawing);
+	void undo_freehand_drawing();
+	const std::vector<FreehandDrawing>& get_page_drawings(int page);
 
 	friend class DocumentManager;
 };

@@ -55,6 +55,7 @@ struct MarkedDataRect {
 struct OpenGLSharedResources {
 	GLuint vertex_buffer_object;
 	GLuint uv_buffer_object;
+	GLuint line_points_buffer_object;
 	GLuint rendered_program;
 	GLuint rendered_dark_program;
 	GLuint custom_color_program;
@@ -64,6 +65,7 @@ struct OpenGLSharedResources {
 	GLuint vertical_line_dark_program;
 	GLuint separator_program;
 	GLuint stencil_program;
+	GLuint line_program;
 
 	GLint dark_mode_contrast_uniform_location;
 	GLint highlight_color_uniform_location;
@@ -75,6 +77,7 @@ struct OpenGLSharedResources {
 	GLint custom_color_transform_uniform_location;
 
 	GLint separator_background_color_uniform_location;
+	GLint freehand_line_color_uniform_location;
 
 	bool is_initialized;
 };
@@ -150,6 +153,7 @@ private:
 	float last_mouse_down_document_offset_x = 0;
 	float last_mouse_down_document_offset_y = 0;
 
+
 	//float vertical_line_location;
 	bool should_draw_vertical_line = false;
 	QDateTime creation_time;
@@ -175,6 +179,7 @@ protected:
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
     void paintGL() override;
     void render(QPainter* painter);
+	void render_drawings(const std::vector<FreehandDrawing>& drawings);
 
 	void enable_stencil();
 	void write_to_stencil();
@@ -185,6 +190,7 @@ protected:
 	void render_transparent_background();
 
 public:
+	FreehandDrawing current_drawing;
 
 #ifndef NDEBUG
 	// properties for visualizing selected blocks, used only for debug
@@ -289,5 +295,7 @@ public:
 	void get_background_color(float out_background[3]);
 	void set_underline(AbsoluteDocumentPos abspos);
 	void clear_underline();
+	void bind_points(const std::vector<float>& points);
+	void bind_default();
 
 };

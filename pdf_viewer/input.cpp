@@ -1055,6 +1055,19 @@ class ToggleMouseDragMode : public Command {
 	bool requires_document() { return false; }
 };
 
+class ToggleFreehandDrawingMode : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->toggle_freehand_drawing_mode();
+	}
+
+	std::string get_name() {
+		return "toggle_freehand_drawing_mode";
+	}
+
+	bool requires_document() { return false; }
+};
+
 class CloseWindowCommand : public Command {
 
 	void perform(MainWidget* widget) {
@@ -1616,6 +1629,18 @@ class SetSelectHighlightTypeCommand : public SymbolCommand {
 	bool requires_document() { return false; }
 };
 
+class SetFreehandType : public SymbolCommand {
+	void perform(MainWidget* widget) {
+        widget->current_freehand_type = symbol;
+	}
+
+	std::string get_name() {
+		return "set_freehand_type";
+	}
+
+	bool requires_document() { return false; }
+};
+
 class AddHighlightWithCurrentTypeCommand : public Command {
 	void perform(MainWidget* widget) {
         if (widget->main_document_view->selected_character_rects.size() > 0) {
@@ -1628,6 +1653,18 @@ class AddHighlightWithCurrentTypeCommand : public Command {
 	std::string get_name() {
 		return "add_highlight_with_current_type";
 	}
+};
+
+class UndoDrawingCommand : public Command {
+	void perform(MainWidget* widget) {
+		widget->handle_undo_drawing();
+	}
+
+	std::string get_name() {
+		return "undo_drawing";
+	}
+
+	bool requires_document() { return true; }
 };
 
 
@@ -2520,6 +2557,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["toggle_presentation_mode"] = []() {return std::make_unique< TogglePresentationModeCommand>(); };
 	new_commands["turn_on_presentation_mode"] = []() {return std::make_unique< TurnOnPresentationModeCommand>(); };
 	new_commands["toggle_mouse_drag_mode"] = []() {return std::make_unique< ToggleMouseDragMode>(); };
+	new_commands["toggle_freehand_drawing_mode"] = []() {return std::make_unique< ToggleFreehandDrawingMode>(); };
 	new_commands["close_window"] = []() {return std::make_unique< CloseWindowCommand>(); };
 	new_commands["quit"] = []() {return std::make_unique< QuitCommand>(); };
 	new_commands["escape"] = []() {return std::make_unique< EscapeCommand>(); };
@@ -2541,6 +2579,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["move_visual_mark_prev"] = []() {return std::make_unique< MoveVisualMarkPrevCommand>(); };
 	new_commands["toggle_custom_color"] = []() {return std::make_unique< ToggleCustomColorMode>(); };
 	new_commands["set_select_highlight_type"] = []() {return std::make_unique< SetSelectHighlightTypeCommand>(); };
+	new_commands["set_freehand_type"] = []() {return std::make_unique< SetFreehandType>(); };
 	new_commands["toggle_window_configuration"] = []() {return std::make_unique< ToggleWindowConfigurationCommand>(); };
 	new_commands["prefs_user_all"] = []() {return std::make_unique< PrefsUserAllCommand>(); };
 	new_commands["keys_user_all"] = []() {return std::make_unique< KeysUserAllCommand>(); };
@@ -2564,6 +2603,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["goto_next_highlight_of_type"] = []() {return std::make_unique< GotoNextHighlightOfTypeCommand>(); };
 	new_commands["goto_prev_highlight_of_type"] = []() {return std::make_unique< GotoPrevHighlightOfTypeCommand>(); };
 	new_commands["add_highlight_with_current_type"] = []() {return std::make_unique< AddHighlightWithCurrentTypeCommand>(); };
+	new_commands["undo_drawing"] = []() {return std::make_unique< UndoDrawingCommand>(); };
 	new_commands["enter_password"] = []() {return std::make_unique< EnterPasswordCommand>(); };
 	new_commands["toggle_fastread"] = []() {return std::make_unique< ToggleFastreadCommand>(); };
 	new_commands["goto_top_of_page"] = []() {return std::make_unique< GotoTopOfPageCommand>(); };

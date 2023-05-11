@@ -2728,3 +2728,7 @@ std::wstring clean_bib_item(std::wstring bib_item) {
 	}
 	return candid;
 }
+
+std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vector<FreehandDrawingPoint>& points) {
+	return points;
+}
