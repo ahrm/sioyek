@@ -364,13 +364,8 @@ void MainWidget::set_overview_link(PdfLink link) {
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
-    if (is_drawing) {
-		WindowPos current_window_pos = { mouse_event->pos().x(), mouse_event->pos().y() };
-        AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(current_window_pos);
-        FreehandDrawingPoint fdp;
-        fdp.pos = mouse_abspos;
-        fdp.thickness = freehand_thickness;
-        opengl_widget->current_drawing.points.push_back(fdp);
+    if ((freehand_drawing_mode == DrawingMode::Drawing) && is_drawing) {
+        handle_drawing_move(mouse_event->pos(), 1.0f);
         validate_render();
         return;
     }
@@ -2125,26 +2120,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
 
     if (is_drawing) {
-        is_drawing = false;
-
-        if (opengl_widget->current_drawing.points.size() == 0) {
-			WindowPos current_window_pos = { mevent->pos().x(), mevent->pos().y() };
-			AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(current_window_pos);
-			FreehandDrawingPoint fdp;
-			fdp.pos = mouse_abspos;
-			fdp.thickness = freehand_thickness;
-			opengl_widget->current_drawing.points.push_back(fdp);
-        }
-
-        std::vector<FreehandDrawingPoint> pruned_points = prune_freehand_drawing_points(opengl_widget->current_drawing.points);
-        opengl_widget->current_drawing.points.clear();
-
-        FreehandDrawing pruned_drawing;
-        pruned_drawing.points = pruned_points;
-        pruned_drawing.type = opengl_widget->current_drawing.type;
-        pruned_drawing.creattion_time = QDateTime::currentDateTime();
-        doc()->add_freehand_drawing(pruned_drawing);
-        //int a = 2;
+        finish_drawing(mevent->pos());
         invalidate_render();
         return;
     }
@@ -2246,10 +2222,8 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
 
-    if (freehand_drawing_mode && (mevent->button() == Qt::MouseButton::LeftButton)) {
-        is_drawing = true;
-        opengl_widget->current_drawing.points.clear();
-        opengl_widget->current_drawing.type = current_freehand_type;
+    if ((freehand_drawing_mode == DrawingMode::Drawing) && (mevent->button() == Qt::MouseButton::LeftButton)) {
+        start_drawing();
         return;
     }
 
@@ -5110,9 +5084,19 @@ int MainWidget::num_visible_links() {
     main_document_view->get_visible_links(visible_page_links);
     return visible_page_links.size();
 }
+
 bool MainWidget::event(QEvent *event){
 
 
+    QTabletEvent* te = dynamic_cast<QTabletEvent*>(event);
+
+    if ((freehand_drawing_mode == DrawingMode::PenDrawing) && te) {
+        handle_pen_drawing_event(te);
+        event->accept();
+        return true;
+    }
+
+    //if (event->type() == QEvent::TabletEVe)
     if (TOUCH_MODE){
         if (event->type() == QEvent::Gesture){
             auto gesture = (static_cast<QGestureEvent*>(event));
@@ -5860,7 +5844,21 @@ bool MainWidget::is_network_manager_running(bool* is_downloading){
 }
 
 void MainWidget::toggle_freehand_drawing_mode() {
-    freehand_drawing_mode = !freehand_drawing_mode;
+    if (freehand_drawing_mode == DrawingMode::Drawing) {
+        freehand_drawing_mode = DrawingMode::None;
+    }
+    else {
+        freehand_drawing_mode = DrawingMode::Drawing;
+    }
+}
+
+void MainWidget::toggle_pen_drawing_mode() {
+    if (freehand_drawing_mode == DrawingMode::PenDrawing) {
+        freehand_drawing_mode = DrawingMode::None;
+    }
+    else {
+        freehand_drawing_mode = DrawingMode::PenDrawing;
+    }
 }
 
 void MainWidget::handle_undo_drawing() {
@@ -5870,4 +5868,57 @@ void MainWidget::handle_undo_drawing() {
 
 void MainWidget::set_freehand_thickness(float val) {
     freehand_thickness = val;
+}
+
+void MainWidget::handle_pen_drawing_event(QTabletEvent* te) {
+
+    if (te->type() == QEvent::TabletPress){
+        start_drawing();
+    }
+
+    if (te->type() == QEvent::TabletRelease){
+        finish_drawing(te->pos());
+        invalidate_render();
+    }
+
+    if (te->type() == QEvent::TabletMove){
+        if (is_drawing){
+            handle_drawing_move(te->pos(), te->pressure());
+            validate_render();
+        }
+
+    }
+}
+
+void MainWidget::handle_drawing_move(QPoint pos, float pressure){
+    WindowPos current_window_pos = { pos.x(), pos.y() };
+    AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(current_window_pos);
+    FreehandDrawingPoint fdp;
+    fdp.pos = mouse_abspos;
+
+    fdp.thickness = freehand_thickness * (0.5f + pressure * 3);
+    opengl_widget->current_drawing.points.push_back(fdp);
+}
+
+void MainWidget::start_drawing(){
+    is_drawing = true;
+    opengl_widget->current_drawing.points.clear();
+    opengl_widget->current_drawing.type = current_freehand_type;
+}
+
+void MainWidget::finish_drawing(QPoint pos){
+    is_drawing = false;
+
+    if (opengl_widget->current_drawing.points.size() == 0) {
+         handle_drawing_move(pos, 1.0f);
+    }
+
+    std::vector<FreehandDrawingPoint> pruned_points = prune_freehand_drawing_points(opengl_widget->current_drawing.points);
+    opengl_widget->current_drawing.points.clear();
+
+    FreehandDrawing pruned_drawing;
+    pruned_drawing.points = pruned_points;
+    pruned_drawing.type = opengl_widget->current_drawing.type;
+    pruned_drawing.creattion_time = QDateTime::currentDateTime();
+    doc()->add_freehand_drawing(pruned_drawing);
 }

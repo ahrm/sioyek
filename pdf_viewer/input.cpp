@@ -1089,6 +1089,19 @@ class ToggleFreehandDrawingMode : public Command {
 	bool requires_document() { return false; }
 };
 
+class TogglePenDrawingMode : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->toggle_pen_drawing_mode();
+	}
+
+	std::string get_name() {
+		return "toggle_pen_drawing_mode";
+	}
+
+	bool requires_document() { return false; }
+};
+
 class CloseWindowCommand : public Command {
 
 	void perform(MainWidget* widget) {
@@ -2580,6 +2593,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["turn_on_presentation_mode"] = []() {return std::make_unique< TurnOnPresentationModeCommand>(); };
 	new_commands["toggle_mouse_drag_mode"] = []() {return std::make_unique< ToggleMouseDragMode>(); };
 	new_commands["toggle_freehand_drawing_mode"] = []() {return std::make_unique< ToggleFreehandDrawingMode>(); };
+	new_commands["toggle_pen_drawing_mode"] = []() {return std::make_unique< TogglePenDrawingMode>(); };
 	new_commands["close_window"] = []() {return std::make_unique< CloseWindowCommand>(); };
 	new_commands["quit"] = []() {return std::make_unique< QuitCommand>(); };
 	new_commands["escape"] = []() {return std::make_unique< EscapeCommand>(); };

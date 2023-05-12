@@ -38,7 +38,13 @@ extern float HORIZONTAL_MOVE_AMOUNT;
 class SelectionIndicator;
 
 
-enum ReferenceType {
+enum class DrawingMode {
+	Drawing,
+	PenDrawing,
+	None
+};
+
+enum class ReferenceType {
 	Generic,
 	Equation,
 	Reference,
@@ -126,7 +132,7 @@ public:
 
 	std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_link;
 
-	bool freehand_drawing_mode = false;
+	DrawingMode freehand_drawing_mode = DrawingMode::None;
 	bool mouse_drag_mode = false;
 	bool synctex_mode = false;
 	bool is_dragging = false;
@@ -297,6 +303,7 @@ public:
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_mouse_drag_mode();
 	void toggle_freehand_drawing_mode();
+	void toggle_pen_drawing_mode();
 
 	void toggle_dark_mode();
 	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line, int column);
@@ -440,6 +447,10 @@ public:
 	bool is_in_back_rect(WindowPos pos);
 	bool is_in_forward_rect(WindowPos pos);
 	bool is_in_edit_portal_rect(WindowPos pos);
+    void handle_drawing_move(QPoint pos, float pressure);
+    void start_drawing();
+    void finish_drawing(QPoint pos);
+	void handle_pen_drawing_event(QTabletEvent* te);
 
     void persist_config();
 

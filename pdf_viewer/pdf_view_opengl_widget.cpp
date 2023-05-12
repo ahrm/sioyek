@@ -3,6 +3,10 @@
 #include <qcolor.h>
 #include <cmath>
 
+#ifndef GL_MULTISAMPLE
+#define GL_MULTISAMPLE  0x809D
+#endif
+
 extern Path shader_path;
 extern float GAMMA;
 extern float BACKGROUND_COLOR[3];
@@ -2240,20 +2244,23 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 			line_direction_x = line_direction_x / line_size;
 			line_direction_y = line_direction_y / line_size;
 
-			float ortho_x = -line_direction_y * thickness_x * drawing.points[line_index + 1].thickness;
-			float ortho_y = line_direction_x * thickness_y * drawing.points[line_index + 1].thickness;
+			float ortho_x1 = -line_direction_y * thickness_x * drawing.points[line_index].thickness;
+			float ortho_y1 = line_direction_x * thickness_y * drawing.points[line_index].thickness;
+
+			float ortho_x2 = -line_direction_y * thickness_x * drawing.points[line_index + 1].thickness;
+			float ortho_y2 = line_direction_x * thickness_y * drawing.points[line_index + 1].thickness;
 
 			float dot_prod_with_prev_direction = (prev_line_x * line_direction_x + prev_line_y * line_direction_y);
 
-			coordinates.push_back(window_positions[line_index].x - ortho_x);
-			coordinates.push_back(window_positions[line_index].y - ortho_y);
-			coordinates.push_back(window_positions[line_index].x + ortho_x);
-			coordinates.push_back(window_positions[line_index].y + ortho_y);
+			coordinates.push_back(window_positions[line_index].x - ortho_x1);
+			coordinates.push_back(window_positions[line_index].y - ortho_y1);
+			coordinates.push_back(window_positions[line_index].x + ortho_x1);
+			coordinates.push_back(window_positions[line_index].y + ortho_y1);
 
-			coordinates.push_back(window_positions[line_index + 1].x - ortho_x);
-			coordinates.push_back(window_positions[line_index + 1].y - ortho_y);
-			coordinates.push_back(window_positions[line_index + 1].x + ortho_x);
-			coordinates.push_back(window_positions[line_index + 1].y + ortho_y);
+			coordinates.push_back(window_positions[line_index + 1].x - ortho_x1);
+			coordinates.push_back(window_positions[line_index + 1].y - ortho_y1);
+			coordinates.push_back(window_positions[line_index + 1].x + ortho_x2);
+			coordinates.push_back(window_positions[line_index + 1].y + ortho_y2);
 
 		}
 
