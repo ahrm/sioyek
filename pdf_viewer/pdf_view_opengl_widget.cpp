@@ -1106,6 +1106,31 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		}
 	}
 
+	if (character_highlight_rect) {
+		float rectangle_color[] = {0.0f, 1.0f, 1.0f};
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
+		render_highlight_absolute(shared_gl_objects.highlight_program, character_highlight_rect.value());
+
+		if (wrong_character_rect) {
+			float wrong_color[] = {1.0f, 0.0f, 0.0f};
+			glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, wrong_color);
+			render_highlight_absolute(shared_gl_objects.highlight_program, wrong_character_rect.value());
+		}
+	}
+	if (selected_rectangle) {
+		enable_stencil();
+		write_to_stencil();
+		float rectangle_color[] = {0.0f, 0.0f, 0.0f};
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
+		render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value());
+
+		use_stencil_to_write(false);
+		fz_rect window_rect = {-1, -1, 1, 1};
+		render_highlight_window(shared_gl_objects.highlight_program, window_rect, true);
+
+		disable_stencil();
+	}
+
 	if (should_draw_vertical_line) {
 		//render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
@@ -1119,6 +1144,24 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			render_line_window(shared_gl_objects.vertical_line_program , vertical_line_end, ruler_rect);
 		}
 	}
+
+	{
+		glUseProgram(shared_gl_objects.line_program);
+		glEnableVertexAttribArray(0);
+		std::vector<FreehandDrawing> pending_drawing;
+		if (current_drawing.points.size() > 1) {
+			pending_drawing.push_back(current_drawing);
+		}
+		glEnable(GL_MULTISAMPLE);
+		for (auto page : visible_pages) {
+
+			render_drawings(document_view->get_document()->get_page_drawings(page));
+		}
+		render_drawings(pending_drawing);
+		glDisable(GL_MULTISAMPLE);
+		bind_default();
+	}
+
 	if (overview_page) {
 		render_overview(overview_page.value());
 	}
@@ -1133,23 +1176,11 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		}
 	}
 
-	std::vector<FreehandDrawing> pending_drawing;
-	if (current_drawing.points.size() > 1) {
-		pending_drawing.push_back(current_drawing);
-	}
 
 
-	glUseProgram(shared_gl_objects.line_program);
 
-	glEnable(GL_MULTISAMPLE);
-	for (auto page : visible_pages) {
 
-		render_drawings(document_view->get_document()->get_page_drawings(page));
-	}
-	render_drawings(pending_drawing);
-	glDisable(GL_MULTISAMPLE);
 
-	bind_default();
 	painter->endNativePainting();
 
 	if (should_highlight_words && (!overview_page)) {
@@ -1223,30 +1254,6 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 				painter->drawText(window_x, window_y, index_string.c_str());
 			}
 		}
-	}
-	if (character_highlight_rect) {
-		float rectangle_color[] = {0.0f, 1.0f, 1.0f};
-		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
-		render_highlight_absolute(shared_gl_objects.highlight_program, character_highlight_rect.value());
-
-		if (wrong_character_rect) {
-			float wrong_color[] = {1.0f, 0.0f, 0.0f};
-			glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, wrong_color);
-			render_highlight_absolute(shared_gl_objects.highlight_program, wrong_character_rect.value());
-		}
-	}
-	if (selected_rectangle) {
-		enable_stencil();
-		write_to_stencil();
-		float rectangle_color[] = {0.0f, 0.0f, 0.0f};
-		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
-		render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value());
-
-		use_stencil_to_write(false);
-		fz_rect window_rect = {-1, -1, 1, 1};
-		render_highlight_window(shared_gl_objects.highlight_program, window_rect, true);
-
-		disable_stencil();
 	}
 
 }
@@ -2190,6 +2197,12 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 			continue;
 		}
 
+		float current_drawing_color[4] = { HIGHLIGHT_COLORS[(drawing.type - 'a') * 3],
+			HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 1],
+			 HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 2],
+			1.0f
+		};
+
 		if (drawing.points.size() == 1) {
 			std::vector<float> coordinates;
 			float window_x, window_y;
@@ -2202,16 +2215,16 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 			const int N = 10;
 
 			for (int i = 0; i <= N; i++) {
-				coordinates.push_back(window_x + thickness * thickness_x * std::cosf(2 * M_PI * i / N));
-				coordinates.push_back(window_y + thickness * thickness_y * std::sinf(2 * M_PI * i / N));
+				coordinates.push_back(window_x + thickness * thickness_x * std::cosf(2 * M_PI * i / N) / 2);
+				coordinates.push_back(window_y + thickness * thickness_y * std::sinf(2 * M_PI * i / N) / 2);
 			}
 			bind_points(coordinates);
-			glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, &HIGHLIGHT_COLORS[(drawing.type - 'a') * 3]);
+			glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
 			glDrawArrays(GL_TRIANGLE_FAN, 0, coordinates.size() / 2);
 			continue;
 		}
 
-		glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, &HIGHLIGHT_COLORS[(drawing.type - 'a') * 3]);
+		glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
 
 		for (auto p : drawing.points) {
 			float window_x, window_y;

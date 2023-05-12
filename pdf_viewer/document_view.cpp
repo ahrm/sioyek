@@ -847,6 +847,7 @@ void DocumentView::fit_to_page_height_width_minimum() {
 void DocumentView::persist() {
 	if (!current_document) return;
     db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y);
+	current_document->persist_drawings_async();
 }
 
 int DocumentView::get_current_chapter_index() {

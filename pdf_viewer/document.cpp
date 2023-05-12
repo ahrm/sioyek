@@ -9,6 +9,10 @@
 #include <regex>
 #include <qcryptographichash.h>
 #include <qjsondocument.h>
+#include "path.h"
+#include <qjsonarray.h>
+#include <qjsonobject.h>
+#include <qjsondocument.h>
 
 #include <mupdf/pdf.h>
 
@@ -740,6 +744,7 @@ void Document::load_page_dimensions(bool force_load_now) {
 		auto background_page_dimensions_loading_thread = std::thread(load_page_dimensions_function);
 		background_page_dimensions_loading_thread.detach();
 	}
+	load_drawings_async();
 }
 
 
@@ -2683,7 +2688,10 @@ std::wstring Document::get_text_in_rect(int page, fz_rect doc_rect) {
 void Document::add_freehand_drawing(FreehandDrawing new_drawing) {
 	if (new_drawing.points.size() > 0) {
 		DocumentPos docpos = absolute_to_page_pos(new_drawing.points[0].pos);
+		drawings_mutex.lock();
 		page_freehand_drawings[docpos.page].push_back(new_drawing);
+		drawings_mutex.unlock();
+		is_drawings_dirty = true;
 	}
 }
 
@@ -2691,6 +2699,7 @@ void Document::undo_freehand_drawing() {
 	int most_recent_page_index = -1;
 	QDateTime most_recent_page_time;
 
+	drawings_mutex.lock();
 	for (auto& [page, drawings] : page_freehand_drawings) {
 		if (drawings.size() > 0) {
 			if (most_recent_page_index == -1) {
@@ -2706,10 +2715,151 @@ void Document::undo_freehand_drawing() {
 		}
 	}
 	if (most_recent_page_index >= 0) {
+		is_drawings_dirty = true;
 		page_freehand_drawings[most_recent_page_index].pop_back();
 	}
+	drawings_mutex.unlock();
 }
 
 const std::vector<FreehandDrawing>& Document::get_page_drawings(int page) {
 	return page_freehand_drawings[page];
+}
+
+void Document::delete_page_intersecting_drawings(int page, fz_rect absolute_rect) {
+	std::vector<int> indices_to_delete;
+	std::vector<FreehandDrawing>& page_drawings = page_freehand_drawings[page];
+
+	for (int i = 0; i < page_drawings.size(); i++) {
+		for (auto point : page_drawings[i].points) {
+			fz_point absolute_point = fz_point{ point.pos.x, point.pos.y };
+			if (fz_is_point_inside_rect(absolute_point, absolute_rect)) {
+				indices_to_delete.push_back(i);
+				break;
+			}
+		}
+	}
+
+	for (int j = indices_to_delete.size() - 1; j >= 0; j--) {
+		//page_freehand_drawings.erase(page_freehand_drawings.begin() + indices_to_delete[j]);
+		page_freehand_drawings[page].erase(page_freehand_drawings[page].begin() + indices_to_delete[j]);
+	}
+	is_drawings_dirty = true;
+}
+
+std::wstring Document::get_drawings_file_path() {
+	Path path = Path(file_name);
+	std::wstring filename = path.filename().value();
+	QString drawing_file_name = QString::fromStdWString(filename).replace(".pdf", ".sioyek");
+	return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+}
+
+void Document::load_drawings_async() {
+	drawings_mutex.lock();
+	auto drawing_load_thread = std::thread([&]() {
+		load_drawings();
+		});
+	drawing_load_thread.detach();
+	drawings_mutex.unlock();
+}
+
+void Document::persist_drawings_async() {
+	if (!is_drawings_dirty) {
+		return;
+	}
+
+	drawings_mutex.lock();
+	auto drawing_persist_thread = std::thread([&]() {
+		persist_drawings();
+		});
+	drawing_persist_thread.detach();
+	drawings_mutex.unlock();
+}
+
+void Document::load_drawings() {
+
+	std::wstring drawing_file_path = get_drawings_file_path();
+	QFile json_file(QString::fromStdWString(drawing_file_path));
+	if (json_file.open(QFile::ReadOnly)) {
+		QJsonDocument json_document = QJsonDocument().fromJson(json_file.readAll());
+		json_file.close();
+
+		QJsonObject root = json_document.object();
+		QJsonObject drawings_object = root["drawings"].toObject();
+		page_freehand_drawings.clear();
+		is_drawings_dirty = false;
+
+		for (auto& page_str : drawings_object.keys()) {
+			int page_number = page_str.toInt();
+			QJsonArray page_drawings_array = drawings_object[page_str].toArray();
+			for (auto val : page_drawings_array) {
+				QJsonObject drawing_object = val.toObject();
+				FreehandDrawing drawing;
+
+				drawing.creattion_time = QDateTime::fromString(drawing_object["creation_time"].toString(), Qt::ISODate);
+				drawing.type = drawing_object["type"].toInt();
+				QJsonArray x_array = drawing_object["point_xs"].toArray();
+				QJsonArray y_array = drawing_object["point_ys"].toArray();
+				QJsonArray t_array = drawing_object["point_thicknesses"].toArray();
+
+				for (int i = 0; i < x_array.size(); i++) {
+					FreehandDrawingPoint point;
+					point.pos.x = x_array.at(i).toDouble();
+					point.pos.y = y_array.at(i).toDouble();
+					point.thickness = t_array.at(i).toDouble();
+					drawing.points.push_back(point);
+				}
+				page_freehand_drawings[page_number].push_back(drawing);
+			}
+		}
+
+	}
+
+}
+
+void Document::persist_drawings(bool force) {
+	if ((!force) && (!is_drawings_dirty)) {
+		return;
+	}
+
+	std::wstring drawing_file_path = get_drawings_file_path();
+	QJsonObject root_object;
+	QJsonObject drawings_object;
+
+	for (auto& [page, drawings] : page_freehand_drawings) {
+		QJsonArray page_drawings_array;
+
+		for (auto& drawing : drawings) {
+			QJsonObject drawing_object;
+			drawing_object["creation_time"] = drawing.creattion_time.toString(Qt::ISODate);
+			drawing_object["type"] = drawing.type;
+			//QJsonArray points;
+			QJsonArray points_xs;
+			QJsonArray points_ys;
+			QJsonArray points_thicknesses;
+
+			for (auto& p : drawing.points) {
+				points_xs.append(p.pos.x);
+				points_ys.append(p.pos.y);
+				points_thicknesses.append(p.thickness);
+			}
+			drawing_object["point_xs"] = points_xs;
+			drawing_object["point_ys"] = points_ys;
+			drawing_object["point_thicknesses"] = points_thicknesses;
+
+			page_drawings_array.append(drawing_object);
+		}
+		drawings_object[QString::number(page)] = page_drawings_array;
+	}
+	root_object["drawings"] = drawings_object;
+
+
+    QJsonDocument json_doc;
+    json_doc.setObject(root_object);
+
+    QFile json_file(QString::fromStdWString(drawing_file_path));
+    json_file.open(QFile::WriteOnly);
+    json_file.write(json_doc.toJson());
+    json_file.close();
+
+	is_drawings_dirty = false;
 }

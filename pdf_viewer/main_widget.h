@@ -451,6 +451,7 @@ public:
     void start_drawing();
     void finish_drawing(QPoint pos);
 	void handle_pen_drawing_event(QTabletEvent* te);
+	void delete_freehand_drawings(fz_rect rect);
 
     void persist_config();
 

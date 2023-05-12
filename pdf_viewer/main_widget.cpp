@@ -1,7 +1,7 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
+// can not get save freehand drawings for tutorial document on android because the pdf file doesn't have a path
 // add more epub-related configs
-// fix the special case handling for download message in get_status_string
 
 #include <iostream>
 #include <vector>
@@ -365,7 +365,7 @@ void MainWidget::set_overview_link(PdfLink link) {
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     if ((freehand_drawing_mode == DrawingMode::Drawing) && is_drawing) {
-        handle_drawing_move(mouse_event->pos(), 1.0f);
+        handle_drawing_move(mouse_event->pos(), -1.0f);
         validate_render();
         return;
     }
@@ -5523,6 +5523,9 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
+    //doc()->persist_drawings();
+    doc()->load_drawings();
+    invalidate_render();
 }
 
 void MainWidget::download_paper_under_cursor() {
@@ -5896,7 +5899,12 @@ void MainWidget::handle_drawing_move(QPoint pos, float pressure){
     FreehandDrawingPoint fdp;
     fdp.pos = mouse_abspos;
 
-    fdp.thickness = freehand_thickness * (0.5f + pressure * 3);
+    if (pressure > 0) {
+		fdp.thickness = freehand_thickness * (0.5f + pressure * 3);
+    }
+    else {
+        fdp.thickness = freehand_thickness;
+    }
     opengl_widget->current_drawing.points.push_back(fdp);
 }
 
@@ -5921,4 +5929,14 @@ void MainWidget::finish_drawing(QPoint pos){
     pruned_drawing.type = opengl_widget->current_drawing.type;
     pruned_drawing.creattion_time = QDateTime::currentDateTime();
     doc()->add_freehand_drawing(pruned_drawing);
+}
+
+
+void MainWidget::delete_freehand_drawings(fz_rect rect) {
+    int page = -1;
+    fz_rect page_rect = doc()->absolute_to_page_rect(rect, &page);
+    doc()->delete_page_intersecting_drawings(page, rect);
+    set_rect_select_mode(false);
+    clear_selected_rect();
+    invalidate_render();
 }

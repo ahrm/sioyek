@@ -30,7 +30,9 @@ class Document {
 private:
 
 	//std::vector<FreehandDrawing> drawings;
+	std::mutex drawings_mutex;
 	std::map<int, std::vector<FreehandDrawing>> page_freehand_drawings;
+	bool is_drawings_dirty = false;
 	std::vector<Mark> marks;
 	std::vector<BookMark> bookmarks;
 	std::vector<Highlight> highlights;
@@ -184,6 +186,7 @@ public:
 	int get_offset_page_number(float y_offset);
 	void index_document(bool* invalid_flag);
 	void stop_indexing();
+	void delete_page_intersecting_drawings(int page, fz_rect absolute_rect);
 	std::optional<IndexedData> find_reference_with_string(std::wstring reference_name);
 	std::optional<IndexedData> find_equation_with_string(std::wstring equation_name, int page_number);
 
@@ -251,6 +254,11 @@ public:
 	//void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
 	fz_rect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);
 	const std::vector<fz_rect>& get_page_lines(int page, std::vector<std::wstring>* line_texts=nullptr);
+	std::wstring get_drawings_file_path();
+	void persist_drawings(bool force=false);
+	void load_drawings();
+	void load_drawings_async();
+	void persist_drawings_async();
 
 	bool is_super_fast_index_ready();
 	std::vector<SearchResult> search_text(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page);

@@ -2320,6 +2320,32 @@ public:
 };
 
 
+class DeleteFreehandDrawingsCommand: public Command {
+
+	std::optional<fz_rect> rect_;
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+		if (!rect_.has_value()) {
+			Requirement req = { RequirementType::Rect, "Command Rect"};
+			return req;
+		}
+		return {};
+	}
+
+	void set_rect_requirement(fz_rect rect) {
+		rect_ = rect;
+	}
+
+	void perform(MainWidget* widget) {
+		widget->delete_freehand_drawings(rect_.value());
+	}
+
+	std::string get_name() {
+		return "delete_freehand_drawings";
+	}
+};
+
 class CustomCommand : public Command {
 
 	std::wstring raw_command;
@@ -2689,6 +2715,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["export_marked_data"] = []() {return std::make_unique< ExportMarkedDataCommand>(); };
 	new_commands["undo_marked_data"] = []() {return std::make_unique< UndoMarkedDataCommand>(); };
 	new_commands["goto_random_page"] = []() {return std::make_unique< GotoRandomPageCommand>(); };
+	new_commands["delete_freehand_drawings"] = []() {return std::make_unique< DeleteFreehandDrawingsCommand>(); };
 
 
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
