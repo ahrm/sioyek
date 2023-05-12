@@ -833,6 +833,7 @@ int main(int argc, char* args[]) {
 //    format.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
 //    format.setSwapInterval(0);
 	format.setProfile(QSurfaceFormat::CoreProfile);
+	format.setSamples(4);
 	QSurfaceFormat::setDefaultFormat(format);
 
 	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);

@@ -2126,7 +2126,16 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
     if (is_drawing) {
         is_drawing = false;
-        //int initial_size = freehand_drawing_points.size();
+
+        if (opengl_widget->current_drawing.points.size() == 0) {
+			WindowPos current_window_pos = { mevent->pos().x(), mevent->pos().y() };
+			AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(current_window_pos);
+			FreehandDrawingPoint fdp;
+			fdp.pos = mouse_abspos;
+			fdp.thickness = freehand_thickness;
+			opengl_widget->current_drawing.points.push_back(fdp);
+        }
+
         std::vector<FreehandDrawingPoint> pruned_points = prune_freehand_drawing_points(opengl_widget->current_drawing.points);
         opengl_widget->current_drawing.points.clear();
 

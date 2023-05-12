@@ -2718,6 +2718,60 @@ std::wstring clean_bib_item(std::wstring bib_item) {
 	return candid;
 }
 
+struct Line2D {
+	float nx;
+	float ny;
+	float c;
+};
+
+float point_distance_from_line(AbsoluteDocumentPos point, Line2D line) {
+	return std::abs(line.nx * point.x + line.ny * point.y - line.c);
+}
+
+Line2D line_from_points(AbsoluteDocumentPos p1, AbsoluteDocumentPos p2) {
+	float dx = p2.x - p1.x;
+	float dy = p2.y - p1.y;
+	float nx = -dy;
+	float ny = dx;
+	float size = std::sqrt(nx * nx + ny * ny);
+
+	nx = nx / size;
+	ny = ny / size;
+
+	Line2D res;
+	res.nx = nx;
+	res.ny = ny;
+	res.c = nx * p1.x + ny * p1.y;
+	return res;
+}
+
 std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vector<FreehandDrawingPoint>& points) {
-	return points;
+	if (points.size() < 3) {
+		return points;
+	}
+
+	std::vector<FreehandDrawingPoint> pruned_points;
+	pruned_points.push_back(points[0]);
+	int candid_index = 1;
+
+	while (candid_index < points.size() - 1) {
+		int next_index = candid_index + 1;
+		if ((points[candid_index].pos.x == pruned_points.back().pos.x) && (points[candid_index].pos.y == pruned_points.back().pos.y)) {
+			candid_index++;
+			continue;
+		}
+
+		Line2D line = line_from_points(pruned_points.back().pos, points[next_index].pos);
+		if (point_distance_from_line(points[candid_index].pos, line) > 0.2f) {
+			pruned_points.push_back(points[candid_index]);
+		}
+
+
+		candid_index++;
+	}
+
+	pruned_points.push_back(points[points.size() - 1]);
+
+
+	return pruned_points;
 }

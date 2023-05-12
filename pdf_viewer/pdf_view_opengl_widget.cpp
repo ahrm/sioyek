@@ -449,6 +449,7 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 #endif
 //    format.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
 //    format.setSwapInterval(0);
+	format.setSamples(4);
 	format.setProfile(QSurfaceFormat::CoreProfile);
 	this->setFormat(format);
 
@@ -1135,21 +1136,15 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 
 	glUseProgram(shared_gl_objects.line_program);
-	glDisable(GL_CULL_FACE);
-	//float line_color[4] = {0.0f, 0.0f, 1.0f, 1.0f};
 
-
-	//glEnable(GL_LINE_SMOOTH);
-	//glLineWidth(20.0f);
-	render_drawings(pending_drawing);
+	glEnable(GL_MULTISAMPLE);
 	for (auto page : visible_pages) {
 
 		render_drawings(document_view->get_document()->get_page_drawings(page));
-		//render_drawings();
 	}
+	render_drawings(pending_drawing);
+	glDisable(GL_MULTISAMPLE);
 
-	//glDisable(GL_LINE_SMOOTH);
-	//glLineWidth(1.0f);
 	bind_default();
 	painter->endNativePainting();
 
@@ -2187,7 +2182,29 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 
 	for (auto drawing : drawings) {
 		std::vector<NormalizedWindowPos> window_positions;
-		if (drawing.points.size() <= 1) {
+		if (drawing.points.size() <= 0) {
+			continue;
+		}
+
+		if (drawing.points.size() == 1) {
+			std::vector<float> coordinates;
+			float window_x, window_y;
+			float thickness = drawing.points[0].thickness;
+
+			document_view->absolute_to_window_pos(drawing.points[0].pos.x, drawing.points[0].pos.y, &window_x, &window_y);
+			coordinates.push_back(window_x);
+			coordinates.push_back(window_y);
+			//coordinates.push_back(window_x + thickness * thickness_x);
+			//coordinates.push_back(window_y);
+			const int N = 10;
+
+			for (int i = 0; i <= N; i++) {
+				coordinates.push_back(window_x + thickness * thickness_x * std::cosf(2 * M_PI * i / N));
+				coordinates.push_back(window_y + thickness * thickness_y * std::sinf(2 * M_PI * i / N));
+			}
+			bind_points(coordinates);
+			glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, drawing.color);
+			glDrawArrays(GL_TRIANGLE_FAN, 0, coordinates.size() / 2);
 			continue;
 		}
 
@@ -2206,13 +2223,16 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 		first_line_x = first_line_x / first_line_size;
 		first_line_y = first_line_y / first_line_size;
 
-		float first_ortho_x = -first_line_x * thickness_x * drawing.points[0].thickness;
-		float first_ortho_y = first_line_y * thickness_y * drawing.points[0].thickness;
+		float first_ortho_x = -first_line_y * thickness_x * drawing.points[0].thickness;
+		float first_ortho_y = first_line_x * thickness_y * drawing.points[0].thickness;
 
 		coordinates.push_back(window_positions[0].x - first_ortho_x);
 		coordinates.push_back(window_positions[0].y - first_ortho_y);
 		coordinates.push_back(window_positions[0].x + first_ortho_x);
 		coordinates.push_back(window_positions[0].y + first_ortho_y);
+
+		float prev_line_x = first_line_x;
+		float prev_line_y = first_line_y;
 
 		for (int line_index = 0; line_index < drawing.points.size() - 1; line_index++) {
 			float line_direction_x = window_positions[line_index + 1].x - window_positions[line_index].x;
@@ -2223,6 +2243,14 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 
 			float ortho_x = -line_direction_y * thickness_x * drawing.points[line_index + 1].thickness;
 			float ortho_y = line_direction_x * thickness_y * drawing.points[line_index + 1].thickness;
+
+			float dot_prod_with_prev_direction = (prev_line_x * line_direction_x + prev_line_y * line_direction_y);
+
+			coordinates.push_back(window_positions[line_index].x - ortho_x);
+			coordinates.push_back(window_positions[line_index].y - ortho_y);
+			coordinates.push_back(window_positions[line_index].x + ortho_x);
+			coordinates.push_back(window_positions[line_index].y + ortho_y);
+
 			coordinates.push_back(window_positions[line_index + 1].x - ortho_x);
 			coordinates.push_back(window_positions[line_index + 1].y - ortho_y);
 			coordinates.push_back(window_positions[line_index + 1].x + ortho_x);

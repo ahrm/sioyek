@@ -113,7 +113,7 @@ public:
 
 	bool is_select_highlight_mode = false;
 	char select_highlight_type = 'a';
-	char current_freehand_type = 'a';
+	char current_freehand_type = 'r';
 	float freehand_thickness = 1.0f;
 
 	bool smooth_scroll_mode = false;

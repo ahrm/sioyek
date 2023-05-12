@@ -1600,14 +1600,16 @@ void Document::embed_annotations(std::wstring new_file_path) {
 			pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
 			pdf_annot* drawing_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_INK);
             //void pdf_set_annot_ink_list(fz_context *ctx, pdf_annot *annot, int n, const int *count, const fz_point *v);
-            int count[1] = { static_cast<int>(drawing.points.size()) };
 			std::vector<fz_point> points;
 
 			for (auto point : drawing.points) {
 				DocumentPos docpos = absolute_to_page_pos(point.pos);
-				points.push_back(fz_point{docpos.x, docpos.y});
+				if (docpos.page == page_number) {
+					points.push_back(fz_point{docpos.x, docpos.y});
+				}
 			}
 
+            int count[1] = { static_cast<int>(points.size()) };
 			pdf_set_annot_border(context, drawing_annot, drawing.points[0].thickness);
 			pdf_set_annot_ink_list(context, drawing_annot, 1, count, &points[0]);
 			pdf_update_annot(context, drawing_annot);
