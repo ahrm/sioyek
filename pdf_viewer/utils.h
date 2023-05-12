@@ -36,7 +36,7 @@ struct FreehandDrawingPoint {
 
 struct FreehandDrawing {
 	std::vector<FreehandDrawingPoint> points;
-	float color[4];
+	char type;
 	QDateTime creattion_time;
 };
 

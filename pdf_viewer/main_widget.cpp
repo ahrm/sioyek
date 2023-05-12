@@ -2141,10 +2141,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
         FreehandDrawing pruned_drawing;
         pruned_drawing.points = pruned_points;
-        pruned_drawing.color[0] = opengl_widget->current_drawing.color[0];
-        pruned_drawing.color[1] = opengl_widget->current_drawing.color[1];
-        pruned_drawing.color[2] = opengl_widget->current_drawing.color[2];
-        pruned_drawing.color[3] = opengl_widget->current_drawing.color[3];
+        pruned_drawing.type = opengl_widget->current_drawing.type;
         pruned_drawing.creattion_time = QDateTime::currentDateTime();
         doc()->add_freehand_drawing(pruned_drawing);
         //int a = 2;
@@ -2252,10 +2249,7 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     if (freehand_drawing_mode && (mevent->button() == Qt::MouseButton::LeftButton)) {
         is_drawing = true;
         opengl_widget->current_drawing.points.clear();
-        opengl_widget->current_drawing.color[0] = HIGHLIGHT_COLORS[(current_freehand_type - 'a') * 3];
-        opengl_widget->current_drawing.color[1] = HIGHLIGHT_COLORS[(current_freehand_type - 'a') * 3 + 1];
-        opengl_widget->current_drawing.color[2] = HIGHLIGHT_COLORS[(current_freehand_type - 'a') * 3 + 2];
-        opengl_widget->current_drawing.color[3] = 1.0f;
+        opengl_widget->current_drawing.type = current_freehand_type;
         return;
     }
 
