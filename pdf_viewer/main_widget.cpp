@@ -803,7 +803,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     QObject::connect((QGuiApplication*)QGuiApplication::instance(), &QGuiApplication::applicationStateChanged, [&](Qt::ApplicationState state){
         if ((state == Qt::ApplicationState::ApplicationSuspended) || (state == Qt::ApplicationState::ApplicationInactive)){
 #ifdef SIOYEK_ANDROID
-            persist();
+            persist(true);
 #endif
         }
 #ifdef SIOYEK_ANDROID
@@ -1426,7 +1426,7 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
 
     //save the previous document state
     if (main_document_view) {
-        main_document_view->persist();
+        main_document_view->persist(true);
     }
 
     if (main_document_view->get_view_width() > main_window_width) {

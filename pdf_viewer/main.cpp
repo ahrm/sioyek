@@ -305,6 +305,7 @@ UIRect PORTRAIT_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
 UIRect LANDSCAPE_VISUAL_MARK_PREV = {true, -1.0f, -0.7f, 0.7f, 1.0f};
 UIRect LANDSCAPE_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
 
+Path standard_data_path;
 Path default_config_path(L"");
 Path default_keys_path(L"");
 std::vector<Path> user_config_paths = {};
@@ -392,7 +393,7 @@ void configure_paths_android(){
         APPDIR = std::getenv("HOME");
     }
 
-    Path standard_data_path = Path(utf8_decode(APPDIR));
+    standard_data_path = Path(utf8_decode(APPDIR));
     standard_data_path = standard_data_path.slash(L".local").slash(L"share").slash(L"Sioyek");
     standard_data_path.create_directories();
 
@@ -434,7 +435,7 @@ void configure_paths(){
 
 #ifdef LINUX_STANDARD_PATHS
 	Path home_path(QDir::homePath().toStdWString());
-	Path standard_data_path = home_path.slash(L".local").slash(L"share").slash(L"sioyek");
+	standard_data_path = home_path.slash(L".local").slash(L"share").slash(L"sioyek");
 	Path standard_config_path = Path(L"/etc/sioyek");
 	Path read_only_data_path = Path(L"/usr/share/sioyek");
 	standard_data_path.create_directories();
@@ -456,7 +457,7 @@ void configure_paths(){
 		APPDIR = std::getenv("HOME");
 	}
 
-	Path standard_data_path = Path(utf8_decode(APPDIR));
+	standard_data_path = Path(utf8_decode(APPDIR));
 	standard_data_path = standard_data_path.slash(L".local").slash(L"share").slash(L"Sioyek");
 	standard_data_path.create_directories();
 
@@ -485,7 +486,7 @@ void configure_paths(){
 #ifdef NDEBUG
 	//install_app(exe_path.c_str());
 #endif
-	Path standard_data_path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+	standard_data_path = Path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
 	QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
 
 	standard_data_path.create_directories();

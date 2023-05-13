@@ -2215,8 +2215,8 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 			const int N = 10;
 
 			for (int i = 0; i <= N; i++) {
-				coordinates.push_back(window_x + thickness * thickness_x * std::cosf(2 * M_PI * i / N) / 2);
-				coordinates.push_back(window_y + thickness * thickness_y * std::sinf(2 * M_PI * i / N) / 2);
+                coordinates.push_back(window_x + thickness * thickness_x * std::cosf(2 * M_PI * i / N) / 2);
+                coordinates.push_back(window_y + thickness * thickness_y * std::sinf(2 * M_PI * i / N) / 2);
 			}
 			bind_points(coordinates);
 			glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);

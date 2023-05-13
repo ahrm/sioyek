@@ -13,6 +13,8 @@
 #include <qjsonarray.h>
 #include <qjsonobject.h>
 #include <qjsondocument.h>
+#include <qdir.h>
+#include <qstandardpaths.h>
 
 #include <mupdf/pdf.h>
 
@@ -41,6 +43,7 @@ extern std::wstring EPUB_CSS;
 extern std::vector<float> embedding_weights;
 extern std::vector<float> linear_weights;
 extern float EPUB_LINE_SPACING;
+extern Path standard_data_path;
 
 int Document::get_mark_index(char symbol) {
 	for (size_t i = 0; i < marks.size(); i++) {
@@ -2760,6 +2763,12 @@ void Document::delete_page_intersecting_drawings(int page, fz_rect absolute_rect
 
 std::wstring Document::get_drawings_file_path() {
 	Path path = Path(file_name);
+#ifdef SIOYEK_ANDROID
+	if (file_name == L":/tutorial.pdf") {
+        QString parent_path = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0);
+        return Path(parent_path.toStdWString()).slash(L"tutorial.pdf.sioyek").get_path();
+	}
+#endif
 	QString filename = QString::fromStdWString(path.filename().value());
 	QString drawing_file_name = filename + ".sioyek";
 	return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
@@ -2790,6 +2799,7 @@ void Document::persist_drawings_async() {
 void Document::load_drawings() {
 
 	std::wstring drawing_file_path = get_drawings_file_path();
+
 	QFile json_file(QString::fromStdWString(drawing_file_path));
 	if (json_file.open(QFile::ReadOnly)) {
 		QJsonDocument json_document = QJsonDocument().fromJson(json_file.readAll());
