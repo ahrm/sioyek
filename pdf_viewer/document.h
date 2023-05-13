@@ -186,7 +186,7 @@ public:
 	int get_offset_page_number(float y_offset);
 	void index_document(bool* invalid_flag);
 	void stop_indexing();
-	void delete_page_intersecting_drawings(int page, fz_rect absolute_rect);
+	void delete_page_intersecting_drawings(int page, fz_rect absolute_rect, bool mask[26]);
 	std::optional<IndexedData> find_reference_with_string(std::wstring reference_name);
 	std::optional<IndexedData> find_equation_with_string(std::wstring equation_name, int page_number);
 

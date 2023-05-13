@@ -405,6 +405,9 @@ public:
 	void handle_remove_marked_data();
 	void handle_export_marked_data();
 	void handle_goto_random_page();
+	void hande_turn_on_all_drawings();
+	void hande_turn_off_all_drawings();
+	void handle_toggle_drawing_mask(char symbol);
 
 	void show_audio_buttons();
 	void set_freehand_thickness(float val);

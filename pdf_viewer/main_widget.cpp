@@ -5934,8 +5934,27 @@ void MainWidget::finish_drawing(QPoint pos){
 void MainWidget::delete_freehand_drawings(fz_rect rect) {
     int page = -1;
     fz_rect page_rect = doc()->absolute_to_page_rect(rect, &page);
-    doc()->delete_page_intersecting_drawings(page, rect);
+    doc()->delete_page_intersecting_drawings(page, rect, opengl_widget->visible_drawing_mask);
     set_rect_select_mode(false);
     clear_selected_rect();
     invalidate_render();
+}
+
+void MainWidget::hande_turn_on_all_drawings() {
+    for (int i = 0; i < 26; i++) {
+        opengl_widget->visible_drawing_mask[i] = true;
+    }
+}
+
+void MainWidget::hande_turn_off_all_drawings() {
+    for (int i = 0; i < 26; i++) {
+        opengl_widget->visible_drawing_mask[i] = false;
+    }
+}
+
+void MainWidget::handle_toggle_drawing_mask(char symbol) {
+
+    if (symbol >= 'a' && symbol <= 'z') {
+        opengl_widget->visible_drawing_mask[symbol - 'a'] = !opengl_widget->visible_drawing_mask[symbol - 'a'] ;
+    }
 }

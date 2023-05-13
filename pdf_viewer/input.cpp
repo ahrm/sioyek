@@ -101,6 +101,17 @@ class SetMark : public SymbolCommand {
 	}
 };
 
+class ToggleDrawingMask : public SymbolCommand {
+
+	std::string get_name() {
+		return "toggle_drawing_mask";
+	}
+
+	void perform(MainWidget* widget) {
+		widget->handle_toggle_drawing_mask(this->symbol);
+	}
+};
+
 class NextItemCommand : public Command{
 	void perform(MainWidget* widget) {
 		if (num_repeats == 0) num_repeats++;
@@ -1769,6 +1780,30 @@ class ReloadConfigCommand : public Command {
 	bool requires_document() { return false; }
 };
 
+class TurnOnAllDrawings : public Command {
+	void perform(MainWidget* widget) {
+		widget->hande_turn_on_all_drawings();
+	}
+
+	std::string get_name() {
+		return "turn_on_all_drawings";
+	}
+
+	bool requires_document() { return false; }
+};
+
+class TurnOffAllDrawings : public Command {
+	void perform(MainWidget* widget) {
+		widget->hande_turn_off_all_drawings();
+	}
+
+	std::string get_name() {
+		return "turn_off_all_drawings";
+	}
+
+	bool requires_document() { return false; }
+};
+
 class SetStatusStringCommand : public TextCommand {
 
 	void perform(MainWidget* widget) {
@@ -2558,6 +2593,9 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["next_item"] = []() {return std::make_unique< NextItemCommand>(); };
 	new_commands["previous_item"] = []() {return std::make_unique< PrevItemCommand>(); };
 	new_commands["set_mark"] = []() {return std::make_unique< SetMark>(); };
+	new_commands["toggle_drawing_mask"] = []() {return std::make_unique< ToggleDrawingMask>(); };
+	new_commands["turn_on_all_drawings"] = []() {return std::make_unique< TurnOnAllDrawings>(); };
+	new_commands["turn_off_all_drawings"] = []() {return std::make_unique< TurnOffAllDrawings>(); };
 	new_commands["goto_mark"] = []() {return std::make_unique< GotoMark>(); };
 	new_commands["goto_page_with_page_number"] = []() {return std::make_unique< GotoPageWithPageNumberCommand>(); };
 	new_commands["search"] = []() {return std::make_unique< SearchCommand>(); };

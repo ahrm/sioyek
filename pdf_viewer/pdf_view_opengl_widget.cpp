@@ -462,6 +462,9 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 
 	overview_offset_x = OVERVIEW_OFFSET[0];
 	overview_offset_y = OVERVIEW_OFFSET[1];
+	for (int i = 0; i < 26; i++) {
+		visible_drawing_mask[i] = true;
+	}
 }
 
 void PdfViewOpenGLWidget::cancel_search() {
@@ -2194,6 +2197,9 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 	for (auto drawing : drawings) {
 		std::vector<NormalizedWindowPos> window_positions;
 		if (drawing.points.size() <= 0) {
+			continue;
+		}
+		if (!visible_drawing_mask[drawing.type-'a']) {
 			continue;
 		}
 

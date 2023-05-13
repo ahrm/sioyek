@@ -2740,11 +2740,14 @@ const std::vector<FreehandDrawing>& Document::get_page_drawings(int page) {
 	return page_freehand_drawings[page];
 }
 
-void Document::delete_page_intersecting_drawings(int page, fz_rect absolute_rect) {
+void Document::delete_page_intersecting_drawings(int page, fz_rect absolute_rect, bool mask[26]) {
 	std::vector<int> indices_to_delete;
 	std::vector<FreehandDrawing>& page_drawings = page_freehand_drawings[page];
 
 	for (int i = 0; i < page_drawings.size(); i++) {
+		if (!mask[page_drawings[i].type - 'a']) {
+			continue;
+		}
 		for (auto point : page_drawings[i].points) {
 			fz_point absolute_point = fz_point{ point.pos.x, point.pos.y };
 			if (fz_is_point_inside_rect(absolute_point, absolute_rect)) {

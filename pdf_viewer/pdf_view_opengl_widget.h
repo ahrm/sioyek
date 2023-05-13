@@ -190,6 +190,7 @@ protected:
 	void render_transparent_background();
 
 public:
+	bool visible_drawing_mask[26];
 	FreehandDrawing current_drawing;
 
 #ifndef NDEBUG
