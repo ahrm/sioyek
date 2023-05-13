@@ -138,7 +138,7 @@ public:
 	void fit_to_page_width(bool smart=false, bool ratio=false);
 	void fit_to_page_height(bool smart=false);
 	void fit_to_page_height_width_minimum();
-	void persist();
+	void persist(bool persist_drawings=false);
 	std::wstring get_current_chapter_name();
 	std::optional<std::pair<int,int>> get_current_page_range();
 	int get_current_chapter_index();

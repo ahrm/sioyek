@@ -35,10 +35,12 @@ extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 extern bool SUPER_FAST_SEARCH;
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
+extern QString EPUB_TEMPLATE;
 extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
 extern std::vector<float> embedding_weights;
 extern std::vector<float> linear_weights;
+extern float EPUB_LINE_SPACING;
 
 int Document::get_mark_index(char symbol) {
 	for (size_t i = 0; i < marks.size(); i++) {
@@ -2466,9 +2468,19 @@ int Document::reflow(int page) {
 		doc, fz_location_from_page_number(context, doc, page));
 
 	clear_document_caches();
+
+	//if (EPUB_CSS.size() > -1) {
+	//	std::string encoded = utf7_encode(EPUB_CSS);
+	//	fz_set_user_css(context, encoded.c_str());
+	//}
+	//else {
+	//	QString temp = EPUB_TEMPLATE;
+	//	std::string encoded = temp.replace("%{line_spacing}", QString::number(EPUB_LINE_SPACING)).toStdString();
+	//	fz_set_user_css(context, encoded.c_str());
+	//}
+
 	fz_layout_document(context, doc, EPUB_WIDTH, EPUB_HEIGHT, EPUB_FONT_SIZE);
-	std::string encoded = utf8_encode(EPUB_CSS);
-	fz_set_user_css(context, encoded.c_str());
+
 	bool flag = false;
 	load_document_caches(&flag, false);
 

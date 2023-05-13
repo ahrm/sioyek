@@ -530,8 +530,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     }
 }
 
-void MainWidget::persist() {
-    main_document_view->persist();
+void MainWidget::persist(bool persist_drawings) {
+    main_document_view->persist(persist_drawings);
 
     // write the address of the current document in a file so that the next time
     // we launch the application, we open this document
@@ -3458,7 +3458,7 @@ std::wstring MainWidget::get_window_configuration_string() {
 void MainWidget::handle_close_event() {
     save_auto_config();
 #ifndef SIOYEK_ANDROID
-    persist();
+    persist(true);
 #endif
 
 	// we need to delete this here (instead of destructor) to ensure that application
@@ -5523,9 +5523,8 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    //doc()->persist_drawings();
-    doc()->load_drawings();
-    invalidate_render();
+    bool invalid;
+    doc()->load_document_caches(&invalid, true);
 }
 
 void MainWidget::download_paper_under_cursor() {

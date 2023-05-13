@@ -188,7 +188,7 @@ public:
 	void toggle_titlebar();
 	void handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed);
 	//void paintEvent(QPaintEvent* paint_event) override;
-	void persist() ;
+	void persist(bool persist_drawings=false) ;
 	bool is_pending_link_source_filled();
 	std::wstring get_status_string();
 	void handle_escape();

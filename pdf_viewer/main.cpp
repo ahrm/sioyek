@@ -285,7 +285,12 @@ float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3] = {1.0f, 0.0f, 1.0f};
 float EPUB_WIDTH = 400;
 float EPUB_HEIGHT = 700;
 float EPUB_FONT_SIZE = 14;
+float EPUB_LINE_SPACING = 2.0f;
+
 std::wstring EPUB_CSS;
+QString EPUB_TEMPLATE = "p {\
+line-height: %{line_spacing}em!important;\
+}";
 
 UIRect PORTRAIT_EDIT_PORTAL_UI_RECT = {true, -0.2f, 0.2f, -1.0f, -0.7f};
 UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT = {true, -0.2f, 0.2f, -1.0f, -0.7f};

@@ -86,6 +86,7 @@ extern bool SHOW_DOC_PATH;
 extern float FASTREAD_OPACITY;
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool SINGLE_CLICK_SELECTS_WORDS;
+extern float EPUB_LINE_SPACING;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -612,6 +613,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		nullptr,
 		FloatExtras{0.1f, 10.0f}
 		});
+	//configs.push_back({
+	//	L"epub_line_spacing",
+	//	ConfigType::Float,
+	//	&EPUB_LINE_SPACING,
+	//	float_serializer,
+	//	float_deserializer,
+	//	nullptr,
+	//	FloatExtras{0.1f, 10.0f}
+	//	});
 	configs.push_back({
 		L"horizontal_move_amount",
 		ConfigType::Float,
@@ -1616,14 +1626,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		nullptr,
 		FloatExtras{0.0f, 100.0f}
 		});
-	configs.push_back({
-		L"epub_css",
-		ConfigType::String,
-		&EPUB_CSS,
-		string_serializer,
-		string_deserializer,
-		nullptr
-		});
+	//configs.push_back({
+	//	L"epub_css",
+	//	ConfigType::String,
+	//	&EPUB_CSS,
+	//	string_serializer,
+	//	string_deserializer,
+	//	nullptr
+	//	});
 
 	std::wstring highlight_config_string = L"highlight_color_a";
 	std::wstring search_url_config_string = L"search_url_a";

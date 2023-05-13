@@ -49,6 +49,8 @@ extern bool NUMERIC_TAGS;
 extern int NUM_H_SLICES;
 extern int NUM_V_SLICES;
 
+extern QString EPUB_TEMPLATE;
+extern float EPUB_LINE_SPACING;
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
 extern float EPUB_FONT_SIZE;
@@ -2372,10 +2374,18 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
 #else
     fz_document* doc =  fz_open_document(context, utf8_encode(file_name).c_str());
 	if (fz_is_document_reflowable(context, doc) ){
+
+		//if (EPUB_CSS.size() > 0) {
+		//	std::string encoded = utf8_encode(EPUB_CSS);
+		//	fz_set_user_css(context, encoded.c_str());
+		//}
+		//else {
+		//	QString temp = EPUB_TEMPLATE;
+		//	std::string encoded = temp.replace("%{line_spacing}", QString::number(EPUB_LINE_SPACING)).toStdString();
+		//	fz_set_user_css(context, encoded.c_str());
+		//}
 		fz_layout_document(context, doc, EPUB_WIDTH, EPUB_HEIGHT, EPUB_FONT_SIZE);
-		//const char* css = fz_user_css(context);
-		std::string encoded = utf8_encode(EPUB_CSS);
-		fz_set_user_css(context, encoded.c_str());
+
 		//int a = 2;
 	}
 	return doc;
