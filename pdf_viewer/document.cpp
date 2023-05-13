@@ -2760,8 +2760,8 @@ void Document::delete_page_intersecting_drawings(int page, fz_rect absolute_rect
 
 std::wstring Document::get_drawings_file_path() {
 	Path path = Path(file_name);
-	std::wstring filename = path.filename().value();
-	QString drawing_file_name = QString::fromStdWString(filename).replace(".pdf", ".sioyek");
+	QString filename = QString::fromStdWString(path.filename().value());
+	QString drawing_file_name = filename + ".sioyek";
 	return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
 }
 
