@@ -2548,11 +2548,14 @@ public:
     bool requires_document() { return false; }
 };
 
+
 class MacroCommand : public Command {
 	std::vector<std::unique_ptr<Command>> commands;
+	std::vector<std::wstring> modes;
 	//std::wstring commands;
 	std::string name;
 	CommandManager* command_manager;
+	bool is_modal = false;
 
 public:
 	//MacroCommand(std::string name_, std::vector<std::unique_ptr<NewCommand>> commands_) {
@@ -2565,7 +2568,23 @@ public:
 		auto parts = QString::fromStdWString(commands_).split(';');
 		for (int i = 0; i < parts.size(); i++) {
 			if (parts.at(i).size() > 0) {
-				commands.push_back(std::make_unique<LazyCommand>(manager, parts.at(i).toStdWString()));
+
+				if (parts.at(i).at(1) == '[') {
+					is_modal = true;
+				}
+
+				if (!is_modal) {
+					commands.push_back(std::make_unique<LazyCommand>(manager, parts.at(i).toStdWString()));
+				}
+				else {
+					int closed_bracket_index = parts.at(i).indexOf(']');
+					QString mode_string = parts.at(i).mid(1, closed_bracket_index - 1);
+					QString command_string = parts.at(i).mid(closed_bracket_index + 1);
+					commands.push_back(std::make_unique<LazyCommand>(manager, command_string.toStdWString()));
+					modes.push_back(mode_string.toStdWString());
+				}
+
+
 			}
 		}
 
@@ -2780,10 +2799,22 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 
 }
 
-std::unique_ptr<Command> CommandManager::get_command_with_name(std::string name) {
-	if (new_commands.find(name) != new_commands.end()) {
-		return new_commands[name]();
+std::unique_ptr<Command> CommandManager::get_command_with_name(std::string name, std::string mode_string) {
+
+	if (name.size() == 0) {
+		return nullptr;
 	}
+
+	if (name[0] != '[') {
+		if (new_commands.find(name) != new_commands.end()) {
+			return new_commands[name]();
+		}
+	}
+	else {
+		return nullptr;
+		//int closing_index = name.find(']');
+	}
+
 	//for (const auto &com : commands) {
 	//	if (com.name == name) {
 	//		return &com;
@@ -3093,7 +3124,7 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	std::vector<std::wstring> command_files;
 	std::vector<int> command_line_numbers;
 
-	get_keys_file_lines(default_path, command_names, command_keys, command_files, command_line_numbers);
+	//get_keys_file_lines(default_path, command_names, command_keys, command_files, command_line_numbers);
 	for (auto upath : user_paths) {
 		get_keys_file_lines(upath, command_names, command_keys, command_files, command_line_numbers);
 	}

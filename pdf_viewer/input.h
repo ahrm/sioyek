@@ -59,7 +59,7 @@ private:
 public:
 
 	CommandManager(ConfigManager* config_manager);
-	std::unique_ptr<Command> get_command_with_name(std::string name);
+	std::unique_ptr<Command> get_command_with_name(std::string name, std::string mode_string="");
 	std::unique_ptr<Command> create_macro_command(std::string name, std::wstring macro_string);
 	QStringList get_all_command_names();
 };
