@@ -55,9 +55,9 @@ public:
 class CommandManager {
 private:
 	//std::vector<Command> commands;
-	std::map < std::string, std::function<std::unique_ptr<Command>()> > new_commands;
 public:
 
+	std::map < std::string, std::function<std::unique_ptr<Command>()> > new_commands;
 	CommandManager(ConfigManager* config_manager);
 	std::unique_ptr<Command> get_command_with_name(std::string name, std::string mode_string="");
 	std::unique_ptr<Command> create_macro_command(std::string name, std::wstring macro_string);
@@ -69,7 +69,9 @@ struct InputParseTreeNode {
 	std::vector<InputParseTreeNode*> children;
 	//char command;
 	int command;
-	std::vector<std::string> name;
+	//std::vector<std::string> name;
+	std::vector<std::string> name_;
+	std::optional<std::function<std::unique_ptr<Command>()>> generator = {};
 	bool shift_modifier = false;
 	bool control_modifier = false;
 	bool alt_modifier = false;
@@ -106,7 +108,8 @@ public:
 
 	InputHandler(const Path& default_path, const std::vector<Path>& user_paths, CommandManager* cm);
 	void reload_config_files(const Path& default_path, const std::vector<Path>& user_path);
-	std::vector<std::unique_ptr<Command>> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
+	//std::vector<std::unique_ptr<Command>> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
+	std::unique_ptr<Command> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
 	std::optional<Path> get_or_create_user_keys_path();

@@ -2551,7 +2551,7 @@ public:
 
 class MacroCommand : public Command {
 	std::vector<std::unique_ptr<Command>> commands;
-	std::vector<std::wstring> modes;
+	std::vector<std::string> modes;
 	//std::wstring commands;
 	std::string name;
 	CommandManager* command_manager;
@@ -2569,7 +2569,7 @@ public:
 		for (int i = 0; i < parts.size(); i++) {
 			if (parts.at(i).size() > 0) {
 
-				if (parts.at(i).at(1) == '[') {
+				if (parts.at(i).at(0) == '[') {
 					is_modal = true;
 				}
 
@@ -2578,10 +2578,12 @@ public:
 				}
 				else {
 					int closed_bracket_index = parts.at(i).indexOf(']');
-					QString mode_string = parts.at(i).mid(1, closed_bracket_index - 1);
-					QString command_string = parts.at(i).mid(closed_bracket_index + 1);
-					commands.push_back(std::make_unique<LazyCommand>(manager, command_string.toStdWString()));
-					modes.push_back(mode_string.toStdWString());
+					if (closed_bracket_index > 0) {
+						QString mode_string = parts.at(i).mid(1, closed_bracket_index - 1);
+						QString command_string = parts.at(i).mid(closed_bracket_index + 1);
+						commands.push_back(std::make_unique<LazyCommand>(manager, command_string.toStdWString()));
+						modes.push_back(mode_string.toStdString());
+					}
 				}
 
 
@@ -2592,9 +2594,30 @@ public:
 
 
 	void perform(MainWidget* widget) {
-		for (std::unique_ptr<Command>& subcommand : commands) {
-			subcommand->run(widget);
+		if (!is_modal) {
+			for (std::unique_ptr<Command>& subcommand : commands) {
+				subcommand->run(widget);
+			}
 		}
+		else {
+			std::string mode_string = widget->get_current_mode_string();
+
+			for (int i = 0; i < commands.size(); i++) {
+				if (mode_matches(mode_string, modes[i])) {
+					commands[i]->run(widget);
+					return;
+				}
+			}
+		}
+	}
+
+	bool mode_matches(std::string current_mode, std::string command_mode) {
+		for (auto c : command_mode) {
+			if (current_mode.find(c) == std::string::npos) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	std::string get_name() {
@@ -2799,27 +2822,12 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 
 }
 
+
 std::unique_ptr<Command> CommandManager::get_command_with_name(std::string name, std::string mode_string) {
 
-	if (name.size() == 0) {
-		return nullptr;
+	if (new_commands.find(name) != new_commands.end()) {
+		return new_commands[name]();
 	}
-
-	if (name[0] != '[') {
-		if (new_commands.find(name) != new_commands.end()) {
-			return new_commands[name]();
-		}
-	}
-	else {
-		return nullptr;
-		//int closing_index = name.find(']');
-	}
-
-	//for (const auto &com : commands) {
-	//	if (com.name == name) {
-	//		return &com;
-	//	}
-	//}
 	return nullptr;
 }
 
@@ -2961,6 +2969,7 @@ void get_tokens(std::wstring line, std::vector<std::wstring>& tokens) {
 
 InputParseTreeNode* parse_lines(
 	InputParseTreeNode* root,
+	CommandManager* command_manager,
 	const std::vector<std::wstring>& lines,
 	const std::vector<std::vector<std::string>>& command_names,
 	const std::vector<std::wstring>& command_file_names,
@@ -3018,15 +3027,15 @@ InputParseTreeNode* parse_lines(
 			else if (((size_t)i == (tokens.size() - 1)) &&
 				(SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
 					(command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
-				if ((parent_node->name.size() == 0) || parent_node->name[0].compare(command_names[j][0]) != 0) {
+				if ((parent_node->name_.size() == 0) || parent_node->name_[0].compare(command_names[j][0]) != 0) {
 
 					std::wcout << L"Warning: key defined in " << parent_node->defining_file_path
 						<< L":" << parent_node->defining_file_line
 						<< L" overwritten by " << command_file_names[j]
 						<< L":" << command_line_numbers[j];
-					if (parent_node->name.size() > 0) {
+					if (parent_node->name_.size() > 0) {
 						std::wcout << L". Overriding command: " << line 
-							<< L": replacing " << utf8_decode(parent_node->name[0])
+							<< L": replacing " << utf8_decode(parent_node->name_[0])
 							<< L" with " << utf8_decode(command_names[j][0]);
 					}
 					std::wcout << L"\n";
@@ -3034,16 +3043,28 @@ InputParseTreeNode* parse_lines(
 			}
 			if ((size_t) i == (tokens.size() - 1)) {
 				parent_node->is_final = true;
-				parent_node->name.clear();
+				parent_node->name_.clear();
                 parent_node->defining_file_line = command_line_numbers[j];
                 parent_node->defining_file_path = command_file_names[j];
 				for (size_t k = 0; k < command_names[j].size(); k++) {
-					parent_node->name.push_back(command_names[j][k]);
+					parent_node->name_.push_back(command_names[j][k]);
 				}
+				if (command_names[j].size() == 1) {
+					parent_node->generator = command_manager->new_commands[command_names[j][0]];
+				}
+				else {
+					QStringList command_parts;
+					for (int k = 0; k < command_names[j].size(); k++) {
+						command_parts.append(QString::fromStdString(command_names[j][k]));
+					}
+					std::wstring joined_command = command_parts.join(";").toStdWString();
+					parent_node->generator = [joined_command, command_manager]() {return std::make_unique<MacroCommand>(command_manager, "", joined_command); };
+				}
+				//if (command_names[j].size())
 			}
 			else {
-				if (parent_node->is_final && (parent_node->name.size() > 0)) {
-					std::wcout << L"Warning: unmapping " << utf8_decode(parent_node->name[0]) << L" because of " << utf8_decode(command_names[j][0]) << L" which uses " << line << L"\n";
+				if (parent_node->is_final && (parent_node->name_.size() > 0)) {
+					std::wcout << L"Warning: unmapping " << utf8_decode(parent_node->name_[0]) << L" because of " << utf8_decode(command_names[j][0]) << L" which uses " << line << L"\n";
 				}
 				parent_node->is_final = false;
 			}
@@ -3055,6 +3076,7 @@ InputParseTreeNode* parse_lines(
 }
 
 InputParseTreeNode* parse_lines(
+	CommandManager* command_manager,
 	const std::vector<std::wstring>& lines,
 	const std::vector<std::vector<std::string>>& command_names,
 	const std::vector<std::wstring>& command_file_names,
@@ -3065,7 +3087,7 @@ InputParseTreeNode* parse_lines(
 	InputParseTreeNode* root = new InputParseTreeNode;
 	root->is_root = true;
 
-	parse_lines(root, lines, command_names, command_file_names, command_line_numbers);
+	parse_lines(root, command_manager, lines, command_names, command_file_names, command_line_numbers);
 
 	return root;
 
@@ -3114,7 +3136,7 @@ void get_keys_file_lines(const Path& file_path,
 	infile.close();
 }
 
-InputParseTreeNode* parse_key_config_files(const Path& default_path,
+InputParseTreeNode* parse_key_config_files(CommandManager* command_manager, const Path& default_path,
 	const std::vector<Path>& user_paths) {
 
 	std::wifstream default_infile = open_wifstream(default_path.get_path());
@@ -3124,12 +3146,12 @@ InputParseTreeNode* parse_key_config_files(const Path& default_path,
 	std::vector<std::wstring> command_files;
 	std::vector<int> command_line_numbers;
 
-	//get_keys_file_lines(default_path, command_names, command_keys, command_files, command_line_numbers);
+	get_keys_file_lines(default_path, command_names, command_keys, command_files, command_line_numbers);
 	for (auto upath : user_paths) {
 		get_keys_file_lines(upath, command_names, command_keys, command_files, command_line_numbers);
 	}
 
-	return parse_lines(command_keys, command_names, command_files, command_line_numbers);
+	return parse_lines(command_manager, command_keys, command_names, command_files, command_line_numbers);
 }
 
 
@@ -3142,7 +3164,8 @@ InputHandler::InputHandler(const Path& default_path, const std::vector<Path>& us
 void InputHandler::reload_config_files(const Path& default_config_path, const std::vector<Path>& user_config_paths)
 {
 	delete_current_parse_tree(root);
-	root = parse_key_config_files(default_config_path, user_config_paths);
+
+	root = parse_key_config_files(command_manager, default_config_path, user_config_paths);
 	current_node = root;
 }
 
@@ -3151,9 +3174,7 @@ bool is_digit(int key) {
 	return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-std::vector<std::unique_ptr<Command>> InputHandler::handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
-	std::vector<std::unique_ptr<Command>> res;
-
+std::unique_ptr<Command> InputHandler::handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
 	int key = 0;
 	if (!USE_LEGACY_KEYBINDS){
 		std::vector<QString> special_texts = {"\b", "\t", " ", "\r", "\n"};
@@ -3191,7 +3212,7 @@ std::vector<std::unique_ptr<Command>> InputHandler::handle_key(QKeyEvent* key_ev
 	if (current_node == root && is_digit(key)) {
 		if (!(key == '0' && (number_stack.size() == 0)) && (!control_pressed) && (!shift_pressed) && (!alt_pressed)) {
 			number_stack.push_back('0' + key - Qt::Key::Key_0);
-			return {};
+			return nullptr;
 		}
 	}
 
@@ -3208,21 +3229,25 @@ std::vector<std::unique_ptr<Command>> InputHandler::handle_key(QKeyEvent* key_ev
 				}
 
 				//return command_manager.get_command_with_name(child->name);
-				for (size_t i = 0; i < child->name.size(); i++) {
-					res.push_back(command_manager->get_command_with_name(child->name[i]));
+				if (child->generator) {
+					return (child->generator.value())();
 				}
-				return res;
+				return nullptr;
+				//for (size_t i = 0; i < child->name.size(); i++) {
+				//	res.push_back(command_manager->get_command_with_name(child->name[i]));
+				//}
+				//return res;
 			}
 			else{
 				current_node = child;
-				return {};
+				return nullptr;
 			}
 		}
 	}
 	std::wcout << "Warning: invalid command (key:" << (char)key << "); resetting to root" << std::endl;
 	number_stack.clear();
 	current_node = root;
-	return {};
+	return nullptr;
 }
 
 void InputHandler::delete_current_parse_tree(InputParseTreeNode* node_to_delete)
@@ -3284,11 +3309,11 @@ void InputHandler::add_command_key_mappings(InputParseTreeNode* thisroot,
 	std::vector<InputParseTreeNode*> prefix) const {
 
 	if (thisroot->is_final) {
-		if (thisroot->name.size() == 1) {
-			map[thisroot->name[0]].push_back(get_key_string_from_tree_node_sequence(prefix));
+		if (thisroot->name_.size() == 1) {
+			map[thisroot->name_[0]].push_back(get_key_string_from_tree_node_sequence(prefix));
 		}
-		else if (thisroot->name.size() > 1) {
-			for (const auto& name : thisroot->name) {
+		else if (thisroot->name_.size() > 1) {
+			for (const auto& name : thisroot->name_) {
 				map[name].push_back("{" + get_key_string_from_tree_node_sequence(prefix) + "}");
 			}
 		}

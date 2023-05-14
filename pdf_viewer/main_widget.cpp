@@ -1640,16 +1640,19 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
         }
         int num_repeats = 0;
         bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier) || (kevent->modifiers() & Qt::MetaModifier);
-        std::vector<std::unique_ptr<Command>> commands = input_handler->handle_key(
+        std::unique_ptr<Command> commands = input_handler->handle_key(
             kevent,
             kevent->modifiers() & Qt::ShiftModifier,
             is_control_pressed,
             kevent->modifiers() & Qt::AltModifier,
             &num_repeats);
 
-        for (auto& command : commands) {
-            handle_command_types(std::move(command), num_repeats);
+        if (commands) {
+            handle_command_types(std::move(commands), num_repeats);
         }
+        //for (auto& command : commands) {
+        //    handle_command_types(std::move(command), num_repeats);
+        //}
     }
 
 }
@@ -5523,8 +5526,7 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    bool invalid;
-    doc()->load_document_caches(&invalid, true);
+    qDebug() << QString::fromStdWString(selected_text);
 }
 
 void MainWidget::download_paper_under_cursor() {
@@ -5957,4 +5959,19 @@ void MainWidget::handle_toggle_drawing_mask(char symbol) {
     if (symbol >= 'a' && symbol <= 'z') {
         opengl_widget->visible_drawing_mask[symbol - 'a'] = !opengl_widget->visible_drawing_mask[symbol - 'a'] ;
     }
+}
+
+std::string MainWidget::get_current_mode_string() {
+    std::string res;
+    res += (is_visual_mark_mode()) ? "r" : "R";
+    res += (synctex_mode) ? "x" : "X";
+    res += (is_select_highlight_mode) ? "h" : "H";
+    res += (freehand_drawing_mode == DrawingMode::Drawing) ? "q" : "Q";
+    res += (freehand_drawing_mode == DrawingMode::PenDrawing) ? "e" : "E";
+    res += (mouse_drag_mode) ? "d" : "D";
+    res += (opengl_widget->is_presentation_mode()) ? "p" : "P";
+    res += (opengl_widget->get_overview_page()) ? "o" : "O";
+    res += (opengl_widget->get_is_searching(nullptr)) ? "s" : "S";
+    return res;
+
 }

@@ -409,6 +409,8 @@ public:
 	void hande_turn_off_all_drawings();
 	void handle_toggle_drawing_mask(char symbol);
 
+	std::string get_current_mode_string();
+
 	void show_audio_buttons();
 	void set_freehand_thickness(float val);
 
