@@ -23,7 +23,7 @@ fi
 
 make -j$MAKE_PARALLEL
 
-rm -r build 2> /dev/null
+rm -rf build 2> /dev/null
 mkdir build
 mv sioyek.app build/
 cp -r pdf_viewer/shaders build/sioyek.app/Contents/MacOS/shaders

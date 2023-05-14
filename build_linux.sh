@@ -21,7 +21,7 @@ $QMAKE "CONFIG+=linux_app_image" pdf_viewer_build_config.pro
 make
 
 # Copy files in build/ subdirectory
-rm -r build 2> /dev/null
+rm -rf build 2> /dev/null
 mkdir build
 mv sioyek build/sioyek
 cp pdf_viewer/prefs.config build/prefs.config
