@@ -3511,7 +3511,7 @@ void MainWidget::perform_search(std::wstring text, bool is_regex) {
    if (search_term.size() > 0) {
 	   // in mupdf RTL documents are reversed, so we reverse the search string
 	   //todo: better (or any!) handling of mixed RTL and LTR text
-	   if (is_rtl(search_term[0])) {
+	   if ((!SUPER_FAST_SEARCH) && is_rtl(search_term[0])) {
 		   search_term = reverse_wstring(search_term);
 	   }
    }
