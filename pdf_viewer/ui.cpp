@@ -559,7 +559,7 @@ TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidg
 
 DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent){
     main_widget = parent;
-    controls_ui = new TouchDrawControls('a', this);
+    controls_ui = new TouchDrawControls(parent->freehand_thickness, 'a', this);
     this->setAttribute(Qt::WA_NoMousePropagation);
 
     QObject::connect(controls_ui, &TouchDrawControls::exitDrawModePressed, [&](){
@@ -581,6 +581,10 @@ DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent){
     QObject::connect(controls_ui, &TouchDrawControls::eraserPressed, [&](){
         auto command = main_widget->command_manager->get_command_with_name("delete_freehand_drawings");
         main_widget->handle_command_types(std::move(command), 0);
+    });
+
+    QObject::connect(controls_ui, &TouchDrawControls::penSizeChanged, [&](qreal val){
+        main_widget->set_freehand_thickness(val);
     });
 
 

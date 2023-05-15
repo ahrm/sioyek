@@ -342,6 +342,9 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         if (highlight_buttons) {
             QCoreApplication::postEvent(highlight_buttons, resize_event->clone());
         }
+        if (draw_controls) {
+            QCoreApplication::postEvent(draw_controls, resize_event->clone());
+        }
     }
 }
 
@@ -6002,5 +6005,6 @@ void MainWidget::handle_drawing_ui_visibilty() {
 	}
     else {
 		draw_controls->show();
+        draw_controls->controls_ui->set_pen_size(freehand_thickness);
 	}
 }

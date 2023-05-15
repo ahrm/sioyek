@@ -3,7 +3,7 @@
 
 extern float HIGHLIGHT_COLORS[26 * 3];
 
-TouchDrawControls::TouchDrawControls(char selected_symbol, QWidget* parent) : QWidget(parent){
+TouchDrawControls::TouchDrawControls(float pen_size, char selected_symbol, QWidget* parent) : QWidget(parent){
 
     quick_widget = new QQuickWidget(this);
 
@@ -23,6 +23,7 @@ TouchDrawControls::TouchDrawControls(char selected_symbol, QWidget* parent) : QW
     quick_widget->rootContext()->setContextProperty("_colors", QVariant::fromValue(colors));
 
     quick_widget->rootContext()->setContextProperty("_index", selected_symbol - 'a');
+    quick_widget->rootContext()->setContextProperty("_pen_size", pen_size);
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchDrawControls.qml"));
 
@@ -52,6 +53,11 @@ TouchDrawControls::TouchDrawControls(char selected_symbol, QWidget* parent) : QW
         this,
         SLOT(handleEraser()));
 
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(penSizeChanged(qreal)),
+        this,
+        SLOT(handlePenSizeChanged(qreal)));
+
 
 }
 void TouchDrawControls::setDrawType(char type) {
@@ -60,6 +66,10 @@ void TouchDrawControls::setDrawType(char type) {
 
 void TouchDrawControls::handleExitDrawMode() {
     emit exitDrawModePressed();
+}
+
+void TouchDrawControls::handlePenSizeChanged(qreal val) {
+    emit penSizeChanged(val);
 }
 
 void TouchDrawControls::handleEnablePenDrawMode() {
@@ -82,4 +92,8 @@ void TouchDrawControls::resizeEvent(QResizeEvent* resize_event){
     quick_widget->resize(resize_event->size().width(), resize_event->size().height());
     QWidget::resizeEvent(resize_event);
 
+}
+
+void TouchDrawControls::set_pen_size(float size) {
+    quick_widget->rootContext()->setContextProperty("_pen_size", size);
 }

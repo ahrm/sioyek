@@ -9,9 +9,10 @@
 class TouchDrawControls : public QWidget{
     Q_OBJECT
 public:
-    TouchDrawControls(char selected_symbol, QWidget* parent=nullptr);
+    TouchDrawControls(float pen_size, char selected_symbol, QWidget* parent=nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
     void setDrawType(char type);
+    void set_pen_size(float size);
 
 public slots:
     void handleExitDrawMode();
@@ -19,6 +20,7 @@ public slots:
     void handleDisablePenDrawMode();
     void handleChangeColor(int);
     void handleEraser();
+    void handlePenSizeChanged(qreal size);
 
 signals:
     void exitDrawModePressed();
@@ -26,6 +28,7 @@ signals:
     void disablePenDrawModePressed();
     void changeColorPressed(int);
     void eraserPressed();
+    void penSizeChanged(qreal size);
 
 private:
     QQuickWidget* quick_widget = nullptr;

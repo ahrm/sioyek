@@ -920,10 +920,10 @@ class DrawControlsUI : public QWidget {
 public:
     DrawControlsUI(MainWidget* parent);
     void resizeEvent(QResizeEvent* resize_event) override;
+    TouchDrawControls* controls_ui;
 private:
     MainWidget* main_widget;
 
-    TouchDrawControls* controls_ui;
 };
 
 class TouchTextSelectionButtons : public QWidget {

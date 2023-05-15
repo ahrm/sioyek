@@ -11,6 +11,7 @@ Rectangle{
 	signal enablePenDrawModeClicked();
 	signal disablePenDrawModeClicked();
 	signal eraserClicked();
+	signal penSizeChanged(size: real);
 
 	id: root
 	//color: "black"
@@ -20,15 +21,17 @@ Rectangle{
 
 	TouchButtonGroup{
 		anchors.left: parent.left
-		anchors.top: parent.top
-		anchors.bottom: parent.bottom
-		width: parent.width / 5
+		// anchors.top: parent.top
+		// anchors.bottom: parent.bottom
+		height: pen_size_slider.visible ? parent.height / 2 : parent.height
+		//height: parent.height
+		width: Math.max(parent.width / 5, 150)
 
 
 		id: deletebutton
 
-		buttons: ["🗑️", "🖋️", "✂️"]
-		colors: ["black", root.pen_mode ? "green" : "black", "black"]
+		buttons: ["❌", "🖋️", "✂️", "P"]
+		colors: ["black", root.pen_mode ? "green" : "black", "black", pen_size_slider.visible ? "green" : "black"]
 
 		onButtonClicked: function (index, name){
 			if (index == 0){
@@ -46,14 +49,20 @@ Rectangle{
 			if (index == 2){
 				root.eraserClicked();
 			}
+			if (index == 3){
+				pen_size_slider.visible = !pen_size_slider.visible;
+			}
 		}
 	}
 
 	TouchButtonGroup{
 		anchors.right: parent.right
-		anchors.top: parent.top
-		anchors.bottom: parent.bottom
-		width: 4 * parent.width / 5
+		anchors.left: deletebutton.right
+		// anchors.top: parent.top
+		// anchors.bottom: parent.bottom
+		//height: parent.height
+		height: pen_size_slider.visible ? parent.height / 2 : parent.height
+		//width: 4 * parent.width / 5
 		radio: true
 
 
@@ -65,6 +74,22 @@ Rectangle{
 		onButtonClicked: function (index, name){
 			root.changeColorClicked(index);
 		}
+	}
+    Slider{
+        from: 0
+        to: 10
+        value: _pen_size
+        id: pen_size_slider
+        anchors.top: deletebutton.bottom
+		anchors.left: parent.left
+		width: parent.width
+		height: parent.height / 2
+		visible: false
+
+        onValueChanged: {
+				penSizeChanged(value);
+				//pen_size_slider.visible = false;
+        }
 	}
 
 	// Row{

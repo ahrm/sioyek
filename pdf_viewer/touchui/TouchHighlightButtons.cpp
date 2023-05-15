@@ -6,22 +6,19 @@ extern float HIGHLIGHT_COLORS[26 * 3];
 TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* parent) : QWidget(parent){
 
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
+    setAttribute(Qt::WA_NoMousePropagation);
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);
     quick_widget->setAttribute(Qt::WA_AlwaysStackOnTop);
     quick_widget->setClearColor(Qt::transparent);
 
-    //quick_widget->rootContext()->setContextProperty("_initialValue", initial_value);
-    //quick_widget->rootContext()->setContextProperty("_color_a", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('a' - 'a')])));
-    //quick_widget->rootContext()->setContextProperty("_color_b", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('b' - 'a')])));
-    //quick_widget->rootContext()->setContextProperty("_color_c", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('c' - 'a')])));
-    //quick_widget->rootContext()->setContextProperty("_color_d", QVariant::fromValue(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('d' - 'a')])));
     QList<QColor> colors;
-    colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('a' - 'a')]));
-    colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('b' - 'a')]));
-    colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('c' - 'a')]));
-    colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('d' - 'a')]));
+    const int N_COLORS = 5;
+    for (int i = 0; i < N_COLORS; i++) {
+		colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * i]));
+    }
+
     quick_widget->rootContext()->setContextProperty("_colors", QVariant::fromValue(colors));
 
     quick_widget->rootContext()->setContextProperty("_index", selected_symbol - 'a');
