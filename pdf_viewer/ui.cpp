@@ -557,12 +557,50 @@ TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidg
     });
 }
 
+DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent){
+    main_widget = parent;
+    controls_ui = new TouchDrawControls('a', this);
+    this->setAttribute(Qt::WA_NoMousePropagation);
+
+    QObject::connect(controls_ui, &TouchDrawControls::exitDrawModePressed, [&](){
+        main_widget->exit_freehand_drawing_mode();
+    });
+
+    QObject::connect(controls_ui, &TouchDrawControls::changeColorPressed, [&](int color_index){
+        main_widget->current_freehand_type = 'a' + color_index;
+    });
+
+    QObject::connect(controls_ui, &TouchDrawControls::enablePenDrawModePressed, [&](){
+        main_widget->set_pen_drawing_mode(true);
+    });
+
+    QObject::connect(controls_ui, &TouchDrawControls::disablePenDrawModePressed, [&](){
+        main_widget->set_hand_drawing_mode(true);
+    });
+
+    QObject::connect(controls_ui, &TouchDrawControls::eraserPressed, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("delete_freehand_drawings");
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
+
+}
+void DrawControlsUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+
+    int pwidth = parentWidget()->width();
+    int width = parentWidget()->width() * 3 / 4;
+    int height = parentWidget()->height() / 16;
+
+    controls_ui->move(0, 0);
+    controls_ui->resize(width, height);
+    move((pwidth - width) / 2, height);
+    setFixedSize(width, height);
+
+}
+
 void TouchTextSelectionButtons::resizeEvent(QResizeEvent* resize_event){
     QWidget::resizeEvent(resize_event);
-//    qDebug() << "sioyek: resize " << resize_event << "\n";
-
-//    int width = resize_event->size().width() * 2 / 3;
-//    int height = resize_event->size().height() / 4;
 
     int pwidth = parentWidget()->width();
     int width = parentWidget()->width() * 3 / 4;

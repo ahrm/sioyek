@@ -17,6 +17,7 @@
 #include <qdrag.h>
 #include <qscrollbar.h>
 #include <qtexttospeech.h>
+#include <touchui/TouchDrawControls.h>
 
 #include <mupdf/fitz.h>
 #include "document_view.h"
@@ -303,7 +304,11 @@ public:
 	void on_config_file_changed(ConfigManager* new_config) override;
 	void toggle_mouse_drag_mode();
 	void toggle_freehand_drawing_mode();
+	void exit_freehand_drawing_mode();
 	void toggle_pen_drawing_mode();
+	void set_pen_drawing_mode(bool enabled);
+	void set_hand_drawing_mode(bool enabled);
+	void handle_drawing_ui_visibilty();
 
 	void toggle_dark_mode();
 	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line, int column);
@@ -472,6 +477,7 @@ public:
 
 	protected:
     TouchTextSelectionButtons* text_selection_buttons = nullptr;
+    DrawControlsUI* draw_controls = nullptr;
     SearchButtons* search_buttons = nullptr;
     HighlightButtons* highlight_buttons = nullptr;
 

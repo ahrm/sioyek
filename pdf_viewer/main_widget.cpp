@@ -824,6 +824,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 	text_selection_buttons = new TouchTextSelectionButtons(this);
     text_selection_buttons->hide();
 
+	draw_controls = new DrawControlsUI(this);
+    draw_controls->hide();
+
     setMinimumWidth(500);
     setMinimumHeight(200);
     setFocus();
@@ -5847,22 +5850,37 @@ bool MainWidget::is_network_manager_running(bool* is_downloading){
     return false;
 }
 
+void MainWidget::exit_freehand_drawing_mode() {
+	freehand_drawing_mode = DrawingMode::None;
+    handle_drawing_ui_visibilty();
+}
+
 void MainWidget::toggle_freehand_drawing_mode() {
-    if (freehand_drawing_mode == DrawingMode::Drawing) {
-        freehand_drawing_mode = DrawingMode::None;
+    set_hand_drawing_mode(freehand_drawing_mode != DrawingMode::Drawing);
+}
+
+void MainWidget::set_pen_drawing_mode(bool enabled) {
+    if (enabled) {
+        freehand_drawing_mode = DrawingMode::PenDrawing;
     }
     else {
+        freehand_drawing_mode = DrawingMode::None;
+    }
+    handle_drawing_ui_visibilty();
+}
+
+void MainWidget::set_hand_drawing_mode(bool enabled) {
+    if (enabled) {
         freehand_drawing_mode = DrawingMode::Drawing;
     }
+    else {
+        freehand_drawing_mode = DrawingMode::None;
+    }
+    handle_drawing_ui_visibilty();
 }
 
 void MainWidget::toggle_pen_drawing_mode() {
-    if (freehand_drawing_mode == DrawingMode::PenDrawing) {
-        freehand_drawing_mode = DrawingMode::None;
-    }
-    else {
-        freehand_drawing_mode = DrawingMode::PenDrawing;
-    }
+    set_pen_drawing_mode(freehand_drawing_mode != DrawingMode::PenDrawing);
 }
 
 void MainWidget::handle_undo_drawing() {
@@ -5974,4 +5992,15 @@ std::string MainWidget::get_current_mode_string() {
     res += (opengl_widget->get_is_searching(nullptr)) ? "s" : "S";
     return res;
 
+}
+
+void MainWidget::handle_drawing_ui_visibilty() {
+    if (!TOUCH_MODE) return;
+    
+    if (freehand_drawing_mode == DrawingMode::None) {
+		draw_controls->hide();
+	}
+    else {
+		draw_controls->show();
+	}
 }

@@ -2358,6 +2358,13 @@ public:
 class DeleteFreehandDrawingsCommand: public Command {
 
 	std::optional<fz_rect> rect_;
+	DrawingMode original_drawing_mode = DrawingMode::None;
+
+
+	void pre_perform(MainWidget* widget) {
+		original_drawing_mode = widget->freehand_drawing_mode;
+		widget->freehand_drawing_mode = DrawingMode::None;
+	}
 
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
 
@@ -2369,11 +2376,19 @@ class DeleteFreehandDrawingsCommand: public Command {
 	}
 
 	void set_rect_requirement(fz_rect rect) {
+		if (rect.x0 > rect.x1) {
+			std::swap(rect.x0, rect.x1);
+		}
+		if (rect.y0 > rect.y1) {
+			std::swap(rect.y0, rect.y1);
+		}
+
 		rect_ = rect;
 	}
 
 	void perform(MainWidget* widget) {
 		widget->delete_freehand_drawings(rect_.value());
+		widget->freehand_drawing_mode = original_drawing_mode;
 	}
 
 	std::string get_name() {

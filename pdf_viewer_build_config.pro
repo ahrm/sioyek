@@ -42,6 +42,7 @@ SOURCES += \
         pdf_viewer/touchui/TouchSettings.cpp \
         pdf_viewer/touchui/TouchAudioButtons.cpp \
         pdf_viewer/touchui/TouchMarkSelector.cpp \
+        pdf_viewer/touchui/TouchDrawControls.cpp \
         pdf_viewer/touchui/TouchMainMenu.cpp
 
 HEADERS += \
@@ -60,6 +61,7 @@ HEADERS += \
     pdf_viewer/touchui/TouchSettings.h \
     pdf_viewer/touchui/TouchAudioButtons.h \
     pdf_viewer/touchui/TouchMarkSelector.h \
+    pdf_viewer/touchui/TouchDrawControls.h \
     pdf_viewer/touchui/TouchMainMenu.h
 
 android{

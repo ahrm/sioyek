@@ -52,6 +52,7 @@
 #include "touchui/TouchDeleteButton.h"
 #include "touchui/TouchHighlightButtons.h"
 #include "touchui/TouchAudioButtons.h"
+#include "touchui/TouchDrawControls.h"
 
 #include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"
@@ -913,6 +914,17 @@ private:
 //    QPushButton* highlight_button;
 
 //};
+
+
+class DrawControlsUI : public QWidget {
+public:
+    DrawControlsUI(MainWidget* parent);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    MainWidget* main_widget;
+
+    TouchDrawControls* controls_ui;
+};
 
 class TouchTextSelectionButtons : public QWidget {
 public:
