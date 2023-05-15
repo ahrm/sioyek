@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 if [ -z ${MAKE_PARALLEL+x} ]; then export MAKE_PARALLEL=1; else echo "MAKE_PARALLEL defined"; fi
 echo "MAKE_PARALLEL set to $MAKE_PARALLEL"
@@ -19,7 +20,7 @@ else
 	qmake "CONFIG+=linux_app_image non_portable" pdf_viewer_build_config.pro
 fi
 
-rm -r sioyek-release 2> /dev/null
+rm -rf sioyek-release 2> /dev/null
 make install INSTALL_ROOT=sioyek-release -j$MAKE_PARALLEL
 
 if [[ $1 == portable ]]; then
@@ -43,8 +44,8 @@ fi
 
 
 if [[ $1 == portable ]]; then
-	rm -r Sioyek-x86_64.AppImage.config
-	rm Sioyek-x86_64.AppImage
+	rm -rf Sioyek-x86_64.AppImage.config
+	rm -f Sioyek-x86_64.AppImage
 	mv Sioyek-* Sioyek-x86_64.AppImage
 	mkdir -p Sioyek-x86_64.AppImage.config/.local/share/Sioyek
 	cp tutorial.pdf Sioyek-x86_64.AppImage.config/.local/share/Sioyek/tutorial.pdf

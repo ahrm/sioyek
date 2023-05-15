@@ -377,12 +377,12 @@ std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line) {
 
 	if (rtl) {
 		std::sort(reordered_chars.begin(), reordered_chars.end(), [](fz_stext_char* lhs, fz_stext_char* rhs) {
-			return lhs->quad.ll.x > rhs->quad.ll.x;
+			return lhs->quad.lr.x > rhs->quad.lr.x;
 			});
 	}
 	else {
 		std::sort(reordered_chars.begin(), reordered_chars.end(), [](fz_stext_char* lhs, fz_stext_char* rhs) {
-			return lhs->quad.ll.x < rhs->quad.ll.x;
+			return (lhs->quad.lr.x <= rhs->quad.lr.x) && (lhs->quad.ll.x < rhs->quad.ll.x);
 			});
 	}
 	return reordered_chars;
