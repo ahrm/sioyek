@@ -20,9 +20,7 @@ TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* pare
     }
 
     quick_widget->rootContext()->setContextProperty("_colors", QVariant::fromValue(colors));
-
     quick_widget->rootContext()->setContextProperty("_index", selected_symbol - 'a');
-
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchHighlightButtons.qml"));
 
 

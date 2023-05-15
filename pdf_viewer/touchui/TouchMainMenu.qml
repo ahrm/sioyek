@@ -124,22 +124,22 @@ ColumnLayout{
                 _portaling ? "qrc:/icons/link-enabled.svg" :  "qrc:/icons/link.svg",
                 "qrc:/icons/unlink.svg",
                 _speaking ? "qrc:/icons/tts-enabled.svg" :  "qrc:/icons/tts.svg",
+                "qrc:/icons/draw.svg",
                 _locked ? "qrc:/icons/lock-enabled.svg" :"qrc:/icons/lock.svg",
                 "qrc:/icons/bookmark-g.svg",
                 "qrc:/icons/highlight-g.svg",
                 _fit ? "qrc:/icons/fit-horizontal-enabled.svg" :  "qrc:/icons/fit-horizontal.svg",
-                "D"
                 ]
 
                 tips: ["Add Bookmark",
                 "Portal",
                 "Delete Portal",
                 "Text to Speech",
+                "Darwing Mode",
                 "Lock Horizontal Scroll",
                 "All Bookmarks",
                 "All Highlights",
-                "Fit to Page Width",
-                "Darwing Mode"
+                "Fit to Page Width"
                 ]
 
 
@@ -160,15 +160,15 @@ ColumnLayout{
                         case 3:
                             /* emit */ ttsClicked(); break;
                         case 4:
-                            /* emit */ horizontalLockClicked(); break;
-                        case 5:
-                            /* emit */ globalBookmarksClicked(); break;
-                        case 6:
-                            /* emit */ globalHighlightsClicked(); break;
-                        case 7:
-                            /* emit */ fitToPageWidthClicked(); break;
-                        case 8:
                             /* emit */ drawingModeButtonClicked(); break;
+                        case 5:
+                            /* emit */ horizontalLockClicked(); break;
+                        case 6:
+                            /* emit */ globalBookmarksClicked(); break;
+                        case 7:
+                            /* emit */ globalHighlightsClicked(); break;
+                        case 8:
+                            /* emit */ fitToPageWidthClicked(); break;
                         default:
                     }
                 }

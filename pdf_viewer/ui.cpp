@@ -594,7 +594,7 @@ void DrawControlsUI::resizeEvent(QResizeEvent* resize_event){
 
     int pwidth = parentWidget()->width();
     int width = parentWidget()->width() * 3 / 4;
-    int height = parentWidget()->height() / 16;
+    int height = std::max(parentWidget()->height() / 16, 50);
 
     controls_ui->move(0, 0);
     controls_ui->resize(width, height);
