@@ -32,6 +32,7 @@ ColumnLayout{
     signal ttsClicked();
     signal horizontalLockClicked();
     signal fitToPageWidthClicked();
+    signal drawingModeButtonClicked();
 
     Rectangle{
         anchors.fill: parent
@@ -127,6 +128,7 @@ ColumnLayout{
                 "qrc:/icons/bookmark-g.svg",
                 "qrc:/icons/highlight-g.svg",
                 _fit ? "qrc:/icons/fit-horizontal-enabled.svg" :  "qrc:/icons/fit-horizontal.svg",
+                "D"
                 ]
 
                 tips: ["Add Bookmark",
@@ -136,7 +138,8 @@ ColumnLayout{
                 "Lock Horizontal Scroll",
                 "All Bookmarks",
                 "All Highlights",
-                "Fit to Page Width"
+                "Fit to Page Width",
+                "Darwing Mode"
                 ]
 
 
@@ -164,6 +167,8 @@ ColumnLayout{
                             /* emit */ globalHighlightsClicked(); break;
                         case 7:
                             /* emit */ fitToPageWidthClicked(); break;
+                        case 8:
+                            /* emit */ drawingModeButtonClicked(); break;
                         default:
                     }
                 }

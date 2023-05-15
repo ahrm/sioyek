@@ -160,6 +160,16 @@ TouchMainMenu::TouchMainMenu(bool fit_mode, bool portaling, bool fullscreen, boo
                 SIGNAL(fitToPageWidthClicked()),
                 this,
                 SLOT(handleFitToPageWidth()));
+
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(drawingModeButtonClicked()),
+                this,
+                SLOT(handleDrawingMode()));
+}
+
+void TouchMainMenu::handleDrawingMode(){
+    emit drawingModeClicked();
 }
 
 void TouchMainMenu::handleSelectText(){

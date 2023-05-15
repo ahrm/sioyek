@@ -247,6 +247,12 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->handle_command_types(std::move(command), 0);
     });
 
+    QObject::connect(main_menu, &TouchMainMenu::drawingModeClicked, [&](){
+        auto command = main_widget->command_manager->get_command_with_name("toggle_freehand_drawing_mode");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+    });
+
     QObject::connect(main_menu, &TouchMainMenu::settingsClicked, [&](){
 		//TouchConfigMenu* config_menu = new TouchConfigMenu(main_widget);
         TouchSettings* config_menu = new TouchSettings(main_widget);

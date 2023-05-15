@@ -36,6 +36,7 @@ public slots:
     void handleTTS();
     void handleHorizontalLock();
     void handleFitToPageWidth();
+    void handleDrawingMode();
 
 signals:
     void selectTextClicked();
@@ -61,6 +62,7 @@ signals:
     void ttsClicked();
     void horizontalLockClicked();
     void fitToPageWidthClicked();
+    void drawingModeClicked();
 
 private:
     QQuickWidget* quick_widget = nullptr;
