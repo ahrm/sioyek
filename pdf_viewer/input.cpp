@@ -3011,6 +3011,7 @@ class MacroCommand : public Command {
 	std::vector<std::string> modes;
 	//std::wstring commands;
 	std::string name;
+	std::wstring raw_commands;
 	CommandManager* command_manager;
 	bool is_modal = false;
 
@@ -3021,6 +3022,8 @@ public:
 		//commands = std::move(commands_);
 		command_manager = manager;
 		name = name_;
+		raw_commands = commands_;
+
 
 		auto parts = QString::fromStdWString(commands_).split(';');
 		for (int i = 0; i < parts.size(); i++) {
@@ -3132,6 +3135,11 @@ public:
 	}
 
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
+		if (modes.size() != commands.size()) {
+			qDebug() << "Invalid modal command : " << QString::fromStdWString(raw_commands);
+			return {};
+		}
+
 		if (is_modal) {
 			int current_mode_index = get_current_mode_index();
 			if (current_mode_index >= 0) {
@@ -3157,6 +3165,10 @@ public:
 			}
 		}
 		else {
+			if (modes.size() != commands.size()) {
+				qDebug() << "Invalid modal command : " << QString::fromStdWString(raw_commands);
+				return;
+			}
 			std::string mode_string = widget->get_current_mode_string();
 
 			for (int i = 0; i < commands.size(); i++) {
