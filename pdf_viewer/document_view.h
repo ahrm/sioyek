@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <thread>
 #include <optional>
+#include <deque>
 
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -55,7 +56,8 @@ private:
 
 
 public:
-	std::vector<fz_rect> selected_character_rects;
+	std::deque<fz_rect> selected_character_rects;
+	bool mark_end = true;
 
 	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer);
 	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer, bool* invalid_flag,
@@ -88,7 +90,7 @@ public:
 	void set_offset_y(float new_offset_y);
 	std::optional<PdfLink> get_link_in_pos(WindowPos pos);
 	int get_highlight_index_in_pos(WindowPos pos);
-	void get_text_selection(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, std::vector<fz_rect>& selected_characters, std::wstring& text_selection);
+	void get_text_selection(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, std::deque<fz_rect>& selected_characters, std::wstring& text_selection);
 	void add_mark(char symbol);
 	void add_bookmark(std::wstring desc);
 	void add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
@@ -140,6 +142,7 @@ public:
 	void fit_to_page_height_width_minimum();
 	void persist(bool persist_drawings=false);
 	std::wstring get_current_chapter_name();
+	std::optional<fz_rect> get_control_rect();
 	std::optional<std::pair<int,int>> get_current_page_range();
 	int get_current_chapter_index();
 	void goto_chapter(int diff);
@@ -177,6 +180,10 @@ public:
 	float get_half_screen_offset();
 	void scroll_mid_to_top();
 	void get_visible_links(std::vector<std::pair<int, fz_link*>>& visible_page_links);
+	void set_text_mark(bool is_begin);
+	void toggle_text_mark();
+	std::optional<fz_rect> expand_selection(bool is_begin, bool word);
+	std::optional<fz_rect> shrink_selection(bool is_begin, bool word);
 
-	std::vector<fz_rect>* get_selected_character_rects();
+	std::deque<fz_rect>* get_selected_character_rects();
 };

@@ -34,6 +34,7 @@ protected:
 	int num_repeats = 1;
 	MainWidget* widget = nullptr;
 public:
+	//Command(MainWidget* widget);
 	virtual std::optional<Requirement> next_requirement(MainWidget* widget);
 
 	virtual void set_text_requirement(std::wstring value);

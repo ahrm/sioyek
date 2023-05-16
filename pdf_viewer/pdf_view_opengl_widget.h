@@ -140,6 +140,7 @@ private:
 
 	std::optional<fz_rect> character_highlight_rect = {};
 	std::optional<fz_rect> wrong_character_rect = {};
+	bool show_control_rect;
 
 	std::optional<AbsoluteDocumentPos> underline = {};
 

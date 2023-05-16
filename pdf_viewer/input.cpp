@@ -26,6 +26,10 @@ extern std::vector<Path> user_config_paths;
 extern std::vector<Path> user_keys_paths;
 extern bool TOUCH_MODE;
 
+//Command::Command(MainWidget* widget_) : widget(widget_) {
+//
+//}
+
 class SymbolCommand : public Command {
 protected:
 	char symbol = 0;
@@ -132,6 +136,64 @@ class PrevItemCommand : public Command{
 
 	std::string get_name() {
 		return "previous_item";
+	}
+};
+
+class ToggleTextMarkCommand : public Command{
+
+	void perform(MainWidget* widget) {
+		//if (num_repeats == 0) num_repeats++;
+		widget->handle_toggle_text_mark();
+		//widget->invalidate_render();
+	}
+
+	std::string get_name() {
+		return "toggle_text_mark";
+	}
+};
+class MoveTextMarkForwardCommand : public Command{
+
+	void perform(MainWidget* widget) {
+		//if (num_repeats == 0) num_repeats++;
+		widget->handle_move_text_mark_forward(false);
+		//widget->invalidate_render();
+	}
+
+	std::string get_name() {
+		return "move_text_mark_forward";
+	}
+};
+
+class MoveTextMarkForwardWordCommand : public Command{
+
+	void perform(MainWidget* widget) {
+		widget->handle_move_text_mark_forward(true);
+	}
+
+	std::string get_name() {
+		return "move_text_mark_forward_word";
+	}
+};
+
+class MoveTextMarkBackwardCommand : public Command{
+
+	void perform(MainWidget* widget) {
+		widget->handle_move_text_mark_backward(false);
+	}
+
+	std::string get_name() {
+		return "move_text_mark_backward";
+	}
+};
+
+class MoveTextMarkBackwardWordCommand : public Command{
+
+	void perform(MainWidget* widget) {
+		widget->handle_move_text_mark_backward(true);
+	}
+
+	std::string get_name() {
+		return "move_text_mark_backward_word";
 	}
 };
 
@@ -2301,16 +2363,20 @@ private:
 			if (!actual_command) return &noop;
 
 			auto req = actual_command->next_requirement(widget);
-			if (req) {
-				if (req.value().type == RequirementType::Text) {
-					actual_command->set_text_requirement(command_params);
-				}
-				if (req.value().type == RequirementType::File) {
-					actual_command->set_file_requirement(command_params);
-				}
-				if (req.value().type == RequirementType::Symbol) {
-					if (command_params.size() > 0) {
-						actual_command->set_symbol_requirement((char)command_params[0]);
+			if (command_params.size() > 0) {
+				// set the params if command was called with parameters, for example
+				// add_bookmark(some text)
+				if (req) {
+					if (req.value().type == RequirementType::Text) {
+						actual_command->set_text_requirement(command_params);
+					}
+					if (req.value().type == RequirementType::File) {
+						actual_command->set_file_requirement(command_params);
+					}
+					if (req.value().type == RequirementType::Symbol) {
+						if (command_params.size() > 0) {
+							actual_command->set_symbol_requirement((char)command_params[0]);
+						}
 					}
 				}
 			}
@@ -2334,6 +2400,9 @@ public:
 	void pre_perform(MainWidget* widget) { get_command()->pre_perform(widget); }
 	bool pushes_state() { return get_command()->pushes_state(); }
 	bool requires_document() { return get_command()->requires_document(); }
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+		return get_command()->next_requirement(widget);
+	}
 
 	virtual void perform(MainWidget* w) {
 		auto com = get_command();
@@ -2608,6 +2677,107 @@ public:
 	}
 
 
+	void set_text_requirement(std::wstring value) {
+		if (is_modal) {
+			int current_mode_index = get_current_mode_index();
+			if (current_mode_index >= 0) {
+				commands[current_mode_index]->set_text_requirement(value);
+			}
+		}
+		else {
+			for (int i = 0; i < commands.size(); i++) {
+				std::optional<Requirement> req = commands[i]->next_requirement(widget);
+				if (req) {
+					if (req.value().type == RequirementType::Text) {
+						commands[i]->set_text_requirement(value);
+					}
+					return;
+				}
+			}
+		}
+	}
+
+	void set_symbol_requirement(char value) {
+		if (is_modal) {
+			int current_mode_index = get_current_mode_index();
+			if (current_mode_index >= 0) {
+				commands[current_mode_index]->set_symbol_requirement(value);
+			}
+		}
+		else {
+
+			for (int i = 0; i < commands.size(); i++) {
+				std::optional<Requirement> req = commands[i]->next_requirement(widget);
+				if (req) {
+					if (req.value().type == RequirementType::Symbol) {
+						commands[i]->set_symbol_requirement(value);
+					}
+					return;
+				}
+			}
+		}
+	}
+
+	void set_file_requirement(std::wstring value) {
+		if (is_modal) {
+			int current_mode_index = get_current_mode_index();
+			if (current_mode_index >= 0) {
+				commands[current_mode_index]->set_file_requirement(value);
+			}
+		}
+		else {
+			for (int i = 0; i < commands.size(); i++) {
+				std::optional<Requirement> req = commands[i]->next_requirement(widget);
+				if (req) {
+					if (req.value().type == RequirementType::File) {
+						commands[i]->set_file_requirement(value);
+					}
+					return;
+				}
+			}
+		}
+	}
+
+	void set_rect_requirement(fz_rect value) {
+		if (is_modal) {
+			int current_mode_index = get_current_mode_index();
+			if (current_mode_index >= 0) {
+				commands[current_mode_index]->set_rect_requirement(value);
+			}
+		}
+		else {
+
+			for (int i = 0; i < commands.size(); i++) {
+				std::optional<Requirement> req = commands[i]->next_requirement(widget);
+				if (req) {
+					if (req.value().type == RequirementType::Rect) {
+						commands[i]->set_rect_requirement(value);
+					}
+					return;
+				}
+			}
+		}
+	}
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+		if (is_modal) {
+			int current_mode_index = get_current_mode_index();
+			if (current_mode_index >= 0) {
+				return commands[current_mode_index]->next_requirement(widget);
+			}
+			return {};
+		}
+		else {
+			for (int i = 0; i < commands.size(); i++) {
+				if (commands[i]->next_requirement(widget)) {
+					return commands[i]->next_requirement(widget);
+				}
+			}
+			return {};
+		}
+	}
+
+
 	void perform(MainWidget* widget) {
 		if (!is_modal) {
 			for (std::unique_ptr<Command>& subcommand : commands) {
@@ -2619,11 +2789,27 @@ public:
 
 			for (int i = 0; i < commands.size(); i++) {
 				if (mode_matches(mode_string, modes[i])) {
-					commands[i]->run(widget);
+					widget->handle_command_types(std::move(commands[i]), 1);
+					//commands[i]->run(widget);
 					return;
 				}
 			}
 		}
+	}
+
+	int get_current_mode_index() {
+		if (is_modal) {
+			std::string mode_str = widget->get_current_mode_string();
+			for (int i = 0; i < commands.size(); i++) {
+				if (mode_matches(mode_str, modes[i])) {
+					return i;
+				}
+			}
+			return -1;
+
+		}
+
+		return -1;
 	}
 
 	bool mode_matches(std::string current_mode, std::string command_mode) {
@@ -2649,6 +2835,11 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["portal_to_definition"] = []() {return std::make_unique< PortalToDefinitionCommand>(); };
 	new_commands["next_item"] = []() {return std::make_unique< NextItemCommand>(); };
 	new_commands["previous_item"] = []() {return std::make_unique< PrevItemCommand>(); };
+	new_commands["toggle_text_mark"] = []() {return std::make_unique< ToggleTextMarkCommand>(); };
+	new_commands["move_text_mark_forward"] = []() {return std::make_unique< MoveTextMarkForwardCommand>(); };
+	new_commands["move_text_mark_backward"] = []() {return std::make_unique< MoveTextMarkBackwardCommand>(); };
+	new_commands["move_text_mark_forward_word"] = []() {return std::make_unique< MoveTextMarkForwardWordCommand>(); };
+	new_commands["move_text_mark_backward_word"] = []() {return std::make_unique< MoveTextMarkBackwardWordCommand>(); };
 	new_commands["set_mark"] = []() {return std::make_unique< SetMark>(); };
 	new_commands["toggle_drawing_mask"] = []() {return std::make_unique< ToggleDrawingMask>(); };
 	new_commands["turn_on_all_drawings"] = []() {return std::make_unique< TurnOnAllDrawings>(); };

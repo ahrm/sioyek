@@ -308,7 +308,7 @@ void DocumentView::add_bookmark(std::wstring desc) {
 void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
 
 	if (current_document) {
-		std::vector<fz_rect> selected_characters;
+		std::deque<fz_rect> selected_characters;
 		std::vector<fz_rect> merged_characters;
 		std::wstring selected_text;
 
@@ -1032,7 +1032,7 @@ void DocumentView::goto_vertical_line_pos() {
 void DocumentView::get_text_selection(AbsoluteDocumentPos selection_begin,
 	AbsoluteDocumentPos selection_end,
 	bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
-	std::vector<fz_rect>& selected_characters,
+	std::deque<fz_rect>& selected_characters,
 	std::wstring& selected_text) {
 
 	if (current_document) {
@@ -1269,6 +1269,123 @@ void DocumentView::get_visible_links(std::vector<std::pair<int, fz_link*>>& visi
 	}
 }
 
-std::vector<fz_rect>* DocumentView::get_selected_character_rects() {
+std::deque<fz_rect>* DocumentView::get_selected_character_rects() {
 	return &this->selected_character_rects;
+}
+
+std::optional<fz_rect> DocumentView::get_control_rect() {
+	if (selected_character_rects.size() > 0) {
+		if (mark_end) {
+			return selected_character_rects[selected_character_rects.size()-1];
+		}
+		else {
+			return selected_character_rects[0];
+		}
+	}
+	return {};
+}
+
+std::optional<fz_rect> DocumentView::shrink_selection(bool is_begin, bool word) {
+	if (selected_character_rects.size() > 1) {
+		if (word) {
+			int page;
+			int index = is_begin ? 0 : selected_character_rects.size() - 1;
+			fz_rect page_rect = current_document->absolute_to_page_rect(selected_character_rects[index], &page);
+			if (page >= 0) {
+				fz_stext_page* stext_page = current_document->get_stext_with_page_number(page);
+				std::optional<fz_rect> new_rect_ = find_shrinking_rect_word(is_begin, stext_page, page_rect);
+				if (new_rect_) {
+					fz_rect new_rect = current_document->document_to_absolute_rect(page, new_rect_.value(), true);
+
+					if (is_begin) {
+						while (!are_rects_same(new_rect, selected_character_rects[0])) {
+							selected_character_rects.pop_front();
+							if (selected_character_rects.size() == 1) break;
+						}
+						return selected_character_rects[0];
+					}
+					else{
+						while (!are_rects_same(new_rect, selected_character_rects[selected_character_rects.size()-1])) {
+							selected_character_rects.pop_back();
+							if (selected_character_rects.size() == 1) break;
+						}
+						return selected_character_rects[selected_character_rects.size()-1];
+					}
+
+				}
+				return {};
+			}
+
+		}
+		else {
+			if (is_begin) {
+				selected_character_rects.pop_front();
+				return selected_character_rects[0];
+			}
+			else {
+				selected_character_rects.pop_back();
+				return selected_character_rects[selected_character_rects.size() - 1];
+			}
+		}
+	}
+
+	return {};
+}
+
+std::optional<fz_rect> DocumentView::expand_selection(bool is_begin, bool word){
+	//current_document->get_stext_with_page_number()
+	if (selected_character_rects.size() > 0) {
+		int page;
+		int index = is_begin ? 0 : selected_character_rects.size() - 1;
+
+		fz_rect page_rect = current_document->absolute_to_page_rect(selected_character_rects[index], &page);
+		if (page >= 0) {
+			fz_stext_page* stext_page = current_document->get_stext_with_page_number(page);
+			std::optional<fz_rect> next_rect = {};
+			if (word) {
+				std::vector<fz_rect> next_rects = find_expanding_rect_word(is_begin, stext_page, page_rect);
+				for (int i = 0; i < next_rects.size(); i++) {
+					next_rects[i] = current_document->document_to_absolute_rect(page, next_rects[i], true);
+				}
+				if (is_begin) {
+					for (int i = 0; i < next_rects.size(); i++) {
+						selected_character_rects.push_front(next_rects[i]);
+					}
+					return selected_character_rects[selected_character_rects.size()-1];
+				}
+				else {
+					for (int i = 0; i < next_rects.size(); i++) {
+						selected_character_rects.push_back(next_rects[i]);
+					}
+					return selected_character_rects[selected_character_rects.size()-1];
+				}
+			}
+			else {
+				next_rect = find_expanding_rect(is_begin, stext_page, page_rect);
+			}
+			if (next_rect) {
+				fz_rect next_rect_abs = current_document->document_to_absolute_rect(page, next_rect.value(), true);
+				if (is_begin) {
+					selected_character_rects.push_front(next_rect_abs);
+				}
+				else {
+					selected_character_rects.push_back(next_rect_abs);
+				}
+				return next_rect_abs;
+			}
+		}
+	}
+	return {};
+}
+void DocumentView::set_text_mark(bool is_begin) {
+	if (is_begin) {
+		mark_end = false;
+	}
+	else {
+		mark_end = true;
+	}
+}
+
+void DocumentView::toggle_text_mark() {
+	set_text_mark(mark_end);
 }

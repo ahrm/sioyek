@@ -94,7 +94,7 @@ void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
 
 	for (size_t i = 0; i < highlights.size(); i++) {
 		const Highlight highlight = highlights[i];
-		std::vector<fz_rect> highlight_rects;
+		std::deque<fz_rect> highlight_rects;
 		std::vector<fz_rect> merged_rects;
 		std::wstring highlight_text;
 		get_text_selection(ctx, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text, doc_);
@@ -1377,14 +1377,14 @@ fz_pixmap* Document::get_small_pixmap(int page) {
 void Document::get_text_selection(AbsoluteDocumentPos selection_begin,
 	AbsoluteDocumentPos selection_end,
 	bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
-	std::vector<fz_rect>& selected_characters,
+	std::deque<fz_rect>& selected_characters,
 	std::wstring& selected_text) {
 	get_text_selection(context, selection_begin, selection_end, is_word_selection, selected_characters, selected_text);
 }
 void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection_begin,
 	AbsoluteDocumentPos selection_end,
 	bool is_word_selection,
-	std::vector<fz_rect>& selected_characters,
+	std::deque<fz_rect>& selected_characters,
 	std::wstring& selected_text,
 	fz_document* doc_) {
 
@@ -1550,7 +1550,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
 	for (auto highlight : doc_highlights) {
 		int page_number = get_offset_page_number(highlight.selection_begin.y);
 
-		std::vector<fz_rect> selected_characters;
+		std::deque<fz_rect> selected_characters;
 		std::vector<fz_rect> merged_characters;
 		std::vector<fz_rect> selected_characters_page_rects;
 		std::wstring selected_text;
@@ -2282,7 +2282,7 @@ std::vector<SearchResult> Document::search_text(std::wstring query, bool case_se
 
 	for ( ; it != super_fast_search_index.end(); it = std::search(it+1, super_fast_search_index.end(), searcher)) {
 		int start_index = it - super_fast_search_index.begin();
-		std::vector<fz_rect> match_rects;
+		std::deque<fz_rect> match_rects;
 		std::vector<fz_rect> compressed_match_rects;
 
 		int match_page = super_fast_search_index_pages[start_index];
@@ -2343,7 +2343,7 @@ std::vector<SearchResult> Document::search_regex(std::wstring query, bool case_s
 
 
 	while (std::regex_search(search_start, super_fast_search_index.cend(), match, regex)) {
-		std::vector<fz_rect> match_rects;
+		std::deque<fz_rect> match_rects;
 		std::vector<fz_rect> compressed_match_rects;
 
 		int match_page = super_fast_search_index_pages[offset + match.position()];

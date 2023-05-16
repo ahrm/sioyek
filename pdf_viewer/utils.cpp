@@ -740,7 +740,7 @@ fz_rect bound_rects(const std::vector<fz_rect>& rects) {
 	return res;
 
 }
-void merge_selected_character_rects(const std::vector<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects) {
+void merge_selected_character_rects(const std::deque<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects) {
 	/*
 		This function merges the bounding boxes of all selected characters into large line chunks.
 	*/
@@ -2784,4 +2784,186 @@ std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vecto
 
 
 	return pruned_points;
+}
+
+float rect_area(fz_rect rect) {
+	if (rect.x1 < rect.x0 || rect.y1 < rect.y0) return 0;
+	return std::abs(rect.x1 - rect.x0) * std::abs(rect.y1 - rect.y0);
+}
+
+bool are_rects_same(fz_rect r1, fz_rect r2) {
+	float r1_area = rect_area(r1);
+	float r2_area = rect_area(r2);
+	float max_area = std::max(r1_area, r2_area);
+	if (r2_area == 0) {
+		return (std::abs(r1.x0 - r2.x0) < 0.01f) && (std::abs(r1.y0 - r2.y0) < 0.01f);
+	}
+	fz_rect intersection = fz_intersect_rect(r1, r2);
+	if (rect_area(intersection) > max_area * 0.9f) {
+		return true;
+	}
+	return false;
+}
+
+
+std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page, fz_rect page_rect) {
+	bool found = false;
+	std::optional<fz_rect> last_before_space_rect = {};
+	std::optional<fz_rect> before_rect = {};
+
+
+	bool should_return_next_char = false;
+	bool was_last_character_space = true;
+
+	LL_ITER(block, page->first_block) {
+		if (block->type == FZ_STEXT_BLOCK_TEXT) {
+			LL_ITER(line, block->u.t.first_line) {
+				LL_ITER(ch, line->first_char) {
+					fz_rect cr = fz_rect_from_quad(ch->quad);
+					if (should_return_next_char) {
+						return cr;
+					}
+					if ((!before) && (ch->c == ' ' || ch->c == '\n') && found) {
+						return last_before_space_rect;
+					}
+					if (ch->c == ' ' || ch->c == '\n') {
+						last_before_space_rect = before_rect;
+						was_last_character_space = true;
+						if (found && before) {
+							should_return_next_char = true;
+						}
+					}
+					if (are_rects_same(cr, page_rect)) {
+						found = true;
+					}
+					before_rect = cr;
+				}
+			}
+		}
+	}
+	return {};
+}
+
+std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, fz_rect page_rect) {
+	std::vector<fz_rect> res;
+	std::vector<fz_stext_char*> chars;
+	get_flat_chars_from_stext_page(page, chars);
+	int index = -1;
+	for (int i = 0; i < chars.size(); i++) {
+		fz_rect cr = fz_rect_from_quad(chars[i]->quad);
+		if (are_rects_same(cr, page_rect)) {
+			index = i;
+			break;
+		}
+	}
+	int original_index = index;
+	if (index != -1) {
+		if (before) {
+			index--;
+			while (index >= 0) {
+				res.push_back(fz_rect_from_quad(chars[index]->quad));
+				if (chars[index]->c == ' ' || chars[index]->c == '\n') {
+					if (std::abs(original_index - index) > 1) {
+						res.pop_back();
+						break;
+					}
+				}
+				index--;
+			}
+		}
+		else {
+			index++;
+			while (index < chars.size()) {
+				res.push_back(fz_rect_from_quad(chars[index]->quad));
+				if (chars[index]->c == ' ' || chars[index]->c == '\n') {
+					if (std::abs(original_index - index) > 1) {
+						res.pop_back();
+						break;
+					}
+				}
+				index++;
+			}
+		}
+	}
+	return res;
+
+}
+
+//std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, fz_rect page_rect) {
+//	bool found = false;
+//	std::optional<fz_rect> last_after_space_rect = {};
+//	std::optional<fz_rect> before_rect = {};
+//	std::vector<fz_rect> res;
+//
+//	bool was_last_character_space = true;
+//
+//	LL_ITER(block, page->first_block) {
+//		if (block->type == FZ_STEXT_BLOCK_TEXT) {
+//			LL_ITER(line, block->u.t.first_line) {
+//				LL_ITER(ch, line->first_char) {
+//					fz_rect cr = fz_rect_from_quad(ch->quad);
+//
+//					if (was_last_character_space) {
+//						was_last_character_space = false;
+//						last_after_space_rect = cr;
+//					}
+//
+//					if (before) {
+//						res.push_back(cr);
+//					}
+//					if (ch->c == ' ' || ch->c == '\n') {
+//						was_last_character_space = true;
+//						if (before) {
+//							res.clear();
+//						}
+//						if (found) {
+//							return res;
+//						}
+//					}
+//					if (found) {
+//						res.push_back(cr);
+//					}
+//
+//					if (are_rects_same(cr, page_rect)) {
+//						if (before) {
+//							return res;
+//						}
+//						found = true;
+//					}
+//
+//					before_rect = cr;
+//
+//				}
+//			}
+//		}
+//	}
+//
+//	return {};
+//}
+
+std::optional<fz_rect> find_expanding_rect(bool before, fz_stext_page* page, fz_rect page_rect) {
+	bool found = false;
+	std::optional<fz_rect> before_rect = {};
+
+	LL_ITER(block, page->first_block) {
+		if (block->type == FZ_STEXT_BLOCK_TEXT) {
+			LL_ITER(line, block->u.t.first_line) {
+				LL_ITER(ch, line->first_char) {
+					fz_rect cr = fz_rect_from_quad(ch->quad);
+					if (found) {
+						return cr;
+					}
+					if (are_rects_same(cr, page_rect)) {
+						if (before) {
+							return before_rect;
+						}
+						found = true;
+					}
+					before_rect = cr;
+				}
+			}
+		}
+	}
+
+	return {};
 }

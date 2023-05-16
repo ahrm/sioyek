@@ -1911,6 +1911,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
                 is_word_selecting,
                 main_document_view->selected_character_rects,
                 selected_text);
+			//opengl_widget->set_control_character_rect(control_rect);
             is_word_selecting = false;
         }
         else {
@@ -5704,7 +5705,7 @@ void MainWidget::handle_undo_marked_data() {
 }
 
 void MainWidget::handle_add_marked_data() {
-    std::vector<fz_rect> local_selected_rects;
+    std::deque<fz_rect> local_selected_rects;
     std::wstring local_selected_text;
 
 	main_document_view->get_text_selection(selection_begin,
@@ -5993,6 +5994,12 @@ std::string MainWidget::get_current_mode_string() {
     res += (opengl_widget->is_presentation_mode()) ? "p" : "P";
     res += (opengl_widget->get_overview_page()) ? "o" : "O";
     res += (opengl_widget->get_is_searching(nullptr)) ? "s" : "S";
+    if (main_document_view) {
+		res += (main_document_view->selected_character_rects.size() > 0) ? "t" : "T";
+    }
+    else {
+        res += "T";
+    }
     return res;
 
 }
@@ -6007,4 +6014,59 @@ void MainWidget::handle_drawing_ui_visibilty() {
 		draw_controls->show();
         draw_controls->controls_ui->set_pen_size(freehand_thickness);
 	}
+}
+
+void MainWidget::move_selection_end(bool expand, bool word) {
+    std::optional<fz_rect> new_end_ = {};
+
+    if (expand) {
+		new_end_ = main_document_view->expand_selection(false, word);
+    }
+    else {
+		new_end_ = main_document_view->shrink_selection(false, word);
+    }
+
+    if (new_end_) {
+        fz_rect new_end = new_end_.value();
+        selection_end = AbsoluteDocumentPos{ (new_end.x0 + new_end.x1) / 2,   (new_end.y0 + new_end.y1) / 2  };
+    }
+
+}
+
+
+void MainWidget::move_selection_begin(bool expand, bool word) {
+    std::optional<fz_rect> new_begin_ = {};
+    if (expand) {
+		new_begin_ = main_document_view->expand_selection(true, word);
+    }
+    else {
+		new_begin_ = main_document_view->shrink_selection(true, word);
+    }
+
+    if (new_begin_) {
+        fz_rect new_begin = new_begin_.value();
+        selection_begin = AbsoluteDocumentPos{ (new_begin.x0 + new_begin.x1) / 2,   (new_begin.y0 + new_begin.y1) / 2  };
+    }
+}
+
+void MainWidget::handle_move_text_mark_forward(bool word) {
+    if (main_document_view->mark_end) {
+        move_selection_end(true, word);
+    }
+    else {
+        move_selection_begin(false, word);
+    }
+}
+
+void MainWidget::handle_toggle_text_mark() {
+    main_document_view->toggle_text_mark();
+}
+
+void MainWidget::handle_move_text_mark_backward(bool word) {
+    if (main_document_view->mark_end) {
+        move_selection_end(false, word);
+    }
+    else {
+        move_selection_begin(true, word);
+    }
 }

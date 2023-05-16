@@ -213,12 +213,12 @@ public:
 	void get_text_selection(AbsoluteDocumentPos selection_begin,
 		AbsoluteDocumentPos selection_end,
 		bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
-		std::vector<fz_rect>& selected_characters,
+		std::deque<fz_rect>& selected_characters,
 		std::wstring& selected_text);
 	void get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection_begin,
 		AbsoluteDocumentPos selection_end,
 		bool is_word_selection,
-		std::vector<fz_rect>& selected_characters,
+		std::deque<fz_rect>& selected_characters,
 		std::wstring& selected_text,
 		fz_document* doc=nullptr);
 
