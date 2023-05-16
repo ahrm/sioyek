@@ -235,7 +235,6 @@ public:
 	bool is_network_manager_running(bool* is_downloading=nullptr);
 	void show_download_paper_menu(
 		const std::vector<std::wstring>& paper_names,
-		const std::vector<std::wstring>& contributor_names,
 		const std::vector<std::wstring>& download_urls );
 	void download_paper_with_url(std::wstring paper_url);
 
@@ -515,6 +514,92 @@ public:
 	void mouseDoubleClickEvent(QMouseEvent* mevent) override;
 	void wheelEvent(QWheelEvent* wevent) override;
     bool event(QEvent *event);
+
+	template<typename T>
+	void set_filtered_select_menu(std::vector<std::wstring> left_names,
+		std::optional<std::vector<std::wstring>> right_names,
+		std::vector<T> values,
+		int selected_index,
+		std::function<void(T*)> on_select,
+		std::function<void(T*)> on_delete
+	) {
+		if (right_names) {
+
+			if (TOUCH_MODE) {
+				// when will this be released?
+				QStandardItemModel* model = create_table_model(left_names, right_names.value());
+
+				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(model, values, selected_index,
+					[&, on_select = std::move(on_select)](T* val) {
+						if (val) {
+							on_select(val);
+						}
+						pop_current_widget();
+					},
+					[&, on_delete = std::move(on_delete)](T* val) {
+						if (val) {
+							on_delete(val);
+						}
+					}, this);
+				set_current_widget(widget);
+			}
+			else {
+
+				set_current_widget(new FilteredSelectTableWindowClass<T>(
+					left_names,
+					right_names.value(),
+					values,
+					selected_index,
+					[on_select = std::move(on_select)](T* val) {
+						if (val) {
+							on_select(val);
+						}
+					},
+					this,
+						[on_delete = std::move(on_delete)](T* val) {
+						if (val) {
+							on_delete(val);
+						}
+					}));
+			}
+		}
+		else {
+
+			if (TOUCH_MODE) {
+				// when will this be released?
+				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(left_names, values, selected_index,
+					[&, on_select = std::move(on_select)](T* val) {
+						if (val) {
+							on_select(val);
+						}
+						pop_current_widget();
+					},
+					[&, on_delete = std::move(on_delete)](T* val) {
+						if (val) {
+							on_delete(val);
+						}
+					}, this);
+				set_current_widget(widget);
+			}
+			else {
+
+				set_current_widget(new FilteredSelectWindowClass<T>(
+					left_names,
+					values,
+					[on_select = std::move(on_select)](T* val) {
+						if (val) {
+							on_select(val);
+						}
+					},
+					this,
+						[on_delete = std::move(on_delete)](T* val) {
+						if (val) {
+							on_delete(val);
+						}
+					}));
+			}
+		}
+	}
 
 };
 

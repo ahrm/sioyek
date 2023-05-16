@@ -2,6 +2,8 @@
 // make the rest of config UIs have the same theme as boolean config
 // can not get save freehand drawings for tutorial document on android because the pdf file doesn't have a path
 // add more epub-related configs
+// add "tabs" (a way to view and goto opened documents along with methods to unload them)
+// multiline touch list view
 
 #include <iostream>
 #include <vector>
@@ -692,24 +694,27 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 			QByteArray json_data = QByteArray::fromStdString(answer);
 			QJsonDocument json_doc = QJsonDocument::fromJson(json_data);
 			QJsonArray hits = json_doc.object().value("hits").toObject().value("hits").toArray();
-			std::vector<std::wstring> hit_titles;
-			std::vector<std::wstring> hit_authors;
+			//std::vector<std::wstring> hit_titles;
+			//std::vector<std::wstring> hit_authors;
+            std::vector<std::wstring> hit_names;
 			std::vector<std::wstring> hit_urls;
 			for (int i = 0; i < hits.size(); i++) {
 				std::wstring url = hits.at(i).toObject().value("_source").toObject().value("best_pdf_url").toString().toStdWString();
 
 				if (url.size() > 0) {
-					hit_titles.push_back(hits.at(i).toObject().value("_source").toObject().value("title").toString().toStdWString());
+                    std::wstring title = hits.at(i).toObject().value("_source").toObject().value("title").toString().toStdWString();
 					hit_urls.push_back(url);
 					QJsonArray contributors = hits.at(i).toObject().value("_source").toObject().value("contrib_names").toArray();
 					std::wstring contrib_string;
 					for (int j = 0; j < contributors.size(); j++) {
 						contrib_string += contributors.at(j).toString().toStdWString() + L", ";
 					}
-					hit_authors.push_back(contrib_string);
+                    title += L" by " + contrib_string;
+                    hit_names.push_back(title);
+					//hit_authors.push_back(contrib_string);
 				}
 			}
-			show_download_paper_menu(hit_titles, hit_authors, hit_urls);
+			show_download_paper_menu(hit_names, hit_urls);
         }
 
         });
@@ -4368,45 +4373,16 @@ void MainWidget::handle_goto_bookmark() {
 
 	int closest_bookmark_index = main_document_view->get_document()->find_closest_bookmark_index(bookmarks, main_document_view->get_offset_y());
 
-    if (!TOUCH_MODE) {
-        set_current_widget(new FilteredSelectTableWindowClass<float>(
-            option_names,
-            option_location_strings,
-            option_locations,
-            closest_bookmark_index,
-            [&](float* offset_value) {
-                if (offset_value) {
-                    validate_render();
-                    push_state();
-                    main_document_view->set_offset_y(*offset_value);
-                }
-            },
-            this,
-                [&](float* offset_value) {
-                if (offset_value) {
-                    main_document_view->delete_closest_bookmark_to_offset(*offset_value);
-                }
-            }));
-    }
-    else {
-        QStandardItemModel* model = create_table_model(option_names, option_location_strings);
-
-        TouchFilteredSelectWidget<float>* widget = new TouchFilteredSelectWidget<float>(model, option_locations, closest_bookmark_index,
-            [&](float* offset_value) {
-                if (offset_value) {
-                    validate_render();
-                    push_state();
-                    main_document_view->set_offset_y(*offset_value);
-                }
-                pop_current_widget();
-            },
-            [&](float* offset_value) {
-                if (offset_value) {
-                    main_document_view->delete_closest_bookmark_to_offset(*offset_value);
-                }
-            }, this);
-        set_current_widget(widget);
-    }
+	set_filtered_select_menu<float>(option_names, option_location_strings, option_locations, closest_bookmark_index,
+		[&](float* offset_value) {
+			validate_render();
+			push_state();
+			main_document_view->set_offset_y(*offset_value);
+		},
+		[&](float* offset_value) {
+			main_document_view->delete_closest_bookmark_to_offset(*offset_value);
+		}
+		);
 
     show_current_widget();
 }
@@ -4429,45 +4405,16 @@ void MainWidget::handle_goto_bookmark_global() {
 			book_states.push_back({ path.value(), bm.y_offset });
 		}
 	}
-    if (!TOUCH_MODE) {
-		set_current_widget(new FilteredSelectTableWindowClass<BookState>(
-			descs,
-			file_names,
-			book_states,
-			-1,
-			[&](BookState* book_state) {
-				if (book_state) {
-					validate_render();
-					open_document(book_state->document_path, 0.0f, book_state->offset_y);
-				}
-			},
-			this,
-				[&](BookState* book_state) {
-				if (book_state) {
-					db_manager->delete_bookmark(checksummer->get_checksum(book_state->document_path), book_state->offset_y);
-				}
-			}));
-    }
-    else {
-        QStandardItemModel* model = create_table_model(descs, file_names);
-		set_current_widget(new TouchFilteredSelectWidget<BookState>(
-			model,
-			book_states,
-            -1,
-			[&](BookState* book_state) {
-				if (book_state) {
-					validate_render();
-					open_document(book_state->document_path, 0.0f, book_state->offset_y);
-				}
-				pop_current_widget();
-			},
-			[&](BookState* book_state) {
-				if (book_state) {
-					db_manager->delete_bookmark(checksummer->get_checksum(book_state->document_path), book_state->offset_y);
-				}
-			},
-            this));
-    }
+
+	set_filtered_select_menu<BookState>(descs, file_names, book_states, -1,
+		[&](BookState* book_state) {
+			validate_render();
+			open_document(book_state->document_path, 0.0f, book_state->offset_y);
+		},
+		[&](BookState* book_state) {
+			db_manager->delete_bookmark(checksummer->get_checksum(book_state->document_path), book_state->offset_y);
+		}
+		);
     show_current_widget();
 }
 
@@ -4512,48 +4459,16 @@ void MainWidget::handle_goto_highlight() {
 		option_location_strings.push_back(get_page_formatted_string(page + 1));
 	}
 
-    if (!TOUCH_MODE) {
+    set_filtered_select_menu<Highlight>(option_names, option_location_strings, highlights, closest_highlight_index,
+        [&](Highlight* hl) {
+			validate_render();
+			push_state();
+			main_document_view->set_offset_y(hl->selection_begin.y);
+        },
+        [&](Highlight* hl) {
+			main_document_view->delete_highlight(*hl);
+        });
 
-        set_current_widget(new FilteredSelectTableWindowClass<Highlight>(
-            option_names,
-            option_location_strings,
-            highlights,
-            closest_highlight_index,
-            [&](Highlight* hl) {
-                if (hl) {
-                    validate_render();
-                    push_state();
-                    main_document_view->set_offset_y(hl->selection_begin.y);
-                }
-            },
-            this,
-                [&](Highlight* hl) {
-                if (hl) {
-                    main_document_view->delete_highlight(*hl);
-                }
-            }));
-    }
-    else {
-        QAbstractItemModel* model = create_table_model(option_names, option_location_strings);
-
-        
-        TouchFilteredSelectWidget<Highlight>* widget = new TouchFilteredSelectWidget<Highlight>(model, highlights, closest_highlight_index,
-            [&](Highlight* hl) {
-                if (hl) {
-                    validate_render();
-                    push_state();
-                    main_document_view->set_offset_y(hl->selection_begin.y);
-                }
-                pop_current_widget();
-            },
-            [&](Highlight* hl) {
-                if (hl) {
-                    main_document_view->delete_highlight(*hl);
-                }
-            }, this);
-        set_current_widget(widget);
-        //new TouchListView(model, )
-    }
     show_current_widget();
 }
 
@@ -4584,38 +4499,16 @@ void MainWidget::handle_goto_highlight_global() {
 
 		}
 	}
-    if (!TOUCH_MODE) {
 
-        set_current_widget(new FilteredSelectTableWindowClass<BookState>(
-            descs,
-            file_names,
-            book_states,
-            -1,
-            [&](BookState* book_state) {
-                if (book_state) {
-                    validate_render();
-                    open_document(book_state->document_path, 0.0f, book_state->offset_y);
-                }
-            },
-            this));
-    }
-    else {
-        QAbstractItemModel* model = create_table_model(descs, file_names);
-        set_current_widget(new TouchFilteredSelectWidget<BookState>(
-            model,
-            book_states,
-            -1,
-            [&](BookState* book_state) {
-                if (book_state) {
-                    validate_render();
-                    open_document(book_state->document_path, 0.0f, book_state->offset_y);
-                }
-                pop_current_widget();
-            },
-            [&](BookState* book_state) {
-            },
-            this));
-    }
+    set_filtered_select_menu<BookState>(descs, file_names, book_states, -1,
+
+        [&](BookState* book_state) {
+            if (book_state) {
+                validate_render();
+                open_document(book_state->document_path, 0.0f, book_state->offset_y);
+            }
+        }, nullptr);
+
     show_current_widget();
 }
 
@@ -4764,44 +4657,19 @@ void MainWidget::handle_open_prev_doc() {
 		}
 	}
 
-//    auto prev_done_handler = [&](std::string* doc_hash) {
-//            if (doc_hash->size() > 0) {
-//                validate_render();
-//                open_document_with_hash(*doc_hash);
-//            }
-//        };
 
-    if (!TOUCH_MODE){
-        set_current_widget(new FilteredSelectWindowClass<std::string>(opened_docs_names,
-                                      opened_docs_hashes,
-                                      [&](std::string* doc_hash) {
-                       if (doc_hash->size() > 0) {
-                           validate_render();
-                           open_document_with_hash(*doc_hash);
-                       }
-                   },
-                   this,
-                   [&](std::string* doc_hash) {
-            db_manager->delete_opened_book(*doc_hash);
-        }));
-    }
-    else{
-		set_current_widget(new TouchFilteredSelectWidget<std::string>(opened_docs_names,
-			opened_docs_hashes,
-            -1,
-			[&](std::string* doc_hash) {
-				if (doc_hash->size() > 0) {
-					validate_render();
-					open_document_with_hash(*doc_hash);
-				}
-				//                   prev_done_handler(doc_hash);
-                pop_current_widget();
+    set_filtered_select_menu<std::string>(opened_docs_names, {}, opened_docs_hashes, -1,
+        [&](std::string* doc_hash) {
+            if (doc_hash->size() > 0) {
+                validate_render();
+                open_document_with_hash(*doc_hash);
+            }
+        },
+        [&](std::string* doc_hash) {
+                db_manager->delete_opened_book(*doc_hash);
+            }
+            );
 
-			}, [&](std::string* doc_hash) {
-				db_manager->delete_opened_book(*doc_hash);
-			},
-				this));
-    }
     show_current_widget();
 }
 
@@ -5821,21 +5689,16 @@ void MainWidget::handle_goto_random_page() {
 }
 void MainWidget::show_download_paper_menu(
     const std::vector<std::wstring>& paper_names,
-    const std::vector<std::wstring>& contributor_names,
     const std::vector<std::wstring>& download_urls) {
 
-	set_current_widget(new FilteredSelectTableWindowClass<std::wstring>(
-		paper_names,
-		contributor_names,
-		download_urls,
-		-1,
+
+    set_filtered_select_menu<std::wstring>(paper_names, {}, download_urls, -1, 
 		[&](std::wstring* url) {
 			qDebug() << *url;
             download_paper_with_url(*url);
 		},
-		this,
-			[&](std::wstring* _) {
-		}));
+        nullptr);
+
     show_current_widget();
 
 
