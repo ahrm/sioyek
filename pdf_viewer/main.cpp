@@ -725,7 +725,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 	if (should_create_new_window) {
 		target_window = new MainWidget(windows[0]);
 		//target_window->run_multiple_commands(STARTUP_COMMANDS);
-		target_window->command_manager->create_macro_command("", STARTUP_COMMANDS)->run(target_window);
+		target_window->command_manager->create_macro_command(target_window, "", STARTUP_COMMANDS)->run(target_window);
 		target_window->apply_window_params_for_one_window_mode(true);
 		target_window->show();
 		windows.push_back(target_window);
@@ -748,7 +748,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 			command_string += QString::fromStdString("(") + command_data + QString::fromStdString(")");
 		}
 
-		auto command = target_window->command_manager->create_macro_command("", command_string.toStdWString());
+		auto command = target_window->command_manager->create_macro_command(target_window, "", command_string.toStdWString());
 		command->run(target_window);
 	}
 
@@ -995,7 +995,7 @@ int main(int argc, char* args[]) {
 	main_widget->show();
 
 	handle_args(app.arguments());
-	main_widget->command_manager->create_macro_command("", STARTUP_COMMANDS)->run(main_widget);
+	main_widget->command_manager->create_macro_command(main_widget, "", STARTUP_COMMANDS)->run(main_widget);
 	//main_widget->run_multiple_commands(STARTUP_COMMANDS);
 
 	// load input file from `QFileOpenEvent` for macOS drag and drop & "open with"

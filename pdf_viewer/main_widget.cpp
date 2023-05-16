@@ -650,7 +650,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             }
         }
         else {
-			std::unique_ptr<Command> command = this->command_manager->get_command_with_name(command_name);
+			std::unique_ptr<Command> command = this->command_manager->get_command_with_name(this, command_name);
 			handle_command_types(std::move(command), 0);
         }
     };
@@ -737,7 +737,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
         if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
             if ((last_middle_down_time.msecsTo(QTime::currentTime()) > 200) && (!is_dragging)) {
-				auto commands = this->command_manager->create_macro_command("", HOLD_MIDDLE_CLICK_COMMAND);
+				auto commands = this->command_manager->create_macro_command(this, "", HOLD_MIDDLE_CLICK_COMMAND);
 				commands->run(this);
 				invalidate_render();
                 is_dragging = true;
@@ -1646,7 +1646,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
         }
         int num_repeats = 0;
         bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier) || (kevent->modifiers() & Qt::MetaModifier);
-        std::unique_ptr<Command> commands = input_handler->handle_key(
+        std::unique_ptr<Command> commands = input_handler->handle_key(this,
             kevent,
             kevent->modifiers() & Qt::ShiftModifier,
             is_control_pressed,
@@ -2146,15 +2146,15 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
     if (mevent->button() == Qt::MouseButton::LeftButton) {
         if (is_shift_pressed) {
-			auto commands = command_manager->create_macro_command("", SHIFT_CLICK_COMMAND);
+			auto commands = command_manager->create_macro_command(this, "", SHIFT_CLICK_COMMAND);
 			commands->run(this);
         }
         else if (is_control_pressed) {
-			auto commands = command_manager->create_macro_command("", CONTROL_CLICK_COMMAND);
+			auto commands = command_manager->create_macro_command(this, "", CONTROL_CLICK_COMMAND);
 			commands->run(this);
         }
         else if (is_alt_pressed) {
-			auto commands = command_manager->create_macro_command("", ALT_CLICK_COMMAND);
+			auto commands = command_manager->create_macro_command(this, "", ALT_CLICK_COMMAND);
 			commands->run(this);
         }
         else {
@@ -2172,15 +2172,15 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
         if (is_shift_pressed) {
-			auto commands = command_manager->create_macro_command("", SHIFT_RIGHT_CLICK_COMMAND);
+			auto commands = command_manager->create_macro_command(this, "", SHIFT_RIGHT_CLICK_COMMAND);
 			commands->run(this);
         }
         else if (is_control_pressed) {
-			auto commands = command_manager->create_macro_command("", CONTROL_RIGHT_CLICK_COMMAND);
+			auto commands = command_manager->create_macro_command(this, "", CONTROL_RIGHT_CLICK_COMMAND);
 			commands->run(this);
         }
         else if (is_alt_pressed) {
-			auto commands = command_manager->create_macro_command("", ALT_RIGHT_CLICK_COMMAND);
+			auto commands = command_manager->create_macro_command(this, "", ALT_RIGHT_CLICK_COMMAND);
 			commands->run(this);
         }
         else {
@@ -2194,7 +2194,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
             if (HIGHLIGHT_MIDDLE_CLICK
                 && main_document_view->selected_character_rects.size() > 0
                 && !(opengl_widget && opengl_widget->get_overview_page())) {
-                command_manager->get_command_with_name("add_highlight_with_current_type")->run(this);
+                command_manager->get_command_with_name(this, "add_highlight_with_current_type")->run(this);
                 invalidate_render();
             }
             else {
@@ -2252,12 +2252,12 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::XButton1) {
-        handle_command_types(command_manager->get_command_with_name("prev_state"), 0);
+        handle_command_types(command_manager->get_command_with_name(this, "prev_state"), 0);
         invalidate_render();
     }
 
     if (mevent->button() == Qt::MouseButton::XButton2) {
-        handle_command_types(command_manager->get_command_with_name("next_state"), 0);
+        handle_command_types(command_manager->get_command_with_name(this, "next_state"), 0);
         invalidate_render();
     }
 }
@@ -2323,7 +2323,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
             if (wevent->angleDelta().y() > 0) {
 
                 if (is_visual_mark_mode) {
-                    command = command_manager->get_command_with_name("move_visual_mark_up");
+                    command = command_manager->get_command_with_name(this, "move_visual_mark_up");
                 }
                 else {
                     move_vertical(-72.0f * vertical_move_amount * num_repeats_f);
@@ -2334,7 +2334,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
             if (wevent->angleDelta().y() < 0) {
 
                 if (is_visual_mark_mode) {
-                    command = command_manager->get_command_with_name("move_visual_mark_down");
+                    command = command_manager->get_command_with_name(this, "move_visual_mark_down");
                 }
                 else {
                     move_vertical(72.0f * vertical_move_amount * num_repeats_f);
@@ -3341,7 +3341,7 @@ void MainWidget::show_password_prompt_if_required() {
 	if (main_document_view && (main_document_view->get_document() != nullptr)) {
 		if (main_document_view->get_document()->needs_authentication()) {
             if ((pending_command_instance == nullptr) || (pending_command_instance->get_name() != "enter_password")) {
-				handle_command_types(command_manager->get_command_with_name("enter_password"), 1);
+				handle_command_types(command_manager->get_command_with_name(this, "enter_password"), 1);
 			}
 		}
 	}
@@ -4820,7 +4820,7 @@ MainWidget* MainWidget::handle_new_window() {
 	new_widget->show();
     new_widget->apply_window_params_for_one_window_mode();
 	//new_widget->run_multiple_commands(STARTUP_COMMANDS);
-    auto startup_commands = command_manager->create_macro_command("", STARTUP_COMMANDS);
+    auto startup_commands = command_manager->create_macro_command(this, "", STARTUP_COMMANDS);
     startup_commands->run(new_widget);
 
 	windows.push_back(new_widget);
@@ -5138,12 +5138,12 @@ bool MainWidget::event(QEvent *event){
                     is_dragging = false;
 
                     if (is_in_back_rect(window_pos)) {
-                        handle_command_types(command_manager->get_command_with_name("goto_mark"), 0);
+                        handle_command_types(command_manager->get_command_with_name(this, "goto_mark"), 0);
                         invalidate_render();
                         return true;
                     }
                     if (is_in_forward_rect(window_pos)) {
-                        handle_command_types(command_manager->get_command_with_name("set_mark"), 0);
+                        handle_command_types(command_manager->get_command_with_name(this, "set_mark"), 0);
                         invalidate_render();
                         return true;
                     }
@@ -5315,7 +5315,7 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos){
     }
 
     if (is_in_edit_portal_rect(click_pos)) {
-        handle_command_types(command_manager->get_command_with_name("edit_portal"), 0);
+        handle_command_types(command_manager->get_command_with_name(this, "edit_portal"), 0);
 		return true;
     }
 

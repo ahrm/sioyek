@@ -26,14 +26,15 @@ extern std::vector<Path> user_config_paths;
 extern std::vector<Path> user_keys_paths;
 extern bool TOUCH_MODE;
 
-//Command::Command(MainWidget* widget_) : widget(widget_) {
-//
-//}
+Command::Command(MainWidget* widget_) : widget(widget_) {
+
+}
 
 class SymbolCommand : public Command {
 protected:
 	char symbol = 0;
 public:
+	SymbolCommand(MainWidget* w) : Command(w) {}
 	virtual std::optional<Requirement> next_requirement(MainWidget* widget) {
 		if (symbol == 0) {
 			return Requirement{ RequirementType::Symbol, "symbol" };
@@ -53,6 +54,8 @@ protected:
 	std::optional<std::wstring> text = {};
 public:
 	
+	TextCommand(MainWidget* w) : Command(w) {}
+
 	virtual std::string text_requirement_name() {
 		return "text";
 	}
@@ -72,6 +75,10 @@ public:
 };
 
 class GotoMark : public SymbolCommand {
+public:
+
+	GotoMark(MainWidget* w) : SymbolCommand(w) {}
+
 	bool pushes_state() {
 		return true;
 	}
@@ -94,6 +101,8 @@ class GotoMark : public SymbolCommand {
 };
 
 class SetMark : public SymbolCommand {
+public:
+	SetMark(MainWidget* w) : SymbolCommand(w) {}
 
 	std::string get_name() {
 		return "set_mark";
@@ -106,6 +115,8 @@ class SetMark : public SymbolCommand {
 };
 
 class ToggleDrawingMask : public SymbolCommand {
+public:
+	ToggleDrawingMask(MainWidget* w) : SymbolCommand(w) {}
 
 	std::string get_name() {
 		return "toggle_drawing_mask";
@@ -117,6 +128,9 @@ class ToggleDrawingMask : public SymbolCommand {
 };
 
 class NextItemCommand : public Command{
+public:
+	NextItemCommand(MainWidget* w) : Command(w) {}
+
 	void perform(MainWidget* widget) {
 		if (num_repeats == 0) num_repeats++;
 		widget->opengl_widget->goto_search_result(num_repeats);
@@ -128,6 +142,8 @@ class NextItemCommand : public Command{
 };
 
 class PrevItemCommand : public Command{
+public:
+	PrevItemCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		if (num_repeats == 0) num_repeats++;
@@ -140,6 +156,8 @@ class PrevItemCommand : public Command{
 };
 
 class ToggleTextMarkCommand : public Command{
+public:
+	ToggleTextMarkCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		//if (num_repeats == 0) num_repeats++;
@@ -151,7 +169,10 @@ class ToggleTextMarkCommand : public Command{
 		return "toggle_text_mark";
 	}
 };
+
 class MoveTextMarkForwardCommand : public Command{
+public:
+	MoveTextMarkForwardCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		//if (num_repeats == 0) num_repeats++;
@@ -165,6 +186,8 @@ class MoveTextMarkForwardCommand : public Command{
 };
 
 class MoveTextMarkForwardWordCommand : public Command{
+public:
+	MoveTextMarkForwardWordCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_move_text_mark_forward(true);
@@ -176,6 +199,8 @@ class MoveTextMarkForwardWordCommand : public Command{
 };
 
 class MoveTextMarkBackwardCommand : public Command{
+public:
+	MoveTextMarkBackwardCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_move_text_mark_backward(false);
@@ -187,6 +212,8 @@ class MoveTextMarkBackwardCommand : public Command{
 };
 
 class MoveTextMarkBackwardWordCommand : public Command{
+public:
+	MoveTextMarkBackwardWordCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_move_text_mark_backward(true);
@@ -198,6 +225,8 @@ class MoveTextMarkBackwardWordCommand : public Command{
 };
 
 class StartReadingCommand : public Command{
+public:
+	StartReadingCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_start_reading();
@@ -209,6 +238,8 @@ class StartReadingCommand : public Command{
 };
 
 class StopReadingCommand : public Command{
+public:
+	StopReadingCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_stop_reading();
@@ -220,6 +251,8 @@ class StopReadingCommand : public Command{
 };
 
 class SearchCommand : public TextCommand {
+public:
+	SearchCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->perform_search(this->text.value(), false);
@@ -242,6 +275,8 @@ class SearchCommand : public TextCommand {
 };
 
 class SetFreehandThickness : public TextCommand {
+public:
+	SetFreehandThickness(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		float thickness = QString::fromStdWString(this->text.value()).toFloat();
@@ -263,6 +298,8 @@ class SetFreehandThickness : public TextCommand {
 };
 
 class GotoPageWithLabel : public TextCommand {
+public:
+	GotoPageWithLabel(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->goto_page_with_label(text.value());
@@ -282,6 +319,8 @@ class GotoPageWithLabel : public TextCommand {
 };
 
 class ChapterSearchCommand : public TextCommand {
+public:
+	ChapterSearchCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->perform_search(this->text.value(), false);
@@ -311,6 +350,8 @@ class ChapterSearchCommand : public TextCommand {
 };
 
 class RegexSearchCommand : public TextCommand {
+public:
+	RegexSearchCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->perform_search(this->text.value(), true);
@@ -330,6 +371,9 @@ class RegexSearchCommand : public TextCommand {
 };
 
 class AddBookmarkCommand : public TextCommand {
+public:
+	AddBookmarkCommand(MainWidget* w) : TextCommand(w) {}
+
 	void perform(MainWidget* widget) {
 		widget->main_document_view->add_bookmark(text.value());
 	}
@@ -344,6 +388,8 @@ class AddBookmarkCommand : public TextCommand {
 };
 
 class GotoBookmarkCommand : public Command {
+public:
+	GotoBookmarkCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->handle_goto_bookmark();
 	}
@@ -358,6 +404,8 @@ class GotoBookmarkCommand : public Command {
 };
 
 class GotoBookmarkGlobalCommand : public Command {
+public:
+	GotoBookmarkGlobalCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->handle_goto_bookmark_global();
 	}
@@ -373,6 +421,8 @@ class GotoBookmarkGlobalCommand : public Command {
 };
 
 class GotoHighlightCommand : public Command {
+public:
+	GotoHighlightCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_goto_highlight();
@@ -388,6 +438,8 @@ class GotoHighlightCommand : public Command {
 };
 
 class GotoHighlightGlobalCommand : public Command {
+public:
+	GotoHighlightGlobalCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->handle_goto_highlight_global();
 	}
@@ -403,6 +455,8 @@ class GotoHighlightGlobalCommand : public Command {
 };
 
 class GotoTableOfContentsCommand : public Command {
+public:
+	GotoTableOfContentsCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_goto_toc();
@@ -414,6 +468,8 @@ class GotoTableOfContentsCommand : public Command {
 };
 
 class PortalCommand : public Command {
+public:
+	PortalCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_portal();
@@ -425,6 +481,8 @@ class PortalCommand : public Command {
 };
 
 class ToggleWindowConfigurationCommand : public Command {
+public:
+	ToggleWindowConfigurationCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->toggle_window_configuration();
 	}
@@ -436,6 +494,8 @@ class ToggleWindowConfigurationCommand : public Command {
 };
 
 class NextStateCommand : public Command {
+public:
+	NextStateCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->next_state();
@@ -448,6 +508,8 @@ class NextStateCommand : public Command {
 };
 
 class PrevStateCommand : public Command {
+public:
+	PrevStateCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->prev_state();
@@ -460,6 +522,8 @@ class PrevStateCommand : public Command {
 };
 
 class AddHighlightCommand : public SymbolCommand {
+public:
+	AddHighlightCommand(MainWidget* w) : SymbolCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_add_highlight(symbol);
@@ -471,6 +535,8 @@ class AddHighlightCommand : public SymbolCommand {
 };
 
 class CommandCommand : public Command {
+public:
+	CommandCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		QStringList command_names = widget->command_manager->get_all_command_names();
@@ -499,6 +565,8 @@ class CommandCommand : public Command {
 };
 
 class OpenDocumentCommand : public Command {
+public:
+	OpenDocumentCommand(MainWidget* w) : Command(w) {};
 
 	std::wstring file_name;
 
@@ -531,6 +599,8 @@ class OpenDocumentCommand : public Command {
 };
 
 class MoveDownCommand : public Command {
+public:
+	MoveDownCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
@@ -544,6 +614,8 @@ class MoveDownCommand : public Command {
 };
 
 class MoveUpCommand : public Command {
+public:
+	MoveUpCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
@@ -557,6 +629,8 @@ class MoveUpCommand : public Command {
 };
 
 class MoveLeftCommand : public Command {
+public:
+	MoveLeftCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->handle_horizontal_move(-rp);
@@ -568,6 +642,8 @@ class MoveLeftCommand : public Command {
 };
 
 class MoveRightCommand : public Command {
+public:
+	MoveRightCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->handle_horizontal_move(rp);
@@ -579,6 +655,8 @@ class MoveRightCommand : public Command {
 };
 
 class ZoomInCommand : public Command {
+public:
+	ZoomInCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->main_document_view->zoom_in();
 		widget->last_smart_fit_page = {};
@@ -590,6 +668,8 @@ class ZoomInCommand : public Command {
 };
 
 class FitToPageWidthCommand : public Command {
+public:
+	FitToPageWidthCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->main_document_view->fit_to_page_width();
@@ -602,6 +682,8 @@ class FitToPageWidthCommand : public Command {
 };
 
 class FitToPageWidthSmartCommand : public Command {
+public:
+	FitToPageWidthSmartCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->main_document_view->fit_to_page_width(true);
 		int current_page = widget->get_current_page_number();
@@ -614,6 +696,8 @@ class FitToPageWidthSmartCommand : public Command {
 };
 
 class FitToPageHeightCommand : public Command {
+public:
+	FitToPageHeightCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->main_document_view->fit_to_page_height();
 		widget->last_smart_fit_page = {};
@@ -625,6 +709,8 @@ class FitToPageHeightCommand : public Command {
 };
 
 class FitToPageHeightSmartCommand : public Command {
+public:
+	FitToPageHeightSmartCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->main_document_view->fit_to_page_height(true);
 	}
@@ -635,6 +721,8 @@ class FitToPageHeightSmartCommand : public Command {
 };
 
 class NextPageCommand : public Command {
+public:
+	NextPageCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->main_document_view->move_pages(std::max(1, num_repeats));
 	}
@@ -644,6 +732,8 @@ class NextPageCommand : public Command {
 };
 
 class PreviousPageCommand : public Command {
+public:
+	PreviousPageCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->main_document_view->move_pages(std::min(-1, -num_repeats));
 	}
@@ -654,6 +744,8 @@ class PreviousPageCommand : public Command {
 };
 
 class ZoomOutCommand : public Command {
+public:
+	ZoomOutCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->main_document_view->zoom_out();
@@ -666,6 +758,8 @@ class ZoomOutCommand : public Command {
 };
 
 class GotoDefinitionCommand : public Command {
+public:
+	GotoDefinitionCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		if (widget->main_document_view->goto_definition()) {
 			widget->opengl_widget->set_should_draw_vertical_line(false);
@@ -682,6 +776,8 @@ class GotoDefinitionCommand : public Command {
 };
 
 class OverviewDefinitionCommand : public Command {
+public:
+	OverviewDefinitionCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->overview_to_definition();
 	}
@@ -692,6 +788,8 @@ class OverviewDefinitionCommand : public Command {
 };
 
 class PortalToDefinitionCommand : public Command {
+public:
+	PortalToDefinitionCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->portal_to_definition();
 	}
@@ -702,6 +800,8 @@ class PortalToDefinitionCommand : public Command {
 };
 
 class MoveVisualMarkDownCommand : public Command {
+public:
+	MoveVisualMarkDownCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->move_visual_mark_command(rp);
@@ -713,6 +813,8 @@ class MoveVisualMarkDownCommand : public Command {
 };
 
 class MoveVisualMarkUpCommand : public Command {
+public:
+	MoveVisualMarkUpCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->move_visual_mark_command(-rp);
@@ -724,6 +826,8 @@ class MoveVisualMarkUpCommand : public Command {
 };
 
 class MoveVisualMarkNextCommand : public Command {
+public:
+	MoveVisualMarkNextCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->move_visual_mark_next();
 	}
@@ -734,6 +838,8 @@ class MoveVisualMarkNextCommand : public Command {
 };
 
 class MoveVisualMarkPrevCommand : public Command {
+public:
+	MoveVisualMarkPrevCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->move_visual_mark_prev();
 	}
@@ -745,6 +851,8 @@ class MoveVisualMarkPrevCommand : public Command {
 
 
 class GotoPageWithPageNumberCommand : public TextCommand {
+public:
+	GotoPageWithPageNumberCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		std::wstring text_ = text.value();
@@ -768,6 +876,8 @@ class GotoPageWithPageNumberCommand : public TextCommand {
 };
 
 class DeletePortalCommand : public Command {
+public:
+	DeletePortalCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->main_document_view->delete_closest_portal();
 		widget->validate_render();
@@ -779,6 +889,8 @@ class DeletePortalCommand : public Command {
 };
 
 class DeleteBookmarkCommand : public Command {
+public:
+	DeleteBookmarkCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->main_document_view->delete_closest_bookmark();
 		widget->validate_render();
@@ -790,6 +902,8 @@ class DeleteBookmarkCommand : public Command {
 };
 
 class DeleteHighlightCommand : public Command {
+public:
+	DeleteHighlightCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
         widget->handle_delete_selected_highlight();
 	}
@@ -800,6 +914,8 @@ class DeleteHighlightCommand : public Command {
 };
 
 class GotoPortalCommand : public Command {
+public:
+	GotoPortalCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		std::optional<Portal> link = widget->main_document_view->find_closest_portal();
 		if (link) {
@@ -817,6 +933,8 @@ class GotoPortalCommand : public Command {
 };
 
 class EditPortalCommand : public Command {
+public:
+	EditPortalCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		std::optional<Portal> link = widget->main_document_view->find_closest_portal();
 		if (link) {
@@ -835,6 +953,8 @@ class EditPortalCommand : public Command {
 };
 
 class OpenPrevDocCommand : public Command {
+public:
+	OpenPrevDocCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->handle_open_prev_doc();
 	}
@@ -851,6 +971,8 @@ class OpenPrevDocCommand : public Command {
 };
 
 class OpenDocumentEmbeddedCommand : public Command {
+public:
+	OpenDocumentEmbeddedCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->set_current_widget(new FileSelector(
 			[widget](std::wstring doc_path) {
@@ -872,6 +994,8 @@ class OpenDocumentEmbeddedCommand : public Command {
 };
 
 class OpenDocumentEmbeddedFromCurrentPathCommand : public Command {
+public:
+	OpenDocumentEmbeddedFromCurrentPathCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		std::wstring last_file_name = widget->get_current_file_name().value_or(L"");
 
@@ -895,6 +1019,8 @@ class OpenDocumentEmbeddedFromCurrentPathCommand : public Command {
 };
 
 class CopyCommand : public Command {
+public:
+	CopyCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		copy_to_clipboard(widget->selected_text);
 	}
@@ -905,6 +1031,8 @@ class CopyCommand : public Command {
 };
 
 class GotoBeginningCommand : public Command {
+public:
+	GotoBeginningCommand(MainWidget* w) : Command(w) {};
 public:
 	void perform(MainWidget* main_widget) {
 		if (num_repeats) {
@@ -926,6 +1054,8 @@ public:
 
 class GotoEndCommand : public Command {
 public:
+	GotoEndCommand(MainWidget* w) : Command(w) {};
+public:
 	void perform(MainWidget* main_widget) {
 		if (num_repeats > 0) {
 			main_widget->main_document_view->goto_page(num_repeats - 1 + main_widget->main_document_view->get_page_offset());
@@ -945,6 +1075,8 @@ public:
 };
 
 class ToggleFullscreenCommand : public Command {
+public:
+	ToggleFullscreenCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->toggle_fullscreen();
 	}
@@ -956,6 +1088,8 @@ class ToggleFullscreenCommand : public Command {
 };
 
 class ToggleOneWindowCommand : public Command {
+public:
+	ToggleOneWindowCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->toggle_two_window_mode();
 	}
@@ -967,6 +1101,8 @@ class ToggleOneWindowCommand : public Command {
 };
 
 class ToggleHighlightCommand : public Command {
+public:
+	ToggleHighlightCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->opengl_widget->toggle_highlight_links();
 	}
@@ -978,6 +1114,8 @@ class ToggleHighlightCommand : public Command {
 };
 
 class ToggleSynctexCommand : public Command {
+public:
+	ToggleSynctexCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->toggle_synctex_mode();
 	}
@@ -989,6 +1127,8 @@ class ToggleSynctexCommand : public Command {
 };
 
 class TurnOnSynctexCommand : public Command {
+public:
+	TurnOnSynctexCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->set_synctex_mode(true);
 	}
@@ -1000,6 +1140,8 @@ class TurnOnSynctexCommand : public Command {
 };
 
 class ToggleShowLastCommand : public Command {
+public:
+	ToggleShowLastCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->should_show_last_command = !widget->should_show_last_command;
 	}
@@ -1009,6 +1151,8 @@ class ToggleShowLastCommand : public Command {
 };
 
 class ExternalSearchCommand : public SymbolCommand {
+public:
+	ExternalSearchCommand(MainWidget* w) : SymbolCommand(w) {};
 	void perform(MainWidget* widget) {
 		if ((symbol >= 'a') && (symbol <= 'z')) {
 			if (SEARCH_URLS[symbol - 'a'].size() > 0) {
@@ -1026,6 +1170,8 @@ class ExternalSearchCommand : public SymbolCommand {
 };
 
 class OpenSelectedUrlCommand : public Command {
+public:
+	OpenSelectedUrlCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		open_web_url((widget->selected_text).c_str());
 	}
@@ -1035,6 +1181,8 @@ class OpenSelectedUrlCommand : public Command {
 };
 
 class ScreenDownCommand : public Command {
+public:
+	ScreenDownCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
@@ -1047,6 +1195,8 @@ class ScreenDownCommand : public Command {
 };
 
 class ScreenUpCommand : public Command {
+public:
+	ScreenUpCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
@@ -1059,6 +1209,8 @@ class ScreenUpCommand : public Command {
 };
 
 class NextChapterCommand : public Command {
+public:
+	NextChapterCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
@@ -1071,6 +1223,8 @@ class NextChapterCommand : public Command {
 };
 
 class PrevChapterCommand : public Command {
+public:
+	PrevChapterCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
@@ -1083,6 +1237,8 @@ class PrevChapterCommand : public Command {
 };
 
 class ToggleDarkModeCommand : public Command {
+public:
+	ToggleDarkModeCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->opengl_widget->toggle_dark_mode();
@@ -1097,6 +1253,8 @@ class ToggleDarkModeCommand : public Command {
 };
 
 class ToggleCustomColorMode : public Command {
+public:
+	ToggleCustomColorMode(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->opengl_widget->toggle_custom_color_mode();
@@ -1111,6 +1269,8 @@ class ToggleCustomColorMode : public Command {
 };
 
 class TogglePresentationModeCommand : public Command {
+public:
+	TogglePresentationModeCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->toggle_presentation_mode();
@@ -1124,6 +1284,8 @@ class TogglePresentationModeCommand : public Command {
 };
 
 class TurnOnPresentationModeCommand : public Command {
+public:
+	TurnOnPresentationModeCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->set_presentation_mode(true);
@@ -1137,6 +1299,8 @@ class TurnOnPresentationModeCommand : public Command {
 };
 
 class ToggleMouseDragMode : public Command {
+public:
+	ToggleMouseDragMode(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->toggle_mouse_drag_mode();
@@ -1150,6 +1314,8 @@ class ToggleMouseDragMode : public Command {
 };
 
 class ToggleFreehandDrawingMode : public Command {
+public:
+	ToggleFreehandDrawingMode(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->toggle_freehand_drawing_mode();
@@ -1163,6 +1329,8 @@ class ToggleFreehandDrawingMode : public Command {
 };
 
 class TogglePenDrawingMode : public Command {
+public:
+	TogglePenDrawingMode(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->toggle_pen_drawing_mode();
@@ -1176,6 +1344,8 @@ class TogglePenDrawingMode : public Command {
 };
 
 class CloseWindowCommand : public Command {
+public:
+	CloseWindowCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->close();
@@ -1189,6 +1359,8 @@ class CloseWindowCommand : public Command {
 };
 
 class NewWindowCommand : public Command {
+public:
+	NewWindowCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_new_window();
@@ -1202,6 +1374,8 @@ class NewWindowCommand : public Command {
 };
 
 class QuitCommand : public Command {
+public:
+	QuitCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_close_event();
@@ -1216,6 +1390,8 @@ class QuitCommand : public Command {
 };
 
 class EscapeCommand : public Command {
+public:
+	EscapeCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_escape();
@@ -1229,6 +1405,8 @@ class EscapeCommand : public Command {
 };
 
 class OpenLinkCommand : public Command {
+public:
+	OpenLinkCommand(MainWidget* w) : Command(w) {};
 protected:
 	std::optional<std::wstring> text = {};
 public:
@@ -1279,6 +1457,8 @@ public:
 };
 
 class OverviewLinkCommand : public OpenLinkCommand {
+public:
+	OverviewLinkCommand(MainWidget* w) : OpenLinkCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_overview_link(text.value());
@@ -1291,6 +1471,8 @@ class OverviewLinkCommand : public OpenLinkCommand {
 };
 
 class PortalToLinkCommand : public OpenLinkCommand {
+public:
+	PortalToLinkCommand(MainWidget* w) : OpenLinkCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_portal_to_link(text.value());
@@ -1303,6 +1485,8 @@ class PortalToLinkCommand : public OpenLinkCommand {
 };
 
 class CopyLinkCommand : public TextCommand {
+public:
+	CopyLinkCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_open_link(text.value(), true);
@@ -1323,6 +1507,8 @@ class CopyLinkCommand : public TextCommand {
 };
 
 class KeyboardSelectCommand : public TextCommand {
+public:
+	KeyboardSelectCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_keyboard_select(text.value());
@@ -1343,6 +1529,8 @@ class KeyboardSelectCommand : public TextCommand {
 };
 
 class KeyboardOverviewCommand : public TextCommand {
+public:
+	KeyboardOverviewCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		std::optional<fz_irect> rect_ = widget->get_tag_window_rect(utf8_encode(text.value()));
@@ -1368,6 +1556,8 @@ class KeyboardOverviewCommand : public TextCommand {
 };
 
 class KeyboardSmartjumpCommand : public TextCommand {
+public:
+	KeyboardSmartjumpCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 	   	std::optional<fz_irect> rect_ = widget->get_tag_window_rect(utf8_encode(text.value()));
@@ -1396,6 +1586,8 @@ class KeyboardSmartjumpCommand : public TextCommand {
 };
 
 class KeysCommand : public Command {
+public:
+	KeysCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		open_file(default_keys_path.get_path());
@@ -1409,6 +1601,8 @@ class KeysCommand : public Command {
 };
 
 class KeysUserCommand : public Command {
+public:
+	KeysUserCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		std::optional<Path> key_file_path = widget->input_handler->get_or_create_user_keys_path();
@@ -1425,6 +1619,8 @@ class KeysUserCommand : public Command {
 };
 
 class KeysUserAllCommand : public Command {
+public:
+	KeysUserAllCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_keys_user_all();
@@ -1438,6 +1634,8 @@ class KeysUserAllCommand : public Command {
 };
 
 class PrefsCommand : public Command {
+public:
+	PrefsCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		open_file(default_config_path.get_path());
@@ -1451,6 +1649,8 @@ class PrefsCommand : public Command {
 };
 
 class PrefsUserCommand : public Command {
+public:
+	PrefsUserCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		std::optional<Path> pref_file_path = widget->config_manager->get_or_create_user_config_file();
@@ -1467,6 +1667,8 @@ class PrefsUserCommand : public Command {
 };
 
 class PrefsUserAllCommand : public Command {
+public:
+	PrefsUserAllCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_prefs_user_all();
@@ -1480,6 +1682,8 @@ class PrefsUserAllCommand : public Command {
 };
 
 class FitToPageWidthRatioCommand : public Command {
+public:
+	FitToPageWidthRatioCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->main_document_view->fit_to_page_width(false, true);
@@ -1492,6 +1696,8 @@ class FitToPageWidthRatioCommand : public Command {
 };
 
 class SmartJumpUnderCursorCommand : public Command {
+public:
+	SmartJumpUnderCursorCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
@@ -1504,6 +1710,8 @@ class SmartJumpUnderCursorCommand : public Command {
 };
 
 class DownloadPaperUnderCursorCommand : public Command {
+public:
+	DownloadPaperUnderCursorCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         widget->download_paper_under_cursor();
@@ -1516,6 +1724,8 @@ class DownloadPaperUnderCursorCommand : public Command {
 
 
 class OverviewUnderCursorCommand : public Command {
+public:
+	OverviewUnderCursorCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
@@ -1528,6 +1738,8 @@ class OverviewUnderCursorCommand : public Command {
 };
 
 class SynctexUnderCursorCommand : public Command {
+public:
+	SynctexUnderCursorCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
@@ -1540,6 +1752,8 @@ class SynctexUnderCursorCommand : public Command {
 };
 
 class VisualMarkUnderCursorCommand : public Command {
+public:
+	VisualMarkUnderCursorCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
@@ -1552,6 +1766,8 @@ class VisualMarkUnderCursorCommand : public Command {
 };
 
 class CloseOverviewCommand : public Command {
+public:
+	CloseOverviewCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         widget->opengl_widget->set_overview_page({});
@@ -1563,6 +1779,8 @@ class CloseOverviewCommand : public Command {
 };
 
 class CloseVisualMarkCommand : public Command {
+public:
+	CloseVisualMarkCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         widget->opengl_widget->set_should_draw_vertical_line(false);
@@ -1574,6 +1792,8 @@ class CloseVisualMarkCommand : public Command {
 };
 
 class ZoomInCursorCommand : public Command {
+public:
+	ZoomInCursorCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
@@ -1587,6 +1807,8 @@ class ZoomInCursorCommand : public Command {
 };
 
 class ZoomOutCursorCommand : public Command {
+public:
+	ZoomOutCursorCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
@@ -1600,6 +1822,8 @@ class ZoomOutCursorCommand : public Command {
 };
 
 class GotoLeftCommand : public Command {
+public:
+	GotoLeftCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->main_document_view->goto_left();
@@ -1611,6 +1835,8 @@ class GotoLeftCommand : public Command {
 };
 
 class GotoLeftSmartCommand : public Command {
+public:
+	GotoLeftSmartCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->main_document_view->goto_left_smart();
@@ -1622,6 +1848,8 @@ class GotoLeftSmartCommand : public Command {
 };
 
 class GotoRightCommand : public Command {
+public:
+	GotoRightCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->main_document_view->goto_right();
@@ -1633,6 +1861,8 @@ class GotoRightCommand : public Command {
 };
 
 class GotoRightSmartCommand : public Command {
+public:
+	GotoRightSmartCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->main_document_view->goto_right_smart();
@@ -1644,6 +1874,8 @@ class GotoRightSmartCommand : public Command {
 };
 
 class RotateClockwiseCommand : public Command {
+public:
+	RotateClockwiseCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->main_document_view->rotate();
@@ -1656,6 +1888,8 @@ class RotateClockwiseCommand : public Command {
 };
 
 class RotateCounterClockwiseCommand : public Command {
+public:
+	RotateCounterClockwiseCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->main_document_view->rotate();
@@ -1668,6 +1902,8 @@ class RotateCounterClockwiseCommand : public Command {
 };
 
 class GotoNextHighlightCommand : public Command {
+public:
+	GotoNextHighlightCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		auto next_highlight = widget->main_document_view->get_document()->get_next_highlight(widget->main_document_view->get_offset_y());
@@ -1682,6 +1918,8 @@ class GotoNextHighlightCommand : public Command {
 };
 
 class GotoPrevHighlightCommand : public Command {
+public:
+	GotoPrevHighlightCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 
@@ -1697,6 +1935,8 @@ class GotoPrevHighlightCommand : public Command {
 };
 
 class GotoNextHighlightOfTypeCommand : public Command {
+public:
+	GotoNextHighlightOfTypeCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		auto next_highlight = widget->main_document_view->get_document()->get_next_highlight(widget->main_document_view->get_offset_y(), widget->select_highlight_type);
@@ -1711,6 +1951,8 @@ class GotoNextHighlightOfTypeCommand : public Command {
 };
 
 class GotoPrevHighlightOfTypeCommand : public Command {
+public:
+	GotoPrevHighlightOfTypeCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		auto prev_highlight = widget->main_document_view->get_document()->get_prev_highlight(widget->main_document_view->get_offset_y(), widget->select_highlight_type);
@@ -1725,6 +1967,8 @@ class GotoPrevHighlightOfTypeCommand : public Command {
 };
 
 class SetSelectHighlightTypeCommand : public SymbolCommand {
+public:
+	SetSelectHighlightTypeCommand(MainWidget* w) : SymbolCommand(w) {};
 	void perform(MainWidget* widget) {
         widget->select_highlight_type = symbol;
 	}
@@ -1737,6 +1981,8 @@ class SetSelectHighlightTypeCommand : public SymbolCommand {
 };
 
 class SetFreehandType : public SymbolCommand {
+public:
+	SetFreehandType(MainWidget* w) : SymbolCommand(w) {};
 	void perform(MainWidget* widget) {
         widget->current_freehand_type = symbol;
 	}
@@ -1749,6 +1995,8 @@ class SetFreehandType : public SymbolCommand {
 };
 
 class AddHighlightWithCurrentTypeCommand : public Command {
+public:
+	AddHighlightWithCurrentTypeCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
         if (widget->main_document_view->selected_character_rects.size() > 0) {
             widget->main_document_view->add_highlight(widget->selection_begin, widget->selection_end, widget->select_highlight_type);
@@ -1763,6 +2011,8 @@ class AddHighlightWithCurrentTypeCommand : public Command {
 };
 
 class UndoDrawingCommand : public Command {
+public:
+	UndoDrawingCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->handle_undo_drawing();
 	}
@@ -1776,6 +2026,8 @@ class UndoDrawingCommand : public Command {
 
 
 class EnterPasswordCommand : public TextCommand {
+public:
+	EnterPasswordCommand(MainWidget* w) : TextCommand(w) {};
 	void perform(MainWidget* widget) {
 		std::string password = utf8_encode(text.value());
 		widget->pdf_renderer->add_password(widget->main_document_view->get_document()->get_path(), password);
@@ -1791,6 +2043,8 @@ class EnterPasswordCommand : public TextCommand {
 };
 
 class ToggleFastreadCommand : public Command {
+public:
+	ToggleFastreadCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->opengl_widget->toggle_fastread_mode();
 	}
@@ -1801,6 +2055,8 @@ class ToggleFastreadCommand : public Command {
 };
 
 class GotoTopOfPageCommand : public Command {
+public:
+	GotoTopOfPageCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
         widget->main_document_view->goto_top_of_page();
 	}
@@ -1811,6 +2067,8 @@ class GotoTopOfPageCommand : public Command {
 };
 
 class GotoBottomOfPageCommand : public Command {
+public:
+	GotoBottomOfPageCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
         widget->main_document_view->goto_bottom_of_page();
 	}
@@ -1821,6 +2079,8 @@ class GotoBottomOfPageCommand : public Command {
 };
 
 class ReloadCommand : public Command {
+public:
+	ReloadCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
         widget->reload();
 	}
@@ -1831,6 +2091,8 @@ class ReloadCommand : public Command {
 };
 
 class ReloadConfigCommand : public Command {
+public:
+	ReloadConfigCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->on_config_file_changed(widget->config_manager);
 	}
@@ -1843,6 +2105,8 @@ class ReloadConfigCommand : public Command {
 };
 
 class TurnOnAllDrawings : public Command {
+public:
+	TurnOnAllDrawings(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->hande_turn_on_all_drawings();
 	}
@@ -1855,6 +2119,8 @@ class TurnOnAllDrawings : public Command {
 };
 
 class TurnOffAllDrawings : public Command {
+public:
+	TurnOffAllDrawings(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->hande_turn_off_all_drawings();
 	}
@@ -1867,6 +2133,8 @@ class TurnOffAllDrawings : public Command {
 };
 
 class SetStatusStringCommand : public TextCommand {
+public:
+	SetStatusStringCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->set_status_message(text.value());
@@ -1884,6 +2152,8 @@ class SetStatusStringCommand : public TextCommand {
 };
 
 class ClearStatusStringCommand : public Command {
+public:
+	ClearStatusStringCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
         widget->set_status_message(L"");
 	}
@@ -1896,6 +2166,8 @@ class ClearStatusStringCommand : public Command {
 };
 
 class ToggleTittlebarCommand : public Command {
+public:
+	ToggleTittlebarCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->toggle_titlebar();
 	}
@@ -1908,6 +2180,8 @@ class ToggleTittlebarCommand : public Command {
 };
 
 class NextPreviewCommand : public Command {
+public:
+	NextPreviewCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
         if (widget->smart_view_candidates.size() > 0) {
             widget->index_into_candidates = (widget->index_into_candidates + 1) % widget->smart_view_candidates.size();
@@ -1921,6 +2195,8 @@ class NextPreviewCommand : public Command {
 };
 
 class PreviousPreviewCommand : public Command {
+public:
+	PreviousPreviewCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
         if (widget->smart_view_candidates.size() > 0) {
             widget->index_into_candidates = mod(widget->index_into_candidates - 1, widget->smart_view_candidates.size());
@@ -1934,6 +2210,8 @@ class PreviousPreviewCommand : public Command {
 };
 
 class GotoOverviewCommand : public Command {
+public:
+	GotoOverviewCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->goto_overview();
 	}
@@ -1944,6 +2222,8 @@ class GotoOverviewCommand : public Command {
 };
 
 class PortalToOverviewCommand : public Command {
+public:
+	PortalToOverviewCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
 		widget->handle_portal_to_overview();
 	}
@@ -1954,6 +2234,8 @@ class PortalToOverviewCommand : public Command {
 };
 
 class GotoSelectedTextCommand : public Command {
+public:
+	GotoSelectedTextCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->long_jump_to_destination(widget->selection_begin.y);
@@ -1965,6 +2247,8 @@ class GotoSelectedTextCommand : public Command {
 };
 
 class FocusTextCommand : public TextCommand {
+public:
+	FocusTextCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
 		std::wstring text_ = text.value();
@@ -1981,6 +2265,8 @@ class FocusTextCommand : public TextCommand {
 };
 
 class GotoWindowCommand : public Command {
+public:
+	GotoWindowCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_goto_window();
@@ -1994,6 +2280,8 @@ class GotoWindowCommand : public Command {
 };
 
 class ToggleSmoothScrollModeCommand : public Command {
+public:
+	ToggleSmoothScrollModeCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_toggle_smooth_scroll_mode();
@@ -2007,6 +2295,8 @@ class ToggleSmoothScrollModeCommand : public Command {
 };
 
 class ToggleScrollbarCommand : public Command {
+public:
+	ToggleScrollbarCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         widget->toggle_scrollbar();
@@ -2018,6 +2308,8 @@ class ToggleScrollbarCommand : public Command {
 };
 
 class OverviewToPortalCommand : public Command {
+public:
+	OverviewToPortalCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_overview_to_portal();
@@ -2029,6 +2321,8 @@ class OverviewToPortalCommand : public Command {
 };
 
 class DebugCommand : public Command {
+public:
+	DebugCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_debug_command();
@@ -2040,6 +2334,8 @@ class DebugCommand : public Command {
 };
 
 class SelectRectCommand : public Command {
+public:
+	SelectRectCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         widget->set_rect_select_mode(true);
@@ -2051,6 +2347,8 @@ class SelectRectCommand : public Command {
 };
 
 class ToggleTypingModeCommand : public Command {
+public:
+	ToggleTypingModeCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_toggle_typing_mode();
@@ -2062,6 +2360,8 @@ class ToggleTypingModeCommand : public Command {
 };
 
 class DonateCommand : public Command {
+public:
+	DonateCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         open_web_url(L"https://www.buymeacoffee.com/ahrm");
@@ -2074,6 +2374,8 @@ class DonateCommand : public Command {
 };
 
 class OverviewNextItemCommand : public Command {
+public:
+	OverviewNextItemCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         if (num_repeats == 0) num_repeats++;
@@ -2086,6 +2388,8 @@ class OverviewNextItemCommand : public Command {
 };
 
 class OverviewPrevItemCommand : public Command {
+public:
+	OverviewPrevItemCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         if (num_repeats == 0) num_repeats++;
@@ -2098,6 +2402,8 @@ class OverviewPrevItemCommand : public Command {
 };
 
 class DeleteHighlightUnderCursorCommand : public Command {
+public:
+	DeleteHighlightUnderCursorCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_delete_highlight_under_cursor();
@@ -2109,6 +2415,9 @@ class DeleteHighlightUnderCursorCommand : public Command {
 };
 
 class NoopCommand : public Command {
+public:
+
+	NoopCommand(MainWidget* widget_) : Command(widget_) {}
 
 	void perform(MainWidget* widget) {
 	}
@@ -2120,6 +2429,8 @@ class NoopCommand : public Command {
 };
 
 class ImportCommand : public Command {
+public:
+	ImportCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         std::wstring import_file_name = select_json_file_name();
@@ -2133,6 +2444,8 @@ class ImportCommand : public Command {
 };
 
 class ExportCommand : public Command {
+public:
+	ExportCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         std::wstring export_file_name = select_new_json_file_name();
@@ -2146,6 +2459,8 @@ class ExportCommand : public Command {
 };
 
 class EnterVisualMarkModeCommand : public Command {
+public:
+	EnterVisualMarkModeCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         widget->visual_mark_under_pos({ widget->width()/2, widget->height()/2});
@@ -2157,6 +2472,8 @@ class EnterVisualMarkModeCommand : public Command {
 };
 
 class SetPageOffsetCommand : public TextCommand {
+public:
+	SetPageOffsetCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
         if (is_string_numeric(text.value().c_str()) && text.value().size() < 6) { // make sure the page number is valid
@@ -2170,6 +2487,8 @@ class SetPageOffsetCommand : public TextCommand {
 };
 
 class ToggleVisualScrollCommand : public Command {
+public:
+	ToggleVisualScrollCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         widget->toggle_visual_scroll_mode();
@@ -2181,6 +2500,8 @@ class ToggleVisualScrollCommand : public Command {
 };
 
 class ToggleHorizontalLockCommand : public Command {
+public:
+	ToggleHorizontalLockCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         widget->horizontal_scroll_locked = !widget->horizontal_scroll_locked;
@@ -2192,6 +2513,8 @@ class ToggleHorizontalLockCommand : public Command {
 };
 
 class ExecuteCommand : public TextCommand {
+public:
+	ExecuteCommand(MainWidget* w) : TextCommand(w) {};
 
 	void perform(MainWidget* widget) {
         widget->execute_command(text.value());
@@ -2204,6 +2527,8 @@ class ExecuteCommand : public TextCommand {
 };
 
 class EmbedAnnotationsCommand : public Command {
+public:
+	EmbedAnnotationsCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
@@ -2218,6 +2543,8 @@ class EmbedAnnotationsCommand : public Command {
 };
 
 class CopyWindowSizeConfigCommand : public Command {
+public:
+	CopyWindowSizeConfigCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         copy_to_clipboard(widget->get_window_configuration_string());
@@ -2230,6 +2557,8 @@ class CopyWindowSizeConfigCommand : public Command {
 };
 
 class ToggleSelectHighlightCommand : public Command {
+public:
+	ToggleSelectHighlightCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         widget->is_select_highlight_mode = !widget->is_select_highlight_mode;
@@ -2241,6 +2570,8 @@ class ToggleSelectHighlightCommand : public Command {
 };
 
 class OpenLastDocumentCommand : public Command {
+public:
+	OpenLastDocumentCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
         auto last_opened_file = widget->get_last_opened_file_checksum();
@@ -2257,6 +2588,8 @@ class OpenLastDocumentCommand : public Command {
 };
 
 class AddMarkedDataCommand : public Command {
+public:
+	AddMarkedDataCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_add_marked_data();
@@ -2270,6 +2603,8 @@ class AddMarkedDataCommand : public Command {
 };
 
 class UndoMarkedDataCommand : public Command {
+public:
+	UndoMarkedDataCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_undo_marked_data();
@@ -2283,6 +2618,8 @@ class UndoMarkedDataCommand : public Command {
 };
 
 class GotoRandomPageCommand : public Command {
+public:
+	GotoRandomPageCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_goto_random_page();
@@ -2296,6 +2633,8 @@ class GotoRandomPageCommand : public Command {
 };
 
 class RemoveMarkedDataCommand : public Command {
+public:
+	RemoveMarkedDataCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_remove_marked_data();
@@ -2309,6 +2648,8 @@ class RemoveMarkedDataCommand : public Command {
 };
 
 class ExportMarkedDataCommand : public Command {
+public:
+	ExportMarkedDataCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->handle_export_marked_data();
@@ -2322,6 +2663,8 @@ class ExportMarkedDataCommand : public Command {
 };
 
 class ToggleStatusbarCommand : public Command {
+public:
+	ToggleStatusbarCommand(MainWidget* w) : Command(w) {};
 
 	void perform(MainWidget* widget) {
 		widget->toggle_statusbar();
@@ -2359,7 +2702,7 @@ private:
 			return actual_command.get();
 		}
 		else {
-			actual_command = std::move(command_manager->get_command_with_name(command_name));
+			actual_command = std::move(command_manager->get_command_with_name(widget, command_name));
 			if (!actual_command) return &noop;
 
 			auto req = actual_command->next_requirement(widget);
@@ -2386,7 +2729,7 @@ private:
 
 
 public:
-	LazyCommand(CommandManager* manager, std::wstring command_text) {
+	LazyCommand(MainWidget* widget_, CommandManager* manager, std::wstring command_text) : Command(widget_), noop(widget_) {
 		command_manager = manager;
 		parse_command_text(command_text);
 	}
@@ -2425,6 +2768,8 @@ public:
 
 
 class DeleteFreehandDrawingsCommand: public Command {
+public:
+	DeleteFreehandDrawingsCommand(MainWidget* w) : Command(w) {};
 
 	std::optional<fz_rect> rect_;
 	DrawingMode original_drawing_mode = DrawingMode::None;
@@ -2474,7 +2819,7 @@ class CustomCommand : public Command {
 
 public:
 
-	CustomCommand(std::string name_, std::wstring command_) {
+	CustomCommand(MainWidget* widget_, std::string name_, std::wstring command_) : Command(widget) {
 		raw_command = command_;
 		name = name_;
 	}
@@ -2533,7 +2878,7 @@ class ConfigCommand : public Command {
 	std::optional<std::wstring> text = {};
 	ConfigManager* config_manager;
 public:
-    ConfigCommand(std::string config_name_, ConfigManager* config_manager_) : config_manager(config_manager_){
+    ConfigCommand(MainWidget* widget_, std::string config_name_, ConfigManager* config_manager_) : Command(widget_), config_manager(config_manager_){
         config_name = config_name_;
     }
 
@@ -2644,7 +2989,7 @@ class MacroCommand : public Command {
 public:
 	//MacroCommand(std::string name_, std::vector<std::unique_ptr<NewCommand>> commands_) {
 
-	MacroCommand(CommandManager* manager, std::string name_, std::wstring commands_) {
+	MacroCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(widget_){
 		//commands = std::move(commands_);
 		command_manager = manager;
 		name = name_;
@@ -2658,18 +3003,17 @@ public:
 				}
 
 				if (!is_modal) {
-					commands.push_back(std::make_unique<LazyCommand>(manager, parts.at(i).toStdWString()));
+					commands.push_back(std::make_unique<LazyCommand>(widget_, manager, parts.at(i).toStdWString()));
 				}
 				else {
 					int closed_bracket_index = parts.at(i).indexOf(']');
 					if (closed_bracket_index > 0) {
 						QString mode_string = parts.at(i).mid(1, closed_bracket_index - 1);
 						QString command_string = parts.at(i).mid(closed_bracket_index + 1);
-						commands.push_back(std::make_unique<LazyCommand>(manager, command_string.toStdWString()));
+						commands.push_back(std::make_unique<LazyCommand>(widget_, manager, command_string.toStdWString()));
 						modes.push_back(mode_string.toStdString());
 					}
 				}
-
 
 			}
 		}
@@ -2828,192 +3172,192 @@ public:
 
 CommandManager::CommandManager(ConfigManager* config_manager) {
 
-	new_commands["goto_beginning"] = []() {return std::make_unique< GotoBeginningCommand>(); };
-	new_commands["goto_end"] = []() {return std::make_unique< GotoEndCommand>(); };
-	new_commands["goto_definition"] = []() {return std::make_unique< GotoDefinitionCommand>(); };
-	new_commands["overview_definition"] = []() {return std::make_unique< OverviewDefinitionCommand>(); };
-	new_commands["portal_to_definition"] = []() {return std::make_unique< PortalToDefinitionCommand>(); };
-	new_commands["next_item"] = []() {return std::make_unique< NextItemCommand>(); };
-	new_commands["previous_item"] = []() {return std::make_unique< PrevItemCommand>(); };
-	new_commands["toggle_text_mark"] = []() {return std::make_unique< ToggleTextMarkCommand>(); };
-	new_commands["move_text_mark_forward"] = []() {return std::make_unique< MoveTextMarkForwardCommand>(); };
-	new_commands["move_text_mark_backward"] = []() {return std::make_unique< MoveTextMarkBackwardCommand>(); };
-	new_commands["move_text_mark_forward_word"] = []() {return std::make_unique< MoveTextMarkForwardWordCommand>(); };
-	new_commands["move_text_mark_backward_word"] = []() {return std::make_unique< MoveTextMarkBackwardWordCommand>(); };
-	new_commands["set_mark"] = []() {return std::make_unique< SetMark>(); };
-	new_commands["toggle_drawing_mask"] = []() {return std::make_unique< ToggleDrawingMask>(); };
-	new_commands["turn_on_all_drawings"] = []() {return std::make_unique< TurnOnAllDrawings>(); };
-	new_commands["turn_off_all_drawings"] = []() {return std::make_unique< TurnOffAllDrawings>(); };
-	new_commands["goto_mark"] = []() {return std::make_unique< GotoMark>(); };
-	new_commands["goto_page_with_page_number"] = []() {return std::make_unique< GotoPageWithPageNumberCommand>(); };
-	new_commands["search"] = []() {return std::make_unique< SearchCommand>(); };
-	new_commands["set_freehand_thickness"] = []() {return std::make_unique< SetFreehandThickness>(); };
-	new_commands["goto_page_with_label"] = []() {return std::make_unique< GotoPageWithLabel>(); };
-	new_commands["regex_search"] = []() {return std::make_unique< RegexSearchCommand>(); };
-	new_commands["chapter_search"] = []() {return std::make_unique< ChapterSearchCommand>(); };
-	new_commands["move_down"] = []() {return std::make_unique< MoveDownCommand>(); };
-	new_commands["move_up"] = []() {return std::make_unique< MoveUpCommand>(); };
-	new_commands["move_left"] = []() {return std::make_unique< MoveLeftCommand>(); };
-	new_commands["move_right"] = []() {return std::make_unique< MoveRightCommand>(); };
-	new_commands["zoom_in"] = []() {return std::make_unique< ZoomInCommand>(); };
-	new_commands["zoom_out"] = []() {return std::make_unique< ZoomOutCommand>(); };
-	new_commands["fit_to_page_width"] = []() {return std::make_unique< FitToPageWidthCommand>(); };
-	new_commands["fit_to_page_height"] = []() {return std::make_unique< FitToPageHeightCommand>(); };
-	new_commands["fit_to_page_height_smart"] = []() {return std::make_unique< FitToPageHeightSmartCommand>(); };
-	new_commands["fit_to_page_width_smart"] = []() {return std::make_unique< FitToPageWidthSmartCommand>(); };
-	new_commands["next_page"] = []() {return std::make_unique< NextPageCommand>(); };
-	new_commands["previous_page"] = []() {return std::make_unique< PreviousPageCommand>(); };
-	new_commands["open_document"] = []() {return std::make_unique< OpenDocumentCommand>(); };
-	new_commands["add_bookmark"] = []() {return std::make_unique< AddBookmarkCommand>(); };
-	new_commands["add_highlight"] = []() {return std::make_unique< AddHighlightCommand>(); };
-	new_commands["goto_toc"] = []() {return std::make_unique< GotoTableOfContentsCommand>(); };
-	new_commands["goto_highlight"] = []() {return std::make_unique< GotoHighlightCommand>(); };
-	new_commands["goto_bookmark"] = []() {return std::make_unique< GotoBookmarkCommand>(); };
-	new_commands["goto_bookmark_g"] = []() {return std::make_unique< GotoBookmarkGlobalCommand>(); };
-	new_commands["goto_highlight_g"] = []() {return std::make_unique< GotoHighlightGlobalCommand>(); };
-	new_commands["link"] = []() {return std::make_unique< PortalCommand>(); };
-	new_commands["portal"] = []() {return std::make_unique< PortalCommand>(); };
-	new_commands["next_state"] = []() {return std::make_unique< NextStateCommand>(); };
-	new_commands["prev_state"] = []() {return std::make_unique< PrevStateCommand>(); };
-	new_commands["delete_link"] = []() {return std::make_unique< DeletePortalCommand>(); };
-	new_commands["delete_portal"] = []() {return std::make_unique< DeletePortalCommand>(); };
-	new_commands["delete_bookmark"] = []() {return std::make_unique< DeleteBookmarkCommand>(); };
-	new_commands["delete_highlight"] = []() {return std::make_unique< DeleteHighlightCommand>(); };
-	new_commands["goto_link"] = []() {return std::make_unique< GotoPortalCommand>(); };
-	new_commands["goto_portal"] = []() {return std::make_unique< GotoPortalCommand>(); };
-	new_commands["edit_link"] = []() {return std::make_unique< EditPortalCommand>(); };
-	new_commands["edit_portal"] = []() {return std::make_unique< EditPortalCommand>(); };
-	new_commands["open_prev_doc"] = []() {return std::make_unique< OpenPrevDocCommand>(); };
-	new_commands["open_document_embedded"] = []() {return std::make_unique< OpenDocumentEmbeddedCommand>(); };
-	new_commands["open_document_embedded_from_current_path"] = []() {return std::make_unique< OpenDocumentEmbeddedFromCurrentPathCommand>(); };
-	new_commands["copy"] = []() {return std::make_unique< CopyCommand>(); };
-	new_commands["toggle_fullscreen"] = []() {return std::make_unique< ToggleFullscreenCommand>(); };
-	new_commands["toggle_one_window"] = []() {return std::make_unique< ToggleOneWindowCommand>(); };
-	new_commands["toggle_highlight"] = []() {return std::make_unique< ToggleHighlightCommand>(); };
-	new_commands["toggle_synctex"] = []() {return std::make_unique< ToggleSynctexCommand>(); };
-	new_commands["turn_on_synctex"] = []() {return std::make_unique< TurnOnSynctexCommand>(); };
-	new_commands["toggle_show_last_command"] = []() {return std::make_unique< ToggleShowLastCommand>(); };
-	new_commands["command"] = []() {return std::make_unique< CommandCommand>(); };
-	new_commands["external_search"] = []() {return std::make_unique< ExternalSearchCommand>(); };
-	new_commands["open_selected_url"] = []() {return std::make_unique< OpenSelectedUrlCommand>(); };
-	new_commands["screen_down"] = []() {return std::make_unique< ScreenDownCommand>(); };
-	new_commands["screen_up"] = []() {return std::make_unique< ScreenUpCommand>(); };
-	new_commands["next_chapter"] = []() {return std::make_unique< NextChapterCommand>(); };
-	new_commands["prev_chapter"] = []() {return std::make_unique< PrevChapterCommand>(); };
-	new_commands["toggle_dark_mode"] = []() {return std::make_unique< ToggleDarkModeCommand>(); };
-	new_commands["toggle_presentation_mode"] = []() {return std::make_unique< TogglePresentationModeCommand>(); };
-	new_commands["turn_on_presentation_mode"] = []() {return std::make_unique< TurnOnPresentationModeCommand>(); };
-	new_commands["toggle_mouse_drag_mode"] = []() {return std::make_unique< ToggleMouseDragMode>(); };
-	new_commands["toggle_freehand_drawing_mode"] = []() {return std::make_unique< ToggleFreehandDrawingMode>(); };
-	new_commands["toggle_pen_drawing_mode"] = []() {return std::make_unique< TogglePenDrawingMode>(); };
-	new_commands["close_window"] = []() {return std::make_unique< CloseWindowCommand>(); };
-	new_commands["quit"] = []() {return std::make_unique< QuitCommand>(); };
-	new_commands["escape"] = []() {return std::make_unique< EscapeCommand>(); };
-	new_commands["q"] = []() {return std::make_unique< QuitCommand>(); };
-	new_commands["open_link"] = []() {return std::make_unique< OpenLinkCommand>(); };
-	new_commands["overview_link"] = []() {return std::make_unique< OverviewLinkCommand>(); };
-	new_commands["portal_to_link"] = []() {return std::make_unique< PortalToLinkCommand>(); };
-	new_commands["copy_link"] = []() {return std::make_unique< CopyLinkCommand>(); };
-	new_commands["keyboard_select"] = []() {return std::make_unique< KeyboardSelectCommand>(); };
-	new_commands["keyboard_smart_jump"] = []() {return std::make_unique< KeyboardSmartjumpCommand>(); };
-	new_commands["keyboard_overview"] = []() {return std::make_unique< KeyboardOverviewCommand>(); };
-	new_commands["keys"] = []() {return std::make_unique< KeysCommand>(); };
-	new_commands["keys_user"] = []() {return std::make_unique< KeysUserCommand>(); };
-	new_commands["prefs"] = []() {return std::make_unique< PrefsCommand>(); };
-	new_commands["prefs_user"] = []() {return std::make_unique< PrefsUserCommand>(); };
-	new_commands["move_visual_mark_down"] = []() {return std::make_unique< MoveVisualMarkDownCommand>(); };
-	new_commands["move_visual_mark_up"] = []() {return std::make_unique< MoveVisualMarkUpCommand>(); };
-	new_commands["move_visual_mark_next"] = []() {return std::make_unique< MoveVisualMarkNextCommand>(); };
-	new_commands["move_visual_mark_prev"] = []() {return std::make_unique< MoveVisualMarkPrevCommand>(); };
-	new_commands["toggle_custom_color"] = []() {return std::make_unique< ToggleCustomColorMode>(); };
-	new_commands["set_select_highlight_type"] = []() {return std::make_unique< SetSelectHighlightTypeCommand>(); };
-	new_commands["set_freehand_type"] = []() {return std::make_unique< SetFreehandType>(); };
-	new_commands["toggle_window_configuration"] = []() {return std::make_unique< ToggleWindowConfigurationCommand>(); };
-	new_commands["prefs_user_all"] = []() {return std::make_unique< PrefsUserAllCommand>(); };
-	new_commands["keys_user_all"] = []() {return std::make_unique< KeysUserAllCommand>(); };
-	new_commands["fit_to_page_width_ratio"] = []() {return std::make_unique< FitToPageWidthRatioCommand>(); };
-	new_commands["smart_jump_under_cursor"] = []() {return std::make_unique< SmartJumpUnderCursorCommand>(); };
-	new_commands["download_paper_under_cursor"] = []() {return std::make_unique< DownloadPaperUnderCursorCommand>(); };
-	new_commands["overview_under_cursor"] = []() {return std::make_unique< OverviewUnderCursorCommand>(); };
-	new_commands["close_overview"] = []() {return std::make_unique< CloseOverviewCommand>(); };
-	new_commands["visual_mark_under_cursor"] = []() {return std::make_unique< VisualMarkUnderCursorCommand>(); };
-	new_commands["close_visual_mark"] = []() {return std::make_unique< CloseVisualMarkCommand>(); };
-	new_commands["zoom_in_cursor"] = []() {return std::make_unique< ZoomInCursorCommand>(); };
-	new_commands["zoom_out_cursor"] = []() {return std::make_unique< ZoomOutCursorCommand>(); };
-	new_commands["goto_left"] = []() {return std::make_unique< GotoLeftCommand>(); };
-	new_commands["goto_left_smart"] = []() {return std::make_unique< GotoLeftSmartCommand>(); };
-	new_commands["goto_right"] = []() {return std::make_unique< GotoRightCommand>(); };
-	new_commands["goto_right_smart"] = []() {return std::make_unique< GotoRightSmartCommand>(); };
-	new_commands["rotate_clockwise"] = []() {return std::make_unique< RotateClockwiseCommand>(); };
-	new_commands["rotate_counterclockwise"] = []() {return std::make_unique< RotateCounterClockwiseCommand>(); };
-	new_commands["goto_next_highlight"] = []() {return std::make_unique< GotoNextHighlightCommand>(); };
-	new_commands["goto_prev_highlight"] = []() {return std::make_unique< GotoPrevHighlightCommand>(); };
-	new_commands["goto_next_highlight_of_type"] = []() {return std::make_unique< GotoNextHighlightOfTypeCommand>(); };
-	new_commands["goto_prev_highlight_of_type"] = []() {return std::make_unique< GotoPrevHighlightOfTypeCommand>(); };
-	new_commands["add_highlight_with_current_type"] = []() {return std::make_unique< AddHighlightWithCurrentTypeCommand>(); };
-	new_commands["undo_drawing"] = []() {return std::make_unique< UndoDrawingCommand>(); };
-	new_commands["enter_password"] = []() {return std::make_unique< EnterPasswordCommand>(); };
-	new_commands["toggle_fastread"] = []() {return std::make_unique< ToggleFastreadCommand>(); };
-	new_commands["goto_top_of_page"] = []() {return std::make_unique< GotoTopOfPageCommand>(); };
-	new_commands["goto_bottom_of_page"] = []() {return std::make_unique< GotoBottomOfPageCommand>(); };
-	new_commands["new_window"] = []() {return std::make_unique< NewWindowCommand>(); };
-	new_commands["reload"] = []() {return std::make_unique< ReloadCommand>(); };
-	new_commands["reload_config"] = []() {return std::make_unique< ReloadConfigCommand>(); };
-	new_commands["synctex_under_cursor"] = []() {return std::make_unique< SynctexUnderCursorCommand>(); };
-	new_commands["set_status_string"] = []() {return std::make_unique< SetStatusStringCommand>(); };
-	new_commands["clear_status_string"] = []() {return std::make_unique< ClearStatusStringCommand>(); };
-	new_commands["toggle_titlebar"] = []() {return std::make_unique< ToggleTittlebarCommand>(); };
-	new_commands["next_preview"] = []() {return std::make_unique< NextPreviewCommand>(); };
-	new_commands["previous_preview"] = []() {return std::make_unique< PreviousPreviewCommand>(); };
-	new_commands["goto_overview"] = []() {return std::make_unique< GotoOverviewCommand>(); };
-	new_commands["portal_to_overview"] = []() {return std::make_unique< PortalToOverviewCommand>(); };
-	new_commands["goto_selected_text"] = []() {return std::make_unique< GotoSelectedTextCommand>(); };
-	new_commands["focus_text"] = []() {return std::make_unique< FocusTextCommand>(); };
-	new_commands["goto_window"] = []() {return std::make_unique< GotoWindowCommand>(); };
-	new_commands["toggle_smooth_scroll_mode"] = []() {return std::make_unique< ToggleSmoothScrollModeCommand>(); };
-	new_commands["goto_begining"] = []() {return std::make_unique< GotoBeginningCommand>(); };
-	new_commands["toggle_scrollbar"] = []() {return std::make_unique< ToggleScrollbarCommand>(); };
-	new_commands["overview_to_portal"] = []() {return std::make_unique< OverviewToPortalCommand>(); };
-	new_commands["select_rect"] = []() {return std::make_unique< SelectRectCommand>(); };
-	new_commands["toggle_typing_mode"] = []() {return std::make_unique< ToggleTypingModeCommand>(); };
-	new_commands["donate"] = []() {return std::make_unique< DonateCommand>(); };
-	new_commands["overview_next_item"] = []() {return std::make_unique< OverviewNextItemCommand>(); };
-	new_commands["overview_prev_item"] = []() {return std::make_unique< OverviewPrevItemCommand>(); };
-	new_commands["delete_highlight_under_cursor"] = []() {return std::make_unique< DeleteHighlightUnderCursorCommand>(); };
-	new_commands["noop"] = []() {return std::make_unique< NoopCommand>(); };
-	new_commands["import"] = []() {return std::make_unique< ImportCommand>(); };
-	new_commands["export"] = []() {return std::make_unique< ExportCommand>(); };
-	new_commands["enter_visual_mark_mode"] = []() {return std::make_unique< EnterVisualMarkModeCommand>(); };
-	new_commands["set_page_offset"] = []() {return std::make_unique< SetPageOffsetCommand>(); };
-	new_commands["toggle_visual_scroll"] = []() {return std::make_unique< ToggleVisualScrollCommand>(); };
-	new_commands["toggle_horizontal_scroll_lock"] = []() {return std::make_unique< ToggleHorizontalLockCommand>(); };
-	new_commands["execute"] = []() {return std::make_unique< ExecuteCommand>(); };
-	new_commands["embed_annotations"] = []() {return std::make_unique< EmbedAnnotationsCommand>(); };
-	new_commands["copy_window_size_config"] = []() {return std::make_unique< CopyWindowSizeConfigCommand>(); };
-	new_commands["toggle_select_highlight"] = []() {return std::make_unique< ToggleSelectHighlightCommand>(); };
-	new_commands["open_last_document"] = []() {return std::make_unique< OpenLastDocumentCommand>(); };
-	new_commands["toggle_statusbar"] = []() {return std::make_unique< ToggleStatusbarCommand>(); };
-	new_commands["start_reading"] = []() {return std::make_unique< StartReadingCommand>(); };
-	new_commands["stop_reading"] = []() {return std::make_unique< StopReadingCommand>(); };
-	new_commands["debug"] = []() {return std::make_unique< DebugCommand>(); };
-	new_commands["add_marked_data"] = []() {return std::make_unique< AddMarkedDataCommand>(); };
-	new_commands["remove_marked_data"] = []() {return std::make_unique< RemoveMarkedDataCommand>(); };
-	new_commands["export_marked_data"] = []() {return std::make_unique< ExportMarkedDataCommand>(); };
-	new_commands["undo_marked_data"] = []() {return std::make_unique< UndoMarkedDataCommand>(); };
-	new_commands["goto_random_page"] = []() {return std::make_unique< GotoRandomPageCommand>(); };
-	new_commands["delete_freehand_drawings"] = []() {return std::make_unique< DeleteFreehandDrawingsCommand>(); };
+	new_commands["goto_beginning"] = [](MainWidget* widget) {return std::make_unique< GotoBeginningCommand>(widget); };
+	new_commands["goto_end"] = [](MainWidget* widget) {return std::make_unique< GotoEndCommand>(widget); };
+	new_commands["goto_definition"] = [](MainWidget* widget) {return std::make_unique< GotoDefinitionCommand>(widget); };
+	new_commands["overview_definition"] = [](MainWidget* widget) {return std::make_unique< OverviewDefinitionCommand>(widget); };
+	new_commands["portal_to_definition"] = [](MainWidget* widget) {return std::make_unique< PortalToDefinitionCommand>(widget); };
+	new_commands["next_item"] = [](MainWidget* widget) {return std::make_unique< NextItemCommand>(widget); };
+	new_commands["previous_item"] = [](MainWidget* widget) {return std::make_unique< PrevItemCommand>(widget); };
+	new_commands["toggle_text_mark"] = [](MainWidget* widget) {return std::make_unique< ToggleTextMarkCommand>(widget); };
+	new_commands["move_text_mark_forward"] = [](MainWidget* widget) {return std::make_unique< MoveTextMarkForwardCommand>(widget); };
+	new_commands["move_text_mark_backward"] = [](MainWidget* widget) {return std::make_unique< MoveTextMarkBackwardCommand>(widget); };
+	new_commands["move_text_mark_forward_word"] = [](MainWidget* widget) {return std::make_unique< MoveTextMarkForwardWordCommand>(widget); };
+	new_commands["move_text_mark_backward_word"] = [](MainWidget* widget) {return std::make_unique< MoveTextMarkBackwardWordCommand>(widget); };
+	new_commands["set_mark"] = [](MainWidget* widget) {return std::make_unique< SetMark>(widget); };
+	new_commands["toggle_drawing_mask"] = [](MainWidget* widget) {return std::make_unique< ToggleDrawingMask>(widget); };
+	new_commands["turn_on_all_drawings"] = [](MainWidget* widget) {return std::make_unique< TurnOnAllDrawings>(widget); };
+	new_commands["turn_off_all_drawings"] = [](MainWidget* widget) {return std::make_unique< TurnOffAllDrawings>(widget); };
+	new_commands["goto_mark"] = [](MainWidget* widget) {return std::make_unique< GotoMark>(widget); };
+	new_commands["goto_page_with_page_number"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithPageNumberCommand>(widget); };
+	new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
+	new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
+	new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
+	new_commands["regex_search"] = [](MainWidget* widget) {return std::make_unique< RegexSearchCommand>(widget); };
+	new_commands["chapter_search"] = [](MainWidget* widget) {return std::make_unique< ChapterSearchCommand>(widget); };
+	new_commands["move_down"] = [](MainWidget* widget) {return std::make_unique< MoveDownCommand>(widget); };
+	new_commands["move_up"] = [](MainWidget* widget) {return std::make_unique< MoveUpCommand>(widget); };
+	new_commands["move_left"] = [](MainWidget* widget) {return std::make_unique< MoveLeftCommand>(widget); };
+	new_commands["move_right"] = [](MainWidget* widget) {return std::make_unique< MoveRightCommand>(widget); };
+	new_commands["zoom_in"] = [](MainWidget* widget) {return std::make_unique< ZoomInCommand>(widget); };
+	new_commands["zoom_out"] = [](MainWidget* widget) {return std::make_unique< ZoomOutCommand>(widget); };
+	new_commands["fit_to_page_width"] = [](MainWidget* widget) {return std::make_unique< FitToPageWidthCommand>(widget); };
+	new_commands["fit_to_page_height"] = [](MainWidget* widget) {return std::make_unique< FitToPageHeightCommand>(widget); };
+	new_commands["fit_to_page_height_smart"] = [](MainWidget* widget) {return std::make_unique< FitToPageHeightSmartCommand>(widget); };
+	new_commands["fit_to_page_width_smart"] = [](MainWidget* widget) {return std::make_unique< FitToPageWidthSmartCommand>(widget); };
+	new_commands["next_page"] = [](MainWidget* widget) {return std::make_unique< NextPageCommand>(widget); };
+	new_commands["previous_page"] = [](MainWidget* widget) {return std::make_unique< PreviousPageCommand>(widget); };
+	new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
+	new_commands["add_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkCommand>(widget); };
+	new_commands["add_highlight"] = [](MainWidget* widget) {return std::make_unique< AddHighlightCommand>(widget); };
+	new_commands["goto_toc"] = [](MainWidget* widget) {return std::make_unique< GotoTableOfContentsCommand>(widget); };
+	new_commands["goto_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightCommand>(widget); };
+	new_commands["goto_bookmark"] = [](MainWidget* widget) {return std::make_unique< GotoBookmarkCommand>(widget); };
+	new_commands["goto_bookmark_g"] = [](MainWidget* widget) {return std::make_unique< GotoBookmarkGlobalCommand>(widget); };
+	new_commands["goto_highlight_g"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightGlobalCommand>(widget); };
+	new_commands["link"] = [](MainWidget* widget) {return std::make_unique< PortalCommand>(widget); };
+	new_commands["portal"] = [](MainWidget* widget) {return std::make_unique< PortalCommand>(widget); };
+	new_commands["next_state"] = [](MainWidget* widget) {return std::make_unique< NextStateCommand>(widget); };
+	new_commands["prev_state"] = [](MainWidget* widget) {return std::make_unique< PrevStateCommand>(widget); };
+	new_commands["delete_link"] = [](MainWidget* widget) {return std::make_unique< DeletePortalCommand>(widget); };
+	new_commands["delete_portal"] = [](MainWidget* widget) {return std::make_unique< DeletePortalCommand>(widget); };
+	new_commands["delete_bookmark"] = [](MainWidget* widget) {return std::make_unique< DeleteBookmarkCommand>(widget); };
+	new_commands["delete_highlight"] = [](MainWidget* widget) {return std::make_unique< DeleteHighlightCommand>(widget); };
+	new_commands["goto_link"] = [](MainWidget* widget) {return std::make_unique< GotoPortalCommand>(widget); };
+	new_commands["goto_portal"] = [](MainWidget* widget) {return std::make_unique< GotoPortalCommand>(widget); };
+	new_commands["edit_link"] = [](MainWidget* widget) {return std::make_unique< EditPortalCommand>(widget); };
+	new_commands["edit_portal"] = [](MainWidget* widget) {return std::make_unique< EditPortalCommand>(widget); };
+	new_commands["open_prev_doc"] = [](MainWidget* widget) {return std::make_unique< OpenPrevDocCommand>(widget); };
+	new_commands["open_document_embedded"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentEmbeddedCommand>(widget); };
+	new_commands["open_document_embedded_from_current_path"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentEmbeddedFromCurrentPathCommand>(widget); };
+	new_commands["copy"] = [](MainWidget* widget) {return std::make_unique< CopyCommand>(widget); };
+	new_commands["toggle_fullscreen"] = [](MainWidget* widget) {return std::make_unique< ToggleFullscreenCommand>(widget); };
+	new_commands["toggle_one_window"] = [](MainWidget* widget) {return std::make_unique< ToggleOneWindowCommand>(widget); };
+	new_commands["toggle_highlight"] = [](MainWidget* widget) {return std::make_unique< ToggleHighlightCommand>(widget); };
+	new_commands["toggle_synctex"] = [](MainWidget* widget) {return std::make_unique< ToggleSynctexCommand>(widget); };
+	new_commands["turn_on_synctex"] = [](MainWidget* widget) {return std::make_unique< TurnOnSynctexCommand>(widget); };
+	new_commands["toggle_show_last_command"] = [](MainWidget* widget) {return std::make_unique< ToggleShowLastCommand>(widget); };
+	new_commands["command"] = [](MainWidget* widget) {return std::make_unique< CommandCommand>(widget); };
+	new_commands["external_search"] = [](MainWidget* widget) {return std::make_unique< ExternalSearchCommand>(widget); };
+	new_commands["open_selected_url"] = [](MainWidget* widget) {return std::make_unique< OpenSelectedUrlCommand>(widget); };
+	new_commands["screen_down"] = [](MainWidget* widget) {return std::make_unique< ScreenDownCommand>(widget); };
+	new_commands["screen_up"] = [](MainWidget* widget) {return std::make_unique< ScreenUpCommand>(widget); };
+	new_commands["next_chapter"] = [](MainWidget* widget) {return std::make_unique< NextChapterCommand>(widget); };
+	new_commands["prev_chapter"] = [](MainWidget* widget) {return std::make_unique< PrevChapterCommand>(widget); };
+	new_commands["toggle_dark_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleDarkModeCommand>(widget); };
+	new_commands["toggle_presentation_mode"] = [](MainWidget* widget) {return std::make_unique< TogglePresentationModeCommand>(widget); };
+	new_commands["turn_on_presentation_mode"] = [](MainWidget* widget) {return std::make_unique< TurnOnPresentationModeCommand>(widget); };
+	new_commands["toggle_mouse_drag_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleMouseDragMode>(widget); };
+	new_commands["toggle_freehand_drawing_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleFreehandDrawingMode>(widget); };
+	new_commands["toggle_pen_drawing_mode"] = [](MainWidget* widget) {return std::make_unique< TogglePenDrawingMode>(widget); };
+	new_commands["close_window"] = [](MainWidget* widget) {return std::make_unique< CloseWindowCommand>(widget); };
+	new_commands["quit"] = [](MainWidget* widget) {return std::make_unique< QuitCommand>(widget); };
+	new_commands["escape"] = [](MainWidget* widget) {return std::make_unique< EscapeCommand>(widget); };
+	new_commands["q"] = [](MainWidget* widget) {return std::make_unique< QuitCommand>(widget); };
+	new_commands["open_link"] = [](MainWidget* widget) {return std::make_unique< OpenLinkCommand>(widget); };
+	new_commands["overview_link"] = [](MainWidget* widget) {return std::make_unique< OverviewLinkCommand>(widget); };
+	new_commands["portal_to_link"] = [](MainWidget* widget) {return std::make_unique< PortalToLinkCommand>(widget); };
+	new_commands["copy_link"] = [](MainWidget* widget) {return std::make_unique< CopyLinkCommand>(widget); };
+	new_commands["keyboard_select"] = [](MainWidget* widget) {return std::make_unique< KeyboardSelectCommand>(widget); };
+	new_commands["keyboard_smart_jump"] = [](MainWidget* widget) {return std::make_unique< KeyboardSmartjumpCommand>(widget); };
+	new_commands["keyboard_overview"] = [](MainWidget* widget) {return std::make_unique< KeyboardOverviewCommand>(widget); };
+	new_commands["keys"] = [](MainWidget* widget) {return std::make_unique< KeysCommand>(widget); };
+	new_commands["keys_user"] = [](MainWidget* widget) {return std::make_unique< KeysUserCommand>(widget); };
+	new_commands["prefs"] = [](MainWidget* widget) {return std::make_unique< PrefsCommand>(widget); };
+	new_commands["prefs_user"] = [](MainWidget* widget) {return std::make_unique< PrefsUserCommand>(widget); };
+	new_commands["move_visual_mark_down"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkDownCommand>(widget); };
+	new_commands["move_visual_mark_up"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkUpCommand>(widget); };
+	new_commands["move_visual_mark_next"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkNextCommand>(widget); };
+	new_commands["move_visual_mark_prev"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkPrevCommand>(widget); };
+	new_commands["toggle_custom_color"] = [](MainWidget* widget) {return std::make_unique< ToggleCustomColorMode>(widget); };
+	new_commands["set_select_highlight_type"] = [](MainWidget* widget) {return std::make_unique< SetSelectHighlightTypeCommand>(widget); };
+	new_commands["set_freehand_type"] = [](MainWidget* widget) {return std::make_unique< SetFreehandType>(widget); };
+	new_commands["toggle_window_configuration"] = [](MainWidget* widget) {return std::make_unique< ToggleWindowConfigurationCommand>(widget); };
+	new_commands["prefs_user_all"] = [](MainWidget* widget) {return std::make_unique< PrefsUserAllCommand>(widget); };
+	new_commands["keys_user_all"] = [](MainWidget* widget) {return std::make_unique< KeysUserAllCommand>(widget); };
+	new_commands["fit_to_page_width_ratio"] = [](MainWidget* widget) {return std::make_unique< FitToPageWidthRatioCommand>(widget); };
+	new_commands["smart_jump_under_cursor"] = [](MainWidget* widget) {return std::make_unique< SmartJumpUnderCursorCommand>(widget); };
+	new_commands["download_paper_under_cursor"] = [](MainWidget* widget) {return std::make_unique< DownloadPaperUnderCursorCommand>(widget); };
+	new_commands["overview_under_cursor"] = [](MainWidget* widget) {return std::make_unique< OverviewUnderCursorCommand>(widget); };
+	new_commands["close_overview"] = [](MainWidget* widget) {return std::make_unique< CloseOverviewCommand>(widget); };
+	new_commands["visual_mark_under_cursor"] = [](MainWidget* widget) {return std::make_unique< VisualMarkUnderCursorCommand>(widget); };
+	new_commands["close_visual_mark"] = [](MainWidget* widget) {return std::make_unique< CloseVisualMarkCommand>(widget); };
+	new_commands["zoom_in_cursor"] = [](MainWidget* widget) {return std::make_unique< ZoomInCursorCommand>(widget); };
+	new_commands["zoom_out_cursor"] = [](MainWidget* widget) {return std::make_unique< ZoomOutCursorCommand>(widget); };
+	new_commands["goto_left"] = [](MainWidget* widget) {return std::make_unique< GotoLeftCommand>(widget); };
+	new_commands["goto_left_smart"] = [](MainWidget* widget) {return std::make_unique< GotoLeftSmartCommand>(widget); };
+	new_commands["goto_right"] = [](MainWidget* widget) {return std::make_unique< GotoRightCommand>(widget); };
+	new_commands["goto_right_smart"] = [](MainWidget* widget) {return std::make_unique< GotoRightSmartCommand>(widget); };
+	new_commands["rotate_clockwise"] = [](MainWidget* widget) {return std::make_unique< RotateClockwiseCommand>(widget); };
+	new_commands["rotate_counterclockwise"] = [](MainWidget* widget) {return std::make_unique< RotateCounterClockwiseCommand>(widget); };
+	new_commands["goto_next_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoNextHighlightCommand>(widget); };
+	new_commands["goto_prev_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoPrevHighlightCommand>(widget); };
+	new_commands["goto_next_highlight_of_type"] = [](MainWidget* widget) {return std::make_unique< GotoNextHighlightOfTypeCommand>(widget); };
+	new_commands["goto_prev_highlight_of_type"] = [](MainWidget* widget) {return std::make_unique< GotoPrevHighlightOfTypeCommand>(widget); };
+	new_commands["add_highlight_with_current_type"] = [](MainWidget* widget) {return std::make_unique< AddHighlightWithCurrentTypeCommand>(widget); };
+	new_commands["undo_drawing"] = [](MainWidget* widget) {return std::make_unique< UndoDrawingCommand>(widget); };
+	new_commands["enter_password"] = [](MainWidget* widget) {return std::make_unique< EnterPasswordCommand>(widget); };
+	new_commands["toggle_fastread"] = [](MainWidget* widget) {return std::make_unique< ToggleFastreadCommand>(widget); };
+	new_commands["goto_top_of_page"] = [](MainWidget* widget) {return std::make_unique< GotoTopOfPageCommand>(widget); };
+	new_commands["goto_bottom_of_page"] = [](MainWidget* widget) {return std::make_unique< GotoBottomOfPageCommand>(widget); };
+	new_commands["new_window"] = [](MainWidget* widget) {return std::make_unique< NewWindowCommand>(widget); };
+	new_commands["reload"] = [](MainWidget* widget) {return std::make_unique< ReloadCommand>(widget); };
+	new_commands["reload_config"] = [](MainWidget* widget) {return std::make_unique< ReloadConfigCommand>(widget); };
+	new_commands["synctex_under_cursor"] = [](MainWidget* widget) {return std::make_unique< SynctexUnderCursorCommand>(widget); };
+	new_commands["set_status_string"] = [](MainWidget* widget) {return std::make_unique< SetStatusStringCommand>(widget); };
+	new_commands["clear_status_string"] = [](MainWidget* widget) {return std::make_unique< ClearStatusStringCommand>(widget); };
+	new_commands["toggle_titlebar"] = [](MainWidget* widget) {return std::make_unique< ToggleTittlebarCommand>(widget); };
+	new_commands["next_preview"] = [](MainWidget* widget) {return std::make_unique< NextPreviewCommand>(widget); };
+	new_commands["previous_preview"] = [](MainWidget* widget) {return std::make_unique< PreviousPreviewCommand>(widget); };
+	new_commands["goto_overview"] = [](MainWidget* widget) {return std::make_unique< GotoOverviewCommand>(widget); };
+	new_commands["portal_to_overview"] = [](MainWidget* widget) {return std::make_unique< PortalToOverviewCommand>(widget); };
+	new_commands["goto_selected_text"] = [](MainWidget* widget) {return std::make_unique< GotoSelectedTextCommand>(widget); };
+	new_commands["focus_text"] = [](MainWidget* widget) {return std::make_unique< FocusTextCommand>(widget); };
+	new_commands["goto_window"] = [](MainWidget* widget) {return std::make_unique< GotoWindowCommand>(widget); };
+	new_commands["toggle_smooth_scroll_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleSmoothScrollModeCommand>(widget); };
+	new_commands["goto_begining"] = [](MainWidget* widget) {return std::make_unique< GotoBeginningCommand>(widget); };
+	new_commands["toggle_scrollbar"] = [](MainWidget* widget) {return std::make_unique< ToggleScrollbarCommand>(widget); };
+	new_commands["overview_to_portal"] = [](MainWidget* widget) {return std::make_unique< OverviewToPortalCommand>(widget); };
+	new_commands["select_rect"] = [](MainWidget* widget) {return std::make_unique< SelectRectCommand>(widget); };
+	new_commands["toggle_typing_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleTypingModeCommand>(widget); };
+	new_commands["donate"] = [](MainWidget* widget) {return std::make_unique< DonateCommand>(widget); };
+	new_commands["overview_next_item"] = [](MainWidget* widget) {return std::make_unique< OverviewNextItemCommand>(widget); };
+	new_commands["overview_prev_item"] = [](MainWidget* widget) {return std::make_unique< OverviewPrevItemCommand>(widget); };
+	new_commands["delete_highlight_under_cursor"] = [](MainWidget* widget) {return std::make_unique< DeleteHighlightUnderCursorCommand>(widget); };
+	new_commands["noop"] = [](MainWidget* widget) {return std::make_unique< NoopCommand>(widget); };
+	new_commands["import"] = [](MainWidget* widget) {return std::make_unique< ImportCommand>(widget); };
+	new_commands["export"] = [](MainWidget* widget) {return std::make_unique< ExportCommand>(widget); };
+	new_commands["enter_visual_mark_mode"] = [](MainWidget* widget) {return std::make_unique< EnterVisualMarkModeCommand>(widget); };
+	new_commands["set_page_offset"] = [](MainWidget* widget) {return std::make_unique< SetPageOffsetCommand>(widget); };
+	new_commands["toggle_visual_scroll"] = [](MainWidget* widget) {return std::make_unique< ToggleVisualScrollCommand>(widget); };
+	new_commands["toggle_horizontal_scroll_lock"] = [](MainWidget* widget) {return std::make_unique< ToggleHorizontalLockCommand>(widget); };
+	new_commands["execute"] = [](MainWidget* widget) {return std::make_unique< ExecuteCommand>(widget); };
+	new_commands["embed_annotations"] = [](MainWidget* widget) {return std::make_unique< EmbedAnnotationsCommand>(widget); };
+	new_commands["copy_window_size_config"] = [](MainWidget* widget) {return std::make_unique< CopyWindowSizeConfigCommand>(widget); };
+	new_commands["toggle_select_highlight"] = [](MainWidget* widget) {return std::make_unique< ToggleSelectHighlightCommand>(widget); };
+	new_commands["open_last_document"] = [](MainWidget* widget) {return std::make_unique< OpenLastDocumentCommand>(widget); };
+	new_commands["toggle_statusbar"] = [](MainWidget* widget) {return std::make_unique< ToggleStatusbarCommand>(widget); };
+	new_commands["start_reading"] = [](MainWidget* widget) {return std::make_unique< StartReadingCommand>(widget); };
+	new_commands["stop_reading"] = [](MainWidget* widget) {return std::make_unique< StopReadingCommand>(widget); };
+	new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };
+	new_commands["add_marked_data"] = [](MainWidget* widget) {return std::make_unique< AddMarkedDataCommand>(widget); };
+	new_commands["remove_marked_data"] = [](MainWidget* widget) {return std::make_unique< RemoveMarkedDataCommand>(widget); };
+	new_commands["export_marked_data"] = [](MainWidget* widget) {return std::make_unique< ExportMarkedDataCommand>(widget); };
+	new_commands["undo_marked_data"] = [](MainWidget* widget) {return std::make_unique< UndoMarkedDataCommand>(widget); };
+	new_commands["goto_random_page"] = [](MainWidget* widget) {return std::make_unique< GotoRandomPageCommand>(widget); };
+	new_commands["delete_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< DeleteFreehandDrawingsCommand>(widget); };
 
 
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
 		std::string command_name = utf8_encode(command_name_);
 		std::wstring local_command_value = command_value;
-		new_commands[command_name] = [command_name, local_command_value]() {return  std::make_unique<CustomCommand>(command_name, local_command_value); };
+		new_commands[command_name] = [command_name, local_command_value](MainWidget* w) {return  std::make_unique<CustomCommand>(w, command_name, local_command_value); };
 	}
 
 	for (auto [command_name_, macro_value] : ADDITIONAL_MACROS) {
 		std::string command_name = utf8_encode(command_name_);
 		std::wstring local_macro_value = macro_value;
-		new_commands[command_name] = [command_name, local_macro_value, this]() {return std::make_unique<MacroCommand>(this, command_name, local_macro_value); };
+		new_commands[command_name] = [command_name, local_macro_value, this](MainWidget* w) {return std::make_unique<MacroCommand>(w, this, command_name, local_macro_value); };
 	}
 
 	std::vector<Config> configs = config_manager->get_configs();
@@ -3022,17 +3366,17 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 		std::string confname = utf8_encode(conf.name);
 		std::string config_set_command_name = "setconfig_" + confname;
 		//commands.push_back({ config_set_command_name, true, false , false, false, true, {} });
-		new_commands[config_set_command_name] = [confname, config_manager]() {return std::make_unique<ConfigCommand>(confname, config_manager); };
+		new_commands[config_set_command_name] = [confname, config_manager](MainWidget* w) {return std::make_unique<ConfigCommand>(w, confname, config_manager); };
 
 	}
 
 }
 
 
-std::unique_ptr<Command> CommandManager::get_command_with_name(std::string name, std::string mode_string) {
+std::unique_ptr<Command> CommandManager::get_command_with_name(MainWidget* w, std::string name, std::string mode_string) {
 
 	if (new_commands.find(name) != new_commands.end()) {
-		return new_commands[name]();
+		return new_commands[name](w);
 	}
 	return nullptr;
 }
@@ -3264,7 +3608,7 @@ InputParseTreeNode* parse_lines(
 						command_parts.append(QString::fromStdString(command_names[j][k]));
 					}
 					std::wstring joined_command = command_parts.join(";").toStdWString();
-					parent_node->generator = [joined_command, command_manager]() {return std::make_unique<MacroCommand>(command_manager, "", joined_command); };
+					parent_node->generator = [joined_command, command_manager](MainWidget* w) {return std::make_unique<MacroCommand>(w, command_manager, "", joined_command); };
 				}
 				//if (command_names[j].size())
 			}
@@ -3380,7 +3724,7 @@ bool is_digit(int key) {
 	return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-std::unique_ptr<Command> InputHandler::handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
 	int key = 0;
 	if (!USE_LEGACY_KEYBINDS){
 		std::vector<QString> special_texts = {"\b", "\t", " ", "\r", "\n"};
@@ -3436,7 +3780,7 @@ std::unique_ptr<Command> InputHandler::handle_key(QKeyEvent* key_event, bool shi
 
 				//return command_manager.get_command_with_name(child->name);
 				if (child->generator) {
-					return (child->generator.value())();
+					return (child->generator.value())(w);
 				}
 				return nullptr;
 				//for (size_t i = 0; i < child->name.size(); i++) {
@@ -3649,6 +3993,6 @@ std::string Command::get_name() {
 	return "";
 }
 
-std::unique_ptr<Command> CommandManager::create_macro_command(std::string name, std::wstring macro_string) {
-	return std::make_unique<MacroCommand>(this, name, macro_string);
+std::unique_ptr<Command> CommandManager::create_macro_command(MainWidget* w, std::string name, std::wstring macro_string) {
+	return std::make_unique<MacroCommand>(w, this, name, macro_string);
 }

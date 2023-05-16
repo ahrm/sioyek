@@ -207,12 +207,12 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
-        auto command = main_widget->command_manager->get_command_with_name("open_document");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "open_document");
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::openPrevDocClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("open_prev_doc");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "open_prev_doc");
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
@@ -221,25 +221,25 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     });
 
     QObject::connect(main_menu, &TouchMainMenu::highlightsClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("goto_highlight");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_highlight");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::tocClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("goto_toc");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_toc");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::bookmarksClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("goto_bookmark");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_bookmark");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::commandsClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("command");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "command");
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
@@ -248,7 +248,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     });
 
     QObject::connect(main_menu, &TouchMainMenu::drawingModeClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("toggle_freehand_drawing_mode");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "toggle_freehand_drawing_mode");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
@@ -280,7 +280,7 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     });
 
     QObject::connect(main_menu, &TouchMainMenu::searchClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("search");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "search");
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
@@ -289,43 +289,43 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
     });
 
     QObject::connect(main_menu, &TouchMainMenu::addBookmarkClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("add_bookmark");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "add_bookmark");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::portalClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("portal");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "portal");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::deletePortalClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("delete_portal");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "delete_portal");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::globalBookmarksClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("goto_bookmark_g");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_bookmark_g");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::globalHighlightsClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("goto_highlight_g");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_highlight_g");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::ttsClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("start_reading");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "start_reading");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
 
     QObject::connect(main_menu, &TouchMainMenu::horizontalLockClicked, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("toggle_horizontal_scroll_lock");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "toggle_horizontal_scroll_lock");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
     });
@@ -579,7 +579,7 @@ DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent){
     });
 
     QObject::connect(controls_ui, &TouchDrawControls::eraserPressed, [&](){
-        auto command = main_widget->command_manager->get_command_with_name("delete_freehand_drawings");
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "delete_freehand_drawings");
         main_widget->handle_command_types(std::move(command), 0);
     });
 

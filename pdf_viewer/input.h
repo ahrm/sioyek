@@ -34,7 +34,7 @@ protected:
 	int num_repeats = 1;
 	MainWidget* widget = nullptr;
 public:
-	//Command(MainWidget* widget);
+	Command(MainWidget* widget);
 	virtual std::optional<Requirement> next_requirement(MainWidget* widget);
 
 	virtual void set_text_requirement(std::wstring value);
@@ -58,10 +58,10 @@ private:
 	//std::vector<Command> commands;
 public:
 
-	std::map < std::string, std::function<std::unique_ptr<Command>()> > new_commands;
+	std::map < std::string, std::function<std::unique_ptr<Command>(MainWidget*)> > new_commands;
 	CommandManager(ConfigManager* config_manager);
-	std::unique_ptr<Command> get_command_with_name(std::string name, std::string mode_string="");
-	std::unique_ptr<Command> create_macro_command(std::string name, std::wstring macro_string);
+	std::unique_ptr<Command> get_command_with_name(MainWidget* w, std::string name, std::string mode_string="");
+	std::unique_ptr<Command> create_macro_command(MainWidget* w, std::string name, std::wstring macro_string);
 	QStringList get_all_command_names();
 };
 
@@ -72,7 +72,7 @@ struct InputParseTreeNode {
 	int command;
 	//std::vector<std::string> name;
 	std::vector<std::string> name_;
-	std::optional<std::function<std::unique_ptr<Command>()>> generator = {};
+	std::optional<std::function<std::unique_ptr<Command>(MainWidget*)>> generator = {};
 	bool shift_modifier = false;
 	bool control_modifier = false;
 	bool alt_modifier = false;
@@ -110,7 +110,7 @@ public:
 	InputHandler(const Path& default_path, const std::vector<Path>& user_paths, CommandManager* cm);
 	void reload_config_files(const Path& default_path, const std::vector<Path>& user_path);
 	//std::vector<std::unique_ptr<Command>> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
-	std::unique_ptr<Command> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
+	std::unique_ptr<Command> handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
 	void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
 	std::optional<Path> get_or_create_user_keys_path();
