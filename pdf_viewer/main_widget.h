@@ -526,7 +526,9 @@ public:
 		if (right_names) {
 
 			if (TOUCH_MODE) {
-				// when will this be released?
+
+				// we will set the parent of model to be the widget in the constructor, and it will delete
+				// the model when it is freed, so this is not a memory leak
 				QStandardItemModel* model = create_table_model(left_names, right_names.value());
 
 				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(model, values, selected_index,

@@ -5717,7 +5717,6 @@ bool MainWidget::is_network_manager_running(bool* is_downloading){
     for (int i = 0; i < children.size(); i++) {
         if (children.at(i)->isRunning()) {
             if (is_downloading) {
-                qDebug() << children.at(i)->url().toString();
                 *is_downloading = children.at(i)->url().toString().endsWith(".pdf");
             }
             return true;
