@@ -1109,11 +1109,13 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 		}
 	}
 
-	std::optional<fz_rect> control_character_rect = document_view->get_control_rect();
-	if (control_character_rect) {
-		float rectangle_color[] = {0.0f, 1.0f, 1.0f};
-		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
-		render_highlight_absolute(shared_gl_objects.highlight_program, control_character_rect.value());
+	if (document_view->should_show_text_selection_marker) {
+		std::optional<fz_rect> control_character_rect = document_view->get_control_rect();
+		if (control_character_rect) {
+			float rectangle_color[] = {0.0f, 1.0f, 1.0f};
+			glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
+			render_highlight_absolute(shared_gl_objects.highlight_program, control_character_rect.value());
+		}
 	}
 
 	if (character_highlight_rect) {

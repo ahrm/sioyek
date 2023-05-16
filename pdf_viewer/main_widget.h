@@ -116,7 +116,9 @@ public:
 	bool is_selecting = false;
 	// is the user in word select mode? (happens when we double left click and move the cursor)
 	bool is_word_selecting = false;
-	std::wstring selected_text;
+
+	bool selected_text_is_dirty = false;
+	std::wstring selected_text_;
 
 	bool is_select_highlight_mode = false;
 	char select_highlight_type = 'a';
@@ -260,6 +262,7 @@ public:
 	void clear_selected_rect();
 	void clear_selected_text();
 
+	void expand_selection_vertical(bool begin, bool below);
 
 	std::optional<fz_rect> get_selected_rect_absolute();
 	bool get_selected_rect_document(int& out_page, fz_rect& out_rect);
@@ -464,8 +467,11 @@ public:
 	void delete_freehand_drawings(fz_rect rect);
 	void handle_move_text_mark_forward(bool word);
 	void handle_move_text_mark_backward(bool word);
+	void handle_move_text_mark_down();
+	void handle_move_text_mark_up();
 	void handle_toggle_text_mark();
 
+	const std::wstring& get_selected_text();
 	void move_selection_end(bool expand, bool word);
 	void move_selection_begin(bool expand, bool word);
 	void shrink_selection_end();

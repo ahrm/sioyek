@@ -2805,11 +2805,49 @@ bool are_rects_same(fz_rect r1, fz_rect r2) {
 	return false;
 }
 
+bool is_new_word(fz_stext_char* old_char, fz_stext_char* new_char) {
+	if (old_char == nullptr) return true;
+	if (new_char->c == ' ' || new_char->c == '\n') return true;
+	return std::abs(new_char->quad.ll.x - old_char->quad.ll.x) > 5 * std::abs(old_char->quad.lr.x - old_char->quad.ll.x);
+}
+
+std::optional<fz_rect> get_rect_directly(bool below, fz_stext_page* page, fz_rect page_rect) {
+	std::vector<fz_stext_char*> chars;
+	get_flat_chars_from_stext_page(page, chars);
+	float closest_distance = 100000;
+	std::optional<fz_rect> closest_rect = {};
+	float page_rect_x = (page_rect.x0 + page_rect.x1) / 2;
+
+	for (auto ch : chars) {
+		float h = std::abs(ch->quad.ul.y - ch->quad.ll.y);
+
+		if (below) {
+			if (ch->quad.ll.y > (page_rect.y1 + h/2)) {
+				float distance = std::abs(ch->quad.lr.y - page_rect.y1) + std::abs(ch->quad.lr.x - page_rect_x) ;
+				if (distance < closest_distance) {
+					closest_distance = distance;
+					closest_rect = fz_rect_from_quad(ch->quad);
+				}
+			}
+		}
+		else {
+			if (ch->quad.ul.y < (page_rect.y0 - h/2)) {
+				float distance = std::abs(ch->quad.lr.y - page_rect.y1) + std::abs(ch->quad.lr.x - page_rect_x) ;
+				if (distance < closest_distance) {
+					closest_distance = distance;
+					closest_rect = fz_rect_from_quad(ch->quad);
+				}
+			}
+		}
+	}
+	return closest_rect;
+}
 
 std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page, fz_rect page_rect) {
 	bool found = false;
 	std::optional<fz_rect> last_before_space_rect = {};
 	std::optional<fz_rect> before_rect = {};
+	fz_stext_char* old_char = nullptr;
 
 
 	bool should_return_next_char = false;
@@ -2823,10 +2861,10 @@ std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page
 					if (should_return_next_char) {
 						return cr;
 					}
-					if ((!before) && (ch->c == ' ' || ch->c == '\n') && found) {
+					if ((!before) && (is_new_word(old_char, ch)) && found) {
 						return last_before_space_rect;
 					}
-					if (ch->c == ' ' || ch->c == '\n') {
+					if (is_new_word(old_char, ch)) {
 						last_before_space_rect = before_rect;
 						was_last_character_space = true;
 						if (found && before) {
@@ -2837,6 +2875,7 @@ std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page
 						found = true;
 					}
 					before_rect = cr;
+					old_char = ch;
 				}
 			}
 		}
@@ -2857,17 +2896,21 @@ std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, 
 		}
 	}
 	int original_index = index;
+	int prev_index = original_index;
+
 	if (index != -1) {
 		if (before) {
 			index--;
 			while (index >= 0) {
 				res.push_back(fz_rect_from_quad(chars[index]->quad));
-				if (chars[index]->c == ' ' || chars[index]->c == '\n') {
+				//if (chars[index]->c == ' ' || chars[index]->c == '\n') {
+				if (is_new_word(chars[prev_index], chars[index])) {
 					if (std::abs(original_index - index) > 1) {
 						res.pop_back();
 						break;
 					}
 				}
+				prev_index = index;
 				index--;
 			}
 		}
@@ -2875,12 +2918,13 @@ std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, 
 			index++;
 			while (index < chars.size()) {
 				res.push_back(fz_rect_from_quad(chars[index]->quad));
-				if (chars[index]->c == ' ' || chars[index]->c == '\n') {
+				if (is_new_word(chars[prev_index], chars[index])) {
 					if (std::abs(original_index - index) > 1) {
 						res.pop_back();
 						break;
 					}
 				}
+				prev_index = index;
 				index++;
 			}
 		}

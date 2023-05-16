@@ -525,7 +525,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
                 selection_end,
                 is_word_selecting,
                 main_document_view->selected_character_rects,
-                selected_text);
+                selected_text_);
+            selected_text_is_dirty = false;
 
             validate_render();
             last_text_select_time = QTime::currentTime();
@@ -1075,8 +1076,7 @@ void MainWidget::handle_escape() {
         }
 
         opengl_widget->set_overview_page({});
-		main_document_view->selected_character_rects.clear();
-		selected_text.clear();
+        clear_selected_text();
 
         if (!done_anything) {
             opengl_widget->set_should_draw_vertical_line(false);
@@ -1910,7 +1910,9 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
                 abs_doc_pos,
                 is_word_selecting,
                 main_document_view->selected_character_rects,
-                selected_text);
+                selected_text_);
+            selected_text_is_dirty = false;
+
 			//opengl_widget->set_control_character_rect(control_rect);
             is_word_selecting = false;
         }
@@ -2164,7 +2166,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
                 clear_selected_text();
 			}
 			if (main_document_view->selected_character_rects.size() > 0) {
-				copy_to_clipboard(selected_text, true);
+				copy_to_clipboard(get_selected_text(), true);
 			}
         }
 
@@ -2404,7 +2406,7 @@ void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill
         QString init = "";
 
         if (should_fill_with_selected_text) {
-            init = QString::fromStdWString(selected_text);
+            init = QString::fromStdWString(get_selected_text());
         }
 
         if (initial_value.size() > 0 ){
@@ -2431,7 +2433,7 @@ void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill
     else {
 		text_command_line_edit->clear();
 		if (should_fill_with_selected_text) {
-			text_command_line_edit->setText(QString::fromStdWString(selected_text));
+			text_command_line_edit->setText(QString::fromStdWString(get_selected_text()));
 		}
 		text_command_line_edit_label->setText(QString::fromStdWString(command_name));
 		text_command_line_edit_container->show();
@@ -2900,14 +2902,16 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
             // lagacy number macros, now replaced with names ones
             command_parts[i].replace("%1", qfile_path);
             command_parts[i].replace("%2", qfile_name);
-            command_parts[i].replace("%3", QString::fromStdWString(selected_text));
+            command_parts[i].replace("%3", QString::fromStdWString(get_selected_text()));
             command_parts[i].replace("%4", QString::number(get_current_page_number()));
             command_parts[i].replace("%5", QString::fromStdWString(text));
 
             // new named macros
             command_parts[i].replace("%{file_path}", qfile_path);
             command_parts[i].replace("%{file_name}", qfile_name);
-            command_parts[i].replace("%{selected_text}", QString::fromStdWString(selected_text));
+            command_parts[i].replace("%{selected_text}", QString::fromStdWString(get_selected_text()));
+            std::wstring selected_text = get_selected_text();
+
             if (selected_text.size() > 0) {
                 auto selection_begin_document = main_document_view->get_document()->absolute_to_page_pos(selection_begin);
                 command_parts[i].replace("%{selection_begin_document}",
@@ -4124,7 +4128,11 @@ float CharacterAddress::focus_offset() {
 
 void MainWidget::clear_selected_text() {
 	main_document_view->selected_character_rects.clear();
-	selected_text.clear();
+    main_document_view->mark_end = true;
+    main_document_view->should_show_text_selection_marker = false;
+	selected_text_.clear();
+    selected_text_is_dirty = false;
+
 }
 
 bool MainWidget::is_rect_visible(int page, fz_rect rect) {
@@ -4466,8 +4474,7 @@ void MainWidget::handle_goto_bookmark_global() {
 void MainWidget::handle_add_highlight(char symbol) {
 	if (main_document_view->selected_character_rects.size() > 0) {
 		main_document_view->add_highlight(selection_begin, selection_end, symbol);
-		main_document_view->selected_character_rects.clear();
-		selected_text.clear();
+        clear_selected_text();
 	}
     else {
         change_selected_highlight_type(symbol);
@@ -5273,7 +5280,8 @@ void MainWidget::update_mobile_selection(){
     end_absolute,
     false,
     main_document_view->selected_character_rects,
-    selected_text);
+    selected_text_);
+    selected_text_is_dirty = false;
     validate_render();
 }
 
@@ -5533,7 +5541,8 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    qDebug() << QString::fromStdWString(selected_text);
+    //qDebug() << QString::fromStdWString(get_selected_text());
+    //expand_selection_vertical(false);
 }
 
 void MainWidget::download_paper_under_cursor() {
@@ -6017,6 +6026,7 @@ void MainWidget::handle_drawing_ui_visibilty() {
 }
 
 void MainWidget::move_selection_end(bool expand, bool word) {
+    selected_text_is_dirty = true;
     std::optional<fz_rect> new_end_ = {};
 
     if (expand) {
@@ -6035,6 +6045,7 @@ void MainWidget::move_selection_end(bool expand, bool word) {
 
 
 void MainWidget::move_selection_begin(bool expand, bool word) {
+    selected_text_is_dirty = true;
     std::optional<fz_rect> new_begin_ = {};
     if (expand) {
 		new_begin_ = main_document_view->expand_selection(true, word);
@@ -6050,6 +6061,8 @@ void MainWidget::move_selection_begin(bool expand, bool word) {
 }
 
 void MainWidget::handle_move_text_mark_forward(bool word) {
+    main_document_view->should_show_text_selection_marker = true;
+    selected_text_is_dirty = true;
     if (main_document_view->mark_end) {
         move_selection_end(true, word);
     }
@@ -6059,14 +6072,91 @@ void MainWidget::handle_move_text_mark_forward(bool word) {
 }
 
 void MainWidget::handle_toggle_text_mark() {
+    main_document_view->should_show_text_selection_marker = true;
     main_document_view->toggle_text_mark();
 }
 
 void MainWidget::handle_move_text_mark_backward(bool word) {
+    main_document_view->should_show_text_selection_marker = true;
+    selected_text_is_dirty = true;
     if (main_document_view->mark_end) {
         move_selection_end(false, word);
     }
     else {
         move_selection_begin(true, word);
+    }
+}
+
+const std::wstring& MainWidget::get_selected_text(){
+    if (selected_text_is_dirty) {
+        std::deque<fz_rect> dummy_rects;
+		main_document_view->get_text_selection(selection_begin,
+			selection_end,
+			is_word_selecting,
+			dummy_rects,
+			selected_text_);
+
+        selected_text_is_dirty = false;
+    }
+
+    return selected_text_;
+}
+
+void MainWidget::expand_selection_vertical(bool begin, bool below) {
+	int page;
+	const std::deque<fz_rect>& scr = main_document_view->selected_character_rects;
+    if (scr.size() == 0) return;
+    int index = (begin) ? 0 : scr.size() - 1;
+    int other_index = (begin) ? scr.size() - 1 : 0;
+
+	fz_rect page_rect = doc()->absolute_to_page_rect(scr[index], &page);
+    fz_rect other_rect = scr[other_index];
+
+	if (page >= 0) {
+		fz_stext_page* stext_page = doc()->get_stext_with_page_number(page);
+		std::optional<fz_rect> below_rect = get_rect_directly(below, stext_page, page_rect);
+        if (below_rect) {
+            fz_rect absrect = doc()->document_to_absolute_rect(page, below_rect.value(), true);
+            if (begin) {
+				auto target  = AbsoluteDocumentPos{ (absrect.x0 + absrect.x1) / 2,   (absrect.y0 + absrect.y1) / 2  };
+                if (target.y <= other_rect.y1) {
+					selection_begin = target;
+                }
+            }
+            else {
+				auto target = AbsoluteDocumentPos{ (absrect.x0 + absrect.x1) / 2,   (absrect.y0 + absrect.y1) / 2  };
+                if (target.y >= other_rect.y0) {
+					selection_end = target;
+                }
+            }
+            main_document_view->get_text_selection(selection_begin,
+                selection_end,
+                is_word_selecting,
+                main_document_view->selected_character_rects,
+                selected_text_);
+            selected_text_is_dirty = false;
+        }
+
+	}
+}
+
+void MainWidget::handle_move_text_mark_down() {
+    main_document_view->should_show_text_selection_marker = true;
+    if (main_document_view->mark_end) {
+        expand_selection_vertical(false, true);
+    }
+    else {
+        expand_selection_vertical(true, true);
+    }
+}
+
+void MainWidget::handle_move_text_mark_up() {
+    main_document_view->should_show_text_selection_marker = true;
+
+    if (main_document_view->mark_end) {
+        expand_selection_vertical(false, false);
+    }
+    else {
+        expand_selection_vertical(true, false);
     }
 }

@@ -58,6 +58,7 @@ private:
 public:
 	std::deque<fz_rect> selected_character_rects;
 	bool mark_end = true;
+	bool should_show_text_selection_marker = false;
 
 	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer);
 	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer, bool* invalid_flag,
@@ -184,6 +185,7 @@ public:
 	void toggle_text_mark();
 	std::optional<fz_rect> expand_selection(bool is_begin, bool word);
 	std::optional<fz_rect> shrink_selection(bool is_begin, bool word);
+	//std::optional<fz_rect> expand_selection_below();
 
 	std::deque<fz_rect>* get_selected_character_rects();
 };

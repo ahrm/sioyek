@@ -266,3 +266,4 @@ std::optional<fz_rect> find_expanding_rect(bool before, fz_stext_page* page, fz_
 std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, fz_rect page_rect);
 std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page, fz_rect page_rect);
 bool are_rects_same(fz_rect r1, fz_rect r2);
+std::optional<fz_rect> get_rect_directly(bool below, fz_stext_page* page, fz_rect page_rect);

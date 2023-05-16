@@ -1351,7 +1351,7 @@ std::optional<fz_rect> DocumentView::expand_selection(bool is_begin, bool word){
 					for (int i = 0; i < next_rects.size(); i++) {
 						selected_character_rects.push_front(next_rects[i]);
 					}
-					return selected_character_rects[selected_character_rects.size()-1];
+					return selected_character_rects[0];
 				}
 				else {
 					for (int i = 0; i < next_rects.size(); i++) {
@@ -1389,3 +1389,4 @@ void DocumentView::set_text_mark(bool is_begin) {
 void DocumentView::toggle_text_mark() {
 	set_text_mark(mark_end);
 }
+

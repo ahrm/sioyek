@@ -1,3 +1,6 @@
+// todo: remev MainWidgets from the Command functions that don't need it anymore (because we added
+// it to the Command constructor
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -182,6 +185,32 @@ public:
 
 	std::string get_name() {
 		return "move_text_mark_forward";
+	}
+};
+
+class MoveTextMarkDownCommand : public Command{
+public:
+	MoveTextMarkDownCommand(MainWidget* w) : Command(w) {};
+
+	void perform(MainWidget* widget) {
+		widget->handle_move_text_mark_down();
+	}
+
+	std::string get_name() {
+		return "move_text_mark_down";
+	}
+};
+
+class MoveTextMarkUpCommand : public Command{
+public:
+	MoveTextMarkUpCommand(MainWidget* w) : Command(w) {};
+
+	void perform(MainWidget* widget) {
+		widget->handle_move_text_mark_up();
+	}
+
+	std::string get_name() {
+		return "move_text_mark_up";
 	}
 };
 
@@ -1022,7 +1051,7 @@ class CopyCommand : public Command {
 public:
 	CopyCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
-		copy_to_clipboard(widget->selected_text);
+		copy_to_clipboard(widget->get_selected_text());
 	}
 
 	std::string get_name() {
@@ -1156,7 +1185,7 @@ public:
 	void perform(MainWidget* widget) {
 		if ((symbol >= 'a') && (symbol <= 'z')) {
 			if (SEARCH_URLS[symbol - 'a'].size() > 0) {
-				search_custom_engine(widget->selected_text, SEARCH_URLS[symbol - 'a']);
+				search_custom_engine(widget->get_selected_text(), SEARCH_URLS[symbol - 'a']);
 			}
 			else {
 				std::wcout << L"No search engine defined for symbol " << symbol << std::endl;
@@ -1173,7 +1202,7 @@ class OpenSelectedUrlCommand : public Command {
 public:
 	OpenSelectedUrlCommand(MainWidget* w) : Command(w) {};
 	void perform(MainWidget* widget) {
-		open_web_url((widget->selected_text).c_str());
+		open_web_url((widget->get_selected_text()).c_str());
 	}
 	std::string get_name() {
 		return "open_selected_url";
@@ -2000,8 +2029,7 @@ public:
 	void perform(MainWidget* widget) {
         if (widget->main_document_view->selected_character_rects.size() > 0) {
             widget->main_document_view->add_highlight(widget->selection_begin, widget->selection_end, widget->select_highlight_type);
-            widget->main_document_view->selected_character_rects.clear();
-            widget->selected_text.clear();
+			widget->clear_selected_text();
         }
 	}
 
@@ -3184,6 +3212,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["move_text_mark_backward"] = [](MainWidget* widget) {return std::make_unique< MoveTextMarkBackwardCommand>(widget); };
 	new_commands["move_text_mark_forward_word"] = [](MainWidget* widget) {return std::make_unique< MoveTextMarkForwardWordCommand>(widget); };
 	new_commands["move_text_mark_backward_word"] = [](MainWidget* widget) {return std::make_unique< MoveTextMarkBackwardWordCommand>(widget); };
+	new_commands["move_text_mark_down"] = [](MainWidget* widget) {return std::make_unique< MoveTextMarkDownCommand>(widget); };
+	new_commands["move_text_mark_up"] = [](MainWidget* widget) {return std::make_unique< MoveTextMarkUpCommand>(widget); };
 	new_commands["set_mark"] = [](MainWidget* widget) {return std::make_unique< SetMark>(widget); };
 	new_commands["toggle_drawing_mask"] = [](MainWidget* widget) {return std::make_unique< ToggleDrawingMask>(widget); };
 	new_commands["turn_on_all_drawings"] = [](MainWidget* widget) {return std::make_unique< TurnOnAllDrawings>(widget); };
