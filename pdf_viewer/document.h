@@ -283,8 +283,10 @@ public:
 	DocumentManager(fz_context* mupdf_context, DatabaseManager* db_manager, CachedChecksummer* checksummer);
 
 	Document* get_document(const std::wstring& path);
+	std::optional<Document*> get_cached_document(const std::wstring& path);
 	void free_document(Document* document);
 	const std::unordered_map<std::wstring, Document*>& get_cached_documents();
+	std::vector<std::wstring> get_loaded_document_paths();
 	void delete_global_mark(char symbol);
 	~DocumentManager();
 };

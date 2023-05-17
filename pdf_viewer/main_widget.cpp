@@ -5409,6 +5409,7 @@ void MainWidget::update_highlight_buttons_position() {
 void MainWidget::handle_debug_command() {
     //qDebug() << QString::fromStdWString(get_selected_text());
     //expand_selection_vertical(false);
+    handle_goto_loaded_document();
 }
 
 void MainWidget::download_paper_under_cursor() {
@@ -6021,4 +6022,32 @@ void MainWidget::handle_move_text_mark_up() {
     else {
         expand_selection_vertical(true, false);
     }
+}
+
+void MainWidget::handle_goto_loaded_document() {
+    std::vector<std::wstring> loaded_document_paths = document_manager->get_loaded_document_paths();
+    std::wstring current_document_path = doc()->get_path();
+
+    auto loc = std::find(loaded_document_paths.begin(), loaded_document_paths.end(), current_document_path);
+    int index = -1;
+    if (loc != loaded_document_paths.end()) {
+        index = loc - loaded_document_paths.begin();
+    }
+
+	set_filtered_select_menu<std::wstring>(
+		loaded_document_paths,
+		{},
+		loaded_document_paths,
+		index,
+		[&](std::wstring* path) {
+			open_document(*path);
+		},
+		[&](std::wstring* path) {
+            std::optional<Document*> doc_to_delete = document_manager->get_cached_document(*path);
+            if (doc_to_delete && (doc_to_delete.value() != doc())) {
+                document_manager->free_document(doc_to_delete.value());
+            }
+		}
+	);
+    show_current_widget();
 }

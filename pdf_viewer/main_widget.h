@@ -374,6 +374,7 @@ public:
 	void overview_to_definition();
 	void portal_to_definition();
 	void move_visual_mark_command(int amount);
+	void handle_goto_loaded_document();
 
 	void handle_vertical_move(int amount);
 	void handle_horizontal_move(int amount);
@@ -598,7 +599,8 @@ public:
 						if (val) {
 							on_delete(val);
 						}
-					}));
+					},
+					selected_index));
 			}
 		}
 	}

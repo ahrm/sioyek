@@ -674,7 +674,7 @@ public:
 		std::vector<T> values,
 		std::function<void(T*)> on_done,
 		QWidget* parent,
-		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QListView, MySortFilterProxyModel>(nullptr, parent),
+		std::function<void(T*)> on_delete_function = nullptr, int selected_index=-1) : BaseSelectorWidget<T, QListView, MySortFilterProxyModel>(nullptr, parent),
 		values(values),
 		on_done(on_done),
 		on_delete_function(on_delete_function)
@@ -686,8 +686,13 @@ public:
 		}
 		QStringList string_list = QStringList::fromVector(q_string_list);
 
+
 		string_list_model = new QStringListModel(string_list);
 		this->proxy_model->setSourceModel(string_list_model);
+
+		if (selected_index != -1) {
+			dynamic_cast<QListView*>(this->get_view())->selectionModel()->setCurrentIndex(string_list_model->index(selected_index), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
+		}
 
 	}
 

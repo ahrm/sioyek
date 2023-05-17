@@ -2888,3 +2888,18 @@ void Document::persist_drawings(bool force) {
 
 	is_drawings_dirty = false;
 }
+
+std::vector<std::wstring> DocumentManager::get_loaded_document_paths() {
+	std::vector<std::wstring> res;
+	for (auto& [path, _] : cached_documents) {
+		res.push_back(path);
+	}
+	return res;
+}
+
+std::optional<Document*> DocumentManager::get_cached_document(const std::wstring& path) {
+	if (cached_documents.find(path) != cached_documents.end()) {
+		return cached_documents[path];
+	}
+	return {};
+}

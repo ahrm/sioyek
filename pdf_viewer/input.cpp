@@ -127,6 +127,19 @@ public:
 	}
 };
 
+class GotoLoadedDocumentCommand : public Command{
+public:
+	GotoLoadedDocumentCommand(MainWidget* w) : Command(w) {}
+
+	void perform() {
+		widget->handle_goto_loaded_document();
+	}
+
+	std::string get_name() {
+		return "goto_tab";
+	}
+};
+
 class NextItemCommand : public Command{
 public:
 	NextItemCommand(MainWidget* w) : Command(w) {}
@@ -3213,6 +3226,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["goto_definition"] = [](MainWidget* widget) {return std::make_unique< GotoDefinitionCommand>(widget); };
 	new_commands["overview_definition"] = [](MainWidget* widget) {return std::make_unique< OverviewDefinitionCommand>(widget); };
 	new_commands["portal_to_definition"] = [](MainWidget* widget) {return std::make_unique< PortalToDefinitionCommand>(widget); };
+	new_commands["goto_tab"] = [](MainWidget* widget) {return std::make_unique< GotoLoadedDocumentCommand>(widget); };
 	new_commands["next_item"] = [](MainWidget* widget) {return std::make_unique< NextItemCommand>(widget); };
 	new_commands["previous_item"] = [](MainWidget* widget) {return std::make_unique< PrevItemCommand>(widget); };
 	new_commands["toggle_text_mark"] = [](MainWidget* widget) {return std::make_unique< ToggleTextMarkCommand>(widget); };
