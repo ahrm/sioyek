@@ -5812,7 +5812,7 @@ void MainWidget::finish_drawing(QPoint pos){
     is_drawing = false;
 
     if (opengl_widget->current_drawing.points.size() == 0) {
-         handle_drawing_move(pos, 1.0f);
+         handle_drawing_move(pos, -1.0f);
     }
 
     std::vector<FreehandDrawingPoint> pruned_points = prune_freehand_drawing_points(opengl_widget->current_drawing.points);

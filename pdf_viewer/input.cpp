@@ -27,7 +27,6 @@ extern std::vector<Path> user_keys_paths;
 extern bool TOUCH_MODE;
 
 Command::Command(MainWidget* widget_) : widget(widget_) {
-	int  a = 2;
 
 }
 

@@ -180,6 +180,7 @@ protected:
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
     void paintGL() override;
     void render(QPainter* painter);
+	void add_coordinates_for_window_point(float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates);
 	void render_drawings(const std::vector<FreehandDrawing>& drawings);
 
 	void enable_stencil();
