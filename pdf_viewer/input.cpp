@@ -1,6 +1,3 @@
-// todo: remev MainWidgets from the Command functions that don't need it anymore (because we added
-// it to the Command constructor
-
 #include <iostream>
 #include <vector>
 #include <string>
@@ -30,6 +27,7 @@ extern std::vector<Path> user_keys_paths;
 extern bool TOUCH_MODE;
 
 Command::Command(MainWidget* widget_) : widget(widget_) {
+	int  a = 2;
 
 }
 
@@ -95,7 +93,7 @@ public:
 		return res;
 	}
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		assert(this->symbol != 0);
 		widget->goto_mark(this->symbol);
 	}
@@ -111,7 +109,7 @@ public:
 		return "set_mark";
 	}
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		assert(this->symbol != 0);
 		widget->set_mark_in_current_location(this->symbol);
 	}
@@ -125,7 +123,7 @@ public:
 		return "toggle_drawing_mask";
 	}
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_toggle_drawing_mask(this->symbol);
 	}
 };
@@ -134,7 +132,7 @@ class NextItemCommand : public Command{
 public:
 	NextItemCommand(MainWidget* w) : Command(w) {}
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		if (num_repeats == 0) num_repeats++;
 		widget->opengl_widget->goto_search_result(num_repeats);
 	}
@@ -148,7 +146,7 @@ class PrevItemCommand : public Command{
 public:
 	PrevItemCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		if (num_repeats == 0) num_repeats++;
 		widget->opengl_widget->goto_search_result(-num_repeats);
 	}
@@ -162,7 +160,7 @@ class ToggleTextMarkCommand : public Command{
 public:
 	ToggleTextMarkCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		//if (num_repeats == 0) num_repeats++;
 		widget->handle_toggle_text_mark();
 		//widget->invalidate_render();
@@ -177,7 +175,7 @@ class MoveTextMarkForwardCommand : public Command{
 public:
 	MoveTextMarkForwardCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		//if (num_repeats == 0) num_repeats++;
 		widget->handle_move_text_mark_forward(false);
 		//widget->invalidate_render();
@@ -192,7 +190,7 @@ class MoveTextMarkDownCommand : public Command{
 public:
 	MoveTextMarkDownCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_move_text_mark_down();
 	}
 
@@ -205,7 +203,7 @@ class MoveTextMarkUpCommand : public Command{
 public:
 	MoveTextMarkUpCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_move_text_mark_up();
 	}
 
@@ -218,7 +216,7 @@ class MoveTextMarkForwardWordCommand : public Command{
 public:
 	MoveTextMarkForwardWordCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_move_text_mark_forward(true);
 	}
 
@@ -231,7 +229,7 @@ class MoveTextMarkBackwardCommand : public Command{
 public:
 	MoveTextMarkBackwardCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_move_text_mark_backward(false);
 	}
 
@@ -244,7 +242,7 @@ class MoveTextMarkBackwardWordCommand : public Command{
 public:
 	MoveTextMarkBackwardWordCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_move_text_mark_backward(true);
 	}
 
@@ -257,7 +255,7 @@ class StartReadingCommand : public Command{
 public:
 	StartReadingCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_start_reading();
 	}
 
@@ -270,7 +268,7 @@ class StopReadingCommand : public Command{
 public:
 	StopReadingCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_stop_reading();
 	}
 
@@ -283,7 +281,7 @@ class SearchCommand : public TextCommand {
 public:
 	SearchCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->perform_search(this->text.value(), false);
 		if (TOUCH_MODE) {
 			widget->show_search_buttons();
@@ -307,7 +305,7 @@ class SetFreehandThickness : public TextCommand {
 public:
 	SetFreehandThickness(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		float thickness = QString::fromStdWString(this->text.value()).toFloat();
 		widget->set_freehand_thickness(thickness);
 		//widget->perform_search(this->text.value(), false);
@@ -330,7 +328,7 @@ class GotoPageWithLabel : public TextCommand {
 public:
 	GotoPageWithLabel(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->goto_page_with_label(text.value());
 	}
 
@@ -351,11 +349,11 @@ class ChapterSearchCommand : public TextCommand {
 public:
 	ChapterSearchCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->perform_search(this->text.value(), false);
 	}
 
-	void pre_perform(MainWidget* widget) {
+	void pre_perform() {
 		std::optional<std::pair<int, int>> chapter_range = widget->main_document_view->get_current_page_range();
 		if (chapter_range) {
 			std::stringstream search_range_string;
@@ -382,7 +380,7 @@ class RegexSearchCommand : public TextCommand {
 public:
 	RegexSearchCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->perform_search(this->text.value(), true);
 	}
 
@@ -403,7 +401,7 @@ class AddBookmarkCommand : public TextCommand {
 public:
 	AddBookmarkCommand(MainWidget* w) : TextCommand(w) {}
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->add_bookmark(text.value());
 	}
 
@@ -419,7 +417,7 @@ public:
 class GotoBookmarkCommand : public Command {
 public:
 	GotoBookmarkCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_goto_bookmark();
 	}
 
@@ -435,7 +433,7 @@ public:
 class GotoBookmarkGlobalCommand : public Command {
 public:
 	GotoBookmarkGlobalCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_goto_bookmark_global();
 	}
 
@@ -453,7 +451,7 @@ class GotoHighlightCommand : public Command {
 public:
 	GotoHighlightCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_goto_highlight();
 	}
 
@@ -469,7 +467,7 @@ public:
 class GotoHighlightGlobalCommand : public Command {
 public:
 	GotoHighlightGlobalCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_goto_highlight_global();
 	}
 
@@ -487,7 +485,7 @@ class GotoTableOfContentsCommand : public Command {
 public:
 	GotoTableOfContentsCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_goto_toc();
 	}
 
@@ -500,7 +498,7 @@ class PortalCommand : public Command {
 public:
 	PortalCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_portal();
 	}
 
@@ -512,7 +510,7 @@ public:
 class ToggleWindowConfigurationCommand : public Command {
 public:
 	ToggleWindowConfigurationCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_window_configuration();
 	}
 
@@ -526,7 +524,7 @@ class NextStateCommand : public Command {
 public:
 	NextStateCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->next_state();
 	}
 
@@ -540,7 +538,7 @@ class PrevStateCommand : public Command {
 public:
 	PrevStateCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->prev_state();
 	}
 
@@ -554,7 +552,7 @@ class AddHighlightCommand : public SymbolCommand {
 public:
 	AddHighlightCommand(MainWidget* w) : SymbolCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_add_highlight(symbol);
 	}
 
@@ -567,7 +565,7 @@ class CommandCommand : public Command {
 public:
 	CommandCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		QStringList command_names = widget->command_manager->get_all_command_names();
 		if (!TOUCH_MODE) {
 
@@ -616,7 +614,7 @@ public:
 		file_name = value;
 	}
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->open_document(file_name);
 	}
 
@@ -631,7 +629,7 @@ class MoveDownCommand : public Command {
 public:
 	MoveDownCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->handle_vertical_move(rp);
 	}
@@ -646,7 +644,7 @@ class MoveUpCommand : public Command {
 public:
 	MoveUpCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->handle_vertical_move(-rp);
 	}
@@ -660,7 +658,7 @@ public:
 class MoveLeftCommand : public Command {
 public:
 	MoveLeftCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->handle_horizontal_move(-rp);
 	}
@@ -673,7 +671,7 @@ public:
 class MoveRightCommand : public Command {
 public:
 	MoveRightCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->handle_horizontal_move(rp);
 	}
@@ -686,7 +684,7 @@ public:
 class ZoomInCommand : public Command {
 public:
 	ZoomInCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->zoom_in();
 		widget->last_smart_fit_page = {};
 	}
@@ -700,7 +698,7 @@ class FitToPageWidthCommand : public Command {
 public:
 	FitToPageWidthCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->fit_to_page_width();
 		widget->last_smart_fit_page = {};
 	}
@@ -713,7 +711,7 @@ public:
 class FitToPageWidthSmartCommand : public Command {
 public:
 	FitToPageWidthSmartCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->fit_to_page_width(true);
 		int current_page = widget->get_current_page_number();
 		widget->last_smart_fit_page = current_page;
@@ -727,7 +725,7 @@ public:
 class FitToPageHeightCommand : public Command {
 public:
 	FitToPageHeightCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->fit_to_page_height();
 		widget->last_smart_fit_page = {};
 	}
@@ -740,7 +738,7 @@ public:
 class FitToPageHeightSmartCommand : public Command {
 public:
 	FitToPageHeightSmartCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->fit_to_page_height(true);
 	}
 
@@ -752,7 +750,7 @@ public:
 class NextPageCommand : public Command {
 public:
 	NextPageCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->move_pages(std::max(1, num_repeats));
 	}
 	std::string get_name() {
@@ -763,7 +761,7 @@ public:
 class PreviousPageCommand : public Command {
 public:
 	PreviousPageCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->move_pages(std::min(-1, -num_repeats));
 	}
 
@@ -776,7 +774,7 @@ class ZoomOutCommand : public Command {
 public:
 	ZoomOutCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->zoom_out();
 		widget->last_smart_fit_page = {};
 	}
@@ -789,7 +787,7 @@ public:
 class GotoDefinitionCommand : public Command {
 public:
 	GotoDefinitionCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		if (widget->main_document_view->goto_definition()) {
 			widget->opengl_widget->set_should_draw_vertical_line(false);
 		}
@@ -807,7 +805,7 @@ public:
 class OverviewDefinitionCommand : public Command {
 public:
 	OverviewDefinitionCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->overview_to_definition();
 	}
 
@@ -819,7 +817,7 @@ public:
 class PortalToDefinitionCommand : public Command {
 public:
 	PortalToDefinitionCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->portal_to_definition();
 	}
 
@@ -831,7 +829,7 @@ public:
 class MoveVisualMarkDownCommand : public Command {
 public:
 	MoveVisualMarkDownCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->move_visual_mark_command(rp);
 	}
@@ -844,7 +842,7 @@ public:
 class MoveVisualMarkUpCommand : public Command {
 public:
 	MoveVisualMarkUpCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->move_visual_mark_command(-rp);
 	}
@@ -857,7 +855,7 @@ public:
 class MoveVisualMarkNextCommand : public Command {
 public:
 	MoveVisualMarkNextCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->move_visual_mark_next();
 	}
 
@@ -869,7 +867,7 @@ public:
 class MoveVisualMarkPrevCommand : public Command {
 public:
 	MoveVisualMarkPrevCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->move_visual_mark_prev();
 	}
 
@@ -883,7 +881,7 @@ class GotoPageWithPageNumberCommand : public TextCommand {
 public:
 	GotoPageWithPageNumberCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		std::wstring text_ = text.value();
 		if (is_string_numeric(text_.c_str()) && text_.size() < 6) { // make sure the page number is valid
 			int dest = std::stoi(text_.c_str()) - 1;
@@ -907,7 +905,7 @@ public:
 class DeletePortalCommand : public Command {
 public:
 	DeletePortalCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->delete_closest_portal();
 		widget->validate_render();
 	}
@@ -920,7 +918,7 @@ public:
 class DeleteBookmarkCommand : public Command {
 public:
 	DeleteBookmarkCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->delete_closest_bookmark();
 		widget->validate_render();
 	}
@@ -933,7 +931,7 @@ public:
 class DeleteHighlightCommand : public Command {
 public:
 	DeleteHighlightCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->handle_delete_selected_highlight();
 	}
 
@@ -945,7 +943,7 @@ public:
 class GotoPortalCommand : public Command {
 public:
 	GotoPortalCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		std::optional<Portal> link = widget->main_document_view->find_closest_portal();
 		if (link) {
 			widget->open_document(link->dst);
@@ -964,7 +962,7 @@ public:
 class EditPortalCommand : public Command {
 public:
 	EditPortalCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		std::optional<Portal> link = widget->main_document_view->find_closest_portal();
 		if (link) {
 			widget->link_to_edit = link;
@@ -984,7 +982,7 @@ public:
 class OpenPrevDocCommand : public Command {
 public:
 	OpenPrevDocCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_open_prev_doc();
 	}
 
@@ -1002,9 +1000,9 @@ public:
 class OpenDocumentEmbeddedCommand : public Command {
 public:
 	OpenDocumentEmbeddedCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->set_current_widget(new FileSelector(
-			[widget](std::wstring doc_path) {
+			[widget = widget](std::wstring doc_path) {
 				widget->validate_render();
 				widget->open_document(doc_path);
 			}, widget, ""));
@@ -1025,11 +1023,11 @@ public:
 class OpenDocumentEmbeddedFromCurrentPathCommand : public Command {
 public:
 	OpenDocumentEmbeddedFromCurrentPathCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		std::wstring last_file_name = widget->get_current_file_name().value_or(L"");
 
 		widget->set_current_widget(new FileSelector(
-			[widget](std::wstring doc_path) {
+			[widget = widget](std::wstring doc_path) {
 				widget->validate_render();
 				widget->open_document(doc_path);
 			}, widget, QString::fromStdWString(last_file_name)));
@@ -1050,7 +1048,7 @@ public:
 class CopyCommand : public Command {
 public:
 	CopyCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		copy_to_clipboard(widget->get_selected_text());
 	}
 
@@ -1063,12 +1061,12 @@ class GotoBeginningCommand : public Command {
 public:
 	GotoBeginningCommand(MainWidget* w) : Command(w) {};
 public:
-	void perform(MainWidget* main_widget) {
+	void perform() {
 		if (num_repeats) {
-			main_widget->main_document_view->goto_page(num_repeats - 1 + main_widget->main_document_view->get_page_offset());
+			widget->main_document_view->goto_page(num_repeats - 1 + widget->main_document_view->get_page_offset());
 		}
 		else {
-			main_widget->main_document_view->set_offset_y(0.0f);
+			widget->main_document_view->set_offset_y(0.0f);
 		}
 	}
 
@@ -1085,12 +1083,12 @@ class GotoEndCommand : public Command {
 public:
 	GotoEndCommand(MainWidget* w) : Command(w) {};
 public:
-	void perform(MainWidget* main_widget) {
+	void perform() {
 		if (num_repeats > 0) {
-			main_widget->main_document_view->goto_page(num_repeats - 1 + main_widget->main_document_view->get_page_offset());
+			widget->main_document_view->goto_page(num_repeats - 1 + widget->main_document_view->get_page_offset());
 		}
 		else {
-			main_widget->main_document_view->goto_end();
+			widget->main_document_view->goto_end();
 		}
 	}
 
@@ -1106,7 +1104,7 @@ public:
 class ToggleFullscreenCommand : public Command {
 public:
 	ToggleFullscreenCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_fullscreen();
 	}
 	std::string get_name() {
@@ -1119,7 +1117,7 @@ public:
 class ToggleOneWindowCommand : public Command {
 public:
 	ToggleOneWindowCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_two_window_mode();
 	}
 	std::string get_name() {
@@ -1132,7 +1130,7 @@ public:
 class ToggleHighlightCommand : public Command {
 public:
 	ToggleHighlightCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->opengl_widget->toggle_highlight_links();
 	}
 	std::string get_name() {
@@ -1145,7 +1143,7 @@ public:
 class ToggleSynctexCommand : public Command {
 public:
 	ToggleSynctexCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_synctex_mode();
 	}
 	std::string get_name() {
@@ -1158,7 +1156,7 @@ public:
 class TurnOnSynctexCommand : public Command {
 public:
 	TurnOnSynctexCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->set_synctex_mode(true);
 	}
 	std::string get_name() {
@@ -1171,7 +1169,7 @@ public:
 class ToggleShowLastCommand : public Command {
 public:
 	ToggleShowLastCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->should_show_last_command = !widget->should_show_last_command;
 	}
 	std::string get_name() {
@@ -1182,7 +1180,7 @@ public:
 class ExternalSearchCommand : public SymbolCommand {
 public:
 	ExternalSearchCommand(MainWidget* w) : SymbolCommand(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		if ((symbol >= 'a') && (symbol <= 'z')) {
 			if (SEARCH_URLS[symbol - 'a'].size() > 0) {
 				search_custom_engine(widget->get_selected_text(), SEARCH_URLS[symbol - 'a']);
@@ -1201,7 +1199,7 @@ public:
 class OpenSelectedUrlCommand : public Command {
 public:
 	OpenSelectedUrlCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		open_web_url((widget->get_selected_text()).c_str());
 	}
 	std::string get_name() {
@@ -1213,7 +1211,7 @@ class ScreenDownCommand : public Command {
 public:
 	ScreenDownCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->handle_move_screen(rp);
 	}
@@ -1227,7 +1225,7 @@ class ScreenUpCommand : public Command {
 public:
 	ScreenUpCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->handle_move_screen(-rp);
 	}
@@ -1241,7 +1239,7 @@ class NextChapterCommand : public Command {
 public:
 	NextChapterCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->main_document_view->goto_chapter(rp);
 	}
@@ -1255,7 +1253,7 @@ class PrevChapterCommand : public Command {
 public:
 	PrevChapterCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		int rp = num_repeats == 0 ? 1 : num_repeats;
 		widget->main_document_view->goto_chapter(-rp);
 	}
@@ -1269,7 +1267,7 @@ class ToggleDarkModeCommand : public Command {
 public:
 	ToggleDarkModeCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->opengl_widget->toggle_dark_mode();
 		widget->helper_opengl_widget->toggle_dark_mode();
 	}
@@ -1285,7 +1283,7 @@ class ToggleCustomColorMode : public Command {
 public:
 	ToggleCustomColorMode(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->opengl_widget->toggle_custom_color_mode();
 		widget->helper_opengl_widget->toggle_custom_color_mode();
 	}
@@ -1301,7 +1299,7 @@ class TogglePresentationModeCommand : public Command {
 public:
 	TogglePresentationModeCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_presentation_mode();
 	}
 
@@ -1316,7 +1314,7 @@ class TurnOnPresentationModeCommand : public Command {
 public:
 	TurnOnPresentationModeCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->set_presentation_mode(true);
 	}
 
@@ -1331,7 +1329,7 @@ class ToggleMouseDragMode : public Command {
 public:
 	ToggleMouseDragMode(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_mouse_drag_mode();
 	}
 
@@ -1346,7 +1344,7 @@ class ToggleFreehandDrawingMode : public Command {
 public:
 	ToggleFreehandDrawingMode(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_freehand_drawing_mode();
 	}
 
@@ -1361,7 +1359,7 @@ class TogglePenDrawingMode : public Command {
 public:
 	TogglePenDrawingMode(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_pen_drawing_mode();
 	}
 
@@ -1376,7 +1374,7 @@ class CloseWindowCommand : public Command {
 public:
 	CloseWindowCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->close();
 	}
 
@@ -1391,7 +1389,7 @@ class NewWindowCommand : public Command {
 public:
 	NewWindowCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_new_window();
 	}
 
@@ -1406,7 +1404,7 @@ class QuitCommand : public Command {
 public:
 	QuitCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_close_event();
 		QApplication::quit();
 	}
@@ -1422,7 +1420,7 @@ class EscapeCommand : public Command {
 public:
 	EscapeCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_escape();
 	}
 
@@ -1461,11 +1459,11 @@ public:
 		}
 	}
 
-	virtual void perform(MainWidget* widget) {
+	virtual void perform() {
 		widget->handle_open_link(text.value());
 	}
 
-	void pre_perform(MainWidget* widget) {
+	void pre_perform() {
 		widget->opengl_widget->set_highlight_links(true, true);
 
 	}
@@ -1489,7 +1487,7 @@ class OverviewLinkCommand : public OpenLinkCommand {
 public:
 	OverviewLinkCommand(MainWidget* w) : OpenLinkCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_overview_link(text.value());
 	}
 
@@ -1503,7 +1501,7 @@ class PortalToLinkCommand : public OpenLinkCommand {
 public:
 	PortalToLinkCommand(MainWidget* w) : OpenLinkCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_portal_to_link(text.value());
 	}
 
@@ -1517,11 +1515,11 @@ class CopyLinkCommand : public TextCommand {
 public:
 	CopyLinkCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_open_link(text.value(), true);
 	}
 
-	void pre_perform(MainWidget* widget) {
+	void pre_perform() {
 		widget->opengl_widget->set_highlight_links(true, true);
 
 	}
@@ -1539,11 +1537,11 @@ class KeyboardSelectCommand : public TextCommand {
 public:
 	KeyboardSelectCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_keyboard_select(text.value());
 	}
 
-	void pre_perform(MainWidget* widget) {
+	void pre_perform() {
 		widget->highlight_words();
 
 	}
@@ -1561,7 +1559,7 @@ class KeyboardOverviewCommand : public TextCommand {
 public:
 	KeyboardOverviewCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		std::optional<fz_irect> rect_ = widget->get_tag_window_rect(utf8_encode(text.value()));
        if (rect_) {
            fz_irect rect = rect_.value();
@@ -1570,7 +1568,7 @@ public:
        }
 	}
 
-	void pre_perform(MainWidget* widget) {
+	void pre_perform() {
 		widget->highlight_words();
 
 	}
@@ -1588,7 +1586,7 @@ class KeyboardSmartjumpCommand : public TextCommand {
 public:
 	KeyboardSmartjumpCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 	   	std::optional<fz_irect> rect_ = widget->get_tag_window_rect(utf8_encode(text.value()));
        if (rect_) {
            fz_irect rect = rect_.value();
@@ -1597,7 +1595,7 @@ public:
        }
 	}
 
-	void pre_perform(MainWidget* widget) {
+	void pre_perform() {
 		widget->highlight_words();
 	}
 
@@ -1618,7 +1616,7 @@ class KeysCommand : public Command {
 public:
 	KeysCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		open_file(default_keys_path.get_path());
 	}
 
@@ -1633,7 +1631,7 @@ class KeysUserCommand : public Command {
 public:
 	KeysUserCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		std::optional<Path> key_file_path = widget->input_handler->get_or_create_user_keys_path();
 		if (key_file_path) {
 			open_file(key_file_path.value().get_path());
@@ -1651,7 +1649,7 @@ class KeysUserAllCommand : public Command {
 public:
 	KeysUserAllCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_keys_user_all();
 	}
 
@@ -1666,7 +1664,7 @@ class PrefsCommand : public Command {
 public:
 	PrefsCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		open_file(default_config_path.get_path());
 	}
 
@@ -1681,7 +1679,7 @@ class PrefsUserCommand : public Command {
 public:
 	PrefsUserCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		std::optional<Path> pref_file_path = widget->config_manager->get_or_create_user_config_file();
 		if (pref_file_path) {
 			open_file(pref_file_path.value().get_path());
@@ -1699,7 +1697,7 @@ class PrefsUserAllCommand : public Command {
 public:
 	PrefsUserAllCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_prefs_user_all();
 	}
 
@@ -1714,7 +1712,7 @@ class FitToPageWidthRatioCommand : public Command {
 public:
 	FitToPageWidthRatioCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->fit_to_page_width(false, true);
 		widget->last_smart_fit_page = {};
 	}
@@ -1728,7 +1726,7 @@ class SmartJumpUnderCursorCommand : public Command {
 public:
 	SmartJumpUnderCursorCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
         widget->smart_jump_under_pos({ mouse_pos.x(), mouse_pos.y() });
 	}
@@ -1742,7 +1740,7 @@ class DownloadPaperUnderCursorCommand : public Command {
 public:
 	DownloadPaperUnderCursorCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->download_paper_under_cursor();
 	}
 
@@ -1756,7 +1754,7 @@ class OverviewUnderCursorCommand : public Command {
 public:
 	OverviewUnderCursorCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
         widget->overview_under_pos({ mouse_pos.x(), mouse_pos.y() });
 	}
@@ -1770,7 +1768,7 @@ class SynctexUnderCursorCommand : public Command {
 public:
 	SynctexUnderCursorCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
         widget->synctex_under_pos({ mouse_pos.x(), mouse_pos.y() });
 	}
@@ -1784,7 +1782,7 @@ class VisualMarkUnderCursorCommand : public Command {
 public:
 	VisualMarkUnderCursorCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
         widget->visual_mark_under_pos({ mouse_pos.x(), mouse_pos.y() });
 	}
@@ -1798,7 +1796,7 @@ class CloseOverviewCommand : public Command {
 public:
 	CloseOverviewCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->opengl_widget->set_overview_page({});
 	}
 
@@ -1811,7 +1809,7 @@ class CloseVisualMarkCommand : public Command {
 public:
 	CloseVisualMarkCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->opengl_widget->set_should_draw_vertical_line(false);
 	}
 
@@ -1824,7 +1822,7 @@ class ZoomInCursorCommand : public Command {
 public:
 	ZoomInCursorCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
         widget->main_document_view->zoom_in_cursor({ mouse_pos.x(), mouse_pos.y() });
 		widget->last_smart_fit_page = {};
@@ -1839,7 +1837,7 @@ class ZoomOutCursorCommand : public Command {
 public:
 	ZoomOutCursorCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
         widget->main_document_view->zoom_out_cursor({ mouse_pos.x(), mouse_pos.y() });
 		widget->last_smart_fit_page = {};
@@ -1854,7 +1852,7 @@ class GotoLeftCommand : public Command {
 public:
 	GotoLeftCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->goto_left();
 	}
 
@@ -1867,7 +1865,7 @@ class GotoLeftSmartCommand : public Command {
 public:
 	GotoLeftSmartCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->goto_left_smart();
 	}
 
@@ -1880,7 +1878,7 @@ class GotoRightCommand : public Command {
 public:
 	GotoRightCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->goto_right();
 	}
 
@@ -1893,7 +1891,7 @@ class GotoRightSmartCommand : public Command {
 public:
 	GotoRightSmartCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->goto_right_smart();
 	}
 
@@ -1906,7 +1904,7 @@ class RotateClockwiseCommand : public Command {
 public:
 	RotateClockwiseCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->rotate();
         widget->opengl_widget->rotate_clockwise();
 	}
@@ -1920,7 +1918,7 @@ class RotateCounterClockwiseCommand : public Command {
 public:
 	RotateCounterClockwiseCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->main_document_view->rotate();
         widget->opengl_widget->rotate_counterclockwise();
 	}
@@ -1934,7 +1932,7 @@ class GotoNextHighlightCommand : public Command {
 public:
 	GotoNextHighlightCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		auto next_highlight = widget->main_document_view->get_document()->get_next_highlight(widget->main_document_view->get_offset_y());
         if (next_highlight.has_value()) {
 			widget->long_jump_to_destination(next_highlight.value().selection_begin.y);
@@ -1950,7 +1948,7 @@ class GotoPrevHighlightCommand : public Command {
 public:
 	GotoPrevHighlightCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 
 		auto prev_highlight = widget->main_document_view->get_document()->get_prev_highlight(widget->main_document_view->get_offset_y());
         if (prev_highlight.has_value()) {
@@ -1967,7 +1965,7 @@ class GotoNextHighlightOfTypeCommand : public Command {
 public:
 	GotoNextHighlightOfTypeCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		auto next_highlight = widget->main_document_view->get_document()->get_next_highlight(widget->main_document_view->get_offset_y(), widget->select_highlight_type);
         if (next_highlight.has_value()) {
 			widget->long_jump_to_destination(next_highlight.value().selection_begin.y);
@@ -1983,7 +1981,7 @@ class GotoPrevHighlightOfTypeCommand : public Command {
 public:
 	GotoPrevHighlightOfTypeCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		auto prev_highlight = widget->main_document_view->get_document()->get_prev_highlight(widget->main_document_view->get_offset_y(), widget->select_highlight_type);
         if (prev_highlight.has_value()) {
 			widget->long_jump_to_destination(prev_highlight.value().selection_begin.y);
@@ -1998,7 +1996,7 @@ public:
 class SetSelectHighlightTypeCommand : public SymbolCommand {
 public:
 	SetSelectHighlightTypeCommand(MainWidget* w) : SymbolCommand(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->select_highlight_type = symbol;
 	}
 
@@ -2012,7 +2010,7 @@ public:
 class SetFreehandType : public SymbolCommand {
 public:
 	SetFreehandType(MainWidget* w) : SymbolCommand(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->current_freehand_type = symbol;
 	}
 
@@ -2026,7 +2024,7 @@ public:
 class AddHighlightWithCurrentTypeCommand : public Command {
 public:
 	AddHighlightWithCurrentTypeCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         if (widget->main_document_view->selected_character_rects.size() > 0) {
             widget->main_document_view->add_highlight(widget->selection_begin, widget->selection_end, widget->select_highlight_type);
 			widget->clear_selected_text();
@@ -2041,7 +2039,7 @@ public:
 class UndoDrawingCommand : public Command {
 public:
 	UndoDrawingCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_undo_drawing();
 	}
 
@@ -2056,7 +2054,7 @@ public:
 class EnterPasswordCommand : public TextCommand {
 public:
 	EnterPasswordCommand(MainWidget* w) : TextCommand(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		std::string password = utf8_encode(text.value());
 		widget->pdf_renderer->add_password(widget->main_document_view->get_document()->get_path(), password);
 	}
@@ -2073,7 +2071,7 @@ public:
 class ToggleFastreadCommand : public Command {
 public:
 	ToggleFastreadCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->opengl_widget->toggle_fastread_mode();
 	}
 
@@ -2085,7 +2083,7 @@ public:
 class GotoTopOfPageCommand : public Command {
 public:
 	GotoTopOfPageCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->main_document_view->goto_top_of_page();
 	}
 
@@ -2097,7 +2095,7 @@ public:
 class GotoBottomOfPageCommand : public Command {
 public:
 	GotoBottomOfPageCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->main_document_view->goto_bottom_of_page();
 	}
 
@@ -2109,7 +2107,7 @@ public:
 class ReloadCommand : public Command {
 public:
 	ReloadCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->reload();
 	}
 
@@ -2121,7 +2119,7 @@ public:
 class ReloadConfigCommand : public Command {
 public:
 	ReloadConfigCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->on_config_file_changed(widget->config_manager);
 	}
 
@@ -2135,7 +2133,7 @@ public:
 class TurnOnAllDrawings : public Command {
 public:
 	TurnOnAllDrawings(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->hande_turn_on_all_drawings();
 	}
 
@@ -2149,7 +2147,7 @@ public:
 class TurnOffAllDrawings : public Command {
 public:
 	TurnOffAllDrawings(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->hande_turn_off_all_drawings();
 	}
 
@@ -2164,7 +2162,7 @@ class SetStatusStringCommand : public TextCommand {
 public:
 	SetStatusStringCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->set_status_message(text.value());
 	}
 
@@ -2182,7 +2180,7 @@ public:
 class ClearStatusStringCommand : public Command {
 public:
 	ClearStatusStringCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->set_status_message(L"");
 	}
 
@@ -2196,7 +2194,7 @@ public:
 class ToggleTittlebarCommand : public Command {
 public:
 	ToggleTittlebarCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_titlebar();
 	}
 
@@ -2210,7 +2208,7 @@ public:
 class NextPreviewCommand : public Command {
 public:
 	NextPreviewCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         if (widget->smart_view_candidates.size() > 0) {
             widget->index_into_candidates = (widget->index_into_candidates + 1) % widget->smart_view_candidates.size();
             widget->set_overview_position(widget->smart_view_candidates[widget->index_into_candidates].page, widget->smart_view_candidates[widget->index_into_candidates].y);
@@ -2225,7 +2223,7 @@ public:
 class PreviousPreviewCommand : public Command {
 public:
 	PreviousPreviewCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
         if (widget->smart_view_candidates.size() > 0) {
             widget->index_into_candidates = mod(widget->index_into_candidates - 1, widget->smart_view_candidates.size());
             widget->set_overview_position(widget->smart_view_candidates[widget->index_into_candidates].page, widget->smart_view_candidates[widget->index_into_candidates].y);
@@ -2240,7 +2238,7 @@ public:
 class GotoOverviewCommand : public Command {
 public:
 	GotoOverviewCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->goto_overview();
 	}
 
@@ -2252,7 +2250,7 @@ public:
 class PortalToOverviewCommand : public Command {
 public:
 	PortalToOverviewCommand(MainWidget* w) : Command(w) {};
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_portal_to_overview();
 	}
 
@@ -2265,7 +2263,7 @@ class GotoSelectedTextCommand : public Command {
 public:
 	GotoSelectedTextCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->long_jump_to_destination(widget->selection_begin.y);
 	}
 
@@ -2278,7 +2276,7 @@ class FocusTextCommand : public TextCommand {
 public:
 	FocusTextCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		std::wstring text_ = text.value();
 		widget->handle_focus_text(text_);
 	}
@@ -2296,7 +2294,7 @@ class GotoWindowCommand : public Command {
 public:
 	GotoWindowCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_goto_window();
 	}
 
@@ -2311,7 +2309,7 @@ class ToggleSmoothScrollModeCommand : public Command {
 public:
 	ToggleSmoothScrollModeCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_toggle_smooth_scroll_mode();
 	}
 
@@ -2326,7 +2324,7 @@ class ToggleScrollbarCommand : public Command {
 public:
 	ToggleScrollbarCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->toggle_scrollbar();
 	}
 
@@ -2339,7 +2337,7 @@ class OverviewToPortalCommand : public Command {
 public:
 	OverviewToPortalCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_overview_to_portal();
 	}
 
@@ -2352,7 +2350,7 @@ class DebugCommand : public Command {
 public:
 	DebugCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_debug_command();
 	}
 
@@ -2365,7 +2363,7 @@ class SelectRectCommand : public Command {
 public:
 	SelectRectCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->set_rect_select_mode(true);
 	}
 
@@ -2378,7 +2376,7 @@ class ToggleTypingModeCommand : public Command {
 public:
 	ToggleTypingModeCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_toggle_typing_mode();
 	}
 
@@ -2391,7 +2389,7 @@ class DonateCommand : public Command {
 public:
 	DonateCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         open_web_url(L"https://www.buymeacoffee.com/ahrm");
 	}
 
@@ -2405,7 +2403,7 @@ class OverviewNextItemCommand : public Command {
 public:
 	OverviewNextItemCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         if (num_repeats == 0) num_repeats++;
         widget->opengl_widget->goto_search_result(num_repeats, true);
 	}
@@ -2419,7 +2417,7 @@ class OverviewPrevItemCommand : public Command {
 public:
 	OverviewPrevItemCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         if (num_repeats == 0) num_repeats++;
         widget->opengl_widget->goto_search_result(-num_repeats, true);
 	}
@@ -2433,7 +2431,7 @@ class DeleteHighlightUnderCursorCommand : public Command {
 public:
 	DeleteHighlightUnderCursorCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_delete_highlight_under_cursor();
 	}
 
@@ -2447,7 +2445,7 @@ public:
 
 	NoopCommand(MainWidget* widget_) : Command(widget_) {}
 
-	void perform(MainWidget* widget) {
+	void perform() {
 	}
 
 	std::string get_name() {
@@ -2460,7 +2458,7 @@ class ImportCommand : public Command {
 public:
 	ImportCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         std::wstring import_file_name = select_json_file_name();
         widget->db_manager->import_json(import_file_name, widget->checksummer);
 	}
@@ -2475,7 +2473,7 @@ class ExportCommand : public Command {
 public:
 	ExportCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         std::wstring export_file_name = select_new_json_file_name();
         widget->db_manager->export_json(export_file_name, widget->checksummer);
 	}
@@ -2490,7 +2488,7 @@ class EnterVisualMarkModeCommand : public Command {
 public:
 	EnterVisualMarkModeCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->visual_mark_under_pos({ widget->width()/2, widget->height()/2});
 	}
 
@@ -2503,7 +2501,7 @@ class SetPageOffsetCommand : public TextCommand {
 public:
 	SetPageOffsetCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         if (is_string_numeric(text.value().c_str()) && text.value().size() < 6) { // make sure the page number is valid
             widget->main_document_view->set_page_offset(std::stoi(text.value().c_str()));
         }
@@ -2518,7 +2516,7 @@ class ToggleVisualScrollCommand : public Command {
 public:
 	ToggleVisualScrollCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->toggle_visual_scroll_mode();
 	}
 
@@ -2531,7 +2529,7 @@ class ToggleHorizontalLockCommand : public Command {
 public:
 	ToggleHorizontalLockCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->horizontal_scroll_locked = !widget->horizontal_scroll_locked;
 	}
 
@@ -2544,7 +2542,7 @@ class ExecuteCommand : public TextCommand {
 public:
 	ExecuteCommand(MainWidget* w) : TextCommand(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->execute_command(text.value());
 	}
 
@@ -2558,7 +2556,7 @@ class EmbedAnnotationsCommand : public Command {
 public:
 	EmbedAnnotationsCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
         if (embedded_pdf_file_name.size() > 0) {
             widget->main_document_view->get_document()->embed_annotations(embedded_pdf_file_name);
@@ -2574,7 +2572,7 @@ class CopyWindowSizeConfigCommand : public Command {
 public:
 	CopyWindowSizeConfigCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         copy_to_clipboard(widget->get_window_configuration_string());
 	}
 
@@ -2588,7 +2586,7 @@ class ToggleSelectHighlightCommand : public Command {
 public:
 	ToggleSelectHighlightCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         widget->is_select_highlight_mode = !widget->is_select_highlight_mode;
 	}
 
@@ -2601,7 +2599,7 @@ class OpenLastDocumentCommand : public Command {
 public:
 	OpenLastDocumentCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
         auto last_opened_file = widget->get_last_opened_file_checksum();
         if (last_opened_file) {
             widget->open_document_with_hash(last_opened_file.value());
@@ -2619,7 +2617,7 @@ class AddMarkedDataCommand : public Command {
 public:
 	AddMarkedDataCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_add_marked_data();
 	}
 
@@ -2634,7 +2632,7 @@ class UndoMarkedDataCommand : public Command {
 public:
 	UndoMarkedDataCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_undo_marked_data();
 	}
 
@@ -2649,7 +2647,7 @@ class GotoRandomPageCommand : public Command {
 public:
 	GotoRandomPageCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_goto_random_page();
 	}
 
@@ -2664,7 +2662,7 @@ class RemoveMarkedDataCommand : public Command {
 public:
 	RemoveMarkedDataCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_remove_marked_data();
 	}
 
@@ -2679,7 +2677,7 @@ class ExportMarkedDataCommand : public Command {
 public:
 	ExportMarkedDataCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->handle_export_marked_data();
 	}
 
@@ -2694,7 +2692,7 @@ class ToggleStatusbarCommand : public Command {
 public:
 	ToggleStatusbarCommand(MainWidget* w) : Command(w) {};
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->toggle_statusbar();
 	}
 
@@ -2708,7 +2706,6 @@ public:
 class LazyCommand : public Command {
 private:
 	CommandManager* command_manager;
-	MainWidget* widget;
 	std::string command_name;
 	std::wstring command_params;
 	std::unique_ptr<Command> actual_command = nullptr;
@@ -2768,17 +2765,17 @@ public:
 	void set_rect_requirement(fz_rect value) { get_command()->set_rect_requirement(value); }
 	void set_num_repeats(int nr) { get_command()->set_num_repeats(nr); }
 	std::vector<char> special_symbols() { return get_command()->special_symbols(); }
-	void pre_perform(MainWidget* widget) { get_command()->pre_perform(widget); }
+	void pre_perform() { get_command()->pre_perform(); }
 	bool pushes_state() { return get_command()->pushes_state(); }
 	bool requires_document() { return get_command()->requires_document(); }
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
 		return get_command()->next_requirement(widget);
 	}
 
-	virtual void perform(MainWidget* w) {
+	virtual void perform() {
 		auto com = get_command();
 		if (com) {
-			com->run(w);
+			com->run();
 		}
 	}
 
@@ -2803,7 +2800,7 @@ public:
 	DrawingMode original_drawing_mode = DrawingMode::None;
 
 
-	void pre_perform(MainWidget* widget) {
+	void pre_perform() {
 		original_drawing_mode = widget->freehand_drawing_mode;
 		widget->freehand_drawing_mode = DrawingMode::None;
 	}
@@ -2828,7 +2825,7 @@ public:
 		rect_ = rect;
 	}
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->delete_freehand_drawings(rect_.value());
 		widget->freehand_drawing_mode = original_drawing_mode;
 	}
@@ -2872,7 +2869,7 @@ public:
 		command_text = txt;
 	}
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		widget->execute_command(raw_command, command_text.value_or(L""));
 	}
 
@@ -2948,7 +2945,7 @@ public:
 		}
 	}
 
-    void perform(MainWidget* widget) {
+    void perform() {
 
 		if (TOUCH_MODE) {
 			Config* config = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
@@ -3158,10 +3155,10 @@ public:
 	}
 
 
-	void perform(MainWidget* widget) {
+	void perform() {
 		if (!is_modal) {
 			for (std::unique_ptr<Command>& subcommand : commands) {
-				subcommand->run(widget);
+				subcommand->run();
 			}
 		}
 		else {
@@ -4014,15 +4011,15 @@ void Command::set_num_repeats(int nr) {
 	num_repeats = nr;
 }
 
-void Command::pre_perform(MainWidget* widget) {
+void Command::pre_perform() {
 
 }
 
-void Command::run(MainWidget* widget) {
+void Command::run() {
 	if (this->requires_document() && !(widget->main_document_view_has_document())) {
 		return;
 	}
-	perform(widget);
+	perform();
 }
 
 std::vector<char> Command::special_symbols() {

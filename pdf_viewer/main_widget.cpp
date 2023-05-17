@@ -1,9 +1,9 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
-// can not get save freehand drawings for tutorial document on android because the pdf file doesn't have a path
 // add more epub-related configs
 // add "tabs" (a way to view and goto opened documents along with methods to unload them)
 // multiline touch list view
+// make drawings round
 
 #include <iostream>
 #include <vector>
@@ -744,7 +744,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
             if ((last_middle_down_time.msecsTo(QTime::currentTime()) > 200) && (!is_dragging)) {
 				auto commands = this->command_manager->create_macro_command(this, "", HOLD_MIDDLE_CLICK_COMMAND);
-				commands->run(this);
+				commands->run();
 				invalidate_render();
                 is_dragging = true;
             }
@@ -2154,15 +2154,15 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     if (mevent->button() == Qt::MouseButton::LeftButton) {
         if (is_shift_pressed) {
 			auto commands = command_manager->create_macro_command(this, "", SHIFT_CLICK_COMMAND);
-			commands->run(this);
+			commands->run();
         }
         else if (is_control_pressed) {
 			auto commands = command_manager->create_macro_command(this, "", CONTROL_CLICK_COMMAND);
-			commands->run(this);
+			commands->run();
         }
         else if (is_alt_pressed) {
 			auto commands = command_manager->create_macro_command(this, "", ALT_CLICK_COMMAND);
-			commands->run(this);
+			commands->run();
         }
         else {
 			handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
@@ -2180,15 +2180,15 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     if (mevent->button() == Qt::MouseButton::RightButton) {
         if (is_shift_pressed) {
 			auto commands = command_manager->create_macro_command(this, "", SHIFT_RIGHT_CLICK_COMMAND);
-			commands->run(this);
+			commands->run();
         }
         else if (is_control_pressed) {
 			auto commands = command_manager->create_macro_command(this, "", CONTROL_RIGHT_CLICK_COMMAND);
-			commands->run(this);
+			commands->run();
         }
         else if (is_alt_pressed) {
 			auto commands = command_manager->create_macro_command(this, "", ALT_RIGHT_CLICK_COMMAND);
-			commands->run(this);
+			commands->run();
         }
         else {
 			handle_right_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
@@ -2201,7 +2201,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
             if (HIGHLIGHT_MIDDLE_CLICK
                 && main_document_view->selected_character_rects.size() > 0
                 && !(opengl_widget && opengl_widget->get_overview_page())) {
-                command_manager->get_command_with_name(this, "add_highlight_with_current_type")->run(this);
+                command_manager->get_command_with_name(this, "add_highlight_with_current_type")->run();
                 invalidate_render();
             }
             else {
@@ -2385,7 +2385,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     if (command) {
         //handle_command(command, num_repeats);
         command->set_num_repeats(num_repeats);
-        command->run(this);
+        command->run();
     }
 }
 
@@ -4205,7 +4205,7 @@ void MainWidget::goto_mark(char symbol) {
 void MainWidget::advance_command(std::unique_ptr<Command> new_command){
 	if (new_command) {
 		if (!new_command->next_requirement(this).has_value()) {
-			new_command->run(this);
+			new_command->run();
             pending_command_instance = nullptr;
 		}
 		else {
@@ -4239,7 +4239,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command){
                 set_rect_select_mode(true);
 			}
             if (pending_command_instance) {
-				pending_command_instance->pre_perform(this);
+				pending_command_instance->pre_perform();
             }
 
 		}
@@ -4695,8 +4695,8 @@ MainWidget* MainWidget::handle_new_window() {
 	new_widget->show();
     new_widget->apply_window_params_for_one_window_mode();
 	//new_widget->run_multiple_commands(STARTUP_COMMANDS);
-    auto startup_commands = command_manager->create_macro_command(this, "", STARTUP_COMMANDS);
-    startup_commands->run(new_widget);
+    auto startup_commands = command_manager->create_macro_command(new_widget, "", STARTUP_COMMANDS);
+    startup_commands->run();
 
 	windows.push_back(new_widget);
     return new_widget;
@@ -5981,15 +5981,17 @@ void MainWidget::expand_selection_vertical(bool begin, bool below) {
             fz_rect absrect = doc()->document_to_absolute_rect(page, below_rect.value(), true);
             if (begin) {
 				auto target  = AbsoluteDocumentPos{ (absrect.x0 + absrect.x1) / 2,   (absrect.y0 + absrect.y1) / 2  };
-                if (target.y <= other_rect.y1) {
-					selection_begin = target;
-                }
+				selection_begin = target;
+     //           if (target.y <= other_rect.y1) {
+					//selection_begin = target;
+     //           }
             }
             else {
 				auto target = AbsoluteDocumentPos{ (absrect.x0 + absrect.x1) / 2,   (absrect.y0 + absrect.y1) / 2  };
-                if (target.y >= other_rect.y0) {
-					selection_end = target;
-                }
+				selection_end = target;
+     //           if (target.y >= other_rect.y0) {
+					//selection_end = target;
+     //           }
             }
             main_document_view->get_text_selection(selection_begin,
                 selection_end,

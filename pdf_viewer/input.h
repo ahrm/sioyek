@@ -29,7 +29,7 @@ struct Requirement {
 
 class Command {
 private:
-	virtual void perform(MainWidget* widget) = 0;
+	virtual void perform() = 0;
 protected:
 	int num_repeats = 1;
 	MainWidget* widget = nullptr;
@@ -43,11 +43,11 @@ public:
 	virtual void set_rect_requirement(fz_rect value);
 	virtual void set_num_repeats(int nr);
 	virtual std::vector<char> special_symbols();
-	virtual void pre_perform(MainWidget* widget);
+	virtual void pre_perform();
 	virtual bool pushes_state();
 	virtual bool requires_document();
 
-	virtual void run(MainWidget* widget);
+	virtual void run();
 	virtual std::string get_name();
 	virtual std::wstring get_text_default_value();
 };
