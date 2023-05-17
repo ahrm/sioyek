@@ -166,6 +166,12 @@ TouchMainMenu::TouchMainMenu(bool fit_mode, bool portaling, bool fullscreen, boo
                 SIGNAL(drawingModeButtonClicked()),
                 this,
                 SLOT(handleDrawingMode()));
+
+    QObject::connect(
+                dynamic_cast<QObject*>(quick_widget->rootObject()),
+                SIGNAL(downloadPaperClicked()),
+                this,
+                SLOT(handleDownloadPaper()));
 }
 
 void TouchMainMenu::handleDrawingMode(){
@@ -183,6 +189,11 @@ void TouchMainMenu::handleGotoPage(){
 void TouchMainMenu::handleToc(){
     emit tocClicked();
 }
+
+void TouchMainMenu::handleDownloadPaper(){
+    emit downloadPaperClicked();
+}
+
 
 void TouchMainMenu::handleSearch(){
     emit searchClicked();

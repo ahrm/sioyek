@@ -70,6 +70,7 @@
         <file>icons/left.svg</file>
         <file>icons/right.svg</file>
         <file>icons/draw.svg</file>
+        <file>icons/paper-download.svg</file>
         <file>end.png</file>
         <file>data/embedding.npy</file>
         <file>data/linear.npy</file>

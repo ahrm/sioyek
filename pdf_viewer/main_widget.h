@@ -352,7 +352,7 @@ public:
 	void set_inverse_search_command(const std::wstring& new_command);
 	int get_current_monitor_width(); int get_current_monitor_height();
 	void synctex_under_pos(WindowPos position);
-	std::optional<std::wstring> get_paper_name_under_cursor();
+	std::optional<std::wstring> get_paper_name_under_cursor(bool use_last_hold_point=false);
     fz_stext_char* get_closest_character_to_cusrsor(QPoint pos);
     void set_status_message(std::wstring new_status_string);
 	void remove_self_from_windows();
@@ -406,7 +406,7 @@ public:
 	void handle_undo_drawing();
 	void handle_pause();
 	void read_current_line();
-	void download_paper_under_cursor();
+	void download_paper_under_cursor(bool use_last_touch_pos=false);
 	void handle_debug_command();
 	void handle_add_marked_data();
 	void handle_undo_marked_data();

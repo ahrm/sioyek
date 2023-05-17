@@ -1,7 +1,6 @@
 ﻿//todo:
 // make the rest of config UIs have the same theme as boolean config
 // add more epub-related configs
-// add "tabs" (a way to view and goto opened documents along with methods to unload them)
 
 #include <iostream>
 #include <vector>
@@ -2512,8 +2511,14 @@ fz_stext_char* MainWidget::get_closest_character_to_cusrsor(QPoint pos){
     return find_closest_char_to_document_point(flat_chars, doc_point, &location_index);
 }
 
-std::optional<std::wstring> MainWidget::get_paper_name_under_cursor() {
-	QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_last_hold_point) {
+    QPoint mouse_pos;
+    if (use_last_hold_point) {
+        mouse_pos = last_hold_point;
+    }
+    else {
+		 mouse_pos = mapFromGlobal(QCursor::pos());
+    }
     WindowPos window_pos = { mouse_pos.x(), mouse_pos.y() };
     auto normal_pos = main_document_view->window_to_normalized_window_pos(window_pos);
 
@@ -5412,8 +5417,14 @@ void MainWidget::handle_debug_command() {
     handle_goto_loaded_document();
 }
 
-void MainWidget::download_paper_under_cursor() {
-	QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
+    QPoint mouse_pos;
+    if (use_last_touch_pos) {
+        mouse_pos = last_hold_point;
+    }
+    else {
+		mouse_pos = mapFromGlobal(QCursor::pos());
+    }
     WindowPos pos(mouse_pos.x(), mouse_pos.y());
     DocumentPos docpos = main_document_view->window_to_document_pos(pos);
     auto [page, offset_x, offset_y] = docpos;
@@ -5441,7 +5452,7 @@ void MainWidget::download_paper_under_cursor() {
 			}
         }
         else {
-            std::optional<std::wstring> paper_name = get_paper_name_under_cursor();
+            std::optional<std::wstring> paper_name = get_paper_name_under_cursor(use_last_touch_pos);
             if (paper_name) {
                 bib_text_ = paper_name;
             }

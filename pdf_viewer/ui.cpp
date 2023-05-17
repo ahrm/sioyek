@@ -399,6 +399,12 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         main_widget->invalidate_render();
     });
 
+    QObject::connect(main_menu, &TouchMainMenu::downloadPaperClicked, [&](){
+        main_widget->download_paper_under_cursor(true);
+        main_widget->pop_current_widget();
+        main_widget->invalidate_render();
+    });
+
 
     QObject::connect(main_menu, &TouchMainMenu::fitToPageWidthClicked, [&](){
 
