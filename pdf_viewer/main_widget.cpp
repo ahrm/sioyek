@@ -2,8 +2,6 @@
 // make the rest of config UIs have the same theme as boolean config
 // add more epub-related configs
 // add "tabs" (a way to view and goto opened documents along with methods to unload them)
-// multiline touch list view
-// make drawings round
 
 #include <iostream>
 #include <vector>

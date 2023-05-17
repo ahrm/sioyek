@@ -97,8 +97,8 @@ Rectangle {
 
             Item{
                 anchors.left: parent.left
+                anchors.right: right_label.left
                 //anchors.right: parent.right
-                width: inner.contentWidth
                 anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
                 Text {
@@ -106,15 +106,19 @@ Rectangle {
                     text: model.display
                     color: "white"
                     anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.right: parent.right
                     font.pixelSize: 15
+                    wrapMode: Text.Wrap
                 }
 
             }
             Item{
                 anchors.right: parent.right
-                width: pagetext.contentWidth
+                width: Math.min(pagetext.contentWidth, parent.width / 2)
                 anchors.rightMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
+                id: right_label
                 Text {
                     id: pagetext
                     //text: model.display
