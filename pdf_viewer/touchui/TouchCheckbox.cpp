@@ -17,11 +17,16 @@ TouchCheckbox::TouchCheckbox(QString name, bool initial_value, QWidget* parent) 
 
 
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(valueSelected(bool)), this, SLOT(handleSelect(bool)));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(canceled()), this, SLOT(handleCancel()));
 
 }
 
 void TouchCheckbox::handleSelect(bool item) {
     emit itemSelected(item);
+}
+
+void TouchCheckbox::handleCancel() {
+    emit canceled();
 }
 
 void TouchCheckbox::resizeEvent(QResizeEvent* resize_event){

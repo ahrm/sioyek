@@ -12,12 +12,16 @@ Rectangle {
 //    implicitWidth: 100
 //    implicitHeight: 100
     //    anchors.fill: parent
-    color: "#00000000"
+    //color: "#00000000"
+    color: "#444"
+    radius: 10
+    //color: "black"
     //    flags:  Qt.WA_TranslucentBackground | Qt.WA_AlwaysStackOnTop
     //    flags:  Qt.WA_AlwaysStackOnTop
     id: root
 
     signal valueSelected(val: int)
+    signal canceled()
 
     Slider{
         from: _from
@@ -29,21 +33,33 @@ Rectangle {
             left: parent.left
             right: parent.right
             verticalCenter: parent.verticalCenter
+            leftMargin: 10
+            rightMargin: 10
         }
 
 
 
     }
-    Button{
-        text: "Confirm"
+
+    Row{
+
         anchors {
             horizontalCenter: parent.horizontalCenter
             top: my_slider.bottom
         }
+        Button{
+            text: "Confirm"
 
-        onClicked: {
-            root.valueSelected(my_slider.value);
-            //                console.log("something has happened!");
+            onClicked: {
+                root.valueSelected(my_slider.value);
+            }
+        }
+        Button{
+            text: "Cancel"
+
+            onClicked: {
+                root.canceled();
+            }
         }
     }
 

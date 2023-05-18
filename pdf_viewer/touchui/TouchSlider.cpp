@@ -18,12 +18,18 @@ TouchSlider::TouchSlider(int from, int to, int initial_value, QWidget* parent) :
 
 
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(valueSelected(int)), this, SLOT(handleSelect(int)));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(canceled()), this, SLOT(handleCancel()));
 
 }
 
 void TouchSlider::handleSelect(int item) {
     emit itemSelected(item);
 }
+
+void TouchSlider::handleCancel() {
+    emit canceled();
+}
+
 
 void TouchSlider::resizeEvent(QResizeEvent* resize_event){
     quick_widget->resize(resize_event->size().width(), resize_event->size().height());

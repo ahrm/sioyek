@@ -14,9 +14,11 @@ public:
 
 public slots:
     void handleSelect(int item);
+    void handleCancel();
 
 signals:
     void itemSelected(int);
+    void canceled();
 
 private:
     QQuickWidget* quick_widget = nullptr;

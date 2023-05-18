@@ -839,6 +839,10 @@ FloatConfigUI::FloatConfigUI(std::string name, MainWidget* parent, float* config
         main_widget->pop_current_widget();
     });
 
+    QObject::connect(slider, &TouchSlider::canceled, [&](){
+        main_widget->pop_current_widget();
+    });
+
  }
 
 
@@ -854,6 +858,10 @@ IntConfigUI::IntConfigUI(std::string name, MainWidget* parent, int* config_locat
         *int_location = val;
         on_change();
         main_widget->invalidate_render();
+        main_widget->pop_current_widget();
+    });
+
+    QObject::connect(slider, &TouchSlider::canceled, [&](){
         main_widget->pop_current_widget();
     });
 
@@ -956,28 +964,12 @@ BoolConfigUI::BoolConfigUI(std::string name_, MainWidget* parent, bool* config_l
 			main_widget->persist_config();
         }
 
-        //main_widget->current_widget = nullptr;
-        //deleteLater();
         main_widget->pop_current_widget();
     });
-//    layout = new QHBoxLayout();
 
-//    label = new QLabel(name, this);
-//    checkbox = new QCheckBox(this);
-//    checkbox->setStyleSheet("QCheckBox::indicator {width: 50px;height: 50px;}");
-
-//    checkbox->setChecked(*config_location);
-
-//    layout->addWidget(label);
-//    layout->addWidget(checkbox);
-
-//    QObject::connect(checkbox, &QCheckBox::stateChanged, [&](int new_state){
-//        *bool_location = static_cast<bool>(new_state);
-//        main_widget->invalidate_render();
-//        main_widget->persist_config();
-//    });
-
-//    setLayout(layout);
+    QObject::connect(checkbox, &TouchCheckbox::canceled, [&](){
+        main_widget->pop_current_widget();
+    });
 }
 
 void BoolConfigUI::resizeEvent(QResizeEvent* resize_event){
