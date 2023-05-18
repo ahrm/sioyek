@@ -1,6 +1,6 @@
-﻿//todo:
-// make the rest of config UIs have the same theme as boolean config
-// add more epub-related configs
+﻿// todo: make touch virtual button commands configurable
+// clean console output
+// fix extra invalid modal command messages
 
 #include <iostream>
 #include <vector>
@@ -143,6 +143,17 @@ extern float RULER_AUTO_MOVE_SENSITIVITY;
 extern float TTS_RATE;
 extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 
+extern std::wstring BACK_RECT_TAP_COMMAND;
+extern std::wstring BACK_RECT_HOLD_COMMAND;
+extern std::wstring FORWARD_RECT_TAP_COMMAND;
+extern std::wstring FORWARD_RECT_HOLD_COMMAND;
+extern std::wstring EDIT_PORTAL_TAP_COMMAND;
+extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
+extern std::wstring VISUAL_MARK_NEXT_TAP_COMMAND;
+extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
+extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
+extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
+
 extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
 extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
 
@@ -150,7 +161,6 @@ extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
 extern UIRect LANDSCAPE_BACK_UI_RECT;
 extern UIRect LANDSCAPE_FORWARD_UI_RECT;
-
 extern UIRect PORTRAIT_VISUAL_MARK_PREV;
 extern UIRect PORTRAIT_VISUAL_MARK_NEXT;
 extern UIRect LANDSCAPE_VISUAL_MARK_PREV;
@@ -1541,10 +1551,10 @@ bool MainWidget::is_waiting_for_symbol() {
 		(pending_command_instance->next_requirement(this).value().type == RequirementType::Symbol));
 }
 
-void MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int num_repeats) {
+bool MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int num_repeats) {
 
     if (new_command == nullptr) {
-        return;
+        return false;
     }
 
     if (new_command) {
@@ -1558,7 +1568,7 @@ void MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int 
         advance_command(std::move(new_command));
 		update_scrollbar();
     }
-    return;
+    return true;
 
 }
 
@@ -1766,6 +1776,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 					move_visual_mark_next();
 					was_last_mouse_down_in_ruler_next_rect = true;
 					ruler_moving_last_window_pos = click_pos;
+
 				}
 				else if (PORTRAIT_VISUAL_MARK_PREV.enabled && PORTRAIT_VISUAL_MARK_PREV.contains(nwp)) {
 					move_visual_mark_prev();
@@ -4935,15 +4946,15 @@ void MainWidget::handle_toggle_typing_mode() {
 }
 
 void MainWidget::handle_delete_highlight_under_cursor() {
-	QPoint mouse_pos = mapFromGlobal(QCursor::pos());
-	WindowPos window_pos = WindowPos{ mouse_pos.x(), mouse_pos.y() };
-	int sel_highlight = main_document_view->get_highlight_index_in_pos(window_pos);
-	if (sel_highlight != -1) {
-		main_document_view->delete_highlight_with_index(sel_highlight);
-	}
+    QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+    WindowPos window_pos = WindowPos{ mouse_pos.x(), mouse_pos.y() };
+    int sel_highlight = main_document_view->get_highlight_index_in_pos(window_pos);
+    if (sel_highlight != -1) {
+        main_document_view->delete_highlight_with_index(sel_highlight);
+    }
 }
 
-void MainWidget::handle_delete_selected_highlight(){
+void MainWidget::handle_delete_selected_highlight() {
     if (selected_highlight_index != -1) {
         main_document_view->delete_highlight_with_index(selected_highlight_index);
         selected_highlight_index = -1;
@@ -4954,13 +4965,13 @@ void MainWidget::handle_delete_selected_highlight(){
 void MainWidget::synchronize_pending_link() {
     for (auto window : windows) {
         if (window != this) {
-			window->pending_link = pending_link;
+            window->pending_link = pending_link;
         }
     }
     refresh_all_windows();
 }
 
-void MainWidget::refresh_all_windows(){
+void MainWidget::refresh_all_windows() {
     for (auto window : windows) {
         window->invalidate_ui();
     }
@@ -4968,12 +4979,12 @@ void MainWidget::refresh_all_windows(){
 
 
 int MainWidget::num_visible_links() {
-	std::vector<std::pair<int, fz_link*>> visible_page_links;
+    std::vector<std::pair<int, fz_link*>> visible_page_links;
     main_document_view->get_visible_links(visible_page_links);
     return visible_page_links.size();
 }
 
-bool MainWidget::event(QEvent *event){
+bool MainWidget::event(QEvent* event) {
 
 
     QTabletEvent* te = dynamic_cast<QTabletEvent*>(event);
@@ -4985,24 +4996,24 @@ bool MainWidget::event(QEvent *event){
     }
 
     //if (event->type() == QEvent::TabletEVe)
-    if (TOUCH_MODE){
-        if (event->type() == QEvent::Gesture){
+    if (TOUCH_MODE) {
+        if (event->type() == QEvent::Gesture) {
             auto gesture = (static_cast<QGestureEvent*>(event));
 
-            if (gesture->gesture(Qt::TapAndHoldGesture)){
+            if (gesture->gesture(Qt::TapAndHoldGesture)) {
                 velocity_x = 0;
                 velocity_y = 0;
 
-                if (was_last_mouse_down_in_ruler_next_rect){
+                if (was_last_mouse_down_in_ruler_next_rect) {
                     return true;
                 }
 
-                if ((mapFromGlobal(QCursor::pos()) - last_press_point).manhattanLength() > 10){
+                if ((mapFromGlobal(QCursor::pos()) - last_press_point).manhattanLength() > 10) {
                     return QWidget::event(event);
                 }
 
                 // only show menu when there are no other widgets
-                if (current_widget_stack.size() > 0){
+                if (current_widget_stack.size() > 0) {
                     return true;
                 }
 
@@ -5010,28 +5021,36 @@ bool MainWidget::event(QEvent *event){
                 WindowPos window_pos = WindowPos{ last_hold_point.x(), last_hold_point.y() };
                 //opengl_widget->last_selected_block
 
-                QTapAndHoldGesture *tapgest = static_cast<QTapAndHoldGesture *>(gesture->gesture(Qt::TapAndHoldGesture));
-                if (tapgest->state() == Qt::GestureFinished){
+                QTapAndHoldGesture* tapgest = static_cast<QTapAndHoldGesture*>(gesture->gesture(Qt::TapAndHoldGesture));
+                if (tapgest->state() == Qt::GestureFinished) {
 
                     is_dragging = false;
 
                     if (is_in_back_rect(window_pos)) {
-                        handle_command_types(command_manager->get_command_with_name(this, "goto_mark"), 0);
+                        handle_command_types(command_manager->create_macro_command(this, "", BACK_RECT_HOLD_COMMAND), 0);
                         invalidate_render();
                         return true;
                     }
                     if (is_in_forward_rect(window_pos)) {
-                        handle_command_types(command_manager->get_command_with_name(this, "set_mark"), 0);
+                        handle_command_types(command_manager->create_macro_command(this, "", FORWARD_RECT_HOLD_COMMAND), 0);
                         invalidate_render();
                         return true;
                     }
-
-                    //                persist();
-                    //                toggle_fullscreen();
-                    //                toggle_statusbar();
-                    //                std::unique_ptr<Command> command = this->command_manager->get_command_with_name("command");
-                    //                handle_command_types(std::move(command), 0);
-                    //                invalidate_render();
+                    if (is_in_edit_portal_rect(window_pos)) {
+                        handle_command_types(command_manager->create_macro_command(this, "", EDIT_PORTAL_HOLD_COMMAND), 0);
+                        invalidate_render();
+                        return true;
+                    }
+                    if ((!is_visual_mark_mode()) && is_in_visual_mark_next_rect(window_pos)) {
+                        if (execute_macro_if_enabled(VISUAL_MARK_NEXT_HOLD_COMMAND)) {
+                            return true;
+                        }
+                    }
+                    if ((!is_visual_mark_mode()) && is_in_visual_mark_prev_rect(window_pos)) {
+                        if (execute_macro_if_enabled(VISUAL_MARK_PREV_HOLD_COMMAND)) {
+                            return true;
+                        }
+                    }
 
                     set_current_widget(new AndroidSelector(this));
                     show_current_widget();
@@ -5185,18 +5204,30 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos){
 
 
     if (is_in_back_rect(click_pos)) {
-		prev_state();
+        handle_command_types(command_manager->get_command_with_name(this,utf8_encode(BACK_RECT_TAP_COMMAND)), 0);
 		return true;
     }
     if (is_in_forward_rect(click_pos)) {
-		next_state();
+        handle_command_types(command_manager->get_command_with_name(this,utf8_encode(FORWARD_RECT_TAP_COMMAND)), 0);
 		return true;
     }
 
     if (is_in_edit_portal_rect(click_pos)) {
-        handle_command_types(command_manager->get_command_with_name(this, "edit_portal"), 0);
+        handle_command_types(command_manager->get_command_with_name(this, utf8_encode(EDIT_PORTAL_TAP_COMMAND)), 0);
 		return true;
     }
+
+    if ((!is_visual_mark_mode()) && is_in_visual_mark_next_rect(click_pos)) {
+        if (execute_macro_if_enabled(VISUAL_MARK_NEXT_TAP_COMMAND)) {
+            return true;
+        }
+    }
+    if ((!is_visual_mark_mode()) && is_in_visual_mark_prev_rect(click_pos)) {
+        if (execute_macro_if_enabled(VISUAL_MARK_PREV_TAP_COMMAND)) {
+            return true;
+        }
+    }
+
 
     clear_selected_text();
     clear_selection_indicators();
@@ -5544,6 +5575,27 @@ bool MainWidget::is_in_forward_rect(WindowPos pos) {
 	}
     else {
 		return LANDSCAPE_FORWARD_UI_RECT.contains(nwp);
+	}
+}
+bool MainWidget::is_in_visual_mark_next_rect(WindowPos pos) {
+
+    NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(pos);
+    if (screen()->orientation() == Qt::PortraitOrientation) {
+		return PORTRAIT_VISUAL_MARK_NEXT.contains(nwp);
+	}
+    else {
+		return LANDSCAPE_VISUAL_MARK_NEXT.contains(nwp);
+	}
+}
+
+bool MainWidget::is_in_visual_mark_prev_rect(WindowPos pos) {
+
+    NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(pos);
+    if (screen()->orientation() == Qt::PortraitOrientation) {
+		return PORTRAIT_VISUAL_MARK_PREV.contains(nwp);
+	}
+    else {
+		return LANDSCAPE_VISUAL_MARK_PREV.contains(nwp);
 	}
 }
 
@@ -6061,4 +6113,17 @@ void MainWidget::handle_goto_loaded_document() {
 		}
 	);
     show_current_widget();
+}
+
+bool MainWidget::execute_macro_if_enabled(std::wstring macro_command_string) {
+
+	std::unique_ptr<Command> command = command_manager->create_macro_command(this, "", macro_command_string);
+
+	if (is_macro_command_enabled(command.get())) {
+		handle_command_types(std::move(command), 0);
+		invalidate_render();
+		return true;
+	}
+
+    return false;
 }

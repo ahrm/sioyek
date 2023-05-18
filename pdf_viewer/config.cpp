@@ -96,6 +96,17 @@ extern std::wstring ALT_CLICK_COMMAND;
 extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 
+extern std::wstring BACK_RECT_TAP_COMMAND;
+extern std::wstring BACK_RECT_HOLD_COMMAND;
+extern std::wstring FORWARD_RECT_TAP_COMMAND;
+extern std::wstring FORWARD_RECT_HOLD_COMMAND;
+extern std::wstring EDIT_PORTAL_TAP_COMMAND;
+extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
+extern std::wstring VISUAL_MARK_NEXT_TAP_COMMAND;
+extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
+extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
+extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
+
 extern bool USE_LEGACY_KEYBINDS;
 extern bool MULTILINE_MENUS;
 extern bool START_WITH_HELPER_WINDOW;
@@ -1181,6 +1192,86 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		L"hold_middle_click_command",
 		ConfigType::String,
 		&HOLD_MIDDLE_CLICK_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"back_rect_tap_command",
+		ConfigType::String,
+		&BACK_RECT_TAP_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"back_rect_hold_command",
+		ConfigType::String,
+		&BACK_RECT_HOLD_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"forward_rect_tap_command",
+		ConfigType::String,
+		&FORWARD_RECT_TAP_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"forward_rect_hold_command",
+		ConfigType::String,
+		&FORWARD_RECT_HOLD_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"edit_portal_tap_command",
+		ConfigType::String,
+		&EDIT_PORTAL_TAP_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"edit_portal_hold_command",
+		ConfigType::String,
+		&EDIT_PORTAL_HOLD_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"visual_mark_next_tap_command",
+		ConfigType::String,
+		&VISUAL_MARK_NEXT_TAP_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"visual_mark_next_hold_command",
+		ConfigType::String,
+		&VISUAL_MARK_NEXT_HOLD_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"visual_mark_prev_tap_command",
+		ConfigType::String,
+		&VISUAL_MARK_PREV_TAP_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"visual_mark_prev_hold_command",
+		ConfigType::String,
+		&VISUAL_MARK_PREV_HOLD_COMMAND,
 		string_serializer,
 		string_deserializer,
 		nullptr

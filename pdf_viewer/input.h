@@ -60,7 +60,7 @@ public:
 
 	std::map < std::string, std::function<std::unique_ptr<Command>(MainWidget*)> > new_commands;
 	CommandManager(ConfigManager* config_manager);
-	std::unique_ptr<Command> get_command_with_name(MainWidget* w, std::string name, std::string mode_string="");
+	std::unique_ptr<Command> get_command_with_name(MainWidget* w, std::string name);
 	std::unique_ptr<Command> create_macro_command(MainWidget* w, std::string name, std::wstring macro_string);
 	QStringList get_all_command_names();
 };
@@ -119,3 +119,4 @@ public:
 
 };
 
+bool is_macro_command_enabled(Command* command);

@@ -3144,7 +3144,7 @@ public:
 	}
 
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
-		if (modes.size() != commands.size()) {
+		if (is_modal && (modes.size() != commands.size())) {
 			qDebug() << "Invalid modal command : " << QString::fromStdWString(raw_commands);
 			return {};
 		}
@@ -3167,6 +3167,21 @@ public:
 	}
 
 
+	bool is_enabled() {
+		if (!is_modal) {
+			return commands.size() > 0;
+		}
+		else {
+			std::string mode_string = widget->get_current_mode_string();
+			for (int i = 0; i < modes.size(); i++) {
+				if (mode_matches(mode_string, modes[i])) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+	}
 	void perform() {
 		if (!is_modal) {
 			for (std::unique_ptr<Command>& subcommand : commands) {
@@ -3425,7 +3440,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 }
 
 
-std::unique_ptr<Command> CommandManager::get_command_with_name(MainWidget* w, std::string name, std::string mode_string) {
+std::unique_ptr<Command> CommandManager::get_command_with_name(MainWidget* w, std::string name) {
 
 	if (new_commands.find(name) != new_commands.end()) {
 		return new_commands[name](w);
@@ -4043,6 +4058,15 @@ std::vector<char> Command::special_symbols() {
 
 std::string Command::get_name() {
 	return "";
+}
+
+bool is_macro_command_enabled(Command* command) {
+	MacroCommand* macro_command = dynamic_cast<MacroCommand*>(command);
+	if (macro_command) {
+		return macro_command->is_enabled();
+	}
+
+	return false;
 }
 
 std::unique_ptr<Command> CommandManager::create_macro_command(MainWidget* w, std::string name, std::wstring macro_string) {

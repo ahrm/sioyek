@@ -283,7 +283,7 @@ public:
 	~MainWidget();
 
 	//void handle_command(NewCommand* command, int num_repeats);
-	void handle_command_types(std::unique_ptr<Command> command, int num_repeats);
+	bool handle_command_types(std::unique_ptr<Command> command, int num_repeats);
 	void handle_pending_text_command(std::wstring text);
 
 	void invalidate_render();
@@ -460,6 +460,8 @@ public:
 	bool is_in_back_rect(WindowPos pos);
 	bool is_in_forward_rect(WindowPos pos);
 	bool is_in_edit_portal_rect(WindowPos pos);
+	bool is_in_visual_mark_next_rect(WindowPos pos);
+	bool is_in_visual_mark_prev_rect(WindowPos pos);
     void handle_drawing_move(QPoint pos, float pressure);
     void start_drawing();
     void finish_drawing(QPoint pos);
@@ -604,6 +606,8 @@ public:
 			}
 		}
 	}
+
+	bool execute_macro_if_enabled(std::wstring macro_command_string);
 
 };
 
