@@ -135,9 +135,10 @@ RowLayout{
             //                anchors.fill: parent
             Layout.fillWidth: true
             Layout.preferredWidth: 100
+            Layout.fillHeight: true
             //                height: parent.height
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
+            //anchors.top: parent.top
+            //anchors.bottom: parent.bottom
             property string originalLabel: ""
             property int originalPreferredWidth: -1
 
