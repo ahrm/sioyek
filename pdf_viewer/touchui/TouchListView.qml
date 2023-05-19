@@ -122,7 +122,7 @@ Rectangle {
                 Text {
                     id: pagetext
                     //text: model.display
-					text: lview.model.data(lview.model.index(index, 1));
+					text: lview.model.data(lview.model.index(index, 1)) || "";
                     color: "white"
                     anchors.verticalCenter: parent.verticalCenter
                     font.pixelSize: 15

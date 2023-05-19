@@ -34,29 +34,29 @@ RunGuard::RunGuard(const QString &key) : QObject{},
     // If a shared memory segment identified by the key already exists, the
     // attach operation is not performed and false is returned.
 
-    qDebug() << "Creating shared memory block...";
+    //qDebug() << "Creating shared memory block...";
     bool isPrimary = false;
     if (memory->create(sizeof(quint64))) {
-        qDebug() << "Shared memory created: this is the primary application.";
+        //qDebug() << "Shared memory created: this is the primary application.";
         isPrimary = true;
     } else {
-        qDebug() << "Shared memory already exists: this is a secondary application.";
-        qDebug() << "Secondary application attaching to shared memory block...";
+        //qDebug() << "Shared memory already exists: this is a secondary application.";
+        //qDebug() << "Secondary application attaching to shared memory block...";
         if (!memory->attach()) {
             qCritical() << "Secondary application cannot attach to shared memory block.";
             QCoreApplication::exit();
         }
-        qDebug() << "Secondary application successfully attached to shared memory block.";
+        //qDebug() << "Secondary application successfully attached to shared memory block.";
     }
 
     memory->lock();
     if (isPrimary) { // Start primary server.
-        qDebug() << "Starting IPC server...";
+        //qDebug() << "Starting IPC server...";
         QLocalServer::removeServer(key);
         server = new QLocalServer;
         server->setSocketOptions(QLocalServer::UserAccessOption);
         if (server->listen(key)) {
-            qDebug() << "IPC server started.";
+            //qDebug() << "IPC server started.";
         } else {
             qCritical() << "Cannot start IPC server.";
             QCoreApplication::exit();
@@ -116,7 +116,7 @@ void RunGuard::sendMessage(const QByteArray &message)
         if (socket.state() == QLocalSocket::ConnectedState) {
             socket.write(message);
             if (socket.waitForBytesWritten()) {
-                qCritical() << "Secondary application sent message to IPC server.";
+                //qCritical() << "Secondary application sent message to IPC server.";
             }
         }
     } else {

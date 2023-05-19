@@ -57,6 +57,8 @@ extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
 extern float HIGHLIGHT_COLORS[26 * 3];
 
+extern bool VERBOSE;
+
 extern std::vector<MainWidget*> windows;
 
 #ifdef Q_OS_WIN
@@ -1653,6 +1655,9 @@ QCommandLineParser* get_command_line_parser() {
 	QCommandLineOption shared_database_path_option("shared-database-path", "Specify which file to use for shared data (bookmarks, highlights, etc.)", "path");
 	parser->addOption(shared_database_path_option);
 
+	QCommandLineOption verbose_option("verbose", "Print extra information in commnad line.");
+	parser->addOption(verbose_option);
+
     parser->addHelpOption();
 
 	return parser;
@@ -2456,15 +2461,12 @@ void check_pending_intents(const QString workingDirPath)
         // create a Java String for the Working Dir Path
         QJniObject jniWorkingDir = QJniObject::fromString(workingDirPath);
         if(!jniWorkingDir.isValid()) {
-            qWarning() << "QAndroidJniObject jniWorkingDir not valid.";
 //            emit shareError(0, tr("Share: an Error occured\nWorkingDir not valid"));
             return;
         }
         activity.callMethod<void>("checkPendingIntents","(Ljava/lang/String;)V", jniWorkingDir.object<jstring>());
-        qDebug() << "checkPendingIntents: " << workingDirPath;
         return;
     }
-    qDebug() << "checkPendingIntents: Activity not valid";
 }
 
 
@@ -2495,7 +2497,6 @@ JNIEXPORT void JNICALL
 {
     const char *urlStr = env->GetStringUTFChars(url, NULL);
     Q_UNUSED (obj)
-    qDebug() << urlStr;
     env->ReleaseStringUTFChars(url, urlStr);
     return;
 }
@@ -3011,3 +3012,4 @@ std::optional<fz_rect> find_expanding_rect(bool before, fz_stext_page* page, fz_
 
 	return {};
 }
+

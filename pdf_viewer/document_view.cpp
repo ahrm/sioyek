@@ -7,6 +7,7 @@ extern float RULER_PADDING;
 extern float RULER_X_PADDING;
 extern bool EXACT_HIGHLIGHT_SELECT;
 extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
+extern bool VERBOSE;
 
 
 DocumentView::DocumentView( fz_context* mupdf_context,
@@ -714,7 +715,7 @@ void DocumentView::open_document(const std::wstring& doc_path,
 		std::vector<OpenedBookState> prev_state;
 		if (checksum && db_manager->select_opened_book(checksum.value(), prev_state)) {
 			if (prev_state.size() > 1) {
-				std::cerr << "more than one file with one path, this should not happen!" << std::endl;
+				LOG(std::cerr << "more than one file with one path, this should not happen!" << std::endl);
 			}
 		}
 		if (prev_state.size() > 0) {

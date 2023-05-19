@@ -44,6 +44,7 @@ extern std::vector<float> embedding_weights;
 extern std::vector<float> linear_weights;
 extern float EPUB_LINE_SPACING;
 extern Path standard_data_path;
+extern bool VERBOSE;
 
 int Document::get_mark_index(char symbol) {
 	for (size_t i = 0; i < marks.size(); i++) {
@@ -544,7 +545,7 @@ fz_link* Document::get_page_links(int page_number) {
 	}
 
 	fz_catch(context) {
-		std::cerr << "Error: Could not load links" << std::endl;
+		LOG(std::cerr << "Error: Could not load links" << std::endl);
 		res = nullptr;
 	}
 	return res;
@@ -579,7 +580,7 @@ Document::~Document() {
 			//todo: implement rest of destructor
 		}
 		fz_catch(context) {
-			std::cerr << "Error: could not drop documnet" << std::endl;
+			LOG(std::cerr << "Error: could not drop documnet" << std::endl);
 		}
 	}
 }
@@ -609,7 +610,7 @@ bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string 
 			//fz_layout_document(context, doc, 600, 800, 9);
 		}
 		fz_catch(context) {
-			std::wcerr << "could not open " << file_name << std::endl;
+			LOG(std::wcerr << "could not open " << file_name << std::endl);
 		}
 		if ((doc != nullptr) && (!temp)) {
 			//load_document_metadata_from_db();
@@ -781,7 +782,7 @@ int Document::num_pages() {
 		cached_num_pages = pages;
 	}
 	fz_catch(context) {
-		std::cerr << "could not count pages" << std::endl;
+		LOG(std::cerr << "could not count pages" << std::endl);
 	}
 	return pages;
 }

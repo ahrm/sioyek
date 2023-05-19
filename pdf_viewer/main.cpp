@@ -274,6 +274,7 @@ bool ALPHABETIC_LINK_TAGS = false;
 bool VIMTEX_WSL_FIX = false;
 float RULER_AUTO_MOVE_SENSITIVITY = 40.0f;
 float TTS_RATE = 0.0f;
+bool VERBOSE = false;
 //UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
 float DEFAULT_TEXT_HIGHLIGHT_COLOR[3] = {1.0f, 1.0f, 0.0};
@@ -538,25 +539,25 @@ void verify_config_paths(){
 #define CHECK_DIR_EXIST(path) do{ if(!(path).dir_exists() ) std::wcout << L"Error: " << #path << ": " << path << L" doesn't exist!\n"; } while(false)
 #define CHECK_FILE_EXIST(path) do{ if(!(path).file_exists() ) std::wcout << L"Error: " << #path << ": " << path << L" doesn't exist!\n"; } while(false)
 
-    std::wcout << L"default_config_path: " << default_config_path << L"\n";
+    LOG(std::wcout << L"default_config_path: " << default_config_path << L"\n");
     CHECK_FILE_EXIST(default_config_path);
-    std::wcout << L"default_keys_path: " << default_keys_path << L"\n";
+    LOG(std::wcout << L"default_keys_path: " << default_keys_path << L"\n");
     CHECK_FILE_EXIST(default_keys_path);
     for (size_t i = 0; i < user_config_paths.size(); i++) {
-        std::wcout << L"user_config_path: [ " << i << " ] " << user_config_paths[i] << L"\n";
+        LOG(std::wcout << L"user_config_path: [ " << i << " ] " << user_config_paths[i] << L"\n");
     }
     for (size_t i = 0; i < user_keys_paths.size(); i++) {
-        std::wcout << L"user_keys_path: [ " << i << " ] " << user_keys_paths[i] << L"\n";
+        LOG(std::wcout << L"user_keys_path: [ " << i << " ] " << user_keys_paths[i] << L"\n");
     }
 }
 
 void verify_paths(){
-    std::wcout << L"database_file_path: " << database_file_path << L"\n";
-    std::wcout << L"local_database_file_path: " << local_database_file_path << L"\n";
-    std::wcout << L"global_database_file_path: " << global_database_file_path << L"\n";
-    std::wcout << L"tutorial_path: " << tutorial_path << L"\n";
-    std::wcout << L"last_opened_file_address_path: " << last_opened_file_address_path << L"\n";
-    std::wcout << L"shader_path: " << shader_path << L"\n";
+    LOG(std::wcout << L"database_file_path: " << database_file_path << L"\n");
+    LOG(std::wcout << L"local_database_file_path: " << local_database_file_path << L"\n");
+    LOG(std::wcout << L"global_database_file_path: " << global_database_file_path << L"\n");
+    LOG(std::wcout << L"tutorial_path: " << tutorial_path << L"\n");
+    LOG(std::wcout << L"last_opened_file_address_path: " << last_opened_file_address_path << L"\n");
+    LOG(std::wcout << L"shader_path: " << shader_path << L"\n");
     CHECK_DIR_EXIST(shader_path);
 }
 #undef CHECK_DIR_EXIST
@@ -834,6 +835,9 @@ int main(int argc, char* args[]) {
 		std::cout << "sioyek " << APPLICATION_VERSION << "\n";
 		return 0;
 	}
+	if (has_arg(argc, args, "--verbose")) {
+		VERBOSE = true;
+	}
 	int nrows, ncols;
 
     load_npy(":/data/embedding.npy", embedding_weights, &nrows, &ncols);
@@ -925,6 +929,11 @@ int main(int argc, char* args[]) {
 	locks.unlock = unlock_mutex;
 
 	fz_context* mupdf_context = fz_new_context(nullptr, &locks, FZ_STORE_DEFAULT);
+
+	if (!VERBOSE) {
+		fz_set_warning_callback(mupdf_context, nullptr, nullptr);
+		fz_set_error_callback(mupdf_context, nullptr, nullptr);
+	}
 
 	if (!mupdf_context) {
 		std::cerr << "could not create mupdf context" << std::endl;

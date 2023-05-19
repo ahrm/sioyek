@@ -5756,7 +5756,6 @@ void MainWidget::show_download_paper_menu(
 
     set_filtered_select_menu<std::wstring>(paper_names, {}, download_urls, -1, 
 		[&](std::wstring* url) {
-			qDebug() << *url;
             download_paper_with_url(*url);
 		},
         nullptr);

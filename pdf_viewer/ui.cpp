@@ -1040,7 +1040,6 @@ TouchCommandSelector::TouchCommandSelector(const QStringList& commands, MainWidg
 
 void TouchCommandSelector::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
-    qDebug() << "sioyek :" << resize_event << "\n";
 
     int parent_width = parentWidget()->size().width();
     int parent_height = parentWidget()->size().height();

@@ -228,7 +228,6 @@ public:
 	}
 
 	bool eventFilter(QObject* obj, QEvent* event) override {
-        qDebug() << "Sioyek: Even happened! type: " << event->type() << "\n";
 		if (obj == line_edit) {
 #ifdef SIOYEK_QT6
 			if (event->type() == QEvent::KeyRelease) {
@@ -572,7 +571,6 @@ public:
 	void initialize() {
 
         QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
-            qDebug() << "name is : " << name << " and index is : " << index << "\n";
             on_done(&values[index]);
             deleteLater();
         });
@@ -615,7 +613,6 @@ public:
         list_view = new TouchListView(model, selected_index, this, false, false, true);
 
         QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
-            qDebug() << "name is : " << name << " and index is : " << index << "\n";
             on_done(&values[index]);
             deleteLater();
         });

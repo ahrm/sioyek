@@ -1,4 +1,5 @@
 #include "touchui/TouchMainMenu.h"
+#include "qqmlengine.h"
 
 
 TouchMainMenu::TouchMainMenu(bool fit_mode, bool portaling, bool fullscreen, bool ruler, bool speaking, bool locked, int current_colorscheme_index, QWidget* parent) : QWidget(parent){

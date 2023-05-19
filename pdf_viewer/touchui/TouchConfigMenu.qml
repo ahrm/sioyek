@@ -72,11 +72,12 @@ Rectangle {
             color: "white"
             inputMethodHints: Qt.ImhSensitiveData | Qt.ImhPreferLowercase
 
-            anchors {
+            /* anchors {
                 left: parent.left
                 top: parent.top
                 right: savebutton.left
-            }
+            } */
+            width: parent.width - savebutton.width - 10
 
 
             font.pixelSize: 15
@@ -96,12 +97,12 @@ Rectangle {
         }
         Button{
             id: savebutton
-            anchors{
+            /* anchors{
                 right: parent.right
                 margins: 10
 //                top: parent.top
 //                bottom: parent.bottom
-            }
+            } */
             width: 100
             height: 40
             font.pixelSize: 7
@@ -206,7 +207,7 @@ Rectangle {
 //                    anchors.verticalCenter: parent.verticalCenter
                     width: 100
 //                    height: 100
-                    color: bg.value
+                    color: visible ? bg.value : "transparent"
                     visible: (bg.type == 'color3' || bg.type == 'color4')
 
                     MouseArea{

@@ -33,7 +33,6 @@ TouchRectangleSelectUI::TouchRectangleSelectUI(bool initial_enabled,
 }
 
 void TouchRectangleSelectUI::handleRectangleSelected(bool enabled, qreal left, qreal right, qreal top, qreal bottom) {
-    qDebug("handler called");
     emit rectangleSelected(enabled, left, right, top, bottom);
 }
 

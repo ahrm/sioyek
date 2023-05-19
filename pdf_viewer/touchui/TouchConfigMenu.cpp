@@ -24,6 +24,7 @@ TouchConfigMenu::TouchConfigMenu(MainWidget* main_widget) :
     //quick_widget->setClearColor(Qt::transparent);
 
     quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
+    quick_widget->rootContext()->setContextProperty("_deletable", QVariant::fromValue(&proxy_model));
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchConfigMenu.qml"));
 

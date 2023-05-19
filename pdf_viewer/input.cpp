@@ -25,6 +25,7 @@ extern Path default_keys_path;
 extern std::vector<Path> user_config_paths;
 extern std::vector<Path> user_keys_paths;
 extern bool TOUCH_MODE;
+extern bool VERBOSE;
 
 Command::Command(MainWidget* widget_) : widget(widget_) {
 
@@ -3145,7 +3146,7 @@ public:
 
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
 		if (is_modal && (modes.size() != commands.size())) {
-			qDebug() << "Invalid modal command : " << QString::fromStdWString(raw_commands);
+			std::wcout << L"Invalid modal command : " << raw_commands;
 			return {};
 		}
 
@@ -3615,13 +3616,13 @@ InputParseTreeNode* parse_lines(
 			if (!existing_node) {
 				if ((tokens[i] != L"sym") && (tokens[i] != L"txt")) {
 					if (parent_node->is_final) {
-                        std::wcout
+                        LOG(std::wcout
                             << L"Warning: key defined in " << command_file_names[j]
                             << L":" << command_line_numbers[j]
                             << L" for " << utf8_decode(command_names[j][0])
                             << L" is unreachable, shadowed by final key sequence defined in "
                             << parent_node->defining_file_path
-                            << L":" << parent_node->defining_file_line << L"\n";
+                            << L":" << parent_node->defining_file_line << L"\n");
 					}
 					auto new_node = new InputParseTreeNode(node);
 					new_node->defining_file_line = command_line_numbers[j];
@@ -3646,16 +3647,16 @@ InputParseTreeNode* parse_lines(
 					(command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
 				if ((parent_node->name_.size() == 0) || parent_node->name_[0].compare(command_names[j][0]) != 0) {
 
-					std::wcout << L"Warning: key defined in " << parent_node->defining_file_path
+					LOG(std::wcout << L"Warning: key defined in " << parent_node->defining_file_path
 						<< L":" << parent_node->defining_file_line
 						<< L" overwritten by " << command_file_names[j]
-						<< L":" << command_line_numbers[j];
+						<< L":" << command_line_numbers[j]);
 					if (parent_node->name_.size() > 0) {
-						std::wcout << L". Overriding command: " << line 
+						LOG(std::wcout << L". Overriding command: " << line 
 							<< L": replacing " << utf8_decode(parent_node->name_[0])
-							<< L" with " << utf8_decode(command_names[j][0]);
+							<< L" with " << utf8_decode(command_names[j][0]));
 					}
-					std::wcout << L"\n";
+					LOG(std::wcout << L"\n");
 				}
 			}
 			if ((size_t) i == (tokens.size() - 1)) {
@@ -3681,7 +3682,7 @@ InputParseTreeNode* parse_lines(
 			}
 			else {
 				if (parent_node->is_final && (parent_node->name_.size() > 0)) {
-					std::wcout << L"Warning: unmapping " << utf8_decode(parent_node->name_[0]) << L" because of " << utf8_decode(command_names[j][0]) << L" which uses " << line << L"\n";
+					LOG(std::wcout << L"Warning: unmapping " << utf8_decode(parent_node->name_[0]) << L" because of " << utf8_decode(command_names[j][0]) << L" which uses " << line << L"\n");
 				}
 				parent_node->is_final = false;
 			}
@@ -3861,7 +3862,7 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
 			}
 		}
 	}
-	std::wcout << "Warning: invalid command (key:" << (char)key << "); resetting to root" << std::endl;
+	LOG(std::wcout << "Warning: invalid command (key:" << (char)key << "); resetting to root" << std::endl);
 	number_stack.clear();
 	current_node = root;
 	return nullptr;

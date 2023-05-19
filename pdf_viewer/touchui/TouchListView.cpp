@@ -24,9 +24,7 @@ void TouchListView::initialize(int selected_index, bool deletable, bool is_tree)
 		quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
     }
 
-    if (deletable) {
-		quick_widget->rootContext()->setContextProperty("_deletable", QVariant::fromValue(true));
-    }
+	quick_widget->rootContext()->setContextProperty("_deletable", QVariant::fromValue(deletable));
 //    quick_widget->rootContext()->setContextProperty("_from", from);
 //    quick_widget->rootContext()->setContextProperty("_to", to);
 
