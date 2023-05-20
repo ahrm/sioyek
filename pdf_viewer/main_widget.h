@@ -117,8 +117,13 @@ public:
 	// is the user in word select mode? (happens when we double left click and move the cursor)
 	bool is_word_selecting = false;
 
+	// when moving the text selection using keyboard, `selection_begin` and `selection_end`
+	// might be out of sync with `selected_text_`. `selected_text_is_dirty` is true when this
+	// is the case, which means that we need to update `selected_text_` before using it.
 	bool selected_text_is_dirty = false;
-	std::wstring selected_text_;
+
+	// selected text (using mouse cursor or other methods) which is used e.g. for copying or highlighting
+	std::wstring selected_text;
 
 	bool is_select_highlight_mode = false;
 	char select_highlight_type = 'a';

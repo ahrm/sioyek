@@ -537,7 +537,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
                 selection_end,
                 is_word_selecting,
                 main_document_view->selected_character_rects,
-                selected_text_);
+                selected_text);
             selected_text_is_dirty = false;
 
             validate_render();
@@ -1915,7 +1915,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
                 abs_doc_pos,
                 is_word_selecting,
                 main_document_view->selected_character_rects,
-                selected_text_);
+                selected_text);
             selected_text_is_dirty = false;
 
 			//opengl_widget->set_control_character_rect(control_rect);
@@ -2921,9 +2921,9 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
             command_parts[i].replace("%{file_path}", qfile_path);
             command_parts[i].replace("%{file_name}", qfile_name);
             command_parts[i].replace("%{selected_text}", QString::fromStdWString(get_selected_text()));
-            std::wstring selected_text = get_selected_text();
+            std::wstring current_selected_text = get_selected_text();
 
-            if (selected_text.size() > 0) {
+            if (current_selected_text.size() > 0) {
                 auto selection_begin_document = main_document_view->get_document()->absolute_to_page_pos(selection_begin);
                 command_parts[i].replace("%{selection_begin_document}",
                         QString::number(selection_begin_document.page) + " " + QString::number(selection_begin_document.x) + " " + QString::number(selection_begin_document.y));
@@ -4141,7 +4141,7 @@ void MainWidget::clear_selected_text() {
 	main_document_view->selected_character_rects.clear();
     main_document_view->mark_end = true;
     main_document_view->should_show_text_selection_marker = false;
-	selected_text_.clear();
+	selected_text.clear();
     selected_text_is_dirty = false;
 
 }
@@ -5162,7 +5162,7 @@ void MainWidget::update_mobile_selection(){
     end_absolute,
     false,
     main_document_view->selected_character_rects,
-    selected_text_);
+    selected_text);
     selected_text_is_dirty = false;
     validate_render();
 }
@@ -6009,12 +6009,12 @@ const std::wstring& MainWidget::get_selected_text(){
 			selection_end,
 			is_word_selecting,
 			dummy_rects,
-			selected_text_);
+			selected_text);
 
         selected_text_is_dirty = false;
     }
 
-    return selected_text_;
+    return selected_text;
 }
 
 void MainWidget::expand_selection_vertical(bool begin, bool below) {
@@ -6029,28 +6029,22 @@ void MainWidget::expand_selection_vertical(bool begin, bool below) {
 
 	if (page >= 0) {
 		fz_stext_page* stext_page = doc()->get_stext_with_page_number(page);
-		std::optional<fz_rect> below_rect = get_rect_directly(below, stext_page, page_rect);
-        if (below_rect) {
-            fz_rect absrect = doc()->document_to_absolute_rect(page, below_rect.value(), true);
+		std::optional<fz_rect> next_rect = get_rect_vertically(below, stext_page, page_rect);
+        if (next_rect) {
+            fz_rect absrect = doc()->document_to_absolute_rect(page, next_rect.value(), true);
             if (begin) {
 				auto target  = AbsoluteDocumentPos{ (absrect.x0 + absrect.x1) / 2,   (absrect.y0 + absrect.y1) / 2  };
 				selection_begin = target;
-     //           if (target.y <= other_rect.y1) {
-					//selection_begin = target;
-     //           }
             }
             else {
 				auto target = AbsoluteDocumentPos{ (absrect.x0 + absrect.x1) / 2,   (absrect.y0 + absrect.y1) / 2  };
 				selection_end = target;
-     //           if (target.y >= other_rect.y0) {
-					//selection_end = target;
-     //           }
             }
             main_document_view->get_text_selection(selection_begin,
                 selection_end,
                 is_word_selecting,
                 main_document_view->selected_character_rects,
-                selected_text_);
+                selected_text);
             selected_text_is_dirty = false;
         }
 
@@ -6079,6 +6073,9 @@ void MainWidget::handle_move_text_mark_up() {
 }
 
 void MainWidget::handle_goto_loaded_document() {
+    // opens a list of currently loaded documents. This is basically sioyek's "tab" feature
+    // the user can "unload" a document by pressing the delete key while it is highlighted in the list
+
     std::vector<std::wstring> loaded_document_paths = document_manager->get_loaded_document_paths();
     std::wstring current_document_path = doc()->get_path();
 

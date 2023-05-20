@@ -2815,7 +2815,7 @@ bool is_new_word(fz_stext_char* old_char, fz_stext_char* new_char) {
 	return std::abs(new_char->quad.ll.x - old_char->quad.ll.x) > 5 * std::abs(old_char->quad.lr.x - old_char->quad.ll.x);
 }
 
-std::optional<fz_rect> get_rect_directly(bool below, fz_stext_page* page, fz_rect page_rect) {
+std::optional<fz_rect> get_rect_vertically(bool below, fz_stext_page* page, fz_rect page_rect) {
 	std::vector<fz_stext_char*> chars;
 	get_flat_chars_from_stext_page(page, chars);
 	float closest_distance = 100000;
