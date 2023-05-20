@@ -173,6 +173,8 @@ extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH ;
 extern std::wstring PAPER_SEARCH_CONTRIB_PATH ;
 
+extern int RELOAD_INTERVAL_MILISECONDS;
+
 #ifdef SIOYEK_ANDROID
 extern Path android_config_path;
 #endif
@@ -1450,6 +1452,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		int_deserializer,
 		nullptr,
 		IntExtras{0, 10}
+		});
+	configs.push_back({
+		L"reload_interval_miliseconds",
+		ConfigType::Int,
+		&RELOAD_INTERVAL_MILISECONDS,
+		int_serializer,
+		int_deserializer,
+		nullptr,
+		IntExtras{0, 10000}
 		});
 	configs.push_back({
 		L"case_sensitive_search",

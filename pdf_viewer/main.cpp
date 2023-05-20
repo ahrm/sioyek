@@ -292,6 +292,7 @@ float EPUB_WIDTH = 400;
 float EPUB_HEIGHT = 700;
 float EPUB_FONT_SIZE = 14;
 float EPUB_LINE_SPACING = 2.0f;
+int RELOAD_INTERVAL_MILISECONDS = 200;
 
 std::wstring EPUB_CSS;
 QString EPUB_TEMPLATE = "p {\

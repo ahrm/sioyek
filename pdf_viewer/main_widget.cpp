@@ -170,6 +170,8 @@ extern bool TOUCH_MODE;
 
 const int MAX_SCROLLBAR = 10000;
 
+extern int RELOAD_INTERVAL_MILISECONDS;
+
 const unsigned int INTERVAL_TIME = 200;
 
 bool MainWidget::main_document_view_has_document()
@@ -759,13 +761,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                 // Wait until a safe amount of time has passed since the last time the file was updated on the filesystem
                 // this is because LaTeX software frequently puts PDF files in an invalid state while it is being made in
                 // multiple passes.
+                if ((doc->get_milies_since_last_document_update_time() > (doc->get_milies_since_last_edit_time() + RELOAD_INTERVAL_MILISECONDS)) &&
+                    (doc->get_milies_since_last_edit_time() > RELOAD_INTERVAL_MILISECONDS)) {
 
-                if ((doc->get_milies_since_last_edit_time() < (2 * INTERVAL_TIME)) &&
-                    doc->get_milies_since_last_edit_time() > INTERVAL_TIME &&
-                    doc->get_milies_since_last_document_update_time() > doc->get_milies_since_last_edit_time()
-                    ) {
-
-                //if (doc->get_milies_since_last_document_update_time() > doc->get_milies_since_last_edit_time()) {
                     doc->reload();
                     pdf_renderer->clear_cache();
                     invalidate_render();
