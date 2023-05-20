@@ -66,47 +66,77 @@ public:
 	PdfRenderer* pdf_renderer = nullptr;
 	InputHandler* input_handler = nullptr;
 	CachedChecksummer* checksummer = nullptr;
-	QTextToSpeech tts;
-	bool is_reading = false;
 
+	QTextToSpeech tts;
+	// is the TTS engine currently reading text?
+	bool is_reading = false;
 
 	PdfViewOpenGLWidget* opengl_widget = nullptr;
 	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
 	QScrollBar* scroll_bar = nullptr;
 
-	//sgd::optional<Command> current_pending_command;
+	// Some commands can not be executed immediately (e.g. because they require a text or symbol
+	// input to be completed) this is where they are stored until they can be executed.
 	std::unique_ptr<Command> pending_command_instance = nullptr;
 
 	DocumentView* main_document_view = nullptr;
 	DocumentView* helper_document_view = nullptr;
 
-	// current widget responsible for selecting an option (for example toc or bookmarks)
+	// A stack of widgets to be displayed (e.g. the bookmark menu or the touch main menu).
+	// only the top widget is visible. When a widget is popped, the previous widget in the stack
+	// will be shown
 	std::vector<QWidget*> current_widget_stack;
-	//QWidget* current_widget = nullptr;
-	std::vector<QWidget*> garbage_widgets;
 
+	// code to execute when a command is pressed (for example when we type `goto_beginning` in the command)
+	// menu, we will call on_command_done("goto_beginning"). The reason that this is a closure instead of just a
+	// method is historical. I am too lazy to change it.
 	std::function<void(std::string)> on_command_done = nullptr;
+
+	// List of previous locations in the current session. Note that we keep the history even across files
+	// hence why `DocumentViewState` has a `document_path` member
 	std::vector<DocumentViewState> history;
+	// the index in the `history` array that we will jump to when `prev_state` is called.
 	int current_history_index = -1;
 
+	// custom message to be displayed in sioyek's statusbar
 	std::wstring custom_status_message = L"";
 
+	// A flag which indicates whether the application should quit. We use this to inform other threads
+	// (e.g. the PDF rendering thread) that they should exit.
 	bool* should_quit = nullptr;
+
 	// last position when mouse was clicked in absolute document space
 	AbsoluteDocumentPos last_mouse_down;
+	// The document offset (offset_x and offset_y) when mouse was last pressed
+	// we use this to update the offset when dragging the mouse in some modes
+	// for example in touch mode or when dragging while holding middle mouse button
 	AbsoluteDocumentPos last_mouse_down_document_offset;
 
-	//int last_mouse_down_window_x = 0;
-	//int last_mouse_down_window_y = 0;
+	// last window position when mouse was clicked, we use this in mouse drag mode
 	WindowPos last_mouse_down_window_pos;
 
+	// begin/end position of the current text selection
 	AbsoluteDocumentPos selection_begin;
 	AbsoluteDocumentPos selection_end;
 
+	// when moving the text selection using keyboard, `selection_begin` and `selection_end`
+	// might be out of sync with `selected_text_`. `selected_text_is_dirty` is true when this
+	// is the case, which means that we need to update `selected_text_` before using it.
+	bool selected_text_is_dirty = false;
+
+	// selected text (using mouse cursor or other methods) which is used e.g. for copying or highlighting
+	std::wstring selected_text;
+
+	// whether we are in rect select mode (some commands require a rectangle to be executed
+	// for example `delete_freehand_drawings`)
 	bool rect_select_mode = false;
+
+	// begin/end of current selected rectangle
 	std::optional<AbsoluteDocumentPos> rect_select_begin = {};
 	std::optional<AbsoluteDocumentPos> rect_select_end = {};
- // when set, mouse wheel moves the visual mark
+
+ // when set, mouse wheel moves the ruler
+
 	bool visual_scroll_mode = false;
 	bool debug_mode = false;
 
@@ -117,22 +147,24 @@ public:
 	// is the user in word select mode? (happens when we double left click and move the cursor)
 	bool is_word_selecting = false;
 
-	// when moving the text selection using keyboard, `selection_begin` and `selection_end`
-	// might be out of sync with `selected_text_`. `selected_text_is_dirty` is true when this
-	// is the case, which means that we need to update `selected_text_` before using it.
-	bool selected_text_is_dirty = false;
-
-	// selected text (using mouse cursor or other methods) which is used e.g. for copying or highlighting
-	std::wstring selected_text;
-
+	// in select highlight mode, we immediately highlight the text when it is selected
+	// with highlight type of `select_highlight_type` 
 	bool is_select_highlight_mode = false;
 	char select_highlight_type = 'a';
+
+	// color type to use when freehand drawing
 	char current_freehand_type = 'r';
+	// line thickness of freehand drawings
 	float freehand_thickness = 1.0f;
 
+	// in smooth scroll mode we scroll the document smoothly instead of jumping to the target
+	// `smooth_scroll_speed` is used to keep track of our speed in this mode
 	bool smooth_scroll_mode = false;
 	float smooth_scroll_speed = 0.0f;
 
+	// the timer which periodically checks if the UI/rendering needs updating. Normally the timer value is
+	// set to be INTERVAL_TIME (which is 200ms at the time of writing this comment), however, it is set to a much
+	// lower value when in smooth scroll mode or when user flicks a document in touch mode
     QTimer* validation_interval_timer = nullptr;
 
 	std::optional<Portal> link_to_edit = {};
