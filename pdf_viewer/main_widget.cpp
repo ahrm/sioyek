@@ -874,7 +874,7 @@ MainWidget::~MainWidget() {
 }
 
 bool MainWidget::is_pending_link_source_filled() {
-    return (pending_link && pending_link.value().first);
+    return (pending_portal && pending_portal.value().first);
 }
 
 std::wstring MainWidget::get_status_string() {
@@ -928,7 +928,7 @@ std::wstring MainWidget::get_status_string() {
     if (is_pending_link_source_filled()) {
         status_string.replace("%{link_status}", " | linking ...");
     }
-    if (link_to_edit) {
+    if (portal_to_edit) {
         status_string.replace("%{link_status}", " | editing link ...");
     }
     //if (current_pending_command && current_pending_command.value().requires_symbol) {
@@ -1058,7 +1058,7 @@ void MainWidget::handle_escape() {
     clear_selection_indicators();
     typing_location = {};
     text_command_line_edit->setText("");
-    pending_link = {};
+    pending_portal = {};
     synchronize_pending_link();
     pending_command_instance = nullptr;
     //current_pending_command = {};
@@ -1393,7 +1393,7 @@ void MainWidget::update_link_with_opened_book_state(Portal lnk, const OpenedBook
     db_manager->update_portal(link_owner->get_checksum(),
         new_state.offset_x, new_state.offset_y, new_state.zoom_level, lnk.src_offset_y);
 
-    link_to_edit = {};
+    portal_to_edit = {};
 }
 
 void MainWidget::update_closest_link_with_opened_book_state(const OpenedBookState& new_state) {
@@ -1988,22 +1988,22 @@ void MainWidget::prev_state() {
         update the link with the current location of document, therefore, we must check to see if a link
         is being edited and if so, we should update its destination position
         */
-        if (link_to_edit) {
+        if (portal_to_edit) {
 
             //std::wstring link_document_path = checksummer->get_path(link_to_edit.value().dst.document_checksum).value();
             std::wstring link_document_path = history[current_history_index].document_path;
             Document* link_owner = document_manager->get_document(link_document_path);
 
             OpenedBookState state = main_document_view->get_state().book_state;
-            link_to_edit.value().dst.book_state = state;
+            portal_to_edit.value().dst.book_state = state;
 
             if (link_owner) {
-                link_owner->update_portal(link_to_edit.value());
+                link_owner->update_portal(portal_to_edit.value());
             }
 
             db_manager->update_portal(checksummer->get_checksum(history[current_history_index].document_path),
-                state.offset_x, state.offset_y, state.zoom_level, link_to_edit->src_offset_y);
-            link_to_edit = {};
+                state.offset_x, state.offset_y, state.zoom_level, portal_to_edit->src_offset_y);
+            portal_to_edit = {};
         }
 
         if (current_history_index == (history.size() - 1)) {
@@ -2690,17 +2690,17 @@ void MainWidget::handle_portal() {
     if (!main_document_view_has_document()) return;
 
     if (is_pending_link_source_filled()) {
-        auto [source_path, pl] = pending_link.value();
+        auto [source_path, pl] = pending_portal.value();
         pl.dst = main_document_view->get_checksum_state();
 
         if (source_path.has_value()) {
 			add_portal(source_path.value(), pl);
         }
 
-        pending_link = {};
+        pending_portal = {};
     }
 	else {
-		pending_link = std::make_pair<std::wstring, Portal>(main_document_view->get_document()->get_path(),
+		pending_portal = std::make_pair<std::wstring, Portal>(main_document_view->get_document()->get_path(),
 			Portal::with_src_offset(main_document_view->get_offset_y()));
 	}
 
@@ -2746,10 +2746,10 @@ void MainWidget::set_presentation_mode(bool mode) {
 }
 
 void MainWidget::complete_pending_link(const PortalViewState& destination_view_state) {
-    Portal& pl = pending_link.value().second;
+    Portal& pl = pending_portal.value().second;
     pl.dst = destination_view_state;
     main_document_view->get_document()->add_portal(pl);
-    pending_link = {};
+    pending_portal = {};
 }
 
 void MainWidget::long_jump_to_destination(int page, float offset_y) {
@@ -4957,7 +4957,7 @@ void MainWidget::handle_delete_selected_highlight() {
 void MainWidget::synchronize_pending_link() {
     for (auto window : windows) {
         if (window != this) {
-            window->pending_link = pending_link;
+            window->pending_portal = pending_portal;
         }
     }
     refresh_all_windows();

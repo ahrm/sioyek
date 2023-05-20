@@ -167,10 +167,18 @@ public:
 	// lower value when in smooth scroll mode or when user flicks a document in touch mode
     QTimer* validation_interval_timer = nullptr;
 
-	std::optional<Portal> link_to_edit = {};
+	// the portal to be edited. This is usually set by `edit_portal` command which jumps to the portal
+	// when we go back to the original location by jumping back in history, the portal will be edited
+	// to be the new document view state
+	std::optional<Portal> portal_to_edit = {};
+
+	// the index of highlight in doc()->get_highlights() that is selected. This is used to
+	// delete/edit highlights e.g. by selecting a highlight by clicking on it and then executing `delete_highlight`
 	int selected_highlight_index = -1;
 
-	std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_link;
+	// An incomplete portal that is being created. The source of the portal is filled
+	// but the destination still needs to be set.
+	std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_portal;
 
 	DrawingMode freehand_drawing_mode = DrawingMode::None;
 	bool mouse_drag_mode = false;

@@ -978,7 +978,7 @@ public:
 	void perform() {
 		std::optional<Portal> link = widget->main_document_view->find_closest_portal();
 		if (link) {
-			widget->link_to_edit = link;
+			widget->portal_to_edit = link;
 			widget->open_document(link->dst);
 		}
 	}
