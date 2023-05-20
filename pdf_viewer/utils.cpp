@@ -28,6 +28,7 @@
 #include <qnetworkrequest.h>
 #include <qnetworkreply.h>
 #include <qscreen.h>
+#include <qjsonarray.h>
 
 #ifdef SIOYEK_ANDROID
 #include <QtCore/private/qandroidextras_p.h>
@@ -56,6 +57,10 @@ extern float EPUB_HEIGHT;
 extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
 extern float HIGHLIGHT_COLORS[26 * 3];
+
+extern std::wstring PAPER_SEARCH_URL_PATH;
+extern std::wstring PAPER_SEARCH_TILE_PATH ;
+extern std::wstring PAPER_SEARCH_CONTRIB_PATH ;
 
 extern bool VERBOSE;
 
@@ -3013,3 +3018,68 @@ std::optional<fz_rect> find_expanding_rect(bool before, fz_stext_page* page, fz_
 	return {};
 }
 
+
+QStringList extract_paper_data_from_json_response(QJsonValue json_object, const std::vector<QString>& path) {
+
+	if (path.size() == 0) {
+		if (json_object.isArray()) {
+			QJsonArray array = json_object.toArray();
+			QStringList list;
+			for (int i = 0; i < array.size(); i++) {
+				list.append(array.at(i).toString());
+			}
+			return QStringList() << list.join(", ");
+		}
+		else {
+			return { json_object.toString()};
+		}
+	}
+
+
+	QString current_path = path[0];
+	if (current_path.indexOf("[]") != -1) {
+		QJsonArray array = json_object.toObject().value(current_path.left(current_path.size() - 2)).toArray();
+		QStringList res;
+
+		for (int i = 0; i < array.size(); i++) {
+			QStringList temp_objects = extract_paper_data_from_json_response(array.at(i), std::vector<QString>(path.begin() + 1, path.end()));
+			for (int i = 0; i < temp_objects.size(); i++) {
+				res.push_back(temp_objects.at(i));
+			}
+		}
+		return res;
+	}
+	else if (current_path.indexOf("[") != -1) {
+		QString index_string = current_path.mid(current_path.indexOf("[") + 1, current_path.indexOf("]") - current_path.indexOf("[") - 1);
+		QString key_string = current_path.left(current_path.indexOf("["));
+		int index = index_string.toInt();
+		return extract_paper_data_from_json_response(json_object.toObject().value(key_string).toArray().at(index),
+						std::vector<QString>(path.begin() + 1, path.end()));
+
+	}
+	else {
+		if (json_object.isArray()) {
+			QJsonArray array = json_object.toObject().value(current_path.left(current_path.size() - 2)).toArray();
+			QStringList res;
+
+			for (int i = 0; i < array.size(); i++) {
+				 QStringList temp_objects = extract_paper_data_from_json_response(array.at(i), std::vector<QString>(path.begin() + 1, path.end()));
+				 res.push_back(temp_objects.join(", "));
+			}
+			return res;
+		}
+		else {
+			return extract_paper_data_from_json_response(json_object.toObject().value(current_path),
+				std::vector<QString>(path.begin() + 1, path.end()));
+		}
+	}
+}
+
+QStringList extract_paper_string_from_json_response(QJsonObject json_object, std::wstring path) {
+	std::vector<QString> parts;
+	QStringList parts_string_list = QString::fromStdWString(path).split(".");
+	for (int i = 0; i < parts_string_list.size(); i++) {
+		parts.push_back(parts_string_list.at(i));
+	}
+	return extract_paper_data_from_json_response(json_object, parts);
+}

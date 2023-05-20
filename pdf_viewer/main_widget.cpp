@@ -72,6 +72,10 @@ extern float MOVE_SCREEN_PERCENTAGE;
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring INVERSE_SEARCH_COMMAND;
 extern std::wstring PAPER_SEARCH_URL;
+extern std::wstring PAPER_SEARCH_URL_PATH;
+extern std::wstring PAPER_SEARCH_TILE_PATH ;
+extern std::wstring PAPER_SEARCH_CONTRIB_PATH ;
+
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float SMALL_PIXMAP_SCALE;
@@ -700,31 +704,24 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 			std::string answer = reply->readAll().toStdString();
 			QByteArray json_data = QByteArray::fromStdString(answer);
 			QJsonDocument json_doc = QJsonDocument::fromJson(json_data);
+
+            QStringList paper_urls = extract_paper_string_from_json_response(json_doc.object(), PAPER_SEARCH_URL_PATH);
+            QStringList paper_titles = extract_paper_string_from_json_response(json_doc.object(), PAPER_SEARCH_TILE_PATH);
+            QStringList paper_contrib_names = extract_paper_string_from_json_response(json_doc.object(), PAPER_SEARCH_CONTRIB_PATH);
+
 			QJsonArray hits = json_doc.object().value("hits").toObject().value("hits").toArray();
-			//std::vector<std::wstring> hit_titles;
-			//std::vector<std::wstring> hit_authors;
+
             std::vector<std::wstring> hit_names;
 			std::vector<std::wstring> hit_urls;
-			for (int i = 0; i < hits.size(); i++) {
-				std::wstring url = hits.at(i).toObject().value("_source").toObject().value("best_pdf_url").toString().toStdWString();
-
-				if (url.size() > 0) {
-                    std::wstring title = hits.at(i).toObject().value("_source").toObject().value("title").toString().toStdWString();
-					hit_urls.push_back(url);
-					QJsonArray contributors = hits.at(i).toObject().value("_source").toObject().value("contrib_names").toArray();
-					std::wstring contrib_string;
-					for (int j = 0; j < contributors.size(); j++) {
-						contrib_string += contributors.at(j).toString().toStdWString() + L", ";
-					}
-                    title += L" by " + contrib_string;
-                    hit_names.push_back(title);
-					//hit_authors.push_back(contrib_string);
-				}
+			for (int i = 0; i < paper_urls.size(); i++) {
+                hit_names.push_back(paper_titles.at(i).toStdWString() + L" by " + paper_contrib_names.at(i).toStdWString());
+                hit_urls.push_back(paper_urls.at(i).toStdWString());
 			}
 			show_download_paper_menu(hit_names, hit_urls);
         }
 
         });
+
     QObject::connect(&tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
         if ((state == QTextToSpeech::Ready) || (state == QTextToSpeech::Error)) {
             if (is_reading) {

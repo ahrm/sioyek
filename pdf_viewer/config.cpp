@@ -169,6 +169,10 @@ extern float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
 
+extern std::wstring PAPER_SEARCH_URL_PATH;
+extern std::wstring PAPER_SEARCH_TILE_PATH ;
+extern std::wstring PAPER_SEARCH_CONTRIB_PATH ;
+
 #ifdef SIOYEK_ANDROID
 extern Path android_config_path;
 #endif
@@ -1192,6 +1196,30 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		L"hold_middle_click_command",
 		ConfigType::String,
 		&HOLD_MIDDLE_CLICK_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"paper_download_url_path",
+		ConfigType::String,
+		&PAPER_SEARCH_URL_PATH,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"paper_download_title_path",
+		ConfigType::String,
+		&PAPER_SEARCH_TILE_PATH,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"paper_download_contrib_path",
+		ConfigType::String,
+		&PAPER_SEARCH_CONTRIB_PATH,
 		string_serializer,
 		string_deserializer,
 		nullptr
