@@ -3729,8 +3729,8 @@ int MainWidget::get_current_monitor_height() {
     }
 }
 
-void MainWidget::reload() {
-    pdf_renderer->delete_old_pages(true, true);
+void MainWidget::reload(bool flush) {
+    pdf_renderer->delete_old_pages(flush, true);
     if (doc()) {
 		doc()->reload();
     }

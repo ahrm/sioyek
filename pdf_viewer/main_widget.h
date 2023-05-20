@@ -252,7 +252,7 @@ public:
 	void handle_close_event();
 	void return_to_last_visual_mark();
 	bool is_visual_mark_mode();
-	void reload();
+	void reload(bool flush=true);
 
 	QString get_font_face_name(); 
 

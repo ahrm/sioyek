@@ -2129,6 +2129,18 @@ public:
 	}
 };
 
+class ReloadNoFlickerCommand : public Command {
+public:
+	ReloadNoFlickerCommand(MainWidget* w) : Command(w) {};
+	void perform() {
+        widget->reload(false);
+	}
+
+	std::string get_name() {
+		return "relaod_no_flicker";
+	}
+};
+
 class ReloadConfigCommand : public Command {
 public:
 	ReloadConfigCommand(MainWidget* w) : Command(w) {};
@@ -3370,6 +3382,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["goto_bottom_of_page"] = [](MainWidget* widget) {return std::make_unique< GotoBottomOfPageCommand>(widget); };
 	new_commands["new_window"] = [](MainWidget* widget) {return std::make_unique< NewWindowCommand>(widget); };
 	new_commands["reload"] = [](MainWidget* widget) {return std::make_unique< ReloadCommand>(widget); };
+	new_commands["reload_no_flicker"] = [](MainWidget* widget) {return std::make_unique< ReloadNoFlickerCommand>(widget); };
 	new_commands["reload_config"] = [](MainWidget* widget) {return std::make_unique< ReloadConfigCommand>(widget); };
 	new_commands["synctex_under_cursor"] = [](MainWidget* widget) {return std::make_unique< SynctexUnderCursorCommand>(widget); };
 	new_commands["set_status_string"] = [](MainWidget* widget) {return std::make_unique< SetStatusStringCommand>(widget); };
