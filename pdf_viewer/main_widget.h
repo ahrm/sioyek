@@ -180,16 +180,33 @@ public:
 	// but the destination still needs to be set.
 	std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_portal;
 
+	// the current freehand drawing mode. None means we are not drawing anything
+	// Drawing means we use the mouse to draw a freehand diagram
+	// and PenDrawing means we assume the user is using a pen so we treat mouse inputs
+	// normally and only use pen inputs for freehand drawing
 	DrawingMode freehand_drawing_mode = DrawingMode::None;
+
+	// In mouse drag mode, we use the mouse to drag the document around
 	bool mouse_drag_mode = false;
+
+	// In synctex mode right clicking on a document will jump to the corresponding latex file
+	// (assuming `inverse_search_command` is properly configured)
 	bool synctex_mode = false;
+
+	// are we currently dragging the document
 	bool is_dragging = false;
+
+	// are we currently freehand drawing on the document
 	bool is_drawing = false;
 
+	// should we show the status label?
+	// If touch mode is enabled, we don't show the status label at all, unless there is another window
+	// (e.g. the main menu or search buttons) is visible. That is because the screen space is already
+	// very limited in touch devices and we don't want to waste it using a statusbar unless it is absolutely required
 	bool should_show_status_label_ = true;
 	bool should_show_status_label();
 
-
+	// the location of current character in sioyek's typing minigame
 	std::optional<CharacterAddress> typing_location;
 
 	int main_window_width = 0;
@@ -200,33 +217,54 @@ public:
 	QLineEdit* text_command_line_edit = nullptr;
 	QLabel* status_label = nullptr;
 
+	// determines if the widget render is invalid and needs to be updated
+	// when `validation_interval_timer` fired, we check if this is true
+	// and only then we re-render the widget
+	// note that this is different from the document being invalid (an example of document
+	// being invalid could be a latex document that is changed since being loaded). This just means that
+	// the current drawing of MainWidget is not correct (for example due to moving vertically)
 	bool is_render_invalidated = false;
+
+	// determines if the UI is invalid and needs to be updated
+	// this can be the case for example when updating the search progress
+	// note that when render is invalid we automatically validate the UI anyway
 	bool is_ui_invalidated = false;
 
+	// this is a niche option to show the last executed command in the status bar
+	// (I used it when recording sioyek's video tutorial to show the command being executed)
 	bool should_show_last_command = false;
 
-	//std::optional<std::pair<std::wstring, int>> last_smart_fit_state = {};
+	// last page to be fit when we are in smart fit mode
+	// this value not being `{}` indicates that we are in smart fit mode
+	// which means that every time page is changed, we execute `fit_to_page_width_smart`
 	std::optional<int> last_smart_fit_page = {};
 
+	// the command used to perform synctex inverse searches
 	std::wstring inverse_search_command;
 
+	// data used to resize/move the overview. which is a small window which shows the target
+	// destination of references/links
 	std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
 	std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
 
-	std::optional<char> command_to_be_executed_symbol = {};
-
+	// A list of candiadates to be shown in the overview window. We use simple heuristics to determine the
+	// target of references, while this works most of the time, it is not perfect. So we keep a list of candidates
+	// which the user can naviagte through using `next_preview` and `previous_preview` commands which move
+	// `index_into_candidates` pointer to the next/previous candidate
 	std::vector<DocumentPos> smart_view_candidates;
 	int index_into_candidates = 0;
 
+	// when selecting text, we update the rendering faster, this timer is used 
+	// so that we don't update the rendering too fast
 	QTime last_text_select_time = QTime::currentTime();
+
+	// last time we updated `smooth_scroll_speed` 
 	QTime last_speed_update_time = QTime::currentTime();
 
 	bool main_document_view_has_document();
 	std::optional<std::string> get_last_opened_file_checksum();
 
 	void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions=false);
-
-
 
     int get_current_colorscheme_index();
     void set_dark_mode();
