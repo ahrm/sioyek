@@ -1,7 +1,4 @@
-﻿// todo: make touch virtual button commands configurable
-// clean console output
-// fix extra invalid modal command messages
-
+﻿
 #include <iostream>
 #include <vector>
 #include <string>
