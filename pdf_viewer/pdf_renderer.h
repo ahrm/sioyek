@@ -30,6 +30,8 @@ struct RenderRequest {
 	float zoom_level;
 	float display_scale;
 	int slice_index = -1;
+	int num_h_slices = 1;
+	int num_v_slices = 1;
 };
 
 struct SearchRequest {
@@ -92,7 +94,7 @@ class PdfRenderer : public QObject{
 
 	fz_context* init_context();
 	fz_document* get_document_with_path(int thread_index, fz_context* mupdf_context, std::wstring path);
-	GLuint try_closest_rendered_page(std::wstring doc_path, int page, int index, float zoom_level, float display_scale, int* page_width, int* page_height);
+	GLuint try_closest_rendered_page(std::wstring doc_path, int page, int index, int num_h_slices, int num_v_slices, float zoom_level, float display_scale, int* page_width, int* page_height);
 	void delete_old_pixmaps(int thread_index, fz_context* mupdf_context);
 	void run(int thread_index);
 	void run_search(int thread_index);
@@ -108,7 +110,7 @@ public:
 	void join_threads();
 
 	//should only be called from the main thread
-	void add_request(std::wstring document_path, int page, float zoom_level, float display_scale, int index);
+	void add_request(std::wstring document_path, int page, float zoom_level, float display_scale, int index, int num_h_slices, int num_v_slices);
 	void add_request(std::wstring document_path,
 		int page,
 		std::wstring term,
@@ -119,7 +121,7 @@ public:
 		std::optional<std::pair<int,
 		int>> range = {});
 
-	GLuint find_rendered_page(std::wstring path, int page, int index, float zoom_level, float display_scale, int* page_width, int* page_height);
+	GLuint find_rendered_page(std::wstring path, int page, int index, int num_h_slices, int num_v_slices, float zoom_level, float display_scale, int* page_width, int* page_height);
 	void delete_old_pages(bool force_all=false, bool invalidate_all=false);
 	void add_password(std::wstring path, std::string password);
 

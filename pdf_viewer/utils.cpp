@@ -47,8 +47,6 @@ extern float STATUS_BAR_TEXT_COLOR[3];
 extern float UI_SELECTED_TEXT_COLOR[3];
 extern float UI_SELECTED_BACKGROUND_COLOR[3];
 extern bool NUMERIC_TAGS;
-extern int NUM_H_SLICES;
-extern int NUM_V_SLICES;
 
 extern QString EPUB_TEMPLATE;
 extern float EPUB_LINE_SPACING;
@@ -2540,21 +2538,21 @@ float dampen_velocity(float v, float dt){
     return v;
 }
 
-fz_irect get_index_irect(fz_rect original, int index, fz_matrix transform) {
+fz_irect get_index_irect(fz_rect original, int index, fz_matrix transform, int num_h_slices, int num_v_slices) {
 	fz_rect transformed = fz_transform_rect(original, transform);
 	fz_irect rounded = fz_round_rect(transformed);
 
-	int vi = index / NUM_H_SLICES;
-	int hi = index % NUM_H_SLICES;
+	int vi = index / num_h_slices;
+	int hi = index % num_h_slices;
 
-	int slice_width = (rounded.x1 - rounded.x0) / NUM_H_SLICES;
-	int slice_height = (rounded.y1 - rounded.y0) / NUM_V_SLICES;
+	int slice_width = (rounded.x1 - rounded.x0) / num_h_slices;
+	int slice_height = (rounded.y1 - rounded.y0) / num_v_slices;
 
 	int x0 = hi * slice_width;
 	int y0 = vi * slice_height;
 
-	int x1 = (hi == (NUM_H_SLICES - 1)) ? rounded.x1 : (hi + 1) * slice_width;
-	int y1 = (vi == (NUM_V_SLICES - 1)) ? rounded.y1 : (vi + 1) * slice_height;
+	int x1 = (hi == (num_h_slices - 1)) ? rounded.x1 : (hi + 1) * slice_width;
+	int y1 = (vi == (num_v_slices - 1)) ? rounded.y1 : (vi + 1) * slice_height;
 
 	fz_irect res;
 	res.x0 = x0;
@@ -2568,23 +2566,23 @@ fz_irect get_index_irect(fz_rect original, int index, fz_matrix transform) {
 
 }
 
-void translate_index(int index, int* h_index, int* v_index) {
-	*v_index = index / NUM_H_SLICES;
-	*h_index = index % NUM_H_SLICES;
+void translate_index(int index, int* h_index, int* v_index, int num_h_slices, int num_v_slices) {
+	*v_index = index / num_h_slices;
+	*h_index = index % num_h_slices;
 }
 
-void get_slice_size(float* width, float* height, fz_rect original) {
-	*width = (original.x1 - original.x0) / NUM_H_SLICES;
-	*height = (original.y1 - original.y0) / NUM_V_SLICES;
+void get_slice_size(float* width, float* height, fz_rect original, int num_h_slices, int num_v_slices) {
+	*width = (original.x1 - original.x0) / num_h_slices;
+	*height = (original.y1 - original.y0) / num_v_slices;
 }
 
-fz_rect get_index_rect(fz_rect original, int index) {
+fz_rect get_index_rect(fz_rect original, int index, int num_h_slices, int num_v_slices) {
 
 	int h_index, v_index;
-	translate_index(index, &h_index, &v_index);
+	translate_index(index, &h_index, &v_index, num_h_slices, num_v_slices);
 
 	float slice_height, slice_width;
-	get_slice_size(&slice_width, &slice_height, original);
+	get_slice_size(&slice_width, &slice_height, original, num_h_slices, num_v_slices);
 
 	fz_rect new_rect;
 	new_rect.x0 = original.x0 + h_index * slice_width;

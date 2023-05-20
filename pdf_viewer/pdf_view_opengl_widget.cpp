@@ -92,6 +92,39 @@ GLfloat rotation_uvs[4][8] = {
 
 OpenGLSharedResources PdfViewOpenGLWidget::shared_gl_objects;
 
+bool num_slices_for_page_rect(fz_rect page_rect, int* h_slices, int* v_slices) {
+	/*
+	determines the number of vertical/horizontal slices when rendering
+	normally we don't use slicing when SLICED_RENDERING is false, unless
+	there is a giant page which would crash the application if we tried rendering
+	it as a single page
+	returns true if we are using sliced rendering
+	*/
+	if (page_rect.y1 > 2000.0) {
+		*v_slices = static_cast<int>(page_rect.y1 / 500.0f);
+		if (SLICED_RENDERING) {
+			*h_slices = NUM_H_SLICES;
+			return true;
+		}
+		else {
+			*h_slices = 1;
+			return true;
+		}
+	}
+	else {
+		if (SLICED_RENDERING) {
+			*h_slices = NUM_H_SLICES;
+			*v_slices = NUM_V_SLICES;
+			return true;
+		}
+		else {
+			*h_slices = 1;
+			*v_slices = 1;
+			return false;
+		}
+	}
+}
+
 std::string read_file_contents(const Path& path){
 #ifdef SIOYEK_ANDROID
     std::wstring actual_path = path.get_path();
@@ -583,6 +616,8 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 	GLuint texture = pdf_renderer->find_rendered_page(target_doc->get_path(),
 		docpos.page,
 		-1,
+		1,
+		1,
 		zoom_level,
 		devicePixelRatioF(),
 		nullptr,
@@ -701,23 +736,31 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 	if (!valid_document()) return;
 
-	int nh = NUM_H_SLICES;
-	int nv = NUM_V_SLICES;
-	if (!SLICED_RENDERING) {
-		nh = 1;
-		nv = 1;
-	}
+	//int nh = NUM_H_SLICES;
+	//int nv = NUM_V_SLICES;
+	int nh, nv;
 
-	for (int i = 0; i < NUM_H_SLICES * NUM_V_SLICES; i++) {
-		int v_index = i / NUM_H_SLICES;
-		int h_index = i % NUM_H_SLICES;
+	float page_width = document_view->get_document()->get_page_width(page_number);
+	float page_height = document_view->get_document()->get_page_height(page_number);
+	fz_rect page_rect = { 0, 0, page_width, page_height };
+	if ((page_width < 0) || (page_height < 0)) return;
+
+	bool is_sliced = num_slices_for_page_rect(page_rect, &nh, &nv);
+	//if (!SLICED_RENDERING) {
+	//	nh = 1;
+	//	nv = 1;
+	//}
+
+	for (int i = 0; i < nh * nv; i++) {
+		int v_index = i / nh;
+		int h_index = i % nh;
 
 		int rendered_width = -1;
 		int rendered_height = -1;
 
 		int index = i;
 
-		if (!SLICED_RENDERING) {
+		if (!is_sliced) {
 			index = -1;
 		}
 
@@ -728,7 +771,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		slice_document_rect.x1 = slice_document_width;
 		slice_document_rect.y0 = 0;
 		slice_document_rect.y1 = slice_document_height;
-		slice_document_rect = get_index_rect(slice_document_rect, i);
+		slice_document_rect = get_index_rect(slice_document_rect, i, nh, nv);
 
 		fz_rect slice_window_rect = document_view->document_to_window_rect(page_number, slice_document_rect);
 		// we add some slack so we pre-render nearby slices
@@ -739,13 +782,15 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		full_window_rect.y1 = 1.5f;
 
 		// don't render invisible slices
-		if (SLICED_RENDERING && (!rects_intersect(slice_window_rect, full_window_rect))) {
+		if (is_sliced && (!rects_intersect(slice_window_rect, full_window_rect))) {
 			continue;
 		}
 
 		GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
 			page_number,
 			index,
+			nh,
+			nv,
 			document_view->get_zoom_level(),
 			devicePixelRatioF(),
 			&rendered_width,
@@ -758,8 +803,8 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		}
 
 		float page_vertices[4 * 2];
-		float slice_height = document_view->get_document()->get_page_height(page_number) / NUM_V_SLICES;
-		float slice_width = document_view->get_document()->get_page_width(page_number) / NUM_H_SLICES;
+		float slice_height = document_view->get_document()->get_page_height(page_number) / nv;
+		float slice_width = document_view->get_document()->get_page_width(page_number) / nh;
 		fz_rect page_rect;
 
 		//fz_rect test_window_rect_1 = document_view->document_to_window_rect_pixel_perfect()
@@ -774,7 +819,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		fz_irect full_page_irect = fz_round_rect(fz_transform_rect(full_page_rect,
 			fz_scale(document_view->get_zoom_level(), document_view->get_zoom_level())));
 
-		if (SLICED_RENDERING) {
+		if (is_sliced) {
 
 			page_rect = { h_index * slice_width,
 				v_index * slice_height,
@@ -782,15 +827,15 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 				(v_index + 1) * slice_height
 			};
 			fz_irect page_irect;
-			page_irect.x0 = ((full_page_irect.x1 - full_page_irect.x0) / NUM_H_SLICES) * h_index;
-			page_irect.x1 = ((full_page_irect.x1 - full_page_irect.x0) / NUM_H_SLICES) * (h_index + 1);
-			if (h_index == (NUM_H_SLICES - 1)) {
+			page_irect.x0 = ((full_page_irect.x1 - full_page_irect.x0) / nh) * h_index;
+			page_irect.x1 = ((full_page_irect.x1 - full_page_irect.x0) / nh) * (h_index + 1);
+			if (h_index == (nh - 1)) {
 				page_irect.x1 = full_page_irect.x1;
 			}
 
-			page_irect.y0 = ((full_page_irect.y1 - full_page_irect.y0) / NUM_V_SLICES) * v_index;
-			page_irect.y1 = ((full_page_irect.y1 - full_page_irect.y0) / NUM_V_SLICES) * (v_index + 1);
-			if (v_index == (NUM_V_SLICES - 1)) {
+			page_irect.y0 = ((full_page_irect.y1 - full_page_irect.y0) / nv) * v_index;
+			page_irect.y1 = ((full_page_irect.y1 - full_page_irect.y0) / nv) * (v_index + 1);
+			if (v_index == (nv - 1)) {
 				//page_irect.y0 += 1;
 				page_irect.y1 = full_page_irect.y1;
 			}
@@ -826,14 +871,14 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 		}
 
 		bool is_not_exact = true;
-		if ((full_page_irect.y1 - full_page_irect.y0) % NUM_V_SLICES == 0) {
+		if ((full_page_irect.y1 - full_page_irect.y0) % nv == 0) {
 			is_not_exact = false;
 		}
 
 		fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number,
 			page_rect,
 			static_cast<int>(rendered_width / device_pixel_ratio),
-			static_cast<int>(rendered_height / device_pixel_ratio), SLICED_RENDERING );
+			static_cast<int>(rendered_height / device_pixel_ratio), is_sliced );
 
 		rect_to_quad(window_rect, page_vertices);
 		if ((v_index == 6) || (v_index == 7)) {
@@ -938,6 +983,8 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
 				visible_page_number.value() + 1,
 				-1,
+				1,
+				1,
 				document_view->get_zoom_level(),
 				devicePixelRatioF(),
 				nullptr,
@@ -968,9 +1015,18 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			int max_page = visible_pages[visible_pages.size() - 1];
 			for (int i = 1; i < (PRERENDERED_PAGE_COUNT + 1); i++) {
 				if (max_page + i < num_pages) {
+
+					float page_width = document_view->get_document()->get_page_width(max_page + i);
+					float page_height = document_view->get_document()->get_page_width(max_page + i);
+					fz_rect page_rect = {0, 0, page_width, page_height};
+					int nh, nv;
+					num_slices_for_page_rect(page_rect, &nh, &nv);
+
 					pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
 						max_page + i,
 						0,
+						nh,
+						nv,
 						document_view->get_zoom_level(),
 						devicePixelRatioF(),
 						nullptr,

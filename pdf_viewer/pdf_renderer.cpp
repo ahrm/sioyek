@@ -54,7 +54,7 @@ void PdfRenderer::join_threads()
 }
 
 
-void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_level, float display_scale, int index) {
+void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_level, float display_scale, int index, int num_h_slices, int num_v_slices) {
 	//fz_document* doc = get_document_with_path(document_path);
 	if (document_path.size() > 0) {
 		RenderRequest req;
@@ -62,6 +62,8 @@ void PdfRenderer::add_request(std::wstring document_path, int page, float zoom_l
 		req.page = page;
 		req.zoom_level = zoom_level;
 		req.slice_index = index;
+		req.num_h_slices = num_h_slices;
+		req.num_v_slices = num_v_slices;
 		req.display_scale = display_scale;
 
 		pending_requests_mutex.lock();
@@ -122,7 +124,7 @@ void PdfRenderer::add_request(std::wstring document_path,
 
 //should only be called from the main thread
 
-GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, float zoom_level, float display_scale, int* page_width, int* page_height) {
+GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, int num_h_slices, int num_v_slices, float zoom_level, float display_scale, int* page_width, int* page_height) {
 	//fz_document* doc = get_document_with_path(path);
 	if (path.size() > 0) {
 		RenderRequest req;
@@ -130,6 +132,8 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, f
 		req.page = page;
 		req.zoom_level = zoom_level;
 		req.slice_index = index;
+		req.num_h_slices = num_h_slices;
+		req.num_v_slices = num_v_slices;
 		req.display_scale = display_scale;
 		cached_response_mutex.lock();
 		GLuint result = 0;
@@ -189,20 +193,30 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, int index, f
 		if (result == 0) {
             if (TOUCH_MODE){
                 if (!no_rerender){
-                    add_request(path, page, zoom_level, display_scale, index);
+                    add_request(path, page, zoom_level, display_scale, index, num_h_slices, num_v_slices);
                 }
             }
             else{
-                add_request(path, page, zoom_level, display_scale, index);
+                add_request(path, page, zoom_level, display_scale, index, num_h_slices, num_v_slices);
             }
-			return try_closest_rendered_page(path, page, index, zoom_level, display_scale, page_width, page_height);
+			return try_closest_rendered_page(
+				path,
+				page,
+				index,
+				num_h_slices,
+				num_v_slices,
+				zoom_level,
+				display_scale,
+				page_width,
+				page_height
+			);
 		}
 		return result;
 	}
 	return 0;
 }
 
-GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, int index, float zoom_level, float display_scale, int* page_width, int* page_height) {
+GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, int index, int num_h_slices, int num_v_slices, float zoom_level, float display_scale, int* page_width, int* page_height) {
 	/*
 	If the requested page is not available, we try to find the rendered page with the closest
 	possible zoom level to our request and return that instead
@@ -214,6 +228,8 @@ GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, i
 
 	for (const auto& cached_resp : cached_responses) {
 		if ((cached_resp.request.slice_index == index) &&
+			(cached_resp.request.num_h_slices == num_h_slices) &&
+			(cached_resp.request.num_v_slices == num_v_slices) &&
 			(cached_resp.request.path == doc_path) &&
 			(cached_resp.request.display_scale == display_scale) &&
 			(cached_resp.request.page == page) &&
@@ -509,7 +525,7 @@ void PdfRenderer::run(int thread_index) {
 					fz_page* page = fz_load_page(mupdf_context, doc, req.page);
 					fz_rect rect = fz_bound_page(mupdf_context, page);
 
-					fz_irect bbox = get_index_irect(rect, req.slice_index, transform_matrix);
+					fz_irect bbox = get_index_irect(rect, req.slice_index, transform_matrix, req.num_h_slices, req.num_v_slices);
 
 					rendered_pixmap = fz_new_pixmap_with_bbox(mupdf_context, fz_device_rgb(mupdf_context), bbox, nullptr, 0); // todo: use alpha
 
@@ -559,6 +575,12 @@ bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 		return false;
 	}
 	if (rhs.slice_index != lhs.slice_index) {
+		return false;
+	}
+	if (rhs.num_h_slices != lhs.num_h_slices) {
+		return false;
+	}
+	if (rhs.num_v_slices != lhs.num_v_slices) {
 		return false;
 	}
 	if (rhs.page != lhs.page) {
