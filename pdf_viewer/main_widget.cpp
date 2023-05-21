@@ -1209,7 +1209,7 @@ void MainWidget::validate_render() {
         if (helper_document_view){
 
             if (link) {
-                helper_document_view->goto_link(&link.value());
+                helper_document_view->goto_portal(&link.value());
             }
             else {
                 helper_document_view->set_null_document();

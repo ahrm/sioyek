@@ -163,7 +163,7 @@ std::optional<BookMark> DocumentView::find_closest_bookmark() {
 	return {};
 }
 
-void DocumentView::goto_link(Portal* link) {
+void DocumentView::goto_portal(Portal* link) {
 	if (link) {
 		if (get_document() &&
 			get_document()->get_checksum() == link->dst.document_checksum) {
