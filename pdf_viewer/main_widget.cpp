@@ -1,4 +1,5 @@
-﻿
+﻿// rotation is wrong when using sliced rendering
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -2552,7 +2553,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos){
         auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y });
         std::optional<std::wstring> paper_name = main_document_view->get_document()->get_paper_name_at_position(doc_page, doc_x, doc_y);
         if (paper_name) {
-            handle_paper_name_on_pointer(paper_name.value(), is_shift_pressed);
+            handle_search_paper_name(paper_name.value(), is_shift_pressed);
         }
         return;
     }
@@ -2571,7 +2572,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos){
     else {
 		std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
 		if (paper_name_on_pointer) {
-			handle_paper_name_on_pointer(paper_name_on_pointer.value(), is_shift_pressed);
+			handle_search_paper_name(paper_name_on_pointer.value(), is_shift_pressed);
 		}
     }
 
@@ -2983,7 +2984,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
     }
 
 }
-void MainWidget::handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed) {
+void MainWidget::handle_search_paper_name(std::wstring paper_name, bool is_shift_pressed) {
     if (paper_name.size() > 5) {
         char type;
         if (is_shift_pressed) {

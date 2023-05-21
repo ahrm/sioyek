@@ -272,8 +272,10 @@ public:
     void set_custom_color_mode();
     void toggle_statusbar();
 	void toggle_titlebar();
-	void handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed);
-	//void paintEvent(QPaintEvent* paint_event) override;
+
+	// search the `paper_name` in one of the configurable when middle-click or shift+middle-clicking on paper's name
+	void handle_search_paper_name(std::wstring paper_name, bool is_shift_pressed);
+
 	void persist(bool persist_drawings=false) ;
 	bool is_pending_link_source_filled();
 	std::wstring get_status_string();
@@ -323,7 +325,6 @@ public:
 
 	QRect get_main_window_rect();
 	QRect get_helper_window_rect();
-
 
 	void show_password_prompt_if_required();
 	void handle_link_click(const PdfLink& link);
@@ -423,6 +424,7 @@ public:
 
 	std::vector<fz_rect> get_flat_words(std::vector<std::vector<fz_rect>>* flat_word_chars=nullptr);
 
+	// get rects using tags (tags are strings shown when executing `keyboard_*` commands)
 	std::optional<fz_rect> get_tag_rect(std::string tag, std::vector<fz_rect>* word_chars=nullptr);
 	std::optional<fz_irect> get_tag_window_rect(std::string tag, std::vector<fz_irect>* char_rects=nullptr);
 
@@ -505,21 +507,32 @@ public:
 	void show_audio_buttons();
 	void set_freehand_thickness(float val);
 
+	// Text selection indicators in touch mode
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator *selection_end_indicator = nullptr;
+
+	// When in touch mode, sometimes we use the last touch hold point for some commands
+	// for example, if select text button is pressed, we select the text under the last touch hold point
     QPoint last_hold_point;
     QPoint last_press_point;
     qint64 last_press_msecs = 0;
     QTime last_quick_tap_time;
 	QTime last_middle_down_time;
     QPoint last_quick_tap_position;
+
+	// whether mouse is pressed, `is_pressed` is true, we add mouse positions to `position_buffer`
     bool is_pressed = false;
+	// list of mouse positions used to calculate the velocity when flicking in touch mode
     std::deque<std::pair<QTime, QPoint>> position_buffer;
     float velocity_x = 0;
     float velocity_y = 0;
 
+	// indicates if mouse was in next/prev ruler rect in touch mode
+	// if this is the case, we use mouse movement to perform next/prev ruler command
+	// after a certain threshold, so the user doesn't have to click on the ruler rect 
     bool was_last_mouse_down_in_ruler_next_rect = false;
     bool was_last_mouse_down_in_ruler_prev_rect = false;
+	// this is used so we can keep track of mouse movement after press and holding on ruler rect
     WindowPos ruler_moving_last_window_pos;
     int ruler_moving_distance_traveled = 0;
 

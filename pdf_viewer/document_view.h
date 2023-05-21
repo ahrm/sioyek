@@ -45,20 +45,26 @@ private:
 	float offset_x = 0;
 	float offset_y = 0;
 
-	//float vertical_line_begin_pos = 0;
+	// absolute rect of the current ruler if this is {} then ruler_pos is used instead
 	std::optional<fz_rect> ruler_rect;
 	float ruler_pos = 0;
+
+	// index of the current highlighted line in ruler mode
 	int line_index = -1;
 
 	int view_width = 0;
 	int view_height = 0;
+
+	// in auto resize mode, we automatically set the zoom level to fit the page when resizing the document
 	bool is_auto_resize_mode = true;
 
-
 public:
+	// list of selected characters (e.g. using mouse select) to be highlighted
 	std::deque<fz_rect> selected_character_rects;
-	bool mark_end = true;
+	// whether we should show a keyboard text selection marker at the end/begin of current
+	// text selection (depending on `mark_end` value)
 	bool should_show_text_selection_marker = false;
+	bool mark_end = true;
 
 	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer);
 	DocumentView( fz_context* mupdf_context, DatabaseManager* db_manager,  DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer, bool* invalid_flag,
@@ -72,6 +78,9 @@ public:
 	void set_book_state(OpenedBookState state);
 	bool set_offsets(float new_offset_x, float new_offset_y, bool force=false);
 	Document* get_document();
+
+	// find the closest portal to the current position
+	// if limit is true, we only search for portals near the current location and not all portals
 	std::optional<Portal> find_closest_portal(bool limit=false);
 	std::optional<BookMark> find_closest_bookmark();
 	void goto_link(Portal* link);
