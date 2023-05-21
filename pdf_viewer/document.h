@@ -29,29 +29,40 @@ class Document {
 
 private:
 
-	//std::vector<FreehandDrawing> drawings;
 	std::mutex drawings_mutex;
 	std::map<int, std::vector<FreehandDrawing>> page_freehand_drawings;
+	// it means we have modified freehand drawings since the document was loaded
+	// which means that when we exit, we must write the modified drawings to the drawings file
 	bool is_drawings_dirty = false;
+
 	std::vector<Mark> marks;
 	std::vector<BookMark> bookmarks;
 	std::vector<Highlight> highlights;
 	std::vector<Portal> portals;
 	DatabaseManager* db_manager = nullptr;
 	std::vector<TocNode*> top_level_toc_nodes;
+
+	// automatically generated table of contents entries
 	std::vector<TocNode*> created_top_level_toc_nodes;
+	// flattened table of contents entries when we don't want to (or can't)
+	// show a tree view (e.g. due to performance reasons on PC and lack of availablity on mobile)
 	std::vector<std::wstring> flat_toc_names;
 	std::vector<int> flat_toc_pages;
 	std::map<int, std::vector<fz_rect>> cached_page_line_rects;
 	std::map<int, std::vector<std::wstring>> cached_line_texts;
 
 	bool super_fast_search_index_ready = false;
+	// super fast index is the concatenated text of all pages along with two lists which map the
+	// characters to pages and rects of those characters this index is built only if the 
+	// super_fast_search config option is enabled
 	std::wstring super_fast_search_index;
 	std::vector<int> super_fast_search_index_pages;
 	std::vector<fz_rect> super_fast_search_rects;
 
+	// DEPRECATED a page offset which could manually be set to make the page numbers correct
+	// on PDF files with page numbers that start at a number other than 1. This is now
+	// unnecessary because mupdf 1.22 allows us to get actual page labels
 	int page_offset = 0;
-
 
 	// number of pages in the document
 	std::optional<int> cached_num_pages = {};
@@ -67,9 +78,12 @@ private:
 	std::unordered_map<int, std::vector<std::vector<fz_rect>>> cached_flat_word_chars;
 	QStandardItemModel* cached_toc_model = nullptr;
 
+	// accumulated page heights (i.e. the height of the page plus the height of all the pages before it)
 	std::vector<float> accum_page_heights;
 	std::vector<float> page_heights;
 	std::vector<float> page_widths;
+
+	// label of the pages, e.g. "i", "ii", "iii", "1", "2", "3", etc.
 	std::vector<std::wstring> page_labels;
 	std::mutex page_dims_mutex;
 	std::string correct_password = "";
@@ -82,7 +96,6 @@ private:
 	// necessarily true for the figures.
 	std::vector<IndexedData> generic_indices;
 	std::map<std::wstring, IndexedData> reference_indices;
-	//std::map<std::wstring, IndexedData> equation_indices;
 	std::map<std::wstring, std::vector<IndexedData>> equation_indices;
 
 	std::mutex document_indexing_mutex;
