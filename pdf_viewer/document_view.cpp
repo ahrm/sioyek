@@ -330,17 +330,26 @@ void DocumentView::on_view_size_change(int new_width, int new_height) {
 //
 //}
 
-void DocumentView::absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y) {
+NormalizedWindowPos DocumentView::absolute_to_window_pos(AbsoluteDocumentPos abs) {
+	NormalizedWindowPos res;
 	float half_width = static_cast<float>(view_width) / zoom_level / 2;
 	float half_height = static_cast<float>(view_height) / zoom_level / 2;
 
-	*window_x = (absolute_x + offset_x) / half_width;
-	*window_y = (-absolute_y + offset_y) / half_height;
+	res.x = (abs.x + offset_x) / half_width;
+	res.y = (-abs.y + offset_y) / half_height;
+	return res;
+	
 }
+
 fz_rect DocumentView::absolute_to_window_rect(fz_rect doc_rect) {
 	fz_rect res;
-	absolute_to_window_pos(doc_rect.x0, doc_rect.y0, &res.x0, &res.y0);
-	absolute_to_window_pos(doc_rect.x1, doc_rect.y1, &res.x1, &res.y1);
+	NormalizedWindowPos p1 = absolute_to_window_pos({ doc_rect.x0, doc_rect.y0 });
+	NormalizedWindowPos p2 = absolute_to_window_pos({ doc_rect.x1, doc_rect.y1 });
+
+	res.x0 = p1.x;
+	res.y0 = p1.y;
+	res.x1 = p2.x;
+	res.y1 = p2.y;
 
 	return res;
 }
@@ -989,10 +998,7 @@ float DocumentView::get_ruler_window_y() {
 
 	absol_end_y += RULER_PADDING;
 
-	float window_end_x, window_end_y;
-	absolute_to_window_pos(0.0, absol_end_y, &window_end_x, &window_end_y);
-
-	return window_end_y;
+	return absolute_to_window_pos({ 0.0f, absol_end_y }).y;
 }
 
 std::optional<fz_rect> DocumentView::get_ruler_window_rect() {

@@ -105,8 +105,9 @@ public:
 	void add_bookmark(std::wstring desc);
 	void add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
 	void on_view_size_change(int new_width, int new_height);
-	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
-	//void absolute_to_window_pos_pixels(float absolute_x, float absolute_y, float* window_x, float* window_y);
+	//void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
+	NormalizedWindowPos absolute_to_window_pos(AbsoluteDocumentPos absolute_pos);
+
 	fz_rect absolute_to_window_rect(fz_rect doc_rect);
 	NormalizedWindowPos document_to_window_pos(DocumentPos pos);
 	WindowPos document_to_window_pos_in_pixels(DocumentPos doc_pos);

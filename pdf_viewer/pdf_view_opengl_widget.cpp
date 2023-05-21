@@ -1131,26 +1131,22 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (document_view->get_document()->can_use_highlights()) {
 		const std::vector<Highlight>& highlights = document_view->get_document()->get_highlights();
 		for (size_t i = 0; i < highlights.size(); i++) {
-			float selection_begin_window_x, selection_begin_window_y;
-			float selection_end_window_x, selection_end_window_y;
+			//float selection_begin_window_x, selection_begin_window_y;
+			//float selection_end_window_x, selection_end_window_y;
 
-			document_view->absolute_to_window_pos(
-				highlights[i].selection_begin.x,
-				highlights[i].selection_begin.y,
-				&selection_begin_window_x,
-				&selection_begin_window_y);
+			NormalizedWindowPos selection_begin_window_pos = document_view->absolute_to_window_pos(
+				{ highlights[i].selection_begin.x, highlights[i].selection_begin.y }
+			);
 
-			document_view->absolute_to_window_pos(
-				highlights[i].selection_end.x,
-				highlights[i].selection_end.y,
-				&selection_end_window_x,
-				&selection_end_window_y);
+			NormalizedWindowPos selection_end_window_pos = document_view->absolute_to_window_pos(
+				{ highlights[i].selection_end.x, highlights[i].selection_end.y }
+			);
 
-			if (selection_begin_window_y > selection_end_window_y) {
-				std::swap(selection_begin_window_y, selection_end_window_y);
+			if (selection_begin_window_pos.y > selection_end_window_pos.y) {
+				std::swap(selection_begin_window_pos.y, selection_end_window_pos.y);
 			}
 
-			bool is_selection_in_window = range_intersects(selection_begin_window_y, selection_end_window_y, -1.0f, 1.0f);
+			bool is_selection_in_window = range_intersects(selection_begin_window_pos.y, selection_end_window_pos.y, -1.0f, 1.0f);
 
 			if (is_selection_in_window) {
 				for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
@@ -2289,11 +2285,11 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 
 		if (drawing.points.size() == 1) {
 			std::vector<float> coordinates;
-			float window_x, window_y;
+			//float window_x, window_y;
 			float thickness = drawing.points[0].thickness;
 
-			document_view->absolute_to_window_pos(drawing.points[0].pos.x, drawing.points[0].pos.y, &window_x, &window_y);
-			add_coordinates_for_window_point(window_x, window_y, thickness * 2, 10, coordinates);
+			NormalizedWindowPos window_pos = document_view->absolute_to_window_pos({ drawing.points[0].pos.x, drawing.points[0].pos.y });
+			add_coordinates_for_window_point(window_pos.x, window_pos.y, thickness * 2, 10, coordinates);
 
 			bind_points(coordinates);
 			glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
@@ -2304,9 +2300,8 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
 		glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
 
 		for (auto p : drawing.points) {
-			float window_x, window_y;
-			document_view->absolute_to_window_pos(p.pos.x, p.pos.y, &window_x, &window_y);
-			window_positions.push_back(NormalizedWindowPos{ window_x, window_y });
+			NormalizedWindowPos window_pos = document_view->absolute_to_window_pos({ p.pos.x, p.pos.y });
+			window_positions.push_back(NormalizedWindowPos{ window_pos.x, window_pos.y });
 		}
 
 		std::vector<float> coordinates;
