@@ -609,11 +609,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     helper_document_view = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
     helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager, true);
 
-#ifndef SIOYEK_ANDROID
-    // weird hack, should not be necessary but application crashes without it when toggling window configuration
-    helper_opengl_widget->show();
-    helper_opengl_widget->hide();
-#endif
+//#ifndef SIOYEK_ANDROID
+    // this is me from the future, it seems this hack is no longer necessary for some reason
+    //// weird hack, should not be necessary but application crashes without it when toggling window configuration
+    //helper_opengl_widget->show();
+    //helper_opengl_widget->hide();
+//#endif
 
     status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
@@ -624,12 +625,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
 
-    if ((num_screens > 1) && (HELPER_WINDOW_SIZE[0] > 0) && (SHOULD_USE_MULTIPLE_MONITORS)) {
-        apply_window_params_for_two_window_mode();
-    }
-    else {
-        apply_window_params_for_one_window_mode();
-    }
+    //if ((num_screens > 1) && (HELPER_WINDOW_SIZE[0] > 0) && (SHOULD_USE_MULTIPLE_MONITORS)) {
+    //    apply_window_params_for_two_window_mode();
+    //}
+    //else {
+    //    apply_window_params_for_one_window_mode();
+    //}
 
     if (helper_opengl_widget){
         helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
