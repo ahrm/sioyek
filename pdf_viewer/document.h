@@ -128,13 +128,9 @@ public:
 	fz_document* doc = nullptr;
 
 	void add_bookmark(const std::wstring& desc, float y_offset);
-	//void add_bookmark_annotation(const BookMark& bookmark);
-	//void delete_bookmark_annotation(const BookMark& bookmark);
 	void add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
-	//void add_highlight_annotation(const Highlight& highlight, const std::vector<fz_rect>& selected_rects);
 	void delete_highlight_with_index(int index);
 	void delete_highlight(Highlight hl);
-	//void delete_highlight_annotation(const Highlight& highlight);
 
 	void fill_highlight_rects(fz_context* ctx, fz_document* doc);
 	void count_chapter_pages(std::vector<int> &page_counts);

@@ -198,8 +198,9 @@ mac {
 
 android{
     !isEmpty(target.path): INSTALLS += target
-    LIBS += -L$$PWD/libs/ -lmupdf_java
-    ANDROID_EXTRA_LIBS += $$PWD/libs/libmupdf_java.so
+    LIBS += -L$$PWD/libs/ -lmupdf_java -lcrypto_3 -lssl_3
+    # ssl libraries downloaded from https://github.com/KDAB/android_openssl/tree/master/ssl_3/arm64-v8a
+    ANDROID_EXTRA_LIBS += $$PWD/libs/libmupdf_java.so $$PWD/libs/libcrypto_3.so $$PWD/libs/libssl_3.so
 
     DISTFILES += \
         android/build.gradle \

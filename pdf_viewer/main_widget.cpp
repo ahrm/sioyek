@@ -60,6 +60,9 @@
 
 #include "main_widget.h"
 
+#ifdef SIOYEK_ANDROID
+#include <QtCore/private/qandroidextras_p.h>
+#endif
 
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
@@ -681,7 +684,13 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
     QObject::connect(&network_manager, &QNetworkAccessManager::finished, [this](QNetworkReply* reply) {
-        if (reply->url().toString().endsWith(".pdf")) {
+        // check if the result is from the paper search engine (and should be interpreted
+        // as json) or is it a pdf file
+        QString reply_host = reply->url().host();
+        QString download_paper_host = QUrl(QString::fromStdWString(PAPER_SEARCH_URL)).host();
+        bool is_json = reply_host == download_paper_host;
+
+        if (!is_json) {
             QByteArray pdf_data = reply->readAll();
             QString file_name = reply->url().fileName();
 
@@ -693,9 +702,15 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             bool opened = file.open(QIODeviceBase::WriteOnly);
             if (opened) {
 				file.write(pdf_data);
-				file.close();
+                file.close();
+#ifdef SIOYEK_ANDROID
+                // todo: maybe show a dialog asking the user if they want to open the downloaded document
+                push_state();
+                open_document(path.toStdWString());
+#else
 				MainWidget* new_window = handle_new_window();
 				new_window->open_document(path.toStdWString());
+#endif
             }
 
 
@@ -5436,12 +5451,11 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    //qDebug() << QString::fromStdWString(get_selected_text());
-    //expand_selection_vertical(false);
-    handle_goto_loaded_document();
 }
 
 void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
+    ensure_internet_permission();
+
     QPoint mouse_pos;
     if (use_last_touch_pos) {
         mouse_pos = last_hold_point;
@@ -5452,11 +5466,14 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
     WindowPos pos(mouse_pos.x(), mouse_pos.y());
     DocumentPos docpos = main_document_view->window_to_document_pos(pos);
     auto [page, offset_x, offset_y] = docpos;
-    //std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
     std::optional<PdfLink> pdf_link_ = doc()->get_link_in_pos(docpos);
 
     std::optional<std::wstring> bib_text_ = {};
 
+    // first, we  try to detect if we are on a PDF link or a non-link reference
+    // (something like [14] or [Doe et. al.]) and then find the paper name in the
+    // referenced location. If we can't match the current text as a refernce source,
+    // we assume the text under cursor is the paper name.
     if (pdf_link_) {
         PdfLink pdf_link = pdf_link_.value();
         fz_rect pdf_rect = pdf_link.rect;
@@ -6115,4 +6132,24 @@ bool MainWidget::execute_macro_if_enabled(std::wstring macro_command_string) {
 	}
 
     return false;
+}
+
+bool MainWidget::ensure_internet_permission(){
+
+#ifdef SIOYEK_ANDROID
+//    qDebug() << "entered";
+    auto internet_permission_status = QtAndroidPrivate::checkPermission("android.permission.INTERNET").result();
+//    qDebug() << "checked";
+//    qDebug() << internet_permission_status;
+    if (internet_permission_status == QtAndroidPrivate::Denied){
+//        qDebug() << "was denied";
+        internet_permission_status = QtAndroidPrivate::requestPermission("android.permission.INTERNET").result();
+
+        if (internet_permission_status == QtAndroidPrivate::Denied){
+            qDebug() << "Could not get internet permission\n";
+        }
+    }
+
+#endif
+    return true;
 }

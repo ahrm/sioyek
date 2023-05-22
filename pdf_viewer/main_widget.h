@@ -54,7 +54,6 @@ enum class ReferenceType {
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 class MainWidget : public QQuickWidget, ConfigFileChangeListener{
-
 public:
     QTime debug_last_timer;
 	fz_context* mupdf_context = nullptr;
@@ -703,7 +702,8 @@ public:
 		}
 	}
 
-	bool execute_macro_if_enabled(std::wstring macro_command_string);
+    bool execute_macro_if_enabled(std::wstring macro_command_string);
+    bool ensure_internet_permission();
 
 };
 
