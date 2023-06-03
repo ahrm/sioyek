@@ -928,6 +928,7 @@ void run_command(std::wstring command, QStringList parameters, bool wait){
 
 void open_file_url(const QString& url_string) {
 	QDesktopServices::openUrl(QUrl::fromLocalFile(url_string));
+	//QDesktopServices::openUrl(QUrl("file:///" + url_string, QUrl::TolerantMode));
 }
 
 void open_file_url(const std::wstring &url_string) {

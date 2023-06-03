@@ -65,7 +65,6 @@ HEADERS += \
     pdf_viewer/touchui/TouchMainMenu.h
 
 android{
-    CONFIG += debug
     DEFINES += SIOYEK_ANDROID
     QT += core-private
 }

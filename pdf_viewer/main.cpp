@@ -835,6 +835,7 @@ int main(int argc, char* args[]) {
             qDebug() << "Could not get storage permission\n";
         }
     }
+
 #endif
 
     if (has_arg(argc, args, "--version")) {
@@ -974,6 +975,7 @@ int main(int argc, char* args[]) {
 
 	QFileSystemWatcher key_file_watcher;
 	add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
+	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
 
 	MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, command_manager, &input_handler, &checksummer, &quit);

@@ -592,7 +592,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 {
 
 	//main_widget->quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
-    quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
+    //quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
     setMouseTracking(true);
     setAcceptDrops(true);
     setAttribute(Qt::WA_DeleteOnClose);
