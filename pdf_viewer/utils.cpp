@@ -874,10 +874,10 @@ void run_command(std::wstring command, QStringList parameters, bool wait){
 	SHELLEXECUTEINFO ShExecInfo = { 0 };
 	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 	if (wait) {
-		ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+		ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
 	}
 	else {
-		ShExecInfo.fMask = SEE_MASK_ASYNCOK;
+		ShExecInfo.fMask = SEE_MASK_ASYNCOK | SEE_MASK_NO_CONSOLE;
 	}
 
 	ShExecInfo.hwnd = NULL;
@@ -2501,6 +2501,7 @@ JNIEXPORT void JNICALL
                                         jstring url)
 {
     const char *urlStr = env->GetStringUTFChars(url, NULL);
+    qDebug() << urlStr;
     Q_UNUSED (obj)
     env->ReleaseStringUTFChars(url, urlStr);
     return;

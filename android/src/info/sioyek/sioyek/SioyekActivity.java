@@ -13,6 +13,7 @@ import android.provider.DocumentsContract;
 import android.content.*;
 import android.app.*;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import java.lang.String;
 import android.content.Intent;
@@ -32,12 +33,18 @@ public class SioyekActivity extends QtActivity{
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         Intent intent = getIntent();
         if (intent != null){
             String action = intent.getAction();
             if (action != null){
+                Uri intentUri = intent.getData();
+                if (intentUri.toString().startsWith("content://")){
+                    Toast.makeText(this, "Can't open content files, download the file and open from file manager", Toast.LENGTH_LONG).show();
+                    finish();
+                }
                 isIntentPending = true;
             }
         }
@@ -46,8 +53,10 @@ public class SioyekActivity extends QtActivity{
             // Uri uri = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
             Uri uri = Uri.parse("package:" + "org.qtproject.example");
             try {
+                Intent newActivityIntent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri);
+
                 startActivity(
-                        new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri)
+                    newActivityIntent
                 );
             }
             catch(Exception e){
@@ -91,9 +100,6 @@ public class SioyekActivity extends QtActivity{
         }
     }
     public static String getPathFromUri(Context context, Uri uri) {
-        qDebug("sioyek: running getPathFromUri");
-        qDebug("sioyek: uri: " + uri.toString());
-
         final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
         // DocumentProvider
@@ -124,7 +130,6 @@ public class SioyekActivity extends QtActivity{
                 final String docId = DocumentsContract.getDocumentId(uri);
                 final String[] split = docId.split(":");
                 final String type = split[0];
-                qDebug("sioyek: type is :" + type);
 
                 Uri contentUri = null;
                 if ("image".equals(type)) {
@@ -220,7 +225,6 @@ public class SioyekActivity extends QtActivity{
 
         Intent intent = getIntent();
         if (intent.getAction().equals("android.intent.action.VIEW")){
-            //qDebug("jsioyek: " + intent.getAction());
             Uri intentUri = intent.getData();
             //String realPath = getRealPathFromUri(getApplicationContext(), intentUri);
             //Uri newUri = Uri.fromFile(new File(realPath));

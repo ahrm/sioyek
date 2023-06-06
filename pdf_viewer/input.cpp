@@ -2869,7 +2869,7 @@ class CustomCommand : public Command {
 
 public:
 
-	CustomCommand(MainWidget* widget_, std::string name_, std::wstring command_) : Command(widget) {
+	CustomCommand(MainWidget* widget_, std::string name_, std::wstring command_) : Command(widget_) {
 		raw_command = command_;
 		name = name_;
 	}
@@ -3432,7 +3432,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
 		std::string command_name = utf8_encode(command_name_);
 		std::wstring local_command_value = command_value;
-		new_commands[command_name] = [command_name, local_command_value](MainWidget* w) {return  std::make_unique<CustomCommand>(w, command_name, local_command_value); };
+		new_commands[command_name] = [command_name, local_command_value, this](MainWidget* w) {return  std::make_unique<CustomCommand>(w, command_name, local_command_value); };
 	}
 
 	for (auto [command_name_, macro_value] : ADDITIONAL_MACROS) {
