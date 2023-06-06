@@ -896,6 +896,7 @@ void run_command(std::wstring command, QStringList parameters, bool wait){
 	}
 
 #else
+	// todo: use setProcessChanellMode to use the same console as the parent process
 	QProcess* process = new QProcess;
 	QString qcommand = QString::fromStdWString(command);
 	QStringList qparameters;

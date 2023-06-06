@@ -302,6 +302,11 @@ line-height: %{line_spacing}em!important;\
 UIRect PORTRAIT_EDIT_PORTAL_UI_RECT = {true, -0.2f, 0.2f, -1.0f, -0.7f};
 UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT = {true, -0.2f, 0.2f, -1.0f, -0.7f};
 
+UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT = {true, -1.0f, -0.7f, -0.3f, 0.3f};
+UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT = {true, 0.7f, 1.0f, -0.3f, 0.3f};
+UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT = {true, -1.0f, -0.7f, -0.3f, 0.3f};
+UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT = {true, 0.7f, 1.0f, -0.3f, 0.3f};
+
 UIRect PORTRAIT_BACK_UI_RECT = {true, -1.0f, -0.7f, -1.0f, -0.7f};
 UIRect PORTRAIT_FORWARD_UI_RECT = {true, 0.7f, 1.0f, -1.0f, -0.7};
 UIRect LANDSCAPE_BACK_UI_RECT = {true, -1.0f, -0.7f, -1.0f, -0.7f};
@@ -349,6 +354,10 @@ std::wstring VISUAL_MARK_NEXT_TAP_COMMAND = L"";
 std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND = L"";
 std::wstring VISUAL_MARK_PREV_TAP_COMMAND = L"";
 std::wstring VISUAL_MARK_PREV_HOLD_COMMAND = L"";
+std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND = L"";
+std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND = L"";
+std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND = L"";
+std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND = L"";
 
 std::vector<MainWidget*> windows;
 

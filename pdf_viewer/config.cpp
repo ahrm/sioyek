@@ -106,6 +106,10 @@ extern std::wstring VISUAL_MARK_NEXT_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
+extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
+extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
+extern std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND;
+extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
 
 extern bool USE_LEGACY_KEYBINDS;
 extern bool MULTILINE_MENUS;
@@ -162,6 +166,11 @@ extern UIRect PORTRAIT_VISUAL_MARK_PREV;
 extern UIRect PORTRAIT_VISUAL_MARK_NEXT;
 extern UIRect LANDSCAPE_VISUAL_MARK_PREV;
 extern UIRect LANDSCAPE_VISUAL_MARK_NEXT;
+
+extern UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT;
+extern UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT ;
+extern UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT ;
+extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT ;
 
 extern float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_VERTICAL_LINE_COLOR[4];
@@ -1275,6 +1284,38 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		nullptr
 		});
 	configs.push_back({
+		L"middle_left_rect_tap_command",
+		ConfigType::String,
+		&MIDDLE_LEFT_RECT_TAP_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"middle_left_rect_hold_command",
+		ConfigType::String,
+		&MIDDLE_LEFT_RECT_HOLD_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"middle_right_rect_tap_command",
+		ConfigType::String,
+		&MIDDLE_RIGHT_RECT_TAP_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"middle_right_rect_hold_command",
+		ConfigType::String,
+		&MIDDLE_RIGHT_RECT_HOLD_COMMAND,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
 		L"visual_mark_next_tap_command",
 		ConfigType::String,
 		&VISUAL_MARK_NEXT_TAP_COMMAND,
@@ -1676,6 +1717,38 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		L"portrait_visual_mark_next",
 		ConfigType::EnableRectangle,
 		&PORTRAIT_VISUAL_MARK_NEXT,
+		rect_serializer,
+		rect_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"landscape_middle_right_rect",
+		ConfigType::EnableRectangle,
+		&LANDSCAPE_MIDDLE_RIGHT_UI_RECT,
+		rect_serializer,
+		rect_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"landscape_middle_left_rect",
+		ConfigType::EnableRectangle,
+		&LANDSCAPE_MIDDLE_LEFT_UI_RECT,
+		rect_serializer,
+		rect_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"portrait_middle_right_rect",
+		ConfigType::EnableRectangle,
+		&PORTRAIT_MIDDLE_RIGHT_UI_RECT,
+		rect_serializer,
+		rect_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"portrait_middle_left_rect",
+		ConfigType::EnableRectangle,
+		&PORTRAIT_MIDDLE_LEFT_UI_RECT,
 		rect_serializer,
 		rect_deserializer,
 		nullptr

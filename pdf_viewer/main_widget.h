@@ -553,6 +553,8 @@ public:
     void handle_touch_highlight();
     void restore_default_config();
 	bool is_in_back_rect(WindowPos pos);
+	bool is_in_middle_left_rect(WindowPos pos);
+	bool is_in_middle_right_rect(WindowPos pos);
 	bool is_in_forward_rect(WindowPos pos);
 	bool is_in_edit_portal_rect(WindowPos pos);
 	bool is_in_visual_mark_next_rect(WindowPos pos);

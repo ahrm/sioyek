@@ -159,6 +159,11 @@ extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
 
+extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
+extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
+extern std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND;
+extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
+
 extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
 extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
 
@@ -170,6 +175,11 @@ extern UIRect PORTRAIT_VISUAL_MARK_PREV;
 extern UIRect PORTRAIT_VISUAL_MARK_NEXT;
 extern UIRect LANDSCAPE_VISUAL_MARK_PREV;
 extern UIRect LANDSCAPE_VISUAL_MARK_NEXT;
+extern UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT;
+extern UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT ;
+extern UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT ;
+extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT ;
+
 extern bool TOUCH_MODE;
 
 const int MAX_SCROLLBAR = 10000;
@@ -5035,6 +5045,18 @@ bool MainWidget::event(QEvent* event) {
 
                     is_dragging = false;
 
+                    if (is_in_middle_left_rect(window_pos)) {
+                        if (execute_macro_if_enabled(MIDDLE_LEFT_RECT_HOLD_COMMAND)) {
+							invalidate_render();
+							return true;
+                        }
+                    }
+                    if (is_in_middle_right_rect(window_pos)) {
+                        if (execute_macro_if_enabled(MIDDLE_RIGHT_RECT_HOLD_COMMAND)) {
+							invalidate_render();
+							return true;
+                        }
+                    }
                     if (is_in_back_rect(window_pos)) {
                         handle_command_types(command_manager->create_macro_command(this, "", BACK_RECT_HOLD_COMMAND), 0);
                         invalidate_render();
@@ -5212,6 +5234,16 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos){
     //NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(click_pos);
 
 
+    if (is_in_middle_left_rect(click_pos)) {
+        if (execute_macro_if_enabled(MIDDLE_LEFT_RECT_TAP_COMMAND)) {
+			return true;
+        }
+    }
+    if (is_in_middle_right_rect(click_pos)) {
+        if (execute_macro_if_enabled(MIDDLE_RIGHT_RECT_TAP_COMMAND)) {
+			return true;
+        }
+    }
     if (is_in_back_rect(click_pos)) {
         handle_command_types(command_manager->get_command_with_name(this,utf8_encode(BACK_RECT_TAP_COMMAND)), 0);
 		return true;
@@ -5567,6 +5599,26 @@ bool MainWidget::should_show_status_label() {
     else {
         return should_show_status_label_ || opengl_widget->get_is_searching(&prog);
     }
+}
+
+bool MainWidget::is_in_middle_left_rect(WindowPos pos) {
+    NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(pos);
+    if (screen()->orientation() == Qt::PortraitOrientation) {
+		return PORTRAIT_MIDDLE_LEFT_UI_RECT.contains(nwp);
+	}
+    else {
+		return LANDSCAPE_MIDDLE_LEFT_UI_RECT.contains(nwp);
+	}
+}
+
+bool MainWidget::is_in_middle_right_rect(WindowPos pos) {
+    NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(pos);
+    if (screen()->orientation() == Qt::PortraitOrientation) {
+		return PORTRAIT_MIDDLE_RIGHT_UI_RECT.contains(nwp);
+	}
+    else {
+		return LANDSCAPE_MIDDLE_RIGHT_UI_RECT.contains(nwp);
+	}
 }
 
 bool MainWidget::is_in_back_rect(WindowPos pos) {
