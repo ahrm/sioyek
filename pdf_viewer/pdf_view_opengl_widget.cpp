@@ -736,8 +736,6 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 	if (!valid_document()) return;
 
-	//int nh = NUM_H_SLICES;
-	//int nv = NUM_V_SLICES;
 	int nh, nv;
 
 	float page_width = document_view->get_document()->get_page_width(page_number);
@@ -746,10 +744,6 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 	if ((page_width < 0) || (page_height < 0)) return;
 
 	bool is_sliced = num_slices_for_page_rect(page_rect, &nh, &nv);
-	//if (!SLICED_RENDERING) {
-	//	nh = 1;
-	//	nv = 1;
-	//}
 
 	for (int i = 0; i < nh * nv; i++) {
 		int v_index = i / nh;
@@ -797,19 +791,20 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 			&rendered_height);
 
 
+		// when rotating, we swap nv and nh 
+		int nh_ = nh;
+		int nv_ = nv;
 
 		if (rotation_index % 2 == 1) {
 			std::swap(rendered_width, rendered_height);
+			std::swap(nh_, nv_);
 		}
 
 		float page_vertices[4 * 2];
-		float slice_height = document_view->get_document()->get_page_height(page_number) / nv;
-		float slice_width = document_view->get_document()->get_page_width(page_number) / nh;
+		float slice_height = document_view->get_document()->get_page_height(page_number) / nv_;
+		float slice_width = document_view->get_document()->get_page_width(page_number) / nh_;
+
 		fz_rect page_rect;
-
-		//fz_rect test_window_rect_1 = document_view->document_to_window_rect_pixel_perfect()
-
-
 		fz_rect full_page_rect = { 0,
 				0,
 				 document_view->get_document()->get_page_width(page_number),
@@ -821,21 +816,33 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 		if (is_sliced) {
 
+			if (rotation_index == 1) {
+				std::swap(h_index, v_index);
+				h_index = nv - h_index - 1;
+			}
+			else if (rotation_index == 2) {
+				v_index = nv - v_index - 1;
+			}
+			else if (rotation_index == 3) {
+				std::swap(h_index, v_index);
+			}
+
+
 			page_rect = { h_index * slice_width,
 				v_index * slice_height,
 				(h_index + 1) * slice_width,
 				(v_index + 1) * slice_height
 			};
 			fz_irect page_irect;
-			page_irect.x0 = ((full_page_irect.x1 - full_page_irect.x0) / nh) * h_index;
-			page_irect.x1 = ((full_page_irect.x1 - full_page_irect.x0) / nh) * (h_index + 1);
-			if (h_index == (nh - 1)) {
+			page_irect.x0 = ((full_page_irect.x1 - full_page_irect.x0) / nh_) * h_index;
+			page_irect.x1 = ((full_page_irect.x1 - full_page_irect.x0) / nh_) * (h_index + 1);
+			if (h_index == (nh_ - 1)) {
 				page_irect.x1 = full_page_irect.x1;
 			}
 
-			page_irect.y0 = ((full_page_irect.y1 - full_page_irect.y0) / nv) * v_index;
-			page_irect.y1 = ((full_page_irect.y1 - full_page_irect.y0) / nv) * (v_index + 1);
-			if (v_index == (nv - 1)) {
+			page_irect.y0 = ((full_page_irect.y1 - full_page_irect.y0) / nv_) * v_index;
+			page_irect.y1 = ((full_page_irect.y1 - full_page_irect.y0) / nv_) * (v_index + 1);
+			if (v_index == (nv_ - 1)) {
 				//page_irect.y0 += 1;
 				page_irect.y1 = full_page_irect.y1;
 			}

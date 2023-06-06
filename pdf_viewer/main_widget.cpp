@@ -1,4 +1,4 @@
-﻿// rotation is wrong when using sliced rendering
+﻿// make overview_definition return all possible targets
 
 #include <iostream>
 #include <vector>
