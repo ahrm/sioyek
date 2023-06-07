@@ -606,6 +606,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     setMouseTracking(true);
     setAcceptDrops(true);
     setAttribute(Qt::WA_DeleteOnClose);
+    setAttribute(Qt::WA_AcceptTouchEvents);
 
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
@@ -5016,6 +5017,18 @@ bool MainWidget::event(QEvent* event) {
 
     //if (event->type() == QEvent::TabletEVe)
     if (TOUCH_MODE) {
+
+        if (event->type() == QEvent::TouchUpdate){
+            // when performing pinch to zoom, Qt only fires PinchGesture event when
+            // the finger that initiated the pinch is moved (the first finger to touch the screen)
+            // therefore, if the user tries to pinch to zoom using the second finger, the render is not
+            // updated in PinchGesture handling code. Here we manually update the render if we are pinching
+            // even when the other finger is moved, which results in a much smoother zooming.
+            if (is_pinching){
+                validate_render();
+            }
+        }
+
         if (event->type() == QEvent::Gesture) {
             auto gesture = (static_cast<QGestureEvent*>(event));
 
@@ -5094,6 +5107,12 @@ bool MainWidget::event(QEvent* event) {
             if (gesture->gesture(Qt::PinchGesture)){
                 pdf_renderer->no_rerender = true;
                 QPinchGesture *pinch = static_cast<QPinchGesture *>(gesture->gesture(Qt::PinchGesture));
+                if (pinch->state() == Qt::GestureStarted){
+                    is_pinching = true;
+                }
+                if ((pinch->state() == Qt::GestureFinished) || (pinch->state() == Qt::GestureCanceled)){
+                    is_pinching = false;
+                }
                 float scale = pinch->scaleFactor();
                 main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
                 return true;

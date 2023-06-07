@@ -194,6 +194,8 @@ public:
 
 	// are we currently dragging the document
 	bool is_dragging = false;
+    // are we performing pinch to zoom gesture
+    bool is_pinching = false;
 
 	// are we currently freehand drawing on the document
 	bool is_drawing = false;
