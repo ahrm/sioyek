@@ -398,6 +398,10 @@ void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*
 		LL_ITER(line, block->u.t.first_line) {
 			std::vector<fz_stext_char*> reordered_chars = reorder_stext_line(line);
 			for (auto ch : reordered_chars) {
+				if (ch->c == 65533) {
+					// unicode replacement character https://www.fileformat.info/info/unicode/char/fffd/index.htm
+					ch->c = ' ';
+				}
 				flat_chars.push_back(ch);
 			}
 		}
