@@ -90,3 +90,6 @@ void TouchListView::keyPressEvent(QKeyEvent* kevent) {
     QWidget::keyPressEvent(kevent);
     //return true;
 }
+void TouchListView::update_model() {
+	quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
+}

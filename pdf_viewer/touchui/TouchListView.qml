@@ -121,8 +121,10 @@ Rectangle {
                 id: right_label
                 Text {
                     id: pagetext
-                    //text: model.display
-					text: lview.model.data(lview.model.index(index, 1)) || "";
+
+                    // model.display.slice(0, 0) is a hack to get qml to redraw this widget
+                    // when model changes there has to be a better way to do this
+					text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, 1)) || "";
                     color: "white"
                     anchors.verticalCenter: parent.verticalCenter
                     font.pixelSize: 15

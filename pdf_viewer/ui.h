@@ -10,6 +10,7 @@
 #include <QScroller>
 #include <qsizepolicy.h>
 #include <qapplication.h>
+#include <qqmlengine.h>
 #include <qpushbutton.h>
 #include <qopenglwidget.h>
 #include <qopenglextrafunctions.h>
@@ -482,6 +483,7 @@ public:
 
 
 		QStandardItemModel* model = create_table_model(std_string_list, std_string_list_right);
+		//model->setItem(selected_index, 0, new QStandardItem(QString::fromStdWString(std_string_list[selected_index])));
 		//QStandardItemModel* model = new QStandardItemModel();
 
 		//for (size_t i = 0; i < std_string_list.size(); i++) {
@@ -524,6 +526,18 @@ public:
 		if (selected_index != -1) {
 			table_view->scrollTo(this->proxy_model->mapFromSource(table_view->currentIndex()), QAbstractItemView::EnsureVisible);
 		}
+	}
+
+	void set_value_second_item(T value, QString str) {
+
+		for (int i = 0; i < values.size(); i++) {
+			if (values[i] == value) {
+				auto source_model = this->proxy_model->sourceModel();
+				source_model->setData(source_model->index(i, 1),  str);
+				return;
+			}
+		}
+
 	}
 
 	virtual std::wstring get_selected_text(){
@@ -646,6 +660,22 @@ public:
         move(parent_width * 0.05f, 0);
 		resize(parent_width * 0.9f, parent_height);
     }
+
+	void set_value_second_item(T value, QString str) {
+
+		auto source_model = list_view->proxy_model.sourceModel();
+
+		if (source_model->columnCount() < 2) return;
+
+		for (int i = 0; i < values.size(); i++) {
+			if (values[i] == value) {
+				source_model->setData(source_model->index(i, 1),  str);
+				list_view->update_model();
+				return;
+			}
+		}
+
+	}
 };
 
 

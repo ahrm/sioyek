@@ -696,6 +696,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
     QObject::connect(&network_manager, &QNetworkAccessManager::finished, [this](QNetworkReply* reply) {
+        if (!reply->property("sioyek_network_request_type").isNull()) {
+            // handled in a different place
+            return;
+        }
+
         // check if the result is from the paper search engine (and should be interpreted
         // as json) or is it a pdf file
         QString reply_host = reply->url().host();
@@ -732,19 +737,57 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 			QByteArray json_data = QByteArray::fromStdString(answer);
 			QJsonDocument json_doc = QJsonDocument::fromJson(json_data);
 
+			auto get_url_file_size = [&](QString url) {
+				QNetworkRequest req;
+
+				QString url_ = url.right(url.size() - url.lastIndexOf("http"));
+				req.setUrl(url_);
+				auto reply = network_manager.head(req);
+
+				reply->setProperty("sioyek_network_request_type", QString("paper_size"));
+
+				connect(reply, &QNetworkReply::finished, [reply, url, this]() {
+
+					if (current_widget_stack.size() == 0) return;
+
+                    //todo: remove duplication here
+					if (dynamic_cast<FilteredSelectTableWindowClass<std::wstring>*>(current_widget_stack.back())) {
+						FilteredSelectTableWindowClass<std::wstring>* list_view = dynamic_cast<FilteredSelectTableWindowClass<std::wstring>*>(current_widget_stack.back());
+						list_view->set_value_second_item(url.toStdWString(),
+							file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toUInt()));
+					}
+					if (dynamic_cast<TouchFilteredSelectWidget<std::wstring>*>(current_widget_stack.back())) {
+						TouchFilteredSelectWidget<std::wstring>* list_view = dynamic_cast<TouchFilteredSelectWidget<std::wstring>*>(current_widget_stack.back());
+						list_view->set_value_second_item(url.toStdWString(),
+							file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toUInt()));
+					}
+					});
+
+			};
+
             QStringList paper_urls = extract_paper_string_from_json_response(json_doc.object(), PAPER_SEARCH_URL_PATH);
             QStringList paper_titles = extract_paper_string_from_json_response(json_doc.object(), PAPER_SEARCH_TILE_PATH);
             QStringList paper_contrib_names = extract_paper_string_from_json_response(json_doc.object(), PAPER_SEARCH_CONTRIB_PATH);
+
+            for (auto u : paper_urls) {
+                if (u.size() > 0) {
+                    get_url_file_size(u);
+                }
+            }
 
 			QJsonArray hits = json_doc.object().value("hits").toObject().value("hits").toArray();
 
             std::vector<std::wstring> hit_names;
 			std::vector<std::wstring> hit_urls;
 			for (int i = 0; i < paper_urls.size(); i++) {
-                hit_names.push_back(paper_titles.at(i).toStdWString() + L" by " + paper_contrib_names.at(i).toStdWString());
-                hit_urls.push_back(paper_urls.at(i).toStdWString());
+                if (paper_urls.at(i).size() > 0) {
+                    hit_names.push_back(paper_titles.at(i).toStdWString() + L" by " + paper_contrib_names.at(i).toStdWString());
+                    hit_urls.push_back(paper_urls.at(i).toStdWString());
+                }
 			}
 			show_download_paper_menu(hit_names, hit_urls);
+
+
         }
 
         });
@@ -5609,6 +5652,10 @@ void MainWidget::handle_pause() {
 }
 bool MainWidget::should_show_status_label() {
 	float prog;
+    if (is_network_manager_running()) {
+        return true;
+    }
+
     if (TOUCH_MODE) {
         if (current_widget_stack.size() > 0 || opengl_widget->get_is_searching(&prog) || is_pending_link_source_filled()) {
             return true;
@@ -5836,7 +5883,11 @@ void MainWidget::show_download_paper_menu(
     const std::vector<std::wstring>& download_urls) {
 
 
-    set_filtered_select_menu<std::wstring>(paper_names, {}, download_urls, -1, 
+    // force it to be a double column layout. the second column will asynchronously be filled with
+    // file sizes
+    std::vector<std::wstring> right_names(paper_names.size());
+
+    set_filtered_select_menu<std::wstring>(paper_names, right_names, download_urls, -1, 
 		[&](std::wstring* url) {
             download_paper_with_url(*url);
 		},
