@@ -492,6 +492,21 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
+    if (overview_touch_move_data) {
+        // in touch mode, instead of moving the overview itself, we move the document inside the overview
+        DocumentPos current_mouse_overview_document_pos = opengl_widget->window_pos_to_overview_pos(normal_mpos);
+        AbsoluteDocumentPos current_mouse_overview_absolute_pos = doc()->document_to_absolute_pos(current_mouse_overview_document_pos);
+        float absdiff = -current_mouse_overview_absolute_pos.y + overview_touch_move_data.value().original_mouse_offset_y;
+        float new_absolute_y = opengl_widget->get_overview_page().value().absolute_offset_y + absdiff;
+        OverviewState new_overview_state;
+        new_overview_state.absolute_offset_y = new_absolute_y;
+        new_overview_state.doc = opengl_widget->get_overview_page().value().doc;
+
+		opengl_widget->set_overview_page(new_overview_state);
+        validate_render();
+
+    }
+
     if (opengl_widget->is_window_point_in_overview(normal_mpos)) {
         link = doc()->get_link_in_pos(opengl_widget->window_pos_to_overview_pos(normal_mpos));
         if (link) {
@@ -1926,13 +1941,23 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             return;
         }
         if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
-            float original_offset_x, original_offset_y;
+			float original_offset_x, original_offset_y;
 
-            PdfViewOpenGLWidget::OverviewMoveData move_data;
-            opengl_widget->get_overview_offsets(&original_offset_x, &original_offset_y);
-            move_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
-            move_data.original_offsets = fvec2{ original_offset_x, original_offset_y };
-            overview_move_data = move_data;
+            if (TOUCH_MODE) {
+				PdfViewOpenGLWidget::OverviewTouchMoveData touch_move_data;
+				touch_move_data.original_mouse_offset_y = doc()->document_to_absolute_pos(opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y })).y;
+                float overview_offset_y = opengl_widget->get_overview_page().value().absolute_offset_y;
+                touch_move_data.overview_original_pos_offset_y = overview_offset_y;
+                overview_touch_move_data = touch_move_data;
+            }
+            else {
+				PdfViewOpenGLWidget::OverviewMoveData move_data;
+				opengl_widget->get_overview_offsets(&original_offset_x, &original_offset_y);
+				move_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
+				move_data.original_offsets = fvec2{ original_offset_x, original_offset_y };
+				overview_move_data = move_data;
+            }
+        
             return;
         }
 
@@ -1968,9 +1993,10 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         is_selecting = false;
         is_dragging = false;
 
-        bool was_overview_mode = overview_move_data.has_value() || overview_resize_data.has_value();
+        bool was_overview_mode = overview_move_data.has_value() || overview_resize_data.has_value() || overview_touch_move_data.has_value();
 
         overview_move_data = {};
+        overview_touch_move_data = {};
         overview_resize_data = {};
 
         //if (was_overview_mode) {
@@ -5330,6 +5356,16 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos){
             return true;
         }
     }
+    
+    if (TOUCH_MODE && opengl_widget->get_overview_page()) {
+        // in touch mode, quick tapping outside the overview window should close it
+		auto window_pos = mapFromGlobal(QCursor::pos());
+		NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos({ window_pos.x(), window_pos.y() });
+
+		if (!opengl_widget->is_window_point_in_overview({ nwp.x, nwp.y})) {
+			opengl_widget->set_overview_page({});
+		}
+    }
 
 
     clear_selected_text();
@@ -5392,6 +5428,9 @@ void MainWidget::update_position_buffer(){
 bool MainWidget::is_flicking(QPointF* out_velocity){
     // we never flick the background when a widget is being shown on top
     if (current_widget_stack.size() > 0) {
+        return false;
+    }
+    if (opengl_widget->get_overview_page()) {
         return false;
     }
 

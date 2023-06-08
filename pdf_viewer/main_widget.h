@@ -246,6 +246,7 @@ public:
 	// data used to resize/move the overview. which is a small window which shows the target
 	// destination of references/links
 	std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
+	std::optional<PdfViewOpenGLWidget::OverviewTouchMoveData> overview_touch_move_data = {};
 	std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
 
 	// A list of candiadates to be shown in the overview window. We use simple heuristics to determine the

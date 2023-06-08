@@ -110,6 +110,13 @@ public:
 		NormalizedWindowPos original_normal_mouse_pos;
 	};
 
+	struct OverviewTouchMoveData {
+		float overview_original_pos_offset_y;
+		float original_mouse_offset_y;
+
+		//NormalizedWindowPos original_normal_mouse_pos;
+	};
+
 	enum ColorPalette {
 		Normal,
 		Dark,
