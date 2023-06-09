@@ -1441,7 +1441,6 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
                 is_word_selection,
                 main_document_view->selected_character_rects,
                 selected_text);
-            is_word_selection = false;
         }
         else {
             handle_click(click_pos);
@@ -1657,7 +1656,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         else {
 			handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
 			if (is_select_highlight_mode && (main_document_view->selected_character_rects.size() > 0)) {
-				main_document_view->add_highlight(selection_begin, selection_end, select_highlight_type);
+				main_document_view->add_highlight(selection_begin, selection_end, is_word_selection, select_highlight_type);
                 clear_selected_text();
 			}
 			if (main_document_view->selected_character_rects.size() > 0) {
@@ -3678,14 +3677,14 @@ void MainWidget::handle_goto_bookmark_global() {
 
 void MainWidget::handle_add_highlight(char symbol) {
 	if (main_document_view->selected_character_rects.size() > 0) {
-		main_document_view->add_highlight(selection_begin, selection_end, symbol);
+		main_document_view->add_highlight(selection_begin, selection_end, is_word_selection, symbol);
 		main_document_view->selected_character_rects.clear();
 		selected_text.clear();
 	}
 	else if (selected_highlight_index != -1) {
 		Highlight new_highlight = main_document_view->get_highlight_with_index(selected_highlight_index);
 		main_document_view->delete_highlight_with_index(selected_highlight_index);
-		main_document_view->add_highlight(new_highlight.selection_begin, new_highlight.selection_end, symbol);
+		main_document_view->add_highlight(new_highlight.selection_begin, new_highlight.selection_end, is_word_selection, symbol);
 		selected_highlight_index = -1;
 	}
 }

@@ -1530,7 +1530,7 @@ class SetSelectHighlightTypeCommand : public SymbolCommand {
 class AddHighlightWithCurrentTypeCommand : public Command {
 	void perform(MainWidget* widget) {
         if (widget->main_document_view->selected_character_rects.size() > 0) {
-            widget->main_document_view->add_highlight(widget->selection_begin, widget->selection_end, widget->select_highlight_type);
+            widget->main_document_view->add_highlight(widget->selection_begin, widget->selection_end, widget->is_word_selection, widget->select_highlight_type);
             widget->main_document_view->selected_character_rects.clear();
             widget->selected_text.clear();
         }

@@ -298,14 +298,14 @@ void DocumentView::add_bookmark(std::wstring desc) {
 	}
 }
 
-void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
+void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, char type) {
 
 	if (current_document) {
 		std::vector<fz_rect> selected_characters;
 		std::vector<fz_rect> merged_characters;
 		std::wstring selected_text;
 
-		get_text_selection(selection_begin, selection_end, !EXACT_HIGHLIGHT_SELECT, selected_characters, selected_text);
+		get_text_selection(selection_begin, selection_end, is_word_selection, selected_characters, selected_text);
 		merge_selected_character_rects(selected_characters, merged_characters);
 		if (selected_text.size() > 0) {
 			current_document->add_highlight(selected_text, merged_characters, selection_begin, selection_end, type);
