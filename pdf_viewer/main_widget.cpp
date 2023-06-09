@@ -296,7 +296,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
             main_document_view->get_text_selection(selection_begin,
                 selection_end,
-                is_word_selecting,
+                is_word_selection,
                 main_document_view->selected_character_rects,
                 selected_text);
 
@@ -1409,7 +1409,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         if (!mouse_drag_mode) {
             is_selecting = true;
 			if (SINGLE_CLICK_SELECTS_WORDS) {
-				is_word_selecting = true;
+				is_word_selection = true;
 			}
         }
         else {
@@ -1438,10 +1438,10 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
             main_document_view->get_text_selection(last_mouse_down,
                 abs_doc_pos,
-                is_word_selecting,
+                is_word_selection,
                 main_document_view->selected_character_rects,
                 selected_text);
-            is_word_selecting = false;
+            is_word_selection = false;
         }
         else {
             handle_click(click_pos);
@@ -1703,10 +1703,10 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
 	if (mevent->button() == Qt::MouseButton::LeftButton) {
 		is_selecting = true;
 		if (SINGLE_CLICK_SELECTS_WORDS) {
-			is_word_selecting = false;
+			is_word_selection = false;
 		}
         else {
-			is_word_selecting = true;
+			is_word_selection = true;
 		}
 	}
 }
