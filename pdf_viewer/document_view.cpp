@@ -5,7 +5,6 @@ extern float MOVE_SCREEN_PERCENTAGE;
 extern float FIT_TO_PAGE_WIDTH_RATIO;
 extern float RULER_PADDING;
 extern float RULER_X_PADDING;
-extern bool EXACT_HIGHLIGHT_SELECT;
 extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 
 
