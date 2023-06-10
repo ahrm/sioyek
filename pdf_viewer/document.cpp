@@ -1533,7 +1533,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
 		std::vector<fz_rect> selected_characters_page_rects;
 		std::wstring selected_text;
 
-		get_text_selection(highlight.selection_begin, highlight.selection_end, true, selected_characters, selected_text);
+		get_text_selection(highlight.selection_begin, highlight.selection_end, false, selected_characters, selected_text);
 		merge_selected_character_rects(selected_characters, merged_characters);
 
 		for (auto absrect : merged_characters) {
