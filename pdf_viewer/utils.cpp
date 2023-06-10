@@ -154,6 +154,10 @@ void rect_to_quad(fz_rect rect, float quad[8]) {
 	quad[7] = rect.y1;
 }
 
+fz_point rect_get_center(const fz_rect& rect) {
+	return { (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 };
+}
+
 void copy_to_clipboard(const std::wstring& text, bool selection) {
 	auto clipboard = QGuiApplication::clipboard();
 	auto qtext = QString::fromStdWString(text);
@@ -600,7 +604,8 @@ fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_ch
 	int index = 0;
 	for (auto current_char : flat_chars) {
 
-		fz_point quad_center = current_char->origin;
+		// This works better than current_char->origin
+		const fz_point quad_center = rect_get_center(fz_rect_from_quad(current_char->quad));
 		float distance = dist_squared(document_point, quad_center);
 		if (distance < min_distance) {
 			min_distance = distance;
