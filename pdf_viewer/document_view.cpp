@@ -307,7 +307,9 @@ void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDo
 		get_text_selection(selection_begin, selection_end, is_word_selection, selected_characters, selected_text);
 		merge_selected_character_rects(selected_characters, merged_characters);
 		if (selected_text.size() > 0) {
-			current_document->add_highlight(selected_text, merged_characters, selection_begin, selection_end, type);
+			const fz_rect& rect1 = selected_characters.front();
+			const fz_rect& rect2 = selected_characters.back();
+			current_document->add_highlight(selected_text, merged_characters, {rect1.x0, (rect1.y0 + rect1.y1) / 2}, {rect2.x0, (rect2.y0 + rect2.y1) / 2}, type);
 		}
 	}
 }

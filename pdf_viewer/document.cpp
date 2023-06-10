@@ -80,7 +80,7 @@ void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
 		std::vector<fz_rect> highlight_rects;
 		std::vector<fz_rect> merged_rects;
 		std::wstring highlight_text;
-		get_text_selection(ctx, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text, doc_);
+		get_text_selection(ctx, highlight.selection_begin, highlight.selection_end, false, highlight_rects, highlight_text, doc_);
 		merge_selected_character_rects(highlight_rects, merged_rects);
 
 		if (i < highlights.size()) {
