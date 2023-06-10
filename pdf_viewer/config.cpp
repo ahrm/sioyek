@@ -80,6 +80,7 @@ extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
 extern bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE;
+extern bool LEGACY_WORD_SELECT;
 extern bool SHOW_DOC_PATH;
 extern float FASTREAD_OPACITY;
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
@@ -396,6 +397,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"overview_size", &OVERVIEW_SIZE, fvec2_serializer, fvec2_deserializer, nullptr });
 	configs.push_back({ L"overview_offset", &OVERVIEW_OFFSET, fvec2_serializer, fvec2_deserializer, nullptr });
 	configs.push_back({ L"ignore_whitespace_in_presentation_mode", &IGNORE_WHITESPACE_IN_PRESENTATION_MODE, bool_serializer, bool_deserializer, bool_validator });
+	configs.push_back({ L"legacy_word_select", &LEGACY_WORD_SELECT, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"show_doc_path", &SHOW_DOC_PATH, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"fastread_opacity", &FASTREAD_OPACITY, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"should_warn_about_user_key_override", &SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE, bool_serializer, bool_deserializer, bool_validator });

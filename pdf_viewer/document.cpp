@@ -26,6 +26,7 @@ extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
 extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
 extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 extern bool SUPER_FAST_SEARCH;
+extern bool LEGACY_WORD_SELECT;
 
 
 int Document::get_mark_index(char symbol) {
@@ -80,7 +81,7 @@ void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
 		std::vector<fz_rect> highlight_rects;
 		std::vector<fz_rect> merged_rects;
 		std::wstring highlight_text;
-		get_text_selection(ctx, highlight.selection_begin, highlight.selection_end, false, highlight_rects, highlight_text, doc_);
+		get_text_selection(ctx, highlight.selection_begin, highlight.selection_end, LEGACY_WORD_SELECT, highlight_rects, highlight_text, doc_);
 		merge_selected_character_rects(highlight_rects, merged_rects);
 
 		if (i < highlights.size()) {
@@ -1533,7 +1534,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
 		std::vector<fz_rect> selected_characters_page_rects;
 		std::wstring selected_text;
 
-		get_text_selection(highlight.selection_begin, highlight.selection_end, false, selected_characters, selected_text);
+		get_text_selection(highlight.selection_begin, highlight.selection_end, LEGACY_WORD_SELECT, selected_characters, selected_text);
 		merge_selected_character_rects(selected_characters, merged_characters);
 
 		for (auto absrect : merged_characters) {
