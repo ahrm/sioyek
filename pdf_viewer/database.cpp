@@ -14,11 +14,13 @@
 #include <qjsondocument.h>
 #include <qjsonobject.h>
 #include <qjsonvalue.h>
+#include <quuid.h>
 
 #include "checksum.h"
 
 extern bool DEBUG;
 extern float HIGHLIGHT_DELETE_THRESHOLD;
+extern int DATABASE_VERSION;
 
 std::wstring esc(const std::wstring& inp) {
 	char* data = sqlite3_mprintf("%q", utf8_encode(inp).c_str());
@@ -35,6 +37,17 @@ static int null_callback(void* notused, int argc, char** argv, char** col_name) 
 	return 0;
 }
 
+static int id_callback(void* res_vector, int argc, char** argv, char** col_name) {
+	std::vector<int>* res = (std::vector<int>*) res_vector;
+
+	if (argc != 1) {
+		std::cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << std::endl;
+	}
+
+	res->push_back(atoi(argv[0]));
+
+	return 0;
+}
 static int opened_book_callback(void* res_vector, int argc, char** argv, char** col_name) {
 	std::vector<OpenedBookState>* res = (std::vector<OpenedBookState>*) res_vector;
 
@@ -170,6 +183,18 @@ static int wstring_pair_select_callback(void* res_vector, int argc, char** argv,
 	std::wstring second = utf8_decode(argv[1]);
 
 	res->push_back(std::make_pair(first, second));
+	return 0;
+}
+
+static int version_callback(void* res, int argc, char** argv, char** col_name) {
+
+	//std::vector<std::pair<std::wstring, std::wstring>>* res = (std::vector<std::pair<std::wstring, std::wstring>>*)res_vector;
+	assert(argc == 1);
+	*(int*)res = atoi(argv[0]);
+	//std::wstring first = utf8_decode(argv[0]);
+	//std::wstring second = utf8_decode(argv[1]); 
+	//res->push_back(std::make_pair(first, second));
+
 	return 0;
 }
 
@@ -336,6 +361,8 @@ bool DatabaseManager::create_marks_table() {
 	"document_path TEXT,"\
 	"symbol CHAR,"\
 	"offset_y real,"\
+	"creation_time timestamp,"\
+	"uuid TEXT,"\
 	"UNIQUE(document_path, symbol));";
 
 	char* error_message = nullptr;
@@ -350,6 +377,13 @@ bool DatabaseManager::create_bookmarks_table() {
 		"id INTEGER PRIMARY KEY AUTOINCREMENT," \
 		"document_path TEXT,"\
 		"desc TEXT,"\
+		"creation_time timestamp,"\
+		"uuid TEXT,"\
+		"font_size integer DEFAULT -1,"\
+		"begin_x real DEFAULT -1,"\
+		"begin_y real DEFAULT -1,"\
+		"end_x real DEFAULT -1,"\
+		"end_y real DEFAULT -1,"\
 		"offset_y real);";
 
 	char* error_message = nullptr;
@@ -364,7 +398,10 @@ bool DatabaseManager::create_highlights_table() {
 		"id INTEGER PRIMARY KEY AUTOINCREMENT," \
 		"document_path TEXT,"\
 		"desc TEXT,"\
+		"text_annot TEXT,"\
 		"type char,"\
+		"creation_time timestamp,"\
+		"uuid TEXT,"\
 		"begin_x real,"\
 		"begin_y real,"\
 		"end_x real,"\
@@ -394,6 +431,8 @@ bool DatabaseManager::create_document_hash_table() {
 bool DatabaseManager::create_links_table() {
 	const char* create_marks_sql = "CREATE TABLE IF NOT EXISTS links ("\
 		"id INTEGER PRIMARY KEY AUTOINCREMENT," \
+		"creation_time timestamp,"\
+		"uuid TEXT,"\
 		"src_document TEXT,"\
 		"dst_document TEXT,"\
 		"src_offset_y REAL,"\
@@ -1224,4 +1263,158 @@ void DatabaseManager::ensure_database_compatibility(const std::wstring& local_db
 	if (local_db == global_db) {
 		split_database(local_db_file_path, global_db_file_path, was_using_hashes);
 	}
+}
+
+int DatabaseManager::get_version() {
+	char* error_message = nullptr;
+
+	int version = -1;
+	int error_code = sqlite3_exec(global_db, "PRAGMA user_version;", version_callback, &version, &error_message);
+	handle_error(error_code, error_message);
+	return version;
+}
+
+int DatabaseManager::set_version() {
+	char* error_message = nullptr;
+
+	std::string query = QString("PRAGMA user_version = %1;").arg(DATABASE_VERSION).toStdString();
+	int error_code = sqlite3_exec(global_db, query.c_str(), null_callback, nullptr, &error_message);
+	return handle_error(error_code, error_message);
+}
+
+void DatabaseManager::ensure_schema_compatibility() {
+	int database_file_version = get_version();
+	std::vector<std::function<void()>> migrations;
+	migrations.push_back([this]() { migrate_version_0_to_1(); });
+
+	if (database_file_version != DATABASE_VERSION) {
+		if (database_file_version >= migrations.size()) {
+			qDebug() << "Error: Invalid database version";
+			return;
+		}
+
+		for (int i = database_file_version; i < DATABASE_VERSION; i++) {
+			migrations[i]();
+		}
+
+		set_version();
+	}
+}
+
+bool DatabaseManager::run_schema_query(const char* query) {
+	char* error_message = nullptr;
+	int error_code = sqlite3_exec(global_db, query, null_callback, 0, &error_message);
+	return handle_error(error_code, error_message);
+}
+
+void DatabaseManager::migrate_version_0_to_1() {
+	std::vector<std::string> queries_to_run;
+
+	std::vector<int> all_mark_ids;
+	std::vector<int> all_bookmark_ids;
+	std::vector<int> all_highlight_ids;
+	std::vector<int> all_portal_ids;
+
+	select_all_mark_ids(all_mark_ids);
+	select_all_bookmark_ids(all_bookmark_ids);
+	select_all_highlight_ids(all_highlight_ids);
+	select_all_portal_ids(all_portal_ids);
+
+	// add box columns to bookmarks table
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN begin_x real DEFAULT -1;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN begin_y real DEFAULT -1;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN end_x real DEFAULT -1;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN end_y real DEFAULT -1;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN font_size integer DEFAULT -1;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN creation_time timestamp;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN uuid TEXT;");
+
+	//add text annotation column to highlight table
+	queries_to_run.push_back("ALTER TABLE highlights ADD COLUMN text_annot TEXT;");
+	queries_to_run.push_back("ALTER TABLE highlights ADD COLUMN creation_time timestamp;");
+	queries_to_run.push_back("ALTER TABLE highlights ADD COLUMN uuid TEXT;");
+
+	// marks
+	queries_to_run.push_back("ALTER TABLE marks ADD COLUMN creation_time timestamp;");
+	queries_to_run.push_back("ALTER TABLE marks ADD COLUMN uuid TEXT;");
+
+	// portals
+	queries_to_run.push_back("ALTER TABLE links ADD COLUMN creation_time timestamp;");
+	queries_to_run.push_back("ALTER TABLE links ADD COLUMN uuid TEXT;");
+
+	queries_to_run.push_back("UPDATE marks set creation_time=CURRENT_TIMESTAMP;");
+	queries_to_run.push_back("UPDATE bookmarks set creation_time=CURRENT_TIMESTAMP;");
+	queries_to_run.push_back("UPDATE highlights set creation_time=CURRENT_TIMESTAMP;");
+	queries_to_run.push_back("UPDATE links set creation_time=CURRENT_TIMESTAMP;");
+
+	for (auto mark_id : all_mark_ids) {
+		queries_to_run.push_back("UPDATE marks set uuid='" + QUuid::createUuid().toString().toStdString() + "' where id=" + std::to_string(mark_id) + ";");
+	}
+
+	for (auto bookmark_id : all_bookmark_ids) {
+		queries_to_run.push_back("UPDATE bookmarks set uuid='" + QUuid::createUuid().toString().toStdString() + "' where id=" + std::to_string(bookmark_id) + ";");
+	}
+
+	for (auto highlight_id : all_highlight_ids) {
+		queries_to_run.push_back("UPDATE highlights set uuid='" + QUuid::createUuid().toString().toStdString() + "' where id=" + std::to_string(highlight_id) + ";");
+	}
+
+	for (auto portal_id : all_portal_ids) {
+		queries_to_run.push_back("UPDATE links set uuid='" + QUuid::createUuid().toString().toStdString() + "' where id=" + std::to_string(portal_id) + ";");
+	}
+
+	std::string transaction = "BEGIN TRANSACTION;\n";
+	for (auto q : queries_to_run) {
+		transaction += q + "\n";
+	}
+
+	transaction += "COMMIT;";
+
+	if (!run_schema_query(transaction.c_str())) {
+		qDebug() << "Error: Could not migrate database from version 0 to version 1, rolling back ...";
+		run_schema_query("ROLLBACK;");
+	}
+
+	//for (int i = 0; i < queries_to_run.size(); i++) {
+	//	if (!run_schema_query(queries_to_run[i].c_str())) {
+	//		qDebug() << "Error: could not migrate database";
+	//	}
+	//}
+
+	//std::vector<std::pair<std::wstring, std::wstring>> path_hashes;
+	//get_prev_path_hash_pairs(path_hashes);
+
+
+}
+
+bool DatabaseManager::select_all_mark_ids(std::vector<int>& mark_ids) {
+	char* error_message = nullptr;
+	int error_code = sqlite3_exec(global_db, "select id from marks", id_callback, &mark_ids, &error_message);
+	return handle_error(
+		error_code,
+		error_message);
+}
+
+bool DatabaseManager::select_all_bookmark_ids(std::vector<int>& bookmark_ids) {
+	char* error_message = nullptr;
+	int error_code = sqlite3_exec(global_db, "select id from bookmarks", id_callback, &bookmark_ids, &error_message);
+	return handle_error(
+		error_code,
+		error_message);
+}
+
+bool DatabaseManager::select_all_highlight_ids(std::vector<int>& highlight_ids){
+	char* error_message = nullptr;
+	int error_code = sqlite3_exec(global_db, "select id from highlights", id_callback, &highlight_ids, &error_message);
+	return handle_error(
+		error_code,
+		error_message);
+}
+
+bool DatabaseManager::select_all_portal_ids(std::vector<int>& portal_ids){
+	char* error_message = nullptr;
+	int error_code = sqlite3_exec(global_db, "select id from links", id_callback, &portal_ids, &error_message);
+	return handle_error(
+		error_code,
+		error_message);
 }

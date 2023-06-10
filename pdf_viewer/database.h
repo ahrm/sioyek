@@ -59,5 +59,14 @@ public:
 	void export_json(std::wstring json_file_path, CachedChecksummer* checksummer);
 	void import_json(std::wstring json_file_path, CachedChecksummer* checksummer);
 	void ensure_database_compatibility(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path);
+	void ensure_schema_compatibility();
+	int get_version();
+	int set_version();
+	bool run_schema_query(const char* query);
+	void migrate_version_0_to_1();
+	bool select_all_mark_ids(std::vector<int>& mark_ids);
+	bool select_all_bookmark_ids(std::vector<int>& mark_ids);
+	bool select_all_highlight_ids(std::vector<int>& mark_ids);
+	bool select_all_portal_ids(std::vector<int>& mark_ids);
 };
 

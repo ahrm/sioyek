@@ -90,6 +90,7 @@
 //#define LINUX_STANDARD_PATHS
 
 
+int DATABASE_VERSION = 1;
 std::wstring APPLICATION_NAME = L"sioyek";
 std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;
@@ -938,6 +939,11 @@ int main(int argc, char* args[]) {
 		db_manager.open(database_file_path.get_path(), database_file_path.get_path());
 	}
 	db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path());
+
+	db_manager.migrate_version_0_to_1();
+	//qDebug() << "database version is: " << db_manager.get_version();
+	//db_manager.set_version();
+	//qDebug() << "database version is: " << db_manager.get_version();
 
 	fz_locks_context locks;
 	locks.user = mupdf_mutexes;
