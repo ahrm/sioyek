@@ -16,6 +16,7 @@ class DocumentView;
 struct BookState {
 	std::wstring document_path;
 	float offset_y;
+	std::string uuid;
 };
 
 struct OpenedBookState {
@@ -24,12 +25,24 @@ struct OpenedBookState {
 	float offset_y;
 };
 
+struct Annotation {
+	std::string creation_time;
+	std::string modification_time;
+	std::string uuid;
+
+	virtual QJsonObject to_json() const = 0;
+	virtual void from_json(const QJsonObject& json_object) = 0;
+
+	void add_metadata_to_json(QJsonObject& obj) const;
+	void load_metadata_from_json(const QJsonObject& obj);
+};
+
 /*
 	A mark is a location in the document labeled with a symbol (which is a single character [a-z]). For example
 	we can mark a location with symbol 'a' and later return to that location by going to the mark named 'a'.
 	Lower case marks are local to the document and upper case marks are global.
 */
-struct Mark {
+struct Mark : Annotation{
 	float y_offset;
 	char symbol;
 
@@ -40,7 +53,7 @@ struct Mark {
 /*
 	A bookmark is similar to mark but instead of being indexed by a symbol, it has a description.
 */
-struct BookMark {
+struct BookMark : Annotation {
 	float y_offset;
 	std::wstring description;
 
@@ -48,10 +61,11 @@ struct BookMark {
 	void from_json(const QJsonObject& json_object);
 };
 
-struct Highlight {
+struct Highlight : Annotation{
 	AbsoluteDocumentPos selection_begin;
 	AbsoluteDocumentPos selection_end;
 	std::wstring description;
+	std::wstring text_annot;
 	char type;
 	std::vector<fz_rect> highlight_rects;
 
@@ -81,7 +95,7 @@ struct PortalViewState {
 	Also if helper window is opened, it automatically displays the closest link to the current location.
 	Note that this is different from PdfLink which is the built-in link functionality in PDF file format.
 */
-struct Portal {
+struct Portal : Annotation{
 	static Portal with_src_offset(float src_offset);
 
 	PortalViewState dst;

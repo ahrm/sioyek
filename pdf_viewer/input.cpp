@@ -314,6 +314,23 @@ public:
 	}
 };
 
+class AddAnnotationToSelectedHighlightCommand : public TextCommand {
+public:
+	AddAnnotationToSelectedHighlightCommand(MainWidget* w) : TextCommand(w) {};
+
+	void perform() {
+		widget->add_text_annotation_to_selected_highlight(this->text.value());
+	}
+
+	std::string get_name() {
+		return "add_annot_to_highlight";
+	}
+
+	std::string text_requirement_name() {
+		return "Comment";
+	}
+};
+
 class SetFreehandThickness : public TextCommand {
 public:
 	SetFreehandThickness(MainWidget* w) : TextCommand(w) {};
@@ -3271,6 +3288,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["goto_mark"] = [](MainWidget* widget) {return std::make_unique< GotoMark>(widget); };
 	new_commands["goto_page_with_page_number"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithPageNumberCommand>(widget); };
 	new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
+	new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
 	new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
 	new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
 	new_commands["regex_search"] = [](MainWidget* widget) {return std::make_unique< RegexSearchCommand>(widget); };

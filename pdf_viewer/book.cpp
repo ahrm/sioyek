@@ -1,4 +1,5 @@
 #include "book.h"
+#include "utils.h"
 
 
 bool operator==(DocumentViewState& lhs, const DocumentViewState& rhs)
@@ -28,13 +29,38 @@ QJsonObject Mark::to_json() const
 	QJsonObject res;
 	res["y_offset"] = y_offset;
 	res["symbol"] = symbol;
+	add_metadata_to_json(res);
 	return res;
+}
+
+void Annotation::add_metadata_to_json(QJsonObject& obj) const {
+	obj["creation_time"] = QString::fromStdString(creation_time);
+	obj["modification_time"] = QString::fromStdString(modification_time);
+	obj["uuid"] = QString::fromStdString(uuid);
+}
+
+void Annotation::load_metadata_from_json(const QJsonObject& obj) {
+	if (obj.contains("creation_time")) {
+		creation_time = obj["creation_time"].toString().toStdString();
+	}
+	if (obj.contains("modification_time")) {
+		modification_time = obj["modification_time"].toString().toStdString();
+	}
+	if (obj.contains("uuid")) {
+		uuid = obj["uuid"].toString().toStdString();
+	}
+	else {
+		uuid = utf8_encode(new_uuid());
+	}
 }
 
 void Mark::from_json(const QJsonObject& json_object)
 {
 	y_offset = json_object["y_offset"].toDouble();
 	symbol = static_cast<char>(json_object["symbol"].toInt());
+
+	load_metadata_from_json(json_object);
+
 }
 
 QJsonObject BookMark::to_json() const
@@ -42,6 +68,9 @@ QJsonObject BookMark::to_json() const
 	QJsonObject res;
 	res["y_offset"] = y_offset;
 	res["description"] = QString::fromStdWString(description);
+
+	add_metadata_to_json(res);
+
 	return res;
 
 }
@@ -50,6 +79,8 @@ void BookMark::from_json(const QJsonObject& json_object)
 {
 	y_offset = json_object["y_offset"].toDouble();
 	description = json_object["description"].toString().toStdWString();
+
+	load_metadata_from_json(json_object);
 }
 
 QJsonObject Highlight::to_json() const
@@ -60,7 +91,9 @@ QJsonObject Highlight::to_json() const
 	res["selection_end_x"] = selection_end.x;
 	res["selection_end_y"] = selection_end.y;
 	res["description"] = QString::fromStdWString(description);
+	res["text_annot"] = QString::fromStdWString(text_annot);
 	res["type"] = type;
+	add_metadata_to_json(res);
 	return res;
 }
 
@@ -72,6 +105,8 @@ void Highlight::from_json(const QJsonObject& json_object)
 	selection_end.y = json_object["selection_end_y"].toDouble();
 	description = json_object["description"].toString().toStdWString();
 	type = static_cast<char>(json_object["type"].toInt());
+
+	load_metadata_from_json(json_object);
 }
 
 QJsonObject Portal::to_json() const
@@ -82,6 +117,7 @@ QJsonObject Portal::to_json() const
 	res["dst_offset_x"] = dst.book_state.offset_x;
 	res["dst_offset_y"] = dst.book_state.offset_y;
 	res["dst_zoom_level"] = dst.book_state.zoom_level;
+	add_metadata_to_json(res);
 	return res;
 }
 
@@ -92,6 +128,8 @@ void Portal::from_json(const QJsonObject& json_object)
 	dst.book_state.offset_x = json_object["dst_offset_x"].toDouble();
 	dst.book_state.offset_y = json_object["dst_offset_y"].toDouble();
 	dst.book_state.zoom_level = json_object["dst_zoom_level"].toDouble();
+
+	load_metadata_from_json(json_object);
 }
 
 bool operator==(const Mark& lhs, const Mark& rhs)

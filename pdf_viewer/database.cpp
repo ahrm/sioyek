@@ -77,12 +77,22 @@ static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col
 static int mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<Mark>* res = (std::vector<Mark>*)res_vector;
-	assert(argc == 2);
+	assert(argc == 5);
 
 	char symbol = argv[0][0];
 	float offset_y = atof(argv[1]);
+	std::string uuid = argv[2];
+	std::string creation_time = argv[3];
+	std::string modification_time = argv[4];
 
-	res->push_back({ offset_y, symbol });
+	Mark m;
+	m.y_offset = offset_y;
+	m.symbol = symbol;
+	m.uuid = uuid;
+	m.creation_time = creation_time;
+	m.modification_time = modification_time;
+
+	res->push_back(m);
 	return 0;
 }
 
@@ -102,15 +112,22 @@ static int global_mark_select_callback(void* res_vector, int argc, char** argv, 
 static int global_bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<std::pair<std::string, BookMark>>* res = (std::vector<std::pair<std::string, BookMark>>*)res_vector;
-	assert(argc == 3);
+	assert(argc == 6);
 
 	std::string path = argv[0];
 	std::wstring desc = utf8_decode(argv[1]);
 	float offset_y = atof(argv[2]);
+	std::string uuid = argv[3];
+	std::string creation_time = argv[4];
+	std::string modification_time = argv[5];
 
 	BookMark bm;
 	bm.description = desc;
 	bm.y_offset = offset_y;
+	bm.uuid = uuid;
+	bm.creation_time = creation_time;
+	bm.modification_time = modification_time;
+
 	res->push_back(std::make_pair(path, bm));
 	return 0;
 }
@@ -118,7 +135,7 @@ static int global_bookmark_select_callback(void* res_vector, int argc, char** ar
 static int global_highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<std::pair<std::string, Highlight>>* res = (std::vector<std::pair<std::string, Highlight>>*)res_vector;
-	assert(argc == 7);
+	assert(argc == 10);
 
 	std::string path = argv[0];
 	std::wstring desc = utf8_decode(argv[1]);
@@ -127,15 +144,21 @@ static int global_highlight_select_callback(void* res_vector, int argc, char** a
 	float begin_y = atof(argv[4]);
 	float end_x = atof(argv[5]);
 	float end_y = atof(argv[6]);
+	std::string uuid = argv[7];
+	std::string creation_time = argv[8];
+	std::string modification_time = argv[9];
 
 	Highlight highlight;
 	highlight.description = desc;
 	highlight.type = type;
 	highlight.selection_begin.x = begin_x;
 	highlight.selection_begin.y = begin_y;
-
 	highlight.selection_end.x = end_x;
 	highlight.selection_end.y = end_y;
+	highlight.uuid = uuid;
+	highlight.creation_time = creation_time;
+	highlight.modification_time = modification_time;
+
 	res->push_back(std::make_pair(path, highlight));
 	return 0;
 }
@@ -143,12 +166,22 @@ static int global_highlight_select_callback(void* res_vector, int argc, char** a
 static int bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<BookMark>* res = (std::vector<BookMark>*)res_vector;
-	assert(argc == 2);
+	assert(argc == 5);
 
 	std::wstring desc = utf8_decode(argv[0]);
 	float offset_y = atof(argv[1]);
+	std::string uuid = argv[2];
+	std::string creation_time = argv[3];
+	std::string modification_time = argv[3];
 
-	res->push_back({ offset_y, desc });
+	BookMark bm;
+	bm.y_offset = offset_y;
+	bm.description = desc;
+	bm.uuid = uuid;
+	bm.creation_time = creation_time;
+	bm.modification_time = modification_time;
+
+	res->push_back(bm);
 	return 0;
 }
 
@@ -201,20 +234,33 @@ static int version_callback(void* res, int argc, char** argv, char** col_name) {
 static int highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<Highlight>* res = (std::vector<Highlight>*)res_vector;
-	assert(argc == 6);
+	assert(argc == 10);
 
 	std::wstring desc = utf8_decode(argv[0]);
-	float begin_x = atof(argv[1]);
-	float begin_y = atof(argv[2]);
-	float end_x = atof(argv[3]);
-	float end_y = atof(argv[4]);
-	char type = argv[5][0];
+	std::wstring text_annot = L"";
+
+	if (argv[1] != nullptr) {
+		text_annot = utf8_decode(argv[1]);
+	}
+
+	float begin_x = atof(argv[2]);
+	float begin_y = atof(argv[3]);
+	float end_x = atof(argv[4]);
+	float end_y = atof(argv[5]);
+	char type = argv[6][0];
+	std::string uuid = argv[7];
+	std::string creation_time = argv[8];
+	std::string modification_time = argv[9];
 
 	Highlight highlight;
 	highlight.description = desc;
+	highlight.text_annot = text_annot;
 	highlight.type = type;
 	highlight.selection_begin = { begin_x, begin_y };
 	highlight.selection_end = { end_x, end_y };
+	highlight.creation_time = creation_time;
+	highlight.modification_time = modification_time;
+	highlight.uuid = uuid;
 	res->push_back(highlight);
 
 	return 0;
@@ -223,13 +269,16 @@ static int highlight_select_callback(void* res_vector, int argc, char** argv, ch
 static int link_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<Portal>* res = (std::vector<Portal>*)res_vector;
-	assert(argc == 5);
+	assert(argc == 8);
 
 	std::string dst_path = argv[0];
 	float src_offset_y = atof(argv[1]);
 	float dst_offset_x = atof(argv[2]);
 	float dst_offset_y = atof(argv[3]);
 	float dst_zoom_level = atof(argv[4]);
+	std::string uuid = argv[5];
+	std::string creation_time = argv[6];
+	std::string modification_time = argv[7];
 
 	Portal link;
 	link.dst.document_checksum = dst_path;
@@ -237,6 +286,9 @@ static int link_select_callback(void* res_vector, int argc, char** argv, char** 
 	link.dst.book_state.offset_x = dst_offset_x;
 	link.dst.book_state.offset_y = dst_offset_y;
 	link.dst.book_state.zoom_level = dst_zoom_level;
+	link.uuid = uuid;
+	link.creation_time = creation_time;
+	link.modification_time = modification_time;
 
 	res->push_back(link);
 	return 0;
@@ -362,6 +414,7 @@ bool DatabaseManager::create_marks_table() {
 	"symbol CHAR,"\
 	"offset_y real,"\
 	"creation_time timestamp,"\
+	"modification_time timestamp,"\
 	"uuid TEXT,"\
 	"UNIQUE(document_path, symbol));";
 
@@ -378,6 +431,7 @@ bool DatabaseManager::create_bookmarks_table() {
 		"document_path TEXT,"\
 		"desc TEXT,"\
 		"creation_time timestamp,"\
+		"modification_time timestamp,"\
 		"uuid TEXT,"\
 		"font_size integer DEFAULT -1,"\
 		"begin_x real DEFAULT -1,"\
@@ -401,6 +455,7 @@ bool DatabaseManager::create_highlights_table() {
 		"text_annot TEXT,"\
 		"type char,"\
 		"creation_time timestamp,"\
+		"modification_time timestamp,"\
 		"uuid TEXT,"\
 		"begin_x real,"\
 		"begin_y real,"\
@@ -432,6 +487,7 @@ bool DatabaseManager::create_links_table() {
 	const char* create_marks_sql = "CREATE TABLE IF NOT EXISTS links ("\
 		"id INTEGER PRIMARY KEY AUTOINCREMENT," \
 		"creation_time timestamp,"\
+		"modification_time timestamp,"\
 		"uuid TEXT,"\
 		"src_document TEXT,"\
 		"dst_document TEXT,"\
@@ -497,11 +553,11 @@ bool DatabaseManager::update_book(const std::string& path, float zoom_level, flo
 		error_message);
 }
 
-bool DatabaseManager::insert_mark(const std::string& document_path, char symbol, float offset_y) {
+bool DatabaseManager::insert_mark(const std::string& document_path, char symbol, float offset_y, std::wstring uuid) {
 
 	//todo: probably should escape symbol too
 	std::wstringstream ss;
-	ss << "INSERT INTO marks (document_path, symbol, offset_y) VALUES ('" << esc(document_path) << "', '" << symbol << "', " << offset_y << ");";
+	ss << "INSERT INTO marks (document_path, symbol, offset_y, uuid, creation_time, modification_time) VALUES ('" << esc(document_path) << "', '" << symbol << "', " << offset_y << ", '" << esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -522,10 +578,10 @@ bool DatabaseManager::delete_mark_with_symbol(char symbol) {
 		error_message);
 }
 
-bool DatabaseManager::insert_bookmark(const std::string& document_path, const std::wstring& desc, float offset_y) {
+bool DatabaseManager::insert_bookmark(const std::string& document_path, const std::wstring& desc, float offset_y, std::wstring uuid) {
 
 	std::wstringstream ss;
-	ss << "INSERT INTO bookmarks (document_path, desc, offset_y) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', " << offset_y << ");";
+	ss << "INSERT INTO bookmarks (document_path, desc, offset_y, uuid, creation_time, modification_time) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', " << offset_y << ", '" << esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -540,15 +596,17 @@ bool DatabaseManager::insert_highlight(const std::string& document_path,
 	float begin_y,
 	float end_x,
 	float end_y,
-	char type) {
+	char type,
+	std::wstring uuid) {
 
 	std::wstringstream ss;
-	ss << "INSERT INTO highlights (document_path, desc, type, begin_x, begin_y, end_x, end_y) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', '" <<
+	ss << "INSERT INTO highlights (document_path, desc, type, begin_x, begin_y, end_x, end_y, uuid, creation_time, modification_time) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', '" <<
 		type << "' , " <<
 		begin_x << " , " <<
 		begin_y << " , " <<
 		end_x << " , " <<
-		end_y << ");";
+		end_y << ", '" <<
+		esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -557,11 +615,23 @@ bool DatabaseManager::insert_highlight(const std::string& document_path,
 		error_message);
 }
 
-bool DatabaseManager::insert_portal(const std::string& src_document_path, const std::string& dst_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
+bool DatabaseManager::insert_portal(const std::string& src_document_path,
+	const std::string& dst_document_path,
+	float dst_offset_x,
+	float dst_offset_y,
+	float dst_zoom_level,
+	float src_offset_y,
+	std::wstring uuid) {
 
 	std::wstringstream ss;
-	ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level) VALUES ('" <<
-		esc(src_document_path) << "', '" << esc(dst_document_path) << "', " << src_offset_y << ", " << dst_offset_x << ", " << dst_offset_y << ", " << dst_zoom_level << ");";
+	ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level, uuid, creation_time, modification_time) VALUES ('" <<
+		esc(src_document_path) << "', '" <<
+		esc(dst_document_path) << "', " <<
+		src_offset_y << ", " <<
+		dst_offset_x << ", " <<
+		dst_offset_y << ", " <<
+		dst_zoom_level << ", '" <<
+		esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -570,12 +640,12 @@ bool DatabaseManager::insert_portal(const std::string& src_document_path, const 
 		error_message);
 }
 
-bool DatabaseManager::update_portal(const std::string& src_document_path, float dst_offset_x, float dst_offset_y, float dst_zoom_level, float src_offset_y) {
+bool DatabaseManager::update_portal(const std::string& uuid, float dst_offset_x, float dst_offset_y, float dst_zoom_level) {
 
 	std::wstringstream ss;
 	ss << "UPDATE links SET dst_offset_x=" << dst_offset_x << ", dst_offset_y=" << dst_offset_y <<
-		", dst_zoom_level=" << dst_zoom_level << " WHERE src_document='" <<
-		esc(src_document_path) << "' AND abs(src_offset_y-(" << src_offset_y << ")) < 0.01;";
+		", dst_zoom_level=" << dst_zoom_level << ", modification_time=CURRENT_TIMESTAMP WHERE uuid='" <<
+		esc(uuid) << "';";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -584,10 +654,10 @@ bool DatabaseManager::update_portal(const std::string& src_document_path, float 
 		error_message);
 }
 
-bool DatabaseManager::delete_link(const std::string& src_document_path, float src_offset_y) {
+bool DatabaseManager::delete_portal(const std::string& uuid) {
 
 	std::wstringstream ss;
-	ss << "DELETE FROM links where src_document='" << esc(src_document_path) << "'AND abs(src_offset_y-(" << src_offset_y << ")) < 0.01;";
+	ss << "DELETE FROM links where uuid='" << esc(uuid) << "';";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -596,10 +666,10 @@ bool DatabaseManager::delete_link(const std::string& src_document_path, float sr
 		error_message);
 }
 
-bool DatabaseManager::delete_bookmark(const std::string& src_document_path, float src_offset_y) {
+bool DatabaseManager::delete_bookmark(const std::string& uuid) {
 
 	std::wstringstream ss;
-	ss << "DELETE FROM bookmarks where document_path='" << esc(src_document_path) << "'AND abs(offset_y-(" << src_offset_y << ")) < 0.01;";
+	ss << "DELETE FROM bookmarks where uuid='" << esc(uuid) << "';";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -608,15 +678,12 @@ bool DatabaseManager::delete_bookmark(const std::string& src_document_path, floa
 		error_message);
 }
 
-bool DatabaseManager::delete_highlight(const std::string& src_document_path, float begin_x, float begin_y, float end_x, float end_y) {
+bool DatabaseManager::delete_highlight(const std::string& uuid) {
 
 	std::wstringstream ss;
 	std::wstring threshold = QString::number(HIGHLIGHT_DELETE_THRESHOLD).toStdWString();
-	ss << std::setprecision(10) << "DELETE FROM highlights where document_path='" << esc(src_document_path) <<
-		"'AND abs(begin_x-(" << begin_x << ")) < " << threshold <<
-		" AND abs(begin_y-(" << begin_y << ")) < " << threshold <<
-		" AND abs(end_x-(" << end_x << ")) < " << threshold << 
-		" AND abs(end_y-(" << end_y << ")) < " << threshold ;
+	ss << std::setprecision(10) << "DELETE FROM highlights where uuid='" << esc(uuid) << "';";
+
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -628,7 +695,7 @@ bool DatabaseManager::delete_highlight(const std::string& src_document_path, flo
 bool DatabaseManager::update_mark(const std::string& document_path, char symbol, float offset_y) {
 
 	std::wstringstream ss;
-	ss << "UPDATE marks set offset_y=" << offset_y << " where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
+	ss << "UPDATE marks set offset_y=" << offset_y << ", modification_time=CURRENT_TIMESTAMP where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
 
 	char* error_message = nullptr;
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -704,7 +771,7 @@ bool DatabaseManager::select_opened_books_path_values( std::vector<std::wstring>
 
 bool DatabaseManager::select_mark(const std::string& book_path, std::vector<Mark> &out_result) {
 		std::wstringstream ss;
-		ss << "select symbol, offset_y from marks where document_path='" << esc(book_path) << "';";
+		ss << "select symbol, offset_y, uuid, creation_time, modification_time from marks where document_path='" << esc(book_path) << "';";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), mark_select_callback, &out_result, &error_message);
@@ -726,7 +793,7 @@ bool DatabaseManager::select_global_mark(char symbol, std::vector<std::pair<std:
 
 bool DatabaseManager::select_bookmark(const std::string& book_path, std::vector<BookMark> &out_result) {
 		std::wstringstream ss;
-		ss << "select desc, offset_y from bookmarks where document_path='" << esc(book_path) << "';";
+		ss << "select desc, offset_y, uuid, creation_time, modification_time from bookmarks where document_path='" << esc(book_path) << "';";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), bookmark_select_callback, &out_result, &error_message);
@@ -770,7 +837,7 @@ bool DatabaseManager::get_prev_path_hash_pairs(std::vector<std::pair<std::wstrin
 
 bool DatabaseManager::select_highlight(const std::string& book_path, std::vector<Highlight> &out_result) {
 		std::wstringstream ss;
-		ss << "select desc, begin_x, begin_y, end_x, end_y, type from highlights where document_path='" << esc(book_path) << "';";
+		ss << "select desc, text_annot, begin_x, begin_y, end_x, end_y, type, uuid, creation_time, modification_time from highlights where document_path='" << esc(book_path) << "';";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), highlight_select_callback, &out_result, &error_message);
@@ -781,7 +848,7 @@ bool DatabaseManager::select_highlight(const std::string& book_path, std::vector
 
 bool DatabaseManager::select_highlight_with_type(const std::string& book_path, char type, std::vector<Highlight> &out_result) {
 		std::wstringstream ss;
-		ss << "select desc, begin_x, begin_y, end_x, end_y, type from highlights where document_path='" << esc(book_path) << "' AND type='" << type << "';";
+		ss << "select desc, begin_x, begin_y, end_x, end_y, type, uuid, creation_time, modification_time from highlights where document_path='" << esc(book_path) << "' AND type='" << type << "';";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), highlight_select_callback, &out_result, &error_message);
@@ -792,7 +859,7 @@ bool DatabaseManager::select_highlight_with_type(const std::string& book_path, c
 
 bool DatabaseManager::global_select_highlight(std::vector<std::pair<std::string, Highlight>> &out_result) {
 		std::wstringstream ss;
-		ss << "select document_path, desc, type, begin_x, begin_y, end_x, end_y from highlights;";
+		ss << "select document_path, desc, type, begin_x, begin_y, end_x, end_y, uuid, creation_time, modification_time from highlights;";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), global_highlight_select_callback, &out_result, &error_message);
@@ -803,7 +870,7 @@ bool DatabaseManager::global_select_highlight(std::vector<std::pair<std::string,
 
 bool DatabaseManager::global_select_bookmark(std::vector<std::pair<std::string, BookMark>> &out_result) {
 		std::wstringstream ss;
-		ss << "select document_path, desc, offset_y from bookmarks;";
+		ss << "select document_path, desc, offset_y, uuid, creation_time, modification_time from bookmarks;";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), global_bookmark_select_callback, &out_result, &error_message);
@@ -814,7 +881,7 @@ bool DatabaseManager::global_select_bookmark(std::vector<std::pair<std::string, 
 
 bool DatabaseManager::select_links(const std::string& src_document_path, std::vector<Portal> &out_result) {
 		std::wstringstream ss;
-		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level from links where src_document='" << esc(src_document_path) << "';";
+		ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level, uuid, creation_time, modification_time from links where src_document='" << esc(src_document_path) << "';";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), link_select_callback, &out_result, &error_message);
@@ -977,10 +1044,10 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 		update_book(hash, book_state.zoom_level, book_state.offset_x, book_state.offset_y);
 	}
 	for (const auto &[hash, mark] : marks) {
-		insert_mark(hash, mark.symbol, mark.y_offset);
+		insert_mark(hash, mark.symbol, mark.y_offset, new_uuid());
 	}
 	for (const auto &[hash, bookmark] : bookmarks) {
-		insert_bookmark(hash, bookmark.description, bookmark.y_offset);
+		insert_bookmark(hash, bookmark.description, bookmark.y_offset, new_uuid());
 	}
 	for (const auto &[hash, highlight] : highlights) {
 		insert_highlight(
@@ -990,7 +1057,8 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 			highlight.selection_begin.y,
 			highlight.selection_end.x,
 			highlight.selection_end.y,
-			highlight.type
+			highlight.type,
+			new_uuid()
 		);
 	}
 	for (const auto &[hash, portal] : portals) {
@@ -1000,7 +1068,8 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 			portal.dst.book_state.offset_x,
 			portal.dst.book_state.offset_y,
 			portal.dst.book_state.zoom_level,
-			portal.src_offset_y
+			portal.src_offset_y,
+			new_uuid()
 		);
 	}
 
@@ -1172,11 +1241,13 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
 		}
 
 		for (const auto& bm : new_bookmarks) {
-			insert_bookmark(checksum, bm.description, bm.y_offset);
+			insert_bookmark(checksum, bm.description, bm.y_offset, utf8_decode(bm.uuid));
 		}
+
 		for (const auto& mark : new_marks) {
-			insert_mark(checksum, mark.symbol, mark.y_offset);
+			insert_mark(checksum, mark.symbol, mark.y_offset, utf8_decode(mark.uuid));
 		}
+
 		for (const auto& hl : new_highlights) {
 			insert_highlight(checksum,
 				hl.description,
@@ -1184,7 +1255,8 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
 				hl.selection_begin.y,
 				hl.selection_end.x,
 				hl.selection_end.y,
-				hl.type);
+				hl.type,
+				utf8_decode(hl.uuid));
 		}
 		for (const auto& portal : new_portals) {
 			insert_portal(checksum,
@@ -1192,7 +1264,8 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
 				portal.dst.book_state.offset_x,
 				portal.dst.book_state.offset_y,
 				portal.dst.book_state.zoom_level,
-				portal.src_offset_y);
+				portal.src_offset_y,
+				utf8_decode(portal.uuid));
 		}
 
 	}
@@ -1308,6 +1381,8 @@ bool DatabaseManager::run_schema_query(const char* query) {
 }
 
 void DatabaseManager::migrate_version_0_to_1() {
+	qDebug() << "Migrating database from version 0 to 1";
+
 	std::vector<std::string> queries_to_run;
 
 	std::vector<int> all_mark_ids;
@@ -1327,25 +1402,34 @@ void DatabaseManager::migrate_version_0_to_1() {
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN end_y real DEFAULT -1;");
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN font_size integer DEFAULT -1;");
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN creation_time timestamp;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN modification_time timestamp;");
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN uuid TEXT;");
 
 	//add text annotation column to highlight table
 	queries_to_run.push_back("ALTER TABLE highlights ADD COLUMN text_annot TEXT;");
 	queries_to_run.push_back("ALTER TABLE highlights ADD COLUMN creation_time timestamp;");
+	queries_to_run.push_back("ALTER TABLE highlights ADD COLUMN modification_time timestamp;");
 	queries_to_run.push_back("ALTER TABLE highlights ADD COLUMN uuid TEXT;");
 
 	// marks
 	queries_to_run.push_back("ALTER TABLE marks ADD COLUMN creation_time timestamp;");
+	queries_to_run.push_back("ALTER TABLE marks ADD COLUMN modification_time timestamp;");
 	queries_to_run.push_back("ALTER TABLE marks ADD COLUMN uuid TEXT;");
 
 	// portals
 	queries_to_run.push_back("ALTER TABLE links ADD COLUMN creation_time timestamp;");
+	queries_to_run.push_back("ALTER TABLE links ADD COLUMN modification_time timestamp;");
 	queries_to_run.push_back("ALTER TABLE links ADD COLUMN uuid TEXT;");
 
 	queries_to_run.push_back("UPDATE marks set creation_time=CURRENT_TIMESTAMP;");
 	queries_to_run.push_back("UPDATE bookmarks set creation_time=CURRENT_TIMESTAMP;");
 	queries_to_run.push_back("UPDATE highlights set creation_time=CURRENT_TIMESTAMP;");
 	queries_to_run.push_back("UPDATE links set creation_time=CURRENT_TIMESTAMP;");
+
+	queries_to_run.push_back("UPDATE marks set modification_time=CURRENT_TIMESTAMP;");
+	queries_to_run.push_back("UPDATE bookmarks set modification_time=CURRENT_TIMESTAMP;");
+	queries_to_run.push_back("UPDATE highlights set modification_time=CURRENT_TIMESTAMP;");
+	queries_to_run.push_back("UPDATE links set modification_time=CURRENT_TIMESTAMP;");
 
 	for (auto mark_id : all_mark_ids) {
 		queries_to_run.push_back("UPDATE marks set uuid='" + QUuid::createUuid().toString().toStdString() + "' where id=" + std::to_string(mark_id) + ";");
@@ -1415,6 +1499,28 @@ bool DatabaseManager::select_all_portal_ids(std::vector<int>& portal_ids){
 	char* error_message = nullptr;
 	int error_code = sqlite3_exec(global_db, "select id from links", id_callback, &portal_ids, &error_message);
 	return handle_error(
+		error_code,
+		error_message);
+}
+
+bool DatabaseManager::update_highlight_add_annotation(const std::string& uuid, const std::wstring& text_annot) {
+	std::wstringstream ss;
+	ss << "UPDATE highlights set text_annot='" << esc(text_annot) << "', modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
+
+	char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+		error_code,
+		error_message);
+}
+
+bool DatabaseManager::update_highlight_type(const std::string& uuid, char new_type) {
+	std::wstringstream ss;
+	ss << "UPDATE highlights set type='" << new_type << "', modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
+
+	char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
 		error_code,
 		error_message);
 }

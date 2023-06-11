@@ -635,12 +635,13 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     helper_document_view = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
     helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager, true);
 
-//#ifndef SIOYEK_ANDROID
-    // this is me from the future, it seems this hack is no longer necessary for some reason
-    //// weird hack, should not be necessary but application crashes without it when toggling window configuration
-    //helper_opengl_widget->show();
-    //helper_opengl_widget->hide();
-//#endif
+#ifndef SIOYEK_ANDROID
+    //// ---this is me from the future, it seems this hack is no longer necessary for some reason---
+    // yeah turns out it *was* necessary still!
+    ////// weird hack, should not be necessary but application crashes without it when toggling window configuration
+    helper_opengl_widget->show();
+    helper_opengl_widget->hide();
+#endif
 
     status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
@@ -1092,6 +1093,10 @@ std::wstring MainWidget::get_status_string() {
             status_string.replace("%{download}", " [ searching ]");
         }
     }
+    if (selected_highlight_index != -1) {
+        Highlight hl = main_document_view->get_highlight_with_index(selected_highlight_index);
+        status_string += " [ " + QString::fromStdWString(hl.text_annot) + " ]";
+    }
 
     status_string.replace("%{current_page}", "");
     status_string.replace("%{num_pages}", "");
@@ -1476,8 +1481,7 @@ void MainWidget::update_link_with_opened_book_state(Portal lnk, const OpenedBook
         link_owner->update_portal(lnk);
     }
 
-    db_manager->update_portal(link_owner->get_checksum(),
-        new_state.offset_x, new_state.offset_y, new_state.zoom_level, lnk.src_offset_y);
+    db_manager->update_portal(lnk.uuid, new_state.offset_x, new_state.offset_y, new_state.zoom_level);
 
     portal_to_edit = {};
 }
@@ -2098,8 +2102,7 @@ void MainWidget::prev_state() {
                 link_owner->update_portal(portal_to_edit.value());
             }
 
-            db_manager->update_portal(checksummer->get_checksum(history[current_history_index].document_path),
-                state.offset_x, state.offset_y, state.zoom_level, portal_to_edit->src_offset_y);
+            db_manager->update_portal(portal_to_edit->uuid, state.offset_x, state.offset_y, state.zoom_level);
             portal_to_edit = {};
         }
 
@@ -3926,7 +3929,8 @@ void MainWidget::add_portal(std::wstring source_path, Portal new_link) {
 			new_link.dst.book_state.offset_x,
 			new_link.dst.book_state.offset_y,
 			new_link.dst.book_state.zoom_level,
-			new_link.src_offset_y);
+			new_link.src_offset_y,
+            new_uuid());
 	}
 }
 
@@ -4505,7 +4509,7 @@ void MainWidget::handle_goto_bookmark_global() {
 			std::wstring file_name = Path(path.value()).filename().value_or(L"");
 			descs.push_back(ITEM_LIST_PREFIX + L" " + bm.description);
 			file_names.push_back(truncate_string(file_name, 50));
-			book_states.push_back({ path.value(), bm.y_offset });
+			book_states.push_back({ path.value(), bm.y_offset, bm.uuid });
 		}
 	}
 
@@ -4515,7 +4519,7 @@ void MainWidget::handle_goto_bookmark_global() {
 			open_document(book_state->document_path, 0.0f, book_state->offset_y);
 		},
 		[&](BookState* book_state) {
-			db_manager->delete_bookmark(checksummer->get_checksum(book_state->document_path), book_state->offset_y);
+			db_manager->delete_bookmark(book_state->uuid);
 		}
 		);
     show_current_widget();
@@ -4533,10 +4537,7 @@ void MainWidget::handle_add_highlight(char symbol) {
 
 void MainWidget::change_selected_highlight_type(char new_type) {
 	if (selected_highlight_index != -1) {
-		Highlight new_highlight = main_document_view->get_highlight_with_index(selected_highlight_index);
-		main_document_view->delete_highlight_with_index(selected_highlight_index);
-		main_document_view->add_highlight(new_highlight.selection_begin, new_highlight.selection_end, new_type);
-		selected_highlight_index = -1;
+        doc()->update_highlight_type(selected_highlight_index, new_type);
 	}
 }
 
@@ -4598,7 +4599,7 @@ void MainWidget::handle_goto_highlight_global() {
 
 			file_names.push_back(truncate_string(file_name, 50));
 
-			book_states.push_back({ path.value(), hl.selection_begin.y });
+			book_states.push_back({ path.value(), hl.selection_begin.y, hl.uuid });
 
 		}
 	}
@@ -6314,4 +6315,11 @@ bool MainWidget::ensure_internet_permission(){
 
 #endif
     return true;
+}
+
+void MainWidget::add_text_annotation_to_selected_highlight(const std::wstring& annot_text) {
+    if (selected_highlight_index > -1) {
+		Highlight hl = main_document_view->get_highlight_with_index(selected_highlight_index);
+		doc()->update_highlight_add_text_annotation(hl.uuid, annot_text);
+    }
 }

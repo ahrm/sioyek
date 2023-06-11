@@ -124,6 +124,7 @@ private:
 	Document(fz_context* context, std::wstring file_name, DatabaseManager* db_manager, CachedChecksummer* checksummer);
 	void clear_toc_nodes();
 	void clear_toc_node(TocNode* node);
+	int find_highlight_index_with_uuid(const std::string& uuid);
 public:
 	fz_document* doc = nullptr;
 
@@ -239,6 +240,9 @@ public:
 	void clear_document_caches();
 	void load_document_caches(bool* invalid_flag, bool force_now);
 	int reflow(int page);
+	void update_highlight_add_text_annotation(const std::string& uuid, const std::wstring& text_annot);
+	void update_highlight_type(const std::string& uuid, char new_type);
+	void update_highlight_type(int index, char new_type);
 
 	bool needs_password();
 	bool needs_authentication();

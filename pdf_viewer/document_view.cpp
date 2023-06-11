@@ -191,6 +191,7 @@ void DocumentView::delete_closest_bookmark() {
 	}
 }
 
+// todo: these should be in Document not here
 Highlight DocumentView::get_highlight_with_index(int index) {
 	return current_document->get_highlights()[index];
 }

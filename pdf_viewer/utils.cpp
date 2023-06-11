@@ -29,6 +29,7 @@
 #include <qnetworkreply.h>
 #include <qscreen.h>
 #include <qjsonarray.h>
+#include <quuid.h>
 
 #ifdef SIOYEK_ANDROID
 #include <QtCore/private/qandroidextras_p.h>
@@ -3106,4 +3107,8 @@ QString file_size_to_human_readable_string(int file_size) {
 	else {
 		return QString("inf");
 	}
+}
+
+std::wstring new_uuid() {
+	return QUuid::createUuid().toString().toStdWString();
 }

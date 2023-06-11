@@ -83,9 +83,11 @@ void Document::load_document_metadata_from_db() {
 
 
 void Document::add_bookmark(const std::wstring& desc, float y_offset) {
-	BookMark bookmark{ y_offset, desc };
+	BookMark bookmark;
+	bookmark.y_offset = y_offset;
+	bookmark.description = desc;
 	bookmarks.push_back(bookmark);
-	db_manager->insert_bookmark(get_checksum(), desc, y_offset);
+	db_manager->insert_bookmark(get_checksum(), desc, y_offset, new_uuid());
 }
 
 void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
@@ -137,7 +139,8 @@ void Document::add_highlight(const std::wstring& desc,
 		selection_begin.y,
 		selection_end.x,
 		selection_end.y,
-		highlight.type);
+		highlight.type,
+		new_uuid());
 }
 
 bool Document::get_is_indexing() {
@@ -153,7 +156,8 @@ void Document::add_portal(Portal portal, bool insert_into_database) {
 			portal.dst.book_state.offset_x,
 			portal.dst.book_state.offset_y,
 			portal.dst.book_state.zoom_level,
-			portal.src_offset_y);
+			portal.src_offset_y,
+			new_uuid());
 	}
 }
 
@@ -193,7 +197,7 @@ int Document::find_closest_highlight_index(const std::vector<Highlight>& sorted_
 void Document::delete_closest_bookmark(float to_y_offset) {
 	int closest_index = find_closest_bookmark_index(bookmarks, to_y_offset);
 	if (closest_index > -1) {
-		db_manager->delete_bookmark( get_checksum(), bookmarks[closest_index].y_offset);
+		db_manager->delete_bookmark(bookmarks[closest_index].uuid);
 		bookmarks.erase(bookmarks.begin() + closest_index);
 	}
 }
@@ -201,12 +205,7 @@ void Document::delete_closest_bookmark(float to_y_offset) {
 void Document::delete_highlight_with_index(int index) {
 	Highlight highlight_to_delete = highlights[index];
 
-	db_manager->delete_highlight(
-		get_checksum(),
-		highlight_to_delete.selection_begin.x,
-		highlight_to_delete.selection_begin.y,
-		highlight_to_delete.selection_end.x,
-		highlight_to_delete.selection_end.y);
+	db_manager->delete_highlight(highlight_to_delete.uuid);
 	highlights.erase(highlights.begin() + index);
 }
 
@@ -244,7 +243,7 @@ bool Document::update_portal(Portal new_portal) {
 void Document::delete_closest_portal(float to_offset_y) {
 	int closest_index = -1;
 	if (find_closest_portal(to_offset_y, &closest_index)) {
-		db_manager->delete_link( get_checksum(), portals[closest_index].src_offset_y);
+		db_manager->delete_portal(portals[closest_index].uuid);
 		portals.erase(portals.begin() + closest_index);
 	}
 }
@@ -295,8 +294,11 @@ const std::vector<Highlight> Document::get_highlights_sorted(char type) const {
 void Document::add_mark(char symbol, float y_offset) {
 	int current_mark_index = get_mark_index(symbol);
 	if (current_mark_index == -1) {
-		marks.push_back({ y_offset, symbol });
-		db_manager->insert_mark( get_checksum(), symbol, y_offset);
+		Mark m;
+		m.y_offset = y_offset;
+		m.symbol = symbol;
+		marks.push_back(m);
+		db_manager->insert_mark( get_checksum(), symbol, y_offset, new_uuid());
 	}
 	else {
 		marks[current_mark_index].y_offset = y_offset;
@@ -2903,4 +2905,28 @@ std::optional<Document*> DocumentManager::get_cached_document(const std::wstring
 		return cached_documents[path];
 	}
 	return {};
+}
+
+int Document::find_highlight_index_with_uuid(const std::string& uuid) {
+	for (int i = 0; i < highlights.size(); i++) {
+		if (highlights[i].uuid == uuid) return i;
+	}
+	return -1;
+}
+
+void Document::update_highlight_add_text_annotation(const std::string& uuid, const std::wstring& text_annot) {
+	int highlight_index = find_highlight_index_with_uuid(uuid);
+	if (highlight_index > -1) {
+		db_manager->update_highlight_add_annotation(uuid, text_annot);
+		highlights[highlight_index].text_annot = text_annot;
+	}
+}
+
+void Document::update_highlight_type(const std::string& uuid, char new_type) {
+	db_manager->update_highlight_type(uuid, new_type);
+}
+
+void Document::update_highlight_type(int index, char new_type) {
+	update_highlight_type(highlights[index].uuid, new_type);
+	highlights[index].type = new_type;
 }

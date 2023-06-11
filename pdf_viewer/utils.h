@@ -273,3 +273,5 @@ QStringList extract_paper_data_from_json_response(QJsonValue json_object, const 
 QStringList extract_paper_string_from_json_response(QJsonObject json_object, std::wstring path);
 //std::vector<std::vector<QString>> extract_paper_string_list_from_json_response(QJsonObject json_object, std::wstring path);
 QString file_size_to_human_readable_string(int file_size);
+
+std::wstring new_uuid();
