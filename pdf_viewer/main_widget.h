@@ -647,6 +647,8 @@ public:
 							on_delete(val);
 						}
 					}, this);
+
+				widget->set_filter_column_index(-1);
 				set_current_widget(widget);
 			}
 			else {

@@ -669,6 +669,10 @@ public:
 		resize(parent_width * 0.9f, parent_height);
     }
 
+	void set_filter_column_index(int index) {
+		list_view->proxy_model.setFilterKeyColumn(index);
+	}
+
 	void set_value_second_item(T value, QString str) {
 
 		auto source_model = list_view->proxy_model.sourceModel();

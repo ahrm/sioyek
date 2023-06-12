@@ -89,7 +89,7 @@ Rectangle {
                 left: parent ? parent.left : undefined
                 right: parent ? parent.right : undefined
             }
-            height: inner.height * 2.5
+            height: Math.max(inner.height * 2.5, inner2.height * 1.5)
 //            color: index % 2 == 0 ? "black" : "#080808"
             color: lview.model.mapToSource(lview.model.index(index, 0)).row == _selected_index ? "#444": (index % 2 == 0 ? "black" : "#111")
             //color: (index % 2 == 0 ? "black" : "#111")
