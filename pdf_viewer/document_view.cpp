@@ -1398,3 +1398,19 @@ void DocumentView::toggle_text_mark() {
 	set_text_mark(mark_end);
 }
 
+
+WindowPos DocumentView::normalized_window_to_window_pos(NormalizedWindowPos nwp) {
+	int window_x0 = static_cast<int>(nwp.x * view_width / 2 + view_width / 2);
+	int window_y0 = static_cast<int>(-nwp.y * view_height / 2 + view_height / 2);
+	return { window_x0, window_y0 };
+}
+
+fz_irect DocumentView::normalized_to_window_rect(fz_rect normalized_rect) {
+	fz_irect res;
+	res.x0 = static_cast<int>(normalized_rect.x0 * view_width / 2 + view_width / 2);
+	res.x1 = static_cast<int>(normalized_rect.x1 * view_width / 2 + view_width / 2);
+	res.y0 = static_cast<int>(-normalized_rect.y0 * view_height / 2 + view_height / 2);
+	res.y1 = static_cast<int>(-normalized_rect.y1 * view_height / 2 + view_height / 2);
+	
+	return res;
+}

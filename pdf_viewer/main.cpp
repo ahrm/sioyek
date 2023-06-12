@@ -317,7 +317,7 @@ UIRect PORTRAIT_VISUAL_MARK_PREV = {true, -1.0f, -0.7f, 0.7f, 1.0f};
 UIRect PORTRAIT_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
 UIRect LANDSCAPE_VISUAL_MARK_PREV = {true, -1.0f, -0.7f, 0.7f, 1.0f};
 UIRect LANDSCAPE_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
-float BOOKMARK_RECT_SIZE = 3.0f;
+float BOOKMARK_RECT_SIZE = 6.0f;
 
 Path standard_data_path;
 Path default_config_path(L"");

@@ -118,6 +118,8 @@ public:
 	DocumentPos window_to_document_pos(WindowPos window_pos);
 	AbsoluteDocumentPos window_to_absolute_document_pos(WindowPos window_pos);
 	NormalizedWindowPos window_to_normalized_window_pos(WindowPos window_pos);
+	WindowPos normalized_window_to_window_pos(NormalizedWindowPos normalized_window_pos);
+	fz_irect normalized_to_window_rect(fz_rect normalized_rect);
 	void goto_mark(char symbol);
 	void goto_end();
 

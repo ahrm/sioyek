@@ -1138,28 +1138,6 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 	if (document_view->get_document()->can_use_highlights()) {
 		const std::vector<Highlight>& highlights = document_view->get_document()->get_highlights();
-		const std::vector<BookMark>& bookmarks = document_view->get_document()->get_bookmarks();
-		// render visible bookmarks
-		for (int i = 0; i < bookmarks.size(); i++) {
-			if ((bookmarks[i].begin_y > -1) && (bookmarks[i].end_x == -1)) {
-				NormalizedWindowPos bookmark_window_pos = document_view->absolute_to_window_pos(
-					{ bookmarks[i].begin_x, bookmarks[i].begin_y }
-				);
-				if (bookmark_window_pos.x > -1.5f && bookmark_window_pos.x < 1.5f &&
-					bookmark_window_pos.y > -1.5f && bookmark_window_pos.y < 1.5f) {
-					fz_rect bookmark_rect;
-					bookmark_rect.x0 = bookmarks[i].begin_x - BOOKMARK_RECT_SIZE;
-					bookmark_rect.x1 = bookmarks[i].begin_x + BOOKMARK_RECT_SIZE;
-					bookmark_rect.y0 = bookmarks[i].begin_y - BOOKMARK_RECT_SIZE;
-					bookmark_rect.y1 = bookmarks[i].begin_y + BOOKMARK_RECT_SIZE;
-					render_highlight_absolute(shared_gl_objects.highlight_program,
-						bookmark_rect,
-						true,
-						false);
-				}
-
-			}
-		}
 
 		for (size_t i = 0; i < highlights.size(); i++) {
 			//float selection_begin_window_x, selection_begin_window_y;
@@ -1277,6 +1255,49 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 
 	painter->endNativePainting();
+
+	if (document_view->get_document()->can_use_highlights()) {
+		const std::vector<BookMark>& bookmarks = document_view->get_document()->get_bookmarks();
+
+		QFont font = painter->font();
+		font.setPointSizeF(5.0f * document_view->get_zoom_level());
+		painter->setFont(font);
+
+		for (int i = 0; i < bookmarks.size(); i++) {
+			if ((bookmarks[i].begin_y > -1) && (bookmarks[i].end_y == -1)) {
+				NormalizedWindowPos bookmark_window_pos = document_view->absolute_to_window_pos(
+					{ bookmarks[i].begin_x, bookmarks[i].begin_y }
+				);
+
+				if (bookmark_window_pos.x > -1.5f && bookmark_window_pos.x < 1.5f &&
+					bookmark_window_pos.y > -1.5f && bookmark_window_pos.y < 1.5f) {
+
+					fz_rect bookmark_rect;
+					bookmark_rect.x0 = bookmarks[i].begin_x - BOOKMARK_RECT_SIZE;
+					bookmark_rect.x1 = bookmarks[i].begin_x + BOOKMARK_RECT_SIZE;
+					bookmark_rect.y0 = bookmarks[i].begin_y - BOOKMARK_RECT_SIZE;
+					bookmark_rect.y1 = bookmarks[i].begin_y + BOOKMARK_RECT_SIZE;
+					fz_rect bookmark_normalized_window_rect = document_view->absolute_to_window_rect(bookmark_rect);
+
+					fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
+					QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+
+					int mid_x = (window_rect.x0 + window_rect.x1) / 2;
+					int mid_y = (window_rect.y0 + window_rect.y1) / 2;
+
+					painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+					painter->drawText(window_qrect, Qt::AlignCenter, "B");
+
+					//painter->drawText(mid_x, mid_y, "B");
+					//render_highlight_absolute(shared_gl_objects.highlight_program,
+					//	bookmark_rect,
+					//	true,
+					//	false);
+				}
+
+			}
+		}
+	}
 
 	if (should_highlight_words && (!overview_page)) {
 		setup_text_painter(painter);
