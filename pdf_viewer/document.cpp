@@ -1624,6 +1624,11 @@ void Document::embed_annotations(std::wstring new_file_path) {
 		float* color = get_highlight_type_color(highlight.type);
 
 		pdf_set_annot_color(context, highlight_annot, 3, color);
+		if (highlight.text_annot.size() > 0) {
+			std::string encoded_highlight_text = utf8_encode(highlight.text_annot);
+			pdf_set_annot_contents(context, highlight_annot, encoded_highlight_text.c_str());
+		}
+
 		pdf_set_annot_quad_points(context, highlight_annot, selected_character_quads.size(), &selected_character_quads[0]);
 		pdf_update_annot(context, highlight_annot);
 
@@ -1636,14 +1641,40 @@ void Document::embed_annotations(std::wstring new_file_path) {
 
 		fz_page* page = load_cached_page(page_number);
 		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
-		pdf_annot* bookmark_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_TEXT);
+		pdf_annot* bookmark_annot;
+		if (bookmark.is_freetext()) {
+			bookmark_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_FREE_TEXT);
+		}
+		else{
+			bookmark_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_TEXT);
+		}
+
 		std::string encoded_bookmark_text = utf8_encode(bookmark.description);
 
 		fz_rect annot_rect;
-		annot_rect.x0 = 10;
-		annot_rect.x1 = 20;
-		annot_rect.y0 = doc_y;
-		annot_rect.y1 = doc_y + 10;
+		if (bookmark.is_freetext()) {
+			DocumentPos begin_page_pos = absolute_to_page_pos({bookmark.begin_x, bookmark.begin_y});
+			DocumentPos end_page_pos = absolute_to_page_pos({bookmark.end_x, bookmark.end_y});
+
+			annot_rect.x0 = begin_page_pos.x;
+			annot_rect.x1 = end_page_pos.x;
+			annot_rect.y0 = begin_page_pos.y;
+			annot_rect.y1 = end_page_pos.y;
+		}
+		else if (bookmark.is_marked()) {
+			DocumentPos begin_page_pos = absolute_to_page_pos({bookmark.begin_x, bookmark.begin_y});
+
+			annot_rect.x0 = begin_page_pos.x - 6;
+			annot_rect.x1 = begin_page_pos.x + 6;
+			annot_rect.y0 = begin_page_pos.y - 6;
+			annot_rect.y1 = begin_page_pos.y + 6;
+		}
+		else {
+			annot_rect.x0 = 10;
+			annot_rect.x1 = 20;
+			annot_rect.y0 = doc_y;
+			annot_rect.y1 = doc_y + 10;
+		}
 
 		pdf_set_annot_rect(context, bookmark_annot, annot_rect);
 		pdf_set_annot_contents(context, bookmark_annot, encoded_bookmark_text.c_str());
