@@ -87,6 +87,9 @@ extern float FASTREAD_OPACITY;
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool SINGLE_CLICK_SELECTS_WORDS;
 extern float EPUB_LINE_SPACING;
+extern float FREETEXT_BOOKMARK_COLOR[3];
+extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern bool RENDER_FREETEXT_BORDERS;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -524,6 +527,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		color_3_validator
 		});
 	configs.push_back({
+		L"freetext_bookmark_color",
+		ConfigType::Color3,
+		FREETEXT_BOOKMARK_COLOR,
+		vec3_serializer,
+		color3_deserializer,
+		color_3_validator
+		});
+	configs.push_back({
 		L"link_highlight_color",
 		ConfigType::Color3 ,
 		DEFAULT_LINK_HIGHLIGHT_COLOR,
@@ -573,6 +584,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		FloatExtras{0.0f, 1.0f}
 		});
 	configs.push_back({
+		L"freetext_bookmark_font_size",
+		ConfigType::Float,
+		&FREETEXT_BOOKMARK_FONT_SIZE,
+		float_serializer,
+		float_deserializer,
+		nullptr,
+		FloatExtras{0.0f, 100.0f}
+		});
+	configs.push_back({
 		L"custom_color_contrast",
 		ConfigType::Float,
 		&CUSTOM_COLOR_CONTRAST,
@@ -585,6 +605,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		L"default_dark_mode",
 		ConfigType::Bool,
 		&DEFAULT_DARK_MODE,
+		bool_serializer,
+		bool_deserializer,
+		bool_validator
+		});
+	configs.push_back({
+		L"render_freetext_borders",
+		ConfigType::Bool,
+		&RENDER_FREETEXT_BORDERS,
 		bool_serializer,
 		bool_deserializer,
 		bool_validator

@@ -29,6 +29,8 @@ public:
 	bool select_mark(const std::string& checksum, std::vector<Mark>& out_result);
 	bool insert_bookmark(const std::string& checksum, const std::wstring& desc, float offset_y, std::wstring uuid);
 	bool insert_bookmark_marked(const std::string& checksum, const std::wstring& desc, float offset_x, float offset_y, std::wstring uuid);
+	//bool insert_bookmark_freetext(const std::string& checksum, const std::wstring& desc, float begin_x, float begin_y, float end_x, float end_y, float color_red, float color_green, float color_blue, float font_size, std::string font_face, std::wstring uuid);
+	bool insert_bookmark_freetext(const std::string& checksum, const BookMark& bm);
 	bool select_bookmark(const std::string& checksum, std::vector<BookMark>& out_result);
 	bool insert_portal(const std::string& src_checksum,
 		const std::string& dst_checksum,

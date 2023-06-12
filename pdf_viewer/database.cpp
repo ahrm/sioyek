@@ -194,7 +194,7 @@ static int global_highlight_select_callback(void* res_vector, int argc, char** a
 static int bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<BookMark>* res = (std::vector<BookMark>*)res_vector;
-	assert(argc == 9);
+	assert(argc == 14);
 
 	std::wstring desc = utf8_decode(argv[0]);
 	float offset_y = -1;
@@ -202,6 +202,11 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 	float begin_y = -1;
 	float end_x = -1;
 	float end_y = -1;
+	float color_red = 0;
+	float color_green = 0;
+	float color_blue = 0;
+	float font_size = -1;
+	std::wstring font_face = L"";
 
 	if (argv[1]) {
 		offset_y = atof(argv[1]);
@@ -219,9 +224,25 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 	if (argv[5]) {
 		end_y = atof(argv[5]);
 	}
-	std::string uuid = argv[6];
-	std::string creation_time = argv[7];
-	std::string modification_time = argv[8];
+	if (argv[6]) {
+		color_red = atof(argv[6]);
+	}
+	if (argv[7]) {
+		color_green = atof(argv[7]);
+	}
+	if (argv[8]) {
+		color_blue = atof(argv[8]);
+	}
+
+	if (argv[9]) {
+		font_size = atof(argv[9]);
+	}
+	if (argv[10]) {
+		font_face = utf8_decode(argv[10]);
+	}
+	std::string uuid = argv[11];
+	std::string creation_time = argv[12];
+	std::string modification_time = argv[13];
 
 	BookMark bm;
 	bm.y_offset = offset_y;
@@ -233,6 +254,11 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 	bm.begin_y = begin_y;
 	bm.end_x = end_x;
 	bm.end_y = end_y;
+	bm.color[0] = color_red;
+	bm.color[1] = color_green;
+	bm.color[2] = color_blue;
+	bm.font_size = font_size;
+	bm.font_face = font_face;
 
 	res->push_back(bm);
 	return 0;
@@ -487,6 +513,10 @@ bool DatabaseManager::create_bookmarks_table() {
 		"modification_time timestamp,"\
 		"uuid TEXT,"\
 		"font_size integer DEFAULT -1,"\
+		"color_red real DEFAULT 0,"\
+		"color_green real DEFAULT 0,"\
+		"color_blue real DEFAULT 0,"\
+		"font_face TEXT,"\
 		"begin_x real DEFAULT -1,"\
 		"begin_y real DEFAULT -1,"\
 		"end_x real DEFAULT -1,"\
@@ -647,6 +677,30 @@ bool DatabaseManager::insert_bookmark_marked(const std::string& document_path, c
 
 	std::wstringstream ss;
 	ss << "INSERT INTO bookmarks (document_path, desc, begin_x, begin_y, uuid, creation_time, modification_time) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', " << offset_x << " , " << offset_y << ", '" << esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
+	char* error_message = nullptr;
+
+	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+	return handle_error(
+		error_code,
+		error_message);
+}
+
+bool DatabaseManager::insert_bookmark_freetext(const std::string& document_path, const BookMark& bm){
+
+	std::wstringstream ss;
+	ss << "INSERT INTO bookmarks (document_path, desc, begin_x, begin_y, end_x, end_y, color_red, color_green, color_blue, font_size, font_face, uuid, creation_time, modification_time) VALUES ('"
+		<< esc(document_path) << "', '"
+		<< esc(bm.description) << "', "
+		<< bm.begin_x << " , "
+		<< bm.begin_y << " , "
+		<< bm.end_x << " , "
+		<< bm.end_y << ", "
+		<< bm.color[0] << ", "
+		<< bm.color[1] << ", "
+		<< bm.color[2] << ", "
+		<< bm.font_size << ", '"
+		<< bm.font_face << "', '"
+		<< esc(bm.uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
 	char* error_message = nullptr;
 
 	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -858,7 +912,7 @@ bool DatabaseManager::select_global_mark(char symbol, std::vector<std::pair<std:
 
 bool DatabaseManager::select_bookmark(const std::string& book_path, std::vector<BookMark> &out_result) {
 		std::wstringstream ss;
-		ss << "select desc, offset_y, begin_x, begin_y, end_x, end_y, uuid, creation_time, modification_time from bookmarks where document_path='" << esc(book_path) << "';";
+		ss << "select desc, offset_y, begin_x, begin_y, end_x, end_y, color_red, color_green, color_blue, font_size, font_face, uuid, creation_time, modification_time from bookmarks where document_path='" << esc(book_path) << "';";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), bookmark_select_callback, &out_result, &error_message);
@@ -1466,6 +1520,11 @@ void DatabaseManager::migrate_version_0_to_1() {
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN end_x real DEFAULT -1;");
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN end_y real DEFAULT -1;");
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN font_size integer DEFAULT -1;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN color_red real DEFAULT 0;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN color_green real DEFAULT 0;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN color_blue real DEFAULT 0;");
+	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN font_face TEXT;");
+
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN creation_time timestamp;");
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN modification_time timestamp;");
 	queries_to_run.push_back("ALTER TABLE bookmarks ADD COLUMN uuid TEXT;");

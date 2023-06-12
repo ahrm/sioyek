@@ -130,6 +130,7 @@ public:
 
 	void add_bookmark(const std::wstring& desc, float y_offset);
 	void add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
+	void add_freetext_bookmark(const std::wstring& desc, fz_rect absrect);
 	void add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
 	void delete_highlight_with_index(int index);
 	void delete_highlight(Highlight hl);
@@ -154,6 +155,7 @@ public:
 	std::optional<Portal> find_closest_portal(float to_offset_y, int* index = nullptr);
 	bool update_portal(Portal new_link);
 	void delete_closest_bookmark(float to_y_offset);
+	void delete_bookmark(int index);
 	void delete_closest_portal(float to_offset_y);
 	const std::vector<BookMark>& get_bookmarks() const;
 	std::vector<BookMark> get_sorted_bookmarks() const;

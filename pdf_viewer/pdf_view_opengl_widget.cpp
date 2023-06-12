@@ -42,6 +42,7 @@ extern int NUM_H_SLICES;
 extern int NUM_V_SLICES;
 extern bool SLICED_RENDERING;
 extern float BOOKMARK_RECT_SIZE;
+extern bool RENDER_FREETEXT_BORDERS;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -1259,40 +1260,59 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (document_view->get_document()->can_use_highlights()) {
 		const std::vector<BookMark>& bookmarks = document_view->get_document()->get_bookmarks();
 
-		QFont font = painter->font();
-		font.setPointSizeF(5.0f * document_view->get_zoom_level());
-		painter->setFont(font);
 
 		for (int i = 0; i < bookmarks.size(); i++) {
-			if ((bookmarks[i].begin_y > -1) && (bookmarks[i].end_y == -1)) {
-				NormalizedWindowPos bookmark_window_pos = document_view->absolute_to_window_pos(
-					{ bookmarks[i].begin_x, bookmarks[i].begin_y }
-				);
+			if (bookmarks[i].begin_y > -1) {
+				if (bookmarks[i].end_x == -1) {
 
-				if (bookmark_window_pos.x > -1.5f && bookmark_window_pos.x < 1.5f &&
-					bookmark_window_pos.y > -1.5f && bookmark_window_pos.y < 1.5f) {
+					NormalizedWindowPos bookmark_window_pos = document_view->absolute_to_window_pos(
+						{ bookmarks[i].begin_x, bookmarks[i].begin_y }
+					);
 
-					fz_rect bookmark_rect;
-					bookmark_rect.x0 = bookmarks[i].begin_x - BOOKMARK_RECT_SIZE;
-					bookmark_rect.x1 = bookmarks[i].begin_x + BOOKMARK_RECT_SIZE;
-					bookmark_rect.y0 = bookmarks[i].begin_y - BOOKMARK_RECT_SIZE;
-					bookmark_rect.y1 = bookmarks[i].begin_y + BOOKMARK_RECT_SIZE;
-					fz_rect bookmark_normalized_window_rect = document_view->absolute_to_window_rect(bookmark_rect);
+					if (bookmark_window_pos.x > -1.5f && bookmark_window_pos.x < 1.5f &&
+						bookmark_window_pos.y > -1.5f && bookmark_window_pos.y < 1.5f) {
 
-					fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
+						fz_rect bookmark_rect;
+						bookmark_rect.x0 = bookmarks[i].begin_x - BOOKMARK_RECT_SIZE;
+						bookmark_rect.x1 = bookmarks[i].begin_x + BOOKMARK_RECT_SIZE;
+						bookmark_rect.y0 = bookmarks[i].begin_y - BOOKMARK_RECT_SIZE;
+						bookmark_rect.y1 = bookmarks[i].begin_y + BOOKMARK_RECT_SIZE;
+						fz_rect bookmark_normalized_window_rect = document_view->absolute_to_window_rect(bookmark_rect);
+
+						fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
+						QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+
+						QFont font = painter->font();
+						font.setPointSizeF(5.0f * document_view->get_zoom_level());
+						painter->setFont(font);
+
+						painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+						painter->drawText(window_qrect, Qt::AlignCenter, "B");
+
+					}
+				}
+				else {
+					fz_rect bookmark_absolute_rect;
+					bookmark_absolute_rect.x0 = bookmarks[i].begin_x;
+				    bookmark_absolute_rect.x1 = bookmarks[i].end_x;
+				    bookmark_absolute_rect.y0 = bookmarks[i].begin_y;
+				    bookmark_absolute_rect.y1 = bookmarks[i].end_y;
+
+					fz_rect normalized_rect = document_view->absolute_to_window_rect(bookmark_absolute_rect);
+					fz_irect window_rect = document_view->normalized_to_window_rect(normalized_rect);
 					QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
-					int mid_x = (window_rect.x0 + window_rect.x1) / 2;
-					int mid_y = (window_rect.y0 + window_rect.y1) / 2;
+					QFont font = painter->font();
+					float font_size = bookmarks[i].font_size == -1 ? 5.0f : bookmarks[i].font_size;
+					font.setPointSizeF(font_size * document_view->get_zoom_level());
+					painter->setFont(font);
 
-					painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
-					painter->drawText(window_qrect, Qt::AlignCenter, "B");
+					painter->setPen(convert_float3_to_qcolor(bookmarks[i].color));
+					if (RENDER_FREETEXT_BORDERS) {
+						painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+					}
+					painter->drawText(window_qrect, Qt::AlignCenter | Qt::TextWordWrap, QString::fromStdWString(bookmarks[i].description));
 
-					//painter->drawText(mid_x, mid_y, "B");
-					//render_highlight_absolute(shared_gl_objects.highlight_program,
-					//	bookmark_rect,
-					//	true,
-					//	false);
 				}
 
 			}

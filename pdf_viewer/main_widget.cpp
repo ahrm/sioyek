@@ -1,4 +1,5 @@
 ﻿// make overview_definition return all possible targets
+// add color and font size and font face support for freetext bookmarks
 
 #include <iostream>
 #include <vector>
@@ -6391,7 +6392,12 @@ void MainWidget::add_text_annotation_to_selected_highlight(const std::wstring& a
 
 void MainWidget::change_selected_bookmark_text(const std::wstring& new_text) {
     if (selected_bookmark_index != -1) {
-        doc()->update_bookmark_text(selected_bookmark_index, new_text);
+        if (new_text.size() > 0) {
+			doc()->update_bookmark_text(selected_bookmark_index, new_text);
+        }
+        else {
+            doc()->delete_bookmark(selected_bookmark_index);
+        }
     }
 }
 

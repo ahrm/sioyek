@@ -486,6 +486,48 @@ public:
 	}
 };
 
+class AddBookmarkFreetextCommand: public Command {
+
+public:
+
+	std::optional<std::wstring> text_;
+	std::optional<fz_rect> rect_;
+
+	AddBookmarkFreetextCommand(MainWidget* w) : Command(w) {};
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+		if (!text_.has_value()) {
+			Requirement req = { RequirementType::Text, "Bookmark Text"};
+			return req;
+		}
+		if (!rect_.has_value()) {
+			Requirement req = { RequirementType::Rect, "Bookmark Location"};
+			return req;
+		}
+		return {};
+	}
+
+	void set_text_requirement(std::wstring value) {
+		text_ = value;
+	}
+
+	void set_rect_requirement(fz_rect value) {
+		rect_ = value;
+	}
+
+
+	void perform() {
+		widget->doc()->add_freetext_bookmark(text_.value(), rect_.value());
+		widget->clear_selected_rect();
+		widget->invalidate_render();
+	}
+
+	std::string get_name() {
+		return "add_freetext_bookmark";
+	}
+};
+
 class GotoBookmarkCommand : public Command {
 public:
 	GotoBookmarkCommand(MainWidget* w) : Command(w) {};
@@ -3379,6 +3421,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
 	new_commands["add_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkCommand>(widget); };
 	new_commands["add_marked_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkMarkedCommand>(widget); };
+	new_commands["add_freetext_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkFreetextCommand>(widget); };
 	new_commands["add_highlight"] = [](MainWidget* widget) {return std::make_unique< AddHighlightCommand>(widget); };
 	new_commands["goto_toc"] = [](MainWidget* widget) {return std::make_unique< GotoTableOfContentsCommand>(widget); };
 	new_commands["goto_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightCommand>(widget); };

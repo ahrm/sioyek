@@ -73,6 +73,14 @@ QJsonObject BookMark::to_json() const
 	res["end_x"] = end_x;
 	res["end_y"] = end_y;
 
+	if (is_freetext()) {
+		res["color_red"] = color[0];
+		res["color_green"] = color[1];
+		res["color_blue"] = color[2];
+		res["font_size"] = font_size;
+		res["font_face"] = QString::fromStdWString(font_face);
+	}
+
 	add_metadata_to_json(res);
 
 	return res;
@@ -88,7 +96,23 @@ void BookMark::from_json(const QJsonObject& json_object)
 	end_x = json_object["end_x"].toDouble();
 	end_y = json_object["end_y"].toDouble();
 
+	if (json_object.contains("color_red")) {
+		color[0] = json_object["color_red"].toDouble();
+		color[1] = json_object["color_green"].toDouble();
+		color[2] = json_object["color_blue"].toDouble();
+		font_size = json_object["font_size"].toDouble();
+		font_face = json_object["font_face"].toString().toStdWString();
+	}
+
 	load_metadata_from_json(json_object);
+}
+
+bool BookMark::is_freetext() const {
+	return (begin_y > -1) && (end_y > -1);
+}
+
+bool BookMark::is_marked() const{
+	return (begin_y > -1) && (end_y == -1);
 }
 
 QJsonObject Highlight::to_json() const

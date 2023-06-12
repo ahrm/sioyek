@@ -46,6 +46,8 @@ extern float EPUB_LINE_SPACING;
 extern Path standard_data_path;
 extern bool VERBOSE;
 extern float BOOKMARK_RECT_SIZE;
+extern float FREETEXT_BOOKMARK_COLOR[3];
+extern float FREETEXT_BOOKMARK_FONT_SIZE;
 
 int Document::get_mark_index(char symbol) {
 	for (size_t i = 0; i < marks.size(); i++) {
@@ -98,8 +100,30 @@ void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos
 	bookmark.begin_x = pos.x;
 	bookmark.begin_y = pos.y;
 
-	bookmarks.push_back(bookmark);
-	db_manager->insert_bookmark_marked(get_checksum(), desc, pos.x, pos.y, new_uuid());
+	if (db_manager->insert_bookmark_marked(get_checksum(), desc, pos.x, pos.y, new_uuid())) {
+		bookmarks.push_back(bookmark);
+	}
+}
+
+void Document::add_freetext_bookmark(const std::wstring& desc, fz_rect absrect) {
+	BookMark bookmark;
+	bookmark.description = desc;
+	bookmark.y_offset = absrect.y0;
+
+	bookmark.begin_x = absrect.x0;
+	bookmark.begin_y = absrect.y0;
+	bookmark.end_x = absrect.x1;
+	bookmark.end_y = absrect.y1;
+
+	bookmark.color[0] = FREETEXT_BOOKMARK_COLOR[0];
+	bookmark.color[1] = FREETEXT_BOOKMARK_COLOR[1];
+	bookmark.color[2] = FREETEXT_BOOKMARK_COLOR[2];
+	bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+	bookmark.uuid = utf8_encode(new_uuid());
+
+	if (db_manager->insert_bookmark_freetext(get_checksum(), bookmark)) {
+		bookmarks.push_back(bookmark);
+	}
 }
 
 void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
@@ -211,6 +235,15 @@ void Document::delete_closest_bookmark(float to_y_offset) {
 	if (closest_index > -1) {
 		db_manager->delete_bookmark(bookmarks[closest_index].uuid);
 		bookmarks.erase(bookmarks.begin() + closest_index);
+	}
+}
+
+void Document::delete_bookmark(int index) {
+
+	if ((index != -1) && (index < bookmarks.size())) {
+		if (db_manager->delete_bookmark(bookmarks[index].uuid)) {
+			bookmarks.erase(bookmarks.begin() + index);
+		}
 	}
 }
 
@@ -2945,14 +2978,28 @@ void Document::update_highlight_type(int index, char new_type) {
 
 int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
 	for (int i = 0; i < bookmarks.size(); i++) {
-		if (bookmarks[i].begin_y != -1) {
-			if (
-				(abspos.x > bookmarks[i].begin_x - BOOKMARK_RECT_SIZE) &&
-				(abspos.x < bookmarks[i].begin_x + BOOKMARK_RECT_SIZE) &&
-				(abspos.y > bookmarks[i].begin_y - BOOKMARK_RECT_SIZE) &&
-				(abspos.y < bookmarks[i].begin_y + BOOKMARK_RECT_SIZE)
-				) {
-				return i;
+		if (bookmarks[i].begin_y != -1){
+			if (bookmarks[i].end_y == -1) {
+
+				if (
+					(abspos.x > bookmarks[i].begin_x - BOOKMARK_RECT_SIZE) &&
+					(abspos.x < bookmarks[i].begin_x + BOOKMARK_RECT_SIZE) &&
+					(abspos.y > bookmarks[i].begin_y - BOOKMARK_RECT_SIZE) &&
+					(abspos.y < bookmarks[i].begin_y + BOOKMARK_RECT_SIZE)
+					) {
+					return i;
+				}
+			}
+			else {
+				fz_rect bookmark_rect;
+				bookmark_rect.x0 = bookmarks[i].begin_x;
+				bookmark_rect.y0 = bookmarks[i].begin_y;
+				bookmark_rect.x1 = bookmarks[i].end_x;
+				bookmark_rect.y1 = bookmarks[i].end_y;
+
+				if (fz_is_point_inside_rect({abspos.x, abspos.y}, bookmark_rect)) {
+					return i;
+				}
 			}
 		}
 	}

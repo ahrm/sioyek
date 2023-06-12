@@ -62,8 +62,15 @@ struct BookMark : Annotation {
 	float end_x = -1;
 	float end_y = -1;
 
+	float color[3] = {0};
+	float font_size = -1;
+	std::wstring font_face;
+
 	QJsonObject to_json() const;
 	void from_json(const QJsonObject& json_object);
+
+	bool is_freetext() const;
+	bool is_marked() const;
 };
 
 struct Highlight : Annotation{
