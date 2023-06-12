@@ -68,6 +68,10 @@ QJsonObject BookMark::to_json() const
 	QJsonObject res;
 	res["y_offset"] = y_offset;
 	res["description"] = QString::fromStdWString(description);
+	res["begin_x"] = begin_x;
+	res["begin_y"] = begin_y;
+	res["end_x"] = end_x;
+	res["end_y"] = end_y;
 
 	add_metadata_to_json(res);
 
@@ -79,6 +83,10 @@ void BookMark::from_json(const QJsonObject& json_object)
 {
 	y_offset = json_object["y_offset"].toDouble();
 	description = json_object["description"].toString().toStdWString();
+	begin_x = json_object["begin_x"].toDouble();
+	begin_y = json_object["begin_y"].toDouble();
+	end_x = json_object["end_x"].toDouble();
+	end_y = json_object["end_y"].toDouble();
 
 	load_metadata_from_json(json_object);
 }

@@ -1079,6 +1079,10 @@ std::wstring MainWidget::get_status_string() {
         status_string.replace("%{rect_select}", " [ select box ]");
     }
 
+    if (point_select_mode) {
+        status_string.replace("%{point_select}", " [ select point ]");
+    }
+
 
     if (custom_status_message.size() > 0) {
         status_string.replace("%{custom_message}", " [ " + QString::fromStdWString(custom_status_message) + " ]");
@@ -1893,6 +1897,16 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
     }
 
+    if (point_select_mode) {
+		if (pending_command_instance) {
+			pending_command_instance->set_point_requirement(abs_doc_pos);
+			advance_command(std::move(pending_command_instance));
+		}
+
+		this->point_select_mode = false;
+        opengl_widget->clear_selected_rectangle();
+		return;
+    }
     if (rect_select_mode) {
         if (down == true) {
             if (rect_select_end.has_value()) {
@@ -2156,6 +2170,7 @@ void MainWidget::handle_click(WindowPos click_pos) {
     }
 
     auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(click_pos);
+    AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(click_pos);
 
     if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
         auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y });
@@ -2168,6 +2183,15 @@ void MainWidget::handle_click(WindowPos click_pos) {
 
     auto link = main_document_view->get_link_in_pos(click_pos);
     selected_highlight_index = main_document_view->get_highlight_index_in_pos(click_pos);
+    selected_bookmark_index  = doc()->get_bookmark_index_at_pos(mouse_abspos);
+
+    if (selected_bookmark_index != -1) {
+        handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
+        set_command_textbox_text(doc()->get_bookmarks()[selected_bookmark_index].description);
+		//text_command_line_edit->setText(QString::fromStdWString(doc()->get_bookmarks()[selected_bookmark_index].description));
+		//text_command_line_edit->setText();
+        return;
+    }
 
     if (TOUCH_MODE && (selected_highlight_index != -1)){
         show_highlight_buttons();
@@ -2176,6 +2200,7 @@ void MainWidget::handle_click(WindowPos click_pos) {
 
     if (link.has_value()) {
         handle_link_click(link.value());
+        return;
     }
 }
 ReferenceType MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int* out_page, float* out_offset, bool update_candidates) {
@@ -4105,6 +4130,14 @@ void MainWidget::set_rect_select_mode(bool mode) {
     }
 }
 
+void MainWidget::set_point_select_mode(bool mode) {
+
+    point_select_mode = mode;
+    if (mode == true) {
+        opengl_widget->set_selected_rectangle({ 0, 0, 0, 0 });
+    }
+}
+
 void MainWidget::clear_selected_rect() {
     opengl_widget->clear_selected_rectangle();
     //rect_select_mode = false;
@@ -4344,6 +4377,9 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command){
 			}
 			else if (next_requirement.type == RequirementType::Rect) {
                 set_rect_select_mode(true);
+			}
+			else if (next_requirement.type == RequirementType::Point) {
+                set_point_select_mode(true);
 			}
             if (pending_command_instance) {
 				pending_command_instance->pre_perform();
@@ -5401,6 +5437,7 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos){
     clear_selected_text();
     clear_selection_indicators();
     selected_highlight_index = -1;
+    selected_bookmark_index = -1;
     clear_highlight_buttons();
     clear_search_buttons();
     opengl_widget->cancel_search();
@@ -6349,5 +6386,27 @@ void MainWidget::add_text_annotation_to_selected_highlight(const std::wstring& a
     if (selected_highlight_index > -1) {
 		Highlight hl = main_document_view->get_highlight_with_index(selected_highlight_index);
 		doc()->update_highlight_add_text_annotation(hl.uuid, annot_text);
+    }
+}
+
+void MainWidget::change_selected_bookmark_text(const std::wstring& new_text) {
+    if (selected_bookmark_index != -1) {
+        doc()->update_bookmark_text(selected_bookmark_index, new_text);
+    }
+}
+
+void MainWidget::set_command_textbox_text(const std::wstring& txt) {
+    if (TOUCH_MODE) {
+        if (current_widget_stack.size() > 0) {
+			TouchTextEdit* edit_widget = dynamic_cast<TouchTextEdit*>(current_widget_stack.back());
+			if (edit_widget) {
+                edit_widget->set_text(txt);
+			}
+
+        }
+
+    }
+    else {
+        text_command_line_edit->setText(QString::fromStdWString(txt));
     }
 }

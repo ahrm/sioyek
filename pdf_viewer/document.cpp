@@ -45,6 +45,7 @@ extern std::vector<float> linear_weights;
 extern float EPUB_LINE_SPACING;
 extern Path standard_data_path;
 extern bool VERBOSE;
+extern float BOOKMARK_RECT_SIZE;
 
 int Document::get_mark_index(char symbol) {
 	for (size_t i = 0; i < marks.size(); i++) {
@@ -88,6 +89,17 @@ void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 	bookmark.description = desc;
 	bookmarks.push_back(bookmark);
 	db_manager->insert_bookmark(get_checksum(), desc, y_offset, new_uuid());
+}
+
+void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos) {
+	BookMark bookmark;
+	bookmark.description = desc;
+	bookmark.y_offset = pos.y;
+	bookmark.begin_x = pos.x;
+	bookmark.begin_y = pos.y;
+
+	bookmarks.push_back(bookmark);
+	db_manager->insert_bookmark_marked(get_checksum(), desc, pos.x, pos.y, new_uuid());
 }
 
 void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
@@ -2929,4 +2941,28 @@ void Document::update_highlight_type(const std::string& uuid, char new_type) {
 void Document::update_highlight_type(int index, char new_type) {
 	update_highlight_type(highlights[index].uuid, new_type);
 	highlights[index].type = new_type;
+}
+
+int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
+	for (int i = 0; i < bookmarks.size(); i++) {
+		if (bookmarks[i].begin_y != -1) {
+			if (
+				(abspos.x > bookmarks[i].begin_x - BOOKMARK_RECT_SIZE) &&
+				(abspos.x < bookmarks[i].begin_x + BOOKMARK_RECT_SIZE) &&
+				(abspos.y > bookmarks[i].begin_y - BOOKMARK_RECT_SIZE) &&
+				(abspos.y < bookmarks[i].begin_y + BOOKMARK_RECT_SIZE)
+				) {
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+void Document::update_bookmark_text(int index, const std::wstring& new_text) {
+	if ((index >= 0) && (index < bookmarks.size())) {
+		if (db_manager->update_bookmark_change_text(bookmarks[index].uuid, new_text)) {
+			bookmarks[index].description = new_text;
+		}
+	}
 }

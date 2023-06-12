@@ -12,6 +12,7 @@ public:
     TouchTextEdit(QString name, QString initial_value, QWidget* parent=nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 	void keyPressEvent(QKeyEvent* kevent) override;
+    void set_text(const std::wstring& txt);
 
 public slots:
     void handleConfirm(QString text);

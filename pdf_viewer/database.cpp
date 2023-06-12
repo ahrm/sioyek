@@ -112,14 +112,35 @@ static int global_mark_select_callback(void* res_vector, int argc, char** argv, 
 static int global_bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<std::pair<std::string, BookMark>>* res = (std::vector<std::pair<std::string, BookMark>>*)res_vector;
-	assert(argc == 6);
+	assert(argc == 10);
 
 	std::string path = argv[0];
 	std::wstring desc = utf8_decode(argv[1]);
-	float offset_y = atof(argv[2]);
-	std::string uuid = argv[3];
-	std::string creation_time = argv[4];
-	std::string modification_time = argv[5];
+	float offset_y = -1;
+	float begin_x = -1;
+	float begin_y = -1;
+	float end_x = -1;
+	float end_y = -1;
+
+	if (argv[2]) {
+		offset_y = atof(argv[2]);
+	}
+	if (argv[3]) {
+		begin_x = atof(argv[3]);
+	}
+	if (argv[4]) {
+		begin_y = atof(argv[4]);
+		offset_y = begin_y;
+	}
+	if (argv[5]) {
+		end_x = atof(argv[5]);
+	}
+	if (argv[6]) {
+		end_y = atof(argv[6]);
+	}
+	std::string uuid = argv[7];
+	std::string creation_time = argv[8];
+	std::string modification_time = argv[9];
 
 	BookMark bm;
 	bm.description = desc;
@@ -173,13 +194,34 @@ static int global_highlight_select_callback(void* res_vector, int argc, char** a
 static int bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<BookMark>* res = (std::vector<BookMark>*)res_vector;
-	assert(argc == 5);
+	assert(argc == 9);
 
 	std::wstring desc = utf8_decode(argv[0]);
-	float offset_y = atof(argv[1]);
-	std::string uuid = argv[2];
-	std::string creation_time = argv[3];
-	std::string modification_time = argv[3];
+	float offset_y = -1;
+	float begin_x = -1;
+	float begin_y = -1;
+	float end_x = -1;
+	float end_y = -1;
+
+	if (argv[1]) {
+		offset_y = atof(argv[1]);
+	}
+	if (argv[2]) {
+		begin_x = atof(argv[2]);
+	}
+	if (argv[3]) {
+		begin_y = atof(argv[3]);
+		offset_y = begin_y;
+	}
+	if (argv[4]) {
+		end_x = atof(argv[4]);
+	}
+	if (argv[5]) {
+		end_y = atof(argv[5]);
+	}
+	std::string uuid = argv[6];
+	std::string creation_time = argv[7];
+	std::string modification_time = argv[8];
 
 	BookMark bm;
 	bm.y_offset = offset_y;
@@ -187,6 +229,10 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 	bm.uuid = uuid;
 	bm.creation_time = creation_time;
 	bm.modification_time = modification_time;
+	bm.begin_x = begin_x;
+	bm.begin_y = begin_y;
+	bm.end_x = end_x;
+	bm.end_y = end_y;
 
 	res->push_back(bm);
 	return 0;
@@ -597,6 +643,18 @@ bool DatabaseManager::insert_bookmark(const std::string& document_path, const st
 		error_message);
 }
 
+bool DatabaseManager::insert_bookmark_marked(const std::string& document_path, const std::wstring& desc, float offset_x, float offset_y, std::wstring uuid) {
+
+	std::wstringstream ss;
+	ss << "INSERT INTO bookmarks (document_path, desc, begin_x, begin_y, uuid, creation_time, modification_time) VALUES ('" << esc(document_path) << "', '" << esc(desc) << "', " << offset_x << " , " << offset_y << ", '" << esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
+	char* error_message = nullptr;
+
+	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+	return handle_error(
+		error_code,
+		error_message);
+}
+
 bool DatabaseManager::insert_highlight(const std::string& document_path,
 	const std::wstring& desc,
 	float begin_x,
@@ -800,7 +858,7 @@ bool DatabaseManager::select_global_mark(char symbol, std::vector<std::pair<std:
 
 bool DatabaseManager::select_bookmark(const std::string& book_path, std::vector<BookMark> &out_result) {
 		std::wstringstream ss;
-		ss << "select desc, offset_y, uuid, creation_time, modification_time from bookmarks where document_path='" << esc(book_path) << "';";
+		ss << "select desc, offset_y, begin_x, begin_y, end_x, end_y, uuid, creation_time, modification_time from bookmarks where document_path='" << esc(book_path) << "';";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), bookmark_select_callback, &out_result, &error_message);
@@ -877,7 +935,7 @@ bool DatabaseManager::global_select_highlight(std::vector<std::pair<std::string,
 
 bool DatabaseManager::global_select_bookmark(std::vector<std::pair<std::string, BookMark>> &out_result) {
 		std::wstringstream ss;
-		ss << "select document_path, desc, offset_y, uuid, creation_time, modification_time from bookmarks;";
+		ss << "select document_path, desc, offset_y, begin_x, begin_y, end_x, end_y, uuid, creation_time, modification_time from bookmarks;";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), global_bookmark_select_callback, &out_result, &error_message);
@@ -1524,6 +1582,17 @@ bool DatabaseManager::update_highlight_add_annotation(const std::string& uuid, c
 bool DatabaseManager::update_highlight_type(const std::string& uuid, char new_type) {
 	std::wstringstream ss;
 	ss << "UPDATE highlights set type='" << new_type << "', modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
+
+	char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+		error_code,
+		error_message);
+}
+
+bool DatabaseManager::update_bookmark_change_text(const std::string& uuid, const std::wstring& new_text) {
+	std::wstringstream ss;
+	ss << "UPDATE bookmarks set desc='" << esc(new_text) << "', modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
 
 	char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);

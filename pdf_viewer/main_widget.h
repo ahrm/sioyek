@@ -126,9 +126,10 @@ public:
 	// selected text (using mouse cursor or other methods) which is used e.g. for copying or highlighting
 	std::wstring selected_text;
 
-	// whether we are in rect select mode (some commands require a rectangle to be executed
+	// whether we are in rect/point select mode (some commands require a rectangle to be executed
 	// for example `delete_freehand_drawings`)
 	bool rect_select_mode = false;
+	bool point_select_mode = false;
 
 	// begin/end of current selected rectangle
 	std::optional<AbsoluteDocumentPos> rect_select_begin = {};
@@ -174,6 +175,7 @@ public:
 	// the index of highlight in doc()->get_highlights() that is selected. This is used to
 	// delete/edit highlights e.g. by selecting a highlight by clicking on it and then executing `delete_highlight`
 	int selected_highlight_index = -1;
+	int selected_bookmark_index = -1;
 
 	// An incomplete portal that is being created. The source of the portal is filled
 	// but the destination still needs to be set.
@@ -299,7 +301,9 @@ public:
 	void handle_click(WindowPos pos);
 
 	//bool eventFilter(QObject* obj, QEvent* event) override;
+	void set_command_textbox_text(const std::wstring& txt);
 	void change_selected_highlight_type(char new_type);
+	void change_selected_bookmark_text(const std::wstring& new_text);
 	char get_current_selected_highlight_type();
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false, const std::wstring& initial_value=L"");
 	void show_mark_selector();
@@ -346,6 +350,7 @@ public:
 
 	void reset_highlight_links();
 	void set_rect_select_mode(bool mode);
+	void set_point_select_mode(bool mode);
 	void clear_selected_rect();
 	void clear_selected_text();
 

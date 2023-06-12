@@ -444,6 +444,48 @@ public:
 	}
 };
 
+class AddBookmarkMarkedCommand: public Command {
+
+public:
+
+	std::optional<std::wstring> text_;
+	std::optional<AbsoluteDocumentPos> point_;
+
+	AddBookmarkMarkedCommand(MainWidget* w) : Command(w) {};
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+		if (!text_.has_value()) {
+			Requirement req = { RequirementType::Text, "Bookmark Text"};
+			return req;
+		}
+		if (!point_.has_value()) {
+			Requirement req = { RequirementType::Point, "Bookmark Location"};
+			return req;
+		}
+		return {};
+	}
+
+	void set_text_requirement(std::wstring value) {
+		text_ = value;
+	}
+
+	void set_point_requirement(AbsoluteDocumentPos value) {
+		point_ = value;
+	}
+
+
+	void perform() {
+		widget->doc()->add_marked_bookmark(text_.value(), point_.value());
+		//widget->delete_freehand_drawings(rect_.value());
+		//widget->freehand_drawing_mode = original_drawing_mode;
+	}
+
+	std::string get_name() {
+		return "add_marked_bookmark";
+	}
+};
+
 class GotoBookmarkCommand : public Command {
 public:
 	GotoBookmarkCommand(MainWidget* w) : Command(w) {};
@@ -925,6 +967,28 @@ public:
 
 	std::string text_requirement_name() {
 		return "Page Number";
+	}
+
+	bool pushes_state() {
+		return true;
+	}
+};
+
+class EditSelectedBookmarkCommand : public TextCommand {
+public:
+	EditSelectedBookmarkCommand(MainWidget* w) : TextCommand(w) {};
+
+	void perform() {
+		std::wstring text_ = text.value();
+		widget->change_selected_bookmark_text(text_);
+	}
+
+	std::string get_name() {
+		return "edit_selected_bookmark";
+	}
+
+	std::string text_requirement_name() {
+		return "Bookmark Text";
 	}
 
 	bool pushes_state() {
@@ -2805,6 +2869,7 @@ public:
 	void set_symbol_requirement(char value) { get_command()->set_symbol_requirement(value); }
 	void set_file_requirement(std::wstring value) { get_command()->set_file_requirement(value); }
 	void set_rect_requirement(fz_rect value) { get_command()->set_rect_requirement(value); }
+	void set_point_requirement(AbsoluteDocumentPos value) { get_command()->set_point_requirement(value); }
 	void set_num_repeats(int nr) { get_command()->set_num_repeats(nr); }
 	std::vector<char> special_symbols() { return get_command()->special_symbols(); }
 	void pre_perform() { get_command()->pre_perform(); }
@@ -2882,6 +2947,7 @@ class CustomCommand : public Command {
 	std::wstring raw_command;
 	std::string name;
 	std::optional<fz_rect> command_rect;
+	std::optional<AbsoluteDocumentPos> command_point;
 	std::optional<std::wstring> command_text;
 
 public:
@@ -2905,6 +2971,10 @@ public:
 
 	void set_rect_requirement(fz_rect rect) {
 		command_rect = rect;
+	}
+
+	void set_point_requirement(AbsoluteDocumentPos point) {
+		command_point = point;
 	}
 
 	void set_text_requirement(std::wstring txt) {
@@ -3287,6 +3357,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["turn_off_all_drawings"] = [](MainWidget* widget) {return std::make_unique< TurnOffAllDrawings>(widget); };
 	new_commands["goto_mark"] = [](MainWidget* widget) {return std::make_unique< GotoMark>(widget); };
 	new_commands["goto_page_with_page_number"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithPageNumberCommand>(widget); };
+	new_commands["edit_selected_bookmark"] = [](MainWidget* widget) {return std::make_unique< EditSelectedBookmarkCommand>(widget); };
 	new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
 	new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
 	new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
@@ -3307,6 +3378,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["previous_page"] = [](MainWidget* widget) {return std::make_unique< PreviousPageCommand>(widget); };
 	new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
 	new_commands["add_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkCommand>(widget); };
+	new_commands["add_marked_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkMarkedCommand>(widget); };
 	new_commands["add_highlight"] = [](MainWidget* widget) {return std::make_unique< AddHighlightCommand>(widget); };
 	new_commands["goto_toc"] = [](MainWidget* widget) {return std::make_unique< GotoTableOfContentsCommand>(widget); };
 	new_commands["goto_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightCommand>(widget); };
@@ -4054,6 +4126,7 @@ void Command::set_text_requirement(std::wstring value) {}
 void Command::set_symbol_requirement(char value) {}
 void Command::set_file_requirement(std::wstring value) {}
 void Command::set_rect_requirement(fz_rect value) {}
+void Command::set_point_requirement(AbsoluteDocumentPos value) {}
 
 std::wstring Command::get_text_default_value() {
 	return L"";
