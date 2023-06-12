@@ -4480,7 +4480,7 @@ void MainWidget::handle_goto_bookmark() {
 
 	int closest_bookmark_index = main_document_view->get_document()->find_closest_bookmark_index(bookmarks, main_document_view->get_offset_y());
 
-	set_filtered_select_menu<float>(option_names, option_location_strings, option_locations, closest_bookmark_index,
+    set_filtered_select_menu<float>({ option_names, option_location_strings }, option_locations, closest_bookmark_index,
 		[&](float* offset_value) {
 			validate_render();
 			push_state();
@@ -4513,7 +4513,7 @@ void MainWidget::handle_goto_bookmark_global() {
 		}
 	}
 
-	set_filtered_select_menu<BookState>(descs, file_names, book_states, -1,
+    set_filtered_select_menu<BookState>({ descs, file_names }, book_states, -1,
 		[&](BookState* book_state) {
 			validate_render();
 			open_document(book_state->document_path, 0.0f, book_state->offset_y);
@@ -4550,7 +4550,9 @@ char MainWidget::get_current_selected_highlight_type() {
 
 void MainWidget::handle_goto_highlight() {
 	std::vector<std::wstring> option_names;
+	std::vector<std::wstring> option_text_annotations;
 	std::vector<std::wstring> option_location_strings;
+    bool has_text_annotations = false;
 	std::vector<Highlight> highlights = main_document_view->get_document()->get_highlights_sorted();
 
 	int closest_highlight_index = main_document_view->get_document()->find_closest_highlight_index(highlights, main_document_view->get_offset_y());
@@ -4559,11 +4561,23 @@ void MainWidget::handle_goto_highlight() {
 		std::wstring type_name = L"a";
 		type_name[0] = highlight.type;
 		option_names.push_back(L"[" + type_name + L"] " + highlight.description + L"]");
+        option_text_annotations.push_back(highlight.text_annot);
+        if (highlight.text_annot.size() > 0) {
+            has_text_annotations = true;
+        }
 		auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos(highlight.selection_begin);
 		option_location_strings.push_back(get_page_formatted_string(page + 1));
 	}
 
-    set_filtered_select_menu<Highlight>(option_names, option_location_strings, highlights, closest_highlight_index,
+    std::vector<std::vector<std::wstring>> table;
+    if (has_text_annotations) {
+        table = { option_names, option_text_annotations, option_location_strings };
+    }
+    else {
+        table = { option_names, option_location_strings };
+    }
+
+    set_filtered_select_menu<Highlight>(table, highlights, closest_highlight_index,
         [&](Highlight* hl) {
 			validate_render();
 			push_state();
@@ -4580,8 +4594,10 @@ void MainWidget::handle_goto_highlight_global() {
 	std::vector<std::pair<std::string, Highlight>> global_highlights;
 	db_manager->global_select_highlight(global_highlights);
 	std::vector<std::wstring> descs;
+	std::vector<std::wstring> text_annotations;
 	std::vector<std::wstring> file_names;
 	std::vector<BookState> book_states;
+    bool has_annots = false;
 
 	for (const auto& desc_hl_pair : global_highlights) {
 		std::string checksum = desc_hl_pair.first;
@@ -4596,6 +4612,11 @@ void MainWidget::handle_goto_highlight_global() {
 
 			//descs.push_back(L"[" + highlight_type_string + L"]" + hl.description + L" {" + file_name + L"}");
 			descs.push_back(L"[" + highlight_type_string + L"]" + hl.description);
+            text_annotations.push_back(hl.text_annot);
+
+            if (hl.text_annot.size() > 0) {
+                has_annots = true;
+            }
 
 			file_names.push_back(truncate_string(file_name, 50));
 
@@ -4604,7 +4625,15 @@ void MainWidget::handle_goto_highlight_global() {
 		}
 	}
 
-    set_filtered_select_menu<BookState>(descs, file_names, book_states, -1,
+    std::vector<std::vector<std::wstring>> table;
+    if (has_annots) {
+        table = { descs, text_annotations, file_names };
+    }
+    else{
+		table = { descs, file_names };
+	}
+
+    set_filtered_select_menu<BookState>(table, book_states, -1,
 
         [&](BookState* book_state) {
             if (book_state) {
@@ -4762,7 +4791,7 @@ void MainWidget::handle_open_prev_doc() {
 	}
 
 
-    set_filtered_select_menu<std::string>(opened_docs_names, {}, opened_docs_hashes, -1,
+    set_filtered_select_menu<std::string>({ opened_docs_names }, opened_docs_hashes, -1,
         [&](std::string* doc_hash) {
             if (doc_hash->size() > 0) {
                 validate_render();
@@ -5927,7 +5956,7 @@ void MainWidget::show_download_paper_menu(
     // file sizes
     std::vector<std::wstring> right_names(paper_names.size());
 
-    set_filtered_select_menu<std::wstring>(paper_names, right_names, download_urls, -1, 
+    set_filtered_select_menu<std::wstring>({ paper_names, right_names }, download_urls, -1,
 		[&](std::wstring* url) {
             download_paper_with_url(*url);
 		},
@@ -6267,8 +6296,7 @@ void MainWidget::handle_goto_loaded_document() {
     }
 
 	set_filtered_select_menu<std::wstring>(
-		loaded_document_paths,
-		{},
+        { loaded_document_paths },
 		loaded_document_paths,
 		index,
 		[&](std::wstring* path) {

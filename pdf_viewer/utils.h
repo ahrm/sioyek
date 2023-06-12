@@ -252,6 +252,7 @@ void convert_qcolor_to_float4(const QColor& color, float* out_floats);
 fz_irect get_index_irect(fz_rect original, int index, fz_matrix transform, int num_h_slices, int num_v_slices);
 fz_rect get_index_rect(fz_rect original, int index, int num_h_slices, int num_v_slices);
 QStandardItemModel* create_table_model(std::vector<std::wstring> lefts, std::vector<std::wstring> rights);
+QStandardItemModel* create_table_model(const std::vector<std::vector<std::wstring>> column_texts);
 
 #ifdef SIOYEK_ANDROID
 QString android_file_uri_from_content_uri(QString uri);

@@ -136,7 +136,9 @@ protected:
 		}
 
 		QTreeView* tree_view = dynamic_cast<QTreeView*>(abstract_item_view);
+
 		if (tree_view) {
+			int n_columns = item_model->columnCount();
 			tree_view->expandAll();
 			tree_view->setHeaderHidden(true);
 			tree_view->resizeColumnToContents(0);
@@ -212,6 +214,10 @@ protected:
 	virtual QString get_view_stylesheet_type_name() = 0;
 
 public:
+
+	void set_filter_column_index(int index) {
+		proxy_model->setFilterKeyColumn(index);
+	}
 
 
 	std::optional<QModelIndex> get_selected_index() {
@@ -463,8 +469,7 @@ public:
 	}
 
 	FilteredSelectTableWindowClass(
-		std::vector<std::wstring> std_string_list,
-		std::vector<std::wstring> std_string_list_right,
+		const std::vector<std::vector<std::wstring>>& table,
 		std::vector<T> values,
 		int selected_index,
 		std::function<void(T*)> on_done,
@@ -474,15 +479,15 @@ public:
 		on_done(on_done),
 		on_delete_function(on_delete_function)
 	{
-		item_strings = std_string_list;
+		item_strings = table[0];
 		QVector<QString> q_string_list;
-		for (const auto& s : std_string_list) {
+		for (const auto& s : table[0]) {
 			q_string_list.push_back(QString::fromStdWString(s));
 
 		}
 
 
-		QStandardItemModel* model = create_table_model(std_string_list, std_string_list_right);
+		QStandardItemModel* model = create_table_model(table);
 		//model->setItem(selected_index, 0, new QStandardItem(QString::fromStdWString(std_string_list[selected_index])));
 		//QStandardItemModel* model = new QStandardItemModel();
 
@@ -509,10 +514,13 @@ public:
 		table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
 		table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-		if (std_string_list.size() > 0) {
+		if (table[0].size() > 0) {
 			table_view->horizontalHeader()->setStretchLastSection(false);
-			table_view->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-			table_view->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+			for (int i = 0; i < table.size()-1; i++) {
+				table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
+			}
+
+			table_view->horizontalHeader()->setSectionResizeMode(table.size()-1, QHeaderView::ResizeToContents);
 		}
 
 		table_view->horizontalHeader()->hide();

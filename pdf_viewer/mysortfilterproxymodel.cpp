@@ -28,6 +28,8 @@ bool MySortFilterProxyModel::filterAcceptsRow(int source_row,
         }
     }
     else {
+        //QModelIndex source_index = sourceModel()->index(source_row, this->filterKeyColumn(), source_parent);
+		//std::string key = sourceModel()->data(source_index, filterRole()).toString().toStdString();
         return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
     }
 }

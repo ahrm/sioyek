@@ -101,15 +101,40 @@ Rectangle {
                 //anchors.right: parent.right
                 anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
-                Text {
-                    id: inner
-                    text: model.display
-                    color: "white"
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    font.pixelSize: 15
-                    wrapMode: Text.Wrap
+                Item{
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    width: _model.columnCount() == 3 ? parent.width / 2 : parent.width
+                    id: inner_container
+
+					Text {
+						id: inner
+						text: model.display
+						color: "white"
+						anchors.verticalCenter: parent.verticalCenter
+						anchors.left: parent.left
+						anchors.right: parent.right
+						font.pixelSize: 15
+						wrapMode: Text.Wrap
+					}
+                }
+                Item{
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    anchors.left: inner_container.right
+                    width: _model.columnCount() == 3 ? parent.width / 2 : parent.width
+					visible: _model.columnCount() == 3
+
+					Text {
+						id: inner2
+						text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, 1)) || "";
+						color: "white"
+						anchors.verticalCenter: parent.verticalCenter
+						anchors.left: parent.left
+						anchors.right: parent.right
+						font.pixelSize: 15
+						wrapMode: Text.Wrap
+					}
                 }
 
             }
@@ -124,12 +149,12 @@ Rectangle {
 
                     // model.display.slice(0, 0) is a hack to get qml to redraw this widget
                     // when model changes there has to be a better way to do this
-					text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, 1)) || "";
+					text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, _model.columnCount()-1)) || "";
                     color: "white"
                     anchors.verticalCenter: parent.verticalCenter
                     font.pixelSize: 15
                 }
-                visible: _model.columnCount() == 2
+                visible: _model.columnCount() >= 2
             }
 
 			Button{

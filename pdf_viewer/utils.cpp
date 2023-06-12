@@ -2601,6 +2601,35 @@ fz_rect get_index_rect(fz_rect original, int index, int num_h_slices, int num_v_
 	return new_rect;
 }
 
+QStandardItemModel* create_table_model(const std::vector<std::vector<std::wstring>> column_texts) {
+	QStandardItemModel* model = new QStandardItemModel();
+	if (column_texts.size() == 0) {
+		return model;
+	}
+	int num_rows = column_texts[0].size();
+	for (int i = 1; i < column_texts.size(); i++) {
+		assert(column_texts[i].size() == num_rows);
+	}
+
+	for (int i = 0; i < num_rows; i++) {
+		QList<QStandardItem*> items;
+		for (int j = 0; j < column_texts.size(); j++) {
+			QStandardItem* item = new QStandardItem(QString::fromStdWString(column_texts[j][i]));
+
+			if (j == (column_texts.size()-1)) {
+				item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
+			}
+			else {
+				item->setTextAlignment(Qt::AlignVCenter);
+			}
+			items.append(item);
+		}
+		model->appendRow(items);
+	}
+	return model;
+}
+
+
 QStandardItemModel* create_table_model(std::vector<std::wstring> lefts, std::vector<std::wstring> rights) {
 	QStandardItemModel* model = new QStandardItemModel();
 

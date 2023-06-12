@@ -135,21 +135,28 @@ static int global_bookmark_select_callback(void* res_vector, int argc, char** ar
 static int global_highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
 	std::vector<std::pair<std::string, Highlight>>* res = (std::vector<std::pair<std::string, Highlight>>*)res_vector;
-	assert(argc == 10);
+	assert(argc == 11);
 
 	std::string path = argv[0];
 	std::wstring desc = utf8_decode(argv[1]);
-	char type = argv[2][0];
-	float begin_x = atof(argv[3]);
-	float begin_y = atof(argv[4]);
-	float end_x = atof(argv[5]);
-	float end_y = atof(argv[6]);
-	std::string uuid = argv[7];
-	std::string creation_time = argv[8];
-	std::string modification_time = argv[9];
+	std::wstring text_annot;
+
+	if (argv[2] != nullptr) {
+		text_annot = utf8_decode(argv[2]);
+	}
+
+	char type = argv[3][0];
+	float begin_x = atof(argv[4]);
+	float begin_y = atof(argv[5]);
+	float end_x = atof(argv[6]);
+	float end_y = atof(argv[7]);
+	std::string uuid = argv[8];
+	std::string creation_time = argv[9];
+	std::string modification_time = argv[10];
 
 	Highlight highlight;
 	highlight.description = desc;
+	highlight.text_annot = text_annot;
 	highlight.type = type;
 	highlight.selection_begin.x = begin_x;
 	highlight.selection_begin.y = begin_y;
@@ -859,7 +866,7 @@ bool DatabaseManager::select_highlight_with_type(const std::string& book_path, c
 
 bool DatabaseManager::global_select_highlight(std::vector<std::pair<std::string, Highlight>> &out_result) {
 		std::wstringstream ss;
-		ss << "select document_path, desc, type, begin_x, begin_y, end_x, end_y, uuid, creation_time, modification_time from highlights;";
+		ss << "select document_path, desc, text_annot, type, begin_x, begin_y, end_x, end_y, uuid, creation_time, modification_time from highlights;";
 
 		char* error_message = nullptr;
 		int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), global_highlight_select_callback, &out_result, &error_message);

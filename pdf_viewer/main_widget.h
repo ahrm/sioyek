@@ -621,20 +621,19 @@ public:
     bool event(QEvent *event);
 
 	template<typename T>
-	void set_filtered_select_menu(std::vector<std::wstring> left_names,
-		std::optional<std::vector<std::wstring>> right_names,
+	void set_filtered_select_menu(std::vector<std::vector<std::wstring>> columns,
 		std::vector<T> values,
 		int selected_index,
 		std::function<void(T*)> on_select,
 		std::function<void(T*)> on_delete
 	) {
-		if (right_names) {
+		if (columns.size() > 1) {
 
 			if (TOUCH_MODE) {
 
 				// we will set the parent of model to be the widget in the constructor, and it will delete
 				// the model when it is freed, so this is not a memory leak
-				QStandardItemModel* model = create_table_model(left_names, right_names.value());
+				QStandardItemModel* model = create_table_model(columns);
 
 				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(model, values, selected_index,
 					[&, on_select = std::move(on_select)](T* val) {
@@ -651,10 +650,8 @@ public:
 				set_current_widget(widget);
 			}
 			else {
-
-				set_current_widget(new FilteredSelectTableWindowClass<T>(
-					left_names,
-					right_names.value(),
+				auto w = new FilteredSelectTableWindowClass<T>(
+					columns,
 					values,
 					selected_index,
 					[on_select = std::move(on_select)](T* val) {
@@ -667,14 +664,16 @@ public:
 						if (val) {
 							on_delete(val);
 						}
-					}));
+					});
+				w->set_filter_column_index(-1);
+				set_current_widget(w);
 			}
 		}
 		else {
 
 			if (TOUCH_MODE) {
 				// when will this be released?
-				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(left_names, values, selected_index,
+				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(columns[0], values, selected_index,
 					[&, on_select = std::move(on_select)](T* val) {
 						if (val) {
 							on_select(val);
@@ -691,7 +690,7 @@ public:
 			else {
 
 				set_current_widget(new FilteredSelectWindowClass<T>(
-					left_names,
+					columns[0],
 					values,
 					[on_select = std::move(on_select)](T* val) {
 						if (val) {
