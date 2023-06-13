@@ -1,7 +1,6 @@
 ﻿// make overview_definition return all possible targets
 // add an option to prevent rendering of PDF annotations (maybe make it a config option instead of a command)
-// use double click to edit bookmarks instead of single click
-// update bookmarks in real time as they are being edited
+// use double click to edit highlight desc
 // deduplicate database code
 
 #include <iostream>
@@ -2198,13 +2197,6 @@ void MainWidget::handle_click(WindowPos click_pos) {
     selected_highlight_index = main_document_view->get_highlight_index_in_pos(click_pos);
     selected_bookmark_index  = doc()->get_bookmark_index_at_pos(mouse_abspos);
 
-    if (selected_bookmark_index != -1) {
-        set_command_textbox_text(doc()->get_bookmarks()[selected_bookmark_index].description);
-        handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
-		//text_command_line_edit->setText(QString::fromStdWString(doc()->get_bookmarks()[selected_bookmark_index].description));
-		//text_command_line_edit->setText();
-        return;
-    }
 
     if (TOUCH_MODE && (selected_highlight_index != -1)){
         show_highlight_buttons();
@@ -2369,6 +2361,18 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
                 is_word_selecting = true;
             }
         }
+
+        WindowPos click_pos = { mevent->pos().x(), mevent->pos().y() };
+		AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(click_pos);
+		int bookmark_index  = doc()->get_bookmark_index_at_pos(mouse_abspos);
+		if (bookmark_index != -1) {
+            selected_bookmark_index = bookmark_index;
+			set_command_textbox_text(doc()->get_bookmarks()[bookmark_index].description);
+			handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
+			//text_command_line_edit->setText(QString::fromStdWString(doc()->get_bookmarks()[selected_bookmark_index].description));
+			//text_command_line_edit->setText();
+			return;
+		}
     }
 }
 
