@@ -48,6 +48,7 @@ public:
 	virtual void pre_perform();
 	virtual bool pushes_state();
 	virtual bool requires_document();
+	virtual void on_cancel();
 
 	virtual void run();
 	virtual std::string get_name();

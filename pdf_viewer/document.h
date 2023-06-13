@@ -159,7 +159,7 @@ public:
 	void delete_closest_bookmark(float to_y_offset);
 	void delete_bookmark(int index);
 	void delete_closest_portal(float to_offset_y);
-	const std::vector<BookMark>& get_bookmarks() const;
+	std::vector<BookMark>& get_bookmarks();
 	std::vector<BookMark> get_sorted_bookmarks() const;
 	const std::vector<Highlight>& get_highlights() const;
 	const std::vector<Highlight> get_highlights_of_type(char type) const;

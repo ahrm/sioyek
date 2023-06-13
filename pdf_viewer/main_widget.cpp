@@ -2,7 +2,6 @@
 // add an option to prevent rendering of PDF annotations (maybe make it a config option instead of a command)
 // use double click to edit bookmarks instead of single click
 // update bookmarks in real time as they are being edited
-// deleting highlights immediately after importing does not work
 // deduplicate database code
 
 #include <iostream>
@@ -707,6 +706,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     // when pdf renderer's background threads finish rendering a page or find a new search result
     // we need to update the ui
+    QObject::connect(text_command_line_edit, &QLineEdit::textEdited, [&](const QString& txt) {
+        handle_command_text_change(txt);
+        });
+
     QObject::connect(pdf_renderer, &PdfRenderer::render_advance, this, &MainWidget::invalidate_render);
     QObject::connect(pdf_renderer, &PdfRenderer::search_advance, this, &MainWidget::invalidate_ui);
     // we check periodically to see if the ui needs updating
@@ -1160,6 +1163,11 @@ void MainWidget::handle_escape() {
     text_command_line_edit->setText("");
     pending_portal = {};
     synchronize_pending_link();
+
+    if (pending_command_instance) {
+        pending_command_instance->on_cancel();
+    }
+
     pending_command_instance = nullptr;
     //current_pending_command = {};
 
@@ -2191,8 +2199,8 @@ void MainWidget::handle_click(WindowPos click_pos) {
     selected_bookmark_index  = doc()->get_bookmark_index_at_pos(mouse_abspos);
 
     if (selected_bookmark_index != -1) {
-        handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
         set_command_textbox_text(doc()->get_bookmarks()[selected_bookmark_index].description);
+        handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
 		//text_command_line_edit->setText(QString::fromStdWString(doc()->get_bookmarks()[selected_bookmark_index].description));
 		//text_command_line_edit->setText();
         return;
@@ -6427,5 +6435,14 @@ void MainWidget::toggle_pdf_annotations() {
     }
     else {
         pdf_renderer->set_should_render_annotations(true);
+    }
+}
+
+void MainWidget::handle_command_text_change(const QString& new_text) {
+    if (pending_command_instance) {
+        if (pending_command_instance->get_name() == "edit_selected_bookmark") {
+            doc()->get_bookmarks()[selected_bookmark_index].description = new_text.toStdWString();
+            validate_render();
+        }
     }
 }

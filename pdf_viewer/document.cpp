@@ -335,7 +335,7 @@ void Document::delete_closest_portal(float to_offset_y) {
 	}
 }
 
-const std::vector<BookMark>& Document::get_bookmarks() const {
+std::vector<BookMark>& Document::get_bookmarks() {
 	return bookmarks;
 }
 

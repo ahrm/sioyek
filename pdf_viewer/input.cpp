@@ -1018,7 +1018,24 @@ public:
 
 class EditSelectedBookmarkCommand : public TextCommand {
 public:
+	std::wstring initial_text;
+	int index = -1;
+
 	EditSelectedBookmarkCommand(MainWidget* w) : TextCommand(w) {};
+
+	void pre_perform() {
+
+		initial_text = widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description;
+		index = widget->selected_bookmark_index;
+
+		widget->text_command_line_edit->setText(
+			QString::fromStdWString(widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description)
+		);
+	}
+
+	void on_cancel() {
+		widget->doc()->get_bookmarks()[index].description = initial_text;
+	}
 
 	void perform() {
 		std::wstring text_ = text.value();
@@ -4218,6 +4235,10 @@ void Command::set_num_repeats(int nr) {
 }
 
 void Command::pre_perform() {
+
+}
+
+void Command::on_cancel() {
 
 }
 

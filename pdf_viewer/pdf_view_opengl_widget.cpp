@@ -1303,7 +1303,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 					QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
 					QFont font = painter->font();
-					float font_size = bookmarks[i].font_size == -1 ? 5.0f : bookmarks[i].font_size;
+					float font_size = bookmarks[i].font_size == -1 ? 10.0f : bookmarks[i].font_size;
 					font.setPointSizeF(font_size * document_view->get_zoom_level() * 0.75);
 					painter->setFont(font);
 
