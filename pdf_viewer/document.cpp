@@ -107,6 +107,37 @@ void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos
 	}
 }
 
+int Document::add_incomplete_freetext_bookmark(fz_rect absrect) {
+	BookMark bookmark;
+
+	bookmark.begin_x = absrect.x0;
+	bookmark.begin_y = absrect.y0;
+	bookmark.end_x = absrect.x1;
+	bookmark.end_y = absrect.y1;
+	bookmark.color[0] = FREETEXT_BOOKMARK_COLOR[0];
+	bookmark.color[1] = FREETEXT_BOOKMARK_COLOR[1];
+	bookmark.color[2] = FREETEXT_BOOKMARK_COLOR[2];
+	bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+
+	bookmark.uuid = new_uuid_utf8();
+	bookmarks.push_back(bookmark);
+	return bookmarks.size() - 1;
+}
+
+void Document::add_pending_freetext_bookmark(int index, const std::wstring& desc) {
+	BookMark& bookmark = bookmarks[index];
+	bookmark.description = desc;
+	if (!db_manager->insert_bookmark_freetext(get_checksum(), bookmark)) {
+		undo_pending_bookmark(index);
+	}
+}
+
+void Document::undo_pending_bookmark(int index) {
+	if (index > 0 && index < bookmarks.size()) {
+		bookmarks.erase(bookmarks.begin() + index);
+	}
+}
+
 void Document::add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color) {
 	BookMark bookmark;
 	bookmark.description = desc;

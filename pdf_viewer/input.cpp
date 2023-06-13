@@ -492,17 +492,18 @@ public:
 
 	std::optional<std::wstring> text_;
 	std::optional<fz_rect> rect_;
+	int pending_index = -1;
 
 	AddBookmarkFreetextCommand(MainWidget* w) : Command(w) {};
 
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
 
-		if (!text_.has_value()) {
-			Requirement req = { RequirementType::Text, "Bookmark Text"};
-			return req;
-		}
 		if (!rect_.has_value()) {
 			Requirement req = { RequirementType::Rect, "Bookmark Location"};
+			return req;
+		}
+		if (!text_.has_value()) {
+			Requirement req = { RequirementType::Text, "Bookmark Text"};
 			return req;
 		}
 		return {};
@@ -514,11 +515,21 @@ public:
 
 	void set_rect_requirement(fz_rect value) {
 		rect_ = value;
+		pending_index = widget->doc()->add_incomplete_freetext_bookmark(value);
+		widget->selected_bookmark_index = pending_index;
 	}
 
 
+	void on_cancel() {
+
+		if (pending_index != -1) {
+			widget->doc()->undo_pending_bookmark(pending_index);
+		}
+	}
+
 	void perform() {
-		widget->doc()->add_freetext_bookmark(text_.value(), rect_.value());
+		//widget->doc()->add_freetext_bookmark(text_.value(), rect_.value());
+		widget->doc()->add_pending_freetext_bookmark(pending_index, text_.value());
 		widget->clear_selected_rect();
 		widget->invalidate_render();
 	}

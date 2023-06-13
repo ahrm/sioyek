@@ -6440,7 +6440,7 @@ void MainWidget::toggle_pdf_annotations() {
 
 void MainWidget::handle_command_text_change(const QString& new_text) {
     if (pending_command_instance) {
-        if (pending_command_instance->get_name() == "edit_selected_bookmark") {
+        if ((pending_command_instance->get_name() == "edit_selected_bookmark") || (pending_command_instance->get_name() == "add_freetext_bookmark")) {
             doc()->get_bookmarks()[selected_bookmark_index].description = new_text.toStdWString();
             validate_render();
         }
