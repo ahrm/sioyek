@@ -258,6 +258,7 @@ QStandardItemModel* create_table_model(const std::vector<std::vector<std::wstrin
 QString android_file_uri_from_content_uri(QString uri);
 #endif
 
+char get_highlight_color_type(float color[3]);
 float* get_highlight_type_color(char type);
 void get_rect_augument_data(fz_rect rect, float page_width, float page_height, std::vector<float>& res);
 bool load_npy(QString resource_name, std::vector<float>& output, int* out_rows, int* out_cols);
@@ -276,3 +277,6 @@ QStringList extract_paper_string_from_json_response(QJsonObject json_object, std
 QString file_size_to_human_readable_string(int file_size);
 
 std::wstring new_uuid();
+std::string new_uuid_utf8();
+bool is_text_rtl(const std::wstring& text);
+bool are_same(float f1, float f2);

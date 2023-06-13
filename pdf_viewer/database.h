@@ -64,6 +64,15 @@ public:
 		float end_y,
 		char type,
 		std::wstring uuid);
+	bool insert_highlight_with_annotation(const std::string& checksum,
+		const std::wstring& desc,
+		const std::wstring& annot,
+		float begin_x,
+		float begin_y,
+		float end_x,
+		float end_y,
+		char type,
+		std::wstring uuid);
 	bool get_path_from_hash(const std::string& checksum, std::vector<std::wstring>& out_paths);
 	bool get_hash_from_path(const std::string& path, std::vector<std::wstring>& out_checksum);
 	bool get_prev_path_hash_pairs(std::vector<std::pair<std::wstring, std::wstring>>& out_pairs);

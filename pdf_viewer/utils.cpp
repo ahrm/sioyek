@@ -339,6 +339,19 @@ float dist_squared(fz_point p1, fz_point p2) {
 	return (p1.x - p2.x) * (p1.x - p2.x) + 100 * (p1.y - p2.y) * (p1.y - p2.y);
 }
 
+bool is_text_rtl(const std::wstring& text) {
+	int score = 0;
+	for (int chr : text) {
+		if (is_rtl(chr)) {
+			score += 1;
+		}
+		else {
+			score -= 1;
+		}
+	}
+	return score > 0;
+}
+
 bool is_stext_line_rtl(fz_stext_line* line) {
 
 	float rtl_count = 0.0f;
@@ -2644,6 +2657,31 @@ QStandardItemModel* create_table_model(std::vector<std::wstring> lefts, std::vec
 	return model;
 }
 
+float vec3_distance_squared(float* v1, float* v2) {
+	float distance = 0;
+
+	float dx = *(v1 + 0) - *(v2 + 0);
+	float dy = *(v1 + 1) - *(v2 + 1);
+	float dz = *(v1 + 2) - *(v2 + 2);
+
+	return dx * dx + dy * dy + dz * dz;
+}
+
+char get_highlight_color_type(float color[3]) {
+	float min_distance = 1000;
+	int min_index = -1;
+
+	for (int i = 0; i < 26; i++) {
+		float dist = vec3_distance_squared(color, &HIGHLIGHT_COLORS[i * 3]);
+		if (dist < min_distance) {
+			min_distance = dist;
+			min_index = i;
+		}
+	}
+
+	return 'a' + min_index;
+}
+
 float* get_highlight_type_color(char type) {
 	if (type >= 'a' && type <= 'z') {
 		return &HIGHLIGHT_COLORS[(type - 'a') * 3];
@@ -3140,4 +3178,12 @@ QString file_size_to_human_readable_string(int file_size) {
 
 std::wstring new_uuid() {
 	return QUuid::createUuid().toString().toStdWString();
+}
+
+std::string new_uuid_utf8() {
+	return QUuid::createUuid().toString().toStdString();
+}
+
+bool are_same(float f1, float f2) {
+	return std::abs(f1 - f2) < 0.01;
 }

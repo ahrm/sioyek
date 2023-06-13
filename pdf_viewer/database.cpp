@@ -734,6 +734,35 @@ bool DatabaseManager::insert_highlight(const std::string& document_path,
 		error_message);
 }
 
+bool DatabaseManager::insert_highlight_with_annotation(const std::string& document_path,
+	const std::wstring& desc,
+	const std::wstring& annot,
+	float begin_x,
+	float begin_y,
+	float end_x,
+	float end_y,
+	char type,
+	std::wstring uuid) {
+
+	std::wstringstream ss;
+	ss << "INSERT INTO highlights (document_path, desc, text_annot, type, begin_x, begin_y, end_x, end_y, uuid, creation_time, modification_time) VALUES ('" <<
+		esc(document_path) << "', '"<<
+		esc(desc) << "', '" <<
+		esc(annot) << "', '" <<
+		type << "' , " <<
+		begin_x << " , " <<
+		begin_y << " , " <<
+		end_x << " , " <<
+		end_y << ", '" <<
+		esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
+	char* error_message = nullptr;
+
+	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+	return handle_error(
+		error_code,
+		error_message);
+}
+
 bool DatabaseManager::insert_portal(const std::string& src_document_path,
 	const std::string& dst_document_path,
 	float dst_offset_x,

@@ -1304,14 +1304,23 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
 					QFont font = painter->font();
 					float font_size = bookmarks[i].font_size == -1 ? 5.0f : bookmarks[i].font_size;
-					font.setPointSizeF(font_size * document_view->get_zoom_level());
+					font.setPointSizeF(font_size * document_view->get_zoom_level() * 0.75);
 					painter->setFont(font);
 
 					painter->setPen(convert_float3_to_qcolor(bookmarks[i].color));
 					if (RENDER_FREETEXT_BORDERS) {
 						painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 					}
-					painter->drawText(window_qrect, Qt::AlignCenter | Qt::TextWordWrap, QString::fromStdWString(bookmarks[i].description));
+
+					int flags = Qt::TextWordWrap;
+					if (is_text_rtl(bookmarks[i].description)) {
+						flags |= Qt::AlignRight;
+					}
+					else {
+						flags |= Qt::AlignLeft;
+					}
+
+					painter->drawText(window_qrect, flags, QString::fromStdWString(bookmarks[i].description));
 
 				}
 

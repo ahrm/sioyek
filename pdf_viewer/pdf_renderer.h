@@ -100,7 +100,9 @@ class PdfRenderer : public QObject{
 	void run_search(int thread_index);
 
 public:
+	bool should_render_annotations = true;
     bool no_rerender = false;
+	void set_should_render_annotations(bool should_render);
 
 	PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone);
 	~PdfRenderer();

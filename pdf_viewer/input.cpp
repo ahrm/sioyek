@@ -1567,6 +1567,21 @@ public:
 	bool requires_document() { return false; }
 };
 
+class TogglePDFAnnotationsCommand : public Command {
+public:
+	TogglePDFAnnotationsCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		widget->toggle_pdf_annotations();
+	}
+
+	std::string get_name() {
+		return "toggle_pdf_annotations";
+	}
+
+	bool requires_document() { return true; }
+};
+
 class OpenLinkCommand : public Command {
 public:
 	OpenLinkCommand(MainWidget* w) : Command(w) {};
@@ -2700,6 +2715,19 @@ public:
 	bool requires_document() { return false; }
 };
 
+class ImportAnnotationsCommand : public Command {
+public:
+	ImportAnnotationsCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		widget->doc()->import_annotations();
+	}
+
+	std::string get_name() {
+		return "import_annotations";
+	}
+};
+
 class EmbedAnnotationsCommand : public Command {
 public:
 	EmbedAnnotationsCommand(MainWidget* w) : Command(w) {};
@@ -3466,6 +3494,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["close_window"] = [](MainWidget* widget) {return std::make_unique< CloseWindowCommand>(widget); };
 	new_commands["quit"] = [](MainWidget* widget) {return std::make_unique< QuitCommand>(widget); };
 	new_commands["escape"] = [](MainWidget* widget) {return std::make_unique< EscapeCommand>(widget); };
+	new_commands["toggle_pdf_annotations"] = [](MainWidget* widget) {return std::make_unique< TogglePDFAnnotationsCommand>(widget); };
 	new_commands["q"] = [](MainWidget* widget) {return std::make_unique< QuitCommand>(widget); };
 	new_commands["open_link"] = [](MainWidget* widget) {return std::make_unique< OpenLinkCommand>(widget); };
 	new_commands["overview_link"] = [](MainWidget* widget) {return std::make_unique< OverviewLinkCommand>(widget); };
@@ -3547,6 +3576,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["toggle_horizontal_scroll_lock"] = [](MainWidget* widget) {return std::make_unique< ToggleHorizontalLockCommand>(widget); };
 	new_commands["execute"] = [](MainWidget* widget) {return std::make_unique< ExecuteCommand>(widget); };
 	new_commands["embed_annotations"] = [](MainWidget* widget) {return std::make_unique< EmbedAnnotationsCommand>(widget); };
+	new_commands["import_annotations"] = [](MainWidget* widget) {return std::make_unique< ImportAnnotationsCommand>(widget); };
 	new_commands["copy_window_size_config"] = [](MainWidget* widget) {return std::make_unique< CopyWindowSizeConfigCommand>(widget); };
 	new_commands["toggle_select_highlight"] = [](MainWidget* widget) {return std::make_unique< ToggleSelectHighlightCommand>(widget); };
 	new_commands["open_last_document"] = [](MainWidget* widget) {return std::make_unique< OpenLastDocumentCommand>(widget); };

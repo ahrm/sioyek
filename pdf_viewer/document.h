@@ -131,7 +131,9 @@ public:
 	void add_bookmark(const std::wstring& desc, float y_offset);
 	void add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
 	void add_freetext_bookmark(const std::wstring& desc, fz_rect absrect);
+	void add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color);
 	void add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
+	void add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
 	void delete_highlight_with_index(int index);
 	void delete_highlight(Highlight hl);
 	int get_bookmark_index_at_pos(AbsoluteDocumentPos abspos);
@@ -236,9 +238,13 @@ public:
 		std::wstring& selected_text,
 		fz_document* doc=nullptr);
 
+	bool is_bookmark_new(const BookMark& bookmark);
+	bool is_highlight_new(const Highlight& highlight);
+
 	int get_page_offset();
 	void set_page_offset(int new_offset);
 	void embed_annotations(std::wstring new_file_path);
+	void import_annotations();
 	std::vector<fz_rect> get_page_flat_words(int page);
 	std::vector<std::vector<fz_rect>> get_page_flat_word_chars(int page);
 	void clear_document_caches();

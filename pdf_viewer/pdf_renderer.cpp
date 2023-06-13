@@ -519,7 +519,14 @@ void PdfRenderer::run(int thread_index) {
 				//}
 				//else {
 				if (req.slice_index == -1) {
-					rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+					if (should_render_annotations) {
+						rendered_pixmap = fz_new_pixmap_from_page_number(mupdf_context, doc, req.page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+					}
+					else {
+						fz_page* page = fz_load_page(mupdf_context, doc, req.page);
+						rendered_pixmap = fz_new_pixmap_from_page_contents(mupdf_context, page, transform_matrix, fz_device_rgb(mupdf_context), 0);
+						fz_drop_page(mupdf_context, page);
+					}
 				}
 				else {
 					fz_page* page = fz_load_page(mupdf_context, doc, req.page);
@@ -532,7 +539,12 @@ void PdfRenderer::run(int thread_index) {
 					fz_clear_pixmap_with_value(mupdf_context, rendered_pixmap, 0xFF);
 					fz_device* draw_device = fz_new_draw_device(mupdf_context, transform_matrix, rendered_pixmap);
 
-					fz_run_page(mupdf_context, page, draw_device, fz_identity, nullptr); // todo: use cookie to report progress
+					if (should_render_annotations) {
+						fz_run_page(mupdf_context, page, draw_device, fz_identity, nullptr); // todo: use cookie to report progress
+					}
+					else {
+						fz_run_page_contents(mupdf_context, page, draw_device, fz_identity, nullptr); // todo: use cookie to report progress
+					}
 
 					fz_close_device(mupdf_context, draw_device);
 					fz_drop_device(mupdf_context, draw_device);
@@ -595,3 +607,10 @@ bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 	return true;
 }
 
+
+void PdfRenderer::set_should_render_annotations(bool should_render) {
+	if (should_render_annotations != should_render) {
+		should_render_annotations = should_render;
+		delete_old_pages(true, true);
+	}
+}

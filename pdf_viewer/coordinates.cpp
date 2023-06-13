@@ -1,4 +1,5 @@
 #include "coordinates.h"
+#include "utils.h"
 
 WindowPos::WindowPos(float x_, float y_) {
 	x = static_cast<int>(x_);
@@ -14,3 +15,12 @@ WindowPos::WindowPos() {
 	x = 0;
 	y = 0;
 }
+
+bool are_same(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs) {
+	return are_same(lhs.x, rhs.x) && are_same(lhs.y, rhs.y);
+}
+
+//bool operator==(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs)
+//{
+//	return are_same(lhs.x, rhs.x) && are_same(lhs.y, rhs.y);
+//}

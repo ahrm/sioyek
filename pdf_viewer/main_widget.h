@@ -353,6 +353,7 @@ public:
 	void set_point_select_mode(bool mode);
 	void clear_selected_rect();
 	void clear_selected_text();
+	void toggle_pdf_annotations();
 
 	void expand_selection_vertical(bool begin, bool below);
 

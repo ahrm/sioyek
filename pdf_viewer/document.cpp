@@ -89,8 +89,9 @@ void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 	BookMark bookmark;
 	bookmark.y_offset = y_offset;
 	bookmark.description = desc;
+	bookmark.uuid = new_uuid_utf8();
 	bookmarks.push_back(bookmark);
-	db_manager->insert_bookmark(get_checksum(), desc, y_offset, new_uuid());
+	db_manager->insert_bookmark(get_checksum(), desc, y_offset, utf8_decode(bookmark.uuid));
 }
 
 void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos) {
@@ -99,13 +100,14 @@ void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos
 	bookmark.y_offset = pos.y;
 	bookmark.begin_x = pos.x;
 	bookmark.begin_y = pos.y;
+	bookmark.uuid = new_uuid_utf8();
 
-	if (db_manager->insert_bookmark_marked(get_checksum(), desc, pos.x, pos.y, new_uuid())) {
+	if (db_manager->insert_bookmark_marked(get_checksum(), desc, pos.x, pos.y, utf8_decode(bookmark.uuid))) {
 		bookmarks.push_back(bookmark);
 	}
 }
 
-void Document::add_freetext_bookmark(const std::wstring& desc, fz_rect absrect) {
+void Document::add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color) {
 	BookMark bookmark;
 	bookmark.description = desc;
 	bookmark.y_offset = absrect.y0;
@@ -115,15 +117,18 @@ void Document::add_freetext_bookmark(const std::wstring& desc, fz_rect absrect) 
 	bookmark.end_x = absrect.x1;
 	bookmark.end_y = absrect.y1;
 
-	bookmark.color[0] = FREETEXT_BOOKMARK_COLOR[0];
-	bookmark.color[1] = FREETEXT_BOOKMARK_COLOR[1];
-	bookmark.color[2] = FREETEXT_BOOKMARK_COLOR[2];
+	bookmark.color[0] = color[0];
+	bookmark.color[1] = color[1];
+	bookmark.color[2] = color[2];
 	bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
-	bookmark.uuid = utf8_encode(new_uuid());
+	bookmark.uuid = new_uuid_utf8();
 
 	if (db_manager->insert_bookmark_freetext(get_checksum(), bookmark)) {
 		bookmarks.push_back(bookmark);
 	}
+}
+void Document::add_freetext_bookmark(const std::wstring& desc, fz_rect absrect) {
+	add_freetext_bookmark_with_color(desc, absrect, FREETEXT_BOOKMARK_COLOR);
 }
 
 void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
@@ -149,6 +154,41 @@ void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
 }
 
 
+void Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
+	std::deque<fz_rect> selected_characters;
+	std::vector<fz_rect> merged_rects;
+	std::wstring selected_text;
+	get_text_selection(selection_begin, selection_end, true, selected_characters, selected_text);
+
+	if (!((type <= 'z' && type >= 'a') || (type <= 'Z' && type >= 'A'))) {
+		type = 'a';
+	}
+
+	merge_selected_character_rects(selected_characters, merged_rects);
+	Highlight highlight;
+	highlight.description = selected_text;
+	highlight.text_annot = annot;
+	highlight.selection_begin = selection_begin;
+	highlight.selection_end = selection_end;
+	highlight.type = type;
+	highlight.highlight_rects = merged_rects;
+	highlight.uuid = new_uuid_utf8();
+
+	if (db_manager->insert_highlight_with_annotation(
+		get_checksum(),
+		selected_text,
+		annot,
+		selection_begin.x,
+		selection_begin.y,
+		selection_end.x,
+		selection_end.y,
+		highlight.type,
+		utf8_decode(highlight.uuid))) {
+		highlights.push_back(highlight);
+	}
+
+}
+
 void Document::add_highlight(const std::wstring& desc,
 	const std::vector<fz_rect>& highlight_rects,
 	AbsoluteDocumentPos selection_begin,
@@ -166,6 +206,7 @@ void Document::add_highlight(const std::wstring& desc,
 	highlight.selection_end = selection_end;
 	highlight.type = type;
 	highlight.highlight_rects = highlight_rects;
+	highlight.uuid = new_uuid_utf8();
 
 	highlights.push_back(highlight);
 	db_manager->insert_highlight(
@@ -176,7 +217,7 @@ void Document::add_highlight(const std::wstring& desc,
 		selection_end.x,
 		selection_end.y,
 		highlight.type,
-		new_uuid());
+		utf8_decode(highlight.uuid));
 }
 
 bool Document::get_is_indexing() {
@@ -184,6 +225,7 @@ bool Document::get_is_indexing() {
 }
 
 void Document::add_portal(Portal portal, bool insert_into_database) {
+	portal.uuid = new_uuid_utf8();
 	portals.push_back(portal);
 	if (insert_into_database) {
 		db_manager->insert_portal(
@@ -193,7 +235,7 @@ void Document::add_portal(Portal portal, bool insert_into_database) {
 			portal.dst.book_state.offset_y,
 			portal.dst.book_state.zoom_level,
 			portal.src_offset_y,
-			new_uuid());
+			utf8_decode(portal.uuid));
 	}
 }
 
@@ -1572,6 +1614,116 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
 	}
 }
 
+void Document::import_annotations() {
+	pdf_document* pdf_doc = pdf_specifics(context, doc);
+
+	std::vector<BookMark> new_bookmarks;
+	std::vector<Highlight> new_highlights;
+
+	for (int p = 0; p < num_pages(); p++) {
+		fz_page* page = fz_load_page(context, doc, p);
+		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
+
+		pdf_annot* annot = pdf_first_annot(context, pdf_page);
+		while (annot) {
+			enum pdf_annot_type annot_type = pdf_annot_type(context, annot);
+
+			if (annot_type == pdf_annot_type::PDF_ANNOT_TEXT) {
+				fz_rect rect = pdf_bound_annot(context, annot);
+				fz_rect absrect = document_to_absolute_rect(p, rect, true);
+				// get text of annotation
+				const char* txt = pdf_annot_contents(context, annot);
+				//new_bookmark.description = utf8_decode(txt);
+				BookMark new_bookmark;
+				new_bookmark.description = utf8_decode(txt);
+				new_bookmark.y_offset = (absrect.y0 + absrect.y1) / 2;
+				new_bookmark.begin_x = (absrect.x0 + absrect.x1) / 2;
+				new_bookmark.begin_y = new_bookmark.y_offset;
+
+				if (is_bookmark_new(new_bookmark)) {
+					add_marked_bookmark(new_bookmark.description, { new_bookmark.begin_x, new_bookmark.begin_y });
+				}
+
+			}
+
+			if (annot_type == pdf_annot_type::PDF_ANNOT_FREE_TEXT) {
+				fz_rect rect = pdf_bound_annot(context, annot);
+				fz_rect absrect = document_to_absolute_rect(p, rect, true);
+				// get text of annotation
+				const char* txt = pdf_annot_contents(context, annot);
+				//new_bookmark.description = utf8_decode(txt);
+				BookMark new_bookmark;
+				new_bookmark.description = utf8_decode(txt);
+				new_bookmark.y_offset = absrect.y0;
+				new_bookmark.begin_x = absrect.x0;
+				new_bookmark.begin_y = absrect.y0;
+				new_bookmark.end_x = absrect.x1;
+				new_bookmark.end_y = absrect.y1;
+				char font_name[100] = {0};
+				const char* font_name_addr[] = {font_name};
+				float font_size;
+				float color[4];
+				int n_channels;
+
+				pdf_annot_default_appearance(context, annot, &font_name_addr[0], &font_size, &n_channels, color);
+				new_bookmark.font_face = utf8_decode(font_name);
+				new_bookmark.font_size = font_size;
+				new_bookmark.color[0] = color[0];
+				new_bookmark.color[1] = color[1];
+				new_bookmark.color[2] = color[2];
+
+				if (is_bookmark_new(new_bookmark)) {
+					add_freetext_bookmark_with_color(new_bookmark.description, absrect, new_bookmark.color);
+				}
+
+			}
+
+			if ((annot_type == pdf_annot_type::PDF_ANNOT_HIGHLIGHT) || (annot_type == pdf_annot_type::PDF_ANNOT_UNDERLINE)) {
+				int num_quads = pdf_annot_quad_point_count(context, annot);
+
+				if (num_quads > 0) {
+					fz_quad first_vertex = pdf_annot_quad_point(context, annot, 0);
+					fz_quad last_vertex = pdf_annot_quad_point(context, annot, num_quads-1);
+					const char* txt = pdf_annot_contents(context, annot);
+					float color[4];
+					int n_channels = -1;
+					pdf_annot_color(context, annot, &n_channels, color);
+
+					DocumentPos begin_pos, end_pos;
+					begin_pos.page = p;
+					begin_pos.x = first_vertex.ul.x;
+					begin_pos.y = ( first_vertex.ul.y + first_vertex.ll.y ) / 2;
+					end_pos.page = p;
+					end_pos.x = last_vertex.ur.x;
+					end_pos.y = ( last_vertex.ur.y + last_vertex.lr.y ) / 2;
+
+					AbsoluteDocumentPos begin_abspos = document_to_absolute_pos(begin_pos, true);
+					AbsoluteDocumentPos end_abspos = document_to_absolute_pos(end_pos, true);
+
+					Highlight new_highlight;
+					new_highlight.selection_begin = begin_abspos;
+					new_highlight.selection_end = end_abspos;
+					new_highlight.text_annot = utf8_decode(txt);
+					new_highlight.type = get_highlight_color_type(color);
+
+					if (annot_type == pdf_annot_type::PDF_ANNOT_UNDERLINE) {
+						new_highlight.type = new_highlight.type + 'A' - 'a';
+					}
+
+					if (is_highlight_new(new_highlight)) {
+						add_highlight(new_highlight.text_annot, begin_abspos, end_abspos, new_highlight.type);
+					}
+
+				}
+			}
+			annot = pdf_next_annot(context, annot);
+		}
+
+
+		fz_drop_page(context, page);
+	}
+}
+
 void Document::embed_annotations(std::wstring new_file_path) {
 
 	std::unordered_map<int, fz_page*> cached_pages;
@@ -1589,7 +1741,19 @@ void Document::embed_annotations(std::wstring new_file_path) {
 	};
 
 	std::string new_file_path_utf8 = utf8_encode(new_file_path);
-	fz_output* output_file = fz_new_output_with_path(context, new_file_path_utf8.c_str(), 0);
+	fz_output* output_file = nullptr;
+
+	fz_try(context) {
+		output_file = fz_new_output_with_path(context, new_file_path_utf8.c_str(), 0);
+	}
+	fz_catch(context) {
+		output_file = nullptr;
+	}
+
+	if (output_file == nullptr) {
+		show_error_message(L"Could not open the output file. Make sure the file is not opened in sioyek or another application.");
+		return;
+	}
 
 	pdf_document* pdf_doc = pdf_specifics(context, doc);
 	const std::vector<Highlight>& doc_highlights = get_highlights();
@@ -1660,6 +1824,10 @@ void Document::embed_annotations(std::wstring new_file_path) {
 			annot_rect.x1 = end_page_pos.x;
 			annot_rect.y0 = begin_page_pos.y;
 			annot_rect.y1 = end_page_pos.y;
+
+			std::string encoded_bookmark_text = utf8_encode(bookmark.description);
+			const char* font_face = bookmark.font_face.size() == 0 ? "Times New Roman" : encoded_bookmark_text.c_str();
+			pdf_set_annot_default_appearance(context, bookmark_annot, font_face, bookmark.font_size, 3, bookmark.color);
 		}
 		else if (bookmark.is_marked()) {
 			DocumentPos begin_page_pos = absolute_to_page_pos({bookmark.begin_x, bookmark.begin_y});
@@ -3043,4 +3211,26 @@ void Document::update_bookmark_text(int index, const std::wstring& new_text) {
 			bookmarks[index].description = new_text;
 		}
 	}
+}
+
+bool Document::is_bookmark_new(const BookMark& new_bookmark) {
+	for (auto bookmark : bookmarks) {
+		if (are_same(bookmark.begin_x, new_bookmark.begin_x) &&
+			are_same(bookmark.begin_y, new_bookmark.begin_y) &&
+				are_same(bookmark.end_x, new_bookmark.end_x) &&
+				are_same(bookmark.end_y, new_bookmark.end_y)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+
+bool Document::is_highlight_new(const Highlight& new_highlight) {
+	for (auto highlight : highlights) {
+		if (are_same(highlight.selection_begin, new_highlight.selection_begin) && are_same(highlight.selection_end, new_highlight.selection_end)) {
+			return false;
+		}
+	}
+	return true;
 }

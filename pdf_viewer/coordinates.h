@@ -137,3 +137,4 @@ Vec<T,dim> operator-(const Vec<T, dim>& lhs, const Vec<T, dim>& rhs) {
 //	}
 //	return c;
 //}
+bool are_same(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs);

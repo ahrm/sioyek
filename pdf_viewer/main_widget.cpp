@@ -1,5 +1,9 @@
 ﻿// make overview_definition return all possible targets
-// add color and font size and font face support for freetext bookmarks
+// add an option to prevent rendering of PDF annotations (maybe make it a config option instead of a command)
+// use double click to edit bookmarks instead of single click
+// update bookmarks in real time as they are being edited
+// deleting highlights immediately after importing does not work
+// deduplicate database code
 
 #include <iostream>
 #include <vector>
@@ -674,8 +678,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     text_command_line_edit_label = new QLabel();
     text_command_line_edit = new QLineEdit();
 
-    text_command_line_edit_label->setFont(QFont(get_font_face_name()));
-    text_command_line_edit->setFont(QFont(get_font_face_name()));
+    text_command_line_edit_label->setFont(label_font);
+    text_command_line_edit->setFont(label_font);
 
     text_command_line_edit_label->setStyleSheet(get_status_stylesheet());
     text_command_line_edit->setStyleSheet(get_status_stylesheet());
@@ -6414,5 +6418,14 @@ void MainWidget::set_command_textbox_text(const std::wstring& txt) {
     }
     else {
         text_command_line_edit->setText(QString::fromStdWString(txt));
+    }
+}
+
+void MainWidget::toggle_pdf_annotations() {
+    if (pdf_renderer->should_render_annotations) {
+        pdf_renderer->set_should_render_annotations(false);
+    }
+    else {
+        pdf_renderer->set_should_render_annotations(true);
     }
 }
