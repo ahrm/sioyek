@@ -43,6 +43,7 @@ extern int NUM_V_SLICES;
 extern bool SLICED_RENDERING;
 extern float BOOKMARK_RECT_SIZE;
 extern bool RENDER_FREETEXT_BORDERS;
+extern float FREETEXT_BOOKMARK_FONT_SIZE;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -1309,7 +1310,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 					QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
 					QFont font = painter->font();
-					float font_size = bookmarks[i].font_size == -1 ? 10.0f : bookmarks[i].font_size;
+					float font_size = bookmarks[i].font_size == -1 ? FREETEXT_BOOKMARK_FONT_SIZE : bookmarks[i].font_size;
 					font.setPointSizeF(font_size * document_view->get_zoom_level() * 0.75);
 					painter->setFont(font);
 

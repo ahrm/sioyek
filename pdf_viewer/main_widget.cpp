@@ -1,7 +1,9 @@
 ﻿// make overview_definition return all possible targets
 // deduplicate database code
 // allow keyboard-only modification of bookmarks/highlight comments
-// import freehand drawings
+// add ability to move bookmarks/drawings
+// in order to bind a key to <C-S-+> we should use this syntax, it this supposed to be the case?
+// if we start adding the bookmark and then press <C-+> and then cancel, the bookmark is not cancelled
 
 #include <iostream>
 #include <vector>
@@ -150,6 +152,7 @@ extern bool VIMTEX_WSL_FIX;
 extern float RULER_AUTO_MOVE_SENSITIVITY;
 extern float TTS_RATE;
 extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
+extern float FREETEXT_BOOKMARK_FONT_SIZE;
 
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
@@ -4366,7 +4369,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command){
 	if (new_command) {
 		if (!new_command->next_requirement(this).has_value()) {
 			new_command->run();
-            pending_command_instance = nullptr;
+            //pending_command_instance = nullptr;
 		}
 		else {
 			pending_command_instance = std::move(new_command);
@@ -5672,7 +5675,12 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    qDebug() << "#drawings=" << doc()->num_freehand_drawings();
+    if (pending_command_instance) {
+        qDebug() << pending_command_instance->get_name();
+    }
+    else {
+        qDebug() << "no pending commands";
+    }
 }
 
 void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
@@ -6413,7 +6421,8 @@ void MainWidget::add_text_annotation_to_selected_highlight(const std::wstring& a
 void MainWidget::change_selected_bookmark_text(const std::wstring& new_text) {
     if (selected_bookmark_index != -1) {
         if (new_text.size() > 0) {
-			doc()->update_bookmark_text(selected_bookmark_index, new_text);
+            float new_font_size = doc()->get_bookmarks()[selected_bookmark_index].font_size;
+			doc()->update_bookmark_text(selected_bookmark_index, new_text, new_font_size);
         }
         else {
             doc()->delete_bookmark(selected_bookmark_index);
@@ -6456,4 +6465,14 @@ void MainWidget::handle_command_text_change(const QString& new_text) {
             validate_render();
         }
     }
+}
+
+void MainWidget::update_selected_bookmark_font_size() {
+
+	if (selected_bookmark_index != -1) {
+		BookMark& selected_bookmark = doc()->get_bookmarks()[selected_bookmark_index];
+		if (selected_bookmark.font_size != -1) {
+			selected_bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+		}
+	}
 }

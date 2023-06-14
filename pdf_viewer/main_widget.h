@@ -300,6 +300,7 @@ public:
 	void set_main_document_view_state(DocumentViewState new_view_state);
 	void handle_click(WindowPos pos);
 
+	void update_selected_bookmark_font_size();
 	//bool eventFilter(QObject* obj, QEvent* event) override;
 	void set_command_textbox_text(const std::wstring& txt);
 	void change_selected_highlight_type(char new_type);

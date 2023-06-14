@@ -119,7 +119,7 @@ int Document::add_incomplete_freetext_bookmark(fz_rect absrect) {
 	bookmark.color[0] = FREETEXT_BOOKMARK_COLOR[0];
 	bookmark.color[1] = FREETEXT_BOOKMARK_COLOR[1];
 	bookmark.color[2] = FREETEXT_BOOKMARK_COLOR[2];
-	bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+	//bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
 
 	bookmark.uuid = new_uuid_utf8();
 	bookmarks.push_back(bookmark);
@@ -129,13 +129,15 @@ int Document::add_incomplete_freetext_bookmark(fz_rect absrect) {
 void Document::add_pending_freetext_bookmark(int index, const std::wstring& desc) {
 	BookMark& bookmark = bookmarks[index];
 	bookmark.description = desc;
+	bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+
 	if (!db_manager->insert_bookmark_freetext(get_checksum(), bookmark)) {
 		undo_pending_bookmark(index);
 	}
 }
 
 void Document::undo_pending_bookmark(int index) {
-	if (index > 0 && index < bookmarks.size()) {
+	if (index >= 0 && index < bookmarks.size()) {
 		bookmarks.erase(bookmarks.begin() + index);
 	}
 }
@@ -3410,9 +3412,9 @@ int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
 	return -1;
 }
 
-void Document::update_bookmark_text(int index, const std::wstring& new_text) {
+void Document::update_bookmark_text(int index, const std::wstring& new_text, float new_font_size) {
 	if ((index >= 0) && (index < bookmarks.size())) {
-		if (db_manager->update_bookmark_change_text(bookmarks[index].uuid, new_text)) {
+		if (db_manager->update_bookmark_change_text(bookmarks[index].uuid, new_text, new_font_size)) {
 			bookmarks[index].description = new_text;
 		}
 	}

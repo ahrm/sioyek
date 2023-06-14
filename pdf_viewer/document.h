@@ -265,7 +265,7 @@ public:
 	void update_highlight_add_text_annotation(const std::string& uuid, const std::wstring& text_annot);
 	void update_highlight_type(const std::string& uuid, char new_type);
 	void update_highlight_type(int index, char new_type);
-	void update_bookmark_text(int index, const std::wstring& new_text);
+	void update_bookmark_text(int index, const std::wstring& new_text, float new_font_size);
 
 	bool needs_password();
 	bool needs_authentication();

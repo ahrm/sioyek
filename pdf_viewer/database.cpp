@@ -1678,9 +1678,9 @@ bool DatabaseManager::update_highlight_type(const std::string& uuid, char new_ty
 		error_message);
 }
 
-bool DatabaseManager::update_bookmark_change_text(const std::string& uuid, const std::wstring& new_text) {
+bool DatabaseManager::update_bookmark_change_text(const std::string& uuid, const std::wstring& new_text, float new_font_size) {
 	std::wstringstream ss;
-	ss << "UPDATE bookmarks set desc='" << esc(new_text) << "', modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
+	ss << "UPDATE bookmarks set desc='" << esc(new_text) << "', font_size=" << new_font_size << ", modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
 
 	char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);

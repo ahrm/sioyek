@@ -48,7 +48,7 @@ public:
 	bool update_portal(const std::string& uuid, float dst_offset_x, float dst_offset_y, float dst_zoom_level);
 	bool update_highlight_add_annotation(const std::string& uuid, const std::wstring& text_annot);
 	bool update_highlight_type(const std::string& uuid, char new_type);
-	bool update_bookmark_change_text(const std::string& uuid, const std::wstring& new_text);
+	bool update_bookmark_change_text(const std::string& uuid, const std::wstring& new_text, float new_font_size);
 	bool select_opened_books_path_values(std::vector<std::wstring>& out_result);
 	bool delete_mark_with_symbol(char symbol);
 	bool select_global_mark(char symbol, std::vector<std::pair<std::string, float>>& out_result);

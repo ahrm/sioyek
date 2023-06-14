@@ -26,6 +26,7 @@ extern std::vector<Path> user_config_paths;
 extern std::vector<Path> user_keys_paths;
 extern bool TOUCH_MODE;
 extern bool VERBOSE;
+extern float FREETEXT_BOOKMARK_FONT_SIZE;
 
 Command::Command(MainWidget* widget_) : widget(widget_) {
 
@@ -578,6 +579,41 @@ public:
 	bool requires_document() { return false; }
 };
 
+class IncreaseFreetextBookmarkFontSizeCommand : public Command {
+public:
+	IncreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		FREETEXT_BOOKMARK_FONT_SIZE *= 1.1f;
+		if (FREETEXT_BOOKMARK_FONT_SIZE > 100) {
+			FREETEXT_BOOKMARK_FONT_SIZE = 100;
+		}
+		widget->update_selected_bookmark_font_size();
+
+	}
+
+	std::string get_name() {
+		return "increase_freetext_font_size";
+	}
+};
+
+class DecreaseFreetextBookmarkFontSizeCommand : public Command {
+public:
+	DecreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		FREETEXT_BOOKMARK_FONT_SIZE /= 1.1f;
+		if (FREETEXT_BOOKMARK_FONT_SIZE < 1) {
+			FREETEXT_BOOKMARK_FONT_SIZE = 1;
+		}
+		widget->update_selected_bookmark_font_size();
+	}
+
+	std::string get_name() {
+		return "decrease_freetext_font_size";
+	}
+};
+
 class GotoHighlightCommand : public Command {
 public:
 	GotoHighlightCommand(MainWidget* w) : Command(w) {};
@@ -1036,6 +1072,7 @@ public:
 class EditSelectedBookmarkCommand : public TextCommand {
 public:
 	std::wstring initial_text;
+	float initial_font_size;
 	int index = -1;
 
 	EditSelectedBookmarkCommand(MainWidget* w) : TextCommand(w) {};
@@ -1043,6 +1080,7 @@ public:
 	void pre_perform() {
 
 		initial_text = widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description;
+		initial_font_size = widget->doc()->get_bookmarks()[widget->selected_bookmark_index].font_size;
 		index = widget->selected_bookmark_index;
 
 		widget->text_command_line_edit->setText(
@@ -1052,6 +1090,7 @@ public:
 
 	void on_cancel() {
 		widget->doc()->get_bookmarks()[index].description = initial_text;
+		widget->doc()->get_bookmarks()[index].font_size = initial_font_size;
 	}
 
 	void perform() {
@@ -3487,6 +3526,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["add_highlight"] = [](MainWidget* widget) {return std::make_unique< AddHighlightCommand>(widget); };
 	new_commands["goto_toc"] = [](MainWidget* widget) {return std::make_unique< GotoTableOfContentsCommand>(widget); };
 	new_commands["goto_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightCommand>(widget); };
+	new_commands["increase_freetext_font_size"] = [](MainWidget* widget) {return std::make_unique< IncreaseFreetextBookmarkFontSizeCommand>(widget); };
+	new_commands["decrease_freetext_font_size"] = [](MainWidget* widget) {return std::make_unique< DecreaseFreetextBookmarkFontSizeCommand>(widget); };
 	new_commands["goto_bookmark"] = [](MainWidget* widget) {return std::make_unique< GotoBookmarkCommand>(widget); };
 	new_commands["goto_bookmark_g"] = [](MainWidget* widget) {return std::make_unique< GotoBookmarkGlobalCommand>(widget); };
 	new_commands["goto_highlight_g"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightGlobalCommand>(widget); };
