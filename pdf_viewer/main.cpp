@@ -122,6 +122,7 @@ bool SLICED_RENDERING = false;
 #endif
 int NUM_V_SLICES = 5;
 int NUM_H_SLICES = 1;
+bool SHOULD_RENDER_PDF_ANNOTATIONS = true;
 
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];

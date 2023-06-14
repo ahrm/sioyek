@@ -20,6 +20,8 @@
 
 #include "checksum.h"
 
+extern bool SHOULD_RENDER_PDF_ANNOTATIONS;
+
 const int WINDOW_SIZE = 10;
 const int EMBEDDING_DIM = 10;
 
@@ -450,6 +452,7 @@ Document::Document(fz_context* context, std::wstring file_name, DatabaseManager*
 	checksummer(checksummer),
 	doc(nullptr){
 	last_update_time = QDateTime::currentDateTime();
+	should_render_annotations = SHOULD_RENDER_PDF_ANNOTATIONS;
 }
 
 void Document::count_chapter_pages(std::vector<int> &page_counts) {
@@ -3264,4 +3267,16 @@ bool Document::is_highlight_new(const Highlight& new_highlight) {
 		}
 	}
 	return true;
+}
+
+bool Document::should_render_pdf_annotations() {
+	return should_render_annotations;
+}
+
+void Document::set_should_render_pdf_annotations(bool val) {
+	should_render_annotations = val;
+}
+
+bool Document::get_should_render_pdf_annotations() {
+	return should_render_annotations;
 }

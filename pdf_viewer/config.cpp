@@ -90,6 +90,7 @@ extern float EPUB_LINE_SPACING;
 extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern bool RENDER_FREETEXT_BORDERS;
+extern bool SHOULD_RENDER_PDF_ANNOTATIONS;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -1021,6 +1022,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		L"collapsed_toc",
 		ConfigType::Bool,
 		&SMALL_TOC,
+		bool_serializer,
+		bool_deserializer,
+		bool_validator
+		});
+	configs.push_back({
+		L"render_pdf_annotations",
+		ConfigType::Bool,
+		&SHOULD_RENDER_PDF_ANNOTATIONS,
 		bool_serializer,
 		bool_deserializer,
 		bool_validator

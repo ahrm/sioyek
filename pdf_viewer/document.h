@@ -103,6 +103,7 @@ private:
 	bool is_document_indexing_required = true;
 	bool is_indexing = false;
 	bool are_highlights_loaded = false;
+	bool should_render_annotations = true;
 
 	QDateTime last_update_time;
 	CachedChecksummer* checksummer;
@@ -140,6 +141,9 @@ public:
 	void delete_highlight_with_index(int index);
 	void delete_highlight(Highlight hl);
 	int get_bookmark_index_at_pos(AbsoluteDocumentPos abspos);
+	bool should_render_pdf_annotations();
+	void set_should_render_pdf_annotations(bool val);
+	bool get_should_render_pdf_annotations();
 
 	void fill_highlight_rects(fz_context* ctx, fz_document* doc);
 	void count_chapter_pages(std::vector<int> &page_counts);

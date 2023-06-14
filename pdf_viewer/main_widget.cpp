@@ -2,6 +2,8 @@
 // add an option to prevent rendering of PDF annotations (maybe make it a config option instead of a command)
 // make the marked bookmark icon look nice
 // deduplicate database code
+// allow keyboard-only modification of bookmarks/highlight comments
+// don't re-embed annotations when executing embed_annotations
 
 #include <iostream>
 #include <vector>
@@ -6437,12 +6439,15 @@ void MainWidget::set_command_textbox_text(const std::wstring& txt) {
 }
 
 void MainWidget::toggle_pdf_annotations() {
-    if (pdf_renderer->should_render_annotations) {
-        pdf_renderer->set_should_render_annotations(false);
+
+    if (doc()->get_should_render_pdf_annotations()) {
+        doc()->set_should_render_pdf_annotations(false);
     }
     else {
-        pdf_renderer->set_should_render_annotations(true);
+        doc()->set_should_render_pdf_annotations(true);
     }
+
+    pdf_renderer->delete_old_pages(true, true);
 }
 
 void MainWidget::handle_command_text_change(const QString& new_text) {

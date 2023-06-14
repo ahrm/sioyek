@@ -617,6 +617,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 
 	GLuint texture = pdf_renderer->find_rendered_page(target_doc->get_path(),
 		docpos.page,
+		target_doc->should_render_pdf_annotations(),
 		-1,
 		1,
 		1,
@@ -784,6 +785,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 		GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
 			page_number,
+			document_view->get_document()->should_render_pdf_annotations(),
 			index,
 			nh,
 			nv,
@@ -990,6 +992,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (is_presentation_mode()) {
 		if (PRERENDER_NEXT_PAGE) {
 			GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+				document_view->get_document()->should_render_pdf_annotations(),
 				visible_page_number.value() + 1,
 				-1,
 				1,
@@ -1032,6 +1035,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 					num_slices_for_page_rect(page_rect, &nh, &nv);
 
 					pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+						document_view->get_document()->should_render_pdf_annotations(),
 						max_page + i,
 						0,
 						nh,
