@@ -135,7 +135,7 @@ public:
 	void add_pending_freetext_bookmark(int index, const std::wstring& desc);
 	void undo_pending_bookmark(int index);
 	void add_freetext_bookmark(const std::wstring& desc, fz_rect absrect);
-	void add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color);
+	void add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color, float font_size=-1);
 	void add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
 	void add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
 	void delete_highlight_with_index(int index);
@@ -247,10 +247,13 @@ public:
 
 	bool is_bookmark_new(const BookMark& bookmark);
 	bool is_highlight_new(const Highlight& highlight);
+	std::vector<BookMark> get_new_sioyek_bookmarks(const std::vector<BookMark>& pdf_bookmarks);
+	std::vector<Highlight> get_new_sioyek_highlights(const std::vector<Highlight>& pdf_highlights);
 
 	int get_page_offset();
 	void set_page_offset(int new_offset);
 	void embed_annotations(std::wstring new_file_path);
+	void get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::vector<Highlight>& pdf_highlights);
 	void import_annotations();
 	std::vector<fz_rect> get_page_flat_words(int page);
 	std::vector<std::vector<fz_rect>> get_page_flat_word_chars(int page);

@@ -181,3 +181,7 @@ bool operator==(const Mark& lhs, const Mark& rhs);
 bool operator==(const BookMark& lhs, const BookMark& rhs);
 bool operator==(const Highlight& lhs, const Highlight& rhs);
 bool operator==(const Portal& lhs, const Portal& rhs);
+
+bool are_same(const BookMark& lhs, const BookMark& rhs);
+
+bool are_same(const Highlight& lhs, const Highlight& rhs);

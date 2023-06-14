@@ -189,3 +189,10 @@ bool operator==(const Portal& lhs, const Portal& rhs)
 	return  (lhs.src_offset_y == rhs.src_offset_y) && (lhs.dst.document_checksum == rhs.dst.document_checksum);
 }
 
+bool are_same(const BookMark& lhs, const BookMark& rhs) {
+	return are_same(lhs.begin_x, rhs.begin_x) && are_same(lhs.begin_y, rhs.begin_y) && are_same(lhs.end_x, rhs.end_x) && are_same(lhs.end_y, rhs.end_y);
+}
+
+bool are_same(const Highlight& lhs, const Highlight& rhs) {
+	return are_same(lhs.selection_begin, rhs.selection_begin) && are_same(lhs.selection_end, rhs.selection_end);
+}

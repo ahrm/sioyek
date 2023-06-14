@@ -1,9 +1,8 @@
 ﻿// make overview_definition return all possible targets
-// add an option to prevent rendering of PDF annotations (maybe make it a config option instead of a command)
 // make the marked bookmark icon look nice
 // deduplicate database code
 // allow keyboard-only modification of bookmarks/highlight comments
-// don't re-embed annotations when executing embed_annotations
+// import freehand drawings
 
 #include <iostream>
 #include <vector>
