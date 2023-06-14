@@ -247,13 +247,15 @@ public:
 
 	bool is_bookmark_new(const BookMark& bookmark);
 	bool is_highlight_new(const Highlight& highlight);
+	bool is_drawing_new(const FreehandDrawing& drawing);
+	int num_freehand_drawings();
 	std::vector<BookMark> get_new_sioyek_bookmarks(const std::vector<BookMark>& pdf_bookmarks);
 	std::vector<Highlight> get_new_sioyek_highlights(const std::vector<Highlight>& pdf_highlights);
 
 	int get_page_offset();
 	void set_page_offset(int new_offset);
 	void embed_annotations(std::wstring new_file_path);
-	void get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::vector<Highlight>& pdf_highlights);
+	void get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::vector<Highlight>& pdf_highlights, std::vector<FreehandDrawing>& pdf_drawings);
 	void import_annotations();
 	std::vector<fz_rect> get_page_flat_words(int page);
 	std::vector<std::vector<fz_rect>> get_page_flat_word_chars(int page);

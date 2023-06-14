@@ -5672,6 +5672,7 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
+    qDebug() << "#drawings=" << doc()->num_freehand_drawings();
 }
 
 void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {

@@ -3187,3 +3187,19 @@ std::string new_uuid_utf8() {
 bool are_same(float f1, float f2) {
 	return std::abs(f1 - f2) < 0.01;
 }
+
+bool are_same(const FreehandDrawing& lhs, const FreehandDrawing& rhs) {
+	if (lhs.points.size() != rhs.points.size()) {
+		return false;
+	}
+	if (lhs.type != rhs.type) {
+		return false;
+	}
+	for (int i = 0; i < lhs.points.size(); i++) {
+		if (!are_same(lhs.points[i].pos, rhs.points[i].pos)) {
+			return false;
+		}
+	}
+	return true;
+
+}

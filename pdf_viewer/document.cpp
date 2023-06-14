@@ -1648,7 +1648,7 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
 	}
 }
 
-void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::vector<Highlight>& pdf_highlights) {
+void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::vector<Highlight>& pdf_highlights,  std::vector<FreehandDrawing>& pdf_drawings) {
 	for (int p = 0; p < num_pages(); p++) {
 		fz_page* page = fz_load_page(context, doc, p);
 		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
@@ -1657,31 +1657,32 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
 		while (annot) {
 			enum pdf_annot_type annot_type = pdf_annot_type(context, annot);
 
-			std::vector<fz_point> vertices;
-
 			if (annot_type == pdf_annot_type::PDF_ANNOT_INK) {
 				int num_strokes = pdf_annot_ink_list_count(context, annot);
 				for (int stroke_index = 0; stroke_index < num_strokes; stroke_index++) {
+					FreehandDrawing drawing;
+
 					int vertex_count = pdf_annot_ink_list_stroke_count(context, annot, stroke_index);
+					int n_channels;
+					float color[4];
+					pdf_annot_color(context, annot, &n_channels, color);
+					char type = get_highlight_color_type(color);
+					float thickness = pdf_annot_border(context, annot);
+					drawing.type = type;
+
 					for (int vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
 						fz_point vertex = pdf_annot_ink_list_stroke_vertex(context, annot, stroke_index, vertex_index);
-						vertices.push_back(vertex);
+						FreehandDrawingPoint point;
+						DocumentPos docpos;
+						docpos.page = p;
+						docpos.x = vertex.x;
+						docpos.y = vertex.y;
+						point.pos = document_to_absolute_pos(docpos, true);
+						point.thickness = thickness;
+						drawing.points.push_back(point);
 					}
+					pdf_drawings.push_back(drawing);
 				}
-	//for (auto [page_number, drawings] : page_freehand_drawings) {
-	//	for (auto drawing : drawings) {
-	//		fz_page* page = load_cached_page(page_number);
-	//		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
-	//		pdf_annot* drawing_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_INK);
- //           //void pdf_set_annot_ink_list(fz_context *ctx, pdf_annot *annot, int n, const int *count, const fz_point *v);
-	//		std::vector<fz_point> points;
-
-	//		for (auto point : drawing.points) {
-	//			DocumentPos docpos = absolute_to_page_pos(point.pos);
-	//			if (docpos.page == page_number) {
-	//				points.push_back(fz_point{docpos.x, docpos.y});
-	//			}
-	//		}
 			}
 			if (annot_type == pdf_annot_type::PDF_ANNOT_TEXT) {
 				fz_rect rect = pdf_bound_annot(context, annot);
@@ -1774,8 +1775,9 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
 void Document::import_annotations() {
 	std::vector<BookMark> pdf_bookmarks;
 	std::vector<Highlight> pdf_highlights;
+	std::vector<FreehandDrawing> pdf_drawings;
 
-	get_pdf_annotations(pdf_bookmarks, pdf_highlights);
+	get_pdf_annotations(pdf_bookmarks, pdf_highlights, pdf_drawings);
 
 
  //           int count[1] = { static_cast<int>(points.size()) };
@@ -1802,6 +1804,11 @@ void Document::import_annotations() {
 	for (auto highlight : pdf_highlights) {
 		if (is_highlight_new(highlight)) {
 			add_highlight(highlight.text_annot, highlight.selection_begin, highlight.selection_end, highlight.type);
+		}
+	}
+	for (auto drawing : pdf_drawings) {
+		if (is_drawing_new(drawing)) {
+			add_freehand_drawing(drawing);
 		}
 	}
 
@@ -1948,8 +1955,9 @@ void Document::embed_annotations(std::wstring new_file_path) {
 	pdf_document* pdf_doc = pdf_specifics(context, doc);
 	std::vector<Highlight> pdf_highlights;
 	std::vector<BookMark> pdf_bookmarks;
+	std::vector<FreehandDrawing> pdf_drawings;
 
-	get_pdf_annotations(pdf_bookmarks, pdf_highlights);
+	get_pdf_annotations(pdf_bookmarks, pdf_highlights, pdf_drawings);
 
 	const std::vector<Highlight>& doc_highlights = get_new_sioyek_highlights(pdf_highlights);
 	const std::vector<BookMark>& doc_bookmarks = get_new_sioyek_bookmarks(pdf_bookmarks);
@@ -2051,7 +2059,6 @@ void Document::embed_annotations(std::wstring new_file_path) {
 			fz_page* page = load_cached_page(page_number);
 			pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
 			pdf_annot* drawing_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_INK);
-            //void pdf_set_annot_ink_list(fz_context *ctx, pdf_annot *annot, int n, const int *count, const fz_point *v);
 			std::vector<fz_point> points;
 
 			for (auto point : drawing.points) {
@@ -3430,6 +3437,19 @@ bool Document::is_highlight_new(const Highlight& new_highlight) {
 	return true;
 }
 
+bool Document::is_drawing_new(const FreehandDrawing& drawing) {
+	if (drawing.points.size() == 0) return false;
+
+	int drawing_page = absolute_to_page_pos(drawing.points[0].pos).page;
+	for (auto page_drawing : page_freehand_drawings[drawing_page]) {
+		if (are_same(page_drawing, drawing)) {
+			return false;
+		}
+	}
+	return true;
+
+}
+
 bool Document::should_render_pdf_annotations() {
 	return should_render_annotations;
 }
@@ -3479,3 +3499,12 @@ std::vector<Highlight> Document::get_new_sioyek_highlights(const std::vector<Hig
 	}
 	return res;
 }
+int Document::num_freehand_drawings() {
+	int res = 0;
+
+	for (auto [page, drawings] : page_freehand_drawings) {
+		res += drawings.size();
+	}
+	return res;
+}
+

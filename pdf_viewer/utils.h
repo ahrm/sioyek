@@ -280,3 +280,4 @@ std::wstring new_uuid();
 std::string new_uuid_utf8();
 bool is_text_rtl(const std::wstring& text);
 bool are_same(float f1, float f2);
+bool are_same(const FreehandDrawing& lhs, const FreehandDrawing& rhs);
