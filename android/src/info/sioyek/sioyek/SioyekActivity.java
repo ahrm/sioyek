@@ -36,16 +36,19 @@ public class SioyekActivity extends QtActivity{
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+
         Intent intent = getIntent();
         if (intent != null){
             String action = intent.getAction();
             if (action != null){
                 Uri intentUri = intent.getData();
-                if (intentUri.toString().startsWith("content://")){
-                    Toast.makeText(this, "Can't open content files, download the file and open from file manager", Toast.LENGTH_LONG).show();
-                    finish();
+                if (intentUri != null){
+                    if (intentUri.toString().startsWith("content://")){
+                        Toast.makeText(this, "Can't open content files, download the file and open from file manager", Toast.LENGTH_LONG).show();
+                        //finish();
+                    }
+                    isIntentPending = true;
                 }
-                isIntentPending = true;
             }
         }
         if(!Environment.isExternalStorageManager()){
