@@ -322,6 +322,12 @@ public:
 		widget->add_text_annotation_to_selected_highlight(this->text.value());
 	}
 
+	void pre_perform() {
+		widget->text_command_line_edit->setText(
+			QString::fromStdWString(widget->doc()->get_highlights()[widget->selected_highlight_index].text_annot)
+		);
+	}
+
 	std::string get_name() {
 		return "add_annot_to_highlight";
 	}

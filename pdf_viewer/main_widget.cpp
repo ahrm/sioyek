@@ -1,6 +1,6 @@
 ﻿// make overview_definition return all possible targets
 // add an option to prevent rendering of PDF annotations (maybe make it a config option instead of a command)
-// use double click to edit highlight desc
+// make the marked bookmark icon look nice
 // deduplicate database code
 
 #include <iostream>
@@ -2365,14 +2365,17 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
         WindowPos click_pos = { mevent->pos().x(), mevent->pos().y() };
 		AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(click_pos);
 		int bookmark_index  = doc()->get_bookmark_index_at_pos(mouse_abspos);
+		int highlight_index = main_document_view->get_highlight_index_in_pos(click_pos);
+
 		if (bookmark_index != -1) {
             selected_bookmark_index = bookmark_index;
-			set_command_textbox_text(doc()->get_bookmarks()[bookmark_index].description);
 			handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
-			//text_command_line_edit->setText(QString::fromStdWString(doc()->get_bookmarks()[selected_bookmark_index].description));
-			//text_command_line_edit->setText();
 			return;
 		}
+        if (highlight_index != -1) {
+            selected_highlight_index = highlight_index;
+			handle_command_types(command_manager->get_command_with_name(this, "add_annot_to_highlight"), 0);
+        }
     }
 }
 
