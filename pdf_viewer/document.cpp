@@ -1657,6 +1657,32 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
 		while (annot) {
 			enum pdf_annot_type annot_type = pdf_annot_type(context, annot);
 
+			std::vector<fz_point> vertices;
+
+			if (annot_type == pdf_annot_type::PDF_ANNOT_INK) {
+				int num_strokes = pdf_annot_ink_list_count(context, annot);
+				for (int stroke_index = 0; stroke_index < num_strokes; stroke_index++) {
+					int vertex_count = pdf_annot_ink_list_stroke_count(context, annot, stroke_index);
+					for (int vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
+						fz_point vertex = pdf_annot_ink_list_stroke_vertex(context, annot, stroke_index, vertex_index);
+						vertices.push_back(vertex);
+					}
+				}
+	//for (auto [page_number, drawings] : page_freehand_drawings) {
+	//	for (auto drawing : drawings) {
+	//		fz_page* page = load_cached_page(page_number);
+	//		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
+	//		pdf_annot* drawing_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_INK);
+ //           //void pdf_set_annot_ink_list(fz_context *ctx, pdf_annot *annot, int n, const int *count, const fz_point *v);
+	//		std::vector<fz_point> points;
+
+	//		for (auto point : drawing.points) {
+	//			DocumentPos docpos = absolute_to_page_pos(point.pos);
+	//			if (docpos.page == page_number) {
+	//				points.push_back(fz_point{docpos.x, docpos.y});
+	//			}
+	//		}
+			}
 			if (annot_type == pdf_annot_type::PDF_ANNOT_TEXT) {
 				fz_rect rect = pdf_bound_annot(context, annot);
 				fz_rect absrect = document_to_absolute_rect(p, rect, true);
@@ -1751,6 +1777,12 @@ void Document::import_annotations() {
 
 	get_pdf_annotations(pdf_bookmarks, pdf_highlights);
 
+
+ //           int count[1] = { static_cast<int>(points.size()) };
+	//		pdf_set_annot_border(context, drawing_annot, drawing.points[0].thickness);
+	//		pdf_set_annot_ink_list(context, drawing_annot, 1, count, &points[0]);
+	//		pdf_update_annot(context, drawing_annot);
+	//	}
 	for (auto bookmark : pdf_bookmarks){
 		if (is_bookmark_new(bookmark)) {
 
@@ -2032,6 +2064,9 @@ void Document::embed_annotations(std::wstring new_file_path) {
             int count[1] = { static_cast<int>(points.size()) };
 			pdf_set_annot_border(context, drawing_annot, drawing.points[0].thickness);
 			pdf_set_annot_ink_list(context, drawing_annot, 1, count, &points[0]);
+			if (drawing.type >= 'a' && drawing.type <= 'z') {
+				pdf_set_annot_color(context, drawing_annot, 3, &HIGHLIGHT_COLORS[3 * (drawing.type - 'a')]);
+			}
 			pdf_update_annot(context, drawing_annot);
 		}
 	}

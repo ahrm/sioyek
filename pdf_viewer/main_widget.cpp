@@ -1,5 +1,4 @@
 ﻿// make overview_definition return all possible targets
-// make the marked bookmark icon look nice
 // deduplicate database code
 // allow keyboard-only modification of bookmarks/highlight comments
 // import freehand drawings
