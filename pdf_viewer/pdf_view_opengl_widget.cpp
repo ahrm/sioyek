@@ -1290,6 +1290,8 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 						font.setPointSizeF(5.0f * document_view->get_zoom_level());
 						painter->setFont(font);
 
+						painter->fillRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect), QColor(255, 255, 0));
+						painter->setPen(QColor(0, 0, 0));
 						painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 						painter->drawText(window_qrect, Qt::AlignCenter, "B");
 
