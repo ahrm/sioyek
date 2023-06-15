@@ -204,6 +204,15 @@ void DocumentView::expand_highlight_with_index(int index) {
 	add_highlight(hl.selection_begin, hl.selection_end, true, hl.type);
 }
 
+void DocumentView::expand_all_highlights() {
+	std::size_t num_highlights = current_document->get_highlights().size();
+	if (num_highlights > 0) {
+		for (; num_highlights--;) {
+			expand_highlight_with_index(0);
+		}
+	}
+}
+
 float DocumentView::get_offset_x() {
 	return offset_x;
 }

@@ -641,6 +641,17 @@ class ExpandHighlightCommand : public Command {
 	}
 };
 
+class ExpandAllHighlightsCommand : public Command {
+	void perform(MainWidget* widget) {
+		widget->main_document_view->expand_all_highlights();
+		widget->validate_render();
+	}
+
+	std::string get_name() {
+		return "expand_all_highlights";
+	}
+};
+
 class GotoPortalCommand : public Command {
 	void perform(MainWidget* widget) {
 		std::optional<Portal> link = widget->main_document_view->find_closest_portal();
@@ -2239,6 +2250,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["delete_bookmark"] = []() {return std::make_unique< DeleteBookmarkCommand>(); };
 	new_commands["delete_highlight"] = []() {return std::make_unique< DeleteHighlightCommand>(); };
 	new_commands["expand_highlight"] = []() {return std::make_unique< ExpandHighlightCommand>(); };
+	new_commands["expand_all_highlights"] = []() {return std::make_unique< ExpandAllHighlightsCommand>(); };
 	new_commands["goto_link"] = []() {return std::make_unique< GotoPortalCommand>(); };
 	new_commands["goto_portal"] = []() {return std::make_unique< GotoPortalCommand>(); };
 	new_commands["edit_link"] = []() {return std::make_unique< EditPortalCommand>(); };
