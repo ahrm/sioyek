@@ -78,6 +78,7 @@ public:
 	void delete_highlight_with_index(int index);
 	void delete_highlight(Highlight hl);
 	void delete_closest_bookmark_to_offset(float offset);
+	void expand_highlight_with_index(int index);
 	float get_offset_x();
 	float get_offset_y();
 	AbsoluteDocumentPos get_offsets();

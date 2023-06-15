@@ -198,6 +198,12 @@ void DocumentView::delete_closest_bookmark_to_offset(float offset) {
 	current_document->delete_closest_bookmark(offset);
 }
 
+void DocumentView::expand_highlight_with_index(int index) {
+	Highlight hl = get_highlight_with_index(index);
+	delete_highlight_with_index(index);
+	add_highlight(hl.selection_begin, hl.selection_end, true, hl.type);
+}
+
 float DocumentView::get_offset_x() {
 	return offset_x;
 }
