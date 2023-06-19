@@ -3570,7 +3570,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["quit"] = [](MainWidget* widget) {return std::make_unique< QuitCommand>(widget); };
 	new_commands["escape"] = [](MainWidget* widget) {return std::make_unique< EscapeCommand>(widget); };
 	new_commands["toggle_pdf_annotations"] = [](MainWidget* widget) {return std::make_unique< TogglePDFAnnotationsCommand>(widget); };
-	new_commands["q"] = [](MainWidget* widget) {return std::make_unique< QuitCommand>(widget); };
+	new_commands["q"] = [](MainWidget* widget) {return std::make_unique< CloseWindowCommand>(widget); };
 	new_commands["open_link"] = [](MainWidget* widget) {return std::make_unique< OpenLinkCommand>(widget); };
 	new_commands["overview_link"] = [](MainWidget* widget) {return std::make_unique< OverviewLinkCommand>(widget); };
 	new_commands["portal_to_link"] = [](MainWidget* widget) {return std::make_unique< PortalToLinkCommand>(widget); };
