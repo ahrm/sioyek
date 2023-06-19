@@ -641,9 +641,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     helper_document_view = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
     helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager, true);
 
-#ifndef SIOYEK_ANDROID
+#ifdef Q_OS_WIN
     //// ---this is me from the future, it seems this hack is no longer necessary for some reason---
-    // yeah turns out it *was* necessary still!
+    // yeah turns out it *was* necessary still, seems to be required only on windows though. TODO: test this on macos.
     ////// weird hack, should not be necessary but application crashes without it when toggling window configuration
     helper_opengl_widget->show();
     helper_opengl_widget->hide();
