@@ -2699,10 +2699,10 @@ void get_rect_augument_data(fz_rect rect, float page_width, float page_height, s
 	float y = rect.y1 / page_height;
 
 	for (auto power : powers) {
-		res.push_back(std::sinf(x * std::pow(2, power) / 4.0f));
-		res.push_back(std::cosf(x * std::pow(2, power) / 4.0f));
-		res.push_back(std::sinf(y * std::pow(2, power) / 4.0f));
-		res.push_back(std::cosf(y * std::pow(2, power) / 4.0f));
+		res.push_back(std::sin(x * std::pow(2, power) / 4.0f));
+		res.push_back(std::cos(x * std::pow(2, power) / 4.0f));
+		res.push_back(std::sin(y * std::pow(2, power) / 4.0f));
+		res.push_back(std::cos(y * std::pow(2, power) / 4.0f));
 	}
 }
 

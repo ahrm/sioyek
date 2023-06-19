@@ -2346,8 +2346,8 @@ void PdfViewOpenGLWidget::add_coordinates_for_window_point(float window_x, float
 	out_coordinates.push_back(window_y);
 
 	for (int i = 0; i <= point_polygon_vertices; i++) {
-		out_coordinates.push_back(window_x + r * thickness_x * std::cosf(2 * M_PI * i / point_polygon_vertices) / 2);
-		out_coordinates.push_back(window_y + r * thickness_y * std::sinf(2 * M_PI * i / point_polygon_vertices) / 2);
+		out_coordinates.push_back(window_x + r * thickness_x * std::cos(2 * M_PI * i / point_polygon_vertices) / 2);
+		out_coordinates.push_back(window_y + r * thickness_y * std::sin(2 * M_PI * i / point_polygon_vertices) / 2);
 	}
 }
 void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& drawings) {
