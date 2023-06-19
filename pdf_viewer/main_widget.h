@@ -66,7 +66,7 @@ public:
 	InputHandler* input_handler = nullptr;
 	CachedChecksummer* checksummer = nullptr;
 
-	QTextToSpeech tts;
+	QTextToSpeech* tts;
 	// is the TTS engine currently reading text?
 	bool is_reading = false;
 
@@ -720,6 +720,7 @@ public:
     bool execute_macro_if_enabled(std::wstring macro_command_string);
     bool ensure_internet_permission();
 	void handle_command_text_change(const QString& new_text);
+	QTextToSpeech* get_tts();
 };
 
 #endif

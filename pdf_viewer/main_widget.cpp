@@ -818,15 +818,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
         });
 
-    QObject::connect(&tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
-        if ((state == QTextToSpeech::Ready) || (state == QTextToSpeech::Error)) {
-            if (is_reading) {
-                move_visual_mark(1);
-                //read_current_line();
-                invalidate_render();
-            }
-		}
-        });
     connect(validation_interval_timer, &QTimer::timeout, [&]() {
 
         if (TOUCH_MODE && selection_begin_indicator){
@@ -940,7 +931,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 MainWidget::~MainWidget() {
     if (is_reading) {
         is_reading = false;
-        tts.stop();
+        get_tts()->stop();
     }
     remove_self_from_windows();
 
@@ -5745,11 +5736,11 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
 
 void MainWidget::read_current_line() {
 	std::wstring text = main_document_view->get_selected_line_text().value_or(L"");
-    tts.setRate(TTS_RATE);
+    get_tts()->setRate(TTS_RATE);
     is_reading = false;
-    tts.stop();
+    get_tts()->stop();
     //std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    tts.say(QString::fromStdWString(text));
+    get_tts()->say(QString::fromStdWString(text));
     is_reading = true;
 }
 
@@ -5764,7 +5755,7 @@ void MainWidget::handle_start_reading() {
 
 void MainWidget::handle_stop_reading() {
     is_reading = false;
-    tts.stop();
+    get_tts()->stop();
     if (TOUCH_MODE) {
         pop_current_widget();
     }
@@ -5772,8 +5763,8 @@ void MainWidget::handle_stop_reading() {
 
 void MainWidget::handle_play() {
     is_reading = true;
-    if (tts.state() == QTextToSpeech::Paused) {
-		tts.resume();
+    if (get_tts()->state() == QTextToSpeech::Paused) {
+		get_tts()->resume();
     }
     else {
         move_visual_mark(1);
@@ -5783,7 +5774,7 @@ void MainWidget::handle_play() {
 
 void MainWidget::handle_pause() {
     is_reading = false;
-    tts.pause(QTextToSpeech::BoundaryHint::Immediate);
+    get_tts()->pause(QTextToSpeech::BoundaryHint::Immediate);
 }
 bool MainWidget::should_show_status_label() {
 	float prog;
@@ -6475,4 +6466,22 @@ void MainWidget::update_selected_bookmark_font_size() {
 			selected_bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
 		}
 	}
+}
+
+QTextToSpeech* MainWidget::get_tts() {
+    if (tts) return tts;
+
+    tts = new QTextToSpeech(this);
+
+    QObject::connect(tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
+        if ((state == QTextToSpeech::Ready) || (state == QTextToSpeech::Error)) {
+            if (is_reading) {
+                move_visual_mark(1);
+                //read_current_line();
+                invalidate_render();
+            }
+		}
+        });
+
+    return tts;
 }
