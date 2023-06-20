@@ -1688,3 +1688,18 @@ bool DatabaseManager::update_bookmark_change_text(const std::string& uuid, const
 		error_code,
 		error_message);
 }
+bool DatabaseManager::update_bookmark_change_position(const std::string& uuid, AbsoluteDocumentPos new_begin, AbsoluteDocumentPos new_end) {
+	std::wstringstream ss;
+	ss << "UPDATE bookmarks set offset_y=" << new_begin.y <<
+		", begin_x=" << new_begin.x <<
+		", begin_y=" << new_begin.y <<
+		", end_x=" << new_end.x <<
+		", end_y=" << new_end.y <<
+		", modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
+
+	char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+		error_code,
+		error_message);
+}

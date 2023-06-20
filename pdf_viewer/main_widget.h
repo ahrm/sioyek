@@ -52,6 +52,14 @@ enum class ReferenceType {
 	None
 };
 
+struct BookmarkMoveData {
+	int index;
+	AbsoluteDocumentPos initial_bookmark_begin_position;
+	AbsoluteDocumentPos initial_bookmark_end_position;
+	AbsoluteDocumentPos initial_mouse_position;
+
+};
+
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 class MainWidget : public QQuickWidget, ConfigFileChangeListener{
 public:
@@ -135,8 +143,8 @@ public:
 	std::optional<AbsoluteDocumentPos> rect_select_begin = {};
 	std::optional<AbsoluteDocumentPos> rect_select_end = {};
 
+	std::optional<BookmarkMoveData> bookmark_move_data = {};
  // when set, mouse wheel moves the ruler
-
 	bool visual_scroll_mode = false;
 	bool debug_mode = false;
 
@@ -721,6 +729,11 @@ public:
     bool ensure_internet_permission();
 	void handle_command_text_change(const QString& new_text);
 	QTextToSpeech* get_tts();
+	void handle_bookmark_move_finish();
+	void handle_bookmark_move();
+	bool is_middle_click_being_used();
+	void begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor_pos);
+	bool should_drag();
 };
 
 #endif

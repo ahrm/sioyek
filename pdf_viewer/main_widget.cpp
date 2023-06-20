@@ -405,6 +405,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
+
     if (TOUCH_MODE){
         if (selection_begin_indicator){
             selection_begin_indicator->update_pos();
@@ -447,23 +448,31 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     }
 
     WindowPos mpos = { mouse_event->pos().x(), mouse_event->pos().y() };
+	AbsoluteDocumentPos abs_mpos = main_document_view->window_to_absolute_document_pos(mpos);
+    NormalizedWindowPos normal_mpos = main_document_view->window_to_normalized_window_pos(mpos);
+
+    if (bookmark_move_data) {
+        handle_bookmark_move(); 
+        validate_render();
+    }
 
     // if the mouse has moved too much when pressing middle mouse button, we assume that the user wants to drag
     // instead of smart jump
     if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
-        if ((std::abs(mpos.x - last_mouse_down.x) + std::abs(mpos.y - last_mouse_down.y)) > 50) {
-            is_dragging = true;
-        }
+
+		if (!bookmark_move_data.has_value()) {
+			if ((std::abs(mpos.x - last_mouse_down.x) + std::abs(mpos.y - last_mouse_down.y)) > 50) {
+				is_dragging = true;
+			}
+		}
     }
 
     std::optional<PdfLink> link = {};
 
-    NormalizedWindowPos normal_mpos = main_document_view->window_to_normalized_window_pos(mpos);
 
     if (rect_select_mode) {
         if (rect_select_begin.has_value()) {
-			AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(mpos);
-			rect_select_end = abspos;
+			rect_select_end = abs_mpos;
 			fz_rect selected_rect;
 			selected_rect.x0 = rect_select_begin.value().x;
 			selected_rect.y0 = rect_select_begin.value().y;
@@ -541,7 +550,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         }
     }
 
-    if (is_dragging) {
+    if (should_drag()) {
         ivec2 diff = ivec2(mpos) - ivec2(last_mouse_down_window_pos);
 
         fvec2 diff_doc = diff / main_document_view->get_zoom_level();
@@ -561,10 +570,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 	int msecs_since_last_text_select = last_text_select_time.msecsTo(QTime::currentTime());
 	if (msecs_since_last_text_select > 16 || msecs_since_last_text_select < 0) {
 
-            AbsoluteDocumentPos document_pos = main_document_view->window_to_absolute_document_pos(mpos);
-
             selection_begin = last_mouse_down;
-            selection_end = document_pos;
+            selection_end = abs_mpos;
             //fz_point selection_begin = { last_mouse_down.x(), last_mouse_down.y()};
             //fz_point selection_end = { document_x, document_y };
 
@@ -833,11 +840,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         }
 
         if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
-            if ((last_middle_down_time.msecsTo(QTime::currentTime()) > 200) && (!is_dragging)) {
+            if ((last_middle_down_time.msecsTo(QTime::currentTime()) > 200) && (!is_middle_click_being_used())) {
 				auto commands = this->command_manager->create_macro_command(this, "", HOLD_MIDDLE_CLICK_COMMAND);
 				commands->run();
 				invalidate_render();
-                is_dragging = true;
             }
         }
 
@@ -2266,6 +2272,13 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         return;
     }
 
+	if (bookmark_move_data) {
+		handle_bookmark_move_finish();
+		bookmark_move_data = {};
+        is_dragging = false;
+        return;
+	}
+
     if (TOUCH_MODE){
 
         pdf_renderer->no_rerender = false;
@@ -2276,6 +2289,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 	}
 
     if (mevent->button() == Qt::MouseButton::LeftButton) {
+
         if (is_shift_pressed) {
 			auto commands = command_manager->create_macro_command(this, "", SHIFT_CLICK_COMMAND);
 			commands->run();
@@ -2320,6 +2334,8 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
+
+
         if (!is_dragging) {
 
             if (HIGHLIGHT_MIDDLE_CLICK
@@ -2395,6 +2411,16 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 		last_middle_down_time = QTime::currentTime();
         last_mouse_down_window_pos = WindowPos{mevent->pos().x(), mevent->pos().y()};
         last_mouse_down_document_offset = main_document_view->get_offsets();
+
+		AbsoluteDocumentPos abs_mpos = main_document_view->window_to_absolute_document_pos(last_mouse_down_window_pos);
+		bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
+        if (is_shift_pressed && (!bookmark_move_data.has_value())) {
+            int index = doc()->get_bookmark_index_at_pos(abs_mpos);
+            if (index >= 0) {
+                begin_bookmark_move(index, abs_mpos);
+                return;
+            }
+        }
     }
 
     if (mevent->button() == Qt::MouseButton::XButton1) {
@@ -5200,6 +5226,13 @@ bool MainWidget::event(QEvent* event) {
 
                 last_hold_point = mapFromGlobal(QCursor::pos());
                 WindowPos window_pos = WindowPos{ last_hold_point.x(), last_hold_point.y() };
+                AbsoluteDocumentPos hold_abspos = main_document_view->window_to_absolute_document_pos(window_pos);
+                int bookmark_index = doc()->get_bookmark_index_at_pos(hold_abspos);
+
+                if (bookmark_index >= 0) {
+                    begin_bookmark_move(bookmark_index, hold_abspos);
+                    return true;
+                }
                 //opengl_widget->last_selected_block
 
                 QTapAndHoldGesture* tapgest = static_cast<QTapAndHoldGesture*>(gesture->gesture(Qt::TapAndHoldGesture));
@@ -6484,4 +6517,49 @@ QTextToSpeech* MainWidget::get_tts() {
         });
 
     return tts;
+}
+
+void MainWidget::handle_bookmark_move_finish() {
+    BookMark& bm = doc()->get_bookmarks()[bookmark_move_data->index];
+    doc()->update_bookmark_position(bookmark_move_data->index, { bm.begin_x, bm.begin_y }, {bm.end_x, bm.end_y});
+}
+
+void MainWidget::handle_bookmark_move() {
+	QPoint current_mouse_window_point = mapFromGlobal(QCursor::pos());
+    WindowPos current_mouse_window_pos = { current_mouse_window_point.x(), current_mouse_window_point.y() };
+    AbsoluteDocumentPos current_mouse_abspos = main_document_view->window_to_absolute_document_pos(current_mouse_window_pos);
+
+    float diff_x = current_mouse_abspos.x - bookmark_move_data->initial_mouse_position.x;
+    float diff_y = current_mouse_abspos.y - bookmark_move_data->initial_mouse_position.y;
+
+    BookMark& bookmark = doc()->get_bookmarks()[bookmark_move_data->index];
+
+    bookmark.begin_x = bookmark_move_data->initial_bookmark_begin_position.x + diff_x;
+    bookmark.begin_y = bookmark_move_data->initial_bookmark_begin_position.y + diff_y;
+
+    if (bookmark.end_y >= 0) {
+		bookmark.end_x = bookmark_move_data->initial_bookmark_end_position.x + diff_x;
+		bookmark.end_y = bookmark_move_data->initial_bookmark_end_position.y + diff_y;
+    }
+}
+
+bool MainWidget::is_middle_click_being_used() {
+    return bookmark_move_data.has_value() || is_dragging;
+}
+
+void MainWidget::begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor_pos) {
+	BookmarkMoveData move_data;
+	move_data.index = index;
+
+	move_data.initial_bookmark_begin_position.x = doc()->get_bookmarks()[index].begin_x;
+	move_data.initial_bookmark_begin_position.y = doc()->get_bookmarks()[index].begin_y;
+	move_data.initial_bookmark_end_position.x = doc()->get_bookmarks()[index].end_x;
+	move_data.initial_bookmark_end_position.y = doc()->get_bookmarks()[index].end_y;
+
+	move_data.initial_mouse_position = begin_cursor_pos;
+	bookmark_move_data = move_data;
+}
+
+bool MainWidget::should_drag() {
+    return is_dragging && (!bookmark_move_data.has_value());
 }

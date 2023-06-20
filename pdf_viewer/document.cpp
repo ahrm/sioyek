@@ -3420,6 +3420,18 @@ void Document::update_bookmark_text(int index, const std::wstring& new_text, flo
 	}
 }
 
+void Document::update_bookmark_position(int index, AbsoluteDocumentPos new_begin_position, AbsoluteDocumentPos new_end_position) {
+	if ((index >= 0) && (index < bookmarks.size())) {
+		if (db_manager->update_bookmark_change_position(bookmarks[index].uuid, new_begin_position, new_end_position)) {
+			bookmarks[index].y_offset = new_begin_position.y;
+			bookmarks[index].begin_x = new_begin_position.x;
+			bookmarks[index].begin_y = new_begin_position.y;
+			bookmarks[index].end_x = new_end_position.x;
+			bookmarks[index].end_y = new_end_position.y;
+		}
+	}
+}
+
 bool Document::is_bookmark_new(const BookMark& new_bookmark) {
 	for (auto bookmark : bookmarks) {
 		if (are_same(bookmark, new_bookmark)) {
