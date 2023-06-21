@@ -85,7 +85,7 @@ public:
 	InputHandler* input_handler = nullptr;
 	CachedChecksummer* checksummer = nullptr;
 
-	QTextToSpeech* tts;
+	QTextToSpeech* tts = nullptr;
 	// is the TTS engine currently reading text?
 	bool is_reading = false;
 
