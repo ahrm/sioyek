@@ -3085,6 +3085,49 @@ public:
 	}
 };
 
+class SelectFreehandDrawingsCommand: public Command {
+public:
+	SelectFreehandDrawingsCommand(MainWidget* w) : Command(w) {};
+
+	std::optional<fz_rect> rect_;
+	DrawingMode original_drawing_mode = DrawingMode::None;
+
+
+	void pre_perform() {
+		original_drawing_mode = widget->freehand_drawing_mode;
+		widget->freehand_drawing_mode = DrawingMode::None;
+	}
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+		if (!rect_.has_value()) {
+			Requirement req = { RequirementType::Rect, "Command Rect"};
+			return req;
+		}
+		return {};
+	}
+
+	void set_rect_requirement(fz_rect rect) {
+		if (rect.x0 > rect.x1) {
+			std::swap(rect.x0, rect.x1);
+		}
+		if (rect.y0 > rect.y1) {
+			std::swap(rect.y0, rect.y1);
+		}
+
+		rect_ = rect;
+	}
+
+	void perform() {
+		widget->select_freehand_drawings(rect_.value());
+		widget->freehand_drawing_mode = original_drawing_mode;
+	}
+
+	std::string get_name() {
+		return "select_freehand_drawings";
+	}
+};
+
 class CustomCommand : public Command {
 
 	std::wstring raw_command;
@@ -3665,6 +3708,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["undo_marked_data"] = [](MainWidget* widget) {return std::make_unique< UndoMarkedDataCommand>(widget); };
 	new_commands["goto_random_page"] = [](MainWidget* widget) {return std::make_unique< GotoRandomPageCommand>(widget); };
 	new_commands["delete_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< DeleteFreehandDrawingsCommand>(widget); };
+	new_commands["select_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< SelectFreehandDrawingsCommand>(widget); };
 
 
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {

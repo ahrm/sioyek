@@ -405,6 +405,29 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
+    if (freehand_drawing_move_data) {
+        // update temp drawings of opengl widget
+		WindowPos mouse_pos = { mouse_event->pos().x(), mouse_event->pos().y() };
+        AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(mouse_pos);
+        opengl_widget->moving_drawings.clear();
+        move_selected_drawings(mouse_abspos, opengl_widget->moving_drawings);
+        //float diff_x = -freehand_drawing_move_data->initial_mouse_position.x + mouse_abspos.x;
+        //float diff_y = -freehand_drawing_move_data->initial_mouse_position.y + mouse_abspos.y;
+        //opengl_widget->moving_drawings.clear();
+
+        //for (auto drawing : freehand_drawing_move_data->initial_drawings) {
+        //    FreehandDrawing new_drawing = drawing;
+        //    for (int i = 0; i < new_drawing.points.size(); i++) {
+        //        new_drawing.points[i].pos.x += diff_x;
+        //        new_drawing.points[i].pos.y += diff_y;
+        //    }
+        //    opengl_widget->moving_drawings.push_back(new_drawing);
+        //}
+        validate_render();
+        return;
+
+    }
+
 
     if (TOUCH_MODE){
         if (selection_begin_indicator){
@@ -1828,6 +1851,24 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
     if (is_shift_pressed || is_control_pressed || is_alt_pressed) {
         return;
     }
+    if (selected_freehand_drawings) {
+		QPoint p = last_press_point = mapFromGlobal(QCursor::pos());
+        AbsoluteDocumentPos mpos_absolute = main_document_view->window_to_absolute_document_pos({p.x(), p.y()});
+        if (fz_is_point_inside_rect({ mpos_absolute.x, mpos_absolute.y }, selected_freehand_drawings->selection_absrect)) {
+            std::vector<FreehandDrawing> moving_drawings = doc()->get_page_freehand_drawings_with_indices(selected_freehand_drawings->page, selected_freehand_drawings->selected_indices);
+            doc()->delete_page_intersecting_drawings(selected_freehand_drawings->page, selected_freehand_drawings->selection_absrect, opengl_widget->visible_drawing_mask);
+            FreehandDrawingMoveData md;
+            md.initial_drawings = moving_drawings;
+            md.initial_mouse_position = mpos_absolute;
+            freehand_drawing_move_data = md;
+            selected_freehand_drawings = {};
+            return;
+        }
+        else {
+            selected_freehand_drawings = {};
+        }
+
+    }
 
     if (TOUCH_MODE){
         was_last_mouse_down_in_ruler_next_rect = false;
@@ -2278,6 +2319,11 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         is_dragging = false;
         return;
 	}
+    if (freehand_drawing_move_data) {
+		handle_freehand_drawing_move_finish();
+        invalidate_render();
+        return;
+    }
 
     if (TOUCH_MODE){
 
@@ -6188,6 +6234,23 @@ void MainWidget::delete_freehand_drawings(fz_rect rect) {
     invalidate_render();
 }
 
+void MainWidget::select_freehand_drawings(fz_rect rect) {
+    int page = -1;
+    fz_rect page_rect = doc()->absolute_to_page_rect(rect, &page);
+    doc()->get_page_intersecting_drawing_indices(page, rect, opengl_widget->visible_drawing_mask);
+    SelectedDrawings selected_drawings;
+    selected_drawings.page = page;
+    selected_drawings.selected_indices = doc()->get_page_intersecting_drawing_indices(page, rect, opengl_widget->visible_drawing_mask);
+    selected_drawings.selection_absrect = rect;
+    selected_freehand_drawings = selected_drawings;
+    set_rect_select_mode(false);
+    clear_selected_rect();
+	opengl_widget->moving_drawings.clear();
+
+	 opengl_widget->moving_drawings = doc()->get_page_freehand_drawings_with_indices(selected_freehand_drawings->page, selected_freehand_drawings->selected_indices);
+    invalidate_render();
+}
+
 void MainWidget::hande_turn_on_all_drawings() {
     for (int i = 0; i < 26; i++) {
         opengl_widget->visible_drawing_mask[i] = true;
@@ -6562,4 +6625,33 @@ void MainWidget::begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor
 
 bool MainWidget::should_drag() {
     return is_dragging && (!bookmark_move_data.has_value());
+}
+
+void MainWidget::handle_freehand_drawing_move_finish() {
+	QPoint p = last_press_point = mapFromGlobal(QCursor::pos());
+	AbsoluteDocumentPos mpos_absolute = main_document_view->window_to_absolute_document_pos({p.x(), p.y()});
+    std::vector<FreehandDrawing> moved_drawings;
+
+    move_selected_drawings(mpos_absolute, moved_drawings);
+    for (auto drawing : moved_drawings) {
+        doc()->add_freehand_drawing(drawing);
+    }
+
+	freehand_drawing_move_data = {};
+	opengl_widget->moving_drawings.clear();
+
+}
+
+void MainWidget::move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings) {
+	float diff_x = -freehand_drawing_move_data->initial_mouse_position.x + new_pos.x;
+	float diff_y = -freehand_drawing_move_data->initial_mouse_position.y + new_pos.y;
+
+	for (auto drawing : freehand_drawing_move_data->initial_drawings) {
+		FreehandDrawing new_drawing = drawing;
+		for (int i = 0; i < new_drawing.points.size(); i++) {
+			new_drawing.points[i].pos.x += diff_x;
+			new_drawing.points[i].pos.y += diff_y;
+		}
+		moved_drawings.push_back(new_drawing);
+	}
 }

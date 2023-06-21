@@ -188,7 +188,7 @@ protected:
     void paintGL() override;
     void render(QPainter* painter);
 	void add_coordinates_for_window_point(float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates);
-	void render_drawings(const std::vector<FreehandDrawing>& drawings);
+	void render_drawings(const std::vector<FreehandDrawing>& drawings, bool highlighted=false);
 
 	void enable_stencil();
 	void write_to_stencil();
@@ -201,6 +201,7 @@ protected:
 public:
 	bool visible_drawing_mask[26];
 	FreehandDrawing current_drawing;
+	std::vector<FreehandDrawing> moving_drawings;
 
 #ifndef NDEBUG
 	// properties for visualizing selected blocks, used only for debug

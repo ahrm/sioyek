@@ -3194,8 +3194,8 @@ const std::vector<FreehandDrawing>& Document::get_page_drawings(int page) {
 	return page_freehand_drawings[page];
 }
 
-void Document::delete_page_intersecting_drawings(int page, fz_rect absolute_rect, bool mask[26]) {
-	std::vector<int> indices_to_delete;
+std::vector<int> Document::get_page_intersecting_drawing_indices(int page, fz_rect absolute_rect, bool mask[26]) {
+	std::vector<int> indices;
 	std::vector<FreehandDrawing>& page_drawings = page_freehand_drawings[page];
 
 	for (int i = 0; i < page_drawings.size(); i++) {
@@ -3205,11 +3205,18 @@ void Document::delete_page_intersecting_drawings(int page, fz_rect absolute_rect
 		for (auto point : page_drawings[i].points) {
 			fz_point absolute_point = fz_point{ point.pos.x, point.pos.y };
 			if (fz_is_point_inside_rect(absolute_point, absolute_rect)) {
-				indices_to_delete.push_back(i);
+				indices.push_back(i);
 				break;
 			}
 		}
 	}
+	return indices;
+
+}
+
+void Document::delete_page_intersecting_drawings(int page, fz_rect absolute_rect, bool mask[26]) {
+	std::vector<FreehandDrawing>& page_drawings = page_freehand_drawings[page];
+	std::vector<int> indices_to_delete = get_page_intersecting_drawing_indices(page, absolute_rect, mask);
 
 	for (int j = indices_to_delete.size() - 1; j >= 0; j--) {
 		//page_freehand_drawings.erase(page_freehand_drawings.begin() + indices_to_delete[j]);
@@ -3522,3 +3529,11 @@ int Document::num_freehand_drawings() {
 	return res;
 }
 
+std::vector<FreehandDrawing> Document::get_page_freehand_drawings_with_indices(int page, const std::vector<int> indices) {
+	std::vector<FreehandDrawing> results;
+	const std::vector<FreehandDrawing>& page_drawings = page_freehand_drawings[page];
+	for (auto index : indices) {
+		results.push_back(page_drawings[index]);
+	}
+	return results;
+}

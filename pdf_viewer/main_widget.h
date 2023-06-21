@@ -60,6 +60,17 @@ struct BookmarkMoveData {
 
 };
 
+struct SelectedDrawings {
+	int page;
+	fz_rect selection_absrect;
+	std::vector<int> selected_indices;
+};
+
+struct FreehandDrawingMoveData {
+	std::vector<FreehandDrawing> initial_drawings;
+	AbsoluteDocumentPos initial_mouse_position;
+};
+
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 class MainWidget : public QQuickWidget, ConfigFileChangeListener{
 public:
@@ -184,6 +195,8 @@ public:
 	// delete/edit highlights e.g. by selecting a highlight by clicking on it and then executing `delete_highlight`
 	int selected_highlight_index = -1;
 	int selected_bookmark_index = -1;
+	std::optional<SelectedDrawings> selected_freehand_drawings = {};
+	std::optional<FreehandDrawingMoveData> freehand_drawing_move_data = {};
 
 	// An incomplete portal that is being created. The source of the portal is filled
 	// but the destination still needs to be set.
@@ -583,6 +596,7 @@ public:
     void start_drawing();
     void finish_drawing(QPoint pos);
 	void handle_pen_drawing_event(QTabletEvent* te);
+	void select_freehand_drawings(fz_rect rect);
 	void delete_freehand_drawings(fz_rect rect);
 	void handle_move_text_mark_forward(bool word);
 	void handle_move_text_mark_backward(bool word);
@@ -734,6 +748,8 @@ public:
 	bool is_middle_click_being_used();
 	void begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor_pos);
 	bool should_drag();
+	void handle_freehand_drawing_move_finish();
+	void move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings);
 };
 
 #endif
