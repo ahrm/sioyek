@@ -5237,7 +5237,9 @@ bool MainWidget::event(QEvent* event) {
         // manually handle them here.
         // todo: make sure this doesn't cause problems on linux and mac
         if (((ke->key() == Qt::Key_Tab) && (ke->modifiers() == 0)) || ((ke->key() == Qt::Key_Backtab) && (ke->modifiers() == Qt::ShiftModifier))){
-            key_event(false, ke);
+            if (event->isAccepted()) {
+				key_event(false, ke);
+            }
         }
     }
 
