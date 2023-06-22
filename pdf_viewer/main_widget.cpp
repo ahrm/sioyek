@@ -1,9 +1,7 @@
 ﻿// make overview_definition return all possible targets
 // deduplicate database code
 // allow keyboard-only modification of bookmarks/highlight comments
-// add ability to move bookmarks/drawings
 // in order to bind a key to <C-S-+> we should use this syntax, it this supposed to be the case?
-// if we start adding the bookmark and then press <C-+> and then cancel, the bookmark is not cancelled
 
 #include <iostream>
 #include <vector>
@@ -14,8 +12,6 @@
 #include <optional>
 #include <memory>
 #include <cctype>
-
-
 #include <qpainterpath.h>
 #include <qabstractitemmodel.h>
 #include <qapplication.h>
@@ -5229,6 +5225,15 @@ bool MainWidget::event(QEvent* event) {
 
 
     QTabletEvent* te = dynamic_cast<QTabletEvent*>(event);
+    QKeyEvent* ke = dynamic_cast<QKeyEvent*>(event);
+    if (ke) {
+        // Apparently Qt doesn't send keyPressEvent for tab and backtab anymore, so we have to
+        // manually handle them here.
+        // todo: make sure this doesn't cause problems on linux and mac
+        if (((ke->key() == Qt::Key_Tab) && (ke->modifiers() == 0)) || ((ke->key() == Qt::Key_Backtab) && (ke->modifiers() == Qt::ShiftModifier))){
+            key_event(false, ke);
+        }
+    }
 
     if ((freehand_drawing_mode == DrawingMode::PenDrawing) && te) {
         handle_pen_drawing_event(te);
@@ -5745,12 +5750,6 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    if (pending_command_instance) {
-        qDebug() << pending_command_instance->get_name();
-    }
-    else {
-        qDebug() << "no pending commands";
-    }
 }
 
 void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
