@@ -2349,28 +2349,24 @@ std::optional<PdfLink> Document::get_link_in_pos(const DocumentPos& pos) {
 	return get_link_in_pos(pos.page, pos.x, pos.y);
 }
 
-std::optional<PdfLink> Document::get_link_in_page_rect(int page, fz_rect rect) {
+std::vector<PdfLink> Document::get_links_in_page_rect(int page, fz_rect rect) {
 	if (!doc) return {};
 
-	//rect.x0 += page_widths[page] / 2;
-	//rect.x1 += page_widths[page] / 2;
+	std::vector<PdfLink> res;
 	int rect_page;
 	fz_rect doc_rect = absolute_to_page_rect(rect, &rect_page);
 
 	if (page != -1) {
-		fz_link* portals = get_page_links(page);
-		std::optional<PdfLink> res = {};
-		while (portals != nullptr) {
-			if (rects_intersect(doc_rect, portals->rect))
+		fz_link* links = get_page_links(page);
+		while (links != nullptr) {
+			if (rects_intersect(doc_rect, links->rect))
 			{
-				res = { portals->rect, portals->uri };
-				return res;
+				res.push_back({ links->rect, links->uri });
 			}
-			portals = portals->next;
+			links = links->next;
 		}
 	}
-
-	return {};
+	return res;
 }
 
 std::optional<PdfLink> Document::get_link_in_pos(int page, float doc_x, float doc_y){

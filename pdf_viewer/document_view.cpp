@@ -1174,10 +1174,14 @@ std::vector<DocumentPos> DocumentView::find_line_definitions() {
 			std::vector<DocumentPos> reference_positions;
 			std::vector<DocumentPos> equation_positions;
 
-			std::optional<PdfLink> pdf_link = current_document->get_link_in_page_rect(get_center_page_number(), line_rects[line_index]);
-			if (pdf_link.has_value()) {
-				auto parsed_uri = parse_uri(mupdf_context, pdf_link.value().uri);
-				result.push_back({ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y });
+			std::vector<PdfLink> pdf_links = current_document->get_links_in_page_rect(get_center_page_number(), line_rects[line_index]);
+			if (pdf_links.size() > 0) {
+
+				for (auto link : pdf_links) {
+					auto parsed_uri = parse_uri(mupdf_context, link.uri);
+					result.push_back({ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y });
+				}
+
 				return result;
 			}
 

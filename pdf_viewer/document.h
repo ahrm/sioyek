@@ -278,7 +278,7 @@ public:
 	fz_rect get_page_rect_no_cache(int page);
 	std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
 	std::optional<PdfLink> get_link_in_pos(const DocumentPos& pos);
-	std::optional<PdfLink> get_link_in_page_rect(int page, fz_rect rect);
+	std::vector<PdfLink> get_links_in_page_rect(int page, fz_rect rect);
 
 	//void create_table_of_contents(std::vector<TocNode*>& top_nodes);
 	int add_stext_page_to_created_toc(fz_stext_page* stext_page,
