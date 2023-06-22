@@ -199,6 +199,7 @@ protected:
 
 	virtual void on_select(const QModelIndex& value) = 0;
 	virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) {}
+	virtual void on_edit(const QModelIndex& source_index, const QModelIndex& selected_index) {}
 
 	virtual void on_return_no_select(const QString& text) {
 		if (get_view()->model()->hasIndex(0, 0)) {
@@ -241,6 +242,9 @@ public:
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
 				if (key_event->key() == Qt::Key_Delete) {
 					handle_delete();
+				}
+				else if (key_event->key() == Qt::Key_Insert) {
+					handle_edit();
 				}
 			}
 #endif
@@ -366,6 +370,18 @@ public:
 		}
 	}
 
+	void handle_edit() {
+		QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
+		if (selected_index_list.size() > 0) {
+			QModelIndex selected_index = selected_index_list.at(0);
+			if (proxy_model->hasIndex(selected_index.row(), selected_index.column())) {
+				QModelIndex source_index = proxy_model->mapToSource(selected_index);
+				on_edit(source_index, selected_index);
+			}
+		}
+	}
+
+
 #ifndef SIOYEK_QT6
 	void keyReleaseEvent(QKeyEvent* event) override {
 		if (event->key() == Qt::Key_Delete) {
@@ -459,6 +475,7 @@ private:
 	std::vector<std::wstring> item_strings;
 	std::function<void(T*)> on_done = nullptr;
 	std::function<void(T*)> on_delete_function = nullptr;
+	std::function<void(T*)> on_edit_function = nullptr;
 
 protected:
 
@@ -536,6 +553,10 @@ public:
 		}
 	}
 
+	void set_on_edit_function(std::function<void(T*)> edit_func) {
+		on_edit_function = edit_func;
+	}
+
 	void set_value_second_item(T value, QString str) {
 
 		for (int i = 0; i < values.size(); i++) {
@@ -565,6 +586,12 @@ public:
 			on_delete_function(&values[source_index.row()]);
 			this->proxy_model->removeRow(selected_index.row());
 			values.erase(values.begin() + source_index.row());
+		}
+	}
+
+	virtual void on_edit(const QModelIndex& source_index, const QModelIndex& selected_index) override {
+		if (on_edit_function) {
+			on_edit_function(&values[source_index.row()]);
 		}
 	}
 

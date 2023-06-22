@@ -326,6 +326,7 @@ public:
 	void set_command_textbox_text(const std::wstring& txt);
 	void change_selected_highlight_type(char new_type);
 	void change_selected_bookmark_text(const std::wstring& new_text);
+	void change_selected_highlight_text_annot(const std::wstring& new_text);
 	char get_current_selected_highlight_type();
 	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false, const std::wstring& initial_value=L"");
 	void show_mark_selector();
@@ -654,7 +655,8 @@ public:
 		std::vector<T> values,
 		int selected_index,
 		std::function<void(T*)> on_select,
-		std::function<void(T*)> on_delete
+		std::function<void(T*)> on_delete,
+		std::function<void(T*)> on_edit=nullptr
 	) {
 		if (columns.size() > 1) {
 
@@ -697,6 +699,9 @@ public:
 						}
 					});
 				w->set_filter_column_index(-1);
+				if (on_edit) {
+					w->set_on_edit_function(on_edit);
+				}
 				set_current_widget(w);
 			}
 		}

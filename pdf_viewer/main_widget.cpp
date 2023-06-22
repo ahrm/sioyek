@@ -1,7 +1,4 @@
-﻿// make overview_definition return all possible targets
-// deduplicate database code
-// allow keyboard-only modification of bookmarks/highlight comments
-// in order to bind a key to <C-S-+> we should use this syntax, it this supposed to be the case?
+﻿// deduplicate database code
 
 #include <iostream>
 #include <vector>
@@ -4580,7 +4577,6 @@ void MainWidget::show_current_widget() {
 void MainWidget::handle_goto_bookmark() {
 	std::vector<std::wstring> option_names;
 	std::vector<std::wstring> option_location_strings;
-	std::vector<float> option_locations;
 	std::vector<BookMark> bookmarks;
 	if (SORT_BOOKMARKS_BY_LOCATION) {
 		bookmarks = main_document_view->get_document()->get_sorted_bookmarks();
@@ -4591,22 +4587,27 @@ void MainWidget::handle_goto_bookmark() {
 
 	for (auto bookmark : bookmarks) {
 		option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmark.description);
-		option_locations.push_back(bookmark.y_offset);
+		//option_locations.push_back(bookmark.y_offset);
 		auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos({ 0, bookmark.y_offset });
 		option_location_strings.push_back(get_page_formatted_string(page + 1));
 	}
 
 	int closest_bookmark_index = main_document_view->get_document()->find_closest_bookmark_index(bookmarks, main_document_view->get_offset_y());
 
-    set_filtered_select_menu<float>({ option_names, option_location_strings }, option_locations, closest_bookmark_index,
-		[&](float* offset_value) {
+    set_filtered_select_menu<BookMark>({ option_names, option_location_strings }, bookmarks, closest_bookmark_index,
+		[&](BookMark* bm) {
 			validate_render();
 			push_state();
-			main_document_view->set_offset_y(*offset_value);
+			main_document_view->set_offset_y(bm->y_offset);
 		},
-		[&](float* offset_value) {
-			main_document_view->delete_closest_bookmark_to_offset(*offset_value);
-		}
+		[&](BookMark* bm) {
+			main_document_view->delete_closest_bookmark_to_offset(bm->y_offset);
+		},
+		[&](BookMark* bm) {
+            selected_bookmark_index = doc()->get_bookmark_index_with_uuid(bm->uuid);
+            pop_current_widget();
+			handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
+        }
 		);
 
     show_current_widget();
@@ -4703,6 +4704,11 @@ void MainWidget::handle_goto_highlight() {
         },
         [&](Highlight* hl) {
 			main_document_view->delete_highlight(*hl);
+        },
+		[&](Highlight* hl) {
+            selected_highlight_index = doc()->get_highlight_index_with_uuid(hl->uuid);
+            pop_current_widget();
+			handle_command_types(command_manager->get_command_with_name(this, "edit_selected_highlight"), 0);
         });
 
     show_current_widget();
@@ -6513,6 +6519,13 @@ void MainWidget::change_selected_bookmark_text(const std::wstring& new_text) {
         else {
             doc()->delete_bookmark(selected_bookmark_index);
         }
+    }
+}
+
+void MainWidget::change_selected_highlight_text_annot(const std::wstring& new_text) {
+
+    if (selected_highlight_index != -1) {
+		doc()->update_highlight_add_text_annotation(doc()->get_highlight_index_uuid(selected_highlight_index), new_text);
     }
 }
 

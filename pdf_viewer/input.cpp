@@ -1106,9 +1106,35 @@ public:
 		return "Bookmark Text";
 	}
 
-	bool pushes_state() {
-		return true;
+};
+
+class EditSelectedHighlightCommand : public TextCommand {
+public:
+	int index = -1;
+
+	EditSelectedHighlightCommand(MainWidget* w) : TextCommand(w) {};
+
+	void pre_perform() {
+		index = widget->selected_bookmark_index;
+
+		widget->text_command_line_edit->setText(
+			QString::fromStdWString(widget->doc()->get_highlights()[widget->selected_highlight_index].text_annot)
+		);
 	}
+
+	void perform() {
+		std::wstring text_ = text.value();
+		widget->change_selected_highlight_text_annot(text_);
+	}
+
+	std::string get_name() {
+		return "edit_selected_highlight";
+	}
+
+	std::string text_requirement_name() {
+		return "Highlight Annotation";
+	}
+
 };
 
 class DeletePortalCommand : public Command {
@@ -3544,6 +3570,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["goto_mark"] = [](MainWidget* widget) {return std::make_unique< GotoMark>(widget); };
 	new_commands["goto_page_with_page_number"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithPageNumberCommand>(widget); };
 	new_commands["edit_selected_bookmark"] = [](MainWidget* widget) {return std::make_unique< EditSelectedBookmarkCommand>(widget); };
+	new_commands["edit_selected_highlight"] = [](MainWidget* widget) {return std::make_unique< EditSelectedHighlightCommand>(widget); };
 	new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
 	new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
 	new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };

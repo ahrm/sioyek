@@ -169,6 +169,8 @@ public:
 	std::vector<BookMark>& get_bookmarks();
 	std::vector<BookMark> get_sorted_bookmarks() const;
 	const std::vector<Highlight>& get_highlights() const;
+	int get_highlight_index_with_uuid(std::string uuid);
+	int get_bookmark_index_with_uuid(std::string uuid);
 	const std::vector<Highlight> get_highlights_of_type(char type) const;
 	const std::vector<Highlight> get_highlights_sorted(char type=0) const;
 
@@ -279,6 +281,8 @@ public:
 	std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
 	std::optional<PdfLink> get_link_in_pos(const DocumentPos& pos);
 	std::vector<PdfLink> get_links_in_page_rect(int page, fz_rect rect);
+	std::string get_highlight_index_uuid(int index);
+	std::string get_bookmark_index_uuid(int index);
 
 	//void create_table_of_contents(std::vector<TocNode*>& top_nodes);
 	int add_stext_page_to_created_toc(fz_stext_page* stext_page,

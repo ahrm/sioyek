@@ -3533,3 +3533,33 @@ std::vector<FreehandDrawing> Document::get_page_freehand_drawings_with_indices(i
 	}
 	return results;
 }
+int Document::get_highlight_index_with_uuid(std::string uuid) {
+	for (int i = 0; i < highlights.size(); i++) {
+		if (highlights[i].uuid == uuid) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+int Document::get_bookmark_index_with_uuid(std::string uuid) {
+	for (int i = 0; i < bookmarks.size(); i++) {
+		if (bookmarks[i].uuid == uuid) {
+			return i;
+		}
+	}
+	return -1;
+}
+std::string Document::get_highlight_index_uuid(int index) {
+	if ((index >= 0) && (index < highlights.size())) {
+		return highlights[index].uuid;
+	}
+	return "";
+}
+
+std::string Document::get_bookmark_index_uuid(int index) {
+	if ((index >= 0) && (index < bookmarks.size())) {
+		return bookmarks[index].uuid;
+	}
+	return "";
+}
