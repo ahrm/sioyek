@@ -4100,9 +4100,13 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
 				key = key_event->text().toStdWString()[0];
 			}
 			else {
+				auto text = key_event->text();
 				key = key_event->key();
-				if (key >= 'A' && key <= 'Z') {
-					key = key - 'A' + 'a';
+
+				if ((key >= 'A' && key <= 'Z') && (!shift_pressed)) {
+					if (!shift_pressed) {
+						key = key - 'A' + 'a';
+					}
 				}
 			}
 		}
