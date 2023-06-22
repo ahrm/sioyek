@@ -1657,49 +1657,114 @@ bool DatabaseManager::select_all_portal_ids(std::vector<int>& portal_ids){
 }
 
 bool DatabaseManager::update_highlight_add_annotation(const std::string& uuid, const std::wstring& text_annot) {
-	std::wstringstream ss;
-	ss << "UPDATE highlights set text_annot='" << esc(text_annot) << "', modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
 
-	char* error_message = nullptr;
-    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
-    return handle_error(
-		error_code,
-		error_message);
+	return generic_update_run_query("highlights",
+		{
+			{"uuid", QString::fromStdString(uuid)},
+		},
+		{
+			{"text_annot",QString::fromStdWString(text_annot)},
+			{"modification_time", "CURRENT_TIMESTAMP"},
+		});
 }
 
 bool DatabaseManager::update_highlight_type(const std::string& uuid, char new_type) {
-	std::wstringstream ss;
-	ss << "UPDATE highlights set type='" << new_type << "', modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
 
-	char* error_message = nullptr;
-    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
-    return handle_error(
-		error_code,
-		error_message);
+	return generic_update_run_query("highlights",
+		{
+			{"uuid", QString::fromStdString(uuid)},
+		},
+		{
+			{"type", QChar(new_type)},
+			{"modification_time", "CURRENT_TIMESTAMP"},
+		});
 }
 
 bool DatabaseManager::update_bookmark_change_text(const std::string& uuid, const std::wstring& new_text, float new_font_size) {
+	return generic_update_run_query("bookmarks",
+		{
+			{"uuid", QString::fromStdString(uuid)},
+		},
+		{
+			{"desc", QString::fromStdWString(new_text)},
+			{"font_size", new_font_size},
+			{"modification_time", "CURRENT_TIMESTAMP"},
+		});
+}
+bool DatabaseManager::update_bookmark_change_position(const std::string& uuid, AbsoluteDocumentPos new_begin, AbsoluteDocumentPos new_end) {
 	std::wstringstream ss;
-	ss << "UPDATE bookmarks set desc='" << esc(new_text) << "', font_size=" << new_font_size << ", modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
+
+	return generic_update_run_query("bookmarks",
+		{
+			{"uuid", QString::fromStdString(uuid)},
+		},
+		{
+			{"offset_y", new_begin.y},
+			{"begin_x", new_begin.x},
+			{"begin_y", new_begin.y},
+			{"end_x", new_end.x},
+			{"end_y", new_end.y},
+			{"modification_time", "CURRENT_TIMESTAMP"},
+		});
+
+}
+std::wstring encode_variant(QVariant var) {
+
+
+	std::vector<QString> specials = {"CURRENT_TIMESTAMP", "datetime('now')"};
+	if ((var.type() == QVariant::String) || (var.type() == QVariant::Char)) {
+		if (std::find(specials.begin(), specials.end(), var.toString()) != specials.end()) {
+			return var.toString().toStdWString();
+		}
+		return (L"'" + esc(var.toString().toStdWString()) + L"'");
+
+	}
+	else {
+		return var.toString().toStdWString();
+	}
+}
+
+bool DatabaseManager::generic_update_run_query(std::string table_name,
+	std::vector<std::pair<std::string, QVariant>> selections,
+	std::vector<std::pair<std::string, QVariant>> updated_values) {
+	std::wstring query = generic_update_create_query(table_name, selections, updated_values);
 
 	char* error_message = nullptr;
-    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    int error_code = sqlite3_exec(global_db, utf8_encode(query).c_str(), null_callback, 0, &error_message);
     return handle_error(
 		error_code,
 		error_message);
 }
-bool DatabaseManager::update_bookmark_change_position(const std::string& uuid, AbsoluteDocumentPos new_begin, AbsoluteDocumentPos new_end) {
-	std::wstringstream ss;
-	ss << "UPDATE bookmarks set offset_y=" << new_begin.y <<
-		", begin_x=" << new_begin.x <<
-		", begin_y=" << new_begin.y <<
-		", end_x=" << new_end.x <<
-		", end_y=" << new_end.y <<
-		", modification_time=CURRENT_TIMESTAMP where uuid='" << esc(uuid) << "';";
 
-	char* error_message = nullptr;
-    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
-    return handle_error(
-		error_code,
-		error_message);
+std::wstring DatabaseManager::generic_update_create_query(std::string table_name,
+	std::vector<std::pair<std::string, QVariant>> selections,
+	std::vector<std::pair<std::string, QVariant>> updated_values) {
+	std::wstringstream query;
+	query << "UPDATE " << esc(table_name) << " SET ";
+
+	for (int i = 0; i < updated_values.size(); i++) {
+		auto [column_name, column_value] = updated_values[i];
+
+		query << esc(column_name) << L" = ";
+		query << encode_variant(column_value);
+
+		if (i < updated_values.size() - 1) {
+			query << L", ";
+		}
+	}
+	query << L" WHERE ";
+
+	for (int i = 0; i < selections.size(); i++) {
+		auto [column_name, column_value] = selections[i];
+
+		query << esc(column_name) << L" = ";
+		query << encode_variant(column_value);
+
+		if (i < selections.size() - 1) {
+			query << L", ";
+		}
+	}
+	query << ";";
+
+	return query.str();
 }

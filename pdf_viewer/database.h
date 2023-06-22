@@ -92,5 +92,13 @@ public:
 	bool select_all_bookmark_ids(std::vector<int>& mark_ids);
 	bool select_all_highlight_ids(std::vector<int>& mark_ids);
 	bool select_all_portal_ids(std::vector<int>& mark_ids);
+
+	std::wstring generic_update_create_query(std::string table_name,
+		std::vector<std::pair<std::string, QVariant>> selections, 
+		std::vector<std::pair<std::string, QVariant>> updated_values);
+
+	bool generic_update_run_query(std::string table_name,
+		std::vector<std::pair<std::string, QVariant>> selections, 
+		std::vector<std::pair<std::string, QVariant>> updated_values);
 };
 
