@@ -1269,7 +1269,7 @@ CommandSelector::CommandSelector(std::function<void(std::string)>* on_done,
 	MainWidget* parent,
 	QStringList elements,
 	std::unordered_map<std::string,
-	std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel>(nullptr, parent),
+	std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView>(nullptr, parent),
 	key_map(key_map),
 	on_done(on_done),
     main_widget(parent)

@@ -16,7 +16,7 @@ class TouchListView : public QWidget{
     Q_OBJECT
 public:
     QAbstractItemModel* model;
-    MySortFilterProxyModel proxy_model;
+    MySortFilterProxyModel* proxy_model;
     QQuickWidget* quick_widget = nullptr;
     TouchListView(QStringList elements, int selected_index, QWidget* parent=nullptr, bool deletable=false);
     TouchListView(QAbstractItemModel* elements, int selected_index, QWidget* parent=nullptr, bool deletable=false, bool move=true, bool is_tree=false);

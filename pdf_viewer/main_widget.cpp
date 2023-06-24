@@ -1,5 +1,4 @@
 ﻿// deduplicate database code
-// check every instance of handle_command_types and see if it should be replaced with execute_macro 
 
 #include <iostream>
 #include <vector>

@@ -45,6 +45,6 @@ private:
     //QStringListModel model;
     MainWidget* main_widget;
     ConfigModel config_model;
-    MySortFilterProxyModel proxy_model;
+    MySortFilterProxyModel* proxy_model;
 
 };

@@ -13,8 +13,11 @@ TouchConfigMenu::TouchConfigMenu(MainWidget* main_widget) :
 
     setAttribute(Qt::WA_NoMousePropagation);
 
-    proxy_model.setSourceModel(&config_model);
-    proxy_model.setFilterKeyColumn(1);
+    proxy_model = new MySortFilterProxyModel(FUZZY_SEARCHING);
+    proxy_model->setParent(this);
+
+    proxy_model->setSourceModel(&config_model);
+    proxy_model->setFilterKeyColumn(1);
 
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     quick_widget = new QQuickWidget(this);
@@ -23,8 +26,8 @@ TouchConfigMenu::TouchConfigMenu(MainWidget* main_widget) :
     //quick_widget->setAttribute(Qt::WA_AlwaysStackOnTop);
     //quick_widget->setClearColor(Qt::transparent);
 
-    quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
-    quick_widget->rootContext()->setContextProperty("_deletable", QVariant::fromValue(&proxy_model));
+    quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(proxy_model));
+    quick_widget->rootContext()->setContextProperty("_deletable", QVariant::fromValue(proxy_model));
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchConfigMenu.qml"));
 

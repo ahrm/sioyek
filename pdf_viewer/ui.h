@@ -96,13 +96,13 @@ public:
 };
 
 
-template <typename T, typename ViewType, typename ProxyModelType>
+template <typename T, typename ViewType >
 class BaseSelectorWidget : public QWidget {
 
 protected:
 	BaseSelectorWidget(QStandardItemModel* item_model, QWidget* parent) : QWidget(parent) {
 
-		proxy_model = new ProxyModelType;
+		proxy_model = new MySortFilterProxyModel(FUZZY_SEARCHING);
 		proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 
 		if (item_model) {
@@ -418,7 +418,7 @@ public:
 };
 
 template<typename T>
-class FilteredTreeSelect : public BaseSelectorWidget<T, QTreeView, MySortFilterProxyModel> {
+class FilteredTreeSelect : public BaseSelectorWidget<T, QTreeView > {
 private:
 	std::function<void(const std::vector<int>&)> on_done;
 
@@ -433,7 +433,7 @@ public:
 	FilteredTreeSelect(QStandardItemModel* item_model,
 		std::function<void(const std::vector<int>&)> on_done,
 		QWidget* parent,
-		std::vector<int> selected_index) : BaseSelectorWidget<T, QTreeView, MySortFilterProxyModel>(item_model, parent),
+		std::vector<int> selected_index) : BaseSelectorWidget<T, QTreeView >(item_model, parent),
 		on_done(on_done)
 	{
 		auto index = QModelIndex();
@@ -468,7 +468,7 @@ public:
 };
 
 template<typename T>
-class FilteredSelectTableWindowClass : public BaseSelectorWidget<T, QTableView, MySortFilterProxyModel> {
+class FilteredSelectTableWindowClass : public BaseSelectorWidget<T, QTableView > {
 private:
 
 	QStringListModel* string_list_model = nullptr;
@@ -492,7 +492,7 @@ public:
 		int selected_index,
 		std::function<void(T*)> on_done,
 		QWidget* parent,
-		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView, MySortFilterProxyModel>(nullptr, parent),
+		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView >(nullptr, parent),
 		values(values),
 		on_done(on_done),
 		on_delete_function(on_delete_function)
@@ -698,12 +698,12 @@ public:
     }
 
 	void set_filter_column_index(int index) {
-		list_view->proxy_model.setFilterKeyColumn(index);
+		list_view->proxy_model->setFilterKeyColumn(index);
 	}
 
 	void set_value_second_item(T value, QString str) {
 
-		auto source_model = list_view->proxy_model.sourceModel();
+		auto source_model = list_view->proxy_model->sourceModel();
 
 		if (source_model->columnCount() < 2) return;
 
@@ -720,7 +720,7 @@ public:
 
 
 template<typename T>
-class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView, MySortFilterProxyModel> {
+class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView> {
 private:
 
 	QStringListModel* string_list_model = nullptr;
@@ -741,7 +741,7 @@ public:
 		std::vector<T> values,
 		std::function<void(T*)> on_done,
 		QWidget* parent,
-		std::function<void(T*)> on_delete_function = nullptr, int selected_index=-1) : BaseSelectorWidget<T, QListView, MySortFilterProxyModel>(nullptr, parent),
+		std::function<void(T*)> on_delete_function = nullptr, int selected_index=-1) : BaseSelectorWidget<T, QListView>(nullptr, parent),
 		values(values),
 		on_done(on_done),
 		on_delete_function(on_delete_function)
@@ -791,7 +791,7 @@ private:
 
 };
 
-class CommandSelector : public BaseSelectorWidget<std::string, QTableView, MySortFilterProxyModel> {
+class CommandSelector : public BaseSelectorWidget<std::string, QTableView> {
 private:
 	QStringList string_elements;
 	MainWidget* main_widget;
@@ -821,7 +821,7 @@ public:
 };
 
 //class FileSelector : public BaseSelectorWidget<std::wstring, QListView, QSortFilterProxyModel> {
-class FileSelector : public BaseSelectorWidget<std::wstring, QListView, MySortFilterProxyModel> {
+class FileSelector : public BaseSelectorWidget<std::wstring, QListView> {
 private:
 
 	QStringListModel* list_model = nullptr;
@@ -837,7 +837,7 @@ public:
 	}
 
 	FileSelector(std::function<void(std::wstring)> on_done, QWidget* parent, QString last_path) :
-		BaseSelectorWidget<std::wstring, QListView, MySortFilterProxyModel>(nullptr, parent),
+		BaseSelectorWidget<std::wstring, QListView>(nullptr, parent),
 		on_done(on_done)
 	{
 

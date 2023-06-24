@@ -6,7 +6,7 @@
 void TouchListView::initialize(int selected_index, bool deletable, bool is_tree) {
     setAttribute(Qt::WA_NoMousePropagation);
 
-    proxy_model.setSourceModel(model);
+    proxy_model->setSourceModel(model);
 
 //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     quick_widget = new QQuickWidget(this);
@@ -21,7 +21,7 @@ void TouchListView::initialize(int selected_index, bool deletable, bool is_tree)
 		quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(model));
     }
     else {
-		quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
+		quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(proxy_model));
     }
 
 	quick_widget->rootContext()->setContextProperty("_deletable", QVariant::fromValue(deletable));
@@ -44,6 +44,7 @@ void TouchListView::initialize(int selected_index, bool deletable, bool is_tree)
 
 TouchListView::TouchListView(QAbstractItemModel* items_, int selected_index, QWidget* parent, bool deletable, bool move, bool is_tree) : QWidget(parent){
 
+    proxy_model = new MySortFilterProxyModel(FUZZY_SEARCHING);
     model = items_;
     if (move) {
 		items_->setParent(this);
@@ -53,22 +54,23 @@ TouchListView::TouchListView(QAbstractItemModel* items_, int selected_index, QWi
 
 TouchListView::TouchListView(QStringList items_, int selected_index ,QWidget* parent, bool deletable) : QWidget(parent){
 
+    proxy_model = new MySortFilterProxyModel(FUZZY_SEARCHING);
     model = new QStringListModel(items_, this);
     initialize(selected_index, deletable);
 }
 
 void TouchListView::handleSelect(QString val, int index) {
-    int source_index = proxy_model.mapToSource( proxy_model.index(index, 0)).row();
+    int source_index = proxy_model->mapToSource( proxy_model->index(index, 0)).row();
     emit itemSelected(val, source_index);
 }
 
 void TouchListView::handleDelete(QString val, int index) {
-    int source_index = proxy_model.mapToSource( proxy_model.index(index, 0)).row();
+    int source_index = proxy_model->mapToSource( proxy_model->index(index, 0)).row();
     emit itemDeleted(val, source_index);
 }
 
 void TouchListView::handlePressAndHold(QString val, int index) {
-    int source_index = proxy_model.mapToSource( proxy_model.index(index, 0)).row();
+    int source_index = proxy_model->mapToSource( proxy_model->index(index, 0)).row();
     emit itemPressAndHold(val, source_index);
 }
 
@@ -91,5 +93,5 @@ void TouchListView::keyPressEvent(QKeyEvent* kevent) {
     //return true;
 }
 void TouchListView::update_model() {
-	quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(&proxy_model));
+	quick_widget->rootContext()->setContextProperty("_model", QVariant::fromValue(proxy_model));
 }

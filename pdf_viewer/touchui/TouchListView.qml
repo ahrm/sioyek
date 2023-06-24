@@ -42,7 +42,9 @@ Rectangle {
 
 
         onTextChanged: {
-            lview.model.setFilterRegularExpression(text);
+            //lview.model.setFilterRegularExpression(text);
+            lview.model.setFilterCustom(text);
+            //rootitem.root_model.setFilterRegularExpression(text);
         }
 
 		onAccepted: {
