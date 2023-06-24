@@ -4,13 +4,14 @@
 #include "rapidfuzz_amalgamated.hpp"
 
 bool MySortFilterProxyModel::filter_accepts_row_column(int row, int col, const QModelIndex& source_parent) const {
+	if (filterString.size() == 0 || filterString == "<NULL>") return true;
+
     if (scores.size() > 0) {
 		return scores[row] > 50;
     }
 	QModelIndex source_index = sourceModel()->index(row, col, source_parent);
 
 	QString key = sourceModel()->data(source_index, filterRole()).toString();
-	if (filterString.size() == 0 || filterString == "<NULL>") return true;
 	std::wstring s1 = filterString.toStdWString();
 	std::wstring s2 = key.toStdWString();
 	int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(s1, s2));

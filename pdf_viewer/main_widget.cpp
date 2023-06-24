@@ -4843,7 +4843,12 @@ void MainWidget::handle_goto_toc() {
                     validate_render();
                     //main_document_view->goto_page(toc_node->page);
                     push_state();
-                    main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
+                    if (std::isnan(toc_node->y)) {
+                        main_document_view->goto_page(toc_node->page);
+                    }
+                    else {
+                        main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
+                    }
                     if (TOC_JUMP_ALIGN_TOP) {
                         main_document_view->scroll_mid_to_top();
                     }
