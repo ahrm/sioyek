@@ -27,6 +27,7 @@ enum ConfigType{
     FVec2,
     EnableRectangle,
     Range,
+    Macro
 };
 
 struct UIRange{

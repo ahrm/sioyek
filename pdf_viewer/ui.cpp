@@ -823,6 +823,27 @@ Color4ConfigUI::Color4ConfigUI(std::string name, MainWidget* parent, float* conf
     });
  }
 
+MacroConfigUI::MacroConfigUI(std::string name, MainWidget* parent, std::wstring* config_location, std::wstring initial_macro) : ConfigUI(name, parent) {
+
+    macro_editor = new TouchMacroEditor(utf8_encode(initial_macro), this, parent);
+
+    connect(macro_editor, &TouchMacroEditor::macroConfirmed, [&, config_location](std::string macro){
+        //convert_qcolor_to_float4(color, color_location);
+        (*config_location) = utf8_decode(macro);
+        on_change();
+        if (should_persist){
+			main_widget->persist_config();
+        }
+        main_widget->pop_current_widget();
+    });
+
+    QObject::connect(macro_editor, &TouchMacroEditor::canceled, [&](){
+        main_widget->pop_current_widget();
+    });
+
+
+ }
+
 FloatConfigUI::FloatConfigUI(std::string name, MainWidget* parent, float* config_location, float min_value_, float max_value_) : ConfigUI(name, parent) {
 
     min_value = min_value_;
@@ -989,6 +1010,19 @@ void BoolConfigUI::resizeEvent(QResizeEvent* resize_event){
 
     setFixedSize(w, h);
     move((parent_width - w) / 2, (parent_height - h) / 2);
+}
+
+void MacroConfigUI::resizeEvent(QResizeEvent* resize_event){
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+
+    int w = 2 * parent_width / 3;
+    int h =  parent_height / 2;
+    macro_editor->resize(w, h);
+
+    setFixedSize(w, h);
+    move(parent_width / 6, parent_height / 4);
 }
 
 void FloatConfigUI::resizeEvent(QResizeEvent* resize_event){

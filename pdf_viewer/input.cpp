@@ -3280,6 +3280,10 @@ public:
 					widget->on_config_changed(config_name);
 				}
 			}
+			if (config->config_type == ConfigType::Macro) {
+				widget->push_current_widget(new MacroConfigUI(config_name, widget, (std::wstring*)config->value, *(std::wstring*)config->value));
+				widget->show_current_widget();
+			}
 			if (config->config_type == ConfigType::Color3) {
 				widget->push_current_widget(new Color3ConfigUI(config_name, widget, (float*)config->value));
 				widget->show_current_widget();

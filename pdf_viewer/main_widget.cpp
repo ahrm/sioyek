@@ -1,4 +1,5 @@
 ﻿// deduplicate database code
+// check every instance of handle_command_types and see if it should be replaced with execute_macro 
 
 #include <iostream>
 #include <vector>
@@ -5505,17 +5506,20 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos){
         }
     }
     if (is_in_back_rect(click_pos)) {
-        handle_command_types(command_manager->get_command_with_name(this,utf8_encode(BACK_RECT_TAP_COMMAND)), 0);
-		return true;
+        if (execute_macro_if_enabled(BACK_RECT_TAP_COMMAND)) {
+            return true;
+        }
     }
     if (is_in_forward_rect(click_pos)) {
-        handle_command_types(command_manager->get_command_with_name(this,utf8_encode(FORWARD_RECT_TAP_COMMAND)), 0);
-		return true;
+        if (execute_macro_if_enabled(FORWARD_RECT_TAP_COMMAND)) {
+            return true;
+        }
     }
 
     if (is_in_edit_portal_rect(click_pos)) {
-        handle_command_types(command_manager->get_command_with_name(this, utf8_encode(EDIT_PORTAL_TAP_COMMAND)), 0);
-		return true;
+        if (execute_macro_if_enabled(EDIT_PORTAL_TAP_COMMAND)) {
+            return true;
+        }
     }
 
     if ((!is_visual_mark_mode()) && is_in_visual_mark_next_rect(click_pos)) {

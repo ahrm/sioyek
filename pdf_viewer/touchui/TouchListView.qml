@@ -10,6 +10,7 @@ Rectangle {
     id: rootitem
     color: "black"
     property bool deletable: _deletable || false
+    property var root_model: _model
 
     signal itemSelected(item: string, index: int)
     signal itemPressAndHold(item: string, index: int)
@@ -65,7 +66,8 @@ Rectangle {
             right: rootitem.right
             bottom: rootitem.bottom
         }
-        model: _model
+        //model: _model
+        model: rootitem.root_model
         id: lview
         clip: true
         //anchors.fill: parent
@@ -104,7 +106,7 @@ Rectangle {
                 Item{
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
-                    width: _model.columnCount() == 3 ? parent.width / 2 : parent.width
+                    width: rootitem.root_model.columnCount() == 3 ? parent.width / 2 : parent.width
                     id: inner_container
 
 					Text {
@@ -122,8 +124,8 @@ Rectangle {
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     anchors.left: inner_container.right
-                    width: _model.columnCount() == 3 ? parent.width / 2 : parent.width
-					visible: _model.columnCount() == 3
+                    width: rootitem.root_model.columnCount() == 3 ? parent.width / 2 : parent.width
+					visible: rootitem.root_model.columnCount() == 3
 
 					Text {
 						id: inner2
@@ -149,12 +151,12 @@ Rectangle {
 
                     // model.display.slice(0, 0) is a hack to get qml to redraw this widget
                     // when model changes there has to be a better way to do this
-					text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, _model.columnCount()-1)) || "";
+					text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, rootitem.root_model.columnCount()-1)) || "";
                     color: "white"
                     anchors.verticalCenter: parent.verticalCenter
                     font.pixelSize: 15
                 }
-                visible: _model.columnCount() >= 2
+                visible: rootitem.root_model.columnCount() >= 2
             }
 
 			Button{

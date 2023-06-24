@@ -54,6 +54,7 @@
 #include "touchui/TouchHighlightButtons.h"
 #include "touchui/TouchAudioButtons.h"
 #include "touchui/TouchDrawControls.h"
+#include "touchui/TouchMacroEditor.h"
 
 #include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"
@@ -1107,6 +1108,14 @@ private:
     float min_value;
     float max_value;
     TouchSlider* slider = nullptr;
+};
+
+class MacroConfigUI : public ConfigUI{
+public:
+    MacroConfigUI(std::string name, MainWidget* parent, std::wstring* config_location, std::wstring initial_macro);
+    void resizeEvent(QResizeEvent* resize_event) override;
+private:
+    TouchMacroEditor* macro_editor = nullptr;
 };
 
 class IntConfigUI : public ConfigUI{

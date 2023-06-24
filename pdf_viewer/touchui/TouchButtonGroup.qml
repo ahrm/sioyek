@@ -16,7 +16,9 @@ RowLayout{
         property var gbButtonClicked : null
         property color color: "black"
         property color selectedColor: color.tint("#44ffffff")
+        property color disabledColor: "red"
         property bool isSelected: false
+        property int mode: -1;
 
         //        property
 
@@ -32,22 +34,51 @@ RowLayout{
             anchors.fill: parent
 //            color: button_area.pressed ? "#444444" : "black"
             function getColor(){
-                if (gb.isSelected){
-                    if (button_area.pressed){
-                        return  gb.selectedColor.tint("#22ffffff");
-                    }
-                    else{
-                        return gb.selectedColor;
-                    }
+                if (mode >= 0){
+					if (mode == 0){
+						if (button_area.pressed){
+							return  gb.color.tint("#22ffffff");
+						}
+						else{
+							return gb.color;
+						}
 
+					}
+					else if (mode == 1){
+						if (button_area.pressed){
+							return  gb.color.tint("#5500ff00");
+						}
+						else{
+							return  gb.color.tint("#4400ff00");
+						}
+					}
+                    else {
+						if (button_area.pressed){
+							return  gb.color.tint("#55ff0000");
+						}
+						else{
+							return  gb.color.tint("#44ff0000");
+						}
+                    }
                 }
                 else{
-                    if (button_area.pressed){
-                        return  gb.color.tint("#22ffffff");
-                    }
-                    else{
-                        return gb.color;
-                    }
+					if (gb.isSelected){
+						if (button_area.pressed){
+							return  gb.selectedColor.tint("#22ffffff");
+						}
+						else{
+							return gb.selectedColor;
+						}
+
+					}
+					else{
+						if (button_area.pressed){
+							return  gb.color.tint("#22ffffff");
+						}
+						else{
+							return gb.color;
+						}
+					}
                 }
             }
 
@@ -117,8 +148,12 @@ RowLayout{
     property list<string> buttons
     property list<string> tips
     property bool radio: false
+    property bool modal: false
     property int selectedIndex : -1
+    property list<int> modeList : []
     property color color: "black"
+    property bool roundLeft: true
+    property bool roundRight: true
     property list<color> colors: []
     //        property var onButtonClicked : null
 
@@ -147,9 +182,10 @@ RowLayout{
             GroupButton{
                 anchors.fill: parent
                 text: model.modelData
-                roundLeft: index == 0
-                roundRight: index == row.buttons.length - 1
+                roundLeft: (index == 0) && row.roundLeft
+                roundRight: index == (row.buttons.length - 1) && row.roundRight
                 isSelected: index == selectedIndex
+                mode: modeList.length > 0 ? modeList[index] : -1
                 color: row.colors.length == 0 ? row.color : row.colors[index]
 //                color: "red"
                 onPressAndHold: {
@@ -164,10 +200,14 @@ RowLayout{
                 }
 
                 gbButtonClicked: function() {
+					//wconsole.log(row.modeList[index]);
 
                     if (row.radio){
-
                         row.selectedIndex = index;
+                    }
+
+                    if (row.modal){
+                        row.modeList[index] = (row.modeList[index] + 1) % 3;
                     }
 
                     /* emit */ row.buttonClicked(index, row.buttons[index]);

@@ -828,7 +828,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"startup_commands",
-		ConfigType::String,
+		ConfigType::Macro,
 		&STARTUP_COMMANDS,
 		string_serializer,
 		string_deserializer,
@@ -1226,7 +1226,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"shift_click_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&SHIFT_CLICK_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1234,7 +1234,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"control_click_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&CONTROL_CLICK_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1242,7 +1242,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"hold_middle_click_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&HOLD_MIDDLE_CLICK_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1274,7 +1274,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"back_rect_tap_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&BACK_RECT_TAP_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1282,7 +1282,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"back_rect_hold_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&BACK_RECT_HOLD_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1290,7 +1290,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"forward_rect_tap_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&FORWARD_RECT_TAP_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1298,7 +1298,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"forward_rect_hold_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&FORWARD_RECT_HOLD_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1306,7 +1306,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"edit_portal_tap_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&EDIT_PORTAL_TAP_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1314,7 +1314,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"edit_portal_hold_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&EDIT_PORTAL_HOLD_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1322,7 +1322,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"middle_left_rect_tap_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&MIDDLE_LEFT_RECT_TAP_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1330,7 +1330,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"middle_left_rect_hold_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&MIDDLE_LEFT_RECT_HOLD_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1338,7 +1338,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"middle_right_rect_tap_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&MIDDLE_RIGHT_RECT_TAP_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1346,7 +1346,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"middle_right_rect_hold_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&MIDDLE_RIGHT_RECT_HOLD_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1354,7 +1354,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"visual_mark_next_tap_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&VISUAL_MARK_NEXT_TAP_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1362,7 +1362,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"visual_mark_next_hold_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&VISUAL_MARK_NEXT_HOLD_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1370,7 +1370,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"visual_mark_prev_tap_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&VISUAL_MARK_PREV_TAP_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1378,7 +1378,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"visual_mark_prev_hold_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&VISUAL_MARK_PREV_HOLD_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1386,7 +1386,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"shift_right_click_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&SHIFT_RIGHT_CLICK_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1394,7 +1394,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"control_right_click_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&CONTROL_RIGHT_CLICK_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1410,7 +1410,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"alt_click_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&ALT_CLICK_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1418,7 +1418,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		});
 	configs.push_back({
 		L"alt_right_click_command",
-		ConfigType::String,
+		ConfigType::Macro,
 		&ALT_RIGHT_CLICK_COMMAND,
 		string_serializer,
 		string_deserializer,
@@ -1924,7 +1924,7 @@ void ConfigManager::serialize(const Path& path) {
 
     for (auto it : configs) {
 
-		if (it.config_type == ConfigType::String) {
+		if ((it.config_type == ConfigType::String) || (it.config_type == ConfigType::Macro)) {
 			if (((std::wstring*)it.value)->size() == 0) {
 				continue;
 			}
@@ -2120,6 +2120,7 @@ QVariant ConfigModel::data(const QModelIndex& index, int role) const {
 			if (config_type == ConfigType::Color3) return QVariant::fromValue(QString("color3"));
 			if (config_type == ConfigType::Color4) return QVariant::fromValue(QString("color4"));
 			if (config_type == ConfigType::String) return QVariant::fromValue(QString("string"));
+			if (config_type == ConfigType::Macro) return QVariant::fromValue(QString("macro"));
 			if (config_type == ConfigType::IVec2) return QVariant::fromValue(QString("ivec2"));
 			if (config_type == ConfigType::FVec2) return QVariant::fromValue(QString("fvec2"));
 			if (config_type == ConfigType::EnableRectangle) return QVariant::fromValue(QString("enablerectangle"));
@@ -2151,7 +2152,7 @@ QVariant ConfigModel::data(const QModelIndex& index, int role) const {
 				return QVariant::fromValue(vals);
 			}
 
-			if (config_type == ConfigType::String) {
+			if ((config_type == ConfigType::String) || (config_type == ConfigType::Macro)) {
 				//QColor::from
 				return QVariant::fromValue(QString::fromStdWString(*(std::wstring*)(conf->value)));
 			}
@@ -2169,10 +2170,10 @@ QVariant ConfigModel::data(const QModelIndex& index, int role) const {
 				return QVariant::fromValue(QColor(out_rgb[0], out_rgb[1], out_rgb[2], out_rgb[3]));
 			}
 
-			if (config_type == ConfigType::String) {
-				//QColor::from
-				return QVariant::fromValue(QString::fromStdWString(*(std::wstring*)conf->value));
-			}
+			//if (config_type == ConfigType::String) {
+			//	//QColor::from
+			//	return QVariant::fromValue(QString::fromStdWString(*(std::wstring*)conf->value));
+			//}
 			return QVariant::fromValue(QString(""));
 		}
 

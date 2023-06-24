@@ -333,14 +333,14 @@ Rectangle {
 //                        text: bg.value
 //                        // color: "white"
 //                        font.pixelSize: 15
-//                        visible: (bg.type == 'string')
+//                        visible: (bg.type == 'string' || bg.type == 'macro')
 //                        onTextChanged: {
 //                            if (bg.type == 'string'){
 //                                /* emit */ textConfigChanged(bg.name, text);
 //                            }
 //                        }
 //                    }
-//                    visible: (bg.type == 'string')
+//                    visible: (bg.type == 'string' || bg.type == 'macro')
 //                }
                 Button{
                     function getValue(){
