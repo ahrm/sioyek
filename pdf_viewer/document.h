@@ -104,6 +104,7 @@ private:
 	bool is_indexing = false;
 	bool are_highlights_loaded = false;
 	bool should_render_annotations = true;
+	bool should_reload_annotations = false;
 
 	QDateTime last_update_time;
 	CachedChecksummer* checksummer;
@@ -117,7 +118,6 @@ private:
 	fz_outline* get_toc_outline();
 
 	// load marks, bookmarks, links, etc.
-	void load_document_metadata_from_db();
 
 	// convetr the fz_outline structure to our own TocNode structure
 	void create_toc_tree(std::vector<TocNode*>& toc);
@@ -129,6 +129,7 @@ private:
 public:
 	fz_document* doc = nullptr;
 
+	void load_document_metadata_from_db();
 	void add_bookmark(const std::wstring& desc, float y_offset);
 	void add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
 	int add_incomplete_freetext_bookmark(fz_rect absrect);
@@ -311,6 +312,8 @@ public:
 	std::vector<FreehandDrawing> get_page_freehand_drawings_with_indices(int page, const std::vector<int> indices);
 	void undo_freehand_drawing();
 	const std::vector<FreehandDrawing>& get_page_drawings(int page);
+
+	bool get_should_reload_annotations();
 
 	friend class DocumentManager;
 };

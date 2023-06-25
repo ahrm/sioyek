@@ -19,4 +19,5 @@ public:
 	std::string get_checksum(std::wstring file_path);
 	std::optional<std::string> get_checksum_fast(std::wstring file_path);
 	std::optional<std::wstring> get_path(std::string checksum);
+	int num_docs_with_checksum(std::string checksum);
 };

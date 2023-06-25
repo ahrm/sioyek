@@ -848,6 +848,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             selection_end_indicator->update_pos();
         }
 
+        if (doc()) {
+            if (doc()->get_should_reload_annotations()) {
+                doc()->load_document_metadata_from_db();
+                validate_render();
+            }
+        }
         if (is_render_invalidated) {
             validate_render();
         }

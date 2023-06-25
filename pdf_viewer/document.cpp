@@ -75,10 +75,16 @@ void Document::load_document_metadata_from_db() {
 		db_manager->select_bookmark(checksum, bookmarks);
 		db_manager->select_highlight(checksum, highlights);
 		db_manager->select_links(checksum, portals);
+		should_reload_annotations = false;
 	}
 	else {
 		auto checksum_thread = std::thread([&]() {
 				std::string checksum = get_checksum();
+				if (checksummer->num_docs_with_checksum(checksum) > 1) {
+					// we already have a document with the same hash so there might be
+					// annotations that are not loaded
+					should_reload_annotations = true;
+				}
 				db_manager->insert_document_hash(get_path(), checksum);
 			});
 		checksum_thread.detach();
@@ -3562,4 +3568,8 @@ std::string Document::get_bookmark_index_uuid(int index) {
 		return bookmarks[index].uuid;
 	}
 	return "";
+}
+
+bool Document::get_should_reload_annotations() {
+	return should_reload_annotations;
 }

@@ -69,3 +69,10 @@ std::optional<std::wstring> CachedChecksummer::get_path(std::string checksum) {
     }
     return {};
 }
+
+int CachedChecksummer::num_docs_with_checksum(std::string checksum) {
+    if (cached_paths.find(checksum) != cached_paths.end()) {
+        return cached_paths[checksum].size();
+    }
+    return 0;
+}
