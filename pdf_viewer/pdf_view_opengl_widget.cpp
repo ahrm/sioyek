@@ -1223,6 +1223,14 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 			render_line_window(shared_gl_objects.vertical_line_program , vertical_line_end, ruler_rect);
 		}
 	}
+	for (auto [type, type_rects] : get_marked_data_rect_map()) {
+		//fz_rect window_rect = document_view->document_to_window_rect(page, rect);
+
+		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[type * 3]);
+		for (auto rect : type_rects) {
+			render_highlight_document(shared_gl_objects.highlight_program, rect.page, rect.rect);
+		}
+	}
 
 	{
 		glUseProgram(shared_gl_objects.line_program);
@@ -1246,17 +1254,6 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 	if (overview_page) {
 		render_overview(overview_page.value());
 	}
-
-
-	for (auto [type, type_rects] : get_marked_data_rect_map()) {
-		//fz_rect window_rect = document_view->document_to_window_rect(page, rect);
-
-		glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[type * 3]);
-		for (auto rect : type_rects) {
-			render_highlight_document(shared_gl_objects.highlight_program, rect.page, rect.rect);
-		}
-	}
-
 
 
 

@@ -42,9 +42,9 @@ void TouchListView::initialize(int selected_index, bool deletable, bool is_tree)
     quick_widget->setFocus();
 }
 
-TouchListView::TouchListView(QAbstractItemModel* items_, int selected_index, QWidget* parent, bool deletable, bool move, bool is_tree) : QWidget(parent){
+TouchListView::TouchListView(bool is_fuzzy, QAbstractItemModel* items_, int selected_index, QWidget* parent, bool deletable, bool move, bool is_tree) : QWidget(parent){
 
-    proxy_model = new MySortFilterProxyModel(FUZZY_SEARCHING);
+    proxy_model = new MySortFilterProxyModel(is_fuzzy);
     model = items_;
     if (move) {
 		items_->setParent(this);
@@ -52,9 +52,9 @@ TouchListView::TouchListView(QAbstractItemModel* items_, int selected_index, QWi
     initialize(selected_index, deletable, is_tree);
 }
 
-TouchListView::TouchListView(QStringList items_, int selected_index ,QWidget* parent, bool deletable) : QWidget(parent){
+TouchListView::TouchListView(bool is_fuzzy, QStringList items_, int selected_index ,QWidget* parent, bool deletable) : QWidget(parent){
 
-    proxy_model = new MySortFilterProxyModel(FUZZY_SEARCHING);
+    proxy_model = new MySortFilterProxyModel(is_fuzzy);
     model = new QStringListModel(items_, this);
     initialize(selected_index, deletable);
 }

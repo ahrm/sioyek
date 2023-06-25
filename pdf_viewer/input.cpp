@@ -27,6 +27,7 @@ extern std::vector<Path> user_keys_paths;
 extern bool TOUCH_MODE;
 extern bool VERBOSE;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern bool FUZZY_SEARCHING;
 
 Command::Command(MainWidget* widget_) : widget(widget_) {
 
@@ -110,6 +111,7 @@ public:
 		return "set_mark";
 	}
 
+
 	void perform() {
 		assert(this->symbol != 0);
 		widget->set_mark_in_current_location(this->symbol);
@@ -140,6 +142,7 @@ public:
 	std::string get_name() {
 		return "goto_tab";
 	}
+
 };
 
 class NextItemCommand : public Command{
@@ -154,6 +157,7 @@ public:
 	std::string get_name() {
 		return "next_item";
 	}
+
 };
 
 class PrevItemCommand : public Command{
@@ -168,6 +172,7 @@ public:
 	std::string get_name() {
 		return "previous_item";
 	}
+
 };
 
 class ToggleTextMarkCommand : public Command{
@@ -183,6 +188,7 @@ public:
 	std::string get_name() {
 		return "toggle_text_mark";
 	}
+
 };
 
 class MoveTextMarkForwardCommand : public Command{
@@ -198,6 +204,7 @@ public:
 	std::string get_name() {
 		return "move_text_mark_forward";
 	}
+
 };
 
 class MoveTextMarkDownCommand : public Command{
@@ -211,6 +218,7 @@ public:
 	std::string get_name() {
 		return "move_text_mark_down";
 	}
+
 };
 
 class MoveTextMarkUpCommand : public Command{
@@ -224,6 +232,7 @@ public:
 	std::string get_name() {
 		return "move_text_mark_up";
 	}
+
 };
 
 class MoveTextMarkForwardWordCommand : public Command{
@@ -237,6 +246,7 @@ public:
 	std::string get_name() {
 		return "move_text_mark_forward_word";
 	}
+
 };
 
 class MoveTextMarkBackwardCommand : public Command{
@@ -250,6 +260,7 @@ public:
 	std::string get_name() {
 		return "move_text_mark_backward";
 	}
+
 };
 
 class MoveTextMarkBackwardWordCommand : public Command{
@@ -263,6 +274,7 @@ public:
 	std::string get_name() {
 		return "move_text_mark_backward_word";
 	}
+
 };
 
 class StartReadingCommand : public Command{
@@ -276,6 +288,7 @@ public:
 	std::string get_name() {
 		return "start_reading";
 	}
+
 };
 
 class StopReadingCommand : public Command{
@@ -289,6 +302,7 @@ public:
 	std::string get_name() {
 		return "stop_reading";
 	}
+
 };
 
 class SearchCommand : public TextCommand {
@@ -313,6 +327,7 @@ public:
 	std::string text_requirement_name() {
 		return "Search Term";
 	}
+
 };
 
 class AddAnnotationToSelectedHighlightCommand : public TextCommand {
@@ -332,6 +347,7 @@ public:
 	std::string get_name() {
 		return "add_annot_to_highlight";
 	}
+
 
 	std::string text_requirement_name() {
 		return "Comment";
@@ -356,6 +372,7 @@ public:
 	}
 
 
+
 	std::string text_requirement_name() {
 		return "Thickness";
 	}
@@ -372,6 +389,7 @@ public:
 	std::string get_name() {
 		return "goto_page_with_label";
 	}
+
 
 	bool pushes_state() {
 		return true;
@@ -408,6 +426,7 @@ public:
 		return "chapter_search";
 	}
 
+
 	std::string text_requirement_name() {
 		return "Search Term";
 	}
@@ -424,6 +443,7 @@ public:
 	std::string get_name() {
 		return "regex_search";
 	}
+
 
 	bool pushes_state() {
 		return true;
@@ -445,6 +465,7 @@ public:
 	std::string get_name() {
 		return "add_bookmark";
 	}
+
 
 	std::string text_requirement_name() {
 		return "Bookmark Text";
@@ -476,6 +497,7 @@ public:
 	void set_text_requirement(std::wstring value) {
 		text_ = value;
 	}
+
 
 	void set_point_requirement(AbsoluteDocumentPos value) {
 		point_ = value;
@@ -544,6 +566,7 @@ public:
 	std::string get_name() {
 		return "add_freetext_bookmark";
 	}
+
 };
 
 class GotoBookmarkCommand : public Command {
@@ -560,6 +583,7 @@ public:
 	std::string get_name() {
 		return "goto_bookmark";
 	}
+
 };
 
 class GotoBookmarkGlobalCommand : public Command {
@@ -576,6 +600,8 @@ public:
 	std::string get_name() {
 		return "goto_bookmark_g";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -595,6 +621,7 @@ public:
 	std::string get_name() {
 		return "increase_freetext_font_size";
 	}
+
 };
 
 class DecreaseFreetextBookmarkFontSizeCommand : public Command {
@@ -612,6 +639,7 @@ public:
 	std::string get_name() {
 		return "decrease_freetext_font_size";
 	}
+
 };
 
 class GotoHighlightCommand : public Command {
@@ -629,6 +657,7 @@ public:
 	std::string get_name() {
 		return "goto_highlight";
 	}
+
 };
 
 class GotoHighlightGlobalCommand : public Command {
@@ -645,6 +674,8 @@ public:
 	std::string get_name() {
 		return "goto_highlight_g";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -659,6 +690,7 @@ public:
 	std::string get_name() {
 		return "goto_toc";
 	}
+
 };
 
 class PortalCommand : public Command {
@@ -672,6 +704,7 @@ public:
 	std::string get_name() {
 		return "portal";
 	}
+
 };
 
 class ToggleWindowConfigurationCommand : public Command {
@@ -684,6 +717,8 @@ public:
 	std::string get_name() {
 		return "toggle_window_configuration";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -698,6 +733,8 @@ public:
 	std::string get_name() {
 		return "next_state";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -712,6 +749,8 @@ public:
 	std::string get_name() {
 		return "prev_state";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -726,6 +765,23 @@ public:
 	std::string get_name() {
 		return "add_highlight";
 	}
+
+};
+
+class CommandPaletteCommand : public Command {
+public:
+	CommandPaletteCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		widget->show_command_palette();
+	}
+
+	std::string get_name() {
+		return "command_palette";
+	}
+
+
+	bool requires_document() { return false; }
 };
 
 class CommandCommand : public Command {
@@ -737,14 +793,11 @@ public:
 		if (!TOUCH_MODE) {
 
 			widget->set_current_widget(new CommandSelector(
-				&widget->on_command_done, widget, command_names, widget->input_handler->get_command_key_mappings()));
+				FUZZY_SEARCHING, &widget->on_command_done, widget, command_names, widget->input_handler->get_command_key_mappings()));
 		}
 		else {
 
-			//        TouchListView* tlv = new TouchListView(command_names, widget);
-			//        tlv->resize(250, 400);
-			//        widget->set_current_widget(tlv);
-			TouchCommandSelector* tcs = new TouchCommandSelector(command_names, widget);
+			TouchCommandSelector* tcs = new TouchCommandSelector(FUZZY_SEARCHING, command_names, widget);
 			widget->set_current_widget(tcs);
 		}
 
@@ -755,6 +808,8 @@ public:
 	std::string get_name() {
 		return "command";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -789,6 +844,7 @@ public:
 		return "open_document";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -805,6 +861,7 @@ public:
 		return "move_down";
 	}
 
+
 };
 
 class MoveUpCommand : public Command {
@@ -820,6 +877,7 @@ public:
 
 		return "move_up";
 	}
+
 };
 
 class MoveLeftCommand : public Command {
@@ -833,6 +891,7 @@ public:
 
 		return "move_left";
 	}
+
 };
 
 class MoveRightCommand : public Command {
@@ -846,6 +905,7 @@ public:
 
 		return "move_right";
 	}
+
 };
 
 class ZoomInCommand : public Command {
@@ -859,6 +919,7 @@ public:
 	std::string get_name() {
 		return "zoom_in";
 	}
+
 };
 
 class FitToPageWidthCommand : public Command {
@@ -873,6 +934,7 @@ public:
 	std::string get_name() {
 		return "fit_to_page_width";
 	}
+
 };
 
 class FitToPageWidthSmartCommand : public Command {
@@ -887,6 +949,7 @@ public:
 	std::string get_name() {
 		return "fit_to_page_width_smart";
 	}
+
 };
 
 class FitToPageHeightCommand : public Command {
@@ -900,6 +963,7 @@ public:
 	std::string get_name() {
 		return "fit_to_page_height";
 	}
+
 };
 
 class FitToPageHeightSmartCommand : public Command {
@@ -912,6 +976,7 @@ public:
 	std::string get_name() {
 		return "fit_to_page_height_smart";
 	}
+
 };
 
 class NextPageCommand : public Command {
@@ -923,6 +988,7 @@ public:
 	std::string get_name() {
 		return "next_page";
 	}
+
 };
 
 class PreviousPageCommand : public Command {
@@ -935,6 +1001,7 @@ public:
 	std::string get_name() {
 		return "previous_page";
 	}
+
 };
 
 class ZoomOutCommand : public Command {
@@ -949,6 +1016,7 @@ public:
 	std::string get_name() {
 		return "zoom_out";
 	}
+
 };
 
 class GotoDefinitionCommand : public Command {
@@ -964,9 +1032,11 @@ public:
 		return "goto_definition";
 	}
 
+
 	bool pushes_state() {
 		return true;
 	}
+
 };
 
 class OverviewDefinitionCommand : public Command {
@@ -979,6 +1049,7 @@ public:
 	std::string get_name() {
 		return "overview_definition";
 	}
+
 };
 
 class PortalToDefinitionCommand : public Command {
@@ -991,6 +1062,7 @@ public:
 	std::string get_name() {
 		return "portak_to_definition";
 	}
+
 };
 
 class MoveVisualMarkDownCommand : public Command {
@@ -1004,6 +1076,7 @@ public:
 	std::string get_name() {
 		return "move_visual_mark_down";
 	}
+
 };
 
 class MoveVisualMarkUpCommand : public Command {
@@ -1017,6 +1090,7 @@ public:
 	std::string get_name() {
 		return "move_visual_mark_up";
 	}
+
 };
 
 class MoveVisualMarkNextCommand : public Command {
@@ -1029,6 +1103,7 @@ public:
 	std::string get_name() {
 		return "move_visual_mark_next";
 	}
+
 };
 
 class MoveVisualMarkPrevCommand : public Command {
@@ -1041,6 +1116,7 @@ public:
 	std::string get_name() {
 		return "move_visual_mark_prev";
 	}
+
 };
 
 
@@ -1059,6 +1135,7 @@ public:
 	std::string get_name() {
 		return "goto_page_with_page_number";
 	}
+
 
 	std::string text_requirement_name() {
 		return "Page Number";
@@ -1102,6 +1179,7 @@ public:
 		return "edit_selected_bookmark";
 	}
 
+
 	std::string text_requirement_name() {
 		return "Bookmark Text";
 	}
@@ -1131,6 +1209,7 @@ public:
 		return "edit_selected_highlight";
 	}
 
+
 	std::string text_requirement_name() {
 		return "Highlight Annotation";
 	}
@@ -1148,6 +1227,7 @@ public:
 	std::string get_name() {
 		return "delete_portal";
 	}
+
 };
 
 class DeleteBookmarkCommand : public Command {
@@ -1161,6 +1241,7 @@ public:
 	std::string get_name() {
 		return "delete_bookmark";
 	}
+
 };
 
 class DeleteHighlightCommand : public Command {
@@ -1173,6 +1254,7 @@ public:
 	std::string get_name() {
 		return "delete_highlight";
 	}
+
 };
 
 class GotoPortalCommand : public Command {
@@ -1192,6 +1274,7 @@ public:
 	std::string get_name() {
 		return "goto_link";
 	}
+
 };
 
 class EditPortalCommand : public Command {
@@ -1212,6 +1295,7 @@ public:
 	std::string get_name() {
 		return "edit_portal";
 	}
+
 };
 
 class OpenPrevDocCommand : public Command {
@@ -1229,6 +1313,7 @@ public:
 		return "open_prev_doc";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1237,6 +1322,7 @@ public:
 	OpenDocumentEmbeddedCommand(MainWidget* w) : Command(w) {};
 	void perform() {
 		widget->set_current_widget(new FileSelector(
+			FUZZY_SEARCHING,
 			[widget = widget](std::wstring doc_path) {
 				widget->validate_render();
 				widget->open_document(doc_path);
@@ -1252,6 +1338,7 @@ public:
 		return "open_document_embedded";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1262,6 +1349,7 @@ public:
 		std::wstring last_file_name = widget->get_current_file_name().value_or(L"");
 
 		widget->set_current_widget(new FileSelector(
+			FUZZY_SEARCHING,
 			[widget = widget](std::wstring doc_path) {
 				widget->validate_render();
 				widget->open_document(doc_path);
@@ -1277,6 +1365,7 @@ public:
 		return "open_document_embedded_from_current_path";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1290,6 +1379,7 @@ public:
 	std::string get_name() {
 		return "copy";
 	}
+
 };
 
 class GotoBeginningCommand : public Command {
@@ -1312,6 +1402,7 @@ public:
 	std::string get_name() {
 		return "goto_beginning";
 	}
+
 };
 
 class GotoEndCommand : public Command {
@@ -1334,6 +1425,7 @@ public:
 	std::string get_name() {
 		return "goto_end";
 	}
+
 };
 
 class ToggleFullscreenCommand : public Command {
@@ -1345,6 +1437,7 @@ public:
 	std::string get_name() {
 		return "toggle_fullscreen";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1359,6 +1452,7 @@ public:
 		return "toggle_one_window";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1371,6 +1465,7 @@ public:
 	std::string get_name() {
 		return "toggle_highlight";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1385,6 +1480,7 @@ public:
 		return "toggle_synctex";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1398,6 +1494,7 @@ public:
 		return "turn_on_synctex";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1410,6 +1507,7 @@ public:
 	std::string get_name() {
 		return "toggle_show_last_command";
 	}
+
 };
 
 class ExternalSearchCommand : public SymbolCommand {
@@ -1429,6 +1527,7 @@ public:
 	std::string get_name() {
 		return "external_search";
 	}
+
 };
 
 class OpenSelectedUrlCommand : public Command {
@@ -1440,6 +1539,7 @@ public:
 	std::string get_name() {
 		return "open_selected_url";
 	}
+
 };
 
 class ScreenDownCommand : public Command {
@@ -1454,6 +1554,7 @@ public:
 	std::string get_name() {
 		return "screen_down";
 	}
+
 };
 
 class ScreenUpCommand : public Command {
@@ -1468,6 +1569,7 @@ public:
 	std::string get_name() {
 		return "screen_up";
 	}
+
 };
 
 class NextChapterCommand : public Command {
@@ -1482,6 +1584,7 @@ public:
 	std::string get_name() {
 		return "next_chapter";
 	}
+
 };
 
 class PrevChapterCommand : public Command {
@@ -1496,6 +1599,7 @@ public:
 	std::string get_name() {
 		return "prev_chapter";
 	}
+
 };
 
 class ToggleDarkModeCommand : public Command {
@@ -1510,6 +1614,7 @@ public:
 	std::string get_name() {
 		return "toggle_dark_mode";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1527,6 +1632,7 @@ public:
 		return "toggle_custom_color";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1541,6 +1647,7 @@ public:
 	std::string get_name() {
 		return "toggle_presentation_mode";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1557,6 +1664,7 @@ public:
 		return "turn_on_presentation_mode";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1571,6 +1679,7 @@ public:
 	std::string get_name() {
 		return "toggle_mouse_drag_mode";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1587,6 +1696,7 @@ public:
 		return "toggle_freehand_drawing_mode";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1601,6 +1711,7 @@ public:
 	std::string get_name() {
 		return "toggle_pen_drawing_mode";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1617,6 +1728,7 @@ public:
 		return "close_window";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1631,6 +1743,7 @@ public:
 	std::string get_name() {
 		return "new_window";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1648,6 +1761,7 @@ public:
 		return "quit";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1663,6 +1777,7 @@ public:
 		return "escape";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1677,6 +1792,7 @@ public:
 	std::string get_name() {
 		return "toggle_pdf_annotations";
 	}
+
 
 	bool requires_document() { return true; }
 };
@@ -1715,12 +1831,13 @@ public:
 
 	void pre_perform() {
 		widget->opengl_widget->set_highlight_links(true, true);
-
+		widget->invalidate_render();
 	}
 
 	virtual std::string get_name() {
 		return "open_link";
 	}
+
 
 	virtual void set_text_requirement(std::wstring value) {
 		this->text = value;
@@ -1745,6 +1862,7 @@ public:
 		return "overview_link";
 	}
 
+
 };
 
 class PortalToLinkCommand : public OpenLinkCommand {
@@ -1759,6 +1877,7 @@ public:
 		return "portal_to_link";
 	}
 
+
 };
 
 class CopyLinkCommand : public TextCommand {
@@ -1771,12 +1890,14 @@ public:
 
 	void pre_perform() {
 		widget->opengl_widget->set_highlight_links(true, true);
+		widget->invalidate_render();
 
 	}
 
 	std::string get_name() {
 		return "copy_link";
 	}
+
 
 	std::string text_requirement_name() {
 		return "Label";
@@ -1799,6 +1920,7 @@ public:
 	std::string get_name() {
 		return "keyboard_select";
 	}
+
 
 	std::string text_requirement_name() {
 		return "Labels";
@@ -1826,6 +1948,7 @@ public:
 	std::string get_name() {
 		return "keyboard_overview";
 	}
+
 
 	std::string text_requirement_name() {
 		return "Label";
@@ -1857,6 +1980,7 @@ public:
 		return "keyboard_smart_jump";
 	}
 
+
 	std::string text_requirement_name() {
 		return "Label";
 	}
@@ -1873,6 +1997,7 @@ public:
 	std::string get_name() {
 		return "keys";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1892,6 +2017,7 @@ public:
 		return "keys_user";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1907,6 +2033,7 @@ public:
 		return "keys_user_all";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1921,6 +2048,7 @@ public:
 	std::string get_name() {
 		return "prefs";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1940,6 +2068,7 @@ public:
 		return "prefs_user";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -1954,6 +2083,7 @@ public:
 	std::string get_name() {
 		return "prefs_user_all";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -1970,6 +2100,7 @@ public:
 	std::string get_name() {
 		return "fit_to_page_width_ratio";
 	}
+
 };
 
 class SmartJumpUnderCursorCommand : public Command {
@@ -1984,6 +2115,7 @@ public:
 	std::string get_name() {
 		return "smart_jump_under_cursor";
 	}
+
 };
 
 class DownloadPaperUnderCursorCommand : public Command {
@@ -1997,6 +2129,7 @@ public:
 	std::string get_name() {
 		return "download_paper_under_cursor";
 	}
+
 };
 
 
@@ -2012,6 +2145,7 @@ public:
 	std::string get_name() {
 		return "overview_under_cursor";
 	}
+
 };
 
 class SynctexUnderCursorCommand : public Command {
@@ -2026,6 +2160,7 @@ public:
 	std::string get_name() {
 		return "synctex_under_cursor";
 	}
+
 };
 
 class VisualMarkUnderCursorCommand : public Command {
@@ -2040,6 +2175,7 @@ public:
 	std::string get_name() {
 		return "visual_mark_under_cursor";
 	}
+
 };
 
 class CloseOverviewCommand : public Command {
@@ -2053,6 +2189,7 @@ public:
 	std::string get_name() {
 		return "close_overview";
 	}
+
 };
 
 class CloseVisualMarkCommand : public Command {
@@ -2066,6 +2203,7 @@ public:
 	std::string get_name() {
 		return "close_visual_mark";
 	}
+
 };
 
 class ZoomInCursorCommand : public Command {
@@ -2081,6 +2219,7 @@ public:
 	std::string get_name() {
 		return "zoom_in_cursor";
 	}
+
 };
 
 class ZoomOutCursorCommand : public Command {
@@ -2096,6 +2235,7 @@ public:
 	std::string get_name() {
 		return "zoom_out_cursor";
 	}
+
 };
 
 class GotoLeftCommand : public Command {
@@ -2109,6 +2249,7 @@ public:
 	std::string get_name() {
 		return "goto_left";
 	}
+
 };
 
 class GotoLeftSmartCommand : public Command {
@@ -2122,6 +2263,7 @@ public:
 	std::string get_name() {
 		return "goto_left_smart";
 	}
+
 };
 
 class GotoRightCommand : public Command {
@@ -2135,6 +2277,7 @@ public:
 	std::string get_name() {
 		return "goto_right";
 	}
+
 };
 
 class GotoRightSmartCommand : public Command {
@@ -2148,6 +2291,7 @@ public:
 	std::string get_name() {
 		return "goto_right_smart";
 	}
+
 };
 
 class RotateClockwiseCommand : public Command {
@@ -2162,6 +2306,7 @@ public:
 	std::string get_name() {
 		return "rotate_clockwise";
 	}
+
 };
 
 class RotateCounterClockwiseCommand : public Command {
@@ -2176,6 +2321,7 @@ public:
 	std::string get_name() {
 		return "rotate_counterclockwise";
 	}
+
 };
 
 class GotoNextHighlightCommand : public Command {
@@ -2192,6 +2338,7 @@ public:
 	std::string get_name() {
 		return "goto_next_highlight";
 	}
+
 };
 
 class GotoPrevHighlightCommand : public Command {
@@ -2209,6 +2356,7 @@ public:
 	std::string get_name() {
 		return "goto_prev_highlight";
 	}
+
 };
 
 class GotoNextHighlightOfTypeCommand : public Command {
@@ -2225,6 +2373,7 @@ public:
 	std::string get_name() {
 		return "goto_next_highlight_of_type";
 	}
+
 };
 
 class GotoPrevHighlightOfTypeCommand : public Command {
@@ -2241,6 +2390,7 @@ public:
 	std::string get_name() {
 		return "goto_prev_highlight_of_type";
 	}
+
 };
 
 class SetSelectHighlightTypeCommand : public SymbolCommand {
@@ -2253,6 +2403,7 @@ public:
 	std::string get_name() {
 		return "set_select_highlight_type";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -2267,6 +2418,7 @@ public:
 	std::string get_name() {
 		return "set_freehand_type";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -2284,6 +2436,7 @@ public:
 	std::string get_name() {
 		return "add_highlight_with_current_type";
 	}
+
 };
 
 class UndoDrawingCommand : public Command {
@@ -2296,6 +2449,7 @@ public:
 	std::string get_name() {
 		return "undo_drawing";
 	}
+
 
 	bool requires_document() { return true; }
 };
@@ -2313,6 +2467,7 @@ public:
 		return "enter_password";
 	}
 
+
 	std::string text_requirement_name() {
 		return "Password";
 	}
@@ -2324,6 +2479,7 @@ public:
 	void perform() {
 		widget->opengl_widget->toggle_fastread_mode();
 	}
+
 
 	std::string get_name() {
 		return "toggle_fastread";
@@ -2340,6 +2496,7 @@ public:
 	std::string get_name() {
 		return "goto_top_of_page";
 	}
+
 };
 
 class GotoBottomOfPageCommand : public Command {
@@ -2352,6 +2509,7 @@ public:
 	std::string get_name() {
 		return "goto_bottom_of_page";
 	}
+
 };
 
 class ReloadCommand : public Command {
@@ -2364,6 +2522,7 @@ public:
 	std::string get_name() {
 		return "relaod";
 	}
+
 };
 
 class ReloadNoFlickerCommand : public Command {
@@ -2376,6 +2535,7 @@ public:
 	std::string get_name() {
 		return "relaod_no_flicker";
 	}
+
 };
 
 class ReloadConfigCommand : public Command {
@@ -2388,6 +2548,7 @@ public:
 	std::string get_name() {
 		return "relaod_config";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -2403,6 +2564,7 @@ public:
 		return "turn_on_all_drawings";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -2416,6 +2578,7 @@ public:
 	std::string get_name() {
 		return "turn_off_all_drawings";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -2436,6 +2599,7 @@ public:
 		return "Status String";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -2450,6 +2614,7 @@ public:
 		return "clear_status_string";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -2463,6 +2628,7 @@ public:
 	std::string get_name() {
 		return "toggle_titlebar";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -2480,6 +2646,7 @@ public:
 	std::string get_name() {
 		return "next_preview";
 	}
+
 };
 
 class PreviousPreviewCommand : public Command {
@@ -2495,6 +2662,7 @@ public:
 	std::string get_name() {
 		return "previous_preview";
 	}
+
 };
 
 class GotoOverviewCommand : public Command {
@@ -2507,6 +2675,7 @@ public:
 	std::string get_name() {
 		return "goto_overview";
 	}
+
 };
 
 class PortalToOverviewCommand : public Command {
@@ -2519,6 +2688,7 @@ public:
 	std::string get_name() {
 		return "portal_to_overview";
 	}
+
 };
 
 class GotoSelectedTextCommand : public Command {
@@ -2532,6 +2702,7 @@ public:
 	std::string get_name() {
 		return "goto_selected_text";
 	}
+
 };
 
 class FocusTextCommand : public TextCommand {
@@ -2546,6 +2717,7 @@ public:
 	std::string get_name() {
 		return "focus_text";
 	}
+
 
 	std::string text_requirement_name() {
 		return "Text to focus";
@@ -2564,6 +2736,7 @@ public:
 		return "goto_window";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -2579,6 +2752,7 @@ public:
 		return "toggle_smooth_scroll_mode";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -2593,6 +2767,7 @@ public:
 	std::string get_name() {
 		return "toggle_scrollbar";
 	}
+
 };
 
 class OverviewToPortalCommand : public Command {
@@ -2606,6 +2781,7 @@ public:
 	std::string get_name() {
 		return "overview_to_portal";
 	}
+
 };
 
 class DebugCommand : public Command {
@@ -2619,6 +2795,7 @@ public:
 	std::string get_name() {
 		return "debug";
 	}
+
 };
 
 class SelectRectCommand : public Command {
@@ -2632,6 +2809,7 @@ public:
 	std::string get_name() {
 		return "select_rect";
 	}
+
 };
 
 class ToggleTypingModeCommand : public Command {
@@ -2645,6 +2823,7 @@ public:
 	std::string get_name() {
 		return "toggle_typing_mode";
 	}
+
 };
 
 class DonateCommand : public Command {
@@ -2658,6 +2837,8 @@ public:
 	std::string get_name() {
 		return "donate";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -2673,6 +2854,7 @@ public:
 	std::string get_name() {
 		return "overview_next_item";
 	}
+
 };
 
 class OverviewPrevItemCommand : public Command {
@@ -2687,6 +2869,7 @@ public:
 	std::string get_name() {
 		return "overview_prev_item";
 	}
+
 };
 
 class DeleteHighlightUnderCursorCommand : public Command {
@@ -2700,6 +2883,7 @@ public:
 	std::string get_name() {
 		return "delete_highlight_under_cursor";
 	}
+
 };
 
 class NoopCommand : public Command {
@@ -2713,6 +2897,8 @@ public:
 	std::string get_name() {
 		return "noop";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -2728,6 +2914,8 @@ public:
 	std::string get_name() {
 		return "import";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -2743,6 +2931,8 @@ public:
 	std::string get_name() {
 		return "export";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -2757,6 +2947,7 @@ public:
 	std::string get_name() {
 		return "enter_visual_mark_mode";
 	}
+
 };
 
 class SetPageOffsetCommand : public TextCommand {
@@ -2772,6 +2963,7 @@ public:
 	std::string get_name() {
 		return "set_page_offset";
 	}
+
 };
 
 class ToggleVisualScrollCommand : public Command {
@@ -2785,6 +2977,7 @@ public:
 	std::string get_name() {
 		return "toggle_visual_scroll";
 	}
+
 };
 
 class ToggleHorizontalLockCommand : public Command {
@@ -2798,6 +2991,7 @@ public:
 	std::string get_name() {
 		return "toggle_horizontal_scroll_lock";
 	}
+
 };
 
 class ExecuteCommand : public TextCommand {
@@ -2811,6 +3005,8 @@ public:
 	std::string get_name() {
 		return "execute";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -2825,6 +3021,7 @@ public:
 	std::string get_name() {
 		return "import_annotations";
 	}
+
 };
 
 class EmbedAnnotationsCommand : public Command {
@@ -2841,6 +3038,7 @@ public:
 	std::string get_name() {
 		return "embed_annotations";
 	}
+
 };
 
 class CopyWindowSizeConfigCommand : public Command {
@@ -2854,6 +3052,8 @@ public:
 	std::string get_name() {
 		return "copy_window_size_config";
 	}
+
+
 	bool requires_document() { return false; }
 };
 
@@ -2868,6 +3068,7 @@ public:
 	std::string get_name() {
 		return "toggle_select_highlight";
 	}
+
 };
 
 class OpenLastDocumentCommand : public Command {
@@ -2885,6 +3086,7 @@ public:
 		return "open_last_document";
 	}
 
+
 	bool requires_document() { return false; }
 };
 
@@ -2899,6 +3101,7 @@ public:
 	std::string get_name() {
 		return "add_marked_data";
 	}
+
 
 	bool requires_document() { return true; }
 };
@@ -2915,6 +3118,7 @@ public:
 		return "undo_marked_data";
 	}
 
+
 	bool requires_document() { return true; }
 };
 
@@ -2929,6 +3133,7 @@ public:
 	std::string get_name() {
 		return "goto_random_page";
 	}
+
 
 	bool requires_document() { return true; }
 };
@@ -2945,6 +3150,7 @@ public:
 		return "remove_marked_data";
 	}
 
+
 	bool requires_document() { return true; }
 };
 
@@ -2960,6 +3166,7 @@ public:
 		return "export_marked_data";
 	}
 
+
 	bool requires_document() { return true; }
 };
 
@@ -2974,6 +3181,7 @@ public:
 	std::string get_name() {
 		return "toggle_statusbar";
 	}
+
 
 	bool requires_document() { return false; }
 };
@@ -3065,6 +3273,7 @@ public:
 		}
 	}
 
+
 };
 
 
@@ -3109,6 +3318,7 @@ public:
 	std::string get_name() {
 		return "delete_freehand_drawings";
 	}
+
 };
 
 class SelectFreehandDrawingsCommand: public Command {
@@ -3152,6 +3362,7 @@ public:
 	std::string get_name() {
 		return "select_freehand_drawings";
 	}
+
 };
 
 class CustomCommand : public Command {
@@ -3200,6 +3411,7 @@ public:
 	std::string get_name() {
 		return name;
 	}
+
 
 };
 
@@ -3326,6 +3538,7 @@ public:
     std::string get_name() {
         return "setconfig_" + config_name;
     }
+
 
     bool requires_document() { return false; }
 };
@@ -3548,6 +3761,7 @@ public:
 	std::string get_name() {
 		return name;
 	}
+
 };
 
 CommandManager::CommandManager(ConfigManager* config_manager) {
@@ -3628,6 +3842,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["turn_on_synctex"] = [](MainWidget* widget) {return std::make_unique< TurnOnSynctexCommand>(widget); };
 	new_commands["toggle_show_last_command"] = [](MainWidget* widget) {return std::make_unique< ToggleShowLastCommand>(widget); };
 	new_commands["command"] = [](MainWidget* widget) {return std::make_unique< CommandCommand>(widget); };
+	new_commands["command_palette"] = [](MainWidget* widget) {return std::make_unique< CommandPaletteCommand>(widget); };
 	new_commands["external_search"] = [](MainWidget* widget) {return std::make_unique< ExternalSearchCommand>(widget); };
 	new_commands["open_selected_url"] = [](MainWidget* widget) {return std::make_unique< OpenSelectedUrlCommand>(widget); };
 	new_commands["screen_down"] = [](MainWidget* widget) {return std::make_unique< ScreenDownCommand>(widget); };
@@ -3741,6 +3956,194 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["delete_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< DeleteFreehandDrawingsCommand>(widget); };
 	new_commands["select_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< SelectFreehandDrawingsCommand>(widget); };
 
+	command_human_readable_names["goto_beginning"] = "Go to the beginning of the document";
+	command_human_readable_names["goto_end"] = "Go to the end of the document";
+	command_human_readable_names["goto_definition"] = "Go to the reference in current highlighted line";
+	command_human_readable_names["overview_definition"] = "Open an overview to the reference in current highlighted line";
+	command_human_readable_names["portal_to_definition"] = "Create a portal to the definition in current highlighted line";
+	command_human_readable_names["goto_tab"] = "Open tab";
+	command_human_readable_names["next_item"] = "Go to next search result";
+	command_human_readable_names["previous_item"] = "Go to previous search result";
+	command_human_readable_names["toggle_text_mark"] = "Move text cursor to other end of selection";
+	command_human_readable_names["move_text_mark_forward"] = "Move text cursor forward";
+	command_human_readable_names["move_text_mark_backward"] = "Move text cursor backward";
+	command_human_readable_names["move_text_mark_forward_word"] = "Move text cursor forward to the next word";
+	command_human_readable_names["move_text_mark_backward_word"] = "Move text cursor backward to the previous word";
+	command_human_readable_names["move_text_mark_down"] = "Move text cursor down";
+	command_human_readable_names["move_text_mark_up"] = "Move text cursor up";
+	command_human_readable_names["set_mark"] = "Set mark in current location";
+	command_human_readable_names["toggle_drawing_mask"] = "Toggle drawing type visibility";
+	command_human_readable_names["turn_on_all_drawings"] = "Make all freehand drawings visible";
+	command_human_readable_names["turn_off_all_drawings"] = "Make all freehand drawings invisible";
+	command_human_readable_names["goto_mark"] = "Go to marked location";
+	command_human_readable_names["goto_page_with_page_number"] = "Go to page with page number";
+	command_human_readable_names["edit_selected_bookmark"] = "Edit selected bookmark";
+	command_human_readable_names["edit_selected_highlight"] = "Edit the text comment of current selected highlight";
+	command_human_readable_names["search"] = "Search";
+	command_human_readable_names["add_annot_to_highlight"] = "Add annotation to selected highlight";
+	command_human_readable_names["set_freehand_thickness"] = "Set thickness of freehand drawings";
+	command_human_readable_names["goto_page_with_label"] = "Go to page with label";
+	command_human_readable_names["regex_search"] = "Search using regular expression";
+	command_human_readable_names["chapter_search"] = "Search current chapter";
+	command_human_readable_names["move_down"] = "Move down";
+	command_human_readable_names["move_up"] = "Move up";
+	command_human_readable_names["move_left"] = "Move left";
+	command_human_readable_names["move_right"] = "Move right";
+	command_human_readable_names["zoom_in"] = "Zoom in";
+	command_human_readable_names["zoom_out"] = "Zoom out";
+	command_human_readable_names["fit_to_page_width"] = "Fit the page to screen width";
+	command_human_readable_names["fit_to_page_height"] = "Fit the page to screen height";
+	command_human_readable_names["fit_to_page_height_smart"] = "Fit the page to screen height, ignoring white page margins";
+	command_human_readable_names["fit_to_page_width_smart"] = "Fit the page to screen width, ignoring white page margins";
+	command_human_readable_names["next_page"] = "Go to next page";
+	command_human_readable_names["previous_page"] = "Go to previous page";
+	command_human_readable_names["open_document"] = "Open documents using native file explorer";
+	command_human_readable_names["add_bookmark"] = "Add an invisible bookmark in the current location";
+	command_human_readable_names["add_marked_bookmark"] = "Add a bookmark in the selected location";
+	command_human_readable_names["add_freetext_bookmark"] = "Add a text bookmark in the selected rectangle";
+	command_human_readable_names["add_highlight"] = "Highlight selected text";
+	command_human_readable_names["goto_toc"] = "Open table of contents";
+	command_human_readable_names["goto_highlight"] = "Open the highlight list of the current document";
+	command_human_readable_names["increase_freetext_font_size"] = "Increase freetext bookmark font size";
+	command_human_readable_names["decrease_freetext_font_size"] = "Decrease freetext bookmark font size";
+	command_human_readable_names["goto_bookmark"] = "Open the bookmark list of current document";
+	command_human_readable_names["goto_bookmark_g"] = "Open the bookmark list of all documents";
+	command_human_readable_names["goto_highlight_g"] = "Open the highlight list of the all documents";
+	command_human_readable_names["link"] = "Go to closest portal destination";
+	command_human_readable_names["portal"] = "Start creating a portal";
+	command_human_readable_names["next_state"] = "Go forward in history";
+	command_human_readable_names["prev_state"] = "Go backward in history";
+	command_human_readable_names["delete_link"] = "Alias for delete_portal";
+	command_human_readable_names["delete_portal"] = "Delete the closest portal";
+	command_human_readable_names["delete_bookmark"] = "Delete the closest bookmark";
+	command_human_readable_names["delete_highlight"] = "Delete the selected highlight";
+	command_human_readable_names["goto_link"] = "Alias for goto_portal";
+	command_human_readable_names["goto_portal"] = "Goto closest portal destination";
+	command_human_readable_names["edit_link"] = "Alias for edit_portal";
+	command_human_readable_names["edit_portal"] = "Edit portal";
+	command_human_readable_names["open_prev_doc"] = "Open the list of previously opened documents";
+	command_human_readable_names["open_document_embedded"] = "Open an embedded file explorer";
+	command_human_readable_names["open_document_embedded_from_current_path"] = "Open an embedded file explorer, starting in the directory of current document";
+	command_human_readable_names["copy"] = "Copy";
+	command_human_readable_names["toggle_fullscreen"] = "Toggle fullscreen mode";
+	command_human_readable_names["toggle_one_window"] = "Open/close helper window";
+	command_human_readable_names["toggle_highlight"] = "Toggle whether PDF links are highlighted";
+	command_human_readable_names["toggle_synctex"] = "Toggle synctex mode";
+	command_human_readable_names["turn_on_synctex"] = "Turn synxtex mode on";
+	command_human_readable_names["toggle_show_last_command"] = "Toggle whether the last command is shown in statusbar";
+	command_human_readable_names["command"] = "Open a list of all sioyek commands";
+	command_human_readable_names["external_search"] = "Search using external search engines";
+	command_human_readable_names["open_selected_url"] = "Open selected URL in a browser";
+	command_human_readable_names["screen_down"] = "Move screen down";
+	command_human_readable_names["screen_up"] = "Move screen up";
+	command_human_readable_names["next_chapter"] = "Go to next chapter";
+	command_human_readable_names["prev_chapter"] = "Go to previous chapter";
+	command_human_readable_names["toggle_dark_mode"] = "Toggle dark mode";
+	command_human_readable_names["toggle_presentation_mode"] = "Toggle presentation mode";
+	command_human_readable_names["turn_on_presentation_mode"] = "Turn on presentation mode";
+	command_human_readable_names["toggle_mouse_drag_mode"] = "Toggle mouse drag mode";
+	command_human_readable_names["toggle_freehand_drawing_mode"] = "Toggle freehand drawing mode";
+	command_human_readable_names["toggle_pen_drawing_mode"] = "Toggle pen drawing mode";
+	command_human_readable_names["close_window"] = "Close window";
+	command_human_readable_names["quit"] = "Quit";
+	command_human_readable_names["escape"] = "Escape";
+	command_human_readable_names["toggle_pdf_annotations"] = "Toggle whether PDF annotations should be rendered";
+	command_human_readable_names["q"] = "";
+	command_human_readable_names["open_link"] = "Go to PDF links using keyboard";
+	command_human_readable_names["overview_link"] = "Overview to PDF links using keyboard";
+	command_human_readable_names["portal_to_link"] = "Create a portal to PDF links using keyboard";
+	command_human_readable_names["copy_link"] = "Copy URL of PDF links using keyboard";
+	command_human_readable_names["keyboard_select"] = "Select text using keyboard";
+	command_human_readable_names["keyboard_smart_jump"] = "Smart jump using keyboard";
+	command_human_readable_names["keyboard_overview"] = "Open an overview using keyboard";
+	command_human_readable_names["keys"] = "Open the default keys config file";
+	command_human_readable_names["keys_user"] = "Open the default keys_user config file";
+	command_human_readable_names["prefs"] = "Open the default prefs config file";
+	command_human_readable_names["prefs_user"] = "Open the default prefs_user config file";
+	command_human_readable_names["move_visual_mark_down"] = "Move current highlighted line down";
+	command_human_readable_names["move_visual_mark_up"] = "Move current highlighted line up";
+	command_human_readable_names["move_visual_mark_next"] = "Move the current highlighted line to the next unread text";
+	command_human_readable_names["move_visual_mark_prev"] = "Move the current highlighted line to the previous";
+	command_human_readable_names["toggle_custom_color"] = "Toggle custom color mode";
+	command_human_readable_names["set_select_highlight_type"] = "Set the selected highlight type";
+	command_human_readable_names["set_freehand_type"] = "Set the freehand drawing color type";
+	command_human_readable_names["toggle_window_configuration"] = "Toggle between one window and two window configuration";
+	command_human_readable_names["prefs_user_all"] = "List all user keys config files";
+	command_human_readable_names["keys_user_all"] = "List all user keys config files";
+	command_human_readable_names["fit_to_page_width_ratio"] = "Fit page to a percentage of window width";
+	command_human_readable_names["smart_jump_under_cursor"] = "Perform a smart jump to the reference under cursor";
+	command_human_readable_names["download_paper_under_cursor"] = "Try to download the paper name under cursor";
+	command_human_readable_names["overview_under_cursor"] = "Open an overview to the reference under cursor";
+	command_human_readable_names["close_overview"] = "Close overview window";
+	command_human_readable_names["visual_mark_under_cursor"] = "Highlight the line under cursor";
+	command_human_readable_names["close_visual_mark"] = "Stop ruler mode";
+	command_human_readable_names["zoom_in_cursor"] = "Zoom in centered on mouse cursor";
+	command_human_readable_names["zoom_out_cursor"] = "Zoom out centered on mouse cursor";
+	command_human_readable_names["goto_left"] = "Go to far left side of the page";
+	command_human_readable_names["goto_left_smart"] = "Go to far left side of the page, ignoring white page margins";
+	command_human_readable_names["goto_right"] = "Go to far right side of the page";
+	command_human_readable_names["goto_right_smart"] = "Go to far right side of the page, ignoring white page margins";
+	command_human_readable_names["rotate_clockwise"] = "Rotate clockwise";
+	command_human_readable_names["rotate_counterclockwise"] = "Rotate counter clockwise";
+	command_human_readable_names["goto_next_highlight"] = "Go to the next highlight";
+	command_human_readable_names["goto_prev_highlight"] = "Go to the previous highlight";
+	command_human_readable_names["goto_next_highlight_of_type"] = "Go to the next highlight with the current highlight type";
+	command_human_readable_names["goto_prev_highlight_of_type"] = "Go to the previous highlight with the current highlight type";
+	command_human_readable_names["add_highlight_with_current_type"] = "Highlight selected text with current selected highlight type";
+	command_human_readable_names["undo_drawing"] = "Undo freehand drawing";
+	command_human_readable_names["enter_password"] = "Enter password";
+	command_human_readable_names["toggle_fastread"] = "Go to top of current page";
+	command_human_readable_names["goto_top_of_page"] = "Go to top of current page";
+	command_human_readable_names["goto_bottom_of_page"] = "Go to bottom of current page";
+	command_human_readable_names["new_window"] = "Open a new window";
+	command_human_readable_names["reload"] = "Reload document";
+	command_human_readable_names["reload_no_flicker"] = "Reload document with no screen flickering";
+	command_human_readable_names["reload_config"] = "Reload configs";
+	command_human_readable_names["synctex_under_cursor"] = "Perform a synctex search to the tex file location corresponding to cursor location";
+	command_human_readable_names["set_status_string"] = "Set custom message to be shown in statusbar";
+	command_human_readable_names["clear_status_string"] = "Clear custom statusbar message";
+	command_human_readable_names["toggle_titlebar"] = "Toggle window titlebar";
+	command_human_readable_names["next_preview"] = "Go to the next candidate in overview window";
+	command_human_readable_names["previous_preview"] = "Go to the previous candidate in overview window";
+	command_human_readable_names["goto_overview"] = "Go to the current overview location";
+	command_human_readable_names["portal_to_overview"] = "Create a portal to the current overview location";
+	command_human_readable_names["goto_selected_text"] = "Go to the location of current selected text";
+	command_human_readable_names["focus_text"] = "Focus on the given text";
+	command_human_readable_names["goto_window"] = "Open a list of all sioyek windows";
+	command_human_readable_names["toggle_smooth_scroll_mode"] = "Toggle smooth scroll mode";
+	command_human_readable_names["goto_begining"] = "";
+	command_human_readable_names["toggle_scrollbar"] = "Toggle scrollbar";
+	command_human_readable_names["overview_to_portal"] = "Open an overview to the closest portal";
+	command_human_readable_names["select_rect"] = "Select a rectangle to be used in other commands";
+	command_human_readable_names["toggle_typing_mode"] = "Toggle typing minigame";
+	command_human_readable_names["donate"] = "Donate to support sioyek's development";
+	command_human_readable_names["overview_next_item"] = "Open an overview to the next search result";
+	command_human_readable_names["overview_prev_item"] = "Open an overview to the previous search result";
+	command_human_readable_names["delete_highlight_under_cursor"] = "Delete highlight under mouse cursor";
+	command_human_readable_names["noop"] = "Do nothing";
+	command_human_readable_names["import"] = "Import annotation data from a json file";
+	command_human_readable_names["export"] = "Export annotation data to a json file";
+	command_human_readable_names["enter_visual_mark_mode"] = "Enter ruler mode using keyboard";
+	command_human_readable_names["set_page_offset"] = "Toggle visual scroll mode";
+	command_human_readable_names["toggle_visual_scroll"] = "Toggle visual scroll mode";
+	command_human_readable_names["toggle_horizontal_scroll_lock"] = "Toggle horizontal lock";
+	command_human_readable_names["execute"] = "Execute shell command";
+	command_human_readable_names["embed_annotations"] = "Embed sioyek annotations into native PDF annotations";
+	command_human_readable_names["import_annotations"] = "Import PDF annotations into sioyek";
+	command_human_readable_names["copy_window_size_config"] = "Copy current window size configuration";
+	command_human_readable_names["toggle_select_highlight"] = "Toggle select highlight mode";
+	command_human_readable_names["open_last_document"] = "Switch to previous opened document";
+	command_human_readable_names["toggle_statusbar"] = "Toggle statusbar";
+	command_human_readable_names["start_reading"] = "Read using text to speech";
+	command_human_readable_names["stop_reading"] = "Stop reading";
+	command_human_readable_names["debug"] = "debug";
+	command_human_readable_names["add_marked_data"] = "[internal]";
+	command_human_readable_names["remove_marked_data"] = "[internal]";
+	command_human_readable_names["export_marked_data"] = "[internal]";
+	command_human_readable_names["undo_marked_data"] = "[internal]";
+	command_human_readable_names["goto_random_page"] = "[internal]";
+	command_human_readable_names["delete_freehand_drawings"] = "Add a text bookmark in the selected rectangle";
+	command_human_readable_names["select_freehand_drawings"] = "Select freehand drawings";
 
 	for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
 		std::string command_name = utf8_encode(command_name_);
@@ -4395,6 +4798,7 @@ std::vector<char> Command::special_symbols() {
 std::string Command::get_name() {
 	return "";
 }
+
 
 bool is_macro_command_enabled(Command* command) {
 	MacroCommand* macro_command = dynamic_cast<MacroCommand*>(command);

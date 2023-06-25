@@ -18,7 +18,7 @@ class TouchConfigMenu : public QWidget{
     Q_OBJECT
 public:
     //TouchConfigMenu(std::vector<Config>* configs, QWidget* parent = nullptr);
-    TouchConfigMenu(MainWidget* main_widget);
+    TouchConfigMenu(bool fuzzy, MainWidget* main_widget);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

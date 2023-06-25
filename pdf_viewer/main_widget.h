@@ -534,6 +534,7 @@ public:
 	void hande_turn_on_all_drawings();
 	void hande_turn_off_all_drawings();
 	void handle_toggle_drawing_mask(char symbol);
+	void show_command_palette();
 
 	std::string get_current_mode_string();
 
@@ -650,8 +651,9 @@ public:
 	void wheelEvent(QWheelEvent* wevent) override;
     bool event(QEvent *event);
 
+	public:
 	template<typename T>
-	void set_filtered_select_menu(std::vector<std::vector<std::wstring>> columns,
+	void set_filtered_select_menu(bool fuzzy, bool multiline, std::vector<std::vector<std::wstring>> columns,
 		std::vector<T> values,
 		int selected_index,
 		std::function<void(T*)> on_select,
@@ -666,7 +668,7 @@ public:
 				// the model when it is freed, so this is not a memory leak
 				QStandardItemModel* model = create_table_model(columns);
 
-				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(model, values, selected_index,
+				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, model, values, selected_index,
 					[&, on_select = std::move(on_select)](T* val) {
 						if (val) {
 							on_select(val);
@@ -684,6 +686,8 @@ public:
 			}
 			else {
 				auto w = new FilteredSelectTableWindowClass<T>(
+					fuzzy,
+					multiline,
 					columns,
 					values,
 					selected_index,
@@ -709,7 +713,7 @@ public:
 
 			if (TOUCH_MODE) {
 				// when will this be released?
-				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(columns[0], values, selected_index,
+				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, columns[0], values, selected_index,
 					[&, on_select = std::move(on_select)](T* val) {
 						if (val) {
 							on_select(val);
@@ -726,6 +730,7 @@ public:
 			else {
 
 				set_current_widget(new FilteredSelectWindowClass<T>(
+					fuzzy,
 					columns[0],
 					values,
 					[on_select = std::move(on_select)](T* val) {

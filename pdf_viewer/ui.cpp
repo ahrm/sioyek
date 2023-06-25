@@ -1060,9 +1060,9 @@ void IntConfigUI::resizeEvent(QResizeEvent* resize_event){
 //}
 
 
-TouchCommandSelector::TouchCommandSelector(const QStringList& commands, MainWidget* mw): QWidget(mw){
+TouchCommandSelector::TouchCommandSelector(bool is_fuzzy, const QStringList& commands, MainWidget* mw): QWidget(mw){
     main_widget = mw;
-    list_view = new TouchListView(commands, -1, this);
+    list_view = new TouchListView(is_fuzzy, commands, -1, this);
 
     QObject::connect(list_view, &TouchListView::itemSelected, [&](QString val, int index){
         //main_widget->current_widget = nullptr;
@@ -1265,11 +1265,11 @@ void CommandSelector::on_select(const QModelIndex& index) {
 	}
 }
 
-CommandSelector::CommandSelector(std::function<void(std::string)>* on_done,
+CommandSelector::CommandSelector(bool is_fuzzy, std::function<void(std::string)>* on_done,
 	MainWidget* parent,
 	QStringList elements,
 	std::unordered_map<std::string,
-	std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView>(nullptr, parent),
+	std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView>(is_fuzzy, nullptr, parent),
 	key_map(key_map),
 	on_done(on_done),
     main_widget(parent)
@@ -1301,7 +1301,7 @@ bool CommandSelector::on_text_change(const QString& text) {
 	for (int i = 0; i < string_elements.size(); i++) {
 		std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
 		int score = 0;
-		if (FUZZY_SEARCHING) {
+		if (is_fuzzy) {
 			score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
 		}
 		else {

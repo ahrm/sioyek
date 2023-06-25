@@ -21,6 +21,7 @@ extern UIRect LANDSCAPE_FORWARD_UI_RECT;
 extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
 extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
 extern float DEFAULT_VERTICAL_LINE_COLOR[4];
+extern bool FUZZY_SEARCHING;
 
 TouchSettings::TouchSettings(MainWidget* parent) : QWidget(parent){
 
@@ -263,7 +264,7 @@ void TouchSettings::handleForward() {
 }
 
 void TouchSettings::handleAllConfigs() {
-	TouchConfigMenu* config_menu = new TouchConfigMenu(main_widget);
+	TouchConfigMenu* config_menu = new TouchConfigMenu(FUZZY_SEARCHING, main_widget);
 	main_widget->push_current_widget(config_menu);
 	main_widget->show_current_widget();
 }

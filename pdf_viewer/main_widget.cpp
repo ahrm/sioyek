@@ -63,6 +63,7 @@
 #endif
 
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
+extern bool MULTILINE_MENUS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool HOVER_OVERVIEW;
@@ -74,6 +75,7 @@ extern std::wstring PAPER_SEARCH_URL;
 extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH ;
 extern std::wstring PAPER_SEARCH_CONTRIB_PATH ;
+extern bool FUZZY_SEARCHING;
 
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
@@ -4600,7 +4602,7 @@ void MainWidget::handle_goto_bookmark() {
 
 	int closest_bookmark_index = main_document_view->get_document()->find_closest_bookmark_index(bookmarks, main_document_view->get_offset_y());
 
-    set_filtered_select_menu<BookMark>({ option_names, option_location_strings }, bookmarks, closest_bookmark_index,
+    set_filtered_select_menu<BookMark>(FUZZY_SEARCHING, MULTILINE_MENUS,{ option_names, option_location_strings }, bookmarks, closest_bookmark_index,
 		[&](BookMark* bm) {
 			validate_render();
 			push_state();
@@ -4638,7 +4640,7 @@ void MainWidget::handle_goto_bookmark_global() {
 		}
 	}
 
-    set_filtered_select_menu<BookState>({ descs, file_names }, book_states, -1,
+    set_filtered_select_menu<BookState>(FUZZY_SEARCHING, MULTILINE_MENUS, { descs, file_names }, book_states, -1,
 		[&](BookState* book_state) {
 			validate_render();
 			open_document(book_state->document_path, 0.0f, book_state->offset_y);
@@ -4702,7 +4704,7 @@ void MainWidget::handle_goto_highlight() {
         table = { option_names, option_location_strings };
     }
 
-    set_filtered_select_menu<Highlight>(table, highlights, closest_highlight_index,
+    set_filtered_select_menu<Highlight>(FUZZY_SEARCHING, MULTILINE_MENUS,table, highlights, closest_highlight_index,
         [&](Highlight* hl) {
 			validate_render();
 			push_state();
@@ -4763,7 +4765,7 @@ void MainWidget::handle_goto_highlight_global() {
 		table = { descs, file_names };
 	}
 
-    set_filtered_select_menu<BookState>(table, book_states, -1,
+    set_filtered_select_menu<BookState>(FUZZY_SEARCHING, MULTILINE_MENUS,table, book_states, -1,
 
         [&](BookState* book_state) {
             if (book_state) {
@@ -4803,7 +4805,7 @@ void MainWidget::handle_goto_toc() {
 		//std::vector<T> values_,
 		//std::function<void(T*)> on_done_,
 		//std::function<void(T*)> on_delete,
-            set_current_widget(new TouchFilteredSelectWidget<int>(model,current_document_toc_pages, closest_toc_index, [&](int* page_value) {
+            set_current_widget(new TouchFilteredSelectWidget<int>(FUZZY_SEARCHING, model,current_document_toc_pages, closest_toc_index, [&](int* page_value) {
                     if (page_value) {
                         validate_render();
 
@@ -4823,7 +4825,7 @@ void MainWidget::handle_goto_toc() {
                 std::vector<std::wstring> flat_toc;
                 std::vector<int> current_document_toc_pages;
                 get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
-                set_current_widget(new FilteredSelectWindowClass<int>(flat_toc, current_document_toc_pages, [&](int* page_value) {
+                set_current_widget(new FilteredSelectWindowClass<int>(FUZZY_SEARCHING, flat_toc, current_document_toc_pages, [&](int* page_value) {
                     if (page_value) {
                         validate_render();
 
@@ -4841,7 +4843,7 @@ void MainWidget::handle_goto_toc() {
 
                 std::vector<int> selected_index = main_document_view->get_current_chapter_recursive_index();
                 //if (!TOUCH_MODE) {
-                set_current_widget(new FilteredTreeSelect<int>(main_document_view->get_document()->get_toc_model(),
+                set_current_widget(new FilteredTreeSelect<int>(FUZZY_SEARCHING, main_document_view->get_document()->get_toc_model(),
                     [&](const std::vector<int>& indices) {
                         TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
                         indices);
@@ -4926,7 +4928,7 @@ void MainWidget::handle_open_prev_doc() {
 	}
 
 
-    set_filtered_select_menu<std::string>({ opened_docs_names }, opened_docs_hashes, -1,
+    set_filtered_select_menu<std::string>(FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names }, opened_docs_hashes, -1,
         [&](std::string* doc_hash) {
             if (doc_hash->size() > 0) {
                 validate_render();
@@ -5067,6 +5069,7 @@ void MainWidget::handle_keys_user_all() {
 	}
 
 	set_current_widget(new FilteredSelectWindowClass<std::wstring>(
+        FUZZY_SEARCHING,
 		keys_paths_wstring,
 		keys_paths_wstring,
 		[&](std::wstring* path) {
@@ -5086,6 +5089,7 @@ void MainWidget::handle_prefs_user_all() {
 	}
 
 	set_current_widget(new FilteredSelectWindowClass<std::wstring>(
+        FUZZY_SEARCHING,
 		prefs_paths_wstring,
 		prefs_paths_wstring,
 		[&](std::wstring* path) {
@@ -5136,7 +5140,7 @@ void MainWidget::handle_goto_window() {
 		window_names.push_back(windows[i]->windowTitle().toStdWString());
 		window_ids.push_back(i);
 	}
-	set_current_widget(new FilteredSelectWindowClass<int>(window_names,
+	set_current_widget(new FilteredSelectWindowClass<int>(FUZZY_SEARCHING, window_names,
 		window_ids,
 		[&](int* window_id) {
 			if (*window_id < windows.size()) {
@@ -6113,7 +6117,7 @@ void MainWidget::show_download_paper_menu(
     // file sizes
     std::vector<std::wstring> right_names(paper_names.size());
 
-    set_filtered_select_menu<std::wstring>({ paper_names, right_names }, download_urls, -1,
+    set_filtered_select_menu<std::wstring>(FUZZY_SEARCHING, MULTILINE_MENUS,{ paper_names, right_names }, download_urls, -1,
 		[&](std::wstring* url) {
             download_paper_with_url(*url);
 		},
@@ -6469,7 +6473,8 @@ void MainWidget::handle_goto_loaded_document() {
         index = loc - loaded_document_paths.begin();
     }
 
-	set_filtered_select_menu<std::wstring>(
+	set_filtered_select_menu<std::wstring>(FUZZY_SEARCHING,
+        MULTILINE_MENUS,
         { loaded_document_paths },
 		loaded_document_paths,
 		index,
@@ -6682,4 +6687,30 @@ void MainWidget::move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector
 		}
 		moved_drawings.push_back(new_drawing);
 	}
+}
+
+void MainWidget::show_command_palette() {
+
+		std::vector<std::wstring> command_names;
+		std::vector<std::wstring> command_descs;
+
+		for (auto [command_name, command_desc] : command_manager->command_human_readable_names) {
+			command_names.push_back(utf8_decode(command_name));
+			command_descs.push_back(utf8_decode(command_desc));
+		}
+		std::vector<std::vector<std::wstring>> columns = { command_descs, command_names};
+		//widget->set_filtered_selelect_menu()
+
+		set_filtered_select_menu<std::wstring>(true,
+            false,
+            columns,
+			command_names,
+			-1,
+			[this](std::wstring* s) {
+                auto command = this->command_manager->get_command_with_name(this, utf8_encode(*s));
+                this->handle_command_types(std::move(command), 0);
+			},
+			[](std::wstring* s) {
+			});
+		show_current_widget();
 }

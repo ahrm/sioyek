@@ -4,7 +4,7 @@
 #include "main_widget.h"
 
 
-TouchConfigMenu::TouchConfigMenu(MainWidget* main_widget) :
+TouchConfigMenu::TouchConfigMenu(bool fuzzy, MainWidget* main_widget) :
     QWidget(main_widget),
     config_model(main_widget->config_manager->get_configs_ptr()),
     config_manager(main_widget->config_manager),
@@ -13,7 +13,7 @@ TouchConfigMenu::TouchConfigMenu(MainWidget* main_widget) :
 
     setAttribute(Qt::WA_NoMousePropagation);
 
-    proxy_model = new MySortFilterProxyModel(FUZZY_SEARCHING);
+    proxy_model = new MySortFilterProxyModel(fuzzy);
     proxy_model->setParent(this);
 
     proxy_model->setSourceModel(&config_model);

@@ -62,6 +62,8 @@ private:
 public:
 
 	std::map < std::string, std::function<std::unique_ptr<Command>(MainWidget*)> > new_commands;
+	std::map<std::string, std::string> command_human_readable_names;
+
 	CommandManager(ConfigManager* config_manager);
 	std::unique_ptr<Command> get_command_with_name(MainWidget* w, std::string name);
 	std::unique_ptr<Command> create_macro_command(MainWidget* w, std::string name, std::wstring macro_string);

@@ -73,7 +73,6 @@ const int max_select_size = 100;
 extern bool SMALL_TOC;
 extern bool MULTILINE_MENUS;
 extern bool EMACS_MODE;
-extern bool FUZZY_SEARCHING;
 extern bool TOUCH_MODE;
 
 
@@ -100,9 +99,10 @@ template <typename T, typename ViewType >
 class BaseSelectorWidget : public QWidget {
 
 protected:
-	BaseSelectorWidget(QStandardItemModel* item_model, QWidget* parent) : QWidget(parent) {
+	BaseSelectorWidget(bool fuzzy, QStandardItemModel* item_model, QWidget* parent) : QWidget(parent) {
 
-		proxy_model = new MySortFilterProxyModel(FUZZY_SEARCHING);
+		is_fuzzy = fuzzy;
+		proxy_model = new MySortFilterProxyModel(fuzzy);
 		proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 
 		if (item_model) {
@@ -193,6 +193,7 @@ protected:
 	QLineEdit* line_edit = nullptr;
 	//QSortFilterProxyModel* proxy_model = nullptr;
 	MySortFilterProxyModel* proxy_model = nullptr;
+	bool is_fuzzy = false;
     int pressed_row = -1;
     QPoint pressed_pos;
 
@@ -430,10 +431,10 @@ public:
 		return "QTreeView";
 	}
 
-	FilteredTreeSelect(QStandardItemModel* item_model,
+	FilteredTreeSelect(bool fuzzy, QStandardItemModel* item_model,
 		std::function<void(const std::vector<int>&)> on_done,
 		QWidget* parent,
-		std::vector<int> selected_index) : BaseSelectorWidget<T, QTreeView >(item_model, parent),
+		std::vector<int> selected_index) : BaseSelectorWidget<T, QTreeView >(fuzzy, item_model, parent),
 		on_done(on_done)
 	{
 		auto index = QModelIndex();
@@ -487,12 +488,14 @@ public:
 	}
 
 	FilteredSelectTableWindowClass(
+		bool fuzzy,
+		bool multiline,
 		const std::vector<std::vector<std::wstring>>& table,
 		std::vector<T> values,
 		int selected_index,
 		std::function<void(T*)> on_done,
 		QWidget* parent,
-		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView >(nullptr, parent),
+		std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView >(fuzzy, nullptr, parent),
 		values(values),
 		on_done(on_done),
 		on_delete_function(on_delete_function)
@@ -544,7 +547,7 @@ public:
 		table_view->horizontalHeader()->hide();
 		table_view->verticalHeader()->hide();
 
-		if (MULTILINE_MENUS) {
+		if (multiline) {
 			table_view->setWordWrap(true);
 			table_view->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 		}
@@ -630,7 +633,7 @@ public:
             //deleteLater();
         });
 	}
-    TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list,
+    TouchFilteredSelectWidget(bool is_fuzzy, std::vector<std::wstring> std_string_list,
 		std::vector<T> values_,
 		int selected_index,
 		std::function<void(T*)> on_done_,
@@ -649,18 +652,18 @@ public:
 //        string_list_model.setStringList(string_list);
 //        proxy_model.setSourceModel(string_list_model);
 
-        list_view = new TouchListView(string_list,selected_index, this, true);
+        list_view = new TouchListView(is_fuzzy, string_list,selected_index, this, true);
 		initialize();
     }
 
-	TouchFilteredSelectWidget(QAbstractItemModel* model,
+	TouchFilteredSelectWidget(bool is_fuzzy, QAbstractItemModel* model,
 		int selected_index,
 		std::function<void(T*)> on_done_,
 		QWidget* parent) :
 		QWidget(parent),
 		on_done(on_done_) {
         parent_widget = parent;
-        list_view = new TouchListView(model, selected_index, this, false, false, true);
+        list_view = new TouchListView(is_fuzzy, model, selected_index, this, false, false, true);
 
         QObject::connect(list_view, &TouchListView::itemSelected, [&](QString name, int index){
             on_done(&values[index]);
@@ -668,7 +671,7 @@ public:
         });
 	}
 
-    TouchFilteredSelectWidget(QAbstractItemModel* model,
+    TouchFilteredSelectWidget(bool is_fuzzy, QAbstractItemModel* model,
 		std::vector<T> values_,
 		int selected_index,
 		std::function<void(T*)> on_done_,
@@ -683,7 +686,7 @@ public:
 //        string_list_model.setStringList(string_list);
 //        proxy_model.setSourceModel(string_list_model);
 
-        list_view = new TouchListView(model, selected_index, this, true);
+        list_view = new TouchListView(is_fuzzy, model, selected_index, this, true);
 		initialize();
     }
 
@@ -737,11 +740,11 @@ public:
 	}
 
 
-	FilteredSelectWindowClass(std::vector<std::wstring> std_string_list,
+	FilteredSelectWindowClass(bool fuzzy, std::vector<std::wstring> std_string_list,
 		std::vector<T> values,
 		std::function<void(T*)> on_done,
 		QWidget* parent,
-		std::function<void(T*)> on_delete_function = nullptr, int selected_index=-1) : BaseSelectorWidget<T, QListView>(nullptr, parent),
+		std::function<void(T*)> on_delete_function = nullptr, int selected_index=-1) : BaseSelectorWidget<T, QListView>(fuzzy, nullptr, parent),
 		values(values),
 		on_done(on_done),
 		on_delete_function(on_delete_function)
@@ -781,7 +784,7 @@ public:
 
 class TouchCommandSelector : public QWidget{
 public:
-    TouchCommandSelector(const QStringList& commands, MainWidget* mw);
+    TouchCommandSelector(bool is_fuzzy, const QStringList& commands, MainWidget* mw);
     void resizeEvent(QResizeEvent* resize_event) override;
 //    void keyReleaseEvent(QKeyEvent* key_event) override;
 
@@ -810,7 +813,7 @@ public:
 
 	void on_select(const QModelIndex& index);
 
-	CommandSelector(std::function<void(std::string)>* on_done,
+	CommandSelector(bool is_fuzzy, std::function<void(std::string)>* on_done,
 		MainWidget* parent,
 		QStringList elements,
 		std::unordered_map<std::string,
@@ -836,8 +839,8 @@ public:
 		return "QListView";
 	}
 
-	FileSelector(std::function<void(std::wstring)> on_done, QWidget* parent, QString last_path) :
-		BaseSelectorWidget<std::wstring, QListView>(nullptr, parent),
+	FileSelector(bool is_fuzzy, std::function<void(std::wstring)> on_done, QWidget* parent, QString last_path) :
+		BaseSelectorWidget<std::wstring, QListView>(is_fuzzy, nullptr, parent),
 		on_done(on_done)
 	{
 
@@ -905,7 +908,7 @@ public:
 			for (auto file : all_directory_files) {
 				std::string encoded_file = utf8_encode(file.toStdWString());
 				int score = 0;
-				if (FUZZY_SEARCHING) {
+				if (is_fuzzy) {
 					score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(encoded_prefix, encoded_file));
 				}
 				else {
