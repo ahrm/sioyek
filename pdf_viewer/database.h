@@ -93,12 +93,25 @@ public:
 	bool select_all_highlight_ids(std::vector<int>& mark_ids);
 	bool select_all_portal_ids(std::vector<int>& mark_ids);
 
+	std::string get_annot_table_name(Annotation* annot);
+
+	bool insert_annotation(Annotation* annot, std::string document_hash);
+	bool update_annotation(Annotation* annot);
+	bool delete_annotation(Annotation* annot);
+
 	std::wstring generic_update_create_query(std::string table_name,
 		std::vector<std::pair<std::string, QVariant>> selections, 
 		std::vector<std::pair<std::string, QVariant>> updated_values);
 
+	std::wstring generic_insert_create_query(std::string table_name,
+		std::vector<std::pair<std::string, QVariant>> values);
+
 	bool generic_update_run_query(std::string table_name,
 		std::vector<std::pair<std::string, QVariant>> selections, 
 		std::vector<std::pair<std::string, QVariant>> updated_values);
+
+	bool generic_insert_run_query(std::string table_name,
+		std::vector<std::pair<std::string, QVariant>> values);
 };
+
 

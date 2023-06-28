@@ -1,4 +1,4 @@
-#include "database.h"
+#include "database.h";
 #include <sstream>
 #include <cassert>
 #include <utility>
@@ -1223,30 +1223,8 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
 
 }
 
-template<typename T>
-QJsonArray export_array(std::vector<T> objects) {
-	QJsonArray res;
-
-	for (const T& obj : objects) {
-		res.append(obj.to_json());
-	}
-	return res;
-}
 
 
-template <typename T>
-std::vector<T> load_from_json_array(const QJsonArray& item_list) {
-
-	std::vector<T> res;
-
-	for (int i = 0; i < item_list.size(); i++) {
-		QJsonObject current_json_object = item_list.at(i).toObject();
-		T current_object;
-		current_object.from_json(current_json_object);
-		res.push_back(current_object);
-	}
-	return res;
-}
 
 
 void DatabaseManager::export_json(std::wstring json_file_path, CachedChecksummer* checksummer) {
@@ -1736,6 +1714,47 @@ bool DatabaseManager::generic_update_run_query(std::string table_name,
 		error_message);
 }
 
+bool DatabaseManager::generic_insert_run_query(std::string table_name,
+	std::vector<std::pair<std::string, QVariant>> values) {
+	std::wstring query = generic_insert_create_query(table_name, values);
+
+	char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(query).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+		error_code,
+		error_message);
+}
+
+std::wstring DatabaseManager::generic_insert_create_query(std::string table_name,
+	std::vector<std::pair<std::string, QVariant>> values) {
+	std::wstringstream query;
+	query << "INSERT INTO " << esc(table_name) << " ( ";
+
+	for (int i = 0; i < values.size(); i++) {
+		auto [column_name, _] = values[i];
+
+		query << esc(column_name);
+
+		if (i < values.size() - 1) {
+			query << L", ";
+		}
+	}
+	query << L" ) VALUES (";
+
+	for (int i = 0; i < values.size(); i++) {
+		auto [_, column_value] = values[i];
+
+		query << encode_variant(column_value);
+
+		if (i < values.size() - 1) {
+			query << L", ";
+		}
+	}
+	query << ");";
+
+	return query.str();
+}
+
 std::wstring DatabaseManager::generic_update_create_query(std::string table_name,
 	std::vector<std::pair<std::string, QVariant>> selections,
 	std::vector<std::pair<std::string, QVariant>> updated_values) {
@@ -1767,4 +1786,44 @@ std::wstring DatabaseManager::generic_update_create_query(std::string table_name
 	query << ";";
 
 	return query.str();
+}
+
+std::string DatabaseManager::get_annot_table_name(Annotation* annot) {
+
+	if (dynamic_cast<BookMark*>(annot)) return "bookmarks";
+	if (dynamic_cast<Highlight*>(annot)) return "highlights";
+	if (dynamic_cast<Mark*>(annot)) return "marks";
+	if (dynamic_cast<Portal*>(annot)) return "links";
+	return "";
+}
+
+bool DatabaseManager::insert_annotation(Annotation* annot, std::string document_hash) {
+	auto fields = annot->to_tuples();
+	fields.push_back({"document_path", QString::fromStdString(document_hash)});
+	return generic_insert_run_query(get_annot_table_name(annot), fields);
+}
+
+bool DatabaseManager::update_annotation(Annotation* annot) {
+	auto fields = annot->to_tuples();
+
+	for (int i = 0; i < fields.size(); i++) {
+		if (fields[i].first == "uuid") {
+			fields.erase(fields.begin() + i);
+			break;
+		}
+	}
+
+	return generic_update_run_query(get_annot_table_name(annot), { { "uuid", QString::fromStdString(annot->uuid) } }, fields);
+}
+
+bool DatabaseManager::delete_annotation(Annotation* annot) {
+	std::string table = get_annot_table_name(annot);
+	std::wstringstream ss;
+	ss << "DELETE FROM " << esc(table)  << " where uuid='" << esc(annot->uuid) << "';";
+	char* error_message = nullptr;
+
+	int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+	return handle_error(
+		error_code,
+		error_message);
 }

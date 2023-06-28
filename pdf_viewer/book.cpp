@@ -54,6 +54,35 @@ void Annotation::load_metadata_from_json(const QJsonObject& obj) {
 	}
 }
 
+std::vector<std::pair<std::string, QVariant>> Annotation::to_tuples() {
+	std::vector<std::pair<std::string, QVariant>> res;
+
+	add_to_tuples(res);
+
+	res.push_back({"uuid", QString::fromStdString(uuid)});
+	res.push_back({"creation_time", QString::fromStdString(creation_time)});
+	res.push_back({"modification_time", QString::fromStdString(modification_time)});
+
+	return res;
+}
+
+QDateTime Annotation::get_creation_datetime() const{
+	return QDateTime::fromString(QString::fromStdString(creation_time), "yyyy-MM-dd HH:mm:ss");
+}
+
+QDateTime Annotation::get_modification_datetime() const{
+	return QDateTime::fromString(QString::fromStdString(modification_time), "yyyy-MM-dd HH:mm:ss");
+}
+
+void Annotation::update_creation_time() {
+	creation_time = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss").toStdString();
+	update_modification_time();
+}
+
+void Annotation::update_modification_time() {
+	modification_time = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss").toStdString();
+}
+
 void Mark::from_json(const QJsonObject& json_object)
 {
 	y_offset = json_object["y_offset"].toDouble();
@@ -61,6 +90,11 @@ void Mark::from_json(const QJsonObject& json_object)
 
 	load_metadata_from_json(json_object);
 
+}
+
+void Mark::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) {
+	tuples.push_back({ "y_offset", y_offset });
+	tuples.push_back({ "symbol", QChar(symbol)});
 }
 
 QJsonObject BookMark::to_json() const
@@ -85,6 +119,20 @@ QJsonObject BookMark::to_json() const
 
 	return res;
 
+}
+
+void BookMark::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) {
+	tuples.push_back({ "offset_y", y_offset });
+	tuples.push_back({ "desc",  QString::fromStdWString(description)});
+	tuples.push_back({ "begin_x",  begin_x});
+	tuples.push_back({ "begin_y",  begin_y});
+	tuples.push_back({ "end_x",  end_x});
+	tuples.push_back({ "end_y",  end_y});
+	tuples.push_back({ "color_red", color[0] });
+	tuples.push_back({ "color_green", color[1] });
+	tuples.push_back({ "color_blue", color[2] });
+	tuples.push_back({ "font_size", font_size });
+	tuples.push_back({ "font_face", QString::fromStdWString(font_face)});
 }
 
 void BookMark::from_json(const QJsonObject& json_object)
@@ -129,6 +177,16 @@ QJsonObject Highlight::to_json() const
 	return res;
 }
 
+void Highlight::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) {
+	tuples.push_back({"begin_x", selection_begin.x});
+	tuples.push_back({"begin_y", selection_begin.y});
+	tuples.push_back({"end_x", selection_end.x});
+	tuples.push_back({"end_y", selection_end.y});
+	tuples.push_back({"desc", QString::fromStdWString(description)});
+	tuples.push_back({"text_annot", QString::fromStdWString(text_annot)});
+	tuples.push_back({"type", QChar(type)});
+}
+
 void Highlight::from_json(const QJsonObject& json_object)
 {
 	selection_begin.x = json_object["selection_begin_x"].toDouble();
@@ -162,6 +220,14 @@ void Portal::from_json(const QJsonObject& json_object)
 	dst.book_state.zoom_level = json_object["dst_zoom_level"].toDouble();
 
 	load_metadata_from_json(json_object);
+}
+
+void Portal::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) {
+	tuples.push_back({ "src_offset_y", src_offset_y });
+	tuples.push_back({ "dst_checksum", QString::fromStdString(dst.document_checksum) });
+	tuples.push_back({ "dst_offset_x", dst.book_state.offset_x });
+	tuples.push_back({ "dst_offset_y", dst.book_state.offset_y });
+	tuples.push_back({ "dst_zoom_level", dst.book_state.zoom_level });
 }
 
 bool operator==(const Mark& lhs, const Mark& rhs)

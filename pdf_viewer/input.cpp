@@ -762,6 +762,11 @@ public:
 		widget->handle_add_highlight(symbol);
 	}
 
+	std::vector<char> special_symbols() {
+		std::vector<char> res = {'_',};
+		return res;
+	}
+
 	std::string get_name() {
 		return "add_highlight";
 	}
@@ -2936,6 +2941,48 @@ public:
 	bool requires_document() { return false; }
 };
 
+class WriteAnnotationsFileCommand : public Command {
+public:
+	WriteAnnotationsFileCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		widget->doc()->persist_annotations(true);
+	}
+
+	std::string get_name() {
+		return "write_annotations_file";
+	}
+
+};
+
+class LoadAnnotationsFileCommand : public Command {
+public:
+	LoadAnnotationsFileCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		widget->doc()->load_annotations();
+	}
+
+	std::string get_name() {
+		return "import_annotations_file";
+	}
+
+};
+
+class LoadAnnotationsFileSyncDeletedCommand : public Command {
+public:
+	LoadAnnotationsFileSyncDeletedCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		widget->doc()->load_annotations(true);
+	}
+
+	std::string get_name() {
+		return "import_annotations_file_sync_deleted";
+	}
+
+};
+
 class EnterVisualMarkModeCommand : public Command {
 public:
 	EnterVisualMarkModeCommand(MainWidget* w) : Command(w) {};
@@ -3934,6 +3981,9 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["noop"] = [](MainWidget* widget) {return std::make_unique< NoopCommand>(widget); };
 	new_commands["import"] = [](MainWidget* widget) {return std::make_unique< ImportCommand>(widget); };
 	new_commands["export"] = [](MainWidget* widget) {return std::make_unique< ExportCommand>(widget); };
+	new_commands["write_annotations_file"] = [](MainWidget* widget) {return std::make_unique< WriteAnnotationsFileCommand>(widget); };
+	new_commands["load_annotations_file"] = [](MainWidget* widget) {return std::make_unique< LoadAnnotationsFileCommand>(widget); };
+	new_commands["load_annotations_file_sync_deleted"] = [](MainWidget* widget) {return std::make_unique< LoadAnnotationsFileSyncDeletedCommand>(widget); };
 	new_commands["enter_visual_mark_mode"] = [](MainWidget* widget) {return std::make_unique< EnterVisualMarkModeCommand>(widget); };
 	new_commands["set_page_offset"] = [](MainWidget* widget) {return std::make_unique< SetPageOffsetCommand>(widget); };
 	new_commands["toggle_visual_scroll"] = [](MainWidget* widget) {return std::make_unique< ToggleVisualScrollCommand>(widget); };

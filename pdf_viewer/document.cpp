@@ -15,6 +15,7 @@
 #include <qjsondocument.h>
 #include <qdir.h>
 #include <qstandardpaths.h>
+#include <set>
 
 #include <mupdf/pdf.h>
 
@@ -50,6 +51,7 @@ extern bool VERBOSE;
 extern float BOOKMARK_RECT_SIZE;
 extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern std::wstring SHARED_DATABASE_PATH;
 
 int Document::get_mark_index(char symbol) {
 	for (size_t i = 0; i < marks.size(); i++) {
@@ -98,8 +100,10 @@ void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 	bookmark.y_offset = y_offset;
 	bookmark.description = desc;
 	bookmark.uuid = new_uuid_utf8();
+	bookmark.update_creation_time();
 	bookmarks.push_back(bookmark);
 	db_manager->insert_bookmark(get_checksum(), desc, y_offset, utf8_decode(bookmark.uuid));
+	is_annotations_dirty = true;
 }
 
 void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos) {
@@ -109,9 +113,11 @@ void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos
 	bookmark.begin_x = pos.x;
 	bookmark.begin_y = pos.y;
 	bookmark.uuid = new_uuid_utf8();
+	bookmark.update_creation_time();
 
 	if (db_manager->insert_bookmark_marked(get_checksum(), desc, pos.x, pos.y, utf8_decode(bookmark.uuid))) {
 		bookmarks.push_back(bookmark);
+		is_annotations_dirty = true;
 	}
 }
 
@@ -136,9 +142,11 @@ void Document::add_pending_freetext_bookmark(int index, const std::wstring& desc
 	BookMark& bookmark = bookmarks[index];
 	bookmark.description = desc;
 	bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+	bookmark.update_creation_time();
 
 	if (!db_manager->insert_bookmark_freetext(get_checksum(), bookmark)) {
 		undo_pending_bookmark(index);
+		is_annotations_dirty = true;
 	}
 }
 
@@ -163,13 +171,29 @@ void Document::add_freetext_bookmark_with_color(const std::wstring& desc, fz_rec
 	bookmark.color[2] = color[2];
 	bookmark.font_size = font_size < 0 ? FREETEXT_BOOKMARK_FONT_SIZE : font_size;
 	bookmark.uuid = new_uuid_utf8();
+	bookmark.update_creation_time();
 
 	if (db_manager->insert_bookmark_freetext(get_checksum(), bookmark)) {
 		bookmarks.push_back(bookmark);
+		is_annotations_dirty = true;
 	}
 }
 void Document::add_freetext_bookmark(const std::wstring& desc, fz_rect absrect) {
 	add_freetext_bookmark_with_color(desc, absrect, FREETEXT_BOOKMARK_COLOR);
+}
+
+void Document::fill_index_highlight_rects(int highlight_index) {
+	if (highlight_index >= highlights.size()) {
+		return;
+	}
+
+	const Highlight highlight = highlights[highlight_index];
+	std::deque<fz_rect> highlight_rects;
+	std::vector<fz_rect> merged_rects;
+	std::wstring highlight_text;
+	get_text_selection(context, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text, doc);
+	merge_selected_character_rects(highlight_rects, merged_rects);
+	highlights[highlight_index].highlight_rects = std::move(merged_rects);
 }
 
 void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
@@ -214,6 +238,7 @@ void Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos sele
 	highlight.type = type;
 	highlight.highlight_rects = merged_rects;
 	highlight.uuid = new_uuid_utf8();
+	highlight.update_creation_time();
 
 	if (db_manager->insert_highlight_with_annotation(
 		get_checksum(),
@@ -226,6 +251,7 @@ void Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos sele
 		highlight.type,
 		utf8_decode(highlight.uuid))) {
 		highlights.push_back(highlight);
+		is_annotations_dirty = true;
 	}
 
 }
@@ -248,6 +274,7 @@ void Document::add_highlight(const std::wstring& desc,
 	highlight.type = type;
 	highlight.highlight_rects = highlight_rects;
 	highlight.uuid = new_uuid_utf8();
+	highlight.update_creation_time();
 
 	highlights.push_back(highlight);
 	db_manager->insert_highlight(
@@ -259,6 +286,7 @@ void Document::add_highlight(const std::wstring& desc,
 		selection_end.y,
 		highlight.type,
 		utf8_decode(highlight.uuid));
+	is_annotations_dirty = true;
 }
 
 bool Document::get_is_indexing() {
@@ -267,6 +295,7 @@ bool Document::get_is_indexing() {
 
 void Document::add_portal(Portal portal, bool insert_into_database) {
 	portal.uuid = new_uuid_utf8();
+	portal.update_creation_time();
 	portals.push_back(portal);
 	if (insert_into_database) {
 		db_manager->insert_portal(
@@ -277,6 +306,7 @@ void Document::add_portal(Portal portal, bool insert_into_database) {
 			portal.dst.book_state.zoom_level,
 			portal.src_offset_y,
 			utf8_decode(portal.uuid));
+		is_annotations_dirty = true;
 	}
 }
 
@@ -317,6 +347,7 @@ void Document::delete_closest_bookmark(float to_y_offset) {
 	int closest_index = find_closest_bookmark_index(bookmarks, to_y_offset);
 	if (closest_index > -1) {
 		db_manager->delete_bookmark(bookmarks[closest_index].uuid);
+		is_annotations_dirty = true;
 		bookmarks.erase(bookmarks.begin() + closest_index);
 	}
 }
@@ -326,6 +357,7 @@ void Document::delete_bookmark(int index) {
 	if ((index != -1) && (index < bookmarks.size())) {
 		if (db_manager->delete_bookmark(bookmarks[index].uuid)) {
 			bookmarks.erase(bookmarks.begin() + index);
+			is_annotations_dirty = true;
 		}
 	}
 }
@@ -335,6 +367,7 @@ void Document::delete_highlight_with_index(int index) {
 
 	db_manager->delete_highlight(highlight_to_delete.uuid);
 	highlights.erase(highlights.begin() + index);
+	is_annotations_dirty = true;
 }
 
 void Document::delete_highlight(Highlight hl) {
@@ -373,6 +406,7 @@ void Document::delete_closest_portal(float to_offset_y) {
 	if (find_closest_portal(to_offset_y, &closest_index)) {
 		db_manager->delete_portal(portals[closest_index].uuid);
 		portals.erase(portals.begin() + closest_index);
+		is_annotations_dirty = true;
 	}
 }
 
@@ -425,12 +459,16 @@ void Document::add_mark(char symbol, float y_offset) {
 		Mark m;
 		m.y_offset = y_offset;
 		m.symbol = symbol;
+		m.update_creation_time();
 		marks.push_back(m);
 		db_manager->insert_mark( get_checksum(), symbol, y_offset, new_uuid());
+		is_annotations_dirty = true;
 	}
 	else {
 		marks[current_mark_index].y_offset = y_offset;
+		marks[current_mark_index].update_modification_time();
 		db_manager->update_mark( get_checksum(), symbol, y_offset);
+		is_annotations_dirty = true;
 	}
 }
 
@@ -3232,13 +3270,44 @@ std::wstring Document::get_drawings_file_path() {
 #ifdef SIOYEK_ANDROID
 	if (file_name == L":/tutorial.pdf") {
         QString parent_path = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0);
-        return Path(parent_path.toStdWString()).slash(L"tutorial.pdf.sioyek").get_path();
+        return Path(parent_path.toStdWString()).slash(L"tutorial.pdf.sioyek.drawings").get_path();
 	}
 #endif
 	QString filename = QString::fromStdWString(path.filename().value());
-	QString drawing_file_name = filename + ".sioyek";
+	QString drawing_file_name = filename + ".sioyek.drawings";
 	return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
 }
+
+bool Document::annotations_file_exists() {
+	std::wstring file_path = get_annotations_file_path();
+	return QFileInfo(QString::fromStdWString(file_path)).exists();
+}
+
+bool Document::annotations_file_is_newer_than_database() {
+	std::wstring file_path = get_annotations_file_path();
+	QFileInfo file_info(QString::fromStdWString(file_path));
+	QFileInfo database_file_info(QString::fromStdWString(SHARED_DATABASE_PATH));
+
+	if (file_info.exists() && database_file_info.exists()) {
+		return file_info.lastModified() > database_file_info.lastModified();
+	}
+
+	return false;
+}
+
+std::wstring Document::get_annotations_file_path() {
+	Path path = Path(file_name);
+#ifdef SIOYEK_ANDROID
+	if (file_name == L":/tutorial.pdf") {
+        QString parent_path = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0);
+        return Path(parent_path.toStdWString()).slash(L"tutorial.pdf.sioyek.annotations").get_path();
+	}
+#endif
+	QString filename = QString::fromStdWString(path.filename().value());
+	QString drawing_file_name = filename + ".sioyek.annotations";
+	return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+}
+
 
 void Document::load_drawings_async() {
 	drawings_mutex.lock();
@@ -3260,6 +3329,95 @@ void Document::persist_drawings_async() {
 		});
 	drawing_persist_thread.detach();
 	drawings_mutex.unlock();
+}
+
+void Document::load_annotations(bool sync) {
+	std::wstring annotation_fille_path = get_annotations_file_path();
+
+	QFile json_file(QString::fromStdWString(annotation_fille_path));
+	if (json_file.open(QFile::ReadOnly)) {
+		QJsonDocument json_document = QJsonDocument().fromJson(json_file.readAll());
+		json_file.close();
+
+		QJsonObject root = json_document.object();
+		std::vector<BookMark> file_bookmarks = load_from_json_array<BookMark>(root["bookmarks"].toArray());
+		std::vector<Highlight> file_highlights = load_from_json_array<Highlight>(root["highlights"].toArray());
+		std::vector<Mark> file_marks = load_from_json_array<Mark>(root["marks"].toArray());
+		std::vector<Portal> file_portals = load_from_json_array<Portal>(root["portals"].toArray());
+
+		std::vector<Annotation*> new_annotations;
+		std::vector<Annotation*> updated_annotations;
+		std::vector<Annotation*> deleted_annotations;
+
+		std::map<std::string, int> bookmark_index_map = annotation_prism(file_bookmarks, bookmarks, new_annotations, updated_annotations, deleted_annotations);
+		std::map<std::string, int> highlight_index_map = annotation_prism(file_highlights, highlights, new_annotations, updated_annotations, deleted_annotations);
+		std::map<std::string, int> mark_index_map = annotation_prism(file_marks, marks, new_annotations, updated_annotations, deleted_annotations);
+		std::map<std::string, int> portal_index_map = annotation_prism(file_portals, portals, new_annotations, updated_annotations, deleted_annotations);
+
+
+		for (int i = 0; i < updated_annotations.size(); i++) {
+			bool success = db_manager->update_annotation(updated_annotations[i]);
+			if (success) {
+				if (dynamic_cast<BookMark*>(updated_annotations[i])) {
+					bookmarks[bookmark_index_map[updated_annotations[i]->uuid]] = *dynamic_cast<BookMark*>(updated_annotations[i]);
+				}
+
+				if (dynamic_cast<Highlight*>(updated_annotations[i])) {
+					highlights[highlight_index_map[updated_annotations[i]->uuid]] = *dynamic_cast<Highlight*>(updated_annotations[i]);
+					fill_index_highlight_rects(highlight_index_map[updated_annotations[i]->uuid]);
+				}
+
+				if (dynamic_cast<Mark*>(updated_annotations[i])) {
+					marks[mark_index_map[updated_annotations[i]->uuid]] = *dynamic_cast<Mark*>(updated_annotations[i]);
+				}
+
+				if (dynamic_cast<Portal*>(updated_annotations[i])) {
+					portals[portal_index_map[updated_annotations[i]->uuid]] = *dynamic_cast<Portal*>(updated_annotations[i]);
+				}
+
+			}
+		}
+
+		for (int i = 0; i < new_annotations.size(); i++) {
+			bool success = db_manager->insert_annotation(new_annotations[i], get_checksum());
+
+			if (success) {
+				if (dynamic_cast<BookMark*>(new_annotations[i])) {
+					bookmarks.push_back(*dynamic_cast<BookMark*>(new_annotations[i]));
+				}
+
+				if (dynamic_cast<Highlight*>(new_annotations[i])) {
+					highlights.push_back(*dynamic_cast<Highlight*>(new_annotations[i]));
+					fill_index_highlight_rects(highlights.size()-1);
+				}
+
+				if (dynamic_cast<Mark*>(new_annotations[i])) {
+					marks.push_back(*dynamic_cast<Mark*>(new_annotations[i]));
+				}
+
+				if (dynamic_cast<Portal*>(new_annotations[i])) {
+					portals.push_back(*dynamic_cast<Portal*>(new_annotations[i]));
+				}
+			}
+		}
+
+		if (sync) {
+			for (int i = 0; i < deleted_annotations.size(); i++) {
+				bool success = db_manager->delete_annotation(deleted_annotations[i]);
+			}
+			bookmarks = file_bookmarks;
+			highlights = file_highlights;
+			marks = file_marks;
+			portals = file_portals;
+
+			for (int i = 0; i < highlights.size(); i++) {
+				fill_index_highlight_rects(i);
+			}
+
+		}
+
+	}
+
 }
 
 void Document::load_drawings() {
@@ -3302,6 +3460,37 @@ void Document::load_drawings() {
 
 	}
 
+}
+
+void Document::persist_annotations(bool force) {
+
+	if ((!is_annotations_dirty) && (!force)) {
+		return;
+	}
+
+	if (!annotations_file_exists()) {
+		return;
+	}
+
+	QJsonArray json_bookmarks = export_array(bookmarks);
+	QJsonArray json_highlights = export_array(highlights);
+	QJsonArray json_marks = export_array(marks);
+	QJsonArray json_portals = export_array(portals);
+
+	QJsonObject book_object;
+	book_object["bookmarks"] = json_bookmarks;
+	book_object["marks"] = json_marks;
+	book_object["highlights"] = json_highlights;
+	book_object["portals"] = json_portals;
+
+	QJsonDocument json_document(book_object);
+
+	QFile output_file(QString::fromStdWString(get_annotations_file_path()));
+	output_file.open(QFile::WriteOnly);
+	output_file.write(json_document.toJson());
+	output_file.close();
+
+	is_annotations_dirty = false;
 }
 
 void Document::persist_drawings(bool force) {
@@ -3378,17 +3567,22 @@ void Document::update_highlight_add_text_annotation(const std::string& uuid, con
 	int highlight_index = find_highlight_index_with_uuid(uuid);
 	if (highlight_index > -1) {
 		db_manager->update_highlight_add_annotation(uuid, text_annot);
+		is_annotations_dirty = true;
 		highlights[highlight_index].text_annot = text_annot;
+		highlights[highlight_index].update_modification_time();
+
 	}
 }
 
 void Document::update_highlight_type(const std::string& uuid, char new_type) {
 	db_manager->update_highlight_type(uuid, new_type);
+	is_annotations_dirty = true;
 }
 
 void Document::update_highlight_type(int index, char new_type) {
 	update_highlight_type(highlights[index].uuid, new_type);
 	highlights[index].type = new_type;
+	highlights[index].update_modification_time();
 }
 
 int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
@@ -3425,6 +3619,8 @@ void Document::update_bookmark_text(int index, const std::wstring& new_text, flo
 	if ((index >= 0) && (index < bookmarks.size())) {
 		if (db_manager->update_bookmark_change_text(bookmarks[index].uuid, new_text, new_font_size)) {
 			bookmarks[index].description = new_text;
+			bookmarks[index].update_modification_time();
+			is_annotations_dirty = true;
 		}
 	}
 }
@@ -3437,6 +3633,8 @@ void Document::update_bookmark_position(int index, AbsoluteDocumentPos new_begin
 			bookmarks[index].begin_y = new_begin_position.y;
 			bookmarks[index].end_x = new_end_position.x;
 			bookmarks[index].end_y = new_end_position.y;
+			bookmarks[index].update_modification_time();
+			is_annotations_dirty = true;
 		}
 	}
 }
@@ -3556,6 +3754,7 @@ int Document::get_bookmark_index_with_uuid(std::string uuid) {
 	}
 	return -1;
 }
+
 std::string Document::get_highlight_index_uuid(int index) {
 	if ((index >= 0) && (index < highlights.size())) {
 		return highlights[index].uuid;
@@ -3573,3 +3772,5 @@ std::string Document::get_bookmark_index_uuid(int index) {
 bool Document::get_should_reload_annotations() {
 	return should_reload_annotations;
 }
+
+

@@ -8,6 +8,7 @@
 #include <mutex>
 #include <variant>
 #include <qjsonobject.h>
+#include <qdatetime.h>
 
 #include "coordinates.h"
 
@@ -31,10 +32,18 @@ struct Annotation {
 	std::string uuid;
 
 	virtual QJsonObject to_json() const = 0;
+	virtual void  add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) = 0;
+	virtual std::vector<std::pair<std::string, QVariant>> to_tuples();
 	virtual void from_json(const QJsonObject& json_object) = 0;
 
 	void add_metadata_to_json(QJsonObject& obj) const;
 	void load_metadata_from_json(const QJsonObject& obj);
+
+	QDateTime get_creation_datetime() const;
+	QDateTime get_modification_datetime() const;
+
+	void update_creation_time();
+	void update_modification_time();
 };
 
 /*
@@ -48,6 +57,7 @@ struct Mark : Annotation{
 
 	QJsonObject to_json() const;
 	void from_json(const QJsonObject& json_object);
+	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 };
 
 /*
@@ -68,6 +78,7 @@ struct BookMark : Annotation {
 
 	QJsonObject to_json() const;
 	void from_json(const QJsonObject& json_object);
+	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 
 	bool is_freetext() const;
 	bool is_marked() const;
@@ -82,6 +93,7 @@ struct Highlight : Annotation{
 	std::vector<fz_rect> highlight_rects;
 
 	QJsonObject to_json() const;
+	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 	void from_json(const QJsonObject& json_object);
 };
 
@@ -115,6 +127,7 @@ struct Portal : Annotation{
 
 	QJsonObject to_json() const;
 	void from_json(const QJsonObject& json_object);
+	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 };
 
 

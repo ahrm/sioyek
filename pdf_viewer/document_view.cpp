@@ -860,6 +860,7 @@ void DocumentView::persist(bool persist_drawings) {
     db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y);
 	if (persist_drawings) {
 		current_document->persist_drawings();
+		current_document->persist_annotations();
 	}
 }
 

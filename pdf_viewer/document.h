@@ -34,6 +34,7 @@ private:
 	// it means we have modified freehand drawings since the document was loaded
 	// which means that when we exit, we must write the modified drawings to the drawings file
 	bool is_drawings_dirty = false;
+	bool is_annotations_dirty = false;
 
 	std::vector<Mark> marks;
 	std::vector<BookMark> bookmarks;
@@ -147,6 +148,7 @@ public:
 	bool get_should_render_pdf_annotations();
 
 	void fill_highlight_rects(fz_context* ctx, fz_document* doc);
+	void fill_index_highlight_rects(int highlight_index);
 	void count_chapter_pages(std::vector<int> &page_counts);
 	void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
 	void count_chapter_pages_accum(std::vector<int> &page_counts);
@@ -298,9 +300,16 @@ public:
 	//void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
 	fz_rect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);
 	const std::vector<fz_rect>& get_page_lines(int page, std::vector<std::wstring>* line_texts=nullptr);
+
 	std::wstring get_drawings_file_path();
+	std::wstring get_annotations_file_path();
+	bool annotations_file_exists();
+	bool annotations_file_is_newer_than_database();
+
 	void persist_drawings(bool force=false);
+	void persist_annotations(bool force=false);
 	void load_drawings();
+	void load_annotations(bool sync=false);
 	void load_drawings_async();
 	void persist_drawings_async();
 
