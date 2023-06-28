@@ -5247,7 +5247,7 @@ bool MainWidget::event(QEvent* event) {
 
     QTabletEvent* te = dynamic_cast<QTabletEvent*>(event);
     QKeyEvent* ke = dynamic_cast<QKeyEvent*>(event);
-    if (ke) {
+    if (ke && (ke->type() == QEvent::KeyPress)) {
         // Apparently Qt doesn't send keyPressEvent for tab and backtab anymore, so we have to
         // manually handle them here.
         // todo: make sure this doesn't cause problems on linux and mac
