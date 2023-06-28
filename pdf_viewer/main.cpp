@@ -211,6 +211,7 @@ float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
 float RULER_PADDING = 0.0f;
 float RULER_X_PADDING = 0.0f;
 std::wstring ITEM_LIST_PREFIX = L">";
+float STRIKE_LINE_WIDTH = 1.0f;
 
 #ifdef SIOYEK_ANDROID
 std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";

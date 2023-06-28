@@ -44,6 +44,7 @@ extern bool SLICED_RENDERING;
 extern float BOOKMARK_RECT_SIZE;
 extern bool RENDER_FREETEXT_BORDERS;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern float STRIKE_LINE_WIDTH;
 
 GLfloat g_quad_vertex[] = {
 	-1.0f, -1.0f,
@@ -401,29 +402,8 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 		return;
 	}
 
-	float quad_vertex_data[] = {
-		window_rect.x0, window_rect.y1,
-		window_rect.x1, window_rect.y1,
-		window_rect.x0, window_rect.y0,
-		window_rect.x1, window_rect.y0
-	};
-	float line_data[] = {
-		window_rect.x0, window_rect.y0,
-		window_rect.x1, window_rect.y0,
-		window_rect.x1, window_rect.y1,
-		window_rect.x0, window_rect.y1
-	};
 
-	float underline_data[] = {
-		window_rect.x1, window_rect.y1,
-		window_rect.x0, window_rect.y1
-	};
-
-	float strike_data[] = {
-		window_rect.x1, (window_rect.y1 + window_rect.y0) / 2,
-		window_rect.x0, (window_rect.y1 + window_rect.y0) / 2
-	};
-
+	float scale_factor = document_view->get_zoom_level() / document_view->get_view_height();
 
 	glEnable(GL_BLEND);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
@@ -432,33 +412,62 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 	glUseProgram(program);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
 
-	// no need to draw the fill color if we are in underline mode
+	if (draw_underline) {
+		float underline_data[] = {
+			window_rect.x0, window_rect.y1 + STRIKE_LINE_WIDTH * scale_factor,
+			window_rect.x1, window_rect.y1 + STRIKE_LINE_WIDTH * scale_factor,
+			window_rect.x0, window_rect.y1 - STRIKE_LINE_WIDTH * scale_factor,
+			window_rect.x1, window_rect.y1 - STRIKE_LINE_WIDTH * scale_factor
+		};
+		glBufferData(GL_ARRAY_BUFFER, sizeof(underline_data), underline_data, GL_DYNAMIC_DRAW);
+	}
+	else if (draw_strike) {
+		float strike_data[] = {
+			window_rect.x0, (window_rect.y1 + window_rect.y0) / 2 + STRIKE_LINE_WIDTH * scale_factor,
+			window_rect.x1, (window_rect.y1 + window_rect.y0) / 2 + STRIKE_LINE_WIDTH * scale_factor,
+			window_rect.x0, (window_rect.y1 + window_rect.y0) / 2 - STRIKE_LINE_WIDTH * scale_factor,
+			window_rect.x1, (window_rect.y1 + window_rect.y0) / 2 - STRIKE_LINE_WIDTH * scale_factor
+		};
+		glBufferData(GL_ARRAY_BUFFER, sizeof(strike_data), strike_data, GL_DYNAMIC_DRAW);
+	}
+	else {
+		float quad_vertex_data[] = {
+			window_rect.x0, window_rect.y1,
+			window_rect.x1, window_rect.y1,
+			window_rect.x0, window_rect.y0,
+			window_rect.x1, window_rect.y0
+		};
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
+	}
+
+
+	// no need to draw the fill color if we are in underline/strike mode
 	if (!draw_underline && !draw_strike) {
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
 
 	if (draw_border) {
+		float line_data[] = {
+			window_rect.x0, window_rect.y0,
+			window_rect.x1, window_rect.y0,
+			window_rect.x1, window_rect.y1,
+			window_rect.x0, window_rect.y1
+		};
+
 		glDisable(GL_BLEND);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(line_data), line_data, GL_DYNAMIC_DRAW);
 		glDrawArrays(GL_LINE_LOOP, 0, 4);
 	}
 	if (draw_underline) {
 		glDisable(GL_BLEND);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(underline_data), underline_data, GL_DYNAMIC_DRAW);
-		glDrawArrays(GL_LINE_LOOP, 0, 2);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
 
 	if (draw_strike) {
 		glDisable(GL_BLEND);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(strike_data), strike_data, GL_DYNAMIC_DRAW);
-		glDrawArrays(GL_LINE_LOOP, 0, 2);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
-
-
-
-
 }
 
 void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border, bool draw_underline, bool draw_strike) {

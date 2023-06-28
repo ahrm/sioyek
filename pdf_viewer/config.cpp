@@ -91,6 +91,7 @@ extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern bool RENDER_FREETEXT_BORDERS;
 extern bool SHOULD_RENDER_PDF_ANNOTATIONS;
+extern float STRIKE_LINE_WIDTH;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -668,15 +669,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		nullptr,
 		FloatExtras{0.1f, 10.0f}
 		});
-	//configs.push_back({
-	//	L"epub_line_spacing",
-	//	ConfigType::Float,
-	//	&EPUB_LINE_SPACING,
-	//	float_serializer,
-	//	float_deserializer,
-	//	nullptr,
-	//	FloatExtras{0.1f, 10.0f}
-	//	});
+
 	configs.push_back({
 		L"horizontal_move_amount",
 		ConfigType::Float,
@@ -694,6 +687,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		float_deserializer,
 		nullptr,
 		FloatExtras{0.0f, 1.0f}
+		});
+	configs.push_back({
+		L"strike_line_width",
+		ConfigType::Float,
+		&STRIKE_LINE_WIDTH,
+		float_serializer,
+		float_deserializer,
+		nullptr,
+		FloatExtras{0.0f, 10.0f}
 		});
 	configs.push_back({
 		L"move_screen_ratio",
