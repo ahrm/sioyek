@@ -56,6 +56,7 @@ extern float EPUB_HEIGHT;
 extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
 extern float HIGHLIGHT_COLORS[26 * 3];
+extern float BLACK_COLOR[3];
 
 extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH ;
@@ -2683,6 +2684,9 @@ char get_highlight_color_type(float color[3]) {
 }
 
 float* get_highlight_type_color(char type) {
+	if (type == '_') {
+		return &BLACK_COLOR[0];
+	}
 	if (type >= 'a' && type <= 'z') {
 		return &HIGHLIGHT_COLORS[(type - 'a') * 3];
 	}

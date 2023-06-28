@@ -225,7 +225,7 @@ void Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos sele
 	std::wstring selected_text;
 	get_text_selection(selection_begin, selection_end, true, selected_characters, selected_text);
 
-	if (!((type <= 'z' && type >= 'a') || (type <= 'Z' && type >= 'A'))) {
+	if ((type != '_') && (!((type <= 'z' && type >= 'a') || (type <= 'Z' && type >= 'A')))) {
 		type = 'a';
 	}
 
@@ -263,7 +263,7 @@ void Document::add_highlight(const std::wstring& desc,
 	char type)
 {
 	//if (type > 'z' || type < 'a') {
-	if (!((type <= 'z' && type >= 'a') || (type <= 'Z' && type >= 'A'))) {
+	if ((type != '_') && (!((type <= 'z' && type >= 'a') || (type <= 'Z' && type >= 'A')))) {
 		type = 'a';
 	}
 
@@ -1775,7 +1775,7 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
 
 			}
 
-			if ((annot_type == pdf_annot_type::PDF_ANNOT_HIGHLIGHT) || (annot_type == pdf_annot_type::PDF_ANNOT_UNDERLINE)) {
+			if ((annot_type == pdf_annot_type::PDF_ANNOT_HIGHLIGHT) || (annot_type == pdf_annot_type::PDF_ANNOT_UNDERLINE) || (annot_type == pdf_annot_type::PDF_ANNOT_STRIKE_OUT) ) {
 				int num_quads = pdf_annot_quad_point_count(context, annot);
 
 				if (num_quads > 0) {
@@ -1805,6 +1805,9 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
 
 					if (annot_type == pdf_annot_type::PDF_ANNOT_UNDERLINE) {
 						new_highlight.type = new_highlight.type + 'A' - 'a';
+					}
+					if (annot_type == pdf_annot_type::PDF_ANNOT_STRIKE_OUT) {
+						new_highlight.type = '_';
 					}
 
 					pdf_highlights.push_back(new_highlight);
@@ -2028,10 +2031,13 @@ void Document::embed_annotations(std::wstring new_file_path) {
 		fz_page* page = load_cached_page(page_number);
 		pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
 		pdf_annot* highlight_annot;
-		if (std::isupper(highlight.type)) {
+		if (highlight.type == '_') {
+			highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_STRIKE_OUT);
+		}
+		else if (std::isupper(highlight.type)) {
 			highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_UNDERLINE);
 		}
-		else {
+		else{
 			highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_HIGHLIGHT);
 		}
 		float* color = get_highlight_type_color(highlight.type);

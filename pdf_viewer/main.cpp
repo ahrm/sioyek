@@ -142,6 +142,7 @@ std::wstring STATUS_BAR_FORMAT = L"Page %{current_page} / %{num_pages}%{chapter_
 std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}";
 #endif
 
+float BLACK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float HIGHLIGHT_COLORS[26 * 3] = { \
 0.94, 0.64, 1.00, \
 0.00, 0.46, 0.86, \
