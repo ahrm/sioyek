@@ -182,17 +182,20 @@ void Document::add_freetext_bookmark(const std::wstring& desc, fz_rect absrect) 
 	add_freetext_bookmark_with_color(desc, absrect, FREETEXT_BOOKMARK_COLOR);
 }
 
-void Document::fill_index_highlight_rects(int highlight_index) {
+void Document::fill_index_highlight_rects(int highlight_index, fz_context* thread_context, fz_document* thread_document) {
+
 	if (highlight_index >= highlights.size()) {
 		return;
 	}
+	if (thread_context == nullptr) thread_context = context;
+	if (thread_document == nullptr) thread_document = doc;
 
 	const Highlight highlight = highlights[highlight_index];
 	std::deque<fz_rect> highlight_rects;
 	std::vector<fz_rect> merged_rects;
 	std::wstring highlight_text;
-	get_text_selection(context, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text, doc);
-	merge_selected_character_rects(highlight_rects, merged_rects);
+	get_text_selection(thread_context, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text, thread_document);
+	merge_selected_character_rects(highlight_rects, merged_rects, highlights[highlight_index].type != '_');
 	highlights[highlight_index].highlight_rects = std::move(merged_rects);
 }
 
@@ -202,19 +205,7 @@ void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
 	// which makes the result look nicer)
 
 	for (size_t i = 0; i < highlights.size(); i++) {
-		const Highlight highlight = highlights[i];
-		std::deque<fz_rect> highlight_rects;
-		std::vector<fz_rect> merged_rects;
-		std::wstring highlight_text;
-		get_text_selection(ctx, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text, doc_);
-		merge_selected_character_rects(highlight_rects, merged_rects);
-
-		if (i < highlights.size()) {
-			highlights[i].highlight_rects = std::move(merged_rects);
-		}
-		else {
-			break;
-		}
+		fill_index_highlight_rects(i, ctx, doc_);
 	}
 }
 
@@ -2020,7 +2011,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
 		std::wstring selected_text;
 
 		get_text_selection(highlight.selection_begin, highlight.selection_end, true, selected_characters, selected_text);
-		merge_selected_character_rects(selected_characters, merged_characters);
+		merge_selected_character_rects(selected_characters, merged_characters, highlight.type != '_');
 
 		for (auto absrect : merged_characters) {
 			selected_characters_page_rects.push_back(absolute_to_page_rect(absrect, nullptr));

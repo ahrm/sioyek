@@ -402,7 +402,6 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 		return;
 	}
 
-
 	float scale_factor = document_view->get_zoom_level() / document_view->get_view_height();
 
 	glEnable(GL_BLEND);
@@ -424,10 +423,10 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
 	}
 	else if (draw_strike) {
 		float strike_data[] = {
-			window_rect.x0, (window_rect.y1 + window_rect.y0) / 2 + STRIKE_LINE_WIDTH * scale_factor,
-			window_rect.x1, (window_rect.y1 + window_rect.y0) / 2 + STRIKE_LINE_WIDTH * scale_factor,
-			window_rect.x0, (window_rect.y1 + window_rect.y0) / 2 - STRIKE_LINE_WIDTH * scale_factor,
-			window_rect.x1, (window_rect.y1 + window_rect.y0) / 2 - STRIKE_LINE_WIDTH * scale_factor
+			window_rect.x0, (window_rect.y1 + window_rect.y0) / 2 ,
+			window_rect.x1, (window_rect.y1 + window_rect.y0) / 2 ,
+			window_rect.x0, (window_rect.y1 + window_rect.y0) / 2 - 2 * STRIKE_LINE_WIDTH * scale_factor,
+			window_rect.x1, (window_rect.y1 + window_rect.y0) / 2 - 2 * STRIKE_LINE_WIDTH * scale_factor
 		};
 		glBufferData(GL_ARRAY_BUFFER, sizeof(strike_data), strike_data, GL_DYNAMIC_DRAW);
 	}

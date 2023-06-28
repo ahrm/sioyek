@@ -148,7 +148,7 @@ public:
 	bool get_should_render_pdf_annotations();
 
 	void fill_highlight_rects(fz_context* ctx, fz_document* doc);
-	void fill_index_highlight_rects(int highlight_index);
+	void fill_index_highlight_rects(int highlight_index, fz_context* thread_context=nullptr, fz_document* thread_document=nullptr);
 	void count_chapter_pages(std::vector<int> &page_counts);
 	void convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output);
 	void count_chapter_pages_accum(std::vector<int> &page_counts);

@@ -764,7 +764,7 @@ fz_rect bound_rects(const std::vector<fz_rect>& rects) {
 	return res;
 
 }
-void merge_selected_character_rects(const std::deque<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects) {
+void merge_selected_character_rects(const std::deque<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects, bool touch_vertically) {
 	/*
 		This function merges the bounding boxes of all selected characters into large line chunks.
 	*/
@@ -804,8 +804,10 @@ void merge_selected_character_rects(const std::deque<fz_rect>& selected_characte
 		if (std::abs(resulting_rects[i + 1].y0 - resulting_rects[i].y0) < (0.5 * height)) {
 			continue;
 		}
-		if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1) ) {
-			resulting_rects[i + 1].y0 = resulting_rects[i].y1;
+		if (touch_vertically) {
+			if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1)) {
+				resulting_rects[i + 1].y0 = resulting_rects[i].y1;
+			}
 		}
 	}
 
