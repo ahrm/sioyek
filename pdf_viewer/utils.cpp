@@ -1050,7 +1050,9 @@ std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack, c
 	std::vector<std::wstring> res;
 	if (std::regex_search(haystack, match, regex)) {
 		for (size_t i = 0; i < match.size(); i++) {
-			res.push_back(match[i].str());
+			if (match[i].matched) {
+				res.push_back(match[i].str());
+			}
 		}
 	}
 	return res;

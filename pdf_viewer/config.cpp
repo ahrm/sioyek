@@ -92,6 +92,7 @@ extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern bool RENDER_FREETEXT_BORDERS;
 extern bool SHOULD_RENDER_PDF_ANNOTATIONS;
 extern float STRIKE_LINE_WIDTH;
+extern float RULER_COLOR[3];
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -156,6 +157,7 @@ extern bool SLICED_RENDERING;
 extern bool TOUCH_MODE;
 extern float TTS_RATE;
 extern std::wstring PAPER_SEARCH_URL;
+extern std::wstring RULER_DISPLAY_MODE;
 
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
@@ -553,6 +555,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		color_3_validator
 		});
 	configs.push_back({
+		L"ruler_color",
+		ConfigType::Color3,
+		RULER_COLOR,
+		vec3_serializer,
+		color3_deserializer,
+		color_3_validator
+		});
+	configs.push_back({
 		L"background_color",
 		ConfigType::Color3,
 		BACKGROUND_COLOR,
@@ -774,6 +784,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 		L"shared_database_path",
 		ConfigType::String,
 		&SHARED_DATABASE_PATH,
+		string_serializer,
+		string_deserializer,
+		nullptr
+		});
+	configs.push_back({
+		L"ruler_display_mode",
+		ConfigType::String,
+		&RULER_DISPLAY_MODE,
 		string_serializer,
 		string_deserializer,
 		nullptr

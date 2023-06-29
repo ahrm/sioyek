@@ -100,6 +100,7 @@ std::string APPLICATION_VERSION = "2.0.0";
 float BACKGROUND_COLOR[3] = { 0.97f, 0.97f, 0.97f };
 float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float RULER_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float CUSTOM_BACKGROUND_COLOR[3] = { 0.18f, 0.204f, 0.251f };
 float CUSTOM_TEXT_COLOR[3] = { 0.847f, 0.871f, 0.914f };
 float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
@@ -302,6 +303,7 @@ float EPUB_FONT_SIZE = 14;
 float EPUB_LINE_SPACING = 2.0f;
 int RELOAD_INTERVAL_MILISECONDS = 200;
 
+std::wstring RULER_DISPLAY_MODE = L"slit";
 std::wstring EPUB_CSS;
 QString EPUB_TEMPLATE = "p {\
 line-height: %{line_spacing}em!important;\

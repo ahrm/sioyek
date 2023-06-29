@@ -1233,7 +1233,6 @@ std::optional<IndexedData> Document::find_equation_with_string(std::wstring equa
 }
 
 
-
 std::optional<std::wstring> Document::get_equation_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
 
 

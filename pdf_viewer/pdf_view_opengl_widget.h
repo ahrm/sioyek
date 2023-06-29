@@ -51,6 +51,14 @@ struct MarkedDataRect {
 	int type;
 };
 
+enum HighlightRenderFlags
+{
+	HRF_FILL = 1 << 0,
+	HRF_BORDER = 1 << 1,
+	HRF_UNDERLINE = 1 << 2,
+	HRF_STRIKE = 1 << 3
+};
+
 
 struct OpenGLSharedResources {
 	GLuint vertex_buffer_object;
@@ -181,9 +189,9 @@ private:
 protected: 
 	void initializeGL() override;
 	void resizeGL(int w, int h) override;
-	void render_highlight_window(GLuint program, fz_rect window_rect, bool draw_border=true, bool draw_underline=false, bool draw_strike=false);
+	void render_highlight_window(GLuint program, fz_rect window_rect, int flags);
+	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, int flags);
 	void render_line_window(GLuint program, float vertical_pos, std::optional<fz_rect> ruler_rect = {});
-	void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, bool draw_border=true, bool draw_underline=false, bool draw_strike=false);
 	void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
     void paintGL() override;
     void render(QPainter* painter);
