@@ -1265,10 +1265,10 @@ void DatabaseManager::export_json(std::wstring json_file_path, CachedChecksummer
 		select_links(document_checksum, portals);
 
 
-		QJsonArray json_bookmarks = export_array(bookmarks);
-		QJsonArray json_highlights = export_array(highlights);
-		QJsonArray json_marks = export_array(marks);
-		QJsonArray json_portals = export_array(portals);
+		QJsonArray json_bookmarks = export_array(bookmarks, utf8_encode(prev_doc_checksums[i]));
+		QJsonArray json_highlights = export_array(highlights, utf8_encode(prev_doc_checksums[i]));
+		QJsonArray json_marks = export_array(marks, utf8_encode(prev_doc_checksums[i]));
+		QJsonArray json_portals = export_array(portals, utf8_encode(prev_doc_checksums[i]));
 
 		QJsonObject book_object;
 		book_object["offset_x"] = opened_book_state.offset_x;
@@ -1799,7 +1799,12 @@ std::string DatabaseManager::get_annot_table_name(Annotation* annot) {
 
 bool DatabaseManager::insert_annotation(Annotation* annot, std::string document_hash) {
 	auto fields = annot->to_tuples();
-	fields.push_back({"document_path", QString::fromStdString(document_hash)});
+	if (dynamic_cast<Portal*>(annot)) {
+		fields.push_back({"src_document", QString::fromStdString(document_hash)});
+	}
+	else {
+		fields.push_back({"document_path", QString::fromStdString(document_hash)});
+	}
 	return generic_insert_run_query(get_annot_table_name(annot), fields);
 }
 

@@ -311,7 +311,7 @@ public:
 	void load_drawings();
 	void load_annotations(bool sync=false);
 	void load_drawings_async();
-	void persist_drawings_async();
+	//void persist_drawings_async();
 
 	bool is_super_fast_index_ready();
 	std::vector<SearchResult> search_text(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page);

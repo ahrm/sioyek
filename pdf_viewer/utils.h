@@ -285,11 +285,11 @@ bool are_same(float f1, float f2);
 bool are_same(const FreehandDrawing& lhs, const FreehandDrawing& rhs);
 
  template<typename T>
-QJsonArray export_array(std::vector<T> objects) {
+QJsonArray export_array(std::vector<T> objects, std::string checksum) {
 	QJsonArray res;
 
 	for (const T& obj : objects) {
-		res.append(obj.to_json());
+		res.append(obj.to_json(checksum));
 	}
 	return res;
 }

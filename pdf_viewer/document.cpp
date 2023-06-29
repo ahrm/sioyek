@@ -3314,18 +3314,18 @@ void Document::load_drawings_async() {
 	drawings_mutex.unlock();
 }
 
-void Document::persist_drawings_async() {
-	if (!is_drawings_dirty) {
-		return;
-	}
-
-	drawings_mutex.lock();
-	auto drawing_persist_thread = std::thread([&]() {
-		persist_drawings();
-		});
-	drawing_persist_thread.detach();
-	drawings_mutex.unlock();
-}
+//void Document::persist_drawings_async() {
+//	if (!is_drawings_dirty) {
+//		return;
+//	}
+//
+//	drawings_mutex.lock();
+//	auto drawing_persist_thread = std::thread([&]() {
+//		persist_drawings();
+//		});
+//	drawing_persist_thread.detach();
+//	drawings_mutex.unlock();
+//}
 
 void Document::load_annotations(bool sync) {
 	std::wstring annotation_fille_path = get_annotations_file_path();
@@ -3340,6 +3340,18 @@ void Document::load_annotations(bool sync) {
 		std::vector<Highlight> file_highlights = load_from_json_array<Highlight>(root["highlights"].toArray());
 		std::vector<Mark> file_marks = load_from_json_array<Mark>(root["marks"].toArray());
 		std::vector<Portal> file_portals = load_from_json_array<Portal>(root["portals"].toArray());
+
+		std::string current_checksum = get_checksum();
+
+		auto portals_array = root["portals"].toArray();
+
+		// set the destination of self-referencing portals to be the current
+		// document and not the original doucment
+		for (int i = 0; i < portals_array.size(); i++) {
+			if (portals_array[i].toObject()["same"].toBool()) {
+				file_portals[i].dst.document_checksum = current_checksum;
+			}
+		}
 
 		std::vector<Annotation*> new_annotations;
 		std::vector<Annotation*> updated_annotations;
@@ -3464,14 +3476,17 @@ void Document::persist_annotations(bool force) {
 		return;
 	}
 
-	if (!annotations_file_exists()) {
+	if (!annotations_file_exists() && (!force)) {
 		return;
 	}
 
-	QJsonArray json_bookmarks = export_array(bookmarks);
-	QJsonArray json_highlights = export_array(highlights);
-	QJsonArray json_marks = export_array(marks);
-	QJsonArray json_portals = export_array(portals);
+	std::string current_checksum = get_checksum();
+
+	QJsonArray json_bookmarks = export_array(bookmarks, current_checksum);
+	QJsonArray json_highlights = export_array(highlights, current_checksum);
+	QJsonArray json_marks = export_array(marks, current_checksum);
+	QJsonArray json_portals = export_array(portals, current_checksum);
+
 
 	QJsonObject book_object;
 	book_object["bookmarks"] = json_bookmarks;

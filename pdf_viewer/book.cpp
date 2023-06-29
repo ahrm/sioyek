@@ -24,7 +24,7 @@ Portal Portal::with_src_offset(float src_offset)
 	return res;
 }
 
-QJsonObject Mark::to_json() const
+QJsonObject Mark::to_json(std::string doc_checksum) const
 {
 	QJsonObject res;
 	res["y_offset"] = y_offset;
@@ -93,11 +93,11 @@ void Mark::from_json(const QJsonObject& json_object)
 }
 
 void Mark::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) {
-	tuples.push_back({ "y_offset", y_offset });
+	tuples.push_back({ "offset_y", y_offset });
 	tuples.push_back({ "symbol", QChar(symbol)});
 }
 
-QJsonObject BookMark::to_json() const
+QJsonObject BookMark::to_json(std::string doc_checksum) const
 {
 	QJsonObject res;
 	res["y_offset"] = y_offset;
@@ -163,7 +163,7 @@ bool BookMark::is_marked() const{
 	return (begin_y > -1) && (end_y == -1);
 }
 
-QJsonObject Highlight::to_json() const
+QJsonObject Highlight::to_json(std::string doc_checksum) const
 {
 	QJsonObject res;
 	res["selection_begin_x"] = selection_begin.x;
@@ -199,7 +199,7 @@ void Highlight::from_json(const QJsonObject& json_object)
 	load_metadata_from_json(json_object);
 }
 
-QJsonObject Portal::to_json() const
+QJsonObject Portal::to_json(std::string doc_checksum) const
 {
 	QJsonObject res;
 	res["src_offset_y"] = src_offset_y;
@@ -207,6 +207,7 @@ QJsonObject Portal::to_json() const
 	res["dst_offset_x"] = dst.book_state.offset_x;
 	res["dst_offset_y"] = dst.book_state.offset_y;
 	res["dst_zoom_level"] = dst.book_state.zoom_level;
+	res["same"] = (doc_checksum == dst.document_checksum);
 	add_metadata_to_json(res);
 	return res;
 }
@@ -224,7 +225,7 @@ void Portal::from_json(const QJsonObject& json_object)
 
 void Portal::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) {
 	tuples.push_back({ "src_offset_y", src_offset_y });
-	tuples.push_back({ "dst_checksum", QString::fromStdString(dst.document_checksum) });
+	tuples.push_back({ "dst_document", QString::fromStdString(dst.document_checksum) });
 	tuples.push_back({ "dst_offset_x", dst.book_state.offset_x });
 	tuples.push_back({ "dst_offset_y", dst.book_state.offset_y });
 	tuples.push_back({ "dst_zoom_level", dst.book_state.zoom_level });

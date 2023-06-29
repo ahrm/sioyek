@@ -31,7 +31,7 @@ struct Annotation {
 	std::string modification_time;
 	std::string uuid;
 
-	virtual QJsonObject to_json() const = 0;
+	virtual QJsonObject to_json(std::string doc_checksum) const = 0;
 	virtual void  add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) = 0;
 	virtual std::vector<std::pair<std::string, QVariant>> to_tuples();
 	virtual void from_json(const QJsonObject& json_object) = 0;
@@ -55,7 +55,7 @@ struct Mark : Annotation{
 	float y_offset;
 	char symbol;
 
-	QJsonObject to_json() const;
+	QJsonObject to_json(std::string doc_checksum) const;
 	void from_json(const QJsonObject& json_object);
 	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 };
@@ -76,7 +76,7 @@ struct BookMark : Annotation {
 	float font_size = -1;
 	std::wstring font_face;
 
-	QJsonObject to_json() const;
+	QJsonObject to_json(std::string doc_checksum) const;
 	void from_json(const QJsonObject& json_object);
 	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 
@@ -92,7 +92,7 @@ struct Highlight : Annotation{
 	char type;
 	std::vector<fz_rect> highlight_rects;
 
-	QJsonObject to_json() const;
+	QJsonObject to_json(std::string doc_checksum) const;
 	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 	void from_json(const QJsonObject& json_object);
 };
@@ -125,7 +125,7 @@ struct Portal : Annotation{
 	PortalViewState dst;
 	float src_offset_y;
 
-	QJsonObject to_json() const;
+	QJsonObject to_json(std::string doc_checksum) const;
 	void from_json(const QJsonObject& json_object);
 	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 };
