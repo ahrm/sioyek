@@ -1101,8 +1101,15 @@ int DocumentView::get_line_index() {
 	}
 }
 
-void DocumentView::set_line_index(int index) {
+void DocumentView::set_line_index(int index, int page) {
 	line_index = index;
+	if (page >= 0) {
+		auto lines = get_document()->get_page_lines(page);
+		if (index >= 0 && index < lines.size()) {
+			ruler_rect = lines[index];
+		}
+	}
+
 }
 
 int DocumentView::get_line_index_of_vertical_pos() {

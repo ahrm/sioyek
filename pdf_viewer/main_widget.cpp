@@ -2849,11 +2849,12 @@ void MainWidget::visual_mark_under_pos(WindowPos pos){
         auto [abs_doc_x, abs_doc_y] = main_document_view->window_to_absolute_document_pos(window_pos);
         main_document_view->set_vertical_line_pos(abs_doc_y);
         int container_line_index = main_document_view->get_line_index_of_pos(document_pos);
+
         if (container_line_index == -1) {
-			main_document_view->set_line_index(main_document_view->get_line_index_of_vertical_pos());
+			main_document_view->set_line_index(main_document_view->get_line_index_of_vertical_pos(), -1);
         }
         else {
-			main_document_view->set_line_index(container_line_index);
+			main_document_view->set_line_index(container_line_index, document_pos.page);
         }
         validate_render();
     }
@@ -3803,8 +3804,8 @@ fz_rect MainWidget::move_visual_mark(int offset) {
     int new_line_index, new_page;
     int vertical_line_page = main_document_view->get_vertical_line_page();
     fz_rect ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, offset, true, &new_line_index, &new_page);
-    main_document_view->set_line_index(new_line_index);
-	main_document_view->set_vertical_line_rect(ruler_rect);
+    main_document_view->set_line_index(new_line_index, new_page);
+	//main_document_view->set_vertical_line_rect(ruler_rect);
 	if (focus_on_visual_mark_pos(moving_down)) {
 		float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
 		main_document_view->move_absolute(0, distance);
@@ -3901,8 +3902,8 @@ void MainWidget::focus_text(int page, const std::wstring& text) {
     }
 
     if (max_index < line_rects.size()) {
-		main_document_view->set_line_index(max_index);
-		main_document_view->set_vertical_line_rect(line_rects[max_index]);
+		main_document_view->set_line_index(max_index, page);
+		//main_document_view->set_vertical_line_rect(line_rects[max_index]);
 		if (focus_on_visual_mark_pos(true)) {
 			float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
 			main_document_view->move_absolute(0, distance);

@@ -182,7 +182,7 @@ public:
 	int get_line_index_of_vertical_pos();
 	int get_line_index_of_pos(DocumentPos docpos);
 	int get_line_index();
-	void set_line_index(int index);
+	void set_line_index(int index, int page);
 	int get_vertical_line_page();
 	bool goto_definition();
 	std::vector<DocumentPos> find_line_definitions();
