@@ -82,7 +82,7 @@ void Document::load_document_metadata_from_db() {
 	else {
 		auto checksum_thread = std::thread([&]() {
 				std::string checksum = get_checksum();
-				if (checksummer->num_docs_with_checksum(checksum) > 1) {
+				if ((checksummer->num_docs_with_checksum(checksum) > 1) || annotations_file_exists()) {
 					// we already have a document with the same hash so there might be
 					// annotations that are not loaded
 					should_reload_annotations = true;
@@ -146,6 +146,8 @@ void Document::add_pending_freetext_bookmark(int index, const std::wstring& desc
 
 	if (!db_manager->insert_bookmark_freetext(get_checksum(), bookmark)) {
 		undo_pending_bookmark(index);
+	}
+	else {
 		is_annotations_dirty = true;
 	}
 }
@@ -3785,3 +3787,11 @@ bool Document::get_should_reload_annotations() {
 }
 
 
+void Document::reload_annotations_on_new_checksum() {
+	if (annotations_file_exists()) {
+		load_annotations();
+	}
+	else {
+		load_document_metadata_from_db();
+	}
+}

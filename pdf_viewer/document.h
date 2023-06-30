@@ -323,6 +323,7 @@ public:
 	const std::vector<FreehandDrawing>& get_page_drawings(int page);
 
 	bool get_should_reload_annotations();
+	void reload_annotations_on_new_checksum();
 
 	friend class DocumentManager;
 };

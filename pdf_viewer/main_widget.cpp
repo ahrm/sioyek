@@ -852,7 +852,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
         if (doc()) {
             if (doc()->get_should_reload_annotations()) {
-                doc()->load_document_metadata_from_db();
+                doc()->reload_annotations_on_new_checksum();
                 validate_render();
             }
         }

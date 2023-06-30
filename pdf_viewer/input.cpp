@@ -2964,7 +2964,7 @@ public:
 	}
 
 	std::string get_name() {
-		return "import_annotations_file";
+		return "load_annotations_file";
 	}
 
 };
