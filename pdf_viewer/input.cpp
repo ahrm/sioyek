@@ -62,6 +62,34 @@ public:
 
 };
 
+class GenericGotoLocationCommand : public Command {
+public:
+	GenericGotoLocationCommand(MainWidget* w) : Command(w) {};
+
+	std::optional<float> target_location = {};
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+		if (target_location.has_value()) {
+			return {};
+		}
+		else {
+			return Requirement { RequirementType::Generic, "Target Location" };
+		}
+	}
+
+	void set_generic_requirement(QVariant value) {
+		target_location = value.toFloat();
+	}
+
+	void perform() {
+		widget->main_document_view->set_offset_y(target_location.value());
+		widget->validate_render();
+	}
+
+	bool pushes_state() { return true; }
+
+};
+
 class SymbolCommand : public Command {
 protected:
 	char symbol = 0;
@@ -603,15 +631,12 @@ public:
 
 };
 
-class GotoBookmarkCommand : public Command {
+class GotoBookmarkCommand : public GenericGotoLocationCommand {
 public:
-	GotoBookmarkCommand(MainWidget* w) : Command(w) {};
-	void perform() {
-		widget->handle_goto_bookmark();
-	}
+	GotoBookmarkCommand(MainWidget* w) : GenericGotoLocationCommand(w) {};
 
-	bool pushes_state() {
-		return true;
+	void handle_generic_requirement() {
+		widget->handle_goto_bookmark();
 	}
 
 	std::string get_name() {
@@ -676,33 +701,6 @@ public:
 
 };
 
-class GenericGotoLocationCommand : public Command {
-public:
-	GenericGotoLocationCommand(MainWidget* w) : Command(w) {};
-
-	std::optional<float> target_location = {};
-
-	std::optional<Requirement> next_requirement(MainWidget* widget) {
-		if (target_location.has_value()) {
-			return {};
-		}
-		else {
-			return Requirement { RequirementType::Generic, "Target Location" };
-		}
-	}
-
-	void set_generic_requirement(QVariant value) {
-		target_location = value.toFloat();
-	}
-
-	void perform() {
-		widget->main_document_view->set_offset_y(target_location.value());
-		widget->validate_render();
-	}
-
-	bool pushes_state() { return true; }
-
-};
 
 class GotoHighlightCommand : public GenericGotoLocationCommand {
 public:

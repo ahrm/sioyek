@@ -1,4 +1,6 @@
 ﻿// deduplicate database code
+// improve visual mark mode when going to the next line that can fit inside the screen but is currently partly offscreen 
+// lazily initialize qml elements in the main widget to improve startup time
 
 #include <iostream>
 #include <vector>
@@ -646,7 +648,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     should_quit(should_quit_ptr),
     command_manager(command_manager)
 {
-
 	//main_widget->quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
     //quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
     setMouseTracking(true);
@@ -942,6 +943,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 #endif
 
     });
+
 
     search_buttons = new SearchButtons(this);
     search_buttons->hide();
@@ -4608,9 +4610,9 @@ void MainWidget::handle_goto_bookmark() {
 
     set_filtered_select_menu<BookMark>(FUZZY_SEARCHING, MULTILINE_MENUS,{ option_names, option_location_strings }, bookmarks, closest_bookmark_index,
 		[&](BookMark* bm) {
-			validate_render();
-			push_state();
-			main_document_view->set_offset_y(bm->y_offset);
+            pending_command_instance->set_generic_requirement(bm->y_offset);
+            advance_command(std::move(pending_command_instance));
+
 		},
 		[&](BookMark* bm) {
 			main_document_view->delete_closest_bookmark_to_offset(bm->y_offset);
