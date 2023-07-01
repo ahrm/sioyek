@@ -20,7 +20,8 @@ enum RequirementType {
 	Symbol,
 	File,
 	Rect,
-	Point
+	Point,
+	Generic
 };
 
 struct Requirement {
@@ -43,6 +44,8 @@ public:
 	virtual void set_file_requirement(std::wstring value);
 	virtual void set_rect_requirement(fz_rect value);
 	virtual void set_point_requirement(AbsoluteDocumentPos value);
+	virtual void set_generic_requirement(QVariant value);
+	virtual void handle_generic_requirement();
 	virtual void set_num_repeats(int nr);
 	virtual std::vector<char> special_symbols();
 	virtual void pre_perform();

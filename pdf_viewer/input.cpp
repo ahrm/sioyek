@@ -33,6 +33,14 @@ Command::Command(MainWidget* widget_) : widget(widget_) {
 
 }
 
+void Command::set_generic_requirement(QVariant value) {
+
+}
+
+void Command::handle_generic_requirement() {
+
+}
+
 class SymbolCommand : public Command {
 protected:
 	char symbol = 0;
@@ -1322,17 +1330,45 @@ public:
 	bool requires_document() { return false; }
 };
 
-class OpenDocumentEmbeddedCommand : public Command {
+class GenericPathCommand : public Command {
 public:
-	OpenDocumentEmbeddedCommand(MainWidget* w) : Command(w) {};
-	void perform() {
+	std::optional<std::wstring> selected_path = {};
+	GenericPathCommand(MainWidget* w) : Command(w) {};
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) override {
+		if (selected_path) {
+			return {};
+		}
+		else {
+			return Requirement{ RequirementType::Generic, "File path" };
+		}
+	}
+
+	void set_generic_requirement(QVariant value) {
+		selected_path = value.toString().toStdWString();
+	}
+
+};
+
+class OpenDocumentEmbeddedCommand : public GenericPathCommand {
+public:
+	OpenDocumentEmbeddedCommand(MainWidget* w) : GenericPathCommand(w) {};
+
+	void handle_generic_requirement() {
+
 		widget->set_current_widget(new FileSelector(
 			FUZZY_SEARCHING,
-			[widget = widget](std::wstring doc_path) {
-				widget->validate_render();
-				widget->open_document(doc_path);
+			[widget = widget, this](std::wstring doc_path) {
+				set_generic_requirement(QString::fromStdWString(doc_path));
+				widget->advance_command(std::move(widget->pending_command_instance));
 			}, widget, ""));
 		widget->show_current_widget();
+	}
+
+
+	void perform() {
+		widget->validate_render();
+		widget->open_document(selected_path.value());
 	}
 
 	bool pushes_state() {
@@ -1347,19 +1383,26 @@ public:
 	bool requires_document() { return false; }
 };
 
-class OpenDocumentEmbeddedFromCurrentPathCommand : public Command {
+class OpenDocumentEmbeddedFromCurrentPathCommand : public GenericPathCommand {
 public:
-	OpenDocumentEmbeddedFromCurrentPathCommand(MainWidget* w) : Command(w) {};
-	void perform() {
+	OpenDocumentEmbeddedFromCurrentPathCommand(MainWidget* w) : GenericPathCommand(w) {};
+
+	void handle_generic_requirement() {
 		std::wstring last_file_name = widget->get_current_file_name().value_or(L"");
 
 		widget->set_current_widget(new FileSelector(
 			FUZZY_SEARCHING,
-			[widget = widget](std::wstring doc_path) {
-				widget->validate_render();
-				widget->open_document(doc_path);
+			[widget = widget, this](std::wstring doc_path) {
+				set_generic_requirement(QString::fromStdWString(doc_path));
+				widget->advance_command(std::move(widget->pending_command_instance));
 			}, widget, QString::fromStdWString(last_file_name)));
 		widget->show_current_widget();
+
+	}
+
+	void perform() {
+		widget->validate_render();
+		widget->open_document(selected_path.value());
 	}
 
 	bool pushes_state() {
@@ -3271,6 +3314,9 @@ private:
 					if (req.value().type == RequirementType::File) {
 						actual_command->set_file_requirement(command_params);
 					}
+					if (req.value().type == RequirementType::Generic) {
+						actual_command->set_generic_requirement(QString::fromStdWString(command_params));
+					}
 					if (req.value().type == RequirementType::Symbol) {
 						if (command_params.size() > 0) {
 							actual_command->set_symbol_requirement((char)command_params[0]);
@@ -3293,6 +3339,8 @@ public:
 	void set_symbol_requirement(char value) { get_command()->set_symbol_requirement(value); }
 	void set_file_requirement(std::wstring value) { get_command()->set_file_requirement(value); }
 	void set_rect_requirement(fz_rect value) { get_command()->set_rect_requirement(value); }
+	void set_generic_requirement(QVariant value) { get_command()->set_generic_requirement(value); }
+	void handle_generic_requirement() { get_command()->handle_generic_requirement(); }
 	void set_point_requirement(AbsoluteDocumentPos value) { get_command()->set_point_requirement(value); }
 	void set_num_repeats(int nr) { get_command()->set_num_repeats(nr); }
 	std::vector<char> special_symbols() { return get_command()->special_symbols(); }
@@ -3650,6 +3698,46 @@ public:
 				if (req) {
 					if (req.value().type == RequirementType::Text) {
 						commands[i]->set_text_requirement(value);
+					}
+					return;
+				}
+			}
+		}
+	}
+
+	void set_generic_requirement(QVariant value) {
+		if (is_modal) {
+			int current_mode_index = get_current_mode_index();
+			if (current_mode_index >= 0) {
+				commands[current_mode_index]->set_generic_requirement(value);
+			}
+		}
+		else {
+			for (int i = 0; i < commands.size(); i++) {
+				std::optional<Requirement> req = commands[i]->next_requirement(widget);
+				if (req) {
+					if (req.value().type == RequirementType::Generic) {
+						commands[i]->set_generic_requirement(value);
+					}
+					return;
+				}
+			}
+		}
+	}
+
+	void handle_generic_requirement() {
+		if (is_modal) {
+			int current_mode_index = get_current_mode_index();
+			if (current_mode_index >= 0) {
+				commands[current_mode_index]->handle_generic_requirement();
+			}
+		}
+		else {
+			for (int i = 0; i < commands.size(); i++) {
+				std::optional<Requirement> req = commands[i]->next_requirement(widget);
+				if (req) {
+					if (req.value().type == RequirementType::Generic) {
+						commands[i]->handle_generic_requirement();
 					}
 					return;
 				}

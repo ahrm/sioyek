@@ -4469,6 +4469,9 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command){
 			else if (next_requirement.type == RequirementType::Point) {
                 set_point_select_mode(true);
 			}
+            else if (next_requirement.type == RequirementType::Generic) {
+                pending_command_instance->handle_generic_requirement();
+            }
             if (pending_command_instance) {
 				pending_command_instance->pre_perform();
             }
