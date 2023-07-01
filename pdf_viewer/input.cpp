@@ -41,6 +41,26 @@ void Command::handle_generic_requirement() {
 
 }
 
+class GenericPathCommand : public Command {
+public:
+	std::optional<std::wstring> selected_path = {};
+	GenericPathCommand(MainWidget* w) : Command(w) {};
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) override {
+		if (selected_path) {
+			return {};
+		}
+		else {
+			return Requirement{ RequirementType::Generic, "File path" };
+		}
+	}
+
+	void set_generic_requirement(QVariant value) {
+		selected_path = value.toString().toStdWString();
+	}
+
+};
+
 class SymbolCommand : public Command {
 protected:
 	char symbol = 0;
@@ -139,12 +159,16 @@ public:
 	}
 };
 
-class GotoLoadedDocumentCommand : public Command{
+class GotoLoadedDocumentCommand : public GenericPathCommand{
 public:
-	GotoLoadedDocumentCommand(MainWidget* w) : Command(w) {}
+	GotoLoadedDocumentCommand(MainWidget* w) : GenericPathCommand(w) {}
+
+	void handle_generic_requirement() {
+		widget->handle_goto_loaded_document();
+	}
 
 	void perform() {
-		widget->handle_goto_loaded_document();
+		widget->open_document(selected_path.value());
 	}
 
 	std::string get_name() {
@@ -1330,25 +1354,6 @@ public:
 	bool requires_document() { return false; }
 };
 
-class GenericPathCommand : public Command {
-public:
-	std::optional<std::wstring> selected_path = {};
-	GenericPathCommand(MainWidget* w) : Command(w) {};
-
-	std::optional<Requirement> next_requirement(MainWidget* widget) override {
-		if (selected_path) {
-			return {};
-		}
-		else {
-			return Requirement{ RequirementType::Generic, "File path" };
-		}
-	}
-
-	void set_generic_requirement(QVariant value) {
-		selected_path = value.toString().toStdWString();
-	}
-
-};
 
 class OpenDocumentEmbeddedCommand : public GenericPathCommand {
 public:

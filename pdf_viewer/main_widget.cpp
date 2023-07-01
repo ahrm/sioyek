@@ -6483,7 +6483,9 @@ void MainWidget::handle_goto_loaded_document() {
 		loaded_document_paths,
 		index,
 		[&](std::wstring* path) {
-			open_document(*path);
+            pending_command_instance->set_generic_requirement(QString::fromStdWString(*path));
+            advance_command(std::move(pending_command_instance));
+			//open_document(*path);
 		},
 		[&](std::wstring* path) {
             std::optional<Document*> doc_to_delete = document_manager->get_cached_document(*path);
