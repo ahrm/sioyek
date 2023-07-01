@@ -1,5 +1,4 @@
 ﻿// deduplicate database code
-// improve visual mark mode when going to the next line that can fit inside the screen but is currently partly offscreen 
 
 #include <iostream>
 #include <vector>
@@ -3748,6 +3747,13 @@ void MainWidget::move_visual_mark_next() {
 
         if (new_ruler_rect.x0 > 1) {
             float offset = (new_ruler_rect.x0 - 0.1f) * main_window_width / 2;
+            move_horizontal(-offset);
+        }
+
+        // if the new rect can fit entirely in the screen yet it is out of bounds,
+        // move such that it is contained in the screen
+        if (new_ruler_rect.x1 > 1 && (new_ruler_rect.x1 - new_ruler_rect.x0) < 1.9f) {
+            float offset = (new_ruler_rect.x1 - 0.9f) * main_window_width / 2;
             move_horizontal(-offset);
         }
 
