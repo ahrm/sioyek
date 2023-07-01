@@ -4774,8 +4774,11 @@ void MainWidget::handle_goto_highlight_global() {
 
         [&](BookState* book_state) {
             if (book_state) {
-                validate_render();
-                open_document(book_state->document_path, 0.0f, book_state->offset_y);
+                pending_command_instance->set_generic_requirement(
+                    QList<QVariant>() << QString::fromStdWString(book_state->document_path) << book_state->offset_y);
+                advance_command(std::move(pending_command_instance));
+                //validate_render();
+                //open_document(book_state->document_path, 0.0f, book_state->offset_y);
             }
         }, nullptr);
 
