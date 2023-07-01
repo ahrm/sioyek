@@ -625,10 +625,17 @@ public:
 #endif
 
 	protected:
-    TouchTextSelectionButtons* text_selection_buttons = nullptr;
-    DrawControlsUI* draw_controls = nullptr;
-    SearchButtons* search_buttons = nullptr;
-    HighlightButtons* highlight_buttons = nullptr;
+    TouchTextSelectionButtons* text_selection_buttons_ = nullptr;
+    DrawControlsUI* draw_controls_ = nullptr;
+    SearchButtons* search_buttons_ = nullptr;
+    HighlightButtons* highlight_buttons_ = nullptr;
+
+	TouchTextSelectionButtons* get_text_selection_buttons();
+	DrawControlsUI* get_draw_controls();
+	SearchButtons* get_search_buttons();
+	HighlightButtons* get_highlight_buttons();
+
+
 
 	void focusInEvent(QFocusEvent* ev);
 	void resizeEvent(QResizeEvent* resize_event) override;

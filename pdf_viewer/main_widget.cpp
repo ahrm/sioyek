@@ -1,6 +1,5 @@
 ﻿// deduplicate database code
 // improve visual mark mode when going to the next line that can fit inside the screen but is currently partly offscreen 
-// lazily initialize qml elements in the main widget to improve startup time
 
 #include <iostream>
 #include <vector>
@@ -362,17 +361,17 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         }
     }
     if (TOUCH_MODE) {
-        if (text_selection_buttons) {
-            QCoreApplication::postEvent(text_selection_buttons, resize_event->clone());
+        if (get_text_selection_buttons()) {
+            QCoreApplication::postEvent(get_text_selection_buttons(), resize_event->clone());
         }
-        if (search_buttons) {
-            QCoreApplication::postEvent(search_buttons, resize_event->clone());
+        if (get_search_buttons()) {
+            QCoreApplication::postEvent(get_search_buttons(), resize_event->clone());
         }
-        if (highlight_buttons) {
-            QCoreApplication::postEvent(highlight_buttons, resize_event->clone());
+        if (get_highlight_buttons()) {
+            QCoreApplication::postEvent(get_highlight_buttons(), resize_event->clone());
         }
-        if (draw_controls) {
-            QCoreApplication::postEvent(draw_controls, resize_event->clone());
+        if (get_draw_controls()) {
+            QCoreApplication::postEvent(get_draw_controls(), resize_event->clone());
         }
     }
 }
@@ -945,15 +944,14 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     });
 
 
-    search_buttons = new SearchButtons(this);
-    search_buttons->hide();
-    highlight_buttons = new HighlightButtons(this);
-    highlight_buttons->hide();
-	text_selection_buttons = new TouchTextSelectionButtons(this);
-    text_selection_buttons->hide();
-
-	draw_controls = new DrawControlsUI(this);
-    draw_controls->hide();
+ //   search_buttons = new SearchButtons(this);
+ //   search_buttons->hide();
+ //   highlight_buttons = new HighlightButtons(this);
+ //   highlight_buttons->hide();
+	//text_selection_buttons = new TouchTextSelectionButtons(this);
+ //   text_selection_buttons->hide();
+	//draw_controls = new DrawControlsUI(this);
+ //   draw_controls->hide();
 
     setMinimumWidth(500);
     setMinimumHeight(200);
@@ -1173,7 +1171,7 @@ void MainWidget::handle_escape() {
         }
         else if (opengl_widget->get_is_searching(nullptr)) {
             opengl_widget->cancel_search();
-			search_buttons->hide();
+			get_search_buttons()->hide();
             should_return = true;
         }
         if (should_return) {
@@ -5419,7 +5417,7 @@ void MainWidget::handle_mobile_selection(){
 
         selection_begin_indicator->show();
         selection_end_indicator->show();
-        text_selection_buttons->show();
+        get_text_selection_buttons()->show();
 
         invalidate_render();
     }
@@ -5450,7 +5448,7 @@ void MainWidget::clear_selection_indicators(){
     if (selection_begin_indicator){
         selection_begin_indicator->hide();
         selection_end_indicator->hide();
-        text_selection_buttons->hide();
+        get_text_selection_buttons()->hide();
         delete selection_begin_indicator;
         delete selection_end_indicator;
         //delete text_selection_buttons;
@@ -5654,14 +5652,14 @@ bool MainWidget::handle_double_tap(QPoint pos){
 
 void MainWidget::show_highlight_buttons(){
     //highlight_buttons = new HighlightButtons(this);
-    highlight_buttons->highlight_buttons->setHighlightType(get_current_selected_highlight_type());
+    get_highlight_buttons()->highlight_buttons->setHighlightType(get_current_selected_highlight_type());
     update_highlight_buttons_position();
-    highlight_buttons->show();
+    get_highlight_buttons()->show();
 }
 
 void MainWidget::clear_highlight_buttons(){
-    if (highlight_buttons){
-        highlight_buttons->hide();
+    if (get_highlight_buttons()){
+        get_highlight_buttons()->hide();
         //delete highlight_buttons;
         //highlight_buttons = nullptr;
     }
@@ -5681,12 +5679,12 @@ void MainWidget::handle_touch_highlight(){
 }
 
 void MainWidget::show_search_buttons(){
-    search_buttons->show();
+    get_search_buttons()->show();
 }
 
 void MainWidget::clear_search_buttons(){
 
-	search_buttons->hide();
+	get_search_buttons()->hide();
 }
 
 void MainWidget::restore_default_config(){
@@ -5736,7 +5734,7 @@ void MainWidget::update_highlight_buttons_position() {
 		DocumentPos docpos = doc()->absolute_to_page_pos(hlpos);
 
 		WindowPos windowpos = main_document_view->document_to_window_pos_in_pixels(docpos);
-		highlight_buttons->move(highlight_buttons->pos().x(), windowpos.y -  highlight_buttons->height());
+		get_highlight_buttons()->move(get_highlight_buttons()->pos().x(), windowpos.y -  get_highlight_buttons()->height());
     }
 }
 
@@ -6285,11 +6283,11 @@ void MainWidget::handle_drawing_ui_visibilty() {
     if (!TOUCH_MODE) return;
     
     if (freehand_drawing_mode == DrawingMode::None) {
-		draw_controls->hide();
+		get_draw_controls()->hide();
 	}
     else {
-		draw_controls->show();
-        draw_controls->controls_ui->set_pen_size(freehand_thickness);
+		get_draw_controls()->show();
+        get_draw_controls()->controls_ui->set_pen_size(freehand_thickness);
 	}
 }
 
@@ -6680,4 +6678,39 @@ void MainWidget::show_command_palette() {
 			[](std::wstring* s) {
 			});
 		show_current_widget();
+}
+
+TouchTextSelectionButtons* MainWidget::get_text_selection_buttons() {
+    if (text_selection_buttons_ == nullptr) {
+        text_selection_buttons_ = new TouchTextSelectionButtons(this);
+    }
+
+    return text_selection_buttons_;
+}
+
+DrawControlsUI* MainWidget::get_draw_controls() {
+
+    if (draw_controls_ == nullptr) {
+        draw_controls_ = new DrawControlsUI(this);
+    }
+
+    return draw_controls_;
+}
+
+SearchButtons* MainWidget::get_search_buttons() {
+
+    if (search_buttons_ == nullptr) {
+        search_buttons_ = new SearchButtons(this);
+    }
+
+    return search_buttons_;
+}
+
+HighlightButtons* MainWidget::get_highlight_buttons() {
+
+    if (highlight_buttons_ == nullptr) {
+        highlight_buttons_ = new HighlightButtons(this);
+    }
+
+    return highlight_buttons_;
 }
