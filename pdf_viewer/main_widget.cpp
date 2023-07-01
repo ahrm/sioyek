@@ -4805,19 +4805,10 @@ void MainWidget::handle_goto_toc() {
 			}
             QAbstractItemModel* model = create_table_model(flat_toc, page_strings);
 
-  //  TouchFilteredSelectWidget(std::vector<std::wstring> std_string_list,
-		//std::vector<T> values_,
-		//std::function<void(T*)> on_done_,
-		//std::function<void(T*)> on_delete,
             set_current_widget(new TouchFilteredSelectWidget<int>(FUZZY_SEARCHING, model,current_document_toc_pages, closest_toc_index, [&](int* page_value) {
                     if (page_value) {
-                        validate_render();
-
-                        push_state();
-                        main_document_view->goto_page(*page_value);
-                        if (TOC_JUMP_ALIGN_TOP) {
-                            main_document_view->scroll_mid_to_top();
-                        }
+                        pending_command_instance->set_generic_requirement(*page_value);
+                        advance_command(std::move(pending_command_instance));
                     }
                     pop_current_widget();
                 }, [&](int* page) {}, this));
@@ -4831,13 +4822,8 @@ void MainWidget::handle_goto_toc() {
                 get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
                 set_current_widget(new FilteredSelectWindowClass<int>(FUZZY_SEARCHING, flat_toc, current_document_toc_pages, [&](int* page_value) {
                     if (page_value) {
-                        validate_render();
-
-                        push_state();
-                        main_document_view->goto_page(*page_value);
-                        if (TOC_JUMP_ALIGN_TOP) {
-                            main_document_view->scroll_mid_to_top();
-                        }
+                        pending_command_instance->set_generic_requirement(*page_value);
+                        advance_command(std::move(pending_command_instance));
 
                     }
                     }, this));
@@ -4852,45 +4838,16 @@ void MainWidget::handle_goto_toc() {
                         TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
                         indices);
                 if (toc_node) {
-                    validate_render();
-                    //main_document_view->goto_page(toc_node->page);
-                    push_state();
                     if (std::isnan(toc_node->y)) {
-                        main_document_view->goto_page(toc_node->page);
+						pending_command_instance->set_generic_requirement(toc_node->page);
+						advance_command(std::move(pending_command_instance));
                     }
                     else {
-                        main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
-                    }
-                    if (TOC_JUMP_ALIGN_TOP) {
-                        main_document_view->scroll_mid_to_top();
+                        pending_command_instance->set_generic_requirement(QList<QVariant>() << toc_node->page << toc_node->x << toc_node->y);
+						advance_command(std::move(pending_command_instance));
                     }
                 }
                     }, this, selected_index));
-                //        }
-                //        else {
-
-                //            QStandardItemModel* model = main_document_view->get_document()->get_toc_model();
-                //            MySortFilterProxyModel* proxy_model = new MySortFilterProxyModel();
-                //            proxy_model->setSourceModel(model);
-                            //proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
-                //            proxy_model->setRecursiveFilteringEnabled(true);
-
-
-                            //set_current_widget(new TouchFilteredSelectWidget<int>(proxy_model,
-                            //	[&](int* index) {
-                            //		//TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
-                            //		//	indices);
-                            //		//if (toc_node) {
-                            //		//	validate_render();
-                            //		//	//main_document_view->goto_page(toc_node->page);
-                            //		//	push_state();
-                            //		//	main_document_view->goto_offset_within_page({ toc_node->page, toc_node->x, toc_node->y });
-                            //		//	if (TOC_JUMP_ALIGN_TOP) {
-                            //		//		main_document_view->scroll_mid_to_top();
-                            //		//	}
-                            //		//}
-                            //	}, this));
-                //        }
                 show_current_widget();
             }
         }

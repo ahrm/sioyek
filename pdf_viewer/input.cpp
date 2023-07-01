@@ -28,6 +28,7 @@ extern bool TOUCH_MODE;
 extern bool VERBOSE;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
+extern bool TOC_JUMP_ALIGN_TOP;
 
 Command::Command(MainWidget* widget_) : widget(widget_) {
 
@@ -170,6 +171,7 @@ public:
 	void perform() {
 		widget->open_document(selected_path.value());
 	}
+
 
 	std::string get_name() {
 		return "goto_tab";
@@ -711,13 +713,63 @@ public:
 	bool requires_document() { return false; }
 };
 
-class GotoTableOfContentsCommand : public Command {
+class GotoTableOfContentsCommand : public GenericPathCommand {
 public:
-	GotoTableOfContentsCommand(MainWidget* w) : Command(w) {};
+	GotoTableOfContentsCommand(MainWidget* w) : GenericPathCommand(w) {};
 
-	void perform() {
+	std::optional<QVariant>  target_location = {};
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+		if (target_location) {
+			return {};
+		}
+		else {
+			return Requirement{ RequirementType::Generic, "Location" };
+		}
+	}
+
+	void set_generic_requirement(QVariant value) {
+		target_location = value;
+	}
+
+
+	void handle_generic_requirement() {
+		//widget->handle_goto_loaded_document();
 		widget->handle_goto_toc();
 	}
+
+	void perform() {
+		QVariant val= target_location.value();
+
+		if (val.canConvert<int>()) {
+			int page = val.toInt();
+
+			widget->main_document_view->goto_page(page);
+
+			if (TOC_JUMP_ALIGN_TOP) {
+			    widget->main_document_view->scroll_mid_to_top();
+			}
+		}
+		else {
+			QList<QVariant> location = val.toList();
+			int page = location[0].toInt();
+			float x_offset = location[1].toFloat();
+			float y_offset = location[2].toFloat();
+
+			if (std::isnan(y_offset)) {
+				widget->main_document_view->goto_page(page);
+			}
+			else {
+				widget->main_document_view->goto_offset_within_page({ page, x_offset, y_offset });
+			}
+			if (TOC_JUMP_ALIGN_TOP) {
+				widget->main_document_view->scroll_mid_to_top();
+			}
+
+		}
+	}
+
+	bool pushes_state() { return true; }
 
 	std::string get_name() {
 		return "goto_toc";
