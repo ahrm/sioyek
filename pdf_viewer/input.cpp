@@ -3758,9 +3758,15 @@ public:
 		}
 
 	}
+
 	void perform() {
 		if (!is_modal) {
 			for (std::unique_ptr<Command>& subcommand : commands) {
+
+				if (subcommand->pushes_state()) {
+					widget->push_state();
+				}
+
 				subcommand->run();
 			}
 		}
