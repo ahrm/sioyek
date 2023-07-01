@@ -676,9 +676,9 @@ public:
 
 };
 
-class GotoHighlightCommand : public Command {
+class GenericGotoLocationCommand : public Command {
 public:
-	GotoHighlightCommand(MainWidget* w) : Command(w) {};
+	GenericGotoLocationCommand(MainWidget* w) : Command(w) {};
 
 	std::optional<float> target_location = {};
 
@@ -695,19 +695,21 @@ public:
 		target_location = value.toFloat();
 	}
 
-	void handle_generic_requirement() {
-		widget->handle_goto_highlight();
-	}
-
-
-
 	void perform() {
 		widget->main_document_view->set_offset_y(target_location.value());
 		widget->validate_render();
 	}
 
-	bool pushes_state() {
-		return true;
+	bool pushes_state() { return true; }
+
+};
+
+class GotoHighlightCommand : public GenericGotoLocationCommand {
+public:
+	GotoHighlightCommand(MainWidget* w) : GenericGotoLocationCommand(w) {};
+
+	void handle_generic_requirement() {
+		widget->handle_goto_highlight();
 	}
 
 	std::string get_name() {
