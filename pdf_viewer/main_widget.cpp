@@ -4896,8 +4896,8 @@ void MainWidget::handle_open_prev_doc() {
     set_filtered_select_menu<std::string>(FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names }, opened_docs_hashes, -1,
         [&](std::string* doc_hash) {
             if (doc_hash->size() > 0) {
-                validate_render();
-                open_document_with_hash(*doc_hash);
+                pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdString(*doc_hash));
+                advance_command(std::move(pending_command_instance));
             }
         },
         [&](std::string* doc_hash) {

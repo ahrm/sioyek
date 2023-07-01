@@ -94,7 +94,8 @@ class GenericPathAndLocationCommadn : public Command {
 public:
 
 	std::optional<QVariant> target_location;
-	GenericPathAndLocationCommadn(MainWidget* w) : Command(w) {};
+	bool is_hash = false;
+	GenericPathAndLocationCommadn(MainWidget* w, bool is_hash_ = false) : Command(w) { is_hash = is_hash_; };
 
 	std::optional<Requirement> next_requirement(MainWidget* widget) {
 		if (target_location) {
@@ -114,8 +115,14 @@ public:
 		std::wstring file_name = values[0].toString().toStdWString();
 
 		if (values.size() == 1) {
-			widget->open_document(file_name);
-			widget->validate_render();
+			if (is_hash) {
+				widget->open_document_with_hash(utf8_encode(file_name));
+				widget->validate_render();
+			}
+			else {
+				widget->open_document(file_name);
+				widget->validate_render();
+			}
 		}
 		else if (values.size() == 2) {
 			float y_offset = values[1].toFloat();
@@ -1451,15 +1458,12 @@ public:
 
 };
 
-class OpenPrevDocCommand : public Command {
+class OpenPrevDocCommand : public GenericPathAndLocationCommadn {
 public:
-	OpenPrevDocCommand(MainWidget* w) : Command(w) {};
-	void perform() {
-		widget->handle_open_prev_doc();
-	}
+	OpenPrevDocCommand(MainWidget* w) : GenericPathAndLocationCommadn(w, true) {};
 
-	bool pushes_state() {
-		return true;
+	void handle_generic_requirement() {
+		widget->handle_open_prev_doc();
 	}
 
 	std::string get_name() {
