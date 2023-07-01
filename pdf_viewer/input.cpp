@@ -680,8 +680,30 @@ class GotoHighlightCommand : public Command {
 public:
 	GotoHighlightCommand(MainWidget* w) : Command(w) {};
 
-	void perform() {
+	std::optional<float> target_location = {};
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+		if (target_location.has_value()) {
+			return {};
+		}
+		else {
+			return Requirement { RequirementType::Generic, "Target Location" };
+		}
+	}
+
+	void set_generic_requirement(QVariant value) {
+		target_location = value.toFloat();
+	}
+
+	void handle_generic_requirement() {
 		widget->handle_goto_highlight();
+	}
+
+
+
+	void perform() {
+		widget->main_document_view->set_offset_y(target_location.value());
+		widget->validate_render();
 	}
 
 	bool pushes_state() {

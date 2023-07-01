@@ -4710,9 +4710,8 @@ void MainWidget::handle_goto_highlight() {
 
     set_filtered_select_menu<Highlight>(FUZZY_SEARCHING, MULTILINE_MENUS,table, highlights, closest_highlight_index,
         [&](Highlight* hl) {
-			validate_render();
-			push_state();
-			main_document_view->set_offset_y(hl->selection_begin.y);
+            pending_command_instance->set_generic_requirement(hl->selection_begin.y);
+            advance_command(std::move(pending_command_instance));
         },
         [&](Highlight* hl) {
 			main_document_view->delete_highlight(*hl);
