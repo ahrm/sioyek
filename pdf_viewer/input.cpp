@@ -90,6 +90,51 @@ public:
 
 };
 
+class GenericPathAndLocationCommadn : public Command {
+public:
+
+	std::optional<QVariant> target_location;
+	GenericPathAndLocationCommadn(MainWidget* w) : Command(w) {};
+
+	std::optional<Requirement> next_requirement(MainWidget* widget) {
+		if (target_location) {
+			return {};
+		}
+		else {
+			return Requirement{ RequirementType::Generic, "Location" };
+		}
+	}
+
+	void set_generic_requirement(QVariant value) {
+		target_location = value;
+	}
+
+	void perform() {
+		QList<QVariant> values = target_location.value().toList();
+		std::wstring file_name = values[0].toString().toStdWString();
+
+		if (values.size() == 1) {
+			widget->open_document(file_name);
+			widget->validate_render();
+		}
+		else if (values.size() == 2) {
+			float y_offset = values[1].toFloat();
+			widget->open_document(file_name, 0.0f, y_offset);
+			widget->validate_render();
+		}
+		else {
+			float x_offset = values[1].toFloat();
+			float y_offset = values[2].toFloat();
+
+			widget->open_document(file_name, x_offset, y_offset);
+			widget->validate_render();
+		}
+	}
+
+	bool pushes_state() {
+		return true;
+	}
+};
 class SymbolCommand : public Command {
 protected:
 	char symbol = 0;
@@ -645,16 +690,15 @@ public:
 
 };
 
-class GotoBookmarkGlobalCommand : public Command {
+class GotoBookmarkGlobalCommand : public GenericPathAndLocationCommadn {
 public:
-	GotoBookmarkGlobalCommand(MainWidget* w) : Command(w) {};
-	void perform() {
+
+	GotoBookmarkGlobalCommand(MainWidget* w) : GenericPathAndLocationCommadn(w) {};
+
+	void handle_generic_requirement() {
 		widget->handle_goto_bookmark_global();
 	}
 
-	bool pushes_state() {
-		return true;
-	}
 
 	std::string get_name() {
 		return "goto_bookmark_g";
@@ -716,51 +760,6 @@ public:
 
 };
 
-class GenericPathAndLocationCommadn : public Command {
-public:
-
-	std::optional<QVariant> target_location;
-	GenericPathAndLocationCommadn(MainWidget* w) : Command(w) {};
-
-	std::optional<Requirement> next_requirement(MainWidget* widget) {
-		if (target_location) {
-			return {};
-		}
-		else {
-			return Requirement{ RequirementType::Generic, "Location" };
-		}
-	}
-
-	void set_generic_requirement(QVariant value) {
-		target_location = value;
-	}
-
-	void perform() {
-		QList<QVariant> values = target_location.value().toList();
-		std::wstring file_name = values[0].toString().toStdWString();
-
-		if (values.size() == 1) {
-			widget->open_document(file_name);
-			widget->validate_render();
-		}
-		else if (values.size() == 2) {
-			float y_offset = values[1].toFloat();
-			widget->open_document(file_name, 0.0f, y_offset);
-			widget->validate_render();
-		}
-		else {
-			float x_offset = values[1].toFloat();
-			float y_offset = values[2].toFloat();
-
-			widget->open_document(file_name, x_offset, y_offset);
-			widget->validate_render();
-		}
-	}
-
-	bool pushes_state() {
-		return true;
-	}
-};
 
 class GotoHighlightGlobalCommand : public GenericPathAndLocationCommadn {
 public:

@@ -4648,8 +4648,8 @@ void MainWidget::handle_goto_bookmark_global() {
 
     set_filtered_select_menu<BookState>(FUZZY_SEARCHING, MULTILINE_MENUS, { descs, file_names }, book_states, -1,
 		[&](BookState* book_state) {
-			validate_render();
-			open_document(book_state->document_path, 0.0f, book_state->offset_y);
+            pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdWString(book_state->document_path) << book_state->offset_y);
+            advance_command(std::move(pending_command_instance));
 		},
 		[&](BookState* book_state) {
 			db_manager->delete_bookmark(book_state->uuid);
