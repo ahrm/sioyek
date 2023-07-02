@@ -14,15 +14,15 @@ Rectangle {
     signal confirmed(val: string)
     signal canceled()
 
-		function getNameFromMacroText(txt){
-			let parts = txt.split(']');
-			if (parts.length == 1){
-				return txt;
-			}
-			else{
-				return parts[1];
-			}
-		}
+        function getNameFromMacroText(txt){
+            let parts = txt.split(']');
+            if (parts.length == 1){
+                return txt;
+            }
+            else{
+                return parts[1];
+            }
+        }
 
         function getMacroModifierString(txt){
             let parts = txt.split(']');
@@ -33,34 +33,34 @@ Rectangle {
                 return "";
             }
         }
-		function getModesFromMacroText(txt){
-			let modes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-			let modes_lower = "rxhqedpost";
-			let modes_upper = "RXHQEDPOST";
-			let index_map = {};
+        function getModesFromMacroText(txt){
+            let modes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            let modes_lower = "rxhqedpost";
+            let modes_upper = "RXHQEDPOST";
+            let index_map = {};
 
-			for (let i = 0; i < modes_lower.length; i++){
-				index_map[modes_lower[i]] = i;
-				index_map[modes_upper[i]] = i;
-			}
-			let parts = txt.split(']');
-			if (parts.length == 2){
-				let mode_string = parts[0].slice(1, parts[0].length);
-				for (let i = 0; i < mode_string.length; i++){
-					let mode_char = mode_string[i];
-					let index = index_map[mode_char];
-					if (mode_char.toLowerCase() == mode_char){
-						modes[index] = 1;
-					}
-					else{
-						modes[index] = 2;
-					}
-				}
-			}
+            for (let i = 0; i < modes_lower.length; i++){
+                index_map[modes_lower[i]] = i;
+                index_map[modes_upper[i]] = i;
+            }
+            let parts = txt.split(']');
+            if (parts.length == 2){
+                let mode_string = parts[0].slice(1, parts[0].length);
+                for (let i = 0; i < mode_string.length; i++){
+                    let mode_char = mode_string[i];
+                    let index = index_map[mode_char];
+                    if (mode_char.toLowerCase() == mode_char){
+                        modes[index] = 1;
+                    }
+                    else{
+                        modes[index] = 2;
+                    }
+                }
+            }
 
-			return modes;
+            return modes;
 
-		}
+        }
 
     function getMacroString(){
         return root.items.join(";");
@@ -71,7 +71,7 @@ Rectangle {
        anchors.top: parent.top
        id: macro_text
        width: root.width
-		height: root.width / 20
+        height: root.width / 20
         readOnly: true
         selectByMouse: true
         color: "white"
@@ -115,8 +115,8 @@ Rectangle {
     }
     // Rectangle {
     //     anchors.top: macro_text.bottom
-	// 	width: root.width / 20
-	// 	height: root.width / 20
+    // 	width: root.width / 20
+    // 	height: root.width / 20
     //     radius: root.width / 20
 
     //     color: "red"
@@ -134,16 +134,16 @@ Rectangle {
     //         id: ma
     //         anchors.fill: parent
     //         onClicked: {
-	// 			root.items.push("");
+    // 			root.items.push("");
     //         }
     //     }
     // }
 
     Flickable{
-		anchors.top: add_button.bottom
-		anchors.left: parent.left
-		anchors.right: parent.right
-		anchors.bottom: parent.bottom
+        anchors.top: add_button.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
         anchors.topMargin: 10
 
         contentWidth: column_container.width
@@ -292,53 +292,53 @@ Rectangle {
     }
     // ListView{
 
-	// 	anchors.top: add_button.bottom
-	// 	anchors.left: parent.left
-	// 	anchors.right: parent.right
-	// 	anchors.bottom: parent.bottom
+    // 	anchors.top: add_button.bottom
+    // 	anchors.left: parent.left
+    // 	anchors.right: parent.right
+    // 	anchors.bottom: parent.bottom
     //     model: root.items
     //     clip: true
-	// 	id: list_view
+    // 	id: list_view
 
-	// 	function getNameFromMacroText(txt){
-	// 		let parts = txt.split(']');
-	// 		if (parts.length == 1){
-	// 			return txt;
-	// 		}
-	// 		else{
-	// 			return parts[1];
-	// 		}
-	// 	}
+    // 	function getNameFromMacroText(txt){
+    // 		let parts = txt.split(']');
+    // 		if (parts.length == 1){
+    // 			return txt;
+    // 		}
+    // 		else{
+    // 			return parts[1];
+    // 		}
+    // 	}
 
-	// 	function getModesFromMacroText(txt){
-	// 		let modes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-	// 		let modes_lower = "rxhqedpost";
-	// 		let modes_upper = "RXHQEDPOST";
-	// 		let index_map = {};
+    // 	function getModesFromMacroText(txt){
+    // 		let modes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    // 		let modes_lower = "rxhqedpost";
+    // 		let modes_upper = "RXHQEDPOST";
+    // 		let index_map = {};
 
-	// 		for (let i = 0; i < modes_lower.length; i++){
-	// 			index_map[modes_lower[i]] = i;
-	// 			index_map[modes_upper[i]] = i;
-	// 		}
-	// 		let parts = txt.split(']');
-	// 		if (parts.length == 2){
-	// 			let mode_string = parts[0].slice(1, parts[0].length);
-	// 			console.log(mode_string);
-	// 			for (let i = 0; i < mode_string.length; i++){
-	// 				let mode_char = mode_string[i];
-	// 				let index = index_map[mode_char];
-	// 				if (mode_char.toLowerCase() == mode_char){
-	// 					modes[index] = 1;
-	// 				}
-	// 				else{
-	// 					modes[index] = 2;
-	// 				}
-	// 			}
-	// 		}
+    // 		for (let i = 0; i < modes_lower.length; i++){
+    // 			index_map[modes_lower[i]] = i;
+    // 			index_map[modes_upper[i]] = i;
+    // 		}
+    // 		let parts = txt.split(']');
+    // 		if (parts.length == 2){
+    // 			let mode_string = parts[0].slice(1, parts[0].length);
+    // 			console.log(mode_string);
+    // 			for (let i = 0; i < mode_string.length; i++){
+    // 				let mode_char = mode_string[i];
+    // 				let index = index_map[mode_char];
+    // 				if (mode_char.toLowerCase() == mode_char){
+    // 					modes[index] = 1;
+    // 				}
+    // 				else{
+    // 					modes[index] = 2;
+    // 				}
+    // 			}
+    // 		}
 
-	// 		return modes;
+    // 		return modes;
 
-	// 	}
+    // 	}
 
     //     delegate: Rectangle {
     //         id: delegate_id
@@ -346,80 +346,80 @@ Rectangle {
     //         height: 100
     //         color: index % 2 == 0 ? "#222" : "#333"
     //         Rectangle{
-	// 			id: text_background
-	// 			color: "white"
-	// 			anchors.verticalCenter: parent.verticalCenter
-	// 			height: 50
-	// 			width: parent.width / 2
-	// 			anchors.left: parent.left
+    // 			id: text_background
+    // 			color: "white"
+    // 			anchors.verticalCenter: parent.verticalCenter
+    // 			height: 50
+    // 			width: parent.width / 2
+    // 			anchors.left: parent.left
 
-	// 			TextInput {
-	// 				anchors.fill: parent
-	// 				verticalAlignment: Text.AlignVCenter
-	// 				id: command_name
-	// 				text:  list_view.getNameFromMacroText(root.items[index])
-	// 				//color: "white"
-	// 				onAccepted: function(){
-	// 					root.items[index] = command_name.text;
-	// 				}
-	// 				//onEditingFinished: function (){
-	// 					//root.items[index] = command_name.text;
-	// 					//command_name.focus = true;
-	// 					//return false;
-	// 				//}
-	// 			}
+    // 			TextInput {
+    // 				anchors.fill: parent
+    // 				verticalAlignment: Text.AlignVCenter
+    // 				id: command_name
+    // 				text:  list_view.getNameFromMacroText(root.items[index])
+    // 				//color: "white"
+    // 				onAccepted: function(){
+    // 					root.items[index] = command_name.text;
+    // 				}
+    // 				//onEditingFinished: function (){
+    // 					//root.items[index] = command_name.text;
+    // 					//command_name.focus = true;
+    // 					//return false;
+    // 				//}
+    // 			}
     //         }
 
-	// 	TouchButtonGroup{
+    // 	TouchButtonGroup{
     //         anchors.top: parent.top
     //         anchors.bottom: parent.bottom
     //         anchors.right: delete_button.left
     //         anchors.left: text_background.right
     //         width: parent.width / 10
-	// 		id: mode_buttons
+    // 		id: mode_buttons
 
 
-	// 		buttons: ["r", "x", "h", "q", "e", "d", "p", "o", "s", "t"]
+    // 		buttons: ["r", "x", "h", "q", "e", "d", "p", "o", "s", "t"]
     //         tips: ["Ruler", "Synxtex", "Highlight on select", "Freehand drawing", "Pen freehand drawing", "Mouse drag", "Presentation", "Overview", "Searching", "Text selected"]
     //         //modeList: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     //         modeList: list_view.getModesFromMacroText(root.items[index])
 
     //         modal: true
-	// 		onButtonClicked: function(ind, val) {
-	// 			let modes = mode_buttons.modeList;
-	// 			let mode_string = "";
-	// 			for (let i = 0; i< modes.length; i++){
-	// 				if (modes[i] == 1){
-	// 					mode_string += mode_buttons.buttons[i];
-	// 				}
-	// 				else if (modes[i] == 2){
-	// 					mode_string += mode_buttons.buttons[i].toUpperCase();
-	// 				}
-	// 			}
+    // 		onButtonClicked: function(ind, val) {
+    // 			let modes = mode_buttons.modeList;
+    // 			let mode_string = "";
+    // 			for (let i = 0; i< modes.length; i++){
+    // 				if (modes[i] == 1){
+    // 					mode_string += mode_buttons.buttons[i];
+    // 				}
+    // 				else if (modes[i] == 2){
+    // 					mode_string += mode_buttons.buttons[i].toUpperCase();
+    // 				}
+    // 			}
 
-	// 			if (mode_string.length > 0){
-	// 				root.items[index] = "[" + mode_string + "]" + list_view.getNameFromMacroText(root.items[index]);
-	// 			}
-	// 			else{
-	// 				root.items[index] = list_view.getNameFromMacroText(root.items[index]);
-	// 			}
+    // 			if (mode_string.length > 0){
+    // 				root.items[index] = "[" + mode_string + "]" + list_view.getNameFromMacroText(root.items[index]);
+    // 			}
+    // 			else{
+    // 				root.items[index] = list_view.getNameFromMacroText(root.items[index]);
+    // 			}
 
-	// 		}
-	// 	}
-	// 	TouchButtonGroup{
+    // 		}
+    // 	}
+    // 	TouchButtonGroup{
     //         id: delete_button
     //         anchors.top: parent.top
     //         anchors.bottom: parent.bottom
     //         anchors.right: parent.right
     //         width: parent.width / 10
 
-	// 		buttons: ["Delete"]
-	// 		onButtonClicked: function(ind, val) {
-	// 			if (ind == 0){
+    // 		buttons: ["Delete"]
+    // 		onButtonClicked: function(ind, val) {
+    // 			if (ind == 0){
     //                 root.items.splice(index, 1);
     //             }
-	// 		}
-	// 	}
+    // 		}
+    // 	}
 
 
     //     }

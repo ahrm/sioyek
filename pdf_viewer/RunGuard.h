@@ -54,15 +54,15 @@ class RunGuard : public QObject
     Q_OBJECT
 
 public:
-    explicit RunGuard(const QString &key);
+    explicit RunGuard(const QString& key);
     ~RunGuard();
 
     bool isPrimary();
     bool isSecondary();
-    void sendMessage(const QByteArray &message);
+    void sendMessage(const QByteArray& message);
 
 signals:
-    void messageReceived(const QByteArray &message);
+    void messageReceived(const QByteArray& message);
 
 private slots:
     void onNewConnection();
@@ -73,10 +73,10 @@ private:
     const QString sharedMemLockKey;
     const QString memoryKey;
 
-    QSharedMemory *memory;
-    QLocalServer *server = nullptr;
+    QSharedMemory* memory;
+    QLocalServer* server = nullptr;
 
-    void readMessage(QLocalSocket *socket);
+    void readMessage(QLocalSocket* socket);
 };
 
 #endif // SINGLE_INSTANCE_GUARD_H

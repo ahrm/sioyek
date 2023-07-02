@@ -4,17 +4,17 @@
 #include "rapidfuzz_amalgamated.hpp"
 
 bool MySortFilterProxyModel::filter_accepts_row_column(int row, int col, const QModelIndex& source_parent) const {
-	if (filterString.size() == 0 || filterString == "<NULL>") return true;
+    if (filterString.size() == 0 || filterString == "<NULL>") return true;
 
     if (scores.size() > 0) {
-		return scores[row] > 50;
+        return scores[row] > 50;
     }
-	QModelIndex source_index = sourceModel()->index(row, col, source_parent);
+    QModelIndex source_index = sourceModel()->index(row, col, source_parent);
 
-	QString key = sourceModel()->data(source_index, filterRole()).toString();
-	std::wstring s1 = filterString.toStdWString();
-	std::wstring s2 = key.toStdWString();
-	int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(s1, s2));
+    QString key = sourceModel()->data(source_index, filterRole()).toString();
+    std::wstring s1 = filterString.toStdWString();
+    std::wstring s2 = key.toStdWString();
+    int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(s1, s2));
     return score > 50;
 
 }
@@ -42,7 +42,7 @@ bool MySortFilterProxyModel::filterAcceptsRow(int source_row,
     }
     else {
         //QModelIndex source_index = sourceModel()->index(source_row, this->filterKeyColumn(), source_parent);
-		//std::string key = sourceModel()->data(source_index, filterRole()).toString().toStdString();
+        //std::string key = sourceModel()->data(source_index, filterRole()).toString().toStdString();
         return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
     }
 }
@@ -94,41 +94,41 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
     }
 }
 
- MySortFilterProxyModel::MySortFilterProxyModel(bool fuzzy) {
-     is_fuzzy = fuzzy;
+MySortFilterProxyModel::MySortFilterProxyModel(bool fuzzy) {
+    is_fuzzy = fuzzy;
 
-     if (fuzzy) {
-         setDynamicSortFilter(true);
-     }
+    if (fuzzy) {
+        setDynamicSortFilter(true);
+    }
 }
 
- void MySortFilterProxyModel::update_scores() {
-     scores.clear();
+void MySortFilterProxyModel::update_scores() {
+    scores.clear();
 
-     int n_rows = sourceModel()->rowCount();
-     int n_cols = sourceModel()->columnCount();
-     int filter_column_index = filterKeyColumn();
-     std::wstring filter_wstring = filterString.toStdWString();
+    int n_rows = sourceModel()->rowCount();
+    int n_cols = sourceModel()->columnCount();
+    int filter_column_index = filterKeyColumn();
+    std::wstring filter_wstring = filterString.toStdWString();
 
-     if ((n_cols == 1) || (filter_column_index >= 0)) {
-		 for (int i = 0; i < n_rows; i++) {
-			 QString row_data = sourceModel()->data(sourceModel()->index(i, filter_column_index)).toString();
-             int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filter_wstring, row_data.toStdWString()));
-             scores.push_back(score);
-		 }
-     }
-     else {
-		 for (int i = 0; i < n_rows; i++) {
-             int score = -1;
+    if ((n_cols == 1) || (filter_column_index >= 0)) {
+        for (int i = 0; i < n_rows; i++) {
+            QString row_data = sourceModel()->data(sourceModel()->index(i, filter_column_index)).toString();
+            int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filter_wstring, row_data.toStdWString()));
+            scores.push_back(score);
+        }
+    }
+    else {
+        for (int i = 0; i < n_rows; i++) {
+            int score = -1;
 
-             for (int col_index = 0; col_index < n_cols; col_index++) {
-				 QString rowcol_data = sourceModel()->data(sourceModel()->index(i, col_index)).toString();
-				 int col_score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filter_wstring, rowcol_data.toStdWString()));
-                 if (col_score > score) score = col_score;
-             }
+            for (int col_index = 0; col_index < n_cols; col_index++) {
+                QString rowcol_data = sourceModel()->data(sourceModel()->index(i, col_index)).toString();
+                int col_score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filter_wstring, rowcol_data.toStdWString()));
+                if (col_score > score) score = col_score;
+            }
 
-             scores.push_back(score);
-		 }
-     }
+            scores.push_back(score);
+        }
+    }
 
- }
+}

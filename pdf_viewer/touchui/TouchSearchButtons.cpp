@@ -1,9 +1,9 @@
 #include "touchui/TouchSearchButtons.h"
 
 
-TouchSearchButtons::TouchSearchButtons(QWidget* parent) : QWidget(parent){
+TouchSearchButtons::TouchSearchButtons(QWidget* parent) : QWidget(parent) {
 
-//    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
+    //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);
@@ -44,7 +44,7 @@ void TouchSearchButtons::handleInitial() {
     emit initialPressed();
 }
 
-void TouchSearchButtons::resizeEvent(QResizeEvent* resize_event){
+void TouchSearchButtons::resizeEvent(QResizeEvent* resize_event) {
     quick_widget->resize(resize_event->size().width(), resize_event->size().height());
     QWidget::resizeEvent(resize_event);
 

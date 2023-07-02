@@ -105,9 +105,9 @@ float CUSTOM_BACKGROUND_COLOR[3] = { 0.18f, 0.204f, 0.251f };
 float CUSTOM_TEXT_COLOR[3] = { 0.847f, 0.871f, 0.914f };
 float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float STATUS_BAR_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
-float UI_SELECTED_TEXT_COLOR[3] = {0.0f, 0.0f, 0.0f};
-float UI_SELECTED_BACKGROUND_COLOR[3] = {1.0f, 1.0f, 1.0f};
-float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = {0.0f, 0.5f, 0.5f};
+float UI_SELECTED_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float UI_SELECTED_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 0.5f, 0.5f };
 float GAMMA = 1.0f;
 bool DEBUG = false;
 #ifdef SIOYEK_ANDROID
@@ -260,7 +260,7 @@ float SMOOTH_SCROLL_DRAG = 3000.0f;
 int PRERENDERED_PAGE_COUNT = 0;
 
 float PAGE_SEPARATOR_WIDTH = 0.0f;
-float PAGE_SEPARATOR_COLOR[3] = {0.9f, 0.9f, 0.9f};
+float PAGE_SEPARATOR_COLOR[3] = { 0.9f, 0.9f, 0.9f };
 bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE = false;
 bool SUPER_FAST_SEARCH = false;
 bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR = false;
@@ -277,8 +277,8 @@ bool TOC_JUMP_ALIGN_TOP = false;
 float CUSTOM_COLOR_CONTRAST = 0.5f;
 float HIGHLIGHT_DELETE_THRESHOLD = 0.1f;
 float SCROLL_VIEW_SENSITIVITY = 1.0f;
-float KEYBOARD_SELECT_BACKGROUND_COLOR[] = { 0.9f , 0.75f, 0.0f, 1.0f};
-float KEYBOARD_SELECT_TEXT_COLOR[] = { 0.0f , 0.0f, 0.5f, 1.0f};
+float KEYBOARD_SELECT_BACKGROUND_COLOR[] = { 0.9f , 0.75f, 0.0f, 1.0f };
+float KEYBOARD_SELECT_TEXT_COLOR[] = { 0.0f , 0.0f, 0.5f, 1.0f };
 bool AUTOCENTER_VISUAL_SCROLL = false;
 bool ALPHABETIC_LINK_TAGS = false;
 bool VIMTEX_WSL_FIX = false;
@@ -287,13 +287,13 @@ float TTS_RATE = 0.0f;
 bool VERBOSE = false;
 //UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
-float DEFAULT_TEXT_HIGHLIGHT_COLOR[3] = {1.0f, 1.0f, 0.0};
-float DEFAULT_VERTICAL_LINE_COLOR[4] = {0.0f, 0.0f, 0.0f, 0.5f};
-float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3] = {0.0f, 1.0f, 0.0f};
-float DEFAULT_LINK_HIGHLIGHT_COLOR[3] = {0.0f, 0.0f, 1.0f};
-float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3] = {1.0f, 0.0f, 1.0f};
+float DEFAULT_TEXT_HIGHLIGHT_COLOR[3] = { 1.0f, 1.0f, 0.0 };
+float DEFAULT_VERTICAL_LINE_COLOR[4] = { 0.0f, 0.0f, 0.0f, 0.5f };
+float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 1.0f, 0.0f };
+float DEFAULT_LINK_HIGHLIGHT_COLOR[3] = { 0.0f, 0.0f, 1.0f };
+float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3] = { 1.0f, 0.0f, 1.0f };
 
-float FREETEXT_BOOKMARK_COLOR[3] = {0.0f, 0.0f, 0.0f};
+float FREETEXT_BOOKMARK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float FREETEXT_BOOKMARK_FONT_SIZE = 8.0f;
 bool RENDER_FREETEXT_BORDERS = false;
 
@@ -309,23 +309,23 @@ QString EPUB_TEMPLATE = "p {\
 line-height: %{line_spacing}em!important;\
 }";
 
-UIRect PORTRAIT_EDIT_PORTAL_UI_RECT = {true, -0.2f, 0.2f, -1.0f, -0.7f};
-UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT = {true, -0.2f, 0.2f, -1.0f, -0.7f};
+UIRect PORTRAIT_EDIT_PORTAL_UI_RECT = { true, -0.2f, 0.2f, -1.0f, -0.7f };
+UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT = { true, -0.2f, 0.2f, -1.0f, -0.7f };
 
-UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT = {true, -1.0f, -0.7f, -0.3f, 0.3f};
-UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT = {true, 0.7f, 1.0f, -0.3f, 0.3f};
-UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT = {true, -1.0f, -0.7f, -0.3f, 0.3f};
-UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT = {true, 0.7f, 1.0f, -0.3f, 0.3f};
+UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT = { true, -1.0f, -0.7f, -0.3f, 0.3f };
+UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT = { true, 0.7f, 1.0f, -0.3f, 0.3f };
+UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT = { true, -1.0f, -0.7f, -0.3f, 0.3f };
+UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT = { true, 0.7f, 1.0f, -0.3f, 0.3f };
 
-UIRect PORTRAIT_BACK_UI_RECT = {true, -1.0f, -0.7f, -1.0f, -0.7f};
-UIRect PORTRAIT_FORWARD_UI_RECT = {true, 0.7f, 1.0f, -1.0f, -0.7};
-UIRect LANDSCAPE_BACK_UI_RECT = {true, -1.0f, -0.7f, -1.0f, -0.7f};
-UIRect LANDSCAPE_FORWARD_UI_RECT = {true, 0.7f, 1.0f, -1.0f, -0.7};
+UIRect PORTRAIT_BACK_UI_RECT = { true, -1.0f, -0.7f, -1.0f, -0.7f };
+UIRect PORTRAIT_FORWARD_UI_RECT = { true, 0.7f, 1.0f, -1.0f, -0.7 };
+UIRect LANDSCAPE_BACK_UI_RECT = { true, -1.0f, -0.7f, -1.0f, -0.7f };
+UIRect LANDSCAPE_FORWARD_UI_RECT = { true, 0.7f, 1.0f, -1.0f, -0.7 };
 
-UIRect PORTRAIT_VISUAL_MARK_PREV = {true, -1.0f, -0.7f, 0.7f, 1.0f};
-UIRect PORTRAIT_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
-UIRect LANDSCAPE_VISUAL_MARK_PREV = {true, -1.0f, -0.7f, 0.7f, 1.0f};
-UIRect LANDSCAPE_VISUAL_MARK_NEXT = {true, 0.7f, 1.0f, 0.7f, 1.0f};
+UIRect PORTRAIT_VISUAL_MARK_PREV = { true, -1.0f, -0.7f, 0.7f, 1.0f };
+UIRect PORTRAIT_VISUAL_MARK_NEXT = { true, 0.7f, 1.0f, 0.7f, 1.0f };
+UIRect LANDSCAPE_VISUAL_MARK_PREV = { true, -1.0f, -0.7f, 0.7f, 1.0f };
+UIRect LANDSCAPE_VISUAL_MARK_NEXT = { true, 0.7f, 1.0f, 0.7f, 1.0f };
 float BOOKMARK_RECT_SIZE = 8.0f;
 
 Path standard_data_path;
@@ -377,19 +377,19 @@ std::vector<float> linear_weights;
 
 std::wstring strip_uri(std::wstring pdf_file_name) {
 
-	if (pdf_file_name.size() > 1) {
-		if ((pdf_file_name[0] == '"') && (pdf_file_name[pdf_file_name.size() - 1] == '"')) {
-			pdf_file_name = pdf_file_name.substr(1, pdf_file_name.size() - 2);
-		}
-		// support URIs like this: file:///home/user/file.pdf
-		if (QString::fromStdWString(pdf_file_name).startsWith("file://")) {
-			return pdf_file_name.substr(7, pdf_file_name.size() - 7);
-		}
-	}
-	return pdf_file_name;
+    if (pdf_file_name.size() > 1) {
+        if ((pdf_file_name[0] == '"') && (pdf_file_name[pdf_file_name.size() - 1] == '"')) {
+            pdf_file_name = pdf_file_name.substr(1, pdf_file_name.size() - 2);
+        }
+        // support URIs like this: file:///home/user/file.pdf
+        if (QString::fromStdWString(pdf_file_name).startsWith("file://")) {
+            return pdf_file_name.substr(7, pdf_file_name.size() - 7);
+        }
+    }
+    return pdf_file_name;
 }
 
-QStringList convert_arguments(QStringList input_args){
+QStringList convert_arguments(QStringList input_args) {
     // convert the relative path of filename (if it exists) to absolute path
 
     QStringList output_args;
@@ -398,23 +398,23 @@ QStringList convert_arguments(QStringList input_args){
     output_args.push_back(input_args.at(0));
     input_args.pop_front();
 
-    if (input_args.size() > 0){
+    if (input_args.size() > 0) {
         QString path = input_args.at(0);
 
         bool is_path_argument = true;
 
-        if (path.size() > 2 && path.startsWith("--")){
+        if (path.size() > 2 && path.startsWith("--")) {
             is_path_argument = false;
         }
 
-        if (is_path_argument){
-			std::wstring path_wstring = strip_uri(path.toStdWString());
+        if (is_path_argument) {
+            std::wstring path_wstring = strip_uri(path.toStdWString());
             Path path_object(path_wstring);
             output_args.push_back(QString::fromStdWString(path_object.get_path()));
             input_args.pop_front();
         }
     }
-    for (int i =0; i < input_args.size(); i++){
+    for (int i = 0; i < input_args.size(); i++) {
         output_args.push_back(input_args.at(i));
     }
 
@@ -422,12 +422,12 @@ QStringList convert_arguments(QStringList input_args){
 }
 
 #ifdef SIOYEK_ANDROID
-void configure_paths_android(){
+void configure_paths_android() {
 
     char* APPDIR = std::getenv("XDG_CONFIG_HOME");
     Path linux_home_path(QDir::homePath().toStdWString());
 
-    if (!APPDIR){
+    if (!APPDIR) {
         APPDIR = std::getenv("HOME");
     }
 
@@ -445,123 +445,123 @@ void configure_paths_android(){
 }
 #endif
 
-void configure_paths(){
+void configure_paths() {
 #ifdef SIOYEK_ANDROID
     configure_paths_android();
 #else
 
 
-	Path parent_path(QCoreApplication::applicationDirPath().toStdWString());
-	std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
+    Path parent_path(QCoreApplication::applicationDirPath().toStdWString());
+    std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
 
-	shader_path = parent_path.slash(L"shaders");
+    shader_path = parent_path.slash(L"shaders");
 
 
 #ifdef Q_OS_MACOS
-	Path mac_home_path(QDir::homePath().toStdWString());
-	Path mac_standard_config_path = mac_home_path.slash(L".config").slash(L"sioyek");
-	user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
-	user_config_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
+    Path mac_home_path(QDir::homePath().toStdWString());
+    Path mac_standard_config_path = mac_home_path.slash(L".config").slash(L"sioyek");
+    user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
+    user_config_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
 #endif
 
 #ifdef Q_OS_LINUX
-	QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
-	for (int i = all_config_paths.size()-1; i >= 0; i--) {
-		user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
-		user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
-	}
+    QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
+    for (int i = all_config_paths.size() - 1; i >= 0; i--) {
+        user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
+        user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
+    }
 
 #ifdef LINUX_STANDARD_PATHS
-	Path home_path(QDir::homePath().toStdWString());
-	standard_data_path = home_path.slash(L".local").slash(L"share").slash(L"sioyek");
-	Path standard_config_path = Path(L"/etc/sioyek");
-	Path read_only_data_path = Path(L"/usr/share/sioyek");
-	standard_data_path.create_directories();
+    Path home_path(QDir::homePath().toStdWString());
+    standard_data_path = home_path.slash(L".local").slash(L"share").slash(L"sioyek");
+    Path standard_config_path = Path(L"/etc/sioyek");
+    Path read_only_data_path = Path(L"/usr/share/sioyek");
+    standard_data_path.create_directories();
 
-	default_config_path = standard_config_path.slash(L"prefs.config");
-	default_keys_path = standard_config_path.slash(L"keys.config");
+    default_config_path = standard_config_path.slash(L"prefs.config");
+    default_keys_path = standard_config_path.slash(L"keys.config");
 
-	database_file_path = standard_data_path.slash(L"test.db");
-	local_database_file_path = standard_data_path.slash(L"local.db");
-	global_database_file_path = standard_data_path.slash(L"shared.db");
-	tutorial_path = read_only_data_path.slash(L"tutorial.pdf");
-	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
-	shader_path = read_only_data_path.slash(L"shaders");
+    database_file_path = standard_data_path.slash(L"test.db");
+    local_database_file_path = standard_data_path.slash(L"local.db");
+    global_database_file_path = standard_data_path.slash(L"shared.db");
+    tutorial_path = read_only_data_path.slash(L"tutorial.pdf");
+    last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
+    shader_path = read_only_data_path.slash(L"shaders");
 #else
-	char* APPDIR = std::getenv("XDG_CONFIG_HOME");
-	Path linux_home_path(QDir::homePath().toStdWString());
+    char* APPDIR = std::getenv("XDG_CONFIG_HOME");
+    Path linux_home_path(QDir::homePath().toStdWString());
 
-	if (!APPDIR){
-		APPDIR = std::getenv("HOME");
-	}
+    if (!APPDIR) {
+        APPDIR = std::getenv("HOME");
+    }
 
-	standard_data_path = Path(utf8_decode(APPDIR));
-	standard_data_path = standard_data_path.slash(L".local").slash(L"share").slash(L"Sioyek");
-	standard_data_path.create_directories();
+    standard_data_path = Path(utf8_decode(APPDIR));
+    standard_data_path = standard_data_path.slash(L".local").slash(L"share").slash(L"Sioyek");
+    standard_data_path.create_directories();
 
-	default_config_path = parent_path.slash(L"prefs.config");
-	//user_config_path = standard_data_path.slash(L"prefs_user.config");
-	user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
-	default_keys_path = parent_path.slash(L"keys.config");
-	user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
-	database_file_path = standard_data_path.slash(L"test.db");
-	local_database_file_path = standard_data_path.slash(L"local.db");
-	global_database_file_path = standard_data_path.slash(L"shared.db");
-	tutorial_path = standard_data_path.slash(L"tutorial.pdf");
-	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
+    default_config_path = parent_path.slash(L"prefs.config");
+    //user_config_path = standard_data_path.slash(L"prefs_user.config");
+    user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
+    default_keys_path = parent_path.slash(L"keys.config");
+    user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
+    database_file_path = standard_data_path.slash(L"test.db");
+    local_database_file_path = standard_data_path.slash(L"local.db");
+    global_database_file_path = standard_data_path.slash(L"shared.db");
+    tutorial_path = standard_data_path.slash(L"tutorial.pdf");
+    last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
 
-	Path linux_standard_config_path = linux_home_path.slash(L".config").slash(L"sioyek");
-	//user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
-	//user_config_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
-	user_keys_paths.push_back(linux_standard_config_path.slash(L"keys_user.config"));
-	user_config_paths.push_back(linux_standard_config_path.slash(L"prefs_user.config"));
+    Path linux_standard_config_path = linux_home_path.slash(L".config").slash(L"sioyek");
+    //user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
+    //user_config_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
+    user_keys_paths.push_back(linux_standard_config_path.slash(L"keys_user.config"));
+    user_config_paths.push_back(linux_standard_config_path.slash(L"prefs_user.config"));
 
-	if (!tutorial_path.file_exists()) {
-		copy_file(parent_path.slash(L"tutorial.pdf"), tutorial_path);
-	}
+    if (!tutorial_path.file_exists()) {
+        copy_file(parent_path.slash(L"tutorial.pdf"), tutorial_path);
+    }
 #endif
 #else //windows
 #ifdef NDEBUG
-	//install_app(exe_path.c_str());
+    //install_app(exe_path.c_str());
 #endif
-	standard_data_path = Path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
-	QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
+    standard_data_path = Path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+    QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
 
-	standard_data_path.create_directories();
+    standard_data_path.create_directories();
 
-	default_config_path = parent_path.slash(L"prefs.config");
-	default_keys_path = parent_path.slash(L"keys.config");
-	tutorial_path = parent_path.slash(L"tutorial.pdf");
+    default_config_path = parent_path.slash(L"prefs.config");
+    default_keys_path = parent_path.slash(L"keys.config");
+    tutorial_path = parent_path.slash(L"tutorial.pdf");
 
 #ifdef NON_PORTABLE
-	user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
-	user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
-	for (int i = all_config_paths.size()-1; i > 0; i--) {
-		user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
-		user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
-	}
-	database_file_path = standard_data_path.slash(L"test.db");
-	local_database_file_path = standard_data_path.slash(L"local.db");
-	global_database_file_path = standard_data_path.slash(L"shared.db");
-	last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
+    user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
+    user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
+    for (int i = all_config_paths.size() - 1; i > 0; i--) {
+        user_config_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"prefs_user.config"));
+        user_keys_paths.push_back(Path(all_config_paths.at(i).toStdWString()).slash(L"keys_user.config"));
+    }
+    database_file_path = standard_data_path.slash(L"test.db");
+    local_database_file_path = standard_data_path.slash(L"local.db");
+    global_database_file_path = standard_data_path.slash(L"shared.db");
+    last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
 #else
-	user_config_paths.push_back(parent_path.slash(L"prefs_user.config"));
-	user_keys_paths.push_back(parent_path.slash(L"keys_user.config"));
-	database_file_path = parent_path.slash(L"test.db");
-	local_database_file_path = parent_path.slash(L"local.db");
-	global_database_file_path = parent_path.slash(L"shared.db");
-	last_opened_file_address_path = parent_path.slash(L"last_document_path.txt");
+    user_config_paths.push_back(parent_path.slash(L"prefs_user.config"));
+    user_keys_paths.push_back(parent_path.slash(L"keys_user.config"));
+    database_file_path = parent_path.slash(L"test.db");
+    local_database_file_path = parent_path.slash(L"local.db");
+    global_database_file_path = parent_path.slash(L"shared.db");
+    last_opened_file_address_path = parent_path.slash(L"last_document_path.txt");
 #endif
 
 #endif
-	auto_config_path = standard_data_path.slash(L"auto.config");
-	// user_config_paths.insert(user_config_paths.begin(), auto_config_path);
+    auto_config_path = standard_data_path.slash(L"auto.config");
+    // user_config_paths.insert(user_config_paths.begin(), auto_config_path);
     downloaded_papers_path = standard_data_path.slash(L"downloads");
 #endif
 
 }
 
-void verify_config_paths(){
+void verify_config_paths() {
 #define CHECK_DIR_EXIST(path) do{ if(!(path).dir_exists() ) std::wcout << L"Error: " << #path << ": " << path << L" doesn't exist!\n"; } while(false)
 #define CHECK_FILE_EXIST(path) do{ if(!(path).file_exists() ) std::wcout << L"Error: " << #path << ": " << path << L" doesn't exist!\n"; } while(false)
 
@@ -577,7 +577,7 @@ void verify_config_paths(){
     }
 }
 
-void verify_paths(){
+void verify_paths() {
     LOG(std::wcout << L"database_file_path: " << database_file_path << L"\n");
     LOG(std::wcout << L"local_database_file_path: " << local_database_file_path << L"\n");
     LOG(std::wcout << L"global_database_file_path: " << global_database_file_path << L"\n");
@@ -592,21 +592,21 @@ void verify_paths(){
 std::mutex mupdf_mutexes[FZ_LOCK_MAX];
 
 void lock_mutex(void* user, int lock) {
-	std::mutex* mut = (std::mutex*)user;
-	(mut + lock)->lock();
+    std::mutex* mut = (std::mutex*)user;
+    (mut + lock)->lock();
 }
 
 void unlock_mutex(void* user, int lock) {
-	std::mutex* mut = (std::mutex*)user;
-	(mut + lock)->unlock();
+    std::mutex* mut = (std::mutex*)user;
+    (mut + lock)->unlock();
 }
 
 void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& default_path, const std::vector<Path>& user_paths) {
-	if (QFile::exists(QString::fromStdWString(default_path.get_path()))) {
-		watcher.addPath(QString::fromStdWString(default_path.get_path()));
-	}
+    if (QFile::exists(QString::fromStdWString(default_path.get_path()))) {
+        watcher.addPath(QString::fromStdWString(default_path.get_path()));
+    }
 
-    for (auto user_path : user_paths){
+    for (auto user_path : user_paths) {
         if (QFile::exists(QString::fromStdWString(user_path.get_path()))) {
             watcher.addPath(QString::fromStdWString(user_path.get_path()));
         }
@@ -614,30 +614,30 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
 }
 
 MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
-	if (!QFile::exists(QString::fromStdWString(file_path))) {
-		return nullptr;
-	}
+    if (!QFile::exists(QString::fromStdWString(file_path))) {
+        return nullptr;
+    }
 
-	if (file_path.size() > 0){
-		for (auto window : windows) {
-			//if (window->doc() && window->doc()->get_path() == file_path) {
+    if (file_path.size() > 0) {
+        for (auto window : windows) {
+            //if (window->doc() && window->doc()->get_path() == file_path) {
 
-			if (window->doc()) {
+            if (window->doc()) {
 
 #ifdef Q_OS_WIN
-				std::wstring path1 = window->doc()->get_path();
-				std::wstring path2 = file_path;
+                std::wstring path1 = window->doc()->get_path();
+                std::wstring path2 = file_path;
 #else
-				std::string path1 = utf8_encode(window->doc()->get_path());
-				std::string path2 = utf8_encode(file_path);
+                std::string path1 = utf8_encode(window->doc()->get_path());
+                std::string path2 = utf8_encode(file_path);
 #endif
-				if (std::filesystem::equivalent(path1, path2)) {
-					return window;
-				}
-			}
-		}
-	}
-	return nullptr;
+                if (std::filesystem::equivalent(path1, path2)) {
+                    return window;
+                }
+            }
+        }
+    }
+    return nullptr;
 }
 
 std::optional<std::wstring> get_last_opened_file_name() {
@@ -655,9 +655,9 @@ std::optional<std::wstring> get_last_opened_file_name() {
 }
 
 void invalidate_render() {
-	for (auto window : windows) {
-		window->invalidate_render();
-	}
+    for (auto window : windows) {
+        window->invalidate_render();
+    }
 }
 
 MainWidget* handle_args(const QStringList& arguments) {
@@ -665,10 +665,10 @@ MainWidget* handle_args(const QStringList& arguments) {
     std::optional<float> x_loc, y_loc;
     std::optional<float> zoom_level;
 
-	std::vector<std::wstring> aarguments;
-	for (int i = 0; i < arguments.size(); i++) {
-		aarguments.push_back(arguments.at(i).toStdWString());
-	}
+    std::vector<std::wstring> aarguments;
+    for (int i = 0; i < arguments.size(); i++) {
+        aarguments.push_back(arguments.at(i).toStdWString());
+    }
 
     //todo: handle out of bounds error
 
@@ -727,115 +727,115 @@ MainWidget* handle_args(const QStringList& arguments) {
         y_loc = parser->value("yloc").toFloat();
     }
 
-	pdf_file_name = strip_uri(pdf_file_name);
+    pdf_file_name = strip_uri(pdf_file_name);
 
-	if ((pdf_file_name.size() > 0) && (!QFile::exists(QString::fromStdWString(pdf_file_name)))) {
+    if ((pdf_file_name.size() > 0) && (!QFile::exists(QString::fromStdWString(pdf_file_name)))) {
 #ifdef SIOYEK_ANDROID
-        if (!((pdf_file_name[0] == ':') || (pdf_file_name.substr(0, 2) == L"/:"))){
+        if (!((pdf_file_name[0] == ':') || (pdf_file_name.substr(0, 2) == L"/:"))) {
             return nullptr;
         }
 #else
         return nullptr;
 #endif
-	}
+    }
 
-	MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
+    MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
 
-	bool should_create_new_window = false;
-	if (pdf_file_name.size() > 0) {
-		if (parser->isSet("new-window")) {
-			should_create_new_window = true;
-		}
-		if (SHOULD_LAUNCH_NEW_WINDOW && (target_window == nullptr) && (!parser->isSet("reuse-window"))) {
-			should_create_new_window = true;
-		}
-		if (windows[0]->doc() == nullptr) {
-			should_create_new_window = false;
-		}
+    bool should_create_new_window = false;
+    if (pdf_file_name.size() > 0) {
+        if (parser->isSet("new-window")) {
+            should_create_new_window = true;
+        }
+        if (SHOULD_LAUNCH_NEW_WINDOW && (target_window == nullptr) && (!parser->isSet("reuse-window"))) {
+            should_create_new_window = true;
+        }
+        if (windows[0]->doc() == nullptr) {
+            should_create_new_window = false;
+        }
 
-	}
-	else {
-		if (parser->isSet("new-window")) {
-			should_create_new_window = true;
-		}
-	}
+    }
+    else {
+        if (parser->isSet("new-window")) {
+            should_create_new_window = true;
+        }
+    }
 
-	if (should_create_new_window) {
-		target_window = new MainWidget(windows[0]);
-		target_window->execute_macro_if_enabled(STARTUP_COMMANDS);
-		target_window->apply_window_params_for_one_window_mode(true);
-		target_window->show();
-		windows.push_back(target_window);
-	}
-	if (target_window == nullptr) {
-		target_window = windows[0];
-	}
+    if (should_create_new_window) {
+        target_window = new MainWidget(windows[0]);
+        target_window->execute_macro_if_enabled(STARTUP_COMMANDS);
+        target_window->apply_window_params_for_one_window_mode(true);
+        target_window->show();
+        windows.push_back(target_window);
+    }
+    if (target_window == nullptr) {
+        target_window = windows[0];
+    }
 
     if (parser->isSet("inverse-search")) {
-		if (target_window) {
-			target_window->set_inverse_search_command(parser->value("inverse-search").toStdWString());
-			target_window->raise();
-			//target_window->activateWindow();
-		}
+        if (target_window) {
+            target_window->set_inverse_search_command(parser->value("inverse-search").toStdWString());
+            target_window->raise();
+            //target_window->activateWindow();
+        }
     }
-	if (parser->isSet("execute-command")) {
-		QString command_string = parser->value("execute-command");
-		QString command_data = parser->value("execute-command-data");
-		if (command_data.size() > 0) {
-			command_string += QString::fromStdString("(") + command_data + QString::fromStdString(")");
-		}
+    if (parser->isSet("execute-command")) {
+        QString command_string = parser->value("execute-command");
+        QString command_data = parser->value("execute-command-data");
+        if (command_data.size() > 0) {
+            command_string += QString::fromStdString("(") + command_data + QString::fromStdString(")");
+        }
 
-		target_window->execute_macro_if_enabled(command_string.toStdWString());
-	}
+        target_window->execute_macro_if_enabled(command_string.toStdWString());
+    }
 
-	if (parser->isSet("focus-text")) {
-		QString text = parser->value("focus-text");
-		int page = parser->value("focus-text-page").toInt();
-		target_window->focus_text(page, text.toStdWString());
-	}
+    if (parser->isSet("focus-text")) {
+        QString text = parser->value("focus-text");
+        int page = parser->value("focus-text-page").toInt();
+        target_window->focus_text(page, text.toStdWString());
+    }
 
     // if no file is specified, use the previous file
     if (pdf_file_name == L"" && (windows[0]->doc() != nullptr)) {
-		if (target_window->doc()) {
-			pdf_file_name = target_window->doc()->get_path();
-		}
-		else {
-			if (windows.size() > 1) {
-				if (windows[windows.size() - 2]->doc()) {
-					pdf_file_name = windows[windows.size() - 2]->doc()->get_path();
-				}
-			}
-			else{
-				pdf_file_name = tutorial_path.get_path();
-			}
-		}
+        if (target_window->doc()) {
+            pdf_file_name = target_window->doc()->get_path();
+        }
+        else {
+            if (windows.size() > 1) {
+                if (windows[windows.size() - 2]->doc()) {
+                    pdf_file_name = windows[windows.size() - 2]->doc()->get_path();
+                }
+            }
+            else {
+                pdf_file_name = tutorial_path.get_path();
+            }
+        }
     }
 
     if (page != -1) {
-		if (target_window) {
-			target_window->push_state();
-			target_window->open_document_at_location(pdf_file_name, page.value_or(0), x_loc, y_loc, zoom_level);
-		}
+        if (target_window) {
+            target_window->push_state();
+            target_window->open_document_at_location(pdf_file_name, page.value_or(0), x_loc, y_loc, zoom_level);
+        }
     }
     else if (latex_file_name) {
-		if (target_window) {
-			target_window->do_synctex_forward_search(pdf_file_name, latex_file_name.value(), latex_line.value_or(0), latex_column.value_or(0));
-		}
+        if (target_window) {
+            target_window->do_synctex_forward_search(pdf_file_name, latex_file_name.value(), latex_line.value_or(0), latex_column.value_or(0));
+        }
     }
     else {
-		target_window->push_state();
+        target_window->push_state();
         target_window->open_document(pdf_file_name);
     }
 
     invalidate_render();
 
     delete parser;
-	return target_window;
+    return target_window;
 }
 
 void focus_on_widget(QWidget* widget) {
-	widget->activateWindow();
-	widget->setWindowState(widget->windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
+    widget->activateWindow();
+    widget->setWindowState(widget->windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
 }
 
 
@@ -846,10 +846,10 @@ int main(int argc, char* args[]) {
     SEARCH_URLS['g' - 'a'] = L"https://www.google.com/search?q=";
 
     auto r = QtAndroidPrivate::checkPermission("android.permission.WRITE_EXTERNAL_STORAGE").result();
-    if (r == QtAndroidPrivate::Denied){
+    if (r == QtAndroidPrivate::Denied) {
         r = QtAndroidPrivate::requestPermission("android.permission.WRITE_EXTERNAL_STORAGE").result();
 
-        if (r == QtAndroidPrivate::Denied){
+        if (r == QtAndroidPrivate::Denied) {
             qDebug() << "Could not get storage permission\n";
         }
     }
@@ -857,70 +857,70 @@ int main(int argc, char* args[]) {
 #endif
 
     if (has_arg(argc, args, "--version")) {
-		std::cout << "sioyek " << APPLICATION_VERSION << "\n";
-		return 0;
-	}
-	if (has_arg(argc, args, "--verbose")) {
-		VERBOSE = true;
-	}
-	int nrows, ncols;
+        std::cout << "sioyek " << APPLICATION_VERSION << "\n";
+        return 0;
+    }
+    if (has_arg(argc, args, "--verbose")) {
+        VERBOSE = true;
+    }
+    int nrows, ncols;
 
     load_npy(":/data/embedding.npy", embedding_weights, &nrows, &ncols);
     load_npy(":/data/linear.npy", linear_weights, &nrows, &ncols);
 
-	QSurfaceFormat format;
+    QSurfaceFormat format;
 #ifdef SIOYEK_ANDROID
     format.setVersion(3, 0);
 #else
     format.setVersion(3, 3);
 #endif
 
-//    auto behaviour = format.swapBehavior();
-//    format.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
-//    format.setSwapInterval(0);
-	format.setProfile(QSurfaceFormat::CoreProfile);
-	format.setSamples(4);
-	QSurfaceFormat::setDefaultFormat(format);
+    //    auto behaviour = format.swapBehavior();
+    //    format.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
+    //    format.setSwapInterval(0);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    format.setSamples(4);
+    QSurfaceFormat::setDefaultFormat(format);
 
-	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
-	OpenWithApplication app(argc, args);
+    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
+    OpenWithApplication app(argc, args);
 
-	qmlRegisterType<MySortFilterProxyModel>("MySortFilterProxyModel", 1, 0, "MySortFilterProxyModel");
+    qmlRegisterType<MySortFilterProxyModel>("MySortFilterProxyModel", 1, 0, "MySortFilterProxyModel");
     QCommandLineParser* parser = get_command_line_parser();
     parser->process(app.arguments());
 
-	configure_paths();
-	verify_config_paths();
+    configure_paths();
+    verify_config_paths();
 
 #ifdef SIOYEK_ANDROID
     ConfigManager config_manager(android_config_path, auto_config_path, user_config_paths);
 #else
     ConfigManager config_manager(default_config_path, auto_config_path, user_config_paths);
 #endif
-	CommandManager* command_manager = new CommandManager(&config_manager);
+    CommandManager* command_manager = new CommandManager(&config_manager);
 
-	if (SHARED_DATABASE_PATH.size() > 0) {
-		global_database_file_path = SHARED_DATABASE_PATH;
-	}
-	char* shared_database_path_arg = get_argv_value(argc, args, "--shared-database-path");
-	if (shared_database_path_arg) {
-		global_database_file_path = utf8_decode(std::string(shared_database_path_arg));
-	}
+    if (SHARED_DATABASE_PATH.size() > 0) {
+        global_database_file_path = SHARED_DATABASE_PATH;
+    }
+    char* shared_database_path_arg = get_argv_value(argc, args, "--shared-database-path");
+    if (shared_database_path_arg) {
+        global_database_file_path = utf8_decode(std::string(shared_database_path_arg));
+    }
 
-	verify_paths();
+    verify_paths();
 
-	// should we launche a new instance each time the user opens a PDF or should we reuse the previous instance
-	bool use_single_instance = (!SHOULD_LAUNCH_NEW_INSTANCE) && (!SHOULD_LAUNCH_NEW_WINDOW);
+    // should we launche a new instance each time the user opens a PDF or should we reuse the previous instance
+    bool use_single_instance = (!SHOULD_LAUNCH_NEW_INSTANCE) && (!SHOULD_LAUNCH_NEW_WINDOW);
 
-	if (should_reuse_instance(argc, args)) {
-		use_single_instance = true;
-	}
-	else if (should_new_instance(argc, args)) {
-		use_single_instance = false;
-	}
+    if (should_reuse_instance(argc, args)) {
+        use_single_instance = true;
+    }
+    else if (should_new_instance(argc, args)) {
+        use_single_instance = false;
+    }
 
 #ifndef SIOYEK_ANDROID
-	RunGuard guard("sioyek");
+    RunGuard guard("sioyek");
     if (!guard.isPrimary()) {
         QStringList sent_args = convert_arguments(app.arguments());
         guard.sendMessage(serialize_string_array(sent_args));
@@ -933,162 +933,162 @@ int main(int argc, char* args[]) {
 #endif
 
 
-	QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
-	QCoreApplication::setApplicationVersion(QString::fromStdString(APPLICATION_VERSION));
+    QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
+    QCoreApplication::setApplicationVersion(QString::fromStdString(APPLICATION_VERSION));
 
-	QStringList positional_args = parser->positionalArguments();
-	delete parser;
+    QStringList positional_args = parser->positionalArguments();
+    delete parser;
 
-	DatabaseManager db_manager;
-	if (local_database_file_path.file_exists() && global_database_file_path.file_exists()) {
-		db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
-	}
-	else {
-		db_manager.open(database_file_path.get_path(), database_file_path.get_path());
-	}
-	db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path());
-	db_manager.ensure_schema_compatibility();
-
-
-	fz_locks_context locks;
-	locks.user = mupdf_mutexes;
-	locks.lock = lock_mutex;
-	locks.unlock = unlock_mutex;
-
-	fz_context* mupdf_context = fz_new_context(nullptr, &locks, FZ_STORE_DEFAULT);
-
-	if (!VERBOSE) {
-		fz_set_warning_callback(mupdf_context, nullptr, nullptr);
-		fz_set_error_callback(mupdf_context, nullptr, nullptr);
-	}
-
-	if (!mupdf_context) {
-		std::cerr << "could not create mupdf context" << std::endl;
-		return -1;
-	}
-	bool fail = false;
-	fz_try(mupdf_context) {
-		fz_register_document_handlers(mupdf_context);
-	}
-	fz_catch(mupdf_context) {
-		std::cerr << "could not register document handlers" << std::endl;
-		fail = true;
-	}
-
-	if (fail) {
-		return -1;
-	}
-
-	bool quit = false;
-
-	InputHandler input_handler(default_keys_path, user_keys_paths, command_manager);
-
-	std::vector<std::pair<std::wstring, std::wstring>> prev_path_hash_pairs;
-	db_manager.get_prev_path_hash_pairs(prev_path_hash_pairs);
-
-	CachedChecksummer checksummer(&prev_path_hash_pairs);
-
-	DocumentManager document_manager(mupdf_context, &db_manager, &checksummer);
-
-	QFileSystemWatcher pref_file_watcher;
-	add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
-
-	QFileSystemWatcher key_file_watcher;
-	add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
-	QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+    DatabaseManager db_manager;
+    if (local_database_file_path.file_exists() && global_database_file_path.file_exists()) {
+        db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
+    }
+    else {
+        db_manager.open(database_file_path.get_path(), database_file_path.get_path());
+    }
+    db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path());
+    db_manager.ensure_schema_compatibility();
 
 
-	MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, command_manager, &input_handler, &checksummer, &quit);
-	windows.push_back(main_widget);
+    fz_locks_context locks;
+    locks.user = mupdf_mutexes;
+    locks.lock = lock_mutex;
+    locks.unlock = unlock_mutex;
 
-	if (DEFAULT_DARK_MODE) {
-		main_widget->toggle_dark_mode();
-	}
+    fz_context* mupdf_context = fz_new_context(nullptr, &locks, FZ_STORE_DEFAULT);
 
-	QString startup_commands_list = QString::fromStdWString(STARTUP_COMMANDS);
-	QStringList startup_commands = startup_commands_list.split(";");
-	NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, main_widget);
+    if (!VERBOSE) {
+        fz_set_warning_callback(mupdf_context, nullptr, nullptr);
+        fz_set_error_callback(mupdf_context, nullptr, nullptr);
+    }
+
+    if (!mupdf_context) {
+        std::cerr << "could not create mupdf context" << std::endl;
+        return -1;
+    }
+    bool fail = false;
+    fz_try(mupdf_context) {
+        fz_register_document_handlers(mupdf_context);
+    }
+    fz_catch(mupdf_context) {
+        std::cerr << "could not register document handlers" << std::endl;
+        fail = true;
+    }
+
+    if (fail) {
+        return -1;
+    }
+
+    bool quit = false;
+
+    InputHandler input_handler(default_keys_path, user_keys_paths, command_manager);
+
+    std::vector<std::pair<std::wstring, std::wstring>> prev_path_hash_pairs;
+    db_manager.get_prev_path_hash_pairs(prev_path_hash_pairs);
+
+    CachedChecksummer checksummer(&prev_path_hash_pairs);
+
+    DocumentManager document_manager(mupdf_context, &db_manager, &checksummer);
+
+    QFileSystemWatcher pref_file_watcher;
+    add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
+
+    QFileSystemWatcher key_file_watcher;
+    add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+
+
+    MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, command_manager, &input_handler, &checksummer, &quit);
+    windows.push_back(main_widget);
+
+    if (DEFAULT_DARK_MODE) {
+        main_widget->toggle_dark_mode();
+    }
+
+    QString startup_commands_list = QString::fromStdWString(STARTUP_COMMANDS);
+    QStringList startup_commands = startup_commands_list.split(";");
+    NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, main_widget);
 
 
 #ifndef SIOYEK_ANDROID
-	if (guard.isPrimary()) {
-		QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
-			QStringList args = deserialize_string_array(message);
-			bool nofocus = args.indexOf("--nofocus") != -1;
-			MainWidget* target = handle_args(args);
-			if (!nofocus) {
-				if (target) {
-					//target->activateWindow();
-					focus_on_widget(target);
-				}
-				else if (windows.size() > 0) {
-					//windows[0]->activateWindow();
-					focus_on_widget(windows[0]);
-				}
-			}
-			});
-	}
+    if (guard.isPrimary()) {
+        QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
+            QStringList args = deserialize_string_array(message);
+            bool nofocus = args.indexOf("--nofocus") != -1;
+            MainWidget* target = handle_args(args);
+            if (!nofocus) {
+                if (target) {
+                    //target->activateWindow();
+                    focus_on_widget(target);
+                }
+                else if (windows.size() > 0) {
+                    //windows[0]->activateWindow();
+                    focus_on_widget(windows[0]);
+                }
+            }
+            });
+    }
 #endif
 
 
-	main_widget->topLevelWidget()->resize(500, 500);
+    main_widget->topLevelWidget()->resize(500, 500);
 
-	if (START_WITH_HELPER_WINDOW && (HELPER_WINDOW_SIZE[0] > -1)) {
-		main_widget->apply_window_params_for_two_window_mode();
-	}
-	else {
-		main_widget->apply_window_params_for_one_window_mode();
-	}
+    if (START_WITH_HELPER_WINDOW && (HELPER_WINDOW_SIZE[0] > -1)) {
+        main_widget->apply_window_params_for_two_window_mode();
+    }
+    else {
+        main_widget->apply_window_params_for_one_window_mode();
+    }
 
-	main_widget->show();
+    main_widget->show();
 
-	handle_args(app.arguments());
-	main_widget->execute_macro_if_enabled(STARTUP_COMMANDS);
+    handle_args(app.arguments());
+    main_widget->execute_macro_if_enabled(STARTUP_COMMANDS);
 
-	//main_widget->run_multiple_commands(STARTUP_COMMANDS);
+    //main_widget->run_multiple_commands(STARTUP_COMMANDS);
 
-	// load input file from `QFileOpenEvent` for macOS drag and drop & "open with"
-	QObject::connect(&app, &OpenWithApplication::file_ready, [&main_widget](const QString& file_name) {
-		handle_args(QStringList() << QCoreApplication::applicationFilePath() << file_name);
-	});
+    // load input file from `QFileOpenEvent` for macOS drag and drop & "open with"
+    QObject::connect(&app, &OpenWithApplication::file_ready, [&main_widget](const QString& file_name) {
+        handle_args(QStringList() << QCoreApplication::applicationFilePath() << file_name);
+        });
 
     // live reload the config files, no need to live reload on android because we are not changing config files anyway
 #ifndef SIOYEK_ANDROID
-	QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
+    QObject::connect(&pref_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
 
-		std::vector<std::string> changed_config_file_names;
-		config_manager.deserialize(&changed_config_file_names, default_config_path, auto_config_path, user_config_paths);
+        std::vector<std::string> changed_config_file_names;
+        config_manager.deserialize(&changed_config_file_names, default_config_path, auto_config_path, user_config_paths);
 
-		ConfigFileChangeListener::notify_config_file_changed(&config_manager);
-		for (auto window : windows) {
-			window->validate_render();
-			window->on_configs_changed(&changed_config_file_names);
-		}
-		add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
-		});
+        ConfigFileChangeListener::notify_config_file_changed(&config_manager);
+        for (auto window : windows) {
+            window->validate_render();
+            window->on_configs_changed(&changed_config_file_names);
+        }
+        add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
+        });
 
-	QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
-		input_handler.reload_config_files(default_keys_path, user_keys_paths);
-		add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
-		});
+    QObject::connect(&key_file_watcher, &QFileSystemWatcher::fileChanged, [&]() {
+        input_handler.reload_config_files(default_keys_path, user_keys_paths);
+        add_paths_to_file_system_watcher(key_file_watcher, default_keys_path, user_keys_paths);
+        });
 #endif
 
 
-	if (SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP) {
-		check_for_updates(main_widget, APPLICATION_VERSION);
-	}
+    if (SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP) {
+        check_for_updates(main_widget, APPLICATION_VERSION);
+    }
 
-	app.exec();
+    app.exec();
 
-	quit = true;
+    quit = true;
 
-	std::vector<MainWidget*> windows_to_delete;
-	for (size_t i = 0; i < windows.size(); i++) {
-		windows_to_delete.push_back(windows[i]);
-	}
-	for (size_t i = 0; i < windows_to_delete.size(); i++) {
-		delete windows_to_delete[i];
-	}
+    std::vector<MainWidget*> windows_to_delete;
+    for (size_t i = 0; i < windows.size(); i++) {
+        windows_to_delete.push_back(windows[i]);
+    }
+    for (size_t i = 0; i < windows_to_delete.size(); i++) {
+        delete windows_to_delete[i];
+    }
 
-	return 0;
+    return 0;
 }

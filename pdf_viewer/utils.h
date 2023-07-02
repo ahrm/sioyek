@@ -28,39 +28,39 @@
 #define LOG(expr) if (VERBOSE) {(expr);};
 
 struct ParsedUri {
-	int page;
-	float x;
-	float y;
+    int page;
+    float x;
+    float y;
 };
 
 struct FreehandDrawingPoint {
-	AbsoluteDocumentPos pos;
-	float thickness;
+    AbsoluteDocumentPos pos;
+    float thickness;
 };
 
 struct FreehandDrawing {
-	std::vector<FreehandDrawingPoint> points;
-	char type;
-	QDateTime creattion_time;
+    std::vector<FreehandDrawingPoint> points;
+    char type;
+    QDateTime creattion_time;
 };
 
 struct CharacterAddress {
-	int page;
-	fz_stext_block* block;
-	fz_stext_line* line;
-	fz_stext_char* character;
-	Document* doc;
+    int page;
+    fz_stext_block* block;
+    fz_stext_line* line;
+    fz_stext_char* character;
+    Document* doc;
 
-	CharacterAddress* previous_character = nullptr;
+    CharacterAddress* previous_character = nullptr;
 
-	bool advance(char c);
-	bool backspace();
-	bool next_char();
-	bool next_line();
-	bool next_block();
-	bool next_page();
+    bool advance(char c);
+    bool backspace();
+    bool next_char();
+    bool next_line();
+    bool next_block();
+    bool next_page();
 
-	float focus_offset();
+    float focus_offset();
 
 };
 
@@ -71,24 +71,24 @@ int mod(int a, int b);
 bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end);
 bool rects_intersect(fz_rect rect1, fz_rect rect2);
 ParsedUri parse_uri(fz_context* mupdf_context, std::string uri);
-char get_symbol(int key, bool is_shift_pressed, const std::vector<char>&special_symbols);
+char get_symbol(int key, bool is_shift_pressed, const std::vector<char>& special_symbols);
 
 template<typename T>
-int argminf(const std::vector<T> &collection, std::function<float(T)> f) {
+int argminf(const std::vector<T>& collection, std::function<float(T)> f) {
 
-	float min = std::numeric_limits<float>::infinity();
-	int min_index = -1;
-	for (size_t i = 0; i < collection.size(); i++) {
-		float element_value = f(collection[i]);
-		if (element_value < min){
-			min = element_value;
-			min_index = i;
-		}
-	}
-	return min_index;
+    float min = std::numeric_limits<float>::infinity();
+    int min_index = -1;
+    for (size_t i = 0; i < collection.size(); i++) {
+        float element_value = f(collection[i]);
+        if (element_value < min) {
+            min = element_value;
+            min_index = i;
+        }
+    }
+    return min_index;
 }
 void rect_to_quad(fz_rect rect, float quad[8]);
-void copy_to_clipboard(const std::wstring& text, bool selection=false);
+void copy_to_clipboard(const std::wstring& text, bool selection = false);
 void install_app(const char* argv0);
 int get_f_key(std::wstring name);
 void show_error_message(const std::wstring& error_message);
@@ -106,9 +106,9 @@ QStandardItemModel* get_model_from_toc(const std::vector<TocNode*>& roots);
 TocNode* get_toc_node_from_indices(const std::vector<TocNode*>& roots, const std::vector<int>& indices);
 
 fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_char*> flat_chars, fz_point document_point, int* location_index);
-void merge_selected_character_rects(const std::deque<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects, bool touch_vertically=true);
+void merge_selected_character_rects(const std::deque<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects, bool touch_vertically = true);
 void split_key_string(std::wstring haystack, const std::wstring& needle, std::vector<std::wstring>& res);
-void run_command(std::wstring command, QStringList parameters, bool wait=true);
+void run_command(std::wstring command, QStringList parameters, bool wait = true);
 
 std::wstring get_string_from_stext_block(fz_stext_block* block);
 std::wstring get_string_from_stext_line(fz_stext_line* line);
@@ -129,8 +129,8 @@ int find_best_vertical_line_location(fz_pixmap* pixmap, int relative_click_x, in
 //void get_flat_chars_from_stext_page_with_space(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, fz_stext_char* space);
 void index_equations(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::map<std::wstring, std::vector<IndexedData>>& indices);
 void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_chars,
-	const std::wregex& regex,
-	std::vector<std::pair<int, int>>& match_ranges, std::vector<std::wstring>& match_texts);
+    const std::wregex& regex,
+    std::vector<std::pair<int, int>>& match_ranges, std::vector<std::wstring>& match_texts);
 bool is_string_numeric(const std::wstring& str);
 bool is_string_numeric_float(const std::wstring& str);
 void create_file_if_not_exists(const std::wstring& path);
@@ -164,15 +164,15 @@ void get_line_begins_and_ends_from_histogram(std::vector<unsigned int> histogram
 
 template<typename T>
 int find_nth_larger_element_in_sorted_list(std::vector<T> sorted_list, T value, int n) {
-	int i = 0;
-	while (i < sorted_list.size() && (value >= sorted_list[i])) i++;
-	if ((i < sorted_list.size()) && (sorted_list[i] == value)) i--;
-	if ((i + n - 1) < sorted_list.size()) {
-		return i + n - 1;
-	}
-	else {
-		return -1;
-	}
+    int i = 0;
+    while (i < sorted_list.size() && (value >= sorted_list[i])) i++;
+    if ((i < sorted_list.size()) && (sorted_list[i] == value)) i--;
+    if ((i + n - 1) < sorted_list.size()) {
+        return i + n - 1;
+    }
+    else {
+        return -1;
+    }
 
 }
 
@@ -184,8 +184,8 @@ std::wifstream open_wifstream(const std::wstring& file_name);
 std::wofstream open_wofstream(const std::wstring& file_name);
 void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::vector<fz_rect>& flat_word_rects, std::vector<std::vector<fz_rect>>* out_char_rects = nullptr);
 void get_word_rect_list_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars,
-	std::vector<std::wstring>& words,
-	std::vector<std::vector<fz_rect>>& flat_word_rects);
+    std::vector<std::wstring>& words,
+    std::vector<std::vector<fz_rect>>& flat_word_rects);
 
 std::vector<std::string> get_tags(int n);
 int get_index_from_tag(const std::string& tag);
@@ -209,19 +209,19 @@ void parse_command_string(std::wstring command_string, std::string& command_name
 void parse_color(std::wstring color_string, float* out_color, int n_components);
 int get_status_bar_height();
 void flat_char_prism(const std::vector<fz_stext_char*> chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<fz_rect>& rects);
-QString get_status_stylesheet(bool nofont=false);
-QString get_selected_stylesheet(bool nofont=false);
+QString get_status_stylesheet(bool nofont = false);
+QString get_selected_stylesheet(bool nofont = false);
 
 template<int d1, int d2, int d3>
 void matmul(float m1[], float m2[], float result[]) {
-	for (int i = 0; i < d1; i++) {
-		for (int j = 0; j < d3; j++) {
-			result[i * d3 + j] = 0;
-			for (int k = 0; k < d2; k++) {
-				result[i * d3 + j] += m1[i * d2 + k] * m2[k * d3 + j];
-			}
-		}
-	}
+    for (int i = 0; i < d1; i++) {
+        for (int j = 0; j < d3; j++) {
+            result[i * d3 + j] = 0;
+            for (int k = 0; k < d2; k++) {
+                result[i * d3 + j] += m1[i * d2 + k] * m2[k * d3 + j];
+            }
+        }
+    }
 }
 
 void convert_color3(float* in_color, int* out_color);
@@ -240,10 +240,10 @@ void check_pending_intents(const QString workingDirPath);
 float dampen_velocity(float v, float dt);
 
 template<typename T>
-T compute_average(std::vector<T> items){
+T compute_average(std::vector<T> items) {
 
     T acc = items[0];
-    for (int i = 1; i < items.size(); i++){
+    for (int i = 1; i < items.size(); i++) {
         acc += items[i];
     }
     return acc / items.size();
@@ -284,68 +284,68 @@ bool is_text_rtl(const std::wstring& text);
 bool are_same(float f1, float f2);
 bool are_same(const FreehandDrawing& lhs, const FreehandDrawing& rhs);
 
- template<typename T>
+template<typename T>
 QJsonArray export_array(std::vector<T> objects, std::string checksum) {
-	QJsonArray res;
+    QJsonArray res;
 
-	for (const T& obj : objects) {
-		res.append(obj.to_json(checksum));
-	}
-	return res;
+    for (const T& obj : objects) {
+        res.append(obj.to_json(checksum));
+    }
+    return res;
 }
 
 template <typename T>
 std::vector<T> load_from_json_array(const QJsonArray& item_list) {
 
-	std::vector<T> res;
+    std::vector<T> res;
 
-	for (int i = 0; i < item_list.size(); i++) {
-		QJsonObject current_json_object = item_list.at(i).toObject();
-		T current_object;
-		current_object.from_json(current_json_object);
-		res.push_back(current_object);
-	}
-	return res;
+    for (int i = 0; i < item_list.size(); i++) {
+        QJsonObject current_json_object = item_list.at(i).toObject();
+        T current_object;
+        current_object.from_json(current_json_object);
+        res.push_back(current_object);
+    }
+    return res;
 }
 
 template<typename T>
- std::map<std::string, int> annotation_prism(std::vector<T>& file_annotations,
-	std::vector<T>& existing_annotations,
-	std::vector<Annotation*>& new_annotations,
-	std::vector<Annotation*>& updated_annotations,
-	std::vector<Annotation*>& deleted_annotations)
+std::map<std::string, int> annotation_prism(std::vector<T>& file_annotations,
+    std::vector<T>& existing_annotations,
+    std::vector<Annotation*>& new_annotations,
+    std::vector<Annotation*>& updated_annotations,
+    std::vector<Annotation*>& deleted_annotations)
 {
 
-	std::map<std::string, int> existing_annotation_ids;
-	std::map<std::string, int> file_annotation_ids;
+    std::map<std::string, int> existing_annotation_ids;
+    std::map<std::string, int> file_annotation_ids;
 
-	for (int i = 0; i < existing_annotations.size(); i++) {
-		existing_annotation_ids[existing_annotations[i].uuid] = i;
-	}
+    for (int i = 0; i < existing_annotations.size(); i++) {
+        existing_annotation_ids[existing_annotations[i].uuid] = i;
+    }
 
-	for (int i = 0; i < file_annotations.size(); i++) {
-		file_annotation_ids[file_annotations[i].uuid] = i;
-	}
+    for (int i = 0; i < file_annotations.size(); i++) {
+        file_annotation_ids[file_annotations[i].uuid] = i;
+    }
 
-	//for (auto annot : file_annotations) {
-	for (int i = 0; i < file_annotations.size(); i++) {
-		if (existing_annotation_ids.find(file_annotations[i].uuid) == existing_annotation_ids.end()) {
-			new_annotations.push_back(&file_annotations[i]);
-		}
+    //for (auto annot : file_annotations) {
+    for (int i = 0; i < file_annotations.size(); i++) {
+        if (existing_annotation_ids.find(file_annotations[i].uuid) == existing_annotation_ids.end()) {
+            new_annotations.push_back(&file_annotations[i]);
+        }
 
-		else {
-			int index = existing_annotation_ids[file_annotations[i].uuid];
-			if (existing_annotations[index].get_modification_datetime().msecsTo(file_annotations[i].get_modification_datetime()) > 1000) {
-				updated_annotations.push_back(&file_annotations[i]);
-			}
-		}
-	}
-	//for (auto annot : existing_annotations) {
-	for (int i = 0; i < existing_annotations.size(); i++) {
-		if (file_annotation_ids.find(existing_annotations[i].uuid) == file_annotation_ids.end()) {
-			deleted_annotations.push_back(&existing_annotations[i]);
-		}
-	}
+        else {
+            int index = existing_annotation_ids[file_annotations[i].uuid];
+            if (existing_annotations[index].get_modification_datetime().msecsTo(file_annotations[i].get_modification_datetime()) > 1000) {
+                updated_annotations.push_back(&file_annotations[i]);
+            }
+        }
+    }
+    //for (auto annot : existing_annotations) {
+    for (int i = 0; i < existing_annotations.size(); i++) {
+        if (file_annotation_ids.find(existing_annotations[i].uuid) == file_annotation_ids.end()) {
+            deleted_annotations.push_back(&existing_annotations[i]);
+        }
+    }
 
-	return existing_annotation_ids;
+    return existing_annotation_ids;
 }

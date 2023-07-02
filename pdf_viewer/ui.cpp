@@ -25,236 +25,236 @@ extern float HIGHLIGHT_COLORS[26 * 3];
 extern float TTS_RATE;
 
 std::wstring select_command_file_name(std::string command_name) {
-	if (command_name == "open_document") {
-		return select_document_file_name();
-	}
-	else if (command_name == "source_config") {
-		return select_any_file_name();
-	}
-	else {
-		return select_any_file_name();
-	}
+    if (command_name == "open_document") {
+        return select_document_file_name();
+    }
+    else if (command_name == "source_config") {
+        return select_any_file_name();
+    }
+    else {
+        return select_any_file_name();
+    }
 }
 
 std::wstring select_document_file_name() {
-	if (DEFAULT_OPEN_FILE_PATH.size() == 0) {
+    if (DEFAULT_OPEN_FILE_PATH.size() == 0) {
 
-		QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.pdf *.epub *.cbz)");
-		return file_name.toStdWString();
-	}
-	else {
+        QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.pdf *.epub *.cbz)");
+        return file_name.toStdWString();
+    }
+    else {
 
-		QFileDialog fd = QFileDialog(nullptr, "Select Document", "", "Documents (*.pdf *.epub *.cbz)");
-		fd.setDirectory(QString::fromStdWString(DEFAULT_OPEN_FILE_PATH));
-		if (fd.exec()) {
-			
-			QString file_name = fd.selectedFiles().first();
-			return file_name.toStdWString();
-		}
-		else {
-			return L"";
-		}
-	}
+        QFileDialog fd = QFileDialog(nullptr, "Select Document", "", "Documents (*.pdf *.epub *.cbz)");
+        fd.setDirectory(QString::fromStdWString(DEFAULT_OPEN_FILE_PATH));
+        if (fd.exec()) {
+
+            QString file_name = fd.selectedFiles().first();
+            return file_name.toStdWString();
+        }
+        else {
+            return L"";
+        }
+    }
 
 }
 
 std::wstring select_json_file_name() {
-	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.json )");
-	return file_name.toStdWString();
+    QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.json )");
+    return file_name.toStdWString();
 }
 
 std::wstring select_any_file_name() {
-	QString file_name = QFileDialog::getOpenFileName(nullptr, "Select File", "", "Any (*)");
-	return file_name.toStdWString();
+    QString file_name = QFileDialog::getOpenFileName(nullptr, "Select File", "", "Any (*)");
+    return file_name.toStdWString();
 }
 
 std::wstring select_new_json_file_name() {
-	QString file_name = QFileDialog::getSaveFileName(nullptr, "Select Document", "", "Documents (*.json )");
-	return file_name.toStdWString();
+    QString file_name = QFileDialog::getSaveFileName(nullptr, "Select Document", "", "Documents (*.json )");
+    return file_name.toStdWString();
 }
 
 std::wstring select_new_pdf_file_name() {
-	QString file_name = QFileDialog::getSaveFileName(nullptr, "Select Document", "", "Documents (*.pdf )");
-	return file_name.toStdWString();
+    QString file_name = QFileDialog::getSaveFileName(nullptr, "Select Document", "", "Documents (*.pdf )");
+    return file_name.toStdWString();
 }
 
 
 std::vector<ConfigFileChangeListener*> ConfigFileChangeListener::registered_listeners;
 
 ConfigFileChangeListener::ConfigFileChangeListener() {
-	registered_listeners.push_back(this);
+    registered_listeners.push_back(this);
 }
 
 ConfigFileChangeListener::~ConfigFileChangeListener() {
-	registered_listeners.erase(std::find(registered_listeners.begin(), registered_listeners.end(), this));
+    registered_listeners.erase(std::find(registered_listeners.begin(), registered_listeners.end(), this));
 }
 
 void ConfigFileChangeListener::notify_config_file_changed(ConfigManager* new_config_manager) {
-	for (auto* it : ConfigFileChangeListener::registered_listeners) {
-		it->on_config_file_changed(new_config_manager);
-	}
+    for (auto* it : ConfigFileChangeListener::registered_listeners) {
+        it->on_config_file_changed(new_config_manager);
+    }
 }
 
 bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
 {
-	// custom behaviour :
+    // custom behaviour :
 #ifdef SIOYEK_QT6
-	if (filterRegularExpression().pattern().size() == 0)
+    if (filterRegularExpression().pattern().size() == 0)
 #else
-	if (filterRegExp().isEmpty() == false)
+    if (filterRegExp().isEmpty() == false)
 #endif
-	{
-		// get source-model index for current row
-		QModelIndex source_index = sourceModel()->index(source_row, this->filterKeyColumn(), source_parent);
-		if (source_index.isValid())
-		{
-			// check current index itself :
-			QString key = sourceModel()->data(source_index, filterRole()).toString();
+    {
+        // get source-model index for current row
+        QModelIndex source_index = sourceModel()->index(source_row, this->filterKeyColumn(), source_parent);
+        if (source_index.isValid())
+        {
+            // check current index itself :
+            QString key = sourceModel()->data(source_index, filterRole()).toString();
 
 #ifdef SIOYEK_QT6
-			bool parent_contains = key.contains(filterRegularExpression());
+            bool parent_contains = key.contains(filterRegularExpression());
 #else
-			bool parent_contains = key.contains(filterRegExp());
+            bool parent_contains = key.contains(filterRegExp());
 #endif
 
-			if (parent_contains) return true;
+            if (parent_contains) return true;
 
-			// if any of children matches the filter, then current index matches the filter as well
-			int i, nb = sourceModel()->rowCount(source_index);
-			for (i = 0; i < nb; ++i)
-			{
-				if (filterAcceptsRow(i, source_index))
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-	}
-	// parent call for initial behaviour
-	return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
+            // if any of children matches the filter, then current index matches the filter as well
+            int i, nb = sourceModel()->rowCount(source_index);
+            for (i = 0; i < nb; ++i)
+            {
+                if (filterAcceptsRow(i, source_index))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+    // parent call for initial behaviour
+    return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
 }
 
- AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent){
-//     layout = new QVBoxLayout();
+AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
+    //     layout = new QVBoxLayout();
 
-     main_widget = dynamic_cast<MainWidget*>(parent);
-     int current_colorscheme_index = main_widget->get_current_colorscheme_index();
-     bool horizontal_locked = main_widget->horizontal_scroll_locked;
-     bool fullscreen = main_widget->isFullScreen();
-     bool ruler = main_widget->is_visual_mark_mode();
-     bool speaking = main_widget->is_reading;
-     bool portaling = main_widget->is_pending_link_source_filled();
-     bool fit_mode = main_widget->last_smart_fit_page.has_value();
+    main_widget = dynamic_cast<MainWidget*>(parent);
+    int current_colorscheme_index = main_widget->get_current_colorscheme_index();
+    bool horizontal_locked = main_widget->horizontal_scroll_locked;
+    bool fullscreen = main_widget->isFullScreen();
+    bool ruler = main_widget->is_visual_mark_mode();
+    bool speaking = main_widget->is_reading;
+    bool portaling = main_widget->is_pending_link_source_filled();
+    bool fit_mode = main_widget->last_smart_fit_page.has_value();
 
-     main_menu = new TouchMainMenu(fit_mode, portaling, fullscreen, ruler, speaking, horizontal_locked, current_colorscheme_index, this);
-
-
-//    set_rect_config_button = new QPushButton("Rect Config", this);
-//    goto_page_button = new QPushButton("Goto Page", this);
-//    fullscreen_button = new QPushButton("Fullscreen", this);
-//    select_text_button = new QPushButton("Select Text", this);
-//    open_document_button = new QPushButton("Open New Document", this);
-//    open_prev_document_button = new QPushButton("Open Previous Document", this);
-//    command_button = new QPushButton("Command", this);
-//    visual_mode_button = new QPushButton("Visual Mark Mode", this);
-//    search_button = new QPushButton("Search", this);
-//    set_background_color = new QPushButton("Background Color", this);
-//    set_dark_mode_contrast = new QPushButton("Dark Mode Contrast", this);
-//    set_ruler_mode = new QPushButton("Ruler Mode", this);
-//    restore_default_config_button = new QPushButton("Restore Default Config", this);
-//    toggle_dark_mode_button = new QPushButton("Toggle Dark Mode", this);
-//    ruler_mode_bounds_config_button = new QPushButton("Configure Ruler Mode", this);
-//    test_rectangle_select_ui = new QPushButton("Rectangle Select", this);
-
-//    layout->addWidget(set_rect_config_button);
-//    layout->addWidget(goto_page_button);
-//    layout->addWidget(fullscreen_button);
-//    layout->addWidget(select_text_button);
-//    layout->addWidget(open_document_button);
-//    layout->addWidget(open_prev_document_button);
-//    layout->addWidget(command_button);
-//    layout->addWidget(visual_mode_button);
-//    layout->addWidget(search_button);
-//    layout->addWidget(set_background_color);
-//    layout->addWidget(set_dark_mode_contrast);
-//    layout->addWidget(set_ruler_mode);
-//    layout->addWidget(restore_default_config_button);
-//    layout->addWidget(toggle_dark_mode_button);
-//    layout->addWidget(ruler_mode_bounds_config_button);
-//    layout->addWidget(test_rectangle_select_ui);
+    main_menu = new TouchMainMenu(fit_mode, portaling, fullscreen, ruler, speaking, horizontal_locked, current_colorscheme_index, this);
 
 
-    QObject::connect(main_menu, &TouchMainMenu::fullscreenClicked, [&](){
+    //    set_rect_config_button = new QPushButton("Rect Config", this);
+    //    goto_page_button = new QPushButton("Goto Page", this);
+    //    fullscreen_button = new QPushButton("Fullscreen", this);
+    //    select_text_button = new QPushButton("Select Text", this);
+    //    open_document_button = new QPushButton("Open New Document", this);
+    //    open_prev_document_button = new QPushButton("Open Previous Document", this);
+    //    command_button = new QPushButton("Command", this);
+    //    visual_mode_button = new QPushButton("Visual Mark Mode", this);
+    //    search_button = new QPushButton("Search", this);
+    //    set_background_color = new QPushButton("Background Color", this);
+    //    set_dark_mode_contrast = new QPushButton("Dark Mode Contrast", this);
+    //    set_ruler_mode = new QPushButton("Ruler Mode", this);
+    //    restore_default_config_button = new QPushButton("Restore Default Config", this);
+    //    toggle_dark_mode_button = new QPushButton("Toggle Dark Mode", this);
+    //    ruler_mode_bounds_config_button = new QPushButton("Configure Ruler Mode", this);
+    //    test_rectangle_select_ui = new QPushButton("Rectangle Select", this);
+
+    //    layout->addWidget(set_rect_config_button);
+    //    layout->addWidget(goto_page_button);
+    //    layout->addWidget(fullscreen_button);
+    //    layout->addWidget(select_text_button);
+    //    layout->addWidget(open_document_button);
+    //    layout->addWidget(open_prev_document_button);
+    //    layout->addWidget(command_button);
+    //    layout->addWidget(visual_mode_button);
+    //    layout->addWidget(search_button);
+    //    layout->addWidget(set_background_color);
+    //    layout->addWidget(set_dark_mode_contrast);
+    //    layout->addWidget(set_ruler_mode);
+    //    layout->addWidget(restore_default_config_button);
+    //    layout->addWidget(toggle_dark_mode_button);
+    //    layout->addWidget(ruler_mode_bounds_config_button);
+    //    layout->addWidget(test_rectangle_select_ui);
+
+
+    QObject::connect(main_menu, &TouchMainMenu::fullscreenClicked, [&]() {
         //main_widget->current_widget = {};
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         //deleteLater();
         main_widget->toggle_fullscreen();
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::selectTextClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::selectTextClicked, [&]() {
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         main_widget->handle_mobile_selection();
         main_widget->invalidate_render();
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::openNewDocClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::openNewDocClicked, [&]() {
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "open_document");
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::openPrevDocClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::openPrevDocClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "open_prev_doc");
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::highlightsClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::highlightsClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_highlight");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::tocClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::tocClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_toc");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::bookmarksClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::bookmarksClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_bookmark");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::commandsClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::commandsClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "command");
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::drawingModeClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::drawingModeClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "toggle_freehand_drawing_mode");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::settingsClicked, [&](){
-		//TouchConfigMenu* config_menu = new TouchConfigMenu(main_widget);
+    QObject::connect(main_menu, &TouchMainMenu::settingsClicked, [&]() {
+        //TouchConfigMenu* config_menu = new TouchConfigMenu(main_widget);
         TouchSettings* config_menu = new TouchSettings(main_widget);
         //main_widget->current_widget = new TouchConfigMenu(main_widget);
         //deleteLater();
@@ -268,200 +268,200 @@ bool HierarchialSortFilterProxyModel::filterAcceptsRow(int source_row, const QMo
         //main_widget->current_widget = {};
         //deleteLater();
         //main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::rulerModeClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::rulerModeClicked, [&]() {
         main_widget->android_handle_visual_mode();
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         main_widget->invalidate_render();
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::searchClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::searchClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "search");
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::addBookmarkClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::addBookmarkClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "add_bookmark");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::portalClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::portalClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "portal");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::deletePortalClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::deletePortalClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "delete_portal");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::globalBookmarksClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::globalBookmarksClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_bookmark_g");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::globalHighlightsClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::globalHighlightsClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_highlight_g");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::ttsClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::ttsClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "start_reading");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::horizontalLockClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::horizontalLockClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "toggle_horizontal_scroll_lock");
         main_widget->pop_current_widget();
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-//    QObject::connect(set_background_color, &QPushButton::pressed, [&](){
+    //    QObject::connect(set_background_color, &QPushButton::pressed, [&](){
 
-//        auto command = main_widget->command_manager->get_command_with_name("setconfig_background_color");
-//        main_widget->current_widget = {};
-//        deleteLater();
-//        main_widget->handle_command_types(std::move(command), 0);
-//    });
+    //        auto command = main_widget->command_manager->get_command_with_name("setconfig_background_color");
+    //        main_widget->current_widget = {};
+    //        deleteLater();
+    //        main_widget->handle_command_types(std::move(command), 0);
+    //    });
 
-//    QObject::connect(set_rect_config_button, &QPushButton::pressed, [&](){
+    //    QObject::connect(set_rect_config_button, &QPushButton::pressed, [&](){
 
-//        auto command = main_widget->command_manager->get_command_with_name("setconfig_portrait_back_ui_rect");
-//        main_widget->current_widget = {};
-//        deleteLater();
-//        main_widget->handle_command_types(std::move(command), 0);
-//    });
+    //        auto command = main_widget->command_manager->get_command_with_name("setconfig_portrait_back_ui_rect");
+    //        main_widget->current_widget = {};
+    //        deleteLater();
+    //        main_widget->handle_command_types(std::move(command), 0);
+    //    });
 
-//    QObject::connect(set_dark_mode_contrast, &QPushButton::pressed, [&](){
+    //    QObject::connect(set_dark_mode_contrast, &QPushButton::pressed, [&](){
 
-//        main_widget->current_widget = {};
-//        deleteLater();
+    //        main_widget->current_widget = {};
+    //        deleteLater();
 
-//        main_widget->current_widget = new FloatConfigUI(main_widget, &DARK_MODE_CONTRAST, 0.0f, 1.0f);
-//        main_widget->current_widget->show();
-//    });
+    //        main_widget->current_widget = new FloatConfigUI(main_widget, &DARK_MODE_CONTRAST, 0.0f, 1.0f);
+    //        main_widget->current_widget->show();
+    //    });
 
-//    QObject::connect(set_ruler_mode, &QPushButton::pressed, [&](){
+    //    QObject::connect(set_ruler_mode, &QPushButton::pressed, [&](){
 
-//        auto command = main_widget->command_manager->get_command_with_name("setconfig_ruler_mode");
-//        main_widget->current_widget = {};
-//        deleteLater();
-//        main_widget->handle_command_types(std::move(command), 0);
+    //        auto command = main_widget->command_manager->get_command_with_name("setconfig_ruler_mode");
+    //        main_widget->current_widget = {};
+    //        deleteLater();
+    //        main_widget->handle_command_types(std::move(command), 0);
 
-//    });
+    //    });
 
-//    QObject::connect(restore_default_config_button, &QPushButton::pressed, [&](){
+    //    QObject::connect(restore_default_config_button, &QPushButton::pressed, [&](){
 
-//        main_widget->current_widget = {};
-//        deleteLater();
-//        main_widget->restore_default_config();
+    //        main_widget->current_widget = {};
+    //        deleteLater();
+    //        main_widget->restore_default_config();
 
-//    });
+    //    });
 
-    QObject::connect(main_menu, &TouchMainMenu::darkColorschemeClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::darkColorschemeClicked, [&]() {
         main_widget->set_dark_mode();
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         main_widget->invalidate_render();
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::lightColorschemeClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::lightColorschemeClicked, [&]() {
         main_widget->set_light_mode();
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         main_widget->invalidate_render();
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::customColorschemeClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::customColorschemeClicked, [&]() {
         main_widget->set_custom_color_mode();
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         main_widget->invalidate_render();
-    });
+        });
 
-    QObject::connect(main_menu, &TouchMainMenu::downloadPaperClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::downloadPaperClicked, [&]() {
         main_widget->download_paper_under_cursor(true);
         main_widget->pop_current_widget();
         main_widget->invalidate_render();
-    });
+        });
 
 
-    QObject::connect(main_menu, &TouchMainMenu::fitToPageWidthClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::fitToPageWidthClicked, [&]() {
 
         if (main_widget->last_smart_fit_page) {
             main_widget->last_smart_fit_page = {};
-			main_widget->pop_current_widget();
-			main_widget->invalidate_render();
+            main_widget->pop_current_widget();
+            main_widget->invalidate_render();
         }
         else {
-			main_widget->main_document_view->fit_to_page_width(true);
-			int current_page = main_widget->get_current_page_number();
-			main_widget->last_smart_fit_page = current_page;
+            main_widget->main_document_view->fit_to_page_width(true);
+            int current_page = main_widget->get_current_page_number();
+            main_widget->last_smart_fit_page = current_page;
 
-			main_widget->pop_current_widget();
-			main_widget->invalidate_render();
+            main_widget->pop_current_widget();
+            main_widget->invalidate_render();
         }
-    });
-//    QObject::connect(ruler_mode_bounds_config_button, &QPushButton::pressed, [&](){
-////        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
-//        main_widget->current_widget = nullptr;
-//        deleteLater();
-//        RangeConfigUI* config_ui = new RangeConfigUI(main_widget, &VISUAL_MARK_NEXT_PAGE_FRACTION, &VISUAL_MARK_NEXT_PAGE_THRESHOLD);
-//        main_widget->current_widget = config_ui;
-//        main_widget->current_widget->show();
-////        main_widget->handle_command_types(std::move(command), 0);
-//    });
+        });
+    //    QObject::connect(ruler_mode_bounds_config_button, &QPushButton::pressed, [&](){
+    ////        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
+    //        main_widget->current_widget = nullptr;
+    //        deleteLater();
+    //        RangeConfigUI* config_ui = new RangeConfigUI(main_widget, &VISUAL_MARK_NEXT_PAGE_FRACTION, &VISUAL_MARK_NEXT_PAGE_THRESHOLD);
+    //        main_widget->current_widget = config_ui;
+    //        main_widget->current_widget->show();
+    ////        main_widget->handle_command_types(std::move(command), 0);
+    //    });
 
-    QObject::connect(main_menu, &TouchMainMenu::gotoPageClicked, [&](){
+    QObject::connect(main_menu, &TouchMainMenu::gotoPageClicked, [&]() {
         //main_widget->current_widget = nullptr;
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         PageSelectorUI* page_ui = new PageSelectorUI(main_widget,
-                                                     main_widget->main_document_view->get_center_page_number(),
-                                                     main_widget->doc()->num_pages());
+            main_widget->main_document_view->get_center_page_number(),
+            main_widget->doc()->num_pages());
 
         main_widget->set_current_widget(page_ui);
         main_widget->show_current_widget();
         //main_widget->current_widget = page_ui;
         //main_widget->current_widget->show();
-    });
+        });
 
-//    QObject::connect(test_rectangle_select_ui, &QPushButton::pressed, [&](){
-////        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
-////        main_widget->current_widget = {};
-//        RectangleConfigUI* configui = new RectangleConfigUI(main_widget, &testrect);
-//        main_widget->current_widget = configui;
-//        configui->show();
+    //    QObject::connect(test_rectangle_select_ui, &QPushButton::pressed, [&](){
+    ////        auto command = main_widget->command_manager->get_command_with_name("toggle_dark_mode");
+    ////        main_widget->current_widget = {};
+    //        RectangleConfigUI* configui = new RectangleConfigUI(main_widget, &testrect);
+    //        main_widget->current_widget = configui;
+    //        configui->show();
 
-//        deleteLater();
-////        main_widget->handle_command_types(std::move(command), 0);
-//    });
+    //        deleteLater();
+    ////        main_widget->handle_command_types(std::move(command), 0);
+    //    });
 
-//     layout->insertStretch(-1, 1);
+    //     layout->insertStretch(-1, 1);
 
-//     this->setLayout(layout);
- }
+    //     this->setLayout(layout);
+}
 
 void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
@@ -470,7 +470,7 @@ void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
 
     //float parent_width_in_centimeters = static_cast<float>(parent_width) / logicalDpiX() * 2.54f;
     //float parent_height_in_centimeters = static_cast<float>(parent_height) / logicalDpiY() * 2.54f;
-    int ten_cm = static_cast<int>(12 * logicalDpiX() / 2.54f );
+    int ten_cm = static_cast<int>(12 * logicalDpiX() / 2.54f);
 
     int w = static_cast<int>(parent_width * 0.9f);
     int h = parent_height;
@@ -481,7 +481,7 @@ void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
     main_menu->resize(w, h);
     setFixedSize(w, h);
 
-//    list_view->setFixedSize(parent_width * 0.9f, parent_height);
+    //    list_view->setFixedSize(parent_width * 0.9f, parent_height);
     move((parent_width - w) / 2, (parent_height - h) / 2);
 
 }
@@ -531,71 +531,71 @@ void AndroidSelector::resizeEvent(QResizeEvent* resize_event) {
 
 //}
 
-TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidget(parent){
+TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidget(parent) {
     main_widget = parent;
     buttons_ui = new TouchCopyOptions(this);
     this->setAttribute(Qt::WA_NoMousePropagation);
 
-    QObject::connect(buttons_ui, &TouchCopyOptions::copyClicked, [&](){
+    QObject::connect(buttons_ui, &TouchCopyOptions::copyClicked, [&]() {
         copy_to_clipboard(main_widget->get_selected_text());
         main_widget->clear_selection_indicators();
-    });
+        });
 
-    QObject::connect(buttons_ui, &TouchCopyOptions::searchClicked, [&](){
-		main_widget->perform_search(main_widget->get_selected_text(), false);
-		main_widget->show_search_buttons();
+    QObject::connect(buttons_ui, &TouchCopyOptions::searchClicked, [&]() {
+        main_widget->perform_search(main_widget->get_selected_text(), false);
+        main_widget->show_search_buttons();
         main_widget->clear_selection_indicators();
-    });
+        });
 
-    QObject::connect(buttons_ui, &TouchCopyOptions::scholarClicked, [&](){
+    QObject::connect(buttons_ui, &TouchCopyOptions::scholarClicked, [&]() {
         search_custom_engine(main_widget->get_selected_text(), L"https://scholar.google.com/scholar?&q=");
         main_widget->clear_selection_indicators();
-    });
+        });
 
-    QObject::connect(buttons_ui, &TouchCopyOptions::googleClicked, [&](){
+    QObject::connect(buttons_ui, &TouchCopyOptions::googleClicked, [&]() {
         search_custom_engine(main_widget->get_selected_text(), L"https://www.google.com/search?q=");
         main_widget->clear_selection_indicators();
-    });
+        });
 
-    QObject::connect(buttons_ui, &TouchCopyOptions::highlightClicked, [&](){
+    QObject::connect(buttons_ui, &TouchCopyOptions::highlightClicked, [&]() {
         main_widget->handle_touch_highlight();
         main_widget->clear_selection_indicators();
-    });
+        });
 }
 
-DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent){
+DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent) {
     main_widget = parent;
     controls_ui = new TouchDrawControls(parent->freehand_thickness, 'a', this);
     this->setAttribute(Qt::WA_NoMousePropagation);
 
-    QObject::connect(controls_ui, &TouchDrawControls::exitDrawModePressed, [&](){
+    QObject::connect(controls_ui, &TouchDrawControls::exitDrawModePressed, [&]() {
         main_widget->exit_freehand_drawing_mode();
-    });
+        });
 
-    QObject::connect(controls_ui, &TouchDrawControls::changeColorPressed, [&](int color_index){
+    QObject::connect(controls_ui, &TouchDrawControls::changeColorPressed, [&](int color_index) {
         main_widget->current_freehand_type = 'a' + color_index;
-    });
+        });
 
-    QObject::connect(controls_ui, &TouchDrawControls::enablePenDrawModePressed, [&](){
+    QObject::connect(controls_ui, &TouchDrawControls::enablePenDrawModePressed, [&]() {
         main_widget->set_pen_drawing_mode(true);
-    });
+        });
 
-    QObject::connect(controls_ui, &TouchDrawControls::disablePenDrawModePressed, [&](){
+    QObject::connect(controls_ui, &TouchDrawControls::disablePenDrawModePressed, [&]() {
         main_widget->set_hand_drawing_mode(true);
-    });
+        });
 
-    QObject::connect(controls_ui, &TouchDrawControls::eraserPressed, [&](){
+    QObject::connect(controls_ui, &TouchDrawControls::eraserPressed, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "delete_freehand_drawings");
         main_widget->handle_command_types(std::move(command), 0);
-    });
+        });
 
-    QObject::connect(controls_ui, &TouchDrawControls::penSizeChanged, [&](qreal val){
+    QObject::connect(controls_ui, &TouchDrawControls::penSizeChanged, [&](qreal val) {
         main_widget->set_freehand_thickness(val);
-    });
+        });
 
 
 }
-void DrawControlsUI::resizeEvent(QResizeEvent* resize_event){
+void DrawControlsUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
 
     int pwidth = parentWidget()->width();
@@ -609,7 +609,7 @@ void DrawControlsUI::resizeEvent(QResizeEvent* resize_event){
 
 }
 
-void TouchTextSelectionButtons::resizeEvent(QResizeEvent* resize_event){
+void TouchTextSelectionButtons::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
 
     int pwidth = parentWidget()->width();
@@ -619,12 +619,12 @@ void TouchTextSelectionButtons::resizeEvent(QResizeEvent* resize_event){
     buttons_ui->move(0, 0);
     buttons_ui->resize(width, height);
     move((pwidth - width) / 2, height);
-//    setFixedSize(0, 0);
+    //    setFixedSize(0, 0);
     setFixedSize(width, height);
 
 }
 
-HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent){
+HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent) {
     main_widget = parent;
     //layout = new QHBoxLayout();
 
@@ -632,14 +632,14 @@ HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent){
     //buttons_widget = new 
     highlight_buttons = new TouchHighlightButtons(main_widget->get_current_selected_highlight_type(), this);
 
-    QObject::connect(highlight_buttons, &TouchHighlightButtons::deletePressed, [&](){
+    QObject::connect(highlight_buttons, &TouchHighlightButtons::deletePressed, [&]() {
         main_widget->handle_delete_selected_highlight();
         hide();
         //main_widget->highlight_buttons = nullptr;
         //deleteLater();
-    });
+        });
 
-    QObject::connect(highlight_buttons, &TouchHighlightButtons::changeColorPressed, [&](int index){
+    QObject::connect(highlight_buttons, &TouchHighlightButtons::changeColorPressed, [&](int index) {
         //float* color = &HIGHLIGHT_COLORS[3 * index];
 
         //main_widget->handle_delete_selected_highlight();
@@ -648,13 +648,13 @@ HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent){
         main_widget->invalidate_render();
         //main_widget->highlight_buttons = nullptr;
         //deleteLater();
-    });
+        });
 
     //layout->addWidget(delete_highlight_button);
     //this->setLayout(layout);
 }
 
-void HighlightButtons::resizeEvent(QResizeEvent* resize_event){
+void HighlightButtons::resizeEvent(QResizeEvent* resize_event) {
 
     QWidget::resizeEvent(resize_event);
 
@@ -665,7 +665,7 @@ void HighlightButtons::resizeEvent(QResizeEvent* resize_event){
     float parent_height_in_centimeters = static_cast<float>(parent_height) / dpi * 2.54f;
 
     int w = static_cast<int>(parent_width / 5);
-    int h = static_cast<int>( static_cast<float>(dpi) / 2.54f);
+    int h = static_cast<int>(static_cast<float>(dpi) / 2.54f);
     w = std::max(w, h * 6);
 
     setFixedSize(w, h);
@@ -674,7 +674,7 @@ void HighlightButtons::resizeEvent(QResizeEvent* resize_event){
 }
 
 
-SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent){
+SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent) {
     main_widget = parent;
     //layout = new QHBoxLayout(this);
 
@@ -690,20 +690,20 @@ SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent){
     //goto_initial_location_button = new QPushButton("initial");
     buttons_widget = new TouchSearchButtons(this);
 
-    QObject::connect(buttons_widget, &TouchSearchButtons::nextPressed, [&](){
+    QObject::connect(buttons_widget, &TouchSearchButtons::nextPressed, [&]() {
         main_widget->opengl_widget->goto_search_result(1);
         main_widget->validate_render();
-    });
+        });
 
-    QObject::connect(buttons_widget, &TouchSearchButtons::previousPressed, [&](){
+    QObject::connect(buttons_widget, &TouchSearchButtons::previousPressed, [&]() {
         main_widget->opengl_widget->goto_search_result(-1);
         main_widget->validate_render();
-    });
+        });
 
-    QObject::connect(buttons_widget, &TouchSearchButtons::initialPressed, [&](){
+    QObject::connect(buttons_widget, &TouchSearchButtons::initialPressed, [&]() {
         main_widget->goto_mark('/');
         main_widget->invalidate_render();
-    });
+        });
 
 
     //layout->addWidget(next_match_button);
@@ -713,7 +713,7 @@ SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent){
     //this->setLayout(layout);
 }
 
-void SearchButtons::resizeEvent(QResizeEvent* resize_event){
+void SearchButtons::resizeEvent(QResizeEvent* resize_event) {
 
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
@@ -726,11 +726,11 @@ void SearchButtons::resizeEvent(QResizeEvent* resize_event){
     buttons_widget->resize(width, height);
     setFixedSize(width, height);
     //layout->update();
-    move((parent_width - width)  / 2, parent_height - 3 * height / 2);
+    move((parent_width - width) / 2, parent_height - 3 * height / 2);
 }
 
 //ConfigUI::ConfigUI(MainWidget* parent) : QQuickWidget(parent){
-ConfigUI::ConfigUI(std::string name, MainWidget* parent) : QWidget(parent){
+ConfigUI::ConfigUI(std::string name, MainWidget* parent) : QWidget(parent) {
     main_widget = parent;
     config_name = name;
 }
@@ -743,7 +743,7 @@ void ConfigUI::set_should_persist(bool val) {
     this->should_persist = val;
 }
 
-void ConfigUI::resizeEvent(QResizeEvent* resize_event){
+void ConfigUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
@@ -757,47 +757,47 @@ Color3ConfigUI::Color3ConfigUI(std::string name, MainWidget* parent, float* conf
     color_picker = new QColorDialog(this);
     color_picker->show();
 
-    connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
+    connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color) {
         convert_qcolor_to_float3(color, color_location);
         main_widget->invalidate_render();
         on_change();
 
         if (should_persist) {
-			main_widget->persist_config();
+            main_widget->persist_config();
         }
-    });
+        });
 
-//    QQmlEngine* engine = new QQmlEngine();
-//    QQmlComponent* component = new QQmlComponent(engine, QUrl("qrc:/pdf_viewer/qml/MyColorPicker.qml"), this);
-//    QObject *object = component->create();
-//    QQuickItem *item = qobject_cast<QQuickItem*>(object);
+    //    QQmlEngine* engine = new QQmlEngine();
+    //    QQmlComponent* component = new QQmlComponent(engine, QUrl("qrc:/pdf_viewer/qml/MyColorPicker.qml"), this);
+    //    QObject *object = component->create();
+    //    QQuickItem *item = qobject_cast<QQuickItem*>(object);
 
-//    QFile source_file("qrc:/pdf_viewer/qml/MyColorPicker.qml");
-//    QString source = source_file.readAll();
+    //    QFile source_file("qrc:/pdf_viewer/qml/MyColorPicker.qml");
+    //    QString source = source_file.readAll();
 
-//    QQuickWidget* quick_widget(source, this);
-//    QUrl url("qrc:/pdf_viewer/qml/MyColorPicker.qml");
-//    color_picker = new QQuickWidget(url, this);
-//    color_picker->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
-//    color_picker->show();
-//    TouchSlider* slider = new TouchSlider(0, 100, 25, this);
-//    QObject::connect(slider, &TouchSlider::itemSelected, [&](int selected_value){
-//        qDebug() << "selected " << selected_value << "\n";
+    //    QQuickWidget* quick_widget(source, this);
+    //    QUrl url("qrc:/pdf_viewer/qml/MyColorPicker.qml");
+    //    color_picker = new QQuickWidget(url, this);
+    //    color_picker->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum);
+    //    color_picker->show();
+    //    TouchSlider* slider = new TouchSlider(0, 100, 25, this);
+    //    QObject::connect(slider, &TouchSlider::itemSelected, [&](int selected_value){
+    //        qDebug() << "selected " << selected_value << "\n";
 
-//    });
-
-
-//    QObject::connect(color_picker, SIGNAL()
-
-//    QQuickWidget
-//    QQuickView* view = new QQuickView();
-//    view->setSource(QUrl("qrc:/pdf_viewer/qml/MyColorPicker.qml"));
-//    view->show();
+    //    });
 
 
- }
+    //    QObject::connect(color_picker, SIGNAL()
 
-void Color3ConfigUI::resizeEvent(QResizeEvent* resize_event){
+    //    QQuickWidget
+    //    QQuickView* view = new QQuickView();
+    //    view->setSource(QUrl("qrc:/pdf_viewer/qml/MyColorPicker.qml"));
+    //    view->show();
+
+
+}
+
+void Color3ConfigUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
@@ -813,36 +813,36 @@ Color4ConfigUI::Color4ConfigUI(std::string name, MainWidget* parent, float* conf
     color_picker = new QColorDialog(this);
     color_picker->show();
 
-    connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color){
+    connect(color_picker, &QColorDialog::colorSelected, [&](const QColor& color) {
         convert_qcolor_to_float4(color, color_location);
         main_widget->invalidate_render();
         on_change();
-        if (should_persist){
-			main_widget->persist_config();
+        if (should_persist) {
+            main_widget->persist_config();
         }
-    });
- }
+        });
+}
 
 MacroConfigUI::MacroConfigUI(std::string name, MainWidget* parent, std::wstring* config_location, std::wstring initial_macro) : ConfigUI(name, parent) {
 
     macro_editor = new TouchMacroEditor(utf8_encode(initial_macro), this, parent);
 
-    connect(macro_editor, &TouchMacroEditor::macroConfirmed, [&, config_location](std::string macro){
+    connect(macro_editor, &TouchMacroEditor::macroConfirmed, [&, config_location](std::string macro) {
         //convert_qcolor_to_float4(color, color_location);
         (*config_location) = utf8_decode(macro);
         on_change();
-        if (should_persist){
-			main_widget->persist_config();
+        if (should_persist) {
+            main_widget->persist_config();
         }
         main_widget->pop_current_widget();
-    });
+        });
 
-    QObject::connect(macro_editor, &TouchMacroEditor::canceled, [&](){
+    QObject::connect(macro_editor, &TouchMacroEditor::canceled, [&]() {
         main_widget->pop_current_widget();
-    });
+        });
 
 
- }
+}
 
 FloatConfigUI::FloatConfigUI(std::string name, MainWidget* parent, float* config_location, float min_value_, float max_value_) : ConfigUI(name, parent) {
 
@@ -852,19 +852,19 @@ FloatConfigUI::FloatConfigUI(std::string name, MainWidget* parent, float* config
 
     int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
     slider = new TouchSlider(0, 100, current_value, this);
-    QObject::connect(slider, &TouchSlider::itemSelected, [&](int val){
+    QObject::connect(slider, &TouchSlider::itemSelected, [&](int val) {
         float value = min_value + (static_cast<float>(val) / 100.0f) * (max_value - min_value);
         *float_location = value;
         on_change();
         main_widget->invalidate_render();
         main_widget->pop_current_widget();
-    });
+        });
 
-    QObject::connect(slider, &TouchSlider::canceled, [&](){
+    QObject::connect(slider, &TouchSlider::canceled, [&]() {
         main_widget->pop_current_widget();
-    });
+        });
 
- }
+}
 
 
 IntConfigUI::IntConfigUI(std::string name, MainWidget* parent, int* config_location, int min_value_, int max_value_) : ConfigUI(name, parent) {
@@ -875,38 +875,38 @@ IntConfigUI::IntConfigUI(std::string name, MainWidget* parent, int* config_locat
 
     int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
     slider = new TouchSlider(min_value, max_value, current_value, this);
-    QObject::connect(slider, &TouchSlider::itemSelected, [&](int val){
+    QObject::connect(slider, &TouchSlider::itemSelected, [&](int val) {
         *int_location = val;
         on_change();
         main_widget->invalidate_render();
         main_widget->pop_current_widget();
-    });
+        });
 
-    QObject::connect(slider, &TouchSlider::canceled, [&](){
+    QObject::connect(slider, &TouchSlider::canceled, [&]() {
         main_widget->pop_current_widget();
-    });
+        });
 
- }
+}
 
 
 PageSelectorUI::PageSelectorUI(MainWidget* parent, int current, int num_pages) : ConfigUI("", parent) {
 
-     page_selector = new TouchPageSelector(0, num_pages-1, current, this);
+    page_selector = new TouchPageSelector(0, num_pages - 1, current, this);
 
-    QObject::connect(page_selector, &TouchPageSelector::pageSelected, [&](int val){
+    QObject::connect(page_selector, &TouchPageSelector::pageSelected, [&](int val) {
         main_widget->main_document_view->goto_page(val);
         main_widget->invalidate_render();
-    });
+        });
 
- }
+}
 
-void PageSelectorUI::resizeEvent(QResizeEvent* resize_event){
+void PageSelectorUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
     int w = 2 * parent_width / 3;
-    int h =  parent_height / 6;
+    int h = parent_height / 6;
     page_selector->resize(w, h);
 
     setFixedSize(w, h);
@@ -915,32 +915,32 @@ void PageSelectorUI::resizeEvent(QResizeEvent* resize_event){
 
 AudioUI::AudioUI(MainWidget* parent) : ConfigUI("", parent) {
 
-     buttons = new TouchAudioButtons(this);
-     buttons->set_rate(TTS_RATE);
+    buttons = new TouchAudioButtons(this);
+    buttons->set_rate(TTS_RATE);
 
-    QObject::connect(buttons, &TouchAudioButtons::playPressed, [&](){
+    QObject::connect(buttons, &TouchAudioButtons::playPressed, [&]() {
         //main_widget->main_document_view->goto_page(val);
         //main_widget->invalidate_render();
         main_widget->handle_play();
-    });
+        });
 
-    QObject::connect(buttons, &TouchAudioButtons::stopPressed, [&](){
+    QObject::connect(buttons, &TouchAudioButtons::stopPressed, [&]() {
         //main_widget->main_document_view->goto_page(val);
         //main_widget->invalidate_render();
         main_widget->handle_stop_reading();
-    });
+        });
 
-    QObject::connect(buttons, &TouchAudioButtons::pausePressed, [&](){
+    QObject::connect(buttons, &TouchAudioButtons::pausePressed, [&]() {
         //main_widget->main_document_view->goto_page(val);
         //main_widget->invalidate_render();
         main_widget->handle_pause();
-    });
+        });
 
 
-    QObject::connect(buttons, &TouchAudioButtons::rateChanged, [&](qreal rate){
+    QObject::connect(buttons, &TouchAudioButtons::rateChanged, [&](qreal rate) {
         TTS_RATE = rate;
         buttons->set_rate(TTS_RATE);
-    });
+        });
     //QObject::connect(buttons, &TouchAudioButtons::speedIncreasePressed, [&](){
     //    TTS_RATE += 0.1;
     //    if (TTS_RATE > 1.0f) {
@@ -956,15 +956,15 @@ AudioUI::AudioUI(MainWidget* parent) : ConfigUI("", parent) {
     //    }
     //    buttons->set_rate(TTS_RATE);
     //});
- }
+}
 
-void AudioUI::resizeEvent(QResizeEvent* resize_event){
+void AudioUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
     int w = parent_width;
-    int h =  parent_height / 6;
+    int h = parent_height / 6;
     buttons->resize(w, h);
 
     setFixedSize(w, h);
@@ -977,74 +977,74 @@ BoolConfigUI::BoolConfigUI(std::string name_, MainWidget* parent, bool* config_l
     bool_location = config_location;
 
     checkbox = new TouchCheckbox(qname, *config_location, this);
-    QObject::connect(checkbox, &TouchCheckbox::itemSelected, [&](bool new_state){
+    QObject::connect(checkbox, &TouchCheckbox::itemSelected, [&](bool new_state) {
         *bool_location = static_cast<bool>(new_state);
         main_widget->invalidate_render();
         on_change();
         if (should_persist) {
-			main_widget->persist_config();
+            main_widget->persist_config();
         }
 
         main_widget->pop_current_widget();
-    });
+        });
 
-    QObject::connect(checkbox, &TouchCheckbox::canceled, [&](){
+    QObject::connect(checkbox, &TouchCheckbox::canceled, [&]() {
         main_widget->pop_current_widget();
-    });
+        });
 }
 
-void BoolConfigUI::resizeEvent(QResizeEvent* resize_event){
+void BoolConfigUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
-    int five_cm = static_cast<int>(12 * logicalDpiX() / 2.54f );
+    int five_cm = static_cast<int>(12 * logicalDpiX() / 2.54f);
 
     int w = 2 * parent_width / 3;
-    int h =  parent_height / 2;
+    int h = parent_height / 2;
 
     w = std::min(w, five_cm);
     h = std::min(h, five_cm);
-    
+
     checkbox->resize(w, h);
 
     setFixedSize(w, h);
     move((parent_width - w) / 2, (parent_height - h) / 2);
 }
 
-void MacroConfigUI::resizeEvent(QResizeEvent* resize_event){
+void MacroConfigUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
     int w = 2 * parent_width / 3;
-    int h =  parent_height / 2;
+    int h = parent_height / 2;
     macro_editor->resize(w, h);
 
     setFixedSize(w, h);
     move(parent_width / 6, parent_height / 4);
 }
 
-void FloatConfigUI::resizeEvent(QResizeEvent* resize_event){
+void FloatConfigUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
     int w = 2 * parent_width / 3;
-    int h =  parent_height / 2;
+    int h = parent_height / 2;
     slider->resize(w, h);
 
     setFixedSize(w, h);
     move(parent_width / 6, parent_height / 4);
 }
 
-void IntConfigUI::resizeEvent(QResizeEvent* resize_event){
+void IntConfigUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
     int w = 2 * parent_width / 3;
-    int h =  parent_height / 2;
+    int h = parent_height / 2;
     slider->resize(w, h);
 
     setFixedSize(w, h);
@@ -1060,16 +1060,16 @@ void IntConfigUI::resizeEvent(QResizeEvent* resize_event){
 //}
 
 
-TouchCommandSelector::TouchCommandSelector(bool is_fuzzy, const QStringList& commands, MainWidget* mw): QWidget(mw){
+TouchCommandSelector::TouchCommandSelector(bool is_fuzzy, const QStringList& commands, MainWidget* mw) : QWidget(mw) {
     main_widget = mw;
     list_view = new TouchListView(is_fuzzy, commands, -1, this);
 
-    QObject::connect(list_view, &TouchListView::itemSelected, [&](QString val, int index){
+    QObject::connect(list_view, &TouchListView::itemSelected, [&](QString val, int index) {
         //main_widget->current_widget = nullptr;
         main_widget->pop_current_widget();
         main_widget->on_command_done(val.toStdString());
         //deleteLater();
-    });
+        });
 }
 
 void TouchCommandSelector::resizeEvent(QResizeEvent* resize_event) {
@@ -1095,19 +1095,19 @@ RectangleConfigUI::RectangleConfigUI(std::string name, MainWidget* parent, UIRec
     float current_top = config_location->top;
     float current_bottom = config_location->bottom;
 
-//    layout = new QVBoxLayout();
+    //    layout = new QVBoxLayout();
 
     rectangle_select_ui = new TouchRectangleSelectUI(current_enabled,
-                                                     current_left,
-                                                     current_top,
-                                                     (current_right - current_left) / 2.0f,
-                                                     (current_bottom - current_top) / 2.0f,
-                                                     this);
+        current_left,
+        current_top,
+        (current_right - current_left) / 2.0f,
+        (current_bottom - current_top) / 2.0f,
+        this);
 
 
-//    int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
-//    slider = new TouchSlider(0, 100, current_value, this);
-    QObject::connect(rectangle_select_ui, &TouchRectangleSelectUI::rectangleSelected, [&](bool enabled, qreal left, qreal right, qreal top, qreal bottom){
+    //    int current_value = static_cast<int>((*config_location - min_value) / (max_value - min_value) * 100);
+    //    slider = new TouchSlider(0, 100, current_value, this);
+    QObject::connect(rectangle_select_ui, &TouchRectangleSelectUI::rectangleSelected, [&](bool enabled, qreal left, qreal right, qreal top, qreal bottom) {
 
         rect_location->enabled = enabled;
         rect_location->left = left;
@@ -1117,15 +1117,15 @@ RectangleConfigUI::RectangleConfigUI(std::string name, MainWidget* parent, UIRec
 
         on_change();
         if (should_persist) {
-			main_widget->persist_config();
+            main_widget->persist_config();
         }
         main_widget->invalidate_render();
         //main_widget->current_widget = nullptr;
         //deleteLater();
         main_widget->pop_current_widget();
-    });
+        });
 
- }
+}
 
 //bool RectangleConfigUI::eventFilter(QObject *obj, QEvent *event){
 //    if ((obj == parentWidget()) && (event->type() == QEvent::Type::Resize)){
@@ -1149,10 +1149,10 @@ RectangleConfigUI::RectangleConfigUI(std::string name, MainWidget* parent, UIRec
 //    }
 //}
 
-void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event){
+void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     move(0, 0);
-//    rectangle_select_ui->resize(resize_event->size().width(), resize_event->size().height());
+    //    rectangle_select_ui->resize(resize_event->size().width(), resize_event->size().height());
     setFixedSize(parentWidget()->size());
     rectangle_select_ui->resize(parentWidget()->size());
 
@@ -1160,7 +1160,7 @@ void RectangleConfigUI::resizeEvent(QResizeEvent* resize_event){
 
 RangeConfigUI::RangeConfigUI(std::string name, MainWidget* parent, float* top_config_location, float* bottom_config_location) : ConfigUI(name, parent) {
 
-//    range_location = config_location;
+    //    range_location = config_location;
     top_location = top_config_location;
     bottom_location = bottom_config_location;
 
@@ -1174,31 +1174,31 @@ RangeConfigUI::RangeConfigUI(std::string name, MainWidget* parent, float* top_co
     resize(parent->width(), parent->height());
 
 
-    QObject::connect(range_select_ui, &TouchRangeSelectUI::rangeSelected, [&](qreal top, qreal bottom){
+    QObject::connect(range_select_ui, &TouchRangeSelectUI::rangeSelected, [&](qreal top, qreal bottom) {
 
         *top_location = -top;
         *bottom_location = -bottom + 1;
 
         on_change();
         if (should_persist) {
-			main_widget->persist_config();
+            main_widget->persist_config();
         }
         main_widget->invalidate_render();
         //main_widget->current_widget = nullptr;
         //deleteLater();
         main_widget->pop_current_widget();
-    });
+        });
 
-    QObject::connect(range_select_ui, &TouchRangeSelectUI::rangeCanceled, [&](){
+    QObject::connect(range_select_ui, &TouchRangeSelectUI::rangeCanceled, [&]() {
         main_widget->invalidate_render();
         //main_widget->current_widget = nullptr;
         //deleteLater();
         main_widget->pop_current_widget();
-    });
+        });
 
- }
+}
 
-void RangeConfigUI::resizeEvent(QResizeEvent* resize_event){
+void RangeConfigUI::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     move(0, 0);
     range_select_ui->resize(resize_event->size().width(), resize_event->size().height());
@@ -1206,131 +1206,131 @@ void RangeConfigUI::resizeEvent(QResizeEvent* resize_event){
 }
 QList<QStandardItem*> CommandSelector::get_item(std::string command_name) {
 
-	std::string command_key = "";
+    std::string command_key = "";
 
-	if (key_map.find(command_name) != key_map.end()) {
-		const std::vector<std::string>& command_keys = key_map[command_name];
-		for (size_t i = 0; i < command_keys.size(); i++) {
-			const std::string& ck = command_keys[i];
-			if (i > 0) {
-				command_key += " | ";
-			}
-			command_key += ck;
-		}
+    if (key_map.find(command_name) != key_map.end()) {
+        const std::vector<std::string>& command_keys = key_map[command_name];
+        for (size_t i = 0; i < command_keys.size(); i++) {
+            const std::string& ck = command_keys[i];
+            if (i > 0) {
+                command_key += " | ";
+            }
+            command_key += ck;
+        }
 
-	}
-	QStandardItem* name_item = new QStandardItem(QString::fromStdString(command_name));
-	QStandardItem* key_item = new QStandardItem(QString::fromStdString(command_key));
-	key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
-	return (QList<QStandardItem*>() << name_item << key_item);
+    }
+    QStandardItem* name_item = new QStandardItem(QString::fromStdString(command_name));
+    QStandardItem* key_item = new QStandardItem(QString::fromStdString(command_key));
+    key_item->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
+    return (QList<QStandardItem*>() << name_item << key_item);
 }
 
 QStandardItemModel* CommandSelector::get_standard_item_model(std::vector<std::string> command_names) {
 
-	QStandardItemModel* res = new QStandardItemModel();
+    QStandardItemModel* res = new QStandardItemModel();
 
-	for (size_t i = 0; i < command_names.size(); i++) {
-		res->appendRow(get_item(command_names[i]));
-	}
-	return res;
+    for (size_t i = 0; i < command_names.size(); i++) {
+        res->appendRow(get_item(command_names[i]));
+    }
+    return res;
 }
 
 QStandardItemModel* CommandSelector::get_standard_item_model(QStringList command_names) {
 
-	std::vector<std::string> std_command_names;
+    std::vector<std::string> std_command_names;
 
-	for (int i = 0; i < command_names.size(); i++) {
-		std_command_names.push_back(command_names.at(i).toStdString());
-	}
-	return get_standard_item_model(std_command_names);
+    for (int i = 0; i < command_names.size(); i++) {
+        std_command_names.push_back(command_names.at(i).toStdString());
+    }
+    return get_standard_item_model(std_command_names);
 }
 
 
 QString CommandSelector::get_view_stylesheet_type_name() {
-	return "QTableView";
+    return "QTableView";
 }
 
 void CommandSelector::on_select(const QModelIndex& index) {
-	bool is_numeric = false;
-	line_edit->text().toInt(&is_numeric);
-	QString name = standard_item_model->data(index).toString();
-	//hide();
+    bool is_numeric = false;
+    line_edit->text().toInt(&is_numeric);
+    QString name = standard_item_model->data(index).toString();
+    //hide();
     main_widget->pop_current_widget();
-	parentWidget()->setFocus();
-	if (!is_numeric) {
-		(*on_done)(name.toStdString());
-	}
-	else {
-		(*on_done)(line_edit->text().toStdString());
-	}
+    parentWidget()->setFocus();
+    if (!is_numeric) {
+        (*on_done)(name.toStdString());
+    }
+    else {
+        (*on_done)(line_edit->text().toStdString());
+    }
 }
 
 CommandSelector::CommandSelector(bool is_fuzzy, std::function<void(std::string)>* on_done,
-	MainWidget* parent,
-	QStringList elements,
-	std::unordered_map<std::string,
-	std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView>(is_fuzzy, nullptr, parent),
-	key_map(key_map),
-	on_done(on_done),
+    MainWidget* parent,
+    QStringList elements,
+    std::unordered_map<std::string,
+    std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView>(is_fuzzy, nullptr, parent),
+    key_map(key_map),
+    on_done(on_done),
     main_widget(parent)
 {
-	string_elements = elements;
-	standard_item_model = get_standard_item_model(string_elements);
+    string_elements = elements;
+    standard_item_model = get_standard_item_model(string_elements);
 
-	QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+    QTableView* table_view = dynamic_cast<QTableView*>(get_view());
 
-	table_view->setSelectionMode(QAbstractItemView::SingleSelection);
-	table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
-	table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
-	table_view->setModel(standard_item_model);
+    table_view->setSelectionMode(QAbstractItemView::SingleSelection);
+    table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table_view->setModel(standard_item_model);
 
-	table_view->horizontalHeader()->setStretchLastSection(true);
-	table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-	table_view->horizontalHeader()->hide();
-	table_view->verticalHeader()->hide();
+    table_view->horizontalHeader()->setStretchLastSection(true);
+    table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    table_view->horizontalHeader()->hide();
+    table_view->verticalHeader()->hide();
 
 }
 
 bool CommandSelector::on_text_change(const QString& text) {
 
-	std::vector<std::string> matching_element_names;
-	std::vector<int> scores;
-	std::string search_text_string = text.toStdString();
-	std::vector<std::pair<std::string, int>> match_score_pairs;
+    std::vector<std::string> matching_element_names;
+    std::vector<int> scores;
+    std::string search_text_string = text.toStdString();
+    std::vector<std::pair<std::string, int>> match_score_pairs;
 
-	for (int i = 0; i < string_elements.size(); i++) {
-		std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
-		int score = 0;
-		if (is_fuzzy) {
-			score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
-		}
-		else {
-			fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
-		}
-		match_score_pairs.push_back(std::make_pair(encoded, score));
-	}
-	std::sort(match_score_pairs.begin(), match_score_pairs.end(), [](std::pair<std::string, int> lhs, std::pair<std::string, int> rhs) {
-		return lhs.second > rhs.second;
-		});
+    for (int i = 0; i < string_elements.size(); i++) {
+        std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
+        int score = 0;
+        if (is_fuzzy) {
+            score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
+        }
+        else {
+            fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
+        }
+        match_score_pairs.push_back(std::make_pair(encoded, score));
+    }
+    std::sort(match_score_pairs.begin(), match_score_pairs.end(), [](std::pair<std::string, int> lhs, std::pair<std::string, int> rhs) {
+        return lhs.second > rhs.second;
+        });
 
-	for (int i = 0; i < string_elements.size(); i++) {
-		if (string_elements.at(i).startsWith(text)) {
-			matching_element_names.push_back(string_elements.at(i).toStdString());
-		}
-	}
+    for (int i = 0; i < string_elements.size(); i++) {
+        if (string_elements.at(i).startsWith(text)) {
+            matching_element_names.push_back(string_elements.at(i).toStdString());
+        }
+    }
 
-	//if (matching_element_names.size() == 0) {
-	for (auto [command, score] : match_score_pairs) {
-		if (score > 60 && (!QString::fromStdString(command).startsWith(text))) {
-			matching_element_names.push_back(command);
-		}
-	}
-	//}
+    //if (matching_element_names.size() == 0) {
+    for (auto [command, score] : match_score_pairs) {
+        if (score > 60 && (!QString::fromStdString(command).startsWith(text))) {
+            matching_element_names.push_back(command);
+        }
+    }
+    //}
 
-	QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
-	dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
-	delete standard_item_model;
-	standard_item_model = new_standard_item_model;
-	return true;
+    QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
+    dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
+    delete standard_item_model;
+    standard_item_model = new_standard_item_model;
+    return true;
 }
 

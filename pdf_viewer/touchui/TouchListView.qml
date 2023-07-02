@@ -47,11 +47,11 @@ Rectangle {
             //rootitem.root_model.setFilterRegularExpression(text);
         }
 
-		onAccepted: {
+        onAccepted: {
             let item = lview.model.data(lview.model.index(0, 0));
             //console.log(item);
-			rootitem.itemSelected(item, 0);
-		}
+            rootitem.itemSelected(item, 0);
+        }
 
     }
 
@@ -111,34 +111,34 @@ Rectangle {
                     width: rootitem.root_model.columnCount() == 3 ? parent.width / 2 : parent.width
                     id: inner_container
 
-					Text {
-						id: inner
-						text: model.display
-						color: "white"
-						anchors.verticalCenter: parent.verticalCenter
-						anchors.left: parent.left
-						anchors.right: parent.right
-						font.pixelSize: 15
-						wrapMode: Text.Wrap
-					}
+                    Text {
+                        id: inner
+                        text: model.display
+                        color: "white"
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        font.pixelSize: 15
+                        wrapMode: Text.Wrap
+                    }
                 }
                 Item{
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     anchors.left: inner_container.right
                     width: rootitem.root_model.columnCount() == 3 ? parent.width / 2 : parent.width
-					visible: rootitem.root_model.columnCount() == 3
+                    visible: rootitem.root_model.columnCount() == 3
 
-					Text {
-						id: inner2
-						text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, 1)) || "";
-						color: "white"
-						anchors.verticalCenter: parent.verticalCenter
-						anchors.left: parent.left
-						anchors.right: parent.right
-						font.pixelSize: 15
-						wrapMode: Text.Wrap
-					}
+                    Text {
+                        id: inner2
+                        text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, 1)) || "";
+                        color: "white"
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        font.pixelSize: 15
+                        wrapMode: Text.Wrap
+                    }
                 }
 
             }
@@ -153,7 +153,7 @@ Rectangle {
 
                     // model.display.slice(0, 0) is a hack to get qml to redraw this widget
                     // when model changes there has to be a better way to do this
-					text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, rootitem.root_model.columnCount()-1)) || "";
+                    text: model.display.slice(0, 0) + lview.model.data(lview.model.index(index, rootitem.root_model.columnCount()-1)) || "";
                     color: "white"
                     anchors.verticalCenter: parent.verticalCenter
                     font.pixelSize: 15
@@ -161,15 +161,15 @@ Rectangle {
                 visible: rootitem.root_model.columnCount() >= 2
             }
 
-			Button{
+            Button{
                 anchors.right: parent.right
                 anchors.top:  parent.top
                 anchors.bottom: parent.bottom
                 anchors.margins: 10
                 z: 10
 
-				id: deletebutton
-				text: "Delete"
+                id: deletebutton
+                text: "Delete"
                 visible: false
 
                 onClicked: {
@@ -177,18 +177,18 @@ Rectangle {
                     lview.model.removeRows(index, 1);
                 }
 
-			}
+            }
 
             MouseArea {
                 anchors.fill: parent
 
                 onPressAndHold: function(event) {
                     if (rootitem.deletable){
-						deletebutton.visible = true;
+                        deletebutton.visible = true;
                     }
                     else{
-						/* emit */ itemPressAndHold(model.display, index);
-					}
+                        /* emit */ itemPressAndHold(model.display, index);
+                    }
                 }
                 onClicked: {
                     lview.currentIndex = index;

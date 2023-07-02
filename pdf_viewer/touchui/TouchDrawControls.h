@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchDrawControls : public QWidget{
+class TouchDrawControls : public QWidget {
     Q_OBJECT
 public:
-    TouchDrawControls(float pen_size, char selected_symbol, QWidget* parent=nullptr);
+    TouchDrawControls(float pen_size, char selected_symbol, QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
     void setDrawType(char type);
     void set_pen_size(float size);

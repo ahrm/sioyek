@@ -14,7 +14,7 @@
 //class MySortFilterProxyModel;
 class MainWidget;
 
-class TouchConfigMenu : public QWidget{
+class TouchConfigMenu : public QWidget {
     Q_OBJECT
 public:
     //TouchConfigMenu(std::vector<Config>* configs, QWidget* parent = nullptr);

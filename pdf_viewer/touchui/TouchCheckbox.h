@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchCheckbox : public QWidget{
+class TouchCheckbox : public QWidget {
     Q_OBJECT
 public:
-    TouchCheckbox(QString name, bool initial_value, QWidget* parent=nullptr);
+    TouchCheckbox(QString name, bool initial_value, QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

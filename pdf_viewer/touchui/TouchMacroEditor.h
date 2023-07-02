@@ -8,7 +8,7 @@
 
 class MainWidget;
 
-class TouchMacroEditor : public QWidget{
+class TouchMacroEditor : public QWidget {
     Q_OBJECT
 public:
     TouchMacroEditor(std::string macro, QWidget* parent, MainWidget* main_widget);

@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchDeleteButton : public QWidget{
+class TouchDeleteButton : public QWidget {
     Q_OBJECT
 public:
-    TouchDeleteButton(QWidget* parent=nullptr);
+    TouchDeleteButton(QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

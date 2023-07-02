@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchPageSelector : public QWidget{
+class TouchPageSelector : public QWidget {
     Q_OBJECT
 public:
-    TouchPageSelector(int from, int to, int initial_value, QWidget* parent=nullptr);
+    TouchPageSelector(int from, int to, int initial_value, QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

@@ -23,7 +23,7 @@ extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
 extern float DEFAULT_VERTICAL_LINE_COLOR[4];
 extern bool FUZZY_SEARCHING;
 
-TouchSettings::TouchSettings(MainWidget* parent) : QWidget(parent){
+TouchSettings::TouchSettings(MainWidget* parent) : QWidget(parent) {
 
     setAttribute(Qt::WA_NoMousePropagation);
 
@@ -40,92 +40,92 @@ TouchSettings::TouchSettings(MainWidget* parent) : QWidget(parent){
 
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(lightApplicationBackgroundClicked()),
-                this,
-                SLOT(handleLightApplicationBackground()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(lightApplicationBackgroundClicked()),
+        this,
+        SLOT(handleLightApplicationBackground()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(darkApplicationBackgroundClicked()),
-                this,
-                SLOT(handleDarkApplicationBackground()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(darkApplicationBackgroundClicked()),
+        this,
+        SLOT(handleDarkApplicationBackground()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(customApplicationBackgroundClicked()),
-                this,
-                SLOT(handleCustomApplicationBackground()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(customApplicationBackgroundClicked()),
+        this,
+        SLOT(handleCustomApplicationBackground()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(customPageTextClicked()),
-                this,
-                SLOT(handleCustomPageText()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(customPageTextClicked()),
+        this,
+        SLOT(handleCustomPageText()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(customPageBackgroundClicked()),
-                this,
-                SLOT(handleCustomPageBackground()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(customPageBackgroundClicked()),
+        this,
+        SLOT(handleCustomPageBackground()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(rulerModeBoundsClicked()),
-                this,
-                SLOT(handleRulerModeBounds()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(rulerModeBoundsClicked()),
+        this,
+        SLOT(handleRulerModeBounds()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(rulerModeColorClicked()),
-                this,
-                SLOT(handleRulerModeColor())); 
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(rulerModeColorClicked()),
+        this,
+        SLOT(handleRulerModeColor()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(rulerNextClicked()),
-                this,
-                SLOT(handleRulerNext())); 
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(rulerNextClicked()),
+        this,
+        SLOT(handleRulerNext()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(rulerPrevClicked()),
-                this,
-                SLOT(handleRulerPrev())); 
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(rulerPrevClicked()),
+        this,
+        SLOT(handleRulerPrev()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(portalClicked()),
-                this,
-                SLOT(handlePortal())); 
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(portalClicked()),
+        this,
+        SLOT(handlePortal()));
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(backClicked()),
-                this,
-                SLOT(handleBack())); 
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(backClicked()),
+        this,
+        SLOT(handleBack()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(forwardClicked()),
-                this,
-                SLOT(handleForward())); 
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(forwardClicked()),
+        this,
+        SLOT(handleForward()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(allConfigsClicked()),
-                this,
-                SLOT(handleAllConfigs())); 
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(allConfigsClicked()),
+        this,
+        SLOT(handleAllConfigs()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(restoreDefaultsClicked()),
-                this,
-                SLOT(handleRestoreDefaults())); 
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(restoreDefaultsClicked()),
+        this,
+        SLOT(handleRestoreDefaults()));
 
 }
 
 
-void TouchSettings::handleLightApplicationBackground(){
+void TouchSettings::handleLightApplicationBackground() {
     show_dialog_for_color_n(3, BACKGROUND_COLOR);
 }
 
@@ -147,7 +147,7 @@ void TouchSettings::handleCustomPageBackground() {
 
 
 
-void TouchSettings::resizeEvent(QResizeEvent* resize_event){
+void TouchSettings::resizeEvent(QResizeEvent* resize_event) {
     //quick_widget->resize(resize_event->size().width(), resize_event->size().height());
     //QWidget::resizeEvent(resize_event);
 
@@ -157,7 +157,7 @@ void TouchSettings::resizeEvent(QResizeEvent* resize_event){
 
     //float parent_width_in_centimeters = static_cast<float>(parent_width) / logicalDpiX() * 2.54f;
     //float parent_height_in_centimeters = static_cast<float>(parent_height) / logicalDpiY() * 2.54f;
-    int ten_cm = static_cast<int>(12 * logicalDpiX() / 2.54f );
+    int ten_cm = static_cast<int>(12 * logicalDpiX() / 2.54f);
 
     int w = static_cast<int>(parent_width * 0.9f);
     int h = parent_height;
@@ -168,7 +168,7 @@ void TouchSettings::resizeEvent(QResizeEvent* resize_event){
     quick_widget->resize(w, h);
     setFixedSize(w, h);
 
-//    list_view->setFixedSize(parent_width * 0.9f, parent_height);
+    //    list_view->setFixedSize(parent_width * 0.9f, parent_height);
     move((parent_width - w) / 2, (parent_height - h) / 2);
 
 }
@@ -176,32 +176,32 @@ void TouchSettings::show_dialog_for_color_n(int n, float* color_location) {
     QColorDialog* dialog = new QColorDialog(this);
 
     if (n == 4) {
-		dialog->setOption(QColorDialog::ShowAlphaChannel, true);
+        dialog->setOption(QColorDialog::ShowAlphaChannel, true);
     }
 
     main_widget->push_current_widget(dialog);
     dialog->show();
 
-    connect(dialog, &QColorDialog::colorSelected, [&, color_location, n](const QColor& color){
+    connect(dialog, &QColorDialog::colorSelected, [&, color_location, n](const QColor& color) {
         if (n == 4) {
-			convert_qcolor_to_float4(color, color_location);
+            convert_qcolor_to_float4(color, color_location);
         }
         else {
-			convert_qcolor_to_float3(color, color_location);
+            convert_qcolor_to_float3(color, color_location);
         }
         main_widget->invalidate_render();
         main_widget->persist_config();
         //main_widget->pop_current_widget();
-    });
+        });
 
-    connect(dialog, &QColorDialog::finished, [&](){
+    connect(dialog, &QColorDialog::finished, [&]() {
         main_widget->pop_current_widget();
-    });
+        });
 
 }
 
 void TouchSettings::handleRulerModeBounds() {
-    RangeConfigUI *config_ui = new RangeConfigUI("", main_widget, &VISUAL_MARK_NEXT_PAGE_FRACTION, &VISUAL_MARK_NEXT_PAGE_THRESHOLD);
+    RangeConfigUI* config_ui = new RangeConfigUI("", main_widget, &VISUAL_MARK_NEXT_PAGE_FRACTION, &VISUAL_MARK_NEXT_PAGE_THRESHOLD);
     config_ui->set_should_persist(true);
     config_ui->show();
     main_widget->push_current_widget(config_ui);
@@ -222,7 +222,7 @@ void TouchSettings::handleRulerNext() {
     if (screen()->orientation() == Qt::PortraitOrientation) {
         show_dialog_for_rect(&PORTRAIT_VISUAL_MARK_NEXT);
     }
-    else{
+    else {
         show_dialog_for_rect(&LANDSCAPE_VISUAL_MARK_NEXT);
     }
 }
@@ -231,7 +231,7 @@ void TouchSettings::handleRulerPrev() {
     if (screen()->orientation() == Qt::PortraitOrientation) {
         show_dialog_for_rect(&PORTRAIT_VISUAL_MARK_PREV);
     }
-    else{
+    else {
         show_dialog_for_rect(&LANDSCAPE_VISUAL_MARK_PREV);
     }
 }
@@ -240,7 +240,7 @@ void TouchSettings::handleBack() {
     if (screen()->orientation() == Qt::PortraitOrientation) {
         show_dialog_for_rect(&PORTRAIT_BACK_UI_RECT);
     }
-    else{
+    else {
         show_dialog_for_rect(&LANDSCAPE_BACK_UI_RECT);
     }
 }
@@ -249,7 +249,7 @@ void TouchSettings::handlePortal() {
     if (screen()->orientation() == Qt::PortraitOrientation) {
         show_dialog_for_rect(&PORTRAIT_EDIT_PORTAL_UI_RECT);
     }
-    else{
+    else {
         show_dialog_for_rect(&LANDSCAPE_EDIT_PORTAL_UI_RECT);
     }
 }
@@ -258,15 +258,15 @@ void TouchSettings::handleForward() {
     if (screen()->orientation() == Qt::PortraitOrientation) {
         show_dialog_for_rect(&PORTRAIT_FORWARD_UI_RECT);
     }
-    else{
+    else {
         show_dialog_for_rect(&LANDSCAPE_FORWARD_UI_RECT);
     }
 }
 
 void TouchSettings::handleAllConfigs() {
-	TouchConfigMenu* config_menu = new TouchConfigMenu(FUZZY_SEARCHING, main_widget);
-	main_widget->push_current_widget(config_menu);
-	main_widget->show_current_widget();
+    TouchConfigMenu* config_menu = new TouchConfigMenu(FUZZY_SEARCHING, main_widget);
+    main_widget->push_current_widget(config_menu);
+    main_widget->show_current_widget();
 }
 
 void TouchSettings::handleRestoreDefaults() {

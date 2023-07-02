@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchHighlightButtons : public QWidget{
+class TouchHighlightButtons : public QWidget {
     Q_OBJECT
 public:
-    TouchHighlightButtons(char selected_symbol, QWidget* parent=nullptr);
+    TouchHighlightButtons(char selected_symbol, QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
     void setHighlightType(char type);
 

@@ -1,9 +1,9 @@
 #include "touchui/TouchMarkSelector.h"
 
 
-TouchMarkSelector::TouchMarkSelector(QWidget* parent) : QWidget(parent){
+TouchMarkSelector::TouchMarkSelector(QWidget* parent) : QWidget(parent) {
 
-//    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
+    //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);
@@ -29,7 +29,7 @@ void TouchMarkSelector::handleMarkSelected(QString text) {
     emit onMarkSelected(text);
 }
 
-void TouchMarkSelector::resizeEvent(QResizeEvent* resize_event){
+void TouchMarkSelector::resizeEvent(QResizeEvent* resize_event) {
     quick_widget->resize(0, 0);
     resize(0, 0);
     QWidget::resizeEvent(resize_event);

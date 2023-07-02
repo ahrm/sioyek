@@ -15,7 +15,7 @@ TextInput{
 
     id: root
     focus: true
-	inputMethodHints: Qt.ImhSensitiveData | Qt.ImhPreferLowercase | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+    inputMethodHints: Qt.ImhSensitiveData | Qt.ImhPreferLowercase | Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
 
     //buttons: ["delete"]
     //color: "red"

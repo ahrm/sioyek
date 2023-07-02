@@ -35,50 +35,50 @@ RowLayout{
 //            color: button_area.pressed ? "#444444" : "black"
             function getColor(){
                 if (mode >= 0){
-					if (mode == 0){
-						if (button_area.pressed){
-							return  gb.color.tint("#22ffffff");
-						}
-						else{
-							return gb.color;
-						}
+                    if (mode == 0){
+                        if (button_area.pressed){
+                            return  gb.color.tint("#22ffffff");
+                        }
+                        else{
+                            return gb.color;
+                        }
 
-					}
-					else if (mode == 1){
-						if (button_area.pressed){
-							return  gb.color.tint("#5500ff00");
-						}
-						else{
-							return  gb.color.tint("#4400ff00");
-						}
-					}
+                    }
+                    else if (mode == 1){
+                        if (button_area.pressed){
+                            return  gb.color.tint("#5500ff00");
+                        }
+                        else{
+                            return  gb.color.tint("#4400ff00");
+                        }
+                    }
                     else {
-						if (button_area.pressed){
-							return  gb.color.tint("#55ff0000");
-						}
-						else{
-							return  gb.color.tint("#44ff0000");
-						}
+                        if (button_area.pressed){
+                            return  gb.color.tint("#55ff0000");
+                        }
+                        else{
+                            return  gb.color.tint("#44ff0000");
+                        }
                     }
                 }
                 else{
-					if (gb.isSelected){
-						if (button_area.pressed){
-							return  gb.selectedColor.tint("#22ffffff");
-						}
-						else{
-							return gb.selectedColor;
-						}
+                    if (gb.isSelected){
+                        if (button_area.pressed){
+                            return  gb.selectedColor.tint("#22ffffff");
+                        }
+                        else{
+                            return gb.selectedColor;
+                        }
 
-					}
-					else{
-						if (button_area.pressed){
-							return  gb.color.tint("#22ffffff");
-						}
-						else{
-							return gb.color;
-						}
-					}
+                    }
+                    else{
+                        if (button_area.pressed){
+                            return  gb.color.tint("#22ffffff");
+                        }
+                        else{
+                            return gb.color;
+                        }
+                    }
                 }
             }
 
@@ -200,7 +200,7 @@ RowLayout{
                 }
 
                 gbButtonClicked: function() {
-					//wconsole.log(row.modeList[index]);
+                    //wconsole.log(row.modeList[index]);
 
                     if (row.radio){
                         row.selectedIndex = index;

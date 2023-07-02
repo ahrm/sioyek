@@ -40,538 +40,538 @@ class SelectionIndicator;
 
 
 enum class DrawingMode {
-	Drawing,
-	PenDrawing,
-	None
+    Drawing,
+    PenDrawing,
+    None
 };
 
 enum class ReferenceType {
-	Generic,
-	Equation,
-	Reference,
-	None
+    Generic,
+    Equation,
+    Reference,
+    None
 };
 
 struct BookmarkMoveData {
-	int index;
-	AbsoluteDocumentPos initial_bookmark_begin_position;
-	AbsoluteDocumentPos initial_bookmark_end_position;
-	AbsoluteDocumentPos initial_mouse_position;
+    int index;
+    AbsoluteDocumentPos initial_bookmark_begin_position;
+    AbsoluteDocumentPos initial_bookmark_end_position;
+    AbsoluteDocumentPos initial_mouse_position;
 
 };
 
 struct SelectedDrawings {
-	int page;
-	fz_rect selection_absrect;
-	std::vector<int> selected_indices;
+    int page;
+    fz_rect selection_absrect;
+    std::vector<int> selected_indices;
 };
 
 struct FreehandDrawingMoveData {
-	std::vector<FreehandDrawing> initial_drawings;
-	AbsoluteDocumentPos initial_mouse_position;
+    std::vector<FreehandDrawing> initial_drawings;
+    AbsoluteDocumentPos initial_mouse_position;
 };
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
-class MainWidget : public QQuickWidget, ConfigFileChangeListener{
+class MainWidget : public QQuickWidget, ConfigFileChangeListener {
 public:
     QTime debug_last_timer;
-	fz_context* mupdf_context = nullptr;
-	DatabaseManager* db_manager = nullptr;
-	DocumentManager* document_manager = nullptr;
-	CommandManager* command_manager = nullptr;
-	ConfigManager* config_manager = nullptr;
-	QNetworkAccessManager network_manager;
-	PdfRenderer* pdf_renderer = nullptr;
-	InputHandler* input_handler = nullptr;
-	CachedChecksummer* checksummer = nullptr;
+    fz_context* mupdf_context = nullptr;
+    DatabaseManager* db_manager = nullptr;
+    DocumentManager* document_manager = nullptr;
+    CommandManager* command_manager = nullptr;
+    ConfigManager* config_manager = nullptr;
+    QNetworkAccessManager network_manager;
+    PdfRenderer* pdf_renderer = nullptr;
+    InputHandler* input_handler = nullptr;
+    CachedChecksummer* checksummer = nullptr;
 
-	QTextToSpeech* tts = nullptr;
-	// is the TTS engine currently reading text?
-	bool is_reading = false;
+    QTextToSpeech* tts = nullptr;
+    // is the TTS engine currently reading text?
+    bool is_reading = false;
 
-	PdfViewOpenGLWidget* opengl_widget = nullptr;
-	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
-	QScrollBar* scroll_bar = nullptr;
+    PdfViewOpenGLWidget* opengl_widget = nullptr;
+    PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
+    QScrollBar* scroll_bar = nullptr;
 
-	// Some commands can not be executed immediately (e.g. because they require a text or symbol
-	// input to be completed) this is where they are stored until they can be executed.
-	std::unique_ptr<Command> pending_command_instance = nullptr;
+    // Some commands can not be executed immediately (e.g. because they require a text or symbol
+    // input to be completed) this is where they are stored until they can be executed.
+    std::unique_ptr<Command> pending_command_instance = nullptr;
 
-	DocumentView* main_document_view = nullptr;
-	DocumentView* helper_document_view = nullptr;
+    DocumentView* main_document_view = nullptr;
+    DocumentView* helper_document_view = nullptr;
 
-	// A stack of widgets to be displayed (e.g. the bookmark menu or the touch main menu).
-	// only the top widget is visible. When a widget is popped, the previous widget in the stack
-	// will be shown
-	std::vector<QWidget*> current_widget_stack;
+    // A stack of widgets to be displayed (e.g. the bookmark menu or the touch main menu).
+    // only the top widget is visible. When a widget is popped, the previous widget in the stack
+    // will be shown
+    std::vector<QWidget*> current_widget_stack;
 
-	// code to execute when a command is pressed (for example when we type `goto_beginning` in the command)
-	// menu, we will call on_command_done("goto_beginning"). The reason that this is a closure instead of just a
-	// method is historical. I am too lazy to change it.
-	std::function<void(std::string)> on_command_done = nullptr;
+    // code to execute when a command is pressed (for example when we type `goto_beginning` in the command)
+    // menu, we will call on_command_done("goto_beginning"). The reason that this is a closure instead of just a
+    // method is historical. I am too lazy to change it.
+    std::function<void(std::string)> on_command_done = nullptr;
 
-	// List of previous locations in the current session. Note that we keep the history even across files
-	// hence why `DocumentViewState` has a `document_path` member
-	std::vector<DocumentViewState> history;
-	// the index in the `history` array that we will jump to when `prev_state` is called.
-	int current_history_index = -1;
+    // List of previous locations in the current session. Note that we keep the history even across files
+    // hence why `DocumentViewState` has a `document_path` member
+    std::vector<DocumentViewState> history;
+    // the index in the `history` array that we will jump to when `prev_state` is called.
+    int current_history_index = -1;
 
-	// custom message to be displayed in sioyek's statusbar
-	std::wstring custom_status_message = L"";
+    // custom message to be displayed in sioyek's statusbar
+    std::wstring custom_status_message = L"";
 
-	// A flag which indicates whether the application should quit. We use this to inform other threads
-	// (e.g. the PDF rendering thread) that they should exit.
-	bool* should_quit = nullptr;
+    // A flag which indicates whether the application should quit. We use this to inform other threads
+    // (e.g. the PDF rendering thread) that they should exit.
+    bool* should_quit = nullptr;
 
-	// last position when mouse was clicked in absolute document space
-	AbsoluteDocumentPos last_mouse_down;
-	// The document offset (offset_x and offset_y) when mouse was last pressed
-	// we use this to update the offset when dragging the mouse in some modes
-	// for example in touch mode or when dragging while holding middle mouse button
-	AbsoluteDocumentPos last_mouse_down_document_offset;
+    // last position when mouse was clicked in absolute document space
+    AbsoluteDocumentPos last_mouse_down;
+    // The document offset (offset_x and offset_y) when mouse was last pressed
+    // we use this to update the offset when dragging the mouse in some modes
+    // for example in touch mode or when dragging while holding middle mouse button
+    AbsoluteDocumentPos last_mouse_down_document_offset;
 
-	// last window position when mouse was clicked, we use this in mouse drag mode
-	WindowPos last_mouse_down_window_pos;
+    // last window position when mouse was clicked, we use this in mouse drag mode
+    WindowPos last_mouse_down_window_pos;
 
-	// begin/end position of the current text selection
-	AbsoluteDocumentPos selection_begin;
-	AbsoluteDocumentPos selection_end;
+    // begin/end position of the current text selection
+    AbsoluteDocumentPos selection_begin;
+    AbsoluteDocumentPos selection_end;
 
-	// when moving the text selection using keyboard, `selection_begin` and `selection_end`
-	// might be out of sync with `selected_text_`. `selected_text_is_dirty` is true when this
-	// is the case, which means that we need to update `selected_text_` before using it.
-	bool selected_text_is_dirty = false;
+    // when moving the text selection using keyboard, `selection_begin` and `selection_end`
+    // might be out of sync with `selected_text_`. `selected_text_is_dirty` is true when this
+    // is the case, which means that we need to update `selected_text_` before using it.
+    bool selected_text_is_dirty = false;
 
-	// selected text (using mouse cursor or other methods) which is used e.g. for copying or highlighting
-	std::wstring selected_text;
+    // selected text (using mouse cursor or other methods) which is used e.g. for copying or highlighting
+    std::wstring selected_text;
 
-	// whether we are in rect/point select mode (some commands require a rectangle to be executed
-	// for example `delete_freehand_drawings`)
-	bool rect_select_mode = false;
-	bool point_select_mode = false;
+    // whether we are in rect/point select mode (some commands require a rectangle to be executed
+    // for example `delete_freehand_drawings`)
+    bool rect_select_mode = false;
+    bool point_select_mode = false;
 
-	// begin/end of current selected rectangle
-	std::optional<AbsoluteDocumentPos> rect_select_begin = {};
-	std::optional<AbsoluteDocumentPos> rect_select_end = {};
+    // begin/end of current selected rectangle
+    std::optional<AbsoluteDocumentPos> rect_select_begin = {};
+    std::optional<AbsoluteDocumentPos> rect_select_end = {};
 
-	std::optional<BookmarkMoveData> bookmark_move_data = {};
- // when set, mouse wheel moves the ruler
-	bool visual_scroll_mode = false;
-	bool debug_mode = false;
+    std::optional<BookmarkMoveData> bookmark_move_data = {};
+    // when set, mouse wheel moves the ruler
+    bool visual_scroll_mode = false;
+    bool debug_mode = false;
 
-	bool horizontal_scroll_locked = false;
+    bool horizontal_scroll_locked = false;
 
-	// is the user currently selecing text? (happens when we left click and move the cursor)
-	bool is_selecting = false;
-	// is the user in word select mode? (happens when we double left click and move the cursor)
-	bool is_word_selecting = false;
+    // is the user currently selecing text? (happens when we left click and move the cursor)
+    bool is_selecting = false;
+    // is the user in word select mode? (happens when we double left click and move the cursor)
+    bool is_word_selecting = false;
 
-	// in select highlight mode, we immediately highlight the text when it is selected
-	// with highlight type of `select_highlight_type` 
-	bool is_select_highlight_mode = false;
-	char select_highlight_type = 'a';
+    // in select highlight mode, we immediately highlight the text when it is selected
+    // with highlight type of `select_highlight_type` 
+    bool is_select_highlight_mode = false;
+    char select_highlight_type = 'a';
 
-	// color type to use when freehand drawing
-	char current_freehand_type = 'r';
-	// line thickness of freehand drawings
-	float freehand_thickness = 1.0f;
+    // color type to use when freehand drawing
+    char current_freehand_type = 'r';
+    // line thickness of freehand drawings
+    float freehand_thickness = 1.0f;
 
-	// in smooth scroll mode we scroll the document smoothly instead of jumping to the target
-	// `smooth_scroll_speed` is used to keep track of our speed in this mode
-	bool smooth_scroll_mode = false;
-	float smooth_scroll_speed = 0.0f;
+    // in smooth scroll mode we scroll the document smoothly instead of jumping to the target
+    // `smooth_scroll_speed` is used to keep track of our speed in this mode
+    bool smooth_scroll_mode = false;
+    float smooth_scroll_speed = 0.0f;
 
-	// the timer which periodically checks if the UI/rendering needs updating. Normally the timer value is
-	// set to be INTERVAL_TIME (which is 200ms at the time of writing this comment), however, it is set to a much
-	// lower value when in smooth scroll mode or when user flicks a document in touch mode
+    // the timer which periodically checks if the UI/rendering needs updating. Normally the timer value is
+    // set to be INTERVAL_TIME (which is 200ms at the time of writing this comment), however, it is set to a much
+    // lower value when in smooth scroll mode or when user flicks a document in touch mode
     QTimer* validation_interval_timer = nullptr;
 
-	// the portal to be edited. This is usually set by `edit_portal` command which jumps to the portal
-	// when we go back to the original location by jumping back in history, the portal will be edited
-	// to be the new document view state
-	std::optional<Portal> portal_to_edit = {};
+    // the portal to be edited. This is usually set by `edit_portal` command which jumps to the portal
+    // when we go back to the original location by jumping back in history, the portal will be edited
+    // to be the new document view state
+    std::optional<Portal> portal_to_edit = {};
 
-	// the index of highlight in doc()->get_highlights() that is selected. This is used to
-	// delete/edit highlights e.g. by selecting a highlight by clicking on it and then executing `delete_highlight`
-	int selected_highlight_index = -1;
-	int selected_bookmark_index = -1;
-	std::optional<SelectedDrawings> selected_freehand_drawings = {};
-	std::optional<FreehandDrawingMoveData> freehand_drawing_move_data = {};
+    // the index of highlight in doc()->get_highlights() that is selected. This is used to
+    // delete/edit highlights e.g. by selecting a highlight by clicking on it and then executing `delete_highlight`
+    int selected_highlight_index = -1;
+    int selected_bookmark_index = -1;
+    std::optional<SelectedDrawings> selected_freehand_drawings = {};
+    std::optional<FreehandDrawingMoveData> freehand_drawing_move_data = {};
 
-	// An incomplete portal that is being created. The source of the portal is filled
-	// but the destination still needs to be set.
-	std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_portal;
+    // An incomplete portal that is being created. The source of the portal is filled
+    // but the destination still needs to be set.
+    std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_portal;
 
-	// the current freehand drawing mode. None means we are not drawing anything
-	// Drawing means we use the mouse to draw a freehand diagram
-	// and PenDrawing means we assume the user is using a pen so we treat mouse inputs
-	// normally and only use pen inputs for freehand drawing
-	DrawingMode freehand_drawing_mode = DrawingMode::None;
+    // the current freehand drawing mode. None means we are not drawing anything
+    // Drawing means we use the mouse to draw a freehand diagram
+    // and PenDrawing means we assume the user is using a pen so we treat mouse inputs
+    // normally and only use pen inputs for freehand drawing
+    DrawingMode freehand_drawing_mode = DrawingMode::None;
 
-	// In mouse drag mode, we use the mouse to drag the document around
-	bool mouse_drag_mode = false;
+    // In mouse drag mode, we use the mouse to drag the document around
+    bool mouse_drag_mode = false;
 
-	// In synctex mode right clicking on a document will jump to the corresponding latex file
-	// (assuming `inverse_search_command` is properly configured)
-	bool synctex_mode = false;
+    // In synctex mode right clicking on a document will jump to the corresponding latex file
+    // (assuming `inverse_search_command` is properly configured)
+    bool synctex_mode = false;
 
-	// are we currently dragging the document
-	bool is_dragging = false;
+    // are we currently dragging the document
+    bool is_dragging = false;
     // are we performing pinch to zoom gesture
     bool is_pinching = false;
 
-	// are we currently freehand drawing on the document
-	bool is_drawing = false;
+    // are we currently freehand drawing on the document
+    bool is_drawing = false;
 
-	// should we show the status label?
-	// If touch mode is enabled, we don't show the status label at all, unless there is another window
-	// (e.g. the main menu or search buttons) is visible. That is because the screen space is already
-	// very limited in touch devices and we don't want to waste it using a statusbar unless it is absolutely required
-	bool should_show_status_label_ = true;
-	bool should_show_status_label();
+    // should we show the status label?
+    // If touch mode is enabled, we don't show the status label at all, unless there is another window
+    // (e.g. the main menu or search buttons) is visible. That is because the screen space is already
+    // very limited in touch devices and we don't want to waste it using a statusbar unless it is absolutely required
+    bool should_show_status_label_ = true;
+    bool should_show_status_label();
 
-	// the location of current character in sioyek's typing minigame
-	std::optional<CharacterAddress> typing_location;
+    // the location of current character in sioyek's typing minigame
+    std::optional<CharacterAddress> typing_location;
 
-	int main_window_width = 0;
-	int main_window_height = 0;
+    int main_window_width = 0;
+    int main_window_height = 0;
 
-	QWidget* text_command_line_edit_container = nullptr;
-	QLabel* text_command_line_edit_label = nullptr;
-	QLineEdit* text_command_line_edit = nullptr;
-	QLabel* status_label = nullptr;
+    QWidget* text_command_line_edit_container = nullptr;
+    QLabel* text_command_line_edit_label = nullptr;
+    QLineEdit* text_command_line_edit = nullptr;
+    QLabel* status_label = nullptr;
 
-	// determines if the widget render is invalid and needs to be updated
-	// when `validation_interval_timer` fired, we check if this is true
-	// and only then we re-render the widget
-	// note that this is different from the document being invalid (an example of document
-	// being invalid could be a latex document that is changed since being loaded). This just means that
-	// the current drawing of MainWidget is not correct (for example due to moving vertically)
-	bool is_render_invalidated = false;
+    // determines if the widget render is invalid and needs to be updated
+    // when `validation_interval_timer` fired, we check if this is true
+    // and only then we re-render the widget
+    // note that this is different from the document being invalid (an example of document
+    // being invalid could be a latex document that is changed since being loaded). This just means that
+    // the current drawing of MainWidget is not correct (for example due to moving vertically)
+    bool is_render_invalidated = false;
 
-	// determines if the UI is invalid and needs to be updated
-	// this can be the case for example when updating the search progress
-	// note that when render is invalid we automatically validate the UI anyway
-	bool is_ui_invalidated = false;
+    // determines if the UI is invalid and needs to be updated
+    // this can be the case for example when updating the search progress
+    // note that when render is invalid we automatically validate the UI anyway
+    bool is_ui_invalidated = false;
 
-	// this is a niche option to show the last executed command in the status bar
-	// (I used it when recording sioyek's video tutorial to show the command being executed)
-	bool should_show_last_command = false;
+    // this is a niche option to show the last executed command in the status bar
+    // (I used it when recording sioyek's video tutorial to show the command being executed)
+    bool should_show_last_command = false;
 
-	// last page to be fit when we are in smart fit mode
-	// this value not being `{}` indicates that we are in smart fit mode
-	// which means that every time page is changed, we execute `fit_to_page_width_smart`
-	std::optional<int> last_smart_fit_page = {};
+    // last page to be fit when we are in smart fit mode
+    // this value not being `{}` indicates that we are in smart fit mode
+    // which means that every time page is changed, we execute `fit_to_page_width_smart`
+    std::optional<int> last_smart_fit_page = {};
 
-	// the command used to perform synctex inverse searches
-	std::wstring inverse_search_command;
+    // the command used to perform synctex inverse searches
+    std::wstring inverse_search_command;
 
-	// data used to resize/move the overview. which is a small window which shows the target
-	// destination of references/links
-	std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
-	std::optional<PdfViewOpenGLWidget::OverviewTouchMoveData> overview_touch_move_data = {};
-	std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
+    // data used to resize/move the overview. which is a small window which shows the target
+    // destination of references/links
+    std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
+    std::optional<PdfViewOpenGLWidget::OverviewTouchMoveData> overview_touch_move_data = {};
+    std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
 
-	// A list of candiadates to be shown in the overview window. We use simple heuristics to determine the
-	// target of references, while this works most of the time, it is not perfect. So we keep a list of candidates
-	// which the user can naviagte through using `next_preview` and `previous_preview` commands which move
-	// `index_into_candidates` pointer to the next/previous candidate
-	std::vector<DocumentPos> smart_view_candidates;
-	int index_into_candidates = 0;
+    // A list of candiadates to be shown in the overview window. We use simple heuristics to determine the
+    // target of references, while this works most of the time, it is not perfect. So we keep a list of candidates
+    // which the user can naviagte through using `next_preview` and `previous_preview` commands which move
+    // `index_into_candidates` pointer to the next/previous candidate
+    std::vector<DocumentPos> smart_view_candidates;
+    int index_into_candidates = 0;
 
-	// when selecting text, we update the rendering faster, this timer is used 
-	// so that we don't update the rendering too fast
-	QTime last_text_select_time = QTime::currentTime();
+    // when selecting text, we update the rendering faster, this timer is used 
+    // so that we don't update the rendering too fast
+    QTime last_text_select_time = QTime::currentTime();
 
-	// last time we updated `smooth_scroll_speed` 
-	QTime last_speed_update_time = QTime::currentTime();
+    // last time we updated `smooth_scroll_speed` 
+    QTime last_speed_update_time = QTime::currentTime();
 
-	bool main_document_view_has_document();
-	std::optional<std::string> get_last_opened_file_checksum();
+    bool main_document_view_has_document();
+    std::optional<std::string> get_last_opened_file_checksum();
 
-	void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions=false);
+    void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions = false);
 
     int get_current_colorscheme_index();
     void set_dark_mode();
     void set_light_mode();
     void set_custom_color_mode();
     void toggle_statusbar();
-	void toggle_titlebar();
+    void toggle_titlebar();
 
-	void add_text_annotation_to_selected_highlight(const std::wstring& annot_text);
+    void add_text_annotation_to_selected_highlight(const std::wstring& annot_text);
 
-	// search the `paper_name` in one of the configurable when middle-click or shift+middle-clicking on paper's name
-	void handle_search_paper_name(std::wstring paper_name, bool is_shift_pressed);
+    // search the `paper_name` in one of the configurable when middle-click or shift+middle-clicking on paper's name
+    void handle_search_paper_name(std::wstring paper_name, bool is_shift_pressed);
 
-	void persist(bool persist_drawings=false) ;
-	bool is_pending_link_source_filled();
-	std::wstring get_status_string();
-	void handle_escape();
-	bool is_waiting_for_symbol();
-	void key_event(bool released, QKeyEvent* kevent);
-	void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
-	void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
-	void on_config_changed(std::string config_name);
-	void on_configs_changed(std::vector<std::string>* config_names);
+    void persist(bool persist_drawings = false);
+    bool is_pending_link_source_filled();
+    std::wstring get_status_string();
+    void handle_escape();
+    bool is_waiting_for_symbol();
+    void key_event(bool released, QKeyEvent* kevent);
+    void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
+    void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
+    void on_config_changed(std::string config_name);
+    void on_configs_changed(std::vector<std::string>* config_names);
 
-	void next_state();
-	void prev_state();
-	void update_current_history_index();
+    void next_state();
+    void prev_state();
+    void update_current_history_index();
 
-	void set_main_document_view_state(DocumentViewState new_view_state);
-	void handle_click(WindowPos pos);
+    void set_main_document_view_state(DocumentViewState new_view_state);
+    void handle_click(WindowPos pos);
 
-	void update_selected_bookmark_font_size();
-	//bool eventFilter(QObject* obj, QEvent* event) override;
-	void set_command_textbox_text(const std::wstring& txt);
-	void change_selected_highlight_type(char new_type);
-	void change_selected_bookmark_text(const std::wstring& new_text);
-	void change_selected_highlight_text_annot(const std::wstring& new_text);
-	char get_current_selected_highlight_type();
-	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false, const std::wstring& initial_value=L"");
-	void show_mark_selector();
-	void toggle_two_window_mode();
-	void toggle_window_configuration();
-	void handle_portal();
-	void add_portal(std::wstring source_path, Portal new_link);
-	void toggle_fullscreen();
-	void toggle_presentation_mode();
-	void set_presentation_mode(bool mode);
+    void update_selected_bookmark_font_size();
+    //bool eventFilter(QObject* obj, QEvent* event) override;
+    void set_command_textbox_text(const std::wstring& txt);
+    void change_selected_highlight_type(char new_type);
+    void change_selected_bookmark_text(const std::wstring& new_text);
+    void change_selected_highlight_text_annot(const std::wstring& new_text);
+    char get_current_selected_highlight_type();
+    void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false, const std::wstring& initial_value = L"");
+    void show_mark_selector();
+    void toggle_two_window_mode();
+    void toggle_window_configuration();
+    void handle_portal();
+    void add_portal(std::wstring source_path, Portal new_link);
+    void toggle_fullscreen();
+    void toggle_presentation_mode();
+    void set_presentation_mode(bool mode);
     void set_synctex_mode(bool mode);
     void toggle_synctex_mode();
     void complete_pending_link(const PortalViewState& destination_view_state);
-	void long_jump_to_destination(DocumentPos pos);
-	void long_jump_to_destination(int page, float offset_y);
-	void long_jump_to_destination(float abs_offset_y);
-	void execute_command(std::wstring command, std::wstring text=L"", bool wait=false);
-	//QString get_status_stylesheet();
+    void long_jump_to_destination(DocumentPos pos);
+    void long_jump_to_destination(int page, float offset_y);
+    void long_jump_to_destination(float abs_offset_y);
+    void execute_command(std::wstring command, std::wstring text = L"", bool wait = false);
+    //QString get_status_stylesheet();
     void smart_jump_under_pos(WindowPos pos);
     bool overview_under_pos(WindowPos pos);
     void visual_mark_under_pos(WindowPos pos);
-	bool is_network_manager_running(bool* is_downloading=nullptr);
-	void show_download_paper_menu(
-		const std::vector<std::wstring>& paper_names,
-		const std::vector<std::wstring>& download_urls );
-	void download_paper_with_url(std::wstring paper_url);
+    bool is_network_manager_running(bool* is_downloading = nullptr);
+    void show_download_paper_menu(
+        const std::vector<std::wstring>& paper_names,
+        const std::vector<std::wstring>& download_urls);
+    void download_paper_with_url(std::wstring paper_url);
 
-	QRect get_main_window_rect();
-	QRect get_helper_window_rect();
+    QRect get_main_window_rect();
+    QRect get_helper_window_rect();
 
-	void show_password_prompt_if_required();
-	void handle_link_click(const PdfLink& link);
+    void show_password_prompt_if_required();
+    void handle_link_click(const PdfLink& link);
 
-	std::wstring get_window_configuration_string();
-	std::wstring get_serialized_configuration_string();
-	void save_auto_config();
+    std::wstring get_window_configuration_string();
+    std::wstring get_serialized_configuration_string();
+    void save_auto_config();
 
-	void handle_close_event();
-	void return_to_last_visual_mark();
-	bool is_visual_mark_mode();
-	void reload(bool flush=true);
+    void handle_close_event();
+    void return_to_last_visual_mark();
+    bool is_visual_mark_mode();
+    void reload(bool flush = true);
 
-	QString get_font_face_name(); 
+    QString get_font_face_name();
 
-	void reset_highlight_links();
-	void set_rect_select_mode(bool mode);
-	void set_point_select_mode(bool mode);
-	void clear_selected_rect();
-	void clear_selected_text();
-	void toggle_pdf_annotations();
+    void reset_highlight_links();
+    void set_rect_select_mode(bool mode);
+    void set_point_select_mode(bool mode);
+    void clear_selected_rect();
+    void clear_selected_text();
+    void toggle_pdf_annotations();
 
-	void expand_selection_vertical(bool begin, bool below);
+    void expand_selection_vertical(bool begin, bool below);
 
-	std::optional<fz_rect> get_selected_rect_absolute();
-	bool get_selected_rect_document(int& out_page, fz_rect& out_rect);
-	Document* doc();
+    std::optional<fz_rect> get_selected_rect_absolute();
+    bool get_selected_rect_document(int& out_page, fz_rect& out_rect);
+    Document* doc();
 
-	MainWidget(
-		fz_context* mupdf_context,
-		DatabaseManager* db_manager,
-		DocumentManager* document_manager,
-		ConfigManager* config_manager,
-		CommandManager* command_manager,
-		InputHandler* input_handler,
-		CachedChecksummer* checksummer,
-		bool* should_quit_ptr,
-		QWidget* parent=nullptr
-	);
-	MainWidget(MainWidget* other);
+    MainWidget(
+        fz_context* mupdf_context,
+        DatabaseManager* db_manager,
+        DocumentManager* document_manager,
+        ConfigManager* config_manager,
+        CommandManager* command_manager,
+        InputHandler* input_handler,
+        CachedChecksummer* checksummer,
+        bool* should_quit_ptr,
+        QWidget* parent = nullptr
+    );
+    MainWidget(MainWidget* other);
 
-	~MainWidget();
+    ~MainWidget();
 
-	//void handle_command(NewCommand* command, int num_repeats);
-	bool handle_command_types(std::unique_ptr<Command> command, int num_repeats);
-	void handle_pending_text_command(std::wstring text);
+    //void handle_command(NewCommand* command, int num_repeats);
+    bool handle_command_types(std::unique_ptr<Command> command, int num_repeats);
+    void handle_pending_text_command(std::wstring text);
 
-	void invalidate_render();
-	void invalidate_ui();
-	void open_document(const Path& path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
-	void open_document_with_hash(const std::string& hash, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
-	void open_document_at_location(const Path& path, int page, std::optional<float> x_loc, std::optional<float> y_loc, std::optional<float> zoom_level);
-	void open_document(const DocumentViewState& state);
-	void open_document(const PortalViewState& checksum);
-	void validate_render();
-	void validate_ui();
-	void zoom(WindowPos pos, float zoom_factor, bool zoom_in);
-	bool move_document(float dx, float dy, bool force=false);
-	void move_document_screens(int num_screens);
-	void focus_text(int page, const std::wstring& text);
+    void invalidate_render();
+    void invalidate_ui();
+    void open_document(const Path& path, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
+    void open_document_with_hash(const std::string& hash, std::optional<float> offset_x = {}, std::optional<float> offset_y = {}, std::optional<float> zoom_level = {});
+    void open_document_at_location(const Path& path, int page, std::optional<float> x_loc, std::optional<float> y_loc, std::optional<float> zoom_level);
+    void open_document(const DocumentViewState& state);
+    void open_document(const PortalViewState& checksum);
+    void validate_render();
+    void validate_ui();
+    void zoom(WindowPos pos, float zoom_factor, bool zoom_in);
+    bool move_document(float dx, float dy, bool force = false);
+    void move_document_screens(int num_screens);
+    void focus_text(int page, const std::wstring& text);
 
-	void move_visual_mark_next();
-	void move_visual_mark_prev();
-	fz_rect move_visual_mark(int offset);
-	void on_config_file_changed(ConfigManager* new_config) override;
-	void toggle_mouse_drag_mode();
-	void toggle_freehand_drawing_mode();
-	void exit_freehand_drawing_mode();
-	void toggle_pen_drawing_mode();
-	void set_pen_drawing_mode(bool enabled);
-	void set_hand_drawing_mode(bool enabled);
-	void handle_drawing_ui_visibilty();
+    void move_visual_mark_next();
+    void move_visual_mark_prev();
+    fz_rect move_visual_mark(int offset);
+    void on_config_file_changed(ConfigManager* new_config) override;
+    void toggle_mouse_drag_mode();
+    void toggle_freehand_drawing_mode();
+    void exit_freehand_drawing_mode();
+    void toggle_pen_drawing_mode();
+    void set_pen_drawing_mode(bool enabled);
+    void set_hand_drawing_mode(bool enabled);
+    void handle_drawing_ui_visibilty();
 
-	void toggle_dark_mode();
-	void do_synctex_forward_search(const Path& pdf_file_path,const Path& latex_file_path, int line, int column);
-	//void handle_args(const QStringList &arguments);
-	void update_link_with_opened_book_state(Portal lnk, const OpenedBookState& new_state);
-	void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
-	void set_current_widget(QWidget* new_widget);
-	void push_current_widget(QWidget* new_widget);
-	void pop_current_widget();
-	void show_current_widget();
-	bool focus_on_visual_mark_pos(bool moving_down);
-	void toggle_visual_scroll_mode();
-	void set_overview_link(PdfLink link);
-	void set_overview_position(int page, float offset);
-	ReferenceType find_location_of_text_under_pointer(WindowPos pos, int* out_page, float* out_offset, bool update_candidates=false);
-	std::optional<std::wstring> get_current_file_name();
-	CommandManager* get_command_manager();
+    void toggle_dark_mode();
+    void do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line, int column);
+    //void handle_args(const QStringList &arguments);
+    void update_link_with_opened_book_state(Portal lnk, const OpenedBookState& new_state);
+    void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
+    void set_current_widget(QWidget* new_widget);
+    void push_current_widget(QWidget* new_widget);
+    void pop_current_widget();
+    void show_current_widget();
+    bool focus_on_visual_mark_pos(bool moving_down);
+    void toggle_visual_scroll_mode();
+    void set_overview_link(PdfLink link);
+    void set_overview_position(int page, float offset);
+    ReferenceType find_location_of_text_under_pointer(WindowPos pos, int* out_page, float* out_offset, bool update_candidates = false);
+    std::optional<std::wstring> get_current_file_name();
+    CommandManager* get_command_manager();
 
-	void move_vertical(float amount);
-	bool move_horizontal(float amount, bool force=false);
-	void get_window_params_for_one_window_mode(int* main_window_size, int* main_window_move);
-	void get_window_params_for_two_window_mode(int* main_window_size, int* main_window_move, int* helper_window_size, int* helper_window_move);
-	void apply_window_params_for_one_window_mode(bool force_resize=false);
-	void apply_window_params_for_two_window_mode();
-	bool helper_window_overlaps_main_window();
-	void highlight_words();
+    void move_vertical(float amount);
+    bool move_horizontal(float amount, bool force = false);
+    void get_window_params_for_one_window_mode(int* main_window_size, int* main_window_move);
+    void get_window_params_for_two_window_mode(int* main_window_size, int* main_window_move, int* helper_window_size, int* helper_window_move);
+    void apply_window_params_for_one_window_mode(bool force_resize = false);
+    void apply_window_params_for_two_window_mode();
+    bool helper_window_overlaps_main_window();
+    void highlight_words();
 
-	std::vector<fz_rect> get_flat_words(std::vector<std::vector<fz_rect>>* flat_word_chars=nullptr);
+    std::vector<fz_rect> get_flat_words(std::vector<std::vector<fz_rect>>* flat_word_chars = nullptr);
 
-	// get rects using tags (tags are strings shown when executing `keyboard_*` commands)
-	std::optional<fz_rect> get_tag_rect(std::string tag, std::vector<fz_rect>* word_chars=nullptr);
-	std::optional<fz_irect> get_tag_window_rect(std::string tag, std::vector<fz_irect>* char_rects=nullptr);
+    // get rects using tags (tags are strings shown when executing `keyboard_*` commands)
+    std::optional<fz_rect> get_tag_rect(std::string tag, std::vector<fz_rect>* word_chars = nullptr);
+    std::optional<fz_irect> get_tag_window_rect(std::string tag, std::vector<fz_irect>* char_rects = nullptr);
 
-	bool is_rotated();
-	void on_new_paper_added(const std::wstring& file_path);
-	void scroll_overview(int amount);
-	int get_current_page_number() const;
-	std::wstring get_current_page_label();
-	void goto_page_with_label(std::wstring label);
-	void set_inverse_search_command(const std::wstring& new_command);
-	int get_current_monitor_width(); int get_current_monitor_height();
-	void synctex_under_pos(WindowPos position);
-	std::optional<std::wstring> get_paper_name_under_cursor(bool use_last_hold_point=false);
+    bool is_rotated();
+    void on_new_paper_added(const std::wstring& file_path);
+    void scroll_overview(int amount);
+    int get_current_page_number() const;
+    std::wstring get_current_page_label();
+    void goto_page_with_label(std::wstring label);
+    void set_inverse_search_command(const std::wstring& new_command);
+    int get_current_monitor_width(); int get_current_monitor_height();
+    void synctex_under_pos(WindowPos position);
+    std::optional<std::wstring> get_paper_name_under_cursor(bool use_last_hold_point = false);
     fz_stext_char* get_closest_character_to_cusrsor(QPoint pos);
     void set_status_message(std::wstring new_status_string);
-	void remove_self_from_windows();
-	//void handle_additional_command(std::wstring command_name, bool wait=false);
-	std::optional<DocumentPos> get_overview_position();
-	void handle_keyboard_select(const std::wstring& text);
-	//void run_multiple_commands(const std::wstring& commands);
-	void push_state(bool update=true);
-	void toggle_scrollbar();
-	void update_scrollbar();
-	void handle_portal_overview_update();
-	void goto_overview();
-	bool is_rect_visible(int page, fz_rect rect);
-	bool is_point_visible(int page, fz_point point);
-	void set_mark_in_current_location(char symbol);
-	void goto_mark(char symbol);
-	void advance_command(std::unique_ptr<Command> command);
-	void perform_search(std::wstring text, bool is_regex=false);
-	void overview_to_definition();
-	void portal_to_definition();
-	void move_visual_mark_command(int amount);
-	void handle_goto_loaded_document();
+    void remove_self_from_windows();
+    //void handle_additional_command(std::wstring command_name, bool wait=false);
+    std::optional<DocumentPos> get_overview_position();
+    void handle_keyboard_select(const std::wstring& text);
+    //void run_multiple_commands(const std::wstring& commands);
+    void push_state(bool update = true);
+    void toggle_scrollbar();
+    void update_scrollbar();
+    void handle_portal_overview_update();
+    void goto_overview();
+    bool is_rect_visible(int page, fz_rect rect);
+    bool is_point_visible(int page, fz_point point);
+    void set_mark_in_current_location(char symbol);
+    void goto_mark(char symbol);
+    void advance_command(std::unique_ptr<Command> command);
+    void perform_search(std::wstring text, bool is_regex = false);
+    void overview_to_definition();
+    void portal_to_definition();
+    void move_visual_mark_command(int amount);
+    void handle_goto_loaded_document();
 
-	void handle_vertical_move(int amount);
-	void handle_horizontal_move(int amount);
-	void handle_goto_bookmark();
-	void handle_goto_bookmark_global();
-	void handle_add_highlight(char symbol);
-	void handle_goto_highlight();
-	void handle_goto_highlight_global();
-	void handle_goto_toc();
-	void handle_open_prev_doc();
-	void handle_move_screen(int amount);
-	MainWidget* handle_new_window();
-	void handle_open_link(const std::wstring& text, bool copy=false);
-	void handle_overview_link(const std::wstring& text);
-	void handle_portal_to_link(const std::wstring& text);
-	void handle_keys_user_all();
-	void handle_prefs_user_all();
-	void handle_portal_to_overview();
-	void handle_focus_text(const std::wstring& text);
-	void handle_goto_window();
-	void handle_toggle_smooth_scroll_mode();
-	void handle_overview_to_portal();
-	void handle_toggle_typing_mode();
-	void handle_delete_highlight_under_cursor();
+    void handle_vertical_move(int amount);
+    void handle_horizontal_move(int amount);
+    void handle_goto_bookmark();
+    void handle_goto_bookmark_global();
+    void handle_add_highlight(char symbol);
+    void handle_goto_highlight();
+    void handle_goto_highlight_global();
+    void handle_goto_toc();
+    void handle_open_prev_doc();
+    void handle_move_screen(int amount);
+    MainWidget* handle_new_window();
+    void handle_open_link(const std::wstring& text, bool copy = false);
+    void handle_overview_link(const std::wstring& text);
+    void handle_portal_to_link(const std::wstring& text);
+    void handle_keys_user_all();
+    void handle_prefs_user_all();
+    void handle_portal_to_overview();
+    void handle_focus_text(const std::wstring& text);
+    void handle_goto_window();
+    void handle_toggle_smooth_scroll_mode();
+    void handle_overview_to_portal();
+    void handle_toggle_typing_mode();
+    void handle_delete_highlight_under_cursor();
     void handle_delete_selected_highlight();
-	void handle_start_reading();
-	void handle_stop_reading();
-	void handle_play();
-	void handle_undo_drawing();
-	void handle_pause();
-	void read_current_line();
-	void download_paper_under_cursor(bool use_last_touch_pos=false);
-	void handle_debug_command();
-	void handle_add_marked_data();
-	void handle_undo_marked_data();
-	void handle_remove_marked_data();
-	void handle_export_marked_data();
-	void handle_goto_random_page();
-	void hande_turn_on_all_drawings();
-	void hande_turn_off_all_drawings();
-	void handle_toggle_drawing_mask(char symbol);
-	void show_command_palette();
+    void handle_start_reading();
+    void handle_stop_reading();
+    void handle_play();
+    void handle_undo_drawing();
+    void handle_pause();
+    void read_current_line();
+    void download_paper_under_cursor(bool use_last_touch_pos = false);
+    void handle_debug_command();
+    void handle_add_marked_data();
+    void handle_undo_marked_data();
+    void handle_remove_marked_data();
+    void handle_export_marked_data();
+    void handle_goto_random_page();
+    void hande_turn_on_all_drawings();
+    void hande_turn_off_all_drawings();
+    void handle_toggle_drawing_mask(char symbol);
+    void show_command_palette();
 
-	std::string get_current_mode_string();
+    std::string get_current_mode_string();
 
-	void show_audio_buttons();
-	void set_freehand_thickness(float val);
+    void show_audio_buttons();
+    void set_freehand_thickness(float val);
 
-	// Text selection indicators in touch mode
+    // Text selection indicators in touch mode
     SelectionIndicator* selection_begin_indicator = nullptr;
-    SelectionIndicator *selection_end_indicator = nullptr;
+    SelectionIndicator* selection_end_indicator = nullptr;
 
-	// When in touch mode, sometimes we use the last touch hold point for some commands
-	// for example, if select text button is pressed, we select the text under the last touch hold point
+    // When in touch mode, sometimes we use the last touch hold point for some commands
+    // for example, if select text button is pressed, we select the text under the last touch hold point
     QPoint last_hold_point;
     QPoint last_press_point;
     qint64 last_press_msecs = 0;
     QTime last_quick_tap_time;
-	QTime last_middle_down_time;
+    QTime last_middle_down_time;
     QPoint last_quick_tap_position;
 
-	// whether mouse is pressed, `is_pressed` is true, we add mouse positions to `position_buffer`
+    // whether mouse is pressed, `is_pressed` is true, we add mouse positions to `position_buffer`
     bool is_pressed = false;
-	// list of mouse positions used to calculate the velocity when flicking in touch mode
+    // list of mouse positions used to calculate the velocity when flicking in touch mode
     std::deque<std::pair<QTime, QPoint>> position_buffer;
     float velocity_x = 0;
     float velocity_y = 0;
 
-	// indicates if mouse was in next/prev ruler rect in touch mode
-	// if this is the case, we use mouse movement to perform next/prev ruler command
-	// after a certain threshold, so the user doesn't have to click on the ruler rect 
+    // indicates if mouse was in next/prev ruler rect in touch mode
+    // if this is the case, we use mouse movement to perform next/prev ruler command
+    // after a certain threshold, so the user doesn't have to click on the ruler rect 
     bool was_last_mouse_down_in_ruler_next_rect = false;
     bool was_last_mouse_down_in_ruler_prev_rect = false;
-	// this is used so we can keep track of mouse movement after press and holding on ruler rect
+    // this is used so we can keep track of mouse movement after press and holding on ruler rect
     WindowPos ruler_moving_last_window_pos;
     int ruler_moving_distance_traveled = 0;
 
 
-	void update_highlight_buttons_position();
+    void update_highlight_buttons_position();
     void handle_mobile_selection();
     void update_mobile_selection();
     bool handle_quick_tap(WindowPos click_pos);
@@ -587,186 +587,186 @@ public:
     bool is_flicking(QPointF* out_velocity);
     void handle_touch_highlight();
     void restore_default_config();
-	bool is_in_back_rect(WindowPos pos);
-	bool is_in_middle_left_rect(WindowPos pos);
-	bool is_in_middle_right_rect(WindowPos pos);
-	bool is_in_forward_rect(WindowPos pos);
-	bool is_in_edit_portal_rect(WindowPos pos);
-	bool is_in_visual_mark_next_rect(WindowPos pos);
-	bool is_in_visual_mark_prev_rect(WindowPos pos);
+    bool is_in_back_rect(WindowPos pos);
+    bool is_in_middle_left_rect(WindowPos pos);
+    bool is_in_middle_right_rect(WindowPos pos);
+    bool is_in_forward_rect(WindowPos pos);
+    bool is_in_edit_portal_rect(WindowPos pos);
+    bool is_in_visual_mark_next_rect(WindowPos pos);
+    bool is_in_visual_mark_prev_rect(WindowPos pos);
     void handle_drawing_move(QPoint pos, float pressure);
     void start_drawing();
     void finish_drawing(QPoint pos);
-	void handle_pen_drawing_event(QTabletEvent* te);
-	void select_freehand_drawings(fz_rect rect);
-	void delete_freehand_drawings(fz_rect rect);
-	void handle_move_text_mark_forward(bool word);
-	void handle_move_text_mark_backward(bool word);
-	void handle_move_text_mark_down();
-	void handle_move_text_mark_up();
-	void handle_toggle_text_mark();
+    void handle_pen_drawing_event(QTabletEvent* te);
+    void select_freehand_drawings(fz_rect rect);
+    void delete_freehand_drawings(fz_rect rect);
+    void handle_move_text_mark_forward(bool word);
+    void handle_move_text_mark_backward(bool word);
+    void handle_move_text_mark_down();
+    void handle_move_text_mark_up();
+    void handle_toggle_text_mark();
 
-	const std::wstring& get_selected_text();
-	void move_selection_end(bool expand, bool word);
-	void move_selection_begin(bool expand, bool word);
-	void shrink_selection_end();
-	void shrink_selection_begin();
+    const std::wstring& get_selected_text();
+    void move_selection_end(bool expand, bool word);
+    void move_selection_begin(bool expand, bool word);
+    void shrink_selection_end();
+    void shrink_selection_begin();
 
     void persist_config();
 
-	void synchronize_pending_link();
-	void refresh_all_windows();
-	std::optional<std::pair<int, fz_link*>> get_selected_link(const std::wstring& text);
+    void synchronize_pending_link();
+    void refresh_all_windows();
+    std::optional<std::pair<int, fz_link*>> get_selected_link(const std::wstring& text);
 
-	int num_visible_links();
+    int num_visible_links();
 #ifdef SIOYEK_ANDROID
-//    void onApplicationStateChanged(Qt::ApplicationState applicationState);
+    //    void onApplicationStateChanged(Qt::ApplicationState applicationState);
     bool pending_intents_checked = false;
 #endif
 
-	protected:
+protected:
     TouchTextSelectionButtons* text_selection_buttons_ = nullptr;
     DrawControlsUI* draw_controls_ = nullptr;
     SearchButtons* search_buttons_ = nullptr;
     HighlightButtons* highlight_buttons_ = nullptr;
 
-	TouchTextSelectionButtons* get_text_selection_buttons();
-	DrawControlsUI* get_draw_controls();
-	SearchButtons* get_search_buttons();
-	HighlightButtons* get_highlight_buttons();
+    TouchTextSelectionButtons* get_text_selection_buttons();
+    DrawControlsUI* get_draw_controls();
+    SearchButtons* get_search_buttons();
+    HighlightButtons* get_highlight_buttons();
 
 
 
-	void focusInEvent(QFocusEvent* ev);
-	void resizeEvent(QResizeEvent* resize_event) override;
-	void changeEvent(QEvent* event) override;
-	void mouseMoveEvent(QMouseEvent* mouse_event) override;
+    void focusInEvent(QFocusEvent* ev);
+    void resizeEvent(QResizeEvent* resize_event) override;
+    void changeEvent(QEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* mouse_event) override;
 
-	// we already handle drag and drop on macos elsewhere
+    // we already handle drag and drop on macos elsewhere
 #ifndef Q_OS_MACOS
-	void dragEnterEvent(QDragEnterEvent* e) override;
-	void dragMoveEvent(QDragMoveEvent* e) override;
-	void dropEvent(QDropEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* e) override;
+    void dragMoveEvent(QDragMoveEvent* e) override;
+    void dropEvent(QDropEvent* event) override;
 #endif
 
-	void closeEvent(QCloseEvent* close_event) override;
-	void keyPressEvent(QKeyEvent* kevent) override;
-	void keyReleaseEvent(QKeyEvent* kevent) override;
-	void mouseReleaseEvent(QMouseEvent* mevent) override;
-	void mousePressEvent(QMouseEvent* mevent) override;
-	void mouseDoubleClickEvent(QMouseEvent* mevent) override;
-	void wheelEvent(QWheelEvent* wevent) override;
-    bool event(QEvent *event);
+    void closeEvent(QCloseEvent* close_event) override;
+    void keyPressEvent(QKeyEvent* kevent) override;
+    void keyReleaseEvent(QKeyEvent* kevent) override;
+    void mouseReleaseEvent(QMouseEvent* mevent) override;
+    void mousePressEvent(QMouseEvent* mevent) override;
+    void mouseDoubleClickEvent(QMouseEvent* mevent) override;
+    void wheelEvent(QWheelEvent* wevent) override;
+    bool event(QEvent* event);
 
-	public:
-	template<typename T>
-	void set_filtered_select_menu(bool fuzzy, bool multiline, std::vector<std::vector<std::wstring>> columns,
-		std::vector<T> values,
-		int selected_index,
-		std::function<void(T*)> on_select,
-		std::function<void(T*)> on_delete,
-		std::function<void(T*)> on_edit=nullptr
-	) {
-		if (columns.size() > 1) {
+public:
+    template<typename T>
+    void set_filtered_select_menu(bool fuzzy, bool multiline, std::vector<std::vector<std::wstring>> columns,
+        std::vector<T> values,
+        int selected_index,
+        std::function<void(T*)> on_select,
+        std::function<void(T*)> on_delete,
+        std::function<void(T*)> on_edit = nullptr
+    ) {
+        if (columns.size() > 1) {
 
-			if (TOUCH_MODE) {
+            if (TOUCH_MODE) {
 
-				// we will set the parent of model to be the widget in the constructor, and it will delete
-				// the model when it is freed, so this is not a memory leak
-				QStandardItemModel* model = create_table_model(columns);
+                // we will set the parent of model to be the widget in the constructor, and it will delete
+                // the model when it is freed, so this is not a memory leak
+                QStandardItemModel* model = create_table_model(columns);
 
-				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, model, values, selected_index,
-					[&, on_select = std::move(on_select)](T* val) {
-						if (val) {
-							on_select(val);
-						}
-						pop_current_widget();
-					},
-					[&, on_delete = std::move(on_delete)](T* val) {
-						if (val) {
-							on_delete(val);
-						}
-					}, this);
+                TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, model, values, selected_index,
+                    [&, on_select = std::move(on_select)](T* val) {
+                        if (val) {
+                            on_select(val);
+                        }
+                        pop_current_widget();
+                    },
+                    [&, on_delete = std::move(on_delete)](T* val) {
+                        if (val) {
+                            on_delete(val);
+                        }
+                    }, this);
 
-				widget->set_filter_column_index(-1);
-				set_current_widget(widget);
-			}
-			else {
-				auto w = new FilteredSelectTableWindowClass<T>(
-					fuzzy,
-					multiline,
-					columns,
-					values,
-					selected_index,
-					[on_select = std::move(on_select)](T* val) {
-						if (val) {
-							on_select(val);
-						}
-					},
-					this,
-						[on_delete = std::move(on_delete)](T* val) {
-						if (val) {
-							on_delete(val);
-						}
-					});
-				w->set_filter_column_index(-1);
-				if (on_edit) {
-					w->set_on_edit_function(on_edit);
-				}
-				set_current_widget(w);
-			}
-		}
-		else {
+                widget->set_filter_column_index(-1);
+                set_current_widget(widget);
+            }
+            else {
+                auto w = new FilteredSelectTableWindowClass<T>(
+                    fuzzy,
+                    multiline,
+                    columns,
+                    values,
+                    selected_index,
+                    [on_select = std::move(on_select)](T* val) {
+                        if (val) {
+                            on_select(val);
+                        }
+                    },
+                    this,
+                        [on_delete = std::move(on_delete)](T* val) {
+                        if (val) {
+                            on_delete(val);
+                        }
+                    });
+                w->set_filter_column_index(-1);
+                if (on_edit) {
+                    w->set_on_edit_function(on_edit);
+                }
+                set_current_widget(w);
+            }
+        }
+        else {
 
-			if (TOUCH_MODE) {
-				// when will this be released?
-				TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, columns[0], values, selected_index,
-					[&, on_select = std::move(on_select)](T* val) {
-						if (val) {
-							on_select(val);
-						}
-						pop_current_widget();
-					},
-					[&, on_delete = std::move(on_delete)](T* val) {
-						if (val) {
-							on_delete(val);
-						}
-					}, this);
-				set_current_widget(widget);
-			}
-			else {
+            if (TOUCH_MODE) {
+                // when will this be released?
+                TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, columns[0], values, selected_index,
+                    [&, on_select = std::move(on_select)](T* val) {
+                        if (val) {
+                            on_select(val);
+                        }
+                        pop_current_widget();
+                    },
+                    [&, on_delete = std::move(on_delete)](T* val) {
+                        if (val) {
+                            on_delete(val);
+                        }
+                    }, this);
+                set_current_widget(widget);
+            }
+            else {
 
-				set_current_widget(new FilteredSelectWindowClass<T>(
-					fuzzy,
-					columns[0],
-					values,
-					[on_select = std::move(on_select)](T* val) {
-						if (val) {
-							on_select(val);
-						}
-					},
-					this,
-						[on_delete = std::move(on_delete)](T* val) {
-						if (val) {
-							on_delete(val);
-						}
-					},
-					selected_index));
-			}
-		}
-	}
+                set_current_widget(new FilteredSelectWindowClass<T>(
+                    fuzzy,
+                    columns[0],
+                    values,
+                    [on_select = std::move(on_select)](T* val) {
+                        if (val) {
+                            on_select(val);
+                        }
+                    },
+                    this,
+                        [on_delete = std::move(on_delete)](T* val) {
+                        if (val) {
+                            on_delete(val);
+                        }
+                    },
+                        selected_index));
+            }
+        }
+    }
 
     bool execute_macro_if_enabled(std::wstring macro_command_string);
     bool ensure_internet_permission();
-	void handle_command_text_change(const QString& new_text);
-	QTextToSpeech* get_tts();
-	void handle_bookmark_move_finish();
-	void handle_bookmark_move();
-	bool is_middle_click_being_used();
-	void begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor_pos);
-	bool should_drag();
-	void handle_freehand_drawing_move_finish();
-	void move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings);
+    void handle_command_text_change(const QString& new_text);
+    QTextToSpeech* get_tts();
+    void handle_bookmark_move_finish();
+    void handle_bookmark_move();
+    bool is_middle_click_being_used();
+    void begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor_pos);
+    bool should_drag();
+    void handle_freehand_drawing_move_finish();
+    void move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings);
 };
 
 #endif

@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchMarkSelector : public QWidget{
+class TouchMarkSelector : public QWidget {
     Q_OBJECT
 public:
-    TouchMarkSelector(QWidget* parent=nullptr);
+    TouchMarkSelector(QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

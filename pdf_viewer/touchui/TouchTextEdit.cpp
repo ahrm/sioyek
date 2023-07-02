@@ -2,7 +2,7 @@
 #include "utils.h"
 
 
-TouchTextEdit::TouchTextEdit(QString name, QString initial_value, QWidget* parent) : QWidget(parent){
+TouchTextEdit::TouchTextEdit(QString name, QString initial_value, QWidget* parent) : QWidget(parent) {
 
 
     setAttribute(Qt::WA_NoMousePropagation);
@@ -19,15 +19,15 @@ TouchTextEdit::TouchTextEdit(QString name, QString initial_value, QWidget* paren
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchTextEdit.qml"));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(confirmed(QString)),
-                this,
-                SLOT(handleConfirm(QString)));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(confirmed(QString)),
+        this,
+        SLOT(handleConfirm(QString)));
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(cancelled()),
-                this,
-                SLOT(handleCancel()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(cancelled()),
+        this,
+        SLOT(handleCancel()));
     quick_widget->setFocus();
 
 }
@@ -46,7 +46,7 @@ void TouchTextEdit::handleCancel() {
 }
 
 
-void TouchTextEdit::resizeEvent(QResizeEvent* resize_event){
+void TouchTextEdit::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
 
     int parent_width = parentWidget()->width();
@@ -59,13 +59,13 @@ void TouchTextEdit::resizeEvent(QResizeEvent* resize_event){
 
     resize(w, h);
     quick_widget->resize(w, h);
-    move((parent_width - w ) / 2, (parent_height - h) / 2);
+    move((parent_width - w) / 2, (parent_height - h) / 2);
 
 }
 
 void TouchTextEdit::keyPressEvent(QKeyEvent* kevent) {
     if (kevent->key() == Qt::Key_Return) {
-		kevent->accept();
+        kevent->accept();
         return;
     }
     QWidget::keyPressEvent(kevent);

@@ -25,28 +25,28 @@ Item{
         height: Math.max(Math.min(root.width / 2, root.height / 2), 40);
         radius: Math.max(Math.min(root.width / 2, root.height / 2), 40);
         color: ma.pressed ? "#222": "black"
-		anchors.centerIn: parent
+        anchors.centerIn: parent
         id: play_button
 
-		Image{
-			id: image
-			anchors.centerIn: parent
-			source: root.isPlaying ? "qrc:/icons/pause.svg" :  "qrc:/icons/play.svg"
-			height: 2 * parent.height / 3
-			fillMode: Image.PreserveAspectFit
+        Image{
+            id: image
+            anchors.centerIn: parent
+            source: root.isPlaying ? "qrc:/icons/pause.svg" :  "qrc:/icons/play.svg"
+            height: 2 * parent.height / 3
+            fillMode: Image.PreserveAspectFit
 
-		}
+        }
 
         MouseArea{
             id: ma
             anchors.fill: parent
             onClicked: {
                 if (root.isPlaying){
-					root.pauseButtonClicked();
+                    root.pauseButtonClicked();
                     isPlaying = false;
                 }
                 else{
-					root.playButtonClicked();
+                    root.playButtonClicked();
                     isPlaying = true;
                 }
             }
@@ -62,14 +62,14 @@ Item{
         anchors.margins: 10
         color: ma2.pressed ? "#222": "black"
 
-		Image{
-			id: image2
-			anchors.centerIn: parent
-			source: "qrc:/icons/stop.svg"
-			height: 2 * parent.height / 3
-			fillMode: Image.PreserveAspectFit
+        Image{
+            id: image2
+            anchors.centerIn: parent
+            source: "qrc:/icons/stop.svg"
+            height: 2 * parent.height / 3
+            fillMode: Image.PreserveAspectFit
 
-		}
+        }
 
         MouseArea{
             id: ma2
@@ -93,13 +93,13 @@ Item{
         id: speed
         property bool expanded: false
 
-		Behavior on width {
+        Behavior on width {
 
-			NumberAnimation {
-			duration: 500
-			easing.type: Easing.OutExpo
-			}
-		}
+            NumberAnimation {
+            duration: 500
+            easing.type: Easing.OutExpo
+            }
+        }
 
         Slider {
             from: -1
@@ -119,22 +119,22 @@ Item{
             }
         }
 
-		// Text{
+        // Text{
         //     text: "🗣️"
         //     color: "white"
-		// 	anchors.centerIn: parent
+        // 	anchors.centerIn: parent
         //     visible: !speed.expanded
-		// }
+        // }
 
-		Image{
-			id: speedimage
-			anchors.centerIn: parent
-			source: "qrc:/icons/tts.svg"
-			height: 2 * parent.height / 3
-			fillMode: Image.PreserveAspectFit
+        Image{
+            id: speedimage
+            anchors.centerIn: parent
+            source: "qrc:/icons/tts.svg"
+            height: 2 * parent.height / 3
+            fillMode: Image.PreserveAspectFit
             visible: !speed.expanded
 
-		}
+        }
 
         MouseArea{
             id: ma3

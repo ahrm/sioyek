@@ -1,9 +1,9 @@
 #include "touchui/TouchAudioButtons.h"
 
 
-TouchAudioButtons::TouchAudioButtons(QWidget* parent) : QWidget(parent){
+TouchAudioButtons::TouchAudioButtons(QWidget* parent) : QWidget(parent) {
 
-//    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
+    //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     setAttribute(Qt::WA_NoMousePropagation);
     quick_widget = new QQuickWidget(this);
 
@@ -62,7 +62,7 @@ void TouchAudioButtons::handleStop() {
     emit stopPressed();
 }
 
-void TouchAudioButtons::resizeEvent(QResizeEvent* resize_event){
+void TouchAudioButtons::resizeEvent(QResizeEvent* resize_event) {
     quick_widget->resize(resize_event->size().width(), resize_event->size().height());
     QWidget::resizeEvent(resize_event);
 

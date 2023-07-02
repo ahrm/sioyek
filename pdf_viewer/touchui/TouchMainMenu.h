@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchMainMenu : public QWidget{
+class TouchMainMenu : public QWidget {
     Q_OBJECT
 public:
-    TouchMainMenu(bool fit_mode, bool portaling, bool fullscreen, bool ruler, bool speaking, bool locked, int current_colorscheme_index, QWidget* parent=nullptr);
+    TouchMainMenu(bool fit_mode, bool portaling, bool fullscreen, bool ruler, bool speaking, bool locked, int current_colorscheme_index, QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

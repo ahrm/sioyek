@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchCopyOptions : public QWidget{
+class TouchCopyOptions : public QWidget {
     Q_OBJECT
 public:
-    TouchCopyOptions( QWidget* parent=nullptr);
+    TouchCopyOptions(QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

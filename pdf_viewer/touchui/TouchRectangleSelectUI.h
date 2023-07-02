@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchRectangleSelectUI : public QWidget{
+class TouchRectangleSelectUI : public QWidget {
     Q_OBJECT
 public:
-    TouchRectangleSelectUI(bool initial_enabled, float initial_x, float initial_y, float initial_width, float intitial_height, QWidget* parent=nullptr);
+    TouchRectangleSelectUI(bool initial_enabled, float initial_x, float initial_y, float initial_width, float intitial_height, QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

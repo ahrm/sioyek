@@ -2,7 +2,7 @@
 #include "qqmlengine.h"
 
 
-TouchMainMenu::TouchMainMenu(bool fit_mode, bool portaling, bool fullscreen, bool ruler, bool speaking, bool locked, int current_colorscheme_index, QWidget* parent) : QWidget(parent){
+TouchMainMenu::TouchMainMenu(bool fit_mode, bool portaling, bool fullscreen, bool ruler, bool speaking, bool locked, int current_colorscheme_index, QWidget* parent) : QWidget(parent) {
 
     setAttribute(Qt::WA_NoMousePropagation);
 
@@ -24,262 +24,262 @@ TouchMainMenu::TouchMainMenu(bool fit_mode, bool portaling, bool fullscreen, boo
 
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(selectTextClicked()),
-                this,
-                SLOT(handleSelectText()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(selectTextClicked()),
+        this,
+        SLOT(handleSelectText()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(gotoPageClicked()),
-                this,
-                SLOT(handleGotoPage()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(gotoPageClicked()),
+        this,
+        SLOT(handleGotoPage()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(tocClicked()),
-                this,
-                SLOT(handleToc()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(tocClicked()),
+        this,
+        SLOT(handleToc()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(searchClicked()),
-                this,
-                SLOT(handleSearch()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(searchClicked()),
+        this,
+        SLOT(handleSearch()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(fullscreenClicked()),
-                this,
-                SLOT(handleFullscreen()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(fullscreenClicked()),
+        this,
+        SLOT(handleFullscreen()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(bookmarksClicked()),
-                this,
-                SLOT(handleBookmarks()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(bookmarksClicked()),
+        this,
+        SLOT(handleBookmarks()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(highlightsClicked()),
-                this,
-                SLOT(handleHighlights()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(highlightsClicked()),
+        this,
+        SLOT(handleHighlights()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(rulerModeClicked()),
-                this,
-                SLOT(handleRuler()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(rulerModeClicked()),
+        this,
+        SLOT(handleRuler()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(lightColorschemeClicked()),
-                this,
-                SLOT(handleLightColorscheme()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(lightColorschemeClicked()),
+        this,
+        SLOT(handleLightColorscheme()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(darkColorschemeClicked()),
-                this,
-                SLOT(handleDarkColorscheme()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(darkColorschemeClicked()),
+        this,
+        SLOT(handleDarkColorscheme()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(customColorschemeClicked()),
-                this,
-                SLOT(handleCustomColorscheme()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(customColorschemeClicked()),
+        this,
+        SLOT(handleCustomColorscheme()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(openPrevDocClicked()),
-                this,
-                SLOT(handleOpenPrevDoc()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(openPrevDocClicked()),
+        this,
+        SLOT(handleOpenPrevDoc()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(openNewDocClicked()),
-                this,
-                SLOT(handleOpenNewDoc()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(openNewDocClicked()),
+        this,
+        SLOT(handleOpenNewDoc()));
 
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(commandsClicked()),
-                this,
-                SLOT(handleCommands()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(commandsClicked()),
+        this,
+        SLOT(handleCommands()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(settingsClicked()),
-                this,
-                SLOT(handleSettings()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(settingsClicked()),
+        this,
+        SLOT(handleSettings()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(addBookmarkClicked()),
-                this,
-                SLOT(handleAddBookmark()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(addBookmarkClicked()),
+        this,
+        SLOT(handleAddBookmark()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(portalClicked()),
-                this,
-                SLOT(handlePortal()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(portalClicked()),
+        this,
+        SLOT(handlePortal()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(deletePortalClicked()),
-                this,
-                SLOT(handleDeletePortal()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(deletePortalClicked()),
+        this,
+        SLOT(handleDeletePortal()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(globalBookmarksClicked()),
-                this,
-                SLOT(handleGlobalBookmarks()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(globalBookmarksClicked()),
+        this,
+        SLOT(handleGlobalBookmarks()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(globalHighlightsClicked()),
-                this,
-                SLOT(handleGlobalHighlights()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(globalHighlightsClicked()),
+        this,
+        SLOT(handleGlobalHighlights()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(ttsClicked()),
-                this,
-                SLOT(handleTTS()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(ttsClicked()),
+        this,
+        SLOT(handleTTS()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(horizontalLockClicked()),
-                this,
-                SLOT(handleHorizontalLock()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(horizontalLockClicked()),
+        this,
+        SLOT(handleHorizontalLock()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(fitToPageWidthClicked()),
-                this,
-                SLOT(handleFitToPageWidth()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(fitToPageWidthClicked()),
+        this,
+        SLOT(handleFitToPageWidth()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(drawingModeButtonClicked()),
-                this,
-                SLOT(handleDrawingMode()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(drawingModeButtonClicked()),
+        this,
+        SLOT(handleDrawingMode()));
 
     QObject::connect(
-                dynamic_cast<QObject*>(quick_widget->rootObject()),
-                SIGNAL(downloadPaperClicked()),
-                this,
-                SLOT(handleDownloadPaper()));
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(downloadPaperClicked()),
+        this,
+        SLOT(handleDownloadPaper()));
 }
 
-void TouchMainMenu::handleDrawingMode(){
+void TouchMainMenu::handleDrawingMode() {
     emit drawingModeClicked();
 }
 
-void TouchMainMenu::handleSelectText(){
+void TouchMainMenu::handleSelectText() {
     emit selectTextClicked();
 }
 
-void TouchMainMenu::handleGotoPage(){
+void TouchMainMenu::handleGotoPage() {
     emit gotoPageClicked();
 }
 
-void TouchMainMenu::handleToc(){
+void TouchMainMenu::handleToc() {
     emit tocClicked();
 }
 
-void TouchMainMenu::handleDownloadPaper(){
+void TouchMainMenu::handleDownloadPaper() {
     emit downloadPaperClicked();
 }
 
 
-void TouchMainMenu::handleSearch(){
+void TouchMainMenu::handleSearch() {
     emit searchClicked();
 }
 
-void TouchMainMenu::handleFullscreen(){
+void TouchMainMenu::handleFullscreen() {
     emit fullscreenClicked();
 }
 
-void TouchMainMenu::handleBookmarks(){
+void TouchMainMenu::handleBookmarks() {
     emit bookmarksClicked();
 }
 
-void TouchMainMenu::handleHighlights(){
+void TouchMainMenu::handleHighlights() {
     emit highlightsClicked();
 }
 
-void TouchMainMenu::handleRuler(){
+void TouchMainMenu::handleRuler() {
     emit rulerModeClicked();
 }
 
-void TouchMainMenu::handleLightColorscheme(){
+void TouchMainMenu::handleLightColorscheme() {
     emit lightColorschemeClicked();
 }
 
-void TouchMainMenu::handleDarkColorscheme(){
+void TouchMainMenu::handleDarkColorscheme() {
     emit darkColorschemeClicked();
 }
 
-void TouchMainMenu::handleCustomColorscheme(){
+void TouchMainMenu::handleCustomColorscheme() {
     emit customColorschemeClicked();
 }
 
-void TouchMainMenu::handleOpenPrevDoc(){
+void TouchMainMenu::handleOpenPrevDoc() {
     emit openPrevDocClicked();
 }
 
-void TouchMainMenu::handleOpenNewDoc(){
+void TouchMainMenu::handleOpenNewDoc() {
     emit openNewDocClicked();
 }
 
-void TouchMainMenu::handleCommands(){
+void TouchMainMenu::handleCommands() {
     emit commandsClicked();
 }
 
-void TouchMainMenu::handleSettings(){
+void TouchMainMenu::handleSettings() {
     emit settingsClicked();
 }
 
-void TouchMainMenu::handleAddBookmark(){
+void TouchMainMenu::handleAddBookmark() {
     emit addBookmarkClicked();
 }
 
-void TouchMainMenu::handlePortal(){
+void TouchMainMenu::handlePortal() {
     emit portalClicked();
 }
 
-void TouchMainMenu::handleDeletePortal(){
+void TouchMainMenu::handleDeletePortal() {
     emit deletePortalClicked();
 }
 
-void TouchMainMenu::handleGlobalBookmarks(){
+void TouchMainMenu::handleGlobalBookmarks() {
     emit globalBookmarksClicked();
 }
 
-void TouchMainMenu::handleGlobalHighlights(){
+void TouchMainMenu::handleGlobalHighlights() {
     emit globalHighlightsClicked();
 }
 
-void TouchMainMenu::handleTTS(){
+void TouchMainMenu::handleTTS() {
     emit ttsClicked();
 }
 
-void TouchMainMenu::handleFitToPageWidth(){
+void TouchMainMenu::handleFitToPageWidth() {
     emit fitToPageWidthClicked();
 }
 
-void TouchMainMenu::handleHorizontalLock(){
+void TouchMainMenu::handleHorizontalLock() {
     emit horizontalLockClicked();
 }
 //void TouchMainMenu::handleSelect(int item) {
 //    emit pageSelected(item);
 //}
 
-void TouchMainMenu::resizeEvent(QResizeEvent* resize_event){
+void TouchMainMenu::resizeEvent(QResizeEvent* resize_event) {
     quick_widget->resize(resize_event->size().width(), resize_event->size().height());
     QWidget::resizeEvent(resize_event);
 

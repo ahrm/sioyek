@@ -9,7 +9,7 @@ TouchConfigMenu::TouchConfigMenu(bool fuzzy, MainWidget* main_widget) :
     config_model(main_widget->config_manager->get_configs_ptr()),
     config_manager(main_widget->config_manager),
     main_widget(main_widget)
-    {
+{
 
     setAttribute(Qt::WA_NoMousePropagation);
 
@@ -19,7 +19,7 @@ TouchConfigMenu::TouchConfigMenu(bool fuzzy, MainWidget* main_widget) :
     proxy_model->setSourceModel(&config_model);
     proxy_model->setFilterKeyColumn(1);
 
-//    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
+    //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);
@@ -34,29 +34,29 @@ TouchConfigMenu::TouchConfigMenu(bool fuzzy, MainWidget* main_widget) :
 
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(color3ConfigChanged(QString, qreal, qreal, qreal)), this, SLOT(handleColor3ConfigChanged(QString, qreal, qreal, qreal)));
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(color4ConfigChanged(QString, qreal, qreal, qreal, qreal)), this, SLOT(handleColor4ConfigChanged(QString, qreal, qreal, qreal, qreal)));
-	QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
-		SIGNAL(boolConfigChanged(QString, bool)),
-		this,
-		SLOT(handleBoolConfigChanged(QString, bool)));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(boolConfigChanged(QString, bool)),
+        this,
+        SLOT(handleBoolConfigChanged(QString, bool)));
 
-	QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
-		SIGNAL(floatConfigChanged(QString, qreal)),
-		this,
-		SLOT(handleFloatConfigChanged(QString, qreal)));
-	QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
-		SIGNAL(textConfigChanged(QString, QString)),
-		this,
-		SLOT(handleTextConfigChanged(QString, QString)));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(floatConfigChanged(QString, qreal)),
+        this,
+        SLOT(handleFloatConfigChanged(QString, qreal)));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(textConfigChanged(QString, QString)),
+        this,
+        SLOT(handleTextConfigChanged(QString, QString)));
 
-	QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
-		SIGNAL(onSetConfigPressed(QString)),
-		this,
-		SLOT(handleSetConfigPressed(QString)));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(onSetConfigPressed(QString)),
+        this,
+        SLOT(handleSetConfigPressed(QString)));
 
-	QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
-		SIGNAL(onSaveButtonClicked()),
-		this,
-		SLOT(handleSaveButtonClicked()));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(onSaveButtonClicked()),
+        this,
+        SLOT(handleSaveButtonClicked()));
     //QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemPressAndHold(QString, int)), this, SLOT(handlePressAndHold(QString, int)));
     //QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(itemDeleted(QString, int)), this, SLOT(handleDelete(QString, int)));
 
@@ -128,7 +128,7 @@ void TouchConfigMenu::handleSaveButtonClicked() {
 //    emit itemPressAndHold(val, source_index);
 //}
 
-void TouchConfigMenu::resizeEvent(QResizeEvent* resize_event){
+void TouchConfigMenu::resizeEvent(QResizeEvent* resize_event) {
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
     int w = parent_width * 0.8f;

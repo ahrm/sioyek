@@ -15,179 +15,179 @@
 class DocumentView;
 
 struct BookState {
-	std::wstring document_path;
-	float offset_y;
-	std::string uuid;
+    std::wstring document_path;
+    float offset_y;
+    std::string uuid;
 };
 
 struct OpenedBookState {
-	float zoom_level;
-	float offset_x;
-	float offset_y;
+    float zoom_level;
+    float offset_x;
+    float offset_y;
 };
 
 struct Annotation {
-	std::string creation_time;
-	std::string modification_time;
-	std::string uuid;
+    std::string creation_time;
+    std::string modification_time;
+    std::string uuid;
 
-	virtual QJsonObject to_json(std::string doc_checksum) const = 0;
-	virtual void  add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) = 0;
-	virtual std::vector<std::pair<std::string, QVariant>> to_tuples();
-	virtual void from_json(const QJsonObject& json_object) = 0;
+    virtual QJsonObject to_json(std::string doc_checksum) const = 0;
+    virtual void  add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) = 0;
+    virtual std::vector<std::pair<std::string, QVariant>> to_tuples();
+    virtual void from_json(const QJsonObject& json_object) = 0;
 
-	void add_metadata_to_json(QJsonObject& obj) const;
-	void load_metadata_from_json(const QJsonObject& obj);
+    void add_metadata_to_json(QJsonObject& obj) const;
+    void load_metadata_from_json(const QJsonObject& obj);
 
-	QDateTime get_creation_datetime() const;
-	QDateTime get_modification_datetime() const;
+    QDateTime get_creation_datetime() const;
+    QDateTime get_modification_datetime() const;
 
-	void update_creation_time();
-	void update_modification_time();
+    void update_creation_time();
+    void update_modification_time();
 };
 
 /*
-	A mark is a location in the document labeled with a symbol (which is a single character [a-z]). For example
-	we can mark a location with symbol 'a' and later return to that location by going to the mark named 'a'.
-	Lower case marks are local to the document and upper case marks are global.
+    A mark is a location in the document labeled with a symbol (which is a single character [a-z]). For example
+    we can mark a location with symbol 'a' and later return to that location by going to the mark named 'a'.
+    Lower case marks are local to the document and upper case marks are global.
 */
-struct Mark : Annotation{
-	float y_offset;
-	char symbol;
+struct Mark : Annotation {
+    float y_offset;
+    char symbol;
 
-	QJsonObject to_json(std::string doc_checksum) const;
-	void from_json(const QJsonObject& json_object);
-	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
+    QJsonObject to_json(std::string doc_checksum) const;
+    void from_json(const QJsonObject& json_object);
+    void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 };
 
 /*
-	A bookmark is similar to mark but instead of being indexed by a symbol, it has a description.
+    A bookmark is similar to mark but instead of being indexed by a symbol, it has a description.
 */
 struct BookMark : Annotation {
-	float y_offset = -1;
-	std::wstring description;
+    float y_offset = -1;
+    std::wstring description;
 
-	float begin_x = -1;
-	float begin_y = -1;
-	float end_x = -1;
-	float end_y = -1;
+    float begin_x = -1;
+    float begin_y = -1;
+    float end_x = -1;
+    float end_y = -1;
 
-	float color[3] = {0};
-	float font_size = -1;
-	std::wstring font_face;
+    float color[3] = { 0 };
+    float font_size = -1;
+    std::wstring font_face;
 
-	QJsonObject to_json(std::string doc_checksum) const;
-	void from_json(const QJsonObject& json_object);
-	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
+    QJsonObject to_json(std::string doc_checksum) const;
+    void from_json(const QJsonObject& json_object);
+    void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 
-	bool is_freetext() const;
-	bool is_marked() const;
+    bool is_freetext() const;
+    bool is_marked() const;
 };
 
-struct Highlight : Annotation{
-	AbsoluteDocumentPos selection_begin;
-	AbsoluteDocumentPos selection_end;
-	std::wstring description;
-	std::wstring text_annot;
-	char type;
-	std::vector<fz_rect> highlight_rects;
+struct Highlight : Annotation {
+    AbsoluteDocumentPos selection_begin;
+    AbsoluteDocumentPos selection_end;
+    std::wstring description;
+    std::wstring text_annot;
+    char type;
+    std::vector<fz_rect> highlight_rects;
 
-	QJsonObject to_json(std::string doc_checksum) const;
-	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
-	void from_json(const QJsonObject& json_object);
+    QJsonObject to_json(std::string doc_checksum) const;
+    void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
+    void from_json(const QJsonObject& json_object);
 };
 
 
 struct PdfLink {
-	fz_rect rect;
-	std::string uri;
+    fz_rect rect;
+    std::string uri;
 };
 
 struct DocumentViewState {
-	std::wstring document_path;
-	OpenedBookState book_state;
+    std::wstring document_path;
+    OpenedBookState book_state;
 };
 
 struct PortalViewState {
-	std::string document_checksum;
-	OpenedBookState book_state;
+    std::string document_checksum;
+    OpenedBookState book_state;
 };
 
 /*
-	A link is a connection between two document locations. For example when reading a paragraph that is referencing a figure,
-	we may want to link that paragraphs's location to the figure. We can then easily switch between the paragraph and the figure.
-	Also if helper window is opened, it automatically displays the closest link to the current location.
-	Note that this is different from PdfLink which is the built-in link functionality in PDF file format.
+    A link is a connection between two document locations. For example when reading a paragraph that is referencing a figure,
+    we may want to link that paragraphs's location to the figure. We can then easily switch between the paragraph and the figure.
+    Also if helper window is opened, it automatically displays the closest link to the current location.
+    Note that this is different from PdfLink which is the built-in link functionality in PDF file format.
 */
-struct Portal : Annotation{
-	static Portal with_src_offset(float src_offset);
+struct Portal : Annotation {
+    static Portal with_src_offset(float src_offset);
 
-	PortalViewState dst;
-	float src_offset_y;
+    PortalViewState dst;
+    float src_offset_y;
 
-	QJsonObject to_json(std::string doc_checksum) const;
-	void from_json(const QJsonObject& json_object);
-	void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
+    QJsonObject to_json(std::string doc_checksum) const;
+    void from_json(const QJsonObject& json_object);
+    void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 };
 
 
 bool operator==(DocumentViewState& lhs, const DocumentViewState& rhs);
 
 struct SearchResult {
-	std::vector<fz_rect> rects;
-	int page;
+    std::vector<fz_rect> rects;
+    int page;
 };
 
 
 struct TocNode {
-	std::vector<TocNode*> children;
-	std::wstring title;
-	int page;
+    std::vector<TocNode*> children;
+    std::wstring title;
+    int page;
 
-	float y;
-	float x;
+    float y;
+    float x;
 };
 
 
 class Document;
 
 struct CachedPageData {
-	Document* doc = nullptr;
-	int page;
-	float zoom_level;
+    Document* doc = nullptr;
+    int page;
+    float zoom_level;
 };
 
 /*
-	A cached page consists of cached_page_data which is the header that describes the rendered location
-	and the actual rendered page. We have two different rendered formats: the pixmap we got from mupdf and
-	the cached_page_texture which is an OpenGL texture. The reason we need both formats in the structure is because
-	we render the pixmaps in a background mupdf thread, but in order to be able to use a texture in the main thread,
-	the texture has to be created in the main thread. Therefore, we fill this structure's cached_page_pixmap value in the
-	background thread and then send it to the main thread where we create the texture (which is a relatively fast operation
-	so it doesn't matter that it is in the main thread). When cached_page_texture is created, we can safely delete the
-	cached_page_pixmap, but the pixmap can only be deleted in the thread that it was created in, so we have to once again,
-	send the cached_page_texture back to the background thread to be deleted.
+    A cached page consists of cached_page_data which is the header that describes the rendered location
+    and the actual rendered page. We have two different rendered formats: the pixmap we got from mupdf and
+    the cached_page_texture which is an OpenGL texture. The reason we need both formats in the structure is because
+    we render the pixmaps in a background mupdf thread, but in order to be able to use a texture in the main thread,
+    the texture has to be created in the main thread. Therefore, we fill this structure's cached_page_pixmap value in the
+    background thread and then send it to the main thread where we create the texture (which is a relatively fast operation
+    so it doesn't matter that it is in the main thread). When cached_page_texture is created, we can safely delete the
+    cached_page_pixmap, but the pixmap can only be deleted in the thread that it was created in, so we have to once again,
+    send the cached_page_texture back to the background thread to be deleted.
 */
 struct CachedPage {
-	CachedPageData cached_page_data;
-	fz_pixmap* cached_page_pixmap = nullptr;
+    CachedPageData cached_page_data;
+    fz_pixmap* cached_page_pixmap = nullptr;
 
-	// last_access_time is used to garbage collect old pages
-	unsigned int last_access_time;
-	GLuint cached_page_texture;
+    // last_access_time is used to garbage collect old pages
+    unsigned int last_access_time;
+    GLuint cached_page_texture;
 };
 bool operator==(const CachedPageData& lhs, const CachedPageData& rhs);
 
 
 /*
-	When a document does not have built-in links to the figures, we use a heuristic to find the figures
-	and index them in FigureData structure. Using this, we can quickly find the figures when user clicks on the
-	text descripbing the figure (for example 'Fig. 2.13')
+    When a document does not have built-in links to the figures, we use a heuristic to find the figures
+    and index them in FigureData structure. Using this, we can quickly find the figures when user clicks on the
+    text descripbing the figure (for example 'Fig. 2.13')
 */
 struct IndexedData {
-	int page;
-	float y_offset;
-	std::wstring text;
+    int page;
+    float y_offset;
+    std::wstring text;
 };
 
 bool operator==(const Mark& lhs, const Mark& rhs);

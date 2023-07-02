@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchAudioButtons : public QWidget{
+class TouchAudioButtons : public QWidget {
     Q_OBJECT
 public:
-    TouchAudioButtons(QWidget* parent=nullptr);
+    TouchAudioButtons(QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
     void set_rate(float rate);
 

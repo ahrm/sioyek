@@ -231,30 +231,30 @@ Rectangle {
 
                 Rectangle{
                     color: "#444"
-					anchors.top: parent.top
-					anchors.bottom: parent.bottom
-					anchors.right: parent.right
-					anchors.margins: 10
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    anchors.right: parent.right
+                    anchors.margins: 10
                     width: 2 * checkbox.width
-					visible: (bg.type == 'bool')
-					CheckBox{
-						//anchors.top: parent.top
-						//anchors.bottom: parent.bottom
-						//anchors.right: parent.right
-						//anchors.margins: 10
+                    visible: (bg.type == 'bool')
+                    CheckBox{
+                        //anchors.top: parent.top
+                        //anchors.bottom: parent.bottom
+                        //anchors.right: parent.right
+                        //anchors.margins: 10
                         anchors.centerIn: parent
-						checked: bg.value
+                        checked: bg.value
                         id: checkbox
-						visible: (bg.type == 'bool')
+                        visible: (bg.type == 'bool')
 
 
-						onCheckedChanged: {
-							if (visible){
-								/* emit */ boolConfigChanged(bg.name, checked);
-							}
-						}
+                        onCheckedChanged: {
+                            if (visible){
+                                /* emit */ boolConfigChanged(bg.name, checked);
+                            }
+                        }
 
-					}
+                    }
                 }
 
 //                    Slider{
@@ -391,11 +391,11 @@ Rectangle {
                     bg.holded = true;
 
                     if (rootitem.deletable){
-						deletebutton.visible = true;
+                        deletebutton.visible = true;
                     }
                     else{
-						/* emit */ itemPressAndHold(model.display, index);
-					}
+                        /* emit */ itemPressAndHold(model.display, index);
+                    }
                 }
 
                 onReleased: {

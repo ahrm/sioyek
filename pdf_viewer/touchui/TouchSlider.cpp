@@ -1,9 +1,9 @@
 #include "touchui/TouchSlider.h"
 
 
-TouchSlider::TouchSlider(int from, int to, int initial_value, QWidget* parent) : QWidget(parent){
+TouchSlider::TouchSlider(int from, int to, int initial_value, QWidget* parent) : QWidget(parent) {
 
-//    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
+    //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);
@@ -31,7 +31,7 @@ void TouchSlider::handleCancel() {
 }
 
 
-void TouchSlider::resizeEvent(QResizeEvent* resize_event){
+void TouchSlider::resizeEvent(QResizeEvent* resize_event) {
     quick_widget->resize(resize_event->size().width(), resize_event->size().height());
     QWidget::resizeEvent(resize_event);
 

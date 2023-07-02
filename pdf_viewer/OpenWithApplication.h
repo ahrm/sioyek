@@ -6,9 +6,9 @@
 
 class OpenWithApplication : public QApplication
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-    OpenWithApplication(int &argc, char **argv)
+    OpenWithApplication(int& argc, char** argv)
         : QApplication(argc, argv)
     {
     }
@@ -16,7 +16,7 @@ signals:
     void file_ready(const QString& file_name);
 
 protected:
-    bool event(QEvent *event) override;
+    bool event(QEvent* event) override;
 };
 
 #endif // OPEN_WITH_APP_H

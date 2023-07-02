@@ -3,9 +3,9 @@
 
 extern float HIGHLIGHT_COLORS[26 * 3];
 
-TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* parent) : QWidget(parent){
+TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* parent) : QWidget(parent) {
 
-//    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
+    //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
     setAttribute(Qt::WA_NoMousePropagation);
     quick_widget = new QQuickWidget(this);
 
@@ -16,7 +16,7 @@ TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* pare
     QList<QColor> colors;
     const int N_COLORS = 5;
     for (int i = 0; i < N_COLORS; i++) {
-		colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * i]));
+        colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * i]));
     }
 
     quick_widget->rootContext()->setContextProperty("_colors", QVariant::fromValue(colors));
@@ -48,7 +48,7 @@ void TouchHighlightButtons::handleChangeColor(int index) {
     emit changeColorPressed(index);
 }
 
-void TouchHighlightButtons::resizeEvent(QResizeEvent* resize_event){
+void TouchHighlightButtons::resizeEvent(QResizeEvent* resize_event) {
     quick_widget->resize(resize_event->size().width(), resize_event->size().height());
     QWidget::resizeEvent(resize_event);
 

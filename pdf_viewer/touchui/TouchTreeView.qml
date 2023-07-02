@@ -47,11 +47,11 @@ Rectangle {
             //_model.setFilterCustom(text);
         }
 
-		onAccepted: {
+        onAccepted: {
             let item = tree_view.model.data(lview.model.index(0, 0));
             //console.log(item);
-			rootitem.itemSelected(item, 0);
-		}
+            rootitem.itemSelected(item, 0);
+        }
 
     }
 

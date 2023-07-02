@@ -1,7 +1,7 @@
 #include "touchui/TouchPageSelector.h"
 
 
-TouchPageSelector::TouchPageSelector(int from, int to, int initial_value, QWidget* parent) : QWidget(parent){
+TouchPageSelector::TouchPageSelector(int from, int to, int initial_value, QWidget* parent) : QWidget(parent) {
 
     setAttribute(Qt::WA_NoMousePropagation);
     quick_widget = new QQuickWidget(this);
@@ -25,7 +25,7 @@ void TouchPageSelector::handleSelect(int item) {
     emit pageSelected(item);
 }
 
-void TouchPageSelector::resizeEvent(QResizeEvent* resize_event){
+void TouchPageSelector::resizeEvent(QResizeEvent* resize_event) {
     int rwidth = resize_event->size().width();
     int rheight = resize_event->size().height();
 

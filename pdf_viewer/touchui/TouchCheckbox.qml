@@ -27,11 +27,11 @@ Rectangle {
         }
 
 
-		CheckBox{
-			//anchors.centerIn: parent
-			id: checkbox
-			checked: _initialValue
-		}
+        CheckBox{
+            //anchors.centerIn: parent
+            id: checkbox
+            checked: _initialValue
+        }
 
         anchors {
             left: parent.left

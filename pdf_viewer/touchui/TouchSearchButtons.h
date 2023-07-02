@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchSearchButtons : public QWidget{
+class TouchSearchButtons : public QWidget {
     Q_OBJECT
 public:
-    TouchSearchButtons(QWidget* parent=nullptr);
+    TouchSearchButtons(QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

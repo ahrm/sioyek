@@ -6,10 +6,10 @@
 #include <QQuickItem>
 
 
-class TouchRangeSelectUI : public QWidget{
+class TouchRangeSelectUI : public QWidget {
     Q_OBJECT
 public:
-    TouchRangeSelectUI(float initial_top, float initial_bottom, QWidget* parent=nullptr);
+    TouchRangeSelectUI(float initial_top, float initial_bottom, QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

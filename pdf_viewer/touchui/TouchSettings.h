@@ -8,10 +8,10 @@
 class MainWidget;
 class UIRect;
 
-class TouchSettings : public QWidget{
+class TouchSettings : public QWidget {
     Q_OBJECT
 public:
-    TouchSettings(MainWidget* parent=nullptr);
+    TouchSettings(MainWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

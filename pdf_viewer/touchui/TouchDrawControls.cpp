@@ -3,7 +3,7 @@
 
 extern float HIGHLIGHT_COLORS[26 * 3];
 
-TouchDrawControls::TouchDrawControls(float pen_size, char selected_symbol, QWidget* parent) : QWidget(parent){
+TouchDrawControls::TouchDrawControls(float pen_size, char selected_symbol, QWidget* parent) : QWidget(parent) {
 
     quick_widget = new QQuickWidget(this);
 
@@ -14,7 +14,7 @@ TouchDrawControls::TouchDrawControls(float pen_size, char selected_symbol, QWidg
     QList<QColor> colors;
     const int N_COLORS = 5;
     for (int i = 0; i < N_COLORS; i++) {
-		colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * i]));
+        colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * i]));
     }
     //colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('b' - 'a')]));
     //colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * ('c' - 'a')]));
@@ -88,7 +88,7 @@ void TouchDrawControls::handleChangeColor(int index) {
     emit changeColorPressed(index);
 }
 
-void TouchDrawControls::resizeEvent(QResizeEvent* resize_event){
+void TouchDrawControls::resizeEvent(QResizeEvent* resize_event) {
     quick_widget->resize(resize_event->size().width(), resize_event->size().height());
     QWidget::resizeEvent(resize_event);
 
