@@ -652,7 +652,11 @@ fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_ch
     int index = 0;
     for (auto current_char : flat_chars) {
 
-        fz_point quad_center = current_char->origin;
+        fz_point quad_center;
+
+        quad_center.x = (current_char->quad.ll.x + current_char->quad.lr.x) / 2;
+        quad_center.y = (current_char->quad.ll.y + current_char->quad.ul.y) / 2;
+
         float distance = dist_squared(document_point, quad_center);
         if (distance < min_distance) {
             min_distance = distance;

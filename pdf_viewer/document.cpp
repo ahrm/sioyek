@@ -52,6 +52,7 @@ extern float BOOKMARK_RECT_SIZE;
 extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern std::wstring SHARED_DATABASE_PATH;
+extern bool DEBUG;
 
 int Document::get_mark_index(char symbol) {
     for (size_t i = 0; i < marks.size(); i++) {

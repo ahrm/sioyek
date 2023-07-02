@@ -1,4 +1,6 @@
 ﻿// deduplicate database code
+// allow direct use of macros in keys_user.config file (e.g. `setconfig_touch_mode(1) q`)
+// add a toggleconfig command for boolean configs
 
 #include <iostream>
 #include <vector>
@@ -159,6 +161,7 @@ extern std::wstring VISUAL_MARK_NEXT_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
+extern bool DEBUG;
 
 extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
@@ -1152,7 +1155,9 @@ std::wstring MainWidget::get_status_string() {
     status_string.replace("%{search_progress}", "");
     status_string.replace("%{download}", "");
 
-
+    if (DEBUG) {
+        status_string += " [DEBUG MODE] ";
+    }
 
     //return ss.str();
     return status_string.toStdWString();
