@@ -3638,23 +3638,25 @@ public:
 };
 
 
-//class ConfigCommand : public TextCommand {
-//	std::string config_name;
-//public:
-//	ConfigCommand(std::string config_name_) {
-//		config_name = config_name_;
-//	}
-//
-//	void perform(MainWidget* widget) {
-//        widget->config_manager->deserialize_config(config_name, text.value());
-//	}
-//
-//	std::string get_name() {
-//		return "setconfig_" + config_name;
-//	}
-//	
-//	bool requires_document() { return false; }
-//};
+class ToggleConfigCommand : public Command {
+	std::string config_name;
+public:
+	ToggleConfigCommand(MainWidget* widget, std::string config_name_) : Command(widget){
+		config_name = config_name_;
+	}
+
+	void perform() {
+        //widget->config_manager->deserialize_config(config_name, text.value());
+        auto conf = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
+        *(bool*)conf->value = !*(bool*)conf->value;
+	}
+
+	std::string get_name() {
+		return "toggleconfig_" + config_name;
+	}
+	
+	bool requires_document() { return false; }
+};
 
 class ConfigCommand : public Command {
     std::string config_name;
@@ -4449,10 +4451,16 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     std::vector<Config> configs = config_manager->get_configs();
 
     for (auto conf : configs) {
+
         std::string confname = utf8_encode(conf.name);
         std::string config_set_command_name = "setconfig_" + confname;
         //commands.push_back({ config_set_command_name, true, false , false, false, true, {} });
         new_commands[config_set_command_name] = [confname, config_manager](MainWidget* w) {return std::make_unique<ConfigCommand>(w, confname, config_manager); };
+
+        if (conf.config_type == ConfigType::Bool) {
+            std::string config_toggle_command_name = "toggleconfig_" + confname;
+            new_commands[config_toggle_command_name] = [confname, config_manager](MainWidget* w) {return std::make_unique<ToggleConfigCommand>(w, confname); };
+        }
 
     }
 
