@@ -4685,7 +4685,7 @@ InputParseTreeNode* parse_lines(
                 for (size_t k = 0; k < command_names[j].size(); k++) {
                     parent_node->name_.push_back(command_names[j][k]);
                 }
-                if (command_names[j].size() == 1 && (command_names[j][0].find("[") == -1)) {
+                if (command_names[j].size() == 1 && (command_names[j][0].find("[") == -1) && (command_names[j][0].find("(") == -1)) {
                     parent_node->generator = command_manager->new_commands[command_names[j][0]];
                 }
                 else {

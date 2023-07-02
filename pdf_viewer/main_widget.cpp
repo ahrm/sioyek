@@ -1,5 +1,4 @@
 ﻿// deduplicate database code
-// allow direct use of macros in keys_user.config file (e.g. `setconfig_touch_mode(1) q`)
 // add a toggleconfig command for boolean configs
 
 #include <iostream>
