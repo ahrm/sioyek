@@ -2937,6 +2937,8 @@ public:
         widget->toggle_scrollbar();
 	}
 
+	bool requires_document() { return false; }
+
 	std::string get_name() {
 		return "toggle_scrollbar";
 	}
@@ -3888,6 +3890,24 @@ public:
 					return;
 				}
 			}
+		}
+	}
+
+	bool requires_document() {
+		if (is_modal) {
+			int current_mode_index = get_current_mode_index();
+			if (current_mode_index >= 0) {
+				return commands[current_mode_index]->requires_document();
+			}
+		}
+		else {
+
+			for (int i = 0; i < commands.size(); i++) {
+				if (commands[i]->requires_document()) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 
