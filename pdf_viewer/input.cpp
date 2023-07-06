@@ -2164,7 +2164,7 @@ public:
     KeysCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        open_file(default_keys_path.get_path());
+        open_file(default_keys_path.get_path(), true);
     }
 
     std::string get_name() {
@@ -2182,7 +2182,7 @@ public:
     void perform() {
         std::optional<Path> key_file_path = widget->input_handler->get_or_create_user_keys_path();
         if (key_file_path) {
-            open_file(key_file_path.value().get_path());
+            open_file(key_file_path.value().get_path(), true);
         }
     }
 
@@ -2215,7 +2215,7 @@ public:
     PrefsCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        open_file(default_config_path.get_path());
+        open_file(default_config_path.get_path(), true);
     }
 
     std::string get_name() {
@@ -2233,7 +2233,7 @@ public:
     void perform() {
         std::optional<Path> pref_file_path = widget->config_manager->get_or_create_user_config_file();
         if (pref_file_path) {
-            open_file(pref_file_path.value().get_path());
+            open_file(pref_file_path.value().get_path(), true);
         }
     }
 

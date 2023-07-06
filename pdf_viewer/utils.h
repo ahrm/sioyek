@@ -116,10 +116,10 @@ void sleep_ms(unsigned int ms);
 //void open_url(const std::string& url_string);
 //void open_url(const std::wstring& url_string);
 
-void open_file_url(const std::wstring& file_url);
+void open_file_url(const std::wstring& file_url, bool show_fail_message);
 void open_web_url(const std::wstring& web_url);
 
-void open_file(const std::wstring& path);
+void open_file(const std::wstring& path, bool show_fail_message);
 void search_custom_engine(const std::wstring& search_string, const std::wstring& custom_engine_url);
 void search_google_scholar(const std::wstring& search_string);
 void search_libgen(const std::wstring& search_string);

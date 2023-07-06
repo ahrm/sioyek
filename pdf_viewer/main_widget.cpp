@@ -1,5 +1,6 @@
 ﻿// deduplicate database code
-// add a toggleconfig command for boolean configs
+// if sioyek doens't have the permission to open config files, at least show a message with the path of the config file
+// allow viewing references when in ruler mode by right clicking. Also allow mouse wheel to switch between possible references
 
 #include <iostream>
 #include <vector>
@@ -5045,7 +5046,7 @@ void MainWidget::handle_keys_user_all() {
         keys_paths_wstring,
         [&](std::wstring* path) {
             if (path) {
-                open_file(*path);
+                open_file(*path, true);
             }
         },
         this));
@@ -5065,7 +5066,7 @@ void MainWidget::handle_prefs_user_all() {
         prefs_paths_wstring,
         [&](std::wstring* path) {
             if (path) {
-                open_file(*path);
+                open_file(*path, true);
             }
         },
         this));

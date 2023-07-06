@@ -952,14 +952,15 @@ void run_command(std::wstring command, QStringList parameters, bool wait) {
 }
 
 
-void open_file_url(const QString& url_string) {
-    QDesktopServices::openUrl(QUrl::fromLocalFile(url_string));
-    //QDesktopServices::openUrl(QUrl("file:///" + url_string, QUrl::TolerantMode));
+void open_file_url(const QString& url_string, bool show_fail_message) {
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(url_string))) {
+        show_error_message(("Could not open address: " + url_string).toStdWString());
+    }
 }
 
-void open_file_url(const std::wstring& url_string) {
+void open_file_url(const std::wstring& url_string, bool show_fail_message) {
     QString qurl_string = QString::fromStdWString(url_string);
-    open_file_url(qurl_string);
+    open_file_url(qurl_string, show_fail_message);
 }
 
 void open_web_url(const QString& url_string) {
@@ -1008,9 +1009,9 @@ void create_file_if_not_exists(const std::wstring& path) {
 }
 
 
-void open_file(const std::wstring& path) {
+void open_file(const std::wstring& path, bool show_fail_message) {
     std::wstring canon_path = get_canonical_path(path);
-    open_file_url(canon_path);
+    open_file_url(canon_path, show_fail_message);
 
 }
 
