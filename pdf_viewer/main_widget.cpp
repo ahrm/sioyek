@@ -1,6 +1,6 @@
 ﻿// deduplicate database code
-// if sioyek doens't have the permission to open config files, at least show a message with the path of the config file
 // allow viewing references when in ruler mode by right clicking. Also allow mouse wheel to switch between possible references
+// see if macro commands can be sped up
 
 #include <iostream>
 #include <vector>
@@ -1832,6 +1832,13 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
                 return;
             }
 
+            if (visual_scroll_mode) {
+                if (is_in_middle_right_rect(click_pos)) {
+                    overview_to_definition();
+                    return;
+                }
+            }
+
             visual_mark_under_pos(click_pos);
 
         }
@@ -2483,16 +2490,9 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 
 void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
-    std::unique_ptr<Command> command = nullptr;
-    //bool is_touchpad = wevent->source() == Qt::MouseEventSource::MouseEventSynthesizedBySystem;
-    //bool is_touchpad = true;
     float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
     float horizontal_move_amount = HORIZONTAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
 
-    //if (is_touchpad) {
-    //	vertical_move_amount *= TOUCHPAD_SENSITIVITY;
-    //	horizontal_move_amount *= TOUCHPAD_SENSITIVITY;
-    //}
     if (main_document_view_has_document()) {
         main_document_view->disable_auto_resize_mode();
     }
@@ -2542,7 +2542,17 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
             if (wevent->angleDelta().y() > 0) {
 
                 if (is_visual_mark_mode) {
-                    command = command_manager->get_command_with_name(this, "move_visual_mark_up");
+                    if (opengl_widget->get_overview_page()) {
+                        if (!goto_ith_next_overview(1)) {
+                            move_visual_mark_command(-num_repeats);
+                        }
+                        return;
+                    }
+                    else {
+                        move_visual_mark_command(-num_repeats);
+                        return;
+                    }
+
                 }
                 else {
                     move_vertical(-72.0f * vertical_move_amount * num_repeats_f);
@@ -2553,7 +2563,16 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
             if (wevent->angleDelta().y() < 0) {
 
                 if (is_visual_mark_mode) {
-                    command = command_manager->get_command_with_name(this, "move_visual_mark_down");
+                    if (opengl_widget->get_overview_page()) {
+                        if (!goto_ith_next_overview(-1)) {
+                            move_visual_mark_command(num_repeats);
+                        }
+                        return;
+                    }
+                    else {
+                        move_visual_mark_command(num_repeats);
+                        return;
+                    }
                 }
                 else {
                     move_vertical(72.0f * vertical_move_amount * num_repeats_f);
@@ -2592,12 +2611,6 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
             return;
         }
 
-    }
-
-    if (command) {
-        //handle_command(command, num_repeats);
-        command->set_num_repeats(num_repeats);
-        command->run();
     }
 }
 
@@ -6722,4 +6735,13 @@ HighlightButtons* MainWidget::get_highlight_buttons() {
     }
 
     return highlight_buttons_;
+}
+
+bool MainWidget::goto_ith_next_overview(int i) {
+    if (smart_view_candidates.size() > 1) {
+        index_into_candidates = mod((index_into_candidates + i), smart_view_candidates.size());
+        set_overview_position(smart_view_candidates[index_into_candidates].page, smart_view_candidates[index_into_candidates].y);
+        return true;
+    }
+    return false;
 }

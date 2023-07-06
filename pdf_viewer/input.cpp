@@ -2811,8 +2811,9 @@ public:
     NextPreviewCommand(MainWidget* w) : Command(w) {};
     void perform() {
         if (widget->smart_view_candidates.size() > 0) {
-            widget->index_into_candidates = (widget->index_into_candidates + 1) % widget->smart_view_candidates.size();
-            widget->set_overview_position(widget->smart_view_candidates[widget->index_into_candidates].page, widget->smart_view_candidates[widget->index_into_candidates].y);
+            //widget->index_into_candidates = (widget->index_into_candidates + 1) % widget->smart_view_candidates.size();
+            //widget->set_overview_position(widget->smart_view_candidates[widget->index_into_candidates].page, widget->smart_view_candidates[widget->index_into_candidates].y);
+            widget->goto_ith_next_overview(1);
         }
     }
 
@@ -2827,8 +2828,9 @@ public:
     PreviousPreviewCommand(MainWidget* w) : Command(w) {};
     void perform() {
         if (widget->smart_view_candidates.size() > 0) {
-            widget->index_into_candidates = mod(widget->index_into_candidates - 1, widget->smart_view_candidates.size());
-            widget->set_overview_position(widget->smart_view_candidates[widget->index_into_candidates].page, widget->smart_view_candidates[widget->index_into_candidates].y);
+            //widget->index_into_candidates = mod(widget->index_into_candidates - 1, widget->smart_view_candidates.size());
+            //widget->set_overview_position(widget->smart_view_candidates[widget->index_into_candidates].page, widget->smart_view_candidates[widget->index_into_candidates].y);
+            widget->goto_ith_next_overview(-1);
         }
     }
 

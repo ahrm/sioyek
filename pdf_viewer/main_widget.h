@@ -767,6 +767,7 @@ public:
     bool should_drag();
     void handle_freehand_drawing_move_finish();
     void move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings);
+    bool goto_ith_next_overview(int i);
 };
 
 #endif
