@@ -3782,6 +3782,16 @@ class MacroCommand : public Command {
 public:
     //MacroCommand(std::string name_, std::vector<std::unique_ptr<NewCommand>> commands_) {
 
+    std::unique_ptr<Command> get_subcommand(std::wstring subcommand_name) {
+        auto subcommand = widget->command_manager->get_command_with_name(widget, utf8_encode(subcommand_name));
+        if (subcommand) {
+            return std::move(subcommand);
+        }
+        else {
+            return std::move(std::make_unique<LazyCommand>(widget, widget->command_manager, subcommand_name));
+        }
+    }
+
     MacroCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(widget_) {
         //commands = std::move(commands_);
         command_manager = manager;
@@ -3798,14 +3808,14 @@ public:
                 }
 
                 if (!is_modal) {
-                    commands.push_back(std::make_unique<LazyCommand>(widget_, manager, parts.at(i).toStdWString()));
+                    commands.push_back(get_subcommand(parts.at(i).toStdWString()));
                 }
                 else {
                     int closed_bracket_index = parts.at(i).indexOf(']');
                     if (closed_bracket_index > 0) {
                         QString mode_string = parts.at(i).mid(1, closed_bracket_index - 1);
                         QString command_string = parts.at(i).mid(closed_bracket_index + 1);
-                        commands.push_back(std::make_unique<LazyCommand>(widget_, manager, command_string.toStdWString()));
+                        commands.push_back(get_subcommand(command_string.toStdWString()));
                         modes.push_back(mode_string.toStdString());
                     }
                 }
