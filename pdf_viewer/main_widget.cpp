@@ -1,5 +1,4 @@
 ﻿// deduplicate database code
-// allow viewing references when in ruler mode by right clicking. Also allow mouse wheel to switch between possible references
 // see if macro commands can be sped up
 
 #include <iostream>
@@ -1957,9 +1956,6 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
     auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(click_pos);
 
 
-    if (!TOUCH_MODE) {
-        if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
-    }
 
     if (point_select_mode) {
         if (pending_command_instance) {
@@ -2259,6 +2255,12 @@ void MainWidget::handle_click(WindowPos click_pos) {
         handle_link_click(link.value());
         return;
     }
+    else {
+        if (!TOUCH_MODE) {
+            if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
+        }
+    }
+
 }
 ReferenceType MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int* out_page, float* out_offset, bool update_candidates) {
 
