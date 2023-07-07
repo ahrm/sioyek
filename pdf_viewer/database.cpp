@@ -348,20 +348,29 @@ static int highlight_select_callback(void* res_vector, int argc, char** argv, ch
 static int link_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<Portal>* res = (std::vector<Portal>*)res_vector;
-    assert(argc == 8);
+    assert(argc == 9);
+
+    bool is_visible = false;
 
     std::string dst_path = argv[0];
     float src_offset_y = atof(argv[1]);
-    float dst_offset_x = atof(argv[2]);
-    float dst_offset_y = atof(argv[3]);
-    float dst_zoom_level = atof(argv[4]);
-    std::string uuid = argv[5];
-    std::string creation_time = argv[6];
-    std::string modification_time = argv[7];
+    std::optional<float> src_offset_x = {};
+
+    if (argv[2]) {
+        src_offset_x = atof(argv[2]);
+    }
+
+    float dst_offset_x = atof(argv[3]);
+    float dst_offset_y = atof(argv[4]);
+    float dst_zoom_level = atof(argv[5]);
+    std::string uuid = argv[6];
+    std::string creation_time = argv[7];
+    std::string modification_time = argv[8];
 
     Portal link;
     link.dst.document_checksum = dst_path;
     link.src_offset_y = src_offset_y;
+    link.src_offset_x = src_offset_x;
     link.dst.book_state.offset_x = dst_offset_x;
     link.dst.book_state.offset_y = dst_offset_y;
     link.dst.book_state.zoom_level = dst_zoom_level;
@@ -575,6 +584,7 @@ bool DatabaseManager::create_links_table() {
         "src_document TEXT,"\
         "dst_document TEXT,"\
         "src_offset_y REAL,"\
+        "src_offset_x REAL,"\
         "dst_offset_x REAL,"\
         "dst_offset_y REAL,"\
         "dst_zoom_level REAL);";
@@ -771,21 +781,39 @@ bool DatabaseManager::insert_portal(const std::string& src_document_path,
     float src_offset_y,
     std::wstring uuid) {
 
-    std::wstringstream ss;
-    ss << "INSERT INTO links (src_document, dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level, uuid, creation_time, modification_time) VALUES ('" <<
-        esc(src_document_path) << "', '" <<
-        esc(dst_document_path) << "', " <<
-        src_offset_y << ", " <<
-        dst_offset_x << ", " <<
-        dst_offset_y << ", " <<
-        dst_zoom_level << ", '" <<
-        esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
-    char* error_message = nullptr;
+    return generic_insert_run_query("links", { {"src_document", QString::fromStdString(src_document_path)},
+                                              {"dst_document", QString::fromStdString(dst_document_path)},
+                                              {"src_offset_y", src_offset_y},
+                                              {"dst_offset_x", dst_offset_x},
+                                              {"dst_offset_y", dst_offset_y},
+                                              {"dst_zoom_level", dst_zoom_level},
+                                              {"uuid", QString::fromStdWString(uuid)},
+                                              {"creation_time", "CURRENT_TIMESTAMP"},
+                                              {"modification_time", "CURRENT_TIMESTAMP"}
+        });
 
-    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
-    return handle_error(
-        error_code,
-        error_message);
+}
+
+bool DatabaseManager::insert_visible_portal(const std::string& src_checksum,
+    const std::string& dst_checksum,
+    float dst_offset_x,
+    float dst_offset_y,
+    float dst_zoom_level,
+    float src_offset_x,
+    float src_offset_y,
+    std::wstring uuid) {
+
+    return generic_insert_run_query("links", { {"src_document", QString::fromStdString(src_checksum)},
+                                                     {"dst_document", QString::fromStdString(dst_checksum)},
+                                                     {"src_offset_y", src_offset_y},
+                                                     {"src_offset_x", src_offset_x},
+                                                     {"dst_offset_x", dst_offset_x},
+                                                     {"dst_offset_y", dst_offset_y},
+                                                     {"dst_zoom_level", dst_zoom_level},
+                                                     {"uuid", QString::fromStdWString(uuid)},
+                                                     {"creation_time", "CURRENT_TIMESTAMP"},
+                                                     {"modification_time", "CURRENT_TIMESTAMP"}
+               });
 }
 
 bool DatabaseManager::update_portal(const std::string& uuid, float dst_offset_x, float dst_offset_y, float dst_zoom_level) {
@@ -1029,7 +1057,7 @@ bool DatabaseManager::global_select_bookmark(std::vector<std::pair<std::string, 
 
 bool DatabaseManager::select_links(const std::string& src_document_path, std::vector<Portal>& out_result) {
     std::wstringstream ss;
-    ss << "select dst_document, src_offset_y, dst_offset_x, dst_offset_y, dst_zoom_level, uuid, creation_time, modification_time from links where src_document='" << esc(src_document_path) << "';";
+    ss << "select dst_document, src_offset_y, src_offset_x, dst_offset_x, dst_offset_y, dst_zoom_level, uuid, creation_time, modification_time from links where src_document='" << esc(src_document_path) << "';";
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), link_select_callback, &out_result, &error_message);
@@ -1548,6 +1576,7 @@ void DatabaseManager::migrate_version_0_to_1() {
     queries_to_run.push_back("ALTER TABLE marks ADD COLUMN uuid TEXT;");
 
     // portals
+    queries_to_run.push_back("ALTER TABLE links ADD COLUMN src_offset_x REAL;");
     queries_to_run.push_back("ALTER TABLE links ADD COLUMN creation_time timestamp;");
     queries_to_run.push_back("ALTER TABLE links ADD COLUMN modification_time timestamp;");
     queries_to_run.push_back("ALTER TABLE links ADD COLUMN uuid TEXT;");

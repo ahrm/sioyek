@@ -207,6 +207,11 @@ QJsonObject Portal::to_json(std::string doc_checksum) const
     res["dst_offset_x"] = dst.book_state.offset_x;
     res["dst_offset_y"] = dst.book_state.offset_y;
     res["dst_zoom_level"] = dst.book_state.zoom_level;
+
+    if (src_offset_x) {
+        res["src_offset_x"] = src_offset_x.value();
+    }
+
     res["same"] = (doc_checksum == dst.document_checksum);
     add_metadata_to_json(res);
     return res;
@@ -220,6 +225,11 @@ void Portal::from_json(const QJsonObject& json_object)
     dst.book_state.offset_y = json_object["dst_offset_y"].toDouble();
     dst.book_state.zoom_level = json_object["dst_zoom_level"].toDouble();
 
+    if (json_object.contains("src_offset_x")) {
+
+        src_offset_x = json_object["src_offset_x"].toDouble();
+    }
+
     load_metadata_from_json(json_object);
 }
 
@@ -229,6 +239,10 @@ void Portal::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples
     tuples.push_back({ "dst_offset_x", dst.book_state.offset_x });
     tuples.push_back({ "dst_offset_y", dst.book_state.offset_y });
     tuples.push_back({ "dst_zoom_level", dst.book_state.zoom_level });
+    if (src_offset_x) {
+        tuples.push_back({ "src_offset_x", src_offset_x.value()});
+    }
+
 }
 
 bool operator==(const Mark& lhs, const Mark& rhs)
@@ -262,4 +276,8 @@ bool are_same(const BookMark& lhs, const BookMark& rhs) {
 
 bool are_same(const Highlight& lhs, const Highlight& rhs) {
     return are_same(lhs.selection_begin, rhs.selection_begin) && are_same(lhs.selection_end, rhs.selection_end);
+}
+
+bool Portal::is_visible() const {
+    return src_offset_x.has_value();
 }

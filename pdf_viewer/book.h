@@ -124,6 +124,9 @@ struct Portal : Annotation {
 
     PortalViewState dst;
     float src_offset_y;
+    std::optional<float> src_offset_x = {};
+
+    bool is_visible() const;
 
     QJsonObject to_json(std::string doc_checksum) const;
     void from_json(const QJsonObject& json_object);

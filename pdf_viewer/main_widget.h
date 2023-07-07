@@ -333,6 +333,7 @@ public:
     void toggle_two_window_mode();
     void toggle_window_configuration();
     void handle_portal();
+    void start_creating_rect_portal(AbsoluteDocumentPos location);
     void add_portal(std::wstring source_path, Portal new_link);
     void toggle_fullscreen();
     void toggle_presentation_mode();

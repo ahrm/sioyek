@@ -39,6 +39,16 @@ public:
         float dst_zoom_level,
         float src_offset_y,
         std::wstring uuid);
+
+    bool insert_visible_portal(const std::string& src_checksum,
+        const std::string& dst_checksum,
+        float dst_offset_y,
+        float dst_offset_x,
+        float dst_zoom_level,
+        float src_offet_x,
+        float src_offset_y,
+        std::wstring uuid);
+
     bool select_links(const std::string& src_checksum, std::vector<Portal>& out_result);
     bool delete_portal(const std::string& uuid);
     bool delete_bookmark(const std::string& uuid);

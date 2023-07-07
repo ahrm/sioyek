@@ -1312,6 +1312,27 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
     if (document_view->get_document()->can_use_highlights()) {
         const std::vector<BookMark>& bookmarks = document_view->get_document()->get_bookmarks();
+        const std::vector<Portal>& portals = document_view->get_document()->get_portals();
+        for (int i = 0; i < portals.size(); i++) {
+            if (portals[i].is_visible()) {
+
+
+                fz_rect portal_rect;
+                portal_rect.x0 = portals[i].src_offset_x.value() - BOOKMARK_RECT_SIZE;
+                portal_rect.x1 = portals[i].src_offset_x.value() + BOOKMARK_RECT_SIZE;
+                portal_rect.y0 = portals[i].src_offset_y - BOOKMARK_RECT_SIZE;
+                portal_rect.y1 = portals[i].src_offset_y + BOOKMARK_RECT_SIZE;
+
+                //fz_rect portal_rect = {portals[i].src_rect_begin_x, portals[i].src_rect_begin_y, portals[i].src_rect_end_x, portals[i].src_rect_end_y};
+                fz_rect portal_normalized_window_rect = document_view->absolute_to_window_rect(portal_rect);
+                fz_irect portal_window_rect = document_view->normalized_to_window_rect(portal_normalized_window_rect);
+                QRect window_qrect = QRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
+
+                painter->setPen(QColor(255, 0, 0));
+                painter->drawRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
+
+            }
+        }
 
 
         for (int i = 0; i < bookmarks.size(); i++) {

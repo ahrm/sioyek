@@ -170,6 +170,7 @@ public:
     void delete_bookmark(int index);
     void delete_closest_portal(float to_offset_y);
     std::vector<BookMark>& get_bookmarks();
+    std::vector<Portal>& get_portals();
     std::vector<BookMark> get_sorted_bookmarks() const;
     const std::vector<Highlight>& get_highlights() const;
     int get_highlight_index_with_uuid(std::string uuid);

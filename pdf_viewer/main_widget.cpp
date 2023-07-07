@@ -1,5 +1,6 @@
 ﻿// deduplicate database code
 // see if macro commands can be sped up
+// make sure jsons exported by previous sioyek versions can be imported
 
 #include <iostream>
 #include <vector>
@@ -1957,12 +1958,13 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
 
 
-    if (point_select_mode) {
+    if (point_select_mode && (down == false)) {
         if (pending_command_instance) {
             pending_command_instance->set_point_requirement(abs_doc_pos);
             advance_command(std::move(pending_command_instance));
         }
 
+        is_selecting = false;
         this->point_select_mode = false;
         opengl_widget->clear_selected_rectangle();
         return;
@@ -2912,6 +2914,25 @@ void MainWidget::set_synctex_mode(bool mode) {
 
 void MainWidget::toggle_synctex_mode() {
     this->set_synctex_mode(!this->synctex_mode);
+}
+
+void MainWidget::start_creating_rect_portal(AbsoluteDocumentPos location) {
+
+    Portal new_portal;
+    new_portal.src_offset_y = location.y;
+    new_portal.src_offset_x = location.x;
+    //new_portal.src_rect_begin_x = rect.x0;
+    //new_portal.src_rect_begin_y = rect.y0;
+    //new_portal.src_rect_end_x = rect.x1;
+    //new_portal.src_rect_end_y = rect.y1;
+
+
+    pending_portal = std::make_pair<std::wstring, Portal>(main_document_view->get_document()->get_path(),
+        std::move(new_portal));
+
+    synchronize_pending_link();
+    refresh_all_windows();
+    validate_render();
 }
 
 void MainWidget::handle_portal() {
@@ -4060,13 +4081,25 @@ void MainWidget::add_portal(std::wstring source_path, Portal new_link) {
             }
         }
 
-        db_manager->insert_portal(checksummer->get_checksum(source_path),
-            new_link.dst.document_checksum,
-            new_link.dst.book_state.offset_x,
-            new_link.dst.book_state.offset_y,
-            new_link.dst.book_state.zoom_level,
-            new_link.src_offset_y,
-            new_uuid());
+        if (new_link.is_visible()) {
+            db_manager->insert_visible_portal(checksummer->get_checksum(source_path),
+                new_link.dst.document_checksum,
+                new_link.dst.book_state.offset_x,
+                new_link.dst.book_state.offset_y,
+                new_link.dst.book_state.zoom_level,
+                new_link.src_offset_x.value(),
+                new_link.src_offset_y,
+                new_uuid());
+        }
+        else {
+            db_manager->insert_portal(checksummer->get_checksum(source_path),
+                new_link.dst.document_checksum,
+                new_link.dst.book_state.offset_x,
+                new_link.dst.book_state.offset_y,
+                new_link.dst.book_state.zoom_level,
+                new_link.src_offset_y,
+                new_uuid());
+        }
     }
 }
 

@@ -292,14 +292,28 @@ void Document::add_portal(Portal portal, bool insert_into_database) {
     portal.update_creation_time();
     portals.push_back(portal);
     if (insert_into_database) {
-        db_manager->insert_portal(
-            get_checksum(),
-            portal.dst.document_checksum,
-            portal.dst.book_state.offset_x,
-            portal.dst.book_state.offset_y,
-            portal.dst.book_state.zoom_level,
-            portal.src_offset_y,
-            utf8_decode(portal.uuid));
+        if (portal.is_visible()) {
+            bool res = db_manager->insert_visible_portal(
+                get_checksum(),
+                portal.dst.document_checksum,
+                portal.dst.book_state.offset_x,
+                portal.dst.book_state.offset_y,
+                portal.dst.book_state.zoom_level,
+                portal.src_offset_x.value(),
+                portal.src_offset_y,
+                utf8_decode(portal.uuid));
+            qDebug() << "result of inserting portal was " << res;
+        }
+        else {
+            db_manager->insert_portal(
+                get_checksum(),
+                portal.dst.document_checksum,
+                portal.dst.book_state.offset_x,
+                portal.dst.book_state.offset_y,
+                portal.dst.book_state.zoom_level,
+                portal.src_offset_y,
+                utf8_decode(portal.uuid));
+        }
         is_annotations_dirty = true;
     }
 }
@@ -3796,4 +3810,7 @@ void Document::reload_annotations_on_new_checksum() {
     else {
         load_document_metadata_from_db();
     }
+}
+std::vector<Portal>& Document::get_portals() {
+    return portals;
 }

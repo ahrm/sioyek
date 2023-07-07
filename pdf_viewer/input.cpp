@@ -647,6 +647,38 @@ public:
     }
 };
 
+
+class CreateVisiblePortalCommand : public Command {
+
+public:
+
+    std::optional<AbsoluteDocumentPos> point_;
+
+    CreateVisiblePortalCommand(MainWidget* w) : Command(w) {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+        if (!point_.has_value()) {
+            Requirement req = { RequirementType::Point, "Location" };
+            return req;
+        }
+        return {};
+    }
+
+    void set_point_requirement(AbsoluteDocumentPos value) {
+        point_ = value;
+    }
+
+    void perform() {
+        widget->start_creating_rect_portal(point_.value());
+    }
+
+    std::string get_name() {
+        return "create_visible_portal";
+    }
+
+};
+
 class AddBookmarkFreetextCommand : public Command {
 
 public:
@@ -4139,6 +4171,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["goto_highlight_g"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightGlobalCommand>(widget); };
     new_commands["link"] = [](MainWidget* widget) {return std::make_unique< PortalCommand>(widget); };
     new_commands["portal"] = [](MainWidget* widget) {return std::make_unique< PortalCommand>(widget); };
+    new_commands["create_visible_portal"] = [](MainWidget* widget) {return std::make_unique< CreateVisiblePortalCommand>(widget); };
     new_commands["next_state"] = [](MainWidget* widget) {return std::make_unique< NextStateCommand>(widget); };
     new_commands["prev_state"] = [](MainWidget* widget) {return std::make_unique< PrevStateCommand>(widget); };
     new_commands["delete_link"] = [](MainWidget* widget) {return std::make_unique< DeletePortalCommand>(widget); };
