@@ -525,6 +525,8 @@ public:
     void handle_pause();
     void read_current_line();
     void download_paper_under_cursor(bool use_last_touch_pos = false);
+    void download_paper_with_name(const std::wstring& name);
+    bool is_pos_inside_selected_text(WindowPos window_pos);
     void handle_debug_command();
     void handle_add_marked_data();
     void handle_undo_marked_data();

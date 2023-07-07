@@ -444,6 +444,24 @@ public:
 
 };
 
+class DownloadPaperWithNameCommand : public TextCommand {
+public:
+    DownloadPaperWithNameCommand(MainWidget* w) : TextCommand(w) {};
+
+    void perform() {
+        widget->download_paper_with_name(text.value());
+    }
+
+    std::string get_name() {
+        return "download_paper_with_name";
+    }
+
+    std::string text_requirement_name() {
+        return "Paper Name";
+    }
+
+};
+
 class AddAnnotationToSelectedHighlightCommand : public TextCommand {
 public:
     AddAnnotationToSelectedHighlightCommand(MainWidget* w) : TextCommand(w) {};
@@ -4184,6 +4202,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["fit_to_page_width_ratio"] = [](MainWidget* widget) {return std::make_unique< FitToPageWidthRatioCommand>(widget); };
     new_commands["smart_jump_under_cursor"] = [](MainWidget* widget) {return std::make_unique< SmartJumpUnderCursorCommand>(widget); };
     new_commands["download_paper_under_cursor"] = [](MainWidget* widget) {return std::make_unique< DownloadPaperUnderCursorCommand>(widget); };
+    new_commands["download_paper_with_name"] = [](MainWidget* widget) {return std::make_unique< DownloadPaperWithNameCommand>(widget); };
     new_commands["overview_under_cursor"] = [](MainWidget* widget) {return std::make_unique< OverviewUnderCursorCommand>(widget); };
     new_commands["close_overview"] = [](MainWidget* widget) {return std::make_unique< CloseOverviewCommand>(widget); };
     new_commands["visual_mark_under_cursor"] = [](MainWidget* widget) {return std::make_unique< VisualMarkUnderCursorCommand>(widget); };

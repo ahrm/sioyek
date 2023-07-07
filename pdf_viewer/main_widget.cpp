@@ -5765,6 +5765,31 @@ void MainWidget::update_highlight_buttons_position() {
 void MainWidget::handle_debug_command() {
 }
 
+void MainWidget::download_paper_with_name(const std::wstring& name) {
+    QUrl get_url = QString::fromStdWString(PAPER_SEARCH_URL).replace(
+        "%{query}",
+        QUrl::toPercentEncoding(QString::fromStdWString(name))
+    );
+
+    QNetworkRequest req;
+    req.setUrl(get_url);
+    network_manager.get(req);
+}
+
+bool MainWidget::is_pos_inside_selected_text(WindowPos window_pos) {
+
+    AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(window_pos);
+
+    if (main_document_view) {
+        for (auto rect : main_document_view->selected_character_rects) {
+            if (fz_is_point_inside_rect({ abspos.x, abspos.y }, rect)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
     ensure_internet_permission();
 
@@ -5782,11 +5807,16 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
 
     std::optional<std::wstring> bib_text_ = {};
 
-    // first, we  try to detect if we are on a PDF link or a non-link reference
-    // (something like [14] or [Doe et. al.]) and then find the paper name in the
-    // referenced location. If we can't match the current text as a refernce source,
-    // we assume the text under cursor is the paper name.
-    if (pdf_link_) {
+    if (is_pos_inside_selected_text(pos)) {
+        // if user is clicking on a selected text, we assume they want to download the text
+        bib_text_ = selected_text;
+    }
+    else if (pdf_link_) {
+        // first, we  try to detect if we are on a PDF link or a non-link reference
+        // (something like [14] or [Doe et. al.]) and then find the paper name in the
+        // referenced location. If we can't match the current text as a refernce source,
+        // we assume the text under cursor is the paper name.
+
         PdfLink pdf_link = pdf_link_.value();
         fz_rect pdf_rect = pdf_link.rect;
         auto [link_page, offset_x, offset_y] = parse_uri(mupdf_context, pdf_link.uri);
@@ -5814,14 +5844,7 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
 
     if (bib_text_) {
         std::wstring bib_text = clean_bib_item(bib_text_.value());
-        QUrl get_url = QString::fromStdWString(PAPER_SEARCH_URL).replace(
-            "%{query}",
-            QUrl::toPercentEncoding(QString::fromStdWString(bib_text))
-        );
-
-        QNetworkRequest req;
-        req.setUrl(get_url);
-        network_manager.get(req);
+        download_paper_with_name(bib_text);
     }
 }
 
