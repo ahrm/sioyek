@@ -6986,7 +6986,7 @@ void MainWidget::finish_pending_download_portal(std::wstring download_paper_name
             Document* src_doc = document_manager->get_document(pending_download_portals[i].source_document_path);
 
             if (src_doc) {
-
+                db_manager->insert_document_hash(downloaded_file_path, checksum);
                 src_doc->add_portal(pending_portal, true);
             }
         }
