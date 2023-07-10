@@ -3878,3 +3878,34 @@ void Document::reload_annotations_on_new_checksum() {
 std::vector<Portal>& Document::get_portals() {
     return portals;
 }
+
+std::optional<std::wstring> DocumentManager::get_path_from_hash(const std::string& checksum) {
+    if (hash_to_path.find(checksum) != hash_to_path.end()) {
+        return hash_to_path[checksum];
+    }
+    std::vector<std::wstring> paths;
+
+    db_manager->get_path_from_hash(checksum, paths);
+
+    if (paths.size() > 0) {
+        hash_to_path[checksum] = paths[0];
+        return paths[0];
+    }
+
+    return {};
+}
+
+Document* DocumentManager::get_document_with_checksum(const std::string& checksum) {
+
+
+    std::optional<std::wstring> path = get_path_from_hash(checksum);
+    if (path) {
+        return get_document(path.value());
+    }
+    return nullptr;
+
+    //db_manager->get_path_from_hash();
+    //if (hash_to_path.find(checksum) != hash_to_path.end()) {
+    //    return get_document(hash_to_path[checksum]);
+    //}
+}

@@ -1300,15 +1300,13 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
         bind_default();
     }
 
-    if (overview_page) {
-        render_overview(overview_page.value());
-    }
 
 
 
 
 
     painter->endNativePainting();
+
 
     if (document_view->get_document()->can_use_highlights()) {
         const std::vector<BookMark>& bookmarks = document_view->get_document()->get_bookmarks();
@@ -1485,6 +1483,17 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
             }
         }
     }
+
+    painter->beginNativePainting();
+    if (overview_page) {
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_BLEND);
+        glBindVertexArray(vertex_array_object);
+
+        bind_default();
+        render_overview(overview_page.value());
+    }
+    painter->endNativePainting();
 
 }
 

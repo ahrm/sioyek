@@ -347,6 +347,9 @@ public:
     DocumentManager(fz_context* mupdf_context, DatabaseManager* db_manager, CachedChecksummer* checksummer);
 
     Document* get_document(const std::wstring& path);
+    std::optional<std::wstring> get_path_from_hash(const std::string& checksum);
+
+    Document* get_document_with_checksum(const std::string& checksum);
     std::optional<Document*> get_cached_document(const std::wstring& path);
     void free_document(Document* document);
     const std::unordered_map<std::wstring, Document*>& get_cached_documents();

@@ -2994,6 +2994,22 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
         return true;
     }
 
+    std::optional<Portal> portal = get_portal_under_window_pos(pos);
+    if (portal) {
+        Document* dst_doc = document_manager->get_document_with_checksum(portal.value().dst.document_checksum);
+        if (dst_doc) {
+            OverviewState overview;
+            overview.doc = dst_doc;
+            overview.absolute_offset_y = portal.value().dst.book_state.offset_y;
+            opengl_widget->set_overview_page(overview);
+            invalidate_render();
+            return true;
+        }
+        //overview.doc = document_manager->get_docu
+        //overview.doc = document_manager->get_document(portal.value().dst.document_checksum);
+        //opengl_widget->set_overview_page():
+        //set_overview_
+    }
     return false;
 }
 
