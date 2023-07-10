@@ -804,10 +804,12 @@ public:
 
     void finish_pending_download_portal(std::wstring download_paper_name, std::wstring downloaded_file_path);
 
-    std::optional<Portal> get_portal_under_absolute_pos(AbsoluteDocumentPos abspos);
-    std::optional<Portal> get_portal_under_window_pos(WindowPos pos);
+    std::optional<Portal> get_portal_under_absolute_pos(AbsoluteDocumentPos abspos, int* index=nullptr);
+    std::optional<Portal> get_portal_under_window_pos(WindowPos pos, int* index=nullptr);
+    std::optional<Portal> get_target_portal(bool limit);
 
     AbsoluteDocumentPos get_cursor_abspos();
+
 };
 
 #endif

@@ -1127,7 +1127,7 @@ std::wstring MainWidget::get_status_string() {
 
 
     if (SHOW_CLOSE_PORTAL_IN_STATUSBAR) {
-        std::optional<Portal> close_portal = main_document_view->find_closest_portal(true);
+        std::optional<Portal> close_portal = get_target_portal(true);
         if (close_portal) {
             status_string.replace("%{close_portal}", " [ PORTAL ]");
         }
@@ -1184,6 +1184,7 @@ std::wstring MainWidget::get_status_string() {
 
     if (DEBUG) {
         status_string += " [DEBUG MODE] ";
+        status_string += QString::number(selected_portal_index);
     }
 
     //return ss.str();
@@ -2994,9 +2995,11 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
         return true;
     }
 
-    std::optional<Portal> portal = get_portal_under_window_pos(pos);
+    int index = -1;
+    std::optional<Portal> portal = get_portal_under_window_pos(pos, &index);
     if (portal) {
         Document* dst_doc = document_manager->get_document_with_checksum(portal.value().dst.document_checksum);
+        selected_portal_index = index;
         if (dst_doc) {
             OverviewState overview;
             overview.doc = dst_doc;
@@ -4325,7 +4328,7 @@ void MainWidget::handle_portal_overview_update() {
     if (current_state_) {
         OverviewState current_state = current_state_.value();
         if (current_state.doc != nullptr) {
-            std::optional<Portal> link_ = main_document_view->find_closest_portal();
+            std::optional<Portal> link_ = get_target_portal(false);
             if (link_) {
                 Portal link = link_.value();
                 OpenedBookState link_new_state = link.dst.book_state;
@@ -4340,7 +4343,7 @@ void MainWidget::goto_overview() {
     if (opengl_widget->get_overview_page()) {
         OverviewState overview = opengl_widget->get_overview_page().value();
         if (overview.doc != nullptr) {
-            std::optional<Portal> closest_link_ = main_document_view->find_closest_portal();
+            std::optional<Portal> closest_link_ = get_target_portal(false);
             if (closest_link_) {
                 push_state();
                 open_document(closest_link_.value().dst);
@@ -5300,7 +5303,7 @@ void MainWidget::handle_overview_to_portal() {
     else {
 
         OverviewState overview_state;
-        std::optional<Portal> portal_ = main_document_view->find_closest_portal();
+        std::optional<Portal> portal_ = get_target_portal(false);
         if (portal_) {
             Portal portal = portal_.value();
             auto destination_path = checksummer->get_path(portal.dst.document_checksum);
@@ -7009,15 +7012,16 @@ void MainWidget::finish_pending_download_portal(std::wstring download_paper_name
     }
 }
 
-std::optional<Portal> MainWidget::get_portal_under_window_pos(WindowPos pos) {
+std::optional<Portal> MainWidget::get_portal_under_window_pos(WindowPos pos, int* out_index) {
     AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
-    return get_portal_under_absolute_pos(abspos);
+    return get_portal_under_absolute_pos(abspos, out_index);
 }
 
-std::optional<Portal> MainWidget::get_portal_under_absolute_pos(AbsoluteDocumentPos abspos) {
+std::optional<Portal> MainWidget::get_portal_under_absolute_pos(AbsoluteDocumentPos abspos, int* out_index) {
     std::vector<Portal>& portals = doc()->get_portals();
     int index = doc()->get_portal_index_at_pos(abspos);
     if (index >= 0) {
+        if (out_index) *out_index = index;
         return portals[index];
     }
     return {};
@@ -7027,4 +7031,14 @@ AbsoluteDocumentPos MainWidget::get_cursor_abspos() {
     QPoint current_mouse_window_point = mapFromGlobal(QCursor::pos());
     WindowPos current_mouse_window_pos = { current_mouse_window_point.x(), current_mouse_window_point.y() };
     return main_document_view->window_to_absolute_document_pos(current_mouse_window_pos);
+}
+
+std::optional<Portal> MainWidget::get_target_portal(bool limit) {
+    if ((selected_portal_index >= 0) && (opengl_widget->get_overview_page().has_value())) {
+        std::vector<Portal>& portals = doc()->get_portals();
+        if (portals.size() > selected_portal_index) {
+            return portals[selected_portal_index];
+        }
+    }
+    return main_document_view->find_closest_portal(limit);
 }
