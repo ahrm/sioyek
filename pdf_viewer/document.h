@@ -144,6 +144,7 @@ public:
     void delete_highlight_with_index(int index);
     void delete_highlight(Highlight hl);
     int get_bookmark_index_at_pos(AbsoluteDocumentPos abspos);
+    int get_portal_index_at_pos(AbsoluteDocumentPos abspos);
     bool should_render_pdf_annotations();
     void set_should_render_pdf_annotations(bool val);
     bool get_should_render_pdf_annotations();
@@ -276,6 +277,7 @@ public:
     void update_highlight_type(int index, char new_type);
     void update_bookmark_text(int index, const std::wstring& new_text, float new_font_size);
     void update_bookmark_position(int index, AbsoluteDocumentPos new_begin_position, AbsoluteDocumentPos new_end_position);
+    void update_portal_src_position(int index, AbsoluteDocumentPos new_position);
 
     bool needs_password();
     bool needs_authentication();

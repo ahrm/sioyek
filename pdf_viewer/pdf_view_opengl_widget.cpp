@@ -1313,10 +1313,9 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
     if (document_view->get_document()->can_use_highlights()) {
         const std::vector<BookMark>& bookmarks = document_view->get_document()->get_bookmarks();
         const std::vector<Portal>& portals = document_view->get_document()->get_portals();
+
         for (int i = 0; i < portals.size(); i++) {
             if (portals[i].is_visible()) {
-
-
                 fz_rect portal_rect;
                 portal_rect.x0 = portals[i].src_offset_x.value() - BOOKMARK_RECT_SIZE;
                 portal_rect.x1 = portals[i].src_offset_x.value() + BOOKMARK_RECT_SIZE;
@@ -1325,12 +1324,22 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
 
                 //fz_rect portal_rect = {portals[i].src_rect_begin_x, portals[i].src_rect_begin_y, portals[i].src_rect_end_x, portals[i].src_rect_end_y};
                 fz_rect portal_normalized_window_rect = document_view->absolute_to_window_rect(portal_rect);
-                fz_irect portal_window_rect = document_view->normalized_to_window_rect(portal_normalized_window_rect);
-                QRect window_qrect = QRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
 
-                painter->setPen(QColor(255, 0, 0));
-                painter->drawRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
+                if (is_normalized_y_range_in_window(portal_normalized_window_rect.y0, portal_normalized_window_rect.y1)) {
+                    fz_irect portal_window_rect = document_view->normalized_to_window_rect(portal_normalized_window_rect);
+                    QRect window_qrect = QRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
+                    painter->setPen(QColor(255, 0, 0));
 
+                    painter->fillRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect), QColor(255, 0, 0));
+
+                    QFont font = painter->font();
+                    font.setPointSizeF(5.0f * document_view->get_zoom_level());
+                    painter->setFont(font);
+
+                    painter->setPen(QColor(0, 0, 0));
+                    painter->drawRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
+                    painter->drawText(window_qrect, Qt::AlignCenter, "P");
+                }
             }
         }
 
@@ -2539,5 +2548,14 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
         bind_points(end_point_coordinates);
         glDrawArrays(GL_TRIANGLE_FAN, 0, end_point_coordinates.size() / 2);
     }
+}
+
+bool PdfViewOpenGLWidget::is_normalized_y_in_window(float y) {
+    return (y >= -1) && (y <= 1);
+}
+
+bool PdfViewOpenGLWidget::is_normalized_y_range_in_window(float y0, float y1) {
+    if (y0 <= -1.0 && y1 >= 1.0f) return true;
+    return is_normalized_y_in_window(y0) || is_normalized_y_in_window(y1);
 }
 

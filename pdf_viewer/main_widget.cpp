@@ -486,6 +486,10 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         handle_bookmark_move();
         validate_render();
     }
+    if (portal_move_data) {
+        handle_portal_move();
+        validate_render();
+    }
 
     // if the mouse has moved too much when pressing middle mouse button, we assume that the user wants to drag
     // instead of smart jump
@@ -2269,6 +2273,14 @@ void MainWidget::handle_click(WindowPos click_pos) {
     auto link = main_document_view->get_link_in_pos(click_pos);
     selected_highlight_index = main_document_view->get_highlight_index_in_pos(click_pos);
     selected_bookmark_index = doc()->get_bookmark_index_at_pos(mouse_abspos);
+    selected_portal_index = doc()->get_portal_index_at_pos(mouse_abspos);
+
+    if (selected_portal_index >= 0) {
+        Portal portal = doc()->get_portals()[selected_portal_index];
+        push_state();
+        main_document_view->goto_portal(&portal);
+        return;
+    }
 
 
     if (TOUCH_MODE && (selected_highlight_index != -1)) {
@@ -2373,6 +2385,13 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     if (bookmark_move_data) {
         handle_bookmark_move_finish();
         bookmark_move_data = {};
+        is_dragging = false;
+        return;
+    }
+
+    if (portal_move_data) {
+        handle_portal_move_finish();
+        portal_move_data = {};
         is_dragging = false;
         return;
     }
@@ -2514,10 +2533,15 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 
         AbsoluteDocumentPos abs_mpos = main_document_view->window_to_absolute_document_pos(last_mouse_down_window_pos);
         bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
-        if (is_shift_pressed && (!bookmark_move_data.has_value())) {
-            int index = doc()->get_bookmark_index_at_pos(abs_mpos);
-            if (index >= 0) {
-                begin_bookmark_move(index, abs_mpos);
+        if (is_shift_pressed && (!bookmark_move_data.has_value()) && (!portal_move_data.has_value())) {
+            int bookmark_index = doc()->get_bookmark_index_at_pos(abs_mpos);
+            if (bookmark_index >= 0) {
+                begin_bookmark_move(bookmark_index, abs_mpos);
+                return;
+            }
+            int portal_index = doc()->get_portal_index_at_pos(abs_mpos);
+            if (portal_index >= 0) {
+                begin_portal_move(portal_index, abs_mpos);
                 return;
             }
         }
@@ -5651,6 +5675,7 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
     clear_selection_indicators();
     selected_highlight_index = -1;
     selected_bookmark_index = -1;
+    selected_portal_index = -1;
     clear_highlight_buttons();
     clear_search_buttons();
     opengl_widget->cancel_search();
@@ -6745,23 +6770,38 @@ void MainWidget::handle_bookmark_move_finish() {
     doc()->update_bookmark_position(bookmark_move_data->index, { bm.begin_x, bm.begin_y }, { bm.end_x, bm.end_y });
 }
 
+void MainWidget::handle_portal_move_finish() {
+    Portal& portal = doc()->get_portals()[portal_move_data->index];
+    doc()->update_portal_src_position(portal_move_data->index, { portal.src_offset_x.value(), portal.src_offset_y });
+}
+
 void MainWidget::handle_bookmark_move() {
-    QPoint current_mouse_window_point = mapFromGlobal(QCursor::pos());
-    WindowPos current_mouse_window_pos = { current_mouse_window_point.x(), current_mouse_window_point.y() };
-    AbsoluteDocumentPos current_mouse_abspos = main_document_view->window_to_absolute_document_pos(current_mouse_window_pos);
+    AbsoluteDocumentPos current_mouse_abspos = get_cursor_abspos();
 
     float diff_x = current_mouse_abspos.x - bookmark_move_data->initial_mouse_position.x;
     float diff_y = current_mouse_abspos.y - bookmark_move_data->initial_mouse_position.y;
 
     BookMark& bookmark = doc()->get_bookmarks()[bookmark_move_data->index];
 
-    bookmark.begin_x = bookmark_move_data->initial_bookmark_begin_position.x + diff_x;
-    bookmark.begin_y = bookmark_move_data->initial_bookmark_begin_position.y + diff_y;
+    bookmark.begin_x = bookmark_move_data->initial_begin_position.x + diff_x;
+    bookmark.begin_y = bookmark_move_data->initial_begin_position.y + diff_y;
 
     if (bookmark.end_y >= 0) {
-        bookmark.end_x = bookmark_move_data->initial_bookmark_end_position.x + diff_x;
-        bookmark.end_y = bookmark_move_data->initial_bookmark_end_position.y + diff_y;
+        bookmark.end_x = bookmark_move_data->initial_end_position.x + diff_x;
+        bookmark.end_y = bookmark_move_data->initial_end_position.y + diff_y;
     }
+}
+
+void MainWidget::handle_portal_move() {
+    AbsoluteDocumentPos current_mouse_abspos = get_cursor_abspos();
+
+    float diff_x = current_mouse_abspos.x - portal_move_data->initial_mouse_position.x;
+    float diff_y = current_mouse_abspos.y - portal_move_data->initial_mouse_position.y;
+
+    Portal& portal = doc()->get_portals()[portal_move_data->index];
+
+    portal.src_offset_x = portal_move_data->initial_position.x + diff_x;
+    portal.src_offset_y = portal_move_data->initial_position.y + diff_y;
 }
 
 bool MainWidget::is_middle_click_being_used() {
@@ -6772,17 +6812,31 @@ void MainWidget::begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor
     BookmarkMoveData move_data;
     move_data.index = index;
 
-    move_data.initial_bookmark_begin_position.x = doc()->get_bookmarks()[index].begin_x;
-    move_data.initial_bookmark_begin_position.y = doc()->get_bookmarks()[index].begin_y;
-    move_data.initial_bookmark_end_position.x = doc()->get_bookmarks()[index].end_x;
-    move_data.initial_bookmark_end_position.y = doc()->get_bookmarks()[index].end_y;
+    move_data.initial_begin_position.x = doc()->get_bookmarks()[index].begin_x;
+    move_data.initial_begin_position.y = doc()->get_bookmarks()[index].begin_y;
+    move_data.initial_end_position.x = doc()->get_bookmarks()[index].end_x;
+    move_data.initial_end_position.y = doc()->get_bookmarks()[index].end_y;
 
     move_data.initial_mouse_position = begin_cursor_pos;
     bookmark_move_data = move_data;
 }
 
+
+void MainWidget::begin_portal_move(int index, AbsoluteDocumentPos begin_cursor_pos) {
+    PortalMoveData move_data;
+    move_data.index = index;
+
+    if (doc()->get_portals()[index].src_offset_x) {
+        move_data.initial_position.x = doc()->get_portals()[index].src_offset_x.value();
+        move_data.initial_position.y = doc()->get_portals()[index].src_offset_y;
+
+        move_data.initial_mouse_position = begin_cursor_pos;
+        portal_move_data = move_data;
+    }
+}
+
 bool MainWidget::should_drag() {
-    return is_dragging && (!bookmark_move_data.has_value());
+    return is_dragging && (!bookmark_move_data.has_value()) && (!portal_move_data.has_value());
 }
 
 void MainWidget::handle_freehand_drawing_move_finish() {
@@ -6937,4 +6991,24 @@ void MainWidget::finish_pending_download_portal(std::wstring download_paper_name
             }
         }
     }
+}
+
+std::optional<Portal> MainWidget::get_portal_under_window_pos(WindowPos pos) {
+    AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
+    return get_portal_under_absolute_pos(abspos);
+}
+
+std::optional<Portal> MainWidget::get_portal_under_absolute_pos(AbsoluteDocumentPos abspos) {
+    std::vector<Portal>& portals = doc()->get_portals();
+    int index = doc()->get_portal_index_at_pos(abspos);
+    if (index >= 0) {
+        return portals[index];
+    }
+    return {};
+}
+
+AbsoluteDocumentPos MainWidget::get_cursor_abspos() {
+    QPoint current_mouse_window_point = mapFromGlobal(QCursor::pos());
+    WindowPos current_mouse_window_pos = { current_mouse_window_point.x(), current_mouse_window_point.y() };
+    return main_document_view->window_to_absolute_document_pos(current_mouse_window_pos);
 }

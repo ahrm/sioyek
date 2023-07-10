@@ -60,6 +60,7 @@ public:
     bool update_highlight_type(const std::string& uuid, char new_type);
     bool update_bookmark_change_text(const std::string& uuid, const std::wstring& new_text, float new_font_size);
     bool update_bookmark_change_position(const std::string& uuid, AbsoluteDocumentPos new_begin, AbsoluteDocumentPos new_end);
+    bool update_portal_change_src_position(const std::string& uuid, AbsoluteDocumentPos new_pos);
     bool select_opened_books_path_values(std::vector<std::wstring>& out_result);
     bool delete_mark_with_symbol(char symbol);
     bool select_global_mark(char symbol, std::vector<std::pair<std::string, float>>& out_result);

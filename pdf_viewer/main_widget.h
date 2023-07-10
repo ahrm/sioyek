@@ -54,10 +54,15 @@ enum class ReferenceType {
 
 struct BookmarkMoveData {
     int index;
-    AbsoluteDocumentPos initial_bookmark_begin_position;
-    AbsoluteDocumentPos initial_bookmark_end_position;
+    AbsoluteDocumentPos initial_begin_position;
+    AbsoluteDocumentPos initial_end_position;
     AbsoluteDocumentPos initial_mouse_position;
+};
 
+struct PortalMoveData {
+    int index;
+    AbsoluteDocumentPos initial_position;
+    AbsoluteDocumentPos initial_mouse_position;
 };
 
 struct SelectedDrawings {
@@ -161,6 +166,8 @@ public:
     std::optional<AbsoluteDocumentPos> rect_select_end = {};
 
     std::optional<BookmarkMoveData> bookmark_move_data = {};
+    std::optional<PortalMoveData> portal_move_data = {};
+
     // when set, mouse wheel moves the ruler
     bool visual_scroll_mode = false;
     bool debug_mode = false;
@@ -201,6 +208,8 @@ public:
     // delete/edit highlights e.g. by selecting a highlight by clicking on it and then executing `delete_highlight`
     int selected_highlight_index = -1;
     int selected_bookmark_index = -1;
+    int selected_portal_index = -1;
+
     std::optional<SelectedDrawings> selected_freehand_drawings = {};
     std::optional<FreehandDrawingMoveData> freehand_drawing_move_data = {};
 
@@ -780,8 +789,11 @@ public:
     QTextToSpeech* get_tts();
     void handle_bookmark_move_finish();
     void handle_bookmark_move();
+    void handle_portal_move();
+    void handle_portal_move_finish();
     bool is_middle_click_being_used();
     void begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor_pos);
+    void begin_portal_move(int index, AbsoluteDocumentPos begin_cursor_pos);
     bool should_drag();
     void handle_freehand_drawing_move_finish();
     void move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings);
@@ -791,6 +803,11 @@ public:
     std::optional<fz_rect> get_overview_source_rect();
 
     void finish_pending_download_portal(std::wstring download_paper_name, std::wstring downloaded_file_path);
+
+    std::optional<Portal> get_portal_under_absolute_pos(AbsoluteDocumentPos abspos);
+    std::optional<Portal> get_portal_under_window_pos(WindowPos pos);
+
+    AbsoluteDocumentPos get_cursor_abspos();
 };
 
 #endif

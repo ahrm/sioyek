@@ -3650,6 +3650,23 @@ void Document::update_highlight_type(int index, char new_type) {
     highlights[index].update_modification_time();
 }
 
+int Document::get_portal_index_at_pos(AbsoluteDocumentPos abspos) {
+    for (int i = 0; i < portals.size(); i++) {
+        if (portals[i].src_offset_x.has_value()) {
+
+            if (
+                (abspos.x > portals[i].src_offset_x.value() - BOOKMARK_RECT_SIZE) &&
+                (abspos.x < portals[i].src_offset_x.value() + BOOKMARK_RECT_SIZE) &&
+                (abspos.y > portals[i].src_offset_y - BOOKMARK_RECT_SIZE) &&
+                (abspos.y < portals[i].src_offset_y + BOOKMARK_RECT_SIZE)
+                ) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
 int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
     for (int i = 0; i < bookmarks.size(); i++) {
         if (bookmarks[i].begin_y != -1) {
@@ -3699,6 +3716,17 @@ void Document::update_bookmark_position(int index, AbsoluteDocumentPos new_begin
             bookmarks[index].end_x = new_end_position.x;
             bookmarks[index].end_y = new_end_position.y;
             bookmarks[index].update_modification_time();
+            is_annotations_dirty = true;
+        }
+    }
+}
+
+void Document::update_portal_src_position(int index, AbsoluteDocumentPos new_position){
+    if ((index >= 0) && (index < portals.size())) {
+        if (db_manager->update_portal_change_src_position(portals[index].uuid, new_position)) {
+            portals[index].src_offset_x = new_position.x;
+            portals[index].src_offset_y = new_position.y;
+            portals[index].update_modification_time();
             is_annotations_dirty = true;
         }
     }

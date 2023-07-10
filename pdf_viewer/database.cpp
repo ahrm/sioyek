@@ -1713,6 +1713,20 @@ bool DatabaseManager::update_bookmark_change_position(const std::string& uuid, A
             {"end_y", new_end.y},
             {"modification_time", "CURRENT_TIMESTAMP"},
         });
+}
+
+bool DatabaseManager::update_portal_change_src_position(const std::string& uuid, AbsoluteDocumentPos new_pos){
+    std::wstringstream ss;
+
+    return generic_update_run_query("links",
+        {
+            {"uuid", QString::fromStdString(uuid)},
+        },
+        {
+            {"src_offset_x", new_pos.x},
+            {"src_offset_y", new_pos.y},
+            {"modification_time", "CURRENT_TIMESTAMP"},
+        });
 
 }
 std::wstring encode_variant(QVariant var) {

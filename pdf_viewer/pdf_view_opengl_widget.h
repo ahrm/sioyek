@@ -316,5 +316,7 @@ public:
     void clear_underline();
     void bind_points(const std::vector<float>& points);
     void bind_default();
+    bool is_normalized_y_in_window(float y);
+    bool is_normalized_y_range_in_window(float y0, float y1);
 
 };
