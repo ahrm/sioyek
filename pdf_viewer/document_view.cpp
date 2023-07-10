@@ -1158,67 +1158,119 @@ std::optional<std::wstring> DocumentView::get_selected_line_text() {
     return {};
 }
 
-std::vector<DocumentPos> DocumentView::find_line_definitions() {
+std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions() {
     //todo: remove duplicate code from this function, this just needs to find the location of the
     // reference, the rest can be handled by find_definition_of_location
 
-    std::vector<DocumentPos> result;
+    std::vector<std::pair<DocumentPos, fz_rect>> result;
 
     if (line_index > 0) {
         std::vector<std::wstring> lines;
-        std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
+        std::vector<std::vector<fz_rect>> line_char_rects;
+
+        int line_page_number = get_vertical_line_page();
+
+        std::vector<fz_rect> line_rects = current_document->get_page_lines(line_page_number, &lines, &line_char_rects);
+        for (int i = 0; i < lines.size(); i++) {
+            assert(lines[i].size() == line_char_rects[i].size());
+        }
         if ((size_t)line_index < lines.size()) {
             std::wstring content = lines[line_index];
 
+            //todo: deduplicate this code
             std::wstring item_regex(L"[a-zA-Z]{2,}[ \t]+[0-9]+(\.[0-9]+)*");
             std::wstring reference_regex(L"\\[[a-zA-Z0-9]+\\]");
             std::wstring equation_regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
 
-            std::vector<std::wstring> generic_item_texts = find_all_regex_matches(content, item_regex);
-            std::vector<std::wstring> reference_texts = find_all_regex_matches(content, reference_regex);
-            std::vector<std::wstring> equation_texts = find_all_regex_matches(content, equation_regex);
+            std::vector<std::pair<int, int>> generic_item_ranges;
+            std::vector<std::pair<int, int>> reference_ranges;
+            std::vector<std::pair<int, int>> equation_ranges;
 
-            std::vector<DocumentPos> generic_positions;
-            std::vector<DocumentPos> reference_positions;
-            std::vector<DocumentPos> equation_positions;
+            std::vector<std::wstring> generic_item_texts = find_all_regex_matches(content, item_regex, &generic_item_ranges);
+            std::vector<std::wstring> reference_texts = find_all_regex_matches(content, reference_regex, &reference_ranges);
+            std::vector<std::wstring> equation_texts = find_all_regex_matches(content, equation_regex, &equation_ranges);
 
-            std::vector<PdfLink> pdf_links = current_document->get_links_in_page_rect(get_center_page_number(), line_rects[line_index]);
+            std::vector<std::pair<DocumentPos, fz_rect>> generic_positions;
+            std::vector<std::pair<DocumentPos, fz_rect>> reference_positions;
+            std::vector<std::pair<DocumentPos, fz_rect>> equation_positions;
+
+            std::vector<PdfLink> pdf_links = current_document->get_links_in_page_rect(get_vertical_line_page(), line_rects[line_index]);
             if (pdf_links.size() > 0) {
 
                 for (auto link : pdf_links) {
                     auto parsed_uri = parse_uri(mupdf_context, link.uri);
-                    result.push_back({ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y });
+                    result.push_back(
+                        std::make_pair(
+                            DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y },
+                            current_document->document_to_absolute_rect(line_page_number, link.rect, true)
+                        )
+                    );
+                    //if (src_rects) src_rects->push_back(link.rect);
                 }
 
                 return result;
             }
 
-            for (auto generic_item_text : generic_item_texts) {
+            //for (auto generic_item_text : generic_item_texts) {
+            for (int i = 0; i < generic_item_texts.size(); i++) {
+                auto generic_item_text = generic_item_texts[i];
+                //std::pair<int, int> generic_item_range = generic_item_ranges[i];
+                auto [first, last] = generic_item_ranges[i];
+                fz_rect current_source_rect = get_range_rect_union(line_char_rects[line_index], first, last);
+                current_source_rect = current_document->document_to_absolute_rect(line_page_number, current_source_rect, true);
+
                 auto qtext = QString::fromStdWString(generic_item_text);
                 QStringList parts = qtext.split(' ');
                 if (parts.size() == 2) {
                     std::wstring type = parts.at(0).toStdWString();
                     std::wstring ref = parts.at(1).toStdWString();
-                    generic_positions = current_document->find_generic_locations(type, ref);
+
+                    std::vector<DocumentPos> possible_targets = current_document->find_generic_locations(type, ref);
+
+                    for (int j = 0; j < possible_targets.size(); j++) {
+                        generic_positions.push_back(std::make_pair(possible_targets[i], current_source_rect));
+                    }
 
                 }
             }
-            for (auto reference_text : reference_texts) {
+            for (int i = 0; i < reference_texts.size(); i++) {
+                auto reference_text = reference_texts[i];
                 reference_text = reference_text.substr(1, reference_text.size() - 2);
                 auto index = current_document->find_reference_with_string(reference_text);
+
+                auto [first, last] = reference_ranges[i];
+                fz_rect current_source_rect = get_range_rect_union(line_char_rects[line_index], first, last);
+                current_source_rect = current_document->document_to_absolute_rect(line_page_number, current_source_rect, true);
+
                 if (index.has_value()) {
-                    reference_positions.push_back({ index.value().page, 0, index.value().y_offset });
+                    reference_positions.push_back(
+                        std::make_pair(
+                            DocumentPos{ index.value().page, 0, index.value().y_offset },
+                            current_source_rect)
+                    );
                 }
             }
-            for (auto equation_text : equation_texts) {
+            //for (auto equation_text : equation_texts) {
+            for (int i = 0; i < equation_texts.size(); i++) {
+                auto equation_text = equation_texts[i];
                 equation_text = equation_text.substr(1, equation_text.size() - 2);
-                auto index = current_document->find_equation_with_string(equation_text, get_center_page_number());
+                auto index = current_document->find_equation_with_string(equation_text, get_vertical_line_page());
+
+                auto [first, last] = equation_ranges[i];
+                fz_rect current_source_rect = get_range_rect_union(line_char_rects[line_index], first, last);
+                current_source_rect = current_document->document_to_absolute_rect(line_page_number, current_source_rect, true);
+
                 if (index.has_value()) {
-                    equation_positions.push_back({ index.value().page, 0, index.value().y_offset });
+                    equation_positions.push_back(
+                        std::make_pair(
+                            DocumentPos { index.value().page, 0, index.value().y_offset },
+                            current_source_rect
+                        )
+                    );
                 }
             }
 
-            std::vector<std::vector<DocumentPos>*> res_vectors = { &equation_positions, &reference_positions, &generic_positions };
+            std::vector<std::vector<std::pair<DocumentPos, fz_rect>>*> res_vectors = { &equation_positions, &reference_positions, &generic_positions };
             int index = 0;
             int max_size = 0;
 
@@ -1243,9 +1295,9 @@ std::vector<DocumentPos> DocumentView::find_line_definitions() {
 }
 
 bool DocumentView::goto_definition() {
-    std::vector<DocumentPos> defloc = find_line_definitions();
+    std::vector<std::pair<DocumentPos, fz_rect>> defloc = find_line_definitions();
     if (defloc.size() > 0) {
-        goto_offset_within_page(defloc[0].page, defloc[0].y);
+        goto_offset_within_page(defloc[0].first.page, defloc[0].first.y);
         return true;
     }
     return false;

@@ -2949,6 +2949,61 @@ public:
     }
 };
 
+class DownloadOverviewPaperCommand : public TextCommand {
+public:
+    std::optional<fz_rect> source_rect = {};
+    std::wstring src_doc_path;
+
+    DownloadOverviewPaperCommand(MainWidget* w) : TextCommand(w) {};
+
+    void perform() {
+
+        std::wstring text_ = text.value();
+
+        std::wstring download_url = widget->download_paper_with_name(text_);
+
+        if (source_rect) {
+            Portal pending_portal;
+            pending_portal.src_offset_x = source_rect->x0;
+            pending_portal.src_offset_y = source_rect->y0;
+
+            pending_portal.dst.book_state.offset_x = 0;
+            pending_portal.dst.book_state.offset_y = 0;
+            pending_portal.dst.book_state.zoom_level = 1;
+            PendingDownloadPortal pending_download_portal;
+            pending_download_portal.pending_portal = pending_portal;
+            pending_download_portal.source_document_path = src_doc_path;
+            pending_download_portal.paper_name = text_;
+
+            widget->pending_download_portals.push_back(pending_download_portal);
+        }
+
+
+    }
+
+    void pre_perform() {
+        std::optional<std::wstring> paper_name = widget->get_overview_paper_name();
+        src_doc_path = widget->doc()->get_path();
+
+        if (paper_name) {
+            source_rect = widget->get_overview_source_rect();
+
+            widget->text_command_line_edit->setText(
+                QString::fromStdWString(paper_name.value())
+            );
+        }
+    }
+
+    std::string get_name() {
+        return "download_overview_paper";
+    }
+
+
+    std::string text_requirement_name() {
+        return "Paper Name";
+    }
+};
+
 class GotoWindowCommand : public Command {
 public:
     GotoWindowCommand(MainWidget* w) : Command(w) {};
@@ -4272,6 +4327,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["portal_to_overview"] = [](MainWidget* widget) {return std::make_unique< PortalToOverviewCommand>(widget); };
     new_commands["goto_selected_text"] = [](MainWidget* widget) {return std::make_unique< GotoSelectedTextCommand>(widget); };
     new_commands["focus_text"] = [](MainWidget* widget) {return std::make_unique< FocusTextCommand>(widget); };
+    new_commands["download_overview_paper"] = [](MainWidget* widget) {return std::make_unique< DownloadOverviewPaperCommand>(widget); };
     new_commands["goto_window"] = [](MainWidget* widget) {return std::make_unique< GotoWindowCommand>(widget); };
     new_commands["toggle_smooth_scroll_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleSmoothScrollModeCommand>(widget); };
     new_commands["goto_begining"] = [](MainWidget* widget) {return std::make_unique< GotoBeginningCommand>(widget); };

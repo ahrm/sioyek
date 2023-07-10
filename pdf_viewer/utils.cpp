@@ -717,6 +717,14 @@ std::wstring get_string_from_stext_line(fz_stext_line* line) {
     return res;
 }
 
+std::vector<fz_rect> get_char_rects_from_stext_line(fz_stext_line* line) {
+    std::vector<fz_rect> res;
+    LL_ITER(ch, line->first_char) {
+        res.push_back(fz_rect_from_quad(ch->quad));
+    }
+    return res;
+}
+
 bool is_consequtive(fz_rect rect1, fz_rect rect2) {
 
     float xdist = abs(rect1.x1 - rect2.x1);
@@ -1048,7 +1056,9 @@ std::wstring find_first_regex_match(const std::wstring& haystack, const std::wst
     return L"";
 }
 
-std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack, const std::wstring& regex_string) {
+std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack,
+    const std::wstring& regex_string,
+    std::vector<std::pair<int, int>>* match_ranges) {
 
     std::wregex regex(regex_string);
     std::wsmatch match;
@@ -1057,6 +1067,11 @@ std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack, c
         for (size_t i = 0; i < match.size(); i++) {
             if (match[i].matched) {
                 res.push_back(match[i].str());
+                if (match_ranges) {
+                    int begin_index = match[i].first - haystack.begin();
+                    int match_length = match[i].length();
+                    match_ranges->push_back(std::make_pair(begin_index, begin_index + match_length-1));
+                }
             }
         }
     }
@@ -2152,12 +2167,15 @@ int line_num_chars(fz_stext_line* line) {
 }
 
 
-void merge_lines(const std::vector<fz_stext_line*>& lines_, std::vector<fz_rect>& out_rects, std::vector<std::wstring>& out_texts) {
-
-    std::vector<fz_stext_line*> lines = lines_;
+void merge_lines(
+    std::vector<fz_stext_line*> lines,
+    std::vector<fz_rect>& out_rects,
+    std::vector<std::wstring>& out_texts,
+    std::vector<std::vector<fz_rect>>* out_line_chars) {
 
     std::vector<fz_rect> temp_rects;
     std::vector<std::wstring> temp_texts;
+    std::vector<std::vector<fz_rect>> temp_line_chars;
 
     std::vector<fz_rect> custom_line_rects;
     std::vector<int> char_counts;
@@ -2182,12 +2200,31 @@ void merge_lines(const std::vector<fz_stext_line*>& lines_, std::vector<fz_rect>
         fz_rect rect = custom_line_rects[i];
         int best_index = find_best_merge_index_for_line_index(lines, custom_line_rects, char_counts, i);
         std::wstring text = get_string_from_stext_line(lines[i]);
+        std::vector<fz_rect> line_chars;
+        if (out_line_chars) {
+            line_chars = get_char_rects_from_stext_line(lines[i]);
+        }
+
+        //if (out_line_chars) {
+        //    LL_ITER(ch, lines[i]->first_char) {
+        //        line_chars.push_back(fz_rect_from_quad(ch->quad));
+        //    }
+        //}
+
         for (int j = i + 1; j <= best_index; j++) {
             rect = fz_union_rect(rect, lines[j]->bbox);
             text = text + get_string_from_stext_line(lines[j]);
+            if (out_line_chars) {
+                std::vector<fz_rect> merged_line_chars = get_char_rects_from_stext_line(lines[j]);
+                line_chars.insert(line_chars.end(), merged_line_chars.begin(), merged_line_chars.end());
+            }
         }
+
         temp_rects.push_back(rect);
         temp_texts.push_back(text);
+        if (out_line_chars) {
+            temp_line_chars.push_back(line_chars);
+        }
         i = best_index;
     }
     for (size_t i = 0; i < temp_rects.size(); i++) {
@@ -2201,11 +2238,17 @@ void merge_lines(const std::vector<fz_stext_line*>& lines_, std::vector<fz_rect>
                 out_rects[out_rects.size() - 1].y0 = std::min(prev_rect.y0, current_rect.y0);
                 out_rects[out_rects.size() - 1].y1 = std::max(prev_rect.y1, current_rect.y1);
                 out_texts[out_texts.size() - 1] = out_texts[out_texts.size() - 1] + temp_texts[i];
+                if (out_line_chars) {
+                    (*out_line_chars)[out_line_chars->size()-1].insert((*out_line_chars)[out_line_chars->size()-1].end(), temp_line_chars[i].begin(), temp_line_chars[i].end());
+                }
                 continue;
             }
         }
         out_rects.push_back(temp_rects[i]);
         out_texts.push_back(temp_texts[i]);
+        if (out_line_chars) {
+            out_line_chars->push_back(temp_line_chars[i]);
+        }
     }
 }
 
@@ -3215,4 +3258,12 @@ bool are_same(const FreehandDrawing& lhs, const FreehandDrawing& rhs) {
     }
     return true;
 
+}
+
+fz_rect get_range_rect_union(const std::vector<fz_rect>& rects, int first_index, int last_index) {
+    fz_rect res = rects[first_index];
+    for (int i = first_index + 1; i <= last_index; i++) {
+        res = fz_union_rect(res, rects[i]);
+    }
+    return res;
 }

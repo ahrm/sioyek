@@ -51,6 +51,7 @@ private:
     std::vector<int> flat_toc_pages;
     std::map<int, std::vector<fz_rect>> cached_page_line_rects;
     std::map<int, std::vector<std::wstring>> cached_line_texts;
+    //std::map<int, std::vector<std::vector<fz_rect>>> cached_line_char_rects;
 
     bool super_fast_search_index_ready = false;
     // super fast index is the concatenated text of all pages along with two lists which map the
@@ -223,18 +224,18 @@ public:
 
     std::wstring get_text_in_rect(int page, fz_rect doc_rect);
     std::optional<std::wstring> get_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
-    std::optional<std::wstring> get_reference_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
+    std::optional<std::wstring> get_reference_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y, std::pair<int, int>* out_range);
     std::optional<std::wstring> get_paper_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
     fz_stext_block* get_text_block_at_positition(fz_stext_page* page, float offset_x, float offset_y);
-    std::optional<std::wstring> get_equation_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
-    std::optional<std::pair<std::wstring, std::wstring>> get_generic_link_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
-    std::optional<std::wstring> get_regex_match_at_position(const std::wregex& regex, const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
+    std::optional<std::wstring> get_equation_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y, std::pair<int, int>* out_range);
+    std::optional<std::pair<std::wstring, std::wstring>> get_generic_link_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y, std::pair<int, int>* out_range);
+    std::optional<std::wstring> get_regex_match_at_position(const std::wregex& regex, const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y, std::pair<int, int>* out_range);
     std::optional<std::wstring> get_text_at_position(int page, float offset_x, float offset_y);
-    std::optional<std::wstring> get_reference_text_at_position(int page, float offset_x, float offset_y);
+    std::optional<std::wstring> get_reference_text_at_position(int page, float offset_x, float offset_y, std::pair<int, int>* out_range);
     std::optional<std::wstring> get_paper_name_at_position(int page, float offset_x, float offset_y);
-    std::optional<std::wstring> get_equation_text_at_position(int page, float offset_x, float offset_y);
-    std::optional<std::pair<std::wstring, std::wstring>> get_generic_link_name_at_position(int page, float offset_x, float offset_y);
-    std::optional<std::wstring> get_regex_match_at_position(const std::wregex& regex, int page, float offset_x, float offset_y);
+    std::optional<std::wstring> get_equation_text_at_position(int page, float offset_x, float offset_y, std::pair<int, int>* out_range);
+    std::optional<std::pair<std::wstring, std::wstring>> get_generic_link_name_at_position(int page, float offset_x, float offset_y, std::pair<int, int>* out_range);
+    std::optional<std::wstring> get_regex_match_at_position(const std::wregex& regex, int page, float offset_x, float offset_y, std::pair<int, int>* out_range);
     std::vector<DocumentPos> find_generic_locations(const std::wstring& type, const std::wstring& name);
     bool can_use_highlights();
 
@@ -300,7 +301,10 @@ public:
 
     //void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
     fz_rect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);
-    const std::vector<fz_rect>& get_page_lines(int page, std::vector<std::wstring>* line_texts = nullptr);
+    const std::vector<fz_rect>& get_page_lines(
+        int page,
+        std::vector<std::wstring>* line_texts = nullptr,
+        std::vector<std::vector<fz_rect>>* out_line_rects = nullptr);
 
     std::wstring get_drawings_file_path();
     std::wstring get_annotations_file_path();

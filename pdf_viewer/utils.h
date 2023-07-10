@@ -112,6 +112,7 @@ void run_command(std::wstring command, QStringList parameters, bool wait = true)
 
 std::wstring get_string_from_stext_block(fz_stext_block* block);
 std::wstring get_string_from_stext_line(fz_stext_line* line);
+std::vector<fz_rect> get_char_rects_from_stext_line(fz_stext_line* line);
 void sleep_ms(unsigned int ms);
 //void open_url(const std::string& url_string);
 //void open_url(const std::wstring& url_string);
@@ -198,10 +199,15 @@ void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std
 bool is_string_titlish(const std::wstring& str);
 bool is_title_parent_of(const std::wstring& parent_title, const std::wstring& child_title, bool* are_same);
 std::wstring find_first_regex_match(const std::wstring& haystack, const std::wstring& regex_string);
-void merge_lines(const std::vector<fz_stext_line*>& lines, std::vector<fz_rect>& out_rects, std::vector<std::wstring>& out_texts);
+void merge_lines(
+    std::vector<fz_stext_line*> lines,
+    std::vector<fz_rect>& out_rects,
+    std::vector<std::wstring>& out_texts,
+    std::vector<std::vector<fz_rect>>* out_line_characters);
+
 int lcs(const char* X, const char* Y, int m, int n);
 bool has_arg(int argc, char** argv, std::string key);
-std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack, const std::wstring& regex_string);
+std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack, const std::wstring& regex_string, std::vector<std::pair<int, int>>* match_ranges = nullptr);
 bool command_requires_text(const std::wstring& command);
 bool command_requires_rect(const std::wstring& command);
 void hexademical_to_normalized_color(std::wstring color_string, float* color, int n_components);
@@ -349,3 +355,5 @@ std::map<std::string, int> annotation_prism(std::vector<T>& file_annotations,
 
     return existing_annotation_ids;
 }
+
+fz_rect get_range_rect_union(const std::vector<fz_rect>& rects, int first_index, int last_index);

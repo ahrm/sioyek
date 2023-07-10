@@ -1250,11 +1250,16 @@ std::optional<IndexedData> Document::find_equation_with_string(std::wstring equa
 }
 
 
-std::optional<std::wstring> Document::get_equation_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
+std::optional<std::wstring> Document::get_equation_text_at_position(
+    const std::vector<fz_stext_char*>& flat_chars,
+    float offset_x,
+    float offset_y,
+    std::pair<int,
+    int>* out_range) {
 
 
     std::wregex regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
-    std::optional<std::wstring> match = get_regex_match_at_position(regex, flat_chars, offset_x, offset_y);
+    std::optional<std::wstring> match = get_regex_match_at_position(regex, flat_chars, offset_x, offset_y, out_range);
 
     if (match) {
         return match.value().substr(1, match.value().size() - 2);
@@ -1264,7 +1269,7 @@ std::optional<std::wstring> Document::get_equation_text_at_position(const std::v
     }
 }
 
-std::optional<std::wstring> Document::get_regex_match_at_position(const std::wregex& regex, const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
+std::optional<std::wstring> Document::get_regex_match_at_position(const std::wregex& regex, const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y, std::pair<int, int>* out_range) {
     fz_rect selected_rect;
     selected_rect.x0 = offset_x - 0.1f;
     selected_rect.x1 = offset_x + 0.1f;
@@ -1280,6 +1285,10 @@ std::optional<std::wstring> Document::get_regex_match_at_position(const std::wre
         auto [start_index, end_index] = match_ranges[i];
         for (int index = start_index; index <= end_index; index++) {
             if (fz_contains_rect(fz_rect_from_quad(flat_chars[index]->quad), selected_rect)) {
+                if (out_range) {
+                    *out_range = std::make_pair(start_index, end_index);
+                }
+
                 return match_texts[i];
             }
         }
@@ -1340,9 +1349,15 @@ bool Document::can_use_highlights() {
     return are_highlights_loaded;
 }
 
-std::optional<std::pair<std::wstring, std::wstring>> Document::get_generic_link_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
+std::optional<std::pair<std::wstring, std::wstring>> Document::get_generic_link_name_at_position(
+    const std::vector<fz_stext_char*>& flat_chars,
+    float offset_x,
+    float offset_y,
+    std::pair<int,
+    int>* out_range) {
+
     std::wregex regex(L"[a-zA-Z]{3,}(\.){0,1}[ \t]+[0-9]+(\.[0-9]+)*");
-    std::optional<std::wstring> match_string = get_regex_match_at_position(regex, flat_chars, offset_x, offset_y);
+    std::optional<std::wstring> match_string = get_regex_match_at_position(regex, flat_chars, offset_x, offset_y, out_range);
     if (match_string) {
         std::vector<std::wstring> parts = split_whitespace(match_string.value());
         if (parts.size() != 2) {
@@ -1362,7 +1377,7 @@ std::optional<std::pair<std::wstring, std::wstring>> Document::get_generic_link_
     return {};
 }
 
-std::optional<std::wstring> Document::get_reference_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
+std::optional<std::wstring> Document::get_reference_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y, std::pair<int, int>* out_range) {
     fz_rect selected_rect;
 
     selected_rect.x0 = offset_x - 0.1f;
@@ -1384,7 +1399,13 @@ std::optional<std::wstring> Document::get_reference_text_at_position(const std::
 
     std::wstring selected_text = L"";
 
+    int index = -1;
+    int begin_index = -1;
+    int end_index = -1;
+
     for (auto ch : flat_chars) {
+        index++;
+
         if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
             if (started) {
                 reached = true;
@@ -1400,21 +1421,30 @@ std::optional<std::wstring> Document::get_reference_text_at_position(const std::
             continue;
         }
         if (started && reached && (ch->c == end_char)) {
+            if (out_range) {
+                *out_range = std::make_pair(begin_index, end_index);
+            }
             return selected_text;
         }
         if (started && (!reached) && (ch->c == end_char)) {
             started = false;
             selected_text.clear();
+            begin_index = index;
         }
 
         if (started && (!done)) {
             if (ch->c != ' ') {
+                if (selected_text.size() == 0) {
+                    begin_index = index;
+                }
                 selected_text.push_back(ch->c);
+                end_index = index;
             }
         }
 
         if ((started) && (!reached) && (ch->c == delim)) {
             selected_text.clear();
+            begin_index = index;
         }
 
     }
@@ -2214,32 +2244,32 @@ std::optional<std::wstring> Document::get_paper_name_at_position(int page, float
     return get_paper_name_at_position(flat_chars, offset_x, offset_y);
 }
 
-std::optional<std::wstring> Document::get_reference_text_at_position(int page, float offset_x, float offset_y) {
+std::optional<std::wstring> Document::get_reference_text_at_position(int page, float offset_x, float offset_y, std::pair<int, int>* out_range) {
     fz_stext_page* stext_page = get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
-    return get_reference_text_at_position(flat_chars, offset_x, offset_y);
+    return get_reference_text_at_position(flat_chars, offset_x, offset_y, out_range);
 }
 
-std::optional<std::wstring> Document::get_equation_text_at_position(int page, float offset_x, float offset_y) {
+std::optional<std::wstring> Document::get_equation_text_at_position(int page, float offset_x, float offset_y, std::pair<int, int>* out_range) {
     fz_stext_page* stext_page = get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
-    return get_equation_text_at_position(flat_chars, offset_x, offset_y);
+    return get_equation_text_at_position(flat_chars, offset_x, offset_y, out_range);
 }
 
-std::optional<std::pair<std::wstring, std::wstring>>  Document::get_generic_link_name_at_position(int page, float offset_x, float offset_y) {
+std::optional<std::pair<std::wstring, std::wstring>>  Document::get_generic_link_name_at_position(int page, float offset_x, float offset_y, std::pair<int, int>* out_range) {
     fz_stext_page* stext_page = get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
-    return get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
+    return get_generic_link_name_at_position(flat_chars, offset_x, offset_y, out_range);
 }
 
-std::optional<std::wstring> Document::get_regex_match_at_position(const std::wregex& regex, int page, float offset_x, float offset_y) {
+std::optional<std::wstring> Document::get_regex_match_at_position(const std::wregex& regex, int page, float offset_x, float offset_y, std::pair<int, int>* out_range) {
     fz_stext_page* stext_page = get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
-    return get_regex_match_at_position(regex, flat_chars, offset_x, offset_y);
+    return get_regex_match_at_position(regex, flat_chars, offset_x, offset_y, out_range);
 }
 
 std::vector<std::vector<fz_rect>> Document::get_page_flat_word_chars(int page) {
@@ -2418,7 +2448,7 @@ std::vector<PdfLink> Document::get_links_in_page_rect(int page, fz_rect rect) {
         while (links != nullptr) {
             if (rects_intersect(doc_rect, links->rect))
             {
-                res.push_back({ links->rect, links->uri });
+                res.push_back({ links->rect, page, links->uri });
             }
             links = links->next;
         }
@@ -2435,7 +2465,7 @@ std::optional<PdfLink> Document::get_link_in_pos(int page, float doc_x, float do
         std::optional<PdfLink> res = {};
         while (page_links != nullptr) {
             if (fz_is_point_inside_rect(point, page_links->rect)) {
-                res = { page_links->rect, page_links->uri };
+                res = { page_links->rect, page, page_links->uri };
                 return res;
             }
             page_links = page_links->next;
@@ -2661,13 +2691,19 @@ fz_rect Document::get_ith_next_line_from_absolute_y(int page, int line_index, in
 
 }
 
-const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::wstring>* out_line_texts) {
+const std::vector<fz_rect>& Document::get_page_lines(
+    int page,
+    std::vector<std::wstring>* out_line_texts,
+    std::vector<std::vector<fz_rect>>* out_line_rects){
 
 
-    if (cached_page_line_rects.find(page) != cached_page_line_rects.end()) {
-        if (out_line_texts != nullptr) {
+    if ((out_line_rects == nullptr) && (cached_page_line_rects.find(page) != cached_page_line_rects.end())) {
+        if (out_line_texts) {
             *out_line_texts = cached_line_texts[page];
         }
+        //if (out_line_character_rects) {
+        //    *out_line_character_rects = cached_line_char_rects[page];
+        //}
         return cached_page_line_rects[page];
     }
     else {
@@ -2693,7 +2729,7 @@ const std::vector<fz_rect>& Document::get_page_lines(int page, std::vector<std::
                     }
                 }
             }
-            merge_lines(flat_lines, line_rects, line_texts);
+            merge_lines(flat_lines, line_rects, line_texts, out_line_rects);
             for (size_t i = 0; i < line_rects.size(); i++) {
                 line_rects[i].x0 = line_rects[i].x0 - page_widths[page] / 2;
                 line_rects[i].x1 = line_rects[i].x1 - page_widths[page] / 2;

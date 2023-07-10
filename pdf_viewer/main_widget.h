@@ -66,6 +66,12 @@ struct SelectedDrawings {
     std::vector<int> selected_indices;
 };
 
+struct PendingDownloadPortal {
+    Portal pending_portal;
+    std::wstring paper_name;
+    std::wstring source_document_path;
+};
+
 struct FreehandDrawingMoveData {
     std::vector<FreehandDrawing> initial_drawings;
     AbsoluteDocumentPos initial_mouse_position;
@@ -271,12 +277,15 @@ public:
     std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
     std::optional<PdfViewOpenGLWidget::OverviewTouchMoveData> overview_touch_move_data = {};
     std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
+    std::optional<fz_rect> current_overview_source_rect = {};
+
+    std::vector<PendingDownloadPortal> pending_download_portals;
 
     // A list of candiadates to be shown in the overview window. We use simple heuristics to determine the
     // target of references, while this works most of the time, it is not perfect. So we keep a list of candidates
     // which the user can naviagte through using `next_preview` and `previous_preview` commands which move
     // `index_into_candidates` pointer to the next/previous candidate
-    std::vector<DocumentPos> smart_view_candidates;
+    std::vector<std::pair<DocumentPos, fz_rect>> smart_view_candidates;
     int index_into_candidates = 0;
 
     // when selecting text, we update the rendering faster, this timer is used 
@@ -352,8 +361,9 @@ public:
     bool is_network_manager_running(bool* is_downloading = nullptr);
     void show_download_paper_menu(
         const std::vector<std::wstring>& paper_names,
-        const std::vector<std::wstring>& download_urls);
-    void download_paper_with_url(std::wstring paper_url);
+        const std::vector<std::wstring>& download_urls,
+        std::wstring paper_name);
+    QNetworkReply* download_paper_with_url(std::wstring paper_url);
 
     QRect get_main_window_rect();
     QRect get_helper_window_rect();
@@ -443,7 +453,7 @@ public:
     void toggle_visual_scroll_mode();
     void set_overview_link(PdfLink link);
     void set_overview_position(int page, float offset);
-    ReferenceType find_location_of_text_under_pointer(WindowPos pos, int* out_page, float* out_offset, bool update_candidates = false);
+    ReferenceType find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
     CommandManager* get_command_manager();
 
@@ -526,8 +536,10 @@ public:
     void handle_pause();
     void read_current_line();
     void download_paper_under_cursor(bool use_last_touch_pos = false);
-    void download_paper_with_name(const std::wstring& name);
-    bool is_pos_inside_selected_text(WindowPos window_pos);
+    std::optional<std::wstring> get_direct_paper_name_under_pos(DocumentPos docpos);
+    std::optional<std::wstring> get_paper_name_under_pos(DocumentPos docpos);
+    std::wstring download_paper_with_name(const std::wstring& name);
+    bool is_pos_inside_selected_text(DocumentPos docpos);
     void handle_debug_command();
     void handle_add_marked_data();
     void handle_undo_marked_data();
@@ -538,6 +550,9 @@ public:
     void hande_turn_off_all_drawings();
     void handle_toggle_drawing_mask(char symbol);
     void show_command_palette();
+
+    DocumentPos get_document_pos_under_window_pos(WindowPos window_pos);
+    AbsoluteDocumentPos get_absolute_document_pos_under_window_pos(WindowPos window_pos);
 
     std::string get_current_mode_string();
 
@@ -771,6 +786,11 @@ public:
     void handle_freehand_drawing_move_finish();
     void move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings);
     bool goto_ith_next_overview(int i);
+    void on_overview_source_updated();
+    std::optional<std::wstring> get_overview_paper_name();
+    std::optional<fz_rect> get_overview_source_rect();
+
+    void finish_pending_download_portal(std::wstring download_paper_name, std::wstring downloaded_file_path);
 };
 
 #endif

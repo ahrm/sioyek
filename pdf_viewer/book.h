@@ -100,6 +100,7 @@ struct Highlight : Annotation {
 
 struct PdfLink {
     fz_rect rect;
+    int source_page;
     std::string uri;
 };
 

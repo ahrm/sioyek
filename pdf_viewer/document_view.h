@@ -185,7 +185,7 @@ public:
     void set_line_index(int index, int page);
     int get_vertical_line_page();
     bool goto_definition();
-    std::vector<DocumentPos> find_line_definitions();
+    std::vector<std::pair<DocumentPos, fz_rect>> find_line_definitions();
     std::optional<std::wstring> get_selected_line_text();
     bool get_is_auto_resize_mode();
     void disable_auto_resize_mode();

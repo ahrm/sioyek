@@ -1,6 +1,7 @@
 ﻿// deduplicate database code
 // see if macro commands can be sped up
 // make sure jsons exported by previous sioyek versions can be imported
+// todo: deduplicate find_line_definitions
 
 #include <iostream>
 #include <vector>
@@ -57,6 +58,7 @@
 #include "synctex/synctex_parser.h"
 #include "path.h"
 #include "touchui/TouchMarkSelector.h"
+#include "checksum.h"
 
 #include "main_widget.h"
 
@@ -183,6 +185,8 @@ extern UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT;
 extern UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT;
 extern UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT;
 extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
+
+bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
 
 extern bool TOUCH_MODE;
 
@@ -391,6 +395,12 @@ void MainWidget::set_overview_link(PdfLink link) {
 
     auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
     if (page >= 1) {
+        fz_rect source_absolute_rect = doc()->document_to_absolute_rect(link.source_page, link.rect, true);
+        current_overview_source_rect = source_absolute_rect;
+        smart_view_candidates.clear();
+        smart_view_candidates.push_back(std::make_pair(DocumentPos{page-1, 0, offset_y}, source_absolute_rect));
+        index_into_candidates = 0;
+        //opengl_widget->set_selected_rectangle(source_absolute_rect);
         set_overview_position(page - 1, offset_y);
     }
 }
@@ -760,7 +770,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         QString download_paper_host = QUrl(QString::fromStdWString(PAPER_SEARCH_URL)).host();
         bool is_json = reply_host == download_paper_host;
 
-        if (!is_json) {
+        if (!is_json) { // it's a pdf file
             QByteArray pdf_data = reply->readAll();
             QString file_name = reply->url().fileName();
 
@@ -778,8 +788,19 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                 push_state();
                 open_document(path.toStdWString());
 #else
-                MainWidget* new_window = handle_new_window();
-                new_window->open_document(path.toStdWString());
+                if (PAPER_DOWNLOAD_CREATE_PORTAL) {
+                    //std::string checksum = this->checksummer->get_checksum(path.toStdWString());
+
+                    this->finish_pending_download_portal(
+                        reply->property("sioyek_paper_name").toString().toStdWString(),
+                        path.toStdWString()
+                    );
+
+                }
+                else {
+                    MainWidget* new_window = handle_new_window();
+                    new_window->open_document(path.toStdWString());
+                }
 #endif
             }
 
@@ -789,6 +810,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             std::string answer = reply->readAll().toStdString();
             QByteArray json_data = QByteArray::fromStdString(answer);
             QJsonDocument json_doc = QJsonDocument::fromJson(json_data);
+            std::wstring paper_name = reply->property("sioyek_paper_name").toString().toStdWString();
 
             auto get_url_file_size = [&](QString url) {
                 QNetworkRequest req;
@@ -838,7 +860,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                     hit_urls.push_back(paper_urls.at(i).toStdWString());
                 }
             }
-            show_download_paper_menu(hit_names, hit_urls);
+
+            show_download_paper_menu(hit_names, hit_urls, paper_name);
 
 
         }
@@ -2264,28 +2287,47 @@ void MainWidget::handle_click(WindowPos click_pos) {
     }
 
 }
-ReferenceType MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int* out_page, float* out_offset, bool update_candidates) {
+ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, bool update_candidates) {
 
-    auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
+    //auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
+    auto [page, offset_x, offset_y] = docpos;
     int current_page_number = get_current_page_number();
 
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
 
-    std::optional<std::pair<std::wstring, std::wstring>> generic_pair = \
-        main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
+    std::pair<int, int> reference_range = std::make_pair(-1, -1);
 
-    std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
-    std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
+    std::optional<std::pair<std::wstring, std::wstring>> generic_pair = \
+        main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y, &reference_range);
+
+    std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y, &reference_range);
+    std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y, &reference_range);
+
+    fz_rect source_rect = fz_empty_rect;
+
+    if ((reference_range.first > -1) && (reference_range.second > 0) && out_rect) {
+        source_rect = fz_rect_from_quad(flat_chars[reference_range.first]->quad);
+        for (int i = reference_range.first + 1; i <= reference_range.second; i++) {
+            source_rect = fz_union_rect(source_rect, fz_rect_from_quad(flat_chars[i]->quad));
+        }
+        source_rect = doc()->document_to_absolute_rect(page, source_rect, true);
+        *out_rect = source_rect;
+    }
 
     if (generic_pair) {
         std::vector<DocumentPos> candidates = main_document_view->get_document()->find_generic_locations(generic_pair.value().first,
             generic_pair.value().second);
         if (candidates.size() > 0) {
             if (update_candidates) {
-                smart_view_candidates = candidates;
+                smart_view_candidates.clear();
+                for (auto candid : candidates) {
+                    smart_view_candidates.push_back(std::make_pair(candid, source_rect));
+                }
+                //smart_view_candidates = candidates;
                 index_into_candidates = 0;
+                on_overview_source_updated();
             }
             *out_page = candidates[index_into_candidates].page;
             *out_offset = candidates[index_into_candidates].y;
@@ -2743,6 +2785,25 @@ fz_stext_char* MainWidget::get_closest_character_to_cusrsor(QPoint pos) {
     return find_closest_char_to_document_point(flat_chars, doc_point, &location_index);
 }
 
+std::optional<std::wstring> MainWidget::get_direct_paper_name_under_pos(DocumentPos docpos) {
+    return main_document_view->get_document()->
+        get_paper_name_at_position(docpos.page, docpos.x, docpos.y);
+}
+
+DocumentPos MainWidget::get_document_pos_under_window_pos(WindowPos window_pos) {
+    auto normal_pos = main_document_view->window_to_normalized_window_pos(window_pos);
+    if (opengl_widget->is_window_point_in_overview(normal_pos)) {
+        return opengl_widget->window_pos_to_overview_pos(normal_pos);
+    }
+    else {
+        return main_document_view->window_to_document_pos(window_pos);
+    }
+}
+
+AbsoluteDocumentPos MainWidget::get_absolute_document_pos_under_window_pos(WindowPos window_pos) {
+    return doc()->document_to_absolute_pos(get_document_pos_under_window_pos(window_pos));
+}
+
 std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_last_hold_point) {
     QPoint mouse_pos;
     if (use_last_hold_point) {
@@ -2760,8 +2821,7 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_las
     }
     else {
         DocumentPos doc_pos = main_document_view->window_to_document_pos(window_pos);
-        return main_document_view->get_document()->
-            get_paper_name_at_position(doc_pos.page, doc_pos.x, doc_pos.y);
+        return get_direct_paper_name_under_pos(doc_pos);
     }
 }
 
@@ -2786,7 +2846,8 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
         return;
     }
 
-    auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pos);
+    auto docpos = main_document_view->window_to_document_pos(pos);
+    auto [page, offset_x, offset_y] = docpos;
 
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
@@ -2794,7 +2855,8 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
 
     int target_page;
     float target_y_offset;
-    if (find_location_of_text_under_pointer(pos, &target_page, &target_y_offset) != ReferenceType::None) {
+
+    if (find_location_of_text_under_pointer(docpos, &target_page, &target_y_offset, nullptr) != ReferenceType::None) {
         long_jump_to_destination(target_page, target_y_offset);
     }
     else {
@@ -2897,7 +2959,13 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
 
     int autoreference_page;
     float autoreference_offset;
-    if (find_location_of_text_under_pointer(pos, &autoreference_page, &autoreference_offset, true) != ReferenceType::None) {
+    fz_rect overview_source_rect_absolute;
+    DocumentPos docpos = main_document_view->window_to_document_pos(pos);
+    if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect_absolute, true) != ReferenceType::None) {
+        int pos_page = main_document_view->window_to_document_pos(pos).page;
+         opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
+         current_overview_source_rect = overview_source_rect_absolute;
+
         set_overview_position(autoreference_page, autoreference_offset);
         return true;
     }
@@ -4564,11 +4632,12 @@ void MainWidget::perform_search(std::wstring text, bool is_regex) {
 
 void MainWidget::overview_to_definition() {
     if (!opengl_widget->get_overview_page()) {
-        std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
+        std::vector<std::pair<DocumentPos, fz_rect>> defpos = main_document_view->find_line_definitions();
         if (defpos.size() > 0) {
-            set_overview_position(defpos[0].page, defpos[0].y);
+            set_overview_position(defpos[0].first.page, defpos[0].first.y);
             smart_view_candidates = defpos;
             index_into_candidates = 0;
+            on_overview_source_updated();
         }
     }
     else {
@@ -4577,9 +4646,9 @@ void MainWidget::overview_to_definition() {
 }
 
 void MainWidget::portal_to_definition() {
-    std::vector<DocumentPos> defpos = main_document_view->find_line_definitions();
+    std::vector<std::pair<DocumentPos, fz_rect>> defpos = main_document_view->find_line_definitions();
     if (defpos.size() > 0) {
-        AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
+        AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0].first, true);
         Portal link;
         link.dst.document_checksum = doc()->get_checksum();
         link.dst.book_state.offset_x = abspos.x;
@@ -5798,7 +5867,7 @@ void MainWidget::update_highlight_buttons_position() {
 void MainWidget::handle_debug_command() {
 }
 
-void MainWidget::download_paper_with_name(const std::wstring& name) {
+std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {
     QUrl get_url = QString::fromStdWString(PAPER_SEARCH_URL).replace(
         "%{query}",
         QUrl::toPercentEncoding(QString::fromStdWString(name))
@@ -5806,12 +5875,15 @@ void MainWidget::download_paper_with_name(const std::wstring& name) {
 
     QNetworkRequest req;
     req.setUrl(get_url);
-    network_manager.get(req);
+    auto reply = network_manager.get(req);
+    reply->setProperty("sioyek_paper_name", QString::fromStdWString(name));
+    return get_url.toString().toStdWString();
 }
 
-bool MainWidget::is_pos_inside_selected_text(WindowPos window_pos) {
+bool MainWidget::is_pos_inside_selected_text(DocumentPos docpos) {
 
-    AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(window_pos);
+    //AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(window_pos);
+    AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(docpos);
 
     if (main_document_view) {
         for (auto rect : main_document_view->selected_character_rects) {
@@ -5834,15 +5906,24 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
         mouse_pos = mapFromGlobal(QCursor::pos());
     }
     WindowPos pos(mouse_pos.x(), mouse_pos.y());
-    DocumentPos docpos = main_document_view->window_to_document_pos(pos);
+    DocumentPos doc_pos = get_document_pos_under_window_pos(pos);
+    std::optional<std::wstring> paper_name = get_paper_name_under_pos(doc_pos);
+
+
+    if (paper_name) {
+        std::wstring bib_text = clean_bib_item(paper_name.value());
+        download_paper_with_name(bib_text);
+    }
+}
+
+std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos docpos) {
+
     auto [page, offset_x, offset_y] = docpos;
     std::optional<PdfLink> pdf_link_ = doc()->get_link_in_pos(docpos);
 
-    std::optional<std::wstring> bib_text_ = {};
-
-    if (is_pos_inside_selected_text(pos)) {
+    if (is_pos_inside_selected_text(docpos)) {
         // if user is clicking on a selected text, we assume they want to download the text
-        bib_text_ = selected_text;
+        return selected_text;
     }
     else if (pdf_link_) {
         // first, we  try to detect if we are on a PDF link or a non-link reference
@@ -5855,30 +5936,28 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
         auto [link_page, offset_x, offset_y] = parse_uri(mupdf_context, pdf_link.uri);
         std::wstring link_text = doc()->get_text_in_rect(page, pdf_rect);
         link_text = clean_link_source_text(link_text);
-        bib_text_ = doc()->get_page_bib_with_reference(link_page - 1, link_text);
+        return doc()->get_page_bib_with_reference(link_page - 1, link_text);
     }
     else {
-        auto ref_ = doc()->get_reference_text_at_position(page, offset_x, offset_y);
+        auto ref_ = doc()->get_reference_text_at_position(page, offset_x, offset_y, nullptr);
         int target_page = -1;
         float target_offset;
-        if (find_location_of_text_under_pointer(pos, &target_page, &target_offset) == ReferenceType::Reference) {
+        if (find_location_of_text_under_pointer(docpos, &target_page, &target_offset, nullptr) == ReferenceType::Reference) {
             if (ref_) {
                 std::wstring ref = ref_.value();
-                bib_text_ = doc()->get_page_bib_with_reference(target_page, ref);
+                return doc()->get_page_bib_with_reference(target_page, ref);
             }
         }
         else {
-            std::optional<std::wstring> paper_name = get_paper_name_under_cursor(use_last_touch_pos);
+            //std::optional<std::wstring> paper_name = get_paper_name_under_cursor(alksdh);
+            std::optional<std::wstring> paper_name = get_direct_paper_name_under_pos(docpos);
             if (paper_name) {
-                bib_text_ = paper_name;
+                return paper_name;
             }
         }
     }
 
-    if (bib_text_) {
-        std::wstring bib_text = clean_bib_item(bib_text_.value());
-        download_paper_with_name(bib_text);
-    }
+    return {};
 }
 
 void MainWidget::read_current_line() {
@@ -6153,7 +6232,8 @@ void MainWidget::handle_goto_random_page() {
 }
 void MainWidget::show_download_paper_menu(
     const std::vector<std::wstring>& paper_names,
-    const std::vector<std::wstring>& download_urls) {
+    const std::vector<std::wstring>& download_urls,
+    std::wstring paper_name) {
 
 
     // force it to be a double column layout. the second column will asynchronously be filled with
@@ -6161,8 +6241,8 @@ void MainWidget::show_download_paper_menu(
     std::vector<std::wstring> right_names(paper_names.size());
 
     set_filtered_select_menu<std::wstring>(FUZZY_SEARCHING, MULTILINE_MENUS, { paper_names, right_names }, download_urls, -1,
-        [&](std::wstring* url) {
-            download_paper_with_url(*url);
+        [&, paper_name](std::wstring* url) {
+            download_paper_with_url(*url)->setProperty("sioyek_paper_name", QString::fromStdWString(paper_name));
         },
         nullptr);
 
@@ -6171,12 +6251,12 @@ void MainWidget::show_download_paper_menu(
 
 }
 
-void MainWidget::download_paper_with_url(std::wstring paper_url_) {
+QNetworkReply* MainWidget::download_paper_with_url(std::wstring paper_url_) {
     QString paper_url = QString::fromStdWString(paper_url_);
     paper_url = paper_url.right(paper_url.size() - paper_url.lastIndexOf("http"));
     QNetworkRequest req;
     req.setUrl(paper_url);
-    network_manager.get(req);
+    return network_manager.get(req);
 }
 
 bool MainWidget::is_network_manager_running(bool* is_downloading) {
@@ -6798,8 +6878,63 @@ HighlightButtons* MainWidget::get_highlight_buttons() {
 bool MainWidget::goto_ith_next_overview(int i) {
     if (smart_view_candidates.size() > 1) {
         index_into_candidates = mod((index_into_candidates + i), smart_view_candidates.size());
-        set_overview_position(smart_view_candidates[index_into_candidates].page, smart_view_candidates[index_into_candidates].y);
+        set_overview_position(smart_view_candidates[index_into_candidates].first.page, smart_view_candidates[index_into_candidates].first.y);
+        on_overview_source_updated();
         return true;
     }
     return false;
+}
+
+void MainWidget::on_overview_source_updated() {
+    //if ((smart_view_candidates.size() > 0) && (index_into_candidates < smart_view_candidates.size())) {
+    //    opengl_widget->set_selected_rectangle(smart_view_candidates[index_into_candidates].second);
+    //}
+}
+
+std::optional<fz_rect> MainWidget::get_overview_source_rect() {
+    if (opengl_widget->get_overview_page()) {
+        if (smart_view_candidates.size() > 0) {
+            return smart_view_candidates[index_into_candidates].second;
+        }
+    }
+
+    return {};
+}
+
+std::optional<std::wstring> MainWidget::get_overview_paper_name() {
+    if (opengl_widget->get_overview_page()) {
+        if (smart_view_candidates.size() > 0) {
+            fz_rect candidate_rect = smart_view_candidates[index_into_candidates].second;
+
+            AbsoluteDocumentPos center;
+            center.x =  (candidate_rect.x0 + candidate_rect.x1) / 2;
+            center.y =  (candidate_rect.y0 + candidate_rect.y1) / 2;
+
+            DocumentPos center_document = doc()->absolute_to_page_pos(center);
+            return get_paper_name_under_pos(center_document);
+
+        }
+    }
+    return {};
+}
+
+void MainWidget::finish_pending_download_portal(std::wstring download_paper_name, std::wstring downloaded_file_path) {
+    std::string checksum = checksummer->get_checksum(downloaded_file_path);
+    int pending_index = -1;
+    for (int i = 0; i < pending_download_portals.size(); i++) {
+
+        Portal pending_portal = pending_download_portals[i].pending_portal;
+        std::wstring pending_paper_name = pending_download_portals[i].paper_name;
+
+        if (pending_paper_name == download_paper_name) {
+            pending_index = i;
+            pending_portal.dst.document_checksum = checksum;
+            Document* src_doc = document_manager->get_document(pending_download_portals[i].source_document_path);
+
+            if (src_doc) {
+
+                src_doc->add_portal(pending_portal, true);
+            }
+        }
+    }
 }
