@@ -168,7 +168,7 @@ private:
 
     float last_mouse_down_document_offset_x = 0;
     float last_mouse_down_document_offset_y = 0;
-
+    std::vector<fz_rect> pending_download_portals;
 
     //float vertical_line_location;
     bool should_draw_vertical_line = false;
@@ -318,5 +318,7 @@ public:
     void bind_default();
     bool is_normalized_y_in_window(float y);
     bool is_normalized_y_range_in_window(float y0, float y1);
+    void render_portal_rect(QPainter* painter, fz_rect portal_absolute_rect, bool is_pending);
+    void set_pending_download_portals(std::vector<fz_rect>&& portal_rects);
 
 };

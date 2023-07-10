@@ -218,10 +218,10 @@ protected:
 
 public:
 
+
     void set_filter_column_index(int index) {
         proxy_model->setFilterKeyColumn(index);
     }
-
 
     std::optional<QModelIndex> get_selected_index() {
         QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
@@ -617,6 +617,7 @@ private:
     std::vector<T> values;
     std::function<void(T*)> on_done;
     std::function<void(T*)> on_delete_function = nullptr;
+
 public:
     //	void set_selected_index(int index) {
     //		list_view->set_selected_index(index);

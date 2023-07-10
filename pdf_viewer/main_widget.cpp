@@ -2,6 +2,8 @@
 // see if macro commands can be sped up
 // make sure jsons exported by previous sioyek versions can be imported
 // todo: deduplicate find_line_definitions
+// todo: use a better method to handle deletion of canceled download portals
+// todo: use the same text cleanup algorithm that is used for text selection to cleanup paper names for download
 
 #include <iostream>
 #include <vector>
@@ -188,6 +190,7 @@ extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
 
 bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
 
+extern float BOOKMARK_RECT_SIZE;
 extern bool TOUCH_MODE;
 
 const int MAX_SCROLLBAR = 10000;
@@ -763,6 +766,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer->setInterval(INTERVAL_TIME);
 
     QObject::connect(&network_manager, &QNetworkAccessManager::finished, [this](QNetworkReply* reply) {
+        reply->deleteLater();
         if (!reply->property("sioyek_network_request_type").isNull()) {
             // handled in a different place
             return;
@@ -826,6 +830,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                 reply->setProperty("sioyek_network_request_type", QString("paper_size"));
 
                 connect(reply, &QNetworkReply::finished, [reply, url, this]() {
+                    reply->deleteLater();
 
                     if (current_widget_stack.size() == 0) return;
 
@@ -874,6 +879,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     connect(validation_interval_timer, &QTimer::timeout, [&]() {
 
+        cleanup_expired_pending_portals();
         if (TOUCH_MODE && selection_begin_indicator) {
             selection_begin_indicator->update_pos();
             selection_end_indicator->update_pos();
@@ -1184,7 +1190,7 @@ std::wstring MainWidget::get_status_string() {
 
     if (DEBUG) {
         status_string += " [DEBUG MODE] ";
-        status_string += QString::number(selected_portal_index);
+        status_string += QString::number(network_manager.findChildren<QNetworkReply*>().size());
     }
 
     //return ss.str();
@@ -3170,7 +3176,7 @@ void MainWidget::push_current_widget(QWidget* new_widget) {
     current_widget_stack.push_back(new_widget);
 }
 
-void MainWidget::pop_current_widget() {
+void MainWidget::pop_current_widget(bool canceled) {
     if (current_widget_stack.size() > 0) {
         current_widget_stack.back()->hide();
         current_widget_stack.back()->deleteLater();
@@ -7010,6 +7016,10 @@ void MainWidget::finish_pending_download_portal(std::wstring download_paper_name
             }
         }
     }
+    if (pending_index != -1) {
+        pending_download_portals.erase(pending_download_portals.begin() + pending_index);
+        update_opengl_pending_download_portals();
+    }
 }
 
 std::optional<Portal> MainWidget::get_portal_under_window_pos(WindowPos pos, int* out_index) {
@@ -7041,4 +7051,61 @@ std::optional<Portal> MainWidget::get_target_portal(bool limit) {
         }
     }
     return main_document_view->find_closest_portal(limit);
+}
+
+void MainWidget::update_opengl_pending_download_portals() {
+    std::vector<fz_rect> pending_rects;
+    for (auto pending_portal : pending_download_portals) {
+        float x = pending_portal.pending_portal.src_offset_x.value();
+        float y = pending_portal.pending_portal.src_offset_y;
+        fz_rect rect;
+
+        rect.x0 = x - BOOKMARK_RECT_SIZE;
+        rect.x1 = x + BOOKMARK_RECT_SIZE;
+        rect.y0 = y - BOOKMARK_RECT_SIZE;
+        rect.y1 = y + BOOKMARK_RECT_SIZE;
+        pending_rects.push_back(rect);
+    }
+    opengl_widget->set_pending_download_portals(std::move(pending_rects));
+}
+
+void MainWidget::cleanup_expired_pending_portals() {
+    std::vector<int> indices_to_delete;
+
+    if ((pending_download_portals.size() > 0) && (current_widget_stack.size() == 0)) {
+        auto children_ = network_manager.findChildren<QNetworkReply*>();
+        QList<QNetworkReply*> children;
+
+        for (int i = 0; i < children_.size(); i++) {
+            if (children_[i]->isRunning()) {
+                children.append(children_[i]);
+            }
+        }
+
+        for (int i = 0; i < pending_download_portals.size(); i++) {
+            auto paper_name = pending_download_portals[i].paper_name;
+            bool still_pending = false;
+            //network_manager.
+            for (int i = 0; i < children.size(); i++) {
+                if (children[i]->property("sioyek_paper_name").toString().toStdWString() == paper_name) {
+                    still_pending = true;
+                }
+            }
+            if (!still_pending) {
+                if (pending_download_portals[i].marked) {
+                    indices_to_delete.push_back(i);
+                }
+                else {
+                    pending_download_portals[i].marked = true;
+                }
+            }
+        }
+    }
+    if (indices_to_delete.size() > 0) {
+        for (int i = indices_to_delete.size() - 1; i >= 0; i--) {
+            pending_download_portals.erase(pending_download_portals.begin() + indices_to_delete[i]);
+        }
+        update_opengl_pending_download_portals();
+    }
+
 }

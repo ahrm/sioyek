@@ -1300,11 +1300,6 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
         bind_default();
     }
 
-
-
-
-
-
     painter->endNativePainting();
 
 
@@ -1312,6 +1307,9 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
         const std::vector<BookMark>& bookmarks = document_view->get_document()->get_bookmarks();
         const std::vector<Portal>& portals = document_view->get_document()->get_portals();
 
+        for (int i = 0; i < pending_download_portals.size(); i++) {
+            render_portal_rect(painter, pending_download_portals[i], true);
+        }
         for (int i = 0; i < portals.size(); i++) {
             if (portals[i].is_visible()) {
                 fz_rect portal_rect;
@@ -1320,24 +1318,8 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
                 portal_rect.y0 = portals[i].src_offset_y - BOOKMARK_RECT_SIZE;
                 portal_rect.y1 = portals[i].src_offset_y + BOOKMARK_RECT_SIZE;
 
+                render_portal_rect(painter, portal_rect, false);
                 //fz_rect portal_rect = {portals[i].src_rect_begin_x, portals[i].src_rect_begin_y, portals[i].src_rect_end_x, portals[i].src_rect_end_y};
-                fz_rect portal_normalized_window_rect = document_view->absolute_to_window_rect(portal_rect);
-
-                if (is_normalized_y_range_in_window(portal_normalized_window_rect.y0, portal_normalized_window_rect.y1)) {
-                    fz_irect portal_window_rect = document_view->normalized_to_window_rect(portal_normalized_window_rect);
-                    QRect window_qrect = QRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
-                    painter->setPen(QColor(255, 0, 0));
-
-                    painter->fillRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect), QColor(255, 0, 0));
-
-                    QFont font = painter->font();
-                    font.setPointSizeF(5.0f * document_view->get_zoom_level());
-                    painter->setFont(font);
-
-                    painter->setPen(QColor(0, 0, 0));
-                    painter->drawRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
-                    painter->drawText(window_qrect, Qt::AlignCenter, "P");
-                }
             }
         }
 
@@ -2568,3 +2550,29 @@ bool PdfViewOpenGLWidget::is_normalized_y_range_in_window(float y0, float y1) {
     return is_normalized_y_in_window(y0) || is_normalized_y_in_window(y1);
 }
 
+void PdfViewOpenGLWidget::render_portal_rect(QPainter* painter, fz_rect portal_rect, bool is_pending) {
+    fz_rect portal_normalized_window_rect = document_view->absolute_to_window_rect(portal_rect);
+
+    if (is_normalized_y_range_in_window(portal_normalized_window_rect.y0, portal_normalized_window_rect.y1)) {
+        fz_irect portal_window_rect = document_view->normalized_to_window_rect(portal_normalized_window_rect);
+        QRect window_qrect = QRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
+        QColor fill_color = QColor(255, 0, 0);
+        if (is_pending) {
+            fill_color = QColor(255, 255, 0);
+        }
+
+        painter->fillRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect), fill_color);
+
+        QFont font = painter->font();
+        font.setPointSizeF(5.0f * document_view->get_zoom_level());
+        painter->setFont(font);
+
+        painter->setPen(QColor(0, 0, 0));
+        painter->drawRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
+        painter->drawText(window_qrect, Qt::AlignCenter, "P");
+    }
+}
+
+void PdfViewOpenGLWidget::set_pending_download_portals(std::vector<fz_rect>&& portal_rects){
+    pending_download_portals = std::move(portal_rects);
+}

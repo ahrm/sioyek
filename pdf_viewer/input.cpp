@@ -2976,6 +2976,7 @@ public:
             pending_download_portal.paper_name = text_;
 
             widget->pending_download_portals.push_back(pending_download_portal);
+            widget->update_opengl_pending_download_portals();
         }
 
 

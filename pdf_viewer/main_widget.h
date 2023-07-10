@@ -75,6 +75,8 @@ struct PendingDownloadPortal {
     Portal pending_portal;
     std::wstring paper_name;
     std::wstring source_document_path;
+    // the pending portal is marked for deletion
+    bool marked = false;
 };
 
 struct FreehandDrawingMoveData {
@@ -456,7 +458,7 @@ public:
     void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
     void set_current_widget(QWidget* new_widget);
     void push_current_widget(QWidget* new_widget);
-    void pop_current_widget();
+    void pop_current_widget(bool canceled=false);
     void show_current_widget();
     bool focus_on_visual_mark_pos(bool moving_down);
     void toggle_visual_scroll_mode();
@@ -809,6 +811,8 @@ public:
     std::optional<Portal> get_target_portal(bool limit);
 
     AbsoluteDocumentPos get_cursor_abspos();
+    void update_opengl_pending_download_portals();
+    void cleanup_expired_pending_portals();
 
 };
 
