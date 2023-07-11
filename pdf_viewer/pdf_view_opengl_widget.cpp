@@ -523,6 +523,12 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
     for (int i = 0; i < 26; i++) {
         visible_drawing_mask[i] = true;
     }
+
+    //bookmark_pixmap = QPixmap(":/icons/B.svg");
+    //portal_pixmap = QPixmap(":/end.png");
+    bookmark_icon = QIcon(":/icons/B.svg");
+    portal_icon = QIcon(":/icons/P.svg");
+    hourglass_icon = QIcon(":/icons/hourglass.svg");
 }
 
 void PdfViewOpenGLWidget::cancel_search() {
@@ -982,7 +988,6 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
     glDisable(GL_BLEND);
     glBindVertexArray(vertex_array_object);
 
-
     if (!valid_document()) {
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1345,14 +1350,16 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
                         fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
                         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
-                        QFont font = painter->font();
-                        font.setPointSizeF(5.0f * document_view->get_zoom_level());
-                        painter->setFont(font);
+                        bookmark_icon.paint(painter, window_qrect);
 
-                        painter->fillRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect), QColor(255, 255, 0));
-                        painter->setPen(QColor(0, 0, 0));
-                        painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
-                        painter->drawText(window_qrect, Qt::AlignCenter, "B");
+                        //QFont font = painter->font();
+                        //font.setPointSizeF(5.0f * document_view->get_zoom_level());
+                        //painter->setFont(font);
+
+                        //painter->fillRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect), QColor(255, 255, 0));
+                        //painter->setPen(QColor(0, 0, 0));
+                        //painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                        //painter->drawText(window_qrect, Qt::AlignCenter, "B");
 
                     }
                 }
@@ -2561,15 +2568,21 @@ void PdfViewOpenGLWidget::render_portal_rect(QPainter* painter, fz_rect portal_r
             fill_color = QColor(255, 255, 0);
         }
 
-        painter->fillRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect), fill_color);
+        if (is_pending) {
+            hourglass_icon.paint(painter, window_qrect);
+        }
+        else {
+            portal_icon.paint(painter, window_qrect);
+        }
+        //painter->fillRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect), fill_color);
 
-        QFont font = painter->font();
-        font.setPointSizeF(5.0f * document_view->get_zoom_level());
-        painter->setFont(font);
+        //QFont font = painter->font();
+        //font.setPointSizeF(5.0f * document_view->get_zoom_level());
+        //painter->setFont(font);
 
-        painter->setPen(QColor(0, 0, 0));
-        painter->drawRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
-        painter->drawText(window_qrect, Qt::AlignCenter, "P");
+        //painter->setPen(QColor(0, 0, 0));
+        //painter->drawRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
+        //painter->drawText(window_qrect, Qt::AlignCenter, "P");
     }
 }
 

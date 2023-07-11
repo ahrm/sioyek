@@ -4,6 +4,8 @@
 // todo: deduplicate find_line_definitions
 // todo: use a better method to handle deletion of canceled download portals
 // todo: use the same text cleanup algorithm that is used for text selection to cleanup paper names for download
+// todo: invalidate render when adding a marked bookmark
+// todo: right clicking on non-linked documents still highlights the source reference
 
 #include <iostream>
 #include <vector>

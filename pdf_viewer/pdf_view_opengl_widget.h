@@ -153,6 +153,10 @@ private:
     float percent_done = 0.0f;
     std::optional<int> visible_page_number = {};
 
+    QIcon bookmark_icon;
+    QIcon portal_icon;
+    QIcon hourglass_icon;
+
     std::optional<fz_rect> character_highlight_rect = {};
     std::optional<fz_rect> wrong_character_rect = {};
     bool show_control_rect;
