@@ -63,6 +63,7 @@ struct PortalMoveData {
     int index;
     AbsoluteDocumentPos initial_position;
     AbsoluteDocumentPos initial_mouse_position;
+    bool is_pending = false;
 };
 
 struct SelectedDrawings {
@@ -795,7 +796,7 @@ public:
     void handle_portal_move_finish();
     bool is_middle_click_being_used();
     void begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor_pos);
-    void begin_portal_move(int index, AbsoluteDocumentPos begin_cursor_pos);
+    void begin_portal_move(int index, AbsoluteDocumentPos begin_cursor_pos, bool is_pending);
     bool should_drag();
     void handle_freehand_drawing_move_finish();
     void move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings);
@@ -813,6 +814,9 @@ public:
     AbsoluteDocumentPos get_cursor_abspos();
     void update_opengl_pending_download_portals();
     void cleanup_expired_pending_portals();
+    int get_pending_portal_index_at_pos(AbsoluteDocumentPos abspos);
+    void update_pending_portal_indices_after_removed_indices(std::vector<int>& removed_indices);
+    void close_overview();
 
 };
 

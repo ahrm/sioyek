@@ -157,7 +157,7 @@ public:
     bool get_is_indexing();
     fz_stext_page* get_stext_with_page_number(fz_context* ctx, int page_number, fz_document* doc = nullptr);
     fz_stext_page* get_stext_with_page_number(int page_number);
-    void add_portal(Portal link, bool insert_into_database = true);
+    int add_portal(Portal link, bool insert_into_database = true);
     std::wstring get_path();
     std::string get_checksum();
     std::optional<std::string> get_checksum_fast();

@@ -2548,7 +2548,13 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
             }
             int portal_index = doc()->get_portal_index_at_pos(abs_mpos);
             if (portal_index >= 0) {
-                begin_portal_move(portal_index, abs_mpos);
+                begin_portal_move(portal_index, abs_mpos, false);
+                return;
+            }
+
+            int pending_portal_index = get_pending_portal_index_at_pos(abs_mpos);
+            if (pending_portal_index >= 0) {
+                begin_portal_move(pending_portal_index, abs_mpos, true);
                 return;
             }
         }
@@ -6796,8 +6802,10 @@ void MainWidget::handle_bookmark_move_finish() {
 }
 
 void MainWidget::handle_portal_move_finish() {
-    Portal& portal = doc()->get_portals()[portal_move_data->index];
-    doc()->update_portal_src_position(portal_move_data->index, { portal.src_offset_x.value(), portal.src_offset_y });
+    if (!portal_move_data->is_pending) {
+        Portal& portal = doc()->get_portals()[portal_move_data->index];
+        doc()->update_portal_src_position(portal_move_data->index, { portal.src_offset_x.value(), portal.src_offset_y });
+    }
 }
 
 void MainWidget::handle_bookmark_move() {
@@ -6823,10 +6831,19 @@ void MainWidget::handle_portal_move() {
     float diff_x = current_mouse_abspos.x - portal_move_data->initial_mouse_position.x;
     float diff_y = current_mouse_abspos.y - portal_move_data->initial_mouse_position.y;
 
-    Portal& portal = doc()->get_portals()[portal_move_data->index];
+    if (portal_move_data->is_pending) {
+        if (pending_download_portals.size() > portal_move_data->index) {
+            pending_download_portals[portal_move_data->index].pending_portal.src_offset_x = portal_move_data->initial_position.x + diff_x;
+            pending_download_portals[portal_move_data->index].pending_portal.src_offset_y = portal_move_data->initial_position.y + diff_y;
+            update_opengl_pending_download_portals();
+        }
+    }
+    else {
+        Portal& portal = doc()->get_portals()[portal_move_data->index];
 
-    portal.src_offset_x = portal_move_data->initial_position.x + diff_x;
-    portal.src_offset_y = portal_move_data->initial_position.y + diff_y;
+        portal.src_offset_x = portal_move_data->initial_position.x + diff_x;
+        portal.src_offset_y = portal_move_data->initial_position.y + diff_y;
+    }
 }
 
 bool MainWidget::is_middle_click_being_used() {
@@ -6847,16 +6864,30 @@ void MainWidget::begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor
 }
 
 
-void MainWidget::begin_portal_move(int index, AbsoluteDocumentPos begin_cursor_pos) {
+void MainWidget::begin_portal_move(int index, AbsoluteDocumentPos begin_cursor_pos, bool is_pending) {
     PortalMoveData move_data;
     move_data.index = index;
 
-    if (doc()->get_portals()[index].src_offset_x) {
-        move_data.initial_position.x = doc()->get_portals()[index].src_offset_x.value();
-        move_data.initial_position.y = doc()->get_portals()[index].src_offset_y;
+    if (is_pending) {
+        if (index < pending_download_portals.size()) {
+            move_data.initial_position.x = pending_download_portals[index].pending_portal.src_offset_x.value();
+            move_data.initial_position.y = pending_download_portals[index].pending_portal.src_offset_y;
 
-        move_data.initial_mouse_position = begin_cursor_pos;
-        portal_move_data = move_data;
+            move_data.initial_mouse_position = begin_cursor_pos;
+            move_data.is_pending = is_pending;
+            portal_move_data = move_data;
+        }
+    }
+    else {
+
+        if (doc()->get_portals()[index].src_offset_x) {
+            move_data.initial_position.x = doc()->get_portals()[index].src_offset_x.value();
+            move_data.initial_position.y = doc()->get_portals()[index].src_offset_y;
+
+            move_data.initial_mouse_position = begin_cursor_pos;
+            move_data.is_pending = is_pending;
+            portal_move_data = move_data;
+        }
     }
 }
 
@@ -7012,7 +7043,13 @@ void MainWidget::finish_pending_download_portal(std::wstring download_paper_name
 
             if (src_doc) {
                 db_manager->insert_document_hash(downloaded_file_path, checksum);
-                src_doc->add_portal(pending_portal, true);
+                int portal_index = src_doc->add_portal(pending_portal, true);
+                // when a download is finished while we are moving the pending portal, convert the
+                // pending portal move to the actual portal move
+                if (portal_move_data && portal_move_data->is_pending && portal_move_data->index == i) {
+                    portal_move_data->is_pending = false;
+                    portal_move_data->index = portal_index;
+                }
             }
         }
     }
@@ -7102,10 +7139,54 @@ void MainWidget::cleanup_expired_pending_portals() {
         }
     }
     if (indices_to_delete.size() > 0) {
+        update_pending_portal_indices_after_removed_indices(indices_to_delete);
         for (int i = indices_to_delete.size() - 1; i >= 0; i--) {
             pending_download_portals.erase(pending_download_portals.begin() + indices_to_delete[i]);
         }
         update_opengl_pending_download_portals();
     }
 
+}
+
+int MainWidget::get_pending_portal_index_at_pos(AbsoluteDocumentPos abspos) {
+
+    for (int i = 0; i < pending_download_portals.size(); i++) {
+        fz_rect rect;
+        float x = pending_download_portals[i].pending_portal.src_offset_x.value();
+        float y = pending_download_portals[i].pending_portal.src_offset_y;
+
+        rect.x0 = x - BOOKMARK_RECT_SIZE;
+        rect.x1 = x + BOOKMARK_RECT_SIZE;
+        rect.y0 = y - BOOKMARK_RECT_SIZE;
+        rect.y1 = y + BOOKMARK_RECT_SIZE;
+        if (fz_is_point_inside_rect({ abspos.x, abspos.y }, rect)) {
+            return i;
+        }
+
+    }
+    return -1;
+}
+
+void MainWidget::update_pending_portal_indices_after_removed_indices(std::vector<int>& removed_indices) {
+
+    int index_diff = 0;
+    if (portal_move_data && portal_move_data->is_pending) {
+        for (int i = 0; i < removed_indices.size(); i++) {
+            int index = removed_indices[i];
+
+            if (index == portal_move_data->index) {
+                portal_move_data = {};
+                return;
+            }
+            if (index < portal_move_data->index) {
+                index_diff++;
+            }
+        }
+        portal_move_data->index -= index_diff;
+    }
+
+
+}
+void MainWidget::close_overview() {
+    opengl_widget->set_overview_page({});
 }

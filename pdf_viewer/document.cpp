@@ -287,10 +287,11 @@ bool Document::get_is_indexing() {
     return is_indexing;
 }
 
-void Document::add_portal(Portal portal, bool insert_into_database) {
+int Document::add_portal(Portal portal, bool insert_into_database) {
     portal.uuid = new_uuid_utf8();
     portal.update_creation_time();
     portals.push_back(portal);
+    int index = portals.size() - 1;
     if (insert_into_database) {
         if (portal.is_visible()) {
             bool res = db_manager->insert_visible_portal(
@@ -316,7 +317,9 @@ void Document::add_portal(Portal portal, bool insert_into_database) {
         }
         is_annotations_dirty = true;
     }
+    return index;
 }
+
 
 std::wstring Document::get_path() {
 
