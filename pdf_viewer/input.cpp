@@ -638,8 +638,7 @@ public:
 
     void perform() {
         widget->doc()->add_marked_bookmark(text_.value(), point_.value());
-        //widget->delete_freehand_drawings(rect_.value());
-        //widget->freehand_drawing_mode = original_drawing_mode;
+        widget->invalidate_render();
     }
 
     std::string get_name() {
