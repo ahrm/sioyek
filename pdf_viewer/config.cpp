@@ -93,6 +93,8 @@ extern bool RENDER_FREETEXT_BORDERS;
 extern bool SHOULD_RENDER_PDF_ANNOTATIONS;
 extern float STRIKE_LINE_WIDTH;
 extern float RULER_COLOR[3];
+extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
+extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -728,6 +730,22 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"should_use_multiple_monitors",
         ConfigType::Bool,
         &SHOULD_USE_MULTIPLE_MONITORS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"paper_download_should_create_portal",
+        ConfigType::Bool,
+        &PAPER_DOWNLOAD_CREATE_PORTAL,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"paper_download_should_detect_paper_name",
+        ConfigType::Bool,
+        &PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME,
         bool_serializer,
         bool_deserializer,
         bool_validator

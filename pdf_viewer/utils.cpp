@@ -57,6 +57,7 @@ extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern float BLACK_COLOR[3];
+extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
 
 extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH;
@@ -3277,25 +3278,28 @@ fz_rect get_range_rect_union(const std::vector<fz_rect>& rects, int first_index,
 
 
 std::wstring get_paper_name_from_reference_text(std::wstring reference_text) {
-    QString str = QString::fromStdWString(reference_text);
-    QRegularExpression reference_ending_dot_regex = QRegularExpression("(\.\w*In )|(\.\w*arxiv )|(\.\w*arXiv )");
+    if (PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME) {
+        QString str = QString::fromStdWString(reference_text);
+        QRegularExpression reference_ending_dot_regex = QRegularExpression("(\.\w*In )|(\.\w*arxiv )|(\.\w*arXiv )");
 
-    int ending_index = str.lastIndexOf(reference_ending_dot_regex);
-    if (ending_index == -1) {
-        int last_dot_index = str.lastIndexOf(".");
-        // igonre if the last dot is close to the end
-        if (str.size() - last_dot_index < 8) {
-            str = str.left(last_dot_index - 1);
+        int ending_index = str.lastIndexOf(reference_ending_dot_regex);
+        if (ending_index == -1) {
+            int last_dot_index = str.lastIndexOf(".");
+            // igonre if the last dot is close to the end
+            if (str.size() - last_dot_index < 8) {
+                str = str.left(last_dot_index - 1);
+            }
+            ending_index = str.lastIndexOf(".") + 1;
         }
-        ending_index = str.lastIndexOf(".") + 1;
+
+        if (ending_index > -1) {
+            //int starting_index = 
+            str = str.left(ending_index - 1);
+            int starting_index = str.lastIndexOf(".");
+            return str.right(str.size() - starting_index - 1).trimmed().toStdWString();
+        }
     }
 
-    if (ending_index > -1) {
-        //int starting_index = 
-        str = str.left(ending_index - 1);
-        int starting_index = str.lastIndexOf(".");
-        return str.right(str.size() - starting_index - 1).trimmed().toStdWString();
-    }
     return reference_text;
 
 }

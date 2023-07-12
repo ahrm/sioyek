@@ -287,6 +287,8 @@ float TTS_RATE = 0.0f;
 bool VERBOSE = false;
 //UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
+bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
+bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME = true;
 float DEFAULT_TEXT_HIGHLIGHT_COLOR[3] = { 1.0f, 1.0f, 0.0 };
 float DEFAULT_VERTICAL_LINE_COLOR[4] = { 0.0f, 0.0f, 0.0f, 0.5f };
 float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 1.0f, 0.0f };
