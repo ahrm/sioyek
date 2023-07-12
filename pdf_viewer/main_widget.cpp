@@ -1,9 +1,7 @@
 ﻿// deduplicate database code
-// see if macro commands can be sped up
 // make sure jsons exported by previous sioyek versions can be imported
 // todo: deduplicate find_line_definitions
 // todo: use a better method to handle deletion of canceled download portals
-// todo: use the same text cleanup algorithm that is used for text selection to cleanup paper names for download
 // todo: make a function to compute the rectangle for visible bookmark/portals. also make portal rects be centerd on the point
 
 #include <iostream>
@@ -191,7 +189,6 @@ extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
 
 extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
 
-extern float BOOKMARK_RECT_SIZE;
 extern bool TOUCH_MODE;
 
 const int MAX_SCROLLBAR = 10000;
@@ -7106,14 +7103,7 @@ std::optional<Portal> MainWidget::get_target_portal(bool limit) {
 void MainWidget::update_opengl_pending_download_portals() {
     std::vector<fz_rect> pending_rects;
     for (auto pending_portal : pending_download_portals) {
-        float x = pending_portal.pending_portal.src_offset_x.value();
-        float y = pending_portal.pending_portal.src_offset_y;
-        fz_rect rect;
-
-        rect.x0 = x - BOOKMARK_RECT_SIZE;
-        rect.x1 = x + BOOKMARK_RECT_SIZE;
-        rect.y0 = y - BOOKMARK_RECT_SIZE;
-        rect.y1 = y + BOOKMARK_RECT_SIZE;
+        fz_rect rect = pending_portal.pending_portal.get_rectangle();
         pending_rects.push_back(rect);
     }
     opengl_widget->set_pending_download_portals(std::move(pending_rects));
@@ -7164,14 +7154,8 @@ void MainWidget::cleanup_expired_pending_portals() {
 int MainWidget::get_pending_portal_index_at_pos(AbsoluteDocumentPos abspos) {
 
     for (int i = 0; i < pending_download_portals.size(); i++) {
-        fz_rect rect;
-        float x = pending_download_portals[i].pending_portal.src_offset_x.value();
-        float y = pending_download_portals[i].pending_portal.src_offset_y;
+        fz_rect rect = pending_download_portals[i].pending_portal.get_rectangle();
 
-        rect.x0 = x - BOOKMARK_RECT_SIZE;
-        rect.x1 = x + BOOKMARK_RECT_SIZE;
-        rect.y0 = y - BOOKMARK_RECT_SIZE;
-        rect.y1 = y + BOOKMARK_RECT_SIZE;
         if (fz_is_point_inside_rect({ abspos.x, abspos.y }, rect)) {
             return i;
         }
@@ -7209,8 +7193,8 @@ void MainWidget::fill_overview_pending_portal(std::wstring paper_name) {
     if (current_overview_source_rect) {
 
         Portal pending_portal;
-        pending_portal.src_offset_x = current_overview_source_rect.value().x0;
-        pending_portal.src_offset_y = current_overview_source_rect.value().y0;
+        pending_portal.src_offset_x = (current_overview_source_rect.value().x0 + current_overview_source_rect.value().x1) / 2;
+        pending_portal.src_offset_y = (current_overview_source_rect.value().y0 + current_overview_source_rect.value().y1) / 2;
 
         pending_portal.dst.book_state.offset_x = 0;
         pending_portal.dst.book_state.offset_y = 0;

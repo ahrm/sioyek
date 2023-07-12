@@ -1,6 +1,7 @@
 #include "book.h"
 #include "utils.h"
 
+extern float BOOKMARK_RECT_SIZE;
 
 bool operator==(DocumentViewState& lhs, const DocumentViewState& rhs)
 {
@@ -280,4 +281,25 @@ bool are_same(const Highlight& lhs, const Highlight& rhs) {
 
 bool Portal::is_visible() const {
     return src_offset_x.has_value();
+}
+
+fz_rect BookMark::get_rectangle() const{
+    fz_rect res;
+
+    res.x0 = begin_x - BOOKMARK_RECT_SIZE;
+    res.x1 = begin_x + BOOKMARK_RECT_SIZE;
+    res.y0 = begin_y - BOOKMARK_RECT_SIZE;
+    res.y1 = begin_y + BOOKMARK_RECT_SIZE;
+    return res;
+}
+
+fz_rect Portal::get_rectangle() const{
+    fz_rect res;
+
+    res.x0 = src_offset_x.value() - BOOKMARK_RECT_SIZE;
+    res.x1 = src_offset_x.value() +  BOOKMARK_RECT_SIZE;
+    res.y0 = src_offset_y - BOOKMARK_RECT_SIZE;
+    res.y1 = src_offset_y +  BOOKMARK_RECT_SIZE;
+
+    return res;
 }

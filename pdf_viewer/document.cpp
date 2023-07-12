@@ -48,7 +48,6 @@ extern std::vector<float> linear_weights;
 extern float EPUB_LINE_SPACING;
 extern Path standard_data_path;
 extern bool VERBOSE;
-extern float BOOKMARK_RECT_SIZE;
 extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern std::wstring SHARED_DATABASE_PATH;
@@ -3668,13 +3667,7 @@ void Document::update_highlight_type(int index, char new_type) {
 int Document::get_portal_index_at_pos(AbsoluteDocumentPos abspos) {
     for (int i = 0; i < portals.size(); i++) {
         if (portals[i].src_offset_x.has_value()) {
-
-            if (
-                (abspos.x > portals[i].src_offset_x.value() - BOOKMARK_RECT_SIZE) &&
-                (abspos.x < portals[i].src_offset_x.value() + BOOKMARK_RECT_SIZE) &&
-                (abspos.y > portals[i].src_offset_y - BOOKMARK_RECT_SIZE) &&
-                (abspos.y < portals[i].src_offset_y + BOOKMARK_RECT_SIZE)
-                ) {
+            if (fz_is_point_inside_rect({abspos.x, abspos.y}, portals[i].get_rectangle())) {
                 return i;
             }
         }
@@ -3687,12 +3680,7 @@ int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
         if (bookmarks[i].begin_y != -1) {
             if (bookmarks[i].end_y == -1) {
 
-                if (
-                    (abspos.x > bookmarks[i].begin_x - BOOKMARK_RECT_SIZE) &&
-                    (abspos.x < bookmarks[i].begin_x + BOOKMARK_RECT_SIZE) &&
-                    (abspos.y > bookmarks[i].begin_y - BOOKMARK_RECT_SIZE) &&
-                    (abspos.y < bookmarks[i].begin_y + BOOKMARK_RECT_SIZE)
-                    ) {
+                if (fz_is_point_inside_rect({abspos.x, abspos.y}, bookmarks[i].get_rectangle())) {
                     return i;
                 }
             }

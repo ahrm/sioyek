@@ -41,7 +41,7 @@ extern bool ALPHABETIC_LINK_TAGS;
 extern int NUM_H_SLICES;
 extern int NUM_V_SLICES;
 extern bool SLICED_RENDERING;
-extern float BOOKMARK_RECT_SIZE;
+//extern float BOOKMARK_RECT_SIZE;
 extern bool RENDER_FREETEXT_BORDERS;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern float STRIKE_LINE_WIDTH;
@@ -1317,14 +1317,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
         }
         for (int i = 0; i < portals.size(); i++) {
             if (portals[i].is_visible()) {
-                fz_rect portal_rect;
-                portal_rect.x0 = portals[i].src_offset_x.value() - BOOKMARK_RECT_SIZE;
-                portal_rect.x1 = portals[i].src_offset_x.value() + BOOKMARK_RECT_SIZE;
-                portal_rect.y0 = portals[i].src_offset_y - BOOKMARK_RECT_SIZE;
-                portal_rect.y1 = portals[i].src_offset_y + BOOKMARK_RECT_SIZE;
-
-                render_portal_rect(painter, portal_rect, false);
-                //fz_rect portal_rect = {portals[i].src_rect_begin_x, portals[i].src_rect_begin_y, portals[i].src_rect_end_x, portals[i].src_rect_end_y};
+                render_portal_rect(painter, portals[i].get_rectangle(), false);
             }
         }
 
@@ -1340,26 +1333,12 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
                     if (bookmark_window_pos.x > -1.5f && bookmark_window_pos.x < 1.5f &&
                         bookmark_window_pos.y > -1.5f && bookmark_window_pos.y < 1.5f) {
 
-                        fz_rect bookmark_rect;
-                        bookmark_rect.x0 = bookmarks[i].begin_x - BOOKMARK_RECT_SIZE;
-                        bookmark_rect.x1 = bookmarks[i].begin_x + BOOKMARK_RECT_SIZE;
-                        bookmark_rect.y0 = bookmarks[i].begin_y - BOOKMARK_RECT_SIZE;
-                        bookmark_rect.y1 = bookmarks[i].begin_y + BOOKMARK_RECT_SIZE;
-                        fz_rect bookmark_normalized_window_rect = document_view->absolute_to_window_rect(bookmark_rect);
+                        fz_rect bookmark_normalized_window_rect = document_view->absolute_to_window_rect(bookmarks[i].get_rectangle());
 
                         fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
                         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
                         bookmark_icon.paint(painter, window_qrect);
-
-                        //QFont font = painter->font();
-                        //font.setPointSizeF(5.0f * document_view->get_zoom_level());
-                        //painter->setFont(font);
-
-                        //painter->fillRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect), QColor(255, 255, 0));
-                        //painter->setPen(QColor(0, 0, 0));
-                        //painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
-                        //painter->drawText(window_qrect, Qt::AlignCenter, "B");
 
                     }
                 }
