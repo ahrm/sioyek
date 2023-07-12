@@ -125,7 +125,7 @@ void search_custom_engine(const std::wstring& search_string, const std::wstring&
 void search_google_scholar(const std::wstring& search_string);
 void search_libgen(const std::wstring& search_string);
 void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, IndexedData>& indices);
-void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars);
+void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, bool dehyphenate=false);
 int find_best_vertical_line_location(fz_pixmap* pixmap, int relative_click_x, int relative_click_y);
 //void get_flat_chars_from_stext_page_with_space(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, fz_stext_char* space);
 void index_equations(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::map<std::wstring, std::vector<IndexedData>>& indices);
@@ -194,7 +194,7 @@ std::wstring truncate_string(const std::wstring& inp, int size);
 std::wstring get_page_formatted_string(int page);
 fz_rect create_word_rect(const std::vector<fz_rect>& chars);
 std::vector<fz_rect> create_word_rects_multiline(const std::vector<fz_rect>& chars);
-void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*>& flat_chars);
+void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*>& flat_chars, bool dehyphenate=false);
 void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::wstring& string_res, std::vector<int>& indices);
 bool is_string_titlish(const std::wstring& str);
 bool is_title_parent_of(const std::wstring& parent_title, const std::wstring& child_title, bool* are_same);
@@ -357,3 +357,4 @@ std::map<std::string, int> annotation_prism(std::vector<T>& file_annotations,
 }
 
 fz_rect get_range_rect_union(const std::vector<fz_rect>& rects, int first_index, int last_index);
+std::wstring get_paper_name_from_reference_text(std::wstring reference_text);

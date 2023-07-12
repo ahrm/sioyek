@@ -3064,7 +3064,7 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
     fz_stext_page* stext_page = get_stext_with_page_number(page_number);
     std::vector<fz_stext_char*> flat_chars;
 
-    get_flat_chars_from_stext_page(stext_page, flat_chars);
+    get_flat_chars_from_stext_page(stext_page, flat_chars, true);
 
     std::vector<fz_rect> char_rects;
     std::vector<float> augumented_rect_data;
@@ -3075,13 +3075,23 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
     std::vector<int> dot_indices;
     std::vector<int> end_indices;
     std::wstring raw_text;
+    std::wstring spaced_text;
+    std::vector<int> raw_to_spaced_index;
 
     for (int i = 0; i < flat_chars.size(); i++) {
         if (flat_chars[i]->c == '.') {
             dot_indices.push_back(i);
         }
+
         raw_text.push_back(flat_chars[i]->c);
+        spaced_text.push_back(flat_chars[i]->c);
         char_rects.push_back(fz_rect_from_quad(flat_chars[i]->quad));
+
+        if ((flat_chars[i]->next == nullptr) && (flat_chars[i]->c != '-')) {
+            spaced_text.push_back(' ');
+        }
+        raw_to_spaced_index.push_back(spaced_text.size()-1);
+
     }
 
     for (auto rect : char_rects) {
@@ -3137,7 +3147,9 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
 
     reference_texts.push_back(raw_text.substr(0, end_indices[0]));
     for (int i = 1; i < end_indices.size(); i++) {
-        reference_texts.push_back(raw_text.substr(end_indices[i - 1] + 1, end_indices[i] - end_indices[i - 1]));
+        //reference_texts.push_back(raw_text.substr(end_indices[i - 1] + 1, end_indices[i] - end_indices[i - 1]));
+        int length = raw_to_spaced_index[end_indices[i]] - raw_to_spaced_index[end_indices[i - 1]];
+        reference_texts.push_back(spaced_text.substr(raw_to_spaced_index[end_indices[i-1] + 1], length));
     }
 
     // try to remove the texts before the first bib item

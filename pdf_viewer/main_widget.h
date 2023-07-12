@@ -659,6 +659,7 @@ protected:
     DrawControlsUI* draw_controls_ = nullptr;
     SearchButtons* search_buttons_ = nullptr;
     HighlightButtons* highlight_buttons_ = nullptr;
+    bool middle_click_hold_command_already_executed = false;
 
     TouchTextSelectionButtons* get_text_selection_buttons();
     DrawControlsUI* get_draw_controls();
@@ -817,6 +818,7 @@ public:
     int get_pending_portal_index_at_pos(AbsoluteDocumentPos abspos);
     void update_pending_portal_indices_after_removed_indices(std::vector<int>& removed_indices);
     void close_overview();
+    void fill_overview_pending_portal(std::wstring paper_name);
 
 };
 

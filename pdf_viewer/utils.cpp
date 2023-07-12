@@ -408,7 +408,7 @@ std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line) {
     return reordered_chars;
 }
 
-void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*>& flat_chars) {
+void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*>& flat_chars, bool dehyphenate) {
     if (block->type == FZ_STEXT_BLOCK_TEXT) {
         LL_ITER(line, block->u.t.first_line) {
             std::vector<fz_stext_char*> reordered_chars = reorder_stext_line(line);
@@ -417,16 +417,23 @@ void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*
                     // unicode replacement character https://www.fileformat.info/info/unicode/char/fffd/index.htm
                     ch->c = ' ';
                 }
+
+                if (dehyphenate) {
+                    if (ch->c == '-' && (ch->next == nullptr)) {
+                        continue;
+                    }
+                }
+
                 flat_chars.push_back(ch);
             }
         }
     }
 }
 
-void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
+void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, bool dehyphenate) {
 
     LL_ITER(block, stext_page->first_block) {
-        get_flat_chars_from_block(block, flat_chars);
+        get_flat_chars_from_block(block, flat_chars, dehyphenate);
     }
 }
 
@@ -3266,4 +3273,29 @@ fz_rect get_range_rect_union(const std::vector<fz_rect>& rects, int first_index,
         res = fz_union_rect(res, rects[i]);
     }
     return res;
+}
+
+
+std::wstring get_paper_name_from_reference_text(std::wstring reference_text) {
+    QString str = QString::fromStdWString(reference_text);
+    QRegularExpression reference_ending_dot_regex = QRegularExpression("(\.\w*In )|(\.\w*arxiv )|(\.\w*arXiv )");
+
+    int ending_index = str.lastIndexOf(reference_ending_dot_regex);
+    if (ending_index == -1) {
+        int last_dot_index = str.lastIndexOf(".");
+        // igonre if the last dot is close to the end
+        if (str.size() - last_dot_index < 8) {
+            str = str.left(last_dot_index - 1);
+        }
+        ending_index = str.lastIndexOf(".") + 1;
+    }
+
+    if (ending_index > -1) {
+        //int starting_index = 
+        str = str.left(ending_index - 1);
+        int starting_index = str.lastIndexOf(".");
+        return str.right(str.size() - starting_index - 1).trimmed().toStdWString();
+    }
+    return reference_text;
+
 }

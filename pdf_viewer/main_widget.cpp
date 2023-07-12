@@ -6,6 +6,7 @@
 // todo: use the same text cleanup algorithm that is used for text selection to cleanup paper names for download
 // todo: invalidate render when adding a marked bookmark
 // todo: right clicking on non-linked documents still highlights the source reference
+// todo: make a function to compute the rectangle for visible bookmark/portals. also make portal rects be centerd on the point
 
 #include <iostream>
 #include <vector>
@@ -902,8 +903,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
         if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
             if ((last_middle_down_time.msecsTo(QTime::currentTime()) > 200) && (!is_middle_click_being_used())) {
-                execute_macro_if_enabled(HOLD_MIDDLE_CLICK_COMMAND);
-                invalidate_render();
+                if (!middle_click_hold_command_already_executed) {
+                    execute_macro_if_enabled(HOLD_MIDDLE_CLICK_COMMAND);
+                    middle_click_hold_command_already_executed = true;
+                    invalidate_render();
+                }
             }
         }
 
@@ -2537,6 +2541,7 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
         last_middle_down_time = QTime::currentTime();
+        middle_click_hold_command_already_executed = false;
         last_mouse_down_window_pos = WindowPos{ mevent->pos().x(), mevent->pos().y() };
         last_mouse_down_document_offset = main_document_view->get_offsets();
 
@@ -3002,9 +3007,10 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
     DocumentPos docpos = main_document_view->window_to_document_pos(pos);
     if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect_absolute, true) != ReferenceType::None) {
         int pos_page = main_document_view->window_to_document_pos(pos).page;
-         opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
+         //opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
          current_overview_source_rect = overview_source_rect_absolute;
 
+         smart_view_candidates = { std::make_pair(DocumentPos{pos_page, 0, autoreference_offset}, overview_source_rect_absolute) };
         set_overview_position(autoreference_page, autoreference_offset);
         return true;
     }
@@ -5970,6 +5976,9 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
 
     if (paper_name) {
         std::wstring bib_text = clean_bib_item(paper_name.value());
+        if (PAPER_DOWNLOAD_CREATE_PORTAL && opengl_widget->get_overview_page()) {
+            fill_overview_pending_portal(bib_text);
+        }
         download_paper_with_name(bib_text);
     }
 }
@@ -7019,11 +7028,15 @@ std::optional<std::wstring> MainWidget::get_overview_paper_name() {
             fz_rect candidate_rect = smart_view_candidates[index_into_candidates].second;
 
             AbsoluteDocumentPos center;
-            center.x =  (candidate_rect.x0 + candidate_rect.x1) / 2;
-            center.y =  (candidate_rect.y0 + candidate_rect.y1) / 2;
+            center.x = (candidate_rect.x0 + candidate_rect.x1) / 2;
+            center.y = (candidate_rect.y0 + candidate_rect.y1) / 2;
 
             DocumentPos center_document = doc()->absolute_to_page_pos(center);
-            return get_paper_name_under_pos(center_document);
+            std::optional<std::wstring> bib_string = get_paper_name_under_pos(center_document);
+            if (bib_string) {
+                return get_paper_name_from_reference_text(bib_string.value());
+            }
+            return {};
 
         }
     }
@@ -7191,4 +7204,24 @@ void MainWidget::update_pending_portal_indices_after_removed_indices(std::vector
 }
 void MainWidget::close_overview() {
     opengl_widget->set_overview_page({});
+}
+
+void MainWidget::fill_overview_pending_portal(std::wstring paper_name) {
+
+    if (current_overview_source_rect) {
+
+        Portal pending_portal;
+        pending_portal.src_offset_x = current_overview_source_rect.value().x0;
+        pending_portal.src_offset_y = current_overview_source_rect.value().y0;
+
+        pending_portal.dst.book_state.offset_x = 0;
+        pending_portal.dst.book_state.offset_y = 0;
+        pending_portal.dst.book_state.zoom_level = 1;
+        PendingDownloadPortal pending_download_portal;
+        pending_download_portal.pending_portal = pending_portal;
+        pending_download_portal.source_document_path = doc()->get_path();
+        pending_download_portal.paper_name = paper_name;
+        pending_download_portals.push_back(pending_download_portal);
+        update_opengl_pending_download_portals();
+    }
 }
