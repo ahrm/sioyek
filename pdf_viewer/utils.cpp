@@ -3296,7 +3296,11 @@ std::wstring get_paper_name_from_reference_text(std::wstring reference_text) {
             //int starting_index = 
             str = str.left(ending_index - 1);
             int starting_index = str.lastIndexOf(".");
-            return str.right(str.size() - starting_index - 1).trimmed().toStdWString();
+            QString res = str.right(str.size() - starting_index - 1).trimmed();
+            if (res.size() > 0 && res[0] == ':') {
+                res = res.right(res.size() - 1);
+            }
+            return res.toStdWString();
         }
     }
 
