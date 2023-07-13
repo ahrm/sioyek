@@ -3081,6 +3081,9 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
         if (flat_chars[i]->c == '.') {
             dot_indices.push_back(i);
         }
+        else if ((flat_chars[i]->next) == nullptr && (!std::isalpha(flat_chars[i]->c)) && i < (flat_chars.size() - 1) && (flat_chars[i + 1]->c == '[')) {
+            dot_indices.push_back(i);
+        }
 
         raw_text.push_back(flat_chars[i]->c);
         spaced_text.push_back(flat_chars[i]->c);
@@ -3143,8 +3146,12 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
     }
 
     std::vector<std::wstring> reference_texts;
+    if (end_indices.size() == 0) {
+        return reference_texts;
+    }
 
-    reference_texts.push_back(raw_text.substr(0, end_indices[0]));
+    //reference_texts.push_back(raw_text.substr(0, end_indices[0]));
+    reference_texts.push_back(spaced_text.substr(0, raw_to_spaced_index[end_indices[0]]));
     for (int i = 1; i < end_indices.size(); i++) {
         //reference_texts.push_back(raw_text.substr(end_indices[i - 1] + 1, end_indices[i] - end_indices[i - 1]));
         int length = raw_to_spaced_index[end_indices[i]] - raw_to_spaced_index[end_indices[i - 1]];

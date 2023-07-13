@@ -2,7 +2,6 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // todo: deduplicate find_line_definitions
 // todo: use a better method to handle deletion of canceled download portals
-// todo: make a function to compute the rectangle for visible bookmark/portals. also make portal rects be centerd on the point
 
 #include <iostream>
 #include <vector>
