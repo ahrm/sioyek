@@ -2976,7 +2976,6 @@ public:
 
             widget->pending_download_portals.push_back(pending_download_portal);
             widget->update_opengl_pending_download_portals();
-            widget->close_overview();
         }
 
 
@@ -2992,6 +2991,7 @@ public:
             widget->text_command_line_edit->setText(
                 QString::fromStdWString(paper_name.value())
             );
+            widget->close_overview();
         }
     }
 
