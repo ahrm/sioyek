@@ -2,11 +2,11 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // todo: deduplicate find_line_definitions
 // todo: use a better method to handle deletion of canceled download portals
-// todo: show in statusbar if we have multiple preview targets even when we are on the first target
 // todo: if the direct pdf url fails try the archived url
 // todo: move ruler info to be a part of documentview (so it works when moving between documents)
 // todo: abstract the bookmark/highlight/portal list view code
 // todo: handle edit in portals list view
+// todo: add a config option to automatically download the best matching pdf when downloading
 
 #include <iostream>
 #include <vector>
@@ -1101,7 +1101,7 @@ std::wstring MainWidget::get_status_string() {
         status_string.replace("%{indexing}", " | indexing ... ");
     }
     if (opengl_widget && opengl_widget->get_overview_page()) {
-        if (index_into_candidates > 0 && smart_view_candidates.size() > 0) {
+        if (index_into_candidates >= 0 && smart_view_candidates.size() > 1) {
             status_string.replace("%{preview_index}", " [ preview " + QString::number(index_into_candidates + 1) + " / " + QString::number(smart_view_candidates.size()) + " ]");
 
         }
