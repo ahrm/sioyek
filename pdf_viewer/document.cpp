@@ -344,6 +344,15 @@ int Document::find_closest_bookmark_index(const std::vector<BookMark>& sorted_bo
     return min_index;
 }
 
+int Document::find_closest_portal_index(const std::vector<Portal>& sorted_portals, float to_offset_y) const {
+
+    int min_index = argminf<Portal>(sorted_portals, [to_offset_y](Portal portal) {
+        return abs(portal.src_offset_y - to_offset_y);
+        });
+
+    return min_index;
+}
+
 int Document::find_closest_highlight_index(const std::vector<Highlight>& sorted_highlights, float to_offset_y) const {
 
     int min_index = argminf<Highlight>(sorted_highlights, [to_offset_y](Highlight hl) {
@@ -420,6 +429,23 @@ void Document::delete_closest_portal(float to_offset_y) {
     }
 }
 
+int Document::get_portal_index_with_uuid(const std::string& uuid) {
+    for (int i = 0; i < portals.size(); i++) {
+        if (portals[i].uuid == uuid) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void Document::delete_portal_with_uuid(const std::string& uuid) {
+    int index = get_portal_index_with_uuid(uuid);
+    if (index > -1) {
+        db_manager->delete_portal(uuid);
+        portals.erase(portals.begin() + index);
+    }
+}
+
 std::vector<BookMark>& Document::get_bookmarks() {
     return bookmarks;
 }
@@ -427,6 +453,12 @@ std::vector<BookMark>& Document::get_bookmarks() {
 std::vector<BookMark> Document::get_sorted_bookmarks() const {
     std::vector<BookMark> res = bookmarks;
     std::sort(res.begin(), res.end(), [](const BookMark& lhs, const BookMark& rhs) {return lhs.y_offset < rhs.y_offset; });
+    return res;
+}
+
+std::vector<Portal> Document::get_sorted_portals() const {
+    std::vector<Portal> res = portals;
+    std::sort(res.begin(), res.end(), [](const Portal& lhs, const Portal& rhs) {return lhs.src_offset_y < rhs.src_offset_y; });
     return res;
 }
 

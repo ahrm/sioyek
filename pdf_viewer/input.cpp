@@ -746,6 +746,20 @@ public:
 
 };
 
+class GotoPortalListCommand : public GenericGotoLocationCommand {
+public:
+    GotoPortalListCommand(MainWidget* w) : GenericGotoLocationCommand(w) {};
+
+    void handle_generic_requirement() {
+        widget->handle_goto_portal_list();
+    }
+
+    std::string get_name() {
+        return "goto_portal_list";
+    }
+
+};
+
 class GotoBookmarkGlobalCommand : public GenericPathAndLocationCommadn {
 public:
 
@@ -4276,6 +4290,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["goto_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightCommand>(widget); };
     new_commands["increase_freetext_font_size"] = [](MainWidget* widget) {return std::make_unique< IncreaseFreetextBookmarkFontSizeCommand>(widget); };
     new_commands["decrease_freetext_font_size"] = [](MainWidget* widget) {return std::make_unique< DecreaseFreetextBookmarkFontSizeCommand>(widget); };
+    new_commands["goto_portal_list"] = [](MainWidget* widget) {return std::make_unique< GotoPortalListCommand>(widget); };
     new_commands["goto_bookmark"] = [](MainWidget* widget) {return std::make_unique< GotoBookmarkCommand>(widget); };
     new_commands["goto_bookmark_g"] = [](MainWidget* widget) {return std::make_unique< GotoBookmarkGlobalCommand>(widget); };
     new_commands["goto_highlight_g"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightGlobalCommand>(widget); };

@@ -165,6 +165,7 @@ public:
     //int find_closest_bookmark_index(float to_offset_y);
 
     int find_closest_bookmark_index(const std::vector<BookMark>& sorted_bookmarks, float to_offset_y) const;
+    int find_closest_portal_index(const std::vector<Portal>& sorted_bookmarks, float to_offset_y) const;
     int find_closest_highlight_index(const std::vector<Highlight>& sorted_highlights, float to_offset_y) const;
 
     std::optional<Portal> find_closest_portal(float to_offset_y, int* index = nullptr);
@@ -172,9 +173,12 @@ public:
     void delete_closest_bookmark(float to_y_offset);
     void delete_bookmark(int index);
     void delete_closest_portal(float to_offset_y);
+    int get_portal_index_with_uuid(const std::string& uuid);
+    void delete_portal_with_uuid(const std::string& uuid);
     std::vector<BookMark>& get_bookmarks();
     std::vector<Portal>& get_portals();
     std::vector<BookMark> get_sorted_bookmarks() const;
+    std::vector<Portal> get_sorted_portals() const;
     const std::vector<Highlight>& get_highlights() const;
     int get_highlight_index_with_uuid(std::string uuid);
     int get_bookmark_index_with_uuid(std::string uuid);

@@ -527,6 +527,7 @@ public:
 
     void handle_vertical_move(int amount);
     void handle_horizontal_move(int amount);
+    void handle_goto_portal_list();
     void handle_goto_bookmark();
     void handle_goto_bookmark_global();
     void handle_add_highlight(char symbol);

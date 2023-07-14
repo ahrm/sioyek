@@ -2,10 +2,11 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // todo: deduplicate find_line_definitions
 // todo: use a better method to handle deletion of canceled download portals
-// todo: add a command to show a list of current document's portals
 // todo: show in statusbar if we have multiple preview targets even when we are on the first target
 // todo: if the direct pdf url fails try the archived url
 // todo: move ruler info to be a part of documentview (so it works when moving between documents)
+// todo: abstract the bookmark/highlight/portal list view code
+// todo: handle edit in portals list view
 
 #include <iostream>
 #include <vector>
@@ -4804,6 +4805,53 @@ void MainWidget::show_current_widget() {
     if (current_widget_stack.size() > 0) {
         current_widget_stack.back()->show();
     }
+}
+
+void MainWidget::handle_goto_portal_list() {
+    std::vector<std::wstring> option_names;
+    std::vector<std::wstring> option_location_strings;
+    std::vector<Portal> portals;
+
+    if (!doc()) return;
+
+    if (SORT_BOOKMARKS_BY_LOCATION) {
+        portals = main_document_view->get_document()->get_sorted_portals();
+    }
+    else {
+        portals = main_document_view->get_document()->get_portals();
+    }
+
+    for (auto portal : portals) {
+        std::wstring portal_type_string = L"[*]";
+        if (!portal.is_visible()) {
+            portal_type_string = L"[.]";
+        }
+
+        option_names.push_back(ITEM_LIST_PREFIX + L" " + portal_type_string + L" " +  checksummer->get_path(portal.dst.document_checksum).value_or(L"[ERROR]"));
+        //option_locations.push_back(bookmark.y_offset);
+        auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos({ 0, portal.src_offset_y });
+        option_location_strings.push_back(get_page_formatted_string(page + 1));
+    }
+
+    int closest_portal_index = main_document_view->get_document()->find_closest_portal_index(portals, main_document_view->get_offset_y());
+
+    set_filtered_select_menu<Portal>(FUZZY_SEARCHING, MULTILINE_MENUS, { option_names, option_location_strings }, portals, closest_portal_index,
+        [&](Portal* portal) {
+            pending_command_instance->set_generic_requirement(portal->src_offset_y);
+            advance_command(std::move(pending_command_instance));
+
+        },
+        [&](Portal* portal) {
+            doc()->delete_portal_with_uuid(portal->uuid);
+        },
+            [&](Portal* portal) {
+            //selected_bookmark_index = doc()->get_bookmark_index_with_uuid(bm->uuid);
+            //pop_current_widget();
+            //handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
+        }
+        );
+
+    show_current_widget();
 }
 
 void MainWidget::handle_goto_bookmark() {
