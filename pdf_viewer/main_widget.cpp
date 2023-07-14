@@ -2,10 +2,10 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // todo: deduplicate find_line_definitions
 // todo: use a better method to handle deletion of canceled download portals
-// todo: fix document sizing issue when jumping to a downloaded document
 // todo: add a command to show a list of current document's portals
 // todo: show in statusbar if we have multiple preview targets even when we are on the first target
-// todo: if the direct pdf url failes try the archived url
+// todo: if the direct pdf url fails try the archived url
+// todo: move ruler info to be a part of documentview (so it works when moving between documents)
 
 #include <iostream>
 #include <vector>
@@ -7105,6 +7105,12 @@ void MainWidget::finish_pending_download_portal(std::wstring download_paper_name
             pending_index = i;
             pending_portal.dst.document_checksum = checksum;
             Document* src_doc = document_manager->get_document(pending_download_portals[i].source_document_path);
+            fz_rect downloaded_page_size = get_first_page_size(mupdf_context, downloaded_file_path);
+
+            float zoom_level = static_cast<float>(main_document_view->get_view_width()) / (downloaded_page_size.x1 - downloaded_page_size.x0);
+            float offset_y = (static_cast<float>(main_document_view->get_view_height()) / 2) / zoom_level;
+            pending_portal.dst.book_state.zoom_level = zoom_level;
+            pending_portal.dst.book_state.offset_y = offset_y;
 
             if (src_doc) {
                 db_manager->insert_document_hash(downloaded_file_path, checksum);
@@ -7261,7 +7267,7 @@ void MainWidget::fill_overview_pending_portal(std::wstring paper_name, std::wstr
 
         pending_portal.dst.book_state.offset_x = 0;
         pending_portal.dst.book_state.offset_y = 0;
-        pending_portal.dst.book_state.zoom_level = 1;
+        pending_portal.dst.book_state.zoom_level = -1;
         PendingDownloadPortal pending_download_portal;
         pending_download_portal.pending_portal = pending_portal;
         pending_download_portal.source_document_path = src_doc_path;

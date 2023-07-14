@@ -3307,3 +3307,28 @@ std::wstring get_paper_name_from_reference_text(std::wstring reference_text) {
     return reference_text;
 
 }
+
+fz_rect get_first_page_size(fz_context* ctx, const std::wstring& document_path) {
+    std::string path = utf8_encode(document_path);
+    bool failed = false;
+    
+    fz_rect bounds;
+
+    fz_try(ctx) {
+        fz_document* doc = fz_open_document(ctx, path.c_str());
+
+        fz_page* first_page = fz_load_page(ctx, doc, 0);
+        bounds = fz_bound_page(ctx, first_page);
+
+        fz_drop_page(ctx, first_page);
+        fz_drop_document(ctx, doc);
+    }
+    fz_catch(ctx) {
+        failed = true;
+    }
+    if (failed) {
+        return fz_rect{ 0,0, 100, 100 };
+    }
+
+    return bounds;
+}
