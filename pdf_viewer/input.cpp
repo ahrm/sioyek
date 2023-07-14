@@ -1664,6 +1664,57 @@ public:
 
 };
 
+class GotoRulerPortalCommand : public Command {
+public:
+    GotoRulerPortalCommand(MainWidget* w) : Command(w) {};
+    std::optional<char> mark = {};
+
+public:
+
+    void perform() {
+
+        std::string mark_str = "";
+        if (mark) {
+            mark_str = std::string(1, mark.value());
+        }
+
+        widget->handle_goto_ruler_portal(mark_str);
+        widget->opengl_widget->set_should_highlight_words(false);
+    }
+
+    void on_cancel() override {
+        widget->opengl_widget->set_should_highlight_words(false);
+    }
+    void pre_perform() override {
+        if (widget->get_ruler_portals().size() > 1) {
+            widget->highlight_ruler_portals();
+        }
+    }
+
+    void set_symbol_requirement(char value) override {
+        mark = value;
+    }
+
+    virtual std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (mark) return {};
+
+        if (widget->get_ruler_portals().size() > 1) {
+            return Requirement{ RequirementType::Symbol, "Mark" };
+        }
+
+        return {};
+    }
+
+    bool pushes_state() override {
+        return true;
+    }
+
+    std::string get_name() {
+        return "goto_ruler_portal";
+    }
+
+};
+
 class ToggleFullscreenCommand : public Command {
 public:
     ToggleFullscreenCommand(MainWidget* w) : Command(w) {};
@@ -4337,6 +4388,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["toggle_scrollbar"] = [](MainWidget* widget) {return std::make_unique< ToggleScrollbarCommand>(widget); };
     new_commands["overview_to_portal"] = [](MainWidget* widget) {return std::make_unique< OverviewToPortalCommand>(widget); };
     new_commands["overview_to_ruler_portal"] = [](MainWidget* widget) {return std::make_unique< OverviewRulerPortalCommand>(widget); };
+    new_commands["goto_ruler_portal"] = [](MainWidget* widget) {return std::make_unique< GotoRulerPortalCommand>(widget); };
     new_commands["select_rect"] = [](MainWidget* widget) {return std::make_unique< SelectRectCommand>(widget); };
     new_commands["toggle_typing_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleTypingModeCommand>(widget); };
     new_commands["donate"] = [](MainWidget* widget) {return std::make_unique< DonateCommand>(widget); };

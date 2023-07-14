@@ -484,6 +484,7 @@ public:
     void apply_window_params_for_two_window_mode();
     bool helper_window_overlaps_main_window();
     void highlight_words();
+    void highlight_ruler_portals();
 
     std::vector<fz_rect> get_flat_words(std::vector<std::vector<fz_rect>>* flat_word_chars = nullptr);
 
@@ -826,7 +827,9 @@ public:
     void update_pending_portal_indices_after_removed_indices(std::vector<int>& removed_indices);
     void close_overview();
     void fill_overview_pending_portal(std::wstring paper_name, std::wstring src_doc_path = L"", std::optional<fz_rect> source_rect = {});
+    std::vector<Portal> get_ruler_portals();
     void handle_overview_to_ruler_portal();
+    void handle_goto_ruler_portal(std::string tag="");
 
 };
 

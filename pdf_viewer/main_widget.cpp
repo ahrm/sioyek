@@ -3651,6 +3651,20 @@ void MainWidget::dropEvent(QDropEvent* event)
 }
 #endif
 
+void MainWidget::highlight_ruler_portals() {
+    std::vector<Portal> portals = get_ruler_portals();
+
+    std::vector<std::pair<fz_rect, int>> portal_rect_pages;
+    for (auto portal : portals) {
+        int page;
+        fz_rect page_rect = doc()->absolute_to_page_rect(portal.get_rectangle(), &page);
+        portal_rect_pages.push_back(std::make_pair(page_rect, page));
+    }
+
+    opengl_widget->set_highlight_words(portal_rect_pages);
+    opengl_widget->set_should_highlight_words(true);
+
+}
 void MainWidget::highlight_words() {
 
     int page = get_current_page_number();
@@ -7257,30 +7271,49 @@ void MainWidget::fill_overview_pending_portal(std::wstring paper_name, std::wstr
     }
 }
 
-void MainWidget::handle_overview_to_ruler_portal() {
+std::vector<Portal> MainWidget::get_ruler_portals() {
+    std::vector<Portal> res;
     std::optional<fz_rect> ruler_rect_ = main_document_view->get_ruler_rect();
     if (ruler_rect_) {
         fz_rect ruler_rect = ruler_rect_.value();
-        std::vector<Portal> candidates = doc()->get_intersecting_visible_portals(ruler_rect.y0, ruler_rect.y1);
-        if (candidates.size() > 0) {
-            smart_view_candidates.clear();
-            for (auto candid : candidates) {
-                SmartViewCandidate smc;
-                smc.doc = document_manager->get_document_with_checksum(candid.dst.document_checksum);
-                smc.doc->open(&is_render_invalidated, true);
-                smc.source_rect = candid.get_rectangle();
-                smc.target_pos = AbsoluteDocumentPos{ 0, candid.dst.book_state.offset_y };
-                smart_view_candidates.push_back(smc);
-            }
-            index_into_candidates = 0;
+        return doc()->get_intersecting_visible_portals(ruler_rect.y0, ruler_rect.y1);
+    }
+    return res;
+}
 
+void MainWidget::handle_overview_to_ruler_portal() {
+    std::vector<Portal> candidates = get_ruler_portals();
 
-            OverviewState state;
-            state.doc = smart_view_candidates[0].doc;
-            state.absolute_offset_y = candidates[0].dst.book_state.offset_y;
-            opengl_widget->set_overview_page(state);
-            invalidate_render();
+    if (candidates.size() > 0) {
+        smart_view_candidates.clear();
+        for (auto candid : candidates) {
+            SmartViewCandidate smc;
+            smc.doc = document_manager->get_document_with_checksum(candid.dst.document_checksum);
+            smc.doc->open(&is_render_invalidated, true);
+            smc.source_rect = candid.get_rectangle();
+            smc.target_pos = AbsoluteDocumentPos{ 0, candid.dst.book_state.offset_y };
+            smart_view_candidates.push_back(smc);
         }
+        index_into_candidates = 0;
+
+
+        OverviewState state;
+        state.doc = smart_view_candidates[0].doc;
+        state.absolute_offset_y = candidates[0].dst.book_state.offset_y;
+        opengl_widget->set_overview_page(state);
+        invalidate_render();
     }
 
+}
+
+void MainWidget::handle_goto_ruler_portal(std::string tag) {
+    std::vector<Portal> portals = get_ruler_portals();
+    int index = 0;
+    if (tag.size() > 0) {
+        index = get_index_from_tag(tag);
+    }
+
+    if (portals.size() > 0 && (index < portals.size())) {
+        open_document(portals[index].dst);
+    }
 }
