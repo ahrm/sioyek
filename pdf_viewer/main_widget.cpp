@@ -3,10 +3,10 @@
 // todo: deduplicate find_line_definitions
 // todo: use a better method to handle deletion of canceled download portals
 // todo: if the direct pdf url fails try the archived url
-// todo: move ruler info to be a part of documentview (so it works when moving between documents)
 // todo: abstract the bookmark/highlight/portal list view code
 // todo: handle edit in portals list view
 // todo: add a config option to automatically download the best matching pdf when downloading
+// todo: update history when going back and forth
 
 #include <iostream>
 #include <vector>
@@ -1258,8 +1258,9 @@ void MainWidget::handle_escape() {
         opengl_widget->set_overview_page({});
         clear_selected_text();
 
+        //main_document_view->ruler
         if (!done_anything) {
-            opengl_widget->set_should_draw_vertical_line(false);
+            main_document_view->exit_ruler_mode();
         }
     }
     //if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
@@ -2309,7 +2310,8 @@ void MainWidget::handle_click(WindowPos click_pos) {
     }
     else {
         if (!TOUCH_MODE) {
-            if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
+            if (main_document_view) main_document_view->exit_ruler_mode();
+            //if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
         }
     }
 
@@ -2596,7 +2598,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
         QApplication::queryKeyboardModifiers().testFlag(Qt::MetaModifier);
 
     bool is_shift_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
-    bool is_visual_mark_mode = opengl_widget->get_should_draw_vertical_line() && visual_scroll_mode;
+    bool is_visual_mark_mode = main_document_view->is_ruler_mode() && visual_scroll_mode;
 
 
 #ifdef SIOYEK_QT6
@@ -2962,7 +2964,7 @@ void MainWidget::visual_mark_under_pos(WindowPos pos) {
     //int page;
     DocumentPos document_pos = main_document_view->window_to_document_pos(pos);
     if (document_pos.page != -1) {
-        opengl_widget->set_should_draw_vertical_line(true);
+        //opengl_widget->set_should_draw_vertical_line(true);
         fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(document_pos.page);
         std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
         std::vector<unsigned int> line_locations;
@@ -3903,7 +3905,7 @@ Document* MainWidget::doc() {
 
 void MainWidget::return_to_last_visual_mark() {
     main_document_view->goto_vertical_line_pos();
-    opengl_widget->set_should_draw_vertical_line(true);
+    //opengl_widget->set_should_draw_vertical_line(true);
     pending_command_instance = nullptr;
     validate_render();
 }
@@ -4016,7 +4018,8 @@ fz_rect MainWidget::move_visual_mark(int offset) {
 }
 
 bool MainWidget::is_visual_mark_mode() {
-    return opengl_widget->get_should_draw_vertical_line();
+    return main_document_view->is_ruler_mode();
+    //return opengl_widget->get_should_draw_vertical_line();
 }
 
 void MainWidget::scroll_overview(int amount) {
@@ -4032,7 +4035,7 @@ std::wstring MainWidget::get_current_page_label() {
 }
 int MainWidget::get_current_page_number() const {
     //
-    if (opengl_widget->get_should_draw_vertical_line()) {
+    if (main_document_view->is_ruler_mode()) {
         return main_document_view->get_vertical_line_page();
     }
     else {
@@ -5362,7 +5365,7 @@ void MainWidget::handle_focus_text(const std::wstring& text) {
         int page_number = main_document_view->get_center_page_number();
         focus_text(page_number, text);
     }
-    opengl_widget->set_should_draw_vertical_line(true);
+    //opengl_widget->set_should_draw_vertical_line(true);
 }
 
 void MainWidget::handle_goto_window() {
@@ -5822,7 +5825,8 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
 void MainWidget::android_handle_visual_mode() {
     //	last_hold_point
     if (is_visual_mark_mode()) {
-        opengl_widget->set_should_draw_vertical_line(false);
+        //opengl_widget->set_should_draw_vertical_line(false);
+        main_document_view->exit_ruler_mode();
     }
     else {
 

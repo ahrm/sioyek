@@ -1247,7 +1247,8 @@ public:
     GotoDefinitionCommand(MainWidget* w) : Command(w) {};
     void perform() {
         if (widget->main_document_view->goto_definition()) {
-            widget->opengl_widget->set_should_draw_vertical_line(false);
+            //widget->opengl_widget->set_should_draw_vertical_line(false);
+            widget->main_document_view->exit_ruler_mode();
         }
     }
 
@@ -2499,7 +2500,8 @@ public:
     CloseVisualMarkCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        widget->opengl_widget->set_should_draw_vertical_line(false);
+        //widget->opengl_widget->set_should_draw_vertical_line(false);
+        widget->main_document_view->exit_ruler_mode();
     }
 
     std::string get_name() {

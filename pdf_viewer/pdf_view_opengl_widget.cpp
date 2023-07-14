@@ -1250,7 +1250,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
         disable_stencil();
     }
 
-    if (should_draw_vertical_line) {
+    if (document_view->is_ruler_mode()) {
         //render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
         float vertical_line_end = document_view->get_ruler_window_y();
@@ -1563,23 +1563,6 @@ PdfViewOpenGLWidget::~PdfViewOpenGLWidget() {
     }
 }
 
-//void PdfViewOpenGLWidget::set_vertical_line_pos(float pos)
-//{
-//	vertical_line_location = pos;
-//}
-//
-//float PdfViewOpenGLWidget::get_vertical_line_pos()
-//{
-//	return vertical_line_location;
-//}
-
-void PdfViewOpenGLWidget::set_should_draw_vertical_line(bool val) {
-    should_draw_vertical_line = val;
-}
-
-bool PdfViewOpenGLWidget::get_should_draw_vertical_line() {
-    return should_draw_vertical_line;
-}
 
 void PdfViewOpenGLWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 

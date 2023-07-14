@@ -57,6 +57,7 @@ private:
 
     // in auto resize mode, we automatically set the zoom level to fit the page when resizing the document
     bool is_auto_resize_mode = true;
+    bool is_ruler_mode_ = false;
 
 public:
     // list of selected characters (e.g. using mouse select) to be highlighted
@@ -73,11 +74,13 @@ public:
     float get_zoom_level();
     DocumentViewState get_state();
     PortalViewState get_checksum_state();
-    void set_opened_book_state(const OpenedBookState& state);
+    //void set_opened_book_state(const OpenedBookState& state);
     void handle_escape();
     void set_book_state(OpenedBookState state);
     bool set_offsets(float new_offset_x, float new_offset_y, bool force = false);
     Document* get_document();
+    bool is_ruler_mode();
+    void exit_ruler_mode();
 
     // find the closest portal to the current position
     // if limit is true, we only search for portals near the current location and not all portals

@@ -61,6 +61,10 @@ DocumentViewState DocumentView::get_state() {
         res.book_state.offset_x = get_offset_x();
         res.book_state.offset_y = get_offset_y();
         res.book_state.zoom_level = get_zoom_level();
+        res.book_state.ruler_mode = is_ruler_mode_;
+        res.book_state.ruler_pos = ruler_pos;
+        res.book_state.ruler_rect = ruler_rect;
+        res.book_state.line_index = line_index;
     }
     return res;
 }
@@ -77,18 +81,30 @@ PortalViewState DocumentView::get_checksum_state() {
     return res;
 }
 
-void DocumentView::set_opened_book_state(const OpenedBookState& state) {
-    set_offsets(state.offset_x, state.offset_y);
-    set_zoom_level(state.zoom_level, true);
-}
+//void DocumentView::set_opened_book_state(const OpenedBookState& state) {
+//    set_offsets(state.offset_x, state.offset_y);
+//    set_zoom_level(state.zoom_level, true);
+//    is_ruler_mode_ = state.ruler_mode;
+//    ruler_pos = state.ruler_pos;
+//    ruler_rect = state.ruler_rect;
+//
+//}
 
 
 void DocumentView::handle_escape() {
 }
 
+void DocumentView::exit_ruler_mode() {
+    is_ruler_mode_ = false;
+}
+
 void DocumentView::set_book_state(OpenedBookState state) {
     set_offsets(state.offset_x, state.offset_y);
     set_zoom_level(state.zoom_level, true);
+    is_ruler_mode_ = state.ruler_mode;
+    ruler_pos = state.ruler_pos;
+    ruler_rect = state.ruler_rect;
+    line_index = state.line_index;
 }
 
 bool DocumentView::set_offsets(float new_offset_x, float new_offset_y, bool force) {
@@ -167,13 +183,13 @@ void DocumentView::goto_portal(Portal* link) {
     if (link) {
         if (get_document() &&
             get_document()->get_checksum() == link->dst.document_checksum) {
-            set_opened_book_state(link->dst.book_state);
+            set_book_state(link->dst.book_state);
         }
         else {
             auto destination_path = checksummer->get_path(link->dst.document_checksum);
             if (destination_path) {
                 open_document(destination_path.value(), nullptr);
-                set_opened_book_state(link->dst.book_state);
+                set_book_state(link->dst.book_state);
             }
         }
     }
@@ -967,10 +983,12 @@ float DocumentView::view_height_in_document_space() {
 void DocumentView::set_vertical_line_pos(float pos) {
     ruler_pos = pos;
     ruler_rect = {};
+    is_ruler_mode_ = true;
 }
 
 void DocumentView::set_vertical_line_rect(fz_rect rect) {
     ruler_rect = rect;
+    is_ruler_mode_ = true;
 }
 
 //float DocumentView::get_vertical_line_pos() {
@@ -1035,6 +1053,7 @@ void DocumentView::goto_vertical_line_pos() {
         //float new_y_offset = vertical_line_pos;
         float new_y_offset = get_ruler_pos();
         set_offset_y(new_y_offset);
+        is_ruler_mode_ = true;
     }
 }
 
@@ -1477,4 +1496,8 @@ fz_irect DocumentView::normalized_to_window_rect(fz_rect normalized_rect) {
     res.y1 = static_cast<int>(-normalized_rect.y1 * view_height / 2 + view_height / 2);
 
     return res;
+}
+
+bool DocumentView::is_ruler_mode() {
+    return is_ruler_mode_;
 }

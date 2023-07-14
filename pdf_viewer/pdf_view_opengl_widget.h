@@ -175,7 +175,7 @@ private:
     std::vector<fz_rect> pending_download_portals;
 
     //float vertical_line_location;
-    bool should_draw_vertical_line = false;
+    //bool should_draw_vertical_line = false;
     QDateTime creation_time;
 
     std::optional<std::function<void(const OpenedBookState&)>> on_link_edit = {};
@@ -231,8 +231,8 @@ public:
 
     //void set_vertical_line_pos(float pos);
     //float get_vertical_line_pos();
-    void set_should_draw_vertical_line(bool val);
-    bool get_should_draw_vertical_line();
+    //void set_should_draw_vertical_line(bool val);
+    //bool get_should_draw_vertical_line();
     void handle_escape();
 
     std::map<int, std::vector<MarkedDataRect>> get_marked_data_rect_map();

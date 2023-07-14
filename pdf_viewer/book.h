@@ -24,6 +24,10 @@ struct OpenedBookState {
     float zoom_level;
     float offset_x;
     float offset_y;
+    bool ruler_mode = false;
+    std::optional<fz_rect> ruler_rect = {};
+    float ruler_pos = 0;
+    int line_index = -1;
 };
 
 struct Annotation {
