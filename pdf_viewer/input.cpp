@@ -1685,6 +1685,7 @@ public:
     void on_cancel() override {
         widget->opengl_widget->set_should_highlight_words(false);
     }
+
     void pre_perform() override {
         if (widget->get_ruler_portals().size() > 1) {
             widget->highlight_ruler_portals();

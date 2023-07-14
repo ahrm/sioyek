@@ -5,7 +5,6 @@
 // todo: fix document sizing issue when jumping to a downloaded document
 // todo: add a command to show a list of current document's portals
 // todo: show in statusbar if we have multiple preview targets even when we are on the first target
-// todo: invalidate render when downloading a document is finished so the visible portal icon is updated
 // todo: if the direct pdf url failes try the archived url
 
 #include <iostream>
@@ -7163,6 +7162,7 @@ void MainWidget::update_opengl_pending_download_portals() {
         pending_rects.push_back(rect);
     }
     opengl_widget->set_pending_download_portals(std::move(pending_rects));
+    invalidate_render();
 }
 
 void MainWidget::cleanup_expired_pending_portals() {
