@@ -643,6 +643,9 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     float page_width = target_doc->get_page_width(docpos.page);
     float page_height = target_doc->get_page_height(docpos.page);
     float zoom_level = view_width / page_width;
+    if (page_width < 0) {
+        zoom_level = 1.0f;
+    }
 
     GLuint texture = pdf_renderer->find_rendered_page(target_doc->get_path(),
         docpos.page,

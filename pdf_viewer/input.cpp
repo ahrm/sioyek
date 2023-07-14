@@ -1650,6 +1650,20 @@ public:
 
 };
 
+class OverviewRulerPortalCommand : public Command {
+public:
+    OverviewRulerPortalCommand(MainWidget* w) : Command(w) {};
+public:
+    void perform() {
+        widget->handle_overview_to_ruler_portal();
+    }
+
+    std::string get_name() {
+        return "overview_to_ruler_portal";
+    }
+
+};
+
 class ToggleFullscreenCommand : public Command {
 public:
     ToggleFullscreenCommand(MainWidget* w) : Command(w) {};
@@ -2962,19 +2976,7 @@ public:
         std::wstring download_url = widget->download_paper_with_name(text_);
 
         if (source_rect) {
-            Portal pending_portal;
-            pending_portal.src_offset_x = source_rect->x0;
-            pending_portal.src_offset_y = source_rect->y0;
-
-            pending_portal.dst.book_state.offset_x = 0;
-            pending_portal.dst.book_state.offset_y = 0;
-            pending_portal.dst.book_state.zoom_level = 1;
-            PendingDownloadPortal pending_download_portal;
-            pending_download_portal.pending_portal = pending_portal;
-            pending_download_portal.source_document_path = src_doc_path;
-            pending_download_portal.paper_name = text_;
-
-            widget->pending_download_portals.push_back(pending_download_portal);
+            widget->fill_overview_pending_portal(text_, src_doc_path, source_rect);
             widget->update_opengl_pending_download_portals();
         }
 
@@ -4334,6 +4336,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["goto_begining"] = [](MainWidget* widget) {return std::make_unique< GotoBeginningCommand>(widget); };
     new_commands["toggle_scrollbar"] = [](MainWidget* widget) {return std::make_unique< ToggleScrollbarCommand>(widget); };
     new_commands["overview_to_portal"] = [](MainWidget* widget) {return std::make_unique< OverviewToPortalCommand>(widget); };
+    new_commands["overview_to_ruler_portal"] = [](MainWidget* widget) {return std::make_unique< OverviewRulerPortalCommand>(widget); };
     new_commands["select_rect"] = [](MainWidget* widget) {return std::make_unique< SelectRectCommand>(widget); };
     new_commands["toggle_typing_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleTypingModeCommand>(widget); };
     new_commands["donate"] = [](MainWidget* widget) {return std::make_unique< DonateCommand>(widget); };

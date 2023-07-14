@@ -2,6 +2,11 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // todo: deduplicate find_line_definitions
 // todo: use a better method to handle deletion of canceled download portals
+// todo: fix document sizing issue when jumping to a downloaded document
+// todo: add a command to show a list of current document's portals
+// todo: show in statusbar if we have multiple preview targets even when we are on the first target
+// todo: invalidate render when downloading a document is finished so the visible portal icon is updated
+// todo: if the direct pdf url failes try the archived url
 
 #include <iostream>
 #include <vector>
@@ -397,8 +402,11 @@ void MainWidget::set_overview_link(PdfLink link) {
     if (page >= 1) {
         fz_rect source_absolute_rect = doc()->document_to_absolute_rect(link.source_page, link.rect, true);
         current_overview_source_rect = source_absolute_rect;
+        SmartViewCandidate current_candidate;
+        current_candidate.source_rect = source_absolute_rect;
+        current_candidate.target_pos = DocumentPos{ page - 1, 0, offset_y };
         smart_view_candidates.clear();
-        smart_view_candidates.push_back(std::make_pair(DocumentPos{page-1, 0, offset_y}, source_absolute_rect));
+        smart_view_candidates.push_back(current_candidate);
         index_into_candidates = 0;
         //opengl_widget->set_selected_rectangle(source_absolute_rect);
         set_overview_position(page - 1, offset_y);
@@ -2342,7 +2350,10 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
             if (update_candidates) {
                 smart_view_candidates.clear();
                 for (auto candid : candidates) {
-                    smart_view_candidates.push_back(std::make_pair(candid, source_rect));
+                    SmartViewCandidate smart_view_candid;
+                    smart_view_candid.source_rect = source_rect;
+                    smart_view_candid.target_pos = candid;
+                    smart_view_candidates.push_back(smart_view_candid);
                 }
                 //smart_view_candidates = candidates;
                 index_into_candidates = 0;
@@ -2984,6 +2995,24 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
     smart_view_candidates.clear();
     index_into_candidates = 0;
 
+    int portal_index = -1;
+    std::optional<Portal> portal = get_portal_under_window_pos(pos, &portal_index);
+    if (portal) {
+        Document* dst_doc = document_manager->get_document_with_checksum(portal.value().dst.document_checksum);
+        dst_doc->open(&is_render_invalidated, true);
+
+        dst_doc->load_page_dimensions(true);
+        selected_portal_index = portal_index;
+        if (dst_doc) {
+            OverviewState overview;
+            overview.doc = dst_doc;
+            overview.absolute_offset_y = portal.value().dst.book_state.offset_y;
+            opengl_widget->set_overview_page(overview);
+            invalidate_render();
+            return true;
+        }
+    }
+
     if (main_document_view && (link = main_document_view->get_link_in_pos(pos))) {
         if (QString::fromStdString(link.value().uri).startsWith("http")) {
             // can't open overview to web links
@@ -2999,34 +3028,21 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
     float autoreference_offset;
     fz_rect overview_source_rect_absolute;
     DocumentPos docpos = main_document_view->window_to_document_pos(pos);
+
+
     if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect_absolute, true) != ReferenceType::None) {
         int pos_page = main_document_view->window_to_document_pos(pos).page;
          //opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
          current_overview_source_rect = overview_source_rect_absolute;
 
-         smart_view_candidates = { std::make_pair(DocumentPos{pos_page, 0, autoreference_offset}, overview_source_rect_absolute) };
+         SmartViewCandidate current_candid;
+         current_candid.source_rect = overview_source_rect_absolute;
+         current_candid.target_pos = DocumentPos{ pos_page, 0, autoreference_offset };
+         smart_view_candidates = {current_candid};
         set_overview_position(autoreference_page, autoreference_offset);
         return true;
     }
 
-    int index = -1;
-    std::optional<Portal> portal = get_portal_under_window_pos(pos, &index);
-    if (portal) {
-        Document* dst_doc = document_manager->get_document_with_checksum(portal.value().dst.document_checksum);
-        selected_portal_index = index;
-        if (dst_doc) {
-            OverviewState overview;
-            overview.doc = dst_doc;
-            overview.absolute_offset_y = portal.value().dst.book_state.offset_y;
-            opengl_widget->set_overview_page(overview);
-            invalidate_render();
-            return true;
-        }
-        //overview.doc = document_manager->get_docu
-        //overview.doc = document_manager->get_document(portal.value().dst.document_checksum);
-        //opengl_widget->set_overview_page():
-        //set_overview_
-    }
     return false;
 }
 
@@ -4690,9 +4706,18 @@ void MainWidget::perform_search(std::wstring text, bool is_regex) {
 void MainWidget::overview_to_definition() {
     if (!opengl_widget->get_overview_page()) {
         std::vector<std::pair<DocumentPos, fz_rect>> defpos = main_document_view->find_line_definitions();
+        std::vector<SmartViewCandidate> candidates;
+
+        for (auto [pos, rect] : defpos) {
+            SmartViewCandidate c;
+            c.source_rect = rect;
+            c.target_pos = pos;
+            candidates.push_back(c);
+        }
+
         if (defpos.size() > 0) {
             set_overview_position(defpos[0].first.page, defpos[0].first.y);
-            smart_view_candidates = defpos;
+            smart_view_candidates = candidates;
             index_into_candidates = 0;
             on_overview_source_updated();
         }
@@ -5926,9 +5951,14 @@ void MainWidget::handle_debug_command() {
 }
 
 std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {
+    std::wstring download_name = name;
+    if (name.size() > 0 && name[0] == ':') {
+        download_name = name.substr(1, name.size() - 1);
+    }
+
     QUrl get_url = QString::fromStdWString(PAPER_SEARCH_URL).replace(
         "%{query}",
-        QUrl::toPercentEncoding(QString::fromStdWString(name))
+        QUrl::toPercentEncoding(QString::fromStdWString(download_name))
     );
 
     QNetworkRequest req;
@@ -6993,7 +7023,20 @@ HighlightButtons* MainWidget::get_highlight_buttons() {
 bool MainWidget::goto_ith_next_overview(int i) {
     if (smart_view_candidates.size() > 1) {
         index_into_candidates = mod((index_into_candidates + i), smart_view_candidates.size());
-        set_overview_position(smart_view_candidates[index_into_candidates].first.page, smart_view_candidates[index_into_candidates].first.y);
+        if (std::holds_alternative<DocumentPos>(smart_view_candidates[index_into_candidates].target_pos)) {
+            DocumentPos docpos = std::get<DocumentPos>(smart_view_candidates[index_into_candidates].target_pos);
+            set_overview_position(docpos.page, docpos.y);
+        }
+        else {
+            AbsoluteDocumentPos abspos = std::get<AbsoluteDocumentPos>(smart_view_candidates[index_into_candidates].target_pos);
+            Document* overview_doc = smart_view_candidates[index_into_candidates].doc;
+            if (overview_doc == nullptr) overview_doc = doc();
+            OverviewState state;
+            state.doc = overview_doc;
+            state.absolute_offset_y = abspos.y;
+            opengl_widget->set_overview_page(state);
+            invalidate_render();
+        }
         on_overview_source_updated();
         return true;
     }
@@ -7001,15 +7044,15 @@ bool MainWidget::goto_ith_next_overview(int i) {
 }
 
 void MainWidget::on_overview_source_updated() {
-    //if ((smart_view_candidates.size() > 0) && (index_into_candidates < smart_view_candidates.size())) {
-    //    opengl_widget->set_selected_rectangle(smart_view_candidates[index_into_candidates].second);
-    //}
 }
 
 std::optional<fz_rect> MainWidget::get_overview_source_rect() {
     if (opengl_widget->get_overview_page()) {
         if (smart_view_candidates.size() > 0) {
-            return smart_view_candidates[index_into_candidates].second;
+            return smart_view_candidates[index_into_candidates].source_rect;
+        }
+        if (current_overview_source_rect) {
+            return current_overview_source_rect.value();
         }
     }
 
@@ -7019,7 +7062,7 @@ std::optional<fz_rect> MainWidget::get_overview_source_rect() {
 std::optional<std::wstring> MainWidget::get_overview_paper_name() {
     if (opengl_widget->get_overview_page()) {
         if (smart_view_candidates.size() > 0) {
-            fz_rect candidate_rect = smart_view_candidates[index_into_candidates].second;
+            fz_rect candidate_rect = smart_view_candidates[index_into_candidates].source_rect;
 
             AbsoluteDocumentPos center;
             center.x = (candidate_rect.x0 + candidate_rect.x1) / 2;
@@ -7187,22 +7230,57 @@ void MainWidget::close_overview() {
     opengl_widget->set_overview_page({});
 }
 
-void MainWidget::fill_overview_pending_portal(std::wstring paper_name) {
+void MainWidget::fill_overview_pending_portal(std::wstring paper_name, std::wstring src_doc_path, std::optional<fz_rect> source_rect) {
 
-    if (current_overview_source_rect) {
+    if (src_doc_path.size() == 0) {
+        src_doc_path = doc()->get_path();
+    }
+    if (!source_rect) {
+        source_rect = get_overview_source_rect();
+    }
+
+    if (source_rect) {
 
         Portal pending_portal;
-        pending_portal.src_offset_x = (current_overview_source_rect.value().x0 + current_overview_source_rect.value().x1) / 2;
-        pending_portal.src_offset_y = (current_overview_source_rect.value().y0 + current_overview_source_rect.value().y1) / 2;
+        pending_portal.src_offset_x = (source_rect.value().x0 + source_rect.value().x1) / 2;
+        pending_portal.src_offset_y = (source_rect.value().y0 + source_rect.value().y1) / 2;
 
         pending_portal.dst.book_state.offset_x = 0;
         pending_portal.dst.book_state.offset_y = 0;
         pending_portal.dst.book_state.zoom_level = 1;
         PendingDownloadPortal pending_download_portal;
         pending_download_portal.pending_portal = pending_portal;
-        pending_download_portal.source_document_path = doc()->get_path();
+        pending_download_portal.source_document_path = src_doc_path;
         pending_download_portal.paper_name = paper_name;
         pending_download_portals.push_back(pending_download_portal);
         update_opengl_pending_download_portals();
     }
+}
+
+void MainWidget::handle_overview_to_ruler_portal() {
+    std::optional<fz_rect> ruler_rect_ = main_document_view->get_ruler_rect();
+    if (ruler_rect_) {
+        fz_rect ruler_rect = ruler_rect_.value();
+        std::vector<Portal> candidates = doc()->get_intersecting_visible_portals(ruler_rect.y0, ruler_rect.y1);
+        if (candidates.size() > 0) {
+            smart_view_candidates.clear();
+            for (auto candid : candidates) {
+                SmartViewCandidate smc;
+                smc.doc = document_manager->get_document_with_checksum(candid.dst.document_checksum);
+                smc.doc->open(&is_render_invalidated, true);
+                smc.source_rect = candid.get_rectangle();
+                smc.target_pos = AbsoluteDocumentPos{ 0, candid.dst.book_state.offset_y };
+                smart_view_candidates.push_back(smc);
+            }
+            index_into_candidates = 0;
+
+
+            OverviewState state;
+            state.doc = smart_view_candidates[0].doc;
+            state.absolute_offset_y = candidates[0].dst.book_state.offset_y;
+            opengl_widget->set_overview_page(state);
+            invalidate_render();
+        }
+    }
+
 }

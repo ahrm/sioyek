@@ -3081,7 +3081,7 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
         if (flat_chars[i]->c == '.') {
             dot_indices.push_back(i);
         }
-        else if ((flat_chars[i]->next) == nullptr && (!std::isalpha(flat_chars[i]->c)) && i < (flat_chars.size() - 1) && (flat_chars[i + 1]->c == '[')) {
+        else if ((flat_chars[i]->next) == nullptr && i < (flat_chars.size() - 1) && (flat_chars[i + 1]->c == '[')) {
             dot_indices.push_back(i);
         }
 
@@ -3918,4 +3918,18 @@ Document* DocumentManager::get_document_with_checksum(const std::string& checksu
     //if (hash_to_path.find(checksum) != hash_to_path.end()) {
     //    return get_document(hash_to_path[checksum]);
     //}
+}
+
+std::vector<Portal> Document::get_intersecting_visible_portals(float absrange_begin, float absrange_end) {
+    std::vector<Portal> res;
+
+    for (auto portal : portals) {
+        if (portal.is_visible()) {
+            if (portal.src_offset_y >= absrange_begin && portal.src_offset_y <= absrange_end) {
+                res.push_back(portal);
+            }
+        }
+    }
+
+    return res;
 }

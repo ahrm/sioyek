@@ -148,6 +148,7 @@ public:
     bool should_render_pdf_annotations();
     void set_should_render_pdf_annotations(bool val);
     bool get_should_render_pdf_annotations();
+    std::vector<Portal> get_intersecting_visible_portals(float absrange_begin, float absrange_end);
 
     void fill_highlight_rects(fz_context* ctx, fz_document* doc);
     void fill_index_highlight_rects(int highlight_index, fz_context* thread_context = nullptr, fz_document* thread_document = nullptr);
