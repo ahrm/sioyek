@@ -2209,6 +2209,7 @@ void MainWidget::push_state(bool update) {
 void MainWidget::next_state() {
     //update_current_history_index();
     if (current_history_index < (static_cast<int>(history.size()) - 1)) {
+        update_current_history_index();
         current_history_index++;
         if (current_history_index + 1 < history.size()) {
             set_main_document_view_state(history[current_history_index + 1]);
@@ -2218,8 +2219,8 @@ void MainWidget::next_state() {
 }
 
 void MainWidget::prev_state() {
-    //update_current_history_index();
     if (current_history_index >= 0) {
+        update_current_history_index();
 
         /*
         Goto previous history
@@ -2267,7 +2268,7 @@ void MainWidget::prev_state() {
 void MainWidget::update_current_history_index() {
     if (main_document_view_has_document()) {
         int index_to_update = current_history_index + 1;
-        if (index_to_update < history.size() - 1) {
+        if (index_to_update < history.size()) {
             DocumentViewState current_state = main_document_view->get_state();
             history[index_to_update] = current_state;
         }
