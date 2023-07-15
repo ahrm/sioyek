@@ -359,3 +359,5 @@ std::map<std::string, int> annotation_prism(std::vector<T>& file_annotations,
 fz_rect get_range_rect_union(const std::vector<fz_rect>& rects, int first_index, int last_index);
 std::wstring get_paper_name_from_reference_text(std::wstring reference_text);
 fz_rect get_first_page_size(fz_context* ctx, const std::wstring& document_path);
+QString get_direct_pdf_url_from_archive_url(QString url);
+QString get_original_url_from_archive_url(QString url);

@@ -3332,3 +3332,21 @@ fz_rect get_first_page_size(fz_context* ctx, const std::wstring& document_path) 
 
     return bounds;
 }
+
+QString get_direct_pdf_url_from_archive_url(QString url) {
+    if (url.indexOf("web.archive.org") == -1) return url;
+
+    int index = url.lastIndexOf("http") - 1;
+    if (index > 4) {
+
+        QString prefix = url.left(index);
+        QString suffix = url.right(url.size() - index);
+        return prefix + "if_" + suffix;
+    }
+    return url;
+
+}
+
+QString get_original_url_from_archive_url(QString url) {
+    return url.right(url.size() - url.lastIndexOf("http"));
+}

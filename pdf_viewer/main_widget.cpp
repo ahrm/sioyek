@@ -7,6 +7,7 @@
 // todo: handle edit in portals list view
 // todo: add a config option to automatically download the best matching pdf when downloading
 // todo: update history when going back and forth
+// todo: remove the archive navigational toolbar by appending if_ to url
 
 #include <iostream>
 #include <vector>
@@ -772,6 +773,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     QObject::connect(&network_manager, &QNetworkAccessManager::finished, [this](QNetworkReply* reply) {
         reply->deleteLater();
+
         if (!reply->property("sioyek_network_request_type").isNull()) {
             // handled in a different place
             return;
@@ -779,12 +781,28 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
         // check if the result is from the paper search engine (and should be interpreted
         // as json) or is it a pdf file
+        std::wstring reply_url = reply->url().toString().toStdWString();
         QString reply_host = reply->url().host();
         QString download_paper_host = QUrl(QString::fromStdWString(PAPER_SEARCH_URL)).host();
         bool is_json = reply_host == download_paper_host;
 
         if (!is_json) { // it's a pdf file
             QByteArray pdf_data = reply->readAll();
+
+
+            if (pdf_data.size() == 0) {
+                // by default we try to use the pdf's direct link instead of archived pdf link in order to
+                // reduce the load on archive.org servers, but if the direct link is not available we use
+                // the archived link instead
+                if (reply_url.find(L"web.archive.org") == -1) {
+                    download_paper_with_url(reply->property("sioyek_archive_url").toString().toStdWString(), true)->setProperty(
+                        "sioyek_paper_name",
+                        reply->property("sioyek_paper_name")
+                    );
+                    return;
+                }
+            }
+
             QString file_name = reply->url().fileName();
 
             QString path = QString::fromStdWString(downloaded_papers_path.slash(file_name.toStdWString()).get_path());
@@ -828,7 +846,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             auto get_url_file_size = [&](QString url) {
                 QNetworkRequest req;
 
-                QString url_ = url.right(url.size() - url.lastIndexOf("http"));
+                //QString url_ = url.right(url.size() - url.lastIndexOf("http"));
+                //QString url_ = get_direct_pdf_url_from_archive_url(url);
+                QString url_ = get_original_url_from_archive_url(url);
+
                 req.setUrl(url_);
                 auto reply = network_manager.head(req);
 
@@ -876,8 +897,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             }
 
             show_download_paper_menu(hit_names, hit_urls, paper_name);
-
-
         }
 
         });
@@ -6407,12 +6426,21 @@ void MainWidget::show_download_paper_menu(
 
 }
 
-QNetworkReply* MainWidget::download_paper_with_url(std::wstring paper_url_) {
-    QString paper_url = QString::fromStdWString(paper_url_);
-    paper_url = paper_url.right(paper_url.size() - paper_url.lastIndexOf("http"));
+QNetworkReply* MainWidget::download_paper_with_url(std::wstring paper_url_, bool use_archive_url) {
+    QString paper_url;
+    if (use_archive_url) {
+        paper_url = get_direct_pdf_url_from_archive_url(QString::fromStdWString(paper_url_));
+    }
+    else {
+        paper_url = get_original_url_from_archive_url(QString::fromStdWString(paper_url_));
+    }
+
+    //paper_url = paper_url.right(paper_url.size() - paper_url.lastIndexOf("http"));
     QNetworkRequest req;
     req.setUrl(paper_url);
-    return network_manager.get(req);
+    auto res = network_manager.get(req);
+    res->setProperty("sioyek_archive_url", QString::fromStdWString(paper_url_));
+    return res;
 }
 
 bool MainWidget::is_network_manager_running(bool* is_downloading) {

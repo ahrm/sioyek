@@ -382,7 +382,7 @@ public:
         const std::vector<std::wstring>& paper_names,
         const std::vector<std::wstring>& download_urls,
         std::wstring paper_name);
-    QNetworkReply* download_paper_with_url(std::wstring paper_url);
+    QNetworkReply* download_paper_with_url(std::wstring paper_url, bool use_archive_url=false);
 
     QRect get_main_window_rect();
     QRect get_helper_window_rect();
