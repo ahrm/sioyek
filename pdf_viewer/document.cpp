@@ -1255,15 +1255,22 @@ void Document::stop_indexing() {
 
 
 
-std::optional<IndexedData> Document::find_reference_with_string(std::wstring reference_name) {
+std::vector<IndexedData> Document::find_reference_with_string(std::wstring reference_name, int page_number) {
+    if (reference_name.size() > 1 && reference_name[0] == '[') {
+        reference_name = reference_name.substr(1, reference_name.size() - 2);
+    }
+
     if (reference_indices.find(reference_name) != reference_indices.end()) {
-        return reference_indices[reference_name];
+        return { reference_indices[reference_name] };
     }
 
     return {};
 }
 
-std::optional<IndexedData> Document::find_equation_with_string(std::wstring equation_name, int page_number) {
+std::vector<IndexedData> Document::find_equation_with_string(std::wstring equation_name, int page_number) {
+    if (equation_name.size() > 1 && (equation_name[0] == '(' || equation_name[0] == '[')) {
+        equation_name = equation_name.substr(1, equation_name.size() - 2);
+    }
     if (equation_indices.find(equation_name) != equation_indices.end()) {
         const std::vector<IndexedData> equations = equation_indices[equation_name];
         int min_distance = 10000;
@@ -1277,10 +1284,35 @@ std::optional<IndexedData> Document::find_equation_with_string(std::wstring equa
                 res = index;
             }
         }
-        return res;
+
+        if (res) {
+            return { res.value() };
+        }
     }
 
     return {};
+}
+
+std::vector<IndexedData> Document::find_generic_with_string(std::wstring equation_name, int page_number) {
+    QString qtext = QString::fromStdWString(equation_name);
+
+    std::vector<IndexedData> res;
+
+    QStringList parts = qtext.split(' ');
+    if (parts.size() == 2) {
+        std::wstring type = parts.at(0).toStdWString();
+        std::wstring ref = parts.at(1).toStdWString();
+
+        std::vector<DocumentPos> positions = find_generic_locations(type, ref);
+        for (auto pos : positions) {
+            IndexedData index;
+            index.page = pos.page;
+            index.text = equation_name;
+            index.y_offset = pos.y;
+            res.push_back(index);
+        }
+    }
+    return res;
 }
 
 

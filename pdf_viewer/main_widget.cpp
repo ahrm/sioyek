@@ -1,8 +1,6 @@
 ﻿// deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
-// todo: deduplicate find_line_definitions
-// todo: use a better method to handle deletion of canceled download portals
-// todo: handle edit in portals list view
+// maybe: use a better method to handle deletion of canceled download portals
 
 #include <iostream>
 #include <vector>
@@ -2401,9 +2399,9 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
         }
     }
     if (equation_text_on_pointer) {
-        std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(equation_text_on_pointer.value(), current_page_number);
-        if (eqdata_) {
-            IndexedData refdata = eqdata_.value();
+        std::vector<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(equation_text_on_pointer.value(), current_page_number);
+        if (eqdata_.size() > 0) {
+            IndexedData refdata = eqdata_[0];
             *out_page = refdata.page;
             *out_offset = refdata.y_offset;
             return ReferenceType::Equation;
@@ -2411,9 +2409,9 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
     }
 
     if (reference_text_on_pointer) {
-        std::optional<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
-        if (refdata_) {
-            IndexedData refdata = refdata_.value();
+        std::vector<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value(), current_page_number);
+        if (refdata_.size() > 0) {
+            IndexedData refdata = refdata_[0];
             *out_page = refdata.page;
             *out_offset = refdata.y_offset;
             return ReferenceType::Reference;

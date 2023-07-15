@@ -225,8 +225,9 @@ public:
     void delete_page_intersecting_drawings(int page, fz_rect absolute_rect, bool mask[26]);
     std::vector<int> get_page_intersecting_drawing_indices(int page, fz_rect absolute_rect, bool mask[26]);
 
-    std::optional<IndexedData> find_reference_with_string(std::wstring reference_name);
-    std::optional<IndexedData> find_equation_with_string(std::wstring equation_name, int page_number);
+    std::vector<IndexedData> find_reference_with_string(std::wstring reference_name, int page_number);
+    std::vector<IndexedData> find_equation_with_string(std::wstring equation_name, int page_number);
+    std::vector<IndexedData> find_generic_with_string(std::wstring equation_name, int page_number);
 
     std::wstring get_text_in_rect(int page, fz_rect doc_rect);
     std::optional<std::wstring> get_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
