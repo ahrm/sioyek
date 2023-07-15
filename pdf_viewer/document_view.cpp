@@ -1122,6 +1122,7 @@ int DocumentView::get_line_index() {
 
 void DocumentView::set_line_index(int index, int page) {
     line_index = index;
+    is_ruler_mode_ = true;
     if (page >= 0) {
         auto lines = get_document()->get_page_lines(page);
         if (index >= 0 && index < lines.size()) {

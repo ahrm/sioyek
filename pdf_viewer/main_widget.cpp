@@ -6,7 +6,6 @@
 // todo: abstract the bookmark/highlight/portal list view code
 // todo: handle edit in portals list view
 // todo: add a config option to automatically download the best matching pdf when downloading
-// todo: update history when going back and forth
 // todo: remove the archive navigational toolbar by appending if_ to url
 
 #include <iostream>
@@ -170,6 +169,7 @@ extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
 extern bool DEBUG;
+extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 
 extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
@@ -788,9 +788,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
         if (!is_json) { // it's a pdf file
             QByteArray pdf_data = reply->readAll();
+            QString header = reply->header(QNetworkRequest::ContentTypeHeader).toString();
 
-
-            if (pdf_data.size() == 0) {
+            if ((pdf_data.size() == 0) || (!header.startsWith("application/pdf"))) {
                 // by default we try to use the pdf's direct link instead of archived pdf link in order to
                 // reduce the load on archive.org servers, but if the direct link is not available we use
                 // the archived link instead
@@ -889,14 +889,32 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
             std::vector<std::wstring> hit_names;
             std::vector<std::wstring> hit_urls;
+            std::vector<std::wstring> hit_raw_names;
             for (int i = 0; i < paper_urls.size(); i++) {
                 if (paper_urls.at(i).size() > 0) {
                     hit_names.push_back(paper_titles.at(i).toStdWString() + L" by " + paper_contrib_names.at(i).toStdWString());
+                    hit_raw_names.push_back(paper_titles.at(i).toStdWString());
                     hit_urls.push_back(paper_urls.at(i).toStdWString());
                 }
             }
 
-            show_download_paper_menu(hit_names, hit_urls, paper_name);
+            int matching_index = -1;
+
+            if (AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME) {
+                for (int i = 0; i < hit_names.size(); i++) {
+                    if (does_paper_name_match_query(paper_name, hit_raw_names[i])) {
+                        matching_index = i;
+                        break;
+                    }
+                }
+            }
+
+            if (matching_index > -1) {
+                download_paper_with_url(hit_urls[matching_index])->setProperty("sioyek_paper_name", QString::fromStdWString(paper_name));
+            }
+            else {
+                show_download_paper_menu(hit_names, hit_urls, paper_name);
+            }
         }
 
         });

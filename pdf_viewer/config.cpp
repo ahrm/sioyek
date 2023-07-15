@@ -95,6 +95,7 @@ extern float STRIKE_LINE_WIDTH;
 extern float RULER_COLOR[3];
 extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
 extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
+extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -746,6 +747,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"paper_download_should_detect_paper_name",
         ConfigType::Bool,
         &PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"automatically_download_matching_paper_name",
+        ConfigType::Bool,
+        &AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME,
         bool_serializer,
         bool_deserializer,
         bool_validator

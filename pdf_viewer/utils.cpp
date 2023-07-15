@@ -3350,3 +3350,12 @@ QString get_direct_pdf_url_from_archive_url(QString url) {
 QString get_original_url_from_archive_url(QString url) {
     return url.right(url.size() - url.lastIndexOf("http"));
 }
+
+bool does_paper_name_match_query(std::wstring query, std::wstring paper_name) {
+    std::string query_encoded = QString::fromStdWString(query).toLower().toStdString();
+    std::string paper_name_encoded = QString::fromStdWString(paper_name).toLower().toStdString();
+
+    int score = lcs(query_encoded.c_str(), paper_name_encoded.c_str(), query_encoded.size(), paper_name_encoded.size());
+    int threshold = static_cast<int>(static_cast<float>(std::max(query_encoded.size(), paper_name_encoded.size())) * 0.9f);
+    return score >= threshold;
+}
