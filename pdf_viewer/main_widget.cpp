@@ -2,11 +2,7 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // todo: deduplicate find_line_definitions
 // todo: use a better method to handle deletion of canceled download portals
-// todo: if the direct pdf url fails try the archived url
-// todo: abstract the bookmark/highlight/portal list view code
 // todo: handle edit in portals list view
-// todo: add a config option to automatically download the best matching pdf when downloading
-// todo: remove the archive navigational toolbar by appending if_ to url
 
 #include <iostream>
 #include <vector>
@@ -4886,9 +4882,10 @@ void MainWidget::handle_goto_portal_list() {
             doc()->delete_portal_with_uuid(portal->uuid);
         },
             [&](Portal* portal) {
-            //selected_bookmark_index = doc()->get_bookmark_index_with_uuid(bm->uuid);
-            //pop_current_widget();
-            //handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
+                portal_to_edit = *portal;
+                open_document(portal->dst);
+                pop_current_widget();
+                invalidate_render();
         }
         );
 
