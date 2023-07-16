@@ -3341,8 +3341,75 @@ fz_rect get_range_rect_union(const std::vector<fz_rect>& rects, int first_index,
 }
 
 
+int get_largest_quote_size(const std::wstring& text, int* begin_index, int* end_index) {
+    bool is_in_quote = false;
+    int largest_size = -1;
+    int largest_begin_index = -1;
+    int largest_end_index = -1;
+
+    int current_size = 0;
+
+    int current_begin_index = -1;
+
+    for (int i = 0; i < text.size(); i++) {
+        if ((text[i] == '"') || (text[i] == 8220) || (text[i] == 8221)) {
+            if (is_in_quote) {
+                is_in_quote = false;
+                if (current_size > largest_size) {
+                    largest_size = current_size;
+                    largest_begin_index = current_begin_index;
+                    largest_end_index = i;
+                }
+                current_size = 0;
+            }
+            else {
+                is_in_quote = true;
+                current_begin_index = i;
+                current_size = 0;
+            }
+        }
+
+        if (is_in_quote) {
+            current_size++;
+        }
+
+    }
+    *begin_index = largest_begin_index;
+    *end_index = largest_end_index;
+    
+    return largest_size;
+}
+
+bool is_quote_reference(const std::wstring& text, int* begin_index, int* end_index) {
+    return get_largest_quote_size(text, begin_index, end_index) > 15;
+}
+
+std::wstring strip_garbage_from_paper_name(std::wstring paper_name) {
+    std::vector<int> garbage_characters = { '.', ',', ':', '"', '\'', ' ', 8220, 8221 };
+    int first_index = 0;
+    int last_index = paper_name.size()-1;
+
+    while (std::find(garbage_characters.begin(), garbage_characters.end(), paper_name[first_index]) != garbage_characters.end()) {
+        first_index++;
+    }
+
+    while (std::find(garbage_characters.begin(), garbage_characters.end(), paper_name[last_index]) != garbage_characters.end()) {
+        last_index--;
+    }
+    if (last_index > first_index) {
+        return paper_name.substr(first_index, last_index - first_index + 1);
+    }
+    return L"";
+}
+
 std::wstring get_paper_name_from_reference_text(std::wstring reference_text) {
     if (PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME) {
+
+        int quote_begin_index, quote_end_index;
+        if (is_quote_reference(reference_text, &quote_begin_index, &quote_end_index)) {
+            return strip_garbage_from_paper_name(reference_text.substr(quote_begin_index, quote_end_index - quote_begin_index));
+        }
+
         QString str = QString::fromStdWString(reference_text);
         QRegularExpression reference_ending_dot_regex = QRegularExpression("(\.\w*In )|(\.\w*arxiv )|(\.\w*arXiv )");
 
@@ -3356,15 +3423,19 @@ std::wstring get_paper_name_from_reference_text(std::wstring reference_text) {
             ending_index = str.lastIndexOf(".") + 1;
         }
 
-        if (ending_index > -1) {
-            //int starting_index = 
+        while (ending_index > -1) {
             str = str.left(ending_index - 1);
             int starting_index = str.lastIndexOf(".");
             QString res = str.right(str.size() - starting_index - 1).trimmed();
-            if (res.size() > 0 && res[0] == ':') {
-                res = res.right(res.size() - 1);
+            //if (res.size() > 0 && res[0] == ':') {
+            //    res = res.right(res.size() - 1);
+            //}
+            if (res.size() > 10) {
+                return strip_garbage_from_paper_name(res.toStdWString());
             }
-            return res.toStdWString();
+            else {
+                ending_index = starting_index;
+            }
         }
     }
 

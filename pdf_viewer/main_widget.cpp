@@ -2,6 +2,7 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // todo: fix references in non-standard documents 
 // maybe: use a better method to handle deletion of canceled download portals
+// todo: current bib detection method doesn't work well for the first and last items
 
 #include <iostream>
 #include <vector>
@@ -2388,6 +2389,7 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
                     SmartViewCandidate smart_view_candid;
                     smart_view_candid.source_rect = source_rect;
                     smart_view_candid.target_pos = candid;
+                    smart_view_candid.source_text = generic_pair.value().first + L" " + generic_pair.value().second;
                     smart_view_candidates.push_back(smart_view_candid);
                 }
                 //smart_view_candidates = candidates;
