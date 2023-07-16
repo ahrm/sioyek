@@ -1,5 +1,6 @@
 ﻿// deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
+// todo: fix references in non-standard documents 
 // maybe: use a better method to handle deletion of canceled download portals
 
 #include <iostream>
@@ -5573,6 +5574,12 @@ bool MainWidget::event(QEvent* event) {
 
                 if (bookmark_index >= 0) {
                     begin_bookmark_move(bookmark_index, hold_abspos);
+                    return true;
+                }
+
+                int portal_index = doc()->get_portal_index_at_pos(hold_abspos);
+                if (portal_index >= 0) {
+                    begin_portal_move(portal_index, hold_abspos, false);
                     return true;
                 }
                 //opengl_widget->last_selected_block
