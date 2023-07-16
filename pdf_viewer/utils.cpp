@@ -431,6 +431,70 @@ void get_flat_chars_from_block(fz_stext_block* block, std::vector<fz_stext_char*
     }
 }
 
+bool is_index_reverse_reference_number(const std::vector<fz_stext_char*>& flat_chars, int index, int* range_begin, int* range_end) {
+
+    if (flat_chars[index]->next != nullptr) return false;
+    if (flat_chars[index]->c > 128) return false;
+    if (!std::isdigit(flat_chars[index]->c)) return false;
+
+    std::vector<char> chars_between_last_dot_and_index;
+
+    int current_index = index-1;
+    bool reached_dot = false;
+
+    while (current_index >= 0) {
+        if ((flat_chars[current_index]->c == '.') || (flat_chars[current_index]->next == nullptr)) {
+            break;
+        }
+        chars_between_last_dot_and_index.push_back(flat_chars[current_index]->c);
+        current_index--;
+    }
+    int n_chars = chars_between_last_dot_and_index.size();
+    if (n_chars > 0 && n_chars < 20) {
+        for (int i = 0; i < n_chars; i++) {
+            if (std::isalpha(chars_between_last_dot_and_index[i])) {
+                return false;
+            }
+        }
+        *range_begin = current_index;
+        *range_end = index;
+        return true;
+    }
+    return false;
+
+    //int last_dot_index 
+
+}
+void get_flat_chars_from_stext_page_for_bib_detection(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
+    std::vector<fz_stext_char*> temp_flat_chars;
+    get_flat_chars_from_stext_page(stext_page, temp_flat_chars, true);
+    std::vector<std::pair<int, int>> ranges_to_remove;
+
+    for (int i = 0; i < temp_flat_chars.size(); i++) {
+        int begin_index = -1;
+        int end_index = -1;
+        if (is_index_reverse_reference_number(temp_flat_chars, i, &begin_index, &end_index)) {
+            ranges_to_remove.push_back(std::make_pair(begin_index, end_index));
+        }
+    }
+
+    int current_range_index = -1;
+    if (ranges_to_remove.size() > 0) current_range_index = 0;
+
+    for (int i = 0; i < temp_flat_chars.size(); i++) {
+        if ((current_range_index < ranges_to_remove.size() - 1) && (i > ranges_to_remove[current_range_index].second)) {
+            current_range_index += 1;
+        }
+
+        if ((current_range_index == -1) || !(i > ranges_to_remove[current_range_index].first && i <= ranges_to_remove[current_range_index].second)) {
+            flat_chars.push_back(temp_flat_chars[i]);
+        }
+
+    }
+
+
+}
+
 void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, bool dehyphenate) {
 
     LL_ITER(block, stext_page->first_block) {

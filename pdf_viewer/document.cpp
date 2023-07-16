@@ -3127,7 +3127,8 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
     fz_stext_page* stext_page = get_stext_with_page_number(page_number);
     std::vector<fz_stext_char*> flat_chars;
 
-    get_flat_chars_from_stext_page(stext_page, flat_chars, true);
+    //get_flat_chars_from_stext_page(stext_page, flat_chars, true);
+    get_flat_chars_from_stext_page_for_bib_detection(stext_page, flat_chars);
 
     std::vector<fz_rect> char_rects;
     std::vector<float> augumented_rect_data;
