@@ -831,6 +831,7 @@ public:
     std::vector<Portal> get_ruler_portals();
     void handle_overview_to_ruler_portal();
     void handle_goto_ruler_portal(std::string tag="");
+    void show_touch_buttons(std::vector<std::wstring> buttons, std::function<void(int, std::wstring)> on_select, bool top=true);
 
 };
 

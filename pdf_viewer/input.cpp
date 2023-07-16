@@ -1380,23 +1380,41 @@ public:
 
     void pre_perform() {
 
-        initial_text = widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description;
-        initial_font_size = widget->doc()->get_bookmarks()[widget->selected_bookmark_index].font_size;
-        index = widget->selected_bookmark_index;
+        if (widget->selected_bookmark_index > -1) {
+            initial_text = widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description;
+            initial_font_size = widget->doc()->get_bookmarks()[widget->selected_bookmark_index].font_size;
+            index = widget->selected_bookmark_index;
 
-        widget->text_command_line_edit->setText(
-            QString::fromStdWString(widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description)
-        );
+            if (TOUCH_MODE) {
+                if (widget->current_widget_stack.size() > 0) {
+                    TouchTextEdit* stack_top = dynamic_cast<TouchTextEdit*>(widget->current_widget_stack.back());
+                    if (stack_top) {
+                        stack_top->set_text(widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description);
+                    }
+                }
+            }
+            else {
+                widget->text_command_line_edit->setText(
+                    QString::fromStdWString(widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description)
+                );
+            }
+        }
+        else {
+            show_error_message(L"No bookmark is selected");
+        }
     }
 
     void on_cancel() {
-        widget->doc()->get_bookmarks()[index].description = initial_text;
-        widget->doc()->get_bookmarks()[index].font_size = initial_font_size;
+        if (index > -1) {
+            widget->doc()->get_bookmarks()[index].description = initial_text;
+            widget->doc()->get_bookmarks()[index].font_size = initial_font_size;
+        }
     }
 
     void perform() {
         std::wstring text_ = text.value();
         widget->change_selected_bookmark_text(text_);
+        widget->invalidate_render();
     }
 
     std::string get_name() {

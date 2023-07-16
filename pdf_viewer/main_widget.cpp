@@ -5574,12 +5574,39 @@ bool MainWidget::event(QEvent* event) {
 
                 if (bookmark_index >= 0) {
                     begin_bookmark_move(bookmark_index, hold_abspos);
+                    selected_bookmark_index = bookmark_index;
+                    show_touch_buttons({ L"Delete", L"Edit"}, [this](int index, std::wstring name) {
+                         
+                        if (selected_bookmark_index > -1) {
+                            if (name == L"Delete") {
+                                doc()->delete_bookmark(selected_bookmark_index);
+                                selected_bookmark_index = -1;
+                                pop_current_widget();
+                                invalidate_render();
+                            }
+                            else {
+                                pop_current_widget();
+                                handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
+                                return;
+                            }
+                        }
+                        });
+                    //show_touch_delete_button();
                     return true;
                 }
 
                 int portal_index = doc()->get_portal_index_at_pos(hold_abspos);
                 if (portal_index >= 0) {
                     begin_portal_move(portal_index, hold_abspos, false);
+                    selected_portal_index = portal_index;
+                    show_touch_buttons({ L"Delete" }, [this](int index, std::wstring name) {
+                        if (selected_portal_index > -1) {
+                            doc()->delete_portal_with_uuid(doc()->get_portals()[selected_portal_index].uuid);
+                            selected_portal_index = -1;
+                            pop_current_widget();
+                            invalidate_render();
+                        }
+                        });
                     return true;
                 }
                 //opengl_widget->last_selected_block
@@ -7423,4 +7450,14 @@ void MainWidget::handle_goto_ruler_portal(std::string tag) {
     if (portals.size() > 0 && (index < portals.size())) {
         open_document(portals[index].dst);
     }
+}
+
+
+void MainWidget::show_touch_buttons(std::vector<std::wstring> buttons, std::function<void(int, std::wstring)> on_select, bool top) {
+    TouchGenericButtons* generic_buttons = new TouchGenericButtons(buttons, top, this);
+    QObject::connect(generic_buttons, &TouchGenericButtons::buttonPressed, [this, on_select](int index, std::wstring name) {
+        on_select(index, name);
+        });
+    push_current_widget(generic_buttons);
+    show_current_widget();
 }

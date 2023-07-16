@@ -55,6 +55,7 @@
 #include "touchui/TouchAudioButtons.h"
 #include "touchui/TouchDrawControls.h"
 #include "touchui/TouchMacroEditor.h"
+#include "touchui/TouchGenericButtons.h"
 
 #include "mysortfilterproxymodel.h"
 #include "rapidfuzz_amalgamated.hpp"

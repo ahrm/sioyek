@@ -3,15 +3,13 @@
 
 TouchDeleteButton::TouchDeleteButton(QWidget* parent) : QWidget(parent) {
 
-    //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
+    setAttribute(Qt::WA_NoMousePropagation);
+
     quick_widget = new QQuickWidget(this);
 
     quick_widget->setResizeMode(QQuickWidget::ResizeMode::SizeRootObjectToView);
     quick_widget->setAttribute(Qt::WA_AlwaysStackOnTop);
     quick_widget->setClearColor(Qt::transparent);
-
-    //quick_widget->rootContext()->setContextProperty("_initialValue", initial_value);
-    //quick_widget->rootContext()->setContextProperty("_name", name);
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchDeleteButton.qml"));
 

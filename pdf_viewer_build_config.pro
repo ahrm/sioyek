@@ -44,6 +44,7 @@ SOURCES += \
         pdf_viewer/touchui/TouchMarkSelector.cpp \
         pdf_viewer/touchui/TouchDrawControls.cpp \
         pdf_viewer/touchui/TouchMacroEditor.cpp \
+        pdf_viewer/touchui/TouchGenericButtons.cpp \
         pdf_viewer/touchui/TouchMainMenu.cpp
 
 HEADERS += \
@@ -64,6 +65,7 @@ HEADERS += \
     pdf_viewer/touchui/TouchMarkSelector.h \
     pdf_viewer/touchui/TouchDrawControls.h \
     pdf_viewer/touchui/TouchMacroEditor.h \
+    pdf_viewer/touchui/TouchGenericButtons.h \
     pdf_viewer/touchui/TouchMainMenu.h
 
 android{
