@@ -64,6 +64,10 @@ struct SmartViewCandidate {
     fz_rect source_rect;
     std::wstring source_text;
     std::variant<DocumentPos, AbsoluteDocumentPos> target_pos;
+
+    Document* get_document(MainWidget* widget);
+    DocumentPos get_docpos(MainWidget* widget);
+    AbsoluteDocumentPos get_abspos(MainWidget* widget);
 };
 
 struct PortalMoveData {
@@ -473,7 +477,7 @@ public:
     void toggle_visual_scroll_mode();
     void set_overview_link(PdfLink link);
     void set_overview_position(int page, float offset);
-    ReferenceType find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, bool update_candidates = false);
+    ReferenceType find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
     CommandManager* get_command_manager();
 
