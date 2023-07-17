@@ -195,7 +195,7 @@ public:
     void readjust_to_screen();
     float get_half_screen_offset();
     void scroll_mid_to_top();
-    void get_visible_links(std::vector<std::pair<int, fz_link*>>& visible_page_links);
+    void get_visible_links(std::vector<PdfLink>& visible_page_links);
     void set_text_mark(bool is_begin);
     void toggle_text_mark();
     void get_rects_from_ranges(int page_number, const std::vector<fz_rect>& line_char_rects, const std::vector<std::pair<int, int>>& ranges, std::vector<fz_rect>& out_rects);

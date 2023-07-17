@@ -656,7 +656,7 @@ public:
 
     void synchronize_pending_link();
     void refresh_all_windows();
-    std::optional<std::pair<int, fz_link*>> get_selected_link(const std::wstring& text);
+    std::optional<PdfLink> get_selected_link(const std::wstring& text);
 
     int num_visible_links();
 #ifdef SIOYEK_ANDROID

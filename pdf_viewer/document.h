@@ -72,10 +72,12 @@ private:
     std::vector<std::pair<int, fz_stext_page*>> cached_stext_pages;
     std::vector<std::pair<int, fz_pixmap*>> cached_small_pixmaps;
     std::map<int, std::optional<std::string>> cached_fastread_highlights;
+    PdfLink merge_links(const std::vector<PdfLink>& links_to_merge);
 
     fz_context* context = nullptr;
     std::wstring file_name;
     std::unordered_map<int, fz_link*> cached_page_links;
+    std::unordered_map<int, std::vector<PdfLink>> cached_merged_pdf_links;
     std::unordered_map<int, std::vector<fz_rect>> cached_flat_words;
     std::unordered_map<int, std::vector<std::vector<fz_rect>>> cached_flat_word_chars;
     QStandardItemModel* cached_toc_model = nullptr;
@@ -189,6 +191,8 @@ public:
     std::optional<Highlight> get_prev_highlight(float abs_y, char type = 0, int offset = 0) const;
 
     fz_link* get_page_links(int page_number);
+    const std::vector<PdfLink>& get_page_merged_pdf_links(int page_number);
+    PdfLink pdf_link_from_fz_link(int page, fz_link* link);
     void add_mark(char symbol, float y_offset);
     bool remove_mark(char symbol);
     bool get_mark_location_if_exists(char symbol, float* y_offset);
@@ -294,6 +298,7 @@ public:
     std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
     std::optional<PdfLink> get_link_in_pos(const DocumentPos& pos);
     std::vector<PdfLink> get_links_in_page_rect(int page, fz_rect rect);
+    std::wstring get_pdf_link_text(PdfLink link);
     std::string get_highlight_index_uuid(int index);
     std::string get_bookmark_index_uuid(int index);
 

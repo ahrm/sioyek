@@ -1216,7 +1216,7 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
                     result.push_back(
                         std::make_pair(
                             DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y },
-                            current_document->document_to_absolute_rect(line_page_number, link.rect, true)
+                            current_document->document_to_absolute_rect(line_page_number, link.rects[0], true)
                         )
                     );
                     //if (src_rects) src_rects->push_back(link.rect);
@@ -1340,19 +1340,18 @@ void DocumentView::scroll_mid_to_top() {
     move(0, offset);
 }
 
-void DocumentView::get_visible_links(std::vector<std::pair<int, fz_link*>>& visible_page_links) {
+void DocumentView::get_visible_links(std::vector<PdfLink>& visible_page_links) {
 
     std::vector<int> visible_pages;
     get_visible_pages(get_view_height(), visible_pages);
     for (auto page : visible_pages) {
-        fz_link* link = get_document()->get_page_links(page);
-        while (link) {
-            ParsedUri parsed_uri = parse_uri(mupdf_context, link->uri);
-            fz_rect window_rect = document_to_window_rect(page, link->rect);
+        std::vector<PdfLink> links = get_document()->get_page_merged_pdf_links(page);
+        for (auto link : links) {
+            ParsedUri parsed_uri = parse_uri(mupdf_context, link.uri);
+            fz_rect window_rect = document_to_window_rect(page, link.rects[0]);
             if ((window_rect.x0 >= -1) && (window_rect.x0 <= 1) && (window_rect.y0 >= -1) && (window_rect.y0 <= 1)) {
-                visible_page_links.push_back(std::make_pair(page, link));
+                visible_page_links.push_back(link);
             }
-            link = link->next;
         }
     }
 }

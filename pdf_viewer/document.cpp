@@ -741,11 +741,68 @@ void Document::convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output)
     } while ((root = root->next));
 }
 
+PdfLink Document::merge_links(const std::vector<PdfLink>& links_to_merge) {
+    PdfLink merged_link;
+    merged_link.uri = links_to_merge[0].uri;
+    merged_link.source_page = links_to_merge[0].source_page;
+    std::vector<fz_rect> rects;
+    fz_rect current_rect = links_to_merge[0].rects[0];
+    for (int i = 1; i < links_to_merge.size(); i++) {
+        fz_rect new_rect = links_to_merge[i].rects[0];
+        float height = std::abs(current_rect.y1 - current_rect.y0);
+        if (std::abs(current_rect.y1 - new_rect.y1) < height / 5) {
+            current_rect.x0 = std::min(current_rect.x0, new_rect.x0);
+            current_rect.x1 = std::max(current_rect.x1, new_rect.x1);
+        }
+        else {
+            rects.push_back(current_rect);
+            current_rect = new_rect;
+        }
+    }
+    rects.push_back(current_rect);
+    merged_link.rects = rects;
+    return merged_link;
+}
+
+const std::vector<PdfLink>& Document::get_page_merged_pdf_links(int page_number) {
+    if (cached_merged_pdf_links.find(page_number) != cached_merged_pdf_links.end()) {
+        return cached_merged_pdf_links[page_number];
+    }
+
+    std::vector<PdfLink> res;
+
+    std::vector<PdfLink> links_to_merge;
+
+    fz_link* current_link = get_page_links(page_number);
+
+    while (current_link) {
+        if (links_to_merge.size() > 0 && (links_to_merge.back().uri != current_link->uri)) {
+            PdfLink merged_link = merge_links(links_to_merge);
+            //merged_link.uri = links_to_merge[0].uri;
+            //merged_link.source_page = links_to_merge[0].source_page;
+            //for (int i = 0; i < links_to_merge.size(); i++) {
+            //    merged_link.rects.push_back(links_to_merge[i].rects[0]);
+            //}
+            res.push_back(merged_link);
+            links_to_merge.clear();
+        }
+        links_to_merge.push_back(pdf_link_from_fz_link(page_number, current_link));
+
+        current_link = current_link->next;
+    }
+
+    if (links_to_merge.size() > 0) {
+        res.push_back(merge_links(links_to_merge));
+    }
+
+    cached_merged_pdf_links[page_number] = res;
+    return cached_merged_pdf_links[page_number];
+}
+
 fz_link* Document::get_page_links(int page_number) {
     if (cached_page_links.find(page_number) != cached_page_links.end()) {
         return cached_page_links.at(page_number);
     }
-    //std::cerr << "getting links .... for " << page_number << std::endl;
 
     fz_link* res = nullptr;
     fz_try(context) {
@@ -2502,6 +2559,44 @@ std::optional<PdfLink> Document::get_link_in_pos(const DocumentPos& pos) {
     return get_link_in_pos(pos.page, pos.x, pos.y);
 }
 
+std::wstring Document::get_pdf_link_text(PdfLink link) {
+    int page = link.source_page;
+    fz_stext_page* stext_page = get_stext_with_page_number(page);
+    std::vector<fz_stext_char*> flat_chars;
+    get_flat_chars_from_stext_page(stext_page, flat_chars);
+    std::vector<fz_rect> flat_chars_rects;
+    std::vector<int> flat_chars_pages;
+    std::wstring flat_chars_text;
+    flat_char_prism(flat_chars,page, flat_chars_text, flat_chars_pages, flat_chars_rects);
+
+    std::wstring res;
+    for (int rect_index = 0; rect_index < link.rects.size(); rect_index++) {
+
+        fz_rect current_link_rect = link.rects[rect_index];
+
+        //for (int i = 0; i < flat_chars.size(); i++) {
+        for (int i = 0; i < flat_chars_text.size(); i++) {
+            fz_rect charrect = flat_chars_rects[i];
+            float y = (charrect.y0 + charrect.y1) / 2;
+            float x = (charrect.x0 + charrect.x1) / 2;
+            float height = charrect.y1 - charrect.y0;
+            float width = charrect.x1 - charrect.x0;
+            charrect.y0 = y - height / 5;
+            charrect.y1 = y + height / 5;
+
+            charrect.x0 = x;
+            charrect.x1 = x;
+            //fz_rect intersection = fz_intersect_rect(charrect, link.rect);
+            //if (std::abs(intersection.y1 - intersection.y0) > (0.9f * std::abs(charrect.y1 - charrect.y0))) {
+            if (rects_intersect(charrect, current_link_rect)) {
+                res.push_back(flat_chars_text[i]);
+            }
+
+        }
+    }
+    return res;
+}
+
 std::vector<PdfLink> Document::get_links_in_page_rect(int page, fz_rect rect) {
     if (!doc) return {};
 
@@ -2510,32 +2605,47 @@ std::vector<PdfLink> Document::get_links_in_page_rect(int page, fz_rect rect) {
     fz_rect doc_rect = absolute_to_page_rect(rect, &rect_page);
 
     if (page != -1) {
-        fz_link* links = get_page_links(page);
-        while (links != nullptr) {
-            if (rects_intersect(doc_rect, links->rect))
-            {
-                res.push_back({ links->rect, page, links->uri });
+        //fz_link* links = get_page_links(page);
+        const std::vector<PdfLink>& links = get_page_merged_pdf_links(page);
+        for (auto link : links) {
+            for (auto link_rect : link.rects) {
+                if (rects_intersect(doc_rect, link_rect)) {
+                    res.push_back(link);
+                    break;
+                }
             }
-            links = links->next;
         }
     }
+
     return res;
+}
+
+PdfLink Document::pdf_link_from_fz_link(int page, fz_link* link) {
+    return PdfLink{ {link->rect}, page, link->uri };
 }
 
 std::optional<PdfLink> Document::get_link_in_pos(int page, float doc_x, float doc_y) {
     if (!doc) return {};
 
     if (page != -1) {
-        fz_link* page_links = get_page_links(page);
+        //fz_link* page_links = get_page_links(page);
+        const std::vector<PdfLink>& page_links = get_page_merged_pdf_links(page);
         fz_point point = { doc_x, doc_y };
         std::optional<PdfLink> res = {};
-        while (page_links != nullptr) {
-            if (fz_is_point_inside_rect(point, page_links->rect)) {
-                res = { page_links->rect, page, page_links->uri };
-                return res;
+        for (auto link : page_links) {
+            for (auto link_rect : link.rects) {
+                if (fz_is_point_inside_rect(point, link_rect)) {
+                    return link;
+                }
             }
-            page_links = page_links->next;
         }
+        //while (page_links != nullptr) {
+        //    if (fz_is_point_inside_rect(point, page_links->rect)) {
+        //        res = { {page_links->rect}, page, page_links->uri };
+        //        return res;
+        //    }
+        //    page_links = page_links->next;
+        //}
 
     }
     return {};

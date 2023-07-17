@@ -397,7 +397,7 @@ void MainWidget::set_overview_link(PdfLink link) {
 
     auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
     if (page >= 1) {
-        fz_rect source_absolute_rect = doc()->document_to_absolute_rect(link.source_page, link.rect, true);
+        fz_rect source_absolute_rect = doc()->document_to_absolute_rect(link.source_page, link.rects[0], true);
         current_overview_source_rect = source_absolute_rect;
         SmartViewCandidate current_candidate;
         current_candidate.source_rect = source_absolute_rect;
@@ -3832,7 +3832,6 @@ void MainWidget::on_new_paper_added(const std::wstring& file_path) {
     }
 }
 void MainWidget::handle_link_click(const PdfLink& link) {
-
     if (link.uri.substr(0, 4).compare("http") == 0) {
         open_web_url(utf8_decode(link.uri));
         return;
@@ -5243,8 +5242,8 @@ MainWidget* MainWidget::handle_new_window() {
     return new_widget;
 }
 
-std::optional<std::pair<int, fz_link*>> MainWidget::get_selected_link(const std::wstring& text) {
-    std::vector<std::pair<int, fz_link*>> visible_page_links;
+std::optional<PdfLink> MainWidget::get_selected_link(const std::wstring& text) {
+    std::vector<PdfLink> visible_page_links;
     if (ALPHABETIC_LINK_TAGS || is_string_numeric(text)) {
 
         int link_index = 0;
@@ -5270,8 +5269,8 @@ void MainWidget::handle_overview_link(const std::wstring& text) {
     auto selected_link_ = get_selected_link(text);
     if (selected_link_) {
         PdfLink pdf_link;
-        pdf_link.rect = selected_link_.value().second->rect;
-        pdf_link.uri = selected_link_.value().second->uri;
+        pdf_link.rects = selected_link_.value().rects;
+        pdf_link.uri = selected_link_.value().uri;
         set_overview_link(pdf_link);
     }
     reset_highlight_links();
@@ -5281,17 +5280,17 @@ void MainWidget::handle_portal_to_link(const std::wstring& text) {
 
     auto selected_link_ = get_selected_link(text);
     if (selected_link_) {
-        auto [page, link] = selected_link_.value();
-        PdfLink pdf_link;
-        pdf_link.rect = link->rect;
-        pdf_link.uri = link->uri;
+        //auto link = selected_link_.value();
+        PdfLink pdf_link = selected_link_.value();
+        //pdf_link.rects = { link->rect };
+        //pdf_link.uri = link->uri;
         ParsedUri parsed_uri = parse_uri(mupdf_context, pdf_link.uri);
 
         //AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
         DocumentPos link_source_document_pos;
-        link_source_document_pos.page = page;
+        link_source_document_pos.page = pdf_link.source_page;
         link_source_document_pos.x = 0;
-        link_source_document_pos.y = link->rect.x0;
+        link_source_document_pos.y = pdf_link.rects[0].y0;
         DocumentPos dst_docpos;
         dst_docpos.page = parsed_uri.page - 1;
         dst_docpos.x = parsed_uri.x;
@@ -5315,16 +5314,18 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
 
     auto selected_link_ = get_selected_link(text);
     if (selected_link_) {
-        auto [selected_page, selected_link] = selected_link_.value();
+        //auto [selected_page, selected_link] = selected_link_.value();
+        PdfLink link = selected_link_.value();
+
         if (copy) {
-            copy_to_clipboard(utf8_decode(selected_link->uri));
+            copy_to_clipboard(utf8_decode(link.uri));
         }
         else {
-            if (QString(selected_link->uri).startsWith("http")) {
-                open_web_url(utf8_decode(selected_link->uri));
+            if (QString::fromStdString(link.uri).startsWith("http")) {
+                open_web_url(utf8_decode(link.uri));
             }
             else {
-                auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
+                auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
                 long_jump_to_destination(page - 1, offset_y);
             }
         }
@@ -5508,7 +5509,7 @@ void MainWidget::refresh_all_windows() {
 
 
 int MainWidget::num_visible_links() {
-    std::vector<std::pair<int, fz_link*>> visible_page_links;
+    std::vector<PdfLink> visible_page_links;
     main_document_view->get_visible_links(visible_page_links);
     return visible_page_links.size();
 }
@@ -6157,10 +6158,12 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
         // we assume the text under cursor is the paper name.
 
         PdfLink pdf_link = pdf_link_.value();
-        fz_rect pdf_rect = pdf_link.rect;
+        std::wstring link_text = doc()->get_pdf_link_text(pdf_link);
         auto [link_page, offset_x, offset_y] = parse_uri(mupdf_context, pdf_link.uri);
-        std::wstring link_text = doc()->get_text_in_rect(page, pdf_rect);
-        link_text = clean_link_source_text(link_text);
+
+        //std::vector<fz_rect> pdf_rect = pdf_link.rects;
+        //std::wstring link_text = doc()->get_text_in_rect(page, pdf_rect);
+        //link_text = clean_link_source_text(link_text);
         return doc()->get_page_bib_with_reference(link_page - 1, link_text);
     }
     else {

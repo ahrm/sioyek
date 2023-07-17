@@ -1018,7 +1018,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 
-    std::vector<std::pair<int, fz_link*>> all_visible_links;
+    std::vector<PdfLink> all_visible_links;
 
     if (is_presentation_mode()) {
         if (PRERENDER_NEXT_PAGE) {
@@ -1044,12 +1044,19 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
                 glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
                     1,
                     config_manager->get_config<float>(L"link_highlight_color"));
-                fz_link* links = document_view->get_document()->get_page_links(page);
-                while (links != nullptr) {
-                	render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
-                	all_visible_links.push_back(std::make_pair(page, links));
-                	links = links->next;
+                //fz_link* links = document_view->get_document()->get_page_links(page);
+                const std::vector<PdfLink>& links = document_view->get_document()->get_page_merged_pdf_links(page);
+                for (auto link : links) {
+                    for (auto link_rect : link.rects) {
+                        render_highlight_document(shared_gl_objects.highlight_program, page, link_rect);
+                        //all_visible_links.push_back(link);
+                    }
                 }
+                //while (links != nullptr) {
+                //	render_highlight_document(shared_gl_objects.highlight_program, page, links->rect);
+                //	all_visible_links.push_back(std::make_pair(page, links));
+                //	links = links->next;
+                //}
             }
         }
         // prerender pages
@@ -1424,7 +1431,8 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
                 index_string = get_aplph_tag(i, all_visible_links.size());
             }
 
-            auto [page, link] = all_visible_links[i];
+            //auto [page, link] = all_visible_links[i];
+            auto link = all_visible_links[i];
 
             bool should_draw = true;
 
@@ -1433,15 +1441,15 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
             // other close links. This has quadratic runtime but it should not matter since
             // there are not many links in a single PDF page.
             for (int j = i + 1; j < all_visible_links.size(); j++) {
-                auto [other_page, other_link] = all_visible_links[j];
-                float distance = std::abs(other_link->rect.x0 - link->rect.x0) + std::abs(other_link->rect.y0 - link->rect.y0);
+                auto other_link = all_visible_links[j];
+                float distance = std::abs(other_link.rects[0].x0 - link.rects[0].x0) + std::abs(other_link.rects[0].y0 - link.rects[0].y0);
                 if (distance < 10) {
                     should_draw = false;
                 }
             }
 
             //document_view->document_to_window_pos_in_pixels(page, link->rect.x0, link->rect.x1, &window_x, &window_y);
-            fz_rect window_rect = document_view->document_to_window_rect(page, link->rect);
+            fz_rect window_rect = document_view->document_to_window_rect(link.source_page, link.rects[0]);
 
             int view_width = static_cast<float>(document_view->get_view_width());
             int view_height = static_cast<float>(document_view->get_view_height());
