@@ -1128,14 +1128,14 @@ std::wstring find_first_regex_match(const std::wstring& haystack, const std::wst
     return L"";
 }
 
-std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack,
+std::vector<std::wstring> find_all_regex_matches(std::wstring haystack,
     const std::wstring& regex_string,
     std::vector<std::pair<int, int>>* match_ranges) {
 
     std::wregex regex(regex_string);
     std::wsmatch match;
     std::vector<std::wstring> res;
-    if (std::regex_search(haystack, match, regex)) {
+    while (std::regex_search(haystack, match, regex)) {
         for (size_t i = 0; i < match.size(); i++) {
             if (match[i].matched) {
                 res.push_back(match[i].str());
@@ -1146,6 +1146,7 @@ std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack,
                 }
             }
         }
+        haystack = match.suffix();
     }
     return res;
 

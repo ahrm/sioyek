@@ -1226,7 +1226,7 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
             }
 
             std::wstring item_regex(L"[a-zA-Z]{2,}[ \t]+[0-9]+(\.[0-9]+)*");
-            std::wstring reference_regex(L"\\[[a-zA-Z0-9]+\\]");
+            std::wstring reference_regex(L"\\[[a-zA-Z0-9,]+\\]");
             std::wstring equation_regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
 
             std::vector<std::pair<int, int>> generic_item_ranges;

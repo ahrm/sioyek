@@ -208,7 +208,7 @@ void merge_lines(
 
 int lcs(const char* X, const char* Y, int m, int n);
 bool has_arg(int argc, char** argv, std::string key);
-std::vector<std::wstring> find_all_regex_matches(const std::wstring& haystack, const std::wstring& regex_string, std::vector<std::pair<int, int>>* match_ranges = nullptr);
+std::vector<std::wstring> find_all_regex_matches(std::wstring haystack, const std::wstring& regex_string, std::vector<std::pair<int, int>>* match_ranges = nullptr);
 bool command_requires_text(const std::wstring& command);
 bool command_requires_rect(const std::wstring& command);
 void hexademical_to_normalized_color(std::wstring color_string, float* color, int n_components);
