@@ -1226,7 +1226,7 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
             }
 
             std::wstring item_regex(L"[a-zA-Z]{2,}[ \t]+[0-9]+(\.[0-9]+)*");
-            std::wstring reference_regex(L"\\[[a-zA-Z0-9,]+\\]");
+            std::wstring reference_regex(L"\\[[a-zA-Z0-9, ]+\\]");
             std::wstring equation_regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
 
             std::vector<std::pair<int, int>> generic_item_ranges;
@@ -1262,6 +1262,22 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
                 }
             }
             for (int i = 0; i < reference_texts.size(); i++) {
+                if (reference_texts[i].find(L",") != -1) {
+                    // remove [ and ]
+                    QString references_string = QString::fromStdWString(reference_texts[i].substr(1, reference_texts[i].size()-2));
+                    QStringList parts = references_string.split(',');
+                    for (int j = 0; j < parts.size(); j++) {
+                        auto index = current_document->find_reference_with_string(parts[j].trimmed().toStdWString(), ruler_page);
+
+                        if (index.size() > 0) {
+                            reference_positions.push_back(
+                                std::make_pair(
+                                    DocumentPos{ index[0].page, 0, index[0].y_offset },
+                                    reference_rects[i])
+                            );
+                        }
+                    }
+                }
                 auto index = current_document->find_reference_with_string(reference_texts[i], ruler_page);
 
                 if (index.size() > 0) {

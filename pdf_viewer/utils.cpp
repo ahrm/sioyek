@@ -3495,3 +3495,4 @@ bool does_paper_name_match_query(std::wstring query, std::wstring paper_name) {
     int threshold = static_cast<int>(static_cast<float>(std::max(query_encoded.size(), paper_name_encoded.size())) * 0.9f);
     return score >= threshold;
 }
+
