@@ -1208,7 +1208,11 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
 
             //todo: deduplicate this code
 
-            std::vector<PdfLink> pdf_links = current_document->get_links_in_page_rect(get_vertical_line_page(), line_rects[line_index]);
+            fz_rect line_rect = line_rects[line_index];
+            float mid_y = (line_rect.y1 + line_rect.y0) / 2.0f;
+            line_rect.y0 = line_rect.y0 = mid_y;
+
+            std::vector<PdfLink> pdf_links = current_document->get_links_in_page_rect(get_vertical_line_page(), line_rect);
             if (pdf_links.size() > 0) {
 
                 for (auto link : pdf_links) {

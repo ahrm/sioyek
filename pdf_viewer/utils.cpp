@@ -452,7 +452,7 @@ bool is_index_reverse_reference_number(const std::vector<fz_stext_char*>& flat_c
     int n_chars = chars_between_last_dot_and_index.size();
     if (n_chars > 0 && n_chars < 20) {
         for (int i = 0; i < n_chars; i++) {
-            if (std::isalpha(chars_between_last_dot_and_index[i])) {
+            if ((chars_between_last_dot_and_index[i] > 0) && (chars_between_last_dot_and_index[i] < 128) && std::isalpha(chars_between_last_dot_and_index[i])) {
                 return false;
             }
         }

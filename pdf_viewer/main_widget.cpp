@@ -3,6 +3,8 @@
 // todo: fix references in non-standard documents 
 // maybe: use a better method to handle deletion of canceled download portals
 // todo: current bib detection method doesn't work well for the first and last items
+// todo: improve reference detection models for non-standard documents
+// todo: handle text references
 
 #include <iostream>
 #include <vector>
