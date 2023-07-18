@@ -4108,3 +4108,67 @@ std::vector<Portal> Document::get_intersecting_visible_portals(float absrange_be
 
     return res;
 }
+
+
+int Document::find_reference_page_with_reference_text(std::wstring ref) {
+    QStringList parts = QString::fromStdWString(ref).split(' ');
+    QString largest_part = "";
+    for (int i = 0; i < parts.size(); i++) {
+        if (parts.at(i).size() > largest_part.size() ) {
+            largest_part = parts.at(i);
+        }
+    }
+
+
+    std::wstring query = largest_part.toStdWString();
+    auto searcher = std::default_searcher(query.begin(), query.end(), pred_case_sensitive);
+
+    std::vector<int> found_indices;
+
+    auto it = std::search(
+        super_fast_search_index.begin(),
+        super_fast_search_index.end(),
+        searcher);
+
+    for (; it != super_fast_search_index.end(); it = std::search(it + 1, super_fast_search_index.end(), searcher)) {
+        int index = it - super_fast_search_index.begin();
+        found_indices.push_back(index);
+    }
+
+    std::vector<int> filtered_indices;
+
+    for (auto index : found_indices) {
+        int context_first = std::max(index - 100, 0);
+        int context_last = std::min(index + 100, static_cast<int>(super_fast_search_index.size()-1));
+        bool found_all = true;
+
+        for (int i = 0; i < parts.size(); i++) {
+            if (parts[i].size() < 4 && parts[i].startsWith("et")) {
+                continue;
+            }
+            if (parts[i].size() < 5 && parts[i].startsWith("al")) {
+                continue;
+            }
+
+            if (parts[i].size() > 2) {
+                std::wstring subquery = parts[i].toStdWString();
+                auto subsearcher = std::default_searcher(subquery.begin(), subquery.end(), pred_case_sensitive);
+                auto last = super_fast_search_index.begin() + context_last + 1;
+                if (std::search(super_fast_search_index.begin() + context_first, last, subsearcher) == last) {
+                    found_all = false;
+                    break;
+                }
+            }
+        }
+        if (found_all) {
+            filtered_indices.push_back(index);
+        }
+    }
+    if (filtered_indices.size() > 0) {
+        return super_fast_search_index_pages[filtered_indices.back()];
+        //std::wstring filtered_context = super_fast_search_index.substr(filtered_indices.back(), 200);
+        //int a = 2;
+    }
+    return -1;
+
+}

@@ -6095,6 +6095,16 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
+    //std::wstring query = selected_text;
+    //int page = doc()->find_reference_page_with_reference_text(query);
+    //auto res = doc()->get_page_bib_with_reference(page, query);
+    //if (res) {
+    //    qDebug() << "found reference: " << QString::fromStdWString(res.value());
+    //}
+    //else {
+
+    //    qDebug() << "reference not found";
+    //}
 }
 
 std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {

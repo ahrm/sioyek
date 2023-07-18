@@ -342,6 +342,7 @@ public:
 
     bool get_should_reload_annotations();
     void reload_annotations_on_new_checksum();
+    int find_reference_page_with_reference_text(std::wstring query);
 
     friend class DocumentManager;
 };
