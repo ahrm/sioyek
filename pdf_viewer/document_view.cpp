@@ -1187,11 +1187,13 @@ void DocumentView::get_rects_from_ranges(int page_number, const std::vector<fz_r
     }
 }
 
-std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions() {
+//std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions() {
+std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
     //todo: remove duplicate code from this function, this just needs to find the location of the
     // reference, the rest can be handled by find_definition_of_location
 
-    std::vector<std::pair<DocumentPos, fz_rect>> result;
+    //std::vector<std::pair<DocumentPos, fz_rect>> result;
+    std::vector<SmartViewCandidate> result;
 
     if (line_index > 0) {
         std::vector<std::wstring> lines;
@@ -1217,12 +1219,18 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
 
                 for (auto link : pdf_links) {
                     auto parsed_uri = parse_uri(mupdf_context, link.uri);
-                    result.push_back(
-                        std::make_pair(
-                            DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y },
-                            current_document->document_to_absolute_rect(line_page_number, link.rects[0], true)
-                        )
-                    );
+                    SmartViewCandidate candid;
+                    candid.doc = get_document();
+                    candid.source_rect = current_document->document_to_absolute_rect(line_page_number, link.rects[0], true);
+                    candid.source_text = get_document()->get_pdf_link_text(link);
+                    candid.target_pos = DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y };
+                    result.push_back(candid);
+                    //result.push_back(
+                    //    std::make_pair(
+                    //        DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y },
+                    //        current_document->document_to_absolute_rect(line_page_number, link.rects[0], true)
+                    //    )
+                    //);
                     //if (src_rects) src_rects->push_back(link.rect);
                 }
 
@@ -1250,19 +1258,29 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
             get_rects_from_ranges(ruler_page, line_char_rects[line_index], reference_ranges, reference_rects);
             get_rects_from_ranges(ruler_page, line_char_rects[line_index], equation_ranges, equation_rects);
 
-            std::vector<std::pair<DocumentPos, fz_rect>> generic_positions;
-            std::vector<std::pair<DocumentPos, fz_rect>> reference_positions;
-            std::vector<std::pair<DocumentPos, fz_rect>> equation_positions;
+            //std::vector<std::pair<DocumentPos, fz_rect>> generic_positions;
+            //std::vector<std::pair<DocumentPos, fz_rect>> reference_positions;
+            //std::vector<std::pair<DocumentPos, fz_rect>> equation_positions;
+
+            std::vector<SmartViewCandidate> generic_positions;
+            std::vector<SmartViewCandidate> reference_positions;
+            std::vector<SmartViewCandidate> equation_positions;
 
 
             //for (auto generic_item_text : generic_item_texts) {
             for (int i = 0; i < generic_item_texts.size(); i++) {
                 std::vector<IndexedData> possible_targets = current_document->find_generic_with_string(generic_item_texts[i], ruler_page);
                 for (int j = 0; j < possible_targets.size(); j++) {
-                    generic_positions.push_back(
-                        std::make_pair(DocumentPos{ possible_targets[j].page, 0, possible_targets[j].y_offset },
-                            generic_item_rects[i])
-                    );
+                    SmartViewCandidate candid;
+                    candid.doc = get_document();
+                    candid.source_rect = generic_item_rects[i];
+                    candid.source_text = generic_item_texts[i];
+                    candid.target_pos = DocumentPos{ possible_targets[j].page, 0, possible_targets[j].y_offset };
+                    generic_positions.push_back(candid);
+                    //generic_positions.push_back(
+                    //    std::make_pair(DocumentPos{ possible_targets[j].page, 0, possible_targets[j].y_offset },
+                    //        generic_item_rects[i])
+                    //);
                 }
             }
             for (int i = 0; i < reference_texts.size(); i++) {
@@ -1274,22 +1292,35 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
                         auto index = current_document->find_reference_with_string(parts[j].trimmed().toStdWString(), ruler_page);
 
                         if (index.size() > 0) {
-                            reference_positions.push_back(
-                                std::make_pair(
-                                    DocumentPos{ index[0].page, 0, index[0].y_offset },
-                                    reference_rects[i])
-                            );
+                            SmartViewCandidate candid;
+                            candid.doc = get_document();
+                            candid.source_rect = reference_rects[i];
+                            candid.source_text = parts[j].trimmed().toStdWString();
+                            candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
+                            reference_positions.push_back(candid);
+                            //reference_positions.push_back(
+                            //    std::make_pair(
+                            //        DocumentPos{ index[0].page, 0, index[0].y_offset },
+                            //        reference_rects[i])
+                            //);
                         }
                     }
                 }
                 auto index = current_document->find_reference_with_string(reference_texts[i], ruler_page);
 
                 if (index.size() > 0) {
-                    reference_positions.push_back(
-                        std::make_pair(
-                            DocumentPos{ index[0].page, 0, index[0].y_offset },
-                            reference_rects[i])
-                    );
+
+                    SmartViewCandidate candid;
+                    candid.doc = get_document();
+                    candid.source_rect = reference_rects[i];
+                    candid.source_text = reference_texts[i];
+                    candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
+                    reference_positions.push_back(candid);
+                    //reference_positions.push_back(
+                    //    std::make_pair(
+                    //        DocumentPos{ index[0].page, 0, index[0].y_offset },
+                    //        reference_rects[i])
+                    //);
                 }
             }
             //for (auto equation_text : equation_texts) {
@@ -1297,16 +1328,22 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
                 auto index = current_document->find_equation_with_string(equation_texts[i], get_vertical_line_page());
 
                 if (index.size() > 0) {
-                    equation_positions.push_back(
-                        std::make_pair(
-                            DocumentPos { index[0].page, 0, index[0].y_offset },
-                            equation_rects[i]
-                        )
-                    );
+                    SmartViewCandidate candid;
+                    candid.doc = get_document();
+                    candid.source_rect = equation_rects[i];
+                    candid.source_text = equation_texts[i];
+                    candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
+                    equation_positions.push_back(candid);
+                    //equation_positions.push_back(
+                    //    std::make_pair(
+                    //        DocumentPos { index[0].page, 0, index[0].y_offset },
+                    //        equation_rects[i]
+                    //    )
+                    //);
                 }
             }
 
-            std::vector<std::vector<std::pair<DocumentPos, fz_rect>>*> res_vectors = { &equation_positions, &reference_positions, &generic_positions };
+            std::vector<std::vector<SmartViewCandidate>*> res_vectors = { &equation_positions, &reference_positions, &generic_positions };
             int index = 0;
             int max_size = 0;
 
@@ -1331,9 +1368,11 @@ std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions
 }
 
 bool DocumentView::goto_definition() {
-    std::vector<std::pair<DocumentPos, fz_rect>> defloc = find_line_definitions();
+    std::vector<SmartViewCandidate> defloc = find_line_definitions();
     if (defloc.size() > 0) {
-        goto_offset_within_page(defloc[0].first.page, defloc[0].first.y);
+        //goto_offset_within_page(defloc[0].first.page, defloc[0].first.y);
+        DocumentPos docpos = defloc[0].get_docpos(this);
+        goto_offset_within_page(docpos.page, docpos.y);
         return true;
     }
     return false;
@@ -1516,4 +1555,27 @@ fz_irect DocumentView::normalized_to_window_rect(fz_rect normalized_rect) {
 
 bool DocumentView::is_ruler_mode() {
     return is_ruler_mode_;
+}
+
+Document* SmartViewCandidate::get_document(DocumentView* view) {
+    if (doc) return doc;
+    return view->get_document();
+
+}
+DocumentPos SmartViewCandidate::get_docpos(DocumentView* view) {
+    if (std::holds_alternative<DocumentPos>(target_pos)) {
+        return std::get<DocumentPos>(target_pos);
+    }
+    else {
+        return get_document(view)->absolute_to_page_pos(std::get<AbsoluteDocumentPos>(target_pos));
+    }
+}
+
+AbsoluteDocumentPos SmartViewCandidate::get_abspos(DocumentView* view) {
+    if (std::holds_alternative<AbsoluteDocumentPos>(target_pos)) {
+        return std::get<AbsoluteDocumentPos>(target_pos);
+    }
+    else {
+        return get_document(view)->document_to_absolute_pos(std::get<DocumentPos>(target_pos));
+    }
 }

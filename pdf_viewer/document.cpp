@@ -43,8 +43,8 @@ extern float EPUB_HEIGHT;
 extern QString EPUB_TEMPLATE;
 extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
-extern std::vector<float> embedding_weights;
-extern std::vector<float> linear_weights;
+//extern std::vector<float> embedding_weights;
+//extern std::vector<float> linear_weights;
 extern float EPUB_LINE_SPACING;
 extern Path standard_data_path;
 extern bool VERBOSE;
@@ -3212,30 +3212,30 @@ int Document::reflow(int page) {
     return new_page;
 }
 
-void push_embedding(int index, std::vector<float>& target) {
-    int offset = index * EMBEDDING_DIM;
-    for (int i = 0; i < EMBEDDING_DIM; i++) {
-        target.push_back(embedding_weights[offset + i]);
-    }
-}
+//void push_embedding(int index, std::vector<float>& target) {
+//    int offset = index * EMBEDDING_DIM;
+//    for (int i = 0; i < EMBEDDING_DIM; i++) {
+//        target.push_back(embedding_weights[offset + i]);
+//    }
+//}
 
-std::vector<float> apply_linear_weights(std::vector<float> embeddings) {
-
-    std::vector<float> outputs;
-
-    for (int j = 0; j < 2; j++) {
-        float res = 0;
-        for (int i = 0; i < embeddings.size(); i++) {
-            res += embeddings[i] * linear_weights[i + j * embeddings.size()];
-        }
-        outputs.push_back(res);
-    }
-    return outputs;
-}
+//std::vector<float> apply_linear_weights(std::vector<float> embeddings) {
+//
+//    std::vector<float> outputs;
+//
+//    for (int j = 0; j < 2; j++) {
+//        float res = 0;
+//        for (int i = 0; i < embeddings.size(); i++) {
+//            res += embeddings[i] * linear_weights[i + j * embeddings.size()];
+//        }
+//        outputs.push_back(res);
+//    }
+//    return outputs;
+//}
 
 std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std::vector<fz_rect>* out_rects) {
     fz_stext_page* stext_page = get_stext_with_page_number(page_number);
-    std::vector<fz_stext_char*> flat_chars;
+    std::vector<DocumentCharacter> flat_chars;
 
     //get_flat_chars_from_stext_page(stext_page, flat_chars, true);
     get_flat_chars_from_stext_page_for_bib_detection(stext_page, flat_chars);
@@ -3248,28 +3248,48 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
 
     std::vector<int> dot_indices;
     std::vector<int> end_indices;
+
+    std::vector<int> bracket_end_indices;
+    std::vector<int> indented_end_indices;
+
     std::wstring raw_text;
-    std::wstring spaced_text;
-    std::vector<int> raw_to_spaced_index;
-
+    //std::wstring spaced_text;
+    //std::vector<int> raw_to_spaced_index;
     for (int i = 0; i < flat_chars.size(); i++) {
-        if (flat_chars[i]->c == '.') {
+        if (flat_chars[i].c == '.') {
             dot_indices.push_back(i);
         }
-        else if ((flat_chars[i]->next) == nullptr && i < (flat_chars.size() - 1) && (flat_chars[i + 1]->c == '[')) {
+        else if (flat_chars[i].is_final && i < (flat_chars.size() - 1) && (flat_chars[i + 1].c == '[')) {
             dot_indices.push_back(i);
         }
 
-        raw_text.push_back(flat_chars[i]->c);
-        spaced_text.push_back(flat_chars[i]->c);
-        char_rects.push_back(fz_rect_from_quad(flat_chars[i]->quad));
-
-        if ((flat_chars[i]->next == nullptr) && (flat_chars[i]->c != '-')) {
-            spaced_text.push_back(' ');
-        }
-        raw_to_spaced_index.push_back(spaced_text.size()-1);
-
+    //    else if (flat_chars[i].is_final && i < (flat_chars.size() - 1) && (flat_chars[i + 1].c == '[')) {
+    //        dot_indices.push_back(i);
+    //    }
+        char_rects.push_back(flat_chars[i].rect);
+        raw_text.push_back(flat_chars[i].c);
+        //spaced_text.push_back(flat_chars[i].c);
+        //raw_to_spaced_index.push_back(i);
     }
+
+    //for (int i = 0; i < flat_chars.size(); i++) {
+    //    if (flat_chars[i].c == '.') {
+    //        dot_indices.push_back(i);
+    //    }
+    //    else if (flat_chars[i].is_final && i < (flat_chars.size() - 1) && (flat_chars[i + 1].c == '[')) {
+    //        dot_indices.push_back(i);
+    //    }
+
+    //    raw_text.push_back(flat_chars[i].c);
+    //    spaced_text.push_back(flat_chars[i].c);
+    //    char_rects.push_back(flat_chars[i].rect);
+
+    //    if (flat_chars[i].is_final && (flat_chars[i].c != '-')) {
+    //        spaced_text.push_back(' ');
+    //    }
+    //    raw_to_spaced_index.push_back(spaced_text.size()-1);
+
+    //}
 
     for (auto rect : char_rects) {
         get_rect_augument_data(rect, page_width, page_height, augumented_rect_data);
@@ -3277,42 +3297,80 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
 
 
     for (int dot_index : dot_indices) {
-        std::vector<float> embeddings;
-        int start_index = dot_index - WINDOW_SIZE;
-        int end_index = dot_index + WINDOW_SIZE;
+        //std::vector<float> embeddings;
+        //int start_index = dot_index - WINDOW_SIZE;
+        //int end_index = dot_index + WINDOW_SIZE;
 
-        for (int index = start_index; index < end_index; index++) {
-            if (index >= 0 && index < flat_chars.size()) {
-                //embeddings.push_back(augumented_rect_data[index]);
-                push_embedding(std::min(flat_chars[index]->c, 127), embeddings);
-            }
-            else {
-                push_embedding(0, embeddings);
-            }
+        //for (int index = start_index; index < end_index; index++) {
+        //    if (index >= 0 && index < flat_chars.size()) {
+        //        //embeddings.push_back(augumented_rect_data[index]);
+        //        push_embedding(std::min(flat_chars[index].c, 127), embeddings);
+        //    }
+        //    else {
+        //        push_embedding(0, embeddings);
+        //    }
 
-        }
-        for (int index = start_index; index < end_index; index++) {
-            const int RECT_DIM = 4 * 8;
-            int rect_data_start_index = index * RECT_DIM;
-            if (index >= 0 && index < flat_chars.size()) {
-                for (int i = 0; i < RECT_DIM; i++) {
-                    embeddings.push_back(augumented_rect_data[index * RECT_DIM + i]);
-                }
-            }
-            else {
-                for (int i = 0; i < RECT_DIM; i++) {
-                    embeddings.push_back(0.0f);
-                }
-            }
+        //}
+        //for (int index = start_index; index < end_index; index++) {
+        //    const int RECT_DIM = 4 * 8;
+        //    int rect_data_start_index = index * RECT_DIM;
+        //    if (index >= 0 && index < flat_chars.size()) {
+        //        for (int i = 0; i < RECT_DIM; i++) {
+        //            embeddings.push_back(augumented_rect_data[index * RECT_DIM + i]);
+        //        }
+        //    }
+        //    else {
+        //        for (int i = 0; i < RECT_DIM; i++) {
+        //            embeddings.push_back(0.0f);
+        //        }
+        //    }
 
 
-        }
+        //}
 
-        auto outputs = apply_linear_weights(embeddings);
-        if (outputs[1] > outputs[0]) {
+        //auto outputs = apply_linear_weights(embeddings);
+        //if (outputs[1] > outputs[0]) {
+        //    end_indices.push_back(dot_index);
+        //}
+        if (is_dot_index_end_of_a_reference(flat_chars, dot_index)) {
             end_indices.push_back(dot_index);
+            if (dot_index + 1 < flat_chars.size() && (flat_chars[dot_index + 1].c == '[')) {
+                bracket_end_indices.push_back(dot_index);
+            }
+            if (dot_index + 1 < flat_chars.size()){
+                int next_index = dot_index + 1;
+
+                // skip phantom spaces
+                if (flat_chars[next_index].stext_char == nullptr) next_index++;
+
+                if (next_index == flat_chars.size()) {
+                    indented_end_indices.push_back(dot_index);
+                }
+                else {
+                    fz_rect dot_line_begin_rect = fz_rect_from_quad(flat_chars[dot_index].stext_line->first_char->quad);
+                    fz_rect next_line_rect = flat_chars[next_index].rect;
+                    float next_x = (next_line_rect.x0 + next_line_rect.x1) / 2;
+                    float height = std::abs(next_line_rect.y1 - next_line_rect.y0);
+
+                    if (next_x < dot_line_begin_rect.x0) {
+                        indented_end_indices.push_back(dot_index);
+                    }
+                    //else if (next_line_rect.y0 < dot_line_begin_rect.y1) {
+                    else if (std::abs(next_line_rect.y0 - dot_line_begin_rect.y0) > (5 * height)) {
+                        indented_end_indices.push_back(dot_index);
+                    }
+                }
+            }
+
         }
 
+    }
+    if (bracket_end_indices.size() > 3) {
+        end_indices = bracket_end_indices;
+    }
+
+    if (indented_end_indices.size() > 3 && indented_end_indices.size() > bracket_end_indices.size()) {
+        end_indices = indented_end_indices;
     }
 
     std::vector<fz_rect> res;
@@ -3326,11 +3384,11 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
     }
 
     //reference_texts.push_back(raw_text.substr(0, end_indices[0]));
-    reference_texts.push_back(spaced_text.substr(0, raw_to_spaced_index[end_indices[0]]));
+    reference_texts.push_back(raw_text.substr(0, end_indices[0]));
     for (int i = 1; i < end_indices.size(); i++) {
         //reference_texts.push_back(raw_text.substr(end_indices[i - 1] + 1, end_indices[i] - end_indices[i - 1]));
-        int length = raw_to_spaced_index[end_indices[i]] - raw_to_spaced_index[end_indices[i - 1]];
-        reference_texts.push_back(spaced_text.substr(raw_to_spaced_index[end_indices[i-1] + 1], length));
+        int length = end_indices[i] - end_indices[i - 1];
+        reference_texts.push_back(raw_text.substr(end_indices[i-1] + 1, length));
     }
 
     // try to remove the texts before the first bib item
@@ -3374,10 +3432,13 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
 
 }
 
-std::optional<std::wstring> Document::get_page_bib_with_reference(int page_number, std::wstring reference_text) {
+std::optional<std::pair<std::wstring, fz_rect>> Document::get_page_bib_with_reference(int page_number, std::wstring reference_text) {
     //todo: use the reference offset as well as the page to more accurately get the reference 
 
-    std::vector<std::wstring> bib_texts_ = get_page_bib_candidates(page_number);
+
+    reference_text = remove_et_al(reference_text);
+    std::vector<fz_rect> bib_rects;
+    std::vector<std::wstring> bib_texts_ = get_page_bib_candidates(page_number, &bib_rects);
     std::vector<std::wstring> bib_text_prefixes;
     for (auto bib : bib_texts_) {
         bib_text_prefixes.push_back(bib.substr(0, reference_text.size() + 5));
@@ -3388,7 +3449,7 @@ std::optional<std::wstring> Document::get_page_bib_with_reference(int page_numbe
 
     for (int i = 0; i < bib_text_prefixes.size(); i++) {
         if (QString::fromStdWString(bib_text_prefixes[i]).indexOf(reference_text_qstring) != -1) {
-            return bib_texts_[i];
+            return std::make_pair(bib_texts_[i], bib_rects[i]);
         }
     }
 
@@ -3400,7 +3461,7 @@ std::optional<std::wstring> Document::get_page_bib_with_reference(int page_numbe
         std::string encoded_bib_text = utf8_encode(bib_text_prefixes[i]);
         int current_score = lcs(&encoded_bib_text[0], &encoded_reference_text[0], encoded_bib_text.size(), encoded_reference_text.size());
         if (current_score == max_score) {
-            return bib_texts_[i];
+            return std::make_pair(bib_texts_[i], bib_rects[i]);
         }
         if (current_score > score) {
             score = current_score;
@@ -3408,7 +3469,7 @@ std::optional<std::wstring> Document::get_page_bib_with_reference(int page_numbe
         }
     }
     if (max_score_index >= 0) {
-        return bib_texts_[max_score_index];
+        return std::make_pair(bib_texts_[max_score_index], bib_rects[max_score_index]);
     }
 
     return {};

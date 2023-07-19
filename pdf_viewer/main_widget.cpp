@@ -1140,7 +1140,11 @@ std::wstring MainWidget::get_status_string() {
     }
     if (opengl_widget && opengl_widget->get_overview_page()) {
         if (index_into_candidates >= 0 && smart_view_candidates.size() > 1) {
-            status_string.replace("%{preview_index}", " [ preview " + QString::number(index_into_candidates + 1) + " / " + QString::number(smart_view_candidates.size()) + " ]");
+            QString preview_source_string = "";
+            if (smart_view_candidates[index_into_candidates].source_text.size() > 0) {
+                preview_source_string = " (" + QString::fromStdWString(smart_view_candidates[index_into_candidates].source_text) + ")";
+            }
+            status_string.replace("%{preview_index}", " [ preview " + QString::number(index_into_candidates + 1) + " / " + QString::number(smart_view_candidates.size()) + preview_source_string + " ]");
 
         }
     }
@@ -4768,18 +4772,19 @@ void MainWidget::perform_search(std::wstring text, bool is_regex) {
 
 void MainWidget::overview_to_definition() {
     if (!opengl_widget->get_overview_page()) {
-        std::vector<std::pair<DocumentPos, fz_rect>> defpos = main_document_view->find_line_definitions();
-        std::vector<SmartViewCandidate> candidates;
+        std::vector<SmartViewCandidate> candidates = main_document_view->find_line_definitions();
+        //std::vector<SmartViewCandidate> candidates;
 
-        for (auto [pos, rect] : defpos) {
-            SmartViewCandidate c;
-            c.source_rect = rect;
-            c.target_pos = pos;
-            candidates.push_back(c);
-        }
+        //for (auto [pos, rect] : defpos) {
+        //    SmartViewCandidate c;
+        //    c.source_rect = rect;
+        //    c.target_pos = pos;
+        //    candidates.push_back(c);
+        //}
 
-        if (defpos.size() > 0) {
-            set_overview_position(defpos[0].first.page, defpos[0].first.y);
+        if (candidates.size() > 0) {
+            DocumentPos first_docpos = candidates[0].get_docpos(main_document_view);
+            set_overview_position(first_docpos.page, first_docpos.y);
             smart_view_candidates = candidates;
             index_into_candidates = 0;
             on_overview_source_updated();
@@ -4791,9 +4796,10 @@ void MainWidget::overview_to_definition() {
 }
 
 void MainWidget::portal_to_definition() {
-    std::vector<std::pair<DocumentPos, fz_rect>> defpos = main_document_view->find_line_definitions();
+    std::vector<SmartViewCandidate> defpos = main_document_view->find_line_definitions();
     if (defpos.size() > 0) {
-        AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0].first, true);
+        //AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0].first, true);
+        AbsoluteDocumentPos abspos = defpos[0].get_abspos(main_document_view);
         Portal link;
         link.dst.document_checksum = doc()->get_checksum();
         link.dst.book_state.offset_x = abspos.x;
@@ -6095,16 +6101,48 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    //std::wstring query = selected_text;
-    //int page = doc()->find_reference_page_with_reference_text(query);
-    //auto res = doc()->get_page_bib_with_reference(page, query);
-    //if (res) {
-    //    qDebug() << "found reference: " << QString::fromStdWString(res.value());
-    //}
-    //else {
+    std::wstring query = selected_text;
+    int page = doc()->find_reference_page_with_reference_text(query);
+    auto res = doc()->get_page_bib_with_reference(page, query);
 
-    //    qDebug() << "reference not found";
+    fz_rect absrect = doc()->document_to_absolute_rect(page, res.value().second);
+
+    SmartViewCandidate candid;
+    candid.doc = doc();
+    candid.source_rect = absrect;
+    candid.source_text = query;
+    candid.target_pos = AbsoluteDocumentPos{ absrect.x0, absrect.y0 };
+    smart_view_candidates = { candid };
+    index_into_candidates = 0;
+
+    OverviewState state;
+    state.doc = doc();
+    state.absolute_offset_y = absrect.y0;
+    opengl_widget->set_overview_page(state);
+    invalidate_render();
+    if (res) {
+        qDebug() << "found reference: " << QString::fromStdWString(res.value().first);
+    }
+    else {
+
+        qDebug() << "reference not found";
+    }
+
+    //std::vector<fz_rect> bib_rects;
+    //int page = main_document_view->get_center_page_number();
+    //std::vector<std::wstring> bib_texts_ = doc()->get_page_bib_candidates(page, &bib_rects);
+    //std::vector<MarkedDataRect> marked_rects;
+    //for (auto r : bib_rects) {
+    //    MarkedDataRect mdr;
+    //    mdr.page = page;
+    //    mdr.rect = r;
+    //    mdr.type = 0;
+    //    marked_rects.push_back(mdr);
     //}
+    //opengl_widget->marked_data_rects = marked_rects;
+    //invalidate_render();
+    ////opengl_widget->set_
+
 }
 
 std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {
@@ -6186,7 +6224,13 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
         //std::vector<fz_rect> pdf_rect = pdf_link.rects;
         //std::wstring link_text = doc()->get_text_in_rect(page, pdf_rect);
         //link_text = clean_link_source_text(link_text);
-        return doc()->get_page_bib_with_reference(link_page - 1, link_text);
+        auto res = doc()->get_page_bib_with_reference(link_page - 1, link_text);
+        if (res) {
+            return res.value().first;
+        }
+        else {
+            return {};
+        }
     }
     else {
         auto ref_ = doc()->get_reference_text_at_position(page, offset_x, offset_y, nullptr);
@@ -6197,7 +6241,13 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
         if (find_location_of_text_under_pointer(docpos, &target_page, &target_offset, nullptr, &source_text) == ReferenceType::Reference) {
             if (ref_) {
                 std::wstring ref = ref_.value();
-                return doc()->get_page_bib_with_reference(target_page, ref);
+                auto res = doc()->get_page_bib_with_reference(target_page, ref);
+                if (res) {
+                    return res.value().first;
+                }
+                else {
+                    return {};
+                }
             }
         }
         else {
@@ -7244,9 +7294,12 @@ std::optional<std::wstring> MainWidget::get_overview_paper_name() {
 
             if (smart_view_candidates[index_into_candidates].source_text.size() > 0) {
 
-                int page = smart_view_candidates[index_into_candidates].get_docpos(this).page;
+                int page = smart_view_candidates[index_into_candidates].get_docpos(main_document_view).page;
 
-                bib_string = doc()->get_page_bib_with_reference(page, smart_view_candidates[index_into_candidates].source_text);
+                auto ref = doc()->get_page_bib_with_reference(page, smart_view_candidates[index_into_candidates].source_text);
+                if (ref.has_value()) {
+                    bib_string = ref->first;
+                }
             }
             else {
                 bib_string = get_paper_name_under_pos(center_document);
@@ -7503,25 +7556,3 @@ void MainWidget::show_touch_buttons(std::vector<std::wstring> buttons, std::func
     show_current_widget();
 }
 
-Document* SmartViewCandidate::get_document(MainWidget* widget) {
-    if (doc) return doc;
-    return widget->doc();
-
-}
-DocumentPos SmartViewCandidate::get_docpos(MainWidget* widget) {
-    if (std::holds_alternative<DocumentPos>(target_pos)) {
-        return std::get<DocumentPos>(target_pos);
-    }
-    else {
-        return get_document(widget)->absolute_to_page_pos(std::get<AbsoluteDocumentPos>(target_pos));
-    }
-}
-
-AbsoluteDocumentPos SmartViewCandidate::get_abspos(MainWidget* widget) {
-    if (std::holds_alternative<AbsoluteDocumentPos>(target_pos)) {
-        return std::get<AbsoluteDocumentPos>(target_pos);
-    }
-    else {
-        return get_document(widget)->document_to_absolute_pos(std::get<DocumentPos>(target_pos));
-    }
-}

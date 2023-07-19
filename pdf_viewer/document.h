@@ -251,7 +251,7 @@ public:
     bool can_use_highlights();
 
     std::vector<std::wstring> get_page_bib_candidates(int page_number, std::vector<fz_rect>* out_end_rects = nullptr);
-    std::optional<std::wstring> get_page_bib_with_reference(int page_number, std::wstring reference_text);
+    std::optional<std::pair<std::wstring, fz_rect>> get_page_bib_with_reference(int page_number, std::wstring reference_text);
 
     void get_text_selection(AbsoluteDocumentPos selection_begin,
         AbsoluteDocumentPos selection_end,

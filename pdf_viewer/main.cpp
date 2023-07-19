@@ -375,8 +375,8 @@ std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND = L"";
 
 std::vector<MainWidget*> windows;
 
-std::vector<float> embedding_weights;
-std::vector<float> linear_weights;
+//std::vector<float> embedding_weights;
+//std::vector<float> linear_weights;
 
 std::wstring strip_uri(std::wstring pdf_file_name) {
 
@@ -868,8 +868,8 @@ int main(int argc, char* args[]) {
     }
     int nrows, ncols;
 
-    load_npy(":/data/embedding.npy", embedding_weights, &nrows, &ncols);
-    load_npy(":/data/linear.npy", linear_weights, &nrows, &ncols);
+    //load_npy(":/data/embedding.npy", embedding_weights, &nrows, &ncols);
+    //load_npy(":/data/linear.npy", linear_weights, &nrows, &ncols);
 
     QSurfaceFormat format;
 #ifdef SIOYEK_ANDROID

@@ -29,6 +29,16 @@
 extern float ZOOM_INC_FACTOR;
 extern const int PAGE_PADDINGS;
 
+struct SmartViewCandidate {
+    Document* doc = nullptr;
+    fz_rect source_rect;
+    std::wstring source_text;
+    std::variant<DocumentPos, AbsoluteDocumentPos> target_pos;
+
+    Document* get_document(DocumentView* view);
+    DocumentPos get_docpos(DocumentView* view);
+    AbsoluteDocumentPos get_abspos(DocumentView* view);
+};
 
 class DocumentView {
 protected:
@@ -188,7 +198,8 @@ public:
     void set_line_index(int index, int page);
     int get_vertical_line_page();
     bool goto_definition();
-    std::vector<std::pair<DocumentPos, fz_rect>> find_line_definitions();
+    //std::vector<std::pair<DocumentPos, fz_rect>> find_line_definitions();
+    std::vector<SmartViewCandidate> find_line_definitions();
     std::optional<std::wstring> get_selected_line_text();
     bool get_is_auto_resize_mode();
     void disable_auto_resize_mode();

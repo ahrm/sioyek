@@ -59,16 +59,6 @@ struct BookmarkMoveData {
     AbsoluteDocumentPos initial_mouse_position;
 };
 
-struct SmartViewCandidate {
-    Document* doc = nullptr;
-    fz_rect source_rect;
-    std::wstring source_text;
-    std::variant<DocumentPos, AbsoluteDocumentPos> target_pos;
-
-    Document* get_document(MainWidget* widget);
-    DocumentPos get_docpos(MainWidget* widget);
-    AbsoluteDocumentPos get_abspos(MainWidget* widget);
-};
 
 struct PortalMoveData {
     int index;

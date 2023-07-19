@@ -465,32 +465,99 @@ bool is_index_reverse_reference_number(const std::vector<fz_stext_char*>& flat_c
     //int last_dot_index 
 
 }
-void get_flat_chars_from_stext_page_for_bib_detection(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars) {
-    std::vector<fz_stext_char*> temp_flat_chars;
-    get_flat_chars_from_stext_page(stext_page, temp_flat_chars, true);
-    std::vector<std::pair<int, int>> ranges_to_remove;
 
-    for (int i = 0; i < temp_flat_chars.size(); i++) {
-        int begin_index = -1;
-        int end_index = -1;
-        if (is_index_reverse_reference_number(temp_flat_chars, i, &begin_index, &end_index)) {
-            ranges_to_remove.push_back(std::make_pair(begin_index, end_index));
+
+void get_flat_chars_from_stext_page_for_bib_detection(fz_stext_page* stext_page, std::vector<DocumentCharacter>& flat_chars) {
+    LL_ITER(block, stext_page->first_block) {
+        if (block->type == FZ_STEXT_BLOCK_TEXT) {
+            LL_ITER(line, block->u.t.first_line) {
+                std::vector<fz_stext_char*> current_line_chars;
+                std::optional<DocumentCharacter> phantom_space = {};
+
+                LL_ITER(chr, line->first_char) {
+                    current_line_chars.push_back(chr);
+                }
+
+                //if (current_line_chars.size() < 5) {
+                //    bool found_dot = false;
+                //    for (auto c : current_line_chars) {
+                //        if (c->c == '.') {
+                //            found_dot = true;
+                //            break;
+                //        }
+                //    }
+                //    if (!found_dot) {
+                //        continue;
+                //    }
+                //}
+                if (current_line_chars.size() > 0) { // remove inverse references from end of lines
+                    if (current_line_chars.back()->c <= 128 && (std::isdigit(current_line_chars.back()->c))) {
+                        while (current_line_chars.size() > 0 && current_line_chars.back()->c != '.') {
+                            current_line_chars.pop_back();
+                        }
+                    }
+                }
+
+                if (current_line_chars.size() > 0) { //dehyphenate
+                    if (current_line_chars.back()->c == '-') {
+                        current_line_chars.pop_back();
+                    }
+                    else {
+                        DocumentCharacter ps;
+                        ps.c = ' ';
+                        ps.rect = fz_rect_from_quad(current_line_chars.back()->quad);
+                        ps.stext_block = block;
+                        ps.stext_line = line;
+                        ps.stext_char = nullptr;
+                        ps.is_final = true;
+                        phantom_space = ps;
+                    }
+                }
+                for (int i = 0; i < current_line_chars.size(); i++) {
+                    DocumentCharacter dc;
+                    dc.c = current_line_chars[i]->c;
+                    dc.rect = fz_rect_from_quad(current_line_chars[i]->quad);
+                    dc.stext_block = block;
+                    dc.stext_line = line;
+                    dc.stext_char = current_line_chars[i];
+                    if (i == current_line_chars.size() - 1) {
+                        if (!phantom_space.has_value()) {
+                            dc.is_final = true;
+                        }
+                    }
+                    flat_chars.push_back(dc);
+                }
+                if (phantom_space) {
+                    flat_chars.push_back(phantom_space.value());
+                }
+            }
         }
     }
+    //std::vector<fz_stext_char*> temp_flat_chars;
+    //get_flat_chars_from_stext_page(stext_page, temp_flat_chars, true);
+    //std::vector<std::pair<int, int>> ranges_to_remove;
 
-    int current_range_index = -1;
-    if (ranges_to_remove.size() > 0) current_range_index = 0;
+    //for (int i = 0; i < temp_flat_chars.size(); i++) {
+    //    int begin_index = -1;
+    //    int end_index = -1;
+    //    if (is_index_reverse_reference_number(temp_flat_chars, i, &begin_index, &end_index)) {
+    //        ranges_to_remove.push_back(std::make_pair(begin_index, end_index));
+    //    }
+    //}
 
-    for (int i = 0; i < temp_flat_chars.size(); i++) {
-        if ((current_range_index < ranges_to_remove.size() - 1) && (i > ranges_to_remove[current_range_index].second)) {
-            current_range_index += 1;
-        }
+    //int current_range_index = -1;
+    //if (ranges_to_remove.size() > 0) current_range_index = 0;
 
-        if ((current_range_index == -1) || !(i > ranges_to_remove[current_range_index].first && i <= ranges_to_remove[current_range_index].second)) {
-            flat_chars.push_back(temp_flat_chars[i]);
-        }
+    //for (int i = 0; i < temp_flat_chars.size(); i++) {
+    //    if ((current_range_index < ranges_to_remove.size() - 1) && (i > ranges_to_remove[current_range_index].second)) {
+    //        current_range_index += 1;
+    //    }
 
-    }
+    //    if ((current_range_index == -1) || !(i > ranges_to_remove[current_range_index].first && i <= ranges_to_remove[current_range_index].second)) {
+    //        flat_chars.push_back(temp_flat_chars[i]);
+    //    }
+
+    //}
 
 
 }
@@ -2246,6 +2313,26 @@ void merge_lines(
     std::vector<std::wstring>& out_texts,
     std::vector<std::vector<fz_rect>>* out_line_chars) {
 
+    //for (int i = 0; i < lines.size(); i++) {
+    //    fz_rect box = lines[i]->bbox;
+    //    std::wstring text;
+    //    std::vector<fz_rect> line_chars;
+    //    fz_stext_char* current_char = lines[i]->first_char;
+    //    while (current_char) {
+    //        text.push_back(current_char->c);
+    //        line_chars.push_back(fz_rect_from_quad(current_char->quad));
+    //        current_char = current_char->next;
+    //    }
+
+    //    out_rects.push_back(box);
+    //    out_texts.push_back(text);
+    //    if (out_line_chars) {
+    //        out_line_chars->push_back(line_chars);
+    //    }
+
+    //}
+    //return;
+
     std::vector<fz_rect> temp_rects;
     std::vector<std::wstring> temp_texts;
     std::vector<std::vector<fz_rect>> temp_line_chars;
@@ -3412,7 +3499,8 @@ std::wstring get_paper_name_from_reference_text(std::wstring reference_text) {
         }
 
         QString str = QString::fromStdWString(reference_text);
-        QRegularExpression reference_ending_dot_regex = QRegularExpression("(\.\w*In )|(\.\w*arxiv )|(\.\w*arXiv )");
+        //QRegularExpression reference_ending_dot_regex = QRegularExpression("(\.\w*In )|(\.\w*[aA]r[xX]iv )|(\.\w*[aA]r[X]iv )");
+        QRegularExpression reference_ending_dot_regex = QRegularExpression("(\.\w*In )|(\.\w*[aA]r[xX]iv )");
 
         int ending_index = str.lastIndexOf(reference_ending_dot_regex);
         if (ending_index == -1) {
@@ -3496,3 +3584,69 @@ bool does_paper_name_match_query(std::wstring query, std::wstring paper_name) {
     return score >= threshold;
 }
 
+
+bool is_dot_index_end_of_a_reference(const std::vector<DocumentCharacter>& flat_chars, int dot_index) {
+    int next_non_whitespace_index = -1;
+    int prev_index = dot_index - 1;
+    int context_begin = dot_index - 10;
+    int context_end = dot_index + 10;
+
+    if (dot_index >= flat_chars.size()-2) {
+        return true;
+    }
+
+    for (int candid = dot_index; candid < std::min((int)flat_chars.size(), dot_index+4); candid++) {
+        if (flat_chars[candid].is_final) {
+            next_non_whitespace_index = candid + 1;
+            if (next_non_whitespace_index == flat_chars.size()) next_non_whitespace_index = -1;
+            break;
+        }
+        fz_rect candid_rect = flat_chars[candid].rect;
+        fz_rect dot_rect = flat_chars[dot_index].rect;
+        if (candid_rect.y0 > dot_rect.y1) {
+            next_non_whitespace_index = candid;
+            break;
+        }
+    }
+    if (next_non_whitespace_index == -1) {
+        for (int candid = dot_index; candid < std::min((int)flat_chars.size(), dot_index + 2); candid++) {
+            fz_rect candid_rect = flat_chars[candid].rect;
+            fz_rect dot_rect = flat_chars[dot_index].rect;
+            if (candid_rect.y0 > dot_rect.y1) {
+                next_non_whitespace_index = candid;
+                break;
+            }
+        }
+    }
+    if (next_non_whitespace_index > -1 && prev_index > -1) {
+        if (context_begin >= 0 && context_end < flat_chars.size()) {
+            std::wstring context;
+            for (int i = context_begin; i < context_end; i++) {
+                context.push_back(flat_chars[i].c);
+            }
+            int a = 2;
+            //qDebug() << QString::fromStdWString(context) << "!!" << QString(QChar(flat_chars[next_non_whitespace_index]->c));
+        }
+        fz_rect dot_rect = flat_chars[prev_index].rect;
+        fz_rect next_rect = flat_chars[next_non_whitespace_index].rect;
+        float height = std::abs(next_rect.y1 - next_rect.y0);
+
+        if ((next_rect.y0 > (dot_rect.y0 + height / 2)) && (next_rect.y1 > (dot_rect.y1 + height / 2))) {
+            return true;
+        }
+        if (std::abs(next_rect.y0 - dot_rect.y0) > 5 * height) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::wstring remove_et_al(std::wstring ref) {
+    int index = ref.find(L"et al.");
+    if (index != -1) {
+        return ref.substr(0, index) + ref.substr(index + 6);
+    }
+    else {
+        return ref;
+    }
+}

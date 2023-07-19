@@ -38,6 +38,15 @@ struct FreehandDrawingPoint {
     float thickness;
 };
 
+struct DocumentCharacter {
+    int c;
+    fz_rect rect;
+    bool is_final = false;
+    fz_stext_block* stext_block;
+    fz_stext_line* stext_line;
+    fz_stext_char* stext_char;
+};
+
 struct FreehandDrawing {
     std::vector<FreehandDrawingPoint> points;
     char type;
@@ -126,7 +135,7 @@ void search_google_scholar(const std::wstring& search_string);
 void search_libgen(const std::wstring& search_string);
 void index_references(fz_stext_page* page, int page_number, std::map<std::wstring, IndexedData>& indices);
 void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, bool dehyphenate=false);
-void get_flat_chars_from_stext_page_for_bib_detection(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars);
+//void get_flat_chars_from_stext_page_for_bib_detection(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars);
 int find_best_vertical_line_location(fz_pixmap* pixmap, int relative_click_x, int relative_click_y);
 //void get_flat_chars_from_stext_page_with_space(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, fz_stext_char* space);
 void index_equations(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::map<std::wstring, std::vector<IndexedData>>& indices);
@@ -363,3 +372,6 @@ fz_rect get_first_page_size(fz_context* ctx, const std::wstring& document_path);
 QString get_direct_pdf_url_from_archive_url(QString url);
 QString get_original_url_from_archive_url(QString url);
 bool does_paper_name_match_query(std::wstring query, std::wstring paper_name);
+bool is_dot_index_end_of_a_reference(const std::vector<DocumentCharacter>& flat_chars, int dot_index);
+std::wstring remove_et_al(std::wstring ref);
+void get_flat_chars_from_stext_page_for_bib_detection(fz_stext_page* stext_page, std::vector<DocumentCharacter>& flat_chars);
