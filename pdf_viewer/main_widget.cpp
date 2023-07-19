@@ -5,6 +5,7 @@
 // todo: current bib detection method doesn't work well for the first and last items
 // todo: improve reference detection models for non-standard documents
 // todo: handle text references
+// todo: pending downloads show up on other documents
 
 #include <iostream>
 #include <vector>
@@ -2429,6 +2430,23 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
             *out_source_text = refdata.text;
             *out_page = refdata.page;
             *out_offset = refdata.y_offset;
+            return ReferenceType::Reference;
+        }
+
+    }
+    if (selected_text.size() > 0) {
+
+        std::wstring query = selected_text;
+        int page = doc()->find_reference_page_with_reference_text(query);
+        auto res = doc()->get_page_bib_with_reference(page, query);
+        if (res) {
+            fz_rect absrect = doc()->document_to_absolute_rect(page, res.value().second);
+            *out_source_text = query;
+            *out_page = page;
+            *out_offset = res.value().second.y0;
+            if (main_document_view->selected_character_rects.size() > 0) {
+                *out_rect = main_document_view->selected_character_rects[0];
+            }
             return ReferenceType::Reference;
         }
 
@@ -6238,16 +6256,14 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
         float target_offset;
         std::wstring source_text;
 
-        if (find_location_of_text_under_pointer(docpos, &target_page, &target_offset, nullptr, &source_text) == ReferenceType::Reference) {
-            if (ref_) {
-                std::wstring ref = ref_.value();
-                auto res = doc()->get_page_bib_with_reference(target_page, ref);
-                if (res) {
-                    return res.value().first;
-                }
-                else {
-                    return {};
-                }
+        if (ref_ && find_location_of_text_under_pointer(docpos, &target_page, &target_offset, nullptr, &source_text) == ReferenceType::Reference) {
+            std::wstring ref = ref_.value();
+            auto res = doc()->get_page_bib_with_reference(target_page, ref);
+            if (res) {
+                return res.value().first;
+            }
+            else {
+                return {};
             }
         }
         else {

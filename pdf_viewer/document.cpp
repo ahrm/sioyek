@@ -4172,7 +4172,7 @@ std::vector<Portal> Document::get_intersecting_visible_portals(float absrange_be
 
 
 int Document::find_reference_page_with_reference_text(std::wstring ref) {
-    QStringList parts = QString::fromStdWString(ref).split(' ');
+    QStringList parts = QString::fromStdWString(ref).split(QRegularExpression("[ \w\(\);,]"));
     QString largest_part = "";
     for (int i = 0; i < parts.size(); i++) {
         if (parts.at(i).size() > largest_part.size() ) {
