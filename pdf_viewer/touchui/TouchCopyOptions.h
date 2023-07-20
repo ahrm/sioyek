@@ -18,6 +18,7 @@ public slots:
     void handleScholarClicked();
     void handleGoogleClicked();
     void handleHighlightClicked();
+    void handleDownloadClicked();
 
 signals:
     void copyClicked();
@@ -25,6 +26,7 @@ signals:
     void scholarClicked();
     void googleClicked();
     void highlightClicked();
+    void downloadClicked();
 
 private:
     QQuickWidget* quick_widget = nullptr;

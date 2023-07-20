@@ -561,6 +561,11 @@ TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidg
         main_widget->handle_touch_highlight();
         main_widget->clear_selection_indicators();
         });
+
+    QObject::connect(buttons_ui, &TouchCopyOptions::downloadClicked, [&]() {
+        //main_widget->download_pap
+        main_widget->clear_selection_indicators();
+        });
 }
 
 DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent) {

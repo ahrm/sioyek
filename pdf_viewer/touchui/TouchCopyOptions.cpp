@@ -46,6 +46,10 @@ void TouchCopyOptions::handleHighlightClicked() {
     emit highlightClicked();
 }
 
+void TouchCopyOptions::handleDownloadClicked() {
+    emit downloadClicked();
+}
+
 
 void TouchCopyOptions::resizeEvent(QResizeEvent* resize_event) {
     quick_widget->resize(resize_event->size().width(), resize_event->size().height());

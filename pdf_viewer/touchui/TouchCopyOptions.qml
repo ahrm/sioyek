@@ -18,11 +18,21 @@ Item{
     signal scholarPressed()
     signal googlePressed()
     signal highlightPressed()
+    signal downloadPressed()
 
     TouchButtonGroup{
         anchors.fill: parent
 
-        buttons: ["Copy", "Search", "Scholar", "Google", "Highlight"]
+        buttons: [
+        "qrc:/icons/copy.svg",
+        "qrc:/icons/search.svg",
+        "qrc:/icons/google-scholar.svg",
+        "qrc:/icons/google.svg",
+        "qrc:/icons/paper-download.svg",
+        "qrc:/icons/highlight.svg",
+        ]
+
+        tips: ["Copy", "Search in PDF", "Search in Google Scholar", "Search in Google", "Download", "Highlight"]
         onButtonClicked: function(index, val) {
             if (index == 0){
                 root.copyPressed();
@@ -41,6 +51,9 @@ Item{
             }
 
             if (index == 4){
+                root.downloadPressed();
+            }
+            if (index == 5){
                 root.highlightPressed();
             }
 
