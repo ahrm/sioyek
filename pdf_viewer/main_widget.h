@@ -833,6 +833,7 @@ public:
     void create_pending_download_portal(AbsoluteDocumentPos source_position, std::wstring paper_name);
     void download_and_portal(std::wstring unclean_paper_name, AbsoluteDocumentPos source_pos);
     void download_selected_text();
+    void smart_jump_to_selected_text();
 
 };
 

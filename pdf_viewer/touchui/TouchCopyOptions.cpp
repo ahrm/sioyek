@@ -23,6 +23,8 @@ TouchCopyOptions::TouchCopyOptions(QWidget* parent) : QWidget(parent) {
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(googlePressed()), this, SLOT(handleGoogleClicked()));
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(highlightPressed()), this, SLOT(handleHighlightClicked()));
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(searchPressed()), this, SLOT(handleSearchClicked()));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(downloadPressed()), this, SLOT(handleDownloadClicked()));
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()), SIGNAL(smartJumpPressed()), this, SLOT(handleSmartJumpClicked()));
 
 }
 
@@ -48,6 +50,10 @@ void TouchCopyOptions::handleHighlightClicked() {
 
 void TouchCopyOptions::handleDownloadClicked() {
     emit downloadClicked();
+}
+
+void TouchCopyOptions::handleSmartJumpClicked() {
+    emit smartJumpClicked();
 }
 
 

@@ -2,6 +2,7 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // todo: pending downloads show up on other documents
+// todo: show a prompt when downloading a paper in touch mode
 
 #include <iostream>
 #include <vector>
@@ -493,7 +494,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
-    if (overview_touch_move_data) {
+    if (overview_touch_move_data && opengl_widget->get_overview_page()) {
         // in touch mode, instead of moving the overview itself, we move the document inside the overview
         DocumentPos current_mouse_overview_document_pos = opengl_widget->window_pos_to_overview_pos(normal_mpos);
         AbsoluteDocumentPos current_mouse_overview_absolute_pos = doc()->document_to_absolute_pos(current_mouse_overview_document_pos);
@@ -7538,6 +7539,18 @@ bool MainWidget::is_pos_inside_selected_text(WindowPos pos) {
 }
 
 
+void MainWidget::smart_jump_to_selected_text() {
+    if (selected_text.size() != 0) {
+        int page = -1;
+        float offset;
+        fz_rect source_rect;
+        std::wstring source_text;
+        if (find_location_of_selected_text(&page, &offset, &source_rect, &source_text) != ReferenceType::None) {
+            long_jump_to_destination(page, offset);
+        }
+    }
+}
+
 void MainWidget::download_selected_text() {
     if (selected_text.size() != 0) {
         int page = -1;
@@ -7545,8 +7558,15 @@ void MainWidget::download_selected_text() {
         fz_rect source_rect;
         std::wstring source_text;
         if (find_location_of_selected_text(&page, &offset, &source_rect, &source_text) != ReferenceType::None) {
-            create_pending_download_portal(AbsoluteDocumentPos{ source_rect.x0, source_rect.y0 }, source_text);
-            //download_paper_with_name(clean_bib_item())
+            auto bib_item_ = doc()->get_page_bib_with_reference(page, source_text);
+            if (bib_item_) {
+                auto [bib_item_text, bib_item_rect] = bib_item_.value();
+                std::wstring paper_name = get_paper_name_from_reference_text(bib_item_text);
+                AbsoluteDocumentPos source_pos;
+                source_pos.x = (source_rect.x1 + source_rect.x1) / 2;
+                source_pos.y = (source_rect.y0 + source_rect.y1) /2 ;
+                download_and_portal(paper_name, source_pos);
+            }
         }
     }
 }

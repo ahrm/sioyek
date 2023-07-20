@@ -563,7 +563,12 @@ TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidg
         });
 
     QObject::connect(buttons_ui, &TouchCopyOptions::downloadClicked, [&]() {
-        //main_widget->download_pap
+        main_widget->download_selected_text();
+        main_widget->clear_selection_indicators();
+        });
+
+    QObject::connect(buttons_ui, &TouchCopyOptions::smartJumpClicked, [&]() {
+        main_widget->smart_jump_to_selected_text();
         main_widget->clear_selection_indicators();
         });
 }
