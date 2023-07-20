@@ -1288,22 +1288,27 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     // remove [ and ]
                     QString references_string = QString::fromStdWString(reference_texts[i].substr(1, reference_texts[i].size()-2));
                     QStringList parts = references_string.split(',');
+                    int n_chars_seen = 1;
                     for (int j = 0; j < parts.size(); j++) {
                         auto index = current_document->find_reference_with_string(parts[j].trimmed().toStdWString(), ruler_page);
 
+                        // range of the substring
+                        int rect_range_begin = reference_ranges[i].first + n_chars_seen;
+                        int rect_range_end = rect_range_begin + parts[j].size();
+
+
                         if (index.size() > 0) {
+                            std::vector<fz_rect> subrects;
+                            get_rects_from_ranges(ruler_page, line_char_rects[line_index], {std::make_pair(rect_range_begin, rect_range_end)}, subrects);
+
                             SmartViewCandidate candid;
                             candid.doc = get_document();
-                            candid.source_rect = reference_rects[i];
+                            candid.source_rect = subrects[0];
                             candid.source_text = parts[j].trimmed().toStdWString();
                             candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
                             reference_positions.push_back(candid);
-                            //reference_positions.push_back(
-                            //    std::make_pair(
-                            //        DocumentPos{ index[0].page, 0, index[0].y_offset },
-                            //        reference_rects[i])
-                            //);
                         }
+                        n_chars_seen += parts[j].size() + 1;
                     }
                 }
                 auto index = current_document->find_reference_with_string(reference_texts[i], ruler_page);
