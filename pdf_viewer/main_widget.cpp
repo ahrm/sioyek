@@ -2,7 +2,8 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // todo: pending downloads show up on other documents
-// todo: show a prompt when downloading a paper in touch mode
+// todo: show buttons in overview mode in touch mode
+// todo: touch mode text dialog is bad
 
 #include <iostream>
 #include <vector>
@@ -6180,7 +6181,14 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
 
             create_pending_download_portal(source_position, bib_text);
         }
-        download_paper_with_name(bib_text);
+        if (TOUCH_MODE) {
+            show_text_prompt(bib_text, [this](std::wstring text) {
+                download_paper_with_name(text);
+                });
+        }
+        else {
+            download_paper_with_name(bib_text);
+        }
     }
 }
 
@@ -7565,7 +7573,9 @@ void MainWidget::download_selected_text() {
                 AbsoluteDocumentPos source_pos;
                 source_pos.x = (source_rect.x1 + source_rect.x1) / 2;
                 source_pos.y = (source_rect.y0 + source_rect.y1) /2 ;
-                download_and_portal(paper_name, source_pos);
+                show_text_prompt(paper_name, [this, source_pos](std::wstring confirmed_paper_name) {
+                    download_and_portal(confirmed_paper_name, source_pos);
+                    });
             }
         }
     }
@@ -7592,4 +7602,19 @@ void MainWidget::create_pending_download_portal(AbsoluteDocumentPos source_posit
     pending_download_portal.paper_name = paper_name;
     pending_download_portals.push_back(pending_download_portal);
     update_opengl_pending_download_portals();
+}
+
+void MainWidget::show_text_prompt(std::wstring initial_value, std::function<void(std::wstring)> on_select) {
+    auto new_widget = new TouchTextEdit("Enter text", QString::fromStdWString(initial_value), this);
+
+    QObject::connect(new_widget, &TouchTextEdit::confirmed, [this, on_select](QString text) {
+        on_select(text.toStdWString());
+        pop_current_widget();
+        });
+
+    QObject::connect(new_widget, &TouchTextEdit::cancelled, [this]() {
+        pop_current_widget();
+        });
+    set_current_widget(new_widget);
+    show_current_widget();
 }
