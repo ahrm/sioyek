@@ -1202,6 +1202,8 @@ std::vector<std::wstring> find_all_regex_matches(std::wstring haystack,
     std::wregex regex(regex_string);
     std::wsmatch match;
     std::vector<std::wstring> res;
+    int skipped_length = 0;
+
     while (std::regex_search(haystack, match, regex)) {
         for (size_t i = 0; i < match.size(); i++) {
             if (match[i].matched) {
@@ -1209,10 +1211,11 @@ std::vector<std::wstring> find_all_regex_matches(std::wstring haystack,
                 if (match_ranges) {
                     int begin_index = match[i].first - haystack.begin();
                     int match_length = match[i].length();
-                    match_ranges->push_back(std::make_pair(begin_index, begin_index + match_length-1));
+                    match_ranges->push_back(std::make_pair(skipped_length + begin_index, skipped_length + begin_index + match_length-1));
                 }
             }
         }
+        skipped_length += match.prefix().length() + match.length();
         haystack = match.suffix();
     }
     return res;
@@ -3649,4 +3652,42 @@ std::wstring remove_et_al(std::wstring ref) {
     else {
         return ref;
     }
+}
+
+bool is_year(QString str) {
+    if (str.size() == 0) return false;
+
+    for (int i = 0; i < str.size(); i++) {
+        if (!str[i].isDigit()) {
+            return false;
+        }
+    }
+    int n = str.toInt();
+    if (n > 1600 && n < 2100) {
+        return true;
+    }
+    return false;
+}
+
+bool is_text_refernce_rather_than_paper_name(std::wstring text) {
+    text = strip_garbage_from_paper_name(text);
+
+    if (text.size() > 50) {
+        return false;
+    }
+    if ((text.find(L"et al") != -1) || (text.find(L"et. al") != -1)) {
+        return true;
+    }
+    if (text.back() >= 0 && text.back() <= 128 && std::isdigit(text.back())) {
+        return true;
+    }
+
+    QStringList parts = QString::fromStdWString(text).split(QRegularExpression("[ \(\)]"));
+    for (int i = 0; i < parts.size(); i++) {
+        if (is_year(parts[i])) {
+            return true;
+        }
+    }
+    return false;
+
 }
