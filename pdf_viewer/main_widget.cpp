@@ -2,7 +2,6 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // todo: pending downloads show up on other documents
-// todo: downloading when holding middle click doesn't create a portal
 
 #include <iostream>
 #include <vector>
@@ -6168,17 +6167,16 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
 
         if (PAPER_DOWNLOAD_CREATE_PORTAL) {
             AbsoluteDocumentPos source_position;
-            if (TOUCH_MODE && use_last_touch_pos) {
-                source_position = doc()->document_to_absolute_pos(doc_pos, true);
-                //AbsoluteDocumentPos touch_abspos = doc()->document_to_absolute_pos(doc_pos, true);
-                //create_pending_download_portal(touch_abspos, paper_name.value());
-            }
             if (opengl_widget->get_overview_page()) {
                 //fill_overview_pending_portal(bib_text);
                 fz_rect source_rect = get_overview_source_rect().value();
                 source_position.x = (source_rect.x0 + source_rect.x1) / 2;
                 source_position.y = (source_rect.y0 + source_rect.y1) / 2;
             }
+            else {
+                source_position = doc()->document_to_absolute_pos(doc_pos, true);
+            }
+
             create_pending_download_portal(source_position, bib_text);
         }
         download_paper_with_name(bib_text);
