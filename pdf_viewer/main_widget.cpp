@@ -203,7 +203,18 @@ bool MainWidget::main_document_view_has_document()
 }
 
 class SelectionIndicator : public QWidget {
+private:
+    bool is_dragging = false;
+    bool is_begin;
+    MainWidget* main_widget;
+    QPixmap begin_pixmap;
+    QPixmap end_pixmap;
+    QPoint last_press_window_pos;
+    QPoint last_press_widget_pos;
+    DocumentPos docpos;
+    bool docpos_needs_recompute = false;
 public:
+
     SelectionIndicator(QWidget* parent, bool begin, MainWidget* w, AbsoluteDocumentPos pos) : QWidget(parent) {
         is_begin = begin;
         main_widget = w;
@@ -211,125 +222,58 @@ public:
 
         begin_pixmap = QPixmap(":/begin.png");
         end_pixmap = QPixmap(":/end.png");
-        //        qDebug() << "Indicator created!\n";
-
-        //        setAttribute(Qt::WA_StyledBackground);
     }
 
     void update_pos() {
-        WindowPos window_pos = main_widget->main_document_view->document_to_window_pos_in_pixels(docpos);
+        WindowPos wp = main_widget->main_document_view->document_to_window_pos_in_pixels(docpos);
         if (is_begin) {
-            move(window_pos.x - width(), window_pos.y - height());
-            //            main_widget->text_selection_buttons->move(0, window_pos.y);
+            move(wp.x - width(), wp.y - height());
         }
         else {
-            move(window_pos.x, window_pos.y);
+            move(wp.x, wp.y);
         }
+
     }
-
-
     void mousePressEvent(QMouseEvent* mevent) {
         is_dragging = true;
-    }
-
-    QPoint get_actual_pos(QPoint pos) {
-        if (is_begin) {
-            return pos + QPoint(width(), height());
-        }
-        else {
-            return pos - QPoint(width() / 2, height() / 2);
-        }
+        last_press_window_pos = mapToParent(mevent->pos());
+        last_press_widget_pos = pos();
+        docpos_needs_recompute = true;
     }
 
     void mouseMoveEvent(QMouseEvent* mouse_event) {
         if (is_dragging) {
-            QPoint mouse_pos = get_actual_pos(mapToParent(mouse_event->pos()));
-
-            WindowPos window_pos;
-            window_pos.x = mouse_pos.x();
-            window_pos.y = mouse_pos.y();
-
-            docpos = main_widget->main_document_view->window_to_document_pos(window_pos);
-            if (is_begin) {
-                move(mapToParent(mouse_event->pos()));
-            }
-            else {
-                move(mouse_pos);
-            }
+            QPoint mouse_pos = mapToParent(mouse_event->pos());
+            QPoint diff = mouse_pos - last_press_window_pos;
+            QPoint new_widget_pos = last_press_widget_pos + diff;
+            move(new_widget_pos);
+            docpos_needs_recompute = true;
             main_widget->update_mobile_selection();
         }
     }
 
     void mouseReleaseEvent(QMouseEvent* mevent) {
-        if (is_dragging) {
-            QPoint parent_pos = get_actual_pos(mapToParent(mevent->pos()));
-
-            WindowPos window_pos;
-            window_pos.x = parent_pos.x();
-            window_pos.y = parent_pos.y();
-
-            docpos = main_widget->main_document_view->window_to_document_pos(window_pos);
-            //            AbsoluteDocumentPos abspos = main_widget->main_document_view->window_to_absolute_document_pos(window_pos);
-            //            AbsoluteDocumentPos abspos = main_widget->doc()->document_to_absolute_pos(docpos);
-
-            //            if (is_begin){
-            //                main_widget->selection_begin = abspos;
-            //            }
-            //            else{
-            //                main_widget->selection_end = abspos;
-            //            }
-
-            main_widget->update_mobile_selection();
-        }
         is_dragging = false;
     }
 
-    void paintEvent(QPaintEvent* event) {
-        //        WindowPos window_pos = main_widget->get_selected_rect_absolute()
-        QPainterPath begin_path;
-        begin_path.moveTo(width(), 0);
-        begin_path.lineTo(0, 0);
-        begin_path.arcTo(0, 0, width(), height(), 90, 180);
-        begin_path.closeSubpath();
+    DocumentPos get_docpos() {
+        if (!docpos_needs_recompute) return docpos;
 
-        QPainterPath end_path;
-        end_path.moveTo(0, height());
-        end_path.lineTo(width(), height());
-        end_path.arcTo(0, 0, width(), height(), 270, 360);
-        end_path.closeSubpath();
-
-
-        QPainter painter(this);
-        QPoint pos = this->pos();
-        QRect rect;
-
-        QColor red_color = QColor::fromRgb(255, 0, 0);
-        painter.setPen(red_color);
-
-        rect.setBottom(0);
-        rect.setTop(height());
-        rect.setLeft(0);
-        rect.setRight(width());
-
-        //        painter.fillRect(rect, red_color);
         if (is_begin) {
-            //            painter.fillPath(begin_path, red_color);
-            painter.drawPixmap(0, 0, width(), height(), begin_pixmap);
+            docpos = main_widget->main_document_view->window_to_document_pos(WindowPos{x() + width(), y() + height()});
         }
         else {
-
-            //            painter.fillPath(end_path, red_color);
-            painter.drawPixmap(0, 0, width(), height(), end_pixmap);
+            docpos = main_widget->main_document_view->window_to_document_pos(WindowPos{x(), y()});
         }
+
+        return docpos;
+
     }
 
-    DocumentPos docpos;
-private:
-    bool is_dragging = false;
-    bool is_begin;
-    MainWidget* main_widget;
-    QPixmap begin_pixmap;
-    QPixmap end_pixmap;
+    void paintEvent(QPaintEvent* event) {
+        QPainter painter(this);
+        painter.drawPixmap(0, 0, width(), height(), is_begin ? begin_pixmap : end_pixmap);
+    }
 };
 
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
@@ -5749,18 +5693,26 @@ void MainWidget::handle_mobile_selection() {
 
         AbsoluteDocumentPos begin_abspos;
         begin_abspos.x = rect.x0;
-        begin_abspos.y = rect.y0;
+        begin_abspos.y = (rect.y0 + rect.y1) / 2;
+        //begin_abspos.y = rect.y0;
 
         AbsoluteDocumentPos end_abspos;
         end_abspos.x = rect.x1;
-        end_abspos.y = rect.y1;
+        end_abspos.y = (rect.y1 + rect.y0) / 2;
+        //end_abspos.y = rect.y1;
 
         WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels(begin_document_pos);
         WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels(end_document_pos);
 
+        //std::deque<fz_rect> selection_chars;
+        //std::wstring selection_text;
+        //doc()->get_text_selection(begin_abspos, end_abspos, false, selection_chars, selection_text);
+        //qDebug() << QString::fromStdWString(selection_text);
+
+        int selection_indicator_size = 40;
         QPoint begin_pos;
-        begin_pos.setX(begin_window_pos.x - 40);
-        begin_pos.setY(begin_window_pos.y - 40);
+        begin_pos.setX(begin_window_pos.x - selection_indicator_size);
+        begin_pos.setY(begin_window_pos.y - selection_indicator_size);
 
         QPoint end_pos;
         end_pos.setX(end_window_pos.x);
@@ -5787,8 +5739,8 @@ void MainWidget::handle_mobile_selection() {
         //        selection_begin_indicator->move(QPoint(0, 0));
         //        selection_end_indicator->move(QPoint(20, 20));
 
-        selection_begin_indicator->resize(40, 40);
-        selection_end_indicator->resize(40, 40);
+        selection_begin_indicator->resize(selection_indicator_size, selection_indicator_size);
+        selection_end_indicator->resize(selection_indicator_size, selection_indicator_size);
 
         selection_begin_indicator->raise();
         selection_end_indicator->raise();
@@ -5808,8 +5760,8 @@ void MainWidget::handle_mobile_selection() {
 void MainWidget::update_mobile_selection() {
     //				handle_left_click(begin_window_pos, true, false, false, false);
     //				handle_left_click(end_window_pos, false, false, false, false);
-    DocumentPos begin = selection_begin_indicator->docpos;
-    DocumentPos end = selection_end_indicator->docpos;
+    DocumentPos begin = selection_begin_indicator->get_docpos();
+    DocumentPos end = selection_end_indicator->get_docpos();
     AbsoluteDocumentPos begin_absolute = doc()->document_to_absolute_pos(begin, true);
     AbsoluteDocumentPos end_absolute = doc()->document_to_absolute_pos(end, true);
 
@@ -6047,8 +5999,8 @@ void MainWidget::clear_highlight_buttons() {
 
 void MainWidget::handle_touch_highlight() {
 
-    DocumentPos begin_docpos = selection_begin_indicator->docpos;
-    DocumentPos end_docpos = selection_end_indicator->docpos;
+    DocumentPos begin_docpos = selection_begin_indicator->get_docpos();
+    DocumentPos end_docpos = selection_end_indicator->get_docpos();
 
     AbsoluteDocumentPos begin_abspos = doc()->document_to_absolute_pos(begin_docpos, true);
     AbsoluteDocumentPos end_abspos = doc()->document_to_absolute_pos(end_docpos, true);
