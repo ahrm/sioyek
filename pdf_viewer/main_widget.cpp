@@ -1,10 +1,6 @@
 ﻿// deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
-// todo: fix references in non-standard documents 
 // maybe: use a better method to handle deletion of canceled download portals
-// todo: current bib detection method doesn't work well for the first and last items
-// todo: improve reference detection models for non-standard documents
-// todo: handle text references
 // todo: pending downloads show up on other documents
 
 #include <iostream>
@@ -2445,7 +2441,9 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
             *out_page = page;
             *out_offset = res.value().second.y0;
             if (main_document_view->selected_character_rects.size() > 0) {
-                *out_rect = main_document_view->selected_character_rects[0];
+                if (out_rect) {
+                    *out_rect = main_document_view->selected_character_rects[0];
+                }
             }
             return ReferenceType::Reference;
         }
