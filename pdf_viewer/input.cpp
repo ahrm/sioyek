@@ -3062,8 +3062,14 @@ public:
         std::wstring download_url = widget->download_paper_with_name(text_);
 
         if (source_rect) {
-            widget->fill_overview_pending_portal(text_, src_doc_path, source_rect);
-            widget->update_opengl_pending_download_portals();
+
+            widget->download_and_portal(text_,
+                AbsoluteDocumentPos{
+                    (source_rect->x0 + source_rect->x1) / 2,
+                    (source_rect->y0 + source_rect->y1) / 2
+                });
+            //widget->fill_overview_pending_portal(text_, src_doc_path, source_rect);
+            //widget->update_opengl_pending_download_portals();
         }
 
 

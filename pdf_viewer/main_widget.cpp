@@ -2306,6 +2306,30 @@ void MainWidget::handle_click(WindowPos click_pos) {
     }
 
 }
+
+ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text) {
+    if (selected_text.size() > 0) {
+
+        std::wstring query = selected_text;
+        int page = doc()->find_reference_page_with_reference_text(query);
+        auto res = doc()->get_page_bib_with_reference(page, query);
+        if (res) {
+            fz_rect absrect = doc()->document_to_absolute_rect(page, res.value().second);
+            *out_source_text = query;
+            *out_page = page;
+            *out_offset = res.value().second.y0;
+            if (main_document_view->selected_character_rects.size() > 0) {
+                if (out_rect) {
+                    *out_rect = main_document_view->selected_character_rects[0];
+                }
+            }
+            return ReferenceType::Reference;
+        }
+
+    }
+    return ReferenceType::None;
+}
+
 ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text, bool update_candidates) {
 
     //auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
@@ -2381,22 +2405,7 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
 
     }
     if (selected_text.size() > 0) {
-
-        std::wstring query = selected_text;
-        int page = doc()->find_reference_page_with_reference_text(query);
-        auto res = doc()->get_page_bib_with_reference(page, query);
-        if (res) {
-            fz_rect absrect = doc()->document_to_absolute_rect(page, res.value().second);
-            *out_source_text = query;
-            *out_page = page;
-            *out_offset = res.value().second.y0;
-            if (main_document_view->selected_character_rects.size() > 0) {
-                if (out_rect) {
-                    *out_rect = main_document_view->selected_character_rects[0];
-                }
-            }
-            return ReferenceType::Reference;
-        }
+        return find_location_of_selected_text(out_page, out_offset, out_rect, out_source_text);
 
     }
 
@@ -3049,20 +3058,18 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
     std::wstring source_text;
 
 
-    if (is_pos_inside_selected_text(docpos)) {
-        if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect_absolute, &source_text, true) != ReferenceType::None) {
-            int pos_page = main_document_view->window_to_document_pos(pos).page;
-            //opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
-            current_overview_source_rect = overview_source_rect_absolute;
+    if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect_absolute, &source_text, true) != ReferenceType::None) {
+        int pos_page = main_document_view->window_to_document_pos(pos).page;
+        //opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
+        current_overview_source_rect = overview_source_rect_absolute;
 
-            SmartViewCandidate current_candid;
-            current_candid.source_rect = overview_source_rect_absolute;
-            current_candid.target_pos = DocumentPos{ autoreference_page, 0, autoreference_offset };
-            current_candid.source_text = source_text;
-            smart_view_candidates = { current_candid };
-            set_overview_position(autoreference_page, autoreference_offset);
-            return true;
-        }
+        SmartViewCandidate current_candid;
+        current_candid.source_rect = overview_source_rect_absolute;
+        current_candid.target_pos = DocumentPos{ autoreference_page, 0, autoreference_offset };
+        current_candid.source_text = source_text;
+        smart_view_candidates = { current_candid };
+        set_overview_position(autoreference_page, autoreference_offset);
+        return true;
     }
 
     return false;
@@ -6157,28 +6164,22 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
 
 
     if (paper_name) {
-        if (TOUCH_MODE && use_last_touch_pos) {
-            //PendingDownloadPortal pdp;
-            //pdp.paper_name = paper_name.value();
-            //pdp.source_document_path = doc()->get_path();
-            AbsoluteDocumentPos touch_abspos = doc()->document_to_absolute_pos(doc_pos, true);
-            Portal pending_portal;
-            pending_portal.src_offset_x = touch_abspos.x;
-            pending_portal.src_offset_y = touch_abspos.y;
-
-            pending_portal.dst.book_state.offset_x = 0;
-            pending_portal.dst.book_state.offset_y = 0;
-            pending_portal.dst.book_state.zoom_level = -1;
-            PendingDownloadPortal pending_download_portal;
-            pending_download_portal.pending_portal = pending_portal;
-            pending_download_portal.source_document_path = doc()->get_path();
-            pending_download_portal.paper_name = paper_name.value();
-            pending_download_portals.push_back(pending_download_portal);
-            update_opengl_pending_download_portals();
-        }
         std::wstring bib_text = clean_bib_item(paper_name.value());
-        if (PAPER_DOWNLOAD_CREATE_PORTAL && opengl_widget->get_overview_page()) {
-            fill_overview_pending_portal(bib_text);
+
+        if (PAPER_DOWNLOAD_CREATE_PORTAL) {
+            AbsoluteDocumentPos source_position;
+            if (TOUCH_MODE && use_last_touch_pos) {
+                source_position = doc()->document_to_absolute_pos(doc_pos, true);
+                //AbsoluteDocumentPos touch_abspos = doc()->document_to_absolute_pos(doc_pos, true);
+                //create_pending_download_portal(touch_abspos, paper_name.value());
+            }
+            if (opengl_widget->get_overview_page()) {
+                //fill_overview_pending_portal(bib_text);
+                fz_rect source_rect = get_overview_source_rect().value();
+                source_position.x = (source_rect.x0 + source_rect.x1) / 2;
+                source_position.y = (source_rect.y0 + source_rect.y1) / 2;
+            }
+            create_pending_download_portal(source_position, bib_text);
         }
         download_paper_with_name(bib_text);
     }
@@ -7462,33 +7463,6 @@ void MainWidget::close_overview() {
     opengl_widget->set_overview_page({});
 }
 
-void MainWidget::fill_overview_pending_portal(std::wstring paper_name, std::wstring src_doc_path, std::optional<fz_rect> source_rect) {
-
-    if (src_doc_path.size() == 0) {
-        src_doc_path = doc()->get_path();
-    }
-    if (!source_rect) {
-        source_rect = get_overview_source_rect();
-    }
-
-    if (source_rect) {
-
-        Portal pending_portal;
-        pending_portal.src_offset_x = (source_rect.value().x0 + source_rect.value().x1) / 2;
-        pending_portal.src_offset_y = (source_rect.value().y0 + source_rect.value().y1) / 2;
-
-        pending_portal.dst.book_state.offset_x = 0;
-        pending_portal.dst.book_state.offset_y = 0;
-        pending_portal.dst.book_state.zoom_level = -1;
-        PendingDownloadPortal pending_download_portal;
-        pending_download_portal.pending_portal = pending_portal;
-        pending_download_portal.source_document_path = src_doc_path;
-        pending_download_portal.paper_name = paper_name;
-        pending_download_portals.push_back(pending_download_portal);
-        update_opengl_pending_download_portals();
-    }
-}
-
 std::vector<Portal> MainWidget::get_ruler_portals() {
     std::vector<Portal> res;
     std::optional<fz_rect> ruler_rect_ = main_document_view->get_ruler_rect();
@@ -7563,4 +7537,41 @@ bool MainWidget::is_pos_inside_selected_text(DocumentPos docpos) {
 bool MainWidget::is_pos_inside_selected_text(WindowPos pos) {
     AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
     return is_pos_inside_selected_text(abspos);
+}
+
+
+void MainWidget::download_selected_text() {
+    if (selected_text.size() != 0) {
+        int page = -1;
+        float offset;
+        fz_rect source_rect;
+        std::wstring source_text;
+        if (find_location_of_selected_text(&page, &offset, &source_rect, &source_text) != ReferenceType::None) {
+            create_pending_download_portal(AbsoluteDocumentPos{ source_rect.x0, source_rect.y0 }, source_text);
+            //download_paper_with_name(clean_bib_item())
+        }
+    }
+}
+
+void MainWidget::download_and_portal(std::wstring unclean_paper_name, AbsoluteDocumentPos source_pos) {
+
+    std::wstring cleaned_paper_name = clean_bib_item(unclean_paper_name);
+    create_pending_download_portal(source_pos, cleaned_paper_name);
+    download_paper_with_name(cleaned_paper_name);
+}
+
+void MainWidget::create_pending_download_portal(AbsoluteDocumentPos source_position, std::wstring paper_name) {
+    Portal pending_portal;
+    pending_portal.src_offset_x = source_position.x;
+    pending_portal.src_offset_y = source_position.y;
+
+    pending_portal.dst.book_state.offset_x = 0;
+    pending_portal.dst.book_state.offset_y = 0;
+    pending_portal.dst.book_state.zoom_level = -1;
+    PendingDownloadPortal pending_download_portal;
+    pending_download_portal.pending_portal = pending_portal;
+    pending_download_portal.source_document_path = doc()->get_path();
+    pending_download_portal.paper_name = paper_name;
+    pending_download_portals.push_back(pending_download_portal);
+    update_opengl_pending_download_portals();
 }

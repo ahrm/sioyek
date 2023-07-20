@@ -467,6 +467,7 @@ public:
     void toggle_visual_scroll_mode();
     void set_overview_link(PdfLink link);
     void set_overview_position(int page, float offset);
+    ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text);
     ReferenceType find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
     CommandManager* get_command_manager();
@@ -822,13 +823,16 @@ public:
     int get_pending_portal_index_at_pos(AbsoluteDocumentPos abspos);
     void update_pending_portal_indices_after_removed_indices(std::vector<int>& removed_indices);
     void close_overview();
-    void fill_overview_pending_portal(std::wstring paper_name, std::wstring src_doc_path = L"", std::optional<fz_rect> source_rect = {});
+    //void fill_overview_pending_portal(std::wstring paper_name, std::wstring src_doc_path = L"", std::optional<fz_rect> source_rect = {});
     std::vector<Portal> get_ruler_portals();
     void handle_overview_to_ruler_portal();
     void handle_goto_ruler_portal(std::string tag="");
     void show_touch_buttons(std::vector<std::wstring> buttons, std::function<void(int, std::wstring)> on_select, bool top=true);
     bool is_pos_inside_selected_text(AbsoluteDocumentPos pos);
     bool is_pos_inside_selected_text(WindowPos pos);
+    void create_pending_download_portal(AbsoluteDocumentPos source_position, std::wstring paper_name);
+    void download_and_portal(std::wstring unclean_paper_name, AbsoluteDocumentPos source_pos);
+    void download_selected_text();
 
 };
 

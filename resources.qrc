@@ -54,6 +54,9 @@
         <file>icons/fullscreen.svg</file>
         <file>icons/fullscreen-enabled.svg</file>
         <file>icons/highlight.svg</file>
+        <file>icons/copy.svg</file>
+        <file>icons/google.svg</file>
+        <file>icons/google-scholar.svg</file>
         <file>icons/highlight-g.svg</file>
         <file>icons/ruler.svg</file>
         <file>icons/ruler-enabled.svg</file>
