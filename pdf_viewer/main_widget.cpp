@@ -2,6 +2,7 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // todo: pending downloads show up on other documents
+// todo: downloading when holding middle click doesn't create a portal
 
 #include <iostream>
 #include <vector>
@@ -1941,6 +1942,11 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
                 last_speed_update_time = QTime::currentTime();
             }
         }
+
+        if (current_widget_stack.size() > 0 && (dynamic_cast<AndroidSelector*>(current_widget_stack.back()))) {
+            return;
+        }
+
         int window_width = width();
         int window_height = height();
 
@@ -2402,6 +2408,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
+
 
     if (is_drawing) {
         finish_drawing(mevent->pos());
@@ -6146,10 +6153,29 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
     }
     WindowPos pos(mouse_pos.x(), mouse_pos.y());
     DocumentPos doc_pos = get_document_pos_under_window_pos(pos);
-    std::optional<std::wstring> paper_name = get_paper_name_under_pos(doc_pos);
+    std::optional<std::wstring> paper_name = get_paper_name_under_pos(doc_pos, true);
 
 
     if (paper_name) {
+        if (TOUCH_MODE && use_last_touch_pos) {
+            //PendingDownloadPortal pdp;
+            //pdp.paper_name = paper_name.value();
+            //pdp.source_document_path = doc()->get_path();
+            AbsoluteDocumentPos touch_abspos = doc()->document_to_absolute_pos(doc_pos, true);
+            Portal pending_portal;
+            pending_portal.src_offset_x = touch_abspos.x;
+            pending_portal.src_offset_y = touch_abspos.y;
+
+            pending_portal.dst.book_state.offset_x = 0;
+            pending_portal.dst.book_state.offset_y = 0;
+            pending_portal.dst.book_state.zoom_level = -1;
+            PendingDownloadPortal pending_download_portal;
+            pending_download_portal.pending_portal = pending_portal;
+            pending_download_portal.source_document_path = doc()->get_path();
+            pending_download_portal.paper_name = paper_name.value();
+            pending_download_portals.push_back(pending_download_portal);
+            update_opengl_pending_download_portals();
+        }
         std::wstring bib_text = clean_bib_item(paper_name.value());
         if (PAPER_DOWNLOAD_CREATE_PORTAL && opengl_widget->get_overview_page()) {
             fill_overview_pending_portal(bib_text);
@@ -6158,7 +6184,7 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
     }
 }
 
-std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos docpos) {
+std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos docpos, bool clean) {
 
     auto [page, offset_x, offset_y] = docpos;
     std::optional<PdfLink> pdf_link_ = doc()->get_link_in_pos(docpos);
@@ -6182,7 +6208,12 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
         //link_text = clean_link_source_text(link_text);
         auto res = doc()->get_page_bib_with_reference(link_page - 1, link_text);
         if (res) {
-            return res.value().first;
+            if (clean) {
+                return get_paper_name_from_reference_text(res.value().first);
+            }
+            else {
+                return res.value().first;
+            }
         }
         else {
             return {};
@@ -6198,7 +6229,12 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
             std::wstring ref = ref_.value();
             auto res = doc()->get_page_bib_with_reference(target_page, ref);
             if (res) {
-                return res.value().first;
+                if (clean) {
+                    return get_paper_name_from_reference_text(res.value().first);
+                }
+                else {
+                    return res.value().first;
+                }
             }
             else {
                 return {};

@@ -553,7 +553,7 @@ public:
     void read_current_line();
     void download_paper_under_cursor(bool use_last_touch_pos = false);
     std::optional<std::wstring> get_direct_paper_name_under_pos(DocumentPos docpos);
-    std::optional<std::wstring> get_paper_name_under_pos(DocumentPos docpos);
+    std::optional<std::wstring> get_paper_name_under_pos(DocumentPos docpos, bool clean=false);
     std::wstring download_paper_with_name(const std::wstring& name);
     bool is_pos_inside_selected_text(DocumentPos docpos);
     void handle_debug_command();
