@@ -3098,18 +3098,20 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
     std::wstring source_text;
 
 
-    if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect_absolute, &source_text, true) != ReferenceType::None) {
-        int pos_page = main_document_view->window_to_document_pos(pos).page;
-         //opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
-         current_overview_source_rect = overview_source_rect_absolute;
+    if (is_pos_inside_selected_text(docpos)) {
+        if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect_absolute, &source_text, true) != ReferenceType::None) {
+            int pos_page = main_document_view->window_to_document_pos(pos).page;
+            //opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
+            current_overview_source_rect = overview_source_rect_absolute;
 
-         SmartViewCandidate current_candid;
-         current_candid.source_rect = overview_source_rect_absolute;
-         current_candid.target_pos = DocumentPos{ autoreference_page, 0, autoreference_offset };
-         current_candid.source_text = source_text;
-         smart_view_candidates = {current_candid};
-        set_overview_position(autoreference_page, autoreference_offset);
-        return true;
+            SmartViewCandidate current_candid;
+            current_candid.source_rect = overview_source_rect_absolute;
+            current_candid.target_pos = DocumentPos{ autoreference_page, 0, autoreference_offset };
+            current_candid.source_text = source_text;
+            smart_view_candidates = { current_candid };
+            set_overview_position(autoreference_page, autoreference_offset);
+            return true;
+        }
     }
 
     return false;
@@ -6179,20 +6181,6 @@ std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {
     return get_url.toString().toStdWString();
 }
 
-bool MainWidget::is_pos_inside_selected_text(DocumentPos docpos) {
-
-    //AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(window_pos);
-    AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(docpos);
-
-    if (main_document_view) {
-        for (auto rect : main_document_view->selected_character_rects) {
-            if (fz_is_point_inside_rect({ abspos.x, abspos.y }, rect)) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
 
 void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
     ensure_internet_permission();
@@ -7570,3 +7558,21 @@ void MainWidget::show_touch_buttons(std::vector<std::wstring> buttons, std::func
     show_current_widget();
 }
 
+bool MainWidget::is_pos_inside_selected_text(AbsoluteDocumentPos pos) {
+    for (auto rect : main_document_view->selected_character_rects) {
+        if (fz_is_point_inside_rect(fz_point{ pos.x, pos.y }, rect)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MainWidget::is_pos_inside_selected_text(DocumentPos docpos) {
+    AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(docpos, true);
+    return is_pos_inside_selected_text(abspos);
+}
+
+bool MainWidget::is_pos_inside_selected_text(WindowPos pos) {
+    AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
+    return is_pos_inside_selected_text(abspos);
+}
