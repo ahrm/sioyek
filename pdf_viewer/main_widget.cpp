@@ -756,11 +756,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             if (opened) {
                 file.write(pdf_data);
                 file.close();
-#ifdef SIOYEK_ANDROID
-                // todo: maybe show a dialog asking the user if they want to open the downloaded document
-                push_state();
-                open_document(path.toStdWString());
-#else
                 if (PAPER_DOWNLOAD_CREATE_PORTAL) {
                     //std::string checksum = this->checksummer->get_checksum(path.toStdWString());
 
@@ -771,10 +766,15 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
                 }
                 else {
+#ifdef SIOYEK_ANDROID
+                    // todo: maybe show a dialog asking the user if they want to open the downloaded document
+                    push_state();
+                    open_document(path.toStdWString());
+#else
                     MainWidget* new_window = handle_new_window();
                     new_window->open_document(path.toStdWString());
-                }
 #endif
+                }
             }
 
 

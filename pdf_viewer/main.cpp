@@ -370,7 +370,11 @@ std::wstring VISUAL_MARK_PREV_TAP_COMMAND = L"";
 std::wstring VISUAL_MARK_PREV_HOLD_COMMAND = L"";
 std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND = L"";
 std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND = L"";
+#ifdef SIOYEK_ANDROID
+std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND = L"overview_definition";
+#else
 std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND = L"";
+#endif
 std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND = L"";
 
 std::vector<MainWidget*> windows;
