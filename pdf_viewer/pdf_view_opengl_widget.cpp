@@ -990,6 +990,7 @@ void PdfViewOpenGLWidget::render(QPainter* painter) {
     glDisable(GL_CULL_FACE);
     glDisable(GL_BLEND);
     glBindVertexArray(vertex_array_object);
+    bind_default();
 
     if (!valid_document()) {
 
