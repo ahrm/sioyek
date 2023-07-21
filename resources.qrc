@@ -76,6 +76,9 @@
         <file>icons/left.svg</file>
         <file>icons/right.svg</file>
         <file>icons/draw.svg</file>
+        <file>icons/next.svg</file>
+        <file>icons/previous.svg</file>
+        <file>icons/go-to-file.svg</file>
         <file>icons/paper-download.svg</file>
         <file>icons/P.svg</file>
         <file>icons/B.svg</file>

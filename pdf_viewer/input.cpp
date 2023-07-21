@@ -2504,7 +2504,7 @@ public:
     CloseOverviewCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        widget->opengl_widget->set_overview_page({});
+        widget->set_overview_page({});
     }
 
     std::string get_name() {
@@ -3082,10 +3082,20 @@ public:
         if (paper_name) {
             source_rect = widget->get_overview_source_rect();
 
-            widget->text_command_line_edit->setText(
-                QString::fromStdWString(paper_name.value())
-            );
-            widget->close_overview();
+            if (TOUCH_MODE) {
+                TouchTextEdit* paper_name_editor = dynamic_cast<TouchTextEdit*>(widget->current_widget_stack.back());
+                if (paper_name_editor) {
+                    paper_name_editor->set_text(paper_name.value());
+                    widget->close_overview();
+                }
+                //widget->close_overview();
+            }
+            else {
+                widget->text_command_line_edit->setText(
+                    QString::fromStdWString(paper_name.value())
+                );
+                widget->close_overview();
+            }
         }
     }
 

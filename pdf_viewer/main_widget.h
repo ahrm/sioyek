@@ -827,7 +827,10 @@ public:
     std::vector<Portal> get_ruler_portals();
     void handle_overview_to_ruler_portal();
     void handle_goto_ruler_portal(std::string tag="");
-    void show_touch_buttons(std::vector<std::wstring> buttons, std::function<void(int, std::wstring)> on_select, bool top=true);
+    void show_touch_buttons(
+        std::vector<std::wstring> buttons,
+        std::vector<std::wstring> tips,
+        std::function<void(int, std::wstring)> on_select, bool top=true);
     bool is_pos_inside_selected_text(AbsoluteDocumentPos pos);
     bool is_pos_inside_selected_text(WindowPos pos);
     void create_pending_download_portal(AbsoluteDocumentPos source_position, std::wstring paper_name);
@@ -835,6 +838,7 @@ public:
     void download_selected_text();
     void smart_jump_to_selected_text();
     void show_text_prompt(std::wstring initial_value, std::function<void(std::wstring)> on_select);
+    void set_overview_page(std::optional<OverviewState> overview);
 
 };
 

@@ -14,6 +14,7 @@ TouchButtonGroup{
     id: root
 
     buttons: _buttons
+    tips: _tips
 
     onButtonClicked: function (index, name){
         root.genericButtonClicked(index, name);

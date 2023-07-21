@@ -2,16 +2,21 @@
 #include <qstringlistmodel.h>
 
 
-TouchGenericButtons::TouchGenericButtons(std::vector<std::wstring> buttons, bool top, QWidget* parent) : QWidget(parent) {
+TouchGenericButtons::TouchGenericButtons(std::vector<std::wstring> buttons, std::vector<std::wstring> tips, bool top, QWidget* parent) : QWidget(parent) {
 
     setAttribute(Qt::WA_NoMousePropagation);
 
     is_top = top;
     options = buttons;
     QList<QString> q_buttons;
+    QList<QString> q_tips;
 
     for (auto button : buttons) {
         q_buttons.append(QString::fromStdWString(button));
+    }
+
+    for (auto tip : tips) {
+        q_tips.append(QString::fromStdWString(tip));
     }
 
     //QStringListModel* buttons_model = new QStringListModel(q_buttons, this);
@@ -23,6 +28,7 @@ TouchGenericButtons::TouchGenericButtons(std::vector<std::wstring> buttons, bool
     quick_widget->setClearColor(Qt::transparent);
 
     quick_widget->rootContext()->setContextProperty("_buttons", q_buttons);
+    quick_widget->rootContext()->setContextProperty("_tips", q_tips);
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchGenericButtons.qml"));
 

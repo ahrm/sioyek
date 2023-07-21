@@ -11,7 +11,7 @@ class TouchGenericButtons : public QWidget {
 public:
     std::vector<std::wstring> options;
     bool is_top = false;
-    TouchGenericButtons(std::vector<std::wstring> buttons, bool top, QWidget* parent = nullptr);
+    TouchGenericButtons(std::vector<std::wstring> buttons, std::vector<std::wstring> tips, bool top, QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
 
 public slots:

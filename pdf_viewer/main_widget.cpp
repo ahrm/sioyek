@@ -333,7 +333,7 @@ void MainWidget::set_overview_position(int page, float offset) {
     if (page >= 0) {
         auto abspos = main_document_view->get_document()->document_to_absolute_pos({ page, 0, offset });
         float page_height = main_document_view->get_document()->get_page_height(page);
-        opengl_widget->set_overview_page(OverviewState{ abspos.y });
+        set_overview_page(OverviewState{ abspos.y });
         invalidate_render();
     }
 }
@@ -505,7 +505,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         new_overview_state.absolute_offset_y = new_absolute_y;
         new_overview_state.doc = opengl_widget->get_overview_page().value().doc;
 
-        opengl_widget->set_overview_page(new_overview_state);
+        set_overview_page(new_overview_state);
         validate_render();
 
     }
@@ -533,7 +533,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     else {
         setCursor(Qt::ArrowCursor);
         if (HOVER_OVERVIEW) {
-            opengl_widget->set_overview_page({});
+            set_overview_page({});
             //            invalidate_render();
         }
     }
@@ -1196,7 +1196,7 @@ void MainWidget::handle_escape() {
     if (opengl_widget) {
         bool should_return = false;
         if (opengl_widget->get_overview_page()) {
-            opengl_widget->set_overview_page({});
+            set_overview_page({});
             should_return = true;
         }
         else if (opengl_widget->get_is_searching(nullptr)) {
@@ -1240,7 +1240,7 @@ void MainWidget::handle_escape() {
             done_anything = true;
         }
 
-        opengl_widget->set_overview_page({});
+        set_overview_page({});
         clear_selected_text();
 
         //main_document_view->ruler
@@ -1295,7 +1295,7 @@ void MainWidget::validate_render() {
                 //opengl_widget->get_overview_offsets(&overview_offset_x, &overview_offset_y);
                 //opengl_widget->set_overview_offsets(overview_offset_x, overview_offset_y + smooth_scroll_speed * secs);
                 state.absolute_offset_y += smooth_scroll_speed * secs;
-                opengl_widget->set_overview_page(state);
+                set_overview_page(state);
             }
             float accel = SMOOTH_SCROLL_DRAG;
             if (smooth_scroll_speed > 0) {
@@ -1838,7 +1838,7 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
     }
 
     if ((down == true) && opengl_widget->get_overview_page()) {
-        opengl_widget->set_overview_page({});
+        set_overview_page({});
         //main_document_view->set_line_index(-1);
         invalidate_render();
         return;
@@ -3034,7 +3034,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
             OverviewState overview;
             overview.doc = dst_doc;
             overview.absolute_offset_y = portal.value().dst.book_state.offset_y;
-            opengl_widget->set_overview_page(overview);
+            set_overview_page(overview);
             invalidate_render();
             return true;
         }
@@ -3078,7 +3078,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
 
 void MainWidget::set_synctex_mode(bool mode) {
     if (mode) {
-        this->opengl_widget->set_overview_page({});
+        set_overview_page({});
     }
     this->synctex_mode = mode;
 }
@@ -4053,7 +4053,7 @@ void MainWidget::scroll_overview(int amount) {
     float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY * SCROLL_VIEW_SENSITIVITY;
     OverviewState state = opengl_widget->get_overview_page().value();
     state.absolute_offset_y += 36.0f * vertical_move_amount * amount;
-    opengl_widget->set_overview_page(state);
+    set_overview_page(state);
     handle_portal_overview_update();
 }
 
@@ -4429,7 +4429,7 @@ void MainWidget::goto_overview() {
                 long_jump_to_destination(maybe_overview_position.value());
             }
         }
-        opengl_widget->set_overview_page({});
+        set_overview_page({});
 
     }
 }
@@ -4680,6 +4680,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command) {
         else {
             pending_command_instance = std::move(new_command);
 
+
             Requirement next_requirement = pending_command_instance->next_requirement(this).value();
             if (next_requirement.type == RequirementType::Text) {
                 show_textbar(utf8_decode(next_requirement.name), true, pending_command_instance->get_text_default_value());
@@ -4713,6 +4714,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command) {
             else if (next_requirement.type == RequirementType::Generic) {
                 pending_command_instance->handle_generic_requirement();
             }
+
             if (pending_command_instance) {
                 pending_command_instance->pre_perform();
             }
@@ -4761,14 +4763,14 @@ void MainWidget::overview_to_definition() {
 
         if (candidates.size() > 0) {
             DocumentPos first_docpos = candidates[0].get_docpos(main_document_view);
-            set_overview_position(first_docpos.page, first_docpos.y);
             smart_view_candidates = candidates;
             index_into_candidates = 0;
+            set_overview_position(first_docpos.page, first_docpos.y);
             on_overview_source_updated();
         }
     }
     else {
-        opengl_widget->set_overview_page({});
+        set_overview_page({});
     }
 }
 
@@ -5433,7 +5435,7 @@ void MainWidget::handle_toggle_smooth_scroll_mode() {
 
 void MainWidget::handle_overview_to_portal() {
     if (opengl_widget->get_overview_page()) {
-        opengl_widget->set_overview_page({});
+        set_overview_page({});
     }
     else {
 
@@ -5447,7 +5449,7 @@ void MainWidget::handle_overview_to_portal() {
                 if (doc) {
                     overview_state.absolute_offset_y = portal.dst.book_state.offset_y;
                     overview_state.doc = doc;
-                    opengl_widget->set_overview_page(overview_state);
+                    set_overview_page(overview_state);
                 }
             }
         }
@@ -5573,7 +5575,7 @@ bool MainWidget::event(QEvent* event) {
                 if (bookmark_index >= 0) {
                     begin_bookmark_move(bookmark_index, hold_abspos);
                     selected_bookmark_index = bookmark_index;
-                    show_touch_buttons({ L"Delete", L"Edit"}, [this](int index, std::wstring name) {
+                    show_touch_buttons({ L"Delete", L"Edit" }, {}, [this](int index, std::wstring name) {
                          
                         if (selected_bookmark_index > -1) {
                             if (name == L"Delete") {
@@ -5597,7 +5599,7 @@ bool MainWidget::event(QEvent* event) {
                 if (portal_index >= 0) {
                     begin_portal_move(portal_index, hold_abspos, false);
                     selected_portal_index = portal_index;
-                    show_touch_buttons({ L"Delete" }, [this](int index, std::wstring name) {
+                    show_touch_buttons({ L"Delete" }, {}, [this](int index, std::wstring name) {
                         if (selected_portal_index > -1) {
                             doc()->delete_portal_with_uuid(doc()->get_portals()[selected_portal_index].uuid);
                             selected_portal_index = -1;
@@ -5861,7 +5863,7 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
         NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos({ window_pos.x(), window_pos.y() });
 
         if (!opengl_widget->is_window_point_in_overview({ nwp.x, nwp.y })) {
-            opengl_widget->set_overview_page({});
+            set_overview_page({});
         }
     }
 
@@ -6103,7 +6105,7 @@ void MainWidget::handle_debug_command() {
     OverviewState state;
     state.doc = doc();
     state.absolute_offset_y = absrect.y0;
-    opengl_widget->set_overview_page(state);
+    set_overview_page(state);
     invalidate_render();
     if (res) {
         qDebug() << "found reference: " << QString::fromStdWString(res.value().first);
@@ -7252,7 +7254,7 @@ bool MainWidget::goto_ith_next_overview(int i) {
             OverviewState state;
             state.doc = overview_doc;
             state.absolute_offset_y = abspos.y;
-            opengl_widget->set_overview_page(state);
+            set_overview_page(state);
             invalidate_render();
         }
         on_overview_source_updated();
@@ -7467,7 +7469,7 @@ void MainWidget::update_pending_portal_indices_after_removed_indices(std::vector
 
 }
 void MainWidget::close_overview() {
-    opengl_widget->set_overview_page({});
+    set_overview_page({});
 }
 
 std::vector<Portal> MainWidget::get_ruler_portals() {
@@ -7499,7 +7501,7 @@ void MainWidget::handle_overview_to_ruler_portal() {
         OverviewState state;
         state.doc = smart_view_candidates[0].doc;
         state.absolute_offset_y = candidates[0].dst.book_state.offset_y;
-        opengl_widget->set_overview_page(state);
+        set_overview_page(state);
         invalidate_render();
     }
 
@@ -7518,8 +7520,8 @@ void MainWidget::handle_goto_ruler_portal(std::string tag) {
 }
 
 
-void MainWidget::show_touch_buttons(std::vector<std::wstring> buttons, std::function<void(int, std::wstring)> on_select, bool top) {
-    TouchGenericButtons* generic_buttons = new TouchGenericButtons(buttons, top, this);
+void MainWidget::show_touch_buttons(std::vector<std::wstring> buttons, std::vector<std::wstring> tips, std::function<void(int, std::wstring)> on_select, bool top) {
+    TouchGenericButtons* generic_buttons = new TouchGenericButtons(buttons, tips, top, this);
     QObject::connect(generic_buttons, &TouchGenericButtons::buttonPressed, [this, on_select](int index, std::wstring name) {
         on_select(index, name);
         });
@@ -7617,4 +7619,46 @@ void MainWidget::show_text_prompt(std::wstring initial_value, std::function<void
         });
     set_current_widget(new_widget);
     show_current_widget();
+}
+
+void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
+
+    if (TOUCH_MODE) {
+        if (overview) {
+            if (!opengl_widget->get_overview_page().has_value()) {
+                // show the overview buttons when a new overview is displayed
+                show_touch_buttons(
+                    { L"qrc:/icons/next.svg", L"qrc:/icons/go-to-file.svg", L"qrc:/icons/paper-download.svg", L"qrc:/icons/previous.svg"},
+                    {L"Prev", L"Go", L"Download", L"Next"},
+                    [this](int index, std::wstring name) {
+                    if (index == 0) {
+                        goto_ith_next_overview(-1);
+                        invalidate_render();
+                    }
+                    if (index == 3) {
+                        goto_ith_next_overview(1);
+                        invalidate_render();
+                    }
+                    if (index == 1) {
+                        goto_overview();
+                        invalidate_render();
+                    }
+                    if (index == 2) {
+                        //execute_macro_if_enabled(L"download_overview_paper");
+                        auto command = command_manager->get_command_with_name(this, "download_overview_paper");
+                        handle_command_types(std::move(command), 1);
+                    }
+                    });
+            }
+        }
+        else {
+            if (current_widget_stack.size() > 0) {
+                if (dynamic_cast<TouchGenericButtons*>(current_widget_stack.back())) {
+                    pop_current_widget();
+                }
+            }
+        }
+    }
+
+    opengl_widget->set_overview_page(overview);
 }
