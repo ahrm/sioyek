@@ -5655,8 +5655,6 @@ bool MainWidget::event(QEvent* event) {
                     set_current_widget(new AndroidSelector(this));
                     show_current_widget();
 
-                    //                set_current_widget(new MyList(this));
-                    //                current_widget->show();
                     return true;
                 }
             }
@@ -6086,47 +6084,16 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    std::wstring query = selected_text;
-    int page = doc()->find_reference_page_with_reference_text(query);
-    auto res = doc()->get_page_bib_with_reference(page, query);
+    if (main_document_view->selected_character_rects.size() > 0) {
+        fz_rect test = main_document_view->selected_character_rects[0];
 
-    fz_rect absrect = doc()->document_to_absolute_rect(page, res.value().second);
-
-    SmartViewCandidate candid;
-    candid.doc = doc();
-    candid.source_rect = absrect;
-    candid.source_text = query;
-    candid.target_pos = AbsoluteDocumentPos{ absrect.x0, absrect.y0 };
-    smart_view_candidates = { candid };
-    index_into_candidates = 0;
-
-    OverviewState state;
-    state.doc = doc();
-    state.absolute_offset_y = absrect.y0;
-    set_overview_page(state);
-    invalidate_render();
-    if (res) {
-        qDebug() << "found reference: " << QString::fromStdWString(res.value().first);
+        //auto abspos = main_document_view->window_to_absolute_document_pos(WindowPos{ last_hold_point.x(), last_hold_point.y() });
+        //test.x0 = test.x1 = abspos.x;
+        //test.y0 = test.y1 = abspos.y;
+        opengl_widget->set_pending_download_portals({ test });
+        invalidate_render();
+        //opengl_widget->set_pending_download_portals();
     }
-    else {
-
-        qDebug() << "reference not found";
-    }
-
-    //std::vector<fz_rect> bib_rects;
-    //int page = main_document_view->get_center_page_number();
-    //std::vector<std::wstring> bib_texts_ = doc()->get_page_bib_candidates(page, &bib_rects);
-    //std::vector<MarkedDataRect> marked_rects;
-    //for (auto r : bib_rects) {
-    //    MarkedDataRect mdr;
-    //    mdr.page = page;
-    //    mdr.rect = r;
-    //    mdr.type = 0;
-    //    marked_rects.push_back(mdr);
-    //}
-    //opengl_widget->marked_data_rects = marked_rects;
-    //invalidate_render();
-    ////opengl_widget->set_
 
 }
 
@@ -7206,6 +7173,7 @@ void MainWidget::show_command_palette() {
 TouchTextSelectionButtons* MainWidget::get_text_selection_buttons() {
     if (text_selection_buttons_ == nullptr) {
         text_selection_buttons_ = new TouchTextSelectionButtons(this);
+        text_selection_buttons_->hide();
     }
 
     return text_selection_buttons_;
@@ -7215,6 +7183,7 @@ DrawControlsUI* MainWidget::get_draw_controls() {
 
     if (draw_controls_ == nullptr) {
         draw_controls_ = new DrawControlsUI(this);
+        draw_controls_->hide();
     }
 
     return draw_controls_;
@@ -7224,6 +7193,7 @@ SearchButtons* MainWidget::get_search_buttons() {
 
     if (search_buttons_ == nullptr) {
         search_buttons_ = new SearchButtons(this);
+        search_buttons_->hide();
     }
 
     return search_buttons_;
@@ -7233,6 +7203,7 @@ HighlightButtons* MainWidget::get_highlight_buttons() {
 
     if (highlight_buttons_ == nullptr) {
         highlight_buttons_ = new HighlightButtons(this);
+        highlight_buttons_->hide();
     }
 
     return highlight_buttons_;
