@@ -2,8 +2,6 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // todo: pending downloads show up on other documents
-// todo: show buttons in overview mode in touch mode
-// todo: touch mode text dialog is bad
 
 #include <iostream>
 #include <vector>

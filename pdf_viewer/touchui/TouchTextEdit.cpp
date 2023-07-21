@@ -52,10 +52,10 @@ void TouchTextEdit::resizeEvent(QResizeEvent* resize_event) {
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
 
-    float five_cm = 5 * logicalDpiX() / 2.54f;
+    float twenty_cm = 20 * logicalDpiX() / 2.54f;
 
-    int w = static_cast<int>(std::min(parent_width * 0.8f, five_cm));
-    int h = static_cast<int>(std::min(parent_height * 0.5f, five_cm));
+    int w = static_cast<int>(std::min(parent_width * 0.8f, twenty_cm));
+    int h = static_cast<int>(std::min(parent_height * 0.5f, twenty_cm));
 
     resize(w, h);
     quick_widget->resize(w, h);

@@ -21,6 +21,7 @@ Rectangle {
         color: "white"
         text: _initialValue
         focus: true
+        wrapMode: TextInput.WrapAnywhere
         onAccepted:{
             root.confirmed(edit.text);
         }
@@ -33,12 +34,12 @@ Rectangle {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
 
-        buttons: ["Confirm", "Cancel"]
+        buttons: ["Cancel", "Confirm"]
         onButtonClicked: function(index, name){
-            if (index == 0){
+            if (index == 1){
                 root.confirmed(edit.text);
             }
-            if (index == 1){
+            if (index == 0){
                 root.cancelled();
             }
         }
