@@ -7355,8 +7355,12 @@ std::optional<Portal> MainWidget::get_target_portal(bool limit) {
 void MainWidget::update_opengl_pending_download_portals() {
     std::vector<fz_rect> pending_rects;
     for (auto pending_portal : pending_download_portals) {
-        fz_rect rect = pending_portal.pending_portal.get_rectangle();
-        pending_rects.push_back(rect);
+
+        if (pending_portal.source_document_path == doc()->get_path()) {
+            fz_rect rect = pending_portal.pending_portal.get_rectangle();
+            pending_rects.push_back(rect);
+        }
+
     }
     opengl_widget->set_pending_download_portals(std::move(pending_rects));
     invalidate_render();

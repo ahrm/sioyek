@@ -2915,11 +2915,15 @@ const std::vector<fz_rect>& Document::get_page_lines(
 
             std::vector<fz_rect> line_rects_;
             std::vector<std::wstring> line_texts_;
+            std::vector<std::vector<fz_rect>> line_char_rects_;
 
             for (int i = 0; i < line_rects.size(); i++) {
                 if (fz_contains_rect(bound, line_rects[i])) {
                     line_rects_.push_back(line_rects[i]);
                     line_texts_.push_back(line_texts[i]);
+                    if (out_line_rects) {
+                        line_char_rects_.push_back((*out_line_rects)[i]);
+                    }
                 }
             }
 
@@ -2929,6 +2933,9 @@ const std::vector<fz_rect>& Document::get_page_lines(
 
             if (out_line_texts != nullptr) {
                 *out_line_texts = line_texts_;
+            }
+            if (out_line_rects) {
+                *out_line_rects = line_char_rects_;
             }
 
         }
