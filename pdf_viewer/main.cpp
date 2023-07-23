@@ -830,8 +830,14 @@ MainWidget* handle_args(const QStringList& arguments) {
         }
     }
     else {
-        target_window->push_state();
-        target_window->open_document(pdf_file_name);
+        bool should_open_document = false;
+        if ((target_window->doc() == nullptr) || (target_window->doc()->get_path() != pdf_file_name)) {
+            should_open_document = true;
+        }
+        if (should_open_document) {
+            target_window->push_state();
+            target_window->open_document(pdf_file_name);
+        }
     }
 
     invalidate_render();

@@ -1,7 +1,6 @@
 ﻿// deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
-// todo: pending downloads show up on other documents
 
 #include <iostream>
 #include <vector>
