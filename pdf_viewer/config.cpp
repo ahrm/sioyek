@@ -96,6 +96,7 @@ extern float RULER_COLOR[3];
 extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
 extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
 extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
+extern std::wstring BOOK_SCAN_PATH;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -1264,6 +1265,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
+        L"scan_path",
+        ConfigType::String,
+        &BOOK_SCAN_PATH,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
         L"single_click_selects_words",
         ConfigType::Bool,
         &SINGLE_CLICK_SELECTS_WORDS,
@@ -1971,7 +1980,7 @@ void ConfigManager::serialize(const Path& path) {
 
     for (auto it : configs) {
 
-        if ((it.config_type == ConfigType::String) || (it.config_type == ConfigType::Macro)) {
+        if ((it.config_type == ConfigType::String) || (it.config_type == ConfigType::Macro) || (it.config_type == ConfigType::FilePath) || (it.config_type == ConfigType::FolderPath)) {
             if (((std::wstring*)it.value)->size() == 0) {
                 continue;
             }
@@ -2167,6 +2176,8 @@ QVariant ConfigModel::data(const QModelIndex& index, int role) const {
             if (config_type == ConfigType::Color3) return QVariant::fromValue(QString("color3"));
             if (config_type == ConfigType::Color4) return QVariant::fromValue(QString("color4"));
             if (config_type == ConfigType::String) return QVariant::fromValue(QString("string"));
+            if (config_type == ConfigType::FilePath) return QVariant::fromValue(QString("filepath"));
+            if (config_type == ConfigType::FolderPath) return QVariant::fromValue(QString("folderpath"));
             if (config_type == ConfigType::Macro) return QVariant::fromValue(QString("macro"));
             if (config_type == ConfigType::IVec2) return QVariant::fromValue(QString("ivec2"));
             if (config_type == ConfigType::FVec2) return QVariant::fromValue(QString("fvec2"));
@@ -2199,7 +2210,7 @@ QVariant ConfigModel::data(const QModelIndex& index, int role) const {
                 return QVariant::fromValue(vals);
             }
 
-            if ((config_type == ConfigType::String) || (config_type == ConfigType::Macro)) {
+            if ((config_type == ConfigType::String) || (config_type == ConfigType::Macro) || (config_type == ConfigType::FilePath) || (config_type == ConfigType::FolderPath)) {
                 //QColor::from
                 return QVariant::fromValue(QString::fromStdWString(*(std::wstring*)(conf->value)));
             }

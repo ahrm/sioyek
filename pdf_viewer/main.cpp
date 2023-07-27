@@ -192,6 +192,7 @@ std::wstring LIBGEN_ADDRESS = L"";
 std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 std::wstring INVERSE_SEARCH_COMMAND = L"";
 std::wstring SHARED_DATABASE_PATH = L"";
+std::wstring BOOK_SCAN_PATH = L"";
 std::wstring UI_FONT_FACE_NAME = L"";
 std::wstring DEFAULT_OPEN_FILE_PATH = L"";
 bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
@@ -905,12 +906,17 @@ int main(int argc, char* args[]) {
     configure_paths();
     verify_config_paths();
 
+
 #ifdef SIOYEK_ANDROID
     ConfigManager config_manager(android_config_path, auto_config_path, user_config_paths);
 #else
     ConfigManager config_manager(default_config_path, auto_config_path, user_config_paths);
 #endif
     CommandManager* command_manager = new CommandManager(&config_manager);
+
+    if (PAPERS_FOLDER_PATH.size() > 0) {
+        downloaded_papers_path = PAPERS_FOLDER_PATH;
+    }
 
     if (SHARED_DATABASE_PATH.size() > 0) {
         global_database_file_path = SHARED_DATABASE_PATH;

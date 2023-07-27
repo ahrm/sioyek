@@ -1,4 +1,4 @@
-﻿// deduplicate database code
+// deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 
@@ -151,6 +151,7 @@ extern float RULER_AUTO_MOVE_SENSITIVITY;
 extern float TTS_RATE;
 extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern std::wstring BOOK_SCAN_PATH;
 
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
@@ -3023,18 +3024,21 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
     std::optional<Portal> portal = get_portal_under_window_pos(pos, &portal_index);
     if (portal) {
         Document* dst_doc = document_manager->get_document_with_checksum(portal.value().dst.document_checksum);
-        dst_doc->open(&is_render_invalidated, true);
-
-        dst_doc->load_page_dimensions(true);
-        selected_portal_index = portal_index;
         if (dst_doc) {
-            OverviewState overview;
-            overview.doc = dst_doc;
-            overview.absolute_offset_y = portal.value().dst.book_state.offset_y;
-            set_overview_page(overview);
-            invalidate_render();
-            return true;
+            dst_doc->open(&is_render_invalidated, true);
+
+            dst_doc->load_page_dimensions(true);
+            selected_portal_index = portal_index;
+            if (dst_doc) {
+                OverviewState overview;
+                overview.doc = dst_doc;
+                overview.absolute_offset_y = portal.value().dst.book_state.offset_y;
+                set_overview_page(overview);
+                invalidate_render();
+                return true;
+            }
         }
+
     }
 
     if (main_document_view && (link = main_document_view->get_link_in_pos(pos))) {
@@ -4687,8 +4691,14 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command) {
                     show_mark_selector();
                 }
             }
-            else if (next_requirement.type == RequirementType::File) {
-                std::wstring file_name = select_command_file_name(pending_command_instance->get_name());
+            else if (next_requirement.type == RequirementType::File || next_requirement.type == RequirementType::Folder) {
+                std::wstring file_name;
+                if (next_requirement.type == RequirementType::File) {
+                    file_name = select_command_file_name(pending_command_instance->get_name());
+                }
+                else{
+                    file_name = select_command_folder_name();
+                }
 #ifdef SIOYEK_ANDROID
 
                 //                if (file_name.size() > 0 && QString::fromStdWString(file_name).startsWith("content://")) {
@@ -5161,6 +5171,39 @@ void MainWidget::handle_goto_toc() {
     else {
         show_error_message(L"This document doesn't have a table of contents");
     }
+}
+
+void MainWidget::handle_open_all_docs() {
+
+
+    std::vector<std::pair<std::wstring, std::wstring>> pairs;
+    db_manager->get_prev_path_hash_pairs(pairs);
+
+    // show the most recent files first 
+    std::reverse(pairs.begin(), pairs.end());
+
+    std::vector<std::string> hashes;
+    std::vector<std::wstring> paths;
+
+    for (auto [path, hash] : pairs) {
+        hashes.push_back(utf8_encode(hash));
+        paths.push_back(path);
+    }
+
+
+    set_filtered_select_menu<std::string>(FUZZY_SEARCHING, MULTILINE_MENUS, { paths }, hashes, -1,
+        [&](std::string* doc_hash) {
+            if (doc_hash->size() > 0) {
+                pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdString(*doc_hash));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [&](std::string* doc_hash) {
+            db_manager->delete_opened_book(*doc_hash);
+        }
+        );
+
+    show_current_widget();
 }
 
 void MainWidget::handle_open_prev_doc() {
@@ -6083,18 +6126,53 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    if (main_document_view->selected_character_rects.size() > 0) {
-        fz_rect test = main_document_view->selected_character_rects[0];
+    scan_new_files_from_scan_directory();
+}
 
-        //auto abspos = main_document_view->window_to_absolute_document_pos(WindowPos{ last_hold_point.x(), last_hold_point.y() });
-        //test.x0 = test.x1 = abspos.x;
-        //test.y0 = test.y1 = abspos.y;
-        opengl_widget->set_pending_download_portals({ test });
-        invalidate_render();
-        //opengl_widget->set_pending_download_portals();
+std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
+    std::vector<std::pair<std::wstring, std::wstring>> path_hash;
+    db_manager->get_prev_path_hash_pairs(path_hash);
+    std::vector<std::wstring> prev_paths;
+
+    for (auto [path, hash] : path_hash) {
+        prev_paths.push_back(path);
     }
 
+    std::sort(prev_paths.begin(), prev_paths.end());
+
+    QDir parent(QString::fromStdWString(BOOK_SCAN_PATH));
+    parent.setFilter(QDir::Files | QDir::NoSymLinks);
+    parent.setSorting(QDir::Time);
+    QFileInfoList list = parent.entryInfoList();
+
+    std::vector<std::wstring> paths;
+
+    for (int i = 0; i < list.size(); i++) {
+        paths.push_back(list.at(i).absoluteFilePath().toStdWString());
+    }
+
+    std::sort(paths.begin(), paths.end());
+
+    std::vector<std::wstring> new_paths;
+
+    std::set_difference(
+        paths.begin(), paths.end(),
+        prev_paths.begin(), prev_paths.end(),
+        std::back_inserter(new_paths)
+    );
+
+    return new_paths;
 }
+
+void MainWidget::scan_new_files_from_scan_directory() {
+    std::vector<std::wstring> new_file_paths = get_new_files_from_scan_directory();
+
+    for (auto new_file : new_file_paths) {
+        std::string checksum = checksummer->get_checksum(new_file);
+        db_manager->insert_document_hash(new_file, checksum);
+    }
+}
+
 
 std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {
     std::wstring download_name = name;

@@ -1180,7 +1180,7 @@ std::wstring select_any_file_name();
 std::wstring select_command_file_name(std::string command_name);
 std::wstring select_new_json_file_name();
 std::wstring select_new_pdf_file_name();
-
+std::wstring select_command_folder_name();
 
 //QWidget* color3_configurator_ui(MainWidget* main_widget, void* location);
 //QWidget* color4_configurator_ui(MainWidget* main_widget, void* location);

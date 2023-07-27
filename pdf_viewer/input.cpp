@@ -444,6 +444,31 @@ public:
 
 };
 
+class GetConfigCommand : public TextCommand {
+public:
+    GetConfigCommand(MainWidget* w) : TextCommand(w) {};
+
+    void perform() {
+        auto configs = widget->config_manager->get_configs_ptr();
+        for (int i = 0; i < configs->size(); i++) {
+            if ((*configs)[i].name == text.value()) {
+                std::wstringstream ssr;
+                (*configs)[i].serialize((*configs)[i].value, ssr);
+                show_error_message(ssr.str());
+            }
+        }
+    }
+
+    std::string get_name() {
+        return "get_config_value";
+    }
+
+    std::string text_requirement_name() {
+        return "Config Name";
+    }
+
+};
+
 class DownloadPaperWithNameCommand : public TextCommand {
 public:
     DownloadPaperWithNameCommand(MainWidget* w) : TextCommand(w) {};
@@ -1550,6 +1575,22 @@ public:
 
     std::string get_name() {
         return "open_prev_doc";
+    }
+
+
+    bool requires_document() { return false; }
+};
+
+class OpenAllDocsCommand : public GenericPathAndLocationCommadn {
+public:
+    OpenAllDocsCommand(MainWidget* w) : GenericPathAndLocationCommadn(w, true) {};
+
+    void handle_generic_requirement() {
+        widget->handle_open_all_docs();
+    }
+
+    std::string get_name() {
+        return "open_all_docs";
     }
 
 
@@ -3171,6 +3212,20 @@ public:
 
 };
 
+class ScanNewFilesFromScanDirCommand : public Command {
+public:
+    ScanNewFilesFromScanDirCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->scan_new_files_from_scan_directory();
+    }
+
+    std::string get_name() {
+        return "scan_new_files";
+    }
+
+};
+
 class DebugCommand : public Command {
 public:
     DebugCommand(MainWidget* w) : Command(w) {};
@@ -3647,16 +3702,16 @@ private:
                 // set the params if command was called with parameters, for example
                 // add_bookmark(some text)
                 if (req) {
-                    if (req.value().type == RequirementType::Text) {
+                    if (req->type == RequirementType::Text) {
                         actual_command->set_text_requirement(command_params);
                     }
-                    if (req.value().type == RequirementType::File) {
+                    if (req->type == RequirementType::File || req->type == RequirementType::Folder) {
                         actual_command->set_file_requirement(command_params);
                     }
-                    if (req.value().type == RequirementType::Generic) {
+                    if (req->type == RequirementType::Generic) {
                         actual_command->set_generic_requirement(QString::fromStdWString(command_params));
                     }
-                    if (req.value().type == RequirementType::Symbol) {
+                    if (req->type == RequirementType::Symbol) {
                         if (command_params.size() > 0) {
                             actual_command->set_symbol_requirement((char)command_params[0]);
                         }
@@ -3883,6 +3938,10 @@ public:
         text = value;
     }
 
+    void set_file_requirement(std::wstring value) {
+        text = value;
+    }
+
     std::wstring get_text_default_value() {
         Config* config = config_manager->get_mut_config_with_name(utf8_decode(config_name));
         std::wstringstream config_stream;
@@ -3898,6 +3957,18 @@ public:
             if ((!text.has_value()) && config->config_type == ConfigType::String) {
                 Requirement res;
                 res.type = RequirementType::Text;
+                res.name = "Config Value";
+                return res;
+            }
+            else if ((!text.has_value()) && config->config_type == ConfigType::FilePath) {
+                Requirement res;
+                res.type = RequirementType::File;
+                res.name = "Config Value";
+                return res;
+            }
+            else if ((!text.has_value()) && config->config_type == ConfigType::FolderPath) {
+                Requirement res;
+                res.type = RequirementType::Folder;
                 res.name = "Config Value";
                 return res;
             }
@@ -3923,7 +3994,7 @@ public:
             Config* config = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
 
 
-            if (config->config_type == ConfigType::String) {
+            if (config->config_type == ConfigType::String || config->config_type == ConfigType::FilePath || config->config_type == ConfigType::FolderPath) {
                 if (widget->config_manager->deserialize_config(config_name, text.value())) {
                     widget->on_config_changed(config_name);
                 }
@@ -4146,7 +4217,7 @@ public:
             for (int i = 0; i < commands.size(); i++) {
                 std::optional<Requirement> req = commands[i]->next_requirement(widget);
                 if (req) {
-                    if (req.value().type == RequirementType::File) {
+                    if (req->type == RequirementType::File || req->type == RequirementType::Folder) {
                         commands[i]->set_file_requirement(value);
                     }
                     return;
@@ -4300,6 +4371,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["edit_selected_bookmark"] = [](MainWidget* widget) {return std::make_unique< EditSelectedBookmarkCommand>(widget); };
     new_commands["edit_selected_highlight"] = [](MainWidget* widget) {return std::make_unique< EditSelectedHighlightCommand>(widget); };
     new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
+    new_commands["get_config_value"] = [](MainWidget* widget) {return std::make_unique< GetConfigCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
@@ -4344,6 +4416,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["edit_link"] = [](MainWidget* widget) {return std::make_unique< EditPortalCommand>(widget); };
     new_commands["edit_portal"] = [](MainWidget* widget) {return std::make_unique< EditPortalCommand>(widget); };
     new_commands["open_prev_doc"] = [](MainWidget* widget) {return std::make_unique< OpenPrevDocCommand>(widget); };
+    new_commands["open_all_docs"] = [](MainWidget* widget) {return std::make_unique< OpenAllDocsCommand>(widget); };
     new_commands["open_document_embedded"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentEmbeddedCommand>(widget); };
     new_commands["open_document_embedded_from_current_path"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentEmbeddedFromCurrentPathCommand>(widget); };
     new_commands["copy"] = [](MainWidget* widget) {return std::make_unique< CopyCommand>(widget); };
@@ -4467,6 +4540,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["start_reading"] = [](MainWidget* widget) {return std::make_unique< StartReadingCommand>(widget); };
     new_commands["stop_reading"] = [](MainWidget* widget) {return std::make_unique< StopReadingCommand>(widget); };
     new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };
+    new_commands["scan_new_files"] = [](MainWidget* widget) {return std::make_unique< ScanNewFilesFromScanDirCommand>(widget); };
     new_commands["add_marked_data"] = [](MainWidget* widget) {return std::make_unique< AddMarkedDataCommand>(widget); };
     new_commands["remove_marked_data"] = [](MainWidget* widget) {return std::make_unique< RemoveMarkedDataCommand>(widget); };
     new_commands["export_marked_data"] = [](MainWidget* widget) {return std::make_unique< ExportMarkedDataCommand>(widget); };

@@ -531,6 +531,7 @@ public:
     void handle_goto_highlight_global();
     void handle_goto_toc();
     void handle_open_prev_doc();
+    void handle_open_all_docs();
     void handle_move_screen(int amount);
     MainWidget* handle_new_window();
     void handle_open_link(const std::wstring& text, bool copy = false);
@@ -839,6 +840,8 @@ public:
     void smart_jump_to_selected_text();
     void show_text_prompt(std::wstring initial_value, std::function<void(std::wstring)> on_select);
     void set_overview_page(std::optional<OverviewState> overview);
+    std::vector<std::wstring> get_new_files_from_scan_directory();
+    void scan_new_files_from_scan_directory();
 
 };
 

@@ -36,6 +36,11 @@ std::wstring select_command_file_name(std::string command_name) {
     }
 }
 
+std::wstring select_command_folder_name() {
+    QString dir_name = QFileDialog::getExistingDirectory(nullptr, "Select Folder");
+    return dir_name.toStdWString();
+}
+
 std::wstring select_document_file_name() {
     if (DEFAULT_OPEN_FILE_PATH.size() == 0) {
 

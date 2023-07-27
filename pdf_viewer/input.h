@@ -19,6 +19,7 @@ enum RequirementType {
     Text,
     Symbol,
     File,
+    Folder,
     Rect,
     Point,
     Generic

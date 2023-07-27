@@ -23,6 +23,8 @@ enum ConfigType {
     Color4,
     Bool,
     String,
+    FilePath,
+    FolderPath,
     IVec2,
     FVec2,
     EnableRectangle,
