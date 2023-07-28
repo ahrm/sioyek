@@ -106,18 +106,23 @@ void RunGuard::onNewConnection()
 void RunGuard::readMessage(QLocalSocket* socket)
 {
     QByteArray data = socket->readAll();
-    emit messageReceived(data);
+    emit messageReceived(data, socket);
 }
 
-void RunGuard::sendMessage(const QByteArray& message)
+std::string RunGuard::sendMessage(const QByteArray& message, bool wait)
 {
     QLocalSocket socket;
-    socket.connectToServer(key, QLocalSocket::WriteOnly);
+    socket.connectToServer(key, QLocalSocket::ReadWrite);
     socket.waitForConnected();
     if (socket.state() == QLocalSocket::ConnectedState) {
         if (socket.state() == QLocalSocket::ConnectedState) {
             socket.write(message);
             if (socket.waitForBytesWritten()) {
+                if (wait) {
+                    socket.waitForReadyRead();
+                    std::string response = socket.readAll().toStdString();
+                    return response;
+                }
                 //qCritical() << "Secondary application sent message to IPC server.";
             }
         }
@@ -127,4 +132,5 @@ void RunGuard::sendMessage(const QByteArray& message)
         qCritical() << "Socker error: " << socket.error();
         QCoreApplication::exit();
     }
+    return "";
 }

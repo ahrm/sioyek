@@ -6126,7 +6126,12 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    scan_new_files_from_scan_directory();
+    QString python_api = export_python_api();
+    QFile output("api.py");
+    if (output.open(QIODevice::WriteOnly)) {
+        output.write(python_api.toUtf8());
+    }
+    output.close();
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -7711,4 +7716,39 @@ void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
     }
 
     opengl_widget->set_overview_page(overview);
+}
+
+QString MainWidget::export_python_api() {
+    QString res;
+    QString INDENT = "    ";
+
+    QStringList command_names = command_manager->get_all_command_names();
+    for (auto command_name : command_names) {
+        if (command_name.size() > 0 && command_name[0] != '_') {
+
+            auto command = command_manager->get_command_with_name(this, command_name.toStdString());
+            res += INDENT + "def " + command_name + "(self";
+            auto requirement = command->next_requirement(this);
+            if (requirement) {
+                res += ", arg, focus=False):\n";
+                res += INDENT + INDENT;
+                res += "self.run_command(\"" + command_name + "\", arg, focus)\n\n";
+            }
+            else {
+                res += ", focus=False):\n";
+                res += INDENT + INDENT;
+                res += "self.run_command(\"" + command_name + "\", None, focus)\n\n";
+            }
+        }
+
+    }
+    return res;
+}
+
+bool MainWidget::execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin) {
+    bool res = execute_macro_if_enabled(macro_command_string);
+    if (origin) {
+        origin->write("this is a test");
+    }
+    return res;
 }

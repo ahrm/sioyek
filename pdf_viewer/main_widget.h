@@ -17,6 +17,7 @@
 #include <qdrag.h>
 #include <qscrollbar.h>
 #include <qtexttospeech.h>
+#include <qlocalsocket.h>
 #include <touchui/TouchDrawControls.h>
 
 #include <mupdf/fitz.h>
@@ -794,6 +795,7 @@ public:
     }
 
     bool execute_macro_if_enabled(std::wstring macro_command_string);
+    bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
     bool ensure_internet_permission();
     void handle_command_text_change(const QString& new_text);
     QTextToSpeech* get_tts();
@@ -842,6 +844,7 @@ public:
     void set_overview_page(std::optional<OverviewState> overview);
     std::vector<std::wstring> get_new_files_from_scan_directory();
     void scan_new_files_from_scan_directory();
+    QString export_python_api();
 
 };
 

@@ -668,7 +668,7 @@ void invalidate_render() {
     }
 }
 
-MainWidget* handle_args(const QStringList& arguments) {
+MainWidget* handle_args(const QStringList& arguments, QLocalSocket* origin=nullptr) {
     std::optional<int> page = -1;
     std::optional<float> x_loc, y_loc;
     std::optional<float> zoom_level;
@@ -793,7 +793,7 @@ MainWidget* handle_args(const QStringList& arguments) {
             command_string += QString::fromStdString("(") + command_data + QString::fromStdString(")");
         }
 
-        target_window->execute_macro_if_enabled(command_string.toStdWString());
+        target_window->execute_macro_from_origin(command_string.toStdWString(), origin);
     }
 
     if (parser->isSet("focus-text")) {
@@ -942,7 +942,9 @@ int main(int argc, char* args[]) {
     RunGuard guard("sioyek");
     if (!guard.isPrimary()) {
         QStringList sent_args = convert_arguments(app.arguments());
-        guard.sendMessage(serialize_string_array(sent_args));
+        bool should_wait = parser->isSet("wait-for-response");
+        std::string res = guard.sendMessage(serialize_string_array(sent_args), should_wait);
+        qDebug() << res;
         return 0;
     }
 #endif
@@ -1031,10 +1033,10 @@ int main(int argc, char* args[]) {
 
 #ifndef SIOYEK_ANDROID
     if (guard.isPrimary()) {
-        QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message) {
+        QObject::connect(&guard, &RunGuard::messageReceived, [&main_widget](const QByteArray& message, QLocalSocket* socket) {
             QStringList args = deserialize_string_array(message);
             bool nofocus = args.indexOf("--nofocus") != -1;
-            MainWidget* target = handle_args(args);
+            MainWidget* target = handle_args(args, socket);
             if (!nofocus) {
                 if (target) {
                     //target->activateWindow();

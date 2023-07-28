@@ -1849,6 +1849,9 @@ QCommandLineParser* get_command_line_parser() {
     QCommandLineOption verbose_option("verbose", "Print extra information in commnad line.");
     parser->addOption(verbose_option);
 
+    QCommandLineOption wait_for_response_option("wait-for-response", "Wait for the command to finish before returning.");
+    parser->addOption(wait_for_response_option);
+
     parser->addHelpOption();
 
     return parser;
@@ -3691,3 +3694,4 @@ bool is_text_refernce_rather_than_paper_name(std::wstring text) {
     return false;
 
 }
+

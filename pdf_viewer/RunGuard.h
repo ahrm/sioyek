@@ -59,10 +59,10 @@ public:
 
     bool isPrimary();
     bool isSecondary();
-    void sendMessage(const QByteArray& message);
+    std::string sendMessage(const QByteArray& message, bool wait=false);
 
 signals:
-    void messageReceived(const QByteArray& message);
+    void messageReceived(const QByteArray& message, QLocalSocket* socket);
 
 private slots:
     void onNewConnection();
