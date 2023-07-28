@@ -1702,7 +1702,7 @@ bool MainWidget::is_waiting_for_symbol() {
         (pending_command_instance->next_requirement(this).value().type == RequirementType::Symbol));
 }
 
-bool MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int num_repeats) {
+bool MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int num_repeats, std::wstring* result) {
 
     if (new_command == nullptr) {
         return false;
@@ -1716,7 +1716,7 @@ bool MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int 
         if (main_document_view_has_document()) {
             main_document_view->disable_auto_resize_mode();
         }
-        advance_command(std::move(new_command));
+        advance_command(std::move(new_command), result);
         update_scrollbar();
     }
     return true;
@@ -4672,10 +4672,17 @@ void MainWidget::goto_mark(char symbol) {
     }
 }
 
-void MainWidget::advance_command(std::unique_ptr<Command> new_command) {
+void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstring* result) {
     if (new_command) {
         if (!new_command->next_requirement(this).has_value()) {
             new_command->run();
+            if (result) {
+                std::optional<std::wstring> command_result = new_command->get_result();
+                if (command_result.has_value() && (result != nullptr)) {
+                    *result = command_result.value();
+                }
+                //*result = new_command->get_result()
+            }
             //pending_command_instance = nullptr;
         }
         else {
@@ -4969,13 +4976,15 @@ void MainWidget::handle_goto_bookmark_global() {
     show_current_widget();
 }
 
-void MainWidget::handle_add_highlight(char symbol) {
+std::wstring MainWidget::handle_add_highlight(char symbol) {
     if (main_document_view->selected_character_rects.size() > 0) {
-        main_document_view->add_highlight(selection_begin, selection_end, symbol);
+        std::string uuid = main_document_view->add_highlight(selection_begin, selection_end, symbol);
         clear_selected_text();
+        return utf8_decode(uuid);
     }
     else {
         change_selected_highlight_type(symbol);
+        return utf8_decode(doc()->get_highlight_index_uuid(selected_highlight_index));
     }
 }
 
@@ -6974,13 +6983,14 @@ void MainWidget::handle_goto_loaded_document() {
     show_current_widget();
 }
 
-bool MainWidget::execute_macro_if_enabled(std::wstring macro_command_string) {
+bool MainWidget::execute_macro_if_enabled(std::wstring macro_command_string, std::wstring* result) {
 
     std::unique_ptr<Command> command = command_manager->create_macro_command(this, "", macro_command_string);
 
     if (is_macro_command_enabled(command.get())) {
-        handle_command_types(std::move(command), 0);
+        handle_command_types(std::move(command), 0, result);
         invalidate_render();
+
         return true;
     }
 
@@ -7746,9 +7756,16 @@ QString MainWidget::export_python_api() {
 }
 
 bool MainWidget::execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin) {
-    bool res = execute_macro_if_enabled(macro_command_string);
+    std::wstring result;
+    bool res = execute_macro_if_enabled(macro_command_string, &result);
     if (origin) {
-        origin->write("this is a test");
+        std::string result_str = utf8_encode(result);
+        if (result_str.size() > 0) {
+            origin->write(result_str.c_str());
+        }
+        else {
+            origin->write("<NULL>");
+        }
     }
     return res;
 }

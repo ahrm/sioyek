@@ -323,7 +323,7 @@ void DocumentView::add_bookmark(std::wstring desc) {
     }
 }
 
-void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
+std::string DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
 
     if (current_document) {
         std::deque<fz_rect> selected_characters;
@@ -333,9 +333,11 @@ void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDo
         get_text_selection(selection_begin, selection_end, !EXACT_HIGHLIGHT_SELECT, selected_characters, selected_text);
         merge_selected_character_rects(selected_characters, merged_characters);
         if (selected_text.size() > 0) {
-            current_document->add_highlight(selected_text, merged_characters, selection_begin, selection_end, type);
+            return current_document->add_highlight(selected_text, merged_characters, selection_begin, selection_end, type);
         }
     }
+
+    return "";
 }
 
 void DocumentView::on_view_size_change(int new_width, int new_height) {

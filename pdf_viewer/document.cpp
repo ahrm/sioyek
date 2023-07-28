@@ -212,7 +212,7 @@ void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
 }
 
 
-void Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
+std::string Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
     std::deque<fz_rect> selected_characters;
     std::vector<fz_rect> merged_rects;
     std::wstring selected_text;
@@ -247,9 +247,10 @@ void Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos sele
         is_annotations_dirty = true;
     }
 
+    return highlight.uuid;
 }
 
-void Document::add_highlight(const std::wstring& desc,
+std::string Document::add_highlight(const std::wstring& desc,
     const std::vector<fz_rect>& highlight_rects,
     AbsoluteDocumentPos selection_begin,
     AbsoluteDocumentPos selection_end,
@@ -280,6 +281,7 @@ void Document::add_highlight(const std::wstring& desc,
         highlight.type,
         utf8_decode(highlight.uuid));
     is_annotations_dirty = true;
+    return highlight.uuid;
 }
 
 bool Document::get_is_indexing() {

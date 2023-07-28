@@ -1002,7 +1002,7 @@ public:
     AddHighlightCommand(MainWidget* w) : SymbolCommand(w) {};
 
     void perform() {
-        widget->handle_add_highlight(symbol);
+        result = widget->handle_add_highlight(symbol);
     }
 
     std::vector<char> special_symbols() {
@@ -3689,6 +3689,13 @@ private:
         }
     }
 
+    std::optional<std::wstring> get_result() override{
+        if (actual_command) {
+            return actual_command->get_result();
+        }
+        return {};
+    }
+
     Command* get_command() {
         if (actual_command) {
             return actual_command.get();
@@ -4106,6 +4113,13 @@ public:
 
     }
 
+
+    std::optional<std::wstring> get_result() override{
+        if (commands.size() > 0) {
+            return commands.back()->get_result();
+        }
+        return {};
+    }
 
     void set_text_requirement(std::wstring value) {
         if (is_modal) {
@@ -5351,6 +5365,11 @@ std::vector<Path> InputHandler::get_all_user_keys_paths() {
 std::optional<Requirement> Command::next_requirement(MainWidget* widget) {
     return {};
 }
+
+std::optional<std::wstring> Command::get_result() {
+    return result;
+}
+
 void Command::set_text_requirement(std::wstring value) {}
 void Command::set_symbol_requirement(char value) {}
 void Command::set_file_requirement(std::wstring value) {}

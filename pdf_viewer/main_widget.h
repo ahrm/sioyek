@@ -426,7 +426,7 @@ public:
     ~MainWidget();
 
     //void handle_command(NewCommand* command, int num_repeats);
-    bool handle_command_types(std::unique_ptr<Command> command, int num_repeats);
+    bool handle_command_types(std::unique_ptr<Command> command, int num_repeats, std::wstring* result=nullptr);
     void handle_pending_text_command(std::wstring text);
 
     void invalidate_render();
@@ -515,7 +515,7 @@ public:
     bool is_point_visible(int page, fz_point point);
     void set_mark_in_current_location(char symbol);
     void goto_mark(char symbol);
-    void advance_command(std::unique_ptr<Command> command);
+    void advance_command(std::unique_ptr<Command> command, std::wstring* result=nullptr);
     void perform_search(std::wstring text, bool is_regex = false);
     void overview_to_definition();
     void portal_to_definition();
@@ -527,7 +527,7 @@ public:
     void handle_goto_portal_list();
     void handle_goto_bookmark();
     void handle_goto_bookmark_global();
-    void handle_add_highlight(char symbol);
+    std::wstring handle_add_highlight(char symbol);
     void handle_goto_highlight();
     void handle_goto_highlight_global();
     void handle_goto_toc();
@@ -794,7 +794,7 @@ public:
         }
     }
 
-    bool execute_macro_if_enabled(std::wstring macro_command_string);
+    bool execute_macro_if_enabled(std::wstring macro_command_string, std::wstring* result=nullptr);
     bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
     bool ensure_internet_permission();
     void handle_command_text_change(const QString& new_text);

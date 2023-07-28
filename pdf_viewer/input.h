@@ -36,9 +36,11 @@ private:
 protected:
     int num_repeats = 1;
     MainWidget* widget = nullptr;
+    std::optional<std::wstring> result = {};
 public:
     Command(MainWidget* widget);
     virtual std::optional<Requirement> next_requirement(MainWidget* widget);
+    virtual std::optional<std::wstring> get_result();
 
     virtual void set_text_requirement(std::wstring value);
     virtual void set_symbol_requirement(char value);
