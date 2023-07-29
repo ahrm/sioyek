@@ -6,6 +6,7 @@
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QLocalSocket>
 
+#include <functional>
 /**
  * This is an control to guarantee that only one application instance exists at
  * any time.
@@ -54,6 +55,7 @@ class RunGuard : public QObject
     Q_OBJECT
 
 public:
+    std::function<void(QLocalSocket*)> on_delete;
     explicit RunGuard(const QString& key);
     ~RunGuard();
 

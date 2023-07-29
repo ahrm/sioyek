@@ -38,8 +38,8 @@ protected:
     int num_repeats = 1;
     MainWidget* widget = nullptr;
     std::optional<std::wstring> result = {};
-    QLocalSocket* result_socket = nullptr;
 public:
+    QLocalSocket* result_socket = nullptr;
     Command(MainWidget* widget);
     virtual std::optional<Requirement> next_requirement(MainWidget* widget);
     virtual std::optional<std::wstring> get_result();

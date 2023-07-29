@@ -7772,3 +7772,11 @@ void MainWidget::show_custom_option_list(std::vector<std::wstring> options) {
         });
     show_current_widget();
 }
+
+void MainWidget::on_socket_deleted(QLocalSocket* deleted_socket) {
+    if (pending_command_instance) {
+        if (pending_command_instance->result_socket == deleted_socket) {
+            pending_command_instance->set_result_socket(nullptr);
+        }
+    }
+}

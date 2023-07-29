@@ -94,7 +94,10 @@ void RunGuard::onNewConnection()
 {
     QLocalSocket* socket = server->nextPendingConnection();
     QObject::connect(socket, &QLocalSocket::disconnected, this,
-        [socket]() {
+        [this, socket]() {
+            if (on_delete) {
+                on_delete(socket);
+            }
             socket->deleteLater();
         }
     );

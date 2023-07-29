@@ -3875,6 +3875,13 @@ private:
         return {};
     }
 
+    void set_result_socket(QLocalSocket* socket) {
+        result_socket = socket;
+        if (actual_command) {
+            actual_command->set_result_socket(socket);
+        }
+    }
+
     Command* get_command() {
         if (actual_command) {
             return actual_command.get();
@@ -5635,7 +5642,7 @@ void Command::on_result_computed() {
         return;
     }
 
-    if (result_socket){
+    if (result_socket && result_socket->isOpen()){
         if (!result.has_value()) {
             result_socket->write("<NULL>");
             return;
