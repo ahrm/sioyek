@@ -34,6 +34,11 @@ Command::Command(MainWidget* widget_) : widget(widget_) {
 
 }
 
+
+void Command::set_result_socket(QLocalSocket* socket) {
+    result_socket = socket;
+}
+
 void Command::set_generic_requirement(QVariant value) {
 
 }
@@ -443,6 +448,113 @@ public:
     }
 
 };
+
+//class TestCommand : public Command {
+//private:
+//    std::optional<std::wstring> text1 = {};
+//    std::optional<std::wstring> text2 = {};
+//public:
+//    TestCommand(MainWidget* w) : Command(w) {};
+//
+//    void set_text_requirement(std::wstring value) {
+//        if (!text1.has_value()) {
+//            text1 = value;
+//        }
+//        else {
+//            text2 = value;
+//        }
+//    }
+//
+//    std::optional<Requirement> next_requirement(MainWidget* widget) {
+//        if (!text1.has_value()) {
+//            return Requirement{ RequirementType::Text, "text1" };
+//        }
+//        if (!text2.has_value()) {
+//            return Requirement{ RequirementType::Text, "text2" };
+//        }
+//        return {};
+//    }
+//
+//    void perform() {
+//        result = text1.value() + text2.value();
+//        show_error_message(result.value());
+//    }
+//
+//    std::string get_name() {
+//        return "test_command";
+//    }
+//
+//};
+
+class ShowOptionsCommand : public Command {
+
+private:
+    std::vector<std::wstring> options;
+    std::optional<std::wstring> selected_option;
+
+public:
+    ShowOptionsCommand(MainWidget* w) : Command(w) {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (options.size() == 0) {
+            return Requirement { RequirementType::Text, "options" };
+        }
+        if (!selected_option.has_value()) {
+            return Requirement { RequirementType::Generic, "selected" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        selected_option = value.toString().toStdWString();
+        result = selected_option.value();
+    }
+
+    void handle_generic_requirement() {
+        widget->show_custom_option_list(options);
+    }
+
+    void set_text_requirement(std::wstring value) {
+        QStringList options_ = QString::fromStdWString(value).split("|");
+        for (auto option : options_) {
+            options.push_back(option.toStdWString());
+        }
+    }
+
+    void perform() {
+        qDebug() << "what";
+    }
+
+    std::string get_name() {
+        return "show_custom_options";
+    }
+
+};
+
+//class ShowOptionsCommand : public TextCommand {
+//public:
+//    SearchCommand(MainWidget* w) : TextCommand(w) {};
+//
+//    void perform() {
+//        widget->perform_search(this->text.value(), false);
+//        if (TOUCH_MODE) {
+//            widget->show_search_buttons();
+//        }
+//    }
+//
+//    std::string get_name() {
+//        return "search";
+//    }
+//
+//    bool pushes_state() {
+//        return true;
+//    }
+//
+//    std::string text_requirement_name() {
+//        return "Search Term";
+//    }
+//
+//};
 
 class GetConfigCommand : public TextCommand {
 public:
@@ -3725,6 +3837,11 @@ private:
                     }
                 }
             }
+
+            if (actual_command && (result_socket != nullptr)) {
+                actual_command->set_result_socket(result_socket);
+            }
+
             return actual_command.get();
         }
     }
@@ -4080,6 +4197,13 @@ public:
         }
     }
 
+    void set_result_socket(QLocalSocket* rsocket) {
+        result_socket = rsocket;
+        for (auto& subcommand : commands) {
+            subcommand->set_result_socket(result_socket);
+        }
+    }
+
     MacroCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(widget_) {
         //commands = std::move(commands_);
         command_manager = manager;
@@ -4386,6 +4510,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["edit_selected_highlight"] = [](MainWidget* widget) {return std::make_unique< EditSelectedHighlightCommand>(widget); };
     new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
     new_commands["get_config_value"] = [](MainWidget* widget) {return std::make_unique< GetConfigCommand>(widget); };
+    new_commands["show_custom_options"] = [](MainWidget* widget) {return std::make_unique< ShowOptionsCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
@@ -5405,6 +5530,7 @@ void Command::run() {
         return;
     }
     perform();
+    on_result_computed();
 }
 
 std::vector<char> Command::special_symbols() {
@@ -5429,4 +5555,28 @@ bool is_macro_command_enabled(Command* command) {
 
 std::unique_ptr<Command> CommandManager::create_macro_command(MainWidget* w, std::string name, std::wstring macro_string) {
     return std::make_unique<MacroCommand>(w, this, name, macro_string);
+}
+
+void Command::on_result_computed() {
+
+    if (dynamic_cast<MacroCommand*>(this)) {
+        return;
+    }
+    if (dynamic_cast<LazyCommand*>(this)) {
+        return;
+    }
+
+    if (result_socket){
+        if (!result.has_value()) {
+            result_socket->write("<NULL>");
+            return;
+        }
+        std::string result_str = utf8_encode(result.value());
+        if (result_str.size() > 0) {
+            result_socket->write(result_str.c_str());
+        }
+        else {
+            result_socket->write("<NULL>");
+        }
+    }
 }

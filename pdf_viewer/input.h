@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
+#include <qlocalsocket.h>
 
 #include "utils.h"
 #include "path.h"
@@ -37,6 +38,7 @@ protected:
     int num_repeats = 1;
     MainWidget* widget = nullptr;
     std::optional<std::wstring> result = {};
+    QLocalSocket* result_socket = nullptr;
 public:
     Command(MainWidget* widget);
     virtual std::optional<Requirement> next_requirement(MainWidget* widget);
@@ -55,6 +57,8 @@ public:
     virtual bool pushes_state();
     virtual bool requires_document();
     virtual void on_cancel();
+    virtual void on_result_computed();
+    virtual void set_result_socket(QLocalSocket* result_socket);
 
     virtual void run();
     virtual std::string get_name();

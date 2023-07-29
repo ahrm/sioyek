@@ -944,7 +944,7 @@ int main(int argc, char* args[]) {
         QStringList sent_args = convert_arguments(app.arguments());
         bool should_wait = parser->isSet("wait-for-response");
         std::string res = guard.sendMessage(serialize_string_array(sent_args), should_wait);
-        qDebug() << res;
+        std::wcout << utf8_decode(res);
         return 0;
     }
 #endif

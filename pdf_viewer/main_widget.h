@@ -794,7 +794,7 @@ public:
         }
     }
 
-    bool execute_macro_if_enabled(std::wstring macro_command_string, std::wstring* result=nullptr);
+    bool execute_macro_if_enabled(std::wstring macro_command_string, QLocalSocket* result_socket=nullptr);
     bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
     bool ensure_internet_permission();
     void handle_command_text_change(const QString& new_text);
@@ -845,6 +845,7 @@ public:
     std::vector<std::wstring> get_new_files_from_scan_directory();
     void scan_new_files_from_scan_directory();
     QString export_python_api();
+    void show_custom_option_list(std::vector<std::wstring> option_list);
 
 };
 

@@ -6983,12 +6983,13 @@ void MainWidget::handle_goto_loaded_document() {
     show_current_widget();
 }
 
-bool MainWidget::execute_macro_if_enabled(std::wstring macro_command_string, std::wstring* result) {
+bool MainWidget::execute_macro_if_enabled(std::wstring macro_command_string, QLocalSocket* result_socket) {
 
     std::unique_ptr<Command> command = command_manager->create_macro_command(this, "", macro_command_string);
+    command->set_result_socket(result_socket);
 
     if (is_macro_command_enabled(command.get())) {
-        handle_command_types(std::move(command), 0, result);
+        handle_command_types(std::move(command), 0);
         invalidate_render();
 
         return true;
@@ -7756,16 +7757,18 @@ QString MainWidget::export_python_api() {
 }
 
 bool MainWidget::execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin) {
-    std::wstring result;
-    bool res = execute_macro_if_enabled(macro_command_string, &result);
-    if (origin) {
-        std::string result_str = utf8_encode(result);
-        if (result_str.size() > 0) {
-            origin->write(result_str.c_str());
-        }
-        else {
-            origin->write("<NULL>");
-        }
-    }
-    return res;
+    return execute_macro_if_enabled(macro_command_string, origin);
+}
+
+void MainWidget::show_custom_option_list(std::vector<std::wstring> options) {
+    std::vector<std::vector<std::wstring>> values = { options };
+    set_filtered_select_menu<std::wstring>(false, true, values, options, -1, [this](std::wstring* val) {
+        //selected_option = *val;
+        pending_command_instance->set_generic_requirement(QString::fromStdWString(*val));
+        advance_command(std::move(pending_command_instance));
+        },
+        [](std::wstring* val) {
+
+        });
+    show_current_widget();
 }
