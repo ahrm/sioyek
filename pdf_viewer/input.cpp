@@ -486,6 +486,40 @@ public:
 //
 //};
 
+class ShowTextPromptCommand : public Command {
+
+    std::optional<std::wstring> prompt_title = {};
+public:
+    ShowTextPromptCommand(MainWidget* w) : Command(w) {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!prompt_title.has_value()) {
+            return Requirement { RequirementType::Text, "Prompt Title" };
+        }
+        if (!result.has_value()) {
+            return Requirement{ RequirementType::Text, utf8_encode(prompt_title.value())};
+        }
+        return {};
+    }
+
+    void set_text_requirement(std::wstring value) {
+        if (!prompt_title.has_value()) {
+            prompt_title = value;
+        }
+        else {
+            result = value;
+        }
+    }
+
+    void perform() {
+    }
+
+    std::string get_name() {
+        return "show_text_prompt";
+    }
+
+};
+
 class ShowOptionsCommand : public Command {
 
 private:
@@ -522,7 +556,6 @@ public:
     }
 
     void perform() {
-        qDebug() << "what";
     }
 
     std::string get_name() {
@@ -4511,6 +4544,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
     new_commands["get_config_value"] = [](MainWidget* widget) {return std::make_unique< GetConfigCommand>(widget); };
     new_commands["show_custom_options"] = [](MainWidget* widget) {return std::make_unique< ShowOptionsCommand>(widget); };
+    new_commands["show_text_prompt"] = [](MainWidget* widget) {return std::make_unique< ShowTextPromptCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
