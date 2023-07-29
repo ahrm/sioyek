@@ -6136,7 +6136,7 @@ void MainWidget::update_highlight_buttons_position() {
 
 void MainWidget::handle_debug_command() {
     QString python_api = export_python_api();
-    QFile output("api.py");
+    QFile output("debug/api.py");
     if (output.open(QIODevice::WriteOnly)) {
         output.write(python_api.toUtf8());
     }
@@ -7733,22 +7733,29 @@ QString MainWidget::export_python_api() {
     QString res;
     QString INDENT = "    ";
 
+    res += "class SioyekBase:\n\n";
+
     QStringList command_names = command_manager->get_all_command_names();
     for (auto command_name : command_names) {
+        QString command_name_ = command_name;
+        if (command_name_ == "import") {
+            command_name_ = "import_";
+        }
+
         if (command_name.size() > 0 && command_name[0] != '_') {
 
             auto command = command_manager->get_command_with_name(this, command_name.toStdString());
-            res += INDENT + "def " + command_name + "(self";
+            res += INDENT + "def " + command_name_ + "(self";
             auto requirement = command->next_requirement(this);
             if (requirement) {
-                res += ", arg, focus=False):\n";
+                res += ", arg, focus=False, wait=True):\n";
                 res += INDENT + INDENT;
-                res += "self.run_command(\"" + command_name + "\", arg, focus)\n\n";
+                res += "return self.run_command(\"" + command_name + "\", arg, focus, wait)\n\n";
             }
             else {
-                res += ", focus=False):\n";
+                res += ", focus=False, wait=True):\n";
                 res += INDENT + INDENT;
-                res += "self.run_command(\"" + command_name + "\", None, focus)\n\n";
+                res += "return self.run_command(\"" + command_name + "\", None, focus, wait)\n\n";
             }
         }
 
@@ -7774,9 +7781,12 @@ void MainWidget::show_custom_option_list(std::vector<std::wstring> options) {
 }
 
 void MainWidget::on_socket_deleted(QLocalSocket* deleted_socket) {
-    if (pending_command_instance) {
-        if (pending_command_instance->result_socket == deleted_socket) {
-            pending_command_instance->set_result_socket(nullptr);
+    if (!should_quit) {
+
+        if (pending_command_instance) {
+            if (pending_command_instance->result_socket == deleted_socket) {
+                pending_command_instance->set_result_socket(nullptr);
+            }
         }
     }
 }
