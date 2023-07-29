@@ -486,6 +486,40 @@ public:
 //
 //};
 
+class GetConfigNoDialogCommand : public Command {
+    std::optional<std::wstring> command_name = {};
+public:
+    GetConfigNoDialogCommand(MainWidget* w) : Command(w) {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!command_name.has_value()) {
+            return Requirement{ RequirementType::Text, "Prompt Title" };
+        }
+        return {};
+    }
+
+    void set_text_requirement(std::wstring value) {
+        command_name = value;
+    }
+
+    void perform() {
+        //widget->config_manager->get_config
+        auto configs = widget->config_manager->get_configs_ptr();
+        for (int i = 0; i < configs->size(); i++) {
+            if ((*configs)[i].name == command_name.value()) {
+                std::wstringstream ssr;
+                (*configs)[i].serialize((*configs)[i].value, ssr);
+                result = ssr.str();
+            }
+        }
+    }
+
+    std::string get_name() {
+        return "get_config_no_dialog";
+    }
+
+};
+
 class ShowTextPromptCommand : public Command {
 
     std::optional<std::wstring> prompt_title = {};
@@ -4543,6 +4577,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["edit_selected_highlight"] = [](MainWidget* widget) {return std::make_unique< EditSelectedHighlightCommand>(widget); };
     new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
     new_commands["get_config_value"] = [](MainWidget* widget) {return std::make_unique< GetConfigCommand>(widget); };
+    new_commands["get_config_no_dialog"] = [](MainWidget* widget) {return std::make_unique< GetConfigNoDialogCommand>(widget); };
     new_commands["show_custom_options"] = [](MainWidget* widget) {return std::make_unique< ShowOptionsCommand>(widget); };
     new_commands["show_text_prompt"] = [](MainWidget* widget) {return std::make_unique< ShowTextPromptCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
