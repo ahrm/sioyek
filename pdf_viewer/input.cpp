@@ -504,14 +504,23 @@ public:
 
     void perform() {
         //widget->config_manager->get_config
+        QStringList config_name_list = QString::fromStdWString(command_name.value()).split(',');
+
         auto configs = widget->config_manager->get_configs_ptr();
-        for (int i = 0; i < configs->size(); i++) {
-            if ((*configs)[i].name == command_name.value()) {
-                std::wstringstream ssr;
-                (*configs)[i].serialize((*configs)[i].value, ssr);
-                result = ssr.str();
+        std::wstringstream output;
+        for (auto confname : config_name_list) {
+
+            for (int i = 0; i < configs->size(); i++) {
+                if ((*configs)[i].name == confname.toStdWString()) {
+                    (*configs)[i].serialize((*configs)[i].value, output);
+                    if (i < configs->size() - 1) {
+                        output.put(L'\n');
+                    }
+                }
             }
         }
+
+        result = output.str();
     }
 
     std::string get_name() {
