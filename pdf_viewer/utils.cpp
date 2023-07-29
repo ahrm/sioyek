@@ -3695,3 +3695,11 @@ bool is_text_refernce_rather_than_paper_name(std::wstring text) {
 
 }
 
+QJsonObject rect_to_json(fz_rect rect) {
+    QJsonObject res;
+    res["x0"] = rect.x0;
+    res["y0"] = rect.y0;
+    res["x1"] = rect.x1;
+    res["y1"] = rect.y1;
+    return res;
+}

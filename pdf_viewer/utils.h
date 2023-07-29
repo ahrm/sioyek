@@ -375,3 +375,4 @@ bool does_paper_name_match_query(std::wstring query, std::wstring paper_name);
 bool is_dot_index_end_of_a_reference(const std::vector<DocumentCharacter>& flat_chars, int dot_index);
 std::wstring remove_et_al(std::wstring ref);
 void get_flat_chars_from_stext_page_for_bib_detection(fz_stext_page* stext_page, std::vector<DocumentCharacter>& flat_chars);
+QJsonObject rect_to_json(fz_rect rect);

@@ -7780,3 +7780,88 @@ void MainWidget::on_socket_deleted(QLocalSocket* deleted_socket) {
         }
     }
 }
+
+QJsonObject MainWidget::get_json_state() {
+    QJsonObject result;
+    if (doc()) {
+        result["document_path"] = QString::fromStdWString(doc()->get_path());
+        result["document_checksum"] = QString::fromStdString(doc()->get_checksum());
+
+        int current_page = get_current_page_number();
+        result["page_number"] = get_current_page_number();
+        bool is_searching = opengl_widget->get_is_searching(nullptr);
+        result["searching"] = is_searching;
+        if (is_searching) {
+            int num_results = opengl_widget->get_num_search_results();
+        }
+        float offset_x = main_document_view->get_offset_x();
+        float offset_y =  main_document_view->get_offset_y();
+        result["x_offset"] = offset_x;
+        result["y_offset"] = offset_y;
+
+        AbsoluteDocumentPos abspos = { offset_x, offset_y };
+        DocumentPos docpso = doc()->absolute_to_page_pos(abspos);
+
+        result["x_offset_in_page"] = docpso.x;
+        result["y_offset_in_page"] = docpso.y;
+
+        result["zoom_level"] = main_document_view->get_zoom_level();
+
+        std::vector<std::wstring> loaded_document_paths = document_manager->get_loaded_document_paths();
+        QJsonArray loaded_documents;
+        for (auto docpath : loaded_document_paths) {
+            loaded_documents.push_back(QString::fromStdWString(docpath));
+        }
+
+        result["loaded_documents"] = loaded_documents;
+
+        if (opengl_widget->get_overview_page()) {
+            QJsonObject overview_state_json;
+            OverviewState overview_state = opengl_widget->get_overview_page().value();
+            overview_state_json["y_offset"] = overview_state.absolute_offset_y;
+            AbsoluteDocumentPos overview_abspos = { 0, overview_state.absolute_offset_y };
+            Document* overview_doc = overview_state.doc ? overview_state.doc : doc();
+            DocumentPos overview_docpos = overview_doc->absolute_to_page_pos(overview_abspos);
+            overview_state_json["target_page"] = overview_docpos.page;
+            overview_state_json["y_offset_in_page"] = overview_docpos.y;
+            overview_state_json["document_path"] = QString::fromStdWString(overview_doc->get_path());
+            result["overview"] = overview_state_json;
+        }
+        if (smart_view_candidates.size() > 0) {
+            QJsonArray smart_view_candidates_json;
+
+            for (auto candid : smart_view_candidates) {
+                QJsonObject candid_json_object;
+                Document* candid_document = candid.doc ? candid.doc : doc();
+                candid_json_object["document_path"] = QString::fromStdWString(candid_document->get_path());
+
+                fz_rect source_absolute_rect = candid.source_rect;
+                int source_page = -1;
+                fz_rect source_page_rect = candid_document->absolute_to_page_rect(source_absolute_rect, &source_page);
+
+                candid_json_object["source_absolute_rect"] = rect_to_json(source_absolute_rect);
+                candid_json_object["source_document_rect"] = rect_to_json(source_page_rect);
+                candid_json_object["source_page"] = source_page;
+                candid_json_object["source_text"] = QString::fromStdWString(candid.source_text);
+
+                DocumentPos target_docpos = candid.get_docpos(main_document_view);
+                AbsoluteDocumentPos target_abspos = candid.get_abspos(main_document_view);
+
+                candid_json_object["target_document_x"] = target_docpos.x;
+                candid_json_object["target_document_y"] = target_docpos.y;
+                candid_json_object["target_document_page"] = target_docpos.page;
+
+                candid_json_object["target_absolute_x"] = target_abspos.x;
+                candid_json_object["target_absolute_y"] = target_abspos.y;
+
+                smart_view_candidates_json.push_back(candid_json_object);
+            }
+
+            result["smart_view_candidates"] = smart_view_candidates_json;
+        }
+
+        
+    }
+
+    return result;
+}

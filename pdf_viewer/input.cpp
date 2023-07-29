@@ -563,6 +563,23 @@ public:
 
 };
 
+class GetStateJsonCommand : public Command {
+
+public:
+    GetStateJsonCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        QJsonDocument doc(widget->get_json_state());
+        std::wstring json_str = utf8_decode(doc.toJson(QJsonDocument::Compact).toStdString());
+        result = json_str;
+    }
+
+    std::string get_name() {
+        return "get_state_json";
+    }
+
+};
+
 class ShowOptionsCommand : public Command {
 
 private:
@@ -4596,6 +4613,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["get_config_no_dialog"] = [](MainWidget* widget) {return std::make_unique< GetConfigNoDialogCommand>(widget); };
     new_commands["show_custom_options"] = [](MainWidget* widget) {return std::make_unique< ShowOptionsCommand>(widget); };
     new_commands["show_text_prompt"] = [](MainWidget* widget) {return std::make_unique< ShowTextPromptCommand>(widget); };
+    new_commands["get_state_json"] = [](MainWidget* widget) {return std::make_unique< GetStateJsonCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
