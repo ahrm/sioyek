@@ -34,6 +34,9 @@ Command::Command(MainWidget* widget_) : widget(widget_) {
 
 }
 
+Command::~Command() {
+
+}
 
 void Command::set_result_socket(QLocalSocket* socket) {
     result_socket = socket;
@@ -426,7 +429,11 @@ public:
 
 class SearchCommand : public TextCommand {
 public:
-    SearchCommand(MainWidget* w) : TextCommand(w) {};
+    SearchCommand(MainWidget* w) : TextCommand(w) {
+    };
+
+    ~SearchCommand() {
+    }
 
     void perform() {
         widget->perform_search(this->text.value(), false);
@@ -1294,6 +1301,54 @@ public:
     }
 
     bool requires_document() { return false; }
+};
+
+class WaitForRendersToFinishCommand : public Command {
+public:
+    WaitForRendersToFinishCommand(MainWidget* w) : Command(w) {};
+    bool finished = false;
+    QTimer* timer;
+    QMetaObject::Connection timer_connection;
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!finished) {
+            return Requirement{ RequirementType::Generic, "dummy" };
+        }
+        else {
+            return {};
+        }
+    }
+
+    ~WaitForRendersToFinishCommand() {
+        timer->stop();
+        timer->deleteLater();
+    }
+
+    void set_generic_requirement(QVariant value)
+    {
+        finished = true;
+    }
+
+    void handle_generic_requirement() override{
+        if (finished) return;
+
+        timer = new QTimer();
+        timer->setInterval(100);
+        timer_connection = QObject::connect(timer, &QTimer::timeout, [widget=widget]() {
+            widget->advance_wait_for_render_if_ready();
+            //widget->opengl
+            });
+        timer->start();
+
+    }
+
+    void perform() {
+    }
+
+    std::string get_name() {
+        return "wait_for_renders_to_finish";
+    }
+
 };
 
 class OpenDocumentCommand : public Command {
@@ -4663,6 +4718,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["previous_page"] = [](MainWidget* widget) {return std::make_unique< PreviousPageCommand>(widget); };
     new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
     new_commands["screenshot"] = [](MainWidget* widget) {return std::make_unique< ScreenshotCommand>(widget); };
+    new_commands["wait_for_renders_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForRendersToFinishCommand>(widget); };
     new_commands["add_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkCommand>(widget); };
     new_commands["add_marked_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkMarkedCommand>(widget); };
     new_commands["add_freetext_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkFreetextCommand>(widget); };

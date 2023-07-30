@@ -615,3 +615,6 @@ bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 }
 
 
+int PdfRenderer::num_pending_render_requests() {
+    return pending_render_requests.size();
+}

@@ -110,6 +110,7 @@ public:
     void start_threads();
     void join_threads();
 
+    int num_pending_render_requests();
     //should only be called from the main thread
     void add_request(std::wstring document_path, int page, bool should_render_annotations, float zoom_level, float display_scale, int index, int num_h_slices, int num_v_slices);
     void add_request(std::wstring document_path,

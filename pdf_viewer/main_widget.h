@@ -849,6 +849,7 @@ public:
     void on_socket_deleted(QLocalSocket* deleted_socket);
     QJsonObject get_json_state();
     void screenshot(std::wstring file_path);
+    void advance_wait_for_render_if_ready();
 
 };
 

@@ -6133,13 +6133,14 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
+    //std::unique_ptr<Command> com = command_manager->get_command_with_name(this, "search");
+    //com = {};
     //QString python_api = export_python_api();
     //QFile output("debug/api.py");
     //if (output.open(QIODevice::WriteOnly)) {
     //    output.write(python_api.toUtf8());
     //}
     //output.close();
-    screenshot(L"sioyek_screenshot.png");
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -7880,12 +7881,16 @@ void MainWidget::screenshot(std::wstring file_path) {
     int x1, x2, y1, y2;
     frameGeometry().getCoords( &x1, &y1, &x2, &y2 );
 
-
-    //x1 = std::max(0, x1);
-    //y1 = std::max(0, y1);
-    //x2 = 100;
-    //y2 = 100;
-
     QPixmap pixmap = screen()->grabWindow(0, x1, y1, x2 - x1, y2 - y1 );
     pixmap.save(QString::fromStdWString(file_path));
 }
+
+void MainWidget::advance_wait_for_render_if_ready(){
+    if ((!is_render_invalidated) && (pdf_renderer->num_pending_render_requests() == 0)) {
+        if (pending_command_instance && pending_command_instance->get_name() == "wait_for_renders_to_finish") {
+            pending_command_instance->set_generic_requirement("");
+            advance_command(std::move(pending_command_instance));
+        }
+    }
+}
+
