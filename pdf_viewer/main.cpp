@@ -125,6 +125,7 @@ int NUM_V_SLICES = 5;
 int NUM_H_SLICES = 1;
 bool SHOULD_RENDER_PDF_ANNOTATIONS = true;
 bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME = true;
+bool NO_AUTO_CONFIG = false;
 
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];
@@ -877,6 +878,11 @@ int main(int argc, char* args[]) {
     if (has_arg(argc, args, "--verbose")) {
         VERBOSE = true;
     }
+
+    if (has_arg(argc, args, "--no-auto-config")) {
+        NO_AUTO_CONFIG = true;
+    }
+
     int nrows, ncols;
 
     //load_npy(":/data/embedding.npy", embedding_weights, &nrows, &ncols);

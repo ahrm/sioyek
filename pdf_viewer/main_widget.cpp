@@ -1,6 +1,7 @@
 // deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
+// add tests
 
 #include <iostream>
 #include <vector>
@@ -1402,9 +1403,6 @@ void MainWidget::validate_ui() {
 bool MainWidget::move_document(float dx, float dy, bool force) {
     if (main_document_view_has_document()) {
         return main_document_view->move(dx, dy, force);
-        //float prev_vertical_line_pos = opengl_widget->get_vertical_line_pos();
-        //float new_vertical_line_pos = prev_vertical_line_pos - dy;
-        //opengl_widget->set_vertical_line_pos(new_vertical_line_pos);
     }
     return false;
 }
@@ -6135,12 +6133,13 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    QString python_api = export_python_api();
-    QFile output("debug/api.py");
-    if (output.open(QIODevice::WriteOnly)) {
-        output.write(python_api.toUtf8());
-    }
-    output.close();
+    //QString python_api = export_python_api();
+    //QFile output("debug/api.py");
+    //if (output.open(QIODevice::WriteOnly)) {
+    //    output.write(python_api.toUtf8());
+    //}
+    //output.close();
+    screenshot(L"sioyek_screenshot.png");
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -7874,4 +7873,19 @@ QJsonObject MainWidget::get_json_state() {
     }
 
     return result;
+}
+
+void MainWidget::screenshot(std::wstring file_path) {
+
+    int x1, x2, y1, y2;
+    frameGeometry().getCoords( &x1, &y1, &x2, &y2 );
+
+
+    //x1 = std::max(0, x1);
+    //y1 = std::max(0, y1);
+    //x2 = 100;
+    //y2 = 100;
+
+    QPixmap pixmap = screen()->grabWindow(0, x1, y1, x2 - x1, y2 - y1 );
+    pixmap.save(QString::fromStdWString(file_path));
 }

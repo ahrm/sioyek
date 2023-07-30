@@ -98,6 +98,8 @@ extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
 extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring BOOK_SCAN_PATH;
 
+extern bool NO_AUTO_CONFIG;
+
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
 extern std::wstring SHIFT_RIGHT_CLICK_COMMAND;
@@ -2094,7 +2096,10 @@ void ConfigManager::deserialize(std::vector<std::string>* changed_config_names, 
     ADDITIONAL_COMMANDS.clear();
 
     deserialize_file(changed_config_names, default_file_path);
-    deserialize_file(changed_config_names, auto_path);
+
+    if (!NO_AUTO_CONFIG) {
+        deserialize_file(changed_config_names, auto_path);
+    }
 
     for (const auto& user_file_path : user_file_paths) {
         deserialize_file(changed_config_names, user_file_path);

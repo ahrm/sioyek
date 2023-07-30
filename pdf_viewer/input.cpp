@@ -1266,6 +1266,36 @@ public:
     bool requires_document() { return false; }
 };
 
+class ScreenshotCommand : public Command {
+public:
+    ScreenshotCommand(MainWidget* w) : Command(w) {};
+
+    std::wstring file_name;
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (file_name.size() == 0) {
+            return Requirement{ RequirementType::Text, "File Path" };
+        }
+        else {
+            return {};
+        }
+    }
+
+    void set_text_requirement(std::wstring value) {
+        file_name = value;
+    }
+
+    void perform() {
+        widget->screenshot(file_name);
+    }
+
+    std::string get_name() {
+        return "screenshot";
+    }
+
+    bool requires_document() { return false; }
+};
+
 class OpenDocumentCommand : public Command {
 public:
     OpenDocumentCommand(MainWidget* w) : Command(w) {};
@@ -4632,6 +4662,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["next_page"] = [](MainWidget* widget) {return std::make_unique< NextPageCommand>(widget); };
     new_commands["previous_page"] = [](MainWidget* widget) {return std::make_unique< PreviousPageCommand>(widget); };
     new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
+    new_commands["screenshot"] = [](MainWidget* widget) {return std::make_unique< ScreenshotCommand>(widget); };
     new_commands["add_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkCommand>(widget); };
     new_commands["add_marked_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkMarkedCommand>(widget); };
     new_commands["add_freetext_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkFreetextCommand>(widget); };

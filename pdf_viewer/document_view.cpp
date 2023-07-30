@@ -602,8 +602,8 @@ bool DocumentView::move_absolute(float dx, float dy, bool force) {
 }
 
 bool DocumentView::move(float dx, float dy, bool force) {
-    int abs_dx = (dx / zoom_level);
-    int abs_dy = (dy / zoom_level);
+    float abs_dx = (dx / zoom_level);
+    float abs_dy = (dy / zoom_level);
     return move_absolute(abs_dx, abs_dy, force);
 }
 void DocumentView::get_absolute_delta_from_doc_delta(float dx, float dy, float* abs_dx, float* abs_dy) {

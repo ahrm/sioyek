@@ -1852,6 +1852,9 @@ QCommandLineParser* get_command_line_parser() {
     QCommandLineOption wait_for_response_option("wait-for-response", "Wait for the command to finish before returning.");
     parser->addOption(wait_for_response_option);
 
+    QCommandLineOption no_auto_config_option("no-auto-config", "Disables all config files except the ones next to the executable. Used mainly for testing.");
+    parser->addOption(no_auto_config_option);
+
     parser->addHelpOption();
 
     return parser;
