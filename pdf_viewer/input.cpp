@@ -1307,7 +1307,7 @@ class WaitForRendersToFinishCommand : public Command {
 public:
     WaitForRendersToFinishCommand(MainWidget* w) : Command(w) {};
     bool finished = false;
-    QTimer* timer;
+    QTimer* timer = nullptr;
     QMetaObject::Connection timer_connection;
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
@@ -1320,8 +1320,11 @@ public:
     }
 
     ~WaitForRendersToFinishCommand() {
-        timer->stop();
-        timer->deleteLater();
+
+        if (timer) {
+            timer->stop();
+            timer->deleteLater();
+        }
     }
 
     void set_generic_requirement(QVariant value)
@@ -1343,6 +1346,7 @@ public:
     }
 
     void perform() {
+        int a = 2;
     }
 
     std::string get_name() {
@@ -4663,7 +4667,17 @@ public:
     }
 
     std::string get_name() {
-        return name;
+        if (name.size() > 0 || commands.size() == 0) {
+            return name;
+        }
+        else {
+            std::string res;
+            for (auto& command : commands) {
+                res += command->get_name();
+            }
+            return "{macro}" + res;
+            //return "[macro]" + commands[0]->get_name();
+        }
     }
 
 };

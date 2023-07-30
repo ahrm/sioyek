@@ -23,6 +23,9 @@ num_threads(num_threads)
     garbage_collect_timer.setInterval(1000);
     garbage_collect_timer.start();
 
+    for (int i = 0; i < num_threads; i++) {
+        thread_busy_status.push_back(false);
+    }
     QObject::connect(&garbage_collect_timer, &QTimer::timeout, [&]() {
         delete_old_pages();
         });
@@ -482,6 +485,7 @@ void PdfRenderer::run(int thread_index) {
             delete_old_pixmaps(thread_index, mupdf_context);
             if (*should_quit_pointer) break;
 
+            thread_busy_status[thread_index] = false;
             sleep_ms(100);
             pending_requests_mutex.lock();
         }
@@ -508,6 +512,7 @@ void PdfRenderer::run(int thread_index) {
         cached_response_mutex.unlock();
         pending_render_requests.pop_back();
         pending_requests_mutex.unlock();
+        thread_busy_status[thread_index] = true;
 
         if (!is_already_rendered) {
 
@@ -615,6 +620,11 @@ bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 }
 
 
-int PdfRenderer::num_pending_render_requests() {
-    return pending_render_requests.size();
+bool PdfRenderer::is_busy() {
+    for (int i = 0; i < num_threads; i++) {
+        if (thread_busy_status[i]) {
+            return true;
+        }
+    }
+    return pending_render_requests.size() > 0;
 }

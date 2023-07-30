@@ -77,6 +77,7 @@ class PdfRenderer : public QObject {
     std::vector<RenderResponse> cached_responses;
     std::vector<std::thread> worker_threads;
     std::thread search_thread;
+    std::vector<bool> thread_busy_status;
 
     std::mutex pending_requests_mutex;
     std::mutex search_request_mutex;
@@ -110,7 +111,7 @@ public:
     void start_threads();
     void join_threads();
 
-    int num_pending_render_requests();
+    bool is_busy();
     //should only be called from the main thread
     void add_request(std::wstring document_path, int page, bool should_render_annotations, float zoom_level, float display_scale, int index, int num_h_slices, int num_v_slices);
     void add_request(std::wstring document_path,
