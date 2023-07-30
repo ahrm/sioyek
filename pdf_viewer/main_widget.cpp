@@ -7877,11 +7877,8 @@ QJsonObject MainWidget::get_json_state() {
 }
 
 void MainWidget::screenshot(std::wstring file_path) {
-
-    int x1, x2, y1, y2;
-    frameGeometry().getCoords( &x1, &y1, &x2, &y2 );
-
-    QPixmap pixmap = screen()->grabWindow(0, x1, y1, x2 - x1, y2 - y1 );
+    QPixmap pixmap(size());
+    render(&pixmap, QPoint(), QRegion(rect()));
     pixmap.save(QString::fromStdWString(file_path));
 }
 
