@@ -850,6 +850,7 @@ public:
     QJsonObject get_json_state();
     void screenshot(std::wstring file_path);
     void advance_wait_for_render_if_ready();
+    std::string get_user_agent_string();
 
 };
 

@@ -310,7 +310,6 @@ int Document::add_portal(Portal portal, bool insert_into_database) {
                 portal.src_offset_x.value(),
                 portal.src_offset_y,
                 utf8_decode(portal.uuid));
-            qDebug() << "result of inserting portal was " << res;
         }
         else {
             db_manager->insert_portal(

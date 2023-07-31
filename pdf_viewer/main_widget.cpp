@@ -6206,6 +6206,8 @@ std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {
     );
 
     QNetworkRequest req;
+    std::string user_agent_string = get_user_agent_string();
+    req.setRawHeader("User-Agent", user_agent_string.c_str());
     req.setUrl(get_url);
     auto reply = network_manager.get(req);
     reply->setProperty("sioyek_paper_name", QString::fromStdWString(name));
@@ -6627,6 +6629,12 @@ QNetworkReply* MainWidget::download_paper_with_url(std::wstring paper_url_, bool
     //paper_url = paper_url.right(paper_url.size() - paper_url.lastIndexOf("http"));
     QNetworkRequest req;
     req.setUrl(paper_url);
+
+    if (use_archive_url) {
+        std::string user_agent_string = get_user_agent_string();
+        req.setRawHeader("User-Agent", user_agent_string.c_str());
+    }
+
     auto res = network_manager.get(req);
     res->setProperty("sioyek_archive_url", QString::fromStdWString(paper_url_));
     return res;
@@ -7897,3 +7905,6 @@ void MainWidget::advance_wait_for_render_if_ready(){
     }
 }
 
+std::string MainWidget::get_user_agent_string() {
+    return "Sioyek/3.0";
+}
