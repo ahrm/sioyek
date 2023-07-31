@@ -1248,6 +1248,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
             new_uuid()
         );
     }
+    set_version();
 
 }
 
