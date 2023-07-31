@@ -83,6 +83,12 @@ void Document::load_document_metadata_from_db() {
         auto checksum_thread = std::thread([&]() {
             std::string checksum = get_checksum();
             if ((checksummer->num_docs_with_checksum(checksum) > 1) || annotations_file_exists()) {
+                if (marks.size() == 0 && bookmarks.size() == 0 && highlights.size() == 0 && portals.size() == 0) {
+                    db_manager->select_mark(checksum, marks);
+                    db_manager->select_bookmark(checksum, bookmarks);
+                    db_manager->select_highlight(checksum, highlights);
+                    db_manager->select_links(checksum, portals);
+                }
                 // we already have a document with the same hash so there might be
                 // annotations that are not loaded
                 should_reload_annotations = true;
@@ -3648,6 +3654,17 @@ void Document::load_drawings_async() {
 //}
 
 void Document::load_annotations(bool sync) {
+
+    //if (document_indexing_thread.has_value() && document_indexing_thread->)
+    should_reload_annotations = false;
+    if (highlights.size() > 0 && (highlights[0].highlight_rects.size() == 0)) {
+        fill_highlight_rects(context, doc);
+    }
+
+    if (!are_highlights_loaded || !get_checksum_fast().has_value()) {
+        return;
+    }
+
     std::wstring annotation_fille_path = get_annotations_file_path();
 
     QFile json_file(QString::fromStdWString(annotation_fille_path));
