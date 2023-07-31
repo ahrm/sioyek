@@ -2671,6 +2671,10 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     }
 
                 }
+                else if (opengl_widget->is_presentation_mode()) {
+                    main_document_view->goto_page(main_document_view->get_center_page_number() - num_repeats);
+                    invalidate_render();
+                }
                 else {
                     move_vertical(-72.0f * vertical_move_amount * num_repeats_f);
                     update_scrollbar();
@@ -2690,6 +2694,10 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                         move_visual_mark_command(num_repeats);
                         return;
                     }
+                }
+                else if (opengl_widget->is_presentation_mode()) {
+                    main_document_view->goto_page(main_document_view->get_center_page_number() + num_repeats);
+                    invalidate_render();
                 }
                 else {
                     move_vertical(72.0f * vertical_move_amount * num_repeats_f);
