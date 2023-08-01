@@ -1014,14 +1014,14 @@ void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_ch
 	}
 }
 
-bool are_stext_chars_far_enough_for_equation(fz_stext_char* first, fz_stext_char* second) {
+bool are_stext_chars_far_enough_for_equation(fz_stext_char* first, fz_stext_char* second, fz_stext_char* eqn_end, fz_stext_char* eqn_end_next) {
 	float second_width = second->quad.lr.x - second->quad.ll.x;
-
+	
 	if (second_width < 0) {
 		return false;
 	}
 
-	return (second->origin.x - first->origin.x) > (5 * second_width);
+	return (second->origin.x - first->origin.x) > (5 * second_width) || (eqn_end_next->origin.x - eqn_end->origin.x) > (5 * second_width); 
 }
 
 bool is_whitespace(int chr) {
@@ -1112,9 +1112,11 @@ void index_equations(const std::vector<fz_stext_char*> &flat_chars, int page_num
 			break;
 		}
 
-
-		// we expect the equation reference to be sufficiently separated from the rest of the text
-		if (((start_index > 0) && are_stext_chars_far_enough_for_equation(flat_chars[start_index-1], flat_chars[start_index]))) {
+		// we expect the equation reference to be sufficiently separated from the rest of the text.
+		// When equations are on the left-hand side, for whatever reason for non-optimal OCR, the 
+		// equation is trailed by some character, so that we have to compare distance of the last
+		// character in the equation with the character 2 afterward, rather than the next. 
+		if (((start_index > 0 && end_index < flat_chars.size() - 2) && are_stext_chars_far_enough_for_equation(flat_chars[start_index-1], flat_chars[start_index], flat_chars[end_index], flat_chars[end_index+2]))) {
 
 			std::wstring match_text = match_texts[i].substr(1, match_texts[i].size() - 2);
 			IndexedData indexed_equation;
