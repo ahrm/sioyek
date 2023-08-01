@@ -3184,6 +3184,12 @@ void Document::clear_document_caches() {
 
     delete cached_toc_model;
     cached_toc_model = nullptr;
+
+    super_fast_search_index.clear();
+    super_fast_search_index_pages.clear();
+    super_fast_search_rects.clear();
+    super_fast_search_index_ready = false;
+
     clear_toc_nodes();
 }
 
