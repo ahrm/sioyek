@@ -83,6 +83,7 @@ struct Config {
     void* get_value();
     void save_value_into_default();
     void load_default();
+    std::wstring get_type_string() const;
 
 };
 

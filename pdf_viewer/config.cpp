@@ -2175,19 +2175,7 @@ QVariant ConfigModel::data(const QModelIndex& index, int role) const {
         ConfigType config_type = conf->config_type;
         std::wstring config_name = conf->name;
         if (col == 0) {
-            if (config_type == ConfigType::Bool) return QVariant::fromValue(QString("bool"));
-            if (config_type == ConfigType::Int) return QVariant::fromValue(QString("int"));
-            if (config_type == ConfigType::Float) return QVariant::fromValue(QString("float"));
-            if (config_type == ConfigType::Color3) return QVariant::fromValue(QString("color3"));
-            if (config_type == ConfigType::Color4) return QVariant::fromValue(QString("color4"));
-            if (config_type == ConfigType::String) return QVariant::fromValue(QString("string"));
-            if (config_type == ConfigType::FilePath) return QVariant::fromValue(QString("filepath"));
-            if (config_type == ConfigType::FolderPath) return QVariant::fromValue(QString("folderpath"));
-            if (config_type == ConfigType::Macro) return QVariant::fromValue(QString("macro"));
-            if (config_type == ConfigType::IVec2) return QVariant::fromValue(QString("ivec2"));
-            if (config_type == ConfigType::FVec2) return QVariant::fromValue(QString("fvec2"));
-            if (config_type == ConfigType::EnableRectangle) return QVariant::fromValue(QString("enablerectangle"));
-            if (config_type == ConfigType::Range) return QVariant::fromValue(QString("range"));
+            return QVariant::fromValue(QString::fromStdWString(conf->get_type_string()));
         }
         if (col == 1) {
             return QVariant::fromValue(QString::fromStdWString(config_name));
@@ -2264,4 +2252,20 @@ void ConfigManager::restore_defaults_in_memory() {
     for (auto& config : configs) {
         config.load_default();
     }
+}
+
+std::wstring Config::get_type_string() const{
+    if (config_type == ConfigType::Bool) return L"bool";
+    if (config_type == ConfigType::Int) return L"int";
+    if (config_type == ConfigType::Float) return L"float";
+    if (config_type == ConfigType::Color3) return L"color3";
+    if (config_type == ConfigType::Color4) return L"color4";
+    if (config_type == ConfigType::String) return L"string";
+    if (config_type == ConfigType::FilePath) return L"filepath";
+    if (config_type == ConfigType::FolderPath) return L"folderpath";
+    if (config_type == ConfigType::Macro) return L"macro";
+    if (config_type == ConfigType::IVec2) return L"ivec2";
+    if (config_type == ConfigType::FVec2) return L"fvec2";
+    if (config_type == ConfigType::EnableRectangle) return L"enablerectangle";
+    if (config_type == ConfigType::Range) return L"range";
 }
