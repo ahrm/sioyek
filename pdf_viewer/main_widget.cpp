@@ -7817,6 +7817,7 @@ QJsonObject MainWidget::get_json_state() {
         result["searching"] = is_searching;
         if (is_searching) {
             int num_results = opengl_widget->get_num_search_results();
+            result["num_search_results"] = num_results;
         }
         float offset_x = main_document_view->get_offset_x();
         float offset_y =  main_document_view->get_offset_y();
@@ -7896,13 +7897,25 @@ void MainWidget::screenshot(std::wstring file_path) {
     pixmap.save(QString::fromStdWString(file_path));
 }
 
-void MainWidget::advance_wait_for_render_if_ready(){
-    if ((!is_render_invalidated) && (!pdf_renderer->is_busy())) {
-        if (pending_command_instance && (pending_command_instance->get_name().find("wait_for_renders_to_finish") != -1)) {
-            pending_command_instance->set_generic_requirement("");
-            advance_command(std::move(pending_command_instance));
-        }
+bool MainWidget::is_render_ready(){
+    return  (!is_render_invalidated) && (!pdf_renderer->is_busy());
+}
+
+bool MainWidget::is_index_ready(){
+    return !doc()->get_is_indexing();
+}
+
+bool MainWidget::is_search_ready() {
+    return !pdf_renderer->is_search_busy();
+}
+
+void MainWidget::advance_waiting_command(std::string waiting_command_name) {
+    //if ()
+    if (pending_command_instance && (pending_command_instance->get_name().find(waiting_command_name) != -1)) {
+        pending_command_instance->set_generic_requirement("");
+        advance_command(std::move(pending_command_instance));
     }
+
 }
 
 std::string MainWidget::get_user_agent_string() {

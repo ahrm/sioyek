@@ -849,7 +849,11 @@ public:
     void on_socket_deleted(QLocalSocket* deleted_socket);
     QJsonObject get_json_state();
     void screenshot(std::wstring file_path);
-    void advance_wait_for_render_if_ready();
+    //void advance_wait_for_render_if_ready();
+    bool is_render_ready();
+    bool is_search_ready();
+    bool is_index_ready();
+    void advance_waiting_command(std::string waiting_command_name);
     std::string get_user_agent_string();
 
 };

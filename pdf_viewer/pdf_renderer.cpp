@@ -342,6 +342,7 @@ void PdfRenderer::run_search(int thread_index)
             pending_search_request = {};
             search_request_mutex.unlock();
 
+            search_is_busy = true;
             fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
 
             int num_pages_in_document = fz_count_pages(mupdf_context, doc);
@@ -420,6 +421,7 @@ void PdfRenderer::run_search(int thread_index)
             req.search_results_mutex->unlock();
         }
         else {
+            search_is_busy = false;
             sleep_ms(100);
         }
     }
@@ -620,6 +622,10 @@ bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 }
 
 
+bool PdfRenderer::is_search_busy() {
+    return pending_search_request.has_value() || search_is_busy;
+
+}
 bool PdfRenderer::is_busy() {
     for (int i = 0; i < num_threads; i++) {
         if (thread_busy_status[i]) {

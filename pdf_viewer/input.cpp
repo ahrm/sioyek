@@ -519,6 +519,8 @@ public:
 
             for (int i = 0; i < configs->size(); i++) {
                 if ((*configs)[i].name == confname.toStdWString()) {
+                    output << (*configs)[i].get_type_string();
+                    output << L" ";
                     (*configs)[i].serialize((*configs)[i].value, output);
                     if (i < configs->size() - 1) {
                         output.put(L'\n');
@@ -1303,9 +1305,9 @@ public:
     bool requires_document() { return false; }
 };
 
-class WaitForRendersToFinishCommand : public Command {
+class GenericWaitCommand : public Command {
 public:
-    WaitForRendersToFinishCommand(MainWidget* w) : Command(w) {};
+    GenericWaitCommand(MainWidget* w) : Command(w) {};
     bool finished = false;
     QTimer* timer = nullptr;
     QMetaObject::Connection timer_connection;
@@ -1319,7 +1321,7 @@ public:
         }
     }
 
-    ~WaitForRendersToFinishCommand() {
+    virtual ~GenericWaitCommand() {
 
         if (timer) {
             timer->stop();
@@ -1332,25 +1334,70 @@ public:
         finished = true;
     }
 
+    virtual bool is_ready() = 0;
+
     void handle_generic_requirement() override{
         if (finished) return;
 
         timer = new QTimer();
         timer->setInterval(100);
-        timer_connection = QObject::connect(timer, &QTimer::timeout, [widget=widget]() {
-            widget->advance_wait_for_render_if_ready();
-            //widget->opengl
+        timer_connection = QObject::connect(timer, &QTimer::timeout, [this]() {
+            if (is_ready()) {
+                widget->advance_waiting_command(get_name());
+            }
             });
         timer->start();
 
     }
 
     void perform() {
-        int a = 2;
+    }
+
+};
+
+class WaitForIndexingToFinishCommand : public GenericWaitCommand {
+public:
+    WaitForIndexingToFinishCommand(MainWidget* w) : GenericWaitCommand(w) {};
+
+    void set_generic_requirement(QVariant value)
+    {
+        finished = true;
+    }
+
+    bool is_ready() override {
+        return widget->is_index_ready();
+    }
+
+    std::string get_name() {
+        return "wait_for_indexing_to_finish";
+    }
+
+};
+
+class WaitForRendersToFinishCommand : public GenericWaitCommand {
+public:
+    WaitForRendersToFinishCommand(MainWidget* w) : GenericWaitCommand(w) {};
+
+    bool is_ready() override {
+        return widget->is_render_ready();
     }
 
     std::string get_name() {
         return "wait_for_renders_to_finish";
+    }
+
+};
+
+class WaitForSearchToFinishCommand : public GenericWaitCommand {
+public:
+    WaitForSearchToFinishCommand(MainWidget* w) : GenericWaitCommand(w) {};
+
+    bool is_ready() override {
+        return widget->is_search_ready();
+    }
+
+    std::string get_name() {
+        return "wait_for_search_to_finish";
     }
 
 };
@@ -2000,12 +2047,7 @@ public:
     GotoEndCommand(MainWidget* w) : Command(w) {};
 public:
     void perform() {
-        if (num_repeats > 0) {
-            widget->main_document_view->goto_page(num_repeats - 1 + widget->main_document_view->get_page_offset());
-        }
-        else {
-            widget->main_document_view->goto_end();
-        }
+        widget->main_document_view->goto_end();
     }
 
     bool pushes_state() {
@@ -4733,6 +4775,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
     new_commands["screenshot"] = [](MainWidget* widget) {return std::make_unique< ScreenshotCommand>(widget); };
     new_commands["wait_for_renders_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForRendersToFinishCommand>(widget); };
+    new_commands["wait_for_search_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForSearchToFinishCommand>(widget); };
+    new_commands["wait_for_indexing_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForIndexingToFinishCommand>(widget); };
     new_commands["add_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkCommand>(widget); };
     new_commands["add_marked_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkMarkedCommand>(widget); };
     new_commands["add_freetext_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkFreetextCommand>(widget); };
