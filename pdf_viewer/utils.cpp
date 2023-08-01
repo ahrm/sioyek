@@ -2502,7 +2502,7 @@ int get_status_bar_height() {
     }
 }
 
-void flat_char_prism(const std::vector<fz_stext_char*> chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<fz_rect>& rects) {
+void flat_char_prism(const std::vector<fz_stext_char*>& chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<fz_rect>& rects) {
     fz_stext_char* last_char = nullptr;
 
     for (int j = 0; j < chars.size(); j++) {
@@ -3705,4 +3705,103 @@ QJsonObject rect_to_json(fz_rect rect) {
     res["x1"] = rect.x1;
     res["y1"] = rect.y1;
     return res;
+}
+
+bool pred_case_sensitive(const wchar_t& c1, const wchar_t& c2) {
+    return c1 == c2;
+}
+
+bool pred_case_insensitive(const wchar_t& c1, const wchar_t& c2) {
+    return std::tolower(c1) == std::tolower(c2);
+}
+
+std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_search_index,
+    const std::vector<int>& super_fast_search_index_pages,
+    const std::vector<fz_rect>& super_fast_search_rects,
+    std::wstring query,
+    bool case_sensitive,
+    int begin_page,
+    int min_page,
+    int max_page) {
+
+    std::vector<SearchResult> output;
+
+    std::vector<SearchResult> before_results;
+    bool is_before = true;
+
+    auto pred = case_sensitive ? pred_case_sensitive : pred_case_insensitive;
+    auto searcher = std::default_searcher(query.begin(), query.end(), pred);
+    auto it = std::search(
+        super_fast_search_index.begin(),
+        super_fast_search_index.end(),
+        searcher);
+
+    for (; it != super_fast_search_index.end(); it = std::search(it + 1, super_fast_search_index.end(), searcher)) {
+        int start_index = it - super_fast_search_index.begin();
+        std::deque<fz_rect> match_rects;
+        std::vector<fz_rect> compressed_match_rects;
+
+        int match_page = super_fast_search_index_pages[start_index];
+
+        if (match_page >= begin_page) {
+            is_before = false;
+        }
+
+        int end_index = start_index + query.size();
+
+
+        for (int j = start_index; j < end_index; j++) {
+            fz_rect rect = super_fast_search_rects[j];
+            match_rects.push_back(rect);
+        }
+
+        merge_selected_character_rects(match_rects, compressed_match_rects);
+        SearchResult res{ compressed_match_rects, match_page };
+
+        if (!((match_page < min_page) || (match_page > max_page))) {
+            if (is_before) {
+                before_results.push_back(res);
+            }
+            else {
+                output.push_back(res);
+            }
+        }
+    }
+    output.insert(output.end(), before_results.begin(), before_results.end());
+    return output;
+}
+
+void search_text_with_index_single_page(const std::wstring& super_fast_search_index,
+    const std::vector<fz_rect>& super_fast_search_rects,
+    std::wstring query,
+    bool case_sensitive,
+    int page_number,
+    std::vector<SearchResult>* output
+    ){
+
+    auto pred = case_sensitive ? pred_case_sensitive : pred_case_insensitive;
+    auto searcher = std::default_searcher(query.begin(), query.end(), pred);
+    auto it = std::search(
+        super_fast_search_index.begin(),
+        super_fast_search_index.end(),
+        searcher);
+
+    for (; it != super_fast_search_index.end(); it = std::search(it + 1, super_fast_search_index.end(), searcher)) {
+        int start_index = it - super_fast_search_index.begin();
+        std::deque<fz_rect> match_rects;
+        std::vector<fz_rect> compressed_match_rects;
+
+        int end_index = start_index + query.size();
+
+        for (int j = start_index; j < end_index; j++) {
+            fz_rect rect = super_fast_search_rects[j];
+            match_rects.push_back(rect);
+        }
+
+        merge_selected_character_rects(match_rects, compressed_match_rects);
+        SearchResult res{ compressed_match_rects, page_number };
+
+        output->push_back(res);
+    }
+
 }

@@ -7,7 +7,7 @@ extern int NUM_V_SLICES;
 extern int NUM_H_SLICES;
 extern bool TOUCH_MODE;
 //extern bool AUTO_EMBED_ANNOTATIONS;
-
+extern bool CASE_SENSITIVE_SEARCH;
 
 
 
@@ -372,29 +372,24 @@ void PdfRenderer::run_search(int thread_index)
                 req.start_page = page_begin;
             }
 
-            int total_results = 0;
             int num_handled_pages = 0;
             int i = req.start_page;
             while (num_handled_pages < num_pages && (!pending_search_request.has_value()) && (!(*should_quit_pointer))) {
                 num_handled_pages++;
+
                 fz_page* page = fz_load_page(mupdf_context, doc, i);
 
-                const int max_hits_per_page = 20;
-                fz_quad hitboxes[max_hits_per_page];
-                int hit_mark[max_hits_per_page];
-                int num_results = fz_search_page(mupdf_context, page, utf8_encode(req.search_term).c_str(), hit_mark, hitboxes, max_hits_per_page);
+                fz_stext_page* stext_page = fz_new_stext_page_from_page_number(mupdf_context, doc, i, nullptr);
 
-                if (num_results > 0) {
-                    req.search_results_mutex->lock();
-                    for (int j = 0; j < num_results; j++) {
-                        if (hit_mark[j] == 1) {
-                            // Hit box belongs to new entry
-                            req.search_results->push_back(SearchResult{ std::vector<fz_rect>(), i });
-                        }
-                        req.search_results->back().rects.push_back(fz_rect_from_quad(hitboxes[j]));
-                    }
-                    req.search_results_mutex->unlock();
-                }
+                std::vector<fz_stext_char*> flat_chars;
+                get_flat_chars_from_stext_page(stext_page, flat_chars, false);
+                std::wstring page_text;
+                std::vector<int> pages;
+                std::vector<fz_rect> rects;
+                flat_char_prism(flat_chars, i, page_text, pages, rects);
+                req.search_results_mutex->lock();
+                search_text_with_index_single_page(page_text, rects, req.search_term, CASE_SENSITIVE_SEARCH, i, req.search_results);
+                req.search_results_mutex->unlock();
 
                 if (num_handled_pages % 16 == 0) {
                     *req.percent_done = (float)num_handled_pages / num_pages;
@@ -402,9 +397,8 @@ void PdfRenderer::run_search(int thread_index)
                     emit search_advance();
                 }
 
-                total_results += num_results;
+                fz_drop_stext_page(mupdf_context, stext_page);
 
-                fz_drop_page(mupdf_context, page);
 
                 i++;
                 if (i > page_end) {
