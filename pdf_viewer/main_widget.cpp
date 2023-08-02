@@ -6141,12 +6141,12 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    QString python_api = export_python_api();
-    QFile output("debug/api.py");
-    if (output.open(QIODevice::WriteOnly)) {
-        output.write(python_api.toUtf8());
-    }
-    output.close();
+    // python_api = export_python_api();
+    //QFile output("debug/api.py");
+    //if (output.open(QIODevice::WriteOnly)) {
+    //    output.write(python_api.toUtf8());
+    //}
+    //output.close();
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -7743,7 +7743,7 @@ void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
     opengl_widget->set_overview_page(overview);
 }
 
-QString MainWidget::export_python_api() {
+void MainWidget::export_python_api() {
     QString res;
     QString INDENT = "    ";
 
@@ -7774,7 +7774,18 @@ QString MainWidget::export_python_api() {
         }
 
     }
-    return res;
+
+
+    QFile output(std::getenv("SIOYEK_PYTHON_BASE_PATH"));
+
+    if (output.open(QIODevice::WriteOnly)) {
+        output.write(res.toUtf8());
+    }
+    output.close();
+
+    char* sioyek_python_path = std::getenv("SIOYEK_PYTHON_PATH");
+    std::string command = "python -m pip install " + std::string(sioyek_python_path);
+    std::system(command.c_str());
 }
 
 bool MainWidget::execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin) {

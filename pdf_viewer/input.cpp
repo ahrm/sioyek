@@ -3576,6 +3576,20 @@ public:
 
 };
 
+class ExportPythonApiCommand : public Command {
+public:
+    ExportPythonApiCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->export_python_api();
+    }
+
+    std::string get_name() {
+        return "export_python_api";
+    }
+
+};
+
 class SelectRectCommand : public Command {
 public:
     SelectRectCommand(MainWidget* w) : Command(w) {};
@@ -4926,7 +4940,6 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["toggle_statusbar"] = [](MainWidget* widget) {return std::make_unique< ToggleStatusbarCommand>(widget); };
     new_commands["start_reading"] = [](MainWidget* widget) {return std::make_unique< StartReadingCommand>(widget); };
     new_commands["stop_reading"] = [](MainWidget* widget) {return std::make_unique< StopReadingCommand>(widget); };
-    new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };
     new_commands["scan_new_files"] = [](MainWidget* widget) {return std::make_unique< ScanNewFilesFromScanDirCommand>(widget); };
     new_commands["add_marked_data"] = [](MainWidget* widget) {return std::make_unique< AddMarkedDataCommand>(widget); };
     new_commands["remove_marked_data"] = [](MainWidget* widget) {return std::make_unique< RemoveMarkedDataCommand>(widget); };
@@ -4935,6 +4948,11 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["goto_random_page"] = [](MainWidget* widget) {return std::make_unique< GotoRandomPageCommand>(widget); };
     new_commands["delete_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< DeleteFreehandDrawingsCommand>(widget); };
     new_commands["select_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< SelectFreehandDrawingsCommand>(widget); };
+
+#ifdef _DEBUG
+    new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };
+    new_commands["export_python_api"] = [](MainWidget* widget) {return std::make_unique< ExportPythonApiCommand>(widget); };
+#endif
 
     command_human_readable_names["goto_beginning"] = "Go to the beginning of the document";
     command_human_readable_names["goto_end"] = "Go to the end of the document";

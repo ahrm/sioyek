@@ -844,7 +844,7 @@ public:
     void set_overview_page(std::optional<OverviewState> overview);
     std::vector<std::wstring> get_new_files_from_scan_directory();
     void scan_new_files_from_scan_directory();
-    QString export_python_api();
+    void export_python_api();
     void show_custom_option_list(std::vector<std::wstring> option_list);
     void on_socket_deleted(QLocalSocket* deleted_socket);
     QJsonObject get_json_state();
