@@ -44,6 +44,7 @@ struct SearchRequest {
     float* percent_done = nullptr;
     bool* is_searching = nullptr;
     std::optional<std::pair<int, int>> range;
+    bool is_regex = false;
 };
 
 struct RenderResponse {
@@ -119,6 +120,7 @@ public:
     void add_request(std::wstring document_path,
         int page,
         std::wstring term,
+        bool is_regex,
         std::vector<SearchResult>* out,
         float* percent_done,
         bool* is_searching,

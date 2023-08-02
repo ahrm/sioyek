@@ -3009,77 +3009,14 @@ std::vector<SearchResult> Document::search_text(std::wstring query, SearchCaseSe
 
 std::vector<SearchResult> Document::search_regex(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page)
 {
-    std::vector<SearchResult> output;
-
-    std::wregex regex;
-    try {
-        if (case_sensitive != SearchCaseSensitivity::CaseSensitive) {
-            regex = std::wregex(query, std::regex_constants::icase);
-        }
-        else {
-            regex = std::wregex(query);
-        }
-    }
-    catch (const std::regex_error&) {
-        return output;
-    }
-
-
-    std::vector<SearchResult> before_results;
-    bool is_before = true;
-
-    int offset = 0;
-
-    std::wstring::const_iterator search_start(super_fast_search_index.begin());
-    std::wsmatch match;
-    int empty_tolerance = 1000;
-
-
-    while (std::regex_search(search_start, super_fast_search_index.cend(), match, regex)) {
-        std::deque<fz_rect> match_rects;
-        std::vector<fz_rect> compressed_match_rects;
-
-        int match_page = super_fast_search_index_pages[offset + match.position()];
-
-        if (match_page >= begin_page) {
-            is_before = false;
-        }
-
-        int start_index = offset + match.position();
-        int end_index = offset + match.position() + match.length();
-        if (start_index < end_index) {
-
-
-            for (int j = start_index; j < end_index; j++) {
-                fz_rect rect = super_fast_search_rects[j];
-                match_rects.push_back(rect);
-            }
-
-            merge_selected_character_rects(match_rects, compressed_match_rects);
-            SearchResult res{ compressed_match_rects, match_page };
-
-            if (!((match_page < min_page) || (match_page > max_page))) {
-                if (is_before) {
-                    before_results.push_back(res);
-                }
-                else {
-                    output.push_back(res);
-                }
-            }
-        }
-        else {
-            empty_tolerance--;
-            if (empty_tolerance == 0) {
-                break;
-            }
-        }
-
-        offset = end_index;
-        search_start = match.suffix().first;
-    }
-    output.insert(output.end(), before_results.begin(), before_results.end());
-    return output;
-
+    return search_regex_with_index(super_fast_search_index,
+        super_fast_search_index_pages,
+        super_fast_search_rects,
+        query,
+        case_sensitive,
+        begin_page,
+        min_page,
+        max_page);
 }
 
 float Document::max_y_offset() {

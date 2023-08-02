@@ -401,3 +401,21 @@ void search_text_with_index_single_page(const std::wstring& super_fast_search_in
     int page_number,
     std::vector<SearchResult>* output
     );
+std::vector<SearchResult> search_regex_with_index(const std::wstring& super_fast_search_index,
+    const std::vector<int>& super_fast_search_index_pages,
+    const std::vector<fz_rect>& super_fast_search_rects,
+    std::wstring query,
+    SearchCaseSensitivity case_sensitive,
+    int begin_page,
+    int min_page,
+    int max_page);
+
+void search_regex_with_index_(const std::wstring& super_fast_search_index,
+    const std::vector<int>& super_fast_search_index_pages,
+    const std::vector<fz_rect>& super_fast_search_rects,
+    std::wstring query,
+    SearchCaseSensitivity case_sensitive,
+    int begin_page,
+    int min_page,
+    int max_page,
+    std::vector<SearchResult>* output);

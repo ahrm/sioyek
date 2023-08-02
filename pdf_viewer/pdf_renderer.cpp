@@ -99,6 +99,7 @@ void PdfRenderer::add_request(std::wstring document_path, int page, bool should_
 void PdfRenderer::add_request(std::wstring document_path,
     int page,
     std::wstring term,
+    bool is_regex,
     std::vector<SearchResult>* out,
     float* percent_done,
     bool* is_searching,
@@ -117,6 +118,7 @@ void PdfRenderer::add_request(std::wstring document_path,
         req.percent_done = percent_done;
         req.is_searching = is_searching;
         req.range = range;
+        req.is_regex = is_regex;
 
         search_request_mutex.lock();
         pending_search_request = req;
@@ -393,7 +395,14 @@ void PdfRenderer::run_search(int thread_index)
                 std::vector<fz_rect> rects;
                 flat_char_prism(flat_chars, i, page_text, pages, rects);
                 req.search_results_mutex->lock();
-                search_text_with_index_single_page(page_text, rects, req.search_term, search_case_sensitivity, i, req.search_results);
+
+                if (req.is_regex == false) {
+                    search_text_with_index_single_page(page_text, rects, req.search_term, search_case_sensitivity, i, req.search_results);
+                }
+                else {
+                    search_regex_with_index_(page_text, pages, rects, req.search_term, search_case_sensitivity, i, i, i, req.search_results);
+                }
+
                 req.search_results_mutex->unlock();
 
                 if (num_handled_pages % 16 == 0) {

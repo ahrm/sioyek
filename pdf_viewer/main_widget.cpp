@@ -4764,9 +4764,6 @@ void MainWidget::perform_search(std::wstring text, bool is_regex) {
         }
     }
 
-    if (is_regex && (!SUPER_FAST_SEARCH)) {
-        show_error_message(L"regex search only works when super_fast_search is enabled in prefs_user.config");
-    }
     SearchCaseSensitivity case_sens = SearchCaseSensitivity::CaseInsensitive;
     if (CASE_SENSITIVE_SEARCH) case_sens = SearchCaseSensitivity::CaseSensitive;
     if (SMARTCASE_SEARCH) case_sens = SearchCaseSensitivity::SmartCase;

@@ -1535,6 +1535,7 @@ void PdfViewOpenGLWidget::search_text(const std::wstring& text, SearchCaseSensit
                 document_view->get_document()->get_path(),
                 current_page,
                 text,
+                regex,
                 &search_results,
                 &percent_done,
                 &is_searching,
