@@ -3715,11 +3715,19 @@ bool pred_case_insensitive(const wchar_t& c1, const wchar_t& c2) {
     return std::tolower(c1) == std::tolower(c2);
 }
 
+// a function to return a pred based on case sensitivity
+std::function<bool(const wchar_t&, const wchar_t&)> get_pred(SearchCaseSensitivity cs, const std::wstring& query) {
+    if (cs == SearchCaseSensitivity::CaseSensitive) return pred_case_sensitive;
+    if (cs == SearchCaseSensitivity::CaseInsensitive) return pred_case_insensitive;
+    if (QString::fromStdWString(query).isLower()) return pred_case_insensitive;
+    return pred_case_sensitive;
+}
+
 std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_search_index,
     const std::vector<int>& super_fast_search_index_pages,
     const std::vector<fz_rect>& super_fast_search_rects,
     std::wstring query,
-    bool case_sensitive,
+    SearchCaseSensitivity case_sensitive,
     int begin_page,
     int min_page,
     int max_page) {
@@ -3729,7 +3737,8 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
     std::vector<SearchResult> before_results;
     bool is_before = true;
 
-    auto pred = case_sensitive ? pred_case_sensitive : pred_case_insensitive;
+    //auto pred = case_sensitive == SearchCaseSensitivity::CaseSensitive ? pred_case_sensitive : pred_case_insensitive;
+    auto pred = get_pred(case_sensitive, query);
     auto searcher = std::default_searcher(query.begin(), query.end(), pred);
     auto it = std::search(
         super_fast_search_index.begin(),
@@ -3774,12 +3783,12 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
 void search_text_with_index_single_page(const std::wstring& super_fast_search_index,
     const std::vector<fz_rect>& super_fast_search_rects,
     std::wstring query,
-    bool case_sensitive,
+    SearchCaseSensitivity case_sensitive,
     int page_number,
     std::vector<SearchResult>* output
     ){
 
-    auto pred = case_sensitive ? pred_case_sensitive : pred_case_insensitive;
+    auto pred = get_pred(case_sensitive, query);
     auto searcher = std::default_searcher(query.begin(), query.end(), pred);
     auto it = std::search(
         super_fast_search_index.begin(),

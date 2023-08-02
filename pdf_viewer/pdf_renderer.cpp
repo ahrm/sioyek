@@ -8,6 +8,7 @@ extern int NUM_H_SLICES;
 extern bool TOUCH_MODE;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 extern bool CASE_SENSITIVE_SEARCH;
+extern bool SMARTCASE_SEARCH;
 
 
 
@@ -342,6 +343,10 @@ void PdfRenderer::run_search(int thread_index)
             pending_search_request = {};
             search_request_mutex.unlock();
 
+            SearchCaseSensitivity search_case_sensitivity = SearchCaseSensitivity::CaseInsensitive;
+            if (CASE_SENSITIVE_SEARCH) search_case_sensitivity = SearchCaseSensitivity::CaseSensitive;
+            if (SMARTCASE_SEARCH) search_case_sensitivity = SearchCaseSensitivity::SmartCase;
+
             search_is_busy = true;
             fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
 
@@ -388,7 +393,7 @@ void PdfRenderer::run_search(int thread_index)
                 std::vector<fz_rect> rects;
                 flat_char_prism(flat_chars, i, page_text, pages, rects);
                 req.search_results_mutex->lock();
-                search_text_with_index_single_page(page_text, rects, req.search_term, CASE_SENSITIVE_SEARCH, i, req.search_results);
+                search_text_with_index_single_page(page_text, rects, req.search_term, search_case_sensitivity, i, req.search_results);
                 req.search_results_mutex->unlock();
 
                 if (num_handled_pages % 16 == 0) {

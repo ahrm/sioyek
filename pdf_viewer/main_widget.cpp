@@ -138,6 +138,7 @@ extern bool SUPER_FAST_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool CASE_SENSITIVE_SEARCH;
+extern bool SMARTCASE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 extern std::wstring UI_FONT_FACE_NAME;
 extern bool SHOULD_HIGHLIGHT_LINKS;
@@ -4766,7 +4767,10 @@ void MainWidget::perform_search(std::wstring text, bool is_regex) {
     if (is_regex && (!SUPER_FAST_SEARCH)) {
         show_error_message(L"regex search only works when super_fast_search is enabled in prefs_user.config");
     }
-    opengl_widget->search_text(search_term, CASE_SENSITIVE_SEARCH, is_regex, search_range);
+    SearchCaseSensitivity case_sens = SearchCaseSensitivity::CaseInsensitive;
+    if (CASE_SENSITIVE_SEARCH) case_sens = SearchCaseSensitivity::CaseSensitive;
+    if (SMARTCASE_SEARCH) case_sens = SearchCaseSensitivity::SmartCase;
+    opengl_widget->search_text(search_term, case_sens, is_regex, search_range);
 }
 
 void MainWidget::overview_to_definition() {

@@ -38,6 +38,12 @@ struct FreehandDrawingPoint {
     float thickness;
 };
 
+enum class SearchCaseSensitivity {
+    CaseSensitive,
+    CaseInsensitive,
+    SmartCase
+};
+
 struct DocumentCharacter {
     int c;
     fz_rect rect;
@@ -380,7 +386,7 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
     const std::vector<int>& super_fast_search_index_pages,
     const std::vector<fz_rect>& super_fast_search_rects,
     std::wstring query,
-    bool case_sensitive,
+    SearchCaseSensitivity case_sensitive,
     int begin_page,
     int min_page,
     int max_page);
@@ -391,7 +397,7 @@ bool pred_case_insensitive(const wchar_t& c1, const wchar_t& c2);
 void search_text_with_index_single_page(const std::wstring& super_fast_search_index,
     const std::vector<fz_rect>& super_fast_search_rects,
     std::wstring query,
-    bool case_sensitive,
+    SearchCaseSensitivity case_sensitive,
     int page_number,
     std::vector<SearchResult>* output
     );

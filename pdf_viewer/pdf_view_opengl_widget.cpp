@@ -1492,7 +1492,7 @@ bool PdfViewOpenGLWidget::get_is_searching(float* prog) {
     return true;
 }
 
-void PdfViewOpenGLWidget::search_text(const std::wstring& text, bool case_sensitive, bool regex, std::optional<std::pair<int, int>> range) {
+void PdfViewOpenGLWidget::search_text(const std::wstring& text, SearchCaseSensitivity case_sensitive, bool regex, std::optional<std::pair<int, int>> range) {
 
     if (!document_view) return;
 

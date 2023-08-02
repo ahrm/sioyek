@@ -332,8 +332,8 @@ public:
     //void persist_drawings_async();
 
     bool is_super_fast_index_ready();
-    std::vector<SearchResult> search_text(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page);
-    std::vector<SearchResult> search_regex(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page);
+    std::vector<SearchResult> search_text(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page);
+    std::vector<SearchResult> search_regex(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page);
     float max_y_offset();
     void add_freehand_drawing(FreehandDrawing new_drawing);
     std::vector<FreehandDrawing> get_page_freehand_drawings_with_indices(int page, const std::vector<int> indices);

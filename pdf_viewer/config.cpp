@@ -139,6 +139,7 @@ extern bool SUPER_FAST_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern int PRERENDERED_PAGE_COUNT;
 extern bool CASE_SENSITIVE_SEARCH;
+extern bool SMARTCASE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool NUMERIC_TAGS;
@@ -1602,6 +1603,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"case_sensitive_search",
         ConfigType::Bool,
         &CASE_SENSITIVE_SEARCH,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"smartcase_search",
+        ConfigType::Bool,
+        &SMARTCASE_SEARCH,
         bool_serializer,
         bool_deserializer,
         bool_validator

@@ -2993,7 +2993,7 @@ bool Document::is_super_fast_index_ready() {
 }
 
 
-std::vector<SearchResult> Document::search_text(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page) {
+std::vector<SearchResult> Document::search_text(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page) {
 
     return search_text_with_index(
         super_fast_search_index,
@@ -3007,17 +3007,17 @@ std::vector<SearchResult> Document::search_text(std::wstring query, bool case_se
 
 }
 
-std::vector<SearchResult> Document::search_regex(std::wstring query, bool case_sensitive, int begin_page, int min_page, int max_page)
+std::vector<SearchResult> Document::search_regex(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page)
 {
     std::vector<SearchResult> output;
 
     std::wregex regex;
     try {
-        if (case_sensitive) {
-            regex = std::wregex(query);
+        if (case_sensitive != SearchCaseSensitivity::CaseSensitive) {
+            regex = std::wregex(query, std::regex_constants::icase);
         }
         else {
-            regex = std::wregex(query, std::regex_constants::icase);
+            regex = std::wregex(query);
         }
     }
     catch (const std::regex_error&) {
