@@ -5020,7 +5020,7 @@ void MainWidget::handle_goto_highlight() {
     for (auto highlight : highlights) {
         std::wstring type_name = L"a";
         type_name[0] = highlight.type;
-        option_names.push_back(L"[" + type_name + L"] " + highlight.description + L"]");
+        option_names.push_back(L"[" + type_name + L"] " + highlight.description);
         option_text_annotations.push_back(highlight.text_annot);
         if (highlight.text_annot.size() > 0) {
             has_text_annotations = true;
