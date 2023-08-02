@@ -855,6 +855,8 @@ public:
     bool is_index_ready();
     void advance_waiting_command(std::string waiting_command_name);
     std::string get_user_agent_string();
+    void handle_select_current_search_match();
+    void handle_stop_search();
 
 };
 

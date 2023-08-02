@@ -3590,6 +3590,34 @@ public:
 
 };
 
+class SelectCurrentSearchMatchCommand : public Command {
+public:
+    SelectCurrentSearchMatchCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->handle_select_current_search_match();
+    }
+
+    std::string get_name() {
+        return "select_current_search_match";
+    }
+
+};
+
+//class StopSearchCommand : public Command {
+//public:
+//    StopSearchCommand(MainWidget* w) : Command(w) {};
+//
+//    void perform() {
+//        widget->handle_stop_search();
+//    }
+//
+//    std::string get_name() {
+//        return "stop_search";
+//    }
+//
+//};
+
 class SelectRectCommand : public Command {
 public:
     SelectRectCommand(MainWidget* w) : Command(w) {};
@@ -4948,6 +4976,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["goto_random_page"] = [](MainWidget* widget) {return std::make_unique< GotoRandomPageCommand>(widget); };
     new_commands["delete_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< DeleteFreehandDrawingsCommand>(widget); };
     new_commands["select_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< SelectFreehandDrawingsCommand>(widget); };
+    new_commands["select_current_search_match"] = [](MainWidget* widget) {return std::make_unique< SelectCurrentSearchMatchCommand>(widget); };
+    //new_commands["stop_search"] = [](MainWidget* widget) {return std::make_unique< StopSearchCommand>(widget); };
 
 #ifdef _DEBUG
     new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };

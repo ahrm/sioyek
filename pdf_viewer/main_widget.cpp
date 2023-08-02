@@ -7844,6 +7844,8 @@ QJsonObject MainWidget::get_json_state() {
 
         result["zoom_level"] = main_document_view->get_zoom_level();
 
+        result["selected_text"] = QString::fromStdWString(get_selected_text());
+
         std::vector<std::wstring> loaded_document_paths = document_manager->get_loaded_document_paths();
         QJsonArray loaded_documents;
         for (auto docpath : loaded_document_paths) {
@@ -7932,4 +7934,36 @@ void MainWidget::advance_waiting_command(std::string waiting_command_name) {
 
 std::string MainWidget::get_user_agent_string() {
     return "Sioyek/3.0";
+}
+
+void MainWidget::handle_select_current_search_match() {
+    std::optional<SearchResult> maybe_current_search_match = opengl_widget->get_current_search_result();
+    if (maybe_current_search_match) {
+        SearchResult current_search_match = maybe_current_search_match.value();
+        DocumentPos selection_begin_doc, selection_end_doc;
+        selection_begin_doc.x = current_search_match.rects[0].x0;
+        selection_begin_doc.y = (current_search_match.rects[0].y0 + current_search_match.rects[0].y1) / 2;
+        selection_begin_doc.page = current_search_match.page;
+        
+        selection_end_doc.x = current_search_match.rects.back().x1 - 1.0f;
+        selection_end_doc.y = (current_search_match.rects.back().y0 + current_search_match.rects.back().y1) / 2;
+        selection_end_doc.page = current_search_match.page;
+
+        AbsoluteDocumentPos abspos_begin = doc()->document_to_absolute_pos(selection_begin_doc, true);
+        AbsoluteDocumentPos abspos_end = doc()->document_to_absolute_pos(selection_end_doc, true);
+
+        selection_begin = abspos_begin;
+        selection_end = abspos_end;
+
+        main_document_view->selected_character_rects.clear();
+        doc()->get_text_selection(abspos_begin, abspos_end, false, main_document_view->selected_character_rects, selected_text);
+        handle_stop_search();
+    }
+}
+
+void MainWidget::handle_stop_search() {
+    opengl_widget->cancel_search();
+    if (TOUCH_MODE) {
+        get_search_buttons()->hide();
+    }
 }
