@@ -30,6 +30,33 @@ extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
 extern bool TOC_JUMP_ALIGN_TOP;
 
+struct CommandInvocation {
+    QString command_name;
+    QStringList command_args;
+
+    QString command_string() {
+        if (command_name.size() > 0) {
+            if (command_name[0] != '[') return command_name;
+            int index = command_name.indexOf(']');
+            return command_name.mid(index + 1);
+        }
+        return "";
+    }
+
+    QString mode_string() {
+        if (command_name.size() > 0) {
+            if (command_name[0] == '[') {
+                int index = command_name.indexOf(']');
+                return command_name.mid(1, index - 1);
+            }
+            else {
+                return "";
+            }
+        }
+        return "";
+    }
+};
+
 Command::Command(MainWidget* widget_) : widget(widget_) {
 
 }
@@ -48,6 +75,51 @@ void Command::set_generic_requirement(QVariant value) {
 
 void Command::handle_generic_requirement() {
 
+}
+
+fz_rect get_rect_from_string(std::wstring str) {
+    QStringList parts = QString::fromStdWString(str).split(' ');
+
+    fz_rect result;
+    result.x0 = parts[0].toFloat();
+    result.y0 = parts[1].toFloat();
+    result.x1 = parts[2].toFloat();
+    result.y1 = parts[3].toFloat();
+    return result;
+}
+
+AbsoluteDocumentPos get_point_from_string(std::wstring str) {
+    QStringList parts = QString::fromStdWString(str).split(' ');
+
+    AbsoluteDocumentPos result;
+    result.x = parts[0].toFloat();
+    result.y = parts[1].toFloat();
+    return result;
+}
+
+void Command::set_next_requirement_with_string(std::wstring str) {
+    std::optional<Requirement> maybe_req = next_requirement(widget);
+    if (maybe_req) {
+        Requirement req = maybe_req.value();
+        if (req.type == RequirementType::Text) {
+            set_text_requirement(str);
+        }
+        else if (req.type == RequirementType::Symbol) {
+            set_symbol_requirement(str[0]);
+        }
+        else if (req.type == RequirementType::File || req.type == RequirementType::Folder) {
+            set_file_requirement(str);
+        }
+        else if (req.type == RequirementType::Rect) {
+            set_rect_requirement(get_rect_from_string(str));
+        }
+        else if (req.type == RequirementType::Point) {
+            set_point_requirement(get_point_from_string(str));
+        }
+        else if (req.type == RequirementType::Generic) {
+            set_generic_requirement(QString::fromStdWString(str));
+        }
+    }
 }
 
 class GenericPathCommand : public Command {
@@ -456,42 +528,95 @@ public:
 
 };
 
-//class TestCommand : public Command {
-//private:
-//    std::optional<std::wstring> text1 = {};
-//    std::optional<std::wstring> text2 = {};
-//public:
-//    TestCommand(MainWidget* w) : Command(w) {};
-//
-//    void set_text_requirement(std::wstring value) {
-//        if (!text1.has_value()) {
-//            text1 = value;
-//        }
-//        else {
-//            text2 = value;
-//        }
-//    }
-//
-//    std::optional<Requirement> next_requirement(MainWidget* widget) {
-//        if (!text1.has_value()) {
-//            return Requirement{ RequirementType::Text, "text1" };
-//        }
-//        if (!text2.has_value()) {
-//            return Requirement{ RequirementType::Text, "text2" };
-//        }
-//        return {};
-//    }
-//
-//    void perform() {
-//        result = text1.value() + text2.value();
-//        show_error_message(result.value());
-//    }
-//
-//    std::string get_name() {
-//        return "test_command";
-//    }
-//
-//};
+class ExecuteMacroCommand : public TextCommand {
+public:
+    ExecuteMacroCommand(MainWidget* w) : TextCommand(w) {
+    };
+
+    void perform() {
+        widget->execute_macro_if_enabled(text.value());
+    }
+
+    std::string get_name() {
+        return "execute_macro";
+    }
+
+    std::string text_requirement_name() {
+        return "Macro";
+    }
+
+};
+
+class SetViewStateCommand : public TextCommand {
+public:
+    SetViewStateCommand(MainWidget* w) : TextCommand(w) {
+    };
+
+    void perform() {
+        QStringList parts = QString::fromStdWString(text.value()).split(' ');
+        if (parts.size() == 4) {
+            float offset_x = parts[0].toFloat();
+            float offset_y = parts[1].toFloat();
+            float zoom_level = parts[2].toFloat();
+            bool pushes_state = parts[3].toInt();
+
+            if (pushes_state == 1) {
+                widget->push_state();
+            }
+
+            widget->main_document_view->set_offsets(offset_x, offset_y);
+            widget->main_document_view->set_zoom_level(zoom_level, true);
+        }
+    }
+
+    std::string get_name() {
+        return "set_view_state";
+    }
+
+
+    std::string text_requirement_name() {
+        return "State String";
+    }
+
+};
+
+class TestCommand : public Command {
+private:
+    std::optional<std::wstring> text1 = {};
+    std::optional<std::wstring> text2 = {};
+public:
+    TestCommand(MainWidget* w) : Command(w) {};
+
+    void set_text_requirement(std::wstring value) {
+        if (!text1.has_value()) {
+            text1 = value;
+        }
+        else {
+            text2 = value;
+        }
+    }
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!text1.has_value()) {
+            return Requirement{ RequirementType::Text, "text1" };
+        }
+        if (!text2.has_value()) {
+            return Requirement{ RequirementType::Text, "text2" };
+        }
+        return {};
+    }
+
+    void perform() {
+        result = text1.value() + text2.value();
+        //widget->set_status_message(result.value());
+        show_error_message(result.value());
+    }
+
+    std::string get_name() {
+        return "test_command";
+    }
+
+};
 
 class GetConfigNoDialogCommand : public Command {
     std::optional<std::wstring> command_name = {};
@@ -4052,20 +4177,21 @@ class LazyCommand : public Command {
 private:
     CommandManager* command_manager;
     std::string command_name;
-    std::wstring command_params;
+    //std::wstring command_params;
+    std::vector<std::wstring> command_params;
     std::unique_ptr<Command> actual_command = nullptr;
     NoopCommand noop;
 
-    void parse_command_text(std::wstring command_text) {
-        int index = command_text.find(L"(");
-        if (index != -1) {
-            command_name = utf8_encode(command_text.substr(0, index));
-            command_params = command_text.substr(index + 1, command_text.size() - index - 2);
-        }
-        else {
-            command_name = utf8_encode(command_text);
-        }
-    }
+    //void parse_command_text(std::wstring command_text) {
+    //    int index = command_text.find(L"(");
+    //    if (index != -1) {
+    //        command_name = utf8_encode(command_text.substr(0, index));
+    //        command_params = command_text.substr(index + 1, command_text.size() - index - 2);
+    //    }
+    //    else {
+    //        command_name = utf8_encode(command_text);
+    //    }
+    //}
 
     std::optional<std::wstring> get_result() override{
         if (actual_command) {
@@ -4089,26 +4215,8 @@ private:
             actual_command = std::move(command_manager->get_command_with_name(widget, command_name));
             if (!actual_command) return &noop;
 
-            auto req = actual_command->next_requirement(widget);
-            if (command_params.size() > 0) {
-                // set the params if command was called with parameters, for example
-                // add_bookmark(some text)
-                if (req) {
-                    if (req->type == RequirementType::Text) {
-                        actual_command->set_text_requirement(command_params);
-                    }
-                    if (req->type == RequirementType::File || req->type == RequirementType::Folder) {
-                        actual_command->set_file_requirement(command_params);
-                    }
-                    if (req->type == RequirementType::Generic) {
-                        actual_command->set_generic_requirement(QString::fromStdWString(command_params));
-                    }
-                    if (req->type == RequirementType::Symbol) {
-                        if (command_params.size() > 0) {
-                            actual_command->set_symbol_requirement((char)command_params[0]);
-                        }
-                    }
-                }
+            for (auto arg : command_params) {
+                actual_command->set_next_requirement_with_string(arg);
             }
 
             if (actual_command && (result_socket != nullptr)) {
@@ -4121,9 +4229,14 @@ private:
 
 
 public:
-    LazyCommand(MainWidget* widget_, CommandManager* manager, std::wstring command_text) : Command(widget_), noop(widget_) {
+    LazyCommand(MainWidget* widget_, CommandManager* manager, CommandInvocation invocation) : Command(widget_), noop(widget_) {
         command_manager = manager;
-        parse_command_text(command_text);
+        command_name = invocation.command_name.toStdString();
+        for (auto arg : invocation.command_args) {
+            command_params.push_back(arg.toStdWString());
+        }
+
+        //parse_command_text(command_text);
     }
 
     void set_text_requirement(std::wstring value) { get_command()->set_text_requirement(value); }
@@ -4448,6 +4561,176 @@ public:
 };
 
 
+
+
+struct ParseState {
+    QString str;
+    int index;
+
+    QChar ch() {
+        return str[index];
+    }
+
+    void skip_whitespace() {
+        while ((index < str.size()) && ch() == ' ') {
+            index++;
+        }
+    }
+
+    bool expect(char c) {
+        if (index < str.size() && str[index] == c) {
+            index++;
+            return true;
+        }
+        else {
+            qDebug() << "Parse error: expected " << c << " but got " << str[index];
+            return false;
+        }
+    }
+
+    std::optional<CommandInvocation> get_next_invocation() {
+        skip_whitespace();
+        QString next_command_name = get_next_command_name();
+        skip_whitespace();
+        if (next_command_name.size()) {
+            QStringList next_command_args = get_command_args();
+            return CommandInvocation{ next_command_name, next_command_args };
+        }
+        else {
+            return {};
+        }
+    }
+
+    std::vector<CommandInvocation> parse() {
+        std::vector<CommandInvocation> res;
+
+        while (true) {
+            std::optional<CommandInvocation> next_invocation = get_next_invocation();
+            if (!next_invocation.has_value()) break;
+
+            skip_whitespace();
+
+            if (index < str.size() && ch() == ';') expect(';');
+
+            if (next_invocation) {
+                res.push_back(next_invocation.value());
+            }
+            
+        }
+        return res;
+    }
+
+    QString get_argument() {
+        bool is_prev_char_backslash = false;
+        QString res;
+
+        while (index < str.size()) {
+            if (!is_prev_char_backslash) {
+                if (ch() == '\\') {
+                    is_prev_char_backslash = true;
+                    index++;
+                }
+                else if (ch() == '\'') {
+                    return res;
+                }
+                else {
+                    res.append(ch());
+                    index++;
+                }
+            }
+            else {
+                if (ch() == '\\') {
+                    res.append('\\');
+                }
+                else if (ch() == '\'') {
+                    res.append('\'');
+                }
+                is_prev_char_backslash = false;
+                index++;
+            }
+        }
+        return res;
+    }
+
+    bool is_next_non_whitespace_character_a_single_quote() {
+        int i = index;
+
+        while (i < str.size() && i == ' ') {
+            i++;
+        }
+
+        if (i < str.size()) {
+            if (str[i] == '\'') return true;
+        }
+
+        return false;
+    }
+
+    QStringList get_command_args() {
+        if (index < str.size()) {
+            if (ch() == ';') {
+                return QStringList();
+            }
+
+            QStringList res;
+            expect('(');
+            if (is_next_non_whitespace_character_a_single_quote()) {
+                while (true) {
+                    skip_whitespace();
+                    expect('\'');
+                    res.push_back(get_argument());
+                    expect('\'');
+                    skip_whitespace();
+                    if (index < str.size()) {
+                        if (ch() == ')') {
+                            index++;
+                            break;
+                        }
+                        if (ch() == ',') {
+                            index++;
+                            continue;
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                }
+                return res;
+            }
+            else {
+                QString arg;
+                while (index < str.size() && ch() != ')') {
+                    arg.push_back(str[index]);
+                    index++;
+                }
+                res.push_back(arg);
+                expect(')');
+                return res;
+            }
+        }
+        else {
+            return QStringList();
+        }
+
+    }
+
+    bool can_current_char_be_command_name() {
+        return str[index].isDigit() || str[index].isLetter() || (str[index] == '_') || (str[index] == '[') || (str[index] == ']');
+    }
+
+    QString get_next_command_name() {
+        skip_whitespace();
+        QString res;
+        while (index < str.size() && (can_current_char_be_command_name())) {
+            res.push_back(ch());
+            index++;
+        }
+        return res;
+    }
+
+
+};
+
 class MacroCommand : public Command {
     std::vector<std::unique_ptr<Command>> commands;
     std::vector<std::string> modes;
@@ -4458,15 +4741,18 @@ class MacroCommand : public Command {
     bool is_modal = false;
 
 public:
-    //MacroCommand(std::string name_, std::vector<std::unique_ptr<NewCommand>> commands_) {
 
-    std::unique_ptr<Command> get_subcommand(std::wstring subcommand_name) {
-        auto subcommand = widget->command_manager->get_command_with_name(widget, utf8_encode(subcommand_name));
+    std::unique_ptr<Command> get_subcommand(CommandInvocation invocation) {
+        std::string subcommand_name = invocation.command_string().toStdString();
+        auto subcommand = widget->command_manager->get_command_with_name(widget, subcommand_name);
         if (subcommand) {
+            for (auto arg : invocation.command_args) {
+                subcommand->set_next_requirement_with_string(arg.toStdWString());
+            }
             return std::move(subcommand);
         }
         else {
-            return std::move(std::make_unique<LazyCommand>(widget, widget->command_manager, subcommand_name));
+            return std::move(std::make_unique<LazyCommand>(widget, widget->command_manager, invocation));
         }
     }
 
@@ -4484,27 +4770,22 @@ public:
         raw_commands = commands_;
 
 
-        auto parts = QString::fromStdWString(commands_).split(';');
-        for (int i = 0; i < parts.size(); i++) {
-            if (parts.at(i).size() > 0) {
-
-                if (parts.at(i).at(0) == '[') {
+        QString str = QString::fromStdWString(commands_);
+        ParseState parser;
+        parser.str = str;
+        parser.index = 0;
+        std::vector<CommandInvocation> command_invocations = parser.parse();
+        for (auto command_invocation : command_invocations) {
+            if (command_invocation.command_name.size() > 0) {
+                if (command_invocation.command_name[0] == '[') {
                     is_modal = true;
                 }
 
-                if (!is_modal) {
-                    commands.push_back(get_subcommand(parts.at(i).toStdWString()));
-                }
-                else {
-                    int closed_bracket_index = parts.at(i).indexOf(']');
-                    if (closed_bracket_index > 0) {
-                        QString mode_string = parts.at(i).mid(1, closed_bracket_index - 1);
-                        QString command_string = parts.at(i).mid(closed_bracket_index + 1);
-                        commands.push_back(get_subcommand(command_string.toStdWString()));
-                        modes.push_back(mode_string.toStdString());
-                    }
+                if (is_modal) {
+                    modes.push_back(command_invocation.mode_string().toStdString());
                 }
 
+                commands.push_back(get_subcommand(command_invocation));
             }
         }
 
@@ -4792,6 +5073,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["edit_selected_bookmark"] = [](MainWidget* widget) {return std::make_unique< EditSelectedBookmarkCommand>(widget); };
     new_commands["edit_selected_highlight"] = [](MainWidget* widget) {return std::make_unique< EditSelectedHighlightCommand>(widget); };
     new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
+    new_commands["execute_macro"] = [](MainWidget* widget) {return std::make_unique< ExecuteMacroCommand>(widget); };
+    new_commands["set_view_state"] = [](MainWidget* widget) {return std::make_unique< SetViewStateCommand>(widget); };
     new_commands["get_config_value"] = [](MainWidget* widget) {return std::make_unique< GetConfigCommand>(widget); };
     new_commands["get_config_no_dialog"] = [](MainWidget* widget) {return std::make_unique< GetConfigNoDialogCommand>(widget); };
     new_commands["show_custom_options"] = [](MainWidget* widget) {return std::make_unique< ShowOptionsCommand>(widget); };
@@ -4982,6 +5265,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 #ifdef _DEBUG
     new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };
     new_commands["export_python_api"] = [](MainWidget* widget) {return std::make_unique< ExportPythonApiCommand>(widget); };
+    new_commands["test_command"] = [](MainWidget* widget) {return std::make_unique< TestCommand>(widget); };
 #endif
 
     command_human_readable_names["goto_beginning"] = "Go to the beginning of the document";
@@ -5825,8 +6109,10 @@ void Command::run() {
     if (this->requires_document() && !(widget->main_document_view_has_document())) {
         return;
     }
+    widget->add_command_being_performed(this);
     perform();
     on_result_computed();
+    widget->remove_command_being_performed(this);
 }
 
 std::vector<char> Command::special_symbols() {
@@ -5861,7 +6147,6 @@ void Command::on_result_computed() {
     if (dynamic_cast<LazyCommand*>(this)) {
         return;
     }
-
     if (result_socket && result_socket->isOpen()){
         if (!result.has_value()) {
             result_socket->write("<NULL>");
@@ -5875,4 +6160,5 @@ void Command::on_result_computed() {
             result_socket->write("<NULL>");
         }
     }
+
 }

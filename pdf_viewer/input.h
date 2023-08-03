@@ -60,6 +60,8 @@ public:
     virtual void on_result_computed();
     virtual void set_result_socket(QLocalSocket* result_socket);
 
+    void set_next_requirement_with_string(std::wstring str);
+
     virtual void run();
     virtual std::string get_name();
     virtual std::wstring get_text_default_value();

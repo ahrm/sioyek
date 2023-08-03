@@ -7812,11 +7812,11 @@ void MainWidget::show_custom_option_list(std::vector<std::wstring> options) {
 }
 
 void MainWidget::on_socket_deleted(QLocalSocket* deleted_socket) {
-    if (!should_quit) {
+    if (!(*should_quit)) {
 
-        if (pending_command_instance) {
-            if (pending_command_instance->result_socket == deleted_socket) {
-                pending_command_instance->set_result_socket(nullptr);
+        for (auto pc : commands_being_performed) {
+            if (pc->result_socket == deleted_socket) {
+                pc->set_result_socket(nullptr);
             }
         }
     }
@@ -7984,4 +7984,15 @@ void MainWidget::handle_stop_search() {
 
 int MainWidget::get_window_id() {
     return window_id;
+}
+
+void MainWidget::add_command_being_performed(Command* new_command) {
+    commands_being_performed.push_back(new_command);
+}
+
+void MainWidget::remove_command_being_performed(Command* new_command) {
+    auto index = std::find(commands_being_performed.begin(), commands_being_performed.end(), new_command);
+    if (index != commands_being_performed.end()) {
+        commands_being_performed.erase(index);
+    }
 }

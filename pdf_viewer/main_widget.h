@@ -113,6 +113,7 @@ public:
     // Some commands can not be executed immediately (e.g. because they require a text or symbol
     // input to be completed) this is where they are stored until they can be executed.
     std::unique_ptr<Command> pending_command_instance = nullptr;
+    std::vector<Command*> commands_being_performed;
 
     DocumentView* main_document_view = nullptr;
     DocumentView* helper_document_view = nullptr;
@@ -860,6 +861,8 @@ public:
     void handle_select_current_search_match();
     void handle_stop_search();
     int get_window_id();
+    void add_command_being_performed(Command* new_command);
+    void remove_command_being_performed(Command* new_command);
 
 };
 
