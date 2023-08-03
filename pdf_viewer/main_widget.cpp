@@ -66,6 +66,8 @@
 #include <QtCore/private/qandroidextras_p.h>
 #endif
 
+extern int next_window_id;
+
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool MULTILINE_MENUS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
@@ -618,6 +620,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 {
     //main_widget->quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
     //quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
+    window_id = next_window_id;
+    next_window_id++;
+
     setMouseTracking(true);
     setAcceptDrops(true);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -7763,14 +7768,14 @@ void MainWidget::export_python_api() {
             res += INDENT + "def " + command_name_ + "(self";
             auto requirement = command->next_requirement(this);
             if (requirement) {
-                res += ", arg, focus=False, wait=True):\n";
+                res += ", arg, focus=False, wait=True, window_id=None):\n";
                 res += INDENT + INDENT;
-                res += "return self.run_command(\"" + command_name + "\", arg, focus, wait)\n\n";
+                res += "return self.run_command(\"" + command_name + "\", text=arg, focus=focus, wait=wait, window_id=window_id)\n\n";
             }
             else {
-                res += ", focus=False, wait=True):\n";
+                res += ", focus=False, wait=True, window_id=None):\n";
                 res += INDENT + INDENT;
-                res += "return self.run_command(\"" + command_name + "\", None, focus, wait)\n\n";
+                res += "return self.run_command(\"" + command_name + "\", text=None, focus=focus, wait=wait, window_id=window_id)\n\n";
             }
         }
 
@@ -7845,6 +7850,7 @@ QJsonObject MainWidget::get_json_state() {
         result["zoom_level"] = main_document_view->get_zoom_level();
 
         result["selected_text"] = QString::fromStdWString(get_selected_text());
+        result["window_id"] = window_id;
 
         std::vector<std::wstring> loaded_document_paths = document_manager->get_loaded_document_paths();
         QJsonArray loaded_documents;
@@ -7974,4 +7980,8 @@ void MainWidget::handle_stop_search() {
     if (TOUCH_MODE) {
         get_search_buttons()->hide();
     }
+}
+
+int MainWidget::get_window_id() {
+    return window_id;
 }

@@ -1843,6 +1843,9 @@ QCommandLineParser* get_command_line_parser() {
     QCommandLineOption yloc_option("yloc", "Set y position within page to <yloc>.", "yloc");
     parser->addOption(yloc_option);
 
+    QCommandLineOption window_id_option("window-id", "Apply command to window with id <window-id>", "window-id");
+    parser->addOption(window_id_option);
+
     QCommandLineOption shared_database_path_option("shared-database-path", "Specify which file to use for shared data (bookmarks, highlights, etc.)", "path");
     parser->addOption(shared_database_path_option);
 

@@ -100,6 +100,7 @@ public:
     PdfRenderer* pdf_renderer = nullptr;
     InputHandler* input_handler = nullptr;
     CachedChecksummer* checksummer = nullptr;
+    int window_id;
 
     QTextToSpeech* tts = nullptr;
     // is the TTS engine currently reading text?
@@ -858,6 +859,7 @@ public:
     std::string get_user_agent_string();
     void handle_select_current_search_match();
     void handle_stop_search();
+    int get_window_id();
 
 };
 

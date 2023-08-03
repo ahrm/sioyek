@@ -145,6 +145,7 @@ std::wstring STATUS_BAR_FORMAT = L"Page %{current_page} / %{num_pages}%{chapter_
 std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}";
 #endif
 
+int next_window_id = 0;
 float BLACK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float HIGHLIGHT_COLORS[26 * 3] = { \
 0.94, 0.64, 1.00, \
@@ -623,6 +624,13 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
     }
 }
 
+MainWidget* get_window_with_window_id(int window_id) {
+    for (auto window : windows) {
+        if (window->get_window_id() == window_id) return window;
+    }
+    return nullptr;
+}
+
 MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
     if (!QFile::exists(QString::fromStdWString(file_path))) {
         return nullptr;
@@ -749,7 +757,13 @@ MainWidget* handle_args(const QStringList& arguments, QLocalSocket* origin=nullp
 #endif
     }
 
-    MainWidget* target_window = get_window_with_opened_file_path(pdf_file_name);
+    MainWidget* target_window = nullptr;
+    if (parser->isSet("window-id")) {
+        target_window = get_window_with_window_id(parser->value("window-id").toInt());
+    }
+    else {
+        target_window = get_window_with_opened_file_path(pdf_file_name);
+    }
 
     bool should_create_new_window = false;
     if (pdf_file_name.size() > 0) {
