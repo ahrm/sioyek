@@ -848,6 +848,7 @@ public:
     void show_custom_option_list(std::vector<std::wstring> option_list);
     void on_socket_deleted(QLocalSocket* deleted_socket);
     QJsonObject get_json_state();
+    QJsonArray get_all_json_states();
     void screenshot(std::wstring file_path);
     //void advance_wait_for_render_if_ready();
     bool is_render_ready();

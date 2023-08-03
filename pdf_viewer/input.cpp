@@ -578,7 +578,7 @@ public:
     GetStateJsonCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        QJsonDocument doc(widget->get_json_state());
+        QJsonDocument doc(widget->get_all_json_states());
         std::wstring json_str = utf8_decode(doc.toJson(QJsonDocument::Compact).toStdString());
         result = json_str;
     }

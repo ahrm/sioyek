@@ -7905,6 +7905,14 @@ QJsonObject MainWidget::get_json_state() {
     return result;
 }
 
+QJsonArray MainWidget::get_all_json_states() {
+    QJsonArray result;
+    for (auto window : windows) {
+        result.append(window->get_json_state());
+    }
+    return result;
+}
+
 void MainWidget::screenshot(std::wstring file_path) {
     QPixmap pixmap(size());
     render(&pixmap, QPoint(), QRegion(rect()));
