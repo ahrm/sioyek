@@ -8034,10 +8034,10 @@ QJsonObject MainWidget::get_json_annotations() {
 
 void MainWidget::handle_action_in_menu(std::wstring action) {
 
-    FilteredSelectTableWindowClass<std::wstring>* selector_widget = nullptr;
+    BaseSelectorWidget* selector_widget = nullptr;
 
     if (current_widget_stack.size() > 0) {
-        selector_widget = dynamic_cast<FilteredSelectTableWindowClass<std::wstring>*>(current_widget_stack.back());
+        selector_widget = dynamic_cast<BaseSelectorWidget*>(current_widget_stack.back());
     }
 
     if (selector_widget) {
