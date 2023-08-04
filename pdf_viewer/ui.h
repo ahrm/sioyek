@@ -96,100 +96,16 @@ public:
 };
 
 
-template <typename T, typename ViewType >
 class BaseSelectorWidget : public QWidget {
 
 protected:
-    BaseSelectorWidget(bool fuzzy, QStandardItemModel* item_model, QWidget* parent) : QWidget(parent) {
+    BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy, QStandardItemModel* item_model, QWidget* parent);
 
-        is_fuzzy = fuzzy;
-        proxy_model = new MySortFilterProxyModel(fuzzy);
-        proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
-
-        if (item_model) {
-            proxy_model->setSourceModel(item_model);
-        }
-
-        resize(300, 800);
-        QVBoxLayout* layout = new QVBoxLayout;
-        setLayout(layout);
-
-        line_edit = new QLineEdit;
-        abstract_item_view = new ViewType;
-        abstract_item_view->setModel(proxy_model);
-        abstract_item_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-        if (TOUCH_MODE) {
-            QScroller::grabGesture(abstract_item_view->viewport(), QScroller::TouchGesture);
-            abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-            QObject::connect(abstract_item_view, &QListView::pressed, [&](const QModelIndex& index) {
-                pressed_row = index.row();
-                pressed_pos = QCursor::pos();
-                });
-
-            QObject::connect(abstract_item_view, &QListView::clicked, [&](const QModelIndex& index) {
-                QPoint current_pos = QCursor::pos();
-                if (index.row() == pressed_row) {
-                    if ((current_pos - pressed_pos).manhattanLength() < 10) {
-                        on_select(index);
-                    }
-                }
-                });
-        }
-
-        QTreeView* tree_view = dynamic_cast<QTreeView*>(abstract_item_view);
-
-        if (tree_view) {
-            int n_columns = item_model->columnCount();
-            tree_view->expandAll();
-            tree_view->setHeaderHidden(true);
-            tree_view->resizeColumnToContents(0);
-            tree_view->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-        }
-        if (proxy_model) {
-            proxy_model->setRecursiveFilteringEnabled(true);
-        }
-
-        layout->addWidget(line_edit);
-        layout->addWidget(abstract_item_view);
-
-        line_edit->installEventFilter(this);
-        line_edit->setFocus();
-
-        if (!TOUCH_MODE) {
-            QObject::connect(abstract_item_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
-                on_select(index);
-                });
-        }
-
-        QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
-            on_text_changed(text);
-            });
-
-        if (TOUCH_MODE) {
-            QScroller::grabGesture(abstract_item_view, QScroller::TouchGesture);
-            abstract_item_view->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
-            abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
-        }
-    }
-
-    void on_text_changed(const QString& text) {
-        if (!on_text_change(text)) {
-            // generic text change handling when we don't explicitly handle text change events
-            //proxy_model->setFilterFixedString(text);
-            proxy_model->setFilterCustom(text);
-            QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
-            if (t_view) {
-                t_view->expandAll();
-            }
-        }
-    }
+    void on_text_changed(const QString& text);
 
 
 
-    virtual QAbstractItemView* get_view() {
-        return abstract_item_view;
-    }
+    virtual QAbstractItemView* get_view();
 
     QLineEdit* line_edit = nullptr;
     //QSortFilterProxyModel* proxy_model = nullptr;
@@ -198,261 +114,44 @@ protected:
     int pressed_row = -1;
     QPoint pressed_pos;
 
-    ViewType* abstract_item_view;
+    QAbstractItemView* abstract_item_view;
 
     virtual void on_select(const QModelIndex& value) = 0;
-    virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) {}
-    virtual void on_edit(const QModelIndex& source_index, const QModelIndex& selected_index) {}
+    virtual void on_delete(const QModelIndex& source_index, const QModelIndex& selected_index);
+    virtual void on_edit(const QModelIndex& source_index, const QModelIndex& selected_index);
 
-    virtual void on_return_no_select(const QString& text) {
-        if (get_view()->model()->hasIndex(0, 0)) {
-            on_select(get_view()->model()->index(0, 0));
-        }
-    }
+    virtual void on_return_no_select(const QString& text);
 
     // should return true when we want to manually handle text change events
-    virtual bool on_text_change(const QString& text) {
-        return false;
-    }
+    virtual bool on_text_change(const QString& text);
 
     virtual QString get_view_stylesheet_type_name() = 0;
 
 public:
 
 
-    void set_filter_column_index(int index) {
-        proxy_model->setFilterKeyColumn(index);
-    }
-
-    std::optional<QModelIndex> get_selected_index() {
-        QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
-
-        if (selected_index_list.size() > 0) {
-            QModelIndex selected_index = selected_index_list.at(0);
-            return selected_index;
-        }
-        return {};
-    }
-
-    virtual std::wstring get_selected_text() {
-        return L"";
-    }
-
-    bool eventFilter(QObject* obj, QEvent* event) override {
-        if (obj == line_edit) {
-#ifdef SIOYEK_QT6
-            if (event->type() == QEvent::KeyRelease) {
-                QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-                if (key_event->key() == Qt::Key_Delete) {
-                    handle_delete();
-                }
-                else if (key_event->key() == Qt::Key_Insert) {
-                    handle_edit();
-                }
-            }
-#endif
-            if (event->type() == QEvent::InputMethod) {
-                if (TOUCH_MODE) {
-                    QInputMethodEvent* input_event = static_cast<QInputMethodEvent*>(event);
-                    QString text = input_event->preeditString();
-                    if (input_event->commitString().size() > 0) {
-                        text = input_event->commitString();
-                    }
-                    if (text.size() > 0) {
-                        on_text_changed(text);
-                    }
-                }
-            }
-            if ((event->type() == QEvent::KeyPress)) {
-                QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-                bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
-                bool is_alt_pressed = key_event->modifiers().testFlag(Qt::AltModifier);
-
-                if (TOUCH_MODE) {
-                    if (key_event->key() == Qt::Key_Back) {
-                        return false;
-                    }
-                }
-                if (key_event->key() == Qt::Key_Down ||
-                    key_event->key() == Qt::Key_Up ||
-                    key_event->key() == Qt::Key_Left ||
-                    key_event->key() == Qt::Key_Right
-                    ) {
-#ifdef SIOYEK_QT6
-                    QKeyEvent* newEvent = key_event->clone();
-#else
-                    QKeyEvent* newEvent = new QKeyEvent(*key_event);
-#endif
-                    QCoreApplication::postEvent(get_view(), newEvent);
-                    //QCoreApplication::postEvent(tree_view, key_event);
-                    return true;
-                }
-                if (key_event->key() == Qt::Key_Tab) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
-                    QCoreApplication::postEvent(get_view(), new_key_event);
-                    return true;
-                }
-                if (EMACS_MODE) {
-                    if (((key_event->key() == Qt::Key_V)) && is_control_pressed) {
-                        QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
-                        QCoreApplication::postEvent(get_view(), new_key_event);
-                        return true;
-                    }
-                    if (((key_event->key() == Qt::Key_V)) && is_alt_pressed) {
-                        QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
-                        QCoreApplication::postEvent(get_view(), new_key_event);
-                        return true;
-                    }
-                }
-                if (((key_event->key() == Qt::Key_N) || (key_event->key() == Qt::Key_J)) && is_control_pressed) {
-                    simulate_move_down();
-                    return true;
-                }
-                if (((key_event->key() == Qt::Key_P) || (key_event->key() == Qt::Key_K)) && is_control_pressed) {
-                    simulate_move_up();
-                    return true;
-                }
-                if ((key_event->key() == Qt::Key_J) && is_alt_pressed) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_End, Qt::KeyboardModifier::NoModifier);
-                    QCoreApplication::postEvent(get_view(), new_key_event);
-                    return true;
-                }
-                if ((key_event->key() == Qt::Key_K) && is_alt_pressed) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Home, Qt::KeyboardModifier::NoModifier);
-                    QCoreApplication::postEvent(get_view(), new_key_event);
-                    return true;
-                }
-                if ((key_event->key() == Qt::Key_PageDown)) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageDown, key_event->modifiers());
-                    QCoreApplication::postEvent(get_view(), new_key_event);
-                    return true;
-                }
-                if ((key_event->key() == Qt::Key_PageUp)) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageUp, key_event->modifiers());
-                    QCoreApplication::postEvent(get_view(), new_key_event);
-                    return true;
-                }
-                if (key_event->key() == Qt::Key_Backtab) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
-                    QCoreApplication::postEvent(get_view(), new_key_event);
-                    return true;
-                }
-                if (((key_event->key() == Qt::Key_C) && is_control_pressed)) {
-                    std::wstring text = get_selected_text();
-                    if (text.size() > 0) {
-                        copy_to_clipboard(text);
-                    }
-                    return true;
-                }
-                if (key_event->key() == Qt::Key_Return || key_event->key() == Qt::Key_Enter) {
-                    std::optional<QModelIndex> selected_index = get_selected_index();
-                    if (selected_index) {
-                        on_select(selected_index.value());
-                    }
-                    else {
-                        on_return_no_select(line_edit->text());
-                    }
-                    return true;
-                }
-
-            }
-        }
-        return false;
-    }
-
-    void simulate_move_down() {
-        QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() + 1, 0);
-        int nrows = get_view()->model()->rowCount();
-
-        if (next_index.row() > nrows || next_index.row() < 0) {
-            next_index = get_view()->model()->index(0, 0);
-        }
-
-        get_view()->setCurrentIndex(next_index);
-        get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
-    }
-
-    void simulate_move_up() {
-        QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() - 1, 0);
-        int nrows = get_view()->model()->rowCount();
-
-        if (next_index.row() > nrows || next_index.row() < 0) {
-            next_index = get_view()->model()->index(get_view()->model()->rowCount()-1, 0);
-        }
-
-        get_view()->setCurrentIndex(next_index);
-        get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
-    }
-
-    void simulate_select() {
-        std::optional<QModelIndex> selected_index = get_selected_index();
-        if (selected_index) {
-            on_select(selected_index.value());
-        }
-        else {
-            on_return_no_select(line_edit->text());
-        }
-    }
-
-    void handle_delete() {
-        QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
-        if (selected_index_list.size() > 0) {
-            QModelIndex selected_index = selected_index_list.at(0);
-            if (proxy_model->hasIndex(selected_index.row(), selected_index.column())) {
-                QModelIndex source_index = proxy_model->mapToSource(selected_index);
-                on_delete(source_index, selected_index);
-            }
-        }
-    }
-
-    void handle_edit() {
-        QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
-        if (selected_index_list.size() > 0) {
-            QModelIndex selected_index = selected_index_list.at(0);
-            if (proxy_model->hasIndex(selected_index.row(), selected_index.column())) {
-                QModelIndex source_index = proxy_model->mapToSource(selected_index);
-                on_edit(source_index, selected_index);
-            }
-        }
-    }
+    void set_filter_column_index(int index);
+    std::optional<QModelIndex> get_selected_index();
+    virtual std::wstring get_selected_text();
+    bool eventFilter(QObject* obj, QEvent* event) override;
+    void simulate_move_down();
+    void simulate_move_up();
+    void simulate_select();
+    void handle_delete();
+    void handle_edit();
 
 
 #ifndef SIOYEK_QT6
-    void keyReleaseEvent(QKeyEvent* event) override {
-        if (event->key() == Qt::Key_Delete) {
-            handle_delete();
-        }
-        QWidget::keyReleaseEvent(event);
-    }
+    void keyReleaseEvent(QKeyEvent* event) override;
 #endif
 
-    virtual void on_config_file_changed() {
-        QString font_size_stylesheet = "";
-        if (FONT_SIZE > 0) {
-            font_size_stylesheet = QString("font-size: %1px").arg(FONT_SIZE);
-        }
-
-        //setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
-        std::wstring ss = (get_status_stylesheet(true) + font_size_stylesheet).toStdWString();
-        setStyleSheet(get_status_stylesheet() + font_size_stylesheet);
-        //get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{background-color: white; color: black;}");
-        get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{" + get_selected_stylesheet() + "}");
-        //        get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item{" + get_list_item_stylesheet() + "}");
-    }
-
-    void resizeEvent(QResizeEvent* resize_event) override {
-        QWidget::resizeEvent(resize_event);
-        int parent_width = parentWidget()->width();
-        int parent_height = parentWidget()->height();
-        setFixedSize(parent_width * 0.9f, parent_height);
-        move(parent_width * 0.05f, 0);
-        on_config_file_changed();
-    }
+    virtual void on_config_file_changed();
+    void resizeEvent(QResizeEvent* resize_event) override;
 
 };
 
 template<typename T>
-class FilteredTreeSelect : public BaseSelectorWidget<T, QTreeView > {
+class FilteredTreeSelect : public BaseSelectorWidget {
 private:
     std::function<void(const std::vector<int>&)> on_done;
 
@@ -467,7 +166,7 @@ public:
     FilteredTreeSelect(bool fuzzy, QStandardItemModel* item_model,
         std::function<void(const std::vector<int>&)> on_done,
         QWidget* parent,
-        std::vector<int> selected_index) : BaseSelectorWidget<T, QTreeView >(fuzzy, item_model, parent),
+        std::vector<int> selected_index) : BaseSelectorWidget(new QTreeView(), fuzzy, item_model, parent),
         on_done(on_done)
     {
         auto index = QModelIndex();
@@ -502,7 +201,7 @@ public:
 };
 
 template<typename T>
-class FilteredSelectTableWindowClass : public BaseSelectorWidget<T, QTableView > {
+class FilteredSelectTableWindowClass : public BaseSelectorWidget {
 private:
 
     QStringListModel* string_list_model = nullptr;
@@ -528,7 +227,7 @@ public:
         int selected_index,
         std::function<void(T*)> on_done,
         QWidget* parent,
-        std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget<T, QTableView >(fuzzy, nullptr, parent),
+        std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget(new QTableView(), fuzzy, nullptr, parent),
         values(values),
         on_done(on_done),
         on_delete_function(on_delete_function)
@@ -757,7 +456,7 @@ public:
 
 
 template<typename T>
-class FilteredSelectWindowClass : public BaseSelectorWidget<T, QListView> {
+class FilteredSelectWindowClass : public BaseSelectorWidget {
 private:
 
     QStringListModel* string_list_model = nullptr;
@@ -778,7 +477,7 @@ public:
         std::vector<T> values,
         std::function<void(T*)> on_done,
         QWidget* parent,
-        std::function<void(T*)> on_delete_function = nullptr, int selected_index = -1) : BaseSelectorWidget<T, QListView>(fuzzy, nullptr, parent),
+        std::function<void(T*)> on_delete_function = nullptr, int selected_index = -1) : BaseSelectorWidget(new QListView(), fuzzy, nullptr, parent),
         values(values),
         on_done(on_done),
         on_delete_function(on_delete_function)
@@ -828,7 +527,7 @@ private:
 
 };
 
-class CommandSelector : public BaseSelectorWidget<std::string, QTableView> {
+class CommandSelector : public BaseSelectorWidget {
 private:
     QStringList string_elements;
     MainWidget* main_widget;
@@ -858,7 +557,7 @@ public:
 };
 
 //class FileSelector : public BaseSelectorWidget<std::wstring, QListView, QSortFilterProxyModel> {
-class FileSelector : public BaseSelectorWidget<std::wstring, QListView> {
+class FileSelector : public BaseSelectorWidget {
 private:
 
     QStringListModel* list_model = nullptr;
@@ -874,7 +573,7 @@ public:
     }
 
     FileSelector(bool is_fuzzy, std::function<void(std::wstring)> on_done, QWidget* parent, QString last_path) :
-        BaseSelectorWidget<std::wstring, QListView>(is_fuzzy, nullptr, parent),
+        BaseSelectorWidget(new QListView(), is_fuzzy, nullptr, parent),
         on_done(on_done)
     {
 

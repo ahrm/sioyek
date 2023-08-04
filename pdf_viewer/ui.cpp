@@ -1284,7 +1284,7 @@ CommandSelector::CommandSelector(bool is_fuzzy, std::function<void(std::string)>
     MainWidget* parent,
     QStringList elements,
     std::unordered_map<std::string,
-    std::vector<std::string>> key_map) : BaseSelectorWidget<std::string, QTableView>(is_fuzzy, nullptr, parent),
+    std::vector<std::string>> key_map) : BaseSelectorWidget(new QTableView(), is_fuzzy, nullptr, parent),
     key_map(key_map),
     on_done(on_done),
     main_widget(parent)
@@ -1349,3 +1349,332 @@ bool CommandSelector::on_text_change(const QString& text) {
     return true;
 }
 
+BaseSelectorWidget::BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy, QStandardItemModel* item_model, QWidget* parent) : QWidget(parent) {
+
+    is_fuzzy = fuzzy;
+    proxy_model = new MySortFilterProxyModel(fuzzy);
+    proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+
+    if (item_model) {
+        proxy_model->setSourceModel(item_model);
+    }
+
+    resize(300, 800);
+    QVBoxLayout* layout = new QVBoxLayout;
+    setLayout(layout);
+
+    line_edit = new QLineEdit;
+    abstract_item_view = item_view;
+    abstract_item_view->setParent(this);
+    abstract_item_view->setModel(proxy_model);
+    abstract_item_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    if (TOUCH_MODE) {
+        QScroller::grabGesture(abstract_item_view->viewport(), QScroller::TouchGesture);
+        abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+        QObject::connect(abstract_item_view, &QListView::pressed, [&](const QModelIndex& index) {
+            pressed_row = index.row();
+            pressed_pos = QCursor::pos();
+            });
+
+        QObject::connect(abstract_item_view, &QListView::clicked, [&](const QModelIndex& index) {
+            QPoint current_pos = QCursor::pos();
+            if (index.row() == pressed_row) {
+                if ((current_pos - pressed_pos).manhattanLength() < 10) {
+                    on_select(index);
+                }
+            }
+            });
+    }
+
+    QTreeView* tree_view = dynamic_cast<QTreeView*>(abstract_item_view);
+
+    if (tree_view) {
+        int n_columns = item_model->columnCount();
+        tree_view->expandAll();
+        tree_view->setHeaderHidden(true);
+        tree_view->resizeColumnToContents(0);
+        tree_view->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    }
+    if (proxy_model) {
+        proxy_model->setRecursiveFilteringEnabled(true);
+    }
+
+    layout->addWidget(line_edit);
+    layout->addWidget(abstract_item_view);
+
+    line_edit->installEventFilter(this);
+    line_edit->setFocus();
+
+    if (!TOUCH_MODE) {
+        QObject::connect(abstract_item_view, &QAbstractItemView::activated, [&](const QModelIndex& index) {
+            on_select(index);
+            });
+    }
+
+    QObject::connect(line_edit, &QLineEdit::textChanged, [&](const QString& text) {
+        on_text_changed(text);
+        });
+
+    if (TOUCH_MODE) {
+        QScroller::grabGesture(abstract_item_view, QScroller::TouchGesture);
+        abstract_item_view->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+        abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
+    }
+}
+
+void BaseSelectorWidget::on_text_changed(const QString& text) {
+    if (!on_text_change(text)) {
+        // generic text change handling when we don't explicitly handle text change events
+        //proxy_model->setFilterFixedString(text);
+        proxy_model->setFilterCustom(text);
+        QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
+        if (t_view) {
+            t_view->expandAll();
+        }
+    }
+}
+
+QAbstractItemView* BaseSelectorWidget::get_view() {
+    return abstract_item_view;
+}
+void BaseSelectorWidget::on_delete(const QModelIndex& source_index, const QModelIndex& selected_index) {}
+void BaseSelectorWidget::on_edit(const QModelIndex& source_index, const QModelIndex& selected_index) {}
+
+void BaseSelectorWidget::on_return_no_select(const QString& text) {
+    if (get_view()->model()->hasIndex(0, 0)) {
+        on_select(get_view()->model()->index(0, 0));
+    }
+}
+
+bool BaseSelectorWidget::on_text_change(const QString& text) {
+    return false;
+}
+
+void BaseSelectorWidget::set_filter_column_index(int index) {
+    proxy_model->setFilterKeyColumn(index);
+}
+
+std::optional<QModelIndex> BaseSelectorWidget::get_selected_index() {
+    QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
+
+    if (selected_index_list.size() > 0) {
+        QModelIndex selected_index = selected_index_list.at(0);
+        return selected_index;
+    }
+    return {};
+}
+
+std::wstring BaseSelectorWidget::get_selected_text() {
+    return L"";
+}
+
+bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
+    if (obj == line_edit) {
+#ifdef SIOYEK_QT6
+        if (event->type() == QEvent::KeyRelease) {
+            QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+            if (key_event->key() == Qt::Key_Delete) {
+                handle_delete();
+            }
+            else if (key_event->key() == Qt::Key_Insert) {
+                handle_edit();
+            }
+        }
+#endif
+        if (event->type() == QEvent::InputMethod) {
+            if (TOUCH_MODE) {
+                QInputMethodEvent* input_event = static_cast<QInputMethodEvent*>(event);
+                QString text = input_event->preeditString();
+                if (input_event->commitString().size() > 0) {
+                    text = input_event->commitString();
+                }
+                if (text.size() > 0) {
+                    on_text_changed(text);
+                }
+            }
+        }
+        if ((event->type() == QEvent::KeyPress)) {
+            QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+            bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
+            bool is_alt_pressed = key_event->modifiers().testFlag(Qt::AltModifier);
+
+            if (TOUCH_MODE) {
+                if (key_event->key() == Qt::Key_Back) {
+                    return false;
+                }
+            }
+            if (key_event->key() == Qt::Key_Down ||
+                key_event->key() == Qt::Key_Up ||
+                key_event->key() == Qt::Key_Left ||
+                key_event->key() == Qt::Key_Right
+                ) {
+#ifdef SIOYEK_QT6
+                QKeyEvent* newEvent = key_event->clone();
+#else
+                QKeyEvent* newEvent = new QKeyEvent(*key_event);
+#endif
+                QCoreApplication::postEvent(get_view(), newEvent);
+                //QCoreApplication::postEvent(tree_view, key_event);
+                return true;
+            }
+            if (key_event->key() == Qt::Key_Tab) {
+                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
+                QCoreApplication::postEvent(get_view(), new_key_event);
+                return true;
+            }
+            if (EMACS_MODE) {
+                if (((key_event->key() == Qt::Key_V)) && is_control_pressed) {
+                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
+                    QCoreApplication::postEvent(get_view(), new_key_event);
+                    return true;
+                }
+                if (((key_event->key() == Qt::Key_V)) && is_alt_pressed) {
+                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
+                    QCoreApplication::postEvent(get_view(), new_key_event);
+                    return true;
+                }
+            }
+            if (((key_event->key() == Qt::Key_N) || (key_event->key() == Qt::Key_J)) && is_control_pressed) {
+                simulate_move_down();
+                return true;
+            }
+            if (((key_event->key() == Qt::Key_P) || (key_event->key() == Qt::Key_K)) && is_control_pressed) {
+                simulate_move_up();
+                return true;
+            }
+            if ((key_event->key() == Qt::Key_J) && is_alt_pressed) {
+                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_End, Qt::KeyboardModifier::NoModifier);
+                QCoreApplication::postEvent(get_view(), new_key_event);
+                return true;
+            }
+            if ((key_event->key() == Qt::Key_K) && is_alt_pressed) {
+                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Home, Qt::KeyboardModifier::NoModifier);
+                QCoreApplication::postEvent(get_view(), new_key_event);
+                return true;
+            }
+            if ((key_event->key() == Qt::Key_PageDown)) {
+                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageDown, key_event->modifiers());
+                QCoreApplication::postEvent(get_view(), new_key_event);
+                return true;
+            }
+            if ((key_event->key() == Qt::Key_PageUp)) {
+                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageUp, key_event->modifiers());
+                QCoreApplication::postEvent(get_view(), new_key_event);
+                return true;
+            }
+            if (key_event->key() == Qt::Key_Backtab) {
+                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
+                QCoreApplication::postEvent(get_view(), new_key_event);
+                return true;
+            }
+            if (((key_event->key() == Qt::Key_C) && is_control_pressed)) {
+                std::wstring text = get_selected_text();
+                if (text.size() > 0) {
+                    copy_to_clipboard(text);
+                }
+                return true;
+            }
+            if (key_event->key() == Qt::Key_Return || key_event->key() == Qt::Key_Enter) {
+                std::optional<QModelIndex> selected_index = get_selected_index();
+                if (selected_index) {
+                    on_select(selected_index.value());
+                }
+                else {
+                    on_return_no_select(line_edit->text());
+                }
+                return true;
+            }
+
+        }
+    }
+    return false;
+}
+
+void BaseSelectorWidget::simulate_move_down() {
+    QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() + 1, 0);
+    int nrows = get_view()->model()->rowCount();
+
+    if (next_index.row() > nrows || next_index.row() < 0) {
+        next_index = get_view()->model()->index(0, 0);
+    }
+
+    get_view()->setCurrentIndex(next_index);
+    get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
+}
+
+void BaseSelectorWidget::simulate_move_up() {
+    QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() - 1, 0);
+    int nrows = get_view()->model()->rowCount();
+
+    if (next_index.row() > nrows || next_index.row() < 0) {
+        next_index = get_view()->model()->index(get_view()->model()->rowCount() - 1, 0);
+    }
+
+    get_view()->setCurrentIndex(next_index);
+    get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
+}
+
+void BaseSelectorWidget::simulate_select() {
+    std::optional<QModelIndex> selected_index = get_selected_index();
+    if (selected_index) {
+        on_select(selected_index.value());
+    }
+    else {
+        on_return_no_select(line_edit->text());
+    }
+}
+
+void BaseSelectorWidget::handle_delete() {
+    QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
+    if (selected_index_list.size() > 0) {
+        QModelIndex selected_index = selected_index_list.at(0);
+        if (proxy_model->hasIndex(selected_index.row(), selected_index.column())) {
+            QModelIndex source_index = proxy_model->mapToSource(selected_index);
+            on_delete(source_index, selected_index);
+        }
+    }
+}
+
+void BaseSelectorWidget::handle_edit() {
+    QModelIndexList selected_index_list = get_view()->selectionModel()->selectedIndexes();
+    if (selected_index_list.size() > 0) {
+        QModelIndex selected_index = selected_index_list.at(0);
+        if (proxy_model->hasIndex(selected_index.row(), selected_index.column())) {
+            QModelIndex source_index = proxy_model->mapToSource(selected_index);
+            on_edit(source_index, selected_index);
+        }
+    }
+}
+
+#ifndef SIOYEK_QT6
+    void BaseSelectorWidget::keyReleaseEvent(QKeyEvent* event) {
+        if (event->key() == Qt::Key_Delete) {
+            handle_delete();
+        }
+        QWidget::keyReleaseEvent(event);
+    }
+#endif
+
+void BaseSelectorWidget::on_config_file_changed() {
+    QString font_size_stylesheet = "";
+    if (FONT_SIZE > 0) {
+        font_size_stylesheet = QString("font-size: %1px").arg(FONT_SIZE);
+    }
+
+    //setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
+    std::wstring ss = (get_status_stylesheet(true) + font_size_stylesheet).toStdWString();
+    setStyleSheet(get_status_stylesheet() + font_size_stylesheet);
+    //get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{background-color: white; color: black;}");
+    get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{" + get_selected_stylesheet() + "}");
+    //        get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item{" + get_list_item_stylesheet() + "}");
+}
+
+void BaseSelectorWidget::resizeEvent(QResizeEvent* resize_event) {
+    QWidget::resizeEvent(resize_event);
+    int parent_width = parentWidget()->width();
+    int parent_height = parentWidget()->height();
+    setFixedSize(parent_width * 0.9f, parent_height);
+    move(parent_width * 0.05f, 0);
+    on_config_file_changed();
+}
