@@ -316,11 +316,12 @@ void DocumentView::add_mark(char symbol) {
     }
 }
 
-void DocumentView::add_bookmark(std::wstring desc) {
+std::string DocumentView::add_bookmark(std::wstring desc) {
     //assert(current_document);
     if (current_document) {
-        current_document->add_bookmark(desc, offset_y);
+        return current_document->add_bookmark(desc, offset_y);
     }
+    return "";
 }
 
 std::string DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {

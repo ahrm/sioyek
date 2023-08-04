@@ -134,10 +134,10 @@ public:
     fz_document* doc = nullptr;
 
     void load_document_metadata_from_db();
-    void add_bookmark(const std::wstring& desc, float y_offset);
-    void add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
+    std::string add_bookmark(const std::wstring& desc, float y_offset);
+    std::string add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
     int add_incomplete_freetext_bookmark(fz_rect absrect);
-    void add_pending_freetext_bookmark(int index, const std::wstring& desc);
+    std::string add_pending_freetext_bookmark(int index, const std::wstring& desc);
     void undo_pending_bookmark(int index);
     void add_freetext_bookmark(const std::wstring& desc, fz_rect absrect);
     void add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color, float font_size = -1);

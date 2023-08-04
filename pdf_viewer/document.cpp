@@ -101,7 +101,7 @@ void Document::load_document_metadata_from_db() {
 }
 
 
-void Document::add_bookmark(const std::wstring& desc, float y_offset) {
+std::string Document::add_bookmark(const std::wstring& desc, float y_offset) {
     BookMark bookmark;
     bookmark.y_offset_ = y_offset;
     bookmark.description = desc;
@@ -110,9 +110,10 @@ void Document::add_bookmark(const std::wstring& desc, float y_offset) {
     bookmarks.push_back(bookmark);
     db_manager->insert_bookmark(get_checksum(), desc, y_offset, utf8_decode(bookmark.uuid));
     is_annotations_dirty = true;
+    return bookmark.uuid;
 }
 
-void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos) {
+std::string Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos) {
     BookMark bookmark;
     bookmark.description = desc;
     bookmark.y_offset_ = pos.y;
@@ -125,6 +126,7 @@ void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos
         bookmarks.push_back(bookmark);
         is_annotations_dirty = true;
     }
+    return bookmark.uuid;
 }
 
 int Document::add_incomplete_freetext_bookmark(fz_rect absrect) {
@@ -144,7 +146,7 @@ int Document::add_incomplete_freetext_bookmark(fz_rect absrect) {
     return bookmarks.size() - 1;
 }
 
-void Document::add_pending_freetext_bookmark(int index, const std::wstring& desc) {
+std::string Document::add_pending_freetext_bookmark(int index, const std::wstring& desc) {
     BookMark& bookmark = bookmarks[index];
     bookmark.description = desc;
     bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
@@ -156,6 +158,7 @@ void Document::add_pending_freetext_bookmark(int index, const std::wstring& desc
     else {
         is_annotations_dirty = true;
     }
+    return bookmark.uuid;
 }
 
 void Document::undo_pending_bookmark(int index) {

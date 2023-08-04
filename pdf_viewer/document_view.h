@@ -115,7 +115,7 @@ public:
     int get_highlight_index_in_pos(WindowPos pos);
     void get_text_selection(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, std::deque<fz_rect>& selected_characters, std::wstring& text_selection);
     void add_mark(char symbol);
-    void add_bookmark(std::wstring desc);
+    std::string add_bookmark(std::wstring desc);
     std::string add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     void on_view_size_change(int new_width, int new_height);
     //void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);

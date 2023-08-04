@@ -955,7 +955,8 @@ public:
     AddBookmarkCommand(MainWidget* w) : TextCommand(w) {}
 
     void perform() {
-        widget->main_document_view->add_bookmark(text.value());
+        std::string uuid = widget->main_document_view->add_bookmark(text.value());
+        result = utf8_decode(uuid);
     }
 
     std::string get_name() {
@@ -1001,8 +1002,9 @@ public:
 
 
     void perform() {
-        widget->doc()->add_marked_bookmark(text_.value(), point_.value());
+        std::string uuid = widget->doc()->add_marked_bookmark(text_.value(), point_.value());
         widget->invalidate_render();
+        result = utf8_decode(uuid);
     }
 
     std::string get_name() {
@@ -1085,9 +1087,10 @@ public:
 
     void perform() {
         //widget->doc()->add_freetext_bookmark(text_.value(), rect_.value());
-        widget->doc()->add_pending_freetext_bookmark(pending_index, text_.value());
+        std::string uuid = widget->doc()->add_pending_freetext_bookmark(pending_index, text_.value());
         widget->clear_selected_rect();
         widget->invalidate_render();
+        result = utf8_decode(uuid);
     }
 
     std::string get_name() {
