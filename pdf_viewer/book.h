@@ -68,7 +68,7 @@ struct Mark : Annotation {
     A bookmark is similar to mark but instead of being indexed by a symbol, it has a description.
 */
 struct BookMark : Annotation {
-    float y_offset = -1;
+    float y_offset_ = -1;
     std::wstring description;
 
     float begin_x = -1;
@@ -83,6 +83,7 @@ struct BookMark : Annotation {
     QJsonObject to_json(std::string doc_checksum) const;
     void from_json(const QJsonObject& json_object);
     void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
+    float get_y_offset() const;
 
     bool is_freetext() const;
     bool is_marked() const;

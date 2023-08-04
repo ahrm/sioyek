@@ -144,10 +144,14 @@ static int global_bookmark_select_callback(void* res_vector, int argc, char** ar
 
     BookMark bm;
     bm.description = desc;
-    bm.y_offset = offset_y;
+    bm.y_offset_ = offset_y;
     bm.uuid = uuid;
     bm.creation_time = creation_time;
     bm.modification_time = modification_time;
+    bm.begin_x = begin_x;
+    bm.begin_y = begin_y;
+    bm.end_x = end_x;
+    bm.end_y = end_y;
 
     res->push_back(std::make_pair(path, bm));
     return 0;
@@ -216,7 +220,9 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
     }
     if (argv[3]) {
         begin_y = atof(argv[3]);
-        offset_y = begin_y;
+        if (begin_y != -1) {
+            offset_y = begin_y;
+        }
     }
     if (argv[4]) {
         end_x = atof(argv[4]);
@@ -245,7 +251,7 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
     std::string modification_time = argv[13];
 
     BookMark bm;
-    bm.y_offset = offset_y;
+    bm.y_offset_ = offset_y;
     bm.description = desc;
     bm.uuid = uuid;
     bm.creation_time = creation_time;
@@ -1223,7 +1229,7 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
         insert_mark(hash, mark.symbol, mark.y_offset, new_uuid());
     }
     for (const auto& [hash, bookmark] : bookmarks) {
-        insert_bookmark(hash, bookmark.description, bookmark.y_offset, new_uuid());
+        insert_bookmark(hash, bookmark.description, bookmark.y_offset_, new_uuid());
     }
     for (const auto& [hash, highlight] : highlights) {
         insert_highlight(
@@ -1396,7 +1402,7 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
         }
 
         for (const auto& bm : new_bookmarks) {
-            insert_bookmark(checksum, bm.description, bm.y_offset, utf8_decode(bm.uuid));
+            insert_bookmark(checksum, bm.description, bm.y_offset_, utf8_decode(bm.uuid));
         }
 
         for (const auto& mark : new_marks) {

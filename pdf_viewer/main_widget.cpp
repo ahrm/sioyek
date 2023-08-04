@@ -4932,7 +4932,7 @@ void MainWidget::handle_goto_bookmark() {
     for (auto bookmark : bookmarks) {
         option_names.push_back(ITEM_LIST_PREFIX + L" " + bookmark.description);
         //option_locations.push_back(bookmark.y_offset);
-        auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos({ 0, bookmark.y_offset });
+        auto [page, _, __] = main_document_view->get_document()->absolute_to_page_pos({ 0, bookmark.get_y_offset()});
         option_location_strings.push_back(get_page_formatted_string(page + 1));
     }
 
@@ -4940,12 +4940,12 @@ void MainWidget::handle_goto_bookmark() {
 
     set_filtered_select_menu<BookMark>(FUZZY_SEARCHING, MULTILINE_MENUS, { option_names, option_location_strings }, bookmarks, closest_bookmark_index,
         [&](BookMark* bm) {
-            pending_command_instance->set_generic_requirement(bm->y_offset);
+            pending_command_instance->set_generic_requirement(bm->get_y_offset());
             advance_command(std::move(pending_command_instance));
 
         },
         [&](BookMark* bm) {
-            main_document_view->delete_closest_bookmark_to_offset(bm->y_offset);
+            main_document_view->delete_closest_bookmark_to_offset(bm->get_y_offset());
         },
             [&](BookMark* bm) {
             selected_bookmark_index = doc()->get_bookmark_index_with_uuid(bm->uuid);
@@ -4972,7 +4972,7 @@ void MainWidget::handle_goto_bookmark_global() {
             std::wstring file_name = Path(path.value()).filename().value_or(L"");
             descs.push_back(ITEM_LIST_PREFIX + L" " + bm.description);
             file_names.push_back(truncate_string(file_name, 50));
-            book_states.push_back({ path.value(), bm.y_offset, bm.uuid });
+            book_states.push_back({ path.value(), bm.get_y_offset(), bm.uuid});
         }
     }
 
@@ -7840,6 +7840,31 @@ QJsonObject MainWidget::get_json_state() {
         float offset_y =  main_document_view->get_offset_y();
         result["x_offset"] = offset_x;
         result["y_offset"] = offset_y;
+
+        std::optional<fz_rect> selected_rect_abs = get_selected_rect_absolute();
+        if (selected_rect_abs) {
+            int selected_rect_page;
+            fz_rect selected_rect_doc;
+            get_selected_rect_document(selected_rect_page, selected_rect_doc);
+
+            QJsonObject absrect_json;
+            QJsonObject docrect_json;
+
+            absrect_json["x0"] = selected_rect_abs->x0;
+            absrect_json["x1"] = selected_rect_abs->x1;
+            absrect_json["y0"] = selected_rect_abs->y0;
+            absrect_json["y1"] = selected_rect_abs->y1;
+
+            docrect_json["x0"] = selected_rect_doc.x0;
+            docrect_json["x1"] = selected_rect_doc.x1;
+            docrect_json["y0"] = selected_rect_doc.y0;
+            docrect_json["y1"] = selected_rect_doc.y1;
+            docrect_json["page"] = selected_rect_page;
+
+            result["selected_rect_absolute"] = absrect_json;
+            result["selected_rect_document"] = docrect_json;
+        }
+
 
         AbsoluteDocumentPos abspos = { offset_x, offset_y };
         DocumentPos docpso = doc()->absolute_to_page_pos(abspos);

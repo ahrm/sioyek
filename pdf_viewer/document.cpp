@@ -103,7 +103,7 @@ void Document::load_document_metadata_from_db() {
 
 void Document::add_bookmark(const std::wstring& desc, float y_offset) {
     BookMark bookmark;
-    bookmark.y_offset = y_offset;
+    bookmark.y_offset_ = y_offset;
     bookmark.description = desc;
     bookmark.uuid = new_uuid_utf8();
     bookmark.update_creation_time();
@@ -115,7 +115,7 @@ void Document::add_bookmark(const std::wstring& desc, float y_offset) {
 void Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos) {
     BookMark bookmark;
     bookmark.description = desc;
-    bookmark.y_offset = pos.y;
+    bookmark.y_offset_ = pos.y;
     bookmark.begin_x = pos.x;
     bookmark.begin_y = pos.y;
     bookmark.uuid = new_uuid_utf8();
@@ -167,7 +167,7 @@ void Document::undo_pending_bookmark(int index) {
 void Document::add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color, float font_size) {
     BookMark bookmark;
     bookmark.description = desc;
-    bookmark.y_offset = absrect.y0;
+    bookmark.y_offset_ = absrect.y0;
 
     bookmark.begin_x = absrect.x0;
     bookmark.begin_y = absrect.y0;
@@ -345,7 +345,7 @@ std::optional<std::string> Document::get_checksum_fast() {
 int Document::find_closest_bookmark_index(const std::vector<BookMark>& sorted_bookmarks, float to_offset_y) const {
 
     int min_index = argminf<BookMark>(sorted_bookmarks, [to_offset_y](BookMark bm) {
-        return abs(bm.y_offset - to_offset_y);
+        return abs(bm.get_y_offset() - to_offset_y);
         });
 
     return min_index;
@@ -459,7 +459,7 @@ std::vector<BookMark>& Document::get_bookmarks() {
 
 std::vector<BookMark> Document::get_sorted_bookmarks() const {
     std::vector<BookMark> res = bookmarks;
-    std::sort(res.begin(), res.end(), [](const BookMark& lhs, const BookMark& rhs) {return lhs.y_offset < rhs.y_offset; });
+    std::sort(res.begin(), res.end(), [](const BookMark& lhs, const BookMark& rhs) {return lhs.get_y_offset() < rhs.get_y_offset(); });
     return res;
 }
 
@@ -1905,9 +1905,9 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
                 //new_bookmark.description = utf8_decode(txt);
                 BookMark new_bookmark;
                 new_bookmark.description = utf8_decode(txt);
-                new_bookmark.y_offset = (absrect.y0 + absrect.y1) / 2;
+                new_bookmark.y_offset_ = (absrect.y0 + absrect.y1) / 2;
                 new_bookmark.begin_x = (absrect.x0 + absrect.x1) / 2;
-                new_bookmark.begin_y = new_bookmark.y_offset;
+                new_bookmark.begin_y = new_bookmark.y_offset_;
                 pdf_bookmarks.push_back(new_bookmark);
 
             }
@@ -1920,7 +1920,7 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
                 //new_bookmark.description = utf8_decode(txt);
                 BookMark new_bookmark;
                 new_bookmark.description = utf8_decode(txt);
-                new_bookmark.y_offset = absrect.y0;
+                new_bookmark.y_offset_ = absrect.y0;
                 new_bookmark.begin_x = absrect.x0;
                 new_bookmark.begin_y = absrect.y0;
                 new_bookmark.end_x = absrect.x1;
@@ -2223,7 +2223,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
     }
 
     for (auto bookmark : doc_bookmarks) {
-        auto [page_number, doc_x, doc_y] = absolute_to_page_pos({ 0, bookmark.y_offset });
+        auto [page_number, doc_x, doc_y] = absolute_to_page_pos({ 0, bookmark.y_offset_ });
 
         fz_page* page = load_cached_page(page_number);
         pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
@@ -3883,7 +3883,7 @@ void Document::update_bookmark_text(int index, const std::wstring& new_text, flo
 void Document::update_bookmark_position(int index, AbsoluteDocumentPos new_begin_position, AbsoluteDocumentPos new_end_position) {
     if ((index >= 0) && (index < bookmarks.size())) {
         if (db_manager->update_bookmark_change_position(bookmarks[index].uuid, new_begin_position, new_end_position)) {
-            bookmarks[index].y_offset = new_begin_position.y;
+            bookmarks[index].y_offset_ = new_begin_position.y;
             bookmarks[index].begin_x = new_begin_position.x;
             bookmarks[index].begin_y = new_begin_position.y;
             bookmarks[index].end_x = new_end_position.x;

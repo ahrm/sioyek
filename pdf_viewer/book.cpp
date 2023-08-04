@@ -101,7 +101,7 @@ void Mark::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) 
 QJsonObject BookMark::to_json(std::string doc_checksum) const
 {
     QJsonObject res;
-    res["y_offset"] = y_offset;
+    res["y_offset"] = y_offset_;
     res["description"] = QString::fromStdWString(description);
     res["begin_x"] = begin_x;
     res["begin_y"] = begin_y;
@@ -123,7 +123,7 @@ QJsonObject BookMark::to_json(std::string doc_checksum) const
 }
 
 void BookMark::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) {
-    tuples.push_back({ "offset_y", y_offset });
+    tuples.push_back({ "offset_y", y_offset_ });
     tuples.push_back({ "desc",  QString::fromStdWString(description) });
     tuples.push_back({ "begin_x",  begin_x });
     tuples.push_back({ "begin_y",  begin_y });
@@ -138,7 +138,7 @@ void BookMark::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tupl
 
 void BookMark::from_json(const QJsonObject& json_object)
 {
-    y_offset = json_object["y_offset"].toDouble();
+    y_offset_ = json_object["y_offset"].toDouble();
     description = json_object["description"].toString().toStdWString();
     begin_x = json_object["begin_x"].toDouble();
     begin_y = json_object["begin_y"].toDouble();
@@ -253,7 +253,7 @@ bool operator==(const Mark& lhs, const Mark& rhs)
 
 bool operator==(const BookMark& lhs, const BookMark& rhs)
 {
-    return  (lhs.y_offset == rhs.y_offset) && (lhs.description == rhs.description);
+    return  (lhs.y_offset_ == rhs.y_offset_) && (lhs.description == rhs.description);
 }
 
 bool operator==(const fz_point& lhs, const fz_point& rhs) {
@@ -302,4 +302,9 @@ fz_rect Portal::get_rectangle() const{
     res.y1 = src_offset_y +  BOOKMARK_RECT_SIZE;
 
     return res;
+}
+
+float BookMark::get_y_offset() const{
+    if (begin_y != -1) return begin_y;
+    return y_offset_;
 }
