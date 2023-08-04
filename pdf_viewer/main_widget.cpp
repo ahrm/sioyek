@@ -8021,3 +8021,34 @@ void MainWidget::remove_command_being_performed(Command* new_command) {
         commands_being_performed.erase(index);
     }
 }
+
+QJsonObject MainWidget::get_json_annotations() {
+
+    QJsonObject annots;
+    annots["bookmarks"] = doc()->get_bookmarks_json();
+    annots["highlights"] = doc()->get_highlights_json();
+    annots["portals"] = doc()->get_portals_json();
+    annots["marks"] = doc()->get_marks_json();
+    return annots;
+}
+
+void MainWidget::handle_action_in_menu(std::wstring action) {
+
+    FilteredSelectTableWindowClass<std::wstring>* selector_widget = nullptr;
+
+    if (current_widget_stack.size() > 0) {
+        selector_widget = dynamic_cast<FilteredSelectTableWindowClass<std::wstring>*>(current_widget_stack.back());
+    }
+
+    if (selector_widget) {
+        if (action == L"down") {
+            selector_widget->simulate_move_down();
+        }
+        if (action == L"up") {
+            selector_widget->simulate_move_up();
+        }
+        if (action == L"select") {
+            selector_widget->simulate_select();
+        }
+    }
+}

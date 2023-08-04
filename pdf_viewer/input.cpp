@@ -504,9 +504,6 @@ public:
     SearchCommand(MainWidget* w) : TextCommand(w) {
     };
 
-    ~SearchCommand() {
-    }
-
     void perform() {
         widget->perform_search(this->text.value(), false);
         if (TOUCH_MODE) {
@@ -524,6 +521,26 @@ public:
 
     std::string text_requirement_name() {
         return "Search Term";
+    }
+
+};
+
+class ControlMenuCommand : public TextCommand {
+public:
+    ControlMenuCommand(MainWidget* w) : TextCommand(w) {
+    };
+
+
+    void perform() {
+        widget->handle_action_in_menu(text.value());
+    }
+
+    std::string get_name() {
+        return "control_menu";
+    }
+
+    std::string text_requirement_name() {
+        return "Action";
     }
 
 };
@@ -710,6 +727,23 @@ public:
 
     std::string get_name() {
         return "get_state_json";
+    }
+
+};
+
+class GetAnnotationsJsonCommand : public Command {
+
+public:
+    GetAnnotationsJsonCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        QJsonDocument doc(widget->get_json_annotations());
+        std::wstring json_str = utf8_decode(doc.toJson(QJsonDocument::Compact).toStdString());
+        result = json_str;
+    }
+
+    std::string get_name() {
+        return "get_annotations_json";
     }
 
 };
@@ -3704,6 +3738,7 @@ public:
 
 };
 
+
 class ExportPythonApiCommand : public Command {
 public:
     ExportPythonApiCommand(MainWidget* w) : Command(w) {};
@@ -5077,12 +5112,14 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["edit_selected_highlight"] = [](MainWidget* widget) {return std::make_unique< EditSelectedHighlightCommand>(widget); };
     new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
     new_commands["execute_macro"] = [](MainWidget* widget) {return std::make_unique< ExecuteMacroCommand>(widget); };
+    new_commands["control_menu"] = [](MainWidget* widget) {return std::make_unique< ControlMenuCommand>(widget); };
     new_commands["set_view_state"] = [](MainWidget* widget) {return std::make_unique< SetViewStateCommand>(widget); };
     new_commands["get_config_value"] = [](MainWidget* widget) {return std::make_unique< GetConfigCommand>(widget); };
     new_commands["get_config_no_dialog"] = [](MainWidget* widget) {return std::make_unique< GetConfigNoDialogCommand>(widget); };
     new_commands["show_custom_options"] = [](MainWidget* widget) {return std::make_unique< ShowOptionsCommand>(widget); };
     new_commands["show_text_prompt"] = [](MainWidget* widget) {return std::make_unique< ShowTextPromptCommand>(widget); };
     new_commands["get_state_json"] = [](MainWidget* widget) {return std::make_unique< GetStateJsonCommand>(widget); };
+    new_commands["get_annotations_json"] = [](MainWidget* widget) {return std::make_unique< GetAnnotationsJsonCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };

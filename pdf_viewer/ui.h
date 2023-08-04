@@ -305,13 +305,11 @@ public:
                     }
                 }
                 if (((key_event->key() == Qt::Key_N) || (key_event->key() == Qt::Key_J)) && is_control_pressed) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
-                    QCoreApplication::postEvent(get_view(), new_key_event);
+                    simulate_move_down();
                     return true;
                 }
                 if (((key_event->key() == Qt::Key_P) || (key_event->key() == Qt::Key_K)) && is_control_pressed) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
-                    QCoreApplication::postEvent(get_view(), new_key_event);
+                    simulate_move_up();
                     return true;
                 }
                 if ((key_event->key() == Qt::Key_J) && is_alt_pressed) {
@@ -360,6 +358,40 @@ public:
             }
         }
         return false;
+    }
+
+    void simulate_move_down() {
+        QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() + 1, 0);
+        int nrows = get_view()->model()->rowCount();
+
+        if (next_index.row() > nrows || next_index.row() < 0) {
+            next_index = get_view()->model()->index(0, 0);
+        }
+
+        get_view()->setCurrentIndex(next_index);
+        get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
+    }
+
+    void simulate_move_up() {
+        QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() - 1, 0);
+        int nrows = get_view()->model()->rowCount();
+
+        if (next_index.row() > nrows || next_index.row() < 0) {
+            next_index = get_view()->model()->index(get_view()->model()->rowCount()-1, 0);
+        }
+
+        get_view()->setCurrentIndex(next_index);
+        get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
+    }
+
+    void simulate_select() {
+        std::optional<QModelIndex> selected_index = get_selected_index();
+        if (selected_index) {
+            on_select(selected_index.value());
+        }
+        else {
+            on_return_no_select(line_edit->text());
+        }
     }
 
     void handle_delete() {

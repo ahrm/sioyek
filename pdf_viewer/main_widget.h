@@ -850,6 +850,7 @@ public:
     void show_custom_option_list(std::vector<std::wstring> option_list);
     void on_socket_deleted(QLocalSocket* deleted_socket);
     QJsonObject get_json_state();
+    QJsonObject get_json_annotations();
     QJsonArray get_all_json_states();
     void screenshot(std::wstring file_path);
     //void advance_wait_for_render_if_ready();
@@ -863,6 +864,8 @@ public:
     int get_window_id();
     void add_command_being_performed(Command* new_command);
     void remove_command_being_performed(Command* new_command);
+
+    void handle_action_in_menu(std::wstring action);
 
 };
 

@@ -344,6 +344,11 @@ public:
     void reload_annotations_on_new_checksum();
     int find_reference_page_with_reference_text(std::wstring query);
 
+    QJsonArray get_bookmarks_json();
+    QJsonArray get_highlights_json();
+    QJsonArray get_portals_json();
+    QJsonArray get_marks_json();
+
     friend class DocumentManager;
 };
 

@@ -4163,3 +4163,19 @@ int Document::find_reference_page_with_reference_text(std::wstring ref) {
     return -1;
 
 }
+
+QJsonArray Document::get_bookmarks_json() {
+    return export_array(bookmarks, get_checksum());
+}
+
+QJsonArray Document::get_highlights_json() {
+    return export_array(highlights, get_checksum());
+}
+
+QJsonArray Document::get_portals_json() {
+    return export_array(portals, get_checksum());
+}
+
+QJsonArray Document::get_marks_json() {
+    return export_array(portals, get_checksum());
+}
