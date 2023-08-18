@@ -2400,6 +2400,52 @@ public:
 
 };
 
+
+class ForwardSearchCommand : public Command {
+public:
+    ForwardSearchCommand(MainWidget* w) : Command(w) {};
+
+    std::optional<std::wstring> file_path = {};
+    std::optional<int> line = {};
+    std::optional<int> column = {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+        if (!file_path.has_value()) {
+            return Requirement { RequirementType::File, "File Path" };
+        }
+        if (!line.has_value()) {
+            return Requirement { RequirementType::Text, "Line number" };
+        }
+        return {};
+    }
+
+    void set_file_requirement(std::wstring value) {
+        file_path = value;
+    }
+
+    void set_text_requirement(std::wstring text) {
+        QStringList parts = QString::fromStdWString(text).split(" ");
+        if (parts.size() == 1) {
+            line = parts[0].toInt();
+        }
+        else {
+            line = parts[0].toInt();
+            column = parts[1].toInt();
+        }
+
+    }
+
+    void perform() {
+        widget->do_synctex_forward_search(widget->doc()->get_path(), file_path.value(), line.value(), column.value_or(0));
+    }
+
+    std::string get_name() {
+        return "synctex_forward_search";
+    }
+
+};
+
 class ExternalSearchCommand : public SymbolCommand {
 public:
     ExternalSearchCommand(MainWidget* w) : SymbolCommand(w) {};
@@ -5209,6 +5255,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["toggle_synctex"] = [](MainWidget* widget) {return std::make_unique< ToggleSynctexCommand>(widget); };
     new_commands["turn_on_synctex"] = [](MainWidget* widget) {return std::make_unique< TurnOnSynctexCommand>(widget); };
     new_commands["toggle_show_last_command"] = [](MainWidget* widget) {return std::make_unique< ToggleShowLastCommand>(widget); };
+    new_commands["synctex_forward_search"] = [](MainWidget* widget) {return std::make_unique< ForwardSearchCommand>(widget); };
     new_commands["command"] = [](MainWidget* widget) {return std::make_unique< CommandCommand>(widget); };
     new_commands["command_palette"] = [](MainWidget* widget) {return std::make_unique< CommandPaletteCommand>(widget); };
     new_commands["external_search"] = [](MainWidget* widget) {return std::make_unique< ExternalSearchCommand>(widget); };
