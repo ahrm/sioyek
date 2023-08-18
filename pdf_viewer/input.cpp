@@ -3099,6 +3099,20 @@ public:
 
 };
 
+class SynctexUnderRulerCommand : public Command {
+public:
+    SynctexUnderRulerCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->handle_synctex_to_ruler();
+    }
+
+    std::string get_name() {
+        return "synctex_under_ruler";
+    }
+
+};
+
 class VisualMarkUnderCursorCommand : public Command {
 public:
     VisualMarkUnderCursorCommand(MainWidget* w) : Command(w) {};
@@ -5327,6 +5341,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["reload_no_flicker"] = [](MainWidget* widget) {return std::make_unique< ReloadNoFlickerCommand>(widget); };
     new_commands["reload_config"] = [](MainWidget* widget) {return std::make_unique< ReloadConfigCommand>(widget); };
     new_commands["synctex_under_cursor"] = [](MainWidget* widget) {return std::make_unique< SynctexUnderCursorCommand>(widget); };
+    new_commands["synctex_under_ruler"] = [](MainWidget* widget) {return std::make_unique< SynctexUnderRulerCommand>(widget); };
     new_commands["set_status_string"] = [](MainWidget* widget) {return std::make_unique< SetStatusStringCommand>(widget); };
     new_commands["clear_status_string"] = [](MainWidget* widget) {return std::make_unique< ClearStatusStringCommand>(widget); };
     new_commands["toggle_titlebar"] = [](MainWidget* widget) {return std::make_unique< ToggleTittlebarCommand>(widget); };

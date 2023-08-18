@@ -867,6 +867,7 @@ public:
     void remove_command_being_performed(Command* new_command);
 
     void handle_action_in_menu(std::wstring action);
+    void handle_synctex_to_ruler();
 
 };
 

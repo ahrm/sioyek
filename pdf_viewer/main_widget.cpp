@@ -8078,3 +8078,14 @@ void MainWidget::handle_action_in_menu(std::wstring action) {
         }
     }
 }
+
+void MainWidget::handle_synctex_to_ruler() {
+    std::optional<fz_rect> ruler_rect = main_document_view->get_ruler_window_rect();
+    fz_irect ruler_irect = main_document_view->normalized_to_window_rect(ruler_rect.value());
+
+    WindowPos mid_window_pos;
+    mid_window_pos.x = (ruler_irect.x0 + ruler_irect.x1) / 2;
+    mid_window_pos.y = (ruler_irect.y0 + ruler_irect.y1) / 2;
+
+    synctex_under_pos(mid_window_pos);
+}
