@@ -882,6 +882,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                 validate_render();
             }
         }
+
+        if (opengl_widget->has_synctex_timed_out()) {
+            is_render_invalidated = true;
+        }
+
         if (is_render_invalidated) {
             validate_render();
         }
@@ -4981,7 +4986,9 @@ void MainWidget::handle_goto_bookmark_global() {
 
     set_filtered_select_menu<BookState>(FUZZY_SEARCHING, MULTILINE_MENUS, { descs, file_names }, book_states, -1,
         [&](BookState* book_state) {
-            pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdWString(book_state->document_path) << book_state->offset_y);
+            if (pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdWString(book_state->document_path) << book_state->offset_y);
+            }
             advance_command(std::move(pending_command_instance));
         },
         [&](BookState* book_state) {
@@ -5047,7 +5054,9 @@ void MainWidget::handle_goto_highlight() {
 
     set_filtered_select_menu<Highlight>(FUZZY_SEARCHING, MULTILINE_MENUS, table, highlights, closest_highlight_index,
         [&](Highlight* hl) {
-            pending_command_instance->set_generic_requirement(hl->selection_begin.y);
+            if (pending_command_instance) {
+                pending_command_instance->set_generic_requirement(hl->selection_begin.y);
+            }
             advance_command(std::move(pending_command_instance));
         },
         [&](Highlight* hl) {
@@ -5109,8 +5118,10 @@ void MainWidget::handle_goto_highlight_global() {
 
         [&](BookState* book_state) {
             if (book_state) {
-                pending_command_instance->set_generic_requirement(
-                    QList<QVariant>() << QString::fromStdWString(book_state->document_path) << book_state->offset_y);
+                if (pending_command_instance) {
+                    pending_command_instance->set_generic_requirement(
+                        QList<QVariant>() << QString::fromStdWString(book_state->document_path) << book_state->offset_y);
+                }
                 advance_command(std::move(pending_command_instance));
                 //validate_render();
                 //open_document(book_state->document_path, 0.0f, book_state->offset_y);
@@ -5145,7 +5156,7 @@ void MainWidget::handle_goto_toc() {
             QAbstractItemModel* model = create_table_model(flat_toc, page_strings);
 
             set_current_widget(new TouchFilteredSelectWidget<int>(FUZZY_SEARCHING, model, current_document_toc_pages, closest_toc_index, [&](int* page_value) {
-                if (page_value) {
+                if (page_value && pending_command_instance) {
                     pending_command_instance->set_generic_requirement(*page_value);
                     advance_command(std::move(pending_command_instance));
                 }
@@ -5160,7 +5171,7 @@ void MainWidget::handle_goto_toc() {
                 std::vector<int> current_document_toc_pages;
                 get_flat_toc(main_document_view->get_document()->get_toc(), flat_toc, current_document_toc_pages);
                 set_current_widget(new FilteredSelectWindowClass<int>(FUZZY_SEARCHING, flat_toc, current_document_toc_pages, [&](int* page_value) {
-                    if (page_value) {
+                    if (page_value && pending_command_instance) {
                         pending_command_instance->set_generic_requirement(*page_value);
                         advance_command(std::move(pending_command_instance));
 
@@ -5176,7 +5187,7 @@ void MainWidget::handle_goto_toc() {
                     [&](const std::vector<int>& indices) {
                         TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
                         indices);
-                if (toc_node) {
+                if (toc_node && pending_command_instance) {
                     if (std::isnan(toc_node->y)) {
                         pending_command_instance->set_generic_requirement(toc_node->page);
                         advance_command(std::move(pending_command_instance));
@@ -5217,7 +5228,7 @@ void MainWidget::handle_open_all_docs() {
 
     set_filtered_select_menu<std::string>(FUZZY_SEARCHING, MULTILINE_MENUS, { paths }, hashes, -1,
         [&](std::string* doc_hash) {
-            if (doc_hash->size() > 0) {
+            if ((doc_hash->size() > 0) && (pending_command_instance)) {
                 pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdString(*doc_hash));
                 advance_command(std::move(pending_command_instance));
             }
@@ -5263,7 +5274,7 @@ void MainWidget::handle_open_prev_doc() {
 
     set_filtered_select_menu<std::string>(FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names }, opened_docs_hashes, -1,
         [&](std::string* doc_hash) {
-            if (doc_hash->size() > 0) {
+            if ((doc_hash->size() > 0) && (pending_command_instance)) {
                 pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdString(*doc_hash));
                 advance_command(std::move(pending_command_instance));
             }
@@ -6992,8 +7003,10 @@ void MainWidget::handle_goto_loaded_document() {
         loaded_document_paths,
         index,
         [&](std::wstring* path) {
-            pending_command_instance->set_generic_requirement(QString::fromStdWString(*path));
-            advance_command(std::move(pending_command_instance));
+            if (pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdWString(*path));
+                advance_command(std::move(pending_command_instance));
+            }
             //open_document(*path);
         },
         [&](std::wstring* path) {

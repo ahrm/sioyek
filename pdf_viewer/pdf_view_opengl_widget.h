@@ -196,7 +196,7 @@ protected:
     void render_highlight_window(GLuint program, fz_rect window_rect, int flags);
     void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, int flags);
     void render_line_window(GLuint program, float vertical_pos, std::optional<fz_rect> ruler_rect = {});
-    void render_highlight_document(GLuint program, int page, fz_rect doc_rect);
+    void render_highlight_document(GLuint program, int page, fz_rect doc_rect, int flags=HRF_FILL | HRF_BORDER);
     void paintGL() override;
     void my_render(QPainter* painter);
     void add_coordinates_for_window_point(float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates);
@@ -223,6 +223,7 @@ public:
 
     std::vector<std::pair<fz_rect, int>> word_rects;
     std::vector<std::pair<int, fz_rect>> synctex_highlights;
+    QTime synctex_highlight_time;
     //std::vector<std::pair<fz_rect, int>> marked_data_rects;
     std::vector<MarkedDataRect> marked_data_rects;
 
@@ -258,6 +259,8 @@ public:
     void set_custom_color_mode(bool mode);
     void toggle_custom_color_mode();
     void set_synctex_highlights(std::vector<std::pair<int, fz_rect>> highlights);
+    bool should_show_synxtex_highlights();
+    bool has_synctex_timed_out();
     void on_document_view_reset();
     void mouseMoveEvent(QMouseEvent* mouse_event) override;
     void mousePressEvent(QMouseEvent* mevent) override;

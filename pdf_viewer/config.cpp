@@ -191,6 +191,7 @@ extern float DEFAULT_VERTICAL_LINE_COLOR[4];
 extern float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
+extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
 
 extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH;
@@ -560,6 +561,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         vec3_serializer,
         color3_deserializer,
         color_3_validator
+        });
+    configs.push_back({
+        L"synctex_highlight_timeout",
+        ConfigType::Float,
+        &HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{-1.0f, 100.0f}
         });
     configs.push_back({
         L"ruler_color",

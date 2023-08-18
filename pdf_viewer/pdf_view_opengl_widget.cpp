@@ -47,6 +47,7 @@ extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern float STRIKE_LINE_WIDTH;
 extern std::wstring RULER_DISPLAY_MODE;
 extern float RULER_COLOR[3];
+extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
 
 GLfloat g_quad_vertex[] = {
     -1.0f, -1.0f,
@@ -476,9 +477,9 @@ void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect abso
     render_highlight_window(program, window_rect, flags);
 }
 
-void PdfViewOpenGLWidget::render_highlight_document(GLuint program, int page, fz_rect doc_rect) {
+void PdfViewOpenGLWidget::render_highlight_document(GLuint program, int page, fz_rect doc_rect, int flags) {
     fz_rect window_rect = document_view->document_to_window_rect(page, doc_rect);
-    render_highlight_window(program, window_rect, HRF_FILL | HRF_BORDER);
+    render_highlight_window(program, window_rect, flags);
 }
 
 void PdfViewOpenGLWidget::paintGL() {
@@ -1161,9 +1162,12 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         render_highlight_absolute(shared_gl_objects.highlight_program, rect, HRF_FILL | HRF_BORDER);
     }
 
-    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"synctex_highlight_color"));
-    for (auto [page, rect] : synctex_highlights) {
-        render_highlight_document(shared_gl_objects.highlight_program, page, rect);
+    if (should_show_synxtex_highlights()) {
+
+        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"synctex_highlight_color"));
+        for (auto [page, rect] : synctex_highlights) {
+            render_highlight_document(shared_gl_objects.highlight_program, page, rect, HRF_FILL);
+        }
     }
 
     if (underline) {
@@ -1560,6 +1564,7 @@ void PdfViewOpenGLWidget::toggle_dark_mode() {
 }
 
 void PdfViewOpenGLWidget::set_synctex_highlights(std::vector<std::pair<int, fz_rect>> highlights) {
+    synctex_highlight_time = QTime::currentTime();
     synctex_highlights = std::move(highlights);
 }
 
@@ -2563,4 +2568,22 @@ void PdfViewOpenGLWidget::render_portal_rect(QPainter* painter, fz_rect portal_r
 
 void PdfViewOpenGLWidget::set_pending_download_portals(std::vector<fz_rect>&& portal_rects){
     pending_download_portals = std::move(portal_rects);
+}
+
+bool PdfViewOpenGLWidget::should_show_synxtex_highlights() {
+    if (synctex_highlights.size() > 0) {
+        if ((HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT < 0) || (synctex_highlight_time.msecsTo(QTime::currentTime()) < (HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT * 1000.0f))) {
+            return true;
+        }
+    }
+    return false;
+
+}
+
+bool PdfViewOpenGLWidget::has_synctex_timed_out() {
+    if (synctex_highlights.size() > 0 && (!should_show_synxtex_highlights())) {
+        synctex_highlights.clear();
+        return true;
+    }
+    return false;
 }
