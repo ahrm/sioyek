@@ -1467,6 +1467,36 @@ public:
     bool requires_document() { return false; }
 };
 
+class FramebufferScreenshotCommand : public Command {
+public:
+    FramebufferScreenshotCommand(MainWidget* w) : Command(w) {};
+
+    std::wstring file_name;
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (file_name.size() == 0) {
+            return Requirement{ RequirementType::Text, "File Path" };
+        }
+        else {
+            return {};
+        }
+    }
+
+    void set_text_requirement(std::wstring value) {
+        file_name = value;
+    }
+
+    void perform() {
+        widget->framebuffer_screenshot(file_name);
+    }
+
+    std::string get_name() {
+        return "framebuffer_screenshot";
+    }
+
+    bool requires_document() { return false; }
+};
+
 class GenericWaitCommand : public Command {
 public:
     GenericWaitCommand(MainWidget* w) : Command(w) {};
@@ -5139,6 +5169,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["previous_page"] = [](MainWidget* widget) {return std::make_unique< PreviousPageCommand>(widget); };
     new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
     new_commands["screenshot"] = [](MainWidget* widget) {return std::make_unique< ScreenshotCommand>(widget); };
+    new_commands["framebuffer_screenshot"] = [](MainWidget* widget) {return std::make_unique< FramebufferScreenshotCommand>(widget); };
     new_commands["wait_for_renders_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForRendersToFinishCommand>(widget); };
     new_commands["wait_for_search_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForSearchToFinishCommand>(widget); };
     new_commands["wait_for_indexing_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForIndexingToFinishCommand>(widget); };

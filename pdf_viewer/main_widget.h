@@ -853,6 +853,7 @@ public:
     QJsonObject get_json_annotations();
     QJsonArray get_all_json_states();
     void screenshot(std::wstring file_path);
+    void framebuffer_screenshot(std::wstring file_path);
     //void advance_wait_for_render_if_ready();
     bool is_render_ready();
     bool is_search_ready();

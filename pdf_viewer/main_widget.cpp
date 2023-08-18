@@ -4940,7 +4940,10 @@ void MainWidget::handle_goto_bookmark() {
 
     set_filtered_select_menu<BookMark>(FUZZY_SEARCHING, MULTILINE_MENUS, { option_names, option_location_strings }, bookmarks, closest_bookmark_index,
         [&](BookMark* bm) {
-            pending_command_instance->set_generic_requirement(bm->get_y_offset());
+            if (pending_command_instance) {
+                pending_command_instance->set_generic_requirement(bm->get_y_offset());
+            }
+
             advance_command(std::move(pending_command_instance));
 
         },
@@ -7948,6 +7951,16 @@ void MainWidget::screenshot(std::wstring file_path) {
     QPixmap pixmap(size());
     render(&pixmap, QPoint(), QRegion(rect()));
     pixmap.save(QString::fromStdWString(file_path));
+}
+
+void MainWidget::framebuffer_screenshot(std::wstring file_path) {
+    QImage image = opengl_widget->grabFramebuffer();
+    QPixmap pixmap = QPixmap::fromImage(image);
+    pixmap.save(QString::fromStdWString(file_path));
+
+    //QPixmap pixmap(size());
+    //render(&pixmap, QPoint(), QRegion(rect()));
+    //pixmap.save(QString::fromStdWString(file_path));
 }
 
 bool MainWidget::is_render_ready(){

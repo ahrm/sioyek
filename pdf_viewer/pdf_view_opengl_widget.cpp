@@ -489,7 +489,7 @@ void PdfViewOpenGLWidget::paintGL() {
     QColor red_color = QColor::fromRgb(255, 0, 0);
     painter.setPen(red_color);
 
-    render(&painter);
+    my_render(&painter);
 
     //painter.drawText(-100, -100, "1234567890");
 }
@@ -984,7 +984,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
 }
 
-void PdfViewOpenGLWidget::render(QPainter* painter) {
+void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
     painter->beginNativePainting();
     glDisable(GL_CULL_FACE);
