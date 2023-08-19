@@ -419,3 +419,4 @@ void search_regex_with_index_(const std::wstring& super_fast_search_index,
     int min_page,
     int max_page,
     std::vector<SearchResult>* output);
+float rect_area(fz_rect rect);

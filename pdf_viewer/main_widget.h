@@ -444,6 +444,9 @@ public:
     bool move_document(float dx, float dy, bool force = false);
     void move_document_screens(int num_screens);
     void focus_text(int page, const std::wstring& text);
+    int get_page_intersecting_rect_index(int page, fz_rect rect);
+    fz_rect get_page_intersecting_rect(int page, fz_rect rect);
+    void focus_rect(int page, fz_rect rect);
 
     void move_visual_mark_next();
     void move_visual_mark_prev();
@@ -868,6 +871,7 @@ public:
 
     void handle_action_in_menu(std::wstring action);
     void handle_synctex_to_ruler();
+    void focus_on_line_with_index(int page, int index);
 
 };
 

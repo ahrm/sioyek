@@ -165,6 +165,7 @@ extern bool TOUCH_MODE;
 extern float TTS_RATE;
 extern std::wstring PAPER_SEARCH_URL;
 extern std::wstring RULER_DISPLAY_MODE;
+extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
 
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
@@ -1099,6 +1100,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"ruler_mode",
         ConfigType::Bool,
         &RULER_MODE,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"use_ruler_to_highlight_synctex_line",
+        ConfigType::Bool,
+        &USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE,
         bool_serializer,
         bool_deserializer,
         bool_validator

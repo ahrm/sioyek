@@ -156,6 +156,7 @@ extern float TTS_RATE;
 extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern std::wstring BOOK_SCAN_PATH;
+extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
 
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
@@ -1532,12 +1533,23 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
 
             }
 
-            opengl_widget->set_synctex_highlights(highlight_rects);
-            if (highlight_rects.size() == 0) {
-                main_document_view->goto_page(target_page);
+            if (!USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE) {
+
+                fz_rect line_rect = get_page_intersecting_rect(target_page, highlight_rects[0].second);
+                line_rect = doc()->absolute_to_page_rect(line_rect, nullptr);
+
+                opengl_widget->set_synctex_highlights({ {target_page, line_rect} });
+                if (highlight_rects.size() == 0) {
+                    main_document_view->goto_page(target_page);
+                }
+                else {
+                    main_document_view->goto_offset_within_page({ target_page, main_document_view->get_offset_x(), first_rect.value().y0 });
+                }
             }
             else {
-                main_document_view->goto_offset_within_page({ target_page, main_document_view->get_offset_x(), first_rect.value().y0 });
+                if (highlight_rects.size() > 0) {
+                    focus_rect(target_page, highlight_rects[0].second);
+                }
             }
         }
     }
@@ -4128,6 +4140,44 @@ void MainWidget::toggle_titlebar() {
     show();
 }
 
+
+fz_rect MainWidget::get_page_intersecting_rect(int page, fz_rect rect) {
+    int index = get_page_intersecting_rect_index(page, rect);
+    if (index >= 0) {
+        std::vector<fz_rect> line_rects = main_document_view->get_document()->get_page_lines(page, nullptr);
+        return line_rects[index];
+    }
+}
+
+int MainWidget::get_page_intersecting_rect_index(int page, fz_rect rect) {
+    std::vector<fz_rect> line_rects  = main_document_view->get_document()->get_page_lines(page, nullptr);
+    rect = doc()->document_to_absolute_rect(page, rect, true);
+
+    if (rect.y0 > rect.y1) {
+        std::swap(rect.y0, rect.y1);
+    }
+
+    float max_area = -1;
+    int selected_index = -1;
+
+    for (int i = 0; i < line_rects.size(); i++) {
+        float area = rect_area(fz_intersect_rect(line_rects[i], rect));
+        if (area > max_area * 2) {
+            max_area = area;
+            selected_index = i;
+        }
+    }
+    return selected_index;
+}
+
+void MainWidget::focus_rect(int page, fz_rect rect) {
+    int selected_index = get_page_intersecting_rect_index(page, rect);
+
+    if (selected_index > -1) {
+        focus_on_line_with_index(page, selected_index);
+    }
+}
+
 void MainWidget::focus_text(int page, const std::wstring& text) {
     std::vector<std::wstring> line_texts;
     std::vector<fz_rect> line_rects;
@@ -4149,12 +4199,7 @@ void MainWidget::focus_text(int page, const std::wstring& text) {
     }
 
     if (max_index < line_rects.size()) {
-        main_document_view->set_line_index(max_index, page);
-        //main_document_view->set_vertical_line_rect(line_rects[max_index]);
-        if (focus_on_visual_mark_pos(true)) {
-            float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
-            main_document_view->move_absolute(0, distance);
-        }
+        focus_on_line_with_index(page, max_index);
     }
 }
 
@@ -6161,6 +6206,7 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
+    focus_rect(get_current_page_number(), fz_empty_rect);
     // python_api = export_python_api();
     //QFile output("debug/api.py");
     //if (output.open(QIODevice::WriteOnly)) {
@@ -8088,4 +8134,13 @@ void MainWidget::handle_synctex_to_ruler() {
     mid_window_pos.y = (ruler_irect.y0 + ruler_irect.y1) / 2;
 
     synctex_under_pos(mid_window_pos);
+}
+
+void MainWidget::focus_on_line_with_index(int page, int index) {
+    main_document_view->set_line_index(index, page);
+    //main_document_view->set_vertical_line_rect(line_rects[max_index]);
+    if (focus_on_visual_mark_pos(true)) {
+        float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
+        main_document_view->move_absolute(0, distance);
+    }
 }
