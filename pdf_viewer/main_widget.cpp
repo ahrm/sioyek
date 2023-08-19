@@ -4237,7 +4237,8 @@ void MainWidget::reload(bool flush) {
 }
 
 
-void MainWidget::synctex_under_pos(WindowPos position) {
+std::wstring MainWidget::synctex_under_pos(WindowPos position) {
+    std::wstring res = L"";
 #ifndef SIOYEK_ANDROID
     auto [page, doc_x, doc_y] = main_document_view->window_to_document_pos(position);
     std::wstring docpath = main_document_view->get_document()->get_path();
@@ -4277,7 +4278,7 @@ void MainWidget::synctex_under_pos(WindowPos position) {
 #else
                 QString command = QString::fromStdWString(inverse_search_command).arg(file_name, line_string.c_str(), column_string.c_str());
 #endif
-                std::wstring res = command.toStdWString();
+                res = QString("%1 %2 %3").arg(new_path, QString::number(line), QString::number(column)).toStdWString();
                 QProcess::startDetached(command);
             }
             else {
@@ -4290,6 +4291,7 @@ void MainWidget::synctex_under_pos(WindowPos position) {
     synctex_scanner_free(scanner);
 
 #endif
+    return res;
 }
 
 void MainWidget::set_status_message(std::wstring new_status_string) {
@@ -8125,7 +8127,7 @@ void MainWidget::handle_action_in_menu(std::wstring action) {
     }
 }
 
-void MainWidget::handle_synctex_to_ruler() {
+std::wstring MainWidget::handle_synctex_to_ruler() {
     std::optional<fz_rect> ruler_rect = main_document_view->get_ruler_window_rect();
     fz_irect ruler_irect = main_document_view->normalized_to_window_rect(ruler_rect.value());
 
@@ -8133,7 +8135,7 @@ void MainWidget::handle_synctex_to_ruler() {
     mid_window_pos.x = (ruler_irect.x0 + ruler_irect.x1) / 2;
     mid_window_pos.y = (ruler_irect.y0 + ruler_irect.y1) / 2;
 
-    synctex_under_pos(mid_window_pos);
+    return synctex_under_pos(mid_window_pos);
 }
 
 void MainWidget::focus_on_line_with_index(int page, int index) {

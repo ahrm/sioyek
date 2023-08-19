@@ -502,7 +502,7 @@ public:
     void goto_page_with_label(std::wstring label);
     void set_inverse_search_command(const std::wstring& new_command);
     int get_current_monitor_width(); int get_current_monitor_height();
-    void synctex_under_pos(WindowPos position);
+    std::wstring synctex_under_pos(WindowPos position);
     std::optional<std::wstring> get_paper_name_under_cursor(bool use_last_hold_point = false);
     fz_stext_char* get_closest_character_to_cusrsor(QPoint pos);
     void set_status_message(std::wstring new_status_string);
@@ -870,7 +870,7 @@ public:
     void remove_command_being_performed(Command* new_command);
 
     void handle_action_in_menu(std::wstring action);
-    void handle_synctex_to_ruler();
+    std::wstring handle_synctex_to_ruler();
     void focus_on_line_with_index(int page, int index);
 
 };

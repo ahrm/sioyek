@@ -3104,7 +3104,7 @@ public:
     SynctexUnderRulerCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        widget->handle_synctex_to_ruler();
+        result = widget->handle_synctex_to_ruler();
     }
 
     std::string get_name() {
