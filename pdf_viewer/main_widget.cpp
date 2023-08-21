@@ -212,8 +212,12 @@ private:
     bool is_dragging = false;
     bool is_begin;
     MainWidget* main_widget;
-    QPixmap begin_pixmap;
-    QPixmap end_pixmap;
+
+    //QPixmap begin_pixmap;
+    //QPixmap end_pixmap;
+
+    QIcon begin_icon;
+    QIcon end_icon;
     QPoint last_press_window_pos;
     QPoint last_press_widget_pos;
     DocumentPos docpos;
@@ -225,8 +229,8 @@ public:
         main_widget = w;
         docpos = main_widget->doc()->absolute_to_page_pos(pos);
 
-        begin_pixmap = QPixmap(":/begin.png");
-        end_pixmap = QPixmap(":/end.png");
+        begin_icon = QIcon(":/icons/arrow-begin.svg");
+        end_icon = QIcon(":/icons/arrow-end.svg");
     }
 
     void update_pos() {
@@ -277,7 +281,11 @@ public:
 
     void paintEvent(QPaintEvent* event) {
         QPainter painter(this);
-        painter.drawPixmap(0, 0, width(), height(), is_begin ? begin_pixmap : end_pixmap);
+
+        //begin_icon.paint()
+        //painter.drawPixmap(0, 0, width(), height(), is_begin ? begin_pixmap : end_pixmap);
+        QRect window_qrect = QRect(0, 0, width(), height());
+        (is_begin ? &begin_icon : &end_icon)->paint(&painter, window_qrect);
     }
 };
 

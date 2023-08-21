@@ -82,6 +82,8 @@
         <file>icons/paper-download.svg</file>
         <file>icons/P.svg</file>
         <file>icons/B.svg</file>
+        <file>icons/arrow-begin.svg</file>
+        <file>icons/arrow-end.svg</file>
         <file>icons/hourglass.svg</file>
         <file>end.png</file>
         <file>data/embedding.npy</file>
