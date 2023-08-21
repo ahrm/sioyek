@@ -5947,6 +5947,10 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
         }
     }
 
+    if (current_widget_stack.size() > 0) {
+        pop_current_widget();
+        return false;
+    }
     //NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(click_pos);
 
 
@@ -6009,7 +6013,6 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
     opengl_widget->cancel_search();
     is_dragging = false;
 
-    pop_current_widget();
     //if (current_widget != nullptr) {
     //    delete current_widget;
     //    current_widget = nullptr;
