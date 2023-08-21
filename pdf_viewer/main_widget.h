@@ -874,6 +874,8 @@ public:
     void focus_on_line_with_index(int page, int index);
     void show_touch_main_menu();
     void show_touch_settings_menu();
+    void free_document(Document* doc);
+    bool is_helper_visible();
 
 };
 

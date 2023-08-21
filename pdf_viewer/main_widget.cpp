@@ -1,6 +1,7 @@
 // deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
+// change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
 
 #include <iostream>
 #include <vector>
@@ -1386,7 +1387,7 @@ void MainWidget::validate_render() {
     if (main_document_view && main_document_view->get_document()) {
         std::optional<Portal> link = main_document_view->find_closest_portal();
 
-        if (helper_document_view) {
+        if (is_helper_visible()) {
 
             if (link) {
                 helper_document_view->goto_portal(&link.value());
@@ -5087,9 +5088,9 @@ void MainWidget::handle_goto_highlight() {
     std::vector<std::wstring> option_text_annotations;
     std::vector<std::wstring> option_location_strings;
     bool has_text_annotations = false;
-    std::vector<Highlight> highlights = main_document_view->get_document()->get_highlights_sorted();
+    std::vector<Highlight> highlights = doc()->get_highlights_sorted();
 
-    int closest_highlight_index = main_document_view->get_document()->find_closest_highlight_index(highlights, main_document_view->get_offset_y());
+    int closest_highlight_index = doc()->find_closest_highlight_index(highlights, main_document_view->get_offset_y());
 
     for (auto highlight : highlights) {
         std::wstring type_name = L"a";
@@ -5937,7 +5938,8 @@ void MainWidget::clear_selection_indicators() {
 }
 
 bool MainWidget::handle_quick_tap(WindowPos click_pos) {
-    // returns true if we double clicked
+    // returns true if we double clicked or clicked on a location that executes a command
+    // in either case, we should not do anything else corresponding to the single tap event
 
     QTime now = QTime::currentTime();
 
@@ -5951,8 +5953,6 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
         pop_current_widget();
         return false;
     }
-    //NormalizedWindowPos nwp = main_document_view->window_to_normalized_window_pos(click_pos);
-
 
     if (is_in_middle_left_rect(click_pos)) {
         if (execute_macro_if_enabled(MIDDLE_LEFT_RECT_TAP_COMMAND)) {
@@ -7059,7 +7059,7 @@ void MainWidget::handle_goto_loaded_document() {
         index = loc - loaded_document_paths.begin();
     }
 
-    set_filtered_select_menu<std::wstring>(FUZZY_SEARCHING,
+    set_filtered_select_menu<std::wstring>(true,
         MULTILINE_MENUS,
         { loaded_document_paths },
         loaded_document_paths,
@@ -7074,7 +7074,7 @@ void MainWidget::handle_goto_loaded_document() {
         [&](std::wstring* path) {
             std::optional<Document*> doc_to_delete = document_manager->get_cached_document(*path);
             if (doc_to_delete && (doc_to_delete.value() != doc())) {
-                document_manager->free_document(doc_to_delete.value());
+                free_document(doc_to_delete.value());
             }
         }
         );
@@ -8175,4 +8175,21 @@ void MainWidget::show_touch_settings_menu() {
     set_current_widget(config_menu);
     show_current_widget();
 
+}
+
+void MainWidget::free_document(Document* doc) {
+
+    if (helper_document_view->get_document() == doc) {
+        helper_document_view->set_null_document();
+    }
+
+    document_manager->free_document(doc);
+}
+
+bool MainWidget::is_helper_visible() {
+
+    if (helper_document_view && helper_opengl_widget) {
+        return helper_opengl_widget->isVisible();
+    }
+    return false;
 }
