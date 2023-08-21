@@ -4924,6 +4924,10 @@ void MainWidget::handle_horizontal_move(int amount) {
 void MainWidget::show_current_widget() {
     if (current_widget_stack.size() > 0) {
         current_widget_stack.back()->show();
+        // we want to show statusbar in touch mode when other windows are visible
+        // so when we show a widget, we need to invalidate the ui so the statusbar
+        // is displayed if it is needed
+        invalidate_ui();
     }
 }
 
