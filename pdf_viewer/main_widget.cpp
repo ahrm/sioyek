@@ -1,7 +1,6 @@
 // deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
-// add tests
 
 #include <iostream>
 #include <vector>
@@ -59,6 +58,7 @@
 #include "path.h"
 #include "touchui/TouchMarkSelector.h"
 #include "checksum.h"
+#include "touchui/TouchSettings.h"
 
 #include "main_widget.h"
 
@@ -5776,8 +5776,7 @@ bool MainWidget::event(QEvent* event) {
                         }
                     }
 
-                    set_current_widget(new AndroidSelector(this));
-                    show_current_widget();
+                    show_touch_main_menu();
 
                     return true;
                 }
@@ -8145,4 +8144,20 @@ void MainWidget::focus_on_line_with_index(int page, int index) {
         float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
         main_document_view->move_absolute(0, distance);
     }
+}
+
+void MainWidget::show_touch_main_menu() {
+
+    set_current_widget(new AndroidSelector(this));
+    show_current_widget();
+}
+
+void MainWidget::show_touch_settings_menu() {
+
+    TouchSettings* config_menu = new TouchSettings(this);
+
+    pop_current_widget();
+    set_current_widget(config_menu);
+    show_current_widget();
+
 }

@@ -260,19 +260,15 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
 
     QObject::connect(main_menu, &TouchMainMenu::settingsClicked, [&]() {
         //TouchConfigMenu* config_menu = new TouchConfigMenu(main_widget);
-        TouchSettings* config_menu = new TouchSettings(main_widget);
-        //main_widget->current_widget = new TouchConfigMenu(main_widget);
-        //deleteLater();
-        assert(main_widget->current_widget_stack.back() == this);
-        main_widget->pop_current_widget();
+        main_widget->show_touch_settings_menu();
 
-        main_widget->set_current_widget(config_menu);
-        main_widget->show_current_widget();
+        //TouchSettings* config_menu = new TouchSettings(main_widget);
+        //assert(main_widget->current_widget_stack.back() == this);
+        //main_widget->pop_current_widget();
 
-        //auto command = main_widget->command_manager->get_command_with_name("command");
-        //main_widget->current_widget = {};
-        //deleteLater();
-        //main_widget->handle_command_types(std::move(command), 0);
+        //main_widget->set_current_widget(config_menu);
+        //main_widget->show_current_widget();
+
         });
 
     QObject::connect(main_menu, &TouchMainMenu::rulerModeClicked, [&]() {

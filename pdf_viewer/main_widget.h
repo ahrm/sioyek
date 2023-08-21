@@ -872,6 +872,8 @@ public:
     void handle_action_in_menu(std::wstring action);
     std::wstring handle_synctex_to_ruler();
     void focus_on_line_with_index(int page, int index);
+    void show_touch_main_menu();
+    void show_touch_settings_menu();
 
 };
 

@@ -731,6 +731,22 @@ public:
 
 };
 
+class GetOverviewPaperName : public Command {
+
+public:
+    GetOverviewPaperName(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        std::optional<std::wstring> paper_name = widget->get_overview_paper_name();
+        result = paper_name.value_or(L"");
+    }
+
+    std::string get_name() {
+        return "get_overview_paper_name";
+    }
+
+};
+
 class GetAnnotationsJsonCommand : public Command {
 
 public:
@@ -3828,6 +3844,34 @@ public:
 
 };
 
+class ShowTouchMainMenu : public Command {
+public:
+    ShowTouchMainMenu(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->show_touch_main_menu();
+    }
+
+    std::string get_name() {
+        return "show_touch_main_menu";
+    }
+
+};
+
+class ShowTouchSettingsMenu : public Command {
+public:
+    ShowTouchSettingsMenu(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->show_touch_settings_menu();
+    }
+
+    std::string get_name() {
+        return "show_touch_settings_menu";
+    }
+
+};
+
 
 class ExportPythonApiCommand : public Command {
 public:
@@ -5209,6 +5253,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["show_custom_options"] = [](MainWidget* widget) {return std::make_unique< ShowOptionsCommand>(widget); };
     new_commands["show_text_prompt"] = [](MainWidget* widget) {return std::make_unique< ShowTextPromptCommand>(widget); };
     new_commands["get_state_json"] = [](MainWidget* widget) {return std::make_unique< GetStateJsonCommand>(widget); };
+    new_commands["get_overview_paper_name"] = [](MainWidget* widget) {return std::make_unique< GetOverviewPaperName>(widget); };
     new_commands["get_annotations_json"] = [](MainWidget* widget) {return std::make_unique< GetAnnotationsJsonCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
@@ -5393,6 +5438,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["delete_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< DeleteFreehandDrawingsCommand>(widget); };
     new_commands["select_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< SelectFreehandDrawingsCommand>(widget); };
     new_commands["select_current_search_match"] = [](MainWidget* widget) {return std::make_unique< SelectCurrentSearchMatchCommand>(widget); };
+    new_commands["show_touch_main_menu"] = [](MainWidget* widget) {return std::make_unique< ShowTouchMainMenu>(widget); };
+    new_commands["show_touch_settings_menu"] = [](MainWidget* widget) {return std::make_unique< ShowTouchSettingsMenu>(widget); };
     //new_commands["stop_search"] = [](MainWidget* widget) {return std::make_unique< StopSearchCommand>(widget); };
 
 #ifdef _DEBUG
