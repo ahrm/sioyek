@@ -1384,17 +1384,14 @@ void MainWidget::validate_render() {
         }
     }
 
-    if (main_document_view && main_document_view->get_document()) {
+    if (main_document_view && main_document_view->get_document() && is_helper_visible()) {
         std::optional<Portal> link = main_document_view->find_closest_portal();
 
-        if (is_helper_visible()) {
-
-            if (link) {
-                helper_document_view->goto_portal(&link.value());
-            }
-            else {
-                helper_document_view->set_null_document();
-            }
+        if (link) {
+            helper_document_view->goto_portal(&link.value());
+        }
+        else {
+            helper_document_view->set_null_document();
         }
     }
     validate_ui();
@@ -1403,7 +1400,7 @@ void MainWidget::validate_render() {
         opengl_widget->update();
     }
 
-    if (helper_opengl_widget != nullptr) {
+    if (is_helper_visible()) {
         helper_opengl_widget->update();
     }
 
