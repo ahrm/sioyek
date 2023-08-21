@@ -2,6 +2,7 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
+// tabbed last document path
 
 #include <iostream>
 #include <vector>
@@ -7047,7 +7048,8 @@ void MainWidget::handle_goto_loaded_document() {
     // opens a list of currently loaded documents. This is basically sioyek's "tab" feature
     // the user can "unload" a document by pressing the delete key while it is highlighted in the list
 
-    std::vector<std::wstring> loaded_document_paths = document_manager->get_loaded_document_paths();
+    std::vector<std::wstring> loaded_document_paths_ = document_manager->get_loaded_document_paths();
+    std::vector<std::wstring> loaded_document_paths = get_path_unique_prefix(loaded_document_paths_);
     std::wstring current_document_path = doc()->get_path();
 
     auto loc = std::find(loaded_document_paths.begin(), loaded_document_paths.end(), current_document_path);

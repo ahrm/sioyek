@@ -3919,3 +3919,41 @@ void search_regex_with_index_(const std::wstring& super_fast_search_index,
     output->insert(output->end(), before_results.begin(), before_results.end());
 
 }
+
+std::vector<std::wstring> get_path_unique_prefix(const std::vector<std::wstring>& paths) {
+    std::vector<QStringList> path_parts;
+    QChar separator = '/';
+
+    int max_depth = -1;
+    for (auto p : paths) {
+        path_parts.push_back(QString::fromStdWString(p).split(separator));
+        int current_depth = path_parts.back().size();
+        if (current_depth > max_depth) max_depth = current_depth;
+    }
+
+    std::vector<std::wstring> res;
+
+    for (int depth = 1; depth <= max_depth; depth++) {
+
+        for (auto parts : path_parts) {
+            if (depth < parts.size()) {
+                res.push_back(parts.mid(parts.size() - depth, depth).join(separator).toStdWString());
+            }
+            else {
+                res.push_back(parts.join(separator).toStdWString());
+            }
+        }
+        std::vector<std::wstring> res_copy = res;
+        std::sort(res_copy.begin(), res_copy.end());
+        bool found_duplicate = false;
+
+        for (int i = 0; i < res_copy.size() - 1; i++) {
+            if (res_copy[i] == res_copy[i + 1]) found_duplicate = true;
+        }
+
+        if (!found_duplicate) break;
+        res.clear();
+    }
+
+    return res;
+}
