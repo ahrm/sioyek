@@ -4208,3 +4208,47 @@ void DocumentManager::remove_tab(const std::wstring& path) {
 std::vector<std::wstring> DocumentManager::get_tabs() {
     return tabs;
 }
+
+std::wstring Document::detect_paper_name() {
+
+    fz_stext_page* stext_page = get_stext_with_page_number(0);
+    if (stext_page) {
+
+        std::wstring max_block_text = L"";
+        float max_block_area = -1;
+
+        LL_ITER(block, stext_page->first_block) {
+
+            if (block->type == FZ_STEXT_BLOCK_TEXT) {
+                std::wstring block_text;
+                int num_chars_in_block = 0;
+                float cum_block_char_volumes = 0;
+
+                LL_ITER(line, block->u.t.first_line) {
+                    LL_ITER(ch, line->first_char) {
+                        if (ch->c < 128 && ch->c > 0) {
+                            block_text.push_back(ch->c);
+                            num_chars_in_block++;
+                            fz_rect char_rect = fz_rect_from_quad(ch->quad);
+                            float area = rect_area(char_rect);
+                            cum_block_char_volumes += area;
+                        }
+                    }
+                }
+
+                //if (QString::fromStdWString(block_text).startsWith("arXiv")) continue;
+                if (is_block_vertical(block)) continue;
+
+                float average_area = cum_block_char_volumes / num_chars_in_block;
+                if (num_chars_in_block > 10) {
+                    if (average_area > max_block_area) {
+                        max_block_area = average_area;
+                        max_block_text = block_text;
+                    }
+                }
+            }
+        }
+        return max_block_text;
+    }
+    return L"";
+}

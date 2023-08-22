@@ -3957,3 +3957,25 @@ std::vector<std::wstring> get_path_unique_prefix(const std::vector<std::wstring>
 
     return res;
 }
+
+bool is_block_vertical(fz_stext_block* block) {
+
+    int num_vertical = 0;
+    int num_horizontal = 0;
+    LL_ITER(line, block->u.t.first_line) {
+
+        LL_ITER(ch, line->first_char) {
+            if (ch->next != nullptr) {
+                float horizontal_diff = std::abs(ch->quad.ll.x - ch->next->quad.ll.x);
+                float vertical_diff = std::abs(ch->quad.ll.y - ch->next->quad.ll.y);
+                if (vertical_diff > horizontal_diff) {
+                    num_vertical++;
+                }
+                else {
+                    num_horizontal++;
+                }
+            }
+        }
+    }
+    return num_vertical > num_horizontal;
+}

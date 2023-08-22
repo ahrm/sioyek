@@ -6237,6 +6237,7 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
+    std::wcout << doc()->detect_paper_name() << L"\n";
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -7060,7 +7061,19 @@ void MainWidget::handle_goto_loaded_document() {
 
     std::vector<std::wstring> loaded_document_paths_ = document_manager->get_tabs();
     std::vector<std::wstring> loaded_document_paths = get_path_unique_prefix(loaded_document_paths_);
+    std::vector<std::wstring> detected_paper_names;
+    for (auto path : loaded_document_paths_) {
+        Document* loaded_document = document_manager->get_document(path);
+        if (loaded_document) {
+            detected_paper_names.push_back(loaded_document->detect_paper_name());
+        }
+        else {
+            detected_paper_names.push_back(L"");
+        }
+    }
+
     std::wstring current_document_path = doc()->get_path();
+
 
     auto loc = std::find(loaded_document_paths_.begin(), loaded_document_paths_.end(), current_document_path);
     int index = -1;
@@ -7070,7 +7083,7 @@ void MainWidget::handle_goto_loaded_document() {
 
     set_filtered_select_menu<std::wstring>(true,
         MULTILINE_MENUS,
-        { loaded_document_paths },
+        { loaded_document_paths, detected_paper_names },
         loaded_document_paths_,
         index,
         [&](std::wstring* path) {
@@ -8229,7 +8242,7 @@ std::wstring MainWidget::get_current_tabs_file_names() {
     }
 
     for (int i = begin_index; i < file_names.size(); i++) {
-        if (file_names[0] == current_doc_path) continue;
+        if (file_names[i] == current_doc_path) continue;
         res += L"\n" + file_names[i];
     }
 

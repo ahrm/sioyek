@@ -332,6 +332,7 @@ public:
     void load_drawings_async();
     //void persist_drawings_async();
 
+    std::wstring detect_paper_name();
     //void set_only_for_portal(bool val);
     //bool get_only_for_portal();
 
