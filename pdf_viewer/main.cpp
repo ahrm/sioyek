@@ -225,6 +225,7 @@ std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";
 std::wstring STARTUP_COMMANDS = L"";
 #endif
 
+int MAX_TAB_COUNT = 100;
 float SMALL_PIXMAP_SCALE = 0.75f;
 float DISPLAY_RESOLUTION_SCALE = -1;
 float FIT_TO_PAGE_WIDTH_RATIO = 1;

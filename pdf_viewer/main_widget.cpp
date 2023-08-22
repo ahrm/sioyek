@@ -2,7 +2,6 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
-// tabbed last document path
 
 #include <iostream>
 #include <vector>
@@ -160,6 +159,7 @@ extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern std::wstring BOOK_SCAN_PATH;
 extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
 
+extern int MAX_TAB_COUNT;
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
 extern std::wstring FORWARD_RECT_TAP_COMMAND;
@@ -6237,13 +6237,6 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    focus_rect(get_current_page_number(), fz_empty_rect);
-    // python_api = export_python_api();
-    //QFile output("debug/api.py");
-    //if (output.open(QIODevice::WriteOnly)) {
-    //    output.write(python_api.toUtf8());
-    //}
-    //output.close();
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -8230,9 +8223,14 @@ std::wstring MainWidget::get_current_tabs_file_names() {
     }
 
     res += current_doc_path;
-    for (auto file_name : file_names) {
-        if (file_name == current_doc_path) continue;
-        res += L"\n" + file_name;
+    int begin_index = 0;
+    if (file_names.size() > MAX_TAB_COUNT) {
+        begin_index = file_names.size() - MAX_TAB_COUNT;
+    }
+
+    for (int i = begin_index; i < file_names.size(); i++) {
+        if (file_names[0] == current_doc_path) continue;
+        res += L"\n" + file_names[i];
     }
 
     return res;
