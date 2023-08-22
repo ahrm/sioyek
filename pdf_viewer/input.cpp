@@ -329,7 +329,7 @@ public:
     }
 
     void perform() {
-        widget->open_document(selected_path.value());
+        widget->handle_goto_tab(selected_path.value());
     }
 
 

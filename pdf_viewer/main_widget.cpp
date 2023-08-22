@@ -8235,3 +8235,19 @@ void MainWidget::open_tabs(const std::vector<std::wstring>& tabs) {
         document_manager->add_tab(tab);
     }
 }
+
+void MainWidget::handle_goto_tab(const std::wstring& path) {
+
+    // if there is a window with that tab, raise the window
+    for (auto window : windows) {
+        if (window->doc()) {
+            if (window->doc()->get_path() == path) {
+                window->raise();
+                window->activateWindow();
+                return;
+            }
+        }
+    }
+
+    open_document(path);
+}
