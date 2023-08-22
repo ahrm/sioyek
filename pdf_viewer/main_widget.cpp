@@ -1008,6 +1008,7 @@ MainWidget::~MainWidget() {
         is_reading = false;
         get_tts()->stop();
     }
+    validation_interval_timer->stop();
     remove_self_from_windows();
 
     if (windows.size() == 0) {
@@ -7090,6 +7091,13 @@ void MainWidget::handle_goto_loaded_document() {
             std::optional<Document*> doc_to_delete = document_manager->get_cached_document(*path);
             if (!doc_to_delete) {
                 document_manager->remove_tab(*path);
+            }
+            for (auto window : windows) {
+                if (window->doc() && window->doc()->get_path() == *path) {
+                    if (window != this) {
+                        window->close();
+                    }
+                }
             }
             if (doc_to_delete && (doc_to_delete.value() != doc())) {
                 document_manager->remove_tab(*path);
