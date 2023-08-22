@@ -3793,9 +3793,14 @@ void Document::persist_drawings(bool force) {
     is_drawings_dirty = false;
 }
 
-std::vector<std::wstring> DocumentManager::get_loaded_document_paths() {
+std::vector<std::wstring> DocumentManager::get_loaded_document_paths(bool exclude_portal) {
     std::vector<std::wstring> res;
-    for (auto& [path, _] : cached_documents) {
+
+    for (auto& [path, doc] : cached_documents) {
+        if (exclude_portal && doc->get_only_for_portal()) {
+            continue;
+        }
+
         res.push_back(path);
     }
     return res;
@@ -4178,4 +4183,12 @@ QJsonArray Document::get_portals_json() {
 
 QJsonArray Document::get_marks_json() {
     return export_array(portals, get_checksum());
+}
+
+void Document::set_only_for_portal(bool val) {
+    only_for_portal = val;
+}
+
+bool Document::get_only_for_portal() {
+    return only_for_portal;
 }

@@ -1632,6 +1632,11 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
 
     main_document_view->on_view_size_change(main_window_width, main_window_height);
     main_document_view->open_document(path.get_path(), &this->is_render_invalidated);
+
+    if (doc()) {
+        doc()->set_only_for_portal(false);
+    }
+
     bool has_document = main_document_view_has_document();
 
     if (has_document) {
@@ -3680,6 +3685,10 @@ void MainWidget::open_document(const std::wstring& doc_path,
     }
 
     main_document_view->open_document(doc_path, invalid_flag, load_prev_state, prev_state, force_load_dimensions);
+
+    if (doc()) {
+        doc()->set_only_for_portal(false);
+    }
 
     std::optional<std::wstring> filename = Path(doc_path).filename();
     if (filename) {
@@ -7048,20 +7057,20 @@ void MainWidget::handle_goto_loaded_document() {
     // opens a list of currently loaded documents. This is basically sioyek's "tab" feature
     // the user can "unload" a document by pressing the delete key while it is highlighted in the list
 
-    std::vector<std::wstring> loaded_document_paths_ = document_manager->get_loaded_document_paths();
+    std::vector<std::wstring> loaded_document_paths_ = document_manager->get_loaded_document_paths(true);
     std::vector<std::wstring> loaded_document_paths = get_path_unique_prefix(loaded_document_paths_);
     std::wstring current_document_path = doc()->get_path();
 
-    auto loc = std::find(loaded_document_paths.begin(), loaded_document_paths.end(), current_document_path);
+    auto loc = std::find(loaded_document_paths_.begin(), loaded_document_paths_.end(), current_document_path);
     int index = -1;
-    if (loc != loaded_document_paths.end()) {
-        index = loc - loaded_document_paths.begin();
+    if (loc != loaded_document_paths_.end()) {
+        index = loc - loaded_document_paths_.begin();
     }
 
     set_filtered_select_menu<std::wstring>(true,
         MULTILINE_MENUS,
         { loaded_document_paths },
-        loaded_document_paths,
+        loaded_document_paths_,
         index,
         [&](std::wstring* path) {
             if (pending_command_instance) {
