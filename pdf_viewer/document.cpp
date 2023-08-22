@@ -3793,14 +3793,10 @@ void Document::persist_drawings(bool force) {
     is_drawings_dirty = false;
 }
 
-std::vector<std::wstring> DocumentManager::get_loaded_document_paths(bool exclude_portal) {
+std::vector<std::wstring> DocumentManager::get_loaded_document_paths() {
     std::vector<std::wstring> res;
 
     for (auto& [path, doc] : cached_documents) {
-        if (exclude_portal && doc->get_only_for_portal()) {
-            continue;
-        }
-
         res.push_back(path);
     }
     return res;
@@ -4185,10 +4181,30 @@ QJsonArray Document::get_marks_json() {
     return export_array(portals, get_checksum());
 }
 
-void Document::set_only_for_portal(bool val) {
-    only_for_portal = val;
+int DocumentManager::get_tab_index(const std::wstring& path) {
+    auto found = std::find(tabs.begin(), tabs.end(), path);
+    if (found != tabs.end()) {
+        return found - tabs.begin();
+    }
+    return -1;
 }
 
-bool Document::get_only_for_portal() {
-    return only_for_portal;
+
+int DocumentManager::add_tab(const std::wstring& path) {
+    int tab_index = get_tab_index(path);
+    if (tab_index == -1) {
+        tabs.push_back(path);
+    }
+    return tab_index;
+}
+
+void DocumentManager::remove_tab(const std::wstring& path) {
+    int index = get_tab_index(path);
+    if (index != -1) {
+        tabs.erase(tabs.begin() + index);
+    }
+}
+
+std::vector<std::wstring> DocumentManager::get_tabs() {
+    return tabs;
 }

@@ -660,18 +660,22 @@ MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
     return nullptr;
 }
 
-std::optional<std::wstring> get_last_opened_file_name() {
+std::vector<std::wstring> get_last_opened_file_name() {
     std::string file_path_;
     std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
-    std::getline(last_state_file, file_path_);
+    std::vector<std::wstring> res;
+    while (std::getline(last_state_file, file_path_)) {
+        res.push_back(utf8_decode(file_path_));
+    }
     last_state_file.close();
 
-    if (file_path_.size() > 0) {
-        return utf8_decode(file_path_);
-    }
-    else {
-        return {};
-    }
+    return res;
+    //if (file_path_.size() > 0) {
+    //    return utf8_decode(file_path_);
+    //}
+    //else {
+    //    return {};
+    //}
 }
 
 void invalidate_render() {
@@ -707,7 +711,14 @@ MainWidget* handle_args(const QStringList& arguments, QLocalSocket* origin=nullp
     else {
         if (windows[0]->doc() == nullptr) {
             // when no file is specified, and no current file is open, use the last opened file or tutorial
-            pdf_file_name = get_last_opened_file_name().value_or(tutorial_path.get_path());
+            std::vector<std::wstring> last_opened_file_paths = get_last_opened_file_name();
+            if (last_opened_file_paths.size() > 0) {
+                pdf_file_name = last_opened_file_paths[0];
+                windows[0]->open_tabs(last_opened_file_paths);
+            }
+            else {
+                pdf_file_name = tutorial_path.get_path();
+            }
         }
     }
 

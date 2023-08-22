@@ -42,7 +42,7 @@ private:
     std::vector<Portal> portals;
     DatabaseManager* db_manager = nullptr;
     std::vector<TocNode*> top_level_toc_nodes;
-    bool only_for_portal = true;
+    //bool only_for_portal = true;
 
     // automatically generated table of contents entries
     std::vector<TocNode*> created_top_level_toc_nodes;
@@ -332,8 +332,8 @@ public:
     void load_drawings_async();
     //void persist_drawings_async();
 
-    void set_only_for_portal(bool val);
-    bool get_only_for_portal();
+    //void set_only_for_portal(bool val);
+    //bool get_only_for_portal();
 
     bool is_super_fast_index_ready();
     std::vector<SearchResult> search_text(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page);
@@ -363,9 +363,15 @@ private:
     CachedChecksummer* checksummer;
     std::unordered_map<std::wstring, Document*> cached_documents;
     std::unordered_map<std::string, std::wstring> hash_to_path;
+    std::vector<std::wstring> tabs;
 public:
 
     DocumentManager(fz_context* mupdf_context, DatabaseManager* db_manager, CachedChecksummer* checksummer);
+
+    int get_tab_index(const std::wstring& path);
+    int add_tab(const std::wstring& path);
+    void remove_tab(const std::wstring& path);
+    std::vector<std::wstring> get_tabs();
 
     Document* get_document(const std::wstring& path);
     std::optional<std::wstring> get_path_from_hash(const std::string& checksum);
@@ -374,7 +380,7 @@ public:
     std::optional<Document*> get_cached_document(const std::wstring& path);
     void free_document(Document* document);
     const std::unordered_map<std::wstring, Document*>& get_cached_documents();
-    std::vector<std::wstring> get_loaded_document_paths(bool exclude_portal=false);
+    std::vector<std::wstring> get_loaded_document_paths();
     void delete_global_mark(char symbol);
     ~DocumentManager();
 };

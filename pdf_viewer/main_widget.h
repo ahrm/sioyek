@@ -876,6 +876,8 @@ public:
     void show_touch_settings_menu();
     void free_document(Document* doc);
     bool is_helper_visible();
+    std::wstring get_current_tabs_file_names();
+    void open_tabs(const std::vector<std::wstring>& tabs);
 
 };
 

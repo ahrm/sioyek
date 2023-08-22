@@ -597,7 +597,8 @@ void MainWidget::persist(bool persist_drawings) {
     if (main_document_view->get_document()) {
         std::ofstream last_path_file(last_opened_file_address_path.get_path_utf8());
 
-        std::string encoded_file_name_str = utf8_encode(main_document_view->get_document()->get_path());
+        //std::string encoded_file_name_str = utf8_encode(main_document_view->get_document()->get_path());
+        std::string encoded_file_name_str = utf8_encode(get_current_tabs_file_names());
         last_path_file << encoded_file_name_str.c_str() << std::endl;
         last_path_file.close();
     }
@@ -1634,7 +1635,8 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     main_document_view->open_document(path.get_path(), &this->is_render_invalidated);
 
     if (doc()) {
-        doc()->set_only_for_portal(false);
+        document_manager->add_tab(doc()->get_path());
+        //doc()->set_only_for_portal(false);
     }
 
     bool has_document = main_document_view_has_document();
@@ -2317,6 +2319,10 @@ void MainWidget::handle_click(WindowPos click_pos) {
         Portal portal = doc()->get_portals()[selected_portal_index];
         push_state();
         main_document_view->goto_portal(&portal);
+        if (doc()) {
+            document_manager->add_tab(doc()->get_path());
+        }
+
         return;
     }
 
@@ -3687,7 +3693,8 @@ void MainWidget::open_document(const std::wstring& doc_path,
     main_document_view->open_document(doc_path, invalid_flag, load_prev_state, prev_state, force_load_dimensions);
 
     if (doc()) {
-        doc()->set_only_for_portal(false);
+        document_manager->add_tab(doc()->get_path());
+        //doc()->set_only_for_portal(false);
     }
 
     std::optional<std::wstring> filename = Path(doc_path).filename();
@@ -7057,7 +7064,7 @@ void MainWidget::handle_goto_loaded_document() {
     // opens a list of currently loaded documents. This is basically sioyek's "tab" feature
     // the user can "unload" a document by pressing the delete key while it is highlighted in the list
 
-    std::vector<std::wstring> loaded_document_paths_ = document_manager->get_loaded_document_paths(true);
+    std::vector<std::wstring> loaded_document_paths_ = document_manager->get_tabs();
     std::vector<std::wstring> loaded_document_paths = get_path_unique_prefix(loaded_document_paths_);
     std::wstring current_document_path = doc()->get_path();
 
@@ -7081,7 +7088,11 @@ void MainWidget::handle_goto_loaded_document() {
         },
         [&](std::wstring* path) {
             std::optional<Document*> doc_to_delete = document_manager->get_cached_document(*path);
+            if (!doc_to_delete) {
+                document_manager->remove_tab(*path);
+            }
             if (doc_to_delete && (doc_to_delete.value() != doc())) {
+                document_manager->remove_tab(*path);
                 free_document(doc_to_delete.value());
             }
         }
@@ -8200,4 +8211,27 @@ bool MainWidget::is_helper_visible() {
         return helper_opengl_widget->isVisible();
     }
     return false;
+}
+
+std::wstring MainWidget::get_current_tabs_file_names() {
+    std::wstring res;
+    std::vector<std::wstring> file_names = document_manager->get_tabs();
+    std::wstring current_doc_path;
+    if (doc()) {
+        current_doc_path = doc()->get_path();
+    }
+
+    res += current_doc_path;
+    for (auto file_name : file_names) {
+        if (file_name == current_doc_path) continue;
+        res += L"\n" + file_name;
+    }
+
+    return res;
+}
+
+void MainWidget::open_tabs(const std::vector<std::wstring>& tabs) {
+    for (auto tab : tabs) {
+        document_manager->add_tab(tab);
+    }
 }
