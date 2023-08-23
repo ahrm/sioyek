@@ -5320,12 +5320,19 @@ void MainWidget::handle_open_prev_doc() {
     std::vector<std::wstring> opened_docs_names;
     std::vector<std::wstring> opened_docs_hashes_;
     std::vector<std::string> opened_docs_hashes;
+    std::wstring current_path = L"";
+
+    if (doc()) {
+        current_path = doc()->get_path();
+    }
+
 
     db_manager->select_opened_books_path_values(opened_docs_hashes_);
 
     for (const auto& doc_hash_ : opened_docs_hashes_) {
         std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
         if (path) {
+            if (path == current_path) continue;
 
             if (SHOW_DOC_PATH) {
                 opened_docs_names.push_back(path.value_or(L"<ERROR>"));
