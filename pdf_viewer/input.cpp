@@ -332,6 +332,9 @@ public:
         widget->handle_goto_tab(selected_path.value());
     }
 
+    bool requires_document() {
+        return false;
+    }
 
     std::string get_name() {
         return "goto_tab";
@@ -900,6 +903,46 @@ public:
     }
 };
 
+class RenameCommand : public TextCommand {
+public:
+    RenameCommand(MainWidget* w) : TextCommand(w) {};
+
+    void perform() {
+        //widget->add_text_annotation_to_selected_highlight(this->text.value());
+        widget->handle_rename(text.value());
+    }
+
+    void pre_perform() {
+        if (!widget->doc()) return;
+
+        QString paper_name = QString::fromStdWString(widget->doc()->detect_paper_name());
+        if (paper_name.size() > 0) {
+            QStringList parts = paper_name.split(' ');
+            QString new_file_name;
+            for (int i = 0; i < parts.size(); i++) {
+                new_file_name += parts[i].toLower();
+                if (i < parts.size() - 1) {
+                    new_file_name += '_';
+                }
+            }
+
+            widget->text_command_line_edit->setText(
+                new_file_name
+            );
+        }
+
+    }
+
+    std::string get_name() {
+        return "rename";
+    }
+
+
+    std::string text_requirement_name() {
+        return "New Name";
+    }
+};
+
 class SetFreehandThickness : public TextCommand {
 public:
     SetFreehandThickness(MainWidget* w) : TextCommand(w) {};
@@ -1288,6 +1331,7 @@ public:
         //widget->handle_goto_loaded_document();
         widget->handle_goto_toc();
     }
+
 
     void perform() {
         QVariant val = target_location.value();
@@ -5256,6 +5300,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["get_overview_paper_name"] = [](MainWidget* widget) {return std::make_unique< GetOverviewPaperName>(widget); };
     new_commands["get_annotations_json"] = [](MainWidget* widget) {return std::make_unique< GetAnnotationsJsonCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
+    new_commands["rename"] = [](MainWidget* widget) {return std::make_unique< RenameCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
     new_commands["regex_search"] = [](MainWidget* widget) {return std::make_unique< RegexSearchCommand>(widget); };

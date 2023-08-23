@@ -854,11 +854,23 @@ Document::~Document() {
 
     if (doc != nullptr) {
         fz_try(context) {
+
+            for (auto [_, stext_page] : cached_stext_pages) {
+                fz_drop_stext_page(context, stext_page);
+            }
+
+            for (auto [_, small_pixmap] : cached_small_pixmaps) {
+                fz_drop_pixmap(context, small_pixmap);
+            }
+
+            for (auto [_, link] : cached_page_links) {
+                fz_drop_link(context, link);
+            }
+
             fz_drop_document(context, doc);
-            //todo: implement rest of destructor
         }
         fz_catch(context) {
-            LOG(std::cerr << "Error: could not drop documnet" << std::endl);
+            LOG(std::cerr << "Error: could not drop document" << std::endl);
         }
     }
 }
@@ -4050,6 +4062,7 @@ void Document::reload_annotations_on_new_checksum() {
     }
     else {
         load_document_metadata_from_db();
+        fill_highlight_rects(context, doc);
     }
 }
 std::vector<Portal>& Document::get_portals() {

@@ -109,6 +109,7 @@ public:
     bool insert_annotation(Annotation* annot, std::string document_hash);
     bool update_annotation(Annotation* annot);
     bool delete_annotation(Annotation* annot);
+    bool update_file_name(std::wstring old_name, std::wstring new_name);
 
     std::wstring generic_update_create_query(std::string table_name,
         std::vector<std::pair<std::string, QVariant>> selections,

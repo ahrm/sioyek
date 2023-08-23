@@ -85,7 +85,10 @@ class PdfRenderer : public QObject {
     std::mutex search_request_mutex;
     std::mutex cached_response_mutex;
     std::vector<std::mutex> pixmap_drop_mutex;
+    std::vector<fz_context*> thread_contexts;
 
+    std::mutex searching_mutex;
+    std::vector<std::mutex> thread_rendering_mutex;
 
     QTimer garbage_collect_timer;
 
@@ -112,6 +115,7 @@ public:
 
     void start_threads();
     void join_threads();
+    void free_all_resources_for_document(std::wstring doc_path);
 
     bool is_busy();
     bool is_search_busy();

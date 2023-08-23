@@ -2,6 +2,8 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
+// clicking on a portal doesn't update the window title
+// add a command to maximize window
 
 #include <iostream>
 #include <vector>
@@ -17,6 +19,7 @@
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qdatetime.h>
+#include <qfile.h>
 
 #ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
@@ -6237,7 +6240,7 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    std::wcout << doc()->detect_paper_name() << L"\n";
+
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -7072,7 +7075,11 @@ void MainWidget::handle_goto_loaded_document() {
         }
     }
 
-    std::wstring current_document_path = doc()->get_path();
+    std::wstring current_document_path = L"";
+
+    if (doc()) {
+        current_document_path = doc()->get_path();
+    }
 
 
     auto loc = std::find(loaded_document_paths_.begin(), loaded_document_paths_.end(), current_document_path);
@@ -8269,4 +8276,91 @@ void MainWidget::handle_goto_tab(const std::wstring& path) {
     }
 
     open_document(path);
+}
+
+void MainWidget::handle_rename(std::wstring new_name) {
+    Document* document_to_be_freed = doc();
+    std::wstring path_to_be_freed = document_to_be_freed->get_path();
+
+    std::vector<DocumentView*> document_views_referencing_doc;
+    std::vector<MainWidget*> document_views_referencing_doc_widgets;
+    std::vector<bool> document_view_is_helper;
+    get_document_views_referencing_doc(path_to_be_freed, document_views_referencing_doc, document_views_referencing_doc_widgets, document_view_is_helper);
+
+    std::vector<DocumentViewState> view_states;
+    for (auto document_view : document_views_referencing_doc) {
+        view_states.push_back(document_view->get_state());
+        document_view->set_null_document();
+    }
+
+    pdf_renderer->free_all_resources_for_document(path_to_be_freed);
+    free_document(document_to_be_freed);
+
+    QFile old_qfile(QString::fromStdWString(path_to_be_freed));
+
+    QFileInfo file_info(old_qfile);
+    QString file_extension = file_info.fileName().split(".").back();
+    QString new_file_name = QString::fromStdWString(new_name) + "." + file_extension;
+    QString new_file_path = file_info.dir().filePath(new_file_name);
+
+    if (old_qfile.rename(QString::fromStdWString(path_to_be_freed), new_file_path)) {
+        db_manager->update_file_name(path_to_be_freed, new_file_path.toStdWString());
+        document_views_open_path(document_views_referencing_doc, document_views_referencing_doc_widgets, document_view_is_helper, new_file_path.toStdWString());
+        update_renamed_document_in_history(path_to_be_freed, new_file_path.toStdWString());
+        restore_document_view_states(document_views_referencing_doc, view_states);
+    }
+    else {
+
+        document_views_open_path(document_views_referencing_doc, document_views_referencing_doc_widgets, document_view_is_helper, path_to_be_freed);
+        restore_document_view_states(document_views_referencing_doc, view_states);
+        show_error_message(L"Could not rename the file maybe it is opened in another window or you don't have permission to rename it");
+    }
+
+}
+
+void MainWidget::get_document_views_referencing_doc(std::wstring doc_path, std::vector<DocumentView*>& document_views, std::vector<MainWidget*>& corresponding_widgets, std::vector<bool>& is_helper){
+
+    for (auto window : windows) {
+        if (window->doc()) {
+            if (window->doc()->get_path() == doc_path) {
+                document_views.push_back(window->main_document_view);
+                corresponding_widgets.push_back(window);
+                is_helper.push_back(false);
+            }
+            if (window->helper_document_view && window->helper_document_view->get_document() && (window->helper_document_view->get_document()->get_path() == doc_path)) {
+                document_views.push_back(window->main_document_view);
+                corresponding_widgets.push_back(window);
+                is_helper.push_back(true);
+            }
+        }
+    }
+}
+
+void MainWidget::restore_document_view_states(const std::vector<DocumentView*>& document_views,const std::vector<DocumentViewState>& states){
+    // assumes the length of vectors are equal
+
+    for (int i = 0; i < document_views.size(); i++) {
+        document_views[i]->set_book_state(states[i].book_state);
+    }
+}
+
+void MainWidget::document_views_open_path(const std::vector<DocumentView*>& document_views, const std::vector<MainWidget*>& main_widgets, const std::vector<bool> is_helpers, std::wstring new_path) {
+
+    for (int i = 0; i < document_views.size(); i++) {
+        if (is_helpers[i]) {
+            document_views[i]->open_document(new_path, &main_widgets[i]->is_render_invalidated);
+        }
+        else{
+            main_widgets[i]->open_document(new_path);
+        }
+    }
+}
+
+void MainWidget::update_renamed_document_in_history(std::wstring old_path, std::wstring new_path){
+
+    for (int i = 0; i < history.size(); i++) {
+        if (history[i].document_path == old_path) {
+            history[i].document_path = new_path;
+        }
+    }
 }

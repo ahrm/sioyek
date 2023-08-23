@@ -16,6 +16,8 @@ extern bool SMARTCASE_SEARCH;
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone) : context_to_clone(context_to_clone),
 pixmaps_to_drop(num_threads),
 pixmap_drop_mutex(num_threads),
+thread_rendering_mutex(num_threads),
+thread_contexts(num_threads),
 should_quit_pointer(should_quit_pointer),
 num_threads(num_threads)
 {
@@ -350,6 +352,7 @@ void PdfRenderer::run_search(int thread_index)
             if (SMARTCASE_SEARCH) search_case_sensitivity = SearchCaseSensitivity::SmartCase;
 
             search_is_busy = true;
+            searching_mutex.lock();
             fz_document* doc = get_document_with_path(thread_index, mupdf_context, req.path);
 
             int num_pages_in_document = fz_count_pages(mupdf_context, doc);
@@ -419,6 +422,7 @@ void PdfRenderer::run_search(int thread_index)
                     i = page_begin;
                 }
             }
+            searching_mutex.unlock();
             req.search_results_mutex->lock();
             *req.is_searching = false;
             //*invalidate_pointer = true;
@@ -486,6 +490,7 @@ void PdfRenderer::clear_cache() {
 
 void PdfRenderer::run(int thread_index) {
     fz_context* mupdf_context = init_context();
+    thread_contexts[thread_index] = mupdf_context;
 
     while (!(*should_quit_pointer)) {
         pending_requests_mutex.lock();
@@ -522,6 +527,7 @@ void PdfRenderer::run(int thread_index) {
         cached_response_mutex.unlock();
         pending_render_requests.pop_back();
         pending_requests_mutex.unlock();
+        thread_rendering_mutex[thread_index].lock();
         thread_busy_status[thread_index] = true;
 
         if (!is_already_rendered) {
@@ -592,6 +598,7 @@ void PdfRenderer::run(int thread_index) {
                 std::cerr << "Error: could not render page" << std::endl;
             }
         }
+        thread_rendering_mutex[thread_index].unlock();
 
     }
 }
@@ -641,4 +648,27 @@ bool PdfRenderer::is_busy() {
         }
     }
     return pending_render_requests.size() > 0;
+}
+
+void PdfRenderer::free_all_resources_for_document(std::wstring doc_path) {
+    searching_mutex.lock();
+    for (int i = 0; i < num_threads; i++) {
+        thread_rendering_mutex[i].lock();
+    }
+    
+    delete_old_pages(true, true); // todo: this is overkill, just delete the pixmaps for the document
+
+    for (int i = 0; i < num_threads; i++) {
+        auto index = std::make_pair(i, doc_path);
+        if (opened_documents.find(index) != opened_documents.end()) {
+            fz_document* doc_to_delete = opened_documents[index];
+            fz_drop_document(thread_contexts[i], doc_to_delete);
+            opened_documents.erase(index);
+        }
+    }
+
+    for (int i = 0; i < num_threads; i++) {
+        thread_rendering_mutex[i].unlock();
+    }
+    searching_mutex.unlock();
 }

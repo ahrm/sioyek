@@ -1805,6 +1805,19 @@ std::wstring DatabaseManager::generic_insert_create_query(std::string table_name
     return query.str();
 }
 
+bool DatabaseManager::update_file_name(std::wstring old_name, std::wstring new_name) {
+
+    std::wstring query = generic_update_create_query("document_hash",
+        { {"path", QString::fromStdWString(old_name)} },
+        { {"path", QString::fromStdWString(new_name) } });
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(local_db, utf8_encode(query).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        error_code,
+        error_message);
+}
+
 std::wstring DatabaseManager::generic_update_create_query(std::string table_name,
     std::vector<std::pair<std::string, QVariant>> selections,
     std::vector<std::pair<std::string, QVariant>> updated_values) {

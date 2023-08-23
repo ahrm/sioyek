@@ -315,7 +315,6 @@ public:
     bool main_document_view_has_document();
     std::optional<std::string> get_last_opened_file_checksum();
 
-    void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions = false);
 
     int get_current_colorscheme_index();
     void set_dark_mode();
@@ -799,8 +798,8 @@ public:
         }
     }
 
-    bool execute_macro_if_enabled(std::wstring macro_command_string, QLocalSocket* result_socket=nullptr);
-    bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
+    void handle_rename(std::wstring new_name);
+    bool execute_macro_if_enabled(std::wstring macro_command_string, QLocalSocket* result_socket=nullptr); bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
     bool ensure_internet_permission();
     void handle_command_text_change(const QString& new_text);
     QTextToSpeech* get_tts();
@@ -819,6 +818,7 @@ public:
     std::optional<std::wstring> get_overview_paper_name();
     std::optional<fz_rect> get_overview_source_rect();
 
+    void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions = false);
     void finish_pending_download_portal(std::wstring download_paper_name, std::wstring downloaded_file_path);
 
     std::optional<Portal> get_portal_under_absolute_pos(AbsoluteDocumentPos abspos, int* index=nullptr);
@@ -879,6 +879,10 @@ public:
     std::wstring get_current_tabs_file_names();
     void open_tabs(const std::vector<std::wstring>& tabs);
     void handle_goto_tab(const std::wstring& path);
+    void get_document_views_referencing_doc(std::wstring doc_path, std::vector<DocumentView*>& document_views, std::vector<MainWidget*>& corresponding_widgets, std::vector<bool>& is_helper);
+    void restore_document_view_states(const std::vector<DocumentView*>& document_views, const std::vector<DocumentViewState>& states);
+    void document_views_open_path(const std::vector<DocumentView*>& document_views, const std::vector<MainWidget*>& main_widgets, const std::vector<bool> is_helpers, std::wstring new_path);
+    void update_renamed_document_in_history(std::wstring old_path, std::wstring new_path);
 
 };
 
