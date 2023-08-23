@@ -883,7 +883,6 @@ public:
     void restore_document_view_states(const std::vector<DocumentView*>& document_views, const std::vector<DocumentViewState>& states);
     void document_views_open_path(const std::vector<DocumentView*>& document_views, const std::vector<MainWidget*>& main_widgets, const std::vector<bool> is_helpers, std::wstring new_path);
     void update_renamed_document_in_history(std::wstring old_path, std::wstring new_path);
-
 };
 
 #endif

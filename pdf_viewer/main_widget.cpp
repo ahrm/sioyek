@@ -2321,11 +2321,9 @@ void MainWidget::handle_click(WindowPos click_pos) {
 
     if (selected_portal_index >= 0) {
         Portal portal = doc()->get_portals()[selected_portal_index];
+
         push_state();
-        main_document_view->goto_portal(&portal);
-        if (doc()) {
-            document_manager->add_tab(doc()->get_path());
-        }
+        open_document(portal.dst);
 
         return;
     }
