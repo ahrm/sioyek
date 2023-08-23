@@ -2,8 +2,6 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
-// clicking on a portal doesn't update the window title
-// add a command to maximize window
 
 #include <iostream>
 #include <vector>
@@ -8361,4 +8359,8 @@ void MainWidget::update_renamed_document_in_history(std::wstring old_path, std::
             history[i].document_path = new_path;
         }
     }
+}
+
+void MainWidget::maximize_window() {
+    showMaximized();
 }

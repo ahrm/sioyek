@@ -2392,6 +2392,21 @@ public:
     bool requires_document() { return false; }
 };
 
+class MaximizeCommand : public Command {
+public:
+    MaximizeCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->maximize_window();
+    }
+
+    std::string get_name() {
+        return "maximize";
+    }
+
+
+    bool requires_document() { return false; }
+};
+
 class ToggleOneWindowCommand : public Command {
 public:
     ToggleOneWindowCommand(MainWidget* w) : Command(w) {};
@@ -5354,6 +5369,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["open_document_embedded_from_current_path"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentEmbeddedFromCurrentPathCommand>(widget); };
     new_commands["copy"] = [](MainWidget* widget) {return std::make_unique< CopyCommand>(widget); };
     new_commands["toggle_fullscreen"] = [](MainWidget* widget) {return std::make_unique< ToggleFullscreenCommand>(widget); };
+    new_commands["maximize"] = [](MainWidget* widget) {return std::make_unique< MaximizeCommand>(widget); };
     new_commands["toggle_one_window"] = [](MainWidget* widget) {return std::make_unique< ToggleOneWindowCommand>(widget); };
     new_commands["toggle_highlight"] = [](MainWidget* widget) {return std::make_unique< ToggleHighlightCommand>(widget); };
     new_commands["toggle_synctex"] = [](MainWidget* widget) {return std::make_unique< ToggleSynctexCommand>(widget); };
