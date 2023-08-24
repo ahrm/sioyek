@@ -2,6 +2,8 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
+// handle auto space for paper titles
+// allow filling text input from command line
 
 #include <iostream>
 #include <vector>
@@ -84,6 +86,7 @@ extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH;
 extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
 extern bool FUZZY_SEARCHING;
+extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
 
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
@@ -767,6 +770,16 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
             QString file_name = reply->url().fileName();
 
+            if (AUTO_RENAME_DOWNLOADED_PAPERS && (!reply->property("sioyek_actual_paper_name").isNull())) {
+                QString detected_file_name = get_file_name_from_paper_name(reply->property("sioyek_actual_paper_name").toString());
+
+                if (detected_file_name.size() > 0) {
+                    QString extension = file_name.split(".").back();
+                    file_name = detected_file_name + "." + extension;
+                }
+            }
+            //reply->property("sioyek_paper_name").toString().replace("/", "_")
+
             QString path = QString::fromStdWString(downloaded_papers_path.slash(file_name.toStdWString()).get_path());
             QDir dir;
             dir.mkpath(QString::fromStdWString(downloaded_papers_path.get_path()));
@@ -872,7 +885,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             }
 
             if (matching_index > -1) {
-                download_paper_with_url(hit_urls[matching_index])->setProperty("sioyek_paper_name", QString::fromStdWString(paper_name));
+                auto download_reply = download_paper_with_url(hit_urls[matching_index]);
+                download_reply->setProperty("sioyek_paper_name", QString::fromStdWString(paper_name));
+                download_reply->setProperty("sioyek_actual_paper_name", QString::fromStdWString(hit_raw_names[matching_index]));
             }
             else {
                 show_download_paper_menu(hit_names, hit_urls, paper_name);
@@ -2350,6 +2365,7 @@ ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* o
 
         std::wstring query = selected_text;
         int page = doc()->find_reference_page_with_reference_text(query);
+        if (page < 0) return ReferenceType::None;
         auto res = doc()->get_page_bib_with_reference(page, query);
         if (res) {
             fz_rect absrect = doc()->document_to_absolute_rect(page, res.value().second);
@@ -6243,7 +6259,6 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -6702,10 +6717,19 @@ void MainWidget::show_download_paper_menu(
     // force it to be a double column layout. the second column will asynchronously be filled with
     // file sizes
     std::vector<std::wstring> right_names(paper_names.size());
+    std::vector<std::pair<std::wstring, std::wstring>> values;
+    for (int i = 0; i < paper_names.size(); i++) {
+        values.push_back(std::make_pair(paper_names[i], download_urls[i]));
+    }
 
-    set_filtered_select_menu<std::wstring>(FUZZY_SEARCHING, MULTILINE_MENUS, { paper_names, right_names }, download_urls, -1,
-        [&, paper_name](std::wstring* url) {
-            download_paper_with_url(*url)->setProperty("sioyek_paper_name", QString::fromStdWString(paper_name));
+    set_filtered_select_menu<std::pair<std::wstring, std::wstring>>(FUZZY_SEARCHING, MULTILINE_MENUS, { paper_names, right_names }, values, -1,
+        [&, paper_name](std::pair<std::wstring, std::wstring>* values) {
+            std::wstring actual_paper_name = values->first;
+            std::wstring paper_url = values->second;
+
+            auto download_reply = download_paper_with_url(paper_url);
+            download_reply->setProperty("sioyek_paper_name", QString::fromStdWString(paper_name));
+            download_reply->setProperty("sioyek_actual_paper_name", QString::fromStdWString(actual_paper_name));
         },
         nullptr);
 

@@ -915,21 +915,11 @@ public:
     void pre_perform() {
         if (!widget->doc()) return;
 
-        QString paper_name = QString::fromStdWString(widget->doc()->detect_paper_name());
-        if (paper_name.size() > 0) {
-            QStringList parts = paper_name.split(' ');
-            QString new_file_name;
-            for (int i = 0; i < parts.size(); i++) {
-                new_file_name += parts[i].toLower();
-                if (i < parts.size() - 1) {
-                    new_file_name += '_';
-                }
-            }
-
-            widget->text_command_line_edit->setText(
-                new_file_name
-            );
-        }
+        QString file_name = get_file_name_from_paper_name(QString::fromStdWString(widget->doc()->detect_paper_name()));
+        widget->text_command_line_edit->setText(
+            file_name
+        );
+        //QString paper_name = QString::fromStdWString(widget->doc()->detect_paper_name());
 
     }
 

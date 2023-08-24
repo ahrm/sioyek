@@ -97,6 +97,7 @@ extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
 extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
 extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring BOOK_SCAN_PATH;
+extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
 
 extern bool NO_AUTO_CONFIG;
 
@@ -1572,6 +1573,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"ignore_statusbar_in_presentation_mode",
         ConfigType::Bool,
         &IGNORE_STATUSBAR_IN_PRESENTATION_MODE,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"auto_rename_downloaded_papers",
+        ConfigType::Bool,
+        &AUTO_RENAME_DOWNLOADED_PAPERS,
         bool_serializer,
         bool_deserializer,
         bool_validator

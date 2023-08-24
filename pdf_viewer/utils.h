@@ -422,3 +422,4 @@ void search_regex_with_index_(const std::wstring& super_fast_search_index,
 float rect_area(fz_rect rect);
 std::vector<std::wstring> get_path_unique_prefix(const std::vector<std::wstring>& paths);
 bool is_block_vertical(fz_stext_block* block);
+QString get_file_name_from_paper_name(QString paper_name);

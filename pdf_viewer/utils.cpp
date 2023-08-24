@@ -3979,3 +3979,21 @@ bool is_block_vertical(fz_stext_block* block) {
     }
     return num_vertical > num_horizontal;
 }
+QString get_file_name_from_paper_name(QString paper_name) {
+    if (paper_name.size() > 0) {
+        QStringList parts = paper_name.split(' ');
+        QString new_file_name;
+        for (int i = 0; i < parts.size(); i++) {
+            new_file_name += parts[i].toLower();
+            if (i < parts.size() - 1) {
+                new_file_name += '_';
+            }
+        }
+
+        new_file_name.remove(".");
+        new_file_name.remove("\\");
+        return new_file_name;
+    }
+
+    return "";
+}
