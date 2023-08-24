@@ -824,6 +824,10 @@ MainWidget* handle_args(const QStringList& arguments, QLocalSocket* origin=nullp
             command_string += QString::fromStdString("(") + command_data + QString::fromStdString(")");
         }
 
+        if (!parser->isSet("wait-for-response")) {
+            origin = nullptr;
+        }
+
         target_window->execute_macro_from_origin(command_string.toStdWString(), origin);
     }
 
