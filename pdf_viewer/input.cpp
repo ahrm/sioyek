@@ -769,21 +769,6 @@ public:
 
 };
 
-class SearchCurrentPaperInScholar : public Command {
-
-public:
-    SearchCurrentPaperInScholar(MainWidget* w) : Command(w) {};
-
-    void perform() {
-        widget->handle_search_paper_name(widget->doc()->detect_paper_name(), false);
-    }
-
-    std::string get_name() {
-        return "search_current_paper_in_scholar";
-    }
-
-};
-
 class GetOverviewPaperName : public Command {
 
 public:
@@ -2565,9 +2550,16 @@ class ExternalSearchCommand : public SymbolCommand {
 public:
     ExternalSearchCommand(MainWidget* w) : SymbolCommand(w) {};
     void perform() {
+        std::wstring selected_text = widget->get_selected_text();
+
         if ((symbol >= 'a') && (symbol <= 'z')) {
             if (SEARCH_URLS[symbol - 'a'].size() > 0) {
-                search_custom_engine(widget->get_selected_text(), SEARCH_URLS[symbol - 'a']);
+                if (selected_text.size() > 0) {
+                    search_custom_engine(selected_text, SEARCH_URLS[symbol - 'a']);
+                }
+                else {
+                    search_custom_engine(widget->doc()->detect_paper_name(), SEARCH_URLS[symbol - 'a']);
+                }
             }
             else {
                 std::wcout << L"No search engine defined for symbol " << symbol << std::endl;
@@ -5375,7 +5367,6 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["show_text_prompt"] = [](MainWidget* widget) {return std::make_unique< ShowTextPromptCommand>(widget); };
     new_commands["get_state_json"] = [](MainWidget* widget) {return std::make_unique< GetStateJsonCommand>(widget); };
     new_commands["get_paper_name"] = [](MainWidget* widget) {return std::make_unique< GetPaperNameCommand>(widget); };
-    new_commands["search_current_paper_in_scholar"] = [](MainWidget* widget) {return std::make_unique< SearchCurrentPaperInScholar>(widget); };
     new_commands["get_overview_paper_name"] = [](MainWidget* widget) {return std::make_unique< GetOverviewPaperName>(widget); };
     new_commands["get_annotations_json"] = [](MainWidget* widget) {return std::make_unique< GetAnnotationsJsonCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };

@@ -3464,6 +3464,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
     }
 
 }
+
 void MainWidget::handle_search_paper_name(std::wstring paper_name, bool is_shift_pressed) {
     if (paper_name.size() > 5) {
         char type;
