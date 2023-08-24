@@ -2458,9 +2458,8 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
         }
 
     }
-    if (selected_text.size() > 0) {
+    if (selected_text.size() > 0 && doc()->is_super_fast_index_ready()) {
         return find_location_of_selected_text(out_page, out_offset, out_rect, out_source_text);
-
     }
 
     return ReferenceType::None;
