@@ -840,6 +840,14 @@ std::wstring get_string_from_stext_block(fz_stext_block* block) {
         std::wstring res;
         LL_ITER(line, block->u.t.first_line) {
             res += get_string_from_stext_line(line);
+            if (line->next && res.size() > 0) {
+                if (res.back() == '-') {
+                    res.pop_back();
+                }
+                else {
+                    res.push_back(' ');
+                }
+            }
         }
         return res;
     }

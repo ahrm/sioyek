@@ -4227,7 +4227,8 @@ std::wstring Document::detect_paper_name() {
     fz_stext_page* stext_page = get_stext_with_page_number(0);
     if (stext_page) {
 
-        std::wstring max_block_text = L"";
+        //std::wstring max_block_text = L"";
+        fz_stext_block* max_block = nullptr;
         float max_block_area = -1;
 
         LL_ITER(block, stext_page->first_block) {
@@ -4256,12 +4257,15 @@ std::wstring Document::detect_paper_name() {
                 if (num_chars_in_block > 10) {
                     if (average_area > max_block_area) {
                         max_block_area = average_area;
-                        max_block_text = block_text;
+                        max_block = block;
+                        //max_block_text = block_text;
                     }
                 }
             }
         }
-        return max_block_text;
+        if (max_block) {
+            return get_string_from_stext_block(max_block);
+        }
     }
     return L"";
 }
