@@ -686,6 +686,7 @@ public:
 class ShowTextPromptCommand : public Command {
 
     std::optional<std::wstring> prompt_title = {};
+    std::optional<std::wstring> default_value = {};
 public:
     ShowTextPromptCommand(MainWidget* w) : Command(w) {};
 
@@ -701,10 +702,29 @@ public:
 
     void set_text_requirement(std::wstring value) {
         if (!prompt_title.has_value()) {
-            prompt_title = value;
+            QString value_qstring = QString::fromStdWString(value);
+            int index = value_qstring.indexOf('|');
+            if (index != -1) {
+
+                //QStringList parts = value_qstring.split("|");
+                prompt_title = value_qstring.left(index).toStdWString();
+                default_value = value_qstring.right(value_qstring.size() - prompt_title->size() - 1).toStdWString();
+                //default_value = parts.at(1).toStdWString();
+            }
+            else {
+                prompt_title = value;
+            }
         }
         else {
             result = value;
+        }
+    }
+
+    void pre_perform() {
+        if (default_value) {
+            widget->text_command_line_edit->setText(
+                QString::fromStdWString(default_value.value())
+            );
         }
     }
 
@@ -4960,6 +4980,8 @@ class MacroCommand : public Command {
     std::wstring raw_commands;
     CommandManager* command_manager;
     bool is_modal = false;
+    std::vector<bool> performed;
+    std::vector<bool> pre_performed;
 
 public:
 
@@ -5007,6 +5029,8 @@ public:
                 }
 
                 commands.push_back(get_subcommand(command_invocation));
+                performed.push_back(false);
+                pre_performed.push_back(false);
             }
         }
 
@@ -5154,6 +5178,24 @@ public:
                     if (req.value().type == RequirementType::Rect) {
                         commands[i]->set_rect_requirement(value);
                     }
+                    return;
+                }
+            }
+        }
+    }
+
+
+    void pre_perform() {
+        if (is_modal) {
+            int current_mode_index = get_current_mode_index();
+            if (current_mode_index >= 0) {
+                commands[current_mode_index]->pre_perform();
+            }
+        }
+        else {
+            for (int i = 0; i < performed.size(); i++) {
+                if (performed[i] == false) {
+                    commands[i]->pre_perform();
                     return;
                 }
             }
