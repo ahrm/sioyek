@@ -16,6 +16,7 @@ Rectangle{
     signal gotoPageClicked();
     signal tocClicked();
     signal searchClicked();
+    signal hintClicked();
     signal fullscreenClicked();
     signal bookmarksClicked();
     signal globalBookmarksClicked();
@@ -66,6 +67,7 @@ Rectangle{
                     "qrc:/icons/document-page-number.svg",
                     "qrc:/icons/table-of-contents.svg",
                     "qrc:/icons/search.svg",
+                    "qrc:/icons/question.svg",
                     _fullscreen ? "qrc:/icons/fullscreen-enabled.svg" : "qrc:/icons/fullscreen.svg",
                     "qrc:/icons/bookmark.svg",
                     "qrc:/icons/highlight.svg",
@@ -76,6 +78,7 @@ Rectangle{
                     "Goto Page",
                     "Table of Contents",
                     "Search",
+                    "Show Hints",
                     "Fullscreen",
                     "Bookmarks",
                     "Highlights",
@@ -99,12 +102,14 @@ Rectangle{
                             case 3:
                                 /* emit */ searchClicked(); break;
                             case 4:
-                                /* emit */ fullscreenClicked(); break;
+                                /* emit */ hintClicked(); break;
                             case 5:
-                                /* emit */ bookmarksClicked(); break;
+                                /* emit */ fullscreenClicked(); break;
                             case 6:
-                                /* emit */ highlightsClicked(); break;
+                                /* emit */ bookmarksClicked(); break;
                             case 7:
+                                /* emit */ highlightsClicked(); break;
+                            case 8:
                                 /* emit */ rulerModeClicked(); break;
                             default:
                         }

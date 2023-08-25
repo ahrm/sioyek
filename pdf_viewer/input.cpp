@@ -5426,6 +5426,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["create_visible_portal"] = [](MainWidget* widget) {return std::make_unique< CreateVisiblePortalCommand>(widget); };
     new_commands["next_state"] = [](MainWidget* widget) {return std::make_unique< NextStateCommand>(widget); };
     new_commands["prev_state"] = [](MainWidget* widget) {return std::make_unique< PrevStateCommand>(widget); };
+    new_commands["history_forward"] = [](MainWidget* widget) {return std::make_unique< NextStateCommand>(widget); };
+    new_commands["history_back"] = [](MainWidget* widget) {return std::make_unique< PrevStateCommand>(widget); };
     new_commands["delete_link"] = [](MainWidget* widget) {return std::make_unique< DeletePortalCommand>(widget); };
     new_commands["delete_portal"] = [](MainWidget* widget) {return std::make_unique< DeletePortalCommand>(widget); };
     new_commands["delete_bookmark"] = [](MainWidget* widget) {return std::make_unique< DeleteBookmarkCommand>(widget); };
@@ -5481,6 +5483,10 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["move_visual_mark_up"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkUpCommand>(widget); };
     new_commands["move_visual_mark_next"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkNextCommand>(widget); };
     new_commands["move_visual_mark_prev"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkPrevCommand>(widget); };
+    new_commands["move_ruler_down"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkDownCommand>(widget); };
+    new_commands["move_ruler_up"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkUpCommand>(widget); };
+    new_commands["move_ruler_next"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkNextCommand>(widget); };
+    new_commands["move_ruler_prev"] = [](MainWidget* widget) {return std::make_unique< MoveVisualMarkPrevCommand>(widget); };
     new_commands["toggle_custom_color"] = [](MainWidget* widget) {return std::make_unique< ToggleCustomColorMode>(widget); };
     new_commands["set_select_highlight_type"] = [](MainWidget* widget) {return std::make_unique< SetSelectHighlightTypeCommand>(widget); };
     new_commands["set_freehand_type"] = [](MainWidget* widget) {return std::make_unique< SetFreehandType>(widget); };
@@ -5522,8 +5528,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["set_status_string"] = [](MainWidget* widget) {return std::make_unique< SetStatusStringCommand>(widget); };
     new_commands["clear_status_string"] = [](MainWidget* widget) {return std::make_unique< ClearStatusStringCommand>(widget); };
     new_commands["toggle_titlebar"] = [](MainWidget* widget) {return std::make_unique< ToggleTittlebarCommand>(widget); };
-    new_commands["next_preview"] = [](MainWidget* widget) {return std::make_unique< NextPreviewCommand>(widget); };
-    new_commands["previous_preview"] = [](MainWidget* widget) {return std::make_unique< PreviousPreviewCommand>(widget); };
+    new_commands["next_overview"] = [](MainWidget* widget) {return std::make_unique< NextPreviewCommand>(widget); };
+    new_commands["previous_overview"] = [](MainWidget* widget) {return std::make_unique< PreviousPreviewCommand>(widget); };
     new_commands["goto_overview"] = [](MainWidget* widget) {return std::make_unique< GotoOverviewCommand>(widget); };
     new_commands["portal_to_overview"] = [](MainWidget* widget) {return std::make_unique< PortalToOverviewCommand>(widget); };
     new_commands["goto_selected_text"] = [](MainWidget* widget) {return std::make_unique< GotoSelectedTextCommand>(widget); };
@@ -5727,8 +5733,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     command_human_readable_names["set_status_string"] = "Set custom message to be shown in statusbar";
     command_human_readable_names["clear_status_string"] = "Clear custom statusbar message";
     command_human_readable_names["toggle_titlebar"] = "Toggle window titlebar";
-    command_human_readable_names["next_preview"] = "Go to the next candidate in overview window";
-    command_human_readable_names["previous_preview"] = "Go to the previous candidate in overview window";
+    command_human_readable_names["next_overview"] = "Go to the next candidate in overview window";
+    command_human_readable_names["previous_overview"] = "Go to the previous candidate in overview window";
     command_human_readable_names["goto_overview"] = "Go to the current overview location";
     command_human_readable_names["portal_to_overview"] = "Create a portal to the current overview location";
     command_human_readable_names["goto_selected_text"] = "Go to the location of current selected text";
@@ -6027,7 +6033,13 @@ InputParseTreeNode* parse_lines(
                     parent_node->name_.push_back(command_names[j][k]);
                 }
                 if (command_names[j].size() == 1 && (command_names[j][0].find("[") == -1) && (command_names[j][0].find("(") == -1)) {
-                    parent_node->generator = command_manager->new_commands[command_names[j][0]];
+                    if (command_manager->new_commands.find(command_names[j][0]) != command_manager->new_commands.end()) {
+                        parent_node->generator = command_manager->new_commands[command_names[j][0]];
+                    }
+                    else {
+                        LOG(std::wcout << L"Warning: command " << utf8_decode(command_names[j][0]) << L"not found in " << parent_node->defining_file_path
+                            << L":" << parent_node->defining_file_line << L"\n");
+                    }
                 }
                 else {
                     QStringList command_parts;
@@ -6210,7 +6222,7 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
                 }
 
                 //return command_manager.get_command_with_name(child->name);
-                if (child->generator) {
+                if (child->generator.has_value()) {
                     return (child->generator.value())(w);
                 }
                 return nullptr;

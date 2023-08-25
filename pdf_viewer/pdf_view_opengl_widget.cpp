@@ -1504,10 +1504,10 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         int flags = Qt::TextWordWrap | Qt::AlignCenter;
 
         for (auto [hint_rect, hint_text] : hints) {
-            painter->fillRect(hint_rect, QColor(255, 0, 0, 200));
+            painter->fillRect(hint_rect, QColor(0, 0, 0, 200));
         }
 
-        painter->setPen(QColor(0, 0, 0, 255));
+        painter->setPen(QColor(255, 255, 255, 255));
 
         for (auto [hint_rect, hint_text] : hints) {
             painter->drawText(hint_rect, flags, hint_text);
@@ -2650,8 +2650,8 @@ std::vector<std::pair<QRect, QString>> PdfViewOpenGLWidget::get_hint_rect_and_te
         rect_descriptors = {
             UIRectDescriptor {&PORTRAIT_BACK_UI_RECT, &BACK_RECT_TAP_COMMAND, &BACK_RECT_HOLD_COMMAND, "back"},
             UIRectDescriptor {&PORTRAIT_FORWARD_UI_RECT, &FORWARD_RECT_TAP_COMMAND, &FORWARD_RECT_HOLD_COMMAND, "forward"},
-            UIRectDescriptor {&PORTRAIT_VISUAL_MARK_PREV, &VISUAL_MARK_PREV_TAP_COMMAND, &VISUAL_MARK_PREV_HOLD_COMMAND, "visual_mark_prev"},
-            UIRectDescriptor {&PORTRAIT_VISUAL_MARK_NEXT, &VISUAL_MARK_NEXT_TAP_COMMAND, &VISUAL_MARK_NEXT_HOLD_COMMAND, "visual_mark_next"},
+            UIRectDescriptor {&PORTRAIT_VISUAL_MARK_PREV, &VISUAL_MARK_PREV_TAP_COMMAND, &VISUAL_MARK_PREV_HOLD_COMMAND, "move_ruler_prev"},
+            UIRectDescriptor {&PORTRAIT_VISUAL_MARK_NEXT, &VISUAL_MARK_NEXT_TAP_COMMAND, &VISUAL_MARK_NEXT_HOLD_COMMAND, "move_ruler_next"},
             UIRectDescriptor {&PORTRAIT_MIDDLE_LEFT_UI_RECT, &MIDDLE_LEFT_RECT_TAP_COMMAND, &MIDDLE_LEFT_RECT_HOLD_COMMAND, "middle_left"},
             UIRectDescriptor {&PORTRAIT_MIDDLE_RIGHT_UI_RECT, &MIDDLE_RIGHT_RECT_TAP_COMMAND, &MIDDLE_RIGHT_RECT_HOLD_COMMAND, "middle_right"},
         };
@@ -2660,15 +2660,15 @@ std::vector<std::pair<QRect, QString>> PdfViewOpenGLWidget::get_hint_rect_and_te
         rect_descriptors = {
             UIRectDescriptor {&LANDSCAPE_BACK_UI_RECT, &BACK_RECT_TAP_COMMAND, &BACK_RECT_HOLD_COMMAND, "back"},
             UIRectDescriptor {&LANDSCAPE_FORWARD_UI_RECT, &FORWARD_RECT_TAP_COMMAND, &FORWARD_RECT_HOLD_COMMAND, "forward"},
-            UIRectDescriptor {&LANDSCAPE_VISUAL_MARK_PREV, &VISUAL_MARK_PREV_TAP_COMMAND, &VISUAL_MARK_PREV_HOLD_COMMAND, "visual_mark_prev"},
-            UIRectDescriptor {&LANDSCAPE_VISUAL_MARK_NEXT, &VISUAL_MARK_NEXT_TAP_COMMAND, &VISUAL_MARK_NEXT_HOLD_COMMAND, "visual_mark_next"},
+            UIRectDescriptor {&LANDSCAPE_VISUAL_MARK_PREV, &VISUAL_MARK_PREV_TAP_COMMAND, &VISUAL_MARK_PREV_HOLD_COMMAND, "move_ruler_prev"},
+            UIRectDescriptor {&LANDSCAPE_VISUAL_MARK_NEXT, &VISUAL_MARK_NEXT_TAP_COMMAND, &VISUAL_MARK_NEXT_HOLD_COMMAND, "move_ruler_next"},
             UIRectDescriptor {&LANDSCAPE_MIDDLE_LEFT_UI_RECT, &MIDDLE_LEFT_RECT_TAP_COMMAND, &MIDDLE_LEFT_RECT_HOLD_COMMAND, "middle_left"},
             UIRectDescriptor {&LANDSCAPE_MIDDLE_RIGHT_UI_RECT, &MIDDLE_RIGHT_RECT_TAP_COMMAND, &MIDDLE_RIGHT_RECT_HOLD_COMMAND, "middle_right"},
         };
     }
 
     for (auto desc : rect_descriptors) {
-        bool is_visual = QString::fromStdString(desc.name).startsWith("visual");
+        bool is_visual = QString::fromStdString(desc.name).startsWith("move_ruler");
 
         if (is_visual || (desc.ui_rect->enabled && ((desc.hold_command->size() > 0) || (desc.tap_command->size() > 0)))) {
             QString str = "";

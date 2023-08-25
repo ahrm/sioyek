@@ -110,6 +110,12 @@ TouchMainMenu::TouchMainMenu(bool fit_mode, bool portaling, bool fullscreen, boo
 
     QObject::connect(
         dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(hintClicked()),
+        this,
+        SLOT(handleHint()));
+
+    QObject::connect(
+        dynamic_cast<QObject*>(quick_widget->rootObject()),
         SIGNAL(settingsClicked()),
         this,
         SLOT(handleSettings()));
@@ -222,6 +228,10 @@ void TouchMainMenu::handleLightColorscheme() {
 
 void TouchMainMenu::handleDarkColorscheme() {
     emit darkColorschemeClicked();
+}
+
+void TouchMainMenu::handleHint() {
+    emit hintClicked();
 }
 
 void TouchMainMenu::handleCustomColorscheme() {

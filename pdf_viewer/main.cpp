@@ -366,9 +366,9 @@ std::wstring ALT_CLICK_COMMAND = L"";
 std::wstring ALT_RIGHT_CLICK_COMMAND = L"";
 std::wstring HOLD_MIDDLE_CLICK_COMMAND = L"download_paper_under_cursor";
 
-std::wstring BACK_RECT_TAP_COMMAND = L"prev_state";
+std::wstring BACK_RECT_TAP_COMMAND = L"history_back";
 std::wstring BACK_RECT_HOLD_COMMAND = L"goto_mark";
-std::wstring FORWARD_RECT_TAP_COMMAND = L"next_state";
+std::wstring FORWARD_RECT_TAP_COMMAND = L"history_forward";
 std::wstring FORWARD_RECT_HOLD_COMMAND = L"set_mark";
 std::wstring EDIT_PORTAL_TAP_COMMAND = L"edit_portal";
 std::wstring EDIT_PORTAL_HOLD_COMMAND = L"";

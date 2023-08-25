@@ -243,6 +243,13 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
         main_widget->handle_command_types(std::move(command), 0);
         });
 
+    QObject::connect(main_menu, &TouchMainMenu::hintClicked, [&]() {
+        auto command = main_widget->command_manager->get_command_with_name(main_widget, "toggle_rect_hints");
+        main_widget->pop_current_widget();
+        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->invalidate_render();
+        });
+
     QObject::connect(main_menu, &TouchMainMenu::commandsClicked, [&]() {
         auto command = main_widget->command_manager->get_command_with_name(main_widget, "command");
         //main_widget->current_widget = {};

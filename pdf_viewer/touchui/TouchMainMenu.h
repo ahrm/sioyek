@@ -38,6 +38,7 @@ public slots:
     void handleFitToPageWidth();
     void handleDrawingMode();
     void handleDownloadPaper();
+    void handleHint();
 
 signals:
     void selectTextClicked();
@@ -65,6 +66,7 @@ signals:
     void fitToPageWidthClicked();
     void drawingModeClicked();
     void downloadPaperClicked();
+    void hintClicked();
 
 private:
     QQuickWidget* quick_widget = nullptr;
