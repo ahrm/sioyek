@@ -785,6 +785,21 @@ public:
 
 };
 
+class ToggleRectHintsCommand : public Command {
+
+public:
+    ToggleRectHintsCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->toggle_rect_hints();
+    }
+
+    std::string get_name() {
+        return "toggle_rect_hints";
+    }
+
+};
+
 class GetAnnotationsJsonCommand : public Command {
 
 public:
@@ -5369,6 +5384,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["get_paper_name"] = [](MainWidget* widget) {return std::make_unique< GetPaperNameCommand>(widget); };
     new_commands["get_overview_paper_name"] = [](MainWidget* widget) {return std::make_unique< GetOverviewPaperName>(widget); };
     new_commands["get_annotations_json"] = [](MainWidget* widget) {return std::make_unique< GetAnnotationsJsonCommand>(widget); };
+    new_commands["toggle_rect_hints"] = [](MainWidget* widget) {return std::make_unique< ToggleRectHintsCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
     new_commands["rename"] = [](MainWidget* widget) {return std::make_unique< RenameCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };

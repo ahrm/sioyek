@@ -148,6 +148,7 @@ private:
     bool should_highlight_links = false;
     bool should_highlight_words = false;
     bool should_show_numbers = false;
+    bool should_show_rect_hints = false;
     ColorPalette color_mode = ColorPalette::Normal;
     bool is_helper = false;
     float percent_done = 0.0f;
@@ -201,6 +202,7 @@ protected:
     void my_render(QPainter* painter);
     void add_coordinates_for_window_point(float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates);
     void render_drawings(const std::vector<FreehandDrawing>& drawings, bool highlighted = false);
+    std::vector<std::pair<QRect, QString>> get_hint_rect_and_texts();
 
     void enable_stencil();
     void write_to_stencil();
@@ -327,5 +329,8 @@ public:
     bool is_normalized_y_range_in_window(float y0, float y1);
     void render_portal_rect(QPainter* painter, fz_rect portal_absolute_rect, bool is_pending);
     void set_pending_download_portals(std::vector<fz_rect>&& portal_rects);
+    void show_rect_hints();
+    void hide_rect_hints();
+    bool is_showing_rect_hints();
 
 };

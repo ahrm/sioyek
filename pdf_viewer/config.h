@@ -46,6 +46,7 @@ struct UIRect {
 
 
     bool contains(NormalizedWindowPos window_pos);
+    QRect to_window(int window_width, int window_height);
 };
 
 struct FloatExtras {

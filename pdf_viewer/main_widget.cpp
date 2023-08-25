@@ -5984,6 +5984,10 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
         }
     }
 
+    if (opengl_widget->is_showing_rect_hints()) {
+        opengl_widget->hide_rect_hints();
+    }
+
     if (current_widget_stack.size() > 0) {
         pop_current_widget();
         return false;
@@ -8392,4 +8396,14 @@ void MainWidget::update_renamed_document_in_history(std::wstring old_path, std::
 
 void MainWidget::maximize_window() {
     showMaximized();
+}
+
+
+void MainWidget::toggle_rect_hints() {
+    if (opengl_widget->is_showing_rect_hints()) {
+        opengl_widget->hide_rect_hints();
+    }
+    else {
+        opengl_widget->show_rect_hints();
+    }
 }

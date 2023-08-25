@@ -2306,3 +2306,11 @@ std::wstring Config::get_type_string() const{
     if (config_type == ConfigType::EnableRectangle) return L"enablerectangle";
     if (config_type == ConfigType::Range) return L"range";
 }
+
+QRect UIRect::to_window(int window_width, int window_height) {
+    int top_window = (int)(window_height * (top + 1) / 2.0f);
+    int bottom_window = (int)(window_height * (bottom + 1) / 2.0f);
+    int left_window = (int)(window_width * (left + 1) / 2.0f);
+    int right_window = (int)(window_width * (right + 1) / 2.0f);
+    return QRect(left_window, top_window, right_window - left_window, bottom_window - top_window);
+}
