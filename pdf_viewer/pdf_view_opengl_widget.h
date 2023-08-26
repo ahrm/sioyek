@@ -11,6 +11,7 @@
 #include <optional>
 #include <utility>
 #include <memory>
+#include <array>
 
 #include <qapplication.h>
 #include <qpushbutton.h>
@@ -332,5 +333,7 @@ public:
     void show_rect_hints();
     void hide_rect_hints();
     bool is_showing_rect_hints();
-
+    void get_color_for_current_mode(const float* input_color, float* output_color);
+    std::array<float, 3> cc3(const float* input_color);
+    std::array<float, 4> cc4(const float* input_color);
 };

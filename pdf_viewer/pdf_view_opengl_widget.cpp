@@ -48,6 +48,13 @@ extern float STRIKE_LINE_WIDTH;
 extern std::wstring RULER_DISPLAY_MODE;
 extern float RULER_COLOR[3];
 extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
+extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
+
+extern float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3];
+extern float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
+extern float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
+extern float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
+extern float DEFAULT_VERTICAL_LINE_COLOR[4];
 
 extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
 extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
@@ -64,6 +71,8 @@ extern UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT;
 extern UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT;
 extern UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT;
 extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
+extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
+extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
 
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
@@ -79,6 +88,9 @@ extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
 extern std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
+extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
+extern std::wstring EDIT_PORTAL_TAP_COMMAND;
+extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
 
 GLfloat g_quad_vertex[] = {
     -1.0f, -1.0f,
@@ -371,12 +383,13 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
     glDisable(GL_CULL_FACE);
     glUseProgram(program);
 
-    const float* vertical_line_color = config_manager->get_config<float>(L"vertical_line_color");
-    if (vertical_line_color != nullptr) {
-        glUniform4fv(shared_gl_objects.line_color_uniform_location,
-            1,
-            vertical_line_color);
-    }
+    //const float* vertical_line_color = config_manager->get_config<float>(L"vertical_line_color");
+    std::array<float, 4> vertical_line_color = cc4(DEFAULT_VERTICAL_LINE_COLOR);
+
+    glUniform4fv(shared_gl_objects.line_color_uniform_location,
+        1,
+        &vertical_line_color[0]);
+
     float time = -QDateTime::currentDateTime().msecsTo(creation_time);
     glUniform1f(shared_gl_objects.line_time_uniform_location, time);
 
@@ -1069,6 +1082,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         render_page(visible_page_number.value());
     }
     else {
+        std::array<float, 3> link_highlight_color = cc3(DEFAULT_LINK_HIGHLIGHT_COLOR);
+
         for (int page : visible_pages) {
             render_page(page);
 
@@ -1076,7 +1091,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                 glUseProgram(shared_gl_objects.highlight_program);
                 glUniform3fv(shared_gl_objects.highlight_color_uniform_location,
                     1,
-                    config_manager->get_config<float>(L"link_highlight_color"));
+                    &link_highlight_color[0]);
                 //fz_link* links = document_view->get_document()->get_page_links(page);
                 const std::vector<PdfLink>& links = document_view->get_document()->get_page_merged_pdf_links(page);
                 for (auto link : links) {
@@ -1161,10 +1176,12 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         glUseProgram(shared_gl_objects.highlight_program);
         //glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
 
+        std::array<float, 3> unselected_search_highlight_color = cc3(UNSELECTED_SEARCH_HIGHLIGHT_COLOR);
+
         if (SHOULD_HIGHLIGHT_UNSELECTED_SEARCH) {
 
             std::vector<int> visible_search_indices = get_visible_search_results(visible_pages);
-            glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, UNSELECTED_SEARCH_HIGHLIGHT_COLOR);
+            glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &unselected_search_highlight_color[0]);
             for (int visible_search_index : visible_search_indices) {
                 if (visible_search_index != current_search_result_index) {
                     SearchResult res = search_results[visible_search_index];
@@ -1175,15 +1192,17 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             }
         }
 
-        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
+        std::array<float, 3> search_highlight_color = cc3(DEFAULT_SEARCH_HIGHLIGHT_COLOR);
+        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &search_highlight_color[0]);
         for (auto rect : current_search_result.rects) {
             render_highlight_document(shared_gl_objects.highlight_program, current_search_result.page, rect);
         }
     }
     search_results_mutex.unlock();
 
+    std::array<float, 3> text_highlight_color = cc3(DEFAULT_TEXT_HIGHLIGHT_COLOR);
     glUseProgram(shared_gl_objects.highlight_program);
-    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"text_highlight_color"));
+    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &text_highlight_color[0]);
     std::vector<fz_rect> bounding_rects;
     merge_selected_character_rects(*document_view->get_selected_character_rects(), bounding_rects);
     //for (auto rect : selected_character_rects) {
@@ -1195,7 +1214,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
     if (should_show_synxtex_highlights()) {
 
-        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"synctex_highlight_color"));
+        std::array<float, 3> synctex_highlight_color = cc3(DEFAULT_SYNCTEX_HIGHLIGHT_COLOR);
+        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &synctex_highlight_color[0]);
         for (auto [page, rect] : synctex_highlights) {
             render_highlight_document(shared_gl_objects.highlight_program, page, rect, HRF_FILL);
         }
@@ -1239,7 +1259,11 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             if (is_selection_in_window) {
                 for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
                     //glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
-                    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, get_highlight_type_color(highlights[i].type));
+                    auto adjusted_highlight_color = cc3(get_highlight_type_color(highlights[i].type));
+                    get_color_for_current_mode(get_highlight_type_color(highlights[i].type), &adjusted_highlight_color[0]);
+
+                    //glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, get_highlight_type_color(highlights[i].type));
+                    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &adjusted_highlight_color[0]);
 
                     int flags = 0;
                     if (std::isupper(highlights[i].type)) {
@@ -1300,12 +1324,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         std::optional<fz_rect> ruler_rect = document_view->get_ruler_window_rect();
 
         if ((!ruler_rect.has_value()) || (RULER_DISPLAY_MODE == L"slit")) {
-            if (color_mode == ColorPalette::Dark) {
-                render_line_window(shared_gl_objects.vertical_line_dark_program, vertical_line_end, ruler_rect);
-            }
-            else {
-                render_line_window(shared_gl_objects.vertical_line_program, vertical_line_end, ruler_rect);
-            }
+            render_line_window(shared_gl_objects.vertical_line_program, vertical_line_end, ruler_rect);
         }
         else {
             int flags = 0;
@@ -1404,7 +1423,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                     font.setPointSizeF(font_size * document_view->get_zoom_level() * 0.75);
                     painter->setFont(font);
 
-                    painter->setPen(convert_float3_to_qcolor(bookmarks[i].color));
+                    std::array<float, 3> bookmark_color = cc3(bookmarks[i].color);
+                    painter->setPen(convert_float3_to_qcolor(&bookmark_color[0]));
                     if (RENDER_FREETEXT_BORDERS) {
                         painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
                     }
@@ -2467,11 +2487,15 @@ void PdfViewOpenGLWidget::render_drawings(const std::vector<FreehandDrawing>& dr
             continue;
         }
 
-        float current_drawing_color[4] = { HIGHLIGHT_COLORS[(drawing.type - 'a') * 3],
+        float current_drawing_color_[4] = { HIGHLIGHT_COLORS[(drawing.type - 'a') * 3],
             HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 1],
              HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 2],
             1.0f
         };
+        float current_drawing_color[4] = {0};
+        get_color_for_current_mode(current_drawing_color_, current_drawing_color);
+        current_drawing_color[3] = current_drawing_color_[3];
+
         if (highlighted) {
             current_drawing_color[0] = 1.0f;
             current_drawing_color[1] = 1.0f;
@@ -2654,6 +2678,7 @@ std::vector<std::pair<QRect, QString>> PdfViewOpenGLWidget::get_hint_rect_and_te
             UIRectDescriptor {&PORTRAIT_VISUAL_MARK_NEXT, &VISUAL_MARK_NEXT_TAP_COMMAND, &VISUAL_MARK_NEXT_HOLD_COMMAND, "move_ruler_next"},
             UIRectDescriptor {&PORTRAIT_MIDDLE_LEFT_UI_RECT, &MIDDLE_LEFT_RECT_TAP_COMMAND, &MIDDLE_LEFT_RECT_HOLD_COMMAND, "middle_left"},
             UIRectDescriptor {&PORTRAIT_MIDDLE_RIGHT_UI_RECT, &MIDDLE_RIGHT_RECT_TAP_COMMAND, &MIDDLE_RIGHT_RECT_HOLD_COMMAND, "middle_right"},
+            UIRectDescriptor {&PORTRAIT_EDIT_PORTAL_UI_RECT, &EDIT_PORTAL_TAP_COMMAND, &EDIT_PORTAL_HOLD_COMMAND, "edit_portal"},
         };
     }
     else {
@@ -2664,6 +2689,7 @@ std::vector<std::pair<QRect, QString>> PdfViewOpenGLWidget::get_hint_rect_and_te
             UIRectDescriptor {&LANDSCAPE_VISUAL_MARK_NEXT, &VISUAL_MARK_NEXT_TAP_COMMAND, &VISUAL_MARK_NEXT_HOLD_COMMAND, "move_ruler_next"},
             UIRectDescriptor {&LANDSCAPE_MIDDLE_LEFT_UI_RECT, &MIDDLE_LEFT_RECT_TAP_COMMAND, &MIDDLE_LEFT_RECT_HOLD_COMMAND, "middle_left"},
             UIRectDescriptor {&LANDSCAPE_MIDDLE_RIGHT_UI_RECT, &MIDDLE_RIGHT_RECT_TAP_COMMAND, &MIDDLE_RIGHT_RECT_HOLD_COMMAND, "middle_right"},
+            UIRectDescriptor {&LANDSCAPE_EDIT_PORTAL_UI_RECT, &EDIT_PORTAL_TAP_COMMAND, &EDIT_PORTAL_HOLD_COMMAND, "edit_portal"},
         };
     }
 
@@ -2700,3 +2726,59 @@ void PdfViewOpenGLWidget::hide_rect_hints() {
 bool PdfViewOpenGLWidget::is_showing_rect_hints() {
     return should_show_rect_hints;
 }
+
+void PdfViewOpenGLWidget::get_color_for_current_mode(const float* input_color, float* output_color) {
+    if (!ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE) {
+        output_color[0] = input_color[0];
+        output_color[1] = input_color[1];
+        output_color[2] = input_color[2];
+        return;
+    }
+
+    if (color_mode == ColorPalette::Dark) {
+        float inverted_color[3];
+        inverted_color[0] = (0.5f - input_color[0]) * DARK_MODE_CONTRAST + 0.5f;
+        inverted_color[1] = (0.5f - input_color[1]) * DARK_MODE_CONTRAST + 0.5f;
+        inverted_color[2] = (0.5f - input_color[2]) * DARK_MODE_CONTRAST + 0.5f;
+        float hsv_color[3];
+        rgb2hsv(inverted_color, hsv_color);
+        float new_hue = fmod(hsv_color[0] + 0.5f, 1.0f);
+        hsv_color[0] = new_hue;
+        hsv2rgb(hsv_color, output_color);
+    }
+    else if (color_mode == ColorPalette::Custom) {
+        float transform_matrix[16];
+        float input_vector[4];
+        float output_vector[4];
+        input_vector[0] = input_color[0];
+        input_vector[1] = input_color[1];
+        input_vector[2] = input_color[2];
+        input_vector[3] = 1.0f;
+
+        get_custom_color_transform_matrix(transform_matrix);
+        matmul<4, 4, 1>(transform_matrix, input_vector, output_vector);
+        output_color[0] = fz_clamp(output_vector[0], 0, 1);
+        output_color[1] = fz_clamp(output_vector[1], 0, 1);
+        output_color[2] = fz_clamp(output_vector[2], 0, 1);
+        return;
+    }
+    else {
+        output_color[0] = input_color[0];
+        output_color[1] = input_color[1];
+        output_color[2] = input_color[2];
+    }
+}
+
+std::array<float, 3> PdfViewOpenGLWidget::cc3(const float* input_color) {
+    std::array<float, 3> result;
+    get_color_for_current_mode(input_color, &result[0]);
+    return result;
+}
+
+std::array<float, 4> PdfViewOpenGLWidget::cc4(const float* input_color) {
+    std::array<float, 4> result;
+    get_color_for_current_mode(input_color, &result[0]);
+    result[3] = input_color[3];
+    return result;
+}
+

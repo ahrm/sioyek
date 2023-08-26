@@ -98,6 +98,7 @@ extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
 extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring BOOK_SCAN_PATH;
 extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
+extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 
 extern bool NO_AUTO_CONFIG;
 
@@ -739,6 +740,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"flat_toc",
         ConfigType::Bool,
         &FLAT_TABLE_OF_CONTENTS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"adjust_annotation_colors_for_dark_mode",
+        ConfigType::Bool,
+        &ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE,
         bool_serializer,
         bool_deserializer,
         bool_validator

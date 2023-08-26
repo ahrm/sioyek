@@ -235,7 +235,7 @@ QString get_status_stylesheet(bool nofont = false);
 QString get_selected_stylesheet(bool nofont = false);
 
 template<int d1, int d2, int d3>
-void matmul(float m1[], float m2[], float result[]) {
+void matmul(const float m1[], const float m2[], float result[]) {
     for (int i = 0; i < d1; i++) {
         for (int j = 0; j < d3; j++) {
             result[i * d3 + j] = 0;
@@ -423,3 +423,6 @@ float rect_area(fz_rect rect);
 std::vector<std::wstring> get_path_unique_prefix(const std::vector<std::wstring>& paths);
 bool is_block_vertical(fz_stext_block* block);
 QString get_file_name_from_paper_name(QString paper_name);
+
+void rgb2hsv(float* rgb_color, float* hsv_color);
+void hsv2rgb(float* hsv_color, float* rgb_color);

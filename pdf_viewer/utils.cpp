@@ -4005,3 +4005,23 @@ QString get_file_name_from_paper_name(QString paper_name) {
 
     return "";
 }
+
+
+void rgb2hsv(float* rgb_color, float* hsv_color) {
+    int rgb_255_color[3];
+    convert_color3(rgb_color, rgb_255_color);
+    QColor qcolor(rgb_255_color[0], rgb_255_color[1], rgb_255_color[2]);
+    QColor hsv_qcolor = qcolor.toHsv();
+    hsv_color[0] = hsv_qcolor.hsvHueF();
+    hsv_color[1] = hsv_qcolor.hsvSaturationF();
+    hsv_color[2] = hsv_qcolor.lightnessF();
+    if (hsv_color[0] < 0) hsv_color[0] += 1.0f;
+}
+
+void hsv2rgb(float* hsv_color, float* rgb_color) {
+    QColor qcolor;
+    qcolor.setHsvF(hsv_color[0], hsv_color[1], hsv_color[2]);
+    rgb_color[0] = qcolor.redF();
+    rgb_color[1] = qcolor.greenF();
+    rgb_color[2] = qcolor.blueF();
+}
