@@ -426,3 +426,4 @@ QString get_file_name_from_paper_name(QString paper_name);
 
 void rgb2hsv(float* rgb_color, float* hsv_color);
 void hsv2rgb(float* hsv_color, float* rgb_color);
+bool operator==(const fz_rect& lhs, const fz_rect& rhs);

@@ -105,6 +105,11 @@ public:
     QTextToSpeech* tts = nullptr;
     // is the TTS engine currently reading text?
     bool is_reading = false;
+    bool word_by_word_reading = false;
+    bool tts_is_about_to_finish = false;
+    std::wstring tts_text = L"";
+    std::vector<fz_rect> tts_corresponding_line_rects;
+    std::optional<fz_rect> last_focused_rect = {};
 
     PdfViewOpenGLWidget* opengl_widget = nullptr;
     PdfViewOpenGLWidget* helper_opengl_widget = nullptr;

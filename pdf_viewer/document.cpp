@@ -62,6 +62,73 @@ int Document::get_mark_index(char symbol) {
     return -1;
 }
 
+CharacterIterator::CharacterIterator(fz_stext_page* page) {
+    block = page->first_block;
+    line = block->u.t.first_line;
+    chr = line->first_char;
+}
+
+CharacterIterator::CharacterIterator(fz_stext_block* b, fz_stext_line* l, fz_stext_char* c) {
+    block = b;
+    line = l;
+    chr = c;
+}
+
+CharacterIterator& CharacterIterator::operator++() {
+    if (chr->next != nullptr) {
+        chr = chr->next;
+        return *this;
+    }
+    if (line->next != nullptr) {
+        line = line->next;
+        chr = line->first_char;
+        return *this;
+    }
+    if (block->next != nullptr) {
+        block = block->next;
+        line = block->u.t.first_line;
+        chr = line->first_char;
+        return *this;
+    }
+
+    block = nullptr;
+    line = nullptr;
+    chr = nullptr;
+
+    return *this;
+}
+
+CharacterIterator CharacterIterator::operator++(int) {
+    CharacterIterator tmp = *this;
+    ++(*this);
+    return tmp;
+}
+
+bool CharacterIterator::operator==(const CharacterIterator& other) const {
+    return chr == other.chr;
+}
+
+bool CharacterIterator::operator!=(const CharacterIterator& other) const {
+    return chr != other.chr;
+}
+
+std::tuple<fz_stext_block*, fz_stext_line*, fz_stext_char*> CharacterIterator::operator*() const {
+    return std::make_tuple(block, line, chr);
+}
+
+
+PageIterator::PageIterator(fz_stext_page* page) : page(page) {
+
+}
+
+CharacterIterator PageIterator::begin() const {
+    return CharacterIterator(page);
+}
+
+CharacterIterator PageIterator::end() const {
+    return CharacterIterator(nullptr, nullptr, nullptr);
+}
+
 void Document::load_document_metadata_from_db() {
 
     marks.clear();
@@ -4268,4 +4335,44 @@ std::wstring Document::detect_paper_name() {
         }
     }
     return L"";
+}
+
+PageIterator Document::page_iterator(int page_number) {
+    fz_stext_page* page = get_stext_with_page_number(page_number);
+    return PageIterator(page);
+}
+
+void Document::get_page_text_and_line_rects_after_rect(int page_number, fz_rect after, std::wstring& text, std::vector<fz_rect>& line_rects){
+    bool begun = false;
+    after = absolute_to_page_rect(after, nullptr);
+    after.y0 = after.y1 = (after.y0 + after.y1) / 2;
+
+    if (after == fz_empty_rect) {
+        begun = true;
+    }
+
+    for (auto [block, line, chr] : page_iterator(page_number)) {
+
+        if (rects_intersect(after, line->bbox)) {
+            begun = true;
+        }
+
+        if (chr->c > 0 && chr->c < 128) {
+            if (begun) {
+                if ((chr->next == nullptr) && (chr->c == '-')) continue;
+                text.push_back(chr->c);
+                line_rects.push_back(line->bbox);
+
+                if ((chr->next == nullptr)) {
+                    text.push_back(' ');
+                    line_rects.push_back(line->bbox);
+                    if (line->next == nullptr) {
+                        text.push_back('\n');
+                        line_rects.push_back(line->bbox);
+                    }
+                }
+            }
+        }
+
+    }
 }

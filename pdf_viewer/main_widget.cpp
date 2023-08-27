@@ -2,6 +2,8 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
+// write iterators to iterate on stext blocks/lines/chars instead of creating arrays
+// make types for absolute and document rects to simplify and avoid confusion
 
 #include <iostream>
 #include <vector>
@@ -3070,6 +3072,10 @@ void MainWidget::visual_mark_under_pos(WindowPos pos) {
             main_document_view->set_line_index(container_line_index, document_pos.page);
         }
         validate_render();
+
+        if (is_reading) {
+            read_current_line();
+        }
     }
 }
 
@@ -6261,6 +6267,13 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
+    QString res;
+
+    for (auto [block, line, chr] : doc()->page_iterator(0)) {
+        res.push_back(QChar(chr->c));
+    }
+
+    qDebug() << res;
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -6441,12 +6454,33 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
 }
 
 void MainWidget::read_current_line() {
-    std::wstring text = main_document_view->get_selected_line_text().value_or(L"");
+    std::wstring selected_line_text = main_document_view->get_selected_line_text().value_or(L"");
+    //std::wstring text = main_document_view->get_selected_line_text().value_or(L"");
+    tts_text.clear();
+    tts_corresponding_line_rects.clear();
+
+    int page_number  = main_document_view->get_vertical_line_page();
+    fz_rect ruler_rect = main_document_view->get_ruler_rect().value_or(fz_empty_rect);
+    doc()->get_page_text_and_line_rects_after_rect(page_number, ruler_rect, tts_text, tts_corresponding_line_rects);
+
+    fz_stext_page* stext_page = doc()->get_stext_with_page_number(page_number);
+    std::vector<fz_stext_char*> flat_chars;
+    get_flat_chars_from_stext_page(stext_page, flat_chars, true);
+
     get_tts()->setRate(TTS_RATE);
     is_reading = false;
-    get_tts()->stop();
+    get_tts()->pause();
     //std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    get_tts()->say(QString::fromStdWString(text));
+    if (word_by_word_reading) {
+        //get_tts()->say(QString::fromStdWString(selected_line_text));
+        if (tts_text.size() > 0) {
+            get_tts()->say(QString::fromStdWString(tts_text));
+        }
+    }
+    else {
+        get_tts()->say(QString::fromStdWString(selected_line_text));
+        tts_is_about_to_finish = true;
+    }
     is_reading = true;
 }
 
@@ -6461,7 +6495,16 @@ void MainWidget::handle_start_reading() {
 
 void MainWidget::handle_stop_reading() {
     is_reading = false;
-    get_tts()->stop();
+
+    if (word_by_word_reading) {
+        // we should be able to just call stop() but at the time of this
+        // commit calling stop on a sapi tts object crashes
+        get_tts()->pause();
+    }
+    else {
+        get_tts()->stop();
+    }
+
     if (TOUCH_MODE) {
         pop_current_widget();
     }
@@ -7263,6 +7306,61 @@ QTextToSpeech* MainWidget::get_tts() {
 
     tts = new QTextToSpeech(this);
 
+
+    //void sayingWord(const QString &word, qsizetype id, qsizetype start, qsizetype length);
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+
+#ifdef Q_OS_WIN
+    if (tts->availableEngines().indexOf("sapi") != -1) {
+        // at the time of this commit only the sapi engine correctly fires
+        // sayingWord signals, even though all engines report that they support
+        // word boundary signals
+        tts->setEngine("sapi");
+    }
+#endif
+
+    if (tts->engineCapabilities().testFlag(QTextToSpeech::Capability::WordByWordProgress)) {
+        word_by_word_reading = true;
+    }
+    
+    //void aboutToSynthesize(qsizetype id);
+    QObject::connect(tts, &QTextToSpeech::sayingWord, [&](const QString& word, qsizetype id, qsizetype start, qsizetype length) {
+        if (is_reading) {
+            if (start >= tts_corresponding_line_rects.size()) return;
+
+            fz_rect line_being_read_rect = tts_corresponding_line_rects[start];
+
+            int ruler_page = main_document_view->get_vertical_line_page();
+            std::vector<std::pair<int, fz_rect>> char_highlight_rects;
+
+            int end = start + length;
+
+            if ((!last_focused_rect.has_value()) || !(last_focused_rect.value() == line_being_read_rect)) {
+                last_focused_rect = line_being_read_rect;
+                focus_rect(ruler_page, line_being_read_rect);
+                invalidate_render();
+            }
+            //qDebug() << (int)tts_text.size() - (int)end;
+            if ((tts_text.size() - end) <= 2) {
+                tts_is_about_to_finish = true;
+            }
+
+            //opengl_widget->set_synctex_highlights()
+        }
+        });
+
+    QObject::connect(tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
+        if ((state == QTextToSpeech::Ready) || (state == QTextToSpeech::Error)) {
+            if (is_reading && tts_is_about_to_finish) {
+                tts_is_about_to_finish = false;
+                move_visual_mark(1);
+                invalidate_render();
+            }
+        }
+        });
+
+#else
     QObject::connect(tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
         if ((state == QTextToSpeech::Ready) || (state == QTextToSpeech::Error)) {
             if (is_reading) {
@@ -7272,6 +7370,7 @@ QTextToSpeech* MainWidget::get_tts() {
             }
         }
         });
+#endif
 
     return tts;
 }

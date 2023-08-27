@@ -24,6 +24,34 @@
 #include "book.h"
 #include "checksum.h"
 
+class CharacterIterator {
+    fz_stext_block* block = nullptr;
+    fz_stext_line* line = nullptr;
+    fz_stext_char* chr = nullptr;
+
+public:
+    CharacterIterator(fz_stext_page* page);
+    CharacterIterator(fz_stext_block* b, fz_stext_line* l, fz_stext_char* c);
+    CharacterIterator& operator++();
+    CharacterIterator operator++(int);
+    bool operator==(const CharacterIterator& other) const;
+    bool operator!=(const CharacterIterator& other) const;
+    std::tuple<fz_stext_block*, fz_stext_line*, fz_stext_char*> operator*() const;
+
+    using difference_type = long;
+    using value_type = std::tuple<fz_stext_block*, fz_stext_line*, fz_stext_char*>;
+    using pointer = const std::tuple<fz_stext_block*, fz_stext_line*, fz_stext_char*>*;
+    using reference = const std::tuple<fz_stext_block*, fz_stext_line*, fz_stext_char*>&;
+    using iterator_category = std::forward_iterator_tag;
+};
+
+class PageIterator {
+    fz_stext_page* page;
+public:
+    PageIterator(fz_stext_page* page);
+    CharacterIterator begin() const;
+    CharacterIterator end() const;
+};
 
 class Document {
 
@@ -134,6 +162,8 @@ private:
 public:
     fz_document* doc = nullptr;
 
+    PageIterator page_iterator(int page_number);
+    void get_page_text_and_line_rects_after_rect(int page_number, fz_rect after, std::wstring& text, std::vector<fz_rect>& line_rects);
     void load_document_metadata_from_db();
     std::string add_bookmark(const std::wstring& desc, float y_offset);
     std::string add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);

@@ -4025,3 +4025,10 @@ void hsv2rgb(float* hsv_color, float* rgb_color) {
     rgb_color[1] = qcolor.greenF();
     rgb_color[2] = qcolor.blueF();
 }
+
+bool operator==(const fz_rect& lhs, const fz_rect& rhs) {
+    return lhs.x0 == rhs.x0 &&
+        lhs.y0 == rhs.y0 &&
+        lhs.x1 == rhs.x1 &&
+        lhs.y1 == rhs.y1;
+}
