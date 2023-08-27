@@ -1241,7 +1241,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     candid.doc = get_document();
                     candid.source_rect = current_document->document_to_absolute_rect(line_page_number, link.rects[0], true);
                     candid.source_text = get_document()->get_pdf_link_text(link);
-                    candid.target_pos = DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y };
+                    candid.target_pos = UncenteredDocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y };
                     result.push_back(candid);
                     //result.push_back(
                     //    std::make_pair(
@@ -1293,7 +1293,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     candid.doc = get_document();
                     candid.source_rect = generic_item_rects[i];
                     candid.source_text = generic_item_texts[i];
-                    candid.target_pos = DocumentPos{ possible_targets[j].page, 0, possible_targets[j].y_offset };
+                    candid.target_pos = UncenteredDocumentPos{ possible_targets[j].page, 0, possible_targets[j].y_offset };
                     generic_positions.push_back(candid);
                     //generic_positions.push_back(
                     //    std::make_pair(DocumentPos{ possible_targets[j].page, 0, possible_targets[j].y_offset },
@@ -1323,7 +1323,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                             candid.doc = get_document();
                             candid.source_rect = subrects[0];
                             candid.source_text = parts[j].trimmed().toStdWString();
-                            candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
+                            candid.target_pos = UncenteredDocumentPos{ index[0].page, 0, index[0].y_offset };
                             reference_positions.push_back(candid);
                         }
                         n_chars_seen += parts[j].size() + 1;
@@ -1337,7 +1337,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     candid.doc = get_document();
                     candid.source_rect = reference_rects[i];
                     candid.source_text = reference_texts[i];
-                    candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
+                    candid.target_pos = UncenteredDocumentPos{ index[0].page, 0, index[0].y_offset };
                     reference_positions.push_back(candid);
                     //reference_positions.push_back(
                     //    std::make_pair(
@@ -1355,7 +1355,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     candid.doc = get_document();
                     candid.source_rect = equation_rects[i];
                     candid.source_text = equation_texts[i];
-                    candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
+                    candid.target_pos = UncenteredDocumentPos{ index[0].page, 0, index[0].y_offset };
                     equation_positions.push_back(candid);
                     //equation_positions.push_back(
                     //    std::make_pair(
@@ -1394,7 +1394,7 @@ bool DocumentView::goto_definition() {
     std::vector<SmartViewCandidate> defloc = find_line_definitions();
     if (defloc.size() > 0) {
         //goto_offset_within_page(defloc[0].first.page, defloc[0].first.y);
-        DocumentPos docpos = defloc[0].get_docpos(this);
+        UncenteredDocumentPos docpos = defloc[0].get_docpos(this);
         goto_offset_within_page(docpos.page, docpos.y);
         return true;
     }
@@ -1585,12 +1585,13 @@ Document* SmartViewCandidate::get_document(DocumentView* view) {
     return view->get_document();
 
 }
-DocumentPos SmartViewCandidate::get_docpos(DocumentView* view) {
-    if (std::holds_alternative<DocumentPos>(target_pos)) {
-        return std::get<DocumentPos>(target_pos);
+
+UncenteredDocumentPos SmartViewCandidate::get_docpos(DocumentView* view) {
+    if (std::holds_alternative<UncenteredDocumentPos>(target_pos)) {
+        return std::get<UncenteredDocumentPos>(target_pos);
     }
     else {
-        return get_document(view)->absolute_to_page_pos(std::get<AbsoluteDocumentPos>(target_pos));
+        return get_document(view)->absolute_to_page_pos_uncentered(std::get<AbsoluteDocumentPos>(target_pos));
     }
 }
 
@@ -1599,6 +1600,6 @@ AbsoluteDocumentPos SmartViewCandidate::get_abspos(DocumentView* view) {
         return std::get<AbsoluteDocumentPos>(target_pos);
     }
     else {
-        return get_document(view)->document_to_absolute_pos(std::get<DocumentPos>(target_pos));
+        return get_document(view)->document_to_absolute_pos(std::get<UncenteredDocumentPos>(target_pos));
     }
 }

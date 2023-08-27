@@ -33,10 +33,10 @@ struct SmartViewCandidate {
     Document* doc = nullptr;
     fz_rect source_rect;
     std::wstring source_text;
-    std::variant<DocumentPos, AbsoluteDocumentPos> target_pos;
+    std::variant<UncenteredDocumentPos, AbsoluteDocumentPos> target_pos;
 
     Document* get_document(DocumentView* view);
-    DocumentPos get_docpos(DocumentView* view);
+    UncenteredDocumentPos get_docpos(DocumentView* view);
     AbsoluteDocumentPos get_abspos(DocumentView* view);
 };
 

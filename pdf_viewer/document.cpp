@@ -1460,7 +1460,7 @@ std::vector<IndexedData> Document::find_generic_with_string(std::wstring equatio
         std::wstring type = parts.at(0).toStdWString();
         std::wstring ref = parts.at(1).toStdWString();
 
-        std::vector<DocumentPos> positions = find_generic_locations(type, ref);
+        std::vector<UncenteredDocumentPos> positions = find_generic_locations(type, ref);
         for (auto pos : positions) {
             IndexedData index;
             index.page = pos.page;
@@ -1519,12 +1519,12 @@ std::optional<std::wstring> Document::get_regex_match_at_position(const std::wre
     return {};
 }
 
-std::vector<DocumentPos> Document::find_generic_locations(const std::wstring& type, const std::wstring& name) {
+std::vector<UncenteredDocumentPos> Document::find_generic_locations(const std::wstring& type, const std::wstring& name) {
     //int best_page = -1;
     //int best_y_offset = 0.0f;
     //float best_score = -1000;
 
-    std::vector<std::pair<int, DocumentPos>> pos_scores;
+    std::vector<std::pair<int, UncenteredDocumentPos>> pos_scores;
 
     for (size_t i = 0; i < generic_indices.size(); i++) {
         std::vector<std::wstring> parts = split_whitespace(generic_indices[i].text);
@@ -1535,7 +1535,7 @@ std::vector<DocumentPos> Document::find_generic_locations(const std::wstring& ty
 
             if (current_name == name) {
                 int score = type_name_similarity_score(current_type, type);
-                DocumentPos pos{ generic_indices[i].page, 0, generic_indices[i].y_offset };
+                UncenteredDocumentPos pos{ generic_indices[i].page, 0, generic_indices[i].y_offset };
                 pos_scores.push_back(std::make_pair(score, pos));
                 //if (score > best_score) {
                 //	best_page = generic_indices[i].page;
@@ -1547,13 +1547,13 @@ std::vector<DocumentPos> Document::find_generic_locations(const std::wstring& ty
         }
     }
 
-    auto  by_score = [](std::pair<int, DocumentPos> const& a, std::pair<int, DocumentPos> const& b) {
+    auto  by_score = [](std::pair<int, UncenteredDocumentPos> const& a, std::pair<int, UncenteredDocumentPos> const& b) {
         return a.first < b.first;
     };
 
     std::sort(pos_scores.begin(), pos_scores.end(), by_score);
 
-    std::vector<DocumentPos> res;
+    std::vector<UncenteredDocumentPos> res;
     for (int i = pos_scores.size() - 1; i >= 0; i--) {
         res.push_back(pos_scores[i].second);
     }

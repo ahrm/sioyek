@@ -350,7 +350,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
 void MainWidget::set_overview_position(int page, float offset) {
     if (page >= 0) {
-        auto abspos = main_document_view->get_document()->document_to_absolute_pos(DocumentPos { page, 0, offset });
+        auto abspos = main_document_view->get_document()->document_to_absolute_pos(UncenteredDocumentPos { page, 0, offset });
         float page_height = main_document_view->get_document()->get_page_height(page);
         set_overview_page(OverviewState{ abspos.y });
         invalidate_render();
@@ -367,7 +367,7 @@ void MainWidget::set_overview_link(PdfLink link) {
         current_overview_source_rect = source_absolute_rect;
         SmartViewCandidate current_candidate;
         current_candidate.source_rect = source_absolute_rect;
-        current_candidate.target_pos = DocumentPos{ page - 1, 0, offset_y };
+        current_candidate.target_pos = UncenteredDocumentPos{ page - 1, 0, offset_y };
         current_candidate.source_text = source_text;
         smart_view_candidates.clear();
         smart_view_candidates.push_back(current_candidate);
@@ -2416,7 +2416,7 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(UncenteredDocument
     }
 
     if (generic_pair) {
-        std::vector<DocumentPos> candidates = main_document_view->get_document()->find_generic_locations(generic_pair.value().first,
+        std::vector<UncenteredDocumentPos> candidates = main_document_view->get_document()->find_generic_locations(generic_pair.value().first,
             generic_pair.value().second);
         if (candidates.size() > 0) {
             if (update_candidates) {
@@ -3135,7 +3135,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
 
         SmartViewCandidate current_candid;
         current_candid.source_rect = overview_source_rect_absolute;
-        current_candid.target_pos = DocumentPos{ autoreference_page, 0, autoreference_offset };
+        current_candid.target_pos = UncenteredDocumentPos{ autoreference_page, 0, autoreference_offset };
         current_candid.source_text = source_text;
         smart_view_candidates = { current_candid };
         set_overview_position(autoreference_page, autoreference_offset);
@@ -4888,7 +4888,7 @@ void MainWidget::overview_to_definition() {
         //}
 
         if (candidates.size() > 0) {
-            DocumentPos first_docpos = candidates[0].get_docpos(main_document_view);
+            UncenteredDocumentPos first_docpos = candidates[0].get_docpos(main_document_view);
             smart_view_candidates = candidates;
             index_into_candidates = 0;
             set_overview_position(first_docpos.page, first_docpos.y);
@@ -7576,8 +7576,8 @@ HighlightButtons* MainWidget::get_highlight_buttons() {
 bool MainWidget::goto_ith_next_overview(int i) {
     if (smart_view_candidates.size() > 1) {
         index_into_candidates = mod((index_into_candidates + i), smart_view_candidates.size());
-        if (std::holds_alternative<DocumentPos>(smart_view_candidates[index_into_candidates].target_pos)) {
-            DocumentPos docpos = std::get<DocumentPos>(smart_view_candidates[index_into_candidates].target_pos);
+        if (std::holds_alternative<UncenteredDocumentPos>(smart_view_candidates[index_into_candidates].target_pos)) {
+            UncenteredDocumentPos docpos = std::get<UncenteredDocumentPos>(smart_view_candidates[index_into_candidates].target_pos);
             set_overview_position(docpos.page, docpos.y);
         }
         else {
@@ -8165,7 +8165,7 @@ QJsonObject MainWidget::get_json_state() {
                 candid_json_object["source_page"] = source_page;
                 candid_json_object["source_text"] = QString::fromStdWString(candid.source_text);
 
-                DocumentPos target_docpos = candid.get_docpos(main_document_view);
+                UncenteredDocumentPos target_docpos = candid.get_docpos(main_document_view);
                 AbsoluteDocumentPos target_abspos = candid.get_abspos(main_document_view);
 
                 candid_json_object["target_document_x"] = target_docpos.x;
