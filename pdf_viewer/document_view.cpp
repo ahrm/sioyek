@@ -1160,7 +1160,7 @@ int DocumentView::get_line_index_of_vertical_pos() {
     return index - 1;
 }
 
-int DocumentView::get_line_index_of_pos(DocumentPos line_doc_pos) {
+int DocumentView::get_line_index_of_pos(UncenteredDocumentPos line_doc_pos) {
     fz_point document_point = { line_doc_pos.x, line_doc_pos.y };
     auto rects = current_document->get_page_lines(line_doc_pos.page, nullptr);
     int page_width = current_document->get_page_width(line_doc_pos.page);

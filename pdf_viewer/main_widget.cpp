@@ -6,6 +6,7 @@
 // make types for absolute and document rects to simplify and avoid confusion
 // do the todo for link clicks when the document is zoomed in (focus on x too)
 // fix the issue where executing non-existant command blocks the python api
+// handle mobile text selection case where the character is not in the current page
 
 #include <iostream>
 #include <vector>
@@ -2909,7 +2910,7 @@ void MainWidget::toggle_two_window_mode() {
 fz_stext_char* MainWidget::get_closest_character_to_cusrsor(QPoint pos) {
 
     WindowPos window_pos = { pos.x(), pos.y() };
-    DocumentPos doc_pos = main_document_view->window_to_document_pos(window_pos);
+    UncenteredDocumentPos doc_pos = main_document_view->window_to_document_pos_uncentered(window_pos);
     int current_page = get_current_page_number();
     fz_stext_page* stext_page = doc()->get_stext_with_page_number(current_page);
     std::vector<fz_stext_char*> flat_chars;
@@ -3049,7 +3050,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
 void MainWidget::visual_mark_under_pos(WindowPos pos) {
     //float doc_x, doc_y;
     //int page;
-    DocumentPos document_pos = main_document_view->window_to_document_pos(pos);
+    UncenteredDocumentPos document_pos = main_document_view->window_to_document_pos_uncentered(pos);
     if (document_pos.page != -1) {
         //opengl_widget->set_should_draw_vertical_line(true);
         fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(document_pos.page);
@@ -3062,7 +3063,7 @@ void MainWidget::visual_mark_under_pos(WindowPos pos) {
         int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
         //int best_vertical_loc = line_locations[find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y), 2)];
         float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
-        WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels(DocumentPos{ document_pos.page, 0, best_vertical_loc_doc_pos });
+        WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels(UncenteredDocumentPos{ document_pos.page, 0, best_vertical_loc_doc_pos });
         auto [abs_doc_x, abs_doc_y] = main_document_view->window_to_absolute_document_pos(window_pos);
         main_document_view->set_vertical_line_pos(abs_doc_y);
         int container_line_index = main_document_view->get_line_index_of_pos(document_pos);
@@ -3396,7 +3397,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
 
         QPoint mouse_pos_ = mapFromGlobal(QCursor::pos());
         WindowPos mouse_pos = { mouse_pos_.x(), mouse_pos_.y() };
-        DocumentPos mouse_pos_document = main_document_view->window_to_document_pos(mouse_pos);
+        UncenteredDocumentPos mouse_pos_document = main_document_view->window_to_document_pos_uncentered(mouse_pos);
 
         for (int i = 0; i < command_parts.size(); i++) {
             // lagacy number macros, now replaced with names ones
@@ -4421,8 +4422,8 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
                 float end_offset_x = end_parts.at(1).toFloat();
                 float end_offset_y = end_parts.at(2).toFloat();
 
-                DocumentPos begin_doc_pos = { begin_page_number, begin_offset_x, begin_offset_y };
-                DocumentPos end_doc_pos = { end_page_number, end_offset_x, end_offset_y };
+                UncenteredDocumentPos begin_doc_pos = { begin_page_number, begin_offset_x, begin_offset_y };
+                UncenteredDocumentPos end_doc_pos = { end_page_number, end_offset_x, end_offset_y };
 
                 WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels(begin_doc_pos);
                 WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels(end_doc_pos);
@@ -4603,8 +4604,8 @@ bool MainWidget::get_selected_rect_document(int& out_page, fz_rect& out_rect) {
         bottom_right.x = absrect.value().x1;
         bottom_right.y = absrect.value().y1;
 
-        DocumentPos top_left_document = main_document_view->get_document()->absolute_to_page_pos(top_left);
-        DocumentPos bottom_right_document = main_document_view->get_document()->absolute_to_page_pos(bottom_right);
+        UncenteredDocumentPos top_left_document = main_document_view->get_document()->absolute_to_page_pos_uncentered(top_left);
+        UncenteredDocumentPos bottom_right_document = main_document_view->get_document()->absolute_to_page_pos_uncentered(bottom_right);
 
         fz_rect document_rect;
         document_rect.x0 = top_left_document.x;
@@ -4725,25 +4726,6 @@ void MainWidget::clear_selected_text() {
 bool MainWidget::is_rect_visible(int page, fz_rect rect) {
     fz_irect window_rect = main_document_view->document_to_window_irect(page, rect);
     if (window_rect.x0 > 0 && window_rect.x1 < main_window_width && window_rect.y0 > 0 && window_rect.y1 < main_window_height) {
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
-bool MainWidget::is_point_visible(int page, fz_point point) {
-    //Document
-    DocumentPos docpos;
-    docpos.page = page;
-    docpos.x = point.x;
-    docpos.y = point.y;
-    WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels(docpos);
-    //fz_irect window_rect = main_document_view->document_to_window_pos(page, rect);
-    if ((window_pos.x > 0)
-        && (window_pos.x < main_window_width)
-        && (window_pos.y > 0)
-        && (window_pos.y < main_window_height)) {
         return true;
     }
     else {
@@ -5465,17 +5447,17 @@ void MainWidget::handle_portal_to_link(const std::wstring& text) {
         ParsedUri parsed_uri = parse_uri(mupdf_context, pdf_link.uri);
 
         //AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
-        DocumentPos link_source_document_pos;
+        UncenteredDocumentPos link_source_document_pos;
         link_source_document_pos.page = pdf_link.source_page;
         link_source_document_pos.x = 0;
         link_source_document_pos.y = pdf_link.rects[0].y0;
-        DocumentPos dst_docpos;
+        UncenteredDocumentPos dst_docpos;
         dst_docpos.page = parsed_uri.page - 1;
         dst_docpos.x = parsed_uri.x;
         dst_docpos.y = parsed_uri.y;
 
-        auto src_abspos = doc()->document_to_absolute_pos(link_source_document_pos, true);
-        auto dst_abspos = doc()->document_to_absolute_pos(dst_docpos, true);
+        auto src_abspos = doc()->document_to_absolute_pos(link_source_document_pos);
+        auto dst_abspos = doc()->document_to_absolute_pos(dst_docpos);
 
         Portal portal;
         portal.dst.document_checksum = doc()->get_checksum();
@@ -5864,36 +5846,29 @@ bool MainWidget::event(QEvent* event) {
 }
 
 void MainWidget::handle_mobile_selection() {
-    //    QPoint selection_position = last_hold_point;
     fz_stext_char* character_under = get_closest_character_to_cusrsor(last_hold_point);
     if (character_under) {
         int current_page = get_current_page_number();
-        fz_rect uncentered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad), false);
         fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad), true);
         main_document_view->selected_character_rects.push_back(centered_rect);
 
+        UncenteredDocumentPos begin_document_pos, end_document_pos;
 
-        fz_rect rect = centered_rect;
-        int page;
-        fz_rect document_rect = doc()->absolute_to_page_rect(rect, &page);
-        //        fz_rect window_rect = main_document_view->absolute_to_window_rect(rect);
-        DocumentPos begin_document_pos, end_document_pos;
-
-        begin_document_pos.x = document_rect.x0;
-        begin_document_pos.y = document_rect.y0;
-        begin_document_pos.page = page;
-        end_document_pos.x = document_rect.x1;
-        end_document_pos.y = document_rect.y1;
-        end_document_pos.page = page;
+        begin_document_pos.x = centered_rect.x0;
+        begin_document_pos.y = centered_rect.y0;
+        begin_document_pos.page = current_page;
+        end_document_pos.x = centered_rect.x1;
+        end_document_pos.y = centered_rect.y1;
+        end_document_pos.page = current_page;
 
         AbsoluteDocumentPos begin_abspos;
-        begin_abspos.x = rect.x0;
-        begin_abspos.y = (rect.y0 + rect.y1) / 2;
+        begin_abspos.x = centered_rect.x0;
+        begin_abspos.y = (centered_rect.y0 + centered_rect.y1) / 2;
         //begin_abspos.y = rect.y0;
 
         AbsoluteDocumentPos end_abspos;
-        end_abspos.x = rect.x1;
-        end_abspos.y = (rect.y1 + rect.y0) / 2;
+        end_abspos.x = centered_rect.x1;
+        end_abspos.y = (centered_rect.y1 + centered_rect.y0) / 2;
         //end_abspos.y = rect.y1;
 
         WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels(begin_document_pos);

@@ -521,7 +521,6 @@ public:
     void handle_portal_overview_update();
     void goto_overview();
     bool is_rect_visible(int page, fz_rect rect);
-    bool is_point_visible(int page, fz_point point);
     void set_mark_in_current_location(char symbol);
     void goto_mark(char symbol);
     void advance_command(std::unique_ptr<Command> command, std::wstring* result=nullptr);
