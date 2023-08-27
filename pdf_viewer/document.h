@@ -252,6 +252,8 @@ public:
     int num_pages();
     fz_rect get_page_absolute_rect(int page);
     DocumentPos absolute_to_page_pos(AbsoluteDocumentPos absolute_pos);
+    UncenteredDocumentPos absolute_to_page_pos_uncentered(AbsoluteDocumentPos absolute_pos);
+    CenteredDocumentPos absolute_to_page_pos_centered(AbsoluteDocumentPos absolute_pos);
     fz_rect absolute_to_page_rect(const fz_rect& absolute_rect, int* page);
     QStandardItemModel* get_toc_model();
     int get_offset_page_number(float y_offset);
@@ -327,7 +329,7 @@ public:
     std::vector<fz_rect> get_highlighted_character_masks(int page);
     fz_rect get_page_rect_no_cache(int page);
     std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
-    std::optional<PdfLink> get_link_in_pos(const DocumentPos& pos);
+    std::optional<PdfLink> get_link_in_pos(const UncenteredDocumentPos& pos);
     std::vector<PdfLink> get_links_in_page_rect(int page, fz_rect rect);
     std::wstring get_pdf_link_text(PdfLink link);
     std::string get_highlight_index_uuid(int index);
@@ -341,6 +343,9 @@ public:
 
     float document_to_absolute_y(int page, float doc_y);
     AbsoluteDocumentPos document_to_absolute_pos(DocumentPos, bool center_mid = false);
+    AbsoluteDocumentPos document_to_absolute_pos(UncenteredDocumentPos docpos);
+    AbsoluteDocumentPos document_to_absolute_pos(CenteredDocumentPos docpos);
+
     fz_rect document_to_absolute_rect(int page, fz_rect doc_rect, bool center_mid = false);
 
     //void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);

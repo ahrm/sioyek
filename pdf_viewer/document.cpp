@@ -1236,8 +1236,8 @@ void Document::set_page_offset(int new_offset) {
 }
 
 fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page) {
-    DocumentPos bottom_left = absolute_to_page_pos({ absolute_rect.x0, absolute_rect.y0 });
-    DocumentPos top_right = absolute_to_page_pos({ absolute_rect.x1, absolute_rect.y1 });
+    UncenteredDocumentPos bottom_left = absolute_to_page_pos_uncentered({ absolute_rect.x0, absolute_rect.y0 });
+    UncenteredDocumentPos top_right = absolute_to_page_pos_uncentered({ absolute_rect.x1, absolute_rect.y1 });
     if (page != nullptr) {
         *page = bottom_left.page;
     }
@@ -1271,6 +1271,17 @@ DocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp) {
     else {
         return { -1, 0.0f, 0.0f };
     }
+}
+
+UncenteredDocumentPos Document::absolute_to_page_pos_uncentered(AbsoluteDocumentPos absolute_pos) {
+    DocumentPos doc_pos = absolute_to_page_pos(absolute_pos);
+    return UncenteredDocumentPos{ doc_pos.page, doc_pos.x, doc_pos.y };
+}
+
+CenteredDocumentPos Document::absolute_to_page_pos_centered(AbsoluteDocumentPos absolute_pos) {
+    DocumentPos doc_pos = absolute_to_page_pos(absolute_pos);
+    float doc_pos_page_width = get_page_width(doc_pos.page);
+    return CenteredDocumentPos{ doc_pos.page, doc_pos.x - doc_pos_page_width / 2.0f, doc_pos.y };
 }
 
 QStandardItemModel* Document::get_toc_model() {
@@ -1815,8 +1826,8 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
     }
 
 
-    DocumentPos page_pos1 = absolute_to_page_pos(selection_begin);
-    DocumentPos page_pos2 = absolute_to_page_pos(selection_end);
+    UncenteredDocumentPos page_pos1 = absolute_to_page_pos_uncentered(selection_begin);
+    UncenteredDocumentPos page_pos2 = absolute_to_page_pos_uncentered(selection_end);
 
     int page_begin, page_end;
     fz_point page_point1;
@@ -2321,8 +2332,8 @@ void Document::embed_annotations(std::wstring new_file_path) {
 
         fz_rect annot_rect;
         if (bookmark.is_freetext()) {
-            DocumentPos begin_page_pos = absolute_to_page_pos({ bookmark.begin_x, bookmark.begin_y });
-            DocumentPos end_page_pos = absolute_to_page_pos({ bookmark.end_x, bookmark.end_y });
+            UncenteredDocumentPos begin_page_pos = absolute_to_page_pos_uncentered({ bookmark.begin_x, bookmark.begin_y });
+            UncenteredDocumentPos end_page_pos = absolute_to_page_pos_uncentered({ bookmark.end_x, bookmark.end_y });
 
             annot_rect.x0 = begin_page_pos.x;
             annot_rect.x1 = end_page_pos.x;
@@ -2334,7 +2345,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
             pdf_set_annot_default_appearance(context, bookmark_annot, font_face, bookmark.font_size, 3, bookmark.color);
         }
         else if (bookmark.is_marked()) {
-            DocumentPos begin_page_pos = absolute_to_page_pos({ bookmark.begin_x, bookmark.begin_y });
+            UncenteredDocumentPos begin_page_pos = absolute_to_page_pos_uncentered({ bookmark.begin_x, bookmark.begin_y });
 
             annot_rect.x0 = begin_page_pos.x - 6;
             annot_rect.x1 = begin_page_pos.x + 6;
@@ -2363,7 +2374,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
             std::vector<fz_point> points;
 
             for (auto point : drawing.points) {
-                DocumentPos docpos = absolute_to_page_pos(point.pos);
+                UncenteredDocumentPos docpos = absolute_to_page_pos_uncentered(point.pos);
                 if (docpos.page == page_number) {
                     points.push_back(fz_point{ docpos.x, docpos.y });
                 }
@@ -2644,7 +2655,7 @@ void DocumentManager::free_document(Document* document) {
     delete document;
 }
 
-std::optional<PdfLink> Document::get_link_in_pos(const DocumentPos& pos) {
+std::optional<PdfLink> Document::get_link_in_pos(const UncenteredDocumentPos& pos) {
     return get_link_in_pos(pos.page, pos.x, pos.y);
 }
 
@@ -2806,6 +2817,21 @@ AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos, bool
     if (center_mid && (doc_pos.page < page_widths.size())) {
         res.x -= page_widths[doc_pos.page] / 2;
     }
+    return res;
+}
+
+AbsoluteDocumentPos Document::document_to_absolute_pos(UncenteredDocumentPos doc_pos) {
+    float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
+    AbsoluteDocumentPos res = { doc_pos.x, absolute_y };
+    if (doc_pos.page < page_widths.size()) {
+        res.x -= page_widths[doc_pos.page] / 2;
+    }
+    return res;
+}
+
+AbsoluteDocumentPos Document::document_to_absolute_pos(CenteredDocumentPos doc_pos) {
+    float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
+    AbsoluteDocumentPos res = { doc_pos.x, absolute_y };
     return res;
 }
 
@@ -3501,7 +3527,7 @@ std::wstring Document::get_text_in_rect(int page, fz_rect doc_rect) {
 
 void Document::add_freehand_drawing(FreehandDrawing new_drawing) {
     if (new_drawing.points.size() > 0) {
-        DocumentPos docpos = absolute_to_page_pos(new_drawing.points[0].pos);
+        UncenteredDocumentPos docpos = absolute_to_page_pos_uncentered(new_drawing.points[0].pos);
         drawings_mutex.lock();
         page_freehand_drawings[docpos.page].push_back(new_drawing);
         drawings_mutex.unlock();

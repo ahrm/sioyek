@@ -8,6 +8,18 @@ struct DocumentPos {
     float y;
 };
 
+struct CenteredDocumentPos {
+    int page;
+    float x;
+    float y;
+};
+
+struct UncenteredDocumentPos {
+    int page;
+    float x;
+    float y;
+};
+
 struct AbsoluteDocumentPos {
     float x;
     // this is the concatenated y-coordinate of the current page (sum of all page heights up to current location)

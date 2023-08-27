@@ -286,7 +286,7 @@ void DocumentView::set_offset_y(float new_offset_y) {
 std::optional<PdfLink> DocumentView::get_link_in_pos(WindowPos pos) {
     if (!current_document) return {};
 
-    DocumentPos doc_pos = window_to_document_pos(pos);
+    UncenteredDocumentPos doc_pos = window_to_document_pos_uncentered(pos);
     return current_document->get_link_in_pos(doc_pos);
 }
 
@@ -387,6 +387,10 @@ NormalizedWindowPos DocumentView::document_to_window_pos(DocumentPos doc_pos) {
     }
 }
 
+WindowPos DocumentView::document_to_window_pos_in_pixels(UncenteredDocumentPos doc_pos) {
+    return document_to_window_pos_in_pixels(DocumentPos { doc_pos.page, doc_pos.x, doc_pos.y });
+}
+
 WindowPos DocumentView::document_to_window_pos_in_pixels(DocumentPos doc_pos) {
     AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
     WindowPos window_pos;
@@ -410,8 +414,8 @@ fz_irect DocumentView::document_to_window_irect(int page, fz_rect doc_rect) {
 
     fz_irect window_rect;
 
-    WindowPos bottom_left = document_to_window_pos_in_pixels({ page, doc_rect.x0, doc_rect.y0 });
-    WindowPos top_right = document_to_window_pos_in_pixels({ page, doc_rect.x1, doc_rect.y1 });
+    WindowPos bottom_left = document_to_window_pos_in_pixels(DocumentPos { page, doc_rect.x0, doc_rect.y0 });
+    WindowPos top_right = document_to_window_pos_in_pixels(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
     window_rect.x0 = bottom_left.x;
     window_rect.y0 = bottom_left.y;
     window_rect.x1 = top_right.x;
@@ -446,8 +450,8 @@ fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect do
         w1 = document_to_window_pos_in_pixels_banded({ page, doc_rect.x1, doc_rect.y1 });
     }
     else {
-        w0 = document_to_window_pos_in_pixels({ page, doc_rect.x0, doc_rect.y0 });
-        w1 = document_to_window_pos_in_pixels({ page, doc_rect.x1, doc_rect.y1 });
+        w0 = document_to_window_pos_in_pixels(DocumentPos { page, doc_rect.x0, doc_rect.y0 });
+        w1 = document_to_window_pos_in_pixels(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
     }
 
     w1.x -= ((w1.x - w0.x) - pixel_width);
@@ -466,6 +470,17 @@ fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect do
     res.y1 = -p1.y;
 
     return res;
+}
+
+UncenteredDocumentPos DocumentView::window_to_document_pos_uncentered(WindowPos window_pos) {
+    if (current_document) {
+        return current_document->absolute_to_page_pos_uncentered(
+            { (window_pos.x - view_width / 2) / zoom_level - offset_x,
+            (window_pos.y - view_height / 2) / zoom_level + offset_y });
+    }
+    else {
+        return { -1, 0, 0 };
+    }
 }
 
 DocumentPos DocumentView::window_to_document_pos(WindowPos window_pos) {
