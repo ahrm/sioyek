@@ -1728,7 +1728,7 @@ void MainWidget::open_document_at_location(const Path& path_,
     main_document_view->on_view_size_change(main_window_width, main_window_height);
 
     AbsoluteDocumentPos absolute_pos = main_document_view->get_document()->document_to_absolute_pos(
-        { page, x_loc.value_or(0), y_loc.value_or(0) }, true);
+        UncenteredDocumentPos{ page, x_loc.value_or(0), y_loc.value_or(0) });
 
     if (x_loc) {
         main_document_view->set_offset_x(absolute_pos.x);

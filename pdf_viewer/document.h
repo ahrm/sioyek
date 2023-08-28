@@ -342,11 +342,11 @@ public:
         std::vector<TocNode*>& top_level_node);
 
     float document_to_absolute_y(int page, float doc_y);
-    AbsoluteDocumentPos document_to_absolute_pos(DocumentPos, bool center_mid = false);
+    //AbsoluteDocumentPos document_to_absolute_pos(DocumentPos, bool center_mid = false);
     AbsoluteDocumentPos document_to_absolute_pos(UncenteredDocumentPos docpos);
     AbsoluteDocumentPos document_to_absolute_pos(CenteredDocumentPos docpos);
 
-    fz_rect document_to_absolute_rect(int page, fz_rect doc_rect, bool center_mid = false);
+    fz_rect document_to_absolute_rect(int page, fz_rect doc_rect, bool uncentered = false);
 
     //void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
     fz_rect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);

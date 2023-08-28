@@ -374,19 +374,6 @@ fz_rect DocumentView::absolute_to_window_rect(fz_rect doc_rect) {
     return res;
 }
 
-NormalizedWindowPos DocumentView::document_to_window_pos(DocumentPos doc_pos) {
-
-    if (current_document) {
-        WindowPos window_pos = document_to_window_pos_in_pixels_uncentered({ doc_pos.page, doc_pos.x, doc_pos.y });
-        double halfwidth = static_cast<double>(view_width) / 2;
-        double halfheight = static_cast<double>(view_height) / 2;
-
-        float window_x = static_cast<float>((window_pos.x - halfwidth) / halfwidth);
-        float window_y = static_cast<float>((window_pos.y - halfheight) / halfheight);
-        return { window_x, -window_y };
-    }
-}
-
 NormalizedWindowPos DocumentView::document_to_window_pos(UncenteredDocumentPos doc_pos) {
 
     if (current_document) {
@@ -434,13 +421,11 @@ WindowPos DocumentView::document_to_window_pos_in_pixels_centered(CenteredDocume
     return absolute_to_window_pos_in_pixels(abspos, doc_pos.page);
 }
 
-WindowPos DocumentView::document_to_window_pos_in_pixels_banded(DocumentPos doc_pos) {
+WindowPos DocumentView::document_to_window_pos_in_pixels_banded(UncenteredDocumentPos doc_pos) {
     AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
     WindowPos window_pos;
-    //float to_round = std::roundf((abspos.y - offset_y) * zoom_level + static_cast<float>(view_height) / 2.0f);
-    float docwidth = current_document->get_page_width(doc_pos.page);
     window_pos.y = static_cast<int>(std::roundf((abspos.y - offset_y) * zoom_level + static_cast<float>(view_height) / 2.0f));
-    window_pos.x = static_cast<int>(std::roundf((abspos.x + offset_x - docwidth / 2.0) * zoom_level + static_cast<float>(view_width) / 2.0f));
+    window_pos.x = static_cast<int>(std::roundf((abspos.x + offset_x) * zoom_level + static_cast<float>(view_width) / 2.0f));
     //window_pos.x = static_cast<int>(std::roundf((abspos.x + offset_x - current_document->get_page_width(doc_pos.page) / 2) * zoom_level + static_cast<float>(view_width) / 2));
     return window_pos;
 }
@@ -827,7 +812,7 @@ float DocumentView::get_page_offset(int page) {
     return current_document->get_accum_page_height(page);
 }
 
-void DocumentView::goto_offset_within_page(DocumentPos pos) {
+void DocumentView::goto_offset_within_page(CenteredDocumentPos pos) {
     set_offsets(pos.x, get_page_offset(pos.page) + pos.y);
 }
 

@@ -2226,7 +2226,7 @@ Document* PdfViewOpenGLWidget::get_current_overview_document() {
 
 }
 
-NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(DocumentPos pos) {
+NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(CenteredDocumentPos pos) {
     NormalizedWindowPos res;
 
     if (overview_page) {
@@ -2254,8 +2254,8 @@ NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(DocumentPos po
 
 fz_rect PdfViewOpenGLWidget::document_to_overview_rect(int page, fz_rect document_rect) {
     fz_rect res;
-    DocumentPos top_left = { page, document_rect.x0, document_rect.y0 };
-    DocumentPos bottom_right = { page, document_rect.x1, document_rect.y1 };
+    CenteredDocumentPos top_left = { page, document_rect.x0, document_rect.y0 };
+    CenteredDocumentPos bottom_right = { page, document_rect.x1, document_rect.y1 };
     NormalizedWindowPos top_left_pos = document_to_overview_pos(top_left);
     NormalizedWindowPos bottom_right_pos = document_to_overview_pos(bottom_right);
     res.x0 = top_left_pos.x;

@@ -2,11 +2,11 @@
 
 #include <qpoint.h>
 
-struct DocumentPos {
-    int page;
-    float x;
-    float y;
-};
+//struct DocumentPos {
+//    int page;
+//    float x;
+//    float y;
+//};
 
 struct CenteredDocumentPos {
     int page;

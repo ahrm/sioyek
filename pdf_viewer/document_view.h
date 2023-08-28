@@ -122,14 +122,13 @@ public:
     NormalizedWindowPos absolute_to_window_pos(AbsoluteDocumentPos absolute_pos);
 
     fz_rect absolute_to_window_rect(fz_rect doc_rect);
-    NormalizedWindowPos document_to_window_pos(DocumentPos pos);
     NormalizedWindowPos document_to_window_pos(UncenteredDocumentPos pos);
     NormalizedWindowPos document_to_window_pos(CenteredDocumentPos pos);
     //WindowPos document_to_window_pos_in_pixels(DocumentPos doc_pos);
     WindowPos absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs_pos, int page);
     WindowPos document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos doc_pos);
     WindowPos document_to_window_pos_in_pixels_centered(CenteredDocumentPos doc_pos);
-    WindowPos document_to_window_pos_in_pixels_banded(DocumentPos doc_pos);
+    WindowPos document_to_window_pos_in_pixels_banded(UncenteredDocumentPos doc_pos);
     fz_rect document_to_window_rect(int page, fz_rect doc_rect);
     fz_irect document_to_window_irect(int page, fz_rect doc_rect);
     fz_rect document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height, bool banded = false);
@@ -166,7 +165,7 @@ public:
     void reset_doc_state();
     void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions = false);
     float get_page_offset(int page);
-    void goto_offset_within_page(DocumentPos pos);
+    void goto_offset_within_page(CenteredDocumentPos pos);
     void goto_offset_within_page(int page, float offset_y);
     void goto_page(int page);
     void fit_to_page_width(bool smart = false, bool ratio = false);

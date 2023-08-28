@@ -1978,11 +1978,11 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
                     for (int vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
                         fz_point vertex = pdf_annot_ink_list_stroke_vertex(context, annot, stroke_index, vertex_index);
                         FreehandDrawingPoint point;
-                        DocumentPos docpos;
+                        UncenteredDocumentPos docpos;
                         docpos.page = p;
                         docpos.x = vertex.x;
                         docpos.y = vertex.y;
-                        point.pos = document_to_absolute_pos(docpos, true);
+                        point.pos = document_to_absolute_pos(docpos);
                         point.thickness = thickness;
                         drawing.points.push_back(point);
                     }
@@ -2045,7 +2045,7 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
                     int n_channels = -1;
                     pdf_annot_color(context, annot, &n_channels, color);
 
-                    DocumentPos begin_pos, end_pos;
+                    UncenteredDocumentPos begin_pos, end_pos;
                     begin_pos.page = p;
                     begin_pos.x = first_vertex.ul.x;
                     begin_pos.y = (first_vertex.ul.y + first_vertex.ll.y) / 2;
@@ -2053,8 +2053,8 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
                     end_pos.x = last_vertex.ur.x;
                     end_pos.y = (last_vertex.ur.y + last_vertex.lr.y) / 2;
 
-                    AbsoluteDocumentPos begin_abspos = document_to_absolute_pos(begin_pos, true);
-                    AbsoluteDocumentPos end_abspos = document_to_absolute_pos(end_pos, true);
+                    AbsoluteDocumentPos begin_abspos = document_to_absolute_pos(begin_pos);
+                    AbsoluteDocumentPos end_abspos = document_to_absolute_pos(end_pos);
 
                     Highlight new_highlight;
                     new_highlight.selection_begin = begin_abspos;
@@ -2119,114 +2119,6 @@ void Document::import_annotations() {
             add_freehand_drawing(drawing);
         }
     }
-
-    //pdf_document* pdf_doc = pdf_specifics(context, doc);
-
-    //std::vector<BookMark> new_bookmarks;
-    //std::vector<Highlight> new_highlights;
-
-    //for (int p = 0; p < num_pages(); p++) {
-    //	fz_page* page = fz_load_page(context, doc, p);
-    //	pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
-
-    //	pdf_annot* annot = pdf_first_annot(context, pdf_page);
-    //	while (annot) {
-    //		enum pdf_annot_type annot_type = pdf_annot_type(context, annot);
-
-    //		if (annot_type == pdf_annot_type::PDF_ANNOT_TEXT) {
-    //			fz_rect rect = pdf_bound_annot(context, annot);
-    //			fz_rect absrect = document_to_absolute_rect(p, rect, true);
-    //			// get text of annotation
-    //			const char* txt = pdf_annot_contents(context, annot);
-    //			//new_bookmark.description = utf8_decode(txt);
-    //			BookMark new_bookmark;
-    //			new_bookmark.description = utf8_decode(txt);
-    //			new_bookmark.y_offset = (absrect.y0 + absrect.y1) / 2;
-    //			new_bookmark.begin_x = (absrect.x0 + absrect.x1) / 2;
-    //			new_bookmark.begin_y = new_bookmark.y_offset;
-
-    //			if (is_bookmark_new(new_bookmark)) {
-    //				add_marked_bookmark(new_bookmark.description, { new_bookmark.begin_x, new_bookmark.begin_y });
-    //			}
-
-    //		}
-
-    //		if (annot_type == pdf_annot_type::PDF_ANNOT_FREE_TEXT) {
-    //			fz_rect rect = pdf_bound_annot(context, annot);
-    //			fz_rect absrect = document_to_absolute_rect(p, rect, true);
-    //			// get text of annotation
-    //			const char* txt = pdf_annot_contents(context, annot);
-    //			//new_bookmark.description = utf8_decode(txt);
-    //			BookMark new_bookmark;
-    //			new_bookmark.description = utf8_decode(txt);
-    //			new_bookmark.y_offset = absrect.y0;
-    //			new_bookmark.begin_x = absrect.x0;
-    //			new_bookmark.begin_y = absrect.y0;
-    //			new_bookmark.end_x = absrect.x1;
-    //			new_bookmark.end_y = absrect.y1;
-    //			char font_name[100] = {0};
-    //			const char* font_name_addr[] = {font_name};
-    //			float font_size;
-    //			float color[4];
-    //			int n_channels;
-
-    //			pdf_annot_default_appearance(context, annot, &font_name_addr[0], &font_size, &n_channels, color);
-    //			new_bookmark.font_face = utf8_decode(font_name);
-    //			new_bookmark.font_size = font_size;
-    //			new_bookmark.color[0] = color[0];
-    //			new_bookmark.color[1] = color[1];
-    //			new_bookmark.color[2] = color[2];
-
-    //			if (is_bookmark_new(new_bookmark)) {
-    //				add_freetext_bookmark_with_color(new_bookmark.description, absrect, new_bookmark.color);
-    //			}
-
-    //		}
-
-    //		if ((annot_type == pdf_annot_type::PDF_ANNOT_HIGHLIGHT) || (annot_type == pdf_annot_type::PDF_ANNOT_UNDERLINE)) {
-    //			int num_quads = pdf_annot_quad_point_count(context, annot);
-
-    //			if (num_quads > 0) {
-    //				fz_quad first_vertex = pdf_annot_quad_point(context, annot, 0);
-    //				fz_quad last_vertex = pdf_annot_quad_point(context, annot, num_quads-1);
-    //				const char* txt = pdf_annot_contents(context, annot);
-    //				float color[4];
-    //				int n_channels = -1;
-    //				pdf_annot_color(context, annot, &n_channels, color);
-
-    //				DocumentPos begin_pos, end_pos;
-    //				begin_pos.page = p;
-    //				begin_pos.x = first_vertex.ul.x;
-    //				begin_pos.y = ( first_vertex.ul.y + first_vertex.ll.y ) / 2;
-    //				end_pos.page = p;
-    //				end_pos.x = last_vertex.ur.x;
-    //				end_pos.y = ( last_vertex.ur.y + last_vertex.lr.y ) / 2;
-
-    //				AbsoluteDocumentPos begin_abspos = document_to_absolute_pos(begin_pos, true);
-    //				AbsoluteDocumentPos end_abspos = document_to_absolute_pos(end_pos, true);
-
-    //				Highlight new_highlight;
-    //				new_highlight.selection_begin = begin_abspos;
-    //				new_highlight.selection_end = end_abspos;
-    //				new_highlight.text_annot = utf8_decode(txt);
-    //				new_highlight.type = get_highlight_color_type(color);
-
-    //				if (annot_type == pdf_annot_type::PDF_ANNOT_UNDERLINE) {
-    //					new_highlight.type = new_highlight.type + 'A' - 'a';
-    //				}
-
-    //				if (is_highlight_new(new_highlight)) {
-    //					add_highlight(new_highlight.text_annot, begin_abspos, end_abspos, new_highlight.type);
-    //				}
-
-    //			}
-    //		}
-    //		annot = pdf_next_annot(context, annot);
-    //	}
-
-
-    //	fz_drop_page(context, page);
-    //}
 }
 
 void Document::embed_annotations(std::wstring new_file_path) {
@@ -2810,14 +2702,14 @@ float Document::document_to_absolute_y(int page, float doc_y) {
     return 0;
 }
 
-AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos, bool center_mid) {
-    float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
-    AbsoluteDocumentPos res = { doc_pos.x, absolute_y };
-    if (center_mid && (doc_pos.page < page_widths.size())) {
-        res.x -= page_widths[doc_pos.page] / 2;
-    }
-    return res;
-}
+//AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos, bool center_mid) {
+//    float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
+//    AbsoluteDocumentPos res = { doc_pos.x, absolute_y };
+//    if (center_mid && (doc_pos.page < page_widths.size())) {
+//        res.x -= page_widths[doc_pos.page] / 2;
+//    }
+//    return res;
+//}
 
 AbsoluteDocumentPos Document::document_to_absolute_pos(UncenteredDocumentPos doc_pos) {
     float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
@@ -2834,10 +2726,18 @@ AbsoluteDocumentPos Document::document_to_absolute_pos(CenteredDocumentPos doc_p
     return res;
 }
 
-fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect, bool center_mid) {
+fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect, bool uncentered) {
     fz_rect res;
-    AbsoluteDocumentPos x0y0 = document_to_absolute_pos({ page, doc_rect.x0, doc_rect.y0 }, center_mid);
-    AbsoluteDocumentPos x1y1 = document_to_absolute_pos({ page, doc_rect.x1, doc_rect.y1 }, center_mid);
+    AbsoluteDocumentPos x0y0;
+    AbsoluteDocumentPos x1y1;
+    if (uncentered) {
+        x0y0 = document_to_absolute_pos(UncenteredDocumentPos { page, doc_rect.x0, doc_rect.y0 });
+        x1y1 = document_to_absolute_pos(UncenteredDocumentPos { page, doc_rect.x1, doc_rect.y1 });
+    }
+    else {
+        x0y0 = document_to_absolute_pos(CenteredDocumentPos { page, doc_rect.x0, doc_rect.y0 });
+        x1y1 = document_to_absolute_pos(CenteredDocumentPos { page, doc_rect.x1, doc_rect.y1 });
+    }
 
     res.x0 = x0y0.x;
     res.y0 = x0y0.y;
