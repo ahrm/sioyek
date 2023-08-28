@@ -1930,7 +1930,7 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
             if (selecting || word_selecting) {
                 if (!(current_char->c == ' ' && selected_text.size() == 0)) {
                     selected_text.push_back(current_char->c);
-                    fz_rect charrect = document_to_absolute_rect(i, fz_rect_from_quad(current_char->quad), true);
+                    fz_rect charrect = document_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
                     selected_characters.push_back(charrect);
                 }
                 if ((current_char->next == nullptr)) {
@@ -1991,7 +1991,7 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
             }
             if (annot_type == pdf_annot_type::PDF_ANNOT_TEXT) {
                 fz_rect rect = pdf_bound_annot(context, annot);
-                fz_rect absrect = document_to_absolute_rect(p, rect, true);
+                fz_rect absrect = document_to_absolute_rect(p, rect);
                 // get text of annotation
                 const char* txt = pdf_annot_contents(context, annot);
                 //new_bookmark.description = utf8_decode(txt);
@@ -2006,7 +2006,7 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
 
             if (annot_type == pdf_annot_type::PDF_ANNOT_FREE_TEXT) {
                 fz_rect rect = pdf_bound_annot(context, annot);
-                fz_rect absrect = document_to_absolute_rect(p, rect, true);
+                fz_rect absrect = document_to_absolute_rect(p, rect);
                 // get text of annotation
                 const char* txt = pdf_annot_contents(context, annot);
                 //new_bookmark.description = utf8_decode(txt);
@@ -2726,18 +2726,10 @@ AbsoluteDocumentPos Document::document_to_absolute_pos(CenteredDocumentPos doc_p
     return res;
 }
 
-fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect, bool uncentered) {
+fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect){
     fz_rect res;
-    AbsoluteDocumentPos x0y0;
-    AbsoluteDocumentPos x1y1;
-    if (uncentered) {
-        x0y0 = document_to_absolute_pos(UncenteredDocumentPos { page, doc_rect.x0, doc_rect.y0 });
-        x1y1 = document_to_absolute_pos(UncenteredDocumentPos { page, doc_rect.x1, doc_rect.y1 });
-    }
-    else {
-        x0y0 = document_to_absolute_pos(CenteredDocumentPos { page, doc_rect.x0, doc_rect.y0 });
-        x1y1 = document_to_absolute_pos(CenteredDocumentPos { page, doc_rect.x1, doc_rect.y1 });
-    }
+    AbsoluteDocumentPos x0y0 = document_to_absolute_pos(UncenteredDocumentPos { page, doc_rect.x0, doc_rect.y0 }); 
+    AbsoluteDocumentPos x1y1 = document_to_absolute_pos(UncenteredDocumentPos { page, doc_rect.x1, doc_rect.y1 });
 
     res.x0 = x0y0.x;
     res.y0 = x0y0.y;
@@ -2903,9 +2895,7 @@ const std::vector<fz_rect>& Document::get_page_lines(
             fz_page* mupdf_page = fz_load_page(context, doc, page);
             fz_rect bound = fz_bound_page(context, mupdf_page);
             bound = document_to_absolute_rect(page, bound);
-            int halfwidth = (bound.x1 - bound.x0) / 2;
-            bound.x0 -= halfwidth;
-            bound.x1 -= halfwidth;
+
             fz_drop_page(context, mupdf_page);
 
             std::vector<fz_rect> line_rects;

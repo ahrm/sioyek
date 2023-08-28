@@ -371,7 +371,7 @@ public:
     void set_synctex_mode(bool mode);
     void toggle_synctex_mode();
     void complete_pending_link(const PortalViewState& destination_view_state);
-    void long_jump_to_destination(CenteredDocumentPos pos);
+    void long_jump_to_destination(UncenteredDocumentPos pos);
     void long_jump_to_destination(int page, float offset_y);
     void long_jump_to_destination(float abs_offset_y);
     void execute_command(std::wstring command, std::wstring text = L"", bool wait = false);
@@ -512,7 +512,7 @@ public:
     void set_status_message(std::wstring new_status_string);
     void remove_self_from_windows();
     //void handle_additional_command(std::wstring command_name, bool wait=false);
-    std::optional<CenteredDocumentPos> get_overview_position();
+    std::optional<UncenteredDocumentPos> get_overview_position();
     void handle_keyboard_select(const std::wstring& text);
     //void run_multiple_commands(const std::wstring& commands);
     void push_state(bool update = true);

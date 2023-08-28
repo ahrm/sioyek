@@ -1220,7 +1220,7 @@ void DocumentView::get_rects_from_ranges(int page_number, const std::vector<fz_r
     for (int i = 0; i < ranges.size(); i++) {
         auto [first, last] = ranges[i];
         fz_rect current_source_rect = get_range_rect_union(line_char_rects, first, last);
-        current_source_rect = current_document->document_to_absolute_rect(page_number, current_source_rect, true);
+        current_source_rect = current_document->document_to_absolute_rect(page_number, current_source_rect);
         out_rects.push_back(current_source_rect);
     }
 }
@@ -1259,7 +1259,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     auto parsed_uri = parse_uri(mupdf_context, link.uri);
                     SmartViewCandidate candid;
                     candid.doc = get_document();
-                    candid.source_rect = current_document->document_to_absolute_rect(line_page_number, link.rects[0], true);
+                    candid.source_rect = current_document->document_to_absolute_rect(line_page_number, link.rects[0]);
                     candid.source_text = get_document()->get_pdf_link_text(link);
                     candid.target_pos = UncenteredDocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y };
                     result.push_back(candid);
@@ -1484,7 +1484,7 @@ std::optional<fz_rect> DocumentView::shrink_selection(bool is_begin, bool word) 
                 fz_stext_page* stext_page = current_document->get_stext_with_page_number(page);
                 std::optional<fz_rect> new_rect_ = find_shrinking_rect_word(is_begin, stext_page, page_rect);
                 if (new_rect_) {
-                    fz_rect new_rect = current_document->document_to_absolute_rect(page, new_rect_.value(), true);
+                    fz_rect new_rect = current_document->document_to_absolute_rect(page, new_rect_.value());
 
                     if (is_begin) {
                         while (!are_rects_same(new_rect, selected_character_rects[0])) {
@@ -1534,7 +1534,7 @@ std::optional<fz_rect> DocumentView::expand_selection(bool is_begin, bool word) 
             if (word) {
                 std::vector<fz_rect> next_rects = find_expanding_rect_word(is_begin, stext_page, page_rect);
                 for (int i = 0; i < next_rects.size(); i++) {
-                    next_rects[i] = current_document->document_to_absolute_rect(page, next_rects[i], true);
+                    next_rects[i] = current_document->document_to_absolute_rect(page, next_rects[i]);
                 }
                 if (is_begin) {
                     for (int i = 0; i < next_rects.size(); i++) {
@@ -1553,7 +1553,7 @@ std::optional<fz_rect> DocumentView::expand_selection(bool is_begin, bool word) 
                 next_rect = find_expanding_rect(is_begin, stext_page, page_rect);
             }
             if (next_rect) {
-                fz_rect next_rect_abs = current_document->document_to_absolute_rect(page, next_rect.value(), true);
+                fz_rect next_rect_abs = current_document->document_to_absolute_rect(page, next_rect.value());
                 if (is_begin) {
                     selected_character_rects.push_front(next_rect_abs);
                 }

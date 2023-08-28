@@ -362,7 +362,7 @@ void MainWidget::set_overview_link(PdfLink link) {
 
     auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
     if (page >= 1) {
-        fz_rect source_absolute_rect = doc()->document_to_absolute_rect(link.source_page, link.rects[0], true);
+        fz_rect source_absolute_rect = doc()->document_to_absolute_rect(link.source_page, link.rects[0]);
         std::wstring source_text = doc()->get_pdf_link_text(link);
 
         current_overview_source_rect = source_absolute_rect;
@@ -2371,7 +2371,7 @@ ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* o
         if (page < 0) return ReferenceType::None;
         auto res = doc()->get_page_bib_with_reference(page, query);
         if (res) {
-            fz_rect absrect = doc()->document_to_absolute_rect(page, res.value().second);
+            //fz_rect absrect = doc()->document_to_absolute_rect(page, res.value().second);
             *out_source_text = query;
             *out_page = page;
             *out_offset = res.value().second.y0;
@@ -2412,7 +2412,7 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(UncenteredDocument
         for (int i = reference_range.first + 1; i <= reference_range.second; i++) {
             source_rect = fz_union_rect(source_rect, fz_rect_from_quad(flat_chars[i]->quad));
         }
-        source_rect = doc()->document_to_absolute_rect(page, source_rect, true);
+        source_rect = doc()->document_to_absolute_rect(page, source_rect);
         *out_rect = source_rect;
     }
 
@@ -3254,19 +3254,23 @@ void MainWidget::long_jump_to_destination(float abs_offset_y) {
     long_jump_to_destination(page, offset_y);
 }
 
-void MainWidget::long_jump_to_destination(CenteredDocumentPos pos) {
+void MainWidget::long_jump_to_destination(UncenteredDocumentPos pos) {
+    AbsoluteDocumentPos abs_pos = doc()->document_to_absolute_pos(pos);
+
     if (!is_pending_link_source_filled()) {
         push_state();
-        main_document_view->goto_offset_within_page({ pos.page, pos.x, pos.y });
+        main_document_view->set_offsets(abs_pos.x, abs_pos.y);
+        //main_document_view->goto_offset_within_page({ pos.page, pos.x, pos.y });
     }
     else {
         // if we press the link button and then click on a pdf link, we automatically link to the
         // link's destination
 
+
         PortalViewState dest_state;
         dest_state.document_checksum = main_document_view->get_document()->get_checksum();
-        dest_state.book_state.offset_x = pos.x;
-        dest_state.book_state.offset_y = main_document_view->get_page_offset(pos.page) + pos.y;
+        dest_state.book_state.offset_x = abs_pos.x;
+        dest_state.book_state.offset_y = abs_pos.y;
         dest_state.book_state.zoom_level = main_document_view->get_zoom_level();
 
         complete_pending_link(dest_state);
@@ -3933,9 +3937,10 @@ void MainWidget::handle_link_click(const PdfLink& link) {
     // todo: if the document is so zoomed in that the page doesn't fit inside the screen, center on x also
     // for example currently if we click on a link on a two column document when we zoomed in on a single column
     // the target of the link is not visible if it is on the other column
-    offset_x = main_document_view->get_offset_x();
+    //offset_x = main_document_view->get_offset_x();
 
-    long_jump_to_destination({ page, offset_x, offset_y });
+    //long_jump_to_destination({ page, offset_x, offset_y });
+    long_jump_to_destination(page, offset_y);
 }
 
 void MainWidget::save_auto_config() {
@@ -4200,7 +4205,7 @@ fz_rect MainWidget::get_page_intersecting_rect(int page, fz_rect rect) {
 
 int MainWidget::get_page_intersecting_rect_index(int page, fz_rect rect) {
     std::vector<fz_rect> line_rects  = main_document_view->get_document()->get_page_lines(page, nullptr);
-    rect = doc()->document_to_absolute_rect(page, rect, true);
+    rect = doc()->document_to_absolute_rect(page, rect);
 
     if (rect.y0 > rect.y1) {
         std::swap(rect.y0, rect.y1);
@@ -4357,11 +4362,11 @@ void MainWidget::remove_self_from_windows() {
 }
 
 
-std::optional<CenteredDocumentPos> MainWidget::get_overview_position() {
+std::optional<UncenteredDocumentPos> MainWidget::get_overview_position() {
     auto overview_state_ = opengl_widget->get_overview_page();
     if (overview_state_.has_value()) {
         OverviewState overview_state = overview_state_.value();
-        return main_document_view->get_document()->absolute_to_page_pos_centered({ 0, overview_state.absolute_offset_y });
+        return main_document_view->get_document()->absolute_to_page_pos_uncentered({ 0, overview_state.absolute_offset_y });
         //DocumentPos pos = { overview_state.page, 0.0f, overview_state.offset_y };
         //return pos;
     }
@@ -4538,7 +4543,7 @@ void MainWidget::goto_overview() {
             }
         }
         else {
-            std::optional<CenteredDocumentPos> maybe_overview_position = get_overview_position();
+            std::optional<UncenteredDocumentPos> maybe_overview_position = get_overview_position();
             if (maybe_overview_position.has_value()) {
                 long_jump_to_destination(maybe_overview_position.value());
             }
@@ -5534,7 +5539,7 @@ void MainWidget::handle_prefs_user_all() {
 }
 
 void MainWidget::handle_portal_to_overview() {
-    std::optional<CenteredDocumentPos> maybe_overview_position = get_overview_position();
+    std::optional<UncenteredDocumentPos> maybe_overview_position = get_overview_position();
     if (maybe_overview_position.has_value()) {
         AbsoluteDocumentPos abs_pos = doc()->document_to_absolute_pos(maybe_overview_position.value());
         std::string document_checksum = main_document_view->get_document()->get_checksum();
@@ -5849,7 +5854,7 @@ void MainWidget::handle_mobile_selection() {
     fz_stext_char* character_under = get_closest_character_to_cusrsor(last_hold_point);
     if (character_under) {
         int current_page = get_current_page_number();
-        fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad), true);
+        fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad));
         main_document_view->selected_character_rects.push_back(centered_rect);
 
         UncenteredDocumentPos begin_document_pos, end_document_pos;
@@ -7069,7 +7074,7 @@ void MainWidget::expand_selection_vertical(bool begin, bool below) {
         fz_stext_page* stext_page = doc()->get_stext_with_page_number(page);
         std::optional<fz_rect> next_rect = get_rect_vertically(below, stext_page, page_rect);
         if (next_rect) {
-            fz_rect absrect = doc()->document_to_absolute_rect(page, next_rect.value(), true);
+            fz_rect absrect = doc()->document_to_absolute_rect(page, next_rect.value());
             if (begin) {
                 auto target = AbsoluteDocumentPos{ (absrect.x0 + absrect.x1) / 2,   (absrect.y0 + absrect.y1) / 2 };
                 selection_begin = target;

@@ -2198,11 +2198,11 @@ std::optional<fz_rect> PdfViewOpenGLWidget::get_selected_rectangle() {
 }
 
 void PdfViewOpenGLWidget::set_typing_rect(int page, fz_rect highlight_rect, std::optional<fz_rect> wrong_rect) {
-    fz_rect absrect = document_view->get_document()->document_to_absolute_rect(page, highlight_rect, true);
+    fz_rect absrect = document_view->get_document()->document_to_absolute_rect(page, highlight_rect);
     character_highlight_rect = absrect;
 
     if (wrong_rect) {
-        fz_rect abswrong = document_view->get_document()->document_to_absolute_rect(page, wrong_rect.value(), true);
+        fz_rect abswrong = document_view->get_document()->document_to_absolute_rect(page, wrong_rect.value());
         wrong_character_rect = abswrong;
     }
     else {
@@ -2226,7 +2226,7 @@ Document* PdfViewOpenGLWidget::get_current_overview_document() {
 
 }
 
-NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(CenteredDocumentPos pos) {
+NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(UncenteredDocumentPos pos) {
     NormalizedWindowPos res;
 
     if (overview_page) {
@@ -2241,9 +2241,9 @@ NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(CenteredDocume
         float relative_x = abspos.x * overview_zoom_level;
         float aspect = static_cast<float>(width()) / static_cast<float>(height());
         float relative_y = (abspos.y - overview.absolute_offset_y) * overview_zoom_level * aspect;
-        float left = overview_offset_x - overview_half_width;
+        //float left = overview_offset_x - overview_half_width;
         float top = overview_offset_y;
-        return { left + relative_x, top - relative_y };
+        return { overview_offset_x + relative_x, top - relative_y };
 
         return res;
     }
@@ -2254,8 +2254,8 @@ NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(CenteredDocume
 
 fz_rect PdfViewOpenGLWidget::document_to_overview_rect(int page, fz_rect document_rect) {
     fz_rect res;
-    CenteredDocumentPos top_left = { page, document_rect.x0, document_rect.y0 };
-    CenteredDocumentPos bottom_right = { page, document_rect.x1, document_rect.y1 };
+    UncenteredDocumentPos top_left = { page, document_rect.x0, document_rect.y0 };
+    UncenteredDocumentPos bottom_right = { page, document_rect.x1, document_rect.y1 };
     NormalizedWindowPos top_left_pos = document_to_overview_pos(top_left);
     NormalizedWindowPos bottom_right_pos = document_to_overview_pos(bottom_right);
     res.x0 = top_left_pos.x;

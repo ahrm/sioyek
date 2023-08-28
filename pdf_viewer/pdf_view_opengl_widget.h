@@ -312,7 +312,7 @@ public:
     void set_typing_rect(int page, fz_rect rect, std::optional<fz_rect> wrong_rect);
 
     Document* get_current_overview_document();
-    NormalizedWindowPos document_to_overview_pos(CenteredDocumentPos pos);
+    NormalizedWindowPos document_to_overview_pos(UncenteredDocumentPos pos);
     fz_rect document_to_overview_rect(int page, fz_rect document_rect);
     std::vector<int> get_visible_search_results(std::vector<int>& visible_pages);
     int find_search_index_for_visible_pages(std::vector<int>& visible_pages);
