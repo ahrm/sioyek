@@ -11,6 +11,7 @@
 // check if current_overview_source rect can be deleted and replaced by smart view candidates?
 // improve touch highlight select ui
 // see if we can dynamically change svg icon colors to respect the colorscheme
+// don't show touch mode next/prev overview buttons if there are no overviews
 
 #include <iostream>
 #include <vector>
@@ -372,6 +373,12 @@ void MainWidget::set_overview_link(PdfLink link) {
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
+    if (is_rotated()) {
+        // we don't handle mouse events while document is rotated becausae proper handling
+        // would increase the code complexity too much to be worth it
+        return;
+    }
+
     if ((freehand_drawing_mode == DrawingMode::Drawing) && is_drawing) {
         handle_drawing_move(mouse_event->pos(), -1.0f);
         validate_render();
@@ -423,15 +430,10 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         }
     }
 
-    if (is_rotated()) {
-        // we don't handle mouse events while document is rotated becausae proper handling
-        // would increase the code complexity too much to be worth it
-        return;
-    }
 
-    WindowPos mpos = { mouse_event->pos().x(), mouse_event->pos().y() };
-    AbsoluteDocumentPos abs_mpos = main_document_view->window_to_absolute_document_pos(mpos);
-    NormalizedWindowPos normal_mpos = main_document_view->window_to_normalized_window_pos(mpos);
+    WindowPos mpos(mouse_event->pos());
+    AbsoluteDocumentPos abs_mpos = mpos.to_absolute(main_document_view);
+    NormalizedWindowPos normal_mpos = mpos.to_window_normalized(main_document_view);
 
     if (bookmark_move_data) {
         handle_bookmark_move();
@@ -447,7 +449,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
 
         if (!bookmark_move_data.has_value()) {
-            if ((std::abs(mpos.x - last_mouse_down.x) + std::abs(mpos.y - last_mouse_down.y)) > 50) {
+            if ((std::abs(mpos.x - last_mouse_down_window_pos.x) + std::abs(mpos.y - last_mouse_down_window_pos.y)) > 50) {
                 is_dragging = true;
             }
         }
