@@ -1,6 +1,7 @@
 #pragma once
 
 #include <qpoint.h>
+#include <mupdf/fitz.h>
 
 
 class Document;
@@ -53,6 +54,24 @@ struct WindowPos {
     AbsoluteDocumentPos to_absolute(DocumentView* document_view);
     NormalizedWindowPos to_window_normalized(DocumentView* document_view);
 
+};
+
+struct DocumentRect;
+struct AbsoluteRect;
+
+struct DocumentRect {
+    fz_rect rect;
+    int page;
+
+    AbsoluteRect to_absolute(Document* doc);
+};
+
+struct AbsoluteRect {
+    fz_rect rect;
+
+    DocumentRect to_document(Document* doc);
+    AbsoluteDocumentPos center();
+    void operator=(const fz_rect& r);
 };
 
 

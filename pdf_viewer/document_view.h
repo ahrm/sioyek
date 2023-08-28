@@ -31,7 +31,7 @@ extern const int PAGE_PADDINGS;
 
 struct SmartViewCandidate {
     Document* doc = nullptr;
-    fz_rect source_rect;
+    AbsoluteRect source_rect;
     std::wstring source_text;
     std::variant<DocumentPos, AbsoluteDocumentPos> target_pos;
 

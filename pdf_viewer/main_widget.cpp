@@ -352,7 +352,8 @@ void MainWidget::set_overview_link(PdfLink link) {
 
     auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
     if (page >= 1) {
-        fz_rect source_absolute_rect = doc()->document_to_absolute_rect(link.source_page, link.rects[0]);
+        //fz_rect source_absolute_rect = doc()->document_to_absolute_rect(link.source_page, link.rects[0]);
+        AbsoluteRect source_absolute_rect = DocumentRect{ link.rects[0], link.source_page }.to_absolute(doc());
         std::wstring source_text = doc()->get_pdf_link_text(link);
 
         current_overview_source_rect = source_absolute_rect;
@@ -2352,7 +2353,7 @@ void MainWidget::handle_click(WindowPos click_pos) {
 
 }
 
-ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text) {
+ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text) {
     if (selected_text.size() > 0) {
 
         std::wstring query = selected_text;
@@ -2376,7 +2377,7 @@ ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* o
     return ReferenceType::None;
 }
 
-ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text, bool update_candidates) {
+ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, bool update_candidates) {
 
     //auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
     auto [page, offset_x, offset_y] = docpos;
@@ -2394,15 +2395,16 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
     std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y, &reference_range);
     std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y, &reference_range);
 
-    fz_rect source_rect = fz_empty_rect;
+    DocumentRect source_rect_document = DocumentRect{ fz_empty_rect, page };
+    AbsoluteRect source_rect_absolute = { fz_empty_rect };
 
     if ((reference_range.first > -1) && (reference_range.second > 0) && out_rect) {
-        source_rect = fz_rect_from_quad(flat_chars[reference_range.first]->quad);
+        source_rect_document.rect = fz_rect_from_quad(flat_chars[reference_range.first]->quad);
         for (int i = reference_range.first + 1; i <= reference_range.second; i++) {
-            source_rect = fz_union_rect(source_rect, fz_rect_from_quad(flat_chars[i]->quad));
+            source_rect_document.rect = fz_union_rect(source_rect_document.rect, fz_rect_from_quad(flat_chars[i]->quad));
         }
-        source_rect = doc()->document_to_absolute_rect(page, source_rect);
-        *out_rect = source_rect;
+        source_rect_absolute = source_rect_document.to_absolute(doc());
+        *out_rect = source_rect_absolute;
     }
 
     if (generic_pair) {
@@ -2413,7 +2415,7 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
                 smart_view_candidates.clear();
                 for (auto candid : candidates) {
                     SmartViewCandidate smart_view_candid;
-                    smart_view_candid.source_rect = source_rect;
+                    smart_view_candid.source_rect = source_rect_absolute;
                     smart_view_candid.target_pos = candid;
                     smart_view_candid.source_text = generic_pair.value().first + L" " + generic_pair.value().second;
                     smart_view_candidates.push_back(smart_view_candid);
@@ -3112,19 +3114,19 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
 
     int autoreference_page;
     float autoreference_offset;
-    fz_rect overview_source_rect_absolute;
+    AbsoluteRect overview_source_rect;
     DocumentPos docpos = main_document_view->window_to_document_pos_uncentered(pos);
 
     std::wstring source_text;
 
 
-    if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect_absolute, &source_text, true) != ReferenceType::None) {
+    if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect, &source_text, true) != ReferenceType::None) {
         int pos_page = main_document_view->window_to_document_pos(pos).page;
         //opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
-        current_overview_source_rect = overview_source_rect_absolute;
+        current_overview_source_rect = overview_source_rect;
 
         SmartViewCandidate current_candid;
-        current_candid.source_rect = overview_source_rect_absolute;
+        current_candid.source_rect = overview_source_rect;
         current_candid.target_pos = DocumentPos{ autoreference_page, 0, autoreference_offset };
         current_candid.source_text = source_text;
         smart_view_candidates = { current_candid };
@@ -6317,10 +6319,7 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
         if (PAPER_DOWNLOAD_CREATE_PORTAL) {
             AbsoluteDocumentPos source_position;
             if (opengl_widget->get_overview_page()) {
-                //fill_overview_pending_portal(bib_text);
-                fz_rect source_rect = get_overview_source_rect().value();
-                source_position.x = (source_rect.x0 + source_rect.x1) / 2;
-                source_position.y = (source_rect.y0 + source_rect.y1) / 2;
+                source_position = get_overview_source_rect()->center();
             }
             else {
                 source_position = doc_pos.to_absolute(doc());
@@ -7548,7 +7547,7 @@ bool MainWidget::goto_ith_next_overview(int i) {
 void MainWidget::on_overview_source_updated() {
 }
 
-std::optional<fz_rect> MainWidget::get_overview_source_rect() {
+std::optional<AbsoluteRect> MainWidget::get_overview_source_rect() {
     if (opengl_widget->get_overview_page()) {
         if (smart_view_candidates.size() > 0) {
             return smart_view_candidates[index_into_candidates].source_rect;
@@ -7564,13 +7563,7 @@ std::optional<fz_rect> MainWidget::get_overview_source_rect() {
 std::optional<std::wstring> MainWidget::get_overview_paper_name() {
     if (opengl_widget->get_overview_page()) {
         if (smart_view_candidates.size() > 0) {
-            fz_rect candidate_rect = smart_view_candidates[index_into_candidates].source_rect;
-
-            AbsoluteDocumentPos center;
-            center.x = (candidate_rect.x0 + candidate_rect.x1) / 2;
-            center.y = (candidate_rect.y0 + candidate_rect.y1) / 2;
-
-            DocumentPos center_document = doc()->absolute_to_page_pos_uncentered(center);
+            DocumentPos center_document = smart_view_candidates[index_into_candidates].source_rect.center().to_document(doc());
 
             std::optional<std::wstring> bib_string = {};
 
@@ -7837,7 +7830,7 @@ void MainWidget::smart_jump_to_selected_text() {
     if (selected_text.size() != 0) {
         int page = -1;
         float offset;
-        fz_rect source_rect;
+        AbsoluteRect source_rect;
         std::wstring source_text;
         if (find_location_of_selected_text(&page, &offset, &source_rect, &source_text) != ReferenceType::None) {
             long_jump_to_destination(page, offset);
@@ -7849,16 +7842,16 @@ void MainWidget::download_selected_text() {
     if (selected_text.size() != 0) {
         int page = -1;
         float offset;
-        fz_rect source_rect;
+        AbsoluteRect source_rect;
         std::wstring source_text;
         if (find_location_of_selected_text(&page, &offset, &source_rect, &source_text) != ReferenceType::None) {
             auto bib_item_ = doc()->get_page_bib_with_reference(page, source_text);
             if (bib_item_) {
                 auto [bib_item_text, bib_item_rect] = bib_item_.value();
                 std::wstring paper_name = get_paper_name_from_reference_text(bib_item_text);
-                AbsoluteDocumentPos source_pos;
-                source_pos.x = (source_rect.x1 + source_rect.x1) / 2;
-                source_pos.y = (source_rect.y0 + source_rect.y1) /2 ;
+                AbsoluteDocumentPos source_pos = source_rect.center();
+                //source_pos.x = (source_rect.x1 + source_rect.x1) / 2;
+                //source_pos.y = (source_rect.y0 + source_rect.y1) /2 ;
                 show_text_prompt(paper_name, [this, source_pos](std::wstring confirmed_paper_name) {
                     download_and_portal(confirmed_paper_name, source_pos);
                     });
@@ -8103,12 +8096,12 @@ QJsonObject MainWidget::get_json_state() {
                 Document* candid_document = candid.doc ? candid.doc : doc();
                 candid_json_object["document_path"] = QString::fromStdWString(candid_document->get_path());
 
-                fz_rect source_absolute_rect = candid.source_rect;
+                AbsoluteRect source_absolute_rect = candid.source_rect;
                 int source_page = -1;
-                fz_rect source_page_rect = candid_document->absolute_to_page_rect(source_absolute_rect, &source_page);
+                DocumentRect source_page_rect = source_absolute_rect.to_document(doc());
 
-                candid_json_object["source_absolute_rect"] = rect_to_json(source_absolute_rect);
-                candid_json_object["source_document_rect"] = rect_to_json(source_page_rect);
+                candid_json_object["source_absolute_rect"] = rect_to_json(source_absolute_rect.rect);
+                candid_json_object["source_document_rect"] = rect_to_json(source_page_rect.rect);
                 candid_json_object["source_page"] = source_page;
                 candid_json_object["source_text"] = QString::fromStdWString(candid.source_text);
 

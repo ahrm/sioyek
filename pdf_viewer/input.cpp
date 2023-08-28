@@ -3801,7 +3801,7 @@ public:
 
 class DownloadOverviewPaperCommand : public TextCommand {
 public:
-    std::optional<fz_rect> source_rect = {};
+    std::optional<AbsoluteRect> source_rect = {};
     std::wstring src_doc_path;
 
     DownloadOverviewPaperCommand(MainWidget* w) : TextCommand(w) {};
@@ -3814,11 +3814,7 @@ public:
 
         if (source_rect) {
 
-            widget->download_and_portal(text_,
-                AbsoluteDocumentPos{
-                    (source_rect->x0 + source_rect->x1) / 2,
-                    (source_rect->y0 + source_rect->y1) / 2
-                });
+            widget->download_and_portal(text_, source_rect->center());
             //widget->fill_overview_pending_portal(text_, src_doc_path, source_rect);
             //widget->update_opengl_pending_download_portals();
         }

@@ -298,7 +298,7 @@ public:
     std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
     std::optional<PdfViewOpenGLWidget::OverviewTouchMoveData> overview_touch_move_data = {};
     std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
-    std::optional<fz_rect> current_overview_source_rect = {};
+    std::optional<AbsoluteRect> current_overview_source_rect = {};
 
     std::vector<PendingDownloadPortal> pending_download_portals;
 
@@ -477,8 +477,8 @@ public:
     void toggle_visual_scroll_mode();
     void set_overview_link(PdfLink link);
     void set_overview_position(int page, float offset);
-    ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text);
-    ReferenceType find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text, bool update_candidates = false);
+    ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text);
+    ReferenceType find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
     CommandManager* get_command_manager();
 
@@ -820,7 +820,7 @@ public:
     bool goto_ith_next_overview(int i);
     void on_overview_source_updated();
     std::optional<std::wstring> get_overview_paper_name();
-    std::optional<fz_rect> get_overview_source_rect();
+    std::optional<AbsoluteRect> get_overview_source_rect();
 
     void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions = false);
     void finish_pending_download_portal(std::wstring download_paper_name, std::wstring downloaded_file_path);

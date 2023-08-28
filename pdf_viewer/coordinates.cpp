@@ -76,3 +76,21 @@ AbsoluteDocumentPos WindowPos::to_absolute(DocumentView* document_view) {
 NormalizedWindowPos WindowPos::to_window_normalized(DocumentView* document_view) {
     return document_view->window_to_normalized_window_pos(*this);
 }
+
+AbsoluteRect DocumentRect::to_absolute(Document* doc) {
+    return AbsoluteRect{ doc->document_to_absolute_rect(page, rect) };
+}
+
+DocumentRect AbsoluteRect::to_document(Document* doc) {
+    int page = -1;
+    fz_rect document_rect = doc->absolute_to_page_rect(rect, &page);
+    return DocumentRect{ document_rect, page };
+}
+
+void AbsoluteRect::operator=(const fz_rect& r) {
+    rect = r;
+}
+
+AbsoluteDocumentPos AbsoluteRect::center() {
+    return AbsoluteDocumentPos { (rect.x0 + rect.x1) / 2.0f, (rect.y0 + rect.y1) / 2.0f};
+}
