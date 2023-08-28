@@ -7,6 +7,7 @@
 // do the todo for link clicks when the document is zoomed in (focus on x too)
 // fix the issue where executing non-existant command blocks the python api
 // handle mobile text selection case where the character is not in the current page
+// opening a tab doesn't properly update history 
 
 #include <iostream>
 #include <vector>
@@ -1724,8 +1725,7 @@ void MainWidget::open_document_at_location(const Path& path_,
 
     main_document_view->on_view_size_change(main_window_width, main_window_height);
 
-    AbsoluteDocumentPos absolute_pos = main_document_view->get_document()->document_to_absolute_pos(
-        DocumentPos{ page, x_loc.value_or(0), y_loc.value_or(0) });
+    AbsoluteDocumentPos absolute_pos = DocumentPos{ page, x_loc.value_or(0), y_loc.value_or(0) }.to_absolute(doc());
 
     if (x_loc) {
         main_document_view->set_offset_x(absolute_pos.x);
@@ -2108,7 +2108,8 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
             if (TOUCH_MODE) {
                 PdfViewOpenGLWidget::OverviewTouchMoveData touch_move_data;
-                touch_move_data.original_mouse_offset_y = doc()->document_to_absolute_pos(opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y })).y;
+                //touch_move_data.original_mouse_offset_y = doc()->document_to_absolute_pos(opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y })).y;
+                touch_move_data.original_mouse_offset_y = opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y }).to_absolute(doc()).y;
                 float overview_offset_y = opengl_widget->get_overview_page().value().absolute_offset_y;
                 touch_move_data.overview_original_pos_offset_y = overview_offset_y;
                 overview_touch_move_data = touch_move_data;

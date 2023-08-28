@@ -123,7 +123,7 @@ public:
 
     fz_rect absolute_to_window_rect(fz_rect doc_rect);
     NormalizedWindowPos document_to_window_pos(DocumentPos pos);
-    WindowPos absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs_pos, int page);
+    WindowPos absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs_pos);
     WindowPos document_to_window_pos_in_pixels_uncentered(DocumentPos doc_pos);
     WindowPos document_to_window_pos_in_pixels_banded(DocumentPos doc_pos);
     fz_rect document_to_window_rect(int page, fz_rect doc_rect);

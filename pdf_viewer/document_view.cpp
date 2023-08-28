@@ -387,7 +387,7 @@ NormalizedWindowPos DocumentView::document_to_window_pos(DocumentPos doc_pos) {
     }
 }
 
-WindowPos DocumentView::absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abspos, int page) {
+WindowPos DocumentView::absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abspos) {
     WindowPos window_pos;
     window_pos.y = (abspos.y - offset_y) * zoom_level + view_height / 2;
     window_pos.x = (abspos.x + offset_x) * zoom_level + view_width / 2;
@@ -396,7 +396,7 @@ WindowPos DocumentView::absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs
 
 WindowPos DocumentView::document_to_window_pos_in_pixels_uncentered(DocumentPos doc_pos) {
     AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
-    return absolute_to_window_pos_in_pixels(abspos, doc_pos.page);
+    return absolute_to_window_pos_in_pixels(abspos);
 }
 
 WindowPos DocumentView::document_to_window_pos_in_pixels_banded(DocumentPos doc_pos) {

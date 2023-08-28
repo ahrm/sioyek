@@ -24,12 +24,20 @@ struct AbsoluteDocumentPos {
     float x;
     // this is the concatenated y-coordinate of the current page (sum of all page heights up to current location)
     float y;
+
+    DocumentPos to_document(Document* doc);
+    NormalizedWindowPos to_window_normalized(DocumentView* document_view);
+    WindowPos to_window(DocumentView* document_view);
 };
 
 // normalized window coordinates. x and y are in the range [-1, 1]
 struct NormalizedWindowPos {
     float x;
     float y;
+
+    DocumentPos to_document(DocumentView* document_view);
+    AbsoluteDocumentPos to_absolute(DocumentView* document_view);
+    WindowPos to_window(DocumentView* document_view);
 };
 
 // window coordinate in pixels
@@ -40,6 +48,11 @@ struct WindowPos {
     WindowPos(float x_, float y_);
     WindowPos(int x_, int y_);
     WindowPos();
+
+    DocumentPos to_document(DocumentView* document_view);
+    AbsoluteDocumentPos to_absolute(DocumentView* document_view);
+    NormalizedWindowPos to_window_normalized(DocumentView* document_view);
+
 };
 
 
