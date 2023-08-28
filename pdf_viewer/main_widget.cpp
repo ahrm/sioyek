@@ -223,9 +223,6 @@ private:
     bool is_begin;
     MainWidget* main_widget;
 
-    //QPixmap begin_pixmap;
-    //QPixmap end_pixmap;
-
     QIcon begin_icon;
     QIcon end_icon;
     QPoint last_press_window_pos;
@@ -234,17 +231,15 @@ private:
     bool docpos_needs_recompute = false;
 public:
 
-    SelectionIndicator(QWidget* parent, bool begin, MainWidget* w, AbsoluteDocumentPos pos) : QWidget(parent) {
-        is_begin = begin;
-        main_widget = w;
-        docpos = main_widget->doc()->absolute_to_page_pos_uncentered(pos);
+    SelectionIndicator(QWidget* parent, bool begin, MainWidget* w, AbsoluteDocumentPos pos) : QWidget(parent), is_begin(begin), main_widget(w) {
+        docpos = pos.to_document(w->doc());
 
         begin_icon = QIcon(":/icons/arrow-begin.svg");
         end_icon = QIcon(":/icons/arrow-end.svg");
     }
 
     void update_pos() {
-        WindowPos wp = main_widget->main_document_view->document_to_window_pos_in_pixels_uncentered(docpos);
+        WindowPos wp = docpos.to_window(main_widget->main_document_view);
         if (is_begin) {
             move(wp.x - width(), wp.y - height());
         }
@@ -279,10 +274,10 @@ public:
         if (!docpos_needs_recompute) return docpos;
 
         if (is_begin) {
-            docpos = main_widget->main_document_view->window_to_document_pos_uncentered(WindowPos{x() + width(), y() + height()});
+            docpos = WindowPos{ x() + width(), y() + height() }.to_document(main_widget->main_document_view);
         }
         else {
-            docpos = main_widget->main_document_view->window_to_document_pos_uncentered(WindowPos{x(), y()});
+            docpos = WindowPos{x(), y()}.to_document(main_widget->main_document_view);
         }
 
         return docpos;
@@ -291,11 +286,7 @@ public:
 
     void paintEvent(QPaintEvent* event) {
         QPainter painter(this);
-
-        //begin_icon.paint()
-        //painter.drawPixmap(0, 0, width(), height(), is_begin ? begin_pixmap : end_pixmap);
-        QRect window_qrect = QRect(0, 0, width(), height());
-        (is_begin ? &begin_icon : &end_icon)->paint(&painter, window_qrect);
+        (is_begin ? &begin_icon : &end_icon)->paint(&painter, rect());
     }
 };
 
@@ -2316,8 +2307,8 @@ void MainWidget::handle_click(WindowPos click_pos) {
         return;
     }
 
-    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(click_pos);
-    AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(click_pos);
+    auto [normal_x, normal_y] = click_pos.to_window_normalized(main_document_view);
+    AbsoluteDocumentPos mouse_abspos = click_pos.to_absolute(main_document_view);
 
     if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
         auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y });
@@ -2937,7 +2928,7 @@ DocumentPos MainWidget::get_document_pos_under_window_pos(WindowPos window_pos) 
 }
 
 AbsoluteDocumentPos MainWidget::get_absolute_document_pos_under_window_pos(WindowPos window_pos) {
-    return doc()->document_to_absolute_pos(get_document_pos_under_window_pos(window_pos));
+    return get_document_pos_under_window_pos(window_pos).to_absolute(doc());
 }
 
 std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_last_hold_point) {
@@ -3253,7 +3244,7 @@ void MainWidget::long_jump_to_destination(float abs_offset_y) {
 }
 
 void MainWidget::long_jump_to_destination(DocumentPos pos) {
-    AbsoluteDocumentPos abs_pos = doc()->document_to_absolute_pos(pos);
+    AbsoluteDocumentPos abs_pos = pos.to_absolute(doc());
 
     if (!is_pending_link_source_filled()) {
         push_state();
@@ -5443,24 +5434,11 @@ void MainWidget::handle_portal_to_link(const std::wstring& text) {
 
     auto selected_link_ = get_selected_link(text);
     if (selected_link_) {
-        //auto link = selected_link_.value();
         PdfLink pdf_link = selected_link_.value();
-        //pdf_link.rects = { link->rect };
-        //pdf_link.uri = link->uri;
         ParsedUri parsed_uri = parse_uri(mupdf_context, pdf_link.uri);
 
-        //AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
-        DocumentPos link_source_document_pos;
-        link_source_document_pos.page = pdf_link.source_page;
-        link_source_document_pos.x = 0;
-        link_source_document_pos.y = pdf_link.rects[0].y0;
-        DocumentPos dst_docpos;
-        dst_docpos.page = parsed_uri.page - 1;
-        dst_docpos.x = parsed_uri.x;
-        dst_docpos.y = parsed_uri.y;
-
-        auto src_abspos = doc()->document_to_absolute_pos(link_source_document_pos);
-        auto dst_abspos = doc()->document_to_absolute_pos(dst_docpos);
+        AbsoluteDocumentPos src_abspos = DocumentPos {pdf_link.source_page, 0, pdf_link.rects[0].y0}.to_absolute(doc());
+        AbsoluteDocumentPos dst_abspos = DocumentPos {parsed_uri.page-1, parsed_uri.x, parsed_uri.y}.to_absolute(doc());
 
         Portal portal;
         portal.dst.document_checksum = doc()->get_checksum();
@@ -5539,7 +5517,7 @@ void MainWidget::handle_prefs_user_all() {
 void MainWidget::handle_portal_to_overview() {
     std::optional<DocumentPos> maybe_overview_position = get_overview_position();
     if (maybe_overview_position.has_value()) {
-        AbsoluteDocumentPos abs_pos = doc()->document_to_absolute_pos(maybe_overview_position.value());
+        AbsoluteDocumentPos abs_pos = maybe_overview_position->to_absolute(doc());
         std::string document_checksum = main_document_view->get_document()->get_checksum();
         Portal new_portal;
         new_portal.dst.document_checksum = document_checksum;
@@ -5931,12 +5909,8 @@ void MainWidget::handle_mobile_selection() {
 }
 
 void MainWidget::update_mobile_selection() {
-    //				handle_left_click(begin_window_pos, true, false, false, false);
-    //				handle_left_click(end_window_pos, false, false, false, false);
-    DocumentPos begin = selection_begin_indicator->get_docpos();
-    DocumentPos end = selection_end_indicator->get_docpos();
-    AbsoluteDocumentPos begin_absolute = doc()->document_to_absolute_pos(begin);
-    AbsoluteDocumentPos end_absolute = doc()->document_to_absolute_pos(end);
+    AbsoluteDocumentPos begin_absolute = selection_begin_indicator->get_docpos().to_absolute(doc());
+    AbsoluteDocumentPos end_absolute = selection_end_indicator->get_docpos().to_absolute(doc());
 
     main_document_view->get_text_selection(begin_absolute,
         end_absolute,
@@ -6178,11 +6152,8 @@ void MainWidget::clear_highlight_buttons() {
 
 void MainWidget::handle_touch_highlight() {
 
-    DocumentPos begin_docpos = selection_begin_indicator->get_docpos();
-    DocumentPos end_docpos = selection_end_indicator->get_docpos();
-
-    AbsoluteDocumentPos begin_abspos = doc()->document_to_absolute_pos(begin_docpos);
-    AbsoluteDocumentPos end_abspos = doc()->document_to_absolute_pos(end_docpos);
+    AbsoluteDocumentPos begin_abspos = selection_begin_indicator->get_docpos().to_absolute(doc());
+    AbsoluteDocumentPos end_abspos = selection_end_indicator->get_docpos().to_absolute(doc());
 
     main_document_view->add_highlight(begin_abspos, end_abspos, select_highlight_type);
 
@@ -6352,7 +6323,7 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
                 source_position.y = (source_rect.y0 + source_rect.y1) / 2;
             }
             else {
-                source_position = doc()->document_to_absolute_pos(doc_pos);
+                source_position = doc_pos.to_absolute(doc());
             }
 
             create_pending_download_portal(source_position, bib_text);
@@ -7854,13 +7825,11 @@ bool MainWidget::is_pos_inside_selected_text(AbsoluteDocumentPos pos) {
 }
 
 bool MainWidget::is_pos_inside_selected_text(DocumentPos docpos) {
-    AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(docpos);
-    return is_pos_inside_selected_text(abspos);
+    return is_pos_inside_selected_text(docpos.to_absolute(doc()));
 }
 
 bool MainWidget::is_pos_inside_selected_text(WindowPos pos) {
-    AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
-    return is_pos_inside_selected_text(abspos);
+    return is_pos_inside_selected_text(pos.to_absolute(main_document_view));
 }
 
 
@@ -8227,8 +8196,8 @@ void MainWidget::handle_select_current_search_match() {
         selection_end_doc.y = (current_search_match.rects.back().y0 + current_search_match.rects.back().y1) / 2;
         selection_end_doc.page = current_search_match.page;
 
-        AbsoluteDocumentPos abspos_begin = doc()->document_to_absolute_pos(selection_begin_doc);
-        AbsoluteDocumentPos abspos_end = doc()->document_to_absolute_pos(selection_end_doc);
+        AbsoluteDocumentPos abspos_begin = selection_begin_doc.to_absolute(doc());
+        AbsoluteDocumentPos abspos_end = selection_end_doc.to_absolute(doc());
 
         selection_begin = abspos_begin;
         selection_end = abspos_end;
