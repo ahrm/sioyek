@@ -351,9 +351,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
 void MainWidget::set_overview_position(int page, float offset) {
     if (page >= 0) {
-        auto abspos = main_document_view->get_document()->document_to_absolute_pos(DocumentPos { page, 0, offset });
-        float page_height = main_document_view->get_document()->get_page_height(page);
-        set_overview_page(OverviewState{ abspos.y });
+        set_overview_page(OverviewState{ DocumentPos{ page, 0, offset }.to_absolute(doc()).y });
         invalidate_render();
     }
 }
@@ -517,8 +515,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     if (overview_touch_move_data && opengl_widget->get_overview_page()) {
         // in touch mode, instead of moving the overview itself, we move the document inside the overview
-        DocumentPos current_mouse_overview_document_pos = opengl_widget->window_pos_to_overview_pos(normal_mpos);
-        AbsoluteDocumentPos current_mouse_overview_absolute_pos = doc()->document_to_absolute_pos(current_mouse_overview_document_pos);
+        AbsoluteDocumentPos current_mouse_overview_absolute_pos = opengl_widget->window_pos_to_overview_pos(normal_mpos).to_absolute(doc());
         float absdiff = -current_mouse_overview_absolute_pos.y + overview_touch_move_data.value().original_mouse_offset_y;
         float new_absolute_y = opengl_widget->get_overview_page().value().absolute_offset_y + absdiff;
         OverviewState new_overview_state;

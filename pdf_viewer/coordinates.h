@@ -2,22 +2,22 @@
 
 #include <qpoint.h>
 
-//struct DocumentPos {
-//    int page;
-//    float x;
-//    float y;
-//};
 
-//struct CenteredDocumentPos {
-//    int page;
-//    float x;
-//    float y;
-//};
+class Document;
+class DocumentView;
+
+struct AbsoluteDocumentPos;
+struct NormalizedWindowPos;
+struct WindowPos;
 
 struct DocumentPos {
     int page;
     float x;
     float y;
+
+    AbsoluteDocumentPos to_absolute(Document* doc);
+    NormalizedWindowPos to_window_normalized(DocumentView* document_view);
+    WindowPos to_window(DocumentView* document_view);
 };
 
 struct AbsoluteDocumentPos {
