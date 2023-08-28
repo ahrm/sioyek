@@ -1249,7 +1249,7 @@ fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page)
     return res;
 }
 
-DocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp) {
+UncenteredDocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp) {
 
     std::lock_guard guard(page_dims_mutex);
     if (accum_page_heights.size() == 0) {
@@ -1274,12 +1274,11 @@ DocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp) {
 }
 
 UncenteredDocumentPos Document::absolute_to_page_pos_uncentered(AbsoluteDocumentPos absolute_pos) {
-    DocumentPos doc_pos = absolute_to_page_pos(absolute_pos);
-    return UncenteredDocumentPos{ doc_pos.page, doc_pos.x, doc_pos.y };
+    return absolute_to_page_pos(absolute_pos);
 }
 
 CenteredDocumentPos Document::absolute_to_page_pos_centered(AbsoluteDocumentPos absolute_pos) {
-    DocumentPos doc_pos = absolute_to_page_pos(absolute_pos);
+    UncenteredDocumentPos doc_pos = absolute_to_page_pos(absolute_pos);
     float doc_pos_page_width = get_page_width(doc_pos.page);
     return CenteredDocumentPos{ doc_pos.page, doc_pos.x - doc_pos_page_width / 2.0f, doc_pos.y };
 }

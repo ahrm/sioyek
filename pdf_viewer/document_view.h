@@ -123,13 +123,17 @@ public:
 
     fz_rect absolute_to_window_rect(fz_rect doc_rect);
     NormalizedWindowPos document_to_window_pos(DocumentPos pos);
-    WindowPos document_to_window_pos_in_pixels(DocumentPos doc_pos);
-    WindowPos document_to_window_pos_in_pixels(UncenteredDocumentPos doc_pos);
+    NormalizedWindowPos document_to_window_pos(UncenteredDocumentPos pos);
+    NormalizedWindowPos document_to_window_pos(CenteredDocumentPos pos);
+    //WindowPos document_to_window_pos_in_pixels(DocumentPos doc_pos);
+    WindowPos absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs_pos, int page);
+    WindowPos document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos doc_pos);
+    WindowPos document_to_window_pos_in_pixels_centered(CenteredDocumentPos doc_pos);
     WindowPos document_to_window_pos_in_pixels_banded(DocumentPos doc_pos);
     fz_rect document_to_window_rect(int page, fz_rect doc_rect);
     fz_irect document_to_window_irect(int page, fz_rect doc_rect);
     fz_rect document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height, bool banded = false);
-    DocumentPos window_to_document_pos(WindowPos window_pos);
+    UncenteredDocumentPos window_to_document_pos(WindowPos window_pos);
     UncenteredDocumentPos window_to_document_pos_uncentered(WindowPos window_pos);
     AbsoluteDocumentPos window_to_absolute_document_pos(WindowPos window_pos);
     NormalizedWindowPos window_to_normalized_window_pos(WindowPos window_pos);

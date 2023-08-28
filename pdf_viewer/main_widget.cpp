@@ -243,7 +243,7 @@ public:
     }
 
     void update_pos() {
-        WindowPos wp = main_widget->main_document_view->document_to_window_pos_in_pixels(docpos);
+        WindowPos wp = main_widget->main_document_view->document_to_window_pos_in_pixels_uncentered(docpos);
         if (is_begin) {
             move(wp.x - width(), wp.y - height());
         }
@@ -3063,7 +3063,7 @@ void MainWidget::visual_mark_under_pos(WindowPos pos) {
         int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
         //int best_vertical_loc = line_locations[find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y), 2)];
         float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
-        WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels(UncenteredDocumentPos{ document_pos.page, 0, best_vertical_loc_doc_pos });
+        WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos{ document_pos.page, 0, best_vertical_loc_doc_pos });
         auto [abs_doc_x, abs_doc_y] = main_document_view->window_to_absolute_document_pos(window_pos);
         main_document_view->set_vertical_line_pos(abs_doc_y);
         int container_line_index = main_document_view->get_line_index_of_pos(document_pos);
@@ -4425,8 +4425,8 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
                 UncenteredDocumentPos begin_doc_pos = { begin_page_number, begin_offset_x, begin_offset_y };
                 UncenteredDocumentPos end_doc_pos = { end_page_number, end_offset_x, end_offset_y };
 
-                WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels(begin_doc_pos);
-                WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels(end_doc_pos);
+                WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(begin_doc_pos);
+                WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(end_doc_pos);
 
                 handle_left_click(begin_window_pos, true, false, false, false);
                 handle_left_click(end_window_pos, false, false, false, false);
@@ -5871,8 +5871,8 @@ void MainWidget::handle_mobile_selection() {
         end_abspos.y = (centered_rect.y1 + centered_rect.y0) / 2;
         //end_abspos.y = rect.y1;
 
-        WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels(begin_document_pos);
-        WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels(end_document_pos);
+        WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(begin_document_pos);
+        WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(end_document_pos);
 
         //std::deque<fz_rect> selection_chars;
         //std::wstring selection_text;
@@ -6239,9 +6239,9 @@ void MainWidget::update_highlight_buttons_position() {
         AbsoluteDocumentPos hlpos;
         hlpos.x = hl.selection_begin.x;
         hlpos.y = hl.selection_begin.y;
-        DocumentPos docpos = doc()->absolute_to_page_pos(hlpos);
+        UncenteredDocumentPos docpos = doc()->absolute_to_page_pos_uncentered(hlpos);
 
-        WindowPos windowpos = main_document_view->document_to_window_pos_in_pixels(docpos);
+        WindowPos windowpos = main_document_view->document_to_window_pos_in_pixels_uncentered(docpos);
         get_highlight_buttons()->move(get_highlight_buttons()->pos().x(), windowpos.y - get_highlight_buttons()->height());
     }
 }
@@ -8093,7 +8093,7 @@ QJsonObject MainWidget::get_json_state() {
 
 
         AbsoluteDocumentPos abspos = { offset_x, offset_y };
-        DocumentPos docpso = doc()->absolute_to_page_pos(abspos);
+        UncenteredDocumentPos docpso = doc()->absolute_to_page_pos_uncentered(abspos);
 
         result["x_offset_in_page"] = docpso.x;
         result["y_offset_in_page"] = docpso.y;
@@ -8117,7 +8117,7 @@ QJsonObject MainWidget::get_json_state() {
             overview_state_json["y_offset"] = overview_state.absolute_offset_y;
             AbsoluteDocumentPos overview_abspos = { 0, overview_state.absolute_offset_y };
             Document* overview_doc = overview_state.doc ? overview_state.doc : doc();
-            DocumentPos overview_docpos = overview_doc->absolute_to_page_pos(overview_abspos);
+            UncenteredDocumentPos overview_docpos = overview_doc->absolute_to_page_pos_uncentered(overview_abspos);
             overview_state_json["target_page"] = overview_docpos.page;
             overview_state_json["y_offset_in_page"] = overview_docpos.y;
             overview_state_json["document_path"] = QString::fromStdWString(overview_doc->get_path());
@@ -8215,7 +8215,7 @@ void MainWidget::handle_select_current_search_match() {
     std::optional<SearchResult> maybe_current_search_match = opengl_widget->get_current_search_result();
     if (maybe_current_search_match) {
         SearchResult current_search_match = maybe_current_search_match.value();
-        DocumentPos selection_begin_doc, selection_end_doc;
+        UncenteredDocumentPos selection_begin_doc, selection_end_doc;
         selection_begin_doc.x = current_search_match.rects[0].x0;
         selection_begin_doc.y = (current_search_match.rects[0].y0 + current_search_match.rects[0].y1) / 2;
         selection_begin_doc.page = current_search_match.page;
@@ -8224,8 +8224,8 @@ void MainWidget::handle_select_current_search_match() {
         selection_end_doc.y = (current_search_match.rects.back().y0 + current_search_match.rects.back().y1) / 2;
         selection_end_doc.page = current_search_match.page;
 
-        AbsoluteDocumentPos abspos_begin = doc()->document_to_absolute_pos(selection_begin_doc, true);
-        AbsoluteDocumentPos abspos_end = doc()->document_to_absolute_pos(selection_end_doc, true);
+        AbsoluteDocumentPos abspos_begin = doc()->document_to_absolute_pos(selection_begin_doc);
+        AbsoluteDocumentPos abspos_end = doc()->document_to_absolute_pos(selection_end_doc);
 
         selection_begin = abspos_begin;
         selection_end = abspos_end;

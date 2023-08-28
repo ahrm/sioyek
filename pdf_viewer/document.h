@@ -251,7 +251,7 @@ public:
     void load_page_dimensions(bool force_load_now);
     int num_pages();
     fz_rect get_page_absolute_rect(int page);
-    DocumentPos absolute_to_page_pos(AbsoluteDocumentPos absolute_pos);
+    UncenteredDocumentPos absolute_to_page_pos(AbsoluteDocumentPos absolute_pos);
     UncenteredDocumentPos absolute_to_page_pos_uncentered(AbsoluteDocumentPos absolute_pos);
     CenteredDocumentPos absolute_to_page_pos_centered(AbsoluteDocumentPos absolute_pos);
     fz_rect absolute_to_page_rect(const fz_rect& absolute_rect, int* page);
