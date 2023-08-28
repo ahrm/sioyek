@@ -47,8 +47,7 @@
 
 
 struct MarkedDataRect {
-    fz_rect rect;
-    int page;
+    DocumentRect rect;
     int type;
 };
 
@@ -189,16 +188,16 @@ private:
     float overview_offset_x = 0.0f;
     float overview_offset_y = 0.0f;
 
-    std::optional<fz_rect> selected_rectangle = {};
+    std::optional<AbsoluteRect> selected_rectangle = {};
 
     GLuint LoadShaders(Path vertex_file_path_, Path fragment_file_path_);
 protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
-    void render_highlight_window(GLuint program, fz_rect window_rect, int flags);
-    void render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, int flags);
+    void render_highlight_window(GLuint program, NormalizedWindowRect window_rect, int flags);
+    void render_highlight_absolute(GLuint program, AbsoluteRect absolute_document_rect, int flags);
     void render_line_window(GLuint program, float vertical_pos, std::optional<fz_rect> ruler_rect = {});
-    void render_highlight_document(GLuint program, int page, fz_rect doc_rect, int flags=HRF_FILL | HRF_BORDER);
+    void render_highlight_document(GLuint program, DocumentRect doc_rect, int flags=HRF_FILL | HRF_BORDER);
     void paintGL() override;
     void my_render(QPainter* painter);
     void add_coordinates_for_window_point(float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates);
@@ -225,7 +224,7 @@ public:
 #endif
 
     std::vector<std::pair<fz_rect, int>> word_rects;
-    std::vector<std::pair<int, fz_rect>> synctex_highlights;
+    std::vector<DocumentRect> synctex_highlights;
     QTime synctex_highlight_time;
     //std::vector<std::pair<fz_rect, int>> marked_data_rects;
     std::vector<MarkedDataRect> marked_data_rects;
@@ -261,7 +260,7 @@ public:
     void toggle_dark_mode();
     void set_custom_color_mode(bool mode);
     void toggle_custom_color_mode();
-    void set_synctex_highlights(std::vector<std::pair<int, fz_rect>> highlights);
+    void set_synctex_highlights(std::vector<DocumentRect> highlights);
     bool should_show_synxtex_highlights();
     bool has_synctex_timed_out();
     void on_document_view_reset();
@@ -303,17 +302,17 @@ public:
     void setup_text_painter(QPainter* painter);
     void get_overview_window_vertices(float out_vertices[2 * 4]);
 
-    void set_selected_rectangle(fz_rect selected);
+    void set_selected_rectangle(AbsoluteRect selected);
     void clear_selected_rectangle();
     void clear_all_selections();
 
-    std::optional<fz_rect> get_selected_rectangle();
+    std::optional<AbsoluteRect> get_selected_rectangle();
 
     void set_typing_rect(int page, fz_rect rect, std::optional<fz_rect> wrong_rect);
 
     Document* get_current_overview_document();
     NormalizedWindowPos document_to_overview_pos(DocumentPos pos);
-    fz_rect document_to_overview_rect(int page, fz_rect document_rect);
+    NormalizedWindowRect document_to_overview_rect(DocumentRect doc_rect);
     std::vector<int> get_visible_search_results(std::vector<int>& visible_pages);
     int find_search_index_for_visible_pages(std::vector<int>& visible_pages);
     int find_search_index_for_visible_page(int page, int breakpoint);

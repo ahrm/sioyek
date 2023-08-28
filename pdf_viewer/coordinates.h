@@ -54,24 +54,48 @@ struct WindowPos {
     DocumentPos to_document(DocumentView* document_view);
     AbsoluteDocumentPos to_absolute(DocumentView* document_view);
     NormalizedWindowPos to_window_normalized(DocumentView* document_view);
+    int manhattan(const WindowPos& other);
 
 };
 
 struct DocumentRect;
 struct AbsoluteRect;
+struct NormalizedWindowRect;
 
 struct DocumentRect {
     fz_rect rect;
     int page;
 
+    DocumentRect();
+    DocumentRect(fz_rect r, int page);
+    DocumentRect(DocumentPos top_left, DocumentPos bottom_right, int page);
+
     AbsoluteRect to_absolute(Document* doc);
+    NormalizedWindowRect to_window_normalized(DocumentView* document_view);
+
+    DocumentPos top_left();
+    DocumentPos bottom_right();
+};
+
+struct NormalizedWindowRect {
+    fz_rect rect;
+
+    NormalizedWindowRect(NormalizedWindowPos top_left, NormalizedWindowPos bottom_right);
+    NormalizedWindowRect(fz_rect r);
+    NormalizedWindowRect();
 };
 
 struct AbsoluteRect {
     fz_rect rect;
 
+    AbsoluteRect(AbsoluteDocumentPos top_left, AbsoluteDocumentPos bottom_right);
+    AbsoluteRect(fz_rect r);
+    AbsoluteRect();
     DocumentRect to_document(Document* doc);
     AbsoluteDocumentPos center();
+    AbsoluteDocumentPos top_left();
+    AbsoluteDocumentPos bottom_right();
+    NormalizedWindowRect to_window_normalized(DocumentView* document_view);
     void operator=(const fz_rect& r);
 };
 

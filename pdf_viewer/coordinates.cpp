@@ -81,6 +81,8 @@ AbsoluteDocumentPos WindowPos::to_absolute(DocumentView* document_view) {
 NormalizedWindowPos WindowPos::to_window_normalized(DocumentView* document_view) {
     return document_view->window_to_normalized_window_pos(*this);
 }
+AbsoluteRect::AbsoluteRect(fz_rect r) : rect(r) {
+}
 
 AbsoluteRect DocumentRect::to_absolute(Document* doc) {
     return AbsoluteRect{ doc->document_to_absolute_rect(page, rect) };
@@ -98,4 +100,73 @@ void AbsoluteRect::operator=(const fz_rect& r) {
 
 AbsoluteDocumentPos AbsoluteRect::center() {
     return AbsoluteDocumentPos { (rect.x0 + rect.x1) / 2.0f, (rect.y0 + rect.y1) / 2.0f};
+}
+
+int WindowPos::manhattan(const WindowPos& other) {
+    return std::abs(x - other.x) + std::abs(y - other.y);
+}
+
+AbsoluteRect::AbsoluteRect(AbsoluteDocumentPos top_left, AbsoluteDocumentPos bottom_right) {
+    rect.x0 = top_left.x;
+    rect.y0 = top_left.y;
+    rect.x1 = bottom_right.x;
+    rect.y1 = bottom_right.y;
+}
+
+NormalizedWindowRect AbsoluteRect::to_window_normalized(DocumentView* document_view) {
+    return NormalizedWindowRect{ document_view->absolute_to_window_rect(rect) };
+}
+
+NormalizedWindowRect DocumentRect::to_window_normalized(DocumentView* document_view) {
+    return NormalizedWindowRect{ document_view->document_to_window_rect(page, rect) };
+}
+
+DocumentPos DocumentRect::top_left() {
+    return DocumentPos{ page, rect.x0, rect.y0 };
+}
+
+DocumentPos DocumentRect::bottom_right() {
+    return DocumentPos{ page, rect.x1, rect.y1 };
+}
+
+NormalizedWindowRect::NormalizedWindowRect(NormalizedWindowPos top_left, NormalizedWindowPos bottom_right) {
+    rect.x0 = top_left.x;
+    rect.y0 = top_left.y;
+    rect.x1 = bottom_right.x;
+    rect.y1 = bottom_right.y;
+}
+
+NormalizedWindowRect::NormalizedWindowRect(fz_rect r) : rect(r) {
+
+}
+
+AbsoluteRect::AbsoluteRect() : rect(fz_empty_rect) {
+
+}
+
+AbsoluteDocumentPos AbsoluteRect::top_left() {
+    return AbsoluteDocumentPos{ rect.x0, rect.y0 };
+}
+
+AbsoluteDocumentPos AbsoluteRect::bottom_right() {
+    return AbsoluteDocumentPos{ rect.x1, rect.y1 };
+}
+
+DocumentRect::DocumentRect() : rect(fz_empty_rect), page(-1){
+
+}
+
+DocumentRect::DocumentRect(fz_rect r, int p) : rect(r), page(p) {
+
+}
+DocumentRect::DocumentRect(DocumentPos top_left, DocumentPos bottom_right, int p) {
+    rect.x0 = top_left.x;
+    rect.y0 = top_left.y;
+    rect.x1 = bottom_right.x;
+    rect.y1 = bottom_right.y;
+    page = p;
+}
+
+NormalizedWindowRect::NormalizedWindowRect() : rect(fz_empty_rect) {
+
 }

@@ -12,6 +12,7 @@
 // improve touch highlight select ui
 // see if we can dynamically change svg icon colors to respect the colorscheme
 // don't show touch mode next/prev overview buttons if there are no overviews
+// In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 
 #include <iostream>
 #include <vector>
@@ -356,7 +357,7 @@ void MainWidget::set_overview_link(PdfLink link) {
 
     auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
     if (page >= 1) {
-        AbsoluteRect source_absolute_rect = DocumentRect{ link.rects[0], link.source_page }.to_absolute(doc());
+        AbsoluteRect source_absolute_rect = DocumentRect(link.rects[0], link.source_page).to_absolute(doc());
         std::wstring source_text = doc()->get_pdf_link_text(link);
 
         current_overview_source_rect = source_absolute_rect;
@@ -449,7 +450,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
 
         if (!bookmark_move_data.has_value()) {
-            if ((std::abs(mpos.x - last_mouse_down_window_pos.x) + std::abs(mpos.y - last_mouse_down_window_pos.y)) > 50) {
+            //if ((std::abs(mpos.x - last_mouse_down_window_pos.x) + std::abs(mpos.y - last_mouse_down_window_pos.y)) > 50) {
+            if ((mpos.manhattan(last_mouse_down_window_pos)) > 50) {
                 is_dragging = true;
             }
         }
@@ -461,11 +463,11 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     if (rect_select_mode) {
         if (rect_select_begin.has_value()) {
             rect_select_end = abs_mpos;
-            fz_rect selected_rect;
-            selected_rect.x0 = rect_select_begin.value().x;
-            selected_rect.y0 = rect_select_begin.value().y;
-            selected_rect.x1 = rect_select_end.value().x;
-            selected_rect.y1 = rect_select_end.value().y;
+            AbsoluteRect selected_rect(rect_select_begin.value(), rect_select_end.value());
+            //selected_rect.x0 = rect_select_begin.value().x;
+            //selected_rect.y0 = rect_select_begin.value().y;
+            //selected_rect.x1 = rect_select_end.value().x;
+            //selected_rect.y1 = rect_select_end.value().y;
             opengl_widget->set_selected_rectangle(selected_rect);
 
             validate_render();
@@ -1545,7 +1547,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
                 fz_rect line_rect = get_page_intersecting_rect(target_page, highlight_rects[0].second);
                 line_rect = doc()->absolute_to_page_rect(line_rect, nullptr);
 
-                opengl_widget->set_synctex_highlights({ {target_page, line_rect} });
+                opengl_widget->set_synctex_highlights({ DocumentRect{line_rect, target_page} });
                 if (highlight_rects.size() == 0) {
                     main_document_view->goto_page(target_page);
                 }
@@ -3425,15 +3427,15 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
             command_parts[i].replace("%{shared_database}", QString::fromStdWString(global_database_file_path.get_path()));
 
             int selected_rect_page = -1;
-            fz_rect selected_rect_rect;
-            if (get_selected_rect_document(selected_rect_page, selected_rect_rect)) {
+            std::optional<DocumentRect> selected_rect_document = get_selected_rect_document();
+            if (selected_rect_document) {
                 QString format_string = "%1,%2,%3,%4,%5";
                 QString rect_string = format_string
                     .arg(QString::number(selected_rect_page))
-                    .arg(QString::number(selected_rect_rect.x0))
-                    .arg(QString::number(selected_rect_rect.y0))
-                    .arg(QString::number(selected_rect_rect.x1))
-                    .arg(QString::number(selected_rect_rect.y1));
+                    .arg(QString::number(selected_rect_document->rect.x0))
+                    .arg(QString::number(selected_rect_document->rect.y0))
+                    .arg(QString::number(selected_rect_document->rect.x1))
+                    .arg(QString::number(selected_rect_document->rect.y1));
                 command_parts[i].replace("%{selected_rect}", rect_string);
             }
 
@@ -4554,7 +4556,7 @@ void MainWidget::reset_highlight_links() {
 void MainWidget::set_rect_select_mode(bool mode) {
     rect_select_mode = mode;
     if (mode == true) {
-        opengl_widget->set_selected_rectangle({ 0, 0, 0, 0 });
+        opengl_widget->set_selected_rectangle(AbsoluteRect());
     }
 }
 
@@ -4562,7 +4564,7 @@ void MainWidget::set_point_select_mode(bool mode) {
 
     point_select_mode = mode;
     if (mode == true) {
-        opengl_widget->set_selected_rectangle({ 0, 0, 0, 0 });
+        opengl_widget->set_selected_rectangle(AbsoluteRect());
     }
 }
 
@@ -4573,38 +4575,21 @@ void MainWidget::clear_selected_rect() {
     //rect_select_end = {};
 }
 
-std::optional<fz_rect> MainWidget::get_selected_rect_absolute() {
+std::optional<AbsoluteRect> MainWidget::get_selected_rect_absolute() {
     return opengl_widget->get_selected_rectangle();
 }
 
-bool MainWidget::get_selected_rect_document(int& out_page, fz_rect& out_rect) {
-    std::optional<fz_rect> absrect = get_selected_rect_absolute();
+std::optional<DocumentRect> MainWidget::get_selected_rect_document() {
+    std::optional<AbsoluteRect> absrect = get_selected_rect_absolute();
+
     if (absrect) {
 
-        AbsoluteDocumentPos top_left;
-        AbsoluteDocumentPos bottom_right;
-
-        top_left.x = absrect.value().x0;
-        top_left.y = absrect.value().y0;
-        bottom_right.x = absrect.value().x1;
-        bottom_right.y = absrect.value().y1;
-
-        DocumentPos top_left_document = main_document_view->get_document()->absolute_to_page_pos_uncentered(top_left);
-        DocumentPos bottom_right_document = main_document_view->get_document()->absolute_to_page_pos_uncentered(bottom_right);
-
-        fz_rect document_rect;
-        document_rect.x0 = top_left_document.x;
-        document_rect.y0 = top_left_document.y;
-        document_rect.x1 = bottom_right_document.x;
-        document_rect.y1 = bottom_right_document.y;
-
-        out_rect = document_rect;
-        out_page = top_left_document.page;
-
-        return true;
+        DocumentPos top_left_document = absrect->top_left().to_document(doc());
+        DocumentPos bottom_right_document = absrect->bottom_right().to_document(doc());
+        return DocumentRect(top_left_document, bottom_right_document, top_left_document.page);
     }
     else {
-        return false;
+        return {};
     }
 }
 
@@ -6600,18 +6585,17 @@ void MainWidget::handle_add_marked_data() {
         local_selected_text);
     if (local_selected_rects.size() > 0) {
         int page = -1;
+
         fz_rect begin_docrect = doc()->absolute_to_page_rect(local_selected_rects[0], &page);
         fz_rect end_docrect = doc()->absolute_to_page_rect(local_selected_rects[local_selected_rects.size() - 1], &page);
 
         MarkedDataRect begin_rect;
-        begin_rect.rect = begin_docrect;
-        begin_rect.page = page;
+        begin_rect.rect = DocumentRect(begin_docrect, page);
         begin_rect.type = 0;
         opengl_widget->marked_data_rects.push_back(begin_rect);
 
         MarkedDataRect end_rect;
-        end_rect.rect = end_docrect;
-        end_rect.page = page;
+        end_rect.rect = DocumentRect(end_docrect, page);
         end_rect.type = 1;
         opengl_widget->marked_data_rects.push_back(end_rect);
 
@@ -6641,10 +6625,10 @@ void MainWidget::handle_export_marked_data() {
         for (auto rect_object : rect_objects) {
             QJsonArray rect;
             rect.append(rect_object.type);
-            rect.append(rect_object.rect.x0);
-            rect.append(rect_object.rect.x1);
-            rect.append(rect_object.rect.y0);
-            rect.append(rect_object.rect.y1);
+            rect.append(rect_object.rect.rect.x0);
+            rect.append(rect_object.rect.rect.x1);
+            rect.append(rect_object.rect.rect.y0);
+            rect.append(rect_object.rect.rect.y1);
             rects.append(rect);
         }
 
@@ -8021,19 +8005,18 @@ QJsonObject MainWidget::get_json_state() {
         result["x_offset"] = offset_x;
         result["y_offset"] = offset_y;
 
-        std::optional<fz_rect> selected_rect_abs = get_selected_rect_absolute();
+        std::optional<AbsoluteRect> selected_rect_abs = get_selected_rect_absolute();
         if (selected_rect_abs) {
             int selected_rect_page;
-            fz_rect selected_rect_doc;
-            get_selected_rect_document(selected_rect_page, selected_rect_doc);
+            fz_rect  selected_rect_doc = get_selected_rect_document()->rect;
 
             QJsonObject absrect_json;
             QJsonObject docrect_json;
 
-            absrect_json["x0"] = selected_rect_abs->x0;
-            absrect_json["x1"] = selected_rect_abs->x1;
-            absrect_json["y0"] = selected_rect_abs->y0;
-            absrect_json["y1"] = selected_rect_abs->y1;
+            absrect_json["x0"] = selected_rect_abs->rect.x0;
+            absrect_json["x1"] = selected_rect_abs->rect.x1;
+            absrect_json["y0"] = selected_rect_abs->rect.y0;
+            absrect_json["y1"] = selected_rect_abs->rect.y1;
 
             docrect_json["x0"] = selected_rect_doc.x0;
             docrect_json["x1"] = selected_rect_doc.x1;

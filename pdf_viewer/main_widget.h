@@ -412,8 +412,8 @@ public:
 
     void expand_selection_vertical(bool begin, bool below);
 
-    std::optional<fz_rect> get_selected_rect_absolute();
-    bool get_selected_rect_document(int& out_page, fz_rect& out_rect);
+    std::optional<AbsoluteRect> get_selected_rect_absolute();
+    std::optional<DocumentRect> get_selected_rect_document();
     Document* doc();
 
     MainWidget(

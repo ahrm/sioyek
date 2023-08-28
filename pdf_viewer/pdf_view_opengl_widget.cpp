@@ -443,7 +443,7 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
     glDisable(GL_BLEND);
 
 }
-void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window_rect, int flags) {
+void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWindowRect window_rect_, int flags) {
 
     if (is_rotated()) {
         return;
@@ -458,6 +458,8 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
     glUseProgram(program);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
+
+    fz_rect window_rect = window_rect_.rect;
 
     if (flags & HRF_UNDERLINE) {
         float underline_data[] = {
@@ -516,13 +518,13 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, fz_rect window
     }
 }
 
-void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, fz_rect absolute_document_rect, int flags) {
-    fz_rect window_rect = document_view->absolute_to_window_rect(absolute_document_rect);
+void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, AbsoluteRect absolute_document_rect, int flags) {
+    NormalizedWindowRect window_rect = absolute_document_rect.to_window_normalized(document_view);
     render_highlight_window(program, window_rect, flags);
 }
 
-void PdfViewOpenGLWidget::render_highlight_document(GLuint program, int page, fz_rect doc_rect, int flags) {
-    fz_rect window_rect = document_view->document_to_window_rect(page, doc_rect);
+void PdfViewOpenGLWidget::render_highlight_document(GLuint program, DocumentRect doc_rect, int flags) {
+    NormalizedWindowRect window_rect = doc_rect.to_window_normalized(document_view);
     render_highlight_window(program, window_rect, flags);
 }
 
@@ -792,7 +794,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
             glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
             //glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
             for (auto rect : highlighted_result.rects) {
-                fz_rect target = document_to_overview_rect(highlighted_result.page, rect);
+                NormalizedWindowRect target = document_to_overview_rect(DocumentRect{ rect, highlighted_result.page });
                 render_highlight_window(shared_gl_objects.highlight_program, target, HRF_FILL | HRF_BORDER);
             }
         }
@@ -1096,7 +1098,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                 const std::vector<PdfLink>& links = document_view->get_document()->get_page_merged_pdf_links(page);
                 for (auto link : links) {
                     for (auto link_rect : link.rects) {
-                        render_highlight_document(shared_gl_objects.highlight_program, page, link_rect);
+                        render_highlight_document(shared_gl_objects.highlight_program, { link_rect, page });
                         //all_visible_links.push_back(link);
                     }
                 }
@@ -1159,7 +1161,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
         int page = last_selected_block_page.value();
         fz_rect rect = last_selected_block.value();
-        render_highlight_document(shared_gl_objects.highlight_program, page, rect);
+        render_highlight_document(shared_gl_objects.highlight_program, DocumentRect { rect, page });
     }
 #endif
 
@@ -1186,7 +1188,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                 if (visible_search_index != current_search_result_index) {
                     SearchResult res = search_results[visible_search_index];
                     for (auto rect : res.rects) {
-                        render_highlight_document(shared_gl_objects.highlight_program, res.page, rect);
+                        render_highlight_document(shared_gl_objects.highlight_program, DocumentRect { rect, res.page });
                     }
                 }
             }
@@ -1195,7 +1197,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         std::array<float, 3> search_highlight_color = cc3(DEFAULT_SEARCH_HIGHLIGHT_COLOR);
         glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &search_highlight_color[0]);
         for (auto rect : current_search_result.rects) {
-            render_highlight_document(shared_gl_objects.highlight_program, current_search_result.page, rect);
+            render_highlight_document(shared_gl_objects.highlight_program, DocumentRect { rect, current_search_result.page });
         }
     }
     search_results_mutex.unlock();
@@ -1216,8 +1218,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
         std::array<float, 3> synctex_highlight_color = cc3(DEFAULT_SYNCTEX_HIGHLIGHT_COLOR);
         glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &synctex_highlight_color[0]);
-        for (auto [page, rect] : synctex_highlights) {
-            render_highlight_document(shared_gl_objects.highlight_program, page, rect, HRF_FILL);
+        for (auto synctex_hl_rect : synctex_highlights) {
+            render_highlight_document(shared_gl_objects.highlight_program, synctex_hl_rect, HRF_FILL);
         }
     }
 
@@ -1342,12 +1344,12 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             render_highlight_window(shared_gl_objects.highlight_program, ruler_rect.value(), flags);
         }
     }
-    for (auto [type, type_rects] : get_marked_data_rect_map()) {
+    for (auto [type, marked_data_of_type] : get_marked_data_rect_map()) {
         //fz_rect window_rect = document_view->document_to_window_rect(page, rect);
 
         glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[type * 3]);
-        for (auto rect : type_rects) {
-            render_highlight_document(shared_gl_objects.highlight_program, rect.page, rect.rect);
+        for (auto marked_data : marked_data_of_type) {
+            render_highlight_document(shared_gl_objects.highlight_program, marked_data.rect);
         }
     }
 
@@ -1629,7 +1631,7 @@ void PdfViewOpenGLWidget::toggle_dark_mode() {
     set_dark_mode(!(this->color_mode == ColorPalette::Dark));
 }
 
-void PdfViewOpenGLWidget::set_synctex_highlights(std::vector<std::pair<int, fz_rect>> highlights) {
+void PdfViewOpenGLWidget::set_synctex_highlights(std::vector<DocumentRect> highlights) {
     synctex_highlight_time = QTime::currentTime();
     synctex_highlights = std::move(highlights);
 }
@@ -2186,14 +2188,14 @@ void PdfViewOpenGLWidget::get_overview_window_vertices(float out_vertices[2 * 4]
     out_vertices[7] = overview_offset_y + overview_half_height;
 }
 
-void PdfViewOpenGLWidget::set_selected_rectangle(fz_rect selected) {
+void PdfViewOpenGLWidget::set_selected_rectangle(AbsoluteRect selected) {
     selected_rectangle = selected;
 }
 
 void PdfViewOpenGLWidget::clear_selected_rectangle() {
     selected_rectangle = {};
 }
-std::optional<fz_rect> PdfViewOpenGLWidget::get_selected_rectangle() {
+std::optional<AbsoluteRect> PdfViewOpenGLWidget::get_selected_rectangle() {
     return selected_rectangle;
 }
 
@@ -2252,17 +2254,12 @@ NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(DocumentPos po
     }
 }
 
-fz_rect PdfViewOpenGLWidget::document_to_overview_rect(int page, fz_rect document_rect) {
-    fz_rect res;
-    DocumentPos top_left = { page, document_rect.x0, document_rect.y0 };
-    DocumentPos bottom_right = { page, document_rect.x1, document_rect.y1 };
+NormalizedWindowRect PdfViewOpenGLWidget::document_to_overview_rect(DocumentRect doc_rect) {
+    DocumentPos top_left = doc_rect.top_left();
+    DocumentPos bottom_right = doc_rect.bottom_right();
     NormalizedWindowPos top_left_pos = document_to_overview_pos(top_left);
     NormalizedWindowPos bottom_right_pos = document_to_overview_pos(bottom_right);
-    res.x0 = top_left_pos.x;
-    res.y0 = top_left_pos.y;
-    res.x1 = bottom_right_pos.x;
-    res.y1 = bottom_right_pos.y;
-    return res;
+    return NormalizedWindowRect(top_left_pos, bottom_right_pos);
 }
 
 std::vector<int> PdfViewOpenGLWidget::get_visible_search_results(std::vector<int>& visible_pages) {
