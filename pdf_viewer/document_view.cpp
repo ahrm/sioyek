@@ -286,7 +286,7 @@ void DocumentView::set_offset_y(float new_offset_y) {
 std::optional<PdfLink> DocumentView::get_link_in_pos(WindowPos pos) {
     if (!current_document) return {};
 
-    UncenteredDocumentPos doc_pos = window_to_document_pos_uncentered(pos);
+    DocumentPos doc_pos = window_to_document_pos_uncentered(pos);
     return current_document->get_link_in_pos(doc_pos);
 }
 
@@ -374,7 +374,7 @@ fz_rect DocumentView::absolute_to_window_rect(fz_rect doc_rect) {
     return res;
 }
 
-NormalizedWindowPos DocumentView::document_to_window_pos(UncenteredDocumentPos doc_pos) {
+NormalizedWindowPos DocumentView::document_to_window_pos(DocumentPos doc_pos) {
 
     if (current_document) {
         WindowPos window_pos = document_to_window_pos_in_pixels_uncentered(doc_pos);
@@ -387,23 +387,6 @@ NormalizedWindowPos DocumentView::document_to_window_pos(UncenteredDocumentPos d
     }
 }
 
-NormalizedWindowPos DocumentView::document_to_window_pos(CenteredDocumentPos doc_pos) {
-
-    if (current_document) {
-        WindowPos window_pos = document_to_window_pos_in_pixels_centered(doc_pos);
-        double halfwidth = static_cast<double>(view_width) / 2;
-        double halfheight = static_cast<double>(view_height) / 2;
-
-        float window_x = static_cast<float>((window_pos.x - halfwidth) / halfwidth);
-        float window_y = static_cast<float>((window_pos.y - halfheight) / halfheight);
-        return { window_x, -window_y };
-    }
-}
-
-//WindowPos DocumentView::document_to_window_pos_in_pixels(UncenteredDocumentPos doc_pos) {
-//    return document_to_window_pos_in_pixels(DocumentPos { doc_pos.page, doc_pos.x, doc_pos.y });
-//}
-
 WindowPos DocumentView::absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abspos, int page) {
     WindowPos window_pos;
     window_pos.y = (abspos.y - offset_y) * zoom_level + view_height / 2;
@@ -411,17 +394,12 @@ WindowPos DocumentView::absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs
     return window_pos;
 }
 
-WindowPos DocumentView::document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos doc_pos) {
+WindowPos DocumentView::document_to_window_pos_in_pixels_uncentered(DocumentPos doc_pos) {
     AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
     return absolute_to_window_pos_in_pixels(abspos, doc_pos.page);
 }
 
-WindowPos DocumentView::document_to_window_pos_in_pixels_centered(CenteredDocumentPos doc_pos) {
-    AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
-    return absolute_to_window_pos_in_pixels(abspos, doc_pos.page);
-}
-
-WindowPos DocumentView::document_to_window_pos_in_pixels_banded(UncenteredDocumentPos doc_pos) {
+WindowPos DocumentView::document_to_window_pos_in_pixels_banded(DocumentPos doc_pos) {
     AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
     WindowPos window_pos;
     window_pos.y = static_cast<int>(std::roundf((abspos.y - offset_y) * zoom_level + static_cast<float>(view_height) / 2.0f));
@@ -434,8 +412,8 @@ fz_irect DocumentView::document_to_window_irect(int page, fz_rect doc_rect) {
 
     fz_irect window_rect;
 
-    WindowPos bottom_left = document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos { page, doc_rect.x0, doc_rect.y0 });
-    WindowPos top_right = document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos { page, doc_rect.x1, doc_rect.y1 });
+    WindowPos bottom_left = document_to_window_pos_in_pixels_uncentered(DocumentPos { page, doc_rect.x0, doc_rect.y0 });
+    WindowPos top_right = document_to_window_pos_in_pixels_uncentered(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
     window_rect.x0 = bottom_left.x;
     window_rect.y0 = bottom_left.y;
     window_rect.x1 = top_right.x;
@@ -446,8 +424,8 @@ fz_irect DocumentView::document_to_window_irect(int page, fz_rect doc_rect) {
 fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
     fz_rect res;
 
-    NormalizedWindowPos p0 = document_to_window_pos(UncenteredDocumentPos { page, doc_rect.x0, doc_rect.y0 });
-    NormalizedWindowPos p1 = document_to_window_pos(UncenteredDocumentPos { page, doc_rect.x1, doc_rect.y1 });
+    NormalizedWindowPos p0 = document_to_window_pos(DocumentPos { page, doc_rect.x0, doc_rect.y0 });
+    NormalizedWindowPos p1 = document_to_window_pos(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
 
     res.x0 = p0.x;
     res.x1 = p1.x;
@@ -470,8 +448,8 @@ fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect do
         w1 = document_to_window_pos_in_pixels_banded({ page, doc_rect.x1, doc_rect.y1 });
     }
     else {
-        w0 = document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos { page, doc_rect.x0, doc_rect.y0 });
-        w1 = document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos { page, doc_rect.x1, doc_rect.y1 });
+        w0 = document_to_window_pos_in_pixels_uncentered(DocumentPos { page, doc_rect.x0, doc_rect.y0 });
+        w1 = document_to_window_pos_in_pixels_uncentered(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
     }
 
     w1.x -= ((w1.x - w0.x) - pixel_width);
@@ -492,7 +470,7 @@ fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect do
     return res;
 }
 
-UncenteredDocumentPos DocumentView::window_to_document_pos_uncentered(WindowPos window_pos) {
+DocumentPos DocumentView::window_to_document_pos_uncentered(WindowPos window_pos) {
     if (current_document) {
         return current_document->absolute_to_page_pos_uncentered(
             { (window_pos.x - view_width / 2) / zoom_level - offset_x,
@@ -503,7 +481,7 @@ UncenteredDocumentPos DocumentView::window_to_document_pos_uncentered(WindowPos 
     }
 }
 
-UncenteredDocumentPos DocumentView::window_to_document_pos(WindowPos window_pos) {
+DocumentPos DocumentView::window_to_document_pos(WindowPos window_pos) {
     if (current_document) {
         return current_document->absolute_to_page_pos_uncentered(
             { (window_pos.x - view_width / 2) / zoom_level - offset_x,
@@ -810,10 +788,6 @@ float DocumentView::get_page_offset(int page) {
         page = max_page;
     }
     return current_document->get_accum_page_height(page);
-}
-
-void DocumentView::goto_offset_within_page(CenteredDocumentPos pos) {
-    set_offsets(pos.x, get_page_offset(pos.page) + pos.y);
 }
 
 void DocumentView::goto_offset_within_page(int page, float offset_y) {
@@ -1171,7 +1145,7 @@ void DocumentView::set_line_index(int index, int page) {
 }
 
 int DocumentView::get_line_index_of_vertical_pos() {
-    UncenteredDocumentPos line_doc_pos = current_document->absolute_to_page_pos_uncentered({ 0, get_ruler_pos() });
+    DocumentPos line_doc_pos = current_document->absolute_to_page_pos_uncentered({ 0, get_ruler_pos() });
     auto rects = current_document->get_page_lines(line_doc_pos.page);
     int index = 0;
     while ((size_t)index < rects.size() && rects[index].y0 < get_ruler_pos()) {
@@ -1180,7 +1154,7 @@ int DocumentView::get_line_index_of_vertical_pos() {
     return index - 1;
 }
 
-int DocumentView::get_line_index_of_pos(UncenteredDocumentPos line_doc_pos) {
+int DocumentView::get_line_index_of_pos(DocumentPos line_doc_pos) {
     fz_point document_point = { line_doc_pos.x, line_doc_pos.y };
     auto rects = current_document->get_page_lines(line_doc_pos.page, nullptr);
     int page_width = current_document->get_page_width(line_doc_pos.page);
@@ -1261,7 +1235,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     candid.doc = get_document();
                     candid.source_rect = current_document->document_to_absolute_rect(line_page_number, link.rects[0]);
                     candid.source_text = get_document()->get_pdf_link_text(link);
-                    candid.target_pos = UncenteredDocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y };
+                    candid.target_pos = DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y };
                     result.push_back(candid);
                     //result.push_back(
                     //    std::make_pair(
@@ -1313,7 +1287,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     candid.doc = get_document();
                     candid.source_rect = generic_item_rects[i];
                     candid.source_text = generic_item_texts[i];
-                    candid.target_pos = UncenteredDocumentPos{ possible_targets[j].page, 0, possible_targets[j].y_offset };
+                    candid.target_pos = DocumentPos{ possible_targets[j].page, 0, possible_targets[j].y_offset };
                     generic_positions.push_back(candid);
                     //generic_positions.push_back(
                     //    std::make_pair(DocumentPos{ possible_targets[j].page, 0, possible_targets[j].y_offset },
@@ -1343,7 +1317,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                             candid.doc = get_document();
                             candid.source_rect = subrects[0];
                             candid.source_text = parts[j].trimmed().toStdWString();
-                            candid.target_pos = UncenteredDocumentPos{ index[0].page, 0, index[0].y_offset };
+                            candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
                             reference_positions.push_back(candid);
                         }
                         n_chars_seen += parts[j].size() + 1;
@@ -1357,7 +1331,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     candid.doc = get_document();
                     candid.source_rect = reference_rects[i];
                     candid.source_text = reference_texts[i];
-                    candid.target_pos = UncenteredDocumentPos{ index[0].page, 0, index[0].y_offset };
+                    candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
                     reference_positions.push_back(candid);
                     //reference_positions.push_back(
                     //    std::make_pair(
@@ -1375,7 +1349,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     candid.doc = get_document();
                     candid.source_rect = equation_rects[i];
                     candid.source_text = equation_texts[i];
-                    candid.target_pos = UncenteredDocumentPos{ index[0].page, 0, index[0].y_offset };
+                    candid.target_pos = DocumentPos{ index[0].page, 0, index[0].y_offset };
                     equation_positions.push_back(candid);
                     //equation_positions.push_back(
                     //    std::make_pair(
@@ -1414,7 +1388,7 @@ bool DocumentView::goto_definition() {
     std::vector<SmartViewCandidate> defloc = find_line_definitions();
     if (defloc.size() > 0) {
         //goto_offset_within_page(defloc[0].first.page, defloc[0].first.y);
-        UncenteredDocumentPos docpos = defloc[0].get_docpos(this);
+        DocumentPos docpos = defloc[0].get_docpos(this);
         goto_offset_within_page(docpos.page, docpos.y);
         return true;
     }
@@ -1606,9 +1580,9 @@ Document* SmartViewCandidate::get_document(DocumentView* view) {
 
 }
 
-UncenteredDocumentPos SmartViewCandidate::get_docpos(DocumentView* view) {
-    if (std::holds_alternative<UncenteredDocumentPos>(target_pos)) {
-        return std::get<UncenteredDocumentPos>(target_pos);
+DocumentPos SmartViewCandidate::get_docpos(DocumentView* view) {
+    if (std::holds_alternative<DocumentPos>(target_pos)) {
+        return std::get<DocumentPos>(target_pos);
     }
     else {
         return get_document(view)->absolute_to_page_pos_uncentered(std::get<AbsoluteDocumentPos>(target_pos));
@@ -1620,6 +1594,6 @@ AbsoluteDocumentPos SmartViewCandidate::get_abspos(DocumentView* view) {
         return std::get<AbsoluteDocumentPos>(target_pos);
     }
     else {
-        return get_document(view)->document_to_absolute_pos(std::get<UncenteredDocumentPos>(target_pos));
+        return get_document(view)->document_to_absolute_pos(std::get<DocumentPos>(target_pos));
     }
 }

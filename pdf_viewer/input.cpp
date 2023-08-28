@@ -1395,7 +1395,7 @@ public:
                 widget->main_document_view->goto_page(page);
             }
             else {
-                widget->main_document_view->goto_offset_within_page({ page, x_offset, y_offset });
+                widget->main_document_view->goto_offset_within_page(page,  y_offset);
             }
             if (TOC_JUMP_ALIGN_TOP) {
                 widget->main_document_view->scroll_mid_to_top();

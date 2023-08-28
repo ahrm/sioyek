@@ -294,7 +294,7 @@ public:
     void bind_program();
     void cancel_search();
     //void window_pos_to_overview_pos(float window_x, float window_y, float* doc_offset_x, float* doc_offset_y, int* doc_page);
-    UncenteredDocumentPos window_pos_to_overview_pos(NormalizedWindowPos window_pos);
+    DocumentPos window_pos_to_overview_pos(NormalizedWindowPos window_pos);
     void rotate_clockwise();
     void rotate_counterclockwise();
 
@@ -312,7 +312,7 @@ public:
     void set_typing_rect(int page, fz_rect rect, std::optional<fz_rect> wrong_rect);
 
     Document* get_current_overview_document();
-    NormalizedWindowPos document_to_overview_pos(UncenteredDocumentPos pos);
+    NormalizedWindowPos document_to_overview_pos(DocumentPos pos);
     fz_rect document_to_overview_rect(int page, fz_rect document_rect);
     std::vector<int> get_visible_search_results(std::vector<int>& visible_pages);
     int find_search_index_for_visible_pages(std::vector<int>& visible_pages);

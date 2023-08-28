@@ -1236,8 +1236,8 @@ void Document::set_page_offset(int new_offset) {
 }
 
 fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page) {
-    UncenteredDocumentPos bottom_left = absolute_to_page_pos_uncentered({ absolute_rect.x0, absolute_rect.y0 });
-    UncenteredDocumentPos top_right = absolute_to_page_pos_uncentered({ absolute_rect.x1, absolute_rect.y1 });
+    DocumentPos bottom_left = absolute_to_page_pos_uncentered({ absolute_rect.x0, absolute_rect.y0 });
+    DocumentPos top_right = absolute_to_page_pos_uncentered({ absolute_rect.x1, absolute_rect.y1 });
     if (page != nullptr) {
         *page = bottom_left.page;
     }
@@ -1249,7 +1249,7 @@ fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page)
     return res;
 }
 
-UncenteredDocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp) {
+DocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp) {
 
     std::lock_guard guard(page_dims_mutex);
     if (accum_page_heights.size() == 0) {
@@ -1273,14 +1273,8 @@ UncenteredDocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp) {
     }
 }
 
-UncenteredDocumentPos Document::absolute_to_page_pos_uncentered(AbsoluteDocumentPos absolute_pos) {
+DocumentPos Document::absolute_to_page_pos_uncentered(AbsoluteDocumentPos absolute_pos) {
     return absolute_to_page_pos(absolute_pos);
-}
-
-CenteredDocumentPos Document::absolute_to_page_pos_centered(AbsoluteDocumentPos absolute_pos) {
-    UncenteredDocumentPos doc_pos = absolute_to_page_pos(absolute_pos);
-    float doc_pos_page_width = get_page_width(doc_pos.page);
-    return CenteredDocumentPos{ doc_pos.page, doc_pos.x - doc_pos_page_width / 2.0f, doc_pos.y };
 }
 
 QStandardItemModel* Document::get_toc_model() {
@@ -1459,7 +1453,7 @@ std::vector<IndexedData> Document::find_generic_with_string(std::wstring equatio
         std::wstring type = parts.at(0).toStdWString();
         std::wstring ref = parts.at(1).toStdWString();
 
-        std::vector<UncenteredDocumentPos> positions = find_generic_locations(type, ref);
+        std::vector<DocumentPos> positions = find_generic_locations(type, ref);
         for (auto pos : positions) {
             IndexedData index;
             index.page = pos.page;
@@ -1518,12 +1512,12 @@ std::optional<std::wstring> Document::get_regex_match_at_position(const std::wre
     return {};
 }
 
-std::vector<UncenteredDocumentPos> Document::find_generic_locations(const std::wstring& type, const std::wstring& name) {
+std::vector<DocumentPos> Document::find_generic_locations(const std::wstring& type, const std::wstring& name) {
     //int best_page = -1;
     //int best_y_offset = 0.0f;
     //float best_score = -1000;
 
-    std::vector<std::pair<int, UncenteredDocumentPos>> pos_scores;
+    std::vector<std::pair<int, DocumentPos>> pos_scores;
 
     for (size_t i = 0; i < generic_indices.size(); i++) {
         std::vector<std::wstring> parts = split_whitespace(generic_indices[i].text);
@@ -1534,7 +1528,7 @@ std::vector<UncenteredDocumentPos> Document::find_generic_locations(const std::w
 
             if (current_name == name) {
                 int score = type_name_similarity_score(current_type, type);
-                UncenteredDocumentPos pos{ generic_indices[i].page, 0, generic_indices[i].y_offset };
+                DocumentPos pos{ generic_indices[i].page, 0, generic_indices[i].y_offset };
                 pos_scores.push_back(std::make_pair(score, pos));
                 //if (score > best_score) {
                 //	best_page = generic_indices[i].page;
@@ -1546,13 +1540,13 @@ std::vector<UncenteredDocumentPos> Document::find_generic_locations(const std::w
         }
     }
 
-    auto  by_score = [](std::pair<int, UncenteredDocumentPos> const& a, std::pair<int, UncenteredDocumentPos> const& b) {
+    auto  by_score = [](std::pair<int, DocumentPos> const& a, std::pair<int, DocumentPos> const& b) {
         return a.first < b.first;
     };
 
     std::sort(pos_scores.begin(), pos_scores.end(), by_score);
 
-    std::vector<UncenteredDocumentPos> res;
+    std::vector<DocumentPos> res;
     for (int i = pos_scores.size() - 1; i >= 0; i--) {
         res.push_back(pos_scores[i].second);
     }
@@ -1825,8 +1819,8 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
     }
 
 
-    UncenteredDocumentPos page_pos1 = absolute_to_page_pos_uncentered(selection_begin);
-    UncenteredDocumentPos page_pos2 = absolute_to_page_pos_uncentered(selection_end);
+    DocumentPos page_pos1 = absolute_to_page_pos_uncentered(selection_begin);
+    DocumentPos page_pos2 = absolute_to_page_pos_uncentered(selection_end);
 
     int page_begin, page_end;
     fz_point page_point1;
@@ -1978,7 +1972,7 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
                     for (int vertex_index = 0; vertex_index < vertex_count; vertex_index++) {
                         fz_point vertex = pdf_annot_ink_list_stroke_vertex(context, annot, stroke_index, vertex_index);
                         FreehandDrawingPoint point;
-                        UncenteredDocumentPos docpos;
+                        DocumentPos docpos;
                         docpos.page = p;
                         docpos.x = vertex.x;
                         docpos.y = vertex.y;
@@ -2045,7 +2039,7 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
                     int n_channels = -1;
                     pdf_annot_color(context, annot, &n_channels, color);
 
-                    UncenteredDocumentPos begin_pos, end_pos;
+                    DocumentPos begin_pos, end_pos;
                     begin_pos.page = p;
                     begin_pos.x = first_vertex.ul.x;
                     begin_pos.y = (first_vertex.ul.y + first_vertex.ll.y) / 2;
@@ -2223,8 +2217,8 @@ void Document::embed_annotations(std::wstring new_file_path) {
 
         fz_rect annot_rect;
         if (bookmark.is_freetext()) {
-            UncenteredDocumentPos begin_page_pos = absolute_to_page_pos_uncentered({ bookmark.begin_x, bookmark.begin_y });
-            UncenteredDocumentPos end_page_pos = absolute_to_page_pos_uncentered({ bookmark.end_x, bookmark.end_y });
+            DocumentPos begin_page_pos = absolute_to_page_pos_uncentered({ bookmark.begin_x, bookmark.begin_y });
+            DocumentPos end_page_pos = absolute_to_page_pos_uncentered({ bookmark.end_x, bookmark.end_y });
 
             annot_rect.x0 = begin_page_pos.x;
             annot_rect.x1 = end_page_pos.x;
@@ -2236,7 +2230,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
             pdf_set_annot_default_appearance(context, bookmark_annot, font_face, bookmark.font_size, 3, bookmark.color);
         }
         else if (bookmark.is_marked()) {
-            UncenteredDocumentPos begin_page_pos = absolute_to_page_pos_uncentered({ bookmark.begin_x, bookmark.begin_y });
+            DocumentPos begin_page_pos = absolute_to_page_pos_uncentered({ bookmark.begin_x, bookmark.begin_y });
 
             annot_rect.x0 = begin_page_pos.x - 6;
             annot_rect.x1 = begin_page_pos.x + 6;
@@ -2265,7 +2259,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
             std::vector<fz_point> points;
 
             for (auto point : drawing.points) {
-                UncenteredDocumentPos docpos = absolute_to_page_pos_uncentered(point.pos);
+                DocumentPos docpos = absolute_to_page_pos_uncentered(point.pos);
                 if (docpos.page == page_number) {
                     points.push_back(fz_point{ docpos.x, docpos.y });
                 }
@@ -2546,7 +2540,7 @@ void DocumentManager::free_document(Document* document) {
     delete document;
 }
 
-std::optional<PdfLink> Document::get_link_in_pos(const UncenteredDocumentPos& pos) {
+std::optional<PdfLink> Document::get_link_in_pos(const DocumentPos& pos) {
     return get_link_in_pos(pos.page, pos.x, pos.y);
 }
 
@@ -2711,7 +2705,7 @@ float Document::document_to_absolute_y(int page, float doc_y) {
 //    return res;
 //}
 
-AbsoluteDocumentPos Document::document_to_absolute_pos(UncenteredDocumentPos doc_pos) {
+AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos) {
     float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
     AbsoluteDocumentPos res = { doc_pos.x, absolute_y };
     if (doc_pos.page < page_widths.size()) {
@@ -2720,16 +2714,10 @@ AbsoluteDocumentPos Document::document_to_absolute_pos(UncenteredDocumentPos doc
     return res;
 }
 
-AbsoluteDocumentPos Document::document_to_absolute_pos(CenteredDocumentPos doc_pos) {
-    float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
-    AbsoluteDocumentPos res = { doc_pos.x, absolute_y };
-    return res;
-}
-
 fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect){
     fz_rect res;
-    AbsoluteDocumentPos x0y0 = document_to_absolute_pos(UncenteredDocumentPos { page, doc_rect.x0, doc_rect.y0 }); 
-    AbsoluteDocumentPos x1y1 = document_to_absolute_pos(UncenteredDocumentPos { page, doc_rect.x1, doc_rect.y1 });
+    AbsoluteDocumentPos x0y0 = document_to_absolute_pos(DocumentPos { page, doc_rect.x0, doc_rect.y0 }); 
+    AbsoluteDocumentPos x1y1 = document_to_absolute_pos(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
 
     res.x0 = x0y0.x;
     res.y0 = x0y0.y;
@@ -3416,7 +3404,7 @@ std::wstring Document::get_text_in_rect(int page, fz_rect doc_rect) {
 
 void Document::add_freehand_drawing(FreehandDrawing new_drawing) {
     if (new_drawing.points.size() > 0) {
-        UncenteredDocumentPos docpos = absolute_to_page_pos_uncentered(new_drawing.points[0].pos);
+        DocumentPos docpos = absolute_to_page_pos_uncentered(new_drawing.points[0].pos);
         drawings_mutex.lock();
         page_freehand_drawings[docpos.page].push_back(new_drawing);
         drawings_mutex.unlock();

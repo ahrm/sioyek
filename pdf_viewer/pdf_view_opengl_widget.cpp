@@ -681,7 +681,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
         target_doc = overview.doc;
     }
 
-    UncenteredDocumentPos docpos = target_doc->absolute_to_page_pos_uncentered({ 0, overview.absolute_offset_y });
+    DocumentPos docpos = target_doc->absolute_to_page_pos_uncentered({ 0, overview.absolute_offset_y });
 
     float view_width = static_cast<int>(document_view->get_view_width() * overview_half_width);
     float view_height = static_cast<int>(document_view->get_view_height() * overview_half_height);
@@ -1985,7 +1985,7 @@ void PdfViewOpenGLWidget::bind_program() {
     }
 }
 
-UncenteredDocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos window_pos) {
+DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos window_pos) {
     Document* target = document_view->get_document();
     if (overview_page) {
         if (overview_page.value().doc != nullptr) {
@@ -1997,7 +1997,7 @@ UncenteredDocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(Normalized
     float window_height = static_cast<float>(size().height());
     int window_x = static_cast<int>((1.0f + window_pos.x) / 2 * window_width);
     int window_y = static_cast<int>((1.0f + window_pos.y) / 2 * window_height);
-    UncenteredDocumentPos docpos = target->absolute_to_page_pos_uncentered({ 0, get_overview_page().value().absolute_offset_y });
+    DocumentPos docpos = target->absolute_to_page_pos_uncentered({ 0, get_overview_page().value().absolute_offset_y });
     float overview_width = document_view->get_view_width() * overview_half_width;
     float page_width = target->get_page_width(docpos.page);
     float zoom_level = overview_width / page_width;
@@ -2226,13 +2226,13 @@ Document* PdfViewOpenGLWidget::get_current_overview_document() {
 
 }
 
-NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(UncenteredDocumentPos pos) {
+NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(DocumentPos pos) {
     NormalizedWindowPos res;
 
     if (overview_page) {
         OverviewState overview = overview_page.value();
         Document* target_doc = get_current_overview_document();
-        UncenteredDocumentPos docpos = target_doc->absolute_to_page_pos_uncentered({ 0, overview.absolute_offset_y });
+        DocumentPos docpos = target_doc->absolute_to_page_pos_uncentered({ 0, overview.absolute_offset_y });
 
         AbsoluteDocumentPos abspos = target_doc->document_to_absolute_pos(pos);
 
@@ -2254,8 +2254,8 @@ NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(UncenteredDocu
 
 fz_rect PdfViewOpenGLWidget::document_to_overview_rect(int page, fz_rect document_rect) {
     fz_rect res;
-    UncenteredDocumentPos top_left = { page, document_rect.x0, document_rect.y0 };
-    UncenteredDocumentPos bottom_right = { page, document_rect.x1, document_rect.y1 };
+    DocumentPos top_left = { page, document_rect.x0, document_rect.y0 };
+    DocumentPos bottom_right = { page, document_rect.x1, document_rect.y1 };
     NormalizedWindowPos top_left_pos = document_to_overview_pos(top_left);
     NormalizedWindowPos bottom_right_pos = document_to_overview_pos(bottom_right);
     res.x0 = top_left_pos.x;

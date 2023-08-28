@@ -371,7 +371,7 @@ public:
     void set_synctex_mode(bool mode);
     void toggle_synctex_mode();
     void complete_pending_link(const PortalViewState& destination_view_state);
-    void long_jump_to_destination(UncenteredDocumentPos pos);
+    void long_jump_to_destination(DocumentPos pos);
     void long_jump_to_destination(int page, float offset_y);
     void long_jump_to_destination(float abs_offset_y);
     void execute_command(std::wstring command, std::wstring text = L"", bool wait = false);
@@ -478,7 +478,7 @@ public:
     void set_overview_link(PdfLink link);
     void set_overview_position(int page, float offset);
     ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text);
-    ReferenceType find_location_of_text_under_pointer(UncenteredDocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text, bool update_candidates = false);
+    ReferenceType find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
     CommandManager* get_command_manager();
 
@@ -512,7 +512,7 @@ public:
     void set_status_message(std::wstring new_status_string);
     void remove_self_from_windows();
     //void handle_additional_command(std::wstring command_name, bool wait=false);
-    std::optional<UncenteredDocumentPos> get_overview_position();
+    std::optional<DocumentPos> get_overview_position();
     void handle_keyboard_select(const std::wstring& text);
     //void run_multiple_commands(const std::wstring& commands);
     void push_state(bool update = true);
@@ -563,10 +563,10 @@ public:
     void handle_pause();
     void read_current_line();
     void download_paper_under_cursor(bool use_last_touch_pos = false);
-    std::optional<std::wstring> get_direct_paper_name_under_pos(UncenteredDocumentPos docpos);
-    std::optional<std::wstring> get_paper_name_under_pos(UncenteredDocumentPos docpos, bool clean=false);
+    std::optional<std::wstring> get_direct_paper_name_under_pos(DocumentPos docpos);
+    std::optional<std::wstring> get_paper_name_under_pos(DocumentPos docpos, bool clean=false);
     std::wstring download_paper_with_name(const std::wstring& name);
-    bool is_pos_inside_selected_text(UncenteredDocumentPos docpos);
+    bool is_pos_inside_selected_text(DocumentPos docpos);
     void handle_debug_command();
     void handle_add_marked_data();
     void handle_undo_marked_data();
@@ -578,7 +578,7 @@ public:
     void handle_toggle_drawing_mask(char symbol);
     void show_command_palette();
 
-    UncenteredDocumentPos get_document_pos_under_window_pos(WindowPos window_pos);
+    DocumentPos get_document_pos_under_window_pos(WindowPos window_pos);
     AbsoluteDocumentPos get_absolute_document_pos_under_window_pos(WindowPos window_pos);
 
     std::string get_current_mode_string();

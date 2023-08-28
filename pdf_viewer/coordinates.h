@@ -8,13 +8,13 @@
 //    float y;
 //};
 
-struct CenteredDocumentPos {
-    int page;
-    float x;
-    float y;
-};
+//struct CenteredDocumentPos {
+//    int page;
+//    float x;
+//    float y;
+//};
 
-struct UncenteredDocumentPos {
+struct DocumentPos {
     int page;
     float x;
     float y;

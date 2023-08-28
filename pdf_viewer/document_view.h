@@ -33,10 +33,10 @@ struct SmartViewCandidate {
     Document* doc = nullptr;
     fz_rect source_rect;
     std::wstring source_text;
-    std::variant<UncenteredDocumentPos, AbsoluteDocumentPos> target_pos;
+    std::variant<DocumentPos, AbsoluteDocumentPos> target_pos;
 
     Document* get_document(DocumentView* view);
-    UncenteredDocumentPos get_docpos(DocumentView* view);
+    DocumentPos get_docpos(DocumentView* view);
     AbsoluteDocumentPos get_abspos(DocumentView* view);
 };
 
@@ -122,18 +122,15 @@ public:
     NormalizedWindowPos absolute_to_window_pos(AbsoluteDocumentPos absolute_pos);
 
     fz_rect absolute_to_window_rect(fz_rect doc_rect);
-    NormalizedWindowPos document_to_window_pos(UncenteredDocumentPos pos);
-    NormalizedWindowPos document_to_window_pos(CenteredDocumentPos pos);
-    //WindowPos document_to_window_pos_in_pixels(DocumentPos doc_pos);
+    NormalizedWindowPos document_to_window_pos(DocumentPos pos);
     WindowPos absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs_pos, int page);
-    WindowPos document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos doc_pos);
-    WindowPos document_to_window_pos_in_pixels_centered(CenteredDocumentPos doc_pos);
-    WindowPos document_to_window_pos_in_pixels_banded(UncenteredDocumentPos doc_pos);
+    WindowPos document_to_window_pos_in_pixels_uncentered(DocumentPos doc_pos);
+    WindowPos document_to_window_pos_in_pixels_banded(DocumentPos doc_pos);
     fz_rect document_to_window_rect(int page, fz_rect doc_rect);
     fz_irect document_to_window_irect(int page, fz_rect doc_rect);
     fz_rect document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height, bool banded = false);
-    UncenteredDocumentPos window_to_document_pos(WindowPos window_pos);
-    UncenteredDocumentPos window_to_document_pos_uncentered(WindowPos window_pos);
+    DocumentPos window_to_document_pos(WindowPos window_pos);
+    DocumentPos window_to_document_pos_uncentered(WindowPos window_pos);
     AbsoluteDocumentPos window_to_absolute_document_pos(WindowPos window_pos);
     NormalizedWindowPos window_to_normalized_window_pos(WindowPos window_pos);
     WindowPos normalized_window_to_window_pos(NormalizedWindowPos normalized_window_pos);
@@ -165,7 +162,6 @@ public:
     void reset_doc_state();
     void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions = false);
     float get_page_offset(int page);
-    void goto_offset_within_page(CenteredDocumentPos pos);
     void goto_offset_within_page(int page, float offset_y);
     void goto_page(int page);
     void fit_to_page_width(bool smart = false, bool ratio = false);
@@ -198,7 +194,7 @@ public:
     void goto_top_of_page();
     void goto_bottom_of_page();
     int get_line_index_of_vertical_pos();
-    int get_line_index_of_pos(UncenteredDocumentPos docpos);
+    int get_line_index_of_pos(DocumentPos docpos);
     int get_line_index();
     void set_line_index(int index, int page);
     int get_vertical_line_page();

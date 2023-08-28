@@ -229,7 +229,7 @@ private:
     QIcon end_icon;
     QPoint last_press_window_pos;
     QPoint last_press_widget_pos;
-    UncenteredDocumentPos docpos;
+    DocumentPos docpos;
     bool docpos_needs_recompute = false;
 public:
 
@@ -274,7 +274,7 @@ public:
         is_dragging = false;
     }
 
-    UncenteredDocumentPos get_docpos() {
+    DocumentPos get_docpos() {
         if (!docpos_needs_recompute) return docpos;
 
         if (is_begin) {
@@ -351,7 +351,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
 void MainWidget::set_overview_position(int page, float offset) {
     if (page >= 0) {
-        auto abspos = main_document_view->get_document()->document_to_absolute_pos(UncenteredDocumentPos { page, 0, offset });
+        auto abspos = main_document_view->get_document()->document_to_absolute_pos(DocumentPos { page, 0, offset });
         float page_height = main_document_view->get_document()->get_page_height(page);
         set_overview_page(OverviewState{ abspos.y });
         invalidate_render();
@@ -368,7 +368,7 @@ void MainWidget::set_overview_link(PdfLink link) {
         current_overview_source_rect = source_absolute_rect;
         SmartViewCandidate current_candidate;
         current_candidate.source_rect = source_absolute_rect;
-        current_candidate.target_pos = UncenteredDocumentPos{ page - 1, 0, offset_y };
+        current_candidate.target_pos = DocumentPos{ page - 1, 0, offset_y };
         current_candidate.source_text = source_text;
         smart_view_candidates.clear();
         smart_view_candidates.push_back(current_candidate);
@@ -517,7 +517,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     if (overview_touch_move_data && opengl_widget->get_overview_page()) {
         // in touch mode, instead of moving the overview itself, we move the document inside the overview
-        UncenteredDocumentPos current_mouse_overview_document_pos = opengl_widget->window_pos_to_overview_pos(normal_mpos);
+        DocumentPos current_mouse_overview_document_pos = opengl_widget->window_pos_to_overview_pos(normal_mpos);
         AbsoluteDocumentPos current_mouse_overview_absolute_pos = doc()->document_to_absolute_pos(current_mouse_overview_document_pos);
         float absdiff = -current_mouse_overview_absolute_pos.y + overview_touch_move_data.value().original_mouse_offset_y;
         float new_absolute_y = opengl_widget->get_overview_page().value().absolute_offset_y + absdiff;
@@ -1571,7 +1571,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
                     main_document_view->goto_page(target_page);
                 }
                 else {
-                    main_document_view->goto_offset_within_page({ target_page, main_document_view->get_offset_x(), first_rect.value().y0 });
+                    main_document_view->goto_offset_within_page(target_page, first_rect.value().y0);
                 }
             }
             else {
@@ -1728,7 +1728,7 @@ void MainWidget::open_document_at_location(const Path& path_,
     main_document_view->on_view_size_change(main_window_width, main_window_height);
 
     AbsoluteDocumentPos absolute_pos = main_document_view->get_document()->document_to_absolute_pos(
-        UncenteredDocumentPos{ page, x_loc.value_or(0), y_loc.value_or(0) });
+        DocumentPos{ page, x_loc.value_or(0), y_loc.value_or(0) });
 
     if (x_loc) {
         main_document_view->set_offset_x(absolute_pos.x);
@@ -2387,7 +2387,7 @@ ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* o
     return ReferenceType::None;
 }
 
-ReferenceType MainWidget::find_location_of_text_under_pointer(UncenteredDocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text, bool update_candidates) {
+ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, fz_rect* out_rect, std::wstring* out_source_text, bool update_candidates) {
 
     //auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
     auto [page, offset_x, offset_y] = docpos;
@@ -2417,7 +2417,7 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(UncenteredDocument
     }
 
     if (generic_pair) {
-        std::vector<UncenteredDocumentPos> candidates = main_document_view->get_document()->find_generic_locations(generic_pair.value().first,
+        std::vector<DocumentPos> candidates = main_document_view->get_document()->find_generic_locations(generic_pair.value().first,
             generic_pair.value().second);
         if (candidates.size() > 0) {
             if (update_candidates) {
@@ -2910,7 +2910,7 @@ void MainWidget::toggle_two_window_mode() {
 fz_stext_char* MainWidget::get_closest_character_to_cusrsor(QPoint pos) {
 
     WindowPos window_pos = { pos.x(), pos.y() };
-    UncenteredDocumentPos doc_pos = main_document_view->window_to_document_pos_uncentered(window_pos);
+    DocumentPos doc_pos = main_document_view->window_to_document_pos_uncentered(window_pos);
     int current_page = get_current_page_number();
     fz_stext_page* stext_page = doc()->get_stext_with_page_number(current_page);
     std::vector<fz_stext_char*> flat_chars;
@@ -2923,12 +2923,12 @@ fz_stext_char* MainWidget::get_closest_character_to_cusrsor(QPoint pos) {
     return find_closest_char_to_document_point(flat_chars, doc_point, &location_index);
 }
 
-std::optional<std::wstring> MainWidget::get_direct_paper_name_under_pos(UncenteredDocumentPos docpos) {
+std::optional<std::wstring> MainWidget::get_direct_paper_name_under_pos(DocumentPos docpos) {
     return main_document_view->get_document()->
         get_paper_name_at_position(docpos.page, docpos.x, docpos.y);
 }
 
-UncenteredDocumentPos MainWidget::get_document_pos_under_window_pos(WindowPos window_pos) {
+DocumentPos MainWidget::get_document_pos_under_window_pos(WindowPos window_pos) {
     auto normal_pos = main_document_view->window_to_normalized_window_pos(window_pos);
     if (opengl_widget->is_window_point_in_overview(normal_pos)) {
         return opengl_widget->window_pos_to_overview_pos(normal_pos);
@@ -2958,7 +2958,7 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_las
         return main_document_view->get_document()->get_paper_name_at_position(doc_page, doc_x, doc_y);
     }
     else {
-        UncenteredDocumentPos doc_pos = main_document_view->window_to_document_pos_uncentered(window_pos);
+        DocumentPos doc_pos = main_document_view->window_to_document_pos_uncentered(window_pos);
         return get_direct_paper_name_under_pos(doc_pos);
     }
 }
@@ -3050,7 +3050,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
 void MainWidget::visual_mark_under_pos(WindowPos pos) {
     //float doc_x, doc_y;
     //int page;
-    UncenteredDocumentPos document_pos = main_document_view->window_to_document_pos_uncentered(pos);
+    DocumentPos document_pos = main_document_view->window_to_document_pos_uncentered(pos);
     if (document_pos.page != -1) {
         //opengl_widget->set_should_draw_vertical_line(true);
         fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(document_pos.page);
@@ -3063,7 +3063,7 @@ void MainWidget::visual_mark_under_pos(WindowPos pos) {
         int best_vertical_loc = find_best_vertical_line_location(pixmap, small_doc_x, small_doc_y);
         //int best_vertical_loc = line_locations[find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y), 2)];
         float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
-        WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(UncenteredDocumentPos{ document_pos.page, 0, best_vertical_loc_doc_pos });
+        WindowPos window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(DocumentPos{ document_pos.page, 0, best_vertical_loc_doc_pos });
         auto [abs_doc_x, abs_doc_y] = main_document_view->window_to_absolute_document_pos(window_pos);
         main_document_view->set_vertical_line_pos(abs_doc_y);
         int container_line_index = main_document_view->get_line_index_of_pos(document_pos);
@@ -3124,7 +3124,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
     int autoreference_page;
     float autoreference_offset;
     fz_rect overview_source_rect_absolute;
-    UncenteredDocumentPos docpos = main_document_view->window_to_document_pos_uncentered(pos);
+    DocumentPos docpos = main_document_view->window_to_document_pos_uncentered(pos);
 
     std::wstring source_text;
 
@@ -3136,7 +3136,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
 
         SmartViewCandidate current_candid;
         current_candid.source_rect = overview_source_rect_absolute;
-        current_candid.target_pos = UncenteredDocumentPos{ autoreference_page, 0, autoreference_offset };
+        current_candid.target_pos = DocumentPos{ autoreference_page, 0, autoreference_offset };
         current_candid.source_text = source_text;
         smart_view_candidates = { current_candid };
         set_overview_position(autoreference_page, autoreference_offset);
@@ -3254,7 +3254,7 @@ void MainWidget::long_jump_to_destination(float abs_offset_y) {
     long_jump_to_destination(page, offset_y);
 }
 
-void MainWidget::long_jump_to_destination(UncenteredDocumentPos pos) {
+void MainWidget::long_jump_to_destination(DocumentPos pos) {
     AbsoluteDocumentPos abs_pos = doc()->document_to_absolute_pos(pos);
 
     if (!is_pending_link_source_filled()) {
@@ -3401,7 +3401,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
 
         QPoint mouse_pos_ = mapFromGlobal(QCursor::pos());
         WindowPos mouse_pos = { mouse_pos_.x(), mouse_pos_.y() };
-        UncenteredDocumentPos mouse_pos_document = main_document_view->window_to_document_pos_uncentered(mouse_pos);
+        DocumentPos mouse_pos_document = main_document_view->window_to_document_pos_uncentered(mouse_pos);
 
         for (int i = 0; i < command_parts.size(); i++) {
             // lagacy number macros, now replaced with names ones
@@ -4362,7 +4362,7 @@ void MainWidget::remove_self_from_windows() {
 }
 
 
-std::optional<UncenteredDocumentPos> MainWidget::get_overview_position() {
+std::optional<DocumentPos> MainWidget::get_overview_position() {
     auto overview_state_ = opengl_widget->get_overview_page();
     if (overview_state_.has_value()) {
         OverviewState overview_state = overview_state_.value();
@@ -4427,8 +4427,8 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
                 float end_offset_x = end_parts.at(1).toFloat();
                 float end_offset_y = end_parts.at(2).toFloat();
 
-                UncenteredDocumentPos begin_doc_pos = { begin_page_number, begin_offset_x, begin_offset_y };
-                UncenteredDocumentPos end_doc_pos = { end_page_number, end_offset_x, end_offset_y };
+                DocumentPos begin_doc_pos = { begin_page_number, begin_offset_x, begin_offset_y };
+                DocumentPos end_doc_pos = { end_page_number, end_offset_x, end_offset_y };
 
                 WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(begin_doc_pos);
                 WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(end_doc_pos);
@@ -4543,7 +4543,7 @@ void MainWidget::goto_overview() {
             }
         }
         else {
-            std::optional<UncenteredDocumentPos> maybe_overview_position = get_overview_position();
+            std::optional<DocumentPos> maybe_overview_position = get_overview_position();
             if (maybe_overview_position.has_value()) {
                 long_jump_to_destination(maybe_overview_position.value());
             }
@@ -4609,8 +4609,8 @@ bool MainWidget::get_selected_rect_document(int& out_page, fz_rect& out_rect) {
         bottom_right.x = absrect.value().x1;
         bottom_right.y = absrect.value().y1;
 
-        UncenteredDocumentPos top_left_document = main_document_view->get_document()->absolute_to_page_pos_uncentered(top_left);
-        UncenteredDocumentPos bottom_right_document = main_document_view->get_document()->absolute_to_page_pos_uncentered(bottom_right);
+        DocumentPos top_left_document = main_document_view->get_document()->absolute_to_page_pos_uncentered(top_left);
+        DocumentPos bottom_right_document = main_document_view->get_document()->absolute_to_page_pos_uncentered(bottom_right);
 
         fz_rect document_rect;
         document_rect.x0 = top_left_document.x;
@@ -4875,7 +4875,7 @@ void MainWidget::overview_to_definition() {
         //}
 
         if (candidates.size() > 0) {
-            UncenteredDocumentPos first_docpos = candidates[0].get_docpos(main_document_view);
+            DocumentPos first_docpos = candidates[0].get_docpos(main_document_view);
             smart_view_candidates = candidates;
             index_into_candidates = 0;
             set_overview_position(first_docpos.page, first_docpos.y);
@@ -5452,11 +5452,11 @@ void MainWidget::handle_portal_to_link(const std::wstring& text) {
         ParsedUri parsed_uri = parse_uri(mupdf_context, pdf_link.uri);
 
         //AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
-        UncenteredDocumentPos link_source_document_pos;
+        DocumentPos link_source_document_pos;
         link_source_document_pos.page = pdf_link.source_page;
         link_source_document_pos.x = 0;
         link_source_document_pos.y = pdf_link.rects[0].y0;
-        UncenteredDocumentPos dst_docpos;
+        DocumentPos dst_docpos;
         dst_docpos.page = parsed_uri.page - 1;
         dst_docpos.x = parsed_uri.x;
         dst_docpos.y = parsed_uri.y;
@@ -5539,7 +5539,7 @@ void MainWidget::handle_prefs_user_all() {
 }
 
 void MainWidget::handle_portal_to_overview() {
-    std::optional<UncenteredDocumentPos> maybe_overview_position = get_overview_position();
+    std::optional<DocumentPos> maybe_overview_position = get_overview_position();
     if (maybe_overview_position.has_value()) {
         AbsoluteDocumentPos abs_pos = doc()->document_to_absolute_pos(maybe_overview_position.value());
         std::string document_checksum = main_document_view->get_document()->get_checksum();
@@ -5857,7 +5857,7 @@ void MainWidget::handle_mobile_selection() {
         fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad));
         main_document_view->selected_character_rects.push_back(centered_rect);
 
-        UncenteredDocumentPos begin_document_pos, end_document_pos;
+        DocumentPos begin_document_pos, end_document_pos;
 
         begin_document_pos.x = centered_rect.x0;
         begin_document_pos.y = centered_rect.y0;
@@ -5935,8 +5935,8 @@ void MainWidget::handle_mobile_selection() {
 void MainWidget::update_mobile_selection() {
     //				handle_left_click(begin_window_pos, true, false, false, false);
     //				handle_left_click(end_window_pos, false, false, false, false);
-    UncenteredDocumentPos begin = selection_begin_indicator->get_docpos();
-    UncenteredDocumentPos end = selection_end_indicator->get_docpos();
+    DocumentPos begin = selection_begin_indicator->get_docpos();
+    DocumentPos end = selection_end_indicator->get_docpos();
     AbsoluteDocumentPos begin_absolute = doc()->document_to_absolute_pos(begin);
     AbsoluteDocumentPos end_absolute = doc()->document_to_absolute_pos(end);
 
@@ -6180,8 +6180,8 @@ void MainWidget::clear_highlight_buttons() {
 
 void MainWidget::handle_touch_highlight() {
 
-    UncenteredDocumentPos begin_docpos = selection_begin_indicator->get_docpos();
-    UncenteredDocumentPos end_docpos = selection_end_indicator->get_docpos();
+    DocumentPos begin_docpos = selection_begin_indicator->get_docpos();
+    DocumentPos end_docpos = selection_end_indicator->get_docpos();
 
     AbsoluteDocumentPos begin_abspos = doc()->document_to_absolute_pos(begin_docpos);
     AbsoluteDocumentPos end_abspos = doc()->document_to_absolute_pos(end_docpos);
@@ -6244,7 +6244,7 @@ void MainWidget::update_highlight_buttons_position() {
         AbsoluteDocumentPos hlpos;
         hlpos.x = hl.selection_begin.x;
         hlpos.y = hl.selection_begin.y;
-        UncenteredDocumentPos docpos = doc()->absolute_to_page_pos_uncentered(hlpos);
+        DocumentPos docpos = doc()->absolute_to_page_pos_uncentered(hlpos);
 
         WindowPos windowpos = main_document_view->document_to_window_pos_in_pixels_uncentered(docpos);
         get_highlight_buttons()->move(get_highlight_buttons()->pos().x(), windowpos.y - get_highlight_buttons()->height());
@@ -6338,7 +6338,7 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
         mouse_pos = mapFromGlobal(QCursor::pos());
     }
     WindowPos pos(mouse_pos.x(), mouse_pos.y());
-    UncenteredDocumentPos doc_pos = get_document_pos_under_window_pos(pos);
+    DocumentPos doc_pos = get_document_pos_under_window_pos(pos);
     std::optional<std::wstring> paper_name = get_paper_name_under_pos(doc_pos, true);
 
 
@@ -6370,7 +6370,7 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
     }
 }
 
-std::optional<std::wstring> MainWidget::get_paper_name_under_pos(UncenteredDocumentPos docpos, bool clean) {
+std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos docpos, bool clean) {
 
     auto [page, offset_x, offset_y] = docpos;
     std::optional<PdfLink> pdf_link_ = doc()->get_link_in_pos(docpos);
@@ -7556,8 +7556,8 @@ HighlightButtons* MainWidget::get_highlight_buttons() {
 bool MainWidget::goto_ith_next_overview(int i) {
     if (smart_view_candidates.size() > 1) {
         index_into_candidates = mod((index_into_candidates + i), smart_view_candidates.size());
-        if (std::holds_alternative<UncenteredDocumentPos>(smart_view_candidates[index_into_candidates].target_pos)) {
-            UncenteredDocumentPos docpos = std::get<UncenteredDocumentPos>(smart_view_candidates[index_into_candidates].target_pos);
+        if (std::holds_alternative<DocumentPos>(smart_view_candidates[index_into_candidates].target_pos)) {
+            DocumentPos docpos = std::get<DocumentPos>(smart_view_candidates[index_into_candidates].target_pos);
             set_overview_position(docpos.page, docpos.y);
         }
         else {
@@ -7601,7 +7601,7 @@ std::optional<std::wstring> MainWidget::get_overview_paper_name() {
             center.x = (candidate_rect.x0 + candidate_rect.x1) / 2;
             center.y = (candidate_rect.y0 + candidate_rect.y1) / 2;
 
-            UncenteredDocumentPos center_document = doc()->absolute_to_page_pos_uncentered(center);
+            DocumentPos center_document = doc()->absolute_to_page_pos_uncentered(center);
 
             std::optional<std::wstring> bib_string = {};
 
@@ -7855,7 +7855,7 @@ bool MainWidget::is_pos_inside_selected_text(AbsoluteDocumentPos pos) {
     return false;
 }
 
-bool MainWidget::is_pos_inside_selected_text(UncenteredDocumentPos docpos) {
+bool MainWidget::is_pos_inside_selected_text(DocumentPos docpos) {
     AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(docpos);
     return is_pos_inside_selected_text(abspos);
 }
@@ -8098,7 +8098,7 @@ QJsonObject MainWidget::get_json_state() {
 
 
         AbsoluteDocumentPos abspos = { offset_x, offset_y };
-        UncenteredDocumentPos docpso = doc()->absolute_to_page_pos_uncentered(abspos);
+        DocumentPos docpso = doc()->absolute_to_page_pos_uncentered(abspos);
 
         result["x_offset_in_page"] = docpso.x;
         result["y_offset_in_page"] = docpso.y;
@@ -8122,7 +8122,7 @@ QJsonObject MainWidget::get_json_state() {
             overview_state_json["y_offset"] = overview_state.absolute_offset_y;
             AbsoluteDocumentPos overview_abspos = { 0, overview_state.absolute_offset_y };
             Document* overview_doc = overview_state.doc ? overview_state.doc : doc();
-            UncenteredDocumentPos overview_docpos = overview_doc->absolute_to_page_pos_uncentered(overview_abspos);
+            DocumentPos overview_docpos = overview_doc->absolute_to_page_pos_uncentered(overview_abspos);
             overview_state_json["target_page"] = overview_docpos.page;
             overview_state_json["y_offset_in_page"] = overview_docpos.y;
             overview_state_json["document_path"] = QString::fromStdWString(overview_doc->get_path());
@@ -8145,7 +8145,7 @@ QJsonObject MainWidget::get_json_state() {
                 candid_json_object["source_page"] = source_page;
                 candid_json_object["source_text"] = QString::fromStdWString(candid.source_text);
 
-                UncenteredDocumentPos target_docpos = candid.get_docpos(main_document_view);
+                DocumentPos target_docpos = candid.get_docpos(main_document_view);
                 AbsoluteDocumentPos target_abspos = candid.get_abspos(main_document_view);
 
                 candid_json_object["target_document_x"] = target_docpos.x;
@@ -8220,7 +8220,7 @@ void MainWidget::handle_select_current_search_match() {
     std::optional<SearchResult> maybe_current_search_match = opengl_widget->get_current_search_result();
     if (maybe_current_search_match) {
         SearchResult current_search_match = maybe_current_search_match.value();
-        UncenteredDocumentPos selection_begin_doc, selection_end_doc;
+        DocumentPos selection_begin_doc, selection_end_doc;
         selection_begin_doc.x = current_search_match.rects[0].x0;
         selection_begin_doc.y = (current_search_match.rects[0].y0 + current_search_match.rects[0].y1) / 2;
         selection_begin_doc.page = current_search_match.page;
