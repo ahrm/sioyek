@@ -8,6 +8,9 @@
 // fix the issue where executing non-existant command blocks the python api
 // handle mobile text selection case where the character is not in the current page
 // opening a tab doesn't properly update history 
+// check if current_overview_source rect can be deleted and replaced by smart view candidates?
+// improve touch highlight select ui
+// see if we can dynamically change svg icon colors to respect the colorscheme
 
 #include <iostream>
 #include <vector>
@@ -352,7 +355,6 @@ void MainWidget::set_overview_link(PdfLink link) {
 
     auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
     if (page >= 1) {
-        //fz_rect source_absolute_rect = doc()->document_to_absolute_rect(link.source_page, link.rects[0]);
         AbsoluteRect source_absolute_rect = DocumentRect{ link.rects[0], link.source_page }.to_absolute(doc());
         std::wstring source_text = doc()->get_pdf_link_text(link);
 
@@ -364,7 +366,6 @@ void MainWidget::set_overview_link(PdfLink link) {
         smart_view_candidates.clear();
         smart_view_candidates.push_back(current_candidate);
         index_into_candidates = 0;
-        //opengl_widget->set_selected_rectangle(source_absolute_rect);
         set_overview_position(page - 1, offset_y);
     }
 }
@@ -379,25 +380,11 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     if (freehand_drawing_move_data) {
         // update temp drawings of opengl widget
-        WindowPos mouse_pos = { mouse_event->pos().x(), mouse_event->pos().y() };
-        AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(mouse_pos);
+        AbsoluteDocumentPos mouse_abspos = WindowPos(mouse_event->pos()).to_absolute(main_document_view);
         opengl_widget->moving_drawings.clear();
         move_selected_drawings(mouse_abspos, opengl_widget->moving_drawings);
-        //float diff_x = -freehand_drawing_move_data->initial_mouse_position.x + mouse_abspos.x;
-        //float diff_y = -freehand_drawing_move_data->initial_mouse_position.y + mouse_abspos.y;
-        //opengl_widget->moving_drawings.clear();
-
-        //for (auto drawing : freehand_drawing_move_data->initial_drawings) {
-        //    FreehandDrawing new_drawing = drawing;
-        //    for (int i = 0; i < new_drawing.points.size(); i++) {
-        //        new_drawing.points[i].pos.x += diff_x;
-        //        new_drawing.points[i].pos.y += diff_y;
-        //    }
-        //    opengl_widget->moving_drawings.push_back(new_drawing);
-        //}
         validate_render();
         return;
-
     }
 
 

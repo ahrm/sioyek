@@ -49,6 +49,7 @@ struct WindowPos {
     WindowPos(float x_, float y_);
     WindowPos(int x_, int y_);
     WindowPos();
+    WindowPos(QPoint pos);
 
     DocumentPos to_document(DocumentView* document_view);
     AbsoluteDocumentPos to_absolute(DocumentView* document_view);

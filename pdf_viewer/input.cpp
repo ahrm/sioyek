@@ -3813,10 +3813,7 @@ public:
         std::wstring download_url = widget->download_paper_with_name(text_);
 
         if (source_rect) {
-
             widget->download_and_portal(text_, source_rect->center());
-            //widget->fill_overview_pending_portal(text_, src_doc_path, source_rect);
-            //widget->update_opengl_pending_download_portals();
         }
 
 

@@ -18,6 +18,11 @@ WindowPos::WindowPos() {
     y = 0;
 }
 
+WindowPos::WindowPos(QPoint pos) {
+    x = pos.x();
+    y = pos.y();
+}
+
 bool are_same(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs) {
     return are_same(lhs.x, rhs.x) && are_same(lhs.y, rhs.y);
 }
