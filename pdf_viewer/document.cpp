@@ -3443,7 +3443,7 @@ const std::vector<FreehandDrawing>& Document::get_page_drawings(int page) {
     return page_freehand_drawings[page];
 }
 
-std::vector<int> Document::get_page_intersecting_drawing_indices(int page, fz_rect absolute_rect, bool mask[26]) {
+std::vector<int> Document::get_page_intersecting_drawing_indices(int page, AbsoluteRect absolute_rect, bool mask[26]) {
     std::vector<int> indices;
     std::vector<FreehandDrawing>& page_drawings = page_freehand_drawings[page];
 
@@ -3453,7 +3453,7 @@ std::vector<int> Document::get_page_intersecting_drawing_indices(int page, fz_re
         }
         for (auto point : page_drawings[i].points) {
             fz_point absolute_point = fz_point{ point.pos.x, point.pos.y };
-            if (fz_is_point_inside_rect(absolute_point, absolute_rect)) {
+            if (absolute_rect.contains(point.pos)) {
                 indices.push_back(i);
                 break;
             }
@@ -3463,7 +3463,7 @@ std::vector<int> Document::get_page_intersecting_drawing_indices(int page, fz_re
 
 }
 
-void Document::delete_page_intersecting_drawings(int page, fz_rect absolute_rect, bool mask[26]) {
+void Document::delete_page_intersecting_drawings(int page, AbsoluteRect absolute_rect, bool mask[26]) {
     std::vector<FreehandDrawing>& page_drawings = page_freehand_drawings[page];
     std::vector<int> indices_to_delete = get_page_intersecting_drawing_indices(page, absolute_rect, mask);
 
@@ -3824,7 +3824,8 @@ void Document::update_highlight_type(int index, char new_type) {
 int Document::get_portal_index_at_pos(AbsoluteDocumentPos abspos) {
     for (int i = 0; i < portals.size(); i++) {
         if (portals[i].src_offset_x.has_value()) {
-            if (fz_is_point_inside_rect({abspos.x, abspos.y}, portals[i].get_rectangle())) {
+            //if (fz_is_point_inside_rect({abspos.x, abspos.y}, portals[i].get_rectangle())) {
+            if (portals[i].get_rectangle().contains(abspos)) {
                 return i;
             }
         }
@@ -3837,7 +3838,8 @@ int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
         if (bookmarks[i].begin_y != -1) {
             if (bookmarks[i].end_y == -1) {
 
-                if (fz_is_point_inside_rect({abspos.x, abspos.y}, bookmarks[i].get_rectangle())) {
+                //if (fz_is_point_inside_rect({abspos.x, abspos.y}, bookmarks[i].get_rectangle())) {
+                if (bookmarks[i].get_rectangle().contains(abspos)) {
                     return i;
                 }
             }

@@ -1863,9 +1863,10 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         return;
     }
     if (selected_freehand_drawings) {
-        QPoint p = last_press_point = mapFromGlobal(QCursor::pos());
-        AbsoluteDocumentPos mpos_absolute = main_document_view->window_to_absolute_document_pos({ p.x(), p.y() });
-        if (fz_is_point_inside_rect({ mpos_absolute.x, mpos_absolute.y }, selected_freehand_drawings->selection_absrect)) {
+
+        AbsoluteDocumentPos mpos_absolute = WindowPos(mapFromGlobal(QCursor::pos())).to_absolute(main_document_view);
+
+        if (selected_freehand_drawings->selection_absrect.contains(mpos_absolute)) {
             std::vector<FreehandDrawing> moving_drawings = doc()->get_page_freehand_drawings_with_indices(selected_freehand_drawings->page, selected_freehand_drawings->selected_indices);
             doc()->delete_page_intersecting_drawings(selected_freehand_drawings->page, selected_freehand_drawings->selection_absrect, opengl_widget->visible_drawing_mask);
             FreehandDrawingMoveData md;
@@ -1987,16 +1988,12 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         else {
             if (rect_select_begin.has_value() && rect_select_end.has_value()) {
                 rect_select_end = abs_doc_pos;
-                fz_rect selected_rectangle;
-                selected_rectangle.x0 = rect_select_begin.value().x;
-                selected_rectangle.y0 = rect_select_begin.value().y;
-                selected_rectangle.x1 = rect_select_end.value().x;
-                selected_rectangle.y1 = rect_select_end.value().y;
+                AbsoluteRect selected_rectangle = AbsoluteRect(rect_select_begin.value(), rect_select_end.value());
                 opengl_widget->set_selected_rectangle(selected_rectangle);
 
                 // is pending rect command
                 if (pending_command_instance) {
-                    pending_command_instance->set_rect_requirement(selected_rectangle);
+                    pending_command_instance->set_rect_requirement(selected_rectangle.rect);
                     advance_command(std::move(pending_command_instance));
                 }
 
@@ -2291,7 +2288,6 @@ ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* o
         if (page < 0) return ReferenceType::None;
         auto res = doc()->get_page_bib_with_reference(page, query);
         if (res) {
-            //fz_rect absrect = doc()->document_to_absolute_rect(page, res.value().second);
             *out_source_text = query;
             *out_page = page;
             *out_offset = res.value().second.y0;
@@ -3684,11 +3680,10 @@ void MainWidget::dropEvent(QDropEvent* event)
 void MainWidget::highlight_ruler_portals() {
     std::vector<Portal> portals = get_ruler_portals();
 
-    std::vector<std::pair<fz_rect, int>> portal_rect_pages;
+    std::vector<DocumentRect> portal_rect_pages;
     for (auto portal : portals) {
-        int page;
-        fz_rect page_rect = doc()->absolute_to_page_rect(portal.get_rectangle(), &page);
-        portal_rect_pages.push_back(std::make_pair(page_rect, page));
+        DocumentRect doc_rect = portal.get_rectangle().to_document(doc());
+        portal_rect_pages.push_back(doc_rect);
     }
 
     opengl_widget->set_highlight_words(portal_rect_pages);
@@ -3701,18 +3696,18 @@ void MainWidget::highlight_words() {
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     std::vector<fz_rect> word_rects;
-    std::vector<std::pair<fz_rect, int>> word_rects_with_page;
-    std::vector<std::pair<fz_rect, int>> visible_word_rects;
+    std::vector<DocumentRect> word_rects_with_page;
+    std::vector<DocumentRect> visible_word_rects;
 
     get_flat_chars_from_stext_page(stext_page, flat_chars);
     get_flat_words_from_flat_chars(flat_chars, word_rects);
     for (auto rect : word_rects) {
-        word_rects_with_page.push_back(std::make_pair(rect, page));
+        word_rects_with_page.push_back(DocumentRect(rect, page));
     }
 
     for (auto [rect, page] : word_rects_with_page) {
         if (is_rect_visible(page, rect)) {
-            visible_word_rects.push_back(std::make_pair(rect, page));
+            visible_word_rects.push_back(DocumentRect(rect, page));
         }
     }
 
@@ -5511,6 +5506,7 @@ void MainWidget::handle_overview_to_portal() {
             if (destination_path) {
                 Document* doc = document_manager->get_document(destination_path.value());
                 if (doc) {
+                    doc->open(&is_render_invalidated, true);
                     overview_state.absolute_offset_y = portal.dst.book_state.offset_y;
                     overview_state.doc = doc;
                     set_overview_page(overview_state);
@@ -7574,11 +7570,11 @@ std::optional<Portal> MainWidget::get_target_portal(bool limit) {
 }
 
 void MainWidget::update_opengl_pending_download_portals() {
-    std::vector<fz_rect> pending_rects;
+    std::vector<AbsoluteRect> pending_rects;
     for (auto pending_portal : pending_download_portals) {
 
         if (pending_portal.source_document_path == doc()->get_path()) {
-            fz_rect rect = pending_portal.pending_portal.get_rectangle();
+            AbsoluteRect rect = pending_portal.pending_portal.get_rectangle();
             pending_rects.push_back(rect);
         }
 
@@ -7632,9 +7628,9 @@ void MainWidget::cleanup_expired_pending_portals() {
 int MainWidget::get_pending_portal_index_at_pos(AbsoluteDocumentPos abspos) {
 
     for (int i = 0; i < pending_download_portals.size(); i++) {
-        fz_rect rect = pending_download_portals[i].pending_portal.get_rectangle();
+        AbsoluteRect rect = pending_download_portals[i].pending_portal.get_rectangle();
 
-        if (fz_is_point_inside_rect({ abspos.x, abspos.y }, rect)) {
+        if (rect.contains(abspos)) {
             return i;
         }
 

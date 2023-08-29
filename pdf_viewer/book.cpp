@@ -283,25 +283,19 @@ bool Portal::is_visible() const {
     return src_offset_x.has_value();
 }
 
-fz_rect BookMark::get_rectangle() const{
-    fz_rect res;
-
-    res.x0 = begin_x - BOOKMARK_RECT_SIZE;
-    res.x1 = begin_x + BOOKMARK_RECT_SIZE;
-    res.y0 = begin_y - BOOKMARK_RECT_SIZE;
-    res.y1 = begin_y + BOOKMARK_RECT_SIZE;
-    return res;
+AbsoluteRect BookMark::get_rectangle() const{
+    return AbsoluteRect(
+        AbsoluteDocumentPos{ begin_x - BOOKMARK_RECT_SIZE, begin_y - BOOKMARK_RECT_SIZE },
+        AbsoluteDocumentPos{ begin_x + BOOKMARK_RECT_SIZE, begin_y + BOOKMARK_RECT_SIZE }
+    );
 }
 
-fz_rect Portal::get_rectangle() const{
-    fz_rect res;
+AbsoluteRect Portal::get_rectangle() const{
 
-    res.x0 = src_offset_x.value() - BOOKMARK_RECT_SIZE;
-    res.x1 = src_offset_x.value() +  BOOKMARK_RECT_SIZE;
-    res.y0 = src_offset_y - BOOKMARK_RECT_SIZE;
-    res.y1 = src_offset_y +  BOOKMARK_RECT_SIZE;
-
-    return res;
+    return AbsoluteRect(
+        AbsoluteDocumentPos{ src_offset_x.value() - BOOKMARK_RECT_SIZE, src_offset_y - BOOKMARK_RECT_SIZE},
+        AbsoluteDocumentPos{ src_offset_x.value() + BOOKMARK_RECT_SIZE, src_offset_y + BOOKMARK_RECT_SIZE}
+    );
 }
 
 float BookMark::get_y_offset() const{

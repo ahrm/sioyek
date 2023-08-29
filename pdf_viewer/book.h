@@ -88,7 +88,7 @@ struct BookMark : Annotation {
     bool is_freetext() const;
     bool is_marked() const;
 
-    fz_rect get_rectangle() const;
+    AbsoluteRect get_rectangle() const;
 };
 
 struct Highlight : Annotation {
@@ -142,7 +142,7 @@ struct Portal : Annotation {
     void from_json(const QJsonObject& json_object);
     void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 
-    fz_rect get_rectangle() const;
+    AbsoluteRect get_rectangle() const;
 };
 
 

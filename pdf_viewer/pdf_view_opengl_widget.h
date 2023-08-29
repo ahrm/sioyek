@@ -173,7 +173,7 @@ private:
 
     float last_mouse_down_document_offset_x = 0;
     float last_mouse_down_document_offset_y = 0;
-    std::vector<fz_rect> pending_download_portals;
+    std::vector<AbsoluteRect> pending_download_portals;
 
     //float vertical_line_location;
     //bool should_draw_vertical_line = false;
@@ -223,7 +223,7 @@ public:
     std::optional<fz_rect> last_selected_block = {};
 #endif
 
-    std::vector<std::pair<fz_rect, int>> word_rects;
+    std::vector<DocumentRect> word_rects;
     std::vector<DocumentRect> synctex_highlights;
     QTime synctex_highlight_time;
     //std::vector<std::pair<fz_rect, int>> marked_data_rects;
@@ -242,9 +242,9 @@ public:
     void toggle_highlight_links();
     void set_highlight_links(bool should_highlight_links, bool should_show_numbers);
     void toggle_highlight_words();
-    void set_highlight_words(std::vector<std::pair<fz_rect, int>>& rects);
+    void set_highlight_words(std::vector<DocumentRect>& rects);
     void set_should_highlight_words(bool should_highlight);
-    std::vector<std::pair<fz_rect, int>> get_highlight_word_rects();
+    std::vector<DocumentRect> get_highlight_word_rects();
 
     int get_num_search_results();
     int get_current_search_result_index();
@@ -327,8 +327,8 @@ public:
     void bind_default();
     bool is_normalized_y_in_window(float y);
     bool is_normalized_y_range_in_window(float y0, float y1);
-    void render_portal_rect(QPainter* painter, fz_rect portal_absolute_rect, bool is_pending);
-    void set_pending_download_portals(std::vector<fz_rect>&& portal_rects);
+    void render_portal_rect(QPainter* painter, AbsoluteRect portal_absolute_rect, bool is_pending);
+    void set_pending_download_portals(std::vector<AbsoluteRect>&& portal_rects);
     void show_rect_hints();
     void hide_rect_hints();
     bool is_showing_rect_hints();

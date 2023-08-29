@@ -70,7 +70,7 @@ struct PortalMoveData {
 
 struct SelectedDrawings {
     int page;
-    fz_rect selection_absrect;
+    AbsoluteRect selection_absrect;
     std::vector<int> selected_indices;
 };
 

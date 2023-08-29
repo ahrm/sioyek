@@ -1389,9 +1389,9 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                     if (bookmark_window_pos.x > -1.5f && bookmark_window_pos.x < 1.5f &&
                         bookmark_window_pos.y > -1.5f && bookmark_window_pos.y < 1.5f) {
 
-                        fz_rect bookmark_normalized_window_rect = document_view->absolute_to_window_rect(bookmarks[i].get_rectangle());
+                        NormalizedWindowRect bookmark_normalized_window_rect = bookmarks[i].get_rectangle().to_window_normalized(document_view);
 
-                        fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
+                        fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect.rect);
                         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
                         bookmark_icon.paint(painter, window_qrect);
@@ -1454,7 +1454,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             int window_y0 = static_cast<int>(-window_rect.y0 * view_height / 2 + view_height / 2);
 
             if (i > 0) {
-                if (std::abs(word_rects[i - 1].first.x0 - rect.x0) < 5) {
+                if (std::abs(word_rects[i - 1].rect.x0 - rect.x0) < 5) {
                     window_y0 = static_cast<int>(-window_rect.y1 * view_height / 2 + view_height / 2);
                 }
             }
@@ -2009,7 +2009,7 @@ void PdfViewOpenGLWidget::toggle_highlight_words() {
     this->should_highlight_words = !this->should_highlight_words;
 }
 
-void PdfViewOpenGLWidget::set_highlight_words(std::vector<std::pair<fz_rect, int>>& rects) {
+void PdfViewOpenGLWidget::set_highlight_words(std::vector<DocumentRect>& rects) {
     word_rects = std::move(rects);
 }
 
@@ -2375,7 +2375,7 @@ int PdfViewOpenGLWidget::find_search_results_breakpoint_helper(int begin_index, 
     }
 }
 
-std::vector<std::pair<fz_rect, int>> PdfViewOpenGLWidget::get_highlight_word_rects() {
+std::vector<DocumentRect> PdfViewOpenGLWidget::get_highlight_word_rects() {
     return word_rects;
 }
 
@@ -2593,11 +2593,12 @@ bool PdfViewOpenGLWidget::is_normalized_y_range_in_window(float y0, float y1) {
     return is_normalized_y_in_window(y0) || is_normalized_y_in_window(y1);
 }
 
-void PdfViewOpenGLWidget::render_portal_rect(QPainter* painter, fz_rect portal_rect, bool is_pending) {
-    fz_rect portal_normalized_window_rect = document_view->absolute_to_window_rect(portal_rect);
+void PdfViewOpenGLWidget::render_portal_rect(QPainter* painter, AbsoluteRect portal_rect, bool is_pending) {
+    //fz_rect portal_normalized_window_rect = document_view->absolute_to_window_rect(portal_rect);
+    NormalizedWindowRect window_rect = portal_rect.to_window_normalized(document_view);
 
-    if (is_normalized_y_range_in_window(portal_normalized_window_rect.y0, portal_normalized_window_rect.y1)) {
-        fz_irect portal_window_rect = document_view->normalized_to_window_rect(portal_normalized_window_rect);
+    if (is_normalized_y_range_in_window(window_rect.rect.y0, window_rect.rect.y1)) {
+        fz_irect portal_window_rect = document_view->normalized_to_window_rect(window_rect.rect);
         QRect window_qrect = QRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
         QColor fill_color = QColor(255, 0, 0);
         if (is_pending) {
@@ -2622,7 +2623,7 @@ void PdfViewOpenGLWidget::render_portal_rect(QPainter* painter, fz_rect portal_r
     }
 }
 
-void PdfViewOpenGLWidget::set_pending_download_portals(std::vector<fz_rect>&& portal_rects){
+void PdfViewOpenGLWidget::set_pending_download_portals(std::vector<AbsoluteRect>&& portal_rects){
     pending_download_portals = std::move(portal_rects);
 }
 
