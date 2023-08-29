@@ -1415,24 +1415,6 @@ void MainWidget::move_document_screens(int num_screens) {
     move_document(0, move_amount);
 }
 
-//QString MainWidget::get_status_stylesheet() {
-//    if (STATUS_BAR_FONT_SIZE > -1) {
-//        QString	font_size_stylesheet = QString("font-size: %1px").arg(STATUS_BAR_FONT_SIZE);
-//        return QString("background-color: %1; color: %2; border: 0; %3").arg(
-//            get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
-//            get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2]),
-//            font_size_stylesheet
-//        );
-//    }
-//    else{
-//        return QString("background-color: %1; color: %2; border: 0").arg(
-//            get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
-//            get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2])
-//        );
-//    }
-//}
-//
-
 void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 
     status_label->setStyleSheet(get_status_stylesheet());
@@ -1450,17 +1432,6 @@ void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 
     //text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
 }
-
-//void MainWidget::toggle_dark_mode()
-//{
-//	this->dark_mode = !this->dark_mode;
-//	if (this->opengl_widget) {
-//		this->opengl_widget->set_dark_mode(this->dark_mode);
-//	}
-//	if (this->helper_opengl_widget) {
-//		this->helper_opengl_widget->set_dark_mode(this->dark_mode);
-//	}
-//}
 
 void MainWidget::toggle_mouse_drag_mode() {
     this->mouse_drag_mode = !this->mouse_drag_mode;
@@ -1750,8 +1721,8 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
             }
 
             int page = typing_location.value().page;
-            fz_rect character_rect = fz_rect_from_quad(typing_location.value().character->quad);
-            std::optional<fz_rect> wrong_rect = {};
+            EnhancedRect<DocumentPos> character_rect = fz_rect_from_quad(typing_location.value().character->quad);
+            std::optional<EnhancedRect<DocumentPos>> wrong_rect = {};
 
             if (typing_location.value().previous_character) {
                 wrong_rect = fz_rect_from_quad(typing_location.value().previous_character->character->quad);
