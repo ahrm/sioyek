@@ -971,20 +971,9 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
             static_cast<int>(rendered_height / device_pixel_ratio), is_sliced);
 
         rect_to_quad(window_rect, page_vertices);
-        if ((v_index == 6) || (v_index == 7)) {
-            int a = 2;
-        }
 
         if (texture != 0) {
-            //if (is_dark_mode) {
-            //	glUseProgram(shared_gl_objects.rendered_dark_program);
-            //	glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
-            //}
-            //else {
-            //	glUseProgram(shared_gl_objects.rendered_program);
-            //}
             bind_program();
-
             glBindTexture(GL_TEXTURE_2D, texture);
         }
         else {
@@ -1071,8 +1060,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
     if (is_presentation_mode()) {
         if (PRERENDER_NEXT_PAGE) {
             GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-                document_view->get_document()->should_render_pdf_annotations(),
                 visible_page_number.value() + 1,
+                document_view->get_document()->should_render_pdf_annotations(),
                 -1,
                 1,
                 1,

@@ -4879,6 +4879,7 @@ void MainWidget::handle_horizontal_move(int amount) {
     }
     else if (opengl_widget->is_presentation_mode()) {
         main_document_view->move_pages(-amount);
+        validate_render();
     }
     else {
         main_document_view->move(72.0f * amount * HORIZONTAL_MOVE_AMOUNT, 0.0f);
