@@ -34,6 +34,7 @@ bld/
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/
+packages.config
 
 # MSTest test Results
 [Tt]est[Rr]esult*/

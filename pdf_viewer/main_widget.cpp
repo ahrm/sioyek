@@ -404,7 +404,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         }
         if (was_last_mouse_down_in_ruler_next_rect || was_last_mouse_down_in_ruler_prev_rect) {
             WindowPos current_window_pos = { mouse_event->pos().x(), mouse_event->pos().y() };
-            int distance = abs(current_window_pos.x - ruler_moving_last_window_pos.x) + abs(current_window_pos.y - ruler_moving_last_window_pos.y);
+            int distance = current_window_pos.manhattan(ruler_moving_last_window_pos);
             ruler_moving_last_window_pos = current_window_pos;
             ruler_moving_distance_traveled += distance;
             int num_next = ruler_moving_distance_traveled / static_cast<int>(std::max(RULER_AUTO_MOVE_SENSITIVITY, 1.0f));
@@ -445,9 +445,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     // if the mouse has moved too much when pressing middle mouse button, we assume that the user wants to drag
     // instead of smart jump
     if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
-
-        if (!bookmark_move_data.has_value()) {
-            //if ((std::abs(mpos.x - last_mouse_down_window_pos.x) + std::abs(mpos.y - last_mouse_down_window_pos.y)) > 50) {
+        if ((!bookmark_move_data.has_value()) && (!portal_move_data.has_value())) {
             if ((mpos.manhattan(last_mouse_down_window_pos)) > 50) {
                 is_dragging = true;
             }
@@ -456,15 +454,10 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     std::optional<PdfLink> link = {};
 
-
     if (rect_select_mode) {
         if (rect_select_begin.has_value()) {
             rect_select_end = abs_mpos;
             AbsoluteRect selected_rect(rect_select_begin.value(), rect_select_end.value());
-            //selected_rect.x0 = rect_select_begin.value().x;
-            //selected_rect.y0 = rect_select_begin.value().y;
-            //selected_rect.x1 = rect_select_end.value().x;
-            //selected_rect.y1 = rect_select_end.value().y;
             opengl_widget->set_selected_rectangle(selected_rect);
 
             validate_render();
