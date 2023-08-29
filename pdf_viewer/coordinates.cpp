@@ -175,3 +175,34 @@ bool AbsoluteRect::contains(const AbsoluteDocumentPos& point) {
     return fz_is_point_inside_rect(fz_point{ point.x, point.y }, rect);
 }
 
+fvec2 operator-(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs) {
+    return fvec2( lhs.x - rhs.x, lhs.y - rhs.y );
+}
+
+fvec2 operator-(const DocumentPos& lhs, const DocumentPos& rhs) {
+    return fvec2( lhs.x - rhs.x, lhs.y - rhs.y );
+}
+
+fvec2 operator-(const NormalizedWindowPos& lhs, const NormalizedWindowPos& rhs) {
+    return fvec2( lhs.x - rhs.x, lhs.y - rhs.y );
+}
+
+ivec2 operator-(const WindowPos& lhs, const WindowPos& rhs) {
+    return ivec2( lhs.x - rhs.x, lhs.y - rhs.y );
+}
+
+AbsoluteDocumentPos operator+(const AbsoluteDocumentPos& lhs, const fvec2& rhs) {
+    return AbsoluteDocumentPos{ lhs.x + rhs[0], lhs.y + rhs[1]};
+}
+
+DocumentPos operator+(const DocumentPos& lhs, const fvec2& rhs) {
+    return DocumentPos{ lhs.page, lhs.x + rhs[0], lhs.y + rhs[1]};
+}
+
+NormalizedWindowPos operator+(const NormalizedWindowPos& lhs, const fvec2& rhs) {
+    return NormalizedWindowPos{ lhs.x + rhs[0], lhs.y + rhs[1]};
+}
+
+WindowPos operator+(const WindowPos& lhs, const ivec2& rhs) {
+    return WindowPos{ lhs.x + rhs[0], lhs.y + rhs[1]};
+}

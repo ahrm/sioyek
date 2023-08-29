@@ -12,6 +12,9 @@
 // see if we can dynamically change svg icon colors to respect the colorscheme
 // don't show touch mode next/prev overview buttons if there are no overviews
 // In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
+// only write the configs that actually changed in touch mode
+// don't create the helper opengl widget on startup if it is not needed
+// add progressive search
 
 #include <iostream>
 #include <vector>
@@ -467,9 +470,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     if (overview_resize_data) {
         // if we are resizing overview page, set the selected side of the overview window to the mosue position
-        //float offset_diff_x = normal_x - overview_resize_data.value().original_mouse_pos.first;
-        //float offset_diff_y = normal_y - overview_resize_data.value().original_mouse_pos.second;
-        fvec2 offset_diff = fvec2(normal_mpos) - fvec2(overview_resize_data.value().original_normal_mouse_pos);
+        fvec2 offset_diff = normal_mpos - overview_resize_data->original_normal_mouse_pos;
         opengl_widget->set_overview_side_pos(
             overview_resize_data.value().side_index,
             overview_resize_data.value().original_rect,
@@ -479,7 +480,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     }
 
     if (overview_move_data) {
-        fvec2 offset_diff = fvec2(normal_mpos) - fvec2(overview_move_data.value().original_normal_mouse_pos);
+        fvec2 offset_diff = normal_mpos - overview_move_data->original_normal_mouse_pos;
         offset_diff[1] = -offset_diff[1];
         fvec2 new_offsets = overview_move_data.value().original_offsets + offset_diff;
         opengl_widget->set_overview_offsets(new_offsets);
@@ -490,11 +491,11 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     if (overview_touch_move_data && opengl_widget->get_overview_page()) {
         // in touch mode, instead of moving the overview itself, we move the document inside the overview
         AbsoluteDocumentPos current_mouse_overview_absolute_pos = opengl_widget->window_pos_to_overview_pos(normal_mpos).to_absolute(doc());
-        float absdiff = -current_mouse_overview_absolute_pos.y + overview_touch_move_data.value().original_mouse_offset_y;
-        float new_absolute_y = opengl_widget->get_overview_page().value().absolute_offset_y + absdiff;
+        float absdiff = -current_mouse_overview_absolute_pos.y + overview_touch_move_data->original_mouse_offset_y;
+        float new_absolute_y = opengl_widget->get_overview_page()->absolute_offset_y + absdiff;
         OverviewState new_overview_state;
         new_overview_state.absolute_offset_y = new_absolute_y;
-        new_overview_state.doc = opengl_widget->get_overview_page().value().doc;
+        new_overview_state.doc = opengl_widget->get_overview_page()->doc;
 
         set_overview_page(new_overview_state);
         validate_render();
@@ -530,15 +531,14 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     }
 
     if (should_drag()) {
-        ivec2 diff = ivec2(mpos) - ivec2(last_mouse_down_window_pos);
+        fvec2 diff_doc = (mpos - last_mouse_down_window_pos) / main_document_view->get_zoom_level();
+        diff_doc[1] = -diff_doc[1]; // higher document y positions correspond to lower window positions
 
-        fvec2 diff_doc = diff / main_document_view->get_zoom_level();
         if (horizontal_scroll_locked) {
             diff_doc.values[0] = 0;
         }
+        main_document_view->set_pos(last_mouse_down_document_offset + diff_doc);
 
-        main_document_view->set_offsets(last_mouse_down_document_offset.x + diff_doc.x(),
-            last_mouse_down_document_offset.y - diff_doc.y());
         validate_render();
     }
 
@@ -647,13 +647,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
 
-    //if ((num_screens > 1) && (HELPER_WINDOW_SIZE[0] > 0) && (SHOULD_USE_MULTIPLE_MONITORS)) {
-    //    apply_window_params_for_two_window_mode();
-    //}
-    //else {
-    //    apply_window_params_for_one_window_mode();
-    //}
-
     if (helper_opengl_widget) {
         helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
             this->update_closest_link_with_opened_book_state(state);
@@ -695,14 +688,18 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         }
     };
 
-    // when pdf renderer's background threads finish rendering a page or find a new search result
-    // we need to update the ui
+    // some commands need to be notified when the text in text input is changed
+    // for example when editing bookmarks we update the bookmark in real time as
+    // the bookmark text is being edited
     QObject::connect(text_command_line_edit, &QLineEdit::textEdited, [&](const QString& txt) {
         handle_command_text_change(txt);
         });
 
+    // when pdf renderer's background threads finish rendering a page or find a new search result
+    // we need to update the ui
     QObject::connect(pdf_renderer, &PdfRenderer::render_advance, this, &MainWidget::invalidate_render);
     QObject::connect(pdf_renderer, &PdfRenderer::search_advance, this, &MainWidget::invalidate_ui);
+
     // we check periodically to see if the ui needs updating
     // this is done so that thousands of search results only trigger
     // a few rerenders
@@ -718,11 +715,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             return;
         }
 
-        // check if the result is from the paper search engine (and should be interpreted
-        // as json) or is it a pdf file
         std::wstring reply_url = reply->url().toString().toStdWString();
         QString reply_host = reply->url().host();
         QString download_paper_host = QUrl(QString::fromStdWString(PAPER_SEARCH_URL)).host();
+
+        // check if the result is from the paper search engine (and should be interpreted
+        // as json) or is it a pdf file
         bool is_json = reply_host == download_paper_host;
 
         if (!is_json) { // it's a pdf file
@@ -850,6 +848,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             int matching_index = -1;
 
             if (AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME) {
+                // if a paper matches the query (almost) exactly, then download it without showing
+                // a paper list to the user
                 for (int i = 0; i < hit_names.size(); i++) {
                     if (does_paper_name_match_query(paper_name, hit_raw_names[i])) {
                         matching_index = i;
@@ -978,15 +978,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
         });
 
-
-    //   search_buttons = new SearchButtons(this);
-    //   search_buttons->hide();
-    //   highlight_buttons = new HighlightButtons(this);
-    //   highlight_buttons->hide();
-       //text_selection_buttons = new TouchTextSelectionButtons(this);
-    //   text_selection_buttons->hide();
-       //draw_controls = new DrawControlsUI(this);
-    //   draw_controls->hide();
 
     setMinimumWidth(500);
     setMinimumHeight(200);

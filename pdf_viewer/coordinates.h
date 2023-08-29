@@ -3,13 +3,14 @@
 #include <qpoint.h>
 #include <mupdf/fitz.h>
 
-
 class Document;
 class DocumentView;
 
 struct AbsoluteDocumentPos;
 struct NormalizedWindowPos;
 struct WindowPos;
+
+
 
 struct DocumentPos {
     int page;
@@ -130,6 +131,18 @@ struct AbsoluteRect {
 };
 
 
+
+
+//template<typename T, int dim>
+//operator+ (Vec<T, dim> a, Vec<T, dim> b) {
+//	Vec<T, dim> c;
+//	for (int i = 0; i < dim; i++) {
+//		c.values[i] = a.values[i] + b.values[i];
+//	}
+//	return c;
+//}
+bool are_same(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs);
+
 template<typename T, int dim>
 struct Vec {
     T values[dim];
@@ -197,7 +210,6 @@ struct Vec {
         return NormalizedWindowPos{ values[0], values[1] };
     }
 };
-
 using ivec2 = Vec<int, 2>;
 using fvec2 = Vec<float, 2>;
 
@@ -228,12 +240,12 @@ Vec<T, dim> operator-(const Vec<T, dim>& lhs, const Vec<T, dim>& rhs) {
     return res;
 }
 
-//template<typename T, int dim>
-//operator+ (Vec<T, dim> a, Vec<T, dim> b) {
-//	Vec<T, dim> c;
-//	for (int i = 0; i < dim; i++) {
-//		c.values[i] = a.values[i] + b.values[i];
-//	}
-//	return c;
-//}
-bool are_same(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs);
+fvec2 operator-(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs);
+fvec2 operator-(const DocumentPos& lhs, const DocumentPos& rhs);
+fvec2 operator-(const NormalizedWindowPos& lhs, const NormalizedWindowPos& rhs);
+ivec2 operator-(const WindowPos& lhs, const WindowPos& rhs);
+
+AbsoluteDocumentPos operator+(const AbsoluteDocumentPos& lhs, const fvec2& rhs);
+DocumentPos operator+(const DocumentPos& lhs, const fvec2& rhs);
+NormalizedWindowPos operator+(const NormalizedWindowPos& lhs, const fvec2& rhs);
+WindowPos operator+(const WindowPos& lhs, const ivec2& rhs);

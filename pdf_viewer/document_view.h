@@ -88,6 +88,7 @@ public:
     void handle_escape();
     void set_book_state(OpenedBookState state);
     bool set_offsets(float new_offset_x, float new_offset_y, bool force = false);
+    bool set_pos(AbsoluteDocumentPos pos);
     Document* get_document();
     bool is_ruler_mode();
     void exit_ruler_mode();

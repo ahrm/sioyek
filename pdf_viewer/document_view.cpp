@@ -107,6 +107,10 @@ void DocumentView::set_book_state(OpenedBookState state) {
     line_index = state.line_index;
 }
 
+bool DocumentView::set_pos(AbsoluteDocumentPos pos) {
+    return set_offsets(pos.x, pos.y);
+}
+
 bool DocumentView::set_offsets(float new_offset_x, float new_offset_y, bool force) {
     // if move was truncated
     bool truncated = false;
