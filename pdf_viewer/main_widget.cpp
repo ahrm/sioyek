@@ -3695,7 +3695,7 @@ void MainWidget::highlight_words() {
     int page = get_current_page_number();
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
-    std::vector<fz_rect> word_rects;
+    std::vector<PagelessDocumentRect> word_rects;
     std::vector<DocumentRect> word_rects_with_page;
     std::vector<DocumentRect> visible_word_rects;
 
@@ -3716,7 +3716,7 @@ void MainWidget::highlight_words() {
     invalidate_render();
 }
 
-std::vector<fz_rect> MainWidget::get_flat_words(std::vector<std::vector<fz_rect>>* flat_word_chars) {
+std::vector<PagelessDocumentRect> MainWidget::get_flat_words(std::vector<std::vector<PagelessDocumentRect>>* flat_word_chars) {
     int page = get_current_page_number();
     auto res = main_document_view->get_document()->get_page_flat_words(page);
     if (flat_word_chars != nullptr) {
@@ -3728,8 +3728,8 @@ std::vector<fz_rect> MainWidget::get_flat_words(std::vector<std::vector<fz_rect>
 std::optional<fz_irect> MainWidget::get_tag_window_rect(std::string tag, std::vector<fz_irect>* char_rects) {
 
     int page = get_current_page_number();
-    std::vector<fz_rect> word_char_rects;
-    std::optional<fz_rect> rect = get_tag_rect(tag, &word_char_rects);
+    std::vector<PagelessDocumentRect> word_char_rects;
+    std::optional<PagelessDocumentRect> rect = get_tag_rect(tag, &word_char_rects);
 
     if (rect.has_value()) {
 
@@ -3744,11 +3744,11 @@ std::optional<fz_irect> MainWidget::get_tag_window_rect(std::string tag, std::ve
     return {};
 }
 
-std::optional<fz_rect> MainWidget::get_tag_rect(std::string tag, std::vector<fz_rect>* word_chars) {
+std::optional<PagelessDocumentRect> MainWidget::get_tag_rect(std::string tag, std::vector<PagelessDocumentRect>* word_chars) {
 
     int page = get_current_page_number();
-    std::vector<std::vector<fz_rect>> all_word_chars;
-    std::vector<fz_rect> word_rects;
+    std::vector<std::vector<PagelessDocumentRect>> all_word_chars;
+    std::vector<PagelessDocumentRect> word_rects;
     if (word_chars == nullptr) {
         word_rects = get_flat_words(nullptr);
     }
@@ -3756,8 +3756,8 @@ std::optional<fz_rect> MainWidget::get_tag_rect(std::string tag, std::vector<fz_
         word_rects = get_flat_words(&all_word_chars);
     }
 
-    std::vector<std::vector<fz_rect>> visible_word_chars;
-    std::vector<fz_rect> visible_word_rects;
+    std::vector<std::vector<PagelessDocumentRect>> visible_word_chars;
+    std::vector<PagelessDocumentRect> visible_word_rects;
 
     for (int i = 0; i < word_rects.size(); i++) {
         if (is_rect_visible(page, word_rects[i])) {

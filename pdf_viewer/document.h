@@ -107,8 +107,8 @@ private:
     std::wstring file_name;
     std::unordered_map<int, fz_link*> cached_page_links;
     std::unordered_map<int, std::vector<PdfLink>> cached_merged_pdf_links;
-    std::unordered_map<int, std::vector<fz_rect>> cached_flat_words;
-    std::unordered_map<int, std::vector<std::vector<fz_rect>>> cached_flat_word_chars;
+    std::unordered_map<int, std::vector<PagelessDocumentRect>> cached_flat_words;
+    std::unordered_map<int, std::vector<std::vector<PagelessDocumentRect>>> cached_flat_word_chars;
     QStandardItemModel* cached_toc_model = nullptr;
 
     // accumulated page heights (i.e. the height of the page plus the height of all the pages before it)
@@ -309,8 +309,8 @@ public:
     void embed_annotations(std::wstring new_file_path);
     void get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::vector<Highlight>& pdf_highlights, std::vector<FreehandDrawing>& pdf_drawings);
     void import_annotations();
-    std::vector<fz_rect> get_page_flat_words(int page);
-    std::vector<std::vector<fz_rect>> get_page_flat_word_chars(int page);
+    std::vector<PagelessDocumentRect> get_page_flat_words(int page);
+    std::vector<std::vector<PagelessDocumentRect>> get_page_flat_word_chars(int page);
     void clear_document_caches();
     void load_document_caches(bool* invalid_flag, bool force_now);
     int reflow(int page);

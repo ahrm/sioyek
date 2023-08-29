@@ -12,6 +12,11 @@ struct WindowPos;
 
 
 
+struct PagelessDocumentPos {
+    float x;
+    float y;
+};
+
 struct DocumentPos {
     int page;
     float x;
@@ -90,6 +95,8 @@ struct EnhancedRect : public fz_rect {
         return (x1 - x0) * (y1 - y0);
     }
 };
+
+using PagelessDocumentRect = EnhancedRect<PagelessDocumentPos>;
 
 struct DocumentRect {
     EnhancedRect<DocumentPos> rect;

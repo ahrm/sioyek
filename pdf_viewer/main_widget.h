@@ -491,10 +491,10 @@ public:
     void highlight_words();
     void highlight_ruler_portals();
 
-    std::vector<fz_rect> get_flat_words(std::vector<std::vector<fz_rect>>* flat_word_chars = nullptr);
+    std::vector<PagelessDocumentRect> get_flat_words(std::vector<std::vector<PagelessDocumentRect>>* flat_word_chars = nullptr);
 
     // get rects using tags (tags are strings shown when executing `keyboard_*` commands)
-    std::optional<fz_rect> get_tag_rect(std::string tag, std::vector<fz_rect>* word_chars = nullptr);
+    std::optional<PagelessDocumentRect> get_tag_rect(std::string tag, std::vector<PagelessDocumentRect>* word_chars = nullptr);
     std::optional<fz_irect> get_tag_window_rect(std::string tag, std::vector<fz_irect>* char_rects = nullptr);
 
     bool is_rotated();

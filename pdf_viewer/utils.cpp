@@ -654,7 +654,7 @@ fz_rect create_word_rect(const std::vector<fz_stext_char*>& chars) {
     return res;
 }
 
-void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::vector<fz_rect>& flat_word_rects, std::vector<std::vector<fz_rect>>* out_char_rects) {
+void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::vector<PagelessDocumentRect>& flat_word_rects, std::vector<std::vector<PagelessDocumentRect>>* out_char_rects) {
 
     if (flat_chars.size() == 0) return;
 
@@ -666,7 +666,7 @@ void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_char
         if (is_start_of_new_word(flat_chars[i - 1], flat_chars[i])) {
             flat_word_rects.push_back(create_word_rect(pending_word));
             if (out_char_rects != nullptr) {
-                std::vector<fz_rect> chars;
+                std::vector<PagelessDocumentRect> chars;
                 for (auto c : pending_word) {
                     chars.push_back(fz_rect_from_quad(c->quad));
                 }

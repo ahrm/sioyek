@@ -2380,7 +2380,7 @@ std::optional<std::wstring> Document::get_regex_match_at_position(const std::wre
     return get_regex_match_at_position(regex, flat_chars, offset_x, offset_y, out_range);
 }
 
-std::vector<std::vector<fz_rect>> Document::get_page_flat_word_chars(int page) {
+std::vector<std::vector<PagelessDocumentRect>> Document::get_page_flat_word_chars(int page) {
     // warning: this function should only be called after get_page_flat_words has already cached the chars
     if (cached_flat_word_chars.find(page) != cached_flat_word_chars.end()) {
         return cached_flat_word_chars[page];
@@ -2388,15 +2388,15 @@ std::vector<std::vector<fz_rect>> Document::get_page_flat_word_chars(int page) {
     return {};
 }
 
-std::vector<fz_rect> Document::get_page_flat_words(int page) {
+std::vector<PagelessDocumentRect> Document::get_page_flat_words(int page) {
     if (cached_flat_words.find(page) != cached_flat_words.end()) {
         return cached_flat_words[page];
     }
 
     fz_stext_page* stext_page = get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
-    std::vector<fz_rect> word_rects;
-    std::vector<std::vector<fz_rect>> word_char_rects;
+    std::vector<PagelessDocumentRect> word_rects;
+    std::vector<std::vector<PagelessDocumentRect>> word_char_rects;
     std::vector<std::pair<fz_rect, int>> word_rects_with_page;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
     get_flat_words_from_flat_chars(flat_chars, word_rects, &word_char_rects);
