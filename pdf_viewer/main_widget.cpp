@@ -15,6 +15,7 @@
 // only write the configs that actually changed in touch mode
 // don't create the helper opengl widget on startup if it is not needed
 // add progressive search
+// fix the presentation mode flickering
 
 #include <iostream>
 #include <vector>
@@ -1019,7 +1020,7 @@ MainWidget::~MainWidget() {
 }
 
 bool MainWidget::is_pending_link_source_filled() {
-    return (pending_portal && pending_portal.value().first);
+    return (pending_portal && pending_portal->first);
 }
 
 std::wstring MainWidget::get_status_string() {
@@ -6169,13 +6170,14 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    QString res;
+    //QString res;
 
-    for (auto [block, line, chr] : doc()->page_iterator(0)) {
-        res.push_back(QChar(chr->c));
-    }
+    //for (auto [block, line, chr] : doc()->page_iterator(0)) {
+    //    res.push_back(QChar(chr->c));
+    //}
 
-    qDebug() << res;
+    //qDebug() << res;
+    pdf_renderer->debug();
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {

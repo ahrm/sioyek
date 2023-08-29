@@ -148,6 +148,8 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, bool should_
         cached_response_mutex.lock();
         GLuint result = 0;
         for (auto& cached_resp : cached_responses) {
+            if (cached_resp.pending) continue;
+
             if ((cached_resp.request == req) && (cached_resp.invalid == false)) {
                 cached_resp.last_access_time = QDateTime::currentMSecsSinceEpoch();
 
@@ -238,6 +240,7 @@ GLuint PdfRenderer::try_closest_rendered_page(std::wstring doc_path, int page, b
     GLuint best_texture = 0;
 
     for (const auto& cached_resp : cached_responses) {
+        if (cached_resp.pending) continue;
         if ((cached_resp.request.slice_index == index) &&
             (cached_resp.request.num_h_slices == num_h_slices) &&
             (cached_resp.request.num_v_slices == num_v_slices) &&
@@ -524,6 +527,18 @@ void PdfRenderer::run(int thread_index) {
         for (const auto& cached_rep : cached_responses) {
             if ((cached_rep.request == req) && (cached_rep.invalid == false)) is_already_rendered = true;
         }
+
+        if (!is_already_rendered) {
+            RenderResponse resp;
+            resp.thread = thread_index;
+            resp.request = req;
+            resp.last_access_time = QDateTime::currentMSecsSinceEpoch();
+            resp.texture = 0;
+            resp.invalid = false;
+            resp.pending = true;
+            cached_responses.push_back(resp);
+        }
+
         cached_response_mutex.unlock();
         pending_render_requests.pop_back();
         pending_requests_mutex.unlock();
@@ -577,18 +592,23 @@ void PdfRenderer::run(int thread_index) {
 
                 }
 
+
                 RenderResponse resp;
                 resp.thread = thread_index;
                 resp.request = req;
-                resp.last_access_time = QDateTime::currentMSecsSinceEpoch();
-                resp.pixmap = rendered_pixmap;
-                resp.width = rendered_pixmap->w;
-                resp.height = rendered_pixmap->h;
                 resp.texture = 0;
                 resp.invalid = false;
 
                 cached_response_mutex.lock();
-                cached_responses.push_back(resp);
+                int index = get_pending_response_index(req);
+                assert(cached_responses[index].thread == thread_index);
+
+                cached_responses[index].last_access_time = QDateTime::currentMSecsSinceEpoch();
+                cached_responses[index].pixmap = rendered_pixmap;
+                cached_responses[index].width = rendered_pixmap->w;
+                cached_responses[index].height = rendered_pixmap->h;
+                cached_responses[index].pending = false;
+
                 cached_response_mutex.unlock();
 
                 emit render_advance();
@@ -671,4 +691,23 @@ void PdfRenderer::free_all_resources_for_document(std::wstring doc_path) {
         thread_rendering_mutex[i].unlock();
     }
     searching_mutex.unlock();
+}
+
+void PdfRenderer::debug() {
+    cached_response_mutex.lock();
+    for (auto resp : cached_responses) {
+        std::wcout << resp.request.path << L" " << resp.request.page << L" " << resp.request.zoom_level << std::endl;
+    }
+    cached_response_mutex.unlock();
+}
+
+int PdfRenderer::get_pending_response_index(const RenderRequest& req){
+    // assumes we hold a lock on cached_response_mutex
+
+    for (int i = 0; i < cached_responses.size(); i++) {
+        if (cached_responses[i].pending && (cached_responses[i].request == req)) {
+            return i;
+        }
+    }
+    return -1;
 }

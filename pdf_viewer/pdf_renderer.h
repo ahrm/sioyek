@@ -56,6 +56,7 @@ struct RenderResponse {
     int height = -1;
     GLuint texture = 0;
     bool invalid = false;
+    bool pending = true;
 };
 
 bool operator==(const RenderRequest& lhs, const RenderRequest& rhs);
@@ -105,6 +106,7 @@ class PdfRenderer : public QObject {
     void delete_old_pixmaps(int thread_index, fz_context* mupdf_context);
     void run(int thread_index);
     void run_search(int thread_index);
+    int get_pending_response_index(const RenderRequest& req);
 
 public:
     bool no_rerender = false;
@@ -135,6 +137,7 @@ public:
     GLuint find_rendered_page(std::wstring path, int page, bool should_render_annotations, int index, int num_h_slices, int num_v_slices, float zoom_level, float display_scale, int* page_width, int* page_height);
     void delete_old_pages(bool force_all = false, bool invalidate_all = false);
     void add_password(std::wstring path, std::string password);
+    void debug();
 
 signals:
     void render_advance();
