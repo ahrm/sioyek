@@ -78,7 +78,7 @@ private:
     // show a tree view (e.g. due to performance reasons on PC and lack of availablity on mobile)
     std::vector<std::wstring> flat_toc_names;
     std::vector<int> flat_toc_pages;
-    std::map<int, std::vector<fz_rect>> cached_page_line_rects;
+    std::map<int, std::vector<AbsoluteRect>> cached_page_line_rects;
     std::map<int, std::vector<std::wstring>> cached_line_texts;
     //std::map<int, std::vector<std::vector<fz_rect>>> cached_line_char_rects;
 
@@ -163,7 +163,7 @@ public:
     fz_document* doc = nullptr;
 
     PageIterator page_iterator(int page_number);
-    void get_page_text_and_line_rects_after_rect(int page_number, fz_rect after, std::wstring& text, std::vector<fz_rect>& line_rects);
+    void get_page_text_and_line_rects_after_rect(int page_number, AbsoluteRect after, std::wstring& text, std::vector<fz_rect>& line_rects);
     void load_document_metadata_from_db();
     std::string add_bookmark(const std::wstring& desc, float y_offset);
     std::string add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
@@ -329,7 +329,7 @@ public:
     fz_rect get_page_rect_no_cache(int page);
     std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
     std::optional<PdfLink> get_link_in_pos(const DocumentPos& pos);
-    std::vector<PdfLink> get_links_in_page_rect(int page, fz_rect rect);
+    std::vector<PdfLink> get_links_in_page_rect(int page, AbsoluteRect rect);
     std::wstring get_pdf_link_text(PdfLink link);
     std::string get_highlight_index_uuid(int index);
     std::string get_bookmark_index_uuid(int index);
@@ -347,8 +347,8 @@ public:
     fz_rect document_to_absolute_rect(int page, fz_rect doc_rect);
 
     //void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
-    fz_rect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);
-    const std::vector<fz_rect>& get_page_lines(
+    AbsoluteRect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);
+    const std::vector<AbsoluteRect>& get_page_lines(
         int page,
         std::vector<std::wstring>* line_texts = nullptr,
         std::vector<std::vector<fz_rect>>* out_line_rects = nullptr);

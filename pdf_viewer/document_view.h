@@ -56,7 +56,7 @@ private:
     float offset_y = 0;
 
     // absolute rect of the current ruler if this is {} then ruler_pos is used instead
-    std::optional<fz_rect> ruler_rect;
+    std::optional<AbsoluteRect> ruler_rect;
     float ruler_pos = 0;
 
     // index of the current highlighted line in ruler mode
@@ -179,13 +179,13 @@ public:
     void set_vertical_line_pos(float pos);
     void set_vertical_line_rect(fz_rect rect);
     bool has_ruler_rect();
-    std::optional<fz_rect> get_ruler_rect();
+    std::optional<AbsoluteRect> get_ruler_rect();
     //float get_vertical_line_pos();
     float get_ruler_pos();
 
     //float get_vertical_line_window_y();
     float get_ruler_window_y();
-    std::optional<fz_rect> get_ruler_window_rect();
+    std::optional<NormalizedWindowRect> get_ruler_window_rect();
 
     void goto_vertical_line_pos();
     int get_page_offset();

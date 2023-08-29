@@ -2582,19 +2582,20 @@ std::wstring Document::get_pdf_link_text(PdfLink link) {
     return res;
 }
 
-std::vector<PdfLink> Document::get_links_in_page_rect(int page, fz_rect rect) {
+std::vector<PdfLink> Document::get_links_in_page_rect(int page, AbsoluteRect rect) {
     if (!doc) return {};
 
     std::vector<PdfLink> res;
-    int rect_page;
-    fz_rect doc_rect = absolute_to_page_rect(rect, &rect_page);
+    DocumentRect doc_rect = rect.to_document(this);
+    //int rect_page;
+    //fz_rect doc_rect = absolute_to_page_rect(rect, &rect_page);
 
     if (page != -1) {
         //fz_link* links = get_page_links(page);
         const std::vector<PdfLink>& links = get_page_merged_pdf_links(page);
         for (auto link : links) {
             for (auto link_rect : link.rects) {
-                if (rects_intersect(doc_rect, link_rect)) {
+                if (rects_intersect(doc_rect.rect, link_rect)) {
                     res.push_back(link);
                     break;
                 }
@@ -2780,7 +2781,7 @@ fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect){
 //}
 
 //void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
-fz_rect Document::get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page) {
+AbsoluteRect Document::get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page) {
     //auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
 
     auto line_rects = get_page_lines(page);
@@ -2861,7 +2862,7 @@ fz_rect Document::get_ith_next_line_from_absolute_y(int page, int line_index, in
 
 }
 
-const std::vector<fz_rect>& Document::get_page_lines(
+const std::vector<AbsoluteRect>& Document::get_page_lines(
     int page,
     std::vector<std::wstring>* out_line_texts,
     std::vector<std::vector<fz_rect>>* out_line_rects){
@@ -2905,7 +2906,7 @@ const std::vector<fz_rect>& Document::get_page_lines(
                 line_rects[i].y1 = document_to_absolute_y(page, line_rects[i].y1);
             }
 
-            std::vector<fz_rect> line_rects_;
+            std::vector<AbsoluteRect> line_rects_;
             std::vector<std::wstring> line_texts_;
             std::vector<std::vector<fz_rect>> line_char_rects_;
 
@@ -2938,7 +2939,7 @@ const std::vector<fz_rect>& Document::get_page_lines(
             std::vector<unsigned int> line_locations_begins;
             get_line_begins_and_ends_from_histogram(hist, line_locations_begins, line_locations);
 
-            std::vector<fz_rect> line_rects;
+            std::vector<AbsoluteRect> line_rects;
             for (size_t i = 0; i < line_locations_begins.size(); i++) {
                 fz_rect line_rect;
                 line_rect.x0 = 0 - page_widths[page] / 2;
@@ -4245,8 +4246,9 @@ PageIterator Document::page_iterator(int page_number) {
     return PageIterator(page);
 }
 
-void Document::get_page_text_and_line_rects_after_rect(int page_number, fz_rect after, std::wstring& text, std::vector<fz_rect>& line_rects){
+void Document::get_page_text_and_line_rects_after_rect(int page_number, AbsoluteRect after_, std::wstring& text, std::vector<fz_rect>& line_rects){
     bool begun = false;
+    fz_rect after = after_.rect;
     after = absolute_to_page_rect(after, nullptr);
     after.y0 = after.y1 = (after.y0 + after.y1) / 2;
 

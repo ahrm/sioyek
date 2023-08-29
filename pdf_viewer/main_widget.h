@@ -448,13 +448,13 @@ public:
     bool move_document(float dx, float dy, bool force = false);
     void move_document_screens(int num_screens);
     void focus_text(int page, const std::wstring& text);
-    int get_page_intersecting_rect_index(int page, fz_rect rect);
-    fz_rect get_page_intersecting_rect(int page, fz_rect rect);
-    void focus_rect(int page, fz_rect rect);
+    int get_page_intersecting_rect_index(DocumentRect rect);
+    AbsoluteRect get_page_intersecting_rect(DocumentRect rect);
+    void focus_rect(DocumentRect rect);
 
     void move_visual_mark_next();
     void move_visual_mark_prev();
-    fz_rect move_visual_mark(int offset);
+    AbsoluteRect move_visual_mark(int offset);
     void on_config_file_changed(ConfigManager* new_config) override;
     void toggle_mouse_drag_mode();
     void toggle_freehand_drawing_mode();

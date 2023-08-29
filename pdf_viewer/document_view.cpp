@@ -1009,14 +1009,14 @@ void DocumentView::set_vertical_line_rect(fz_rect rect) {
 
 float DocumentView::get_ruler_pos() {
     if (ruler_rect.has_value()) {
-        return ruler_rect.value().y1;
+        return ruler_rect->rect.y1;
     }
     else {
         return ruler_pos;
     }
 }
 
-std::optional<fz_rect> DocumentView::get_ruler_rect() {
+std::optional<AbsoluteRect> DocumentView::get_ruler_rect() {
     return ruler_rect;
 }
 
@@ -1033,16 +1033,16 @@ float DocumentView::get_ruler_window_y() {
     return absolute_to_window_pos({ 0.0f, absol_end_y }).y;
 }
 
-std::optional<fz_rect> DocumentView::get_ruler_window_rect() {
+std::optional<NormalizedWindowRect> DocumentView::get_ruler_window_rect() {
     if (has_ruler_rect()) {
-        fz_rect absol_ruler_rect = get_ruler_rect().value();
+        fz_rect absol_ruler_rect = get_ruler_rect()->rect;
 
         absol_ruler_rect.y0 -= RULER_PADDING;
         absol_ruler_rect.y1 += RULER_PADDING;
 
         absol_ruler_rect.x0 -= RULER_X_PADDING;
         absol_ruler_rect.x1 += RULER_X_PADDING;
-        return absolute_to_window_rect(absol_ruler_rect);
+        return NormalizedWindowRect(absolute_to_window_rect(absol_ruler_rect));
     }
     return {};
 }
@@ -1148,24 +1148,19 @@ int DocumentView::get_line_index_of_vertical_pos() {
     DocumentPos line_doc_pos = current_document->absolute_to_page_pos_uncentered({ 0, get_ruler_pos() });
     auto rects = current_document->get_page_lines(line_doc_pos.page);
     int index = 0;
-    while ((size_t)index < rects.size() && rects[index].y0 < get_ruler_pos()) {
+    while ((size_t)index < rects.size() && rects[index].rect.y0 < get_ruler_pos()) {
         index++;
     }
     return index - 1;
 }
 
 int DocumentView::get_line_index_of_pos(DocumentPos line_doc_pos) {
-    fz_point document_point = { line_doc_pos.x, line_doc_pos.y };
+    AbsoluteDocumentPos line_abs_pos = line_doc_pos.to_absolute(current_document);
     auto rects = current_document->get_page_lines(line_doc_pos.page, nullptr);
     int page_width = current_document->get_page_width(line_doc_pos.page);
 
     for (int i = 0; i < rects.size(); i++) {
-        rects[i] = current_document->absolute_to_page_rect(rects[i], nullptr);
-    }
-    for (int i = 0; i < rects.size(); i++) {
-        if (fz_is_point_inside_rect(document_point, rects[i])) {
-            return i;
-        }
+        if (rects[i].contains(line_abs_pos)) return i;
     }
     return -1;
 }
@@ -1178,7 +1173,7 @@ std::optional<std::wstring> DocumentView::get_selected_line_text() {
     if (line_index >= 0) {
         std::vector<std::wstring> lines;
         //std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
-        std::vector<fz_rect> line_rects = current_document->get_page_lines(get_vertical_line_page(), &lines);
+        std::vector<AbsoluteRect> line_rects = current_document->get_page_lines(get_vertical_line_page(), &lines);
         if ((size_t)line_index < lines.size()) {
             std::wstring content = lines[line_index];
             return content;
@@ -1213,7 +1208,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
 
         int line_page_number = get_vertical_line_page();
 
-        std::vector<fz_rect> line_rects = current_document->get_page_lines(line_page_number, &lines, &line_char_rects);
+        std::vector<AbsoluteRect> line_rects = current_document->get_page_lines(line_page_number, &lines, &line_char_rects);
         for (int i = 0; i < lines.size(); i++) {
             assert(lines[i].size() == line_char_rects[i].size());
         }
@@ -1222,9 +1217,9 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
 
             //todo: deduplicate this code
 
-            fz_rect line_rect = line_rects[line_index];
-            float mid_y = (line_rect.y1 + line_rect.y0) / 2.0f;
-            line_rect.y0 = line_rect.y0 = mid_y;
+            AbsoluteRect line_rect = line_rects[line_index];
+            float mid_y = (line_rect.rect.y1 + line_rect.rect.y0) / 2.0f;
+            line_rect.rect.y0 = line_rect.rect.y0 = mid_y;
 
             std::vector<PdfLink> pdf_links = current_document->get_links_in_page_rect(get_vertical_line_page(), line_rect);
             if (pdf_links.size() > 0) {

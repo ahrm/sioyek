@@ -196,7 +196,7 @@ protected:
     void resizeGL(int w, int h) override;
     void render_highlight_window(GLuint program, NormalizedWindowRect window_rect, int flags);
     void render_highlight_absolute(GLuint program, AbsoluteRect absolute_document_rect, int flags);
-    void render_line_window(GLuint program, float vertical_pos, std::optional<fz_rect> ruler_rect = {});
+    void render_line_window(GLuint program, float vertical_pos, std::optional<NormalizedWindowRect> ruler_rect = {});
     void render_highlight_document(GLuint program, DocumentRect doc_rect, int flags=HRF_FILL | HRF_BORDER);
     void paintGL() override;
     void my_render(QPainter* painter);

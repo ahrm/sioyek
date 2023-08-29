@@ -62,8 +62,36 @@ struct DocumentRect;
 struct AbsoluteRect;
 struct NormalizedWindowRect;
 
+//struct PagelessDocumentRect : public fz_rect {
+//    PagelessDocumentRect();
+//    PagelessDocumentRect(fz_rect r);
+//};
+template<typename T>
+struct EnhancedRect : public fz_rect {
+
+    EnhancedRect() : fz_rect(fz_empty_rect) {
+
+    }
+
+    EnhancedRect(fz_rect r) : fz_rect(r) {
+
+    }
+
+    T top_left() {
+        return T{ x0, y0 };
+    }
+
+    T bottom_right() {
+        return T{ x1, y1 };
+    }
+
+    float area() {
+        return (x1 - x0) * (y1 - y0);
+    }
+};
+
 struct DocumentRect {
-    fz_rect rect;
+    EnhancedRect<DocumentPos> rect;
     int page;
 
     DocumentRect();
@@ -78,15 +106,16 @@ struct DocumentRect {
 };
 
 struct NormalizedWindowRect {
-    fz_rect rect;
+    EnhancedRect<NormalizedWindowPos> rect;
 
     NormalizedWindowRect(NormalizedWindowPos top_left, NormalizedWindowPos bottom_right);
     NormalizedWindowRect(fz_rect r);
     NormalizedWindowRect();
 };
 
+
 struct AbsoluteRect {
-    fz_rect rect;
+    EnhancedRect<AbsoluteDocumentPos> rect;
 
     AbsoluteRect(AbsoluteDocumentPos top_left, AbsoluteDocumentPos bottom_right);
     AbsoluteRect(fz_rect r);
@@ -97,6 +126,7 @@ struct AbsoluteRect {
     AbsoluteDocumentPos bottom_right();
     NormalizedWindowRect to_window_normalized(DocumentView* document_view);
     void operator=(const fz_rect& r);
+    bool contains(const AbsoluteDocumentPos& point);
 };
 
 

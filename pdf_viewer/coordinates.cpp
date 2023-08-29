@@ -170,3 +170,8 @@ DocumentRect::DocumentRect(DocumentPos top_left, DocumentPos bottom_right, int p
 NormalizedWindowRect::NormalizedWindowRect() : rect(fz_empty_rect) {
 
 }
+
+bool AbsoluteRect::contains(const AbsoluteDocumentPos& point) {
+    return fz_is_point_inside_rect(fz_point{ point.x, point.y }, rect);
+}
+

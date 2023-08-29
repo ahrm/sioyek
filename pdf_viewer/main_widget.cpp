@@ -1506,9 +1506,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
     if (stat > 0) {
         synctex_node_p node;
 
-        std::vector<std::pair<int, fz_rect>> highlight_rects;
-
-        std::optional<fz_rect> first_rect = {};
+        std::vector<DocumentRect> highlight_rects;
 
         while ((node = synctex_scanner_next_result(scanner))) {
             int page = synctex_node_page(node);
@@ -1519,17 +1517,7 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
             float w = synctex_node_box_visible_width(node);
             float h = synctex_node_box_visible_height(node);
 
-            fz_rect doc_rect;
-            doc_rect.x0 = x;
-            doc_rect.y0 = y;
-            doc_rect.x1 = x + w;
-            doc_rect.y1 = y - h;
-
-            if (!first_rect) {
-                first_rect = doc_rect;
-            }
-
-            highlight_rects.push_back(std::make_pair(target_page, doc_rect));
+            highlight_rects.push_back(DocumentRect({x, y, x + w, y - h}, target_page));
 
             break; // todo: handle this properly
         }
@@ -1544,20 +1532,19 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
 
             if (!USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE) {
 
-                fz_rect line_rect = get_page_intersecting_rect(target_page, highlight_rects[0].second);
-                line_rect = doc()->absolute_to_page_rect(line_rect, nullptr);
+                DocumentRect line_rect = get_page_intersecting_rect(highlight_rects[0]).to_document(doc());
 
-                opengl_widget->set_synctex_highlights({ DocumentRect{line_rect, target_page} });
+                opengl_widget->set_synctex_highlights({ line_rect });
                 if (highlight_rects.size() == 0) {
                     main_document_view->goto_page(target_page);
                 }
                 else {
-                    main_document_view->goto_offset_within_page(target_page, first_rect.value().y0);
+                    main_document_view->goto_offset_within_page(target_page, highlight_rects[0].rect.y0);
                 }
             }
             else {
                 if (highlight_rects.size() > 0) {
-                    focus_rect(target_page, highlight_rects[0].second);
+                    focus_rect(highlight_rects[0]);
                 }
             }
         }
@@ -3305,14 +3292,14 @@ bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
     }
 
     float thresh = 1 - VISUAL_MARK_NEXT_PAGE_THRESHOLD;
-    fz_rect ruler_window_rect = main_document_view->get_ruler_window_rect().value();
+    NormalizedWindowRect ruler_window_rect = main_document_view->get_ruler_window_rect().value();
     //main_document_view->absolute_to_window_pos(0, main_document_view->get_vertical_line_pos(), &window_x, &window_y);
     //if ((window_y < -thresh) || (window_y > thresh)) {
-    if (ruler_window_rect.y0 < -1 || ruler_window_rect.y1 > 1) {
+    if (ruler_window_rect.rect.y0 < -1 || ruler_window_rect.rect.y1 > 1) {
         main_document_view->goto_vertical_line_pos();
         return true;
     }
-    if ((moving_down && (ruler_window_rect.y0 < -thresh)) || ((!moving_down) && (ruler_window_rect.y1 > thresh))) {
+    if ((moving_down && (ruler_window_rect.rect.y0 < -thresh)) || ((!moving_down) && (ruler_window_rect.rect.y1 > thresh))) {
         main_document_view->goto_vertical_line_pos();
         //float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION;
         //main_document_view->move_absolute(0, -distance);
@@ -4022,26 +4009,28 @@ void MainWidget::move_visual_mark_next() {
     int vertical_line_page = main_document_view->get_vertical_line_page();
     int current_line_index, current_page;
 
-    fz_rect current_ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page);
-    current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
+    NormalizedWindowRect current_ruler_rect = doc()->
+        get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page)
+        .to_window_normalized(main_document_view);
+    //current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
 
-    if (current_ruler_rect.x1 <= 1.0f) {
-        fz_rect new_rect = move_visual_mark(1);
-        fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
-        if (new_ruler_rect.x0 < -1) {
-            float offset = (new_ruler_rect.x0 + 0.9f) * main_window_width / 2;
+    if (current_ruler_rect.rect.x1 <= 1.0f) {
+        NormalizedWindowRect new_ruler_rect = move_visual_mark(1).to_window_normalized(main_document_view);
+        //fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
+        if (new_ruler_rect.rect.x0 < -1) {
+            float offset = (new_ruler_rect.rect.x0 + 0.9f) * main_window_width / 2;
             move_horizontal(-offset);
         }
 
-        if (new_ruler_rect.x0 > 1) {
-            float offset = (new_ruler_rect.x0 - 0.1f) * main_window_width / 2;
+        if (new_ruler_rect.rect.x0 > 1) {
+            float offset = (new_ruler_rect.rect.x0 - 0.1f) * main_window_width / 2;
             move_horizontal(-offset);
         }
 
         // if the new rect can fit entirely in the screen yet it is out of bounds,
         // move such that it is contained in the screen
-        if (new_ruler_rect.x1 > 1 && (new_ruler_rect.x1 - new_ruler_rect.x0) < 1.9f) {
-            float offset = (new_ruler_rect.x1 - 0.9f) * main_window_width / 2;
+        if (new_ruler_rect.rect.x1 > 1 && (new_ruler_rect.rect.x1 - new_ruler_rect.rect.x0) < 1.9f) {
+            float offset = (new_ruler_rect.rect.x1 - 0.9f) * main_window_width / 2;
             move_horizontal(-offset);
         }
 
@@ -4051,7 +4040,7 @@ void MainWidget::move_visual_mark_next() {
         WindowPos pos;
 
         pos.x = main_window_width;
-        pos.y = main_window_height - static_cast<int>((current_ruler_rect.y1 + 1) * main_window_height / 2);
+        pos.y = main_window_height - static_cast<int>((current_ruler_rect.rect.y1 + 1) * main_window_height / 2);
 
         AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
 
@@ -4074,14 +4063,16 @@ void MainWidget::move_visual_mark_prev() {
     int vertical_line_page = main_document_view->get_vertical_line_page();
     int current_line_index, current_page;
 
-    fz_rect current_ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page);
-    current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
+    NormalizedWindowRect current_ruler_rect = doc()->
+        get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page)
+        .to_window_normalized(main_document_view);
+    //current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
 
-    if (current_ruler_rect.x0 >= -1.0f) {
-        fz_rect new_rect = move_visual_mark(-1);
-        fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
-        if (new_ruler_rect.x1 > 1) {
-            float offset = (new_ruler_rect.x1 - 0.9f) * main_window_width / 2;
+    if (current_ruler_rect.rect.x0 >= -1.0f) {
+        NormalizedWindowRect new_ruler_rect = move_visual_mark(-1).to_window_normalized(main_document_view);
+        //fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
+        if (new_ruler_rect.rect.x1 > 1) {
+            float offset = (new_ruler_rect.rect.x1 - 0.9f) * main_window_width / 2;
             move_horizontal(-offset); //todo: fix this
         }
 
@@ -4091,13 +4082,13 @@ void MainWidget::move_visual_mark_prev() {
     }
 }
 
-fz_rect MainWidget::move_visual_mark(int offset) {
+AbsoluteRect MainWidget::move_visual_mark(int offset) {
     bool moving_down = offset >= 0;
 
     int prev_line_index = main_document_view->get_line_index();
     int new_line_index, new_page;
     int vertical_line_page = main_document_view->get_vertical_line_page();
-    fz_rect ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, offset, true, &new_line_index, &new_page);
+    AbsoluteRect ruler_rect = doc()->get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, offset, true, &new_line_index, &new_page);
     main_document_view->set_line_index(new_line_index, new_page);
     //main_document_view->set_vertical_line_rect(ruler_rect);
     if (focus_on_visual_mark_pos(moving_down)) {
@@ -4177,27 +4168,28 @@ void MainWidget::toggle_titlebar() {
 }
 
 
-fz_rect MainWidget::get_page_intersecting_rect(int page, fz_rect rect) {
-    int index = get_page_intersecting_rect_index(page, rect);
+AbsoluteRect MainWidget::get_page_intersecting_rect(DocumentRect rect) {
+    int index = get_page_intersecting_rect_index(rect);
     if (index >= 0) {
-        std::vector<fz_rect> line_rects = main_document_view->get_document()->get_page_lines(page, nullptr);
+        std::vector<AbsoluteRect> line_rects = main_document_view->get_document()->get_page_lines(rect.page, nullptr);
         return line_rects[index];
     }
 }
 
-int MainWidget::get_page_intersecting_rect_index(int page, fz_rect rect) {
-    std::vector<fz_rect> line_rects  = main_document_view->get_document()->get_page_lines(page, nullptr);
-    rect = doc()->document_to_absolute_rect(page, rect);
+int MainWidget::get_page_intersecting_rect_index(DocumentRect r) {
+    std::vector<AbsoluteRect> line_rects  = main_document_view->get_document()->get_page_lines(r.page, nullptr);
+    AbsoluteRect abs_rect = r.to_absolute(doc());
+    //rect = doc()->document_to_absolute_rect(page, rect);
 
-    if (rect.y0 > rect.y1) {
-        std::swap(rect.y0, rect.y1);
+    if (abs_rect.rect.y0 > abs_rect.rect.y1) {
+        std::swap(abs_rect.rect.y0, abs_rect.rect.y1);
     }
 
     float max_area = -1;
     int selected_index = -1;
 
     for (int i = 0; i < line_rects.size(); i++) {
-        float area = rect_area(fz_intersect_rect(line_rects[i], rect));
+        float area = rect_area(fz_intersect_rect(line_rects[i].rect, abs_rect.rect));
         if (area > max_area * 2) {
             max_area = area;
             selected_index = i;
@@ -4206,17 +4198,17 @@ int MainWidget::get_page_intersecting_rect_index(int page, fz_rect rect) {
     return selected_index;
 }
 
-void MainWidget::focus_rect(int page, fz_rect rect) {
-    int selected_index = get_page_intersecting_rect_index(page, rect);
+void MainWidget::focus_rect(DocumentRect rect) {
+    int selected_index = get_page_intersecting_rect_index(rect);
 
     if (selected_index > -1) {
-        focus_on_line_with_index(page, selected_index);
+        focus_on_line_with_index(rect.page, selected_index);
     }
 }
 
 void MainWidget::focus_text(int page, const std::wstring& text) {
     std::vector<std::wstring> line_texts;
-    std::vector<fz_rect> line_rects;
+    std::vector<AbsoluteRect> line_rects;
     line_rects = main_document_view->get_document()->get_page_lines(page, &line_texts);
 
     std::string encoded_text = utf8_encode(text);
@@ -6387,7 +6379,7 @@ void MainWidget::read_current_line() {
     tts_corresponding_line_rects.clear();
 
     int page_number  = main_document_view->get_vertical_line_page();
-    fz_rect ruler_rect = main_document_view->get_ruler_rect().value_or(fz_empty_rect);
+    AbsoluteRect ruler_rect = main_document_view->get_ruler_rect().value_or(fz_empty_rect);
     doc()->get_page_text_and_line_rects_after_rect(page_number, ruler_rect, tts_text, tts_corresponding_line_rects);
 
     fz_stext_page* stext_page = doc()->get_stext_with_page_number(page_number);
@@ -7264,7 +7256,7 @@ QTextToSpeech* MainWidget::get_tts() {
 
             if ((!last_focused_rect.has_value()) || !(last_focused_rect.value() == line_being_read_rect)) {
                 last_focused_rect = line_being_read_rect;
-                focus_rect(ruler_page, line_being_read_rect);
+                focus_rect(DocumentRect(line_being_read_rect, ruler_page));
                 invalidate_render();
             }
             //qDebug() << (int)tts_text.size() - (int)end;
@@ -7726,10 +7718,10 @@ void MainWidget::close_overview() {
 
 std::vector<Portal> MainWidget::get_ruler_portals() {
     std::vector<Portal> res;
-    std::optional<fz_rect> ruler_rect_ = main_document_view->get_ruler_rect();
+    std::optional<AbsoluteRect> ruler_rect_ = main_document_view->get_ruler_rect();
     if (ruler_rect_) {
-        fz_rect ruler_rect = ruler_rect_.value();
-        return doc()->get_intersecting_visible_portals(ruler_rect.y0, ruler_rect.y1);
+        AbsoluteRect ruler_rect = ruler_rect_.value();
+        return doc()->get_intersecting_visible_portals(ruler_rect.rect.y0, ruler_rect.rect.y1);
     }
     return res;
 }
@@ -8227,8 +8219,8 @@ void MainWidget::handle_action_in_menu(std::wstring action) {
 }
 
 std::wstring MainWidget::handle_synctex_to_ruler() {
-    std::optional<fz_rect> ruler_rect = main_document_view->get_ruler_window_rect();
-    fz_irect ruler_irect = main_document_view->normalized_to_window_rect(ruler_rect.value());
+    std::optional<NormalizedWindowRect> ruler_rect = main_document_view->get_ruler_window_rect();
+    fz_irect ruler_irect = main_document_view->normalized_to_window_rect(ruler_rect->rect);
 
     WindowPos mid_window_pos;
     mid_window_pos.x = (ruler_irect.x0 + ruler_irect.x1) / 2;

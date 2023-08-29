@@ -367,7 +367,7 @@ void PdfViewOpenGLWidget::resizeGL(int w, int h) {
     }
 }
 
-void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_pos, std::optional<fz_rect> ruler_rect) {
+void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_pos, std::optional<NormalizedWindowRect> ruler_rect) {
 
 
     float bar_height = 4.0f;
@@ -405,9 +405,9 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     if (RULER_MODE && ruler_rect.has_value()) {
-        float gl_vertical_begin_pos = ruler_rect.value().y0;
-        float ruler_left_pos = ruler_rect.value().x0;
-        float ruler_right_pos = ruler_rect.value().x1;
+        float gl_vertical_begin_pos = ruler_rect->rect.y0;
+        float ruler_left_pos = ruler_rect->rect.x0;
+        float ruler_right_pos = ruler_rect->rect.x1;
         float top_bar_data[] = {
             -1, gl_vertical_begin_pos + bar_height,
             1, gl_vertical_begin_pos + bar_height,
@@ -1323,7 +1323,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         //render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
         float vertical_line_end = document_view->get_ruler_window_y();
-        std::optional<fz_rect> ruler_rect = document_view->get_ruler_window_rect();
+        std::optional<NormalizedWindowRect> ruler_rect = document_view->get_ruler_window_rect();
 
         if ((!ruler_rect.has_value()) || (RULER_DISPLAY_MODE == L"slit")) {
             render_line_window(shared_gl_objects.vertical_line_program, vertical_line_end, ruler_rect);
