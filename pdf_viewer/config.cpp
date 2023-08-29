@@ -136,7 +136,6 @@ extern bool HIGHLIGHT_MIDDLE_CLICK;
 extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
-extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 extern bool SUPER_FAST_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern int PRERENDERED_PAGE_COUNT;
@@ -1577,14 +1576,6 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         float_deserializer,
         nullptr,
         FloatExtras{10.0f, 10000.0f}
-        });
-    configs.push_back({
-        L"ignore_statusbar_in_presentation_mode",
-        ConfigType::Bool,
-        &IGNORE_STATUSBAR_IN_PRESENTATION_MODE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
         });
     configs.push_back({
         L"auto_rename_downloaded_papers",

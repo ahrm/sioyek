@@ -14,8 +14,8 @@
 // In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 // only write the configs that actually changed in touch mode
 // don't create the helper opengl widget on startup if it is not needed
-// add progressive search
-// fix the presentation mode flickering
+// maybe add progressive search
+// decouple statusbar font size setting from the rest of the ui
 
 #include <iostream>
 #include <vector>
@@ -152,7 +152,6 @@ extern float CUSTOM_TEXT_COLOR[3];
 extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
-extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 extern bool SUPER_FAST_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
@@ -1355,16 +1354,16 @@ void MainWidget::validate_render() {
                     main_document_view->get_document()->get_page_height(current_page) / 2);
             }
             else {
+                float statusbar_factor = status_label->isVisible() ? static_cast<float>(status_label->height() / 2 / main_document_view->get_zoom_level()) : 0;
                 main_document_view->set_offset_y(
                     main_document_view->get_document()->get_accum_page_height(current_page) +
-                    main_document_view->get_document()->get_page_height(current_page) / 2 +
-                    static_cast<float>(get_status_bar_height() / 2 / main_document_view->get_zoom_level()));
+                    main_document_view->get_document()->get_page_height(current_page) / 2 + statusbar_factor);
             }
             if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
                 main_document_view->fit_to_page_height(true);
             }
             else {
-                main_document_view->fit_to_page_height_width_minimum();
+                main_document_view->fit_to_page_height_width_minimum(status_label->isVisible() ? status_label->height() : 0);
             }
         }
     }
