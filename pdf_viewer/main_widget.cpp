@@ -8,7 +8,6 @@
 // fix the issue where executing non-existant command blocks the python api
 // handle mobile text selection case where the character is not in the current page
 // opening a tab doesn't properly update history 
-// check if current_overview_source rect can be deleted and replaced by smart view candidates?
 // improve touch highlight select ui
 // see if we can dynamically change svg icon colors to respect the colorscheme
 // don't show touch mode next/prev overview buttons if there are no overviews
@@ -360,13 +359,11 @@ void MainWidget::set_overview_link(PdfLink link) {
         AbsoluteRect source_absolute_rect = DocumentRect(link.rects[0], link.source_page).to_absolute(doc());
         std::wstring source_text = doc()->get_pdf_link_text(link);
 
-        current_overview_source_rect = source_absolute_rect;
         SmartViewCandidate current_candidate;
         current_candidate.source_rect = source_absolute_rect;
         current_candidate.target_pos = DocumentPos{ page - 1, 0, offset_y };
         current_candidate.source_text = source_text;
-        smart_view_candidates.clear();
-        smart_view_candidates.push_back(current_candidate);
+        smart_view_candidates = { current_candidate };
         index_into_candidates = 0;
         set_overview_position(page - 1, offset_y);
     }
@@ -3101,7 +3098,6 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
     if (find_location_of_text_under_pointer(docpos, &autoreference_page, &autoreference_offset, &overview_source_rect, &source_text, true) != ReferenceType::None) {
         int pos_page = main_document_view->window_to_document_pos(pos).page;
         //opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
-        current_overview_source_rect = overview_source_rect;
 
         SmartViewCandidate current_candid;
         current_candid.source_rect = overview_source_rect;
@@ -7516,9 +7512,6 @@ std::optional<AbsoluteRect> MainWidget::get_overview_source_rect() {
     if (opengl_widget->get_overview_page()) {
         if (smart_view_candidates.size() > 0) {
             return smart_view_candidates[index_into_candidates].source_rect;
-        }
-        if (current_overview_source_rect) {
-            return current_overview_source_rect.value();
         }
     }
 

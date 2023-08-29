@@ -298,7 +298,6 @@ public:
     std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
     std::optional<PdfViewOpenGLWidget::OverviewTouchMoveData> overview_touch_move_data = {};
     std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
-    std::optional<AbsoluteRect> current_overview_source_rect = {};
 
     std::vector<PendingDownloadPortal> pending_download_portals;
 
