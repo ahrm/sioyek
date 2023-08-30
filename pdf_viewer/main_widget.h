@@ -108,8 +108,8 @@ public:
     bool word_by_word_reading = false;
     bool tts_is_about_to_finish = false;
     std::wstring tts_text = L"";
-    std::vector<fz_rect> tts_corresponding_line_rects;
-    std::optional<fz_rect> last_focused_rect = {};
+    std::vector<PagelessDocumentRect> tts_corresponding_line_rects;
+    std::optional<PagelessDocumentRect> last_focused_rect = {};
 
     PdfViewOpenGLWidget* opengl_widget = nullptr;
     PdfViewOpenGLWidget* helper_opengl_widget = nullptr;

@@ -4248,7 +4248,7 @@ PageIterator Document::page_iterator(int page_number) {
     return PageIterator(page);
 }
 
-void Document::get_page_text_and_line_rects_after_rect(int page_number, AbsoluteRect after_, std::wstring& text, std::vector<fz_rect>& line_rects){
+void Document::get_page_text_and_line_rects_after_rect(int page_number, AbsoluteRect after_, std::wstring& text, std::vector<PagelessDocumentRect>& line_rects){
     bool begun = false;
     DocumentRect after = after_.to_document(this);
     after.rect.y0 = after.rect.y1 = (after.rect.y0 + after.rect.y1) / 2;

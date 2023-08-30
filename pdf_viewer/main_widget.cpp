@@ -6569,7 +6569,7 @@ void MainWidget::handle_export_marked_data() {
     QJsonArray page_chars;
 
     for (auto chr : flat_chars) {
-        fz_rect chr_rect = fz_rect_from_quad(chr->quad);
+        PagelessDocumentRect chr_rect = fz_rect_from_quad(chr->quad);
         QJsonArray chr_json;
         chr_json.append(chr->c);
         chr_json.append(chr_rect.x0);
@@ -6926,7 +6926,6 @@ void MainWidget::expand_selection_vertical(bool begin, bool below) {
     int index = (begin) ? 0 : scr.size() - 1;
     int other_index = (begin) ? scr.size() - 1 : 0;
 
-    //fz_rect page_rect = doc()->absolute_to_page_rect(scr[index], &page);
     DocumentRect page_rect = scr[index].to_document(doc());
     AbsoluteRect other_rect = scr[other_index];
 
@@ -7174,10 +7173,9 @@ QTextToSpeech* MainWidget::get_tts() {
         if (is_reading) {
             if (start >= tts_corresponding_line_rects.size()) return;
 
-            fz_rect line_being_read_rect = tts_corresponding_line_rects[start];
+            PagelessDocumentRect line_being_read_rect = tts_corresponding_line_rects[start];
 
             int ruler_page = main_document_view->get_vertical_line_page();
-            std::vector<std::pair<int, fz_rect>> char_highlight_rects;
 
             int end = start + length;
 
@@ -7186,12 +7184,11 @@ QTextToSpeech* MainWidget::get_tts() {
                 focus_rect(DocumentRect(line_being_read_rect, ruler_page));
                 invalidate_render();
             }
-            //qDebug() << (int)tts_text.size() - (int)end;
+
             if ((tts_text.size() - end) <= 2) {
                 tts_is_about_to_finish = true;
             }
 
-            //opengl_widget->set_synctex_highlights()
         }
         });
 
@@ -7491,7 +7488,7 @@ void MainWidget::finish_pending_download_portal(std::wstring download_paper_name
             pending_index = i;
             pending_portal.dst.document_checksum = checksum;
             Document* src_doc = document_manager->get_document(pending_download_portals[i].source_document_path);
-            fz_rect downloaded_page_size = get_first_page_size(mupdf_context, downloaded_file_path);
+            PagelessDocumentRect downloaded_page_size = get_first_page_size(mupdf_context, downloaded_file_path);
 
             float zoom_level = static_cast<float>(main_document_view->get_view_width()) / (downloaded_page_size.x1 - downloaded_page_size.x0);
             float offset_y = (static_cast<float>(main_document_view->get_view_height()) / 2) / zoom_level;
