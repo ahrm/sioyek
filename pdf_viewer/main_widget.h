@@ -642,8 +642,8 @@ public:
     void start_drawing();
     void finish_drawing(QPoint pos);
     void handle_pen_drawing_event(QTabletEvent* te);
-    void select_freehand_drawings(fz_rect rect);
-    void delete_freehand_drawings(fz_rect rect);
+    void select_freehand_drawings(AbsoluteRect rect);
+    void delete_freehand_drawings(AbsoluteRect rect);
     void handle_move_text_mark_forward(bool word);
     void handle_move_text_mark_backward(bool word);
     void handle_move_text_mark_down();

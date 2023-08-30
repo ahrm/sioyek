@@ -6256,9 +6256,6 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
         std::wstring link_text = doc()->get_pdf_link_text(pdf_link);
         auto [link_page, offset_x, offset_y] = parse_uri(mupdf_context, pdf_link.uri);
 
-        //std::vector<fz_rect> pdf_rect = pdf_link.rects;
-        //std::wstring link_text = doc()->get_text_in_rect(page, pdf_rect);
-        //link_text = clean_link_source_text(link_text);
         auto res = doc()->get_page_bib_with_reference(link_page - 1, link_text);
         if (res) {
             if (clean) {
@@ -6770,16 +6767,16 @@ void MainWidget::finish_drawing(QPoint pos) {
 }
 
 
-void MainWidget::delete_freehand_drawings(fz_rect rect) {
-    int page = -1;
-    fz_rect page_rect = doc()->absolute_to_page_rect(rect, &page);
-    doc()->delete_page_intersecting_drawings(page, rect, opengl_widget->visible_drawing_mask);
+void MainWidget::delete_freehand_drawings(AbsoluteRect rect) {
+    //fz_rect page_rect = doc()->absolute_to_page_rect(rect, &page);
+    DocumentRect page_rect = rect.to_document(doc());
+    doc()->delete_page_intersecting_drawings(page_rect.page, rect, opengl_widget->visible_drawing_mask);
     set_rect_select_mode(false);
     clear_selected_rect();
     invalidate_render();
 }
 
-void MainWidget::select_freehand_drawings(fz_rect rect) {
+void MainWidget::select_freehand_drawings(AbsoluteRect rect) {
     int page = -1;
     fz_rect page_rect = doc()->absolute_to_page_rect(rect, &page);
     doc()->get_page_intersecting_drawing_indices(page, rect, opengl_widget->visible_drawing_mask);
