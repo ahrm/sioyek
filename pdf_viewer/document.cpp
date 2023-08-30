@@ -1111,7 +1111,7 @@ void Document::load_page_dimensions(bool force_load_now) {
 }
 
 
-fz_rect Document::get_page_absolute_rect(int page) {
+AbsoluteRect Document::get_page_absolute_rect(int page) {
     std::lock_guard guard(page_dims_mutex);
 
     fz_rect res = { 0, 0, 1, 1 };
@@ -2161,14 +2161,14 @@ void Document::embed_annotations(std::wstring new_file_path) {
 
         std::deque<AbsoluteRect> selected_characters;
         std::vector<AbsoluteRect> merged_characters;
-        std::vector<AbsoluteRect> selected_characters_page_rects;
+        std::vector<PagelessDocumentRect> selected_characters_page_rects;
         std::wstring selected_text;
 
         get_text_selection(highlight.selection_begin, highlight.selection_end, true, selected_characters, selected_text);
         merge_selected_character_rects(selected_characters, merged_characters, highlight.type != '_');
 
         for (auto absrect : merged_characters) {
-            selected_characters_page_rects.push_back(absolute_to_page_rect(absrect, nullptr));
+            selected_characters_page_rects.push_back(absrect.to_document(this).rect);
         }
         //absolute_to_page_pos
         std::vector<fz_quad> selected_character_quads = quads_from_rects(selected_characters_page_rects);
@@ -2289,54 +2289,6 @@ void Document::embed_annotations(std::wstring new_file_path) {
         fz_drop_page(context, page);
     }
 }
-
-
-//void Document::add_highlight_annotation(const Highlight& highlight, const std::vector<fz_rect>& selected_rects) {
-//
-//
-//	int page_number = get_offset_page_number(highlight.selection_begin.y);
-//
-//	//todo: refactor this and other instances of this code into a function
-//	std::vector<fz_rect> merged_characters;
-//	std::vector<fz_rect> page_characters;
-//
-//	merge_selected_character_rects(selected_rects, merged_characters);
-//
-//	for (auto absrect : merged_characters) {
-//		page_characters.push_back(absolute_to_page_rect(absrect, nullptr));
-//	}
-//	std::vector<fz_quad> selected_character_quads = quads_from_rects(page_characters);
-//
-//	fz_page* page = fz_load_page(context, doc, page_number);
-//	pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
-//
-//	if (pdf_page) {
-//		pdf_annot* highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_HIGHLIGHT);
-//		float color[] = { 1.0f, 0.0f, 0.0f };
-//		color[0] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 0];
-//		color[1] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 1];
-//		color[2] = HIGHLIGHT_COLORS[(highlight.type - 'a') * 3 + 2];
-//
-//		pdf_set_annot_color(context, highlight_annot, 3, color);
-//		pdf_set_annot_quad_points(context, highlight_annot, selected_character_quads.size(), &selected_character_quads[0]);
-//		pdf_update_annot(context, highlight_annot);
-//		pdf_update_page(context, pdf_page);
-//	}
-//
-//	fz_drop_page(context, page);
-//}
-//
-//void Document::delete_highlight_annotation(const Highlight& highlight) {
-//
-//}
-//
-//void Document::add_bookmark_annotation(const BookMark& bookmark) {
-//
-//}
-//
-//void Document::delete_bookmark_annotation(const BookMark& bookmark) {
-//
-//}
 
 std::optional<std::wstring> Document::get_text_at_position(int page, float offset_x, float offset_y) {
     fz_stext_page* stext_page = get_stext_with_page_number(page);
@@ -2587,11 +2539,8 @@ std::vector<PdfLink> Document::get_links_in_page_rect(int page, AbsoluteRect rec
 
     std::vector<PdfLink> res;
     DocumentRect doc_rect = rect.to_document(this);
-    //int rect_page;
-    //fz_rect doc_rect = absolute_to_page_rect(rect, &rect_page);
 
     if (page != -1) {
-        //fz_link* links = get_page_links(page);
         const std::vector<PdfLink>& links = get_page_merged_pdf_links(page);
         for (auto link : links) {
             for (auto link_rect : link.rects) {
@@ -3375,31 +3324,6 @@ std::optional<std::pair<std::wstring, fz_rect>> Document::get_page_bib_with_refe
     }
 
     return {};
-}
-
-std::wstring Document::get_text_in_rect(int page, fz_rect doc_rect) {
-    fz_stext_page* stext_page = get_stext_with_page_number(page);
-    std::vector<fz_stext_char*> flat_chars;
-    get_flat_chars_from_stext_page(stext_page, flat_chars);
-
-    std::wstring res;
-
-    for (auto ch : flat_chars) {
-
-        fz_rect scaled_rect = fz_rect_from_quad(ch->quad);
-        float width = scaled_rect.x1 - scaled_rect.x0;
-        float height = scaled_rect.y1 - scaled_rect.y0;
-        scaled_rect.x0 += width / 4;
-        scaled_rect.x1 -= width / 4;
-        scaled_rect.y0 += height / 4;
-        scaled_rect.y1 -= height / 4;
-
-        if (rects_intersect(doc_rect, scaled_rect)) {
-            res.push_back(ch->c);
-        }
-
-    }
-    return res;
 }
 
 

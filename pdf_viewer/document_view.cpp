@@ -1495,7 +1495,6 @@ std::optional<AbsoluteRect> DocumentView::expand_selection(bool is_begin, bool w
     if (selected_character_rects.size() > 0) {
         int index = is_begin ? 0 : selected_character_rects.size() - 1;
 
-        //fz_rect page_rect = current_document->absolute_to_page_rect(selected_character_rects[index], &page);
         DocumentRect page_rect = selected_character_rects[index].to_document(current_document);
 
         if (page_rect.page >= 0) {

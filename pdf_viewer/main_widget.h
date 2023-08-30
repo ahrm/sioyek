@@ -305,7 +305,6 @@ public:
     // target of references, while this works most of the time, it is not perfect. So we keep a list of candidates
     // which the user can naviagte through using `next_preview` and `previous_preview` commands which move
     // `index_into_candidates` pointer to the next/previous candidate
-    //std::vector<std::pair<DocumentPos, fz_rect>> smart_view_candidates;
     std::vector<SmartViewCandidate> smart_view_candidates;
     int index_into_candidates = 0;
 
@@ -834,7 +833,6 @@ public:
     int get_pending_portal_index_at_pos(AbsoluteDocumentPos abspos);
     void update_pending_portal_indices_after_removed_indices(std::vector<int>& removed_indices);
     void close_overview();
-    //void fill_overview_pending_portal(std::wstring paper_name, std::wstring src_doc_path = L"", std::optional<fz_rect> source_rect = {});
     std::vector<Portal> get_ruler_portals();
     void handle_overview_to_ruler_portal();
     void handle_goto_ruler_portal(std::string tag="");

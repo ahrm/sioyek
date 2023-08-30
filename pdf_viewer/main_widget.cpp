@@ -5743,8 +5743,6 @@ void MainWidget::handle_mobile_selection() {
     fz_stext_char* character_under = get_closest_character_to_cusrsor(last_hold_point);
     if (character_under) {
         int current_page = get_current_page_number();
-        //fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad));
-        //fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad));
         AbsoluteRect centered_rect = DocumentRect(fz_rect_from_quad(character_under->quad), current_page).to_absolute(doc());
         main_document_view->selected_character_rects.push_back(centered_rect);
 
@@ -7921,7 +7919,7 @@ QJsonObject MainWidget::get_json_state() {
         std::optional<AbsoluteRect> selected_rect_abs = get_selected_rect_absolute();
         if (selected_rect_abs) {
             int selected_rect_page;
-            fz_rect  selected_rect_doc = get_selected_rect_document()->rect;
+            PagelessDocumentRect  selected_rect_doc = get_selected_rect_document()->rect;
 
             QJsonObject absrect_json;
             QJsonObject docrect_json;

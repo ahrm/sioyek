@@ -250,7 +250,7 @@ public:
     void get_visible_pages(float doc_y_range_begin, float doc_y_range_end, std::vector<int>& visible_pages);
     void load_page_dimensions(bool force_load_now);
     int num_pages();
-    fz_rect get_page_absolute_rect(int page);
+    AbsoluteRect get_page_absolute_rect(int page);
     DocumentPos absolute_to_page_pos(AbsoluteDocumentPos absolute_pos);
     DocumentPos absolute_to_page_pos_uncentered(AbsoluteDocumentPos absolute_pos);
     fz_rect absolute_to_page_rect(const fz_rect& absolute_rect, int* page);
@@ -265,7 +265,6 @@ public:
     std::vector<IndexedData> find_equation_with_string(std::wstring equation_name, int page_number);
     std::vector<IndexedData> find_generic_with_string(std::wstring equation_name, int page_number);
 
-    std::wstring get_text_in_rect(int page, fz_rect doc_rect);
     std::optional<std::wstring> get_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
     std::optional<std::wstring> get_reference_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y, std::pair<int, int>* out_range);
     std::optional<std::wstring> get_paper_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y);
