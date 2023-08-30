@@ -80,7 +80,6 @@ private:
     std::vector<int> flat_toc_pages;
     std::map<int, std::vector<AbsoluteRect>> cached_page_line_rects;
     std::map<int, std::vector<std::wstring>> cached_line_texts;
-    //std::map<int, std::vector<std::vector<fz_rect>>> cached_line_char_rects;
 
     bool super_fast_search_index_ready = false;
     // super fast index is the concatenated text of all pages along with two lists which map the
@@ -88,7 +87,7 @@ private:
     // super_fast_search config option is enabled
     std::wstring super_fast_search_index;
     std::vector<int> super_fast_search_index_pages;
-    std::vector<fz_rect> super_fast_search_rects;
+    std::vector<PagelessDocumentRect> super_fast_search_rects;
 
     // DEPRECATED a page offset which could manually be set to make the page numbers correct
     // on PDF files with page numbers that start at a number other than 1. This is now

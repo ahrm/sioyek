@@ -398,7 +398,7 @@ void PdfRenderer::run_search(int thread_index)
                 get_flat_chars_from_stext_page(stext_page, flat_chars, false);
                 std::wstring page_text;
                 std::vector<int> pages;
-                std::vector<fz_rect> rects;
+                std::vector<PagelessDocumentRect> rects;
                 flat_char_prism(flat_chars, i, page_text, pages, rects);
                 req.search_results_mutex->lock();
 

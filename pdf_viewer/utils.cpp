@@ -2460,7 +2460,7 @@ int get_status_bar_height() {
     }
 }
 
-void flat_char_prism(const std::vector<fz_stext_char*>& chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<fz_rect>& rects) {
+void flat_char_prism(const std::vector<fz_stext_char*>& chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<PagelessDocumentRect>& rects) {
     fz_stext_char* last_char = nullptr;
 
     for (int j = 0; j < chars.size(); j++) {
@@ -3683,7 +3683,7 @@ std::function<bool(const wchar_t&, const wchar_t&)> get_pred(SearchCaseSensitivi
 
 std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_search_index,
     const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<fz_rect>& super_fast_search_rects,
+    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
     std::wstring query,
     SearchCaseSensitivity case_sensitive,
     int begin_page,
@@ -3739,7 +3739,7 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
 }
 
 void search_text_with_index_single_page(const std::wstring& super_fast_search_index,
-    const std::vector<fz_rect>& super_fast_search_rects,
+    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
     std::wstring query,
     SearchCaseSensitivity case_sensitive,
     int page_number,
@@ -3775,7 +3775,7 @@ void search_text_with_index_single_page(const std::wstring& super_fast_search_in
 
 std::vector<SearchResult> search_regex_with_index(const std::wstring& super_fast_search_index,
     const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<fz_rect>& super_fast_search_rects,
+    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
     std::wstring query,
     SearchCaseSensitivity case_sensitive,
     int begin_page,
@@ -3796,7 +3796,7 @@ std::vector<SearchResult> search_regex_with_index(const std::wstring& super_fast
 
 void search_regex_with_index_(const std::wstring& super_fast_search_index,
     const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<fz_rect>& super_fast_search_rects,
+    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
     std::wstring query,
     SearchCaseSensitivity case_sensitive,
     int begin_page,

@@ -1321,7 +1321,7 @@ void Document::index_document(bool* invalid_flag) {
 
         std::wstring local_super_fast_search_index;
         std::vector<int> local_super_fast_search_pages;
-        std::vector<fz_rect> local_super_fast_search_rects;
+        std::vector<PagelessDocumentRect> local_super_fast_search_rects;
 
         std::vector<TocNode*> toc_stack;
         std::vector<TocNode*> top_level_nodes;
@@ -2501,7 +2501,7 @@ std::wstring Document::get_pdf_link_text(PdfLink link) {
     fz_stext_page* stext_page = get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
-    std::vector<fz_rect> flat_chars_rects;
+    std::vector<PagelessDocumentRect> flat_chars_rects;
     std::vector<int> flat_chars_pages;
     std::wstring flat_chars_text;
     flat_char_prism(flat_chars,page, flat_chars_text, flat_chars_pages, flat_chars_rects);

@@ -19,6 +19,7 @@
 // handle keyboard select when document is moved (either exit select mode or update the labels)
 // make text highlights/selection covert visible portal/bookmark icons 
 // maybe use only middle click to move portal/bookmark icons instead of requiring shift
+// if we click on a portal link while ruler mode is activated, it is still active in the destination document
 
 #include <iostream>
 #include <vector>
@@ -4102,12 +4103,25 @@ void MainWidget::toggle_statusbar() {
 
 void MainWidget::toggle_titlebar() {
 
-    Qt::WindowFlags window_flags = windowFlags();
-    if (window_flags.testFlag(Qt::FramelessWindowHint)) {
-        setWindowFlag(Qt::FramelessWindowHint, false);
+    Qt::WindowFlags flags = windowFlags();
+    if (flags.testFlag(Qt::WindowTitleHint)) {
+        flags |= Qt::CustomizeWindowHint;
+        flags &= ~Qt::WindowContextHelpButtonHint;
+        flags &= ~Qt::WindowSystemMenuHint;
+        flags &= ~Qt::WindowMinMaxButtonsHint;
+        flags &= ~Qt::WindowCloseButtonHint;
+        flags &= ~Qt::WindowTitleHint;
+        setWindowFlags(flags);
+
     }
     else {
-        setWindowFlag(Qt::FramelessWindowHint, true);
+        flags &= ~Qt::CustomizeWindowHint;
+        flags |= Qt::WindowContextHelpButtonHint;
+        flags |= Qt::WindowSystemMenuHint;
+        flags |= Qt::WindowMinMaxButtonsHint;
+        flags |= Qt::WindowCloseButtonHint;
+        flags |= Qt::WindowTitleHint;
+        setWindowFlags(flags);
     }
     show();
 }
