@@ -206,3 +206,7 @@ NormalizedWindowPos operator+(const NormalizedWindowPos& lhs, const fvec2& rhs) 
 WindowPos operator+(const WindowPos& lhs, const ivec2& rhs) {
     return WindowPos{ lhs.x + rhs[0], lhs.y + rhs[1]};
 }
+
+WindowRect DocumentRect::to_window(DocumentView* document_view) {
+    return WindowRect(document_view->document_to_window_irect(page, rect));
+}

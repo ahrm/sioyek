@@ -326,7 +326,7 @@ public:
     bool apply_password(const char* password);
     //std::optional<std::string> get_page_fastread_highlights(int page);
     std::vector<fz_rect> get_highlighted_character_masks(int page);
-    fz_rect get_page_rect_no_cache(int page);
+    PagelessDocumentRect get_page_rect_no_cache(int page);
     std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
     std::optional<PdfLink> get_link_in_pos(const DocumentPos& pos);
     std::vector<PdfLink> get_links_in_page_rect(int page, AbsoluteRect rect);

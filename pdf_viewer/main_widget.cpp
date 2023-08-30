@@ -16,6 +16,7 @@
 // don't create the helper opengl widget on startup if it is not needed
 // maybe add progressive search
 // decouple statusbar font size setting from the rest of the ui
+// handle keyboard select when document is moved (either exit select mode or update the labels)
 
 #include <iostream>
 #include <vector>
@@ -1721,8 +1722,8 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
             }
 
             int page = typing_location.value().page;
-            EnhancedRect<DocumentPos> character_rect = fz_rect_from_quad(typing_location.value().character->quad);
-            std::optional<EnhancedRect<DocumentPos>> wrong_rect = {};
+            PagelessDocumentRect character_rect = fz_rect_from_quad(typing_location.value().character->quad);
+            std::optional<PagelessDocumentRect> wrong_rect = {};
 
             if (typing_location.value().previous_character) {
                 wrong_rect = fz_rect_from_quad(typing_location.value().previous_character->character->quad);
@@ -3706,7 +3707,7 @@ void MainWidget::highlight_words() {
     }
 
     for (auto [rect, page] : word_rects_with_page) {
-        if (is_rect_visible(page, rect)) {
+        if (is_rect_visible(DocumentRect(rect, page))) {
             visible_word_rects.push_back(DocumentRect(rect, page));
         }
     }
@@ -3760,7 +3761,7 @@ std::optional<PagelessDocumentRect> MainWidget::get_tag_rect(std::string tag, st
     std::vector<PagelessDocumentRect> visible_word_rects;
 
     for (int i = 0; i < word_rects.size(); i++) {
-        if (is_rect_visible(page, word_rects[i])) {
+        if (is_rect_visible(DocumentRect(word_rects[i], page))) {
             visible_word_rects.push_back(word_rects[i]);
             if (word_chars != nullptr) {
                 visible_word_chars.push_back(all_word_chars[i]);
@@ -3801,19 +3802,17 @@ void MainWidget::on_new_paper_added(const std::wstring& file_path) {
         dst_view_state.book_state.zoom_level = 1;
         Document* new_doc = document_manager->get_document(file_path);
         new_doc->open(nullptr, false, "", true);
-        fz_rect first_page_rect = new_doc->get_page_rect_no_cache(0);
+        PagelessDocumentRect first_page_rect = new_doc->get_page_rect_no_cache(0);
         document_manager->free_document(new_doc);
-        float first_page_width = first_page_rect.x1 - first_page_rect.x0;
-        float first_page_height = first_page_rect.y1 - first_page_rect.y0;
 
         dst_view_state.document_checksum = checksummer->get_checksum(file_path);
 
         if (helper_document_view) {
             float helper_view_width = helper_document_view->get_view_width();
             float helper_view_height = helper_document_view->get_view_height();
-            float zoom_level = helper_view_width / first_page_width;
+            float zoom_level = helper_view_width / first_page_rect.width();
             dst_view_state.book_state.zoom_level = zoom_level;
-            dst_view_state.book_state.offset_y = -std::abs(-helper_view_height / zoom_level / 2 + first_page_height / 2);
+            dst_view_state.book_state.offset_y = -std::abs(-helper_view_height / zoom_level / 2 + first_page_rect.height() / 2);
         }
         complete_pending_link(dst_view_state);
         invalidate_render();
@@ -3962,7 +3961,6 @@ void MainWidget::move_visual_mark_next() {
 
     if (current_ruler_rect.rect.x1 <= 1.0f) {
         NormalizedWindowRect new_ruler_rect = move_visual_mark(1).to_window_normalized(main_document_view);
-        //fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
         if (new_ruler_rect.rect.x0 < -1) {
             float offset = (new_ruler_rect.rect.x0 + 0.9f) * main_window_width / 2;
             move_horizontal(-offset);
@@ -4016,7 +4014,6 @@ void MainWidget::move_visual_mark_prev() {
 
     if (current_ruler_rect.rect.x0 >= -1.0f) {
         NormalizedWindowRect new_ruler_rect = move_visual_mark(-1).to_window_normalized(main_document_view);
-        //fz_rect new_ruler_rect = main_document_view->absolute_to_window_rect(new_rect);
         if (new_ruler_rect.rect.x1 > 1) {
             float offset = (new_ruler_rect.rect.x1 - 0.9f) * main_window_width / 2;
             move_horizontal(-offset); //todo: fix this
@@ -4617,9 +4614,7 @@ bool CharacterAddress::next_page() {
 }
 
 float CharacterAddress::focus_offset() {
-
-    fz_rect character_rect = fz_rect_from_quad(character->quad);
-    return doc->document_to_absolute_y(page, character_rect.y0);
+    return doc->document_to_absolute_y(page, character->quad.ll.y);
 }
 
 void MainWidget::clear_selected_text() {
@@ -4631,8 +4626,8 @@ void MainWidget::clear_selected_text() {
 
 }
 
-bool MainWidget::is_rect_visible(int page, fz_rect rect) {
-    fz_irect window_rect = main_document_view->document_to_window_irect(page, rect);
+bool MainWidget::is_rect_visible(DocumentRect rect) {
+    WindowRect window_rect = rect.to_window(main_document_view);
     if (window_rect.x0 > 0 && window_rect.x1 < main_window_width && window_rect.y0 > 0 && window_rect.y1 < main_window_height) {
         return true;
     }
@@ -5746,6 +5741,7 @@ void MainWidget::handle_mobile_selection() {
     fz_stext_char* character_under = get_closest_character_to_cusrsor(last_hold_point);
     if (character_under) {
         int current_page = get_current_page_number();
+        //fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad));
         fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad));
         main_document_view->selected_character_rects.push_back(centered_rect);
 

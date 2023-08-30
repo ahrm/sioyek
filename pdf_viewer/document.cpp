@@ -822,7 +822,7 @@ PdfLink Document::merge_links(const std::vector<PdfLink>& links_to_merge) {
     PdfLink merged_link;
     merged_link.uri = links_to_merge[0].uri;
     merged_link.source_page = links_to_merge[0].source_page;
-    std::vector<EnhancedRect<DocumentPos>> rects;
+    std::vector<PagelessDocumentRect> rects;
     fz_rect current_rect = links_to_merge[0].rects[0];
     for (int i = 1; i < links_to_merge.size(); i++) {
         fz_rect new_rect = links_to_merge[i].rects[0];
@@ -2506,7 +2506,7 @@ std::vector<fz_rect> Document::get_highlighted_character_masks(int page) {
 }
 
 
-fz_rect Document::get_page_rect_no_cache(int page_number) {
+PagelessDocumentRect Document::get_page_rect_no_cache(int page_number) {
     fz_rect res{};
     fz_try(context) {
         int n_pages = num_pages();

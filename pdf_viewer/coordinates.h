@@ -72,34 +72,55 @@ struct NormalizedWindowRect;
 //    PagelessDocumentRect();
 //    PagelessDocumentRect(fz_rect r);
 //};
-template<typename T>
-struct EnhancedRect : public fz_rect {
+template<typename R, typename T>
+struct EnhancedRect : public R {
 
-    EnhancedRect() : fz_rect(fz_empty_rect) {
+    using S = decltype(R::x0);
+
+    EnhancedRect() {
+        R::x0 = 0;
+        R::y0 = 0;
+        R::x1 = 0;
+        R::y1 = 0;
+    }
+
+    EnhancedRect(R r) : R(r) {
 
     }
 
-    EnhancedRect(fz_rect r) : fz_rect(r) {
-
+    EnhancedRect(T top_left, T bottom_right) {
+        R::x0 = top_left.x;
+        R::y0 = top_left.y;
+        R::x1 = bottom_right.x;
+        R::y1 = bottom_right.y;
     }
 
     T top_left() {
-        return T{ x0, y0 };
+        return T{ R::x0, R::y0 };
     }
 
     T bottom_right() {
-        return T{ x1, y1 };
+        return T{ R::x1, R::y1 };
     }
 
-    float area() {
-        return (x1 - x0) * (y1 - y0);
+    S width() {
+        return R::x1 - R::x0;
+    }
+
+    S height() {
+        return R::y1 - R::y0;
+    }
+
+    S area() {
+        return (R::x1 - R::x0) * (R::y1 - R::y0);
     }
 };
 
-using PagelessDocumentRect = EnhancedRect<PagelessDocumentPos>;
+using PagelessDocumentRect = EnhancedRect<fz_rect, PagelessDocumentPos>;
+using WindowRect = EnhancedRect<fz_irect, WindowPos>;
 
 struct DocumentRect {
-    EnhancedRect<DocumentPos> rect;
+    EnhancedRect<fz_rect, DocumentPos> rect;
     int page;
 
     DocumentRect();
@@ -108,13 +129,14 @@ struct DocumentRect {
 
     AbsoluteRect to_absolute(Document* doc);
     NormalizedWindowRect to_window_normalized(DocumentView* document_view);
+    WindowRect to_window(DocumentView* document_view);
 
     DocumentPos top_left();
     DocumentPos bottom_right();
 };
 
 struct NormalizedWindowRect {
-    EnhancedRect<NormalizedWindowPos> rect;
+    EnhancedRect<fz_rect, NormalizedWindowPos> rect;
 
     NormalizedWindowRect(NormalizedWindowPos top_left, NormalizedWindowPos bottom_right);
     NormalizedWindowRect(fz_rect r);
@@ -123,7 +145,7 @@ struct NormalizedWindowRect {
 
 
 struct AbsoluteRect {
-    EnhancedRect<AbsoluteDocumentPos> rect;
+    EnhancedRect<fz_rect, AbsoluteDocumentPos> rect;
 
     AbsoluteRect(AbsoluteDocumentPos top_left, AbsoluteDocumentPos bottom_right);
     AbsoluteRect(fz_rect r);
