@@ -95,14 +95,6 @@ struct EnhancedRect : public R {
         R::y1 = bottom_right.y;
     }
 
-    T top_left() {
-        return T{ R::x0, R::y0 };
-    }
-
-    T bottom_right() {
-        return T{ R::x1, R::y1 };
-    }
-
     S width() {
         return R::x1 - R::x0;
     }
@@ -113,6 +105,29 @@ struct EnhancedRect : public R {
 
     S area() {
         return (R::x1 - R::x0) * (R::y1 - R::y0);
+    }
+
+    T center() {
+        return T{ (R::x0 + R::x1) / 2, (R::y0 + R::y1) / 2 };
+    }
+
+    T top_left() {
+        return T{ R::x0, R::y0 };
+    }
+
+    T bottom_right() {
+        return T{ R::x1, R::y1 };
+    }
+
+    void operator=(const R& r) {
+        R::x0 = r.x0;
+        R::y0 = r.y0;
+        R::x1 = r.x1;
+        R::y1 = r.y1;
+    }
+
+    bool contains(const T& point) const {
+        return (point.x >= R::x0 && point.x < R::x1 && point.y >= R::y0 && point.y < R::y1);
     }
 };
 
@@ -135,32 +150,21 @@ struct DocumentRect {
     DocumentPos bottom_right();
 };
 
-struct NormalizedWindowRect {
-    EnhancedRect<fz_rect, NormalizedWindowPos> rect;
-
+struct NormalizedWindowRect : public EnhancedRect<fz_rect, NormalizedWindowPos>  {
     NormalizedWindowRect(NormalizedWindowPos top_left, NormalizedWindowPos bottom_right);
     NormalizedWindowRect(fz_rect r);
     NormalizedWindowRect();
 };
 
 
-struct AbsoluteRect {
-    EnhancedRect<fz_rect, AbsoluteDocumentPos> rect;
-
+struct AbsoluteRect : public EnhancedRect<fz_rect, AbsoluteDocumentPos> {
     AbsoluteRect(AbsoluteDocumentPos top_left, AbsoluteDocumentPos bottom_right);
     AbsoluteRect(fz_rect r);
     AbsoluteRect();
-    DocumentRect to_document(Document* doc);
-    AbsoluteDocumentPos center();
-    AbsoluteDocumentPos top_left();
-    AbsoluteDocumentPos bottom_right();
+    DocumentRect to_document(Document* doc) const;
+
     NormalizedWindowRect to_window_normalized(DocumentView* document_view);
-    void operator=(const fz_rect& r);
-    bool contains(const AbsoluteDocumentPos& point);
 };
-
-
-
 
 //template<typename T, int dim>
 //operator+ (Vec<T, dim> a, Vec<T, dim> b) {

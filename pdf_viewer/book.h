@@ -97,7 +97,7 @@ struct Highlight : Annotation {
     std::wstring description;
     std::wstring text_annot;
     char type;
-    std::vector<fz_rect> highlight_rects;
+    std::vector<AbsoluteRect> highlight_rects;
 
     QJsonObject to_json(std::string doc_checksum) const;
     void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;

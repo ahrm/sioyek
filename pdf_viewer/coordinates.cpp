@@ -81,40 +81,33 @@ AbsoluteDocumentPos WindowPos::to_absolute(DocumentView* document_view) {
 NormalizedWindowPos WindowPos::to_window_normalized(DocumentView* document_view) {
     return document_view->window_to_normalized_window_pos(*this);
 }
-AbsoluteRect::AbsoluteRect(fz_rect r) : rect(r) {
+AbsoluteRect::AbsoluteRect(fz_rect r) : EnhancedRect<fz_rect, AbsoluteDocumentPos>(r) {
 }
 
 AbsoluteRect DocumentRect::to_absolute(Document* doc) {
     return AbsoluteRect{ doc->document_to_absolute_rect(page, rect) };
 }
 
-DocumentRect AbsoluteRect::to_document(Document* doc) {
+DocumentRect AbsoluteRect::to_document(Document* doc) const {
     int page = -1;
-    fz_rect document_rect = doc->absolute_to_page_rect(rect, &page);
+    fz_rect document_rect = doc->absolute_to_page_rect(*this, &page);
     return DocumentRect{ document_rect, page };
 }
 
-void AbsoluteRect::operator=(const fz_rect& r) {
-    rect = r;
-}
-
-AbsoluteDocumentPos AbsoluteRect::center() {
-    return AbsoluteDocumentPos { (rect.x0 + rect.x1) / 2.0f, (rect.y0 + rect.y1) / 2.0f};
-}
 
 int WindowPos::manhattan(const WindowPos& other) {
     return std::abs(x - other.x) + std::abs(y - other.y);
 }
 
 AbsoluteRect::AbsoluteRect(AbsoluteDocumentPos top_left, AbsoluteDocumentPos bottom_right) {
-    rect.x0 = top_left.x;
-    rect.y0 = top_left.y;
-    rect.x1 = bottom_right.x;
-    rect.y1 = bottom_right.y;
+    x0 = top_left.x;
+    y0 = top_left.y;
+    x1 = bottom_right.x;
+    y1 = bottom_right.y;
 }
 
 NormalizedWindowRect AbsoluteRect::to_window_normalized(DocumentView* document_view) {
-    return NormalizedWindowRect{ document_view->absolute_to_window_rect(rect) };
+    return NormalizedWindowRect{ document_view->absolute_to_window_rect(*this) };
 }
 
 NormalizedWindowRect DocumentRect::to_window_normalized(DocumentView* document_view) {
@@ -130,26 +123,18 @@ DocumentPos DocumentRect::bottom_right() {
 }
 
 NormalizedWindowRect::NormalizedWindowRect(NormalizedWindowPos top_left, NormalizedWindowPos bottom_right) {
-    rect.x0 = top_left.x;
-    rect.y0 = top_left.y;
-    rect.x1 = bottom_right.x;
-    rect.y1 = bottom_right.y;
+    x0 = top_left.x;
+    y0 = top_left.y;
+    x1 = bottom_right.x;
+    y1 = bottom_right.y;
 }
 
-NormalizedWindowRect::NormalizedWindowRect(fz_rect r) : rect(r) {
-
-}
-
-AbsoluteRect::AbsoluteRect() : rect(fz_empty_rect) {
+NormalizedWindowRect::NormalizedWindowRect(fz_rect r) : EnhancedRect<fz_rect, NormalizedWindowPos>(r) {
 
 }
 
-AbsoluteDocumentPos AbsoluteRect::top_left() {
-    return AbsoluteDocumentPos{ rect.x0, rect.y0 };
-}
+AbsoluteRect::AbsoluteRect() : EnhancedRect<fz_rect, AbsoluteDocumentPos>(fz_empty_rect) {
 
-AbsoluteDocumentPos AbsoluteRect::bottom_right() {
-    return AbsoluteDocumentPos{ rect.x1, rect.y1 };
 }
 
 DocumentRect::DocumentRect() : rect(fz_empty_rect), page(-1){
@@ -167,12 +152,11 @@ DocumentRect::DocumentRect(DocumentPos top_left, DocumentPos bottom_right, int p
     page = p;
 }
 
-NormalizedWindowRect::NormalizedWindowRect() : rect(fz_empty_rect) {
-
-}
-
-bool AbsoluteRect::contains(const AbsoluteDocumentPos& point) {
-    return fz_is_point_inside_rect(fz_point{ point.x, point.y }, rect);
+NormalizedWindowRect::NormalizedWindowRect() {
+    x0 = 0;
+    y0 = 0;
+    x1 = 0;
+    y1 = 0;
 }
 
 fvec2 operator-(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs) {

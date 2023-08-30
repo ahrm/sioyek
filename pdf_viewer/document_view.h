@@ -71,7 +71,7 @@ private:
 
 public:
     // list of selected characters (e.g. using mouse select) to be highlighted
-    std::deque<fz_rect> selected_character_rects;
+    std::deque<AbsoluteRect> selected_character_rects;
     // whether we should show a keyboard text selection marker at the end/begin of current
     // text selection (depending on `mark_end` value)
     bool should_show_text_selection_marker = false;
@@ -114,7 +114,7 @@ public:
     void set_offset_y(float new_offset_y);
     std::optional<PdfLink> get_link_in_pos(WindowPos pos);
     int get_highlight_index_in_pos(WindowPos pos);
-    void get_text_selection(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, std::deque<fz_rect>& selected_characters, std::wstring& text_selection);
+    void get_text_selection(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, std::deque<AbsoluteRect>& selected_characters, std::wstring& text_selection);
     void add_mark(char symbol);
     std::string add_bookmark(std::wstring desc);
     std::string add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
@@ -170,7 +170,7 @@ public:
     void fit_to_page_height_width_minimum(int statusbar_height);
     void persist(bool persist_drawings = false);
     std::wstring get_current_chapter_name();
-    std::optional<fz_rect> get_control_rect();
+    std::optional<AbsoluteRect> get_control_rect();
     std::optional<std::pair<int, int>> get_current_page_range();
     int get_current_chapter_index();
     void goto_chapter(int diff);
@@ -212,9 +212,9 @@ public:
     void set_text_mark(bool is_begin);
     void toggle_text_mark();
     void get_rects_from_ranges(int page_number, const std::vector<fz_rect>& line_char_rects, const std::vector<std::pair<int, int>>& ranges, std::vector<fz_rect>& out_rects);
-    std::optional<fz_rect> expand_selection(bool is_begin, bool word);
-    std::optional<fz_rect> shrink_selection(bool is_begin, bool word);
+    std::optional<AbsoluteRect> expand_selection(bool is_begin, bool word);
+    std::optional<AbsoluteRect> shrink_selection(bool is_begin, bool word);
     //std::optional<fz_rect> expand_selection_below();
 
-    std::deque<fz_rect>* get_selected_character_rects();
+    std::deque<AbsoluteRect>* get_selected_character_rects();
 };

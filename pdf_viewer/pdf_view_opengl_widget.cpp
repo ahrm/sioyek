@@ -405,9 +405,9 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     if (RULER_MODE && ruler_rect.has_value()) {
-        float gl_vertical_begin_pos = ruler_rect->rect.y0;
-        float ruler_left_pos = ruler_rect->rect.x0;
-        float ruler_right_pos = ruler_rect->rect.x1;
+        float gl_vertical_begin_pos = ruler_rect->y0;
+        float ruler_left_pos = ruler_rect->x0;
+        float ruler_right_pos = ruler_rect->x1;
         float top_bar_data[] = {
             -1, gl_vertical_begin_pos + bar_height,
             1, gl_vertical_begin_pos + bar_height,
@@ -459,7 +459,7 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWind
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
 
-    fz_rect window_rect = window_rect_.rect;
+    fz_rect window_rect = window_rect_;
 
     if (flags & HRF_UNDERLINE) {
         float underline_data[] = {
@@ -1194,7 +1194,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
     std::array<float, 3> text_highlight_color = cc3(DEFAULT_TEXT_HIGHLIGHT_COLOR);
     glUseProgram(shared_gl_objects.highlight_program);
     glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &text_highlight_color[0]);
-    std::vector<fz_rect> bounding_rects;
+    std::vector<AbsoluteRect> bounding_rects;
     merge_selected_character_rects(*document_view->get_selected_character_rects(), bounding_rects);
     //for (auto rect : selected_character_rects) {
     //	render_highlight_absolute(shared_gl_objects.highlight_program, rect);
@@ -1275,7 +1275,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
     }
 
     if (document_view->should_show_text_selection_marker) {
-        std::optional<fz_rect> control_character_rect = document_view->get_control_rect();
+        std::optional<AbsoluteRect> control_character_rect = document_view->get_control_rect();
         if (control_character_rect) {
             float rectangle_color[] = { 0.0f, 1.0f, 1.0f };
             glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
@@ -1391,7 +1391,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
                         NormalizedWindowRect bookmark_normalized_window_rect = bookmarks[i].get_rectangle().to_window_normalized(document_view);
 
-                        fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect.rect);
+                        fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
                         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
                         bookmark_icon.paint(painter, window_qrect);
@@ -2597,8 +2597,8 @@ void PdfViewOpenGLWidget::render_portal_rect(QPainter* painter, AbsoluteRect por
     //fz_rect portal_normalized_window_rect = document_view->absolute_to_window_rect(portal_rect);
     NormalizedWindowRect window_rect = portal_rect.to_window_normalized(document_view);
 
-    if (is_normalized_y_range_in_window(window_rect.rect.y0, window_rect.rect.y1)) {
-        fz_irect portal_window_rect = document_view->normalized_to_window_rect(window_rect.rect);
+    if (is_normalized_y_range_in_window(window_rect.y0, window_rect.y1)) {
+        fz_irect portal_window_rect = document_view->normalized_to_window_rect(window_rect);
         QRect window_qrect = QRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect));
         QColor fill_color = QColor(255, 0, 0);
         if (is_pending) {

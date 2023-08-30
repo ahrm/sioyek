@@ -17,6 +17,8 @@
 // maybe add progressive search
 // decouple statusbar font size setting from the rest of the ui
 // handle keyboard select when document is moved (either exit select mode or update the labels)
+// make text highlights/selection covert visible portal/bookmark icons 
+// maybe use only middle click to move portal/bookmark icons instead of requiring shift
 
 #include <iostream>
 #include <vector>
@@ -1994,7 +1996,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
                 // is pending rect command
                 if (pending_command_instance) {
-                    pending_command_instance->set_rect_requirement(selected_rectangle.rect);
+                    pending_command_instance->set_rect_requirement(selected_rectangle);
                     advance_command(std::move(pending_command_instance));
                 }
 
@@ -3243,11 +3245,11 @@ bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
     NormalizedWindowRect ruler_window_rect = main_document_view->get_ruler_window_rect().value();
     //main_document_view->absolute_to_window_pos(0, main_document_view->get_vertical_line_pos(), &window_x, &window_y);
     //if ((window_y < -thresh) || (window_y > thresh)) {
-    if (ruler_window_rect.rect.y0 < -1 || ruler_window_rect.rect.y1 > 1) {
+    if (ruler_window_rect.y0 < -1 || ruler_window_rect.y1 > 1) {
         main_document_view->goto_vertical_line_pos();
         return true;
     }
-    if ((moving_down && (ruler_window_rect.rect.y0 < -thresh)) || ((!moving_down) && (ruler_window_rect.rect.y1 > thresh))) {
+    if ((moving_down && (ruler_window_rect.y0 < -thresh)) || ((!moving_down) && (ruler_window_rect.y1 > thresh))) {
         main_document_view->goto_vertical_line_pos();
         //float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION;
         //main_document_view->move_absolute(0, -distance);
@@ -3959,22 +3961,22 @@ void MainWidget::move_visual_mark_next() {
         .to_window_normalized(main_document_view);
     //current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
 
-    if (current_ruler_rect.rect.x1 <= 1.0f) {
+    if (current_ruler_rect.x1 <= 1.0f) {
         NormalizedWindowRect new_ruler_rect = move_visual_mark(1).to_window_normalized(main_document_view);
-        if (new_ruler_rect.rect.x0 < -1) {
-            float offset = (new_ruler_rect.rect.x0 + 0.9f) * main_window_width / 2;
+        if (new_ruler_rect.x0 < -1) {
+            float offset = (new_ruler_rect.x0 + 0.9f) * main_window_width / 2;
             move_horizontal(-offset);
         }
 
-        if (new_ruler_rect.rect.x0 > 1) {
-            float offset = (new_ruler_rect.rect.x0 - 0.1f) * main_window_width / 2;
+        if (new_ruler_rect.x0 > 1) {
+            float offset = (new_ruler_rect.x0 - 0.1f) * main_window_width / 2;
             move_horizontal(-offset);
         }
 
         // if the new rect can fit entirely in the screen yet it is out of bounds,
         // move such that it is contained in the screen
-        if (new_ruler_rect.rect.x1 > 1 && (new_ruler_rect.rect.x1 - new_ruler_rect.rect.x0) < 1.9f) {
-            float offset = (new_ruler_rect.rect.x1 - 0.9f) * main_window_width / 2;
+        if (new_ruler_rect.x1 > 1 && (new_ruler_rect.x1 - new_ruler_rect.x0) < 1.9f) {
+            float offset = (new_ruler_rect.x1 - 0.9f) * main_window_width / 2;
             move_horizontal(-offset);
         }
 
@@ -3984,7 +3986,7 @@ void MainWidget::move_visual_mark_next() {
         WindowPos pos;
 
         pos.x = main_window_width;
-        pos.y = main_window_height - static_cast<int>((current_ruler_rect.rect.y1 + 1) * main_window_height / 2);
+        pos.y = main_window_height - static_cast<int>((current_ruler_rect.y1 + 1) * main_window_height / 2);
 
         AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
 
@@ -4012,10 +4014,10 @@ void MainWidget::move_visual_mark_prev() {
         .to_window_normalized(main_document_view);
     //current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
 
-    if (current_ruler_rect.rect.x0 >= -1.0f) {
+    if (current_ruler_rect.x0 >= -1.0f) {
         NormalizedWindowRect new_ruler_rect = move_visual_mark(-1).to_window_normalized(main_document_view);
-        if (new_ruler_rect.rect.x1 > 1) {
-            float offset = (new_ruler_rect.rect.x1 - 0.9f) * main_window_width / 2;
+        if (new_ruler_rect.x1 > 1) {
+            float offset = (new_ruler_rect.x1 - 0.9f) * main_window_width / 2;
             move_horizontal(-offset); //todo: fix this
         }
 
@@ -4124,15 +4126,15 @@ int MainWidget::get_page_intersecting_rect_index(DocumentRect r) {
     AbsoluteRect abs_rect = r.to_absolute(doc());
     //rect = doc()->document_to_absolute_rect(page, rect);
 
-    if (abs_rect.rect.y0 > abs_rect.rect.y1) {
-        std::swap(abs_rect.rect.y0, abs_rect.rect.y1);
+    if (abs_rect.y0 > abs_rect.y1) {
+        std::swap(abs_rect.y0, abs_rect.y1);
     }
 
     float max_area = -1;
     int selected_index = -1;
 
     for (int i = 0; i < line_rects.size(); i++) {
-        float area = rect_area(fz_intersect_rect(line_rects[i].rect, abs_rect.rect));
+        float area = rect_area(fz_intersect_rect(line_rects[i], abs_rect));
         if (area > max_area * 2) {
             max_area = area;
             selected_index = i;
@@ -5742,17 +5744,9 @@ void MainWidget::handle_mobile_selection() {
     if (character_under) {
         int current_page = get_current_page_number();
         //fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad));
-        fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad));
+        //fz_rect centered_rect = doc()->document_to_absolute_rect(current_page, fz_rect_from_quad(character_under->quad));
+        AbsoluteRect centered_rect = DocumentRect(fz_rect_from_quad(character_under->quad), current_page).to_absolute(doc());
         main_document_view->selected_character_rects.push_back(centered_rect);
-
-        DocumentPos begin_document_pos, end_document_pos;
-
-        begin_document_pos.x = centered_rect.x0;
-        begin_document_pos.y = centered_rect.y0;
-        begin_document_pos.page = current_page;
-        end_document_pos.x = centered_rect.x1;
-        end_document_pos.y = centered_rect.y1;
-        end_document_pos.page = current_page;
 
         AbsoluteDocumentPos begin_abspos;
         begin_abspos.x = centered_rect.x0;
@@ -5762,15 +5756,9 @@ void MainWidget::handle_mobile_selection() {
         AbsoluteDocumentPos end_abspos;
         end_abspos.x = centered_rect.x1;
         end_abspos.y = (centered_rect.y1 + centered_rect.y0) / 2;
-        //end_abspos.y = rect.y1;
 
-        WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(begin_document_pos);
-        WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(end_document_pos);
-
-        //std::deque<fz_rect> selection_chars;
-        //std::wstring selection_text;
-        //doc()->get_text_selection(begin_abspos, end_abspos, false, selection_chars, selection_text);
-        //qDebug() << QString::fromStdWString(selection_text);
+        WindowPos begin_window_pos = begin_abspos.to_window(main_document_view);
+        WindowPos end_window_pos = end_abspos.to_window(main_document_view);
 
         int selection_indicator_size = 40;
         QPoint begin_pos;
@@ -6512,7 +6500,7 @@ void MainWidget::handle_undo_marked_data() {
 }
 
 void MainWidget::handle_add_marked_data() {
-    std::deque<fz_rect> local_selected_rects;
+    std::deque<AbsoluteRect> local_selected_rects;
     std::wstring local_selected_text;
 
     main_document_view->get_text_selection(selection_begin,
@@ -6521,18 +6509,17 @@ void MainWidget::handle_add_marked_data() {
         local_selected_rects,
         local_selected_text);
     if (local_selected_rects.size() > 0) {
-        int page = -1;
 
-        fz_rect begin_docrect = doc()->absolute_to_page_rect(local_selected_rects[0], &page);
-        fz_rect end_docrect = doc()->absolute_to_page_rect(local_selected_rects[local_selected_rects.size() - 1], &page);
+        DocumentRect begin_docrect = local_selected_rects[0].to_document(doc());
+        DocumentRect end_docrect = local_selected_rects[local_selected_rects.size() - 1].to_document(doc());
 
         MarkedDataRect begin_rect;
-        begin_rect.rect = DocumentRect(begin_docrect, page);
+        begin_rect.rect = begin_docrect;
         begin_rect.type = 0;
         opengl_widget->marked_data_rects.push_back(begin_rect);
 
         MarkedDataRect end_rect;
-        end_rect.rect = DocumentRect(end_docrect, page);
+        end_rect.rect = end_docrect;
         end_rect.type = 1;
         opengl_widget->marked_data_rects.push_back(end_rect);
 
@@ -6863,7 +6850,7 @@ void MainWidget::handle_drawing_ui_visibilty() {
 
 void MainWidget::move_selection_end(bool expand, bool word) {
     selected_text_is_dirty = true;
-    std::optional<fz_rect> new_end_ = {};
+    std::optional<AbsoluteRect> new_end_ = {};
 
     if (expand) {
         new_end_ = main_document_view->expand_selection(false, word);
@@ -6873,8 +6860,8 @@ void MainWidget::move_selection_end(bool expand, bool word) {
     }
 
     if (new_end_) {
-        fz_rect new_end = new_end_.value();
-        selection_end = AbsoluteDocumentPos{ (new_end.x0 + new_end.x1) / 2,   (new_end.y0 + new_end.y1) / 2 };
+        AbsoluteRect new_end = new_end_.value();
+        selection_end = new_end.center();
     }
 
 }
@@ -6882,7 +6869,7 @@ void MainWidget::move_selection_end(bool expand, bool word) {
 
 void MainWidget::move_selection_begin(bool expand, bool word) {
     selected_text_is_dirty = true;
-    std::optional<fz_rect> new_begin_ = {};
+    std::optional<AbsoluteRect> new_begin_ = {};
     if (expand) {
         new_begin_ = main_document_view->expand_selection(true, word);
     }
@@ -6891,8 +6878,8 @@ void MainWidget::move_selection_begin(bool expand, bool word) {
     }
 
     if (new_begin_) {
-        fz_rect new_begin = new_begin_.value();
-        selection_begin = AbsoluteDocumentPos{ (new_begin.x0 + new_begin.x1) / 2,   (new_begin.y0 + new_begin.y1) / 2 };
+        AbsoluteRect new_begin = new_begin_.value();
+        selection_begin = new_begin.center();
     }
 }
 
@@ -6925,7 +6912,7 @@ void MainWidget::handle_move_text_mark_backward(bool word) {
 
 const std::wstring& MainWidget::get_selected_text() {
     if (selected_text_is_dirty) {
-        std::deque<fz_rect> dummy_rects;
+        std::deque<AbsoluteRect> dummy_rects;
         main_document_view->get_text_selection(selection_begin,
             selection_end,
             is_word_selecting,
@@ -6939,26 +6926,26 @@ const std::wstring& MainWidget::get_selected_text() {
 }
 
 void MainWidget::expand_selection_vertical(bool begin, bool below) {
-    int page;
-    const std::deque<fz_rect>& scr = main_document_view->selected_character_rects;
+    const std::deque<AbsoluteRect>& scr = main_document_view->selected_character_rects;
     if (scr.size() == 0) return;
     int index = (begin) ? 0 : scr.size() - 1;
     int other_index = (begin) ? scr.size() - 1 : 0;
 
-    fz_rect page_rect = doc()->absolute_to_page_rect(scr[index], &page);
-    fz_rect other_rect = scr[other_index];
+    //fz_rect page_rect = doc()->absolute_to_page_rect(scr[index], &page);
+    DocumentRect page_rect = scr[index].to_document(doc());
+    AbsoluteRect other_rect = scr[other_index];
 
-    if (page >= 0) {
-        fz_stext_page* stext_page = doc()->get_stext_with_page_number(page);
-        std::optional<fz_rect> next_rect = get_rect_vertically(below, stext_page, page_rect);
+    if (page_rect.page >= 0) {
+        fz_stext_page* stext_page = doc()->get_stext_with_page_number(page_rect.page);
+        std::optional<DocumentRect> next_rect = get_rect_vertically(below, stext_page, page_rect);
         if (next_rect) {
-            fz_rect absrect = doc()->document_to_absolute_rect(page, next_rect.value());
+            AbsoluteRect absrect = next_rect->to_absolute(doc());
             if (begin) {
-                auto target = AbsoluteDocumentPos{ (absrect.x0 + absrect.x1) / 2,   (absrect.y0 + absrect.y1) / 2 };
+                auto target = absrect.center();
                 selection_begin = target;
             }
             else {
-                auto target = AbsoluteDocumentPos{ (absrect.x0 + absrect.x1) / 2,   (absrect.y0 + absrect.y1) / 2 };
+                auto target = absrect.center();
                 selection_end = target;
             }
             main_document_view->get_text_selection(selection_begin,
@@ -7663,7 +7650,7 @@ std::vector<Portal> MainWidget::get_ruler_portals() {
     std::optional<AbsoluteRect> ruler_rect_ = main_document_view->get_ruler_rect();
     if (ruler_rect_) {
         AbsoluteRect ruler_rect = ruler_rect_.value();
-        return doc()->get_intersecting_visible_portals(ruler_rect.rect.y0, ruler_rect.rect.y1);
+        return doc()->get_intersecting_visible_portals(ruler_rect.y0, ruler_rect.y1);
     }
     return res;
 }
@@ -7717,7 +7704,7 @@ void MainWidget::show_touch_buttons(std::vector<std::wstring> buttons, std::vect
 
 bool MainWidget::is_pos_inside_selected_text(AbsoluteDocumentPos pos) {
     for (auto rect : main_document_view->selected_character_rects) {
-        if (fz_is_point_inside_rect(fz_point{ pos.x, pos.y }, rect)) {
+        if (rect.contains(pos)) {
             return true;
         }
     }
@@ -7947,10 +7934,10 @@ QJsonObject MainWidget::get_json_state() {
             QJsonObject absrect_json;
             QJsonObject docrect_json;
 
-            absrect_json["x0"] = selected_rect_abs->rect.x0;
-            absrect_json["x1"] = selected_rect_abs->rect.x1;
-            absrect_json["y0"] = selected_rect_abs->rect.y0;
-            absrect_json["y1"] = selected_rect_abs->rect.y1;
+            absrect_json["x0"] = selected_rect_abs->x0;
+            absrect_json["x1"] = selected_rect_abs->x1;
+            absrect_json["y0"] = selected_rect_abs->y0;
+            absrect_json["y1"] = selected_rect_abs->y1;
 
             docrect_json["x0"] = selected_rect_doc.x0;
             docrect_json["x1"] = selected_rect_doc.x1;
@@ -8006,7 +7993,7 @@ QJsonObject MainWidget::get_json_state() {
                 int source_page = -1;
                 DocumentRect source_page_rect = source_absolute_rect.to_document(doc());
 
-                candid_json_object["source_absolute_rect"] = rect_to_json(source_absolute_rect.rect);
+                candid_json_object["source_absolute_rect"] = rect_to_json(source_absolute_rect);
                 candid_json_object["source_document_rect"] = rect_to_json(source_page_rect.rect);
                 candid_json_object["source_page"] = source_page;
                 candid_json_object["source_text"] = QString::fromStdWString(candid.source_text);
@@ -8162,7 +8149,7 @@ void MainWidget::handle_action_in_menu(std::wstring action) {
 
 std::wstring MainWidget::handle_synctex_to_ruler() {
     std::optional<NormalizedWindowRect> ruler_rect = main_document_view->get_ruler_window_rect();
-    fz_irect ruler_irect = main_document_view->normalized_to_window_rect(ruler_rect->rect);
+    fz_irect ruler_irect = main_document_view->normalized_to_window_rect(ruler_rect.value());
 
     WindowPos mid_window_pos;
     mid_window_pos.x = (ruler_irect.x0 + ruler_irect.x1) / 2;

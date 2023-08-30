@@ -269,12 +269,12 @@ void Document::fill_index_highlight_rects(int highlight_index, fz_context* threa
     if (thread_document == nullptr) thread_document = doc;
 
     const Highlight highlight = highlights[highlight_index];
-    std::deque<fz_rect> highlight_rects;
-    std::vector<fz_rect> merged_rects;
+    std::deque<AbsoluteRect> highlight_rects;
+    std::vector<AbsoluteRect> merged_rects;
     std::wstring highlight_text;
     get_text_selection(thread_context, highlight.selection_begin, highlight.selection_end, true, highlight_rects, highlight_text, thread_document);
     merge_selected_character_rects(highlight_rects, merged_rects, highlights[highlight_index].type != '_');
-    highlights[highlight_index].highlight_rects = std::move(merged_rects);
+    highlights[highlight_index].highlight_rects = std::move((std::vector<AbsoluteRect>&)merged_rects);
 }
 
 void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
@@ -289,8 +289,8 @@ void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
 
 
 std::string Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
-    std::deque<fz_rect> selected_characters;
-    std::vector<fz_rect> merged_rects;
+    std::deque<AbsoluteRect> selected_characters;
+    std::vector<AbsoluteRect> merged_rects;
     std::wstring selected_text;
     get_text_selection(selection_begin, selection_end, true, selected_characters, selected_text);
 
@@ -298,7 +298,7 @@ std::string Document::add_highlight(const std::wstring& annot, AbsoluteDocumentP
         type = 'a';
     }
 
-    merge_selected_character_rects(selected_characters, merged_rects);
+    merge_selected_character_rects<AbsoluteRect>(selected_characters, merged_rects);
     Highlight highlight;
     highlight.description = selected_text;
     highlight.text_annot = annot;
@@ -327,7 +327,7 @@ std::string Document::add_highlight(const std::wstring& annot, AbsoluteDocumentP
 }
 
 std::string Document::add_highlight(const std::wstring& desc,
-    const std::vector<fz_rect>& highlight_rects,
+    const std::vector<AbsoluteRect>& highlight_rects,
     AbsoluteDocumentPos selection_begin,
     AbsoluteDocumentPos selection_end,
     char type)
@@ -1800,14 +1800,14 @@ fz_pixmap* Document::get_small_pixmap(int page) {
 void Document::get_text_selection(AbsoluteDocumentPos selection_begin,
     AbsoluteDocumentPos selection_end,
     bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
-    std::deque<fz_rect>& selected_characters,
+    std::deque<AbsoluteRect>& selected_characters,
     std::wstring& selected_text) {
     get_text_selection(context, selection_begin, selection_end, is_word_selection, selected_characters, selected_text);
 }
 void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection_begin,
     AbsoluteDocumentPos selection_end,
     bool is_word_selection,
-    std::deque<fz_rect>& selected_characters,
+    std::deque<AbsoluteRect>& selected_characters,
     std::wstring& selected_text,
     fz_document* doc_) {
 
@@ -2159,9 +2159,9 @@ void Document::embed_annotations(std::wstring new_file_path) {
     for (auto highlight : doc_highlights) {
         int page_number = get_offset_page_number(highlight.selection_begin.y);
 
-        std::deque<fz_rect> selected_characters;
-        std::vector<fz_rect> merged_characters;
-        std::vector<fz_rect> selected_characters_page_rects;
+        std::deque<AbsoluteRect> selected_characters;
+        std::vector<AbsoluteRect> merged_characters;
+        std::vector<AbsoluteRect> selected_characters_page_rects;
         std::wstring selected_text;
 
         get_text_selection(highlight.selection_begin, highlight.selection_end, true, selected_characters, selected_text);
@@ -4250,17 +4250,16 @@ PageIterator Document::page_iterator(int page_number) {
 
 void Document::get_page_text_and_line_rects_after_rect(int page_number, AbsoluteRect after_, std::wstring& text, std::vector<fz_rect>& line_rects){
     bool begun = false;
-    fz_rect after = after_.rect;
-    after = absolute_to_page_rect(after, nullptr);
-    after.y0 = after.y1 = (after.y0 + after.y1) / 2;
+    DocumentRect after = after_.to_document(this);
+    after.rect.y0 = after.rect.y1 = (after.rect.y0 + after.rect.y1) / 2;
 
-    if (after == fz_empty_rect) {
+    if (after.rect == fz_empty_rect) {
         begun = true;
     }
 
     for (auto [block, line, chr] : page_iterator(page_number)) {
 
-        if (rects_intersect(after, line->bbox)) {
+        if (rects_intersect(after.rect, line->bbox)) {
             begun = true;
         }
 

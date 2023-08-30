@@ -172,7 +172,7 @@ public:
     void undo_pending_bookmark(int index);
     void add_freetext_bookmark(const std::wstring& desc, fz_rect absrect);
     void add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color, float font_size = -1);
-    std::string add_highlight(const std::wstring& desc, const std::vector<fz_rect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
+    std::string add_highlight(const std::wstring& desc, const std::vector<AbsoluteRect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     std::string add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     void delete_highlight_with_index(int index);
     void delete_highlight(Highlight hl);
@@ -288,12 +288,12 @@ public:
     void get_text_selection(AbsoluteDocumentPos selection_begin,
         AbsoluteDocumentPos selection_end,
         bool is_word_selection, // when in word select mode, we select entire words even if the range only partially includes the word
-        std::deque<fz_rect>& selected_characters,
+        std::deque<AbsoluteRect>& selected_characters,
         std::wstring& selected_text);
     void get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection_begin,
         AbsoluteDocumentPos selection_end,
         bool is_word_selection,
-        std::deque<fz_rect>& selected_characters,
+        std::deque<AbsoluteRect>& selected_characters,
         std::wstring& selected_text,
         fz_document* doc = nullptr);
 

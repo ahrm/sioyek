@@ -894,6 +894,7 @@ bool is_consequtive(fz_rect rect1, fz_rect rect2) {
     return false;
 
 }
+
 fz_rect bound_rects(const std::vector<fz_rect>& rects) {
     // find the bounding box of some rects
 
@@ -924,54 +925,6 @@ fz_rect bound_rects(const std::vector<fz_rect>& rects) {
 
 }
 
-void merge_selected_character_rects(const std::deque<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects, bool touch_vertically) {
-    /*
-        This function merges the bounding boxes of all selected characters into large line chunks.
-    */
-
-    if (selected_character_rects.size() == 0) {
-        return;
-    }
-
-    std::vector<fz_rect> line_rects;
-
-    fz_rect last_rect = selected_character_rects[0];
-    line_rects.push_back(selected_character_rects[0]);
-
-    for (size_t i = 1; i < selected_character_rects.size(); i++) {
-        if (is_consequtive(last_rect, selected_character_rects[i])) {
-            last_rect = selected_character_rects[i];
-            line_rects.push_back(selected_character_rects[i]);
-        }
-        else {
-            fz_rect bounding_rect = bound_rects(line_rects);
-            resulting_rects.push_back(bounding_rect);
-            line_rects.clear();
-            last_rect = selected_character_rects[i];
-            line_rects.push_back(selected_character_rects[i]);
-        }
-    }
-
-    if (line_rects.size() > 0) {
-        fz_rect bounding_rect = bound_rects(line_rects);
-        resulting_rects.push_back(bounding_rect);
-    }
-
-    // avoid overlapping rects
-    for (size_t i = 0; i < resulting_rects.size() - 1; i++) {
-        // we don't need to do this across columns of document
-        float height = std::abs(resulting_rects[i].y1 - resulting_rects[i].y0);
-        if (std::abs(resulting_rects[i + 1].y0 - resulting_rects[i].y0) < (0.5 * height)) {
-            continue;
-        }
-        if (touch_vertically) {
-            if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1)) {
-                resulting_rects[i + 1].y0 = resulting_rects[i].y1;
-            }
-        }
-    }
-
-}
 
 int next_path_separator_position(const std::wstring& path) {
     wchar_t sep1 = '/';
@@ -2112,13 +2065,6 @@ fz_quad quad_from_rect(fz_rect r)
     return q;
 }
 
-std::vector<fz_quad> quads_from_rects(const std::vector<fz_rect>& rects) {
-    std::vector<fz_quad> res;
-    for (auto rect : rects) {
-        res.push_back(quad_from_rect(rect));
-    }
-    return res;
-}
 
 std::wifstream open_wifstream(const std::wstring& file_name) {
 
@@ -3128,31 +3074,31 @@ bool is_new_word(fz_stext_char* old_char, fz_stext_char* new_char) {
     return std::abs(new_char->quad.ll.x - old_char->quad.ll.x) > 5 * std::abs(old_char->quad.lr.x - old_char->quad.ll.x);
 }
 
-std::optional<fz_rect> get_rect_vertically(bool below, fz_stext_page* page, fz_rect page_rect) {
+std::optional<DocumentRect> get_rect_vertically(bool below, fz_stext_page* page, DocumentRect page_rect) {
     std::vector<fz_stext_char*> chars;
     get_flat_chars_from_stext_page(page, chars);
     float closest_distance = 100000;
-    std::optional<fz_rect> closest_rect = {};
-    float page_rect_x = (page_rect.x0 + page_rect.x1) / 2;
+    std::optional<DocumentRect> closest_rect = {};
+    float page_rect_x = (page_rect.rect.x0 + page_rect.rect.x1) / 2;
 
     for (auto ch : chars) {
         float h = std::abs(ch->quad.ul.y - ch->quad.ll.y);
 
         if (below) {
-            if (ch->quad.ll.y > (page_rect.y1 + h / 2)) {
-                float distance = std::abs(ch->quad.lr.y - page_rect.y1) + std::abs(ch->quad.lr.x - page_rect_x);
+            if (ch->quad.ll.y > (page_rect.rect.y1 + h / 2)) {
+                float distance = std::abs(ch->quad.lr.y - page_rect.rect.y1) + std::abs(ch->quad.lr.x - page_rect_x);
                 if (distance < closest_distance) {
                     closest_distance = distance;
-                    closest_rect = fz_rect_from_quad(ch->quad);
+                    closest_rect = DocumentRect(fz_rect_from_quad(ch->quad), page_rect.page);
                 }
             }
         }
         else {
-            if (ch->quad.ul.y < (page_rect.y0 - h / 2)) {
-                float distance = std::abs(ch->quad.lr.y - page_rect.y1) + std::abs(ch->quad.lr.x - page_rect_x);
+            if (ch->quad.ul.y < (page_rect.rect.y0 - h / 2)) {
+                float distance = std::abs(ch->quad.lr.y - page_rect.rect.y1) + std::abs(ch->quad.lr.x - page_rect_x);
                 if (distance < closest_distance) {
                     closest_distance = distance;
-                    closest_rect = fz_rect_from_quad(ch->quad);
+                    closest_rect = DocumentRect(fz_rect_from_quad(ch->quad), page_rect.page);
                 }
             }
         }
@@ -3160,10 +3106,10 @@ std::optional<fz_rect> get_rect_vertically(bool below, fz_stext_page* page, fz_r
     return closest_rect;
 }
 
-std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page, fz_rect page_rect) {
+std::optional<DocumentRect> find_shrinking_rect_word(bool before, fz_stext_page* page, DocumentRect rect){
     bool found = false;
-    std::optional<fz_rect> last_before_space_rect = {};
-    std::optional<fz_rect> before_rect = {};
+    std::optional<DocumentRect> last_before_space_rect = {};
+    std::optional<DocumentRect> before_rect = {};
     fz_stext_char* old_char = nullptr;
 
 
@@ -3174,7 +3120,7 @@ std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page
         if (block->type == FZ_STEXT_BLOCK_TEXT) {
             LL_ITER(line, block->u.t.first_line) {
                 LL_ITER(ch, line->first_char) {
-                    fz_rect cr = fz_rect_from_quad(ch->quad);
+                    DocumentRect cr = DocumentRect(fz_rect_from_quad(ch->quad), rect.page);
                     if (should_return_next_char) {
                         return cr;
                     }
@@ -3188,7 +3134,7 @@ std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page
                             should_return_next_char = true;
                         }
                     }
-                    if (are_rects_same(cr, page_rect)) {
+                    if (are_rects_same(cr.rect, rect.rect)) {
                         found = true;
                     }
                     before_rect = cr;
@@ -3200,14 +3146,14 @@ std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page
     return {};
 }
 
-std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, fz_rect page_rect) {
-    std::vector<fz_rect> res;
+std::vector<DocumentRect> find_expanding_rect_word(bool before, fz_stext_page* page, DocumentRect page_rect) {
+    std::vector<DocumentRect> res;
     std::vector<fz_stext_char*> chars;
     get_flat_chars_from_stext_page(page, chars);
     int index = -1;
     for (int i = 0; i < chars.size(); i++) {
-        fz_rect cr = fz_rect_from_quad(chars[i]->quad);
-        if (are_rects_same(cr, page_rect)) {
+        DocumentRect cr = DocumentRect(fz_rect_from_quad(chars[i]->quad), page_rect.page);
+        if (are_rects_same(cr.rect, page_rect.rect)) {
             index = i;
             break;
         }
@@ -3219,7 +3165,7 @@ std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, 
         if (before) {
             index--;
             while (index >= 0) {
-                res.push_back(fz_rect_from_quad(chars[index]->quad));
+                res.push_back(DocumentRect(fz_rect_from_quad(chars[index]->quad), page_rect.page));
                 //if (chars[index]->c == ' ' || chars[index]->c == '\n') {
                 if (is_new_word(chars[prev_index], chars[index])) {
                     if (std::abs(original_index - index) > 1) {
@@ -3234,7 +3180,7 @@ std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, 
         else {
             index++;
             while (index < chars.size()) {
-                res.push_back(fz_rect_from_quad(chars[index]->quad));
+                res.push_back(DocumentRect(fz_rect_from_quad(chars[index]->quad), page_rect.page));
                 if (is_new_word(chars[prev_index], chars[index])) {
                     if (std::abs(original_index - index) > 1) {
                         res.pop_back();
@@ -3302,19 +3248,19 @@ std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, 
 //	return {};
 //}
 
-std::optional<fz_rect> find_expanding_rect(bool before, fz_stext_page* page, fz_rect page_rect) {
+std::optional<DocumentRect> find_expanding_rect(bool before, fz_stext_page* page, DocumentRect page_rect) {
     bool found = false;
-    std::optional<fz_rect> before_rect = {};
+    std::optional<DocumentRect> before_rect = {};
 
     LL_ITER(block, page->first_block) {
         if (block->type == FZ_STEXT_BLOCK_TEXT) {
             LL_ITER(line, block->u.t.first_line) {
                 LL_ITER(ch, line->first_char) {
-                    fz_rect cr = fz_rect_from_quad(ch->quad);
+                    DocumentRect cr = DocumentRect(fz_rect_from_quad(ch->quad), page_rect.page);
                     if (found) {
                         return cr;
                     }
-                    if (are_rects_same(cr, page_rect)) {
+                    if (are_rects_same(cr.rect, page_rect.rect)) {
                         if (before) {
                             return before_rect;
                         }

@@ -121,7 +121,7 @@ QStandardItemModel* get_model_from_toc(const std::vector<TocNode*>& roots);
 TocNode* get_toc_node_from_indices(const std::vector<TocNode*>& roots, const std::vector<int>& indices);
 
 fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_char*> flat_chars, fz_point document_point, int* location_index);
-void merge_selected_character_rects(const std::deque<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects, bool touch_vertically = true);
+//void merge_selected_character_rects(const std::deque<fz_rect>& selected_character_rects, std::vector<fz_rect>& resulting_rects, bool touch_vertically = true);
 void split_key_string(std::wstring haystack, const std::wstring& needle, std::vector<std::wstring>& res);
 void run_command(std::wstring command, QStringList parameters, bool wait = true);
 
@@ -289,11 +289,11 @@ bool load_npy(QString resource_name, std::vector<float>& output, int* out_rows, 
 std::wstring clean_bib_item(std::wstring bib_item);
 std::wstring clean_link_source_text(std::wstring link_source_text);
 std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vector<FreehandDrawingPoint>& points);
-std::optional<fz_rect> find_expanding_rect(bool before, fz_stext_page* page, fz_rect page_rect);
-std::vector<fz_rect> find_expanding_rect_word(bool before, fz_stext_page* page, fz_rect page_rect);
-std::optional<fz_rect> find_shrinking_rect_word(bool before, fz_stext_page* page, fz_rect page_rect);
+std::optional<DocumentRect> find_expanding_rect(bool before, fz_stext_page* page, DocumentRect page_rect);
+std::vector<DocumentRect> find_expanding_rect_word(bool before, fz_stext_page* page, DocumentRect page_rect);
+std::optional<DocumentRect> find_shrinking_rect_word(bool before, fz_stext_page* page, DocumentRect page_rect);
 bool are_rects_same(fz_rect r1, fz_rect r2);
-std::optional<fz_rect> get_rect_vertically(bool below, fz_stext_page* page, fz_rect page_rect);
+std::optional<DocumentRect> get_rect_vertically(bool below, fz_stext_page* page, DocumentRect page_rect);
 
 QStringList extract_paper_data_from_json_response(QJsonValue json_object, const std::vector<QString>& path);
 QStringList extract_paper_string_from_json_response(QJsonObject json_object, std::wstring path);
@@ -427,3 +427,65 @@ QString get_file_name_from_paper_name(QString paper_name);
 void rgb2hsv(float* rgb_color, float* hsv_color);
 void hsv2rgb(float* hsv_color, float* rgb_color);
 bool operator==(const fz_rect& lhs, const fz_rect& rhs);
+
+fz_rect bound_rects(const std::vector<fz_rect>& rects);
+bool is_consequtive(fz_rect rect1, fz_rect rect2);
+
+template<typename R>
+void merge_selected_character_rects(const std::deque<R>& selected_character_rects, std::vector<R>& resulting_rects, bool touch_vertically=true) {
+    /*
+        This function merges the bounding boxes of all selected characters into large line chunks.
+    */
+
+    if (selected_character_rects.size() == 0) {
+        return;
+    }
+
+    std::vector<fz_rect> line_rects;
+
+    fz_rect last_rect = selected_character_rects[0];
+    line_rects.push_back(selected_character_rects[0]);
+
+    for (size_t i = 1; i < selected_character_rects.size(); i++) {
+        if (is_consequtive(last_rect, selected_character_rects[i])) {
+            last_rect = selected_character_rects[i];
+            line_rects.push_back(selected_character_rects[i]);
+        }
+        else {
+            fz_rect bounding_rect = bound_rects(line_rects);
+            resulting_rects.push_back(bounding_rect);
+            line_rects.clear();
+            last_rect = selected_character_rects[i];
+            line_rects.push_back(selected_character_rects[i]);
+        }
+    }
+
+    if (line_rects.size() > 0) {
+        fz_rect bounding_rect = bound_rects(line_rects);
+        resulting_rects.push_back(bounding_rect);
+    }
+
+    // avoid overlapping rects
+    for (size_t i = 0; i < resulting_rects.size() - 1; i++) {
+        // we don't need to do this across columns of document
+        float height = std::abs(resulting_rects[i].y1 - resulting_rects[i].y0);
+        if (std::abs(resulting_rects[i + 1].y0 - resulting_rects[i].y0) < (0.5 * height)) {
+            continue;
+        }
+        if (touch_vertically) {
+            if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1)) {
+                resulting_rects[i + 1].y0 = resulting_rects[i].y1;
+            }
+        }
+    }
+
+}
+
+template<typename R>
+std::vector<fz_quad> quads_from_rects(const std::vector<R>& rects) {
+    std::vector<fz_quad> res;
+    for (auto rect : rects) {
+        res.push_back(quad_from_rect(rect));
+    }
+    return res;
+}
