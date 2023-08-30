@@ -6768,7 +6768,6 @@ void MainWidget::finish_drawing(QPoint pos) {
 
 
 void MainWidget::delete_freehand_drawings(AbsoluteRect rect) {
-    //fz_rect page_rect = doc()->absolute_to_page_rect(rect, &page);
     DocumentRect page_rect = rect.to_document(doc());
     doc()->delete_page_intersecting_drawings(page_rect.page, rect, opengl_widget->visible_drawing_mask);
     set_rect_select_mode(false);
@@ -6777,12 +6776,11 @@ void MainWidget::delete_freehand_drawings(AbsoluteRect rect) {
 }
 
 void MainWidget::select_freehand_drawings(AbsoluteRect rect) {
-    int page = -1;
-    fz_rect page_rect = doc()->absolute_to_page_rect(rect, &page);
-    doc()->get_page_intersecting_drawing_indices(page, rect, opengl_widget->visible_drawing_mask);
+    DocumentRect page_rect = rect.to_document(doc());
+    doc()->get_page_intersecting_drawing_indices(page_rect.page, rect, opengl_widget->visible_drawing_mask);
     SelectedDrawings selected_drawings;
-    selected_drawings.page = page;
-    selected_drawings.selected_indices = doc()->get_page_intersecting_drawing_indices(page, rect, opengl_widget->visible_drawing_mask);
+    selected_drawings.page = page_rect.page;
+    selected_drawings.selected_indices = doc()->get_page_intersecting_drawing_indices(page_rect.page, rect, opengl_widget->visible_drawing_mask);
     selected_drawings.selection_absrect = rect;
     selected_freehand_drawings = selected_drawings;
     set_rect_select_mode(false);
