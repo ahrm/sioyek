@@ -13,8 +13,6 @@
 #include <thread>
 #include <unordered_map>
 #include <map>
-//#include <gl/glew.h>
-//#include <Windows.h>
 
 #include <qobject.h>
 #include <qtimer.h>

@@ -20,6 +20,7 @@
 // make text highlights/selection covert visible portal/bookmark icons 
 // maybe use only middle click to move portal/bookmark icons instead of requiring shift
 // if we click on a portal link while ruler mode is activated, it is still active in the destination document
+// remove opengl widget include from input.h
 
 #include <iostream>
 #include <vector>
@@ -3381,7 +3382,20 @@ CommandManager* MainWidget::get_command_manager() {
 
 void MainWidget::toggle_dark_mode() {
     this->opengl_widget->toggle_dark_mode();
+
+    if (helper_opengl_widget) {
+        helper_opengl_widget->toggle_dark_mode();
+    }
 }
+
+void MainWidget::toggle_custom_color_mode() {
+    this->opengl_widget->toggle_custom_color_mode();
+
+    if (helper_opengl_widget) {
+        helper_opengl_widget->toggle_custom_color_mode();
+    }
+}
+
 
 void MainWidget::execute_command(std::wstring command, std::wstring text, bool wait) {
 
@@ -8469,4 +8483,63 @@ QStringListModel* MainWidget::get_new_command_list_model() {
 
 void MainWidget::add_password(std::wstring path, std::string password) {
     pdf_renderer->add_password(path, password);
+}
+
+void MainWidget::handle_fit_to_page_width(bool smart) {
+    main_document_view->fit_to_page_width(smart);
+
+    if (smart) {
+        int current_page = get_current_page_number();
+        last_smart_fit_page = current_page;
+    }
+    else {
+        last_smart_fit_page = {};
+    }
+}
+
+int MainWidget::current_document_page_count(){
+    if (doc()) {
+        return doc()->num_pages();
+    }
+    return -1;
+}
+
+void MainWidget::goto_page_with_page_number(int page_number) {
+    main_document_view->goto_page(page_number);
+}
+
+void MainWidget::goto_search_result(int nth_next_result, bool overview) {
+    opengl_widget->goto_search_result(nth_next_result, overview);
+}
+
+void MainWidget::set_should_highlight_words(bool should_highlight_words) {
+    opengl_widget->set_should_highlight_words(should_highlight_words);
+}
+
+void MainWidget::toggle_highlight_links() {
+    opengl_widget->toggle_highlight_links();
+}
+
+void MainWidget::set_highlight_links(bool should_highlight, bool should_show_numbers) {
+    opengl_widget->set_highlight_links(should_highlight, should_show_numbers);
+}
+
+void MainWidget::rotate_clockwise() {
+    opengl_widget->rotate_clockwise();
+}
+
+void MainWidget::rotate_counterclockwise() {
+    opengl_widget->rotate_counterclockwise();
+}
+
+void MainWidget::toggle_fastread() {
+    opengl_widget->toggle_fastread_mode();
+}
+
+void MainWidget::export_json(std::wstring json_file_path){
+    db_manager->export_json(json_file_path, checksummer);
+}
+
+void MainWidget::import_json(std::wstring json_file_path){
+    db_manager->import_json(json_file_path, checksummer);
 }

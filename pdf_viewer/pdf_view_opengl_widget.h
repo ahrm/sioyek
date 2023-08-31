@@ -24,7 +24,9 @@
 
 #include <qpainter.h>
 
-#include "document_view.h"
+//#include "document_view.h"
+#include "coordinates.h"
+#include "book.h"
 #include "path.h"
 
 class DocumentView;

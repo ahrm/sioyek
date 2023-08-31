@@ -382,7 +382,8 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
             main_widget->invalidate_render();
         }
         else {
-            main_widget->main_document_view->fit_to_page_width(true);
+            //main_widget->main_document_view->fit_to_page_width(true);
+            main_widget->handle_fit_to_page_width(true);
             int current_page = main_widget->get_current_page_number();
             main_widget->last_smart_fit_page = current_page;
 
@@ -406,8 +407,8 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
         PageSelectorUI* page_ui = new PageSelectorUI(main_widget,
-            main_widget->main_document_view->get_center_page_number(),
-            main_widget->doc()->num_pages());
+            main_widget->get_current_page_number(),
+            main_widget->current_document_page_count());
 
         main_widget->set_current_widget(page_ui);
         main_widget->show_current_widget();
@@ -668,12 +669,14 @@ SearchButtons::SearchButtons(MainWidget* parent) : QWidget(parent) {
     buttons_widget = new TouchSearchButtons(this);
 
     QObject::connect(buttons_widget, &TouchSearchButtons::nextPressed, [&]() {
-        main_widget->opengl_widget->goto_search_result(1);
+        //main_widget->opengl_widget->goto_search_result(1);
+        main_widget->run_command_with_name("next_item");
         main_widget->validate_render();
         });
 
     QObject::connect(buttons_widget, &TouchSearchButtons::previousPressed, [&]() {
-        main_widget->opengl_widget->goto_search_result(-1);
+        main_widget->run_command_with_name("previous_item");
+        //main_widget->opengl_widget->goto_search_result(-1);
         main_widget->validate_render();
         });
 
@@ -871,7 +874,7 @@ PageSelectorUI::PageSelectorUI(MainWidget* parent, int current, int num_pages) :
     page_selector = new TouchPageSelector(0, num_pages - 1, current, this);
 
     QObject::connect(page_selector, &TouchPageSelector::pageSelected, [&](int val) {
-        main_widget->main_document_view->goto_page(val);
+        main_widget->goto_page_with_page_number(val);
         main_widget->invalidate_render();
         });
 

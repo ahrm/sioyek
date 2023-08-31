@@ -471,6 +471,7 @@ public:
     void handle_drawing_ui_visibilty();
 
     void toggle_dark_mode();
+    void toggle_custom_color_mode();
     void do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line, int column);
     //void handle_args(const QStringList &arguments);
     void update_link_with_opened_book_state(Portal lnk, const OpenedBookState& new_state);
@@ -509,6 +510,7 @@ public:
     void scroll_overview(int amount);
     int get_current_page_number() const;
     std::wstring get_current_page_label();
+    void goto_page_with_page_number(int page_number);
     void goto_page_with_label(std::wstring label);
     void set_inverse_search_command(const std::wstring& new_command);
     int get_current_monitor_width(); int get_current_monitor_height();
@@ -801,6 +803,19 @@ public:
     void run_command_with_name(std::string command_name, bool should_pop_current_widget=false);
     QStringListModel* get_new_command_list_model();
     void add_password(std::wstring path, std::string password);
+    void handle_fit_to_page_width(bool smart);
+    int current_document_page_count();
+    void goto_search_result(int nth_next_result, bool overview=false);
+    void set_should_highlight_words(bool should_highlight_words);
+    void toggle_highlight_links();
+    void set_highlight_links(bool should_highlight, bool should_show_numbers);
+    void rotate_clockwise();
+    void rotate_counterclockwise();
+    void toggle_fastread();
+    void export_json(std::wstring json_file_path);
+    void import_json(std::wstring json_file_path);
+
+
 };
 
 #endif

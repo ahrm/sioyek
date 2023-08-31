@@ -13,13 +13,8 @@
 #include "input.h"
 #include "main_widget.h"
 #include "ui.h"
-#include "config.h"
 #include "document.h"
 #include "document_view.h"
-#include "pdf_view_opengl_widget.h"
-#include "database.h"
-
-#include "touchui/TouchListView.h"
 
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
@@ -356,7 +351,7 @@ public:
 
     void perform() {
         if (num_repeats == 0) num_repeats++;
-        widget->opengl_widget->goto_search_result(num_repeats);
+        widget->goto_search_result(num_repeats);
     }
 
     std::string get_name() {
@@ -371,7 +366,7 @@ public:
 
     void perform() {
         if (num_repeats == 0) num_repeats++;
-        widget->opengl_widget->goto_search_result(-num_repeats);
+        widget->goto_search_result(-num_repeats);
     }
 
     std::string get_name() {
@@ -1816,8 +1811,7 @@ public:
     FitToPageWidthCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        widget->main_document_view->fit_to_page_width();
-        widget->last_smart_fit_page = {};
+        widget->handle_fit_to_page_width(false);
     }
 
     std::string get_name() {
@@ -1830,9 +1824,7 @@ class FitToPageWidthSmartCommand : public Command {
 public:
     FitToPageWidthSmartCommand(MainWidget* w) : Command(w) {};
     void perform() {
-        widget->main_document_view->fit_to_page_width(true);
-        int current_page = widget->get_current_page_number();
-        widget->last_smart_fit_page = current_page;
+        widget->handle_fit_to_page_width(true);
     }
 
     std::string get_name() {
@@ -1913,7 +1905,6 @@ public:
     GotoDefinitionCommand(MainWidget* w) : Command(w) {};
     void perform() {
         if (widget->main_document_view->goto_definition()) {
-            //widget->opengl_widget->set_should_draw_vertical_line(false);
             widget->main_document_view->exit_ruler_mode();
         }
     }
@@ -2389,11 +2380,11 @@ public:
         }
 
         widget->handle_goto_ruler_portal(mark_str);
-        widget->opengl_widget->set_should_highlight_words(false);
+        widget->set_should_highlight_words(false);
     }
 
     void on_cancel() override {
-        widget->opengl_widget->set_should_highlight_words(false);
+        widget->set_should_highlight_words(false);
     }
 
     void pre_perform() override {
@@ -2473,7 +2464,7 @@ class ToggleHighlightCommand : public Command {
 public:
     ToggleHighlightCommand(MainWidget* w) : Command(w) {};
     void perform() {
-        widget->opengl_widget->toggle_highlight_links();
+        widget->toggle_highlight_links();
     }
     std::string get_name() {
         return "toggle_highlight";
@@ -2673,8 +2664,7 @@ public:
     ToggleDarkModeCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        widget->opengl_widget->toggle_dark_mode();
-        widget->helper_opengl_widget->toggle_dark_mode();
+        widget->toggle_dark_mode();
     }
 
     std::string get_name() {
@@ -2690,8 +2680,7 @@ public:
     ToggleCustomColorMode(MainWidget* w) : Command(w) {};
 
     void perform() {
-        widget->opengl_widget->toggle_custom_color_mode();
-        widget->helper_opengl_widget->toggle_custom_color_mode();
+        widget->toggle_custom_color_mode();
     }
 
     std::string get_name() {
@@ -2896,7 +2885,7 @@ public:
     }
 
     void pre_perform() {
-        widget->opengl_widget->set_highlight_links(true, true);
+        widget->set_highlight_links(true, true);
         widget->invalidate_render();
     }
 
@@ -2955,7 +2944,7 @@ public:
     }
 
     void pre_perform() {
-        widget->opengl_widget->set_highlight_links(true, true);
+        widget->set_highlight_links(true, true);
         widget->invalidate_render();
 
     }
@@ -3002,7 +2991,7 @@ public:
         if (rect_) {
             fz_irect rect = rect_.value();
             widget->overview_under_pos({ (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 });
-            widget->opengl_widget->set_should_highlight_words(false);
+            widget->set_should_highlight_words(false);
         }
     }
 
@@ -3030,7 +3019,7 @@ public:
         if (rect_) {
             fz_irect rect = rect_.value();
             widget->smart_jump_under_pos({ (rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2 });
-            widget->opengl_widget->set_should_highlight_words(false);
+            widget->set_should_highlight_words(false);
         }
     }
 
@@ -3277,7 +3266,6 @@ public:
     CloseVisualMarkCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        //widget->opengl_widget->set_should_draw_vertical_line(false);
         widget->main_document_view->exit_ruler_mode();
     }
 
@@ -3381,7 +3369,7 @@ public:
 
     void perform() {
         widget->main_document_view->rotate();
-        widget->opengl_widget->rotate_clockwise();
+        widget->rotate_clockwise();
     }
 
     std::string get_name() {
@@ -3396,7 +3384,7 @@ public:
 
     void perform() {
         widget->main_document_view->rotate();
-        widget->opengl_widget->rotate_counterclockwise();
+        widget->rotate_counterclockwise();
     }
 
     std::string get_name() {
@@ -3558,7 +3546,7 @@ class ToggleFastreadCommand : public Command {
 public:
     ToggleFastreadCommand(MainWidget* w) : Command(w) {};
     void perform() {
-        widget->opengl_widget->toggle_fastread_mode();
+        widget->toggle_fastread();
     }
 
 
@@ -4072,7 +4060,7 @@ public:
 
     void perform() {
         if (num_repeats == 0) num_repeats++;
-        widget->opengl_widget->goto_search_result(num_repeats, true);
+        widget->goto_search_result(num_repeats, true);
     }
 
     std::string get_name() {
@@ -4087,7 +4075,7 @@ public:
 
     void perform() {
         if (num_repeats == 0) num_repeats++;
-        widget->opengl_widget->goto_search_result(-num_repeats, true);
+        widget->goto_search_result(-num_repeats, true);
     }
 
     std::string get_name() {
@@ -4132,7 +4120,7 @@ public:
 
     void perform() {
         std::wstring import_file_name = select_json_file_name();
-        widget->db_manager->import_json(import_file_name, widget->checksummer);
+        widget->import_json(import_file_name);
     }
 
     std::string get_name() {
@@ -4149,7 +4137,7 @@ public:
 
     void perform() {
         std::wstring export_file_name = select_new_json_file_name();
-        widget->db_manager->export_json(export_file_name, widget->checksummer);
+        widget->export_json(export_file_name);
     }
 
     std::string get_name() {

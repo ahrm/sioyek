@@ -9,13 +9,6 @@
 #include <optional>
 #include <deque>
 
-#include <qapplication.h>
-#include <qpushbutton.h>
-#include <qopenglwidget.h>
-#include <qopenglextrafunctions.h>
-#include <qopenglfunctions.h>
-#include <qopengl.h>
-
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
 
