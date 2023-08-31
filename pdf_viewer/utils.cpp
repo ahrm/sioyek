@@ -2875,62 +2875,6 @@ float* get_highlight_type_color(char type) {
     return &HIGHLIGHT_COLORS[0];
 }
 
-bool parse_npy_header(std::string header_string, int* out_rows, int* out_cols) {
-    int begin_index = header_string.rfind("(");
-    int end_index = header_string.rfind(")");
-    std::string substr_ = header_string.substr(begin_index + 1, end_index - begin_index - 1);
-    QString substr = QString::fromStdString(substr_);
-    QStringList parts = substr.split(",");
-    if (parts.size() == 2) {
-        *out_rows = parts.at(0).trimmed().toInt();
-        *out_cols = parts.at(1).trimmed().toInt();
-        return true;
-    }
-    return false;
-}
-
-bool load_npy(QString resource_name, std::vector<float>& output, int* out_rows, int* out_cols) {
-    QFile input_file(resource_name);
-    bool opened = input_file.open(QIODevice::ReadOnly);
-
-    if (opened) {
-        const char* magic = "\x93NUMPY";
-        QByteArray magic_header = input_file.read(6);
-
-        // check magic header
-        for (int i = 0; i < 6; i++) {
-            if (magic_header[i] != magic[i]) {
-                return false;
-            }
-        }
-
-        QByteArray version_data = input_file.read(2);
-        QByteArray header_len_bytes = input_file.read(2);
-
-        uint16_t header_length = *(uint16_t*)header_len_bytes.data();
-        QByteArray header_data = input_file.read(header_length);
-        std::string header_string = header_data.toStdString();
-
-        int shape_width, shape_height;
-
-        if (parse_npy_header(header_string, &shape_width, &shape_height)) {
-            *out_rows = shape_width;
-            *out_cols = shape_height;
-
-            int datasize = sizeof(float) * shape_width * shape_height;
-            QByteArray raw_data = input_file.read(datasize);
-            for (int i = 0; i < shape_width * shape_height; i++) {
-                float value = *(float*)(raw_data.data() + i * sizeof(float));
-                output.push_back(value);
-            }
-        }
-
-        input_file.close();
-        return true;
-    }
-    return false;
-}
-
 
 QString trim_text_after(QString source, QString needle) {
     int needle_index = source.indexOf(needle);
