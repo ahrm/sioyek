@@ -37,7 +37,6 @@
 #endif
 
 #include <mupdf/pdf.h>
-#include "main_widget.h"
 
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
@@ -65,7 +64,6 @@ extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
 
 extern bool VERBOSE;
 
-extern std::vector<MainWidget*> windows;
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -2620,6 +2618,8 @@ void convert_qcolor_to_float4(const QColor& color, float* out_floats) {
 
 #ifdef SIOYEK_ANDROID
 
+#include "main_widget.h"
+extern std::vector<MainWidget*> windows;
 
 // modified from https://github.com/mahdize/CrossQFile/blob/main/CrossQFile.cpp
 

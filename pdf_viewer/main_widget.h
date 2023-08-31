@@ -814,8 +814,6 @@ public:
     void toggle_fastread();
     void export_json(std::wstring json_file_path);
     void import_json(std::wstring json_file_path);
-
-
 };
 
 #endif

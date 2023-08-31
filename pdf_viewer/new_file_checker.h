@@ -1,11 +1,11 @@
 #pragma once
 
-#include "main_widget.h"
-
 #include <vector>
 #include <qstring.h>
 #include <qfilesystemwatcher.h>
 #include <qdir.h>
+
+class MainWidget;
 
 class NewFileChecker {
 private:

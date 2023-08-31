@@ -1,4 +1,5 @@
 #include "new_file_checker.h"
+#include "main_widget.h"
 
 extern std::wstring PAPERS_FOLDER_PATH;
 
