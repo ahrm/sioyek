@@ -90,40 +90,9 @@ struct OpenGLSharedResources {
     bool is_initialized;
 };
 
-struct OverviewState {
-    //int page;
-    float absolute_offset_y;
-    Document* doc = nullptr;
-    //float page_height;
-};
 
 class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions {
 public:
-
-    enum OverviewSide {
-        bottom = 0,
-        top = 1,
-        left = 2,
-        right = 3
-    };
-
-    struct OverviewResizeData {
-        fz_rect original_rect;
-        NormalizedWindowPos original_normal_mouse_pos;
-        OverviewSide side_index;
-    };
-
-    struct OverviewMoveData {
-        fvec2 original_offsets;
-        NormalizedWindowPos original_normal_mouse_pos;
-    };
-
-    struct OverviewTouchMoveData {
-        float overview_original_pos_offset_y;
-        float original_mouse_offset_y;
-
-        //NormalizedWindowPos original_normal_mouse_pos;
-    };
 
     enum ColorPalette {
         Normal,

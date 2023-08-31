@@ -212,57 +212,36 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
         main_widget->pop_current_widget();
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "open_document");
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("open_document");
         });
 
     QObject::connect(main_menu, &TouchMainMenu::openPrevDocClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "open_prev_doc");
-        //main_widget->current_widget = {};
-        //deleteLater();
-        assert(main_widget->current_widget_stack.back() == this);
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("open_prev_doc", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::highlightsClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_highlight");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("goto_highlight", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::tocClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_toc");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("goto_toc", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::bookmarksClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_bookmark");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("goto_bookmark", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::hintClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "toggle_rect_hints");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("toggle_rect_hints", true);
         main_widget->invalidate_render();
         });
 
     QObject::connect(main_menu, &TouchMainMenu::commandsClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "command");
-        //main_widget->current_widget = {};
-        //deleteLater();
-        assert(main_widget->current_widget_stack.back() == this);
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("command", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::drawingModeClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "toggle_freehand_drawing_mode");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("toggle_freehand_drawing_mode", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::settingsClicked, [&]() {
@@ -288,54 +267,35 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
         });
 
     QObject::connect(main_menu, &TouchMainMenu::searchClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "search");
-        //main_widget->current_widget = {};
-        //deleteLater();
-        assert(main_widget->current_widget_stack.back() == this);
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("search", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::addBookmarkClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "add_bookmark");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("add_bookmark", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::portalClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "portal");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("portal", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::deletePortalClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "delete_portal");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("delete_portal", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::globalBookmarksClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_bookmark_g");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("goto_bookmark_g", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::globalHighlightsClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "goto_highlight_g");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("goto_highlight_g", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::ttsClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "start_reading");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("start_reading", true);
         });
 
     QObject::connect(main_menu, &TouchMainMenu::horizontalLockClicked, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "toggle_horizontal_scroll_lock");
-        main_widget->pop_current_widget();
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("toggle_horizontal_scroll_lock", true);
         });
 
     //    QObject::connect(set_background_color, &QPushButton::pressed, [&](){
@@ -603,8 +563,7 @@ DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent) {
         });
 
     QObject::connect(controls_ui, &TouchDrawControls::eraserPressed, [&]() {
-        auto command = main_widget->command_manager->get_command_with_name(main_widget, "delete_freehand_drawings");
-        main_widget->handle_command_types(std::move(command), 0);
+        main_widget->run_command_with_name("delete_freehand_drawings");
         });
 
     QObject::connect(controls_ui, &TouchDrawControls::penSizeChanged, [&](qreal val) {

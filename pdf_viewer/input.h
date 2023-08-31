@@ -1,20 +1,17 @@
 #pragma once
 
-#include <iostream>
 #include <vector>
 #include <string>
-#include <fstream>
-#include <sstream>
 #include <memory>
 #include <optional>
 #include <unordered_map>
-#include <qlocalsocket.h>
 
-#include "utils.h"
 #include "path.h"
-#include "config.h"
+#include "coordinates.h"
 
+class QLocalSocket;
 class MainWidget;
+class ConfigManager;
 
 enum RequirementType {
     Text,

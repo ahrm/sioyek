@@ -27,57 +27,6 @@
 #define LL_ITER(name, start) for(auto name=start;(name);name=name->next)
 #define LOG(expr) if (VERBOSE) {(expr);};
 
-struct ParsedUri {
-    int page;
-    float x;
-    float y;
-};
-
-struct FreehandDrawingPoint {
-    AbsoluteDocumentPos pos;
-    float thickness;
-};
-
-enum class SearchCaseSensitivity {
-    CaseSensitive,
-    CaseInsensitive,
-    SmartCase
-};
-
-struct DocumentCharacter {
-    int c;
-    fz_rect rect;
-    bool is_final = false;
-    fz_stext_block* stext_block;
-    fz_stext_line* stext_line;
-    fz_stext_char* stext_char;
-};
-
-struct FreehandDrawing {
-    std::vector<FreehandDrawingPoint> points;
-    char type;
-    QDateTime creattion_time;
-};
-
-struct CharacterAddress {
-    int page;
-    fz_stext_block* block;
-    fz_stext_line* line;
-    fz_stext_char* character;
-    Document* doc;
-
-    CharacterAddress* previous_character = nullptr;
-
-    bool advance(char c);
-    bool backspace();
-    bool next_char();
-    bool next_line();
-    bool next_block();
-    bool next_page();
-
-    float focus_offset();
-
-};
 
 std::wstring to_lower(const std::wstring& inp);
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char);

@@ -9,36 +9,46 @@
 #include <optional>
 #include <deque>
 
-#include <qwidget.h>
-#include <qlineedit.h>
-#include <qtextedit.h>
-#include <qtimer.h>
-#include <qbytearray.h>
-#include <qdrag.h>
-#include <qscrollbar.h>
-#include <qtexttospeech.h>
-#include <qlocalsocket.h>
-#include <touchui/TouchDrawControls.h>
+#include <qnetworkaccessmanager.h>
+#include <qquickwidget.h>
+#include <qstandarditemmodel.h>
 
-#include <mupdf/fitz.h>
-#include "document_view.h"
-#include "document.h"
-#include "input.h"
 #include "book.h"
-#include "config.h"
-#include "pdf_renderer.h"
-#include "input.h"
-#include "pdf_view_opengl_widget.h"
 #include "path.h"
-#include "checksum.h"
-
-#include <QQuickWidget>
 
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 
 class SelectionIndicator;
+class QLocalSocket;
+class QLineEdit;
+class QTextEdit;
+class QTimer;
+class QDragEvent;
+class QDropEvent;
+class QScrollBar;
+class QTextToSpeech;
+class QStringListModel;
+class QLabel;
+class TouchTextSelectionButtons;
+class DrawControlsUI;
+class SearchButtons;
+class HighlightButtons;
 
+struct fz_context;
+struct fz_stext_char;
+
+class DocumentView;
+class Document;
+class InputHandler;
+class ConfigManager;
+class PdfRenderer;
+class CachedChecksummer;
+class CommandManager;
+class Command;
+class PdfViewOpenGLWidget;
+class DatabaseManager;
+class DocumentManager;
 
 enum class DrawingMode {
     Drawing,
@@ -88,9 +98,8 @@ struct FreehandDrawingMoveData {
 };
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
-class MainWidget : public QQuickWidget, ConfigFileChangeListener {
+class MainWidget : public QQuickWidget {
 public:
-    QTime debug_last_timer;
     fz_context* mupdf_context = nullptr;
     DatabaseManager* db_manager = nullptr;
     DocumentManager* document_manager = nullptr;
@@ -295,9 +304,9 @@ public:
 
     // data used to resize/move the overview. which is a small window which shows the target
     // destination of references/links
-    std::optional<PdfViewOpenGLWidget::OverviewMoveData> overview_move_data = {};
-    std::optional<PdfViewOpenGLWidget::OverviewTouchMoveData> overview_touch_move_data = {};
-    std::optional<PdfViewOpenGLWidget::OverviewResizeData> overview_resize_data = {};
+    std::optional<OverviewMoveData> overview_move_data = {};
+    std::optional<OverviewTouchMoveData> overview_touch_move_data = {};
+    std::optional<OverviewResizeData> overview_resize_data = {};
 
     std::vector<PendingDownloadPortal> pending_download_portals;
 
@@ -453,7 +462,7 @@ public:
     void move_visual_mark_next();
     void move_visual_mark_prev();
     AbsoluteRect move_visual_mark(int offset);
-    void on_config_file_changed(ConfigManager* new_config) override;
+    void on_config_file_changed(ConfigManager* new_config);
     void toggle_mouse_drag_mode();
     void toggle_freehand_drawing_mode();
     void exit_freehand_drawing_mode();
@@ -494,7 +503,7 @@ public:
 
     // get rects using tags (tags are strings shown when executing `keyboard_*` commands)
     std::optional<PagelessDocumentRect> get_tag_rect(std::string tag, std::vector<PagelessDocumentRect>* word_chars = nullptr);
-    std::optional<fz_irect> get_tag_window_rect(std::string tag, std::vector<fz_irect>* char_rects = nullptr);
+    std::optional<WindowRect> get_tag_window_rect(std::string tag, std::vector<WindowRect>* char_rects = nullptr);
 
     bool is_rotated();
     void on_new_paper_added(const std::wstring& file_path);
@@ -703,102 +712,6 @@ protected:
     bool event(QEvent* event);
 
 public:
-    template<typename T>
-    void set_filtered_select_menu(bool fuzzy, bool multiline, std::vector<std::vector<std::wstring>> columns,
-        std::vector<T> values,
-        int selected_index,
-        std::function<void(T*)> on_select,
-        std::function<void(T*)> on_delete,
-        std::function<void(T*)> on_edit = nullptr
-    ) {
-        if (columns.size() > 1) {
-
-            if (TOUCH_MODE) {
-
-                // we will set the parent of model to be the widget in the constructor, and it will delete
-                // the model when it is freed, so this is not a memory leak
-                QStandardItemModel* model = create_table_model(columns);
-
-                TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, model, values, selected_index,
-                    [&, on_select = std::move(on_select)](T* val) {
-                        if (val) {
-                            on_select(val);
-                        }
-                        pop_current_widget();
-                    },
-                    [&, on_delete = std::move(on_delete)](T* val) {
-                        if (val) {
-                            on_delete(val);
-                        }
-                    }, this);
-
-                widget->set_filter_column_index(-1);
-                set_current_widget(widget);
-            }
-            else {
-                auto w = new FilteredSelectTableWindowClass<T>(
-                    fuzzy,
-                    multiline,
-                    columns,
-                    values,
-                    selected_index,
-                    [on_select = std::move(on_select)](T* val) {
-                        if (val) {
-                            on_select(val);
-                        }
-                    },
-                    this,
-                        [on_delete = std::move(on_delete)](T* val) {
-                        if (val) {
-                            on_delete(val);
-                        }
-                    });
-                w->set_filter_column_index(-1);
-                if (on_edit) {
-                    w->set_on_edit_function(on_edit);
-                }
-                set_current_widget(w);
-            }
-        }
-        else {
-
-            if (TOUCH_MODE) {
-                // when will this be released?
-                TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, columns[0], values, selected_index,
-                    [&, on_select = std::move(on_select)](T* val) {
-                        if (val) {
-                            on_select(val);
-                        }
-                        pop_current_widget();
-                    },
-                    [&, on_delete = std::move(on_delete)](T* val) {
-                        if (val) {
-                            on_delete(val);
-                        }
-                    }, this);
-                set_current_widget(widget);
-            }
-            else {
-
-                set_current_widget(new FilteredSelectWindowClass<T>(
-                    fuzzy,
-                    columns[0],
-                    values,
-                    [on_select = std::move(on_select)](T* val) {
-                        if (val) {
-                            on_select(val);
-                        }
-                    },
-                    this,
-                        [on_delete = std::move(on_delete)](T* val) {
-                        if (val) {
-                            on_delete(val);
-                        }
-                    },
-                        selected_index));
-            }
-        }
-    }
 
     void handle_rename(std::wstring new_name);
     bool execute_macro_if_enabled(std::wstring macro_command_string, QLocalSocket* result_socket=nullptr); bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
@@ -886,6 +799,8 @@ public:
     void update_renamed_document_in_history(std::wstring old_path, std::wstring new_path);
     void maximize_window();
     void toggle_rect_hints();
+    void run_command_with_name(std::string command_name, bool should_pop_current_widget=false);
+    QStringListModel* get_new_command_list_model();
 };
 
 #endif

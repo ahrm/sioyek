@@ -83,8 +83,9 @@ void TouchConfigMenu::handleTextConfigChanged(QString config_name, QString new_v
 
 void TouchConfigMenu::handleSetConfigPressed(QString config_name) {
     //command_manager->execute_command(CommandType::SetConfig, config_name.toStdWString());
-    auto command = main_widget->command_manager->get_command_with_name(main_widget, (QString("setconfig_") + config_name).toStdString());
-    main_widget->handle_command_types(std::move(command), 0);
+    main_widget->run_command_with_name((QString("setconfig_") + config_name).toStdString());
+    //auto command = main_widget->command_manager->get_command_with_name(main_widget, (QString("setconfig_") + config_name).toStdString());
+    //main_widget->handle_command_types(std::move(command), 0);
 }
 
 void TouchConfigMenu::handleIntConfigChanged(QString config_name, int new_value) {

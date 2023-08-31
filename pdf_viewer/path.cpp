@@ -1,6 +1,7 @@
 #include <qdir.h>
-#include "path.h"
 #include <qfileinfo.h>
+#include "path.h"
+#include "utils.h"
 
 Path::Path() : Path(L"")
 {

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <variant>
 #include <mupdf/fitz.h>
 //#include <gl/glew.h>
 #include <qopengl.h>
@@ -13,11 +14,17 @@
 #include "coordinates.h"
 
 class DocumentView;
+class Document;
 
 struct BookState {
     std::wstring document_path;
     float offset_y;
     std::string uuid;
+};
+
+struct OverviewState {
+    float absolute_offset_y;
+    Document* doc = nullptr;
 };
 
 struct OpenedBookState {
@@ -113,6 +120,65 @@ struct PdfLink {
     std::string uri;
 };
 
+enum OverviewSide {
+    bottom = 0,
+    top = 1,
+    left = 2,
+    right = 3
+};
+
+struct ParsedUri {
+    int page;
+    float x;
+    float y;
+};
+
+struct FreehandDrawingPoint {
+    AbsoluteDocumentPos pos;
+    float thickness;
+};
+
+enum class SearchCaseSensitivity {
+    CaseSensitive,
+    CaseInsensitive,
+    SmartCase
+};
+
+struct DocumentCharacter {
+    int c;
+    fz_rect rect;
+    bool is_final = false;
+    fz_stext_block* stext_block;
+    fz_stext_line* stext_line;
+    fz_stext_char* stext_char;
+};
+
+struct FreehandDrawing {
+    std::vector<FreehandDrawingPoint> points;
+    char type;
+    QDateTime creattion_time;
+};
+
+struct CharacterAddress {
+    int page;
+    fz_stext_block* block;
+    fz_stext_line* line;
+    fz_stext_char* character;
+    Document* doc;
+
+    CharacterAddress* previous_character = nullptr;
+
+    bool advance(char c);
+    bool backspace();
+    bool next_char();
+    bool next_line();
+    bool next_block();
+    bool next_page();
+
+    float focus_offset();
+
+};
+
 struct DocumentViewState {
     std::wstring document_path;
     OpenedBookState book_state;
@@ -121,6 +187,23 @@ struct DocumentViewState {
 struct PortalViewState {
     std::string document_checksum;
     OpenedBookState book_state;
+};
+
+struct OverviewResizeData {
+    fz_rect original_rect;
+    NormalizedWindowPos original_normal_mouse_pos;
+    OverviewSide side_index;
+};
+
+struct OverviewMoveData {
+    fvec2 original_offsets;
+    NormalizedWindowPos original_normal_mouse_pos;
+};
+
+struct OverviewTouchMoveData {
+    float overview_original_pos_offset_y;
+    float original_mouse_offset_y;
+
 };
 
 /*
@@ -170,6 +253,17 @@ struct CachedPageData {
     Document* doc = nullptr;
     int page;
     float zoom_level;
+};
+
+struct SmartViewCandidate {
+    Document* doc = nullptr;
+    AbsoluteRect source_rect;
+    std::wstring source_text;
+    std::variant<DocumentPos, AbsoluteDocumentPos> target_pos;
+
+    Document* get_document(DocumentView* view);
+    DocumentPos get_docpos(DocumentView* view);
+    AbsoluteDocumentPos get_abspos(DocumentView* view);
 };
 
 /*

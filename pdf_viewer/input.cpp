@@ -7,9 +7,14 @@
 #include <qkeyevent.h>
 #include <qstring.h>
 #include <qstringlist.h>
+#include <qlocalsocket.h>
+#include "utils.h"
 #include "input.h"
 #include "main_widget.h"
 #include "ui.h"
+#include "config.h"
+#include "document_view.h"
+#include "pdf_view_opengl_widget.h"
 
 #include "touchui/TouchListView.h"
 

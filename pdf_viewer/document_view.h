@@ -29,16 +29,6 @@
 extern float ZOOM_INC_FACTOR;
 extern const int PAGE_PADDINGS;
 
-struct SmartViewCandidate {
-    Document* doc = nullptr;
-    AbsoluteRect source_rect;
-    std::wstring source_text;
-    std::variant<DocumentPos, AbsoluteDocumentPos> target_pos;
-
-    Document* get_document(DocumentView* view);
-    DocumentPos get_docpos(DocumentView* view);
-    AbsoluteDocumentPos get_abspos(DocumentView* view);
-};
 
 class DocumentView {
 protected:

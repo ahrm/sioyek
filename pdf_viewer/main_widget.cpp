@@ -36,6 +36,7 @@
 #include <qboxlayout.h>
 #include <qdatetime.h>
 #include <qfile.h>
+#include <qdrag.h>
 
 #ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
@@ -61,7 +62,13 @@
 #include <QGestureEvent>
 #include <qjsonarray.h>
 #include <qjsonobject.h>
+#include <qlocalsocket.h>
+#include <qbytearray.h>
+#include <qscrollbar.h>
+#include <qtexttospeech.h>
+#include <qwidget.h>
 
+#include <mupdf/fitz.h>
 
 #include "input.h"
 #include "database.h"
@@ -228,6 +235,102 @@ bool MainWidget::main_document_view_has_document()
     return (main_document_view != nullptr) && (doc() != nullptr);
 }
 
+template<typename T>
+void set_filtered_select_menu(MainWidget* main_widget, bool fuzzy, bool multiline, std::vector<std::vector<std::wstring>> columns,
+    std::vector<T> values,
+    int selected_index,
+    std::function<void(T*)> on_select,
+    std::function<void(T*)> on_delete,
+    std::function<void(T*)> on_edit = nullptr
+) {
+    if (columns.size() > 1) {
+
+        if (TOUCH_MODE) {
+
+            // we will set the parent of model to be the widget in the constructor, and it will delete
+            // the model when it is freed, so this is not a memory leak
+            QStandardItemModel* model = create_table_model(columns);
+
+            TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, model, values, selected_index,
+                [&, main_widget, on_select = std::move(on_select)](T* val) {
+                    if (val) {
+                        on_select(val);
+                    }
+                    main_widget->pop_current_widget();
+                },
+                [&, on_delete = std::move(on_delete)](T* val) {
+                    if (val) {
+                        on_delete(val);
+                    }
+                }, main_widget);
+
+            widget->set_filter_column_index(-1);
+            main_widget->set_current_widget(widget);
+        }
+        else {
+            auto w = new FilteredSelectTableWindowClass<T>(
+                fuzzy,
+                multiline,
+                columns,
+                values,
+                selected_index,
+                [on_select = std::move(on_select)](T* val) {
+                    if (val) {
+                        on_select(val);
+                    }
+                },
+                main_widget,
+                    [on_delete = std::move(on_delete)](T* val) {
+                    if (val) {
+                        on_delete(val);
+                    }
+                });
+            w->set_filter_column_index(-1);
+            if (on_edit) {
+                w->set_on_edit_function(on_edit);
+            }
+            main_widget->set_current_widget(w);
+        }
+    }
+    else {
+
+        if (TOUCH_MODE) {
+            // when will this be released?
+            TouchFilteredSelectWidget<T>* widget = new TouchFilteredSelectWidget<T>(fuzzy, columns[0], values, selected_index,
+                [&, main_widget, on_select = std::move(on_select)](T* val) {
+                    if (val) {
+                        on_select(val);
+                    }
+                    main_widget->pop_current_widget();
+                },
+                [&, on_delete = std::move(on_delete)](T* val) {
+                    if (val) {
+                        on_delete(val);
+                    }
+                }, main_widget);
+            main_widget->set_current_widget(widget);
+        }
+        else {
+
+            main_widget->set_current_widget(new FilteredSelectWindowClass<T>(
+                fuzzy,
+                columns[0],
+                values,
+                [on_select = std::move(on_select)](T* val) {
+                    if (val) {
+                        on_select(val);
+                    }
+                },
+                main_widget,
+                    [on_delete = std::move(on_delete)](T* val) {
+                    if (val) {
+                        on_delete(val);
+                    }
+                },
+                    selected_index));
+        }
+    }
+}
 class SelectionIndicator : public QWidget {
 private:
     bool is_dragging = false;
@@ -2017,9 +2120,9 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
     if (down == true) {
 
-        PdfViewOpenGLWidget::OverviewSide border_index = static_cast<PdfViewOpenGLWidget::OverviewSide>(-1);
+        OverviewSide border_index = static_cast<OverviewSide>(-1);
         if (opengl_widget->is_window_point_in_overview_border(normal_x, normal_y, &border_index)) {
-            PdfViewOpenGLWidget::OverviewResizeData resize_data;
+            OverviewResizeData resize_data;
             resize_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
             resize_data.original_rect = opengl_widget->get_overview_rect();
             resize_data.side_index = border_index;
@@ -2030,7 +2133,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             float original_offset_x, original_offset_y;
 
             if (TOUCH_MODE) {
-                PdfViewOpenGLWidget::OverviewTouchMoveData touch_move_data;
+                OverviewTouchMoveData touch_move_data;
                 //touch_move_data.original_mouse_offset_y = doc()->document_to_absolute_pos(opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y })).y;
                 touch_move_data.original_mouse_offset_y = opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y }).to_absolute(doc()).y;
                 float overview_offset_y = opengl_widget->get_overview_page().value().absolute_offset_y;
@@ -2038,7 +2141,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
                 overview_touch_move_data = touch_move_data;
             }
             else {
-                PdfViewOpenGLWidget::OverviewMoveData move_data;
+                OverviewMoveData move_data;
                 opengl_widget->get_overview_offsets(&original_offset_x, &original_offset_y);
                 move_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
                 move_data.original_offsets = fvec2{ original_offset_x, original_offset_y };
@@ -3729,7 +3832,7 @@ std::vector<PagelessDocumentRect> MainWidget::get_flat_words(std::vector<std::ve
     return res;
 }
 
-std::optional<fz_irect> MainWidget::get_tag_window_rect(std::string tag, std::vector<fz_irect>* char_rects) {
+std::optional<WindowRect> MainWidget::get_tag_window_rect(std::string tag, std::vector<WindowRect>* char_rects) {
 
     int page = get_current_page_number();
     std::vector<PagelessDocumentRect> word_char_rects;
@@ -3737,10 +3840,11 @@ std::optional<fz_irect> MainWidget::get_tag_window_rect(std::string tag, std::ve
 
     if (rect.has_value()) {
 
-        fz_irect window_rect = main_document_view->document_to_window_irect(page, rect.value());
+        //fz_irect window_rect = main_document_view->document_to_window_irect(page, rect.value());
+        WindowRect window_rect = DocumentRect(rect.value(), page).to_window(main_document_view);
         if (char_rects != nullptr) {
             for (auto c : word_char_rects) {
-                char_rects->push_back(main_document_view->document_to_window_irect(page, c));
+                char_rects->push_back(DocumentRect(c, page).to_window(main_document_view));
             }
         }
         return window_rect;
@@ -4379,11 +4483,11 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
         QStringList parts = QString::fromStdWString(text).split(' ');
 
         if (parts.size() == 1) {
-            std::vector<fz_irect> schar_rects;
-            std::optional<fz_irect> srect_ = get_tag_window_rect(parts.at(0).toStdString(), &schar_rects);
+            std::vector<WindowRect> schar_rects;
+            std::optional<WindowRect> srect_ = get_tag_window_rect(parts.at(0).toStdString(), &schar_rects);
             if (schar_rects.size() > 1) {
-                fz_irect srect = schar_rects[0];
-                fz_irect erect = schar_rects[schar_rects.size() - 2];
+                WindowRect srect = schar_rects[0];
+                WindowRect erect = schar_rects[schar_rects.size() - 2];
                 int w = erect.x1 - erect.x0;
 
                 handle_left_click({ (srect.x0 + srect.x1) / 2 - 1, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
@@ -4393,15 +4497,15 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
         }
         if (parts.size() == 2) {
 
-            std::vector<fz_irect> schar_rects;
-            std::vector<fz_irect> echar_rects;
+            std::vector<WindowRect> schar_rects;
+            std::vector<WindowRect> echar_rects;
 
-            std::optional<fz_irect> srect_ = get_tag_window_rect(parts.at(0).toStdString(), &schar_rects);
-            std::optional<fz_irect> erect_ = get_tag_window_rect(parts.at(1).toStdString(), &echar_rects);
+            std::optional<WindowRect> srect_ = get_tag_window_rect(parts.at(0).toStdString(), &schar_rects);
+            std::optional<WindowRect> erect_ = get_tag_window_rect(parts.at(1).toStdString(), &echar_rects);
 
             if ((schar_rects.size() > 0) && (echar_rects.size() > 0)) {
-                fz_irect srect = schar_rects[0];
-                fz_irect erect = echar_rects[0];
+                WindowRect srect = schar_rects[0];
+                WindowRect erect = echar_rects[0];
                 int w = erect.x1 - erect.x0;
 
                 handle_left_click({ (srect.x0 + srect.x1) / 2 - 1, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
@@ -4409,8 +4513,8 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
                 opengl_widget->set_should_highlight_words(false);
             }
             else if (srect_.has_value() && erect_.has_value()) {
-                fz_irect srect = srect_.value();
-                fz_irect erect = erect_.value();
+                WindowRect srect = srect_.value();
+                WindowRect erect = erect_.value();
 
                 handle_left_click({ srect.x0 + 5, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
                 handle_left_click({ erect.x0 - 5 , (erect.y0 + erect.y1) / 2 }, false, false, false, false);
@@ -4901,7 +5005,7 @@ void MainWidget::handle_goto_portal_list() {
 
     int closest_portal_index = main_document_view->get_document()->find_closest_portal_index(portals, main_document_view->get_offset_y());
 
-    set_filtered_select_menu<Portal>(FUZZY_SEARCHING, MULTILINE_MENUS, { option_names, option_location_strings }, portals, closest_portal_index,
+    set_filtered_select_menu<Portal>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { option_names, option_location_strings }, portals, closest_portal_index,
         [&](Portal* portal) {
             pending_command_instance->set_generic_requirement(portal->src_offset_y);
             advance_command(std::move(pending_command_instance));
@@ -4944,7 +5048,7 @@ void MainWidget::handle_goto_bookmark() {
 
     int closest_bookmark_index = main_document_view->get_document()->find_closest_bookmark_index(bookmarks, main_document_view->get_offset_y());
 
-    set_filtered_select_menu<BookMark>(FUZZY_SEARCHING, MULTILINE_MENUS, { option_names, option_location_strings }, bookmarks, closest_bookmark_index,
+    set_filtered_select_menu<BookMark>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { option_names, option_location_strings }, bookmarks, closest_bookmark_index,
         [&](BookMark* bm) {
             if (pending_command_instance) {
                 pending_command_instance->set_generic_requirement(bm->get_y_offset());
@@ -4985,7 +5089,7 @@ void MainWidget::handle_goto_bookmark_global() {
         }
     }
 
-    set_filtered_select_menu<BookState>(FUZZY_SEARCHING, MULTILINE_MENUS, { descs, file_names }, book_states, -1,
+    set_filtered_select_menu<BookState>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { descs, file_names }, book_states, -1,
         [&](BookState* book_state) {
             if (pending_command_instance) {
                 pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdWString(book_state->document_path) << book_state->offset_y);
@@ -5053,7 +5157,7 @@ void MainWidget::handle_goto_highlight() {
         table = { option_names, option_location_strings };
     }
 
-    set_filtered_select_menu<Highlight>(FUZZY_SEARCHING, MULTILINE_MENUS, table, highlights, closest_highlight_index,
+    set_filtered_select_menu<Highlight>(this, FUZZY_SEARCHING, MULTILINE_MENUS, table, highlights, closest_highlight_index,
         [&](Highlight* hl) {
             if (pending_command_instance) {
                 pending_command_instance->set_generic_requirement(hl->selection_begin.y);
@@ -5115,7 +5219,7 @@ void MainWidget::handle_goto_highlight_global() {
         table = { descs, file_names };
     }
 
-    set_filtered_select_menu<BookState>(FUZZY_SEARCHING, MULTILINE_MENUS, table, book_states, -1,
+    set_filtered_select_menu<BookState>(this, FUZZY_SEARCHING, MULTILINE_MENUS, table, book_states, -1,
 
         [&](BookState* book_state) {
             if (book_state) {
@@ -5227,7 +5331,7 @@ void MainWidget::handle_open_all_docs() {
     }
 
 
-    set_filtered_select_menu<std::string>(FUZZY_SEARCHING, MULTILINE_MENUS, { paths }, hashes, -1,
+    set_filtered_select_menu<std::string>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { paths }, hashes, -1,
         [&](std::string* doc_hash) {
             if ((doc_hash->size() > 0) && (pending_command_instance)) {
                 pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdString(*doc_hash));
@@ -5280,7 +5384,7 @@ void MainWidget::handle_open_prev_doc() {
     }
 
 
-    set_filtered_select_menu<std::string>(FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names }, opened_docs_hashes, -1,
+    set_filtered_select_menu<std::string>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names }, opened_docs_hashes, -1,
         [&](std::string* doc_hash) {
             if ((doc_hash->size() > 0) && (pending_command_instance)) {
                 pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdString(*doc_hash));
@@ -6626,7 +6730,7 @@ void MainWidget::show_download_paper_menu(
         values.push_back(std::make_pair(paper_names[i], download_urls[i]));
     }
 
-    set_filtered_select_menu<std::pair<std::wstring, std::wstring>>(FUZZY_SEARCHING, MULTILINE_MENUS, { paper_names, right_names }, values, -1,
+    set_filtered_select_menu<std::pair<std::wstring, std::wstring>>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { paper_names, right_names }, values, -1,
         [&, paper_name](std::pair<std::wstring, std::wstring>* values) {
             std::wstring actual_paper_name = values->first;
             std::wstring paper_url = values->second;
@@ -7016,7 +7120,7 @@ void MainWidget::handle_goto_loaded_document() {
         index = loc - loaded_document_paths_.begin();
     }
 
-    set_filtered_select_menu<std::wstring>(true,
+    set_filtered_select_menu<std::wstring>(this, true,
         MULTILINE_MENUS,
         { loaded_document_paths, detected_paper_names },
         loaded_document_paths_,
@@ -7369,7 +7473,7 @@ void MainWidget::show_command_palette() {
     std::vector<std::vector<std::wstring>> columns = { command_descs, command_names };
     //widget->set_filtered_selelect_menu()
 
-    set_filtered_select_menu<std::wstring>(true,
+    set_filtered_select_menu<std::wstring>(this, true,
         false,
         columns,
         command_names,
@@ -7889,7 +7993,7 @@ bool MainWidget::execute_macro_from_origin(std::wstring macro_command_string, QL
 
 void MainWidget::show_custom_option_list(std::vector<std::wstring> options) {
     std::vector<std::vector<std::wstring>> values = { options };
-    set_filtered_select_menu<std::wstring>(false, true, values, options, -1, [this](std::wstring* val) {
+    set_filtered_select_menu<std::wstring>(this, false, true, values, options, -1, [this](std::wstring* val) {
         //selected_option = *val;
         pending_command_instance->set_generic_requirement(QString::fromStdWString(*val));
         advance_command(std::move(pending_command_instance));
@@ -8347,4 +8451,18 @@ void MainWidget::toggle_rect_hints() {
     else {
         opengl_widget->show_rect_hints();
     }
+}
+
+void MainWidget::run_command_with_name(std::string command_name, bool should_pop_current_widget) {
+    auto command = command_manager->get_command_with_name(this, command_name);
+
+    if (should_pop_current_widget) {
+        pop_current_widget();
+    }
+
+    handle_command_types(std::move(command), 0);
+}
+
+QStringListModel* MainWidget::get_new_command_list_model() {
+    return new QStringListModel(command_manager->get_all_command_names());
 }

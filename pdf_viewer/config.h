@@ -8,9 +8,11 @@
 #include <optional>
 #include <variant>
 #include <map>
-#include "path.h"
 #include <qwidget.h>
 #include <qabstractitemmodel.h>
+
+#include "path.h"
+#include "coordinates.h"
 
 //#include <main_widget.h>
 

@@ -3,12 +3,14 @@
 #include <qstandarditemmodel.h>
 #include <qsortfilterproxymodel.h>
 #include "main_widget.h"
+#include <qstringlistmodel.h>
 
 TouchMacroEditor::TouchMacroEditor(std::string macro, QWidget* parent, MainWidget* main_widget) : QWidget(parent) {
 
     //    quick_widget = new QQuickWidget(QUrl("qrc:/pdf_viewer/touchui/TouchSlider.qml"), this);
 
-    auto commands_model = new QStringListModel(main_widget->command_manager->get_all_command_names(), this);
+    auto commands_model = main_widget->get_new_command_list_model();
+    commands_model->setParent(this);
     QSortFilterProxyModel* proxy_model = new QSortFilterProxyModel(this);
     proxy_model->setSourceModel(commands_model);
 

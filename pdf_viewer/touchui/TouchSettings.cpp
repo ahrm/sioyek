@@ -1,6 +1,10 @@
 #include "touchui/TouchSettings.h"
 #include "touchui/TouchConfigMenu.h"
 #include "main_widget.h"
+#include "config.h"
+#include "utils.h"
+#include "qcolordialog.h"
+#include "ui.h"
 
 
 extern float BACKGROUND_COLOR[3];
