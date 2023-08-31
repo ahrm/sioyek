@@ -2875,20 +2875,6 @@ float* get_highlight_type_color(char type) {
     return &HIGHLIGHT_COLORS[0];
 }
 
-void get_rect_augument_data(fz_rect rect, float page_width, float page_height, std::vector<float>& res) {
-
-    std::vector<int> powers = { 0, 1, 2, 3, 4, 5, 6, 7 };
-    float x = rect.x0 / page_width;
-    float y = rect.y1 / page_height;
-
-    for (auto power : powers) {
-        res.push_back(std::sin(x * std::pow(2, power) / 4.0f));
-        res.push_back(std::cos(x * std::pow(2, power) / 4.0f));
-        res.push_back(std::sin(y * std::pow(2, power) / 4.0f));
-        res.push_back(std::cos(y * std::pow(2, power) / 4.0f));
-    }
-}
-
 bool parse_npy_header(std::string header_string, int* out_rows, int* out_cols) {
     int begin_index = header_string.rfind("(");
     int end_index = header_string.rfind(")");

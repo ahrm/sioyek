@@ -145,7 +145,7 @@ enum class SearchCaseSensitivity {
 
 struct DocumentCharacter {
     int c;
-    fz_rect rect;
+    PagelessDocumentRect rect;
     bool is_final = false;
     fz_stext_block* stext_block;
     fz_stext_line* stext_line;

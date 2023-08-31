@@ -233,7 +233,6 @@ QString android_file_uri_from_content_uri(QString uri);
 
 char get_highlight_color_type(float color[3]);
 float* get_highlight_type_color(char type);
-void get_rect_augument_data(fz_rect rect, float page_width, float page_height, std::vector<float>& res);
 bool load_npy(QString resource_name, std::vector<float>& output, int* out_rows, int* out_cols);
 std::wstring clean_bib_item(std::wstring bib_item);
 std::wstring clean_link_source_text(std::wstring link_source_text);
@@ -246,7 +245,6 @@ std::optional<DocumentRect> get_rect_vertically(bool below, fz_stext_page* page,
 
 QStringList extract_paper_data_from_json_response(QJsonValue json_object, const std::vector<QString>& path);
 QStringList extract_paper_string_from_json_response(QJsonObject json_object, std::wstring path);
-//std::vector<std::vector<QString>> extract_paper_string_list_from_json_response(QJsonObject json_object, std::wstring path);
 QString file_size_to_human_readable_string(int file_size);
 
 std::wstring new_uuid();

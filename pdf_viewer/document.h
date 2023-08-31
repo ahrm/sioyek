@@ -281,7 +281,7 @@ public:
     std::vector<DocumentPos> find_generic_locations(const std::wstring& type, const std::wstring& name);
     bool can_use_highlights();
 
-    std::vector<std::wstring> get_page_bib_candidates(int page_number, std::vector<fz_rect>* out_end_rects = nullptr);
+    std::vector<std::wstring> get_page_bib_candidates(int page_number, std::vector<PagelessDocumentRect>* out_end_rects = nullptr);
     std::optional<std::pair<std::wstring, fz_rect>> get_page_bib_with_reference(int page_number, std::wstring reference_text);
 
     void get_text_selection(AbsoluteDocumentPos selection_begin,
