@@ -1,5 +1,12 @@
-#include "document_view.h"
 #include <cmath>
+
+#include "document_view.h"
+#include "checksum.h"
+#include "database.h"
+#include "document.h"
+#include "utils.h"
+#include "config.h"
+#include "ui.h"
 
 extern float MOVE_SCREEN_PERCENTAGE;
 extern float FIT_TO_PAGE_WIDTH_RATIO;

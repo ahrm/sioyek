@@ -1,7 +1,16 @@
+#include <cmath>
+
+#include <qcolor.h>
+#include <qmouseevent.h>
+
 #include "pdf_view_opengl_widget.h"
 #include "path.h"
-#include <qcolor.h>
-#include <cmath>
+#include "book.h"
+#include "document.h"
+#include "document_view.h"
+#include "pdf_renderer.h"
+#include "config.h"
+#include "utils.h"
 
 #ifndef GL_MULTISAMPLE
 #define GL_MULTISAMPLE  0x809D

@@ -19,16 +19,17 @@
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
 
-#include "pdf_renderer.h"
-#include "document.h"
-#include "utils.h"
-#include "config.h"
-#include "ui.h"
-#include "checksum.h"
+#include "coordinates.h"
+#include "book.h"
 
 extern float ZOOM_INC_FACTOR;
 extern const int PAGE_PADDINGS;
 
+class CachedChecksummer;
+class Document;
+class DatabaseManager;
+class DocumentManager;
+class ConfigManager;
 
 class DocumentView {
 protected:

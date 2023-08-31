@@ -6,7 +6,6 @@
 #include <mupdf/fitz.h>
 //#include <gl/glew.h>
 #include <qopengl.h>
-#include <mutex>
 #include <variant>
 #include <qjsonobject.h>
 #include <qdatetime.h>

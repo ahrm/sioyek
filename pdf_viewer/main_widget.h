@@ -11,7 +11,6 @@
 
 #include <qnetworkaccessmanager.h>
 #include <qquickwidget.h>
-#include <qstandarditemmodel.h>
 
 #include "book.h"
 #include "path.h"
@@ -801,6 +800,7 @@ public:
     void toggle_rect_hints();
     void run_command_with_name(std::string command_name, bool should_pop_current_widget=false);
     QStringListModel* get_new_command_list_model();
+    void add_password(std::wstring path, std::string password);
 };
 
 #endif

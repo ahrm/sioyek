@@ -13,28 +13,10 @@
 #include <memory>
 #include <array>
 
-#include <qapplication.h>
-#include <qpushbutton.h>
 #include <qopenglwidget.h>
 #include <qopenglextrafunctions.h>
 #include <qopenglfunctions.h>
 #include <qopengl.h>
-#include <qwindow.h>
-#include <qkeyevent.h>
-#include <qlineedit.h>
-#include <qtreeview.h>
-#include <qsortfilterproxymodel.h>
-#include <qabstractitemmodel.h>
-#include <qopenglshaderprogram.h>
-#include <qtimer.h>
-#include <qdatetime.h>
-#include <qstackedwidget.h>
-#include <qboxlayout.h>
-#include <qlistview.h>
-#include <qstringlistmodel.h>
-#include <qlabel.h>
-#include <qtextedit.h>
-#include <qfilesystemwatcher.h>
 
 #ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
@@ -45,6 +27,9 @@
 #include "document_view.h"
 #include "path.h"
 
+class DocumentView;
+class PdfRenderer;
+class ConfigManager;
 
 struct MarkedDataRect {
     DocumentRect rect;

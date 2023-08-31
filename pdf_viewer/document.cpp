@@ -19,7 +19,10 @@
 
 #include <mupdf/pdf.h>
 
+#include "sqlite3.h"
 #include "checksum.h"
+#include "database.h"
+#include "utils.h"
 
 extern bool SHOULD_RENDER_PDF_ANNOTATIONS;
 

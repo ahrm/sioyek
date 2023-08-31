@@ -8466,3 +8466,7 @@ void MainWidget::run_command_with_name(std::string command_name, bool should_pop
 QStringListModel* MainWidget::get_new_command_list_model() {
     return new QStringListModel(command_manager->get_all_command_names());
 }
+
+void MainWidget::add_password(std::wstring path, std::string password) {
+    pdf_renderer->add_password(path, password);
+}

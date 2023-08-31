@@ -17,6 +17,7 @@
 #include <quuid.h>
 
 #include "checksum.h"
+#include "utils.h"
 
 extern bool DEBUG;
 extern float HIGHLIGHT_DELETE_THRESHOLD;

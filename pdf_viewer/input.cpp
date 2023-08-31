@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 
+#include <qjsondocument.h>
 #include <qkeyevent.h>
 #include <qstring.h>
 #include <qstringlist.h>
@@ -13,8 +14,10 @@
 #include "main_widget.h"
 #include "ui.h"
 #include "config.h"
+#include "document.h"
 #include "document_view.h"
 #include "pdf_view_opengl_widget.h"
+#include "database.h"
 
 #include "touchui/TouchListView.h"
 
@@ -3538,7 +3541,7 @@ public:
     EnterPasswordCommand(MainWidget* w) : TextCommand(w) {};
     void perform() {
         std::string password = utf8_encode(text.value());
-        widget->pdf_renderer->add_password(widget->main_document_view->get_document()->get_path(), password);
+        widget->add_password(widget->main_document_view->get_document()->get_path(), password);
     }
 
     std::string get_name() {

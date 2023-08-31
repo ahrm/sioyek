@@ -4,25 +4,26 @@
 #include <optional>
 #include <iostream>
 #include <thread>
+#include <mutex>
 #include <map>
 #include <unordered_map>
+#include <deque>
+#include <regex>
 
 //#include <Windows.h>
 #include <qstandarditemmodel.h>
 #include <qdatetime.h>
 
+#include <mupdf/fitz.h>
 #include <qobject.h>
 #include <qnetworkreply.h>
 #include <qjsondocument.h>
 #include <qurlquery.h>
 
-#include <mupdf/fitz.h>
-#include "sqlite3.h"
-
-#include "database.h"
-#include "utils.h"
 #include "book.h"
-#include "checksum.h"
+
+class CachedChecksummer;
+class DatabaseManager;
 
 class CharacterIterator {
     fz_stext_block* block = nullptr;
