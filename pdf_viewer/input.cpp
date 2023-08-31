@@ -77,10 +77,10 @@ void Command::handle_generic_requirement() {
 
 }
 
-fz_rect get_rect_from_string(std::wstring str) {
+AbsoluteRect get_rect_from_string(std::wstring str) {
     QStringList parts = QString::fromStdWString(str).split(' ');
 
-    fz_rect result;
+    AbsoluteRect result;
     result.x0 = parts[0].toFloat();
     result.y0 = parts[1].toFloat();
     result.x1 = parts[2].toFloat();
@@ -1182,7 +1182,7 @@ class AddBookmarkFreetextCommand : public Command {
 public:
 
     std::optional<std::wstring> text_;
-    std::optional<fz_rect> rect_;
+    std::optional<AbsoluteRect> rect_;
     int pending_index = -1;
 
     AddBookmarkFreetextCommand(MainWidget* w) : Command(w) {};
@@ -1204,7 +1204,7 @@ public:
         text_ = value;
     }
 
-    void set_rect_requirement(fz_rect value) {
+    void set_rect_requirement(AbsoluteRect value) {
         rect_ = value;
         pending_index = widget->doc()->add_incomplete_freetext_bookmark(value);
         widget->selected_bookmark_index = pending_index;
@@ -4513,7 +4513,7 @@ public:
     void set_text_requirement(std::wstring value) { get_command()->set_text_requirement(value); }
     void set_symbol_requirement(char value) { get_command()->set_symbol_requirement(value); }
     void set_file_requirement(std::wstring value) { get_command()->set_file_requirement(value); }
-    void set_rect_requirement(fz_rect value) { get_command()->set_rect_requirement(value); }
+    void set_rect_requirement(AbsoluteRect value) { get_command()->set_rect_requirement(value); }
     void set_generic_requirement(QVariant value) { get_command()->set_generic_requirement(value); }
     void handle_generic_requirement() { get_command()->handle_generic_requirement(); }
     void set_point_requirement(AbsoluteDocumentPos value) { get_command()->set_point_requirement(value); }
@@ -4551,7 +4551,7 @@ class DeleteFreehandDrawingsCommand : public Command {
 public:
     DeleteFreehandDrawingsCommand(MainWidget* w) : Command(w) {};
 
-    std::optional<fz_rect> rect_;
+    std::optional<AbsoluteRect> rect_;
     DrawingMode original_drawing_mode = DrawingMode::None;
 
 
@@ -4569,7 +4569,7 @@ public:
         return {};
     }
 
-    void set_rect_requirement(fz_rect rect) {
+    void set_rect_requirement(AbsoluteRect rect) {
         if (rect.x0 > rect.x1) {
             std::swap(rect.x0, rect.x1);
         }
@@ -4595,7 +4595,7 @@ class SelectFreehandDrawingsCommand : public Command {
 public:
     SelectFreehandDrawingsCommand(MainWidget* w) : Command(w) {};
 
-    std::optional<fz_rect> rect_;
+    std::optional<AbsoluteRect> rect_;
     DrawingMode original_drawing_mode = DrawingMode::None;
 
 
@@ -4613,7 +4613,7 @@ public:
         return {};
     }
 
-    void set_rect_requirement(fz_rect rect) {
+    void set_rect_requirement(AbsoluteRect rect) {
         if (rect.x0 > rect.x1) {
             std::swap(rect.x0, rect.x1);
         }
@@ -4639,7 +4639,7 @@ class CustomCommand : public Command {
 
     std::wstring raw_command;
     std::string name;
-    std::optional<fz_rect> command_rect;
+    std::optional<AbsoluteRect> command_rect;
     std::optional<AbsoluteDocumentPos> command_point;
     std::optional<std::wstring> command_text;
 
@@ -4662,7 +4662,7 @@ public:
         return {};
     }
 
-    void set_rect_requirement(fz_rect rect) {
+    void set_rect_requirement(AbsoluteRect rect) {
         command_rect = rect;
     }
 
@@ -5193,7 +5193,7 @@ public:
         }
     }
 
-    void set_rect_requirement(fz_rect value) {
+    void set_rect_requirement(AbsoluteRect value) {
         if (is_modal) {
             int current_mode_index = get_current_mode_index();
             if (current_mode_index >= 0) {
@@ -6395,7 +6395,7 @@ std::optional<std::wstring> Command::get_result() {
 void Command::set_text_requirement(std::wstring value) {}
 void Command::set_symbol_requirement(char value) {}
 void Command::set_file_requirement(std::wstring value) {}
-void Command::set_rect_requirement(fz_rect value) {}
+void Command::set_rect_requirement(AbsoluteRect value) {}
 void Command::set_point_requirement(AbsoluteDocumentPos value) {}
 
 std::wstring Command::get_text_default_value() {

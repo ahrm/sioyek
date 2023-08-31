@@ -47,7 +47,7 @@ public:
     virtual void set_text_requirement(std::wstring value);
     virtual void set_symbol_requirement(char value);
     virtual void set_file_requirement(std::wstring value);
-    virtual void set_rect_requirement(fz_rect value);
+    virtual void set_rect_requirement(AbsoluteRect value);
     virtual void set_point_requirement(AbsoluteDocumentPos value);
     virtual void set_generic_requirement(QVariant value);
     virtual void handle_generic_requirement();

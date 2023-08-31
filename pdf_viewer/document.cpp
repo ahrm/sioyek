@@ -196,7 +196,7 @@ std::string Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocu
     return bookmark.uuid;
 }
 
-int Document::add_incomplete_freetext_bookmark(fz_rect absrect) {
+int Document::add_incomplete_freetext_bookmark(AbsoluteRect absrect) {
     BookMark bookmark;
 
     bookmark.begin_x = absrect.x0;
