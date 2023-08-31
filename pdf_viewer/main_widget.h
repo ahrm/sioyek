@@ -13,6 +13,7 @@
 #include <qquickwidget.h>
 
 #include "book.h"
+#include "input.h"
 #include "path.h"
 
 extern float VERTICAL_MOVE_AMOUNT;

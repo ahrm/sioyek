@@ -1062,9 +1062,11 @@ int main(int argc, char* args[]) {
     MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, command_manager, &input_handler, &checksummer, &quit);
     windows.push_back(main_widget);
 
+#ifndef SIOYEK_ANDROID
     guard.on_delete = std::move([&](QLocalSocket* deleted_socket) {
         main_widget->on_socket_deleted(deleted_socket);
         });
+#endif
 
     if (DEFAULT_DARK_MODE) {
         main_widget->toggle_dark_mode();

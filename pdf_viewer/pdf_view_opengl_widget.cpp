@@ -4,6 +4,7 @@
 #include <qmouseevent.h>
 #include <qapplication.h>
 #include <qdatetime.h>
+#include <qfile.h>
 
 #include "pdf_view_opengl_widget.h"
 #include "path.h"
