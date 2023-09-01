@@ -177,7 +177,7 @@ public:
 #ifndef NDEBUG
     // properties for visualizing selected blocks, used only for debug
     std::optional<int> last_selected_block_page = {};
-    std::optional<fz_rect> last_selected_block = {};
+    std::optional<PagelessDocumentRect> last_selected_block = {};
 #endif
 
     std::vector<DocumentRect> word_rects;
@@ -231,11 +231,11 @@ public:
     void draw_empty_helper_message(QPainter* painter);
     void set_visible_page_number(std::optional<int> val);
     bool is_presentation_mode();
-    fz_rect	get_overview_rect();
+    NormalizedWindowRect get_overview_rect();
     NormalizedWindowRect get_overview_rect_pixel_perfect(int widget_width, int widget_height, int view_width, int view_height);
-    std::vector<fz_rect> get_overview_border_rects();
-    bool is_window_point_in_overview(fvec2 window_point);
-    bool is_window_point_in_overview_border(float window_x, float window_y, OverviewSide* which_border);
+    std::vector<NormalizedWindowRect> get_overview_border_rects();
+    bool is_window_point_in_overview(NormalizedWindowPos window_point);
+    bool is_window_point_in_overview_border(NormalizedWindowPos window_point, OverviewSide* which_border);
 
     void get_overview_offsets(float* offset_x, float* offset_y);
     void get_overview_size(float* width, float* height);

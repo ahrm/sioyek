@@ -204,3 +204,7 @@ PagelessDocumentRect rect_from_quad(fz_quad quad) {
 bool NormalizedWindowRect::is_visible() {
     return (x1 >= -1) && (x0 <= 1) && (y0 >= -1) && (y1 <= 1);
 }
+
+WindowRect AbsoluteRect::to_window(DocumentView* document_view) {
+    return document_view->normalized_to_window_rect(to_window_normalized(document_view));
+}

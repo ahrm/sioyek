@@ -168,6 +168,7 @@ struct AbsoluteRect : public EnhancedRect<fz_rect, AbsoluteDocumentPos> {
     DocumentRect to_document(Document* doc) const;
 
     NormalizedWindowRect to_window_normalized(DocumentView* document_view);
+    WindowRect to_window(DocumentView* document_view);
 };
 
 //template<typename T, int dim>

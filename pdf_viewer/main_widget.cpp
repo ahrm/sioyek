@@ -582,8 +582,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         // if we are resizing overview page, set the selected side of the overview window to the mosue position
         fvec2 offset_diff = normal_mpos - overview_resize_data->original_normal_mouse_pos;
         opengl_widget->set_overview_side_pos(
-            overview_resize_data.value().side_index,
-            overview_resize_data.value().original_rect,
+            overview_resize_data->side_index,
+            overview_resize_data->original_rect,
             offset_diff);
         validate_render();
         return;
@@ -1833,11 +1833,11 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
             }
 
             int page = typing_location.value().page;
-            PagelessDocumentRect character_rect = fz_rect_from_quad(typing_location.value().character->quad);
+            PagelessDocumentRect character_rect = rect_from_quad(typing_location.value().character->quad);
             std::optional<PagelessDocumentRect> wrong_rect = {};
 
             if (typing_location.value().previous_character) {
-                wrong_rect = fz_rect_from_quad(typing_location.value().previous_character->character->quad);
+                wrong_rect = rect_from_quad(typing_location.value().previous_character->character->quad);
             }
 
             if (should_focus) {
@@ -2072,7 +2072,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
     AbsoluteDocumentPos abs_doc_pos = main_document_view->window_to_absolute_document_pos(click_pos);
 
-    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(click_pos);
+    NormalizedWindowPos click_normalized_window_pos = main_document_view->window_to_normalized_window_pos(click_pos);
 
 
 
@@ -2126,21 +2126,21 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
     if (down == true) {
 
         OverviewSide border_index = static_cast<OverviewSide>(-1);
-        if (opengl_widget->is_window_point_in_overview_border(normal_x, normal_y, &border_index)) {
+        if (opengl_widget->is_window_point_in_overview_border(click_normalized_window_pos, &border_index)) {
             OverviewResizeData resize_data;
-            resize_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
+            resize_data.original_normal_mouse_pos = click_normalized_window_pos;
             resize_data.original_rect = opengl_widget->get_overview_rect();
             resize_data.side_index = border_index;
             overview_resize_data = resize_data;
             return;
         }
-        if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
+        if (opengl_widget->is_window_point_in_overview(click_normalized_window_pos)) {
             float original_offset_x, original_offset_y;
 
             if (TOUCH_MODE) {
                 OverviewTouchMoveData touch_move_data;
                 //touch_move_data.original_mouse_offset_y = doc()->document_to_absolute_pos(opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y })).y;
-                touch_move_data.original_mouse_normalized_y = normal_y;
+                touch_move_data.original_mouse_normalized_y = click_normalized_window_pos.y;
                 float overview_offset_y = opengl_widget->get_overview_page()->absolute_offset_y;
                 touch_move_data.overview_original_pos_absolute_offset_y = overview_offset_y;
                 overview_touch_move_data = touch_move_data;
@@ -2148,7 +2148,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             else {
                 OverviewMoveData move_data;
                 opengl_widget->get_overview_offsets(&original_offset_x, &original_offset_y);
-                move_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
+                move_data.original_normal_mouse_pos = click_normalized_window_pos;
                 move_data.original_offsets = fvec2{ original_offset_x, original_offset_y };
                 overview_move_data = move_data;
             }
@@ -2437,9 +2437,9 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
     AbsoluteRect source_rect_absolute = { fz_empty_rect };
 
     if ((reference_range.first > -1) && (reference_range.second > 0) && out_rect) {
-        source_rect_document.rect = fz_rect_from_quad(flat_chars[reference_range.first]->quad);
+        source_rect_document.rect = rect_from_quad(flat_chars[reference_range.first]->quad);
         for (int i = reference_range.first + 1; i <= reference_range.second; i++) {
-            source_rect_document.rect = fz_union_rect(source_rect_document.rect, fz_rect_from_quad(flat_chars[i]->quad));
+            source_rect_document.rect = fz_union_rect(source_rect_document.rect, rect_from_quad(flat_chars[i]->quad));
         }
         source_rect_absolute = source_rect_document.to_absolute(doc());
         *out_rect = source_rect_absolute;
@@ -5620,7 +5620,7 @@ void MainWidget::handle_toggle_typing_mode() {
         charaddr.page = page - 1;
         charaddr.next_page();
 
-        opengl_widget->set_typing_rect(charaddr.page, fz_rect_from_quad(charaddr.character->quad), {});
+        opengl_widget->set_typing_rect(charaddr.page, rect_from_quad(charaddr.character->quad), {});
 
         typing_location = std::move(charaddr);
         main_document_view->set_offset_y(typing_location.value().focus_offset());
@@ -5842,7 +5842,7 @@ void MainWidget::handle_mobile_selection() {
     fz_stext_char* character_under = get_closest_character_to_cusrsor(last_hold_point);
     if (character_under) {
         int current_page = get_current_page_number();
-        AbsoluteRect centered_rect = DocumentRect(fz_rect_from_quad(character_under->quad), current_page).to_absolute(doc());
+        AbsoluteRect centered_rect = DocumentRect(rect_from_quad(character_under->quad), current_page).to_absolute(doc());
         main_document_view->selected_character_rects.push_back(centered_rect);
 
         AbsoluteDocumentPos begin_abspos;
@@ -6665,7 +6665,7 @@ void MainWidget::handle_export_marked_data() {
     QJsonArray page_chars;
 
     for (auto chr : flat_chars) {
-        PagelessDocumentRect chr_rect = fz_rect_from_quad(chr->quad);
+        PagelessDocumentRect chr_rect = rect_from_quad(chr->quad);
         QJsonArray chr_json;
         chr_json.append(chr->c);
         chr_json.append(chr_rect.x0);

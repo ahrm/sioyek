@@ -154,7 +154,7 @@ GLfloat rotation_uvs[4][8] = {
 
 OpenGLSharedResources PdfViewOpenGLWidget::shared_gl_objects;
 
-bool num_slices_for_page_rect(fz_rect page_rect, int* h_slices, int* v_slices) {
+bool num_slices_for_page_rect(PagelessDocumentRect page_rect, int* h_slices, int* v_slices) {
     /*
     determines the number of vertical/horizontal slices when rendering
     normally we don't use slicing when SLICED_RENDERING is false, unless
@@ -455,7 +455,7 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
     glDisable(GL_BLEND);
 
 }
-void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWindowRect window_rect_, int flags) {
+void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWindowRect window_rect, int flags) {
 
     if (is_rotated()) {
         return;
@@ -470,8 +470,6 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWind
     glUseProgram(program);
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
-
-    fz_rect window_rect = window_rect_;
 
     if (flags & HRF_UNDERLINE) {
         float underline_data[] = {
@@ -763,12 +761,6 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     draw_stencil_rects({ window_rect });
     use_stencil_to_write(true);
 
-    fz_rect page_rect;
-    page_rect.x0 = window_rect.x0;
-    page_rect.x1 = window_rect.x1;
-    page_rect.y0 = window_rect.y0;
-    page_rect.y1 = window_rect.y1;
-
     float gray_color[] = { 0.5f, 0.5f, 0.5f };
     float bg_color[] = { 1.0f, 1.0f, 1.0f };
     get_background_color(bg_color);
@@ -834,7 +826,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
     float page_width = document_view->get_document()->get_page_width(page_number);
     float page_height = document_view->get_document()->get_page_height(page_number);
-    fz_rect page_rect = { 0, 0, page_width, page_height };
+    PagelessDocumentRect page_rect({ 0, 0, page_width, page_height });
     if ((page_width < 0) || (page_height < 0)) return;
 
     bool is_sliced = num_slices_for_page_rect(page_rect, &nh, &nv);
@@ -899,14 +891,14 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
         float slice_height = document_view->get_document()->get_page_height(page_number) / nv_;
         float slice_width = document_view->get_document()->get_page_width(page_number) / nh_;
 
-        fz_rect page_rect;
-        fz_rect full_page_rect = { 0,
+        PagelessDocumentRect page_rect;
+        PagelessDocumentRect full_page_rect({ 0,
                 0,
                  document_view->get_document()->get_page_width(page_number),
                  document_view->get_document()->get_page_height(page_number)
-        };
+        });
 
-        fz_irect full_page_irect = fz_round_rect(fz_transform_rect(full_page_rect,
+        WindowRect full_page_irect = fz_round_rect(fz_transform_rect(full_page_rect,
             fz_scale(document_view->get_zoom_level(), document_view->get_zoom_level())));
 
         if (is_sliced) {
@@ -928,7 +920,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
                 (h_index + 1) * slice_width,
                 (v_index + 1) * slice_height
             };
-            fz_irect page_irect;
+            WindowRect page_irect;
             page_irect.x0 = ((full_page_irect.x1 - full_page_irect.x0) / nh_) * h_index;
             page_irect.x1 = ((full_page_irect.x1 - full_page_irect.x0) / nh_) * (h_index + 1);
             if (h_index == (nh_ - 1)) {
@@ -977,7 +969,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
             is_not_exact = false;
         }
 
-        fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(DocumentRect(page_rect, page_number),
+        NormalizedWindowRect window_rect = document_view->document_to_window_rect_pixel_perfect(DocumentRect(page_rect, page_number),
             static_cast<int>(rendered_width / device_pixel_ratio),
             static_cast<int>(rendered_height / device_pixel_ratio), is_sliced);
 
@@ -1009,16 +1001,17 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
             // render page separator
             glUseProgram(shared_gl_objects.separator_program);
 
-            fz_rect separator_rect = { 0,
+            PagelessDocumentRect separator_rect({
+                0,
                 document_view->get_document()->get_page_height(page_number) - PAGE_SEPARATOR_WIDTH / 2,
                 document_view->get_document()->get_page_width(page_number),
-                document_view->get_document()->get_page_height(page_number) + PAGE_SEPARATOR_WIDTH / 2 };
+                document_view->get_document()->get_page_height(page_number) + PAGE_SEPARATOR_WIDTH / 2
+                });
 
-            //fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height) {
+
             if (PAGE_SEPARATOR_WIDTH > 0) {
 
-                //fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
-                fz_rect separator_window_rect = DocumentRect(separator_rect, page_number).to_window_normalized(document_view);
+                NormalizedWindowRect separator_window_rect = DocumentRect(separator_rect, page_number).to_window_normalized(document_view);
                 rect_to_quad(separator_window_rect, page_vertices);
 
                 glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
@@ -1119,7 +1112,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
                     float page_width = document_view->get_document()->get_page_width(max_page + i);
                     float page_height = document_view->get_document()->get_page_width(max_page + i);
-                    fz_rect page_rect = { 0, 0, page_width, page_height };
+                    PagelessDocumentRect page_rect({ 0, 0, page_width, page_height });
                     int nh, nv;
                     num_slices_for_page_rect(page_rect, &nh, &nv);
 
@@ -1161,7 +1154,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             config_manager->get_config<float>(L"link_highlight_color"));
 
         int page = last_selected_block_page.value();
-        fz_rect rect = last_selected_block.value();
+        PagelessDocumentRect rect = last_selected_block.value();
         render_highlight_document(shared_gl_objects.highlight_program, DocumentRect { rect, page });
     }
 #endif
@@ -1228,12 +1221,12 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         float underline_color[] = { 1.0f, 0.0f, 0.0f, 0.9 };
         glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, underline_color);
 
-        fz_rect underline_rect;
-        underline_rect.x0 = underline.value().x - 3.0f;
-        underline_rect.x1 = underline.value().x + 3.0f;
+        AbsoluteRect underline_rect;
+        underline_rect.x0 = underline->x - 3.0f;
+        underline_rect.x1 = underline->x + 3.0f;
 
-        underline_rect.y0 = underline.value().y - 1.0f;
-        underline_rect.y1 = underline.value().y + 1.0f;
+        underline_rect.y0 = underline->y - 1.0f;
+        underline_rect.y1 = underline->y + 1.0f;
 
         render_highlight_absolute(shared_gl_objects.highlight_program, underline_rect, false);
     }
@@ -1314,7 +1307,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value(), HRF_FILL | HRF_BORDER);
 
         use_stencil_to_write(false);
-        fz_rect window_rect = { -1, -1, 1, 1 };
+        NormalizedWindowRect window_rect({ -1, -1, 1, 1 });
         render_highlight_window(shared_gl_objects.highlight_program, window_rect, true);
 
         disable_stencil();
@@ -1346,7 +1339,6 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         }
     }
     for (auto [type, marked_data_of_type] : get_marked_data_rect_map()) {
-        //fz_rect window_rect = document_view->document_to_window_rect(page, rect);
 
         glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[type * 3]);
         for (auto marked_data : marked_data_of_type) {
@@ -1411,14 +1403,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                     }
                 }
                 else {
-                    fz_rect bookmark_absolute_rect;
-                    bookmark_absolute_rect.x0 = bookmarks[i].begin_x;
-                    bookmark_absolute_rect.x1 = bookmarks[i].end_x;
-                    bookmark_absolute_rect.y0 = bookmarks[i].begin_y;
-                    bookmark_absolute_rect.y1 = bookmarks[i].end_y;
-
-                    fz_rect normalized_rect = document_view->absolute_to_window_rect(bookmark_absolute_rect);
-                    fz_irect window_rect = document_view->normalized_to_window_rect(normalized_rect);
+                    WindowRect window_rect = bookmarks[i].get_rectangle().to_window(document_view);
                     QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
                     QFont font = painter->font();
@@ -1799,12 +1784,12 @@ bool PdfViewOpenGLWidget::is_presentation_mode() {
     return false;
 }
 
-fz_rect	PdfViewOpenGLWidget::get_overview_rect() {
-    fz_rect res;
+NormalizedWindowRect PdfViewOpenGLWidget::get_overview_rect() {
+    NormalizedWindowRect res;
     res.x0 = overview_offset_x - overview_half_width;
-    res.y0 = -overview_offset_y - overview_half_height;
+    res.y0 = overview_offset_y - overview_half_height;
     res.x1 = overview_offset_x + overview_half_width;
-    res.y1 = -overview_offset_y + overview_half_height;
+    res.y1 = overview_offset_y + overview_half_height;
     return res;
 }
 
@@ -1823,33 +1808,33 @@ NormalizedWindowRect	PdfViewOpenGLWidget::get_overview_rect_pixel_perfect(int wi
     return res;
 }
 
-std::vector<fz_rect> PdfViewOpenGLWidget::get_overview_border_rects() {
-    std::vector<fz_rect> res;
+std::vector<NormalizedWindowRect> PdfViewOpenGLWidget::get_overview_border_rects() {
+    std::vector<NormalizedWindowRect> res;
 
-    fz_rect bottom_rect;
-    fz_rect top_rect;
-    fz_rect left_rect;
-    fz_rect right_rect;
+    NormalizedWindowRect bottom_rect;
+    NormalizedWindowRect top_rect;
+    NormalizedWindowRect left_rect;
+    NormalizedWindowRect right_rect;
 
     bottom_rect.x0 = overview_offset_x - overview_half_width;
-    bottom_rect.y0 = -overview_offset_y - overview_half_height - 0.05f;
+    bottom_rect.y0 = overview_offset_y - overview_half_height - 0.05f;
     bottom_rect.x1 = overview_offset_x + overview_half_width;
-    bottom_rect.y1 = -overview_offset_y - overview_half_height + 0.05f;
+    bottom_rect.y1 = overview_offset_y - overview_half_height + 0.05f;
 
     top_rect.x0 = overview_offset_x - overview_half_width;
-    top_rect.y0 = -overview_offset_y + overview_half_height - 0.05f;
+    top_rect.y0 = overview_offset_y + overview_half_height - 0.05f;
     top_rect.x1 = overview_offset_x + overview_half_width;
-    top_rect.y1 = -overview_offset_y + overview_half_height + 0.05f;
+    top_rect.y1 = overview_offset_y + overview_half_height + 0.05f;
 
     left_rect.x0 = overview_offset_x - overview_half_width - 0.05f;
-    left_rect.y0 = -overview_offset_y - overview_half_height;
+    left_rect.y0 = overview_offset_y - overview_half_height;
     left_rect.x1 = overview_offset_x - overview_half_width + 0.05f;
-    left_rect.y1 = -overview_offset_y + overview_half_height;
+    left_rect.y1 = overview_offset_y + overview_half_height;
 
     right_rect.x0 = overview_offset_x + overview_half_width - 0.05f;
-    right_rect.y0 = -overview_offset_y - overview_half_height;
+    right_rect.y0 = overview_offset_y - overview_half_height;
     right_rect.x1 = overview_offset_x + overview_half_width + 0.05f;
-    right_rect.y1 = -overview_offset_y + overview_half_height;
+    right_rect.y1 = overview_offset_y + overview_half_height;
 
     res.push_back(bottom_rect);
     res.push_back(top_rect);
@@ -1859,26 +1844,23 @@ std::vector<fz_rect> PdfViewOpenGLWidget::get_overview_border_rects() {
     return res;
 }
 
-bool PdfViewOpenGLWidget::is_window_point_in_overview(fvec2 window_point) {
+bool PdfViewOpenGLWidget::is_window_point_in_overview(NormalizedWindowPos window_point) {
     if (get_overview_page()) {
-        fz_point point{ window_point.x(), window_point.y() };
-        fz_rect rect = get_overview_rect();
-        bool res = fz_is_point_inside_rect(point, rect);
-        return res;
+        NormalizedWindowRect rect = get_overview_rect();
+        return rect.contains(window_point);
     }
     return false;
 }
 
-bool PdfViewOpenGLWidget::is_window_point_in_overview_border(float window_x, float window_y, OverviewSide* which_border) {
+bool PdfViewOpenGLWidget::is_window_point_in_overview_border(NormalizedWindowPos window_point, OverviewSide* which_border) {
 
     if (!get_overview_page().has_value()) {
         return false;
     }
 
-    fz_point point{ window_x, window_y };
-    std::vector<fz_rect> rects = get_overview_border_rects();
+    std::vector<NormalizedWindowRect> rects = get_overview_border_rects();
     for (size_t i = 0; i < rects.size(); i++) {
-        if (fz_is_point_inside_rect(point, rects[i])) {
+        if (rects[i].contains(window_point)) {
             *which_border = static_cast<OverviewSide>(i);
             return true;
         }
@@ -1947,13 +1929,13 @@ void PdfViewOpenGLWidget::set_overview_side_pos(int index, fz_rect original_rect
 }
 
 void PdfViewOpenGLWidget::set_overview_rect(fz_rect rect) {
-    float halfwidth = (rect.x1 - rect.x0) / 2;
-    float halfheight = (rect.y1 - rect.y0) / 2;
+    float halfwidth = std::abs(rect.x1 - rect.x0) / 2;
+    float halfheight = std::abs(rect.y1 - rect.y0) / 2;
     float offset_x = rect.x0 + halfwidth;
     float offset_y = rect.y0 + halfheight;
 
     overview_offset_x = offset_x;
-    overview_offset_y = -offset_y;
+    overview_offset_y = offset_y;
     overview_half_width = halfwidth;
     overview_half_height = halfheight;
 }

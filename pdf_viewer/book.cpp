@@ -284,10 +284,19 @@ bool Portal::is_visible() const {
 }
 
 AbsoluteRect BookMark::get_rectangle() const{
-    return AbsoluteRect(
-        AbsoluteDocumentPos{ begin_x - BOOKMARK_RECT_SIZE, begin_y - BOOKMARK_RECT_SIZE },
-        AbsoluteDocumentPos{ begin_x + BOOKMARK_RECT_SIZE, begin_y + BOOKMARK_RECT_SIZE }
-    );
+    if (end_y > -1) {
+
+        return AbsoluteRect(
+            AbsoluteDocumentPos{ begin_x, begin_y },
+            AbsoluteDocumentPos{ end_x, end_y }
+        );
+    }
+    else {
+        return AbsoluteRect(
+            AbsoluteDocumentPos{ begin_x - BOOKMARK_RECT_SIZE, begin_y - BOOKMARK_RECT_SIZE },
+            AbsoluteDocumentPos{ begin_x + BOOKMARK_RECT_SIZE, begin_y + BOOKMARK_RECT_SIZE }
+        );
+    }
 }
 
 AbsoluteRect Portal::get_rectangle() const{

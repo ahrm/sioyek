@@ -1125,13 +1125,6 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     candid.source_text = get_document()->get_pdf_link_text(link);
                     candid.target_pos = DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y };
                     result.push_back(candid);
-                    //result.push_back(
-                    //    std::make_pair(
-                    //        DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y },
-                    //        current_document->document_to_absolute_rect(line_page_number, link.rects[0], true)
-                    //    )
-                    //);
-                    //if (src_rects) src_rects->push_back(link.rect);
                 }
 
                 return result;
