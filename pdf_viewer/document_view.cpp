@@ -627,41 +627,6 @@ int DocumentView::get_center_page_number() {
     }
 }
 
-//void DocumentView::search_text(const wchar_t* text) {
-//	if (!current_document) return;
-//
-//	search_results_mutex.lock();
-//	search_results.clear();
-//	current_search_result_index = 0;
-//	search_results_mutex.unlock();
-//
-//	is_searching = true;
-//	pdf_renderer->add_request(current_document->get_path(), 
-//		get_current_page_number(), text, &search_results, &percent_done, &is_searching, &search_results_mutex);
-//}
-
-//void DocumentView::goto_search_result(int offset) {
-//	if (!current_document) return;
-//
-//	search_results_mutex.lock();
-//	if (search_results.size() == 0) {
-//		search_results_mutex.unlock();
-//		return;
-//	}
-//
-//	int target_index = mod(current_search_result_index + offset, search_results.size());
-//	current_search_result_index = target_index;
-//
-//	int target_page = search_results[target_index].page;
-//
-//	fz_rect rect = search_results[target_index].rect;
-//
-//	float new_offset_y = rect.y0 + current_document->get_accum_page_height(target_page);
-//
-//	set_offset_y(new_offset_y);
-//	search_results_mutex.unlock();
-//}
-
 void DocumentView::get_visible_pages(int window_height, std::vector<int>& visible_pages) {
     if (!current_document) return;
 
@@ -671,19 +636,6 @@ void DocumentView::get_visible_pages(int window_height, std::vector<int>& visibl
     window_y_range_end += 1;
 
     current_document->get_visible_pages(window_y_range_begin, window_y_range_end, visible_pages);
-
-    //float page_begin = 0.0f;
-
-    //const vector<float>& page_heights = current_document->get_page_heights();
-    //for (int i = 0; i < page_heights.size(); i++) {
-    //	float page_end = page_begin + page_heights[i];
-
-    //	if (intersects(window_y_range_begin, window_y_range_end, page_begin, page_end)) {
-    //		visible_pages.push_back(i);
-    //	}
-    //	page_begin = page_end;
-    //}
-    //cout << "num visible pages:" << visible_pages.size() << endl;
 }
 
 void DocumentView::move_pages(int num_pages) {
@@ -985,15 +937,6 @@ void DocumentView::set_vertical_line_pos(float pos) {
     ruler_rect = {};
     is_ruler_mode_ = true;
 }
-
-void DocumentView::set_vertical_line_rect(fz_rect rect) {
-    ruler_rect = rect;
-    is_ruler_mode_ = true;
-}
-
-//float DocumentView::get_vertical_line_pos() {
-//	return vertical_line_pos;
-//}
 
 float DocumentView::get_ruler_pos() {
     if (ruler_rect.has_value()) {

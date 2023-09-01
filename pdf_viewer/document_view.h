@@ -162,7 +162,6 @@ public:
     std::vector<int> get_current_chapter_recursive_index();
     float view_height_in_document_space();
     void set_vertical_line_pos(float pos);
-    void set_vertical_line_rect(fz_rect rect);
     bool has_ruler_rect();
     std::optional<AbsoluteRect> get_ruler_rect();
     //float get_vertical_line_pos();
