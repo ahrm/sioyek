@@ -350,7 +350,7 @@ public:
     const std::vector<AbsoluteRect>& get_page_lines(
         int page,
         std::vector<std::wstring>* line_texts = nullptr,
-        std::vector<std::vector<fz_rect>>* out_line_rects = nullptr);
+        std::vector<std::vector<PagelessDocumentRect>>* out_line_rects = nullptr);
 
     std::wstring get_drawings_file_path();
     std::wstring get_annotations_file_path();

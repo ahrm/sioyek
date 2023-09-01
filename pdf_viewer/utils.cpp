@@ -862,8 +862,8 @@ std::wstring get_string_from_stext_line(fz_stext_line* line) {
     return res;
 }
 
-std::vector<fz_rect> get_char_rects_from_stext_line(fz_stext_line* line) {
-    std::vector<fz_rect> res;
+std::vector<PagelessDocumentRect> get_char_rects_from_stext_line(fz_stext_line* line) {
+    std::vector<PagelessDocumentRect> res;
     LL_ITER(ch, line->first_char) {
         res.push_back(fz_rect_from_quad(ch->quad));
     }
@@ -2169,7 +2169,7 @@ float width_increase_bonus(float ratio) {
 }
 
 int find_best_merge_index_for_line_index(const std::vector<fz_stext_line*>& lines,
-    const std::vector<fz_rect>& line_rects,
+    const std::vector<PagelessDocumentRect>& line_rects,
     const std::vector<int> char_counts,
     int index) {
 
@@ -2274,35 +2274,15 @@ int line_num_chars(fz_stext_line* line) {
 
 void merge_lines(
     std::vector<fz_stext_line*> lines,
-    std::vector<fz_rect>& out_rects,
+    std::vector<PagelessDocumentRect>& out_rects,
     std::vector<std::wstring>& out_texts,
-    std::vector<std::vector<fz_rect>>* out_line_chars) {
+    std::vector<std::vector<PagelessDocumentRect>>* out_line_chars) {
 
-    //for (int i = 0; i < lines.size(); i++) {
-    //    fz_rect box = lines[i]->bbox;
-    //    std::wstring text;
-    //    std::vector<fz_rect> line_chars;
-    //    fz_stext_char* current_char = lines[i]->first_char;
-    //    while (current_char) {
-    //        text.push_back(current_char->c);
-    //        line_chars.push_back(fz_rect_from_quad(current_char->quad));
-    //        current_char = current_char->next;
-    //    }
-
-    //    out_rects.push_back(box);
-    //    out_texts.push_back(text);
-    //    if (out_line_chars) {
-    //        out_line_chars->push_back(line_chars);
-    //    }
-
-    //}
-    //return;
-
-    std::vector<fz_rect> temp_rects;
+    std::vector<PagelessDocumentRect> temp_rects;
     std::vector<std::wstring> temp_texts;
-    std::vector<std::vector<fz_rect>> temp_line_chars;
+    std::vector<std::vector<PagelessDocumentRect>> temp_line_chars;
 
-    std::vector<fz_rect> custom_line_rects;
+    std::vector<PagelessDocumentRect> custom_line_rects;
     std::vector<int> char_counts;
 
     std::vector<int> indices_to_delete;
@@ -2322,25 +2302,19 @@ void merge_lines(
     }
 
     for (size_t i = 0; i < lines.size(); i++) {
-        fz_rect rect = custom_line_rects[i];
+        PagelessDocumentRect rect = custom_line_rects[i];
         int best_index = find_best_merge_index_for_line_index(lines, custom_line_rects, char_counts, i);
         std::wstring text = get_string_from_stext_line(lines[i]);
-        std::vector<fz_rect> line_chars;
+        std::vector<PagelessDocumentRect> line_chars;
         if (out_line_chars) {
             line_chars = get_char_rects_from_stext_line(lines[i]);
         }
-
-        //if (out_line_chars) {
-        //    LL_ITER(ch, lines[i]->first_char) {
-        //        line_chars.push_back(fz_rect_from_quad(ch->quad));
-        //    }
-        //}
 
         for (int j = i + 1; j <= best_index; j++) {
             rect = fz_union_rect(rect, lines[j]->bbox);
             text = text + get_string_from_stext_line(lines[j]);
             if (out_line_chars) {
-                std::vector<fz_rect> merged_line_chars = get_char_rects_from_stext_line(lines[j]);
+                std::vector<PagelessDocumentRect> merged_line_chars = get_char_rects_from_stext_line(lines[j]);
                 line_chars.insert(line_chars.end(), merged_line_chars.begin(), merged_line_chars.end());
             }
         }
@@ -3285,8 +3259,8 @@ bool are_same(const FreehandDrawing& lhs, const FreehandDrawing& rhs) {
 
 }
 
-fz_rect get_range_rect_union(const std::vector<fz_rect>& rects, int first_index, int last_index) {
-    fz_rect res = rects[first_index];
+PagelessDocumentRect get_range_rect_union(const std::vector<PagelessDocumentRect>& rects, int first_index, int last_index) {
+    PagelessDocumentRect res = rects[first_index];
     for (int i = first_index + 1; i <= last_index; i++) {
         res = fz_union_rect(res, rects[i]);
     }

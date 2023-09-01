@@ -76,7 +76,7 @@ void run_command(std::wstring command, QStringList parameters, bool wait = true)
 
 std::wstring get_string_from_stext_block(fz_stext_block* block);
 std::wstring get_string_from_stext_line(fz_stext_line* line);
-std::vector<fz_rect> get_char_rects_from_stext_line(fz_stext_line* line);
+std::vector<PagelessDocumentRect> get_char_rects_from_stext_line(fz_stext_line* line);
 void sleep_ms(unsigned int ms);
 //void open_url(const std::string& url_string);
 //void open_url(const std::wstring& url_string);
@@ -166,9 +166,9 @@ bool is_title_parent_of(const std::wstring& parent_title, const std::wstring& ch
 std::wstring find_first_regex_match(const std::wstring& haystack, const std::wstring& regex_string);
 void merge_lines(
     std::vector<fz_stext_line*> lines,
-    std::vector<fz_rect>& out_rects,
+    std::vector<PagelessDocumentRect>& out_rects,
     std::vector<std::wstring>& out_texts,
-    std::vector<std::vector<fz_rect>>* out_line_characters);
+    std::vector<std::vector<PagelessDocumentRect>>* out_line_characters);
 
 int lcs(const char* X, const char* Y, int m, int n);
 bool has_arg(int argc, char** argv, std::string key);
@@ -317,7 +317,7 @@ std::map<std::string, int> annotation_prism(std::vector<T>& file_annotations,
     return existing_annotation_ids;
 }
 
-fz_rect get_range_rect_union(const std::vector<fz_rect>& rects, int first_index, int last_index);
+PagelessDocumentRect get_range_rect_union(const std::vector<PagelessDocumentRect>& rects, int first_index, int last_index);
 std::wstring get_paper_name_from_reference_text(std::wstring reference_text);
 fz_rect get_first_page_size(fz_context* ctx, const std::wstring& document_path);
 QString get_direct_pdf_url_from_archive_url(QString url);

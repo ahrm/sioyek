@@ -1192,10 +1192,10 @@ std::optional<std::wstring> DocumentView::get_selected_line_text() {
     return {};
 }
 
-void DocumentView::get_rects_from_ranges(int page_number, const std::vector<fz_rect>& line_char_rects, const std::vector<std::pair<int, int>>& ranges, std::vector<fz_rect>& out_rects) {
+void DocumentView::get_rects_from_ranges(int page_number, const std::vector<PagelessDocumentRect>& line_char_rects, const std::vector<std::pair<int, int>>& ranges, std::vector<PagelessDocumentRect>& out_rects) {
     for (int i = 0; i < ranges.size(); i++) {
         auto [first, last] = ranges[i];
-        fz_rect current_source_rect = get_range_rect_union(line_char_rects, first, last);
+        PagelessDocumentRect current_source_rect = get_range_rect_union(line_char_rects, first, last);
         current_source_rect = current_document->document_to_absolute_rect(page_number, current_source_rect);
         out_rects.push_back(current_source_rect);
     }
@@ -1211,7 +1211,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
 
     if (line_index > 0) {
         std::vector<std::wstring> lines;
-        std::vector<std::vector<fz_rect>> line_char_rects;
+        std::vector<std::vector<PagelessDocumentRect>> line_char_rects;
 
         int line_page_number = get_vertical_line_page();
 
@@ -1263,9 +1263,9 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
             std::vector<std::wstring> reference_texts = find_all_regex_matches(content, reference_regex, &reference_ranges);
             std::vector<std::wstring> equation_texts = find_all_regex_matches(content, equation_regex, &equation_ranges);
 
-            std::vector<fz_rect> generic_item_rects;
-            std::vector<fz_rect> reference_rects;
-            std::vector<fz_rect> equation_rects;
+            std::vector<PagelessDocumentRect> generic_item_rects;
+            std::vector<PagelessDocumentRect> reference_rects;
+            std::vector<PagelessDocumentRect> equation_rects;
 
             int ruler_page = get_vertical_line_page();
             get_rects_from_ranges(ruler_page, line_char_rects[line_index], generic_item_ranges, generic_item_rects);
@@ -1312,7 +1312,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
 
 
                         if (index.size() > 0) {
-                            std::vector<fz_rect> subrects;
+                            std::vector<PagelessDocumentRect> subrects;
                             get_rects_from_ranges(ruler_page, line_char_rects[line_index], {std::make_pair(rect_range_begin, rect_range_end)}, subrects);
 
                             SmartViewCandidate candid;

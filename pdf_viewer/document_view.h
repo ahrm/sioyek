@@ -195,7 +195,7 @@ public:
     void get_visible_links(std::vector<PdfLink>& visible_page_links);
     void set_text_mark(bool is_begin);
     void toggle_text_mark();
-    void get_rects_from_ranges(int page_number, const std::vector<fz_rect>& line_char_rects, const std::vector<std::pair<int, int>>& ranges, std::vector<fz_rect>& out_rects);
+    void get_rects_from_ranges(int page_number, const std::vector<PagelessDocumentRect>& line_char_rects, const std::vector<std::pair<int, int>>& ranges, std::vector<PagelessDocumentRect>& out_rects);
     std::optional<AbsoluteRect> expand_selection(bool is_begin, bool word);
     std::optional<AbsoluteRect> shrink_selection(bool is_begin, bool word);
     //std::optional<fz_rect> expand_selection_below();

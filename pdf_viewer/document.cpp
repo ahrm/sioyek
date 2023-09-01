@@ -2817,29 +2817,22 @@ AbsoluteRect Document::get_ith_next_line_from_absolute_y(int page, int line_inde
 const std::vector<AbsoluteRect>& Document::get_page_lines(
     int page,
     std::vector<std::wstring>* out_line_texts,
-    std::vector<std::vector<fz_rect>>* out_line_rects){
+    std::vector<std::vector<PagelessDocumentRect>>* out_line_rects){
 
 
     if ((out_line_rects == nullptr) && (cached_page_line_rects.find(page) != cached_page_line_rects.end())) {
         if (out_line_texts) {
             *out_line_texts = cached_line_texts[page];
         }
-        //if (out_line_character_rects) {
-        //    *out_line_character_rects = cached_line_char_rects[page];
-        //}
         return cached_page_line_rects[page];
     }
     else {
         fz_stext_page* stext_page = get_stext_with_page_number(page);
         if (stext_page && stext_page->first_block && (!FORCE_CUSTOM_LINE_ALGORITHM)) {
 
-            fz_page* mupdf_page = fz_load_page(context, doc, page);
-            fz_rect bound = fz_bound_page(context, mupdf_page);
-            bound = document_to_absolute_rect(page, bound);
+            PagelessDocumentRect bound = get_page_absolute_rect(page);
 
-            fz_drop_page(context, mupdf_page);
-
-            std::vector<fz_rect> line_rects;
+            std::vector<PagelessDocumentRect> line_rects;
             std::vector<std::wstring> line_texts;
             std::vector<fz_stext_line*> flat_lines;
 
@@ -2850,37 +2843,31 @@ const std::vector<AbsoluteRect>& Document::get_page_lines(
                     }
                 }
             }
-            merge_lines(flat_lines, line_rects, line_texts, out_line_rects);
-            for (size_t i = 0; i < line_rects.size(); i++) {
-                line_rects[i].x0 = line_rects[i].x0 - page_widths[page] / 2;
-                line_rects[i].x1 = line_rects[i].x1 - page_widths[page] / 2;
-                line_rects[i].y0 = document_to_absolute_y(page, line_rects[i].y0);
-                line_rects[i].y1 = document_to_absolute_y(page, line_rects[i].y1);
-            }
+
+            std::vector<std::vector<PagelessDocumentRect>> line_char_rects_;
+
+            merge_lines(flat_lines, line_rects, line_texts, &line_char_rects_);
 
             std::vector<AbsoluteRect> line_rects_;
             std::vector<std::wstring> line_texts_;
-            std::vector<std::vector<fz_rect>> line_char_rects_;
 
-            for (int i = 0; i < line_rects.size(); i++) {
-                if (fz_contains_rect(bound, line_rects[i])) {
-                    line_rects_.push_back(line_rects[i]);
+            for (size_t i = 0; i < line_rects.size(); i++) {
+                //line_rects[i] = DocumentRect(line_rects[i], page).to_absolute(this);
+                AbsoluteRect line_rect_absolute = DocumentRect(line_rects[i], page).to_absolute(this);
+                if (fz_contains_rect(bound, line_rect_absolute)) {
+                    line_rects_.push_back(line_rect_absolute);
                     line_texts_.push_back(line_texts[i]);
                     if (out_line_rects) {
-                        line_char_rects_.push_back((*out_line_rects)[i]);
+                        out_line_rects->push_back(line_char_rects_[i]);
                     }
                 }
             }
-
 
             cached_page_line_rects[page] = line_rects_;
             cached_line_texts[page] = line_texts_;
 
             if (out_line_texts != nullptr) {
                 *out_line_texts = line_texts_;
-            }
-            if (out_line_rects) {
-                *out_line_rects = line_char_rects_;
             }
 
         }
