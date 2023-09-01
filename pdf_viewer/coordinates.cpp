@@ -204,5 +204,5 @@ PagelessDocumentRect rect_from_quad(fz_quad quad) {
 }
 
 bool NormalizedWindowRect::is_visible() {
-    return (x0 >= -1) && (x0 <= 1) && (y0 >= -1) && (y0 <= 1);
+    return (x1 >= -1) && (x0 <= 1) && (y0 >= -1) && (y1 <= 1);
 }

@@ -1103,7 +1103,6 @@ int DocumentView::get_vertical_line_page() {
 std::optional<std::wstring> DocumentView::get_selected_line_text() {
     if (line_index >= 0) {
         std::vector<std::wstring> lines;
-        //std::vector<fz_rect> line_rects = current_document->get_page_lines(get_center_page_number(), &lines);
         std::vector<AbsoluteRect> line_rects = current_document->get_page_lines(get_vertical_line_page(), &lines);
         if ((size_t)line_index < lines.size()) {
             std::wstring content = lines[line_index];
@@ -1125,12 +1124,10 @@ void DocumentView::get_rects_from_ranges(int page_number, const std::vector<Page
     }
 }
 
-//std::vector<std::pair<DocumentPos, fz_rect>> DocumentView::find_line_definitions() {
 std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
     //todo: remove duplicate code from this function, this just needs to find the location of the
     // reference, the rest can be handled by find_definition_of_location
 
-    //std::vector<std::pair<DocumentPos, fz_rect>> result;
     std::vector<SmartViewCandidate> result;
 
     if (line_index > 0) {
@@ -1196,16 +1193,10 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
             get_rects_from_ranges(ruler_page, line_char_rects[line_index], reference_ranges, reference_rects);
             get_rects_from_ranges(ruler_page, line_char_rects[line_index], equation_ranges, equation_rects);
 
-            //std::vector<std::pair<DocumentPos, fz_rect>> generic_positions;
-            //std::vector<std::pair<DocumentPos, fz_rect>> reference_positions;
-            //std::vector<std::pair<DocumentPos, fz_rect>> equation_positions;
-
             std::vector<SmartViewCandidate> generic_positions;
             std::vector<SmartViewCandidate> reference_positions;
             std::vector<SmartViewCandidate> equation_positions;
 
-
-            //for (auto generic_item_text : generic_item_texts) {
             for (int i = 0; i < generic_item_texts.size(); i++) {
                 std::vector<IndexedData> possible_targets = current_document->find_generic_with_string(generic_item_texts[i], ruler_page);
                 for (int j = 0; j < possible_targets.size(); j++) {
@@ -1487,14 +1478,8 @@ WindowPos DocumentView::normalized_window_to_window_pos(NormalizedWindowPos nwp)
     return { window_x0, window_y0 };
 }
 
-fz_irect DocumentView::normalized_to_window_rect(fz_rect normalized_rect) {
-    fz_irect res;
-    res.x0 = static_cast<int>(normalized_rect.x0 * view_width / 2 + view_width / 2);
-    res.x1 = static_cast<int>(normalized_rect.x1 * view_width / 2 + view_width / 2);
-    res.y0 = static_cast<int>(-normalized_rect.y0 * view_height / 2 + view_height / 2);
-    res.y1 = static_cast<int>(-normalized_rect.y1 * view_height / 2 + view_height / 2);
-
-    return res;
+WindowRect DocumentView::normalized_to_window_rect(NormalizedWindowRect normalized_rect) {
+    return WindowRect(normalized_rect.top_left().to_window(this), normalized_rect.bottom_right().to_window(this));
 }
 
 bool DocumentView::is_ruler_mode() {
