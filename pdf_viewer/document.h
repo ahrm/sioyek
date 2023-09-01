@@ -376,6 +376,8 @@ public:
     std::vector<FreehandDrawing> get_page_freehand_drawings_with_indices(int page, const std::vector<int> indices);
     void undo_freehand_drawing();
     const std::vector<FreehandDrawing>& get_page_drawings(int page);
+    AbsoluteRect to_absolute(int page, fz_quad quad);
+    AbsoluteRect to_absolute(int page, PagelessDocumentRect rect);
 
     bool get_should_reload_annotations();
     void reload_annotations_on_new_checksum();

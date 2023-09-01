@@ -1872,8 +1872,7 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
             if (selecting || word_selecting) {
                 if (!(current_char->c == ' ' && selected_text.size() == 0)) {
                     selected_text.push_back(current_char->c);
-                    fz_rect charrect = document_to_absolute_rect(i, fz_rect_from_quad(current_char->quad));
-                    selected_characters.push_back(charrect);
+                    selected_characters.push_back(to_absolute(i, current_char->quad));
                 }
                 if ((current_char->next == nullptr)) {
                     if (current_char->c != '-')
@@ -1932,8 +1931,8 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
                 }
             }
             if (annot_type == pdf_annot_type::PDF_ANNOT_TEXT) {
-                fz_rect rect = pdf_bound_annot(context, annot);
-                fz_rect absrect = document_to_absolute_rect(p, rect);
+                PagelessDocumentRect rect = pdf_bound_annot(context, annot);
+                AbsoluteRect absrect = to_absolute(p, rect);
                 // get text of annotation
                 const char* txt = pdf_annot_contents(context, annot);
                 //new_bookmark.description = utf8_decode(txt);
@@ -1947,8 +1946,8 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
             }
 
             if (annot_type == pdf_annot_type::PDF_ANNOT_FREE_TEXT) {
-                fz_rect rect = pdf_bound_annot(context, annot);
-                fz_rect absrect = document_to_absolute_rect(p, rect);
+                PagelessDocumentRect rect = pdf_bound_annot(context, annot);
+                AbsoluteRect absrect = to_absolute(p, rect);
                 // get text of annotation
                 const char* txt = pdf_annot_contents(context, annot);
                 //new_bookmark.description = utf8_decode(txt);
@@ -2039,7 +2038,7 @@ void Document::import_annotations() {
         if (is_bookmark_new(bookmark)) {
 
             if (bookmark.end_y > 0) { // it is a freetext bookmark
-                fz_rect absrect;
+                AbsoluteRect absrect;
                 absrect.x0 = bookmark.begin_x;
                 absrect.x1 = bookmark.end_x;
                 absrect.y0 = bookmark.begin_y;
@@ -2163,22 +2162,17 @@ void Document::embed_annotations(std::wstring new_file_path) {
 
         std::string encoded_bookmark_text = utf8_encode(bookmark.description);
 
-        fz_rect annot_rect;
+        PagelessDocumentRect annot_rect;
         if (bookmark.is_freetext()) {
-            DocumentPos begin_page_pos = absolute_to_page_pos_uncentered({ bookmark.begin_x, bookmark.begin_y });
-            DocumentPos end_page_pos = absolute_to_page_pos_uncentered({ bookmark.end_x, bookmark.end_y });
-
-            annot_rect.x0 = begin_page_pos.x;
-            annot_rect.x1 = end_page_pos.x;
-            annot_rect.y0 = begin_page_pos.y;
-            annot_rect.y1 = end_page_pos.y;
+            annot_rect = bookmark.rect().to_document(this).rect;
 
             std::string encoded_bookmark_text = utf8_encode(bookmark.description);
             const char* font_face = bookmark.font_face.size() == 0 ? "Times New Roman" : encoded_bookmark_text.c_str();
             pdf_set_annot_default_appearance(context, bookmark_annot, font_face, bookmark.font_size, 3, bookmark.color);
         }
         else if (bookmark.is_marked()) {
-            DocumentPos begin_page_pos = absolute_to_page_pos_uncentered({ bookmark.begin_x, bookmark.begin_y });
+            //DocumentPos begin_page_pos = absolute_to_page_pos_uncentered({ bookmark.begin_x, bookmark.begin_y });
+            DocumentPos begin_page_pos = bookmark.begin_pos().to_document(this);
 
             annot_rect.x0 = begin_page_pos.x - 6;
             annot_rect.x1 = begin_page_pos.x + 6;
@@ -2972,7 +2966,7 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
                     indented_end_indices.push_back(dot_index);
                 }
                 else {
-                    PagelessDocumentRect dot_line_begin_rect = fz_rect_from_quad(flat_chars[dot_index].stext_line->first_char->quad);
+                    PagelessDocumentRect dot_line_begin_rect = rect_from_quad(flat_chars[dot_index].stext_line->first_char->quad);
                     PagelessDocumentRect next_line_rect = flat_chars[next_index].rect;
                     float next_x = next_line_rect.center().x;
 
@@ -3909,7 +3903,7 @@ std::wstring Document::detect_paper_name() {
                         if (ch->c < 128 && ch->c > 0) {
                             block_text.push_back(ch->c);
                             num_chars_in_block++;
-                            PagelessDocumentRect char_rect = fz_rect_from_quad(ch->quad);
+                            PagelessDocumentRect char_rect = rect_from_quad(ch->quad);
                             float area = rect_area(char_rect);
                             cum_block_char_volumes += area;
                         }
@@ -3994,7 +3988,7 @@ std::optional<AbsoluteRect> Document::get_rect_vertically(bool below, AbsoluteRe
             float distance = std::abs(ch->quad.lr.y - doc_rect.rect.y1) + std::abs(ch->quad.lr.x - page_rect_x);
             if (distance < closest_distance) {
                 closest_distance = distance;
-                closest_rect = DocumentRect(fz_rect_from_quad(ch->quad), doc_rect.page);
+                closest_rect = DocumentRect(rect_from_quad(ch->quad), doc_rect.page);
             }
         }
 
@@ -4003,4 +3997,12 @@ std::optional<AbsoluteRect> Document::get_rect_vertically(bool below, AbsoluteRe
         return closest_rect->to_absolute(this);
     }
     return {};
+}
+
+AbsoluteRect Document::to_absolute(int page, fz_quad quad) {
+    return DocumentRect(rect_from_quad(quad), page).to_absolute(this);
+}
+
+AbsoluteRect Document::to_absolute(int page, PagelessDocumentRect rect) {
+    return DocumentRect(rect, page).to_absolute(this);
 }

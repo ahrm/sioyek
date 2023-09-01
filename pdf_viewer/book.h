@@ -86,6 +86,9 @@ struct BookMark : Annotation {
     float font_size = -1;
     std::wstring font_face;
 
+    AbsoluteDocumentPos begin_pos();
+    AbsoluteDocumentPos end_pos();
+    AbsoluteRect rect();
     QJsonObject to_json(std::string doc_checksum) const;
     void from_json(const QJsonObject& json_object);
     void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;

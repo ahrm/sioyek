@@ -302,3 +302,15 @@ float BookMark::get_y_offset() const{
     if (begin_y != -1) return begin_y;
     return y_offset_;
 }
+
+AbsoluteDocumentPos BookMark::begin_pos() {
+    return AbsoluteDocumentPos{ begin_x, begin_y };
+}
+
+AbsoluteDocumentPos BookMark::end_pos() {
+    return AbsoluteDocumentPos{ end_x, end_y };
+}
+
+AbsoluteRect BookMark::rect() {
+    return AbsoluteRect(begin_pos(), end_pos());
+}
