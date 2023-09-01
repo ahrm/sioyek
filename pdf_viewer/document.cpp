@@ -1595,7 +1595,7 @@ std::optional<std::pair<std::wstring, std::wstring>> Document::get_generic_link_
 }
 
 std::optional<std::wstring> Document::get_reference_text_at_position(const std::vector<fz_stext_char*>& flat_chars, PagelessDocumentPos position, std::pair<int, int>* out_range) {
-    fz_rect selected_rect;
+    PagelessDocumentRect selected_rect;
 
     selected_rect.x0 = position.x - 0.1f;
     selected_rect.x1 = position.x + 0.1f;
@@ -1686,15 +1686,15 @@ void get_matches(std::wstring haystack, const std::wregex& reg, std::vector<std:
     }
 }
 
-std::optional<std::wstring> Document::get_text_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
+std::optional<std::wstring> Document::get_text_at_position(const std::vector<fz_stext_char*>& flat_chars, PagelessDocumentPos position){
 
-    fz_rect selected_rect;
+    PagelessDocumentRect selected_rect;
 
-    selected_rect.x0 = offset_x - 0.1f;
-    selected_rect.x1 = offset_x + 0.1f;
+    selected_rect.x0 = position.x - 0.1f;
+    selected_rect.x1 = position.x + 0.1f;
 
-    selected_rect.y0 = offset_y - 0.1f;
-    selected_rect.y1 = offset_y + 0.1f;
+    selected_rect.y0 = position.y - 0.1f;
+    selected_rect.y1 = position.y + 0.1f;
 
     std::wstring selected_string;
     bool reached = false;
@@ -2291,11 +2291,11 @@ void Document::embed_annotations(std::wstring new_file_path) {
     }
 }
 
-std::optional<std::wstring> Document::get_text_at_position(int page, float offset_x, float offset_y) {
-    fz_stext_page* stext_page = get_stext_with_page_number(page);
+std::optional<std::wstring> Document::get_text_at_position(DocumentPos position) {
+    fz_stext_page* stext_page = get_stext_with_page_number(position.page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
-    return get_text_at_position(flat_chars, offset_x, offset_y);
+    return get_text_at_position(flat_chars, position.pageless());
 }
 
 std::optional<std::wstring> Document::get_paper_name_at_position(int page, float offset_x, float offset_y) {
@@ -2842,7 +2842,7 @@ const std::vector<AbsoluteRect>& Document::get_page_lines(
 
             std::vector<AbsoluteRect> line_rects;
             for (size_t i = 0; i < line_locations_begins.size(); i++) {
-                fz_rect line_rect;
+                AbsoluteRect line_rect;
                 line_rect.x0 = 0 - page_widths[page] / 2;
                 line_rect.x1 = static_cast<float>(pixmap->w) / SMALL_PIXMAP_SCALE - page_widths[page] / 2;
                 line_rect.y0 = document_to_absolute_y(page, static_cast<float>(line_locations_begins[i]) / SMALL_PIXMAP_SCALE);
@@ -3650,7 +3650,7 @@ int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
                 }
             }
             else {
-                fz_rect bookmark_rect;
+                AbsoluteRect bookmark_rect;
                 bookmark_rect.x0 = bookmarks[i].begin_x;
                 bookmark_rect.y0 = bookmarks[i].begin_y;
                 bookmark_rect.x1 = bookmarks[i].end_x;
@@ -4022,7 +4022,7 @@ std::wstring Document::detect_paper_name() {
                         if (ch->c < 128 && ch->c > 0) {
                             block_text.push_back(ch->c);
                             num_chars_in_block++;
-                            fz_rect char_rect = fz_rect_from_quad(ch->quad);
+                            PagelessDocumentRect char_rect = fz_rect_from_quad(ch->quad);
                             float area = rect_area(char_rect);
                             cum_block_char_volumes += area;
                         }
