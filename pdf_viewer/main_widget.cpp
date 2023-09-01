@@ -22,6 +22,7 @@
 // if we click on a portal link while ruler mode is activated, it is still active in the destination document
 // remove opengl widget include from input.h
 // allow binding keybinds in a specific mode without rewriting other mode bindings
+// make visual mark down work even when the next page is empty
 
 #include <iostream>
 #include <vector>

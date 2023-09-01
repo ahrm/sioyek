@@ -596,8 +596,8 @@ bool is_start_of_new_word(fz_stext_char* prev_char, fz_stext_char* current_char)
     return is_start_of_new_line(prev_char, current_char);
 }
 
-fz_rect create_word_rect(const std::vector<fz_rect>& chars) {
-    fz_rect res;
+PagelessDocumentRect create_word_rect(const std::vector<PagelessDocumentRect>& chars) {
+    PagelessDocumentRect res;
     res.x0 = res.x1 = res.y0 = res.y1 = 0;
     if (chars.size() == 0) return res;
     res = chars[0];
@@ -612,9 +612,9 @@ fz_rect create_word_rect(const std::vector<fz_rect>& chars) {
     return res;
 }
 
-std::vector<fz_rect> create_word_rects_multiline(const std::vector<fz_rect>& chars) {
-    std::vector<fz_rect> res;
-    std::vector<fz_rect> current_line_chars;
+std::vector<PagelessDocumentRect> create_word_rects_multiline(const std::vector<PagelessDocumentRect>& chars) {
+    std::vector<PagelessDocumentRect> res;
+    std::vector<PagelessDocumentRect> current_line_chars;
 
     if (chars.size() == 0) return res;
     current_line_chars.push_back(chars[0]);
@@ -635,14 +635,14 @@ std::vector<fz_rect> create_word_rects_multiline(const std::vector<fz_rect>& cha
     return res;
 }
 
-fz_rect create_word_rect(const std::vector<fz_stext_char*>& chars) {
-    fz_rect res;
+PagelessDocumentRect create_word_rect(const std::vector<fz_stext_char*>& chars) {
+    PagelessDocumentRect res;
     res.x0 = res.x1 = res.y0 = res.y1 = 0;
     if (chars.size() == 0) return res;
     res = fz_rect_from_quad(chars[0]->quad);
 
     for (size_t i = 1; i < chars.size(); i++) {
-        fz_rect current_char_rect = fz_rect_from_quad(chars[i]->quad);
+        PagelessDocumentRect current_char_rect = fz_rect_from_quad(chars[i]->quad);
         if (res.x0 > current_char_rect.x0) res.x0 = current_char_rect.x0;
         if (res.x1 < current_char_rect.x1) res.x1 = current_char_rect.x1;
         if (res.y0 > current_char_rect.y0) res.y0 = current_char_rect.y0;

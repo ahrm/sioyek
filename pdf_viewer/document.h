@@ -346,7 +346,7 @@ public:
     fz_rect document_to_absolute_rect(int page, fz_rect doc_rect);
 
     //void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
-    AbsoluteRect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page);
+    AbsoluteRect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool continue_to_next_page, int* out_index, int* out_page);
     const std::vector<AbsoluteRect>& get_page_lines(
         int page,
         std::vector<std::wstring>* line_texts = nullptr,

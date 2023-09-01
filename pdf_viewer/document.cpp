@@ -2350,7 +2350,6 @@ std::vector<PagelessDocumentRect> Document::get_page_flat_words(int page) {
     std::vector<fz_stext_char*> flat_chars;
     std::vector<PagelessDocumentRect> word_rects;
     std::vector<std::vector<PagelessDocumentRect>> word_char_rects;
-    std::vector<std::pair<fz_rect, int>> word_rects_with_page;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
     get_flat_words_from_flat_chars(flat_chars, word_rects, &word_char_rects);
     cached_flat_words[page] = word_rects;
@@ -2447,7 +2446,7 @@ std::vector<PagelessDocumentRect> Document::get_highlighted_character_masks(int 
     get_word_rect_list_from_flat_chars(flat_chars, words, word_rects);
 
     for (size_t i = 0; i < words.size(); i++) {
-        std::vector<fz_rect> highlighted_characters;
+        std::vector<PagelessDocumentRect> highlighted_characters;
         int num_highlighted = static_cast<int>(std::ceil(words[i].size() * 0.3f));
         for (int j = 0; j < num_highlighted; j++) {
             highlighted_characters.push_back(word_rects[i][j]);
@@ -2460,12 +2459,12 @@ std::vector<PagelessDocumentRect> Document::get_highlighted_character_masks(int 
 
 
 PagelessDocumentRect Document::get_page_rect_no_cache(int page_number) {
-    fz_rect res{};
+    PagelessDocumentRect res{};
     fz_try(context) {
         int n_pages = num_pages();
         if (page_number < n_pages) {
             fz_page* page = fz_load_page(context, doc, page_number);
-            fz_rect bound = fz_bound_page(context, page);
+            PagelessDocumentRect bound = fz_bound_page(context, page);
             res = bound;
             fz_drop_page(context, page);
         }
@@ -2510,11 +2509,11 @@ std::wstring Document::get_pdf_link_text(PdfLink link) {
     std::wstring res;
     for (int rect_index = 0; rect_index < link.rects.size(); rect_index++) {
 
-        fz_rect current_link_rect = link.rects[rect_index];
+        PagelessDocumentRect current_link_rect = link.rects[rect_index];
 
         //for (int i = 0; i < flat_chars.size(); i++) {
         for (int i = 0; i < flat_chars_text.size(); i++) {
-            fz_rect charrect = flat_chars_rects[i];
+            PagelessDocumentRect charrect = flat_chars_rects[i];
             float y = (charrect.y0 + charrect.y1) / 2;
             float x = (charrect.x0 + charrect.x1) / 2;
             float height = charrect.y1 - charrect.y0;
@@ -2524,8 +2523,6 @@ std::wstring Document::get_pdf_link_text(PdfLink link) {
 
             charrect.x0 = x;
             charrect.x1 = x;
-            //fz_rect intersection = fz_intersect_rect(charrect, link.rect);
-            //if (std::abs(intersection.y1 - intersection.y0) > (0.9f * std::abs(charrect.y1 - charrect.y0))) {
             if (rects_intersect(charrect, current_link_rect)) {
                 res.push_back(flat_chars_text[i]);
             }
@@ -2730,15 +2727,9 @@ fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect){
 //
 //}
 
-//void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
-AbsoluteRect Document::get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool cont, int* out_index, int* out_page) {
-    //auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
-
+AbsoluteRect Document::get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool continue_to_next_page, int* out_index, int* out_page) {
     auto line_rects = get_page_lines(page);
-    //int index = 0;
-    //while ((index < line_rects.size()) && (line_rects[index].y0 < absolute_y)) {
-    //	index++;
-    //}
+
     if (line_index < 0) {
         line_index = line_index + line_rects.size();
     }
@@ -2750,24 +2741,19 @@ AbsoluteRect Document::get_ith_next_line_from_absolute_y(int page, int line_inde
         return line_rects[new_index];
     }
     else {
-        if (!cont) {
+        if (!continue_to_next_page) {
             if (line_index > 0 && (size_t)line_index < line_rects.size()) {
                 *out_page = page;
                 *out_index = line_index;
                 return line_rects[line_index];
             }
             else {
-                fz_rect res;
-                //*out_begin = accum_page_heights[page];
-                //*out_end = accum_page_heights[page];
-                res.y0 = accum_page_heights[page];
-                res.y1 = accum_page_heights[page];
-                res.x0 = 0;
-                res.x1 = page_widths[page];
+                AbsoluteRect page_absrect = get_page_absolute_rect(page);
+                page_absrect.y1 = page_absrect.y0;
 
                 *out_index = 0;
                 *out_page = page;
-                return res;
+                return page_absrect;
             }
         }
 
