@@ -1488,12 +1488,6 @@ std::optional<std::wstring> Document::get_equation_text_at_position(
 }
 
 std::optional<std::wstring> Document::get_regex_match_at_position(const std::wregex& regex, const std::vector<fz_stext_char*>& flat_chars, PagelessDocumentPos pos, std::pair<int, int>* out_range) {
-    PagelessDocumentRect selected_rect;
-    selected_rect.x0 = pos.x - 0.1f;
-    selected_rect.x1 = pos.x + 0.1f;
-    selected_rect.y0 = pos.y - 0.1f;
-    selected_rect.y1 = pos.y + 0.1f;
-
     std::vector<std::pair<int, int>> match_ranges;
     std::vector<std::wstring> match_texts;
 
@@ -1502,7 +1496,7 @@ std::optional<std::wstring> Document::get_regex_match_at_position(const std::wre
     for (size_t i = 0; i < match_ranges.size(); i++) {
         auto [start_index, end_index] = match_ranges[i];
         for (int index = start_index; index <= end_index; index++) {
-            if (fz_contains_rect(fz_rect_from_quad(flat_chars[index]->quad), selected_rect)) {
+            if (rect_from_quad(flat_chars[index]->quad).contains(pos)) {
                 if (out_range) {
                     *out_range = std::make_pair(start_index, end_index);
                 }
@@ -1515,10 +1509,6 @@ std::optional<std::wstring> Document::get_regex_match_at_position(const std::wre
 }
 
 std::vector<DocumentPos> Document::find_generic_locations(const std::wstring& type, const std::wstring& name) {
-    //int best_page = -1;
-    //int best_y_offset = 0.0f;
-    //float best_score = -1000;
-
     std::vector<std::pair<int, DocumentPos>> pos_scores;
 
     for (size_t i = 0; i < generic_indices.size(); i++) {
@@ -1595,13 +1585,6 @@ std::optional<std::pair<std::wstring, std::wstring>> Document::get_generic_link_
 }
 
 std::optional<std::wstring> Document::get_reference_text_at_position(const std::vector<fz_stext_char*>& flat_chars, PagelessDocumentPos position, std::pair<int, int>* out_range) {
-    PagelessDocumentRect selected_rect;
-
-    selected_rect.x0 = position.x - 0.1f;
-    selected_rect.x1 = position.x + 0.1f;
-
-    selected_rect.y0 = position.y - 0.1f;
-    selected_rect.y1 = position.y + 0.1f;
 
     char start_char = '[';
     char end_char = ']';
@@ -1623,7 +1606,7 @@ std::optional<std::wstring> Document::get_reference_text_at_position(const std::
     for (auto ch : flat_chars) {
         index++;
 
-        if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
+        if (rect_from_quad(ch->quad).contains(position)) {
             if (started) {
                 reached = true;
             }
@@ -1688,14 +1671,6 @@ void get_matches(std::wstring haystack, const std::wregex& reg, std::vector<std:
 
 std::optional<std::wstring> Document::get_text_at_position(const std::vector<fz_stext_char*>& flat_chars, PagelessDocumentPos position){
 
-    PagelessDocumentRect selected_rect;
-
-    selected_rect.x0 = position.x - 0.1f;
-    selected_rect.x1 = position.x + 0.1f;
-
-    selected_rect.y0 = position.y - 0.1f;
-    selected_rect.y1 = position.y + 0.1f;
-
     std::wstring selected_string;
     bool reached = false;
 
@@ -1709,7 +1684,7 @@ std::optional<std::wstring> Document::get_text_at_position(const std::vector<fz_
         else {
             selected_string.push_back(ch->c);
         }
-        if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
+        if (rect_from_quad(ch->quad).contains(position)) {
             reached = true;
         }
     }
@@ -1719,14 +1694,6 @@ std::optional<std::wstring> Document::get_text_at_position(const std::vector<fz_
 }
 
 std::optional<std::wstring> Document::get_paper_name_at_position(const std::vector<fz_stext_char*>& flat_chars, PagelessDocumentPos position) {
-    fz_rect selected_rect;
-
-    selected_rect.x0 = position.x - 0.1f;
-    selected_rect.x1 = position.x + 0.1f;
-
-    selected_rect.y0 = position.y - 0.1f;
-    selected_rect.y1 = position.y + 0.1f;
-
     std::wstring selected_string = L"";
     bool reached = false;
 
@@ -1739,7 +1706,8 @@ std::optional<std::wstring> Document::get_paper_name_at_position(const std::vect
                 return selected_string;
             }
         }
-        if (fz_contains_rect(fz_rect_from_quad(ch->quad), selected_rect)) {
+
+        if (rect_from_quad(ch->quad).contains(position)) {
             reached = true;
         }
         if ((ch->c == '-') && (ch->next == nullptr)) continue;
@@ -2623,15 +2591,6 @@ float Document::document_to_absolute_y(int page, float doc_y) {
     return 0;
 }
 
-//AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos, bool center_mid) {
-//    float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
-//    AbsoluteDocumentPos res = { doc_pos.x, absolute_y };
-//    if (center_mid && (doc_pos.page < page_widths.size())) {
-//        res.x -= page_widths[doc_pos.page] / 2;
-//    }
-//    return res;
-//}
-
 AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos) {
     float absolute_y = document_to_absolute_y(doc_pos.page, doc_pos.y);
     AbsoluteDocumentPos res = { doc_pos.x, absolute_y };
@@ -2654,57 +2613,6 @@ fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect){
     return res;
 }
 
-//void Document::get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end) {
-//	auto [page, doc_x, doc_y] = absolute_to_page_pos({ 0, absolute_y });
-//
-//	fz_pixmap* pixmap = get_small_pixmap(page);
-//	std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
-//	std::vector<unsigned int> line_locations;
-//	std::vector<unsigned int> line_locations_begins;
-//	get_line_begins_and_ends_from_histogram(hist, line_locations_begins, line_locations);
-//	int small_doc_y = static_cast<int>(doc_y * SMALL_PIXMAP_SCALE);
-//
-//	int index = find_nth_larger_element_in_sorted_list(line_locations, static_cast<unsigned int>(small_doc_y - 0.3f), i);
-//
-//	if (index > -1) {
-//		int best_vertical_loc = line_locations[index];
-//		int best_vertical_loc_begin = line_locations_begins[index];
-//
-//		float best_vertical_loc_doc_pos = best_vertical_loc / SMALL_PIXMAP_SCALE;
-//		float best_vertical_loc_begin_doc_pos = best_vertical_loc_begin / SMALL_PIXMAP_SCALE;
-//
-//		float abs_doc_y = document_to_absolute_y(page, best_vertical_loc_doc_pos);
-//		float abs_doc_begin_y = document_to_absolute_y(page, best_vertical_loc_begin_doc_pos);
-//		*out_begin = abs_doc_begin_y;
-//		*out_end = abs_doc_y;
-//	}
-//	else {
-//		if (!cont) {
-//			*out_begin = absolute_y;
-//			*out_end = absolute_y;
-//			return;
-//		}
-//
-//		int next_page;
-//		if (i > 0) {
-//			//next_page = main_document_view->get_current_page_number() + 1;
-//			next_page = get_offset_page_number(absolute_y) + 1;
-//			if (next_page < num_pages()) {
-//				return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) + 0.5, 1, false, out_begin, out_end);
-//			}
-//		}
-//		else {
-//			next_page = get_offset_page_number(absolute_y);
-//			if (next_page > 0) {
-//				return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) - 0.5f, -1, false, out_begin, out_end);
-//			}
-//		}
-//		*out_begin = absolute_y;
-//		*out_end = absolute_y;
-//		return;
-//	}
-//
-//}
 
 AbsoluteRect Document::get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool continue_to_next_page, int* out_index, int* out_page) {
     auto line_rects = get_page_lines(page);

@@ -279,6 +279,7 @@ fvec2 operator-(const DocumentPos& lhs, const DocumentPos& rhs);
 fvec2 operator-(const NormalizedWindowPos& lhs, const NormalizedWindowPos& rhs);
 ivec2 operator-(const WindowPos& lhs, const WindowPos& rhs);
 
+PagelessDocumentRect rect_from_quad(fz_quad quad);
 AbsoluteDocumentPos operator+(const AbsoluteDocumentPos& lhs, const fvec2& rhs);
 DocumentPos operator+(const DocumentPos& lhs, const fvec2& rhs);
 NormalizedWindowPos operator+(const NormalizedWindowPos& lhs, const fvec2& rhs);

@@ -198,3 +198,7 @@ WindowRect DocumentRect::to_window(DocumentView* document_view) {
 PagelessDocumentPos DocumentPos::pageless() const {
     return PagelessDocumentPos { x, y };
 }
+
+PagelessDocumentRect rect_from_quad(fz_quad quad) {
+    return PagelessDocumentRect(fz_rect_from_quad(quad));
+}
