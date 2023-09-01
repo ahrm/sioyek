@@ -194,3 +194,7 @@ WindowPos operator+(const WindowPos& lhs, const ivec2& rhs) {
 WindowRect DocumentRect::to_window(DocumentView* document_view) {
     return WindowRect(document_view->document_to_window_irect(page, rect));
 }
+
+PagelessDocumentPos DocumentPos::pageless() const {
+    return PagelessDocumentPos { x, y };
+}

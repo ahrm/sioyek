@@ -2415,22 +2415,22 @@ ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* o
 ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, bool update_candidates) {
 
     //auto [page, offset_x, offset_y] = main_document_view->window_to_document_pos(pointer_pos);
-    auto [page, offset_x, offset_y] = docpos;
+    //auto [page, offset_x, offset_y] = docpos;
     int current_page_number = get_current_page_number();
 
-    fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
+    fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(docpos.page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
 
     std::pair<int, int> reference_range = std::make_pair(-1, -1);
 
     std::optional<std::pair<std::wstring, std::wstring>> generic_pair = \
-        main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y, &reference_range);
+        main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, docpos.pageless(), &reference_range);
 
-    std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y, &reference_range);
-    std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y, &reference_range);
+    std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, docpos.pageless(), &reference_range);
+    std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, docpos.pageless(), &reference_range);
 
-    DocumentRect source_rect_document = DocumentRect{ fz_empty_rect, page };
+    DocumentRect source_rect_document = DocumentRect{ fz_empty_rect, docpos.page };
     AbsoluteRect source_rect_absolute = { fz_empty_rect };
 
     if ((reference_range.first > -1) && (reference_range.second > 0) && out_rect) {
@@ -6370,7 +6370,6 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
 
 std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos docpos, bool clean) {
 
-    auto [page, offset_x, offset_y] = docpos;
     std::optional<PdfLink> pdf_link_ = doc()->get_link_in_pos(docpos);
 
     if (is_pos_inside_selected_text(docpos)) {
@@ -6401,7 +6400,7 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
         }
     }
     else {
-        auto ref_ = doc()->get_reference_text_at_position(page, offset_x, offset_y, nullptr);
+        auto ref_ = doc()->get_reference_text_at_position(docpos, nullptr);
         int target_page = -1;
         float target_offset;
         std::wstring source_text;
