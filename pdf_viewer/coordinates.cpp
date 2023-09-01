@@ -111,7 +111,7 @@ NormalizedWindowRect AbsoluteRect::to_window_normalized(DocumentView* document_v
 }
 
 NormalizedWindowRect DocumentRect::to_window_normalized(DocumentView* document_view) {
-    return NormalizedWindowRect{ document_view->document_to_window_rect(page, rect) };
+    return NormalizedWindowRect{ document_view->document_to_window_rect(*this) };
 }
 
 DocumentPos DocumentRect::top_left() {
@@ -201,4 +201,8 @@ PagelessDocumentPos DocumentPos::pageless() const {
 
 PagelessDocumentRect rect_from_quad(fz_quad quad) {
     return PagelessDocumentRect(fz_rect_from_quad(quad));
+}
+
+bool NormalizedWindowRect::is_visible() {
+    return (x0 >= -1) && (x0 <= 1) && (y0 >= -1) && (y0 <= 1);
 }

@@ -106,14 +106,14 @@ public:
     //void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
     NormalizedWindowPos absolute_to_window_pos(AbsoluteDocumentPos absolute_pos);
 
-    fz_rect absolute_to_window_rect(fz_rect doc_rect);
+    NormalizedWindowRect absolute_to_window_rect(AbsoluteRect doc_rect);
     NormalizedWindowPos document_to_window_pos(DocumentPos pos);
     WindowPos absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs_pos);
     WindowPos document_to_window_pos_in_pixels_uncentered(DocumentPos doc_pos);
     WindowPos document_to_window_pos_in_pixels_banded(DocumentPos doc_pos);
-    fz_rect document_to_window_rect(int page, fz_rect doc_rect);
+    NormalizedWindowRect document_to_window_rect(DocumentRect doc_rect);
     fz_irect document_to_window_irect(int page, fz_rect doc_rect);
-    fz_rect document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height, bool banded = false);
+    NormalizedWindowRect document_to_window_rect_pixel_perfect(DocumentRect doc_rect, int pixel_width, int pixel_height, bool banded = false);
     DocumentPos window_to_document_pos(WindowPos window_pos);
     DocumentPos window_to_document_pos_uncentered(WindowPos window_pos);
     AbsoluteDocumentPos window_to_absolute_document_pos(WindowPos window_pos);
@@ -198,7 +198,6 @@ public:
     void get_rects_from_ranges(int page_number, const std::vector<PagelessDocumentRect>& line_char_rects, const std::vector<std::pair<int, int>>& ranges, std::vector<PagelessDocumentRect>& out_rects);
     std::optional<AbsoluteRect> expand_selection(bool is_begin, bool word);
     std::optional<AbsoluteRect> shrink_selection(bool is_begin, bool word);
-    //std::optional<fz_rect> expand_selection_below();
 
     std::deque<AbsoluteRect>* get_selected_character_rects();
 };

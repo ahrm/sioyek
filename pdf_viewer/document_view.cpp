@@ -373,17 +373,11 @@ NormalizedWindowPos DocumentView::absolute_to_window_pos(AbsoluteDocumentPos abs
 
 }
 
-fz_rect DocumentView::absolute_to_window_rect(fz_rect doc_rect) {
-    fz_rect res;
-    NormalizedWindowPos p1 = absolute_to_window_pos({ doc_rect.x0, doc_rect.y0 });
-    NormalizedWindowPos p2 = absolute_to_window_pos({ doc_rect.x1, doc_rect.y1 });
+NormalizedWindowRect DocumentView::absolute_to_window_rect(AbsoluteRect doc_rect) {
+    NormalizedWindowPos top_left = doc_rect.top_left().to_window_normalized(this);
+    NormalizedWindowPos bottom_right = doc_rect.bottom_right().to_window_normalized(this);
 
-    res.x0 = p1.x;
-    res.y0 = p1.y;
-    res.x1 = p2.x;
-    res.y1 = p2.y;
-
-    return res;
+    return NormalizedWindowRect(top_left, bottom_right);
 }
 
 NormalizedWindowPos DocumentView::document_to_window_pos(DocumentPos doc_pos) {
@@ -433,53 +427,40 @@ fz_irect DocumentView::document_to_window_irect(int page, fz_rect doc_rect) {
     return window_rect;
 }
 
-fz_rect DocumentView::document_to_window_rect(int page, fz_rect doc_rect) {
-    fz_rect res;
+NormalizedWindowRect DocumentView::document_to_window_rect(DocumentRect doc_rect) {
+    NormalizedWindowPos top_left = doc_rect.top_left().to_window_normalized(this);
+    NormalizedWindowPos bottom_right = doc_rect.bottom_right().to_window_normalized(this);
 
-    NormalizedWindowPos p0 = document_to_window_pos(DocumentPos { page, doc_rect.x0, doc_rect.y0 });
-    NormalizedWindowPos p1 = document_to_window_pos(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
-
-    res.x0 = p0.x;
-    res.x1 = p1.x;
-    res.y0 = p0.y;
-    res.y1 = p1.y;
-
-    return res;
+    return NormalizedWindowRect(top_left, bottom_right);
 }
 
-fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height, bool banded) {
+NormalizedWindowRect DocumentView::document_to_window_rect_pixel_perfect(DocumentRect doc_rect, int pixel_width, int pixel_height, bool banded) {
 
     if ((pixel_width <= 0) || (pixel_height <= 0)) {
-        return document_to_window_rect(page, doc_rect);
+        return doc_rect.to_window_normalized(this);
     }
 
 
-    WindowPos w0, w1;
+    WindowPos top_left, bottom_right;
     if (banded) {
-        w0 = document_to_window_pos_in_pixels_banded({ page, doc_rect.x0, doc_rect.y0 });
-        w1 = document_to_window_pos_in_pixels_banded({ page, doc_rect.x1, doc_rect.y1 });
+        top_left = document_to_window_pos_in_pixels_banded(doc_rect.top_left());
+        bottom_right = document_to_window_pos_in_pixels_banded(doc_rect.bottom_right());
     }
     else {
-        w0 = document_to_window_pos_in_pixels_uncentered(DocumentPos { page, doc_rect.x0, doc_rect.y0 });
-        w1 = document_to_window_pos_in_pixels_uncentered(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
+        top_left = document_to_window_pos_in_pixels_uncentered(doc_rect.top_left());
+        bottom_right = document_to_window_pos_in_pixels_uncentered(doc_rect.bottom_right());
     }
 
-    w1.x -= ((w1.x - w0.x) - pixel_width);
+    bottom_right.x -= ((bottom_right.x - top_left.x) - pixel_width);
     if (!banded) {
         //w1.y -= ((w1.y - w0.y) - pixel_height);
-        w1.y -= ((w1.y - w0.y) - pixel_height);
+        bottom_right.y -= ((bottom_right.y - top_left.y) - pixel_height);
     }
 
-    NormalizedWindowPos p0 = window_to_normalized_window_pos(w0);
-    NormalizedWindowPos p1 = window_to_normalized_window_pos(w1);
+    NormalizedWindowPos top_left_normalized = top_left.to_window_normalized(this);
+    NormalizedWindowPos bottom_right_normalized = bottom_right.to_window_normalized(this);
 
-    fz_rect res;
-    res.x0 = p0.x;
-    res.x1 = p1.x;
-    res.y0 = -p0.y;
-    res.y1 = -p1.y;
-
-    return res;
+    return NormalizedWindowRect(top_left_normalized, bottom_right_normalized);
 }
 
 DocumentPos DocumentView::window_to_document_pos_uncentered(WindowPos window_pos) {
@@ -512,7 +493,7 @@ AbsoluteDocumentPos DocumentView::window_to_absolute_document_pos(WindowPos wind
 
 NormalizedWindowPos DocumentView::window_to_normalized_window_pos(WindowPos window_pos) {
     float normal_x = 2 * (static_cast<float>(window_pos.x) - view_width / 2.0f) / view_width;
-    float normal_y = 2 * (static_cast<float>(window_pos.y) - view_height / 2.0f) / view_height;
+    float normal_y = -2 * (static_cast<float>(window_pos.y) - view_height / 2.0f) / view_height;
     return { normal_x, normal_y };
 }
 
@@ -1426,8 +1407,8 @@ void DocumentView::get_visible_links(std::vector<PdfLink>& visible_page_links) {
         std::vector<PdfLink> links = get_document()->get_page_merged_pdf_links(page);
         for (auto link : links) {
             ParsedUri parsed_uri = parse_uri(mupdf_context, link.uri);
-            fz_rect window_rect = document_to_window_rect(page, link.rects[0]);
-            if ((window_rect.x0 >= -1) && (window_rect.x0 <= 1) && (window_rect.y0 >= -1) && (window_rect.y0 <= 1)) {
+            NormalizedWindowRect window_rect = DocumentRect(link.rects[0], page).to_window_normalized(this);
+            if (window_rect.is_visible()) {
                 visible_page_links.push_back(link);
             }
         }

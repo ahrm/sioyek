@@ -854,16 +854,16 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 
         float slice_document_width = document_view->get_document()->get_page_width(page_number);
         float slice_document_height = document_view->get_document()->get_page_height(page_number);
-        fz_rect slice_document_rect;
+        PagelessDocumentRect slice_document_rect;
         slice_document_rect.x0 = 0;
         slice_document_rect.x1 = slice_document_width;
         slice_document_rect.y0 = 0;
         slice_document_rect.y1 = slice_document_height;
         slice_document_rect = get_index_rect(slice_document_rect, i, nh, nv);
 
-        fz_rect slice_window_rect = document_view->document_to_window_rect(page_number, slice_document_rect);
+        NormalizedWindowRect slice_window_rect = DocumentRect(slice_document_rect, page_number).to_window_normalized(document_view);
         // we add some slack so we pre-render nearby slices
-        fz_rect full_window_rect;
+        NormalizedWindowRect full_window_rect;
         full_window_rect.x0 = -1;
         full_window_rect.x1 = 1;
         full_window_rect.y0 = -1.5f;
@@ -977,8 +977,7 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
             is_not_exact = false;
         }
 
-        fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(page_number,
-            page_rect,
+        fz_rect window_rect = document_view->document_to_window_rect_pixel_perfect(DocumentRect(page_rect, page_number),
             static_cast<int>(rendered_width / device_pixel_ratio),
             static_cast<int>(rendered_height / device_pixel_ratio), is_sliced);
 
@@ -1018,7 +1017,8 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
             //fz_rect DocumentView::document_to_window_rect_pixel_perfect(int page, fz_rect doc_rect, int pixel_width, int pixel_height) {
             if (PAGE_SEPARATOR_WIDTH > 0) {
 
-                fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
+                //fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
+                fz_rect separator_window_rect = DocumentRect(separator_rect, page_number).to_window_normalized(document_view);
                 rect_to_quad(separator_window_rect, page_vertices);
 
                 glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
@@ -1454,10 +1454,11 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         std::vector<std::string> tags = get_tags(word_rects.size());
 
         for (size_t i = 0; i < word_rects.size(); i++) {
-            auto [rect, page] = word_rects[i];
+            //auto [rect, page] = word_rects[i];
+            DocumentRect current_word_rect = word_rects[i];
 
 
-            fz_rect window_rect = document_view->document_to_window_rect(page, rect);
+            NormalizedWindowRect window_rect = current_word_rect.to_window_normalized(document_view);
 
             int view_width = static_cast<float>(document_view->get_view_width());
             int view_height = static_cast<float>(document_view->get_view_height());
@@ -1466,7 +1467,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             int window_y0 = static_cast<int>(-window_rect.y0 * view_height / 2 + view_height / 2);
 
             if (i > 0) {
-                if (std::abs(word_rects[i - 1].rect.x0 - rect.x0) < 5) {
+                if (std::abs(word_rects[i - 1].rect.x0 - current_word_rect.rect.x0) < 5) {
                     window_y0 = static_cast<int>(-window_rect.y1 * view_height / 2 + view_height / 2);
                 }
             }
@@ -1507,8 +1508,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                 }
             }
 
-            //document_view->document_to_window_pos_in_pixels(page, link->rect.x0, link->rect.x1, &window_x, &window_y);
-            fz_rect window_rect = document_view->document_to_window_rect(link.source_page, link.rects[0]);
+            NormalizedWindowRect window_rect = DocumentRect(link.rects[0], link.source_page).to_window_normalized(document_view);
 
             int view_width = static_cast<float>(document_view->get_view_width());
             int view_height = static_cast<float>(document_view->get_view_height());

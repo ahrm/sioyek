@@ -155,6 +155,9 @@ struct NormalizedWindowRect : public EnhancedRect<fz_rect, NormalizedWindowPos> 
     NormalizedWindowRect(NormalizedWindowPos top_left, NormalizedWindowPos bottom_right);
     NormalizedWindowRect(fz_rect r);
     NormalizedWindowRect();
+
+
+    bool is_visible();
 };
 
 
