@@ -2459,8 +2459,12 @@ ReferenceType MainWidget::find_location_of_text_under_pointer(DocumentPos docpos
                 //smart_view_candidates = candidates;
                 index_into_candidates = 0;
                 on_overview_source_updated();
+                *out_source_text = smart_view_candidates[index_into_candidates].source_text;
             }
-            *out_source_text = smart_view_candidates[index_into_candidates].source_text;
+            else {
+                *out_source_text = generic_pair.value().first + L" " + generic_pair.value().second;
+            }
+
             *out_page = candidates[index_into_candidates].page;
             *out_offset = candidates[index_into_candidates].y;
             return ReferenceType::Generic;
@@ -2952,7 +2956,7 @@ fz_stext_char* MainWidget::get_closest_character_to_cusrsor(QPoint pos) {
 
 std::optional<std::wstring> MainWidget::get_direct_paper_name_under_pos(DocumentPos docpos) {
     return main_document_view->get_document()->
-        get_paper_name_at_position(docpos.page, docpos.x, docpos.y);
+        get_paper_name_at_position(docpos);
 }
 
 DocumentPos MainWidget::get_document_pos_under_window_pos(WindowPos window_pos) {
@@ -2981,8 +2985,8 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_las
     auto normal_pos = main_document_view->window_to_normalized_window_pos(window_pos);
 
     if (opengl_widget->is_window_point_in_overview(normal_pos)) {
-        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos(normal_pos);
-        return main_document_view->get_document()->get_paper_name_at_position(doc_page, doc_x, doc_y);
+        DocumentPos docpos = opengl_widget->window_pos_to_overview_pos(normal_pos);
+        return main_document_view->get_document()->get_paper_name_at_position(docpos);
     }
     else {
         DocumentPos doc_pos = main_document_view->window_to_document_pos_uncentered(window_pos);
@@ -3003,8 +3007,8 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
 
     // if overview page is open and we middle click on a paper name, search it in a search engine
     if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
-        auto [doc_page, doc_x, doc_y] = opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y });
-        std::optional<std::wstring> paper_name = main_document_view->get_document()->get_paper_name_at_position(doc_page, doc_x, doc_y);
+        DocumentPos docpos = opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y });
+        std::optional<std::wstring> paper_name = main_document_view->get_document()->get_paper_name_at_position(docpos);
         if (paper_name) {
             handle_search_paper_name(paper_name.value(), is_shift_pressed);
         }
@@ -3012,9 +3016,8 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
     }
 
     auto docpos = main_document_view->window_to_document_pos_uncentered(pos);
-    auto [page, offset_x, offset_y] = docpos;
 
-    fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
+    fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(docpos.page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
 
@@ -3026,52 +3029,12 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
         long_jump_to_destination(target_page, target_y_offset);
     }
     else {
-        std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, offset_x, offset_y);
+        std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, docpos.pageless());
         if (paper_name_on_pointer) {
             handle_search_paper_name(paper_name_on_pointer.value(), is_shift_pressed);
         }
     }
 
-    //std::optional<std::pair<std::wstring, std::wstring>> generic_pair =\
-    //        main_document_view->get_document()->get_generic_link_name_at_position(flat_chars, offset_x, offset_y);
-
-    //std::optional<std::wstring> text_on_pointer = main_document_view->get_document()->get_text_at_position(flat_chars, offset_x, offset_y);
-    //std::optional<std::wstring> reference_text_on_pointer = main_document_view->get_document()->get_reference_text_at_position(flat_chars, offset_x, offset_y);
-    //std::optional<std::wstring> equation_text_on_pointer = main_document_view->get_document()->get_equation_text_at_position(flat_chars, offset_x, offset_y);
-
-    //if (generic_pair) {
-    //    int page;
-    //    float y_offset;
-
-    //    if (main_document_view->get_document()->find_generic_location(generic_pair.value().first,
-    //                                                                  generic_pair.value().second,
-    //                                                                  &page,
-    //                                                                  &y_offset)) {
-
-    //        long_jump_to_destination(page, y_offset);
-    //        return;
-    //    }
-    //}
-    //if (equation_text_on_pointer) {
-    //    std::optional<IndexedData> eqdata_ = main_document_view->get_document()->find_equation_with_string(
-    //                equation_text_on_pointer.value(),
-    //                get_current_page_number());
-    //    if (eqdata_) {
-    //        IndexedData refdata = eqdata_.value();
-    //        long_jump_to_destination(refdata.page, refdata.y_offset);
-    //        return;
-    //    }
-    //}
-
-    //if (reference_text_on_pointer) {
-    //    std::optional<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value());
-    //    if (refdata_) {
-    //        IndexedData refdata = refdata_.value();
-    //        long_jump_to_destination(refdata.page, refdata.y_offset);
-    //        return;
-    //    }
-
-    //}
 }
 
 void MainWidget::visual_mark_under_pos(WindowPos pos) {

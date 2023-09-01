@@ -1718,14 +1718,14 @@ std::optional<std::wstring> Document::get_text_at_position(const std::vector<fz_
     return {};
 }
 
-std::optional<std::wstring> Document::get_paper_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
+std::optional<std::wstring> Document::get_paper_name_at_position(const std::vector<fz_stext_char*>& flat_chars, PagelessDocumentPos position) {
     fz_rect selected_rect;
 
-    selected_rect.x0 = offset_x - 0.1f;
-    selected_rect.x1 = offset_x + 0.1f;
+    selected_rect.x0 = position.x - 0.1f;
+    selected_rect.x1 = position.x + 0.1f;
 
-    selected_rect.y0 = offset_y - 0.1f;
-    selected_rect.y1 = offset_y + 0.1f;
+    selected_rect.y0 = position.y - 0.1f;
+    selected_rect.y1 = position.y + 0.1f;
 
     std::wstring selected_string = L"";
     bool reached = false;
@@ -2277,11 +2277,11 @@ std::optional<std::wstring> Document::get_text_at_position(DocumentPos position)
     return get_text_at_position(flat_chars, position.pageless());
 }
 
-std::optional<std::wstring> Document::get_paper_name_at_position(int page, float offset_x, float offset_y) {
-    fz_stext_page* stext_page = get_stext_with_page_number(page);
+std::optional<std::wstring> Document::get_paper_name_at_position(DocumentPos position) {
+    fz_stext_page* stext_page = get_stext_with_page_number(position.page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
-    return get_paper_name_at_position(flat_chars, offset_x, offset_y);
+    return get_paper_name_at_position(flat_chars, position.pageless());
 }
 
 std::optional<std::wstring> Document::get_reference_text_at_position(DocumentPos pos, std::pair<int, int>* out_range) {
