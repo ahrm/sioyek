@@ -237,7 +237,7 @@ void Document::undo_pending_bookmark(int index) {
     }
 }
 
-void Document::add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color, float font_size) {
+void Document::add_freetext_bookmark_with_color(const std::wstring& desc, AbsoluteRect absrect, float* color, float font_size) {
     BookMark bookmark;
     bookmark.description = desc;
     bookmark.y_offset_ = absrect.y0;
@@ -259,7 +259,7 @@ void Document::add_freetext_bookmark_with_color(const std::wstring& desc, fz_rec
         is_annotations_dirty = true;
     }
 }
-void Document::add_freetext_bookmark(const std::wstring& desc, fz_rect absrect) {
+void Document::add_freetext_bookmark(const std::wstring& desc, AbsoluteRect absrect) {
     add_freetext_bookmark_with_color(desc, absrect, FREETEXT_BOOKMARK_COLOR);
 }
 
@@ -826,9 +826,9 @@ PdfLink Document::merge_links(const std::vector<PdfLink>& links_to_merge) {
     merged_link.uri = links_to_merge[0].uri;
     merged_link.source_page = links_to_merge[0].source_page;
     std::vector<PagelessDocumentRect> rects;
-    fz_rect current_rect = links_to_merge[0].rects[0];
+    PagelessDocumentRect current_rect = links_to_merge[0].rects[0];
     for (int i = 1; i < links_to_merge.size(); i++) {
-        fz_rect new_rect = links_to_merge[i].rects[0];
+        PagelessDocumentRect new_rect = links_to_merge[i].rects[0];
         float height = std::abs(current_rect.y1 - current_rect.y0);
         if (std::abs(current_rect.y1 - new_rect.y1) < height / 5) {
             current_rect.x0 = std::min(current_rect.x0, new_rect.x0);
@@ -1025,7 +1025,7 @@ void Document::load_page_dimensions(bool force_load_now) {
     if (n > 0) {
         fz_try(context) {
             fz_page* page = fz_load_page(context, doc, n / 2);
-            fz_rect bounds = fz_bound_page(context, page);
+            PagelessDocumentRect bounds = fz_bound_page(context, page);
             fz_drop_page(context, page);
             int height = bounds.y1 - bounds.y0;
             int width = bounds.x1 - bounds.x0;
@@ -1063,7 +1063,7 @@ void Document::load_page_dimensions(bool force_load_now) {
                 fz_page* page = fz_load_page(context_, doc_, i);
                 fz_page_label(context_, page, label_buffer, N);
                 page_labels_.push_back(utf8_decode(label_buffer));
-                fz_rect page_rect = fz_bound_page(context_, page);
+                PagelessDocumentRect page_rect = fz_bound_page(context_, page);
 
                 float page_height = page_rect.y1 - page_rect.y0;
                 float page_width = page_rect.x1 - page_rect.x0;
@@ -1117,7 +1117,7 @@ void Document::load_page_dimensions(bool force_load_now) {
 AbsoluteRect Document::get_page_absolute_rect(int page) {
     std::lock_guard guard(page_dims_mutex);
 
-    fz_rect res = { 0, 0, 1, 1 };
+    AbsoluteRect res({0, 0, 1, 1});
 
     if (page >= page_widths.size()) {
         return res;
@@ -2790,28 +2790,6 @@ AbsoluteRect Document::get_ith_next_line_from_absolute_y(int page, int line_inde
         *out_index = line_index;
         return line_rects[line_index];
     }
-
-    //else {
-
-    //	int next_page;
-    //	if (i > 0) {
-    //		//next_page = main_document_view->get_current_page_number() + 1;
-    //		next_page = get_offset_page_number(absolute_y) + 1;
-    //		if (next_page < num_pages()) {
-    //			return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) + 0.5, 1, false, out_begin, out_end);
-    //		}
-    //	}
-    //	else {
-    //		next_page = get_offset_page_number(absolute_y);
-    //		if (next_page > 0) {
-    //			return get_ith_next_line_from_absolute_y(get_accum_page_height(next_page) - 0.5f, -1, false, out_begin, out_end);
-    //		}
-    //	}
-    //	*out_begin = absolute_y;
-    //	*out_end = absolute_y;
-    //	return;
-    //}
-
 }
 
 const std::vector<AbsoluteRect>& Document::get_page_lines(

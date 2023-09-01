@@ -170,8 +170,8 @@ public:
     int add_incomplete_freetext_bookmark(AbsoluteRect absrect);
     std::string add_pending_freetext_bookmark(int index, const std::wstring& desc);
     void undo_pending_bookmark(int index);
-    void add_freetext_bookmark(const std::wstring& desc, fz_rect absrect);
-    void add_freetext_bookmark_with_color(const std::wstring& desc, fz_rect absrect, float* color, float font_size = -1);
+    void add_freetext_bookmark(const std::wstring& desc, AbsoluteRect absrect);
+    void add_freetext_bookmark_with_color(const std::wstring& desc, AbsoluteRect absrect, float* color, float font_size = -1);
     std::string add_highlight(const std::wstring& desc, const std::vector<AbsoluteRect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     std::string add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     void delete_highlight_with_index(int index);
