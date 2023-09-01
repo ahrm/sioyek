@@ -1718,27 +1718,6 @@ std::optional<std::wstring> Document::get_text_at_position(const std::vector<fz_
     return {};
 }
 
-fz_stext_block* Document::get_text_block_at_positition(fz_stext_page* page, float offset_x, float offset_y) {
-    fz_stext_block* current_block = page->first_block;
-
-    fz_point pos = { offset_x, offset_y };
-
-    while (current_block) {
-        if (current_block->type == FZ_STEXT_BLOCK_TEXT) {
-            fz_stext_line* current_line = current_block->u.t.first_line;
-            while (current_line) {
-                fz_rect bbox = current_line->bbox;
-                if (fz_is_point_inside_rect(pos, bbox)) {
-                    return current_block;
-                }
-                current_line = current_line->next;
-            }
-        }
-        current_block = current_block->next;
-    }
-    return nullptr;
-}
-
 std::optional<std::wstring> Document::get_paper_name_at_position(const std::vector<fz_stext_char*>& flat_chars, float offset_x, float offset_y) {
     fz_rect selected_rect;
 
