@@ -690,7 +690,7 @@ void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_char
 
 void get_word_rect_list_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars,
     std::vector<std::wstring>& words,
-    std::vector<std::vector<fz_rect>>& flat_word_rects) {
+    std::vector<std::vector<PagelessDocumentRect>>& flat_word_rects) {
 
     if (flat_chars.size() == 0) return;
 
@@ -698,7 +698,7 @@ void get_word_rect_list_from_flat_chars(const std::vector<fz_stext_char*>& flat_
     pending_word.push_back(flat_chars[0]);
 
     auto get_rects = [&]() {
-        std::vector<fz_rect> res;
+        std::vector<PagelessDocumentRect> res;
         for (auto chr : pending_word) {
             res.push_back(fz_rect_from_quad(chr->quad));
         }
@@ -3002,38 +3002,6 @@ bool is_new_word(fz_stext_char* old_char, fz_stext_char* new_char) {
     if (old_char == nullptr) return true;
     if (new_char->c == ' ' || new_char->c == '\n') return true;
     return std::abs(new_char->quad.ll.x - old_char->quad.ll.x) > 5 * std::abs(old_char->quad.lr.x - old_char->quad.ll.x);
-}
-
-std::optional<DocumentRect> get_rect_vertically(bool below, fz_stext_page* page, DocumentRect page_rect) {
-    std::vector<fz_stext_char*> chars;
-    get_flat_chars_from_stext_page(page, chars);
-    float closest_distance = 100000;
-    std::optional<DocumentRect> closest_rect = {};
-    float page_rect_x = (page_rect.rect.x0 + page_rect.rect.x1) / 2;
-
-    for (auto ch : chars) {
-        float h = std::abs(ch->quad.ul.y - ch->quad.ll.y);
-
-        if (below) {
-            if (ch->quad.ll.y > (page_rect.rect.y1 + h / 2)) {
-                float distance = std::abs(ch->quad.lr.y - page_rect.rect.y1) + std::abs(ch->quad.lr.x - page_rect_x);
-                if (distance < closest_distance) {
-                    closest_distance = distance;
-                    closest_rect = DocumentRect(fz_rect_from_quad(ch->quad), page_rect.page);
-                }
-            }
-        }
-        else {
-            if (ch->quad.ul.y < (page_rect.rect.y0 - h / 2)) {
-                float distance = std::abs(ch->quad.lr.y - page_rect.rect.y1) + std::abs(ch->quad.lr.x - page_rect_x);
-                if (distance < closest_distance) {
-                    closest_distance = distance;
-                    closest_rect = DocumentRect(fz_rect_from_quad(ch->quad), page_rect.page);
-                }
-            }
-        }
-    }
-    return closest_rect;
 }
 
 std::optional<DocumentRect> find_shrinking_rect_word(bool before, fz_stext_page* page, DocumentRect rect){

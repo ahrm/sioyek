@@ -162,7 +162,8 @@ protected:
 
     void enable_stencil();
     void write_to_stencil();
-    void draw_stencil_rects(const std::vector<fz_rect>& rects, bool is_window_rect = false, int page = -1);
+    void draw_stencil_rects(const std::vector<NormalizedWindowRect>& window_rects);
+    void draw_stencil_rects(int page, const std::vector<PagelessDocumentRect>& rects);
     void use_stencil_to_write(bool eq);
     void disable_stencil();
 
@@ -231,7 +232,7 @@ public:
     void set_visible_page_number(std::optional<int> val);
     bool is_presentation_mode();
     fz_rect	get_overview_rect();
-    fz_rect	get_overview_rect_pixel_perfect(int widget_width, int widget_height, int view_width, int view_height);
+    NormalizedWindowRect get_overview_rect_pixel_perfect(int widget_width, int widget_height, int view_width, int view_height);
     std::vector<fz_rect> get_overview_border_rects();
     bool is_window_point_in_overview(fvec2 window_point);
     bool is_window_point_in_overview_border(float window_x, float window_y, OverviewSide* which_border);

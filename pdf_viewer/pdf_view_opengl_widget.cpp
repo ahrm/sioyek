@@ -717,7 +717,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
         nullptr,
         nullptr);
 
-    fz_rect window_rect = get_overview_rect_pixel_perfect(
+    NormalizedWindowRect window_rect = get_overview_rect_pixel_perfect(
         document_view->get_view_width(),
         document_view->get_view_height(),
         view_width,
@@ -760,7 +760,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 
     enable_stencil();
     write_to_stencil();
-    draw_stencil_rects({ window_rect }, true);
+    draw_stencil_rects({ window_rect });
     use_stencil_to_write(true);
 
     fz_rect page_rect;
@@ -1145,7 +1145,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         if (rects.size() > 0) {
             enable_stencil();
             write_to_stencil();
-            draw_stencil_rects(rects, false, document_view->get_center_page_number());
+            draw_stencil_rects(document_view->get_center_page_number(), rects);
             use_stencil_to_write(false);
             render_transparent_background();
             disable_stencil();
@@ -1808,8 +1808,8 @@ fz_rect	PdfViewOpenGLWidget::get_overview_rect() {
     return res;
 }
 
-fz_rect	PdfViewOpenGLWidget::get_overview_rect_pixel_perfect(int widget_width, int widget_height, int view_width, int view_height) {
-    fz_rect res;
+NormalizedWindowRect	PdfViewOpenGLWidget::get_overview_rect_pixel_perfect(int widget_width, int widget_height, int view_width, int view_height) {
+    NormalizedWindowRect res;
     int x0_pixel = static_cast<int>((((overview_offset_x - overview_half_width) + 1.0f) / 2.0f) * widget_width);
     int x1_pixel = x0_pixel + view_width;
     int y0_pixel = static_cast<int>((((-overview_offset_y - overview_half_height) + 1.0f) / 2.0f) * widget_height);
@@ -2115,28 +2115,22 @@ void PdfViewOpenGLWidget::render_transparent_background() {
     glDisable(GL_BLEND);
 }
 
-void PdfViewOpenGLWidget::draw_stencil_rects(const std::vector<fz_rect>& rects, bool is_window_rect, int page) {
-
+void PdfViewOpenGLWidget::draw_stencil_rects(const std::vector<NormalizedWindowRect>& rects) {
     std::vector<float> window_rects;
-    for (auto rect : rects) {
-        fz_rect window_rect;
-        if (is_window_rect) {
-            window_rect = rect;
-        }
-        else {
 
-            window_rect = document_view->document_to_window_rect(page, rect);
-        }
+    for (auto rect : rects) {
+
         float triangle1[6] = {
-            window_rect.x0, window_rect.y0,
-            window_rect.x0, window_rect.y1,
-            window_rect.x1, window_rect.y0
+            rect.x0, rect.y0,
+            rect.x0, rect.y1,
+            rect.x1, rect.y0
         };
         float triangle2[6] = {
-            window_rect.x1, window_rect.y0,
-            window_rect.x0, window_rect.y1,
-            window_rect.x1, window_rect.y1
+            rect.x1, rect.y0,
+            rect.x0, rect.y1,
+            rect.x1, rect.y1
         };
+
         for (int i = 0; i < 6; i++) window_rects.push_back(triangle1[i]);
         for (int i = 0; i < 6; i++) window_rects.push_back(triangle2[i]);
     }
@@ -2148,6 +2142,14 @@ void PdfViewOpenGLWidget::draw_stencil_rects(const std::vector<fz_rect>& rects, 
     glDrawArrays(GL_TRIANGLES, 0, rects.size() * 6);
     glDisableVertexAttribArray(0);
 
+}
+
+void PdfViewOpenGLWidget::draw_stencil_rects(int page, const std::vector<PagelessDocumentRect>& rects) {
+    std::vector<NormalizedWindowRect> normalized_rects;
+    for (auto rect : rects) {
+        normalized_rects.push_back(DocumentRect(rect, page).to_window_normalized(document_view));
+    }
+    draw_stencil_rects(normalized_rects);
 }
 
 void PdfViewOpenGLWidget::toggle_fastread_mode() {

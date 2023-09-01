@@ -135,7 +135,7 @@ using PagelessDocumentRect = EnhancedRect<fz_rect, PagelessDocumentPos>;
 using WindowRect = EnhancedRect<fz_irect, WindowPos>;
 
 struct DocumentRect {
-    EnhancedRect<fz_rect, DocumentPos> rect;
+    EnhancedRect<fz_rect, PagelessDocumentPos> rect;
     int page;
 
     DocumentRect();

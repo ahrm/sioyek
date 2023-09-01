@@ -21,6 +21,7 @@
 // maybe use only middle click to move portal/bookmark icons instead of requiring shift
 // if we click on a portal link while ruler mode is activated, it is still active in the destination document
 // remove opengl widget include from input.h
+// allow binding keybinds in a specific mode without rewriting other mode bindings
 
 #include <iostream>
 #include <vector>
@@ -7053,34 +7054,25 @@ const std::wstring& MainWidget::get_selected_text() {
 void MainWidget::expand_selection_vertical(bool begin, bool below) {
     const std::deque<AbsoluteRect>& scr = main_document_view->selected_character_rects;
     if (scr.size() == 0) return;
+
     int index = (begin) ? 0 : scr.size() - 1;
-    int other_index = (begin) ? scr.size() - 1 : 0;
 
-    DocumentRect page_rect = scr[index].to_document(doc());
-    AbsoluteRect other_rect = scr[other_index];
-
-    if (page_rect.page >= 0) {
-        fz_stext_page* stext_page = doc()->get_stext_with_page_number(page_rect.page);
-        std::optional<DocumentRect> next_rect = get_rect_vertically(below, stext_page, page_rect);
-        if (next_rect) {
-            AbsoluteRect absrect = next_rect->to_absolute(doc());
-            if (begin) {
-                auto target = absrect.center();
-                selection_begin = target;
-            }
-            else {
-                auto target = absrect.center();
-                selection_end = target;
-            }
-            main_document_view->get_text_selection(selection_begin,
-                selection_end,
-                is_word_selecting,
-                main_document_view->selected_character_rects,
-                selected_text);
-            selected_text_is_dirty = false;
+    std::optional<AbsoluteRect> next_rect = doc()->get_rect_vertically(below, scr[index]);
+    if (next_rect) {
+        if (begin) {
+            selection_begin = next_rect->center();
         }
-
+        else {
+            selection_end = next_rect->center();
+        }
+        main_document_view->get_text_selection(selection_begin,
+            selection_end,
+            is_word_selecting,
+            main_document_view->selected_character_rects,
+            selected_text);
+        selected_text_is_dirty = false;
     }
+
 }
 
 void MainWidget::handle_move_text_mark_down() {

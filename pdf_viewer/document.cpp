@@ -2439,13 +2439,13 @@ bool Document::needs_authentication() {
     }
 }
 
-std::vector<fz_rect> Document::get_highlighted_character_masks(int page) {
+std::vector<PagelessDocumentRect> Document::get_highlighted_character_masks(int page) {
     fz_stext_page* stext_page = get_stext_with_page_number(page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
-    std::vector<fz_rect> res;
+    std::vector<PagelessDocumentRect> res;
     std::vector<std::wstring> words;
-    std::vector<std::vector<fz_rect>> word_rects;
+    std::vector<std::vector<PagelessDocumentRect>> word_rects;
     get_word_rect_list_from_flat_chars(flat_chars, words, word_rects);
 
     for (size_t i = 0; i < words.size(); i++) {
@@ -3217,9 +3217,8 @@ std::vector<std::wstring> Document::get_page_bib_candidates(int page_number, std
 
 }
 
-std::optional<std::pair<std::wstring, fz_rect>> Document::get_page_bib_with_reference(int page_number, std::wstring reference_text) {
+std::optional<std::pair<std::wstring, PagelessDocumentRect>> Document::get_page_bib_with_reference(int page_number, std::wstring reference_text) {
     //todo: use the reference offset as well as the page to more accurately get the reference 
-
 
     reference_text = remove_et_al(reference_text);
     std::vector<PagelessDocumentRect> bib_rects;
@@ -4139,4 +4138,33 @@ void Document::get_page_text_and_line_rects_after_rect(int page_number, Absolute
         }
 
     }
+}
+
+std::optional<AbsoluteRect> Document::get_rect_vertically(bool below, AbsoluteRect rect) {
+    DocumentRect doc_rect = rect.to_document(this);
+    if (doc_rect.page < 0) return {};
+
+    float closest_distance = 100000;
+    std::optional<DocumentRect> closest_rect = {};
+    float page_rect_x = static_cast<float>(doc_rect.rect.center().x);
+
+    for (auto [block, line, ch] : page_iterator(doc_rect.page)) {
+        float h = std::abs(ch->quad.ul.y - ch->quad.ll.y);
+        float current_y = below ? ch->quad.ll.y : ch->quad.ul.y;
+        float threshold_y = below ? (doc_rect.rect.y1 + h / 2) : (doc_rect.rect.y0 - h / 2);
+        bool threshold_reached = below ? (current_y > threshold_y) : (current_y < threshold_y);
+
+        if (threshold_reached) {
+            float distance = std::abs(ch->quad.lr.y - doc_rect.rect.y1) + std::abs(ch->quad.lr.x - page_rect_x);
+            if (distance < closest_distance) {
+                closest_distance = distance;
+                closest_rect = DocumentRect(fz_rect_from_quad(ch->quad), doc_rect.page);
+            }
+        }
+
+    }
+    if (closest_rect) {
+        return closest_rect->to_absolute(this);
+    }
+    return {};
 }

@@ -282,7 +282,7 @@ public:
     bool can_use_highlights();
 
     std::vector<std::wstring> get_page_bib_candidates(int page_number, std::vector<PagelessDocumentRect>* out_end_rects = nullptr);
-    std::optional<std::pair<std::wstring, fz_rect>> get_page_bib_with_reference(int page_number, std::wstring reference_text);
+    std::optional<std::pair<std::wstring, PagelessDocumentRect>> get_page_bib_with_reference(int page_number, std::wstring reference_text);
 
     void get_text_selection(AbsoluteDocumentPos selection_begin,
         AbsoluteDocumentPos selection_end,
@@ -324,7 +324,7 @@ public:
     bool needs_authentication();
     bool apply_password(const char* password);
     //std::optional<std::string> get_page_fastread_highlights(int page);
-    std::vector<fz_rect> get_highlighted_character_masks(int page);
+    std::vector<PagelessDocumentRect> get_highlighted_character_masks(int page);
     PagelessDocumentRect get_page_rect_no_cache(int page);
     std::optional<PdfLink> get_link_in_pos(int page, float x, float y);
     std::optional<PdfLink> get_link_in_pos(const DocumentPos& pos);
@@ -356,6 +356,7 @@ public:
     std::wstring get_annotations_file_path();
     bool annotations_file_exists();
     bool annotations_file_is_newer_than_database();
+    std::optional<AbsoluteRect> get_rect_vertically(bool below, AbsoluteRect rect);
 
     void persist_drawings(bool force = false);
     void persist_annotations(bool force = false);

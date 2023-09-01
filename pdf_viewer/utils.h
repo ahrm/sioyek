@@ -151,7 +151,7 @@ std::wofstream open_wofstream(const std::wstring& file_name);
 void get_flat_words_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::vector<PagelessDocumentRect>& flat_word_rects, std::vector<std::vector<PagelessDocumentRect>>* out_char_rects = nullptr);
 void get_word_rect_list_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars,
     std::vector<std::wstring>& words,
-    std::vector<std::vector<fz_rect>>& flat_word_rects);
+    std::vector<std::vector<PagelessDocumentRect>>& flat_word_rects);
 
 std::vector<std::string> get_tags(int n);
 int get_index_from_tag(const std::string& tag);
@@ -240,7 +240,6 @@ std::optional<DocumentRect> find_expanding_rect(bool before, fz_stext_page* page
 std::vector<DocumentRect> find_expanding_rect_word(bool before, fz_stext_page* page, DocumentRect page_rect);
 std::optional<DocumentRect> find_shrinking_rect_word(bool before, fz_stext_page* page, DocumentRect page_rect);
 bool are_rects_same(fz_rect r1, fz_rect r2);
-std::optional<DocumentRect> get_rect_vertically(bool below, fz_stext_page* page, DocumentRect page_rect);
 
 QStringList extract_paper_data_from_json_response(QJsonValue json_object, const std::vector<QString>& path);
 QStringList extract_paper_string_from_json_response(QJsonObject json_object, std::wstring path);
