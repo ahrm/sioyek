@@ -112,7 +112,7 @@ public:
     WindowPos document_to_window_pos_in_pixels_uncentered(DocumentPos doc_pos);
     WindowPos document_to_window_pos_in_pixels_banded(DocumentPos doc_pos);
     NormalizedWindowRect document_to_window_rect(DocumentRect doc_rect);
-    fz_irect document_to_window_irect(int page, fz_rect doc_rect);
+    WindowRect document_to_window_irect(DocumentRect);
     NormalizedWindowRect document_to_window_rect_pixel_perfect(DocumentRect doc_rect, int pixel_width, int pixel_height, bool banded = false);
     DocumentPos window_to_document_pos(WindowPos window_pos);
     DocumentPos window_to_document_pos_uncentered(WindowPos window_pos);
@@ -183,7 +183,6 @@ public:
     void set_line_index(int index, int page);
     int get_vertical_line_page();
     bool goto_definition();
-    //std::vector<std::pair<DocumentPos, fz_rect>> find_line_definitions();
     std::vector<SmartViewCandidate> find_line_definitions();
     std::optional<std::wstring> get_selected_line_text();
     bool get_is_auto_resize_mode();

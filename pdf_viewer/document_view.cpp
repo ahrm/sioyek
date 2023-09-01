@@ -266,33 +266,6 @@ void DocumentView::set_offset_y(float new_offset_y) {
     set_offsets(offset_x, new_offset_y);
 }
 
-//void DocumentView::render_highlight_window( GLuint program, fz_rect window_rect) {
-//	float quad_vertex_data[] = {
-//		window_rect.x0, window_rect.y1,
-//		window_rect.x1, window_rect.y1,
-//		window_rect.x0, window_rect.y0,
-//		window_rect.x1, window_rect.y0
-//	};
-//	glEnable(GL_BLEND);
-//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//	glUseProgram(program);
-//	glEnableVertexAttribArray(0);
-//	glEnableVertexAttribArray(1);
-//	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertex_data), quad_vertex_data, GL_DYNAMIC_DRAW);
-//	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-//	glDisable(GL_BLEND);
-//}
-
-//void DocumentView::render_highlight_absolute( GLuint program, fz_rect absolute_document_rect) {
-//	fz_rect window_rect = absolute_to_window_rect(absolute_document_rect);
-//	render_highlight_window(program, window_rect);
-//}
-//
-//void DocumentView::render_highlight_document( GLuint program, int page, fz_rect doc_rect) {
-//	fz_rect window_rect = document_to_window_rect(page, doc_rect);
-//	render_highlight_window(program, window_rect);
-//}
-
 std::optional<PdfLink> DocumentView::get_link_in_pos(WindowPos pos) {
     if (!current_document) return {};
 
@@ -410,21 +383,13 @@ WindowPos DocumentView::document_to_window_pos_in_pixels_banded(DocumentPos doc_
     WindowPos window_pos;
     window_pos.y = static_cast<int>(std::roundf((abspos.y - offset_y) * zoom_level + static_cast<float>(view_height) / 2.0f));
     window_pos.x = static_cast<int>(std::roundf((abspos.x + offset_x) * zoom_level + static_cast<float>(view_width) / 2.0f));
-    //window_pos.x = static_cast<int>(std::roundf((abspos.x + offset_x - current_document->get_page_width(doc_pos.page) / 2) * zoom_level + static_cast<float>(view_width) / 2));
     return window_pos;
 }
 
-fz_irect DocumentView::document_to_window_irect(int page, fz_rect doc_rect) {
-
-    fz_irect window_rect;
-
-    WindowPos bottom_left = document_to_window_pos_in_pixels_uncentered(DocumentPos { page, doc_rect.x0, doc_rect.y0 });
-    WindowPos top_right = document_to_window_pos_in_pixels_uncentered(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
-    window_rect.x0 = bottom_left.x;
-    window_rect.y0 = bottom_left.y;
-    window_rect.x1 = top_right.x;
-    window_rect.y1 = top_right.y;
-    return window_rect;
+WindowRect DocumentView::document_to_window_irect(DocumentRect doc_rect) {
+    WindowPos top_left = doc_rect.top_left().to_window(this);
+    WindowPos bottom_right = doc_rect.bottom_right().to_window(this);
+    return WindowRect(top_left, bottom_right);
 }
 
 NormalizedWindowRect DocumentView::document_to_window_rect(DocumentRect doc_rect) {
@@ -1119,7 +1084,7 @@ void DocumentView::get_rects_from_ranges(int page_number, const std::vector<Page
     for (int i = 0; i < ranges.size(); i++) {
         auto [first, last] = ranges[i];
         PagelessDocumentRect current_source_rect = get_range_rect_union(line_char_rects, first, last);
-        current_source_rect = current_document->document_to_absolute_rect(page_number, current_source_rect);
+        current_source_rect = current_document->document_to_absolute_rect(DocumentRect(current_source_rect, page_number));
         out_rects.push_back(current_source_rect);
     }
 }
@@ -1156,7 +1121,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                     auto parsed_uri = parse_uri(mupdf_context, link.uri);
                     SmartViewCandidate candid;
                     candid.doc = get_document();
-                    candid.source_rect = current_document->document_to_absolute_rect(line_page_number, link.rects[0]);
+                    candid.source_rect = current_document->document_to_absolute_rect(DocumentRect(link.rects[0], line_page_number));
                     candid.source_text = get_document()->get_pdf_link_text(link);
                     candid.target_pos = DocumentPos{ parsed_uri.page - 1, parsed_uri.x, parsed_uri.y };
                     result.push_back(candid);

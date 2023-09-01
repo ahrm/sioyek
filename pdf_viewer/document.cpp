@@ -1238,18 +1238,10 @@ void Document::set_page_offset(int new_offset) {
     page_offset = new_offset;
 }
 
-fz_rect Document::absolute_to_page_rect(const fz_rect& absolute_rect, int* page) {
-    DocumentPos bottom_left = absolute_to_page_pos_uncentered({ absolute_rect.x0, absolute_rect.y0 });
-    DocumentPos top_right = absolute_to_page_pos_uncentered({ absolute_rect.x1, absolute_rect.y1 });
-    if (page != nullptr) {
-        *page = bottom_left.page;
-    }
-    fz_rect res;
-    res.x0 = bottom_left.x;
-    res.x1 = top_right.x;
-    res.y0 = bottom_left.y;
-    res.y1 = top_right.y;
-    return res;
+DocumentRect Document::absolute_to_page_rect(AbsoluteRect abs_rect) {
+    DocumentPos top_left = abs_rect.top_left().to_document(this);
+    DocumentPos bottom_right = abs_rect.bottom_right().to_document(this);
+    return DocumentRect(top_left, bottom_right, top_left.page);
 }
 
 DocumentPos Document::absolute_to_page_pos(AbsoluteDocumentPos absp) {
@@ -2594,17 +2586,10 @@ AbsoluteDocumentPos Document::document_to_absolute_pos(DocumentPos doc_pos) {
     return res;
 }
 
-fz_rect Document::document_to_absolute_rect(int page, fz_rect doc_rect){
-    fz_rect res;
-    AbsoluteDocumentPos x0y0 = document_to_absolute_pos(DocumentPos { page, doc_rect.x0, doc_rect.y0 }); 
-    AbsoluteDocumentPos x1y1 = document_to_absolute_pos(DocumentPos { page, doc_rect.x1, doc_rect.y1 });
-
-    res.x0 = x0y0.x;
-    res.y0 = x0y0.y;
-    res.x1 = x1y1.x;
-    res.y1 = x1y1.y;
-
-    return res;
+AbsoluteRect Document::document_to_absolute_rect(DocumentRect doc_rect){
+    AbsoluteDocumentPos top_left = doc_rect.top_left().to_absolute(this);
+    AbsoluteDocumentPos bottom_right = doc_rect.bottom_right().to_absolute(this);
+    return AbsoluteRect(top_left, bottom_right);
 }
 
 

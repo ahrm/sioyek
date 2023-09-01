@@ -2203,11 +2203,11 @@ std::optional<AbsoluteRect> PdfViewOpenGLWidget::get_selected_rectangle() {
 }
 
 void PdfViewOpenGLWidget::set_typing_rect(int page, fz_rect highlight_rect, std::optional<fz_rect> wrong_rect) {
-    fz_rect absrect = document_view->get_document()->document_to_absolute_rect(page, highlight_rect);
+    fz_rect absrect = document_view->get_document()->document_to_absolute_rect(DocumentRect(highlight_rect, page));
     character_highlight_rect = absrect;
 
     if (wrong_rect) {
-        fz_rect abswrong = document_view->get_document()->document_to_absolute_rect(page, wrong_rect.value());
+        fz_rect abswrong = document_view->get_document()->document_to_absolute_rect(DocumentRect(wrong_rect.value(), page));
         wrong_character_rect = abswrong;
     }
     else {

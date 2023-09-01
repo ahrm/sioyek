@@ -85,13 +85,11 @@ AbsoluteRect::AbsoluteRect(fz_rect r) : EnhancedRect<fz_rect, AbsoluteDocumentPo
 }
 
 AbsoluteRect DocumentRect::to_absolute(Document* doc) {
-    return AbsoluteRect{ doc->document_to_absolute_rect(page, rect) };
+    return doc->document_to_absolute_rect(*this);
 }
 
 DocumentRect AbsoluteRect::to_document(Document* doc) const {
-    int page = -1;
-    fz_rect document_rect = doc->absolute_to_page_rect(*this, &page);
-    return DocumentRect{ document_rect, page };
+    return doc->absolute_to_page_rect(*this);
 }
 
 
@@ -192,7 +190,7 @@ WindowPos operator+(const WindowPos& lhs, const ivec2& rhs) {
 }
 
 WindowRect DocumentRect::to_window(DocumentView* document_view) {
-    return WindowRect(document_view->document_to_window_irect(page, rect));
+    return document_view->document_to_window_irect(*this);
 }
 
 PagelessDocumentPos DocumentPos::pageless() const {

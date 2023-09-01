@@ -253,7 +253,7 @@ public:
     AbsoluteRect get_page_absolute_rect(int page);
     DocumentPos absolute_to_page_pos(AbsoluteDocumentPos absolute_pos);
     DocumentPos absolute_to_page_pos_uncentered(AbsoluteDocumentPos absolute_pos);
-    fz_rect absolute_to_page_rect(const fz_rect& absolute_rect, int* page);
+    DocumentRect absolute_to_page_rect(AbsoluteRect abs_rect);
     QStandardItemModel* get_toc_model();
     int get_offset_page_number(float y_offset);
     void index_document(bool* invalid_flag);
@@ -342,7 +342,7 @@ public:
     //AbsoluteDocumentPos document_to_absolute_pos(DocumentPos, bool center_mid = false);
     AbsoluteDocumentPos document_to_absolute_pos(DocumentPos docpos);
 
-    fz_rect document_to_absolute_rect(int page, fz_rect doc_rect);
+    AbsoluteRect document_to_absolute_rect(DocumentRect doc_rect);
 
     //void get_ith_next_line_from_absolute_y(float absolute_y, int i, bool cont, float* out_begin, float* out_end);
     AbsoluteRect get_ith_next_line_from_absolute_y(int page, int line_index, int i, bool continue_to_next_page, int* out_index, int* out_page);
