@@ -2185,11 +2185,11 @@ std::optional<AbsoluteRect> PdfViewOpenGLWidget::get_selected_rectangle() {
 }
 
 void PdfViewOpenGLWidget::set_typing_rect(DocumentRect highlight_rect, std::optional<DocumentRect> wrong_rect) {
-    fz_rect absrect = document_view->get_document()->document_to_absolute_rect(highlight_rect);
+    AbsoluteRect absrect = document_view->get_document()->document_to_absolute_rect(highlight_rect);
     character_highlight_rect = absrect;
 
     if (wrong_rect) {
-        fz_rect abswrong = document_view->get_document()->document_to_absolute_rect(wrong_rect.value());
+        AbsoluteRect abswrong = document_view->get_document()->document_to_absolute_rect(wrong_rect.value());
         wrong_character_rect = abswrong;
     }
     else {
@@ -2590,7 +2590,6 @@ bool PdfViewOpenGLWidget::is_normalized_y_range_in_window(float y0, float y1) {
 }
 
 void PdfViewOpenGLWidget::render_portal_rect(QPainter* painter, AbsoluteRect portal_rect, bool is_pending) {
-    //fz_rect portal_normalized_window_rect = document_view->absolute_to_window_rect(portal_rect);
     NormalizedWindowRect window_rect = portal_rect.to_window_normalized(document_view);
 
     if (is_normalized_y_range_in_window(window_rect.y0, window_rect.y1)) {

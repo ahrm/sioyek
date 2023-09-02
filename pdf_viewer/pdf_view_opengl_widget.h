@@ -114,8 +114,8 @@ private:
     QIcon portal_icon;
     QIcon hourglass_icon;
 
-    std::optional<fz_rect> character_highlight_rect = {};
-    std::optional<fz_rect> wrong_character_rect = {};
+    std::optional<AbsoluteRect> character_highlight_rect = {};
+    std::optional<AbsoluteRect> wrong_character_rect = {};
     bool show_control_rect;
 
     std::optional<AbsoluteDocumentPos> underline = {};
@@ -183,7 +183,6 @@ public:
     std::vector<DocumentRect> word_rects;
     std::vector<DocumentRect> synctex_highlights;
     QTime synctex_highlight_time;
-    //std::vector<std::pair<fz_rect, int>> marked_data_rects;
     std::vector<MarkedDataRect> marked_data_rects;
 
     PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent = nullptr);
