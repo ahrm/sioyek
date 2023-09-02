@@ -1896,9 +1896,9 @@ float PdfViewOpenGLWidget::get_overview_side_pos(int index) {
     }
 }
 
-void PdfViewOpenGLWidget::set_overview_side_pos(int index, fz_rect original_rect, fvec2 diff) {
+void PdfViewOpenGLWidget::set_overview_side_pos(OverviewSide index, NormalizedWindowRect original_rect, fvec2 diff) {
 
-    fz_rect new_rect = original_rect;
+    NormalizedWindowRect new_rect = original_rect;
 
     if (index == OverviewSide::bottom) {
         float new_bottom_pos = original_rect.y0 + diff.y();
@@ -1928,9 +1928,9 @@ void PdfViewOpenGLWidget::set_overview_side_pos(int index, fz_rect original_rect
 
 }
 
-void PdfViewOpenGLWidget::set_overview_rect(fz_rect rect) {
-    float halfwidth = std::abs(rect.x1 - rect.x0) / 2;
-    float halfheight = std::abs(rect.y1 - rect.y0) / 2;
+void PdfViewOpenGLWidget::set_overview_rect(NormalizedWindowRect rect) {
+    float halfwidth = rect.width() / 2;
+    float halfheight = rect.height() / 2;
     float offset_x = rect.x0 + halfwidth;
     float offset_y = rect.y0 + halfheight;
 
@@ -2184,12 +2184,12 @@ std::optional<AbsoluteRect> PdfViewOpenGLWidget::get_selected_rectangle() {
     return selected_rectangle;
 }
 
-void PdfViewOpenGLWidget::set_typing_rect(int page, fz_rect highlight_rect, std::optional<fz_rect> wrong_rect) {
-    fz_rect absrect = document_view->get_document()->document_to_absolute_rect(DocumentRect(highlight_rect, page));
+void PdfViewOpenGLWidget::set_typing_rect(DocumentRect highlight_rect, std::optional<DocumentRect> wrong_rect) {
+    fz_rect absrect = document_view->get_document()->document_to_absolute_rect(highlight_rect);
     character_highlight_rect = absrect;
 
     if (wrong_rect) {
-        fz_rect abswrong = document_view->get_document()->document_to_absolute_rect(DocumentRect(wrong_rect.value(), page));
+        fz_rect abswrong = document_view->get_document()->document_to_absolute_rect(wrong_rect.value());
         wrong_character_rect = abswrong;
     }
     else {

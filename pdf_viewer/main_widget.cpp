@@ -1833,17 +1833,17 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
             }
 
             int page = typing_location.value().page;
-            PagelessDocumentRect character_rect = rect_from_quad(typing_location.value().character->quad);
-            std::optional<PagelessDocumentRect> wrong_rect = {};
+            DocumentRect character_rect = DocumentRect(rect_from_quad(typing_location.value().character->quad), page);
+            std::optional<DocumentRect> wrong_rect = {};
 
             if (typing_location.value().previous_character) {
-                wrong_rect = rect_from_quad(typing_location.value().previous_character->character->quad);
+                wrong_rect = DocumentRect(rect_from_quad(typing_location.value().previous_character->character->quad), page);
             }
 
             if (should_focus) {
                 main_document_view->set_offset_y(typing_location.value().focus_offset());
             }
-            opengl_widget->set_typing_rect(page, character_rect, wrong_rect);
+            opengl_widget->set_typing_rect(character_rect, wrong_rect);
 
         }
         return;
@@ -5620,7 +5620,7 @@ void MainWidget::handle_toggle_typing_mode() {
         charaddr.page = page - 1;
         charaddr.next_page();
 
-        opengl_widget->set_typing_rect(charaddr.page, rect_from_quad(charaddr.character->quad), {});
+        opengl_widget->set_typing_rect(DocumentRect(rect_from_quad(charaddr.character->quad), charaddr.page), {});
 
         typing_location = std::move(charaddr);
         main_document_view->set_offset_y(typing_location.value().focus_offset());

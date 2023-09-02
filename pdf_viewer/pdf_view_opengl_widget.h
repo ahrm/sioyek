@@ -241,8 +241,8 @@ public:
     void get_overview_size(float* width, float* height);
 
     float get_overview_side_pos(int index);
-    void set_overview_side_pos(int index, fz_rect original_rect, fvec2 diff);
-    void set_overview_rect(fz_rect rect);
+    void set_overview_side_pos(OverviewSide index, NormalizedWindowRect original_rect, fvec2 diff);
+    void set_overview_rect(NormalizedWindowRect rect);
 
     void set_overview_offsets(float offset_x, float offset_y);
     void set_overview_offsets(fvec2 offsets);
@@ -265,7 +265,7 @@ public:
 
     std::optional<AbsoluteRect> get_selected_rectangle();
 
-    void set_typing_rect(int page, fz_rect rect, std::optional<fz_rect> wrong_rect);
+    void set_typing_rect(DocumentRect rect, std::optional<DocumentRect> wrong_rect);
 
     Document* get_current_overview_document();
     NormalizedWindowPos document_to_overview_pos(DocumentPos pos);
