@@ -1596,14 +1596,17 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
 
             if (!USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE) {
 
-                DocumentRect line_rect = get_page_intersecting_rect(highlight_rects[0]).to_document(doc());
+                std::optional<AbsoluteRect> line_rect_absolute = get_page_intersecting_rect(highlight_rects[0]);
+                if (line_rect_absolute){
+                    DocumentRect line_rect = line_rect_absolute->to_document(doc());
 
-                opengl_widget->set_synctex_highlights({ line_rect });
-                if (highlight_rects.size() == 0) {
-                    main_document_view->goto_page(target_page);
-                }
-                else {
-                    main_document_view->goto_offset_within_page(target_page, highlight_rects[0].rect.y0);
+                    opengl_widget->set_synctex_highlights({ line_rect });
+                    if (highlight_rects.size() == 0) {
+                        main_document_view->goto_page(target_page);
+                    }
+                    else {
+                        main_document_view->goto_offset_within_page(target_page, highlight_rects[0].rect.y0);
+                    }
                 }
             }
             else {
@@ -4212,12 +4215,13 @@ void MainWidget::toggle_titlebar() {
 }
 
 
-AbsoluteRect MainWidget::get_page_intersecting_rect(DocumentRect rect) {
+std::optional<AbsoluteRect> MainWidget::get_page_intersecting_rect(DocumentRect rect) {
     int index = get_page_intersecting_rect_index(rect);
     if (index >= 0) {
         std::vector<AbsoluteRect> line_rects = main_document_view->get_document()->get_page_lines(rect.page, nullptr);
         return line_rects[index];
     }
+    return {};
 }
 
 int MainWidget::get_page_intersecting_rect_index(DocumentRect r) {
@@ -4327,18 +4331,21 @@ std::wstring MainWidget::synctex_under_pos(WindowPos position) {
             if (column < 0) column = 0;
             int tag = synctex_node_tag(node);
             const char* file_name = synctex_scanner_get_name(scanner, tag);
+            QString new_path;
 #ifdef Q_OS_WIN
             // the path returned by synctex is formatted in unix style, for example it is something like this
             // in windows: d:/some/path/file.pdf
             // this doesn't work with Vimtex for some reason, so here we have to convert the path separators
             // to windows style and make sure the driver letter is capitalized
             QDir file_path = QDir(file_name);
-            QString new_path = QDir::toNativeSeparators(file_path.absolutePath());
+            new_path = QDir::toNativeSeparators(file_path.absolutePath());
             new_path[0] = new_path[0].toUpper();
             if (VIMTEX_WSL_FIX) {
                 new_path = file_name;
             }
 
+#else
+            new_path = file_name;
 #endif
 
             std::string line_string = std::to_string(line);

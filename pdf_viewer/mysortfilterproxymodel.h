@@ -1,6 +1,6 @@
 #pragma once
 #include <QString>
-#include <QSortFilterProxyModel>
+#include <qsortfilterproxymodel.h>
 
 class MySortFilterProxyModel : public QSortFilterProxyModel {
     Q_OBJECT

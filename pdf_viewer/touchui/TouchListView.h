@@ -7,10 +7,8 @@
 #include <QStringList>
 #include <QStringListModel>
 #include <QSortFilterProxyModel>
-#include "mysortfilterproxymodel.h"
 
-
-//class MySortFilterProxyModel;
+class MySortFilterProxyModel;
 
 class TouchListView : public QWidget {
     Q_OBJECT

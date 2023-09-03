@@ -456,7 +456,7 @@ public:
     void move_document_screens(int num_screens);
     void focus_text(int page, const std::wstring& text);
     int get_page_intersecting_rect_index(DocumentRect rect);
-    AbsoluteRect get_page_intersecting_rect(DocumentRect rect);
+    std::optional<AbsoluteRect> get_page_intersecting_rect(DocumentRect rect);
     void focus_rect(DocumentRect rect);
 
     void move_visual_mark_next();

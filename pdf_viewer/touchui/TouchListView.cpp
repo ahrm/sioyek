@@ -2,6 +2,7 @@
 #include <QVariant>
 #include "ui.h"
 
+#include "mysortfilterproxymodel.h"
 
 void TouchListView::initialize(int selected_index, bool deletable, bool is_tree) {
     setAttribute(Qt::WA_NoMousePropagation);
