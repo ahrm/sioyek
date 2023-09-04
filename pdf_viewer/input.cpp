@@ -941,9 +941,11 @@ public:
     }
 
     void pre_perform() {
-        widget->text_command_line_edit->setText(
-            QString::fromStdWString(widget->doc()->get_highlights()[widget->selected_highlight_index].text_annot)
-        );
+        if (widget->selected_highlight_index >= 0){
+            widget->text_command_line_edit->setText(
+                    QString::fromStdWString(widget->doc()->get_highlights()[widget->selected_highlight_index].text_annot)
+                    );
+        }
     }
 
     std::string get_name() {

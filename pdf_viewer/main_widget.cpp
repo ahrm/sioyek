@@ -3,7 +3,6 @@
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
 // write iterators to iterate on stext blocks/lines/chars instead of creating arrays
-// make types for absolute and document rects to simplify and avoid confusion
 // do the todo for link clicks when the document is zoomed in (focus on x too)
 // fix the issue where executing non-existant command blocks the python api
 // handle mobile text selection case where the character is not in the current page
@@ -25,6 +24,7 @@
 // make visual mark down work even when the next page is empty
 // fix the issue where opening documents using the new button on android doesn't always work
 // fix the issue where we need to click twice to close the overview window in touch mode
+
 
 #include <iostream>
 #include <vector>
