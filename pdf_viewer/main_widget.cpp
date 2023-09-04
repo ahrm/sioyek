@@ -24,6 +24,7 @@
 // make visual mark down work even when the next page is empty
 // fix the issue where opening documents using the new button on android doesn't always work
 // fix the issue where we need to click twice to close the overview window in touch mode
+// make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 
 
 #include <iostream>
