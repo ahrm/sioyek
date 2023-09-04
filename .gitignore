@@ -370,3 +370,4 @@ tutorial/*.pdf
 tutorial/*.synctex.gz
 tutorial/*.bbl
 tutorial/*.blg
+*.o.d

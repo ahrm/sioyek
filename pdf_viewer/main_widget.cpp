@@ -23,6 +23,8 @@
 // remove opengl widget include from input.h
 // allow binding keybinds in a specific mode without rewriting other mode bindings
 // make visual mark down work even when the next page is empty
+// fix the issue where opening documents using the new button on android doesn't always work
+// fix the issue where we need to click twice to close the overview window in touch mode
 
 #include <iostream>
 #include <vector>
