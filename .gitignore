@@ -371,3 +371,4 @@ tutorial/*.synctex.gz
 tutorial/*.bbl
 tutorial/*.blg
 *.o.d
+compile_commands.json

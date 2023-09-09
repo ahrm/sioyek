@@ -99,6 +99,7 @@ extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring BOOK_SCAN_PATH;
 extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
+extern std::wstring TABLET_PEN_CLICK_COMMAND;
 
 extern bool NO_AUTO_CONFIG;
 
@@ -1363,6 +1364,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"back_rect_tap_command",
         ConfigType::Macro,
         &BACK_RECT_TAP_COMMAND,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"tablet_pen_click_command",
+        ConfigType::Macro,
+        &TABLET_PEN_CLICK_COMMAND,
         string_serializer,
         string_deserializer,
         nullptr

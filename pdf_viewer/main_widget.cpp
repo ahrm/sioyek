@@ -204,6 +204,7 @@ extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
 extern bool DEBUG;
 extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
+extern std::wstring TABLET_PEN_CLICK_COMMAND;
 
 extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
@@ -1865,6 +1866,10 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
         }
         if (kevent->key() == Qt::Key::Key_VolumeUp) {
             move_visual_mark_prev();
+        }
+        if (kevent->key() == Qt::Key::Key_MediaTogglePlayPause){
+            // handle the tablet button
+            execute_macro_if_enabled(TABLET_PEN_CLICK_COMMAND);
         }
 #endif
 

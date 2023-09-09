@@ -365,6 +365,7 @@ std::wstring CONTROL_RIGHT_CLICK_COMMAND = L"";
 std::wstring ALT_CLICK_COMMAND = L"";
 std::wstring ALT_RIGHT_CLICK_COMMAND = L"";
 std::wstring HOLD_MIDDLE_CLICK_COMMAND = L"download_paper_under_cursor";
+std::wstring TABLET_PEN_CLICK_COMMAND = L"[r]move_visual_mark_next";
 
 std::wstring BACK_RECT_TAP_COMMAND = L"history_back";
 std::wstring BACK_RECT_HOLD_COMMAND = L"goto_mark";
