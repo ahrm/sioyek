@@ -585,6 +585,8 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
     //portal_pixmap = QPixmap(":/end.png");
     bookmark_icon = QIcon(":/icons/B.svg");
     portal_icon = QIcon(":/icons/P.svg");
+    bookmark_icon_white = QIcon(":/icons/B_white.svg");
+    portal_icon_white = QIcon(":/icons/P_white.svg");
     hourglass_icon = QIcon(":/icons/hourglass.svg");
 }
 
@@ -1381,7 +1383,6 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             }
         }
 
-
         for (int i = 0; i < bookmarks.size(); i++) {
             if (bookmarks[i].begin_y > -1) {
                 if (bookmarks[i].end_x == -1) {
@@ -1398,7 +1399,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                         fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
                         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
-                        bookmark_icon.paint(painter, window_qrect);
+                        render_ui_icon_for_current_color_mode(painter, bookmark_icon, bookmark_icon_white, window_qrect);
 
                     }
                 }
@@ -2603,8 +2604,8 @@ void PdfViewOpenGLWidget::render_portal_rect(QPainter* painter, AbsoluteRect por
         if (is_pending) {
             hourglass_icon.paint(painter, window_qrect);
         }
-        else {
-            portal_icon.paint(painter, window_qrect);
+        else{
+            render_ui_icon_for_current_color_mode(painter, portal_icon, portal_icon_white, window_qrect);
         }
         //painter->fillRect(portal_window_rect.x0, portal_window_rect.y0, fz_irect_width(portal_window_rect), fz_irect_height(portal_window_rect), fill_color);
 
@@ -2764,3 +2765,19 @@ std::array<float, 4> PdfViewOpenGLWidget::cc4(const float* input_color) {
     return result;
 }
 
+void PdfViewOpenGLWidget::render_ui_icon_for_current_color_mode(QPainter* painter, const QIcon& icon_black, const QIcon& icon_white, QRect window_qrect){
+
+    float visible_annotation_icon_color[3] = {1, 1, 1};
+    float mode_color[3] = {0};
+    get_color_for_current_mode(visible_annotation_icon_color, mode_color);
+    int num_adjust_pixels = static_cast<int>(window_qrect.width() * 0.1f);
+
+    painter->fillRect(window_qrect.adjusted(num_adjust_pixels, num_adjust_pixels, -num_adjust_pixels, -num_adjust_pixels), convert_float3_to_qcolor(mode_color));
+
+    if (is_bright(mode_color)){
+        icon_black.paint(painter, window_qrect);
+    }
+    else{
+        icon_white.paint(painter, window_qrect);
+    }
+}

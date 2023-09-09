@@ -3851,3 +3851,7 @@ bool operator==(const fz_rect& lhs, const fz_rect& rhs) {
         lhs.x1 == rhs.x1 &&
         lhs.y1 == rhs.y1;
 }
+
+bool is_bright(float color[3]){
+    return (color[0] + color[1] + color[2]) > 1.5f;
+}
