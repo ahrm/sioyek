@@ -5258,6 +5258,7 @@ void MainWidget::handle_goto_toc() {
                 if (page_value && pending_command_instance) {
                     pending_command_instance->set_generic_requirement(*page_value);
                     advance_command(std::move(pending_command_instance));
+                    invalidate_render();
                 }
                 pop_current_widget();
                 }, [&](int* page) {}, this));
