@@ -10,11 +10,9 @@
 // improve touch highlight select ui
 // In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 // only write the configs that actually changed in touch mode
-// don't create the helper opengl widget on startup if it is not needed
 // maybe add progressive search
 // decouple statusbar font size setting from the rest of the ui
 // handle keyboard select when document is moved (either exit select mode or update the labels)
-// maybe use only middle click to move portal/bookmark icons instead of requiring shift
 // if we click on a portal link while ruler mode is activated, it is still active in the destination document
 // allow binding keybinds in a specific mode without rewriting other mode bindings
 // make visual mark down work even when the next page is empty
@@ -8342,6 +8340,7 @@ void MainWidget::handle_goto_tab(const std::wstring& path) {
         }
     }
 
+    push_state();
     open_document(path);
 }
 
