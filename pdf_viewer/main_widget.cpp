@@ -2672,8 +2672,7 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
         last_mouse_down_document_offset = main_document_view->get_offsets();
 
         AbsoluteDocumentPos abs_mpos = main_document_view->window_to_absolute_document_pos(last_mouse_down_window_pos);
-        bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
-        if (is_shift_pressed && (!bookmark_move_data.has_value()) && (!portal_move_data.has_value())) {
+        if ((!bookmark_move_data.has_value()) && (!portal_move_data.has_value())) {
             int bookmark_index = doc()->get_bookmark_index_at_pos(abs_mpos);
             if (bookmark_index >= 0) {
                 begin_bookmark_move(bookmark_index, abs_mpos);
