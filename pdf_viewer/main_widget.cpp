@@ -17,11 +17,9 @@
 // make text highlights/selection covert visible portal/bookmark icons 
 // maybe use only middle click to move portal/bookmark icons instead of requiring shift
 // if we click on a portal link while ruler mode is activated, it is still active in the destination document
-// remove opengl widget include from input.h
 // allow binding keybinds in a specific mode without rewriting other mode bindings
 // make visual mark down work even when the next page is empty
 // fix the issue where opening documents using the new button on android doesn't always work
-// fix the issue where we need to click twice to close the overview window in touch mode
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 
 
@@ -1012,7 +1010,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
         if (QGuiApplication::mouseButtons() & Qt::MouseButton::MiddleButton) {
             if ((last_middle_down_time.msecsTo(QTime::currentTime()) > 200) && (!is_middle_click_being_used())) {
-                if (!middle_click_hold_command_already_executed) {
+                if ((!middle_click_hold_command_already_executed) && (!is_moving_annotations())) {
                     execute_macro_if_enabled(HOLD_MIDDLE_CLICK_COMMAND);
                     middle_click_hold_command_already_executed = true;
                     invalidate_render();
@@ -8544,5 +8542,12 @@ bool MainWidget::does_current_widget_consume_quicktap_event(){
         return true;
     }
 
+    return false;
+}
+
+bool MainWidget::is_moving_annotations(){
+    if (bookmark_move_data || portal_move_data || freehand_drawing_move_data) {
+        return true;
+    }
     return false;
 }
