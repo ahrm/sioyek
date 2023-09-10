@@ -1066,7 +1066,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
     if (is_presentation_mode()) {
         if (PRERENDER_NEXT_PAGE) {
-            GLuint texture = pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+            // request the next page so it is scheduled for rendering in the background thread
+            pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
                 visible_page_number.value() + 1,
                 document_view->get_document()->should_render_pdf_annotations(),
                 -1,
@@ -1198,17 +1199,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
     }
     search_results_mutex.unlock();
 
-    std::array<float, 3> text_highlight_color = cc3(DEFAULT_TEXT_HIGHLIGHT_COLOR);
     glUseProgram(shared_gl_objects.highlight_program);
-    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &text_highlight_color[0]);
-    std::vector<AbsoluteRect> bounding_rects;
-    merge_selected_character_rects(*document_view->get_selected_character_rects(), bounding_rects);
-    //for (auto rect : selected_character_rects) {
-    //	render_highlight_absolute(shared_gl_objects.highlight_program, rect);
-    //}
-    for (auto rect : bounding_rects) {
-        render_highlight_absolute(shared_gl_objects.highlight_program, rect, HRF_FILL | HRF_BORDER);
-    }
 
     if (should_show_synxtex_highlights()) {
 
@@ -1233,53 +1224,6 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         render_highlight_absolute(shared_gl_objects.highlight_program, underline_rect, false);
     }
 
-    if (document_view->get_document()->can_use_highlights()) {
-        const std::vector<Highlight>& highlights = document_view->get_document()->get_highlights();
-
-        for (size_t i = 0; i < highlights.size(); i++) {
-            //float selection_begin_window_x, selection_begin_window_y;
-            //float selection_end_window_x, selection_end_window_y;
-
-            NormalizedWindowPos selection_begin_window_pos = document_view->absolute_to_window_pos(
-                { highlights[i].selection_begin.x, highlights[i].selection_begin.y }
-            );
-
-            NormalizedWindowPos selection_end_window_pos = document_view->absolute_to_window_pos(
-                { highlights[i].selection_end.x, highlights[i].selection_end.y }
-            );
-
-            if (selection_begin_window_pos.y > selection_end_window_pos.y) {
-                std::swap(selection_begin_window_pos.y, selection_end_window_pos.y);
-            }
-
-            bool is_selection_in_window = range_intersects(selection_begin_window_pos.y, selection_end_window_pos.y, -1.0f, 1.0f);
-
-            if (is_selection_in_window) {
-                for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
-                    //glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
-                    auto adjusted_highlight_color = cc3(get_highlight_type_color(highlights[i].type));
-                    get_color_for_current_mode(get_highlight_type_color(highlights[i].type), &adjusted_highlight_color[0]);
-
-                    //glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, get_highlight_type_color(highlights[i].type));
-                    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &adjusted_highlight_color[0]);
-
-                    int flags = 0;
-                    if (std::isupper(highlights[i].type)) {
-                        flags |= HRF_UNDERLINE;
-                    }
-                    if (highlights[i].type == '_') {
-                        flags |= HRF_STRIKE;
-                    }
-                    if (flags == 0) {
-                        flags |= HRF_FILL;
-                    }
-                    render_highlight_absolute(shared_gl_objects.highlight_program,
-                        highlights[i].highlight_rects[j],
-                        flags);
-                }
-            }
-        }
-    }
 
     if (document_view->should_show_text_selection_marker) {
         std::optional<AbsoluteRect> control_character_rect = document_view->get_control_rect();
@@ -1347,6 +1291,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             render_highlight_document(shared_gl_objects.highlight_program, marked_data.rect);
         }
     }
+
+
 
     {
         glUseProgram(shared_gl_objects.line_program);
@@ -1523,13 +1469,22 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         }
     }
 
+
     painter->beginNativePainting();
+    glBindVertexArray(vertex_array_object);
+    bind_default();
+    glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+    glUseProgram(shared_gl_objects.highlight_program);
+
+    render_text_highlights();
+    render_highlight_annotations();
+
     if (overview_page) {
         glDisable(GL_CULL_FACE);
         glDisable(GL_BLEND);
-        glBindVertexArray(vertex_array_object);
+        /* glBindVertexArray(vertex_array_object); */
 
-        bind_default();
+        /* bind_default(); */
         render_overview(overview_page.value());
     }
     painter->endNativePainting();
@@ -2779,5 +2734,65 @@ void PdfViewOpenGLWidget::render_ui_icon_for_current_color_mode(QPainter* painte
     }
     else{
         icon_white.paint(painter, window_qrect);
+    }
+}
+
+void PdfViewOpenGLWidget::render_text_highlights(){
+
+    std::array<float, 3> text_highlight_color = cc3(DEFAULT_TEXT_HIGHLIGHT_COLOR);
+    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &text_highlight_color[0]);
+    std::vector<AbsoluteRect> bounding_rects;
+    merge_selected_character_rects(*document_view->get_selected_character_rects(), bounding_rects);
+
+    for (auto rect : bounding_rects) {
+        render_highlight_absolute(shared_gl_objects.highlight_program, rect, HRF_FILL | HRF_BORDER);
+    }
+}
+
+void PdfViewOpenGLWidget::render_highlight_annotations(){
+    if (document_view->get_document()->can_use_highlights()) {
+        const std::vector<Highlight>& highlights = document_view->get_document()->get_highlights();
+
+        for (size_t i = 0; i < highlights.size(); i++) {
+
+            NormalizedWindowPos selection_begin_window_pos = document_view->absolute_to_window_pos(
+                    { highlights[i].selection_begin.x, highlights[i].selection_begin.y }
+                    );
+
+            NormalizedWindowPos selection_end_window_pos = document_view->absolute_to_window_pos(
+                    { highlights[i].selection_end.x, highlights[i].selection_end.y }
+                    );
+
+            if (selection_begin_window_pos.y > selection_end_window_pos.y) {
+                std::swap(selection_begin_window_pos.y, selection_end_window_pos.y);
+            }
+
+            bool is_selection_in_window = range_intersects(selection_begin_window_pos.y, selection_end_window_pos.y, -1.0f, 1.0f);
+
+            if (is_selection_in_window) {
+                for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
+                    //glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
+                    auto adjusted_highlight_color = cc3(get_highlight_type_color(highlights[i].type));
+                    get_color_for_current_mode(get_highlight_type_color(highlights[i].type), &adjusted_highlight_color[0]);
+
+                    //glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, get_highlight_type_color(highlights[i].type));
+                    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &adjusted_highlight_color[0]);
+
+                    int flags = 0;
+                    if (std::isupper(highlights[i].type)) {
+                        flags |= HRF_UNDERLINE;
+                    }
+                    if (highlights[i].type == '_') {
+                        flags |= HRF_STRIKE;
+                    }
+                    if (flags == 0) {
+                        flags |= HRF_FILL;
+                    }
+                    render_highlight_absolute(shared_gl_objects.highlight_program,
+                            highlights[i].highlight_rects[j],
+                            flags);
+                }
+            }
+        }
     }
 }

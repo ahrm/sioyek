@@ -14,7 +14,7 @@
 // maybe add progressive search
 // decouple statusbar font size setting from the rest of the ui
 // handle keyboard select when document is moved (either exit select mode or update the labels)
-// make text highlights/selection covert visible portal/bookmark icons 
+// make text highlights/selection cover visible portal/bookmark icons 
 // maybe use only middle click to move portal/bookmark icons instead of requiring shift
 // if we click on a portal link while ruler mode is activated, it is still active in the destination document
 // allow binding keybinds in a specific mode without rewriting other mode bindings
