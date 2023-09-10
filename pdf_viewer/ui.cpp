@@ -1629,7 +1629,7 @@ void BaseSelectorWidget::on_config_file_changed() {
 
     //setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
     std::wstring ss = (get_status_stylesheet(true) + font_size_stylesheet).toStdWString();
-    setStyleSheet(get_status_stylesheet() + font_size_stylesheet);
+    setStyleSheet(get_status_stylesheet(true) + font_size_stylesheet);
     //get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{background-color: white; color: black;}");
     get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{" + get_selected_stylesheet() + "}");
     //        get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item{" + get_list_item_stylesheet() + "}");

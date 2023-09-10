@@ -6,7 +6,6 @@
 // do the todo for link clicks when the document is zoomed in (focus on x too)
 // fix the issue where executing non-existant command blocks the python api
 // handle mobile text selection case where the character is not in the current page
-// opening a tab doesn't properly update history 
 // improve touch highlight select ui
 // In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 // only write the configs that actually changed in touch mode
