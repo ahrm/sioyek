@@ -5962,8 +5962,11 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
     }
 
     if (current_widget_stack.size() > 0) {
+        bool should_return = does_current_widget_consume_quicktap_event();
         pop_current_widget();
-        return false;
+        if (should_return){
+            return false;
+        }
     }
 
     if (is_in_middle_left_rect(click_pos)) {
@@ -8529,4 +8532,16 @@ void MainWidget::export_json(std::wstring json_file_path){
 
 void MainWidget::import_json(std::wstring json_file_path){
     db_manager->import_json(json_file_path, checksummer);
+}
+
+bool MainWidget::does_current_widget_consume_quicktap_event(){
+    if (current_widget_stack.size() > 0){
+        /* return true; */
+        if (dynamic_cast<TouchGenericButtons*>(current_widget_stack.back())){
+            return false;
+        }
+        return true;
+    }
+
+    return false;
 }
