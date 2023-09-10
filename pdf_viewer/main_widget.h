@@ -121,7 +121,7 @@ public:
     std::optional<PagelessDocumentRect> last_focused_rect = {};
 
     PdfViewOpenGLWidget* opengl_widget = nullptr;
-    PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
+    PdfViewOpenGLWidget* helper_opengl_widget_ = nullptr;
     QScrollBar* scroll_bar = nullptr;
 
     // Some commands can not be executed immediately (e.g. because they require a text or symbol
@@ -130,7 +130,7 @@ public:
     std::vector<Command*> commands_being_performed;
 
     DocumentView* main_document_view = nullptr;
-    DocumentView* helper_document_view = nullptr;
+    DocumentView* helper_document_view_ = nullptr;
 
     // A stack of widgets to be displayed (e.g. the bookmark menu or the touch main menu).
     // only the top widget is visible. When a widget is popped, the previous widget in the stack
@@ -817,6 +817,9 @@ public:
     void import_json(std::wstring json_file_path);
     bool does_current_widget_consume_quicktap_event();
     bool is_moving_annotations();
+    PdfViewOpenGLWidget* helper_opengl_widget();
+    DocumentView* helper_document_view();
+    void initialize_helper();
 };
 
 #endif

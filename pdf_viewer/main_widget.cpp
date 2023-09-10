@@ -14,7 +14,6 @@
 // maybe add progressive search
 // decouple statusbar font size setting from the rest of the ui
 // handle keyboard select when document is moved (either exit select mode or update the labels)
-// make text highlights/selection cover visible portal/bookmark icons 
 // maybe use only middle click to move portal/bookmark icons instead of requiring shift
 // if we click on a portal link while ruler mode is activated, it is still active in the destination document
 // allow binding keybinds in a specific mode without rewriting other mode bindings
@@ -739,17 +738,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     main_document_view = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
     opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, false, this);
 
-    helper_document_view = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
-    helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager, true);
-
-#ifdef Q_OS_WIN
-    //// ---this is me from the future, it seems this hack is no longer necessary for some reason---
-    // yeah turns out it *was* necessary still, seems to be required only on windows though. TODO: test this on macos.
-    ////// weird hack, should not be necessary but application crashes without it when toggling window configuration
-    helper_opengl_widget->show();
-    helper_opengl_widget->hide();
-#endif
-
     status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
     QFont label_font = QFont(get_font_face_name());
@@ -758,12 +746,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
-
-    if (helper_opengl_widget) {
-        helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
-            this->update_closest_link_with_opened_book_state(state);
-            });
-    }
 
     text_command_line_edit_container = new QWidget(this);
     text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
@@ -1125,8 +1107,9 @@ MainWidget::~MainWidget() {
         //if (helper_doc != nullptr && helper_doc != main_doc) delete helper_doc;
     }
 
-    if (helper_document_view != nullptr && helper_document_view != main_document_view) {
-        delete helper_document_view;
+    if (helper_document_view_ != nullptr && helper_document_view_ != main_document_view) {
+        delete helper_document_view();
+        helper_document_view_ = nullptr;
     }
 }
 
@@ -1484,10 +1467,10 @@ void MainWidget::validate_render() {
         std::optional<Portal> link = main_document_view->find_closest_portal();
 
         if (link) {
-            helper_document_view->goto_portal(&link.value());
+            helper_document_view()->goto_portal(&link.value());
         }
         else {
-            helper_document_view->set_null_document();
+            helper_document_view()->set_null_document();
         }
     }
     validate_ui();
@@ -1497,7 +1480,7 @@ void MainWidget::validate_render() {
     }
 
     if (is_helper_visible()) {
-        helper_opengl_widget->update();
+        helper_opengl_widget()->update();
     }
 
     is_render_invalidated = false;
@@ -2904,10 +2887,10 @@ bool MainWidget::helper_window_overlaps_main_window() {
 
 void MainWidget::toggle_window_configuration() {
 
-    QWidget* helper_window = get_top_level_widget(helper_opengl_widget);
+    QWidget* helper_window = get_top_level_widget(helper_opengl_widget());
     QWidget* main_window = get_top_level_widget(opengl_widget);
 
-    if (helper_opengl_widget->isVisible()) {
+    if (is_helper_visible()){
         apply_window_params_for_one_window_mode();
     }
     else {
@@ -2927,12 +2910,12 @@ void MainWidget::toggle_two_window_mode() {
 
     //main_widget.resize(window_width, window_height);
 
-    QWidget* helper_window = get_top_level_widget(helper_opengl_widget);
+    QWidget* helper_window = get_top_level_widget(helper_opengl_widget());
 
-    if (helper_opengl_widget->isHidden()) {
+    if (!is_helper_visible()) {
 
-        QPoint pos = helper_opengl_widget->pos();
-        QSize size = helper_opengl_widget->size();
+        QPoint pos = helper_opengl_widget()->pos();
+        QSize size = helper_opengl_widget()->size();
         helper_window->show();
         helper_window->resize(size);
         helper_window->move(pos);
@@ -3205,11 +3188,15 @@ void MainWidget::handle_pending_text_command(std::wstring text) {
 
 void MainWidget::toggle_fullscreen() {
     if (isFullScreen()) {
-        helper_opengl_widget->setWindowState(Qt::WindowState::WindowMaximized);
+        if (is_helper_visible()){
+            helper_opengl_widget()->setWindowState(Qt::WindowState::WindowMaximized);
+        }
         setWindowState(Qt::WindowState::WindowMaximized);
     }
     else {
-        helper_opengl_widget->setWindowState(Qt::WindowState::WindowFullScreen);
+        if (is_helper_visible()){
+            helper_opengl_widget()->setWindowState(Qt::WindowState::WindowFullScreen);
+        }
         setWindowState(Qt::WindowState::WindowFullScreen);
     }
 }
@@ -3356,16 +3343,16 @@ CommandManager* MainWidget::get_command_manager() {
 void MainWidget::toggle_dark_mode() {
     this->opengl_widget->toggle_dark_mode();
 
-    if (helper_opengl_widget) {
-        helper_opengl_widget->toggle_dark_mode();
+    if (helper_opengl_widget_) {
+        helper_opengl_widget_->toggle_dark_mode();
     }
 }
 
 void MainWidget::toggle_custom_color_mode() {
     this->opengl_widget->toggle_custom_color_mode();
 
-    if (helper_opengl_widget) {
-        helper_opengl_widget->toggle_custom_color_mode();
+    if (helper_opengl_widget_) {
+        helper_opengl_widget_->toggle_custom_color_mode();
     }
 }
 
@@ -3664,16 +3651,16 @@ void MainWidget::apply_window_params_for_one_window_mode(bool force_resize) {
     }
 
 
-    if (helper_opengl_widget != nullptr) {
-        helper_opengl_widget->hide();
-        helper_opengl_widget->move(0, 0);
-        helper_opengl_widget->resize(main_window_size[0], main_window_size[1]);
+    if (helper_opengl_widget_ != nullptr) {
+        helper_opengl_widget_->hide();
+        helper_opengl_widget_->move(0, 0);
+        helper_opengl_widget_->resize(main_window_size[0], main_window_size[1]);
     }
 }
 
 void MainWidget::apply_window_params_for_two_window_mode() {
     QWidget* main_window = get_top_level_widget(opengl_widget);
-    QWidget* helper_window = get_top_level_widget(helper_opengl_widget);
+    QWidget* helper_window = get_top_level_widget(helper_opengl_widget());
 
     //int main_window_width = QApplication::desktop()->screenGeometry(0).width();
     int main_window_width = get_current_monitor_width();
@@ -3688,7 +3675,7 @@ void MainWidget::apply_window_params_for_two_window_mode() {
     bool should_maximize = main_window_width == main_window_size[0];
 
 
-    if (helper_opengl_widget != nullptr) {
+    if (helper_opengl_widget_ != nullptr) {
         helper_window->move(helper_window_move[0], helper_window_move[1]);
         helper_window->resize(helper_window_size[0], helper_window_size[1]);
         helper_window->show();
@@ -3711,8 +3698,8 @@ QRect MainWidget::get_main_window_rect() {
 }
 
 QRect MainWidget::get_helper_window_rect() {
-    QPoint helper_window_pos = helper_opengl_widget->pos();
-    QSize helper_window_size = helper_opengl_widget->size();
+    QPoint helper_window_pos = helper_opengl_widget_->pos();
+    QSize helper_window_size = helper_opengl_widget_->size();
     return QRect(helper_window_pos, helper_window_size);
 }
 
@@ -3901,9 +3888,9 @@ void MainWidget::on_new_paper_added(const std::wstring& file_path) {
 
         dst_view_state.document_checksum = checksummer->get_checksum(file_path);
 
-        if (helper_document_view) {
-            float helper_view_width = helper_document_view->get_view_width();
-            float helper_view_height = helper_document_view->get_view_height();
+        if (helper_document_view_) {
+            float helper_view_width = helper_document_view_->get_view_width();
+            float helper_view_height = helper_document_view_->get_view_height();
             float zoom_level = helper_view_width / first_page_rect.width();
             dst_view_state.book_state.zoom_level = zoom_level;
             dst_view_state.book_state.offset_y = -std::abs(-helper_view_height / zoom_level / 2 + first_page_rect.height() / 2);
@@ -3984,11 +3971,11 @@ std::wstring MainWidget::get_window_configuration_string() {
     QString helper_window_move_x = QString::number(-1);
     QString helper_window_move_y = QString::number(-1);
 
-    if ((helper_opengl_widget != nullptr) && helper_opengl_widget->isVisible()) {
-        helper_window_size_w = QString::number(helper_opengl_widget->size().width());
-        helper_window_size_h = QString::number(helper_opengl_widget->size().height());
-        helper_window_move_x = QString::number(helper_opengl_widget->pos().x());
-        helper_window_move_y = QString::number(helper_opengl_widget->pos().y());
+    if (is_helper_visible()) {
+        helper_window_size_w = QString::number(helper_opengl_widget_->size().width());
+        helper_window_size_h = QString::number(helper_opengl_widget_->size().height());
+        helper_window_move_x = QString::number(helper_opengl_widget_->pos().x());
+        helper_window_move_y = QString::number(helper_opengl_widget_->pos().y());
         return (config_string_multi.arg(main_window_size_w,
             main_window_size_h,
             main_window_move_x,
@@ -4014,8 +4001,10 @@ void MainWidget::handle_close_event() {
 
     // we need to delete this here (instead of destructor) to ensure that application
     // closes immediately after the main window is closed
-    delete helper_opengl_widget;
-    helper_opengl_widget = nullptr;
+    if (helper_opengl_widget_){
+        delete helper_opengl_widget_;
+        helper_opengl_widget_ = nullptr;
+    }
 }
 
 Document* MainWidget::doc() {
@@ -8295,8 +8284,8 @@ void MainWidget::show_touch_settings_menu() {
 
 void MainWidget::free_document(Document* doc) {
 
-    if (helper_document_view->get_document() == doc) {
-        helper_document_view->set_null_document();
+    if ((helper_document_view_ != nullptr) && helper_document_view_->get_document() == doc) {
+        helper_document_view()->set_null_document();
     }
 
     document_manager->free_document(doc);
@@ -8304,8 +8293,10 @@ void MainWidget::free_document(Document* doc) {
 
 bool MainWidget::is_helper_visible() {
 
-    if (helper_document_view && helper_opengl_widget) {
-        return helper_opengl_widget->isVisible();
+    if (helper_document_view_ == nullptr) return false;
+
+    if (helper_document_view() && helper_opengl_widget()) {
+        return helper_opengl_widget()->isVisible();
     }
     return false;
 }
@@ -8403,7 +8394,7 @@ void MainWidget::get_document_views_referencing_doc(std::wstring doc_path, std::
                 corresponding_widgets.push_back(window);
                 is_helper.push_back(false);
             }
-            if (window->helper_document_view && window->helper_document_view->get_document() && (window->helper_document_view->get_document()->get_path() == doc_path)) {
+            if (window->helper_document_view_ && window->helper_document_view()->get_document() && (window->helper_document_view()->get_document()->get_path() == doc_path)) {
                 document_views.push_back(window->main_document_view);
                 corresponding_widgets.push_back(window);
                 is_helper.push_back(true);
@@ -8549,4 +8540,37 @@ bool MainWidget::is_moving_annotations(){
         return true;
     }
     return false;
+}
+
+void MainWidget::initialize_helper(){
+    helper_document_view_ = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
+    helper_opengl_widget_ = new PdfViewOpenGLWidget(helper_document_view_, pdf_renderer, config_manager, true);
+#ifdef Q_OS_WIN
+    // seems to be required only on windows though. TODO: test this on macos.
+    // weird hack, should not be necessary but application crashes without it when toggling window configuration
+    helper_opengl_widget_->show();
+    helper_opengl_widget_->hide();
+#endif
+    helper_opengl_widget_->register_on_link_edit_listener([this](OpenedBookState state) {
+            this->update_closest_link_with_opened_book_state(state);
+            });
+}
+
+PdfViewOpenGLWidget* MainWidget::helper_opengl_widget(){
+
+    if (helper_opengl_widget_ == nullptr){
+        initialize_helper();
+    }
+
+    return helper_opengl_widget_;
+
+}
+
+DocumentView* MainWidget::helper_document_view(){
+
+    if (helper_document_view_ == nullptr){
+        initialize_helper();
+    }
+
+    return helper_document_view_;
 }
