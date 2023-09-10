@@ -8,8 +8,6 @@
 // handle mobile text selection case where the character is not in the current page
 // opening a tab doesn't properly update history 
 // improve touch highlight select ui
-// see if we can dynamically change svg icon colors to respect the colorscheme
-// don't show touch mode next/prev overview buttons if there are no overviews
 // In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 // only write the configs that actually changed in touch mode
 // don't create the helper opengl widget on startup if it is not needed
@@ -7892,23 +7890,35 @@ void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
         if (overview) {
             if (!opengl_widget->get_overview_page().has_value()) {
                 // show the overview buttons when a new overview is displayed
+                std::vector<std::wstring> button_icons;
+                std::vector<std::wstring> button_names;
+                if (smart_view_candidates.size() > 1){
+                    button_icons = { L"qrc:/icons/next.svg", L"qrc:/icons/go-to-file.svg", L"qrc:/icons/paper-download.svg", L"qrc:/icons/previous.svg"};
+                    button_names = {L"Prev", L"Go", L"Download", L"Next"};
+                }
+                else{
+                    button_icons = { L"qrc:/icons/go-to-file.svg", L"qrc:/icons/paper-download.svg"};
+                    button_names = {L"Go", L"Download"};
+                }
                 show_touch_buttons(
-                    { L"qrc:/icons/next.svg", L"qrc:/icons/go-to-file.svg", L"qrc:/icons/paper-download.svg", L"qrc:/icons/previous.svg"},
-                    {L"Prev", L"Go", L"Download", L"Next"},
+                    button_icons,
+                    button_names,
                     [this](int index, std::wstring name) {
-                    if (index == 0) {
+                    QString name_qstring = QString::fromStdWString(name);
+
+                    if (name_qstring.endsWith("next.svg")) {
                         goto_ith_next_overview(-1);
                         invalidate_render();
                     }
-                    if (index == 3) {
+                    if (name_qstring.endsWith("previous.svg")) {
                         goto_ith_next_overview(1);
                         invalidate_render();
                     }
-                    if (index == 1) {
+                    if (name_qstring.endsWith("go-to-file.svg")) {
                         goto_overview();
                         invalidate_render();
                     }
-                    if (index == 2) {
+                    if (name_qstring.endsWith("paper-download.svg")) {
                         //execute_macro_if_enabled(L"download_overview_paper");
                         auto command = command_manager->get_command_with_name(this, "download_overview_paper");
                         handle_command_types(std::move(command), 1);
