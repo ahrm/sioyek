@@ -2796,3 +2796,20 @@ void PdfViewOpenGLWidget::render_highlight_annotations(){
         }
     }
 }
+
+bool PdfViewOpenGLWidget::on_vertical_scroll(){
+
+    // returns true if the scroll even caused some change
+    // in this widget
+    bool res = false;
+
+    if (should_highlight_words){
+        should_highlight_words = false;
+        res = true;
+    }
+    if (should_highlight_links){
+        should_highlight_links = false;
+        res = true;
+    }
+    return res;
+}

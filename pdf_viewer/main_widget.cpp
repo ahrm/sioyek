@@ -10,7 +10,6 @@
 // In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 // only write the configs that actually changed in touch mode
 // maybe add progressive search
-// decouple statusbar font size setting from the rest of the ui
 // handle keyboard select when document is moved (either exit select mode or update the labels)
 // if we click on a portal link while ruler mode is activated, it is still active in the destination document
 // allow binding keybinds in a specific mode without rewriting other mode bindings
@@ -1310,6 +1309,7 @@ void MainWidget::handle_escape() {
     clear_selection_indicators();
     typing_location = {};
     text_command_line_edit->setText("");
+    text_command_line_edit_container->hide();
     pending_portal = {};
     synchronize_pending_link();
 
@@ -1346,7 +1346,6 @@ void MainWidget::handle_escape() {
     }
     //if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
 
-    text_command_line_edit_container->hide();
 
     clear_selected_rect();
 
@@ -3488,6 +3487,11 @@ void MainWidget::handle_search_paper_name(std::wstring paper_name, bool is_shift
 
 }
 void MainWidget::move_vertical(float amount) {
+    if (opengl_widget->on_vertical_scroll()){
+        // hide the link/text labels when we move
+        hide_command_line_edit();
+    }
+
     if (!smooth_scroll_mode) {
         move_document(0, amount);
         validate_render();
@@ -8571,4 +8575,11 @@ DocumentView* MainWidget::helper_document_view(){
     }
 
     return helper_document_view_;
+}
+
+void MainWidget::hide_command_line_edit(){
+    text_command_line_edit->setText("");
+    text_command_line_edit_container->hide();
+    pending_command_instance = {};
+    setFocus();
 }

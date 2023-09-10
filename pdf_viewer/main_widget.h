@@ -820,6 +820,7 @@ public:
     PdfViewOpenGLWidget* helper_opengl_widget();
     DocumentView* helper_document_view();
     void initialize_helper();
+    void hide_command_line_edit();
 };
 
 #endif

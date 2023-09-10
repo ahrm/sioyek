@@ -204,6 +204,7 @@ public:
     void set_should_highlight_words(bool should_highlight);
     std::vector<DocumentRect> get_highlight_word_rects();
 
+    bool on_vertical_scroll();
     int get_num_search_results();
     int get_current_search_result_index();
     bool valid_document();
