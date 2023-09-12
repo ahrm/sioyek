@@ -621,6 +621,7 @@ void DocumentView::move_screens(int num_screens) {
 void DocumentView::reset_doc_state() {
     zoom_level = 1.0f;
     set_offsets(0.0f, 0.0f);
+    is_ruler_mode_ = false;
 }
 
 void DocumentView::open_document(const std::wstring& doc_path,

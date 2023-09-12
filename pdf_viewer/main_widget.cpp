@@ -10,12 +10,12 @@
 // In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 // only write the configs that actually changed in touch mode
 // maybe add progressive search
-// handle keyboard select when document is moved (either exit select mode or update the labels)
 // if we click on a portal link while ruler mode is activated, it is still active in the destination document
 // allow binding keybinds in a specific mode without rewriting other mode bindings
 // make visual mark down work even when the next page is empty
 // fix the issue where opening documents using the new button on android doesn't always work
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
+// fix selected_*_index when we change the document while something is selected
 
 
 #include <iostream>

@@ -207,7 +207,7 @@ extern Path android_config_path;
 #endif
 
 bool UIRect::contains(NormalizedWindowPos window_pos) {
-    return enabled && (window_pos.x >= left) && (window_pos.x <= right) && (window_pos.y <= bottom) && (window_pos.y >= top);
+    return enabled && (window_pos.x >= left) && (window_pos.x <= right) && (-window_pos.y <= bottom) && (-window_pos.y >= top);
 }
 
 template<typename T>
