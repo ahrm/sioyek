@@ -3862,6 +3862,9 @@ bool is_abbreviation(const std::wstring& txt){
     int n_lower = 0;
 
     for (auto c : txt){
+        // prevent crash on non-ascii chars
+        if (c <= 0 || c > 128) continue;
+
         if (isupper(c)){
             n_upper++;
         }
