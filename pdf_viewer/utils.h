@@ -435,3 +435,5 @@ std::vector<fz_quad> quads_from_rects(const std::vector<R>& rects) {
     return res;
 }
 bool is_bright(float color[3]);
+bool is_abbreviation(const std::wstring& txt);
+bool is_in(char c, std::vector<char> candidates);

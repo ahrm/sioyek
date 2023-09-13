@@ -21,6 +21,7 @@
 #include <qurlquery.h>
 
 #include "book.h"
+#include "coordinates.h"
 
 class CachedChecksummer;
 class DatabaseManager;
@@ -382,6 +383,7 @@ public:
     bool get_should_reload_annotations();
     void reload_annotations_on_new_checksum();
     int find_reference_page_with_reference_text(std::wstring query);
+    std::optional<DocumentPos> find_abbreviation(std::wstring abbr, std::vector<DocumentRect>& overview_highlight_rects);
 
     QJsonArray get_bookmarks_json();
     QJsonArray get_highlights_json();

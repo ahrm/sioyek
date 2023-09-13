@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <thread>
 #include <cmath>
+#include "coordinates.h"
 #include "utf8.h"
 #include <qfileinfo.h>
 #include <qdatetime.h>
@@ -3759,8 +3760,84 @@ std::vector<Portal> Document::get_intersecting_visible_portals(float absrange_be
     return res;
 }
 
+std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::vector<DocumentRect>& overview_highlight_rects){
+
+    abbr = QString::fromStdWString(abbr).trimmed().toStdWString();
+    if (abbr.size() == 0){
+        return {};
+    }
+
+    std::wstring query = L"(" + abbr + L")";
+
+    auto searcher = std::default_searcher(query.begin(), query.end(), pred_case_sensitive);
+    auto it = std::search(
+        super_fast_search_index.begin(),
+        super_fast_search_index.end(),
+        searcher);
+
+    if (it == super_fast_search_index.end()){
+        if (abbr.back() == 's'){
+            abbr =  abbr.substr(0, abbr.size()-1);
+            query = L"(" + abbr + L")";
+        }
+        else{
+            abbr = abbr + L"s";
+            query = L"(" + abbr + L")";
+        }
+
+        searcher = std::default_searcher(query.begin(), query.end(), pred_case_sensitive);
+        it = std::search(
+            super_fast_search_index.begin(),
+            super_fast_search_index.end(),
+            searcher);
+    }
+
+    std::vector<int> found_indices;
+
+    if (it != super_fast_search_index.end()) {
+        int index = it - super_fast_search_index.begin();
+        while (index > 0 && is_in(super_fast_search_index[index], {' ', '(', ')', '\n'})){
+            index--;
+        }
+        std::wstring remaining_abbr = abbr;
+
+        std::deque<PagelessDocumentRect> raw_rects;
+        std::vector<PagelessDocumentRect> merged_rects;
+
+        while (index > 0 && remaining_abbr.size() > 0){
+            if (super_fast_search_index[index] == ' ' || super_fast_search_index[index] == '\n') {
+                //if (QChar(super_fast_search_index[index+1]).toLower() == QChar(remaining_abbr.back()).toLower()){
+                    remaining_abbr.pop_back();
+                    if (remaining_abbr.size() == 0) {
+                        break;
+                    }
+                //}
+            }
+
+            PagelessDocumentRect rect = super_fast_search_rects[index];
+            /* overview_highlight_rects.push_back(DocumentRect(rect, super_fast_search_index_pages[index])); */
+            raw_rects.push_back(rect);
+
+            index--;
+        }
+        /* while (index > 0 && super_fast_search_index[index]) */
+
+        if (raw_rects.size() > 0){
+            merge_selected_character_rects(raw_rects, merged_rects, false);
+            for (auto r : merged_rects){
+                overview_highlight_rects.push_back(DocumentRect(r, super_fast_search_index_pages[index]));
+            }
+            return DocumentPos{super_fast_search_index_pages[index], overview_highlight_rects[0].rect.x0, overview_highlight_rects[0].rect.y0};
+        }
+
+        return {};
+    }
+
+    return {};
+}
 
 int Document::find_reference_page_with_reference_text(std::wstring ref) {
+
     QStringList parts = QString::fromStdWString(ref).split(QRegularExpression("[ \w\(\);,]"));
     QString largest_part = "";
     for (int i = 0; i < parts.size(); i++) {

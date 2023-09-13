@@ -3855,3 +3855,24 @@ bool operator==(const fz_rect& lhs, const fz_rect& rhs) {
 bool is_bright(float color[3]){
     return (color[0] + color[1] + color[2]) > 1.5f;
 }
+
+
+bool is_abbreviation(const std::wstring& txt){
+    int n_upper = 0;
+    int n_lower = 0;
+
+    for (auto c : txt){
+        if (isupper(c)){
+            n_upper++;
+        }
+        else if (islower(c)){
+            n_lower++;
+        }
+    }
+
+    return n_upper > n_lower;
+}
+
+bool is_in(char c, std::vector<char> candidates){
+    return std::find(candidates.begin(), candidates.end(), c) != candidates.end();
+}

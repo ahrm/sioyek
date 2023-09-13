@@ -60,7 +60,17 @@ enum class ReferenceType {
     Generic,
     Equation,
     Reference,
+    Abbreviation,
     None
+};
+
+struct TextUnderPointerInfo{
+    ReferenceType reference_type;
+    int page;
+    float offset;
+    AbsoluteRect source_rect;
+    std::wstring source_text;
+    std::vector<DocumentRect> overview_highlight_rects;
 };
 
 struct BookmarkMoveData {
@@ -485,8 +495,8 @@ public:
     void toggle_visual_scroll_mode();
     void set_overview_link(PdfLink link);
     void set_overview_position(int page, float offset);
-    ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text);
-    ReferenceType find_location_of_text_under_pointer(DocumentPos docpos, int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, bool update_candidates = false);
+    ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects=nullptr);
+    TextUnderPointerInfo find_location_of_text_under_pointer(DocumentPos docpos, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
     CommandManager* get_command_manager();
 

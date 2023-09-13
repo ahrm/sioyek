@@ -793,6 +793,17 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         std::optional<SearchResult> highlighted_result_ = get_current_search_result();
+        if (overview_highlights.size() > 0){
+            glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
+            glUseProgram(shared_gl_objects.highlight_program);
+            glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, config_manager->get_config<float>(L"search_highlight_color"));
+            //glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
+            for (auto rect : overview_highlights) {
+                NormalizedWindowRect target = document_to_overview_rect(rect);
+                render_highlight_window(shared_gl_objects.highlight_program, target, HRF_FILL | HRF_BORDER);
+            }
+        }
+
         if (highlighted_result_) {
             SearchResult highlighted_result = highlighted_result_.value();
             glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
@@ -2812,4 +2823,8 @@ bool PdfViewOpenGLWidget::on_vertical_scroll(){
         res = true;
     }
     return res;
+}
+
+void PdfViewOpenGLWidget::set_overview_highlights(const std::vector<DocumentRect>& rects){
+    overview_highlights = rects;
 }
