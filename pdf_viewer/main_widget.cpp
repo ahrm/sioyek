@@ -20,7 +20,7 @@
 // text selection right click should only work when the mouse is on the text
 // handle abbreviations on right click without the need for selection
 // middle clicking on reference [16] in preview in semoran paper does not work
-
+// add an option to disable anti-aliasing
 
 #include <iostream>
 #include <vector>

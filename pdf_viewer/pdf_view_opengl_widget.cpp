@@ -1934,6 +1934,7 @@ void PdfViewOpenGLWidget::bind_program() {
     }
     else {
         glUseProgram(shared_gl_objects.rendered_program);
+        glUniform1f(shared_gl_objects.gamma_uniform_location, GAMMA);
     }
 }
 

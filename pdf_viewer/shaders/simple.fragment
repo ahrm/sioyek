@@ -2,7 +2,14 @@ out vec4 color;
 in vec2 screen_pos;
 in vec2 uvs;
 uniform sampler2D pdf_texture;
+uniform float gamma;
 
 void main(){
-    color = vec4(texture(pdf_texture, uvs).rgb, 1.0);
+    if (gamma == 1){
+        color = vec4(texture(pdf_texture, uvs).rgb, 1.0);
+    }
+    else{
+        vec3 c = texture(pdf_texture, uvs).rgb;
+        color = vec4(pow(c.r, gamma) , pow(c.g, gamma) , pow(c.b, gamma) , 1.0);
+    }
 }
