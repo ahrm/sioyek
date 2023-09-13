@@ -1948,7 +1948,7 @@ DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos 
     float window_width = static_cast<float>(size().width());
     float window_height = static_cast<float>(size().height());
     int window_x = static_cast<int>((1.0f + window_pos.x) / 2 * window_width);
-    int window_y = static_cast<int>((1.0f + window_pos.y) / 2 * window_height);
+    int window_y = static_cast<int>((1.0f - window_pos.y) / 2 * window_height);
     DocumentPos docpos = target->absolute_to_page_pos_uncentered({ 0, get_overview_page().value().absolute_offset_y });
     float overview_width = document_view->get_view_width() * overview_half_width;
     float page_width = target->get_page_width(docpos.page);
