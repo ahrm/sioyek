@@ -1686,6 +1686,17 @@ std::optional<std::wstring> Document::get_text_at_position(const std::vector<fz_
     return {};
 }
 
+std::wstring clean_bib_string_quotations(std::wstring bib_string){
+    int start_index= bib_string.find(L"“");
+    int end_index= bib_string.find(L"”");
+    if ((start_index != -1) && (end_index != -1)){
+        if ((end_index - start_index) > bib_string.size() / 2){
+            return bib_string.substr(start_index+1, end_index - start_index-1);
+        }
+    }
+    return bib_string;
+}
+
 std::optional<std::wstring> Document::get_paper_name_at_position(const std::vector<fz_stext_char*>& flat_chars, PagelessDocumentPos position) {
     std::wstring selected_string = L"";
     bool reached = false;
@@ -1696,7 +1707,7 @@ std::optional<std::wstring> Document::get_paper_name_at_position(const std::vect
                 selected_string = L"";
             }
             else {
-                return selected_string;
+                return clean_bib_string_quotations(selected_string);
             }
         }
 
