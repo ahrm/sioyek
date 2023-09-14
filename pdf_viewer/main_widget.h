@@ -831,6 +831,7 @@ public:
     DocumentView* helper_document_view();
     void initialize_helper();
     void hide_command_line_edit();
+    void deselect_document_indices();
 };
 
 #endif

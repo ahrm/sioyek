@@ -1711,6 +1711,7 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
         update_scrollbar();
     }
 
+    deselect_document_indices();
 
 }
 
@@ -8627,4 +8628,10 @@ void MainWidget::hide_command_line_edit(){
     text_command_line_edit_container->hide();
     pending_command_instance = {};
     setFocus();
+}
+
+void MainWidget::deselect_document_indices(){
+    selected_highlight_index = -1;
+    selected_bookmark_index = -1;
+    selected_portal_index = -1;
 }
