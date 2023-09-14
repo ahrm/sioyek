@@ -56,13 +56,6 @@ enum class DrawingMode {
     None
 };
 
-enum class ReferenceType {
-    Generic,
-    Equation,
-    Reference,
-    Abbreviation,
-    None
-};
 
 struct TextUnderPointerInfo{
     ReferenceType reference_type;

@@ -257,6 +257,14 @@ struct CachedPageData {
     float zoom_level;
 };
 
+enum class ReferenceType {
+    Generic,
+    Equation,
+    Reference,
+    Abbreviation,
+    None
+};
+
 struct SmartViewCandidate {
     Document* doc = nullptr;
     AbsoluteRect source_rect;

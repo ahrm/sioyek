@@ -597,7 +597,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         current_pos.y = overview_touch_move_data->original_mouse_normalized_y;
         AbsoluteDocumentPos original_absolute_pos = opengl_widget->window_pos_to_overview_pos(current_pos).to_absolute(doc());
         float absdiff = current_overview_absolute_pos.y - original_absolute_pos.y;
-        float new_absolute_y = overview_touch_move_data->overview_original_pos_absolute_offset_y + absdiff;
+        float new_absolute_y = overview_touch_move_data->overview_original_pos_absolute_offset_y - absdiff;
         OverviewState new_overview_state;
         new_overview_state.absolute_offset_y = new_absolute_y;
         new_overview_state.doc = opengl_widget->get_overview_page()->doc;
