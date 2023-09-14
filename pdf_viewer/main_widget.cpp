@@ -16,8 +16,6 @@
 // fix the issue where opening documents using the new button on android doesn't always work
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // fix selected_*_index when we change the document while something is selected
-// use move_visusal_mark_next for mouse wheel
-// text selection right click should only work when the mouse is on the text
 
 #include <iostream>
 #include <vector>
