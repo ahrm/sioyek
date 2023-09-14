@@ -19,6 +19,7 @@
 // use move_visusal_mark_next for mouse wheel
 // text selection right click should only work when the mouse is on the text
 // handle abbreviations on right click without the need for selection
+// when compiling latex, the number of pages sometimes is set to zero
 
 #include <iostream>
 #include <vector>
@@ -1006,7 +1007,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                 // Wait until a safe amount of time has passed since the last time the file was updated on the filesystem
                 // this is because LaTeX software frequently puts PDF files in an invalid state while it is being made in
                 // multiple passes.
-                if ((doc->get_milies_since_last_document_update_time() > (doc->get_milies_since_last_edit_time() + RELOAD_INTERVAL_MILISECONDS)) &&
+                if ((doc->get_milies_since_last_document_update_time() > (doc->get_milies_since_last_edit_time())) &&
                     (doc->get_milies_since_last_edit_time() > RELOAD_INTERVAL_MILISECONDS)) {
 
                     doc->reload();
@@ -2509,6 +2510,21 @@ TextUnderPointerInfo MainWidget::find_location_of_text_under_pointer(DocumentPos
         return res;
 /* ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects) { */
     }
+    else{
+        std::wregex abbr_regex(L"[A-Z]+s?");
+        std::optional<std::wstring> abbr_under_pointer = doc()->get_regex_match_at_position(abbr_regex, flat_chars, docpos.pageless(), &reference_range);
+        if (abbr_under_pointer){
+            std::optional<DocumentPos> abbr_definition_location = doc()->find_abbreviation(abbr_under_pointer.value(), res.overview_highlight_rects);
+            if (abbr_definition_location){
+                res.source_text = abbr_under_pointer.value();
+                res.page = abbr_definition_location->page;
+                res.offset = abbr_definition_location->y;
+                res.reference_type = ReferenceType::Abbreviation;
+                return res;
+            }
+        }
+    }
+
 
     res.reference_type = ReferenceType::None;
     return res;

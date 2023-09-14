@@ -1206,6 +1206,10 @@ fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_nu
     fz_stext_page* stext_page = nullptr;
 
     bool failed = false;
+    if (!doc_) {
+        return nullptr;
+    }
+
     fz_try(ctx) {
         stext_page = fz_new_stext_page_from_page_number(ctx, doc_, page_number, nullptr);
     }
@@ -1734,6 +1738,7 @@ fz_pixmap* Document::get_small_pixmap(int page) {
             return pixmap;
         }
     }
+    if (!doc) return nullptr;
 
     //fz_matrix ctm = fz_scale(0.5f, 0.5f);
     fz_matrix ctm = fz_scale(SMALL_PIXMAP_SCALE, SMALL_PIXMAP_SCALE);
@@ -2713,6 +2718,7 @@ const std::vector<AbsoluteRect>& Document::get_page_lines(
         }
         else {
             fz_pixmap* pixmap = get_small_pixmap(page);
+            if (pixmap == nullptr) return {};
             std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
             std::vector<unsigned int> line_locations;
             std::vector<unsigned int> line_locations_begins;
