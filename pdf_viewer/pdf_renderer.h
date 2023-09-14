@@ -104,7 +104,7 @@ class PdfRenderer : public QObject {
     void delete_old_pixmaps(int thread_index, fz_context* mupdf_context);
     void run(int thread_index);
     void run_search(int thread_index);
-    int get_pending_response_index(const RenderRequest& req);
+    int get_pending_response_index_with_thread_index(const RenderRequest& req, int thread_index);
 
 public:
     bool no_rerender = false;

@@ -500,6 +500,13 @@ void PdfRenderer::run(int thread_index) {
 
         while (pending_render_requests.size() == 0) {
             pending_requests_mutex.unlock();
+            cached_response_mutex.lock();
+            for (int i = 0; i < cached_responses.size(); i++) {
+                if ((cached_responses[i].thread == thread_index) && (cached_responses[i].texture == 0) && (cached_responses[i].pixmap == nullptr)) {
+                    cached_responses[i].invalid = true;
+                }
+            }
+            cached_response_mutex.unlock();
             delete_old_pixmaps(thread_index, mupdf_context);
             if (*should_quit_pointer) break;
 
@@ -600,9 +607,7 @@ void PdfRenderer::run(int thread_index) {
                 resp.invalid = false;
 
                 cached_response_mutex.lock();
-                int index = get_pending_response_index(req);
-                assert(cached_responses[index].thread == thread_index);
-
+                int index = get_pending_response_index_with_thread_index(req, thread_index);
                 cached_responses[index].last_access_time = QDateTime::currentMSecsSinceEpoch();
                 cached_responses[index].pixmap = rendered_pixmap;
                 cached_responses[index].width = rendered_pixmap->w;
@@ -701,11 +706,11 @@ void PdfRenderer::debug() {
     cached_response_mutex.unlock();
 }
 
-int PdfRenderer::get_pending_response_index(const RenderRequest& req){
+int PdfRenderer::get_pending_response_index_with_thread_index(const RenderRequest& req, int thread_index){
     // assumes we hold a lock on cached_response_mutex
 
     for (int i = 0; i < cached_responses.size(); i++) {
-        if (cached_responses[i].pending && (cached_responses[i].request == req)) {
+        if (cached_responses[i].pending && (cached_responses[i].request == req) && (cached_responses[i].thread == thread_index)) {
             return i;
         }
     }
