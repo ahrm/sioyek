@@ -15,7 +15,6 @@
 // make visual mark down work even when the next page is empty
 // fix the issue where opening documents using the new button on android doesn't always work
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
-// fix selected_*_index when we change the document while something is selected
 
 #include <iostream>
 #include <vector>
@@ -6170,7 +6169,8 @@ bool MainWidget::handle_double_tap(QPoint pos) {
             }
         }
     }
-    smart_jump_under_pos(position);
+    overview_under_pos(position);
+    /* smart_jump_under_pos(position); */
     return true;
 }
 
