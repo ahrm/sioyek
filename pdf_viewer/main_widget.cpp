@@ -6183,7 +6183,7 @@ void MainWidget::show_highlight_buttons() {
 }
 
 void MainWidget::clear_highlight_buttons() {
-    if (get_highlight_buttons()) {
+    if (highlight_buttons_) {
         get_highlight_buttons()->hide();
         //delete highlight_buttons;
         //highlight_buttons = nullptr;
@@ -6206,7 +6206,9 @@ void MainWidget::show_search_buttons() {
 
 void MainWidget::clear_search_buttons() {
 
-    get_search_buttons()->hide();
+    if (search_buttons_){
+        get_search_buttons()->hide();
+    }
 }
 
 void MainWidget::restore_default_config() {
