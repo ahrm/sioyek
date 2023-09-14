@@ -18,8 +18,6 @@
 // fix selected_*_index when we change the document while something is selected
 // use move_visusal_mark_next for mouse wheel
 // text selection right click should only work when the mouse is on the text
-// handle abbreviations on right click without the need for selection
-// when compiling latex, the number of pages sometimes is set to zero
 
 #include <iostream>
 #include <vector>
@@ -2505,10 +2503,12 @@ TextUnderPointerInfo MainWidget::find_location_of_text_under_pointer(DocumentPos
         }
 
     }
-    if (selected_text.size() > 0 && doc()->is_super_fast_index_ready()) {
-        res.reference_type = find_location_of_selected_text(&res.page, &res.offset, &res.source_rect, &res.source_text, &res.overview_highlight_rects);
-        return res;
-/* ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects) { */
+    if (is_pos_inside_selected_text(docpos)){
+        if (selected_text.size() > 0 && doc()->is_super_fast_index_ready()) {
+            res.reference_type = find_location_of_selected_text(&res.page, &res.offset, &res.source_rect, &res.source_text, &res.overview_highlight_rects);
+            return res;
+            /* ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects) { */
+        }
     }
     else{
         std::wregex abbr_regex(L"[A-Z]+s?");
