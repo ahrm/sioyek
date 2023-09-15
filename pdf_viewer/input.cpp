@@ -5941,6 +5941,19 @@ void get_tokens(std::wstring line, std::vector<std::wstring>& tokens) {
     }
 }
 
+bool is_command_incomplete_macro(const std::vector<std::string>& commands){
+
+    for (auto com : commands){
+        if (com.find("[") == -1){
+            return false;
+        }
+        if (com.find("[]") != -1){
+            return false;
+        }
+    }
+    return true;
+}
+
 InputParseTreeNode* parse_lines(
     InputParseTreeNode* root,
     CommandManager* command_manager,
@@ -6017,7 +6030,8 @@ InputParseTreeNode* parse_lines(
             }
             if ((size_t)i == (tokens.size() - 1)) {
                 parent_node->is_final = true;
-                parent_node->name_.clear();
+                std::vector<std::string> previous_names = std::move(parent_node->name_);
+                parent_node->name_ = {};
                 parent_node->defining_file_line = command_line_numbers[j];
                 parent_node->defining_file_path = command_file_names[j];
                 for (size_t k = 0; k < command_names[j].size(); k++) {
@@ -6037,6 +6051,15 @@ InputParseTreeNode* parse_lines(
                     for (int k = 0; k < command_names[j].size(); k++) {
                         command_parts.append(QString::fromStdString(command_names[j][k]));
                     }
+
+                    // is the command incomplete and should be appended to previous command instead of replacing it?
+                    if (is_command_incomplete_macro(command_names[j])) {
+                        for (int k = 0; k < previous_names.size(); k++) {
+                            command_parts.append(QString::fromStdString(previous_names[k]));
+                            parent_node->name_.push_back(previous_names[k]);
+                        }
+                    }
+
                     std::wstring joined_command = command_parts.join(";").toStdWString();
                     parent_node->generator = [joined_command, command_manager](MainWidget* w) {return std::make_unique<MacroCommand>(w, command_manager, "", joined_command); };
                 }
@@ -6102,15 +6125,19 @@ void get_keys_file_lines(const Path& file_path,
         if (line.size() == 0 || line[0] == '#') {
             continue;
         }
-        std::wstringstream ss(line);
-        std::wstring command_name;
-        std::wstring command_key;
-        ss >> command_name >> command_key;
-        //command_names.push_back(utf8_encode(command_name));
-        command_names.push_back(parse_command_name(command_name));
-        command_keys.push_back(command_key);
-        command_files.push_back(default_path_name);
-        command_line_numbers.push_back(line_number);
+
+        QString line_string = QString::fromStdWString(line);
+        int last_space_index = line_string.lastIndexOf(' ');
+
+        if (last_space_index >= 0){
+            std::wstring command_name = line_string.left(last_space_index).trimmed().toStdWString();
+            std::wstring command_key = line_string.right(line_string.size() - last_space_index - 1).trimmed().toStdWString();
+            
+            command_names.push_back(parse_command_name(command_name));
+            command_keys.push_back(command_key);
+            command_files.push_back(default_path_name);
+            command_line_numbers.push_back(line_number);
+        }
     }
 
     infile.close();
