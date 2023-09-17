@@ -15,6 +15,7 @@
 // make visual mark down work even when the next page is empty
 // fix the issue where opening documents using the new button on android doesn't always work
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
+// portals are not correctly saved in an updated database
 
 #include <iostream>
 #include <vector>
