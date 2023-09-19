@@ -213,7 +213,7 @@ public:
     std::optional<SearchResult> get_current_search_result();
     void goto_search_result(int offset, bool overview = false);
     void render_overview(OverviewState overview);
-    void render_page(int page_number);
+    void render_page(int page_number, bool in_overview=false);
     bool get_is_searching(float* prog);
     void search_text(const std::wstring& text, SearchCaseSensitivity case_sensitive = SearchCaseSensitivity::CaseInsensitive, bool regex = false, std::optional<std::pair<int, int>> range = {});
     void set_dark_mode(bool mode);
@@ -239,6 +239,7 @@ public:
     std::vector<NormalizedWindowRect> get_overview_border_rects();
     bool is_window_point_in_overview(NormalizedWindowPos window_point);
     bool is_window_point_in_overview_border(NormalizedWindowPos window_point, OverviewSide* which_border);
+    Document* doc(bool overview=false);
 
     void get_overview_offsets(float* offset_x, float* offset_y);
     void get_overview_size(float* width, float* height);
@@ -300,4 +301,6 @@ public:
     std::array<float, 4> cc4(const float* input_color);
     void set_overview_highlights(const std::vector<DocumentRect>& rects);
     bool needs_stencil_buffer();
+    void draw_overview_background();
+    void draw_overview_border();
 };
