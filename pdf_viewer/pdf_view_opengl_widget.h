@@ -299,4 +299,5 @@ public:
     std::array<float, 3> cc3(const float* input_color);
     std::array<float, 4> cc4(const float* input_color);
     void set_overview_highlights(const std::vector<DocumentRect>& rects);
+    bool needs_stencil_buffer();
 };

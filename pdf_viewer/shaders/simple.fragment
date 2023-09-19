@@ -5,7 +5,7 @@ uniform sampler2D pdf_texture;
 uniform float gamma;
 
 void main(){
-    if (gamma == 1){
+    if (gamma >= 0.99 && gamma <= 1.01){
         color = vec4(texture(pdf_texture, uvs).rgb, 1.0);
     }
     else{

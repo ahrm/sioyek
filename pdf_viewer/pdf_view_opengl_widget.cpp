@@ -1070,8 +1070,15 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
     else {
         glClearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], 1.0f);
     }
-    glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+    // for some reason clearing the stencil buffer tanks the performance on android 
+    // so we only clear it if we absolutely need it
+    if (needs_stencil_buffer()) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
+    else {
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
 
     std::vector<PdfLink> all_visible_links;
 
@@ -2828,4 +2835,8 @@ bool PdfViewOpenGLWidget::on_vertical_scroll(){
 
 void PdfViewOpenGLWidget::set_overview_highlights(const std::vector<DocumentRect>& rects){
     overview_highlights = rects;
+}
+
+bool PdfViewOpenGLWidget::needs_stencil_buffer() {
+    return fastread_mode || selected_rectangle.has_value();
 }
