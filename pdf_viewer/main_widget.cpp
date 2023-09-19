@@ -478,6 +478,11 @@ void MainWidget::set_overview_link(PdfLink link) {
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
+    if (is_pinching){
+        // no need to handle move events when a pinch to zoom is in progress
+        return;
+    }
+
     if (is_rotated()) {
         // we don't handle mouse events while document is rotated becausae proper handling
         // would increase the code complexity too much to be worth it
@@ -5865,7 +5870,13 @@ bool MainWidget::event(QEvent* event) {
                     is_pinching = false;
                 }
                 float scale = pinch->scaleFactor();
-                main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
+
+                if ((pinch->scaleFactor() >= 1 && pinch->lastScaleFactor() >= 1)
+                    || (pinch->scaleFactor() <= 1 && pinch->lastScaleFactor() <= 1)
+                    ){
+
+                    main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
+                }
                 return true;
             }
 
