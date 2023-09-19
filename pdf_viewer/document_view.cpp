@@ -517,6 +517,16 @@ float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode) 
     const float max_zoom_level = 10.0f;
 #endif
 
+    if (TOUCH_MODE){
+        int page_number = get_center_page_number();
+        if (page_number >= 0){
+            float min_zoom_level = view_width / current_document->get_page_width(page_number);
+            if (zl < min_zoom_level){
+                zl = min_zoom_level;
+            }
+        }
+    }
+
     if (zl > max_zoom_level) {
         zl = max_zoom_level;
     }
