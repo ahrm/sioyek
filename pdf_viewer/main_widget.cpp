@@ -5885,7 +5885,12 @@ bool MainWidget::event(QEvent* event) {
                     || (pinch->scaleFactor() <= 1 && pinch->lastScaleFactor() <= 1)
                     ){
 
-                    main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
+                    if (opengl_widget->get_overview_page()){
+                        opengl_widget->zoom_overview(scale);
+                    }
+                    else{
+                        main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
+                    }
                 }
                 return true;
             }
