@@ -1894,31 +1894,34 @@ void PdfViewOpenGLWidget::bind_program() {
 }
 
 DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos window_pos) {
-    Document* target = document_view->get_document();
-    if (overview_page) {
-        if (overview_page.value().doc != nullptr) {
-            target = overview_page.value().doc;
-        }
-    }
+    Document* target = doc(true);
+    //if (overview_page) {
+    //    if (overview_page.value().doc != nullptr) {
+    //        target = overview_page.value().doc;
+    //    }
+    //}
 
     float window_width = static_cast<float>(size().width());
     float window_height = static_cast<float>(size().height());
     int window_x = static_cast<int>((1.0f + window_pos.x) / 2 * window_width);
     int window_y = static_cast<int>((1.0f - window_pos.y) / 2 * window_height);
-    DocumentPos docpos = target->absolute_to_page_pos_uncentered({ 0, get_overview_page().value().absolute_offset_y });
-    float overview_width = document_view->get_view_width() * overview_half_width;
-    float page_width = target->get_page_width(docpos.page);
-    float zoom_level = overview_width / page_width;
+    DocumentPos docpos = target->absolute_to_page_pos_uncentered(
+        { get_overview_page()->absolute_offset_x, get_overview_page()->absolute_offset_y});
 
-    int overview_left = (-overview_half_width + overview_offset_x) * window_width / 2 + window_width / 2;
+    float zoom_level = get_overview_zoom_level();
+
+    //int overview_left = (-overview_half_width + overview_offset_x) * window_width / 2 + window_width / 2;
+    int overview_h_mid = overview_offset_x * window_width / 2 + window_width / 2;
     int overview_mid = (-overview_offset_y) * window_height / 2 + window_height / 2;
 
-    int relative_window_x = static_cast<int>(static_cast<float>(window_x - overview_left) / zoom_level);
+    int relative_window_x = static_cast<int>(static_cast<float>(window_x - overview_h_mid) / zoom_level);
     int relative_window_y = static_cast<int>(static_cast<float>(window_y - overview_mid) / zoom_level);
 
-    float doc_offset_x = relative_window_x;
+    int page_half_width = target->get_page_width(docpos.page);
+    float doc_offset_x = -docpos.x + relative_window_x + page_half_width;
     float doc_offset_y = docpos.y + relative_window_y;
     int doc_page = docpos.page;
+    qDebug() << doc_page << " " << doc_offset_x << doc_offset_y;
     return { doc_page, doc_offset_x, doc_offset_y };
 }
 
@@ -2159,7 +2162,7 @@ NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(DocumentPos po
 
         float overview_zoom_level = get_overview_zoom_level() / document_view->get_view_width() * 2;
 
-        float relative_x = abspos.x * overview_zoom_level + overview.absolute_offset_x;
+        float relative_x = abspos.x * overview_zoom_level + overview.absolute_offset_x * overview_zoom_level;
         float aspect = static_cast<float>(width()) / static_cast<float>(height());
         float relative_y = (abspos.y - overview.absolute_offset_y) * overview_zoom_level * aspect;
         //float left = overview_offset_x - overview_half_width;
@@ -2804,8 +2807,8 @@ void PdfViewOpenGLWidget::zoom_overview(float scale){
     if (overview_page){
         float new_zoom_level = overview_page->zoom_level * scale;
         float min_zoom_level = 1.0f;
-        if (new_zoom_level > 6.0) new_zoom_level = 6.0;
         if (new_zoom_level < min_zoom_level) new_zoom_level = min_zoom_level;
+        if (new_zoom_level > 6.0) new_zoom_level = 6.0;
         overview_page->zoom_level = new_zoom_level;
     }
 }

@@ -4177,10 +4177,11 @@ bool MainWidget::is_visual_mark_mode() {
     //return opengl_widget->get_should_draw_vertical_line();
 }
 
-void MainWidget::scroll_overview(int amount) {
+void MainWidget::scroll_overview(int vertical_amount, int horizontal_amount) {
     float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY * SCROLL_VIEW_SENSITIVITY;
     OverviewState state = opengl_widget->get_overview_page().value();
-    state.absolute_offset_y += 36.0f * vertical_move_amount * amount;
+    state.absolute_offset_y += 36.0f * vertical_move_amount * vertical_amount;
+    state.absolute_offset_x += 36.0f * vertical_move_amount * horizontal_amount;
     set_overview_page(state);
     handle_portal_overview_update();
 }

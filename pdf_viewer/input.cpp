@@ -1766,6 +1766,32 @@ public:
 
 };
 
+class MoveLeftInOverviewCommand : public Command {
+public:
+    MoveLeftInOverviewCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->scroll_overview(0, 1);
+    }
+    std::string get_name() {
+
+        return "move_left_in_overview";
+    }
+
+};
+
+class MoveRightInOverviewCommand : public Command {
+public:
+    MoveRightInOverviewCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->scroll_overview(0, -1);
+    }
+    std::string get_name() {
+
+        return "move_right_in_overview";
+    }
+
+};
+
 class MoveLeftCommand : public Command {
 public:
     MoveLeftCommand(MainWidget* w) : Command(w) {};
@@ -5412,6 +5438,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["move_up"] = [](MainWidget* widget) {return std::make_unique< MoveUpCommand>(widget); };
     new_commands["move_left"] = [](MainWidget* widget) {return std::make_unique< MoveLeftCommand>(widget); };
     new_commands["move_right"] = [](MainWidget* widget) {return std::make_unique< MoveRightCommand>(widget); };
+    new_commands["move_left_in_overview"] = [](MainWidget* widget) {return std::make_unique< MoveLeftInOverviewCommand>(widget); };
+    new_commands["move_right_in_overview"] = [](MainWidget* widget) {return std::make_unique< MoveRightInOverviewCommand>(widget); };
     new_commands["zoom_in"] = [](MainWidget* widget) {return std::make_unique< ZoomInCommand>(widget); };
     new_commands["zoom_out"] = [](MainWidget* widget) {return std::make_unique< ZoomOutCommand>(widget); };
     new_commands["zoom_in_overview"] = [](MainWidget* widget) {return std::make_unique< ZoomInOverviewCommand>(widget); };
