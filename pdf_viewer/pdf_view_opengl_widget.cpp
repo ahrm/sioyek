@@ -1895,11 +1895,6 @@ void PdfViewOpenGLWidget::bind_program() {
 
 DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos window_pos) {
     Document* target = doc(true);
-    //if (overview_page) {
-    //    if (overview_page.value().doc != nullptr) {
-    //        target = overview_page.value().doc;
-    //    }
-    //}
 
     float window_width = static_cast<float>(size().width());
     float window_height = static_cast<float>(size().height());
@@ -1910,7 +1905,6 @@ DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos 
 
     float zoom_level = get_overview_zoom_level();
 
-    //int overview_left = (-overview_half_width + overview_offset_x) * window_width / 2 + window_width / 2;
     int overview_h_mid = overview_offset_x * window_width / 2 + window_width / 2;
     int overview_mid = (-overview_offset_y) * window_height / 2 + window_height / 2;
 
@@ -1921,7 +1915,6 @@ DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos 
     float doc_offset_x = -docpos.x + relative_window_x + page_half_width;
     float doc_offset_y = docpos.y + relative_window_y;
     int doc_page = docpos.page;
-    qDebug() << doc_page << " " << doc_offset_x << doc_offset_y;
     return { doc_page, doc_offset_x, doc_offset_y };
 }
 
