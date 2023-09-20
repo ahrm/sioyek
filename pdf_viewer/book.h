@@ -205,9 +205,8 @@ struct OverviewMoveData {
 };
 
 struct OverviewTouchMoveData {
-    float overview_original_pos_absolute_offset_y;
-    float original_mouse_normalized_y;
-
+    AbsoluteDocumentPos overview_original_pos_absolute;
+    NormalizedWindowPos original_mouse_normalized_pos;
 };
 
 /*

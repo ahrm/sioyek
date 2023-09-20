@@ -600,13 +600,21 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         // in touch mode, instead of moving the overview itself, we move the document inside the overview
         NormalizedWindowPos current_pos = normal_mpos;
         AbsoluteDocumentPos current_overview_absolute_pos = opengl_widget->window_pos_to_overview_pos(current_pos).to_absolute(doc());
-        current_pos.y = overview_touch_move_data->original_mouse_normalized_y;
-        AbsoluteDocumentPos original_absolute_pos = opengl_widget->window_pos_to_overview_pos(current_pos).to_absolute(doc());
-        float absdiff = current_overview_absolute_pos.y - original_absolute_pos.y;
-        float new_absolute_y = overview_touch_move_data->overview_original_pos_absolute_offset_y - absdiff;
+        /* current_pos = overview_touch_move_data->original_mouse_normalized_pos; */
+        AbsoluteDocumentPos original_absolute_pos = opengl_widget->window_pos_to_overview_pos(
+                overview_touch_move_data->original_mouse_normalized_pos).to_absolute(doc());
+
+        float absdiff_y = current_overview_absolute_pos.y - original_absolute_pos.y;
+        float absdiff_x = current_overview_absolute_pos.x - original_absolute_pos.x;
+
+        float new_absolute_y = overview_touch_move_data->overview_original_pos_absolute.y - absdiff_y;
+        float new_absolute_x = overview_touch_move_data->overview_original_pos_absolute.x + absdiff_x;
+
         OverviewState new_overview_state;
         new_overview_state.absolute_offset_y = new_absolute_y;
+        new_overview_state.absolute_offset_x = new_absolute_x;
         new_overview_state.doc = opengl_widget->get_overview_page()->doc;
+        new_overview_state.zoom_level = opengl_widget->get_overview_page()->zoom_level;
 
         set_overview_page(new_overview_state);
         validate_render();
@@ -2131,9 +2139,10 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
             if (TOUCH_MODE) {
                 OverviewTouchMoveData touch_move_data;
                 //touch_move_data.original_mouse_offset_y = doc()->document_to_absolute_pos(opengl_widget->window_pos_to_overview_pos({ normal_x, normal_y })).y;
-                touch_move_data.original_mouse_normalized_y = click_normalized_window_pos.y;
+                touch_move_data.original_mouse_normalized_pos = click_normalized_window_pos;
                 float overview_offset_y = opengl_widget->get_overview_page()->absolute_offset_y;
-                touch_move_data.overview_original_pos_absolute_offset_y = overview_offset_y;
+                float overview_offset_x = opengl_widget->get_overview_page()->absolute_offset_x;
+                touch_move_data.overview_original_pos_absolute = AbsoluteDocumentPos{overview_offset_x, overview_offset_y};
                 overview_touch_move_data = touch_move_data;
             }
             else {

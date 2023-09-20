@@ -1908,8 +1908,8 @@ DocumentPos PdfViewOpenGLWidget::window_pos_to_overview_pos(NormalizedWindowPos 
     int overview_h_mid = overview_offset_x * window_width / 2 + window_width / 2;
     int overview_mid = (-overview_offset_y) * window_height / 2 + window_height / 2;
 
-    int relative_window_x = static_cast<int>(static_cast<float>(window_x - overview_h_mid) / zoom_level);
-    int relative_window_y = static_cast<int>(static_cast<float>(window_y - overview_mid) / zoom_level);
+    float relative_window_x = static_cast<float>(window_x - overview_h_mid) / zoom_level;
+    float relative_window_y = static_cast<float>(window_y - overview_mid) / zoom_level;
 
     int page_half_width = target->get_page_width(docpos.page);
     float doc_offset_x = -docpos.x + relative_window_x + page_half_width;
