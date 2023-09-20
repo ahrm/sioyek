@@ -677,7 +677,7 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
         SearchResult result = result_.value();
         float new_offset_y = result.rects.front().y0 + document_view->get_document()->get_accum_page_height(result.page);
         if (overview) {
-            OverviewState state = { new_offset_y, nullptr };
+            OverviewState state = { new_offset_y, 0, -1, nullptr };
             set_overview_page(state);
         }
         else {
@@ -714,12 +714,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     render_page(page-1, true);
     render_page(page+1, true);
 
-    disable_stencil();
-    draw_overview_border();
-
-
     std::optional<SearchResult> highlighted_result = get_current_search_result();
-
     // highlight the overview search result
     if (highlighted_result) {
         glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
@@ -731,6 +726,12 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
             render_highlight_window(shared_gl_objects.highlight_program, target, HRF_FILL | HRF_BORDER);
         }
     }
+
+    disable_stencil();
+    draw_overview_border();
+
+
+
 
     return;
 }
@@ -781,11 +782,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview) {
     PagelessDocumentRect page_rect({ 0, 0, page_width, page_height });
     if ((page_width < 0) || (page_height < 0)) return;
 
-    float zoom_level = document_view->get_zoom_level();
-
-    if (in_overview) {
-        zoom_level = document_view->get_view_width() * overview_half_width / page_width;
-    }
+    float zoom_level = in_overview ? get_overview_zoom_level() : document_view->get_zoom_level();
 
     bool is_sliced = num_slices_for_page_rect(page_rect, &nh, &nv);
 
@@ -812,11 +809,10 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview) {
         slice_document_rect.y1 = slice_document_height;
         slice_document_rect = get_index_rect(slice_document_rect, i, nh, nv);
 
-        NormalizedWindowRect slice_window_rect = DocumentRect(slice_document_rect, page_number).to_window_normalized(document_view);
+        NormalizedWindowRect slice_window_rect = in_overview ? 
+            document_to_overview_rect(DocumentRect(slice_document_rect, page_number)) :
+            DocumentRect(slice_document_rect, page_number).to_window_normalized(document_view);
 
-        if (in_overview){
-            slice_window_rect = document_to_overview_rect(DocumentRect(slice_document_rect, page_number));
-        }
         // we add some slack so we pre-render nearby slices
         NormalizedWindowRect full_window_rect;
         full_window_rect.x0 = -1;
@@ -932,13 +928,11 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview) {
             is_not_exact = false;
         }
 
-        NormalizedWindowRect window_rect = document_view->document_to_window_rect_pixel_perfect(DocumentRect(page_rect, page_number),
+        NormalizedWindowRect window_rect = in_overview ? 
+            document_to_overview_rect(DocumentRect(page_rect, page_number)) :
+            document_view->document_to_window_rect_pixel_perfect(DocumentRect(page_rect, page_number),
             static_cast<int>(rendered_width / device_pixel_ratio),
             static_cast<int>(rendered_height / device_pixel_ratio), is_sliced);
-
-        if (in_overview){
-            window_rect = document_to_overview_rect(DocumentRect(page_rect, page_number));
-        }
 
         rect_to_quad(window_rect, page_vertices);
 
@@ -2142,19 +2136,30 @@ Document* PdfViewOpenGLWidget::get_current_overview_document() {
 
 }
 
+float PdfViewOpenGLWidget::get_overview_zoom_level(){
+
+    if (overview_page->zoom_level > 0){
+        return overview_page->zoom_level;
+    }
+    DocumentPos docpos = doc(true)->absolute_to_page_pos_uncentered({ 0, overview_page->absolute_offset_y });
+    overview_page->zoom_level = (document_view->get_view_width() * overview_half_width) / doc(true)->get_page_width(docpos.page);
+    return overview_page->zoom_level;
+
+}
+
 NormalizedWindowPos PdfViewOpenGLWidget::document_to_overview_pos(DocumentPos pos) {
     NormalizedWindowPos res;
 
     if (overview_page) {
         OverviewState overview = overview_page.value();
         Document* target_doc = get_current_overview_document();
-        DocumentPos docpos = target_doc->absolute_to_page_pos_uncentered({ 0, overview.absolute_offset_y });
+        /* DocumentPos docpos = target_doc->absolute_to_page_pos_uncentered({ 0, overview.absolute_offset_y }); */
 
         AbsoluteDocumentPos abspos = target_doc->document_to_absolute_pos(pos);
 
-        float overview_zoom_level = (2 * overview_half_width) / target_doc->get_page_width(docpos.page);
+        float overview_zoom_level = get_overview_zoom_level() / document_view->get_view_width() * 2;
 
-        float relative_x = abspos.x * overview_zoom_level;
+        float relative_x = abspos.x * overview_zoom_level + overview.absolute_offset_x;
         float aspect = static_cast<float>(width()) / static_cast<float>(height());
         float relative_y = (abspos.y - overview.absolute_offset_y) * overview_zoom_level * aspect;
         //float left = overview_offset_x - overview_half_width;
@@ -2793,4 +2798,22 @@ void PdfViewOpenGLWidget::set_overview_highlights(const std::vector<DocumentRect
 
 bool PdfViewOpenGLWidget::needs_stencil_buffer() {
     return fastread_mode || selected_rectangle.has_value() || overview_page.has_value();
+}
+
+void PdfViewOpenGLWidget::zoom_overview(float scale){
+    if (overview_page){
+        float new_zoom_level = overview_page->zoom_level * scale;
+        float min_zoom_level = 1.0f;
+        if (new_zoom_level > 6.0) new_zoom_level = 6.0;
+        if (new_zoom_level < min_zoom_level) new_zoom_level = min_zoom_level;
+        overview_page->zoom_level = new_zoom_level;
+    }
+}
+
+void PdfViewOpenGLWidget::zoom_in_overview(){
+    zoom_overview(ZOOM_INC_FACTOR);
+}
+
+void PdfViewOpenGLWidget::zoom_out_overview(){
+    zoom_overview(1.0f / ZOOM_INC_FACTOR);
 }

@@ -825,6 +825,8 @@ public:
     void initialize_helper();
     void hide_command_line_edit();
     void deselect_document_indices();
+    void zoom_in_overview();
+    void zoom_out_overview();
 };
 
 #endif

@@ -303,4 +303,8 @@ public:
     bool needs_stencil_buffer();
     void draw_overview_background();
     void draw_overview_border();
+    float get_overview_zoom_level();
+    void zoom_overview(float scale);
+    void zoom_in_overview();
+    void zoom_out_overview();
 };

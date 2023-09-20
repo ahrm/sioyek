@@ -1808,6 +1808,32 @@ public:
 
 };
 
+class ZoomOutOverviewCommand : public Command {
+public:
+    ZoomOutOverviewCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->zoom_out_overview();
+    }
+
+    std::string get_name() {
+        return "zoom_out_overview";
+    }
+
+};
+
+class ZoomInOverviewCommand : public Command {
+public:
+    ZoomInOverviewCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->zoom_in_overview();
+    }
+
+    std::string get_name() {
+        return "zoom_in_overview";
+    }
+
+};
+
 class FitToPageWidthCommand : public Command {
 public:
     FitToPageWidthCommand(MainWidget* w) : Command(w) {};
@@ -5388,6 +5414,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["move_right"] = [](MainWidget* widget) {return std::make_unique< MoveRightCommand>(widget); };
     new_commands["zoom_in"] = [](MainWidget* widget) {return std::make_unique< ZoomInCommand>(widget); };
     new_commands["zoom_out"] = [](MainWidget* widget) {return std::make_unique< ZoomOutCommand>(widget); };
+    new_commands["zoom_in_overview"] = [](MainWidget* widget) {return std::make_unique< ZoomInOverviewCommand>(widget); };
+    new_commands["zoom_out_overview"] = [](MainWidget* widget) {return std::make_unique< ZoomOutOverviewCommand>(widget); };
     new_commands["fit_to_page_width"] = [](MainWidget* widget) {return std::make_unique< FitToPageWidthCommand>(widget); };
     new_commands["fit_to_page_height"] = [](MainWidget* widget) {return std::make_unique< FitToPageHeightCommand>(widget); };
     new_commands["fit_to_page_height_smart"] = [](MainWidget* widget) {return std::make_unique< FitToPageHeightSmartCommand>(widget); };

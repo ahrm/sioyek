@@ -23,6 +23,8 @@ struct BookState {
 
 struct OverviewState {
     float absolute_offset_y;
+    float absolute_offset_x = 0;
+    float zoom_level = -1;
     Document* doc = nullptr;
 };
 

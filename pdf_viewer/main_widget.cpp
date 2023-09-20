@@ -454,7 +454,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
 void MainWidget::set_overview_position(int page, float offset) {
     if (page >= 0) {
-        set_overview_page(OverviewState{ DocumentPos{ page, 0, offset }.to_absolute(doc()).y });
+        set_overview_page(OverviewState{ DocumentPos{ page, 0, offset }.to_absolute(doc()).y, 0, -1, nullptr});
         invalidate_render();
     }
 }
@@ -6275,14 +6275,7 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    //QString res;
-
-    //for (auto [block, line, chr] : doc()->page_iterator(0)) {
-    //    res.push_back(QChar(chr->c));
-    //}
-
-    //qDebug() << res;
-    pdf_renderer->debug();
+    opengl_widget->zoom_in_overview();
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -8648,4 +8641,12 @@ void MainWidget::deselect_document_indices(){
     selected_highlight_index = -1;
     selected_bookmark_index = -1;
     selected_portal_index = -1;
+}
+
+void MainWidget::zoom_in_overview(){
+    opengl_widget->zoom_in_overview();
+}
+
+void MainWidget::zoom_out_overview(){
+    opengl_widget->zoom_out_overview();
 }
