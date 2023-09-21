@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
+#include <mutex>
 
 #include "path.h"
 #include "coordinates.h"
@@ -37,6 +38,9 @@ protected:
     std::optional<std::wstring> result = {};
 public:
     QLocalSocket* result_socket = nullptr;
+    std::wstring* result_holder = nullptr;
+    bool* is_done = nullptr;
+
     Command(MainWidget* widget);
     virtual std::optional<Requirement> next_requirement(MainWidget* widget);
     virtual std::optional<std::wstring> get_result();
@@ -56,6 +60,7 @@ public:
     virtual void on_cancel();
     virtual void on_result_computed();
     virtual void set_result_socket(QLocalSocket* result_socket);
+    virtual void set_result_mutex(bool* res_mut, std::wstring* result_location);
 
     void set_next_requirement_with_string(std::wstring str);
 

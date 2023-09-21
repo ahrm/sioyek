@@ -10,8 +10,6 @@
 // In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 // only write the configs that actually changed in touch mode
 // maybe add progressive search
-// if we click on a portal link while ruler mode is activated, it is still active in the destination document
-// allow binding keybinds in a specific mode without rewriting other mode bindings
 // make visual mark down work even when the next page is empty
 // fix the issue where opening documents using the new button on android doesn't always work
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
@@ -63,6 +61,8 @@
 #include <qscrollbar.h>
 #include <qtexttospeech.h>
 #include <qwidget.h>
+#include <qjsengine.h>
+#include <qqmlengine.h>
 
 #include <mupdf/fitz.h>
 
@@ -6290,7 +6290,19 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    opengl_widget->zoom_in_overview();
+    std::thread ext_thread = std::thread([&]() {
+            QString file_name = ":/data/sioyeklib.qml";
+            QFile js_file(file_name);
+            if (js_file.open(QIODevice::ReadOnly)){
+                QString content = QTextStream(&js_file).readAll();
+                js_file.close();
+
+                QQmlEngine* engine = take_js_engine();
+                auto res = engine->evaluate(content, file_name);
+                release_js_engine(engine);
+            }
+        });
+    ext_thread.detach();
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -7997,6 +8009,71 @@ void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
     opengl_widget->set_overview_page(overview);
 }
 
+QQmlEngine* MainWidget::take_js_engine() {
+    //std::lock_guard guard(available_engine_mutex);
+    available_engine_mutex.lock();
+
+    while (num_js_engines > 4 && (available_engines.size() == 0)) {
+        available_engine_mutex.unlock();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        available_engine_mutex.lock();
+    }
+
+    if (available_engines.size() > 0) {
+        auto res = available_engines.back();
+        available_engines.pop_back();
+        available_engine_mutex.unlock();
+        return res;
+    }
+
+    auto js_engine = new QQmlEngine(this);
+    num_js_engines++;
+
+    available_engine_mutex.unlock();
+
+    QJSValue sioyek_object = js_engine->newQObject(this);
+    js_engine->setObjectOwnership(this, QQmlEngine::CppOwnership);
+
+    js_engine->globalObject().setProperty("sioyek_api", sioyek_object);
+    js_engine->globalObject().setProperty("sioyek", export_javascript_api(*js_engine));
+    return js_engine;
+}
+
+void MainWidget::release_js_engine(QQmlEngine* engine) {
+    std::lock_guard guard(available_engine_mutex);
+    available_engines.push_back(engine);
+}
+
+QJSValue MainWidget::export_javascript_api(QQmlEngine& engine){
+
+    QJSValue res = engine.newObject();
+
+    QStringList command_names = command_manager->get_all_command_names();
+    for (auto command_name : command_names) {
+        QString command_name_ = command_name;
+        if (command_name_ == "import") {
+            command_name_ = "import_";
+        }
+        res.setProperty(command_name_, engine.evaluate("(...args)=>{\
+                let command_name ='" + command_name_ + "';\
+                let args_strings = args.map((arg)=>{return '' + arg;});\
+                let args_string = args_strings.join(',');\
+                if (args_string.length > 0){return sioyek_api.run_macro_on_main_thread(command_name + '(' + args_string + ')');}\
+                else {return sioyek_api.run_macro_on_main_thread(command_name);}\
+                }"));
+
+        res.setProperty('$' + command_name_, engine.evaluate("(...args)=>{\
+                let command_name ='" + command_name_ + "';\
+                let args_strings = args.map((arg)=>{return '' + arg;});\
+                let args_string = args_strings.join(',');\
+                if (args_string.length > 0){return sioyek_api.run_macro_on_main_thread(command_name + '(' + args_string + ')');}\
+                else {return sioyek_api.run_macro_on_main_thread(command_name, false);}\
+                }"));
+    }
+
+    return res;
+}
+
 void MainWidget::export_python_api() {
     QString res;
     QString INDENT = "    ";
@@ -8664,4 +8741,51 @@ void MainWidget::zoom_in_overview(){
 
 void MainWidget::zoom_out_overview(){
     opengl_widget->zoom_out_overview();
+}
+
+QString MainWidget::run_macro_on_main_thread(QString macro_string, bool wait_for_result) {
+    bool is_done = false;
+    std::wstring result;
+    if (wait_for_result) {
+        QMetaObject::invokeMethod(this,
+            "execute_macro_and_return_result",
+            Qt::QueuedConnection,
+            Q_ARG(QString, macro_string),
+            Q_ARG(bool*, &is_done),
+            Q_ARG(std::wstring*, &result)
+        );
+        while (!is_done) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        };
+        return QString::fromStdWString(result);
+    }
+    else {
+        QMetaObject::invokeMethod(this,
+            "execute_macro_and_return_result",
+            Qt::QueuedConnection,
+            Q_ARG(QString, macro_string),
+            Q_ARG(bool*, nullptr),
+            Q_ARG(std::wstring*, nullptr)
+        );
+        return "";
+    }
+}
+
+void MainWidget::execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result) {
+    std::unique_ptr<Command> command = command_manager->create_macro_command(this, "", macro_string.toStdWString());
+    if (is_done != nullptr) {
+        command->set_result_mutex(is_done, result);
+    }
+
+    if (is_macro_command_enabled(command.get())) {
+        handle_command_types(std::move(command), 0);
+        invalidate_render();
+
+    }
+    else {
+        if (is_done != nullptr) {
+            *is_done = true;
+        }
+    }
+
 }

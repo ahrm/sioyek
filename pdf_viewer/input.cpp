@@ -72,6 +72,11 @@ void Command::set_result_socket(QLocalSocket* socket) {
     result_socket = socket;
 }
 
+void Command::set_result_mutex(bool* id, std::wstring* result_location) {
+    is_done = id;
+    result_holder = result_location;
+}
+
 void Command::set_generic_requirement(QVariant value) {
 
 }
@@ -4528,6 +4533,14 @@ private:
         }
     }
 
+    void set_result_mutex(bool* p_is_done, std::wstring* result_location) {
+        result_holder = result_location;
+        is_done = p_is_done;
+        if (actual_command) {
+            actual_command->set_result_mutex(p_is_done, result_location);
+        }
+    }
+
     Command* get_command() {
         if (actual_command) {
             return actual_command.get();
@@ -4542,6 +4555,10 @@ private:
 
             if (actual_command && (result_socket != nullptr)) {
                 actual_command->set_result_socket(result_socket);
+            }
+
+            if (actual_command && (is_done != nullptr)) {
+                actual_command->set_result_mutex(is_done, result_holder);
             }
 
             return actual_command.get();
@@ -5083,6 +5100,14 @@ public:
         result_socket = rsocket;
         for (auto& subcommand : commands) {
             subcommand->set_result_socket(result_socket);
+        }
+    }
+
+    void set_result_mutex(bool* id, std::wstring* result_location) {
+        is_done = id;
+        result_holder = result_location;
+        for (auto& subcommand : commands) {
+            subcommand->set_result_mutex(id, result_location);
         }
     }
 
@@ -6557,6 +6582,16 @@ void Command::on_result_computed() {
         else {
             result_socket->write("<NULL>");
         }
+    }
+    if (is_done) {
+        if (result) {
+            *result_holder = result.value();
+        }
+        else {
+            *result_holder = L"";
+        }
+
+        *is_done = true;
     }
 
 }

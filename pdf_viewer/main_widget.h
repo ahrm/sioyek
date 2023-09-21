@@ -8,6 +8,7 @@
 #include <vector>
 #include <optional>
 #include <deque>
+#include <mutex>
 
 #include <qnetworkaccessmanager.h>
 #include <qquickwidget.h>
@@ -102,6 +103,7 @@ struct FreehandDrawingMoveData {
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 class MainWidget : public QQuickWidget {
+    Q_OBJECT
 public:
     fz_context* mupdf_context = nullptr;
     DatabaseManager* db_manager = nullptr;
@@ -326,6 +328,10 @@ public:
 
     // last time we updated `smooth_scroll_speed` 
     QTime last_speed_update_time = QTime::currentTime();
+
+    std::vector<QQmlEngine*> available_engines;
+    std::mutex available_engine_mutex;
+    int num_js_engines = 0;
 
     bool main_document_view_has_document();
     std::optional<std::string> get_last_opened_file_checksum();
@@ -719,7 +725,8 @@ protected:
 public:
 
     void handle_rename(std::wstring new_name);
-    bool execute_macro_if_enabled(std::wstring macro_command_string, QLocalSocket* result_socket=nullptr); bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
+    bool execute_macro_if_enabled(std::wstring macro_command_string, QLocalSocket* result_socket=nullptr);
+    bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
     bool ensure_internet_permission();
     void handle_command_text_change(const QString& new_text);
     QTextToSpeech* get_tts();
@@ -769,6 +776,10 @@ public:
     std::vector<std::wstring> get_new_files_from_scan_directory();
     void scan_new_files_from_scan_directory();
     void export_python_api();
+    QQmlEngine* take_js_engine();
+    void release_js_engine(QQmlEngine* engine);
+
+    QJSValue export_javascript_api(QQmlEngine& engine);
     void show_custom_option_list(std::vector<std::wstring> option_list);
     void on_socket_deleted(QLocalSocket* deleted_socket);
     QJsonObject get_json_state();
@@ -827,6 +838,8 @@ public:
     void deselect_document_indices();
     void zoom_in_overview();
     void zoom_out_overview();
+    Q_INVOKABLE QString run_macro_on_main_thread(QString macro_string, bool wait_for_result=true);
+    Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
 };
 
 #endif
