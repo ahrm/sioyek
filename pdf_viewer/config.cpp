@@ -43,6 +43,7 @@ extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring STARTUP_COMMANDS;
 extern std::wstring SHUTDOWN_COMMANDS;
 extern int FONT_SIZE;
+extern int RULER_UNDERLINE_PIXEL_WIDTH;
 extern float CUSTOM_BACKGROUND_COLOR[3];
 extern float CUSTOM_TEXT_COLOR[3];
 extern bool RERENDER_OVERVIEW;
@@ -910,6 +911,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"font_size",
         ConfigType::Int,
         &FONT_SIZE,
+        int_serializer,
+        int_deserializer,
+        nullptr,
+        IntExtras{1, 100}
+        });
+    configs.push_back({
+        L"ruler_pixel_width",
+        ConfigType::Int,
+        &RULER_UNDERLINE_PIXEL_WIDTH,
         int_serializer,
         int_deserializer,
         nullptr,

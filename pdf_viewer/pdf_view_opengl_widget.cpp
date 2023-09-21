@@ -68,6 +68,7 @@ extern float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_VERTICAL_LINE_COLOR[4];
 
+extern int RULER_UNDERLINE_PIXEL_WIDTH;
 extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
 extern UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT;
 
@@ -455,13 +456,19 @@ void PdfViewOpenGLWidget::render_line_window(GLuint program, float gl_vertical_p
     glDisable(GL_BLEND);
 
 }
-void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWindowRect window_rect, int flags) {
+void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWindowRect window_rect, int flags, int line_width_in_pixels) {
 
     if (is_rotated()) {
         return;
     }
 
     float scale_factor = document_view->get_zoom_level() / document_view->get_view_height();
+
+    float line_width_window = STRIKE_LINE_WIDTH * scale_factor;
+
+    if (line_width_in_pixels > 0){
+        line_width_window = static_cast<float>(line_width_in_pixels) / document_view->get_view_height();
+    }
 
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
@@ -473,10 +480,10 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWind
 
     if (flags & HRF_UNDERLINE) {
         float underline_data[] = {
-            window_rect.x0, window_rect.y1 + STRIKE_LINE_WIDTH * scale_factor,
-            window_rect.x1, window_rect.y1 + STRIKE_LINE_WIDTH * scale_factor,
-            window_rect.x0, window_rect.y1 - STRIKE_LINE_WIDTH * scale_factor,
-            window_rect.x1, window_rect.y1 - STRIKE_LINE_WIDTH * scale_factor
+            window_rect.x0, window_rect.y1 + line_width_window,
+            window_rect.x1, window_rect.y1 + line_width_window,
+            window_rect.x0, window_rect.y1 - line_width_window,
+            window_rect.x1, window_rect.y1 - line_width_window
         };
         glBufferData(GL_ARRAY_BUFFER, sizeof(underline_data), underline_data, GL_DYNAMIC_DRAW);
     }
@@ -484,8 +491,8 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWind
         float strike_data[] = {
             window_rect.x0, (window_rect.y1 + window_rect.y0) / 2 ,
             window_rect.x1, (window_rect.y1 + window_rect.y0) / 2 ,
-            window_rect.x0, (window_rect.y1 + window_rect.y0) / 2 - 2 * STRIKE_LINE_WIDTH * scale_factor,
-            window_rect.x1, (window_rect.y1 + window_rect.y0) / 2 - 2 * STRIKE_LINE_WIDTH * scale_factor
+            window_rect.x0, (window_rect.y1 + window_rect.y0) / 2 - 2 * line_width_window,
+            window_rect.x1, (window_rect.y1 + window_rect.y0) / 2 - 2 * line_width_window
         };
         glBufferData(GL_ARRAY_BUFFER, sizeof(strike_data), strike_data, GL_DYNAMIC_DRAW);
     }
@@ -1229,7 +1236,16 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         //render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
 
         float vertical_line_end = document_view->get_ruler_window_y();
-        std::optional<NormalizedWindowRect> ruler_rect = document_view->get_ruler_window_rect();
+        /* std::optional<NormalizedWindowRect> ruler_rect = document_view->get_ruler_window_rect(); */
+        // NormalizedWindowRect DocumentView::document_to_window_rect_pixel_perfect(DocumentRect doc_rect, int pixel_width, int pixel_height, bool banded) {
+        std::optional<NormalizedWindowRect> ruler_rect = {};
+
+        if (document_view->get_ruler_rect()){
+            DocumentRect ruler_document_rect = document_view->get_ruler_rect()->to_document(doc());
+            int ruler_pixel_width = static_cast<int>(ruler_document_rect.rect.width() * document_view->get_zoom_level());
+            int ruler_pixel_height = static_cast<int>(ruler_document_rect.rect.height() * document_view->get_zoom_level());
+            ruler_rect = document_view->document_to_window_rect_pixel_perfect(ruler_document_rect, ruler_pixel_width, ruler_pixel_height, false);
+        }
 
         if ((!ruler_rect.has_value()) || (RULER_DISPLAY_MODE == L"slit")) {
             render_line_window(shared_gl_objects.vertical_line_program, vertical_line_end, ruler_rect);
@@ -1247,7 +1263,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
 
             glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, RULER_COLOR);
-            render_highlight_window(shared_gl_objects.highlight_program, ruler_rect.value(), flags);
+            render_highlight_window(shared_gl_objects.highlight_program, ruler_rect.value(), flags, RULER_UNDERLINE_PIXEL_WIDTH);
         }
     }
     for (auto [type, marked_data_of_type] : get_marked_data_rect_map()) {
