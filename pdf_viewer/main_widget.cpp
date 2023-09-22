@@ -816,6 +816,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             // handled in a different place
             return;
         }
+        if (!reply->property("sioyek_js_extension").isNull()) {
+            return;
+        }
 
         std::wstring reply_url = reply->url().toString().toStdWString();
         QString reply_host = reply->url().host();
@@ -7996,7 +7999,7 @@ void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
     opengl_widget->set_overview_page(overview);
 }
 
-QQmlEngine* MainWidget::take_js_engine() {
+QJSEngine* MainWidget::take_js_engine() {
     //std::lock_guard guard(available_engine_mutex);
     available_engine_mutex.lock();
 
@@ -8013,25 +8016,25 @@ QQmlEngine* MainWidget::take_js_engine() {
         return res;
     }
 
-    auto js_engine = new QQmlEngine(this);
+    auto js_engine = new QJSEngine();
     num_js_engines++;
 
     available_engine_mutex.unlock();
 
     QJSValue sioyek_object = js_engine->newQObject(this);
-    js_engine->setObjectOwnership(this, QQmlEngine::CppOwnership);
+    js_engine->setObjectOwnership(this, QJSEngine::CppOwnership);
 
     js_engine->globalObject().setProperty("sioyek_api", sioyek_object);
     js_engine->globalObject().setProperty("sioyek", export_javascript_api(*js_engine));
     return js_engine;
 }
 
-void MainWidget::release_js_engine(QQmlEngine* engine) {
+void MainWidget::release_js_engine(QJSEngine* engine) {
     std::lock_guard guard(available_engine_mutex);
     available_engines.push_back(engine);
 }
 
-QJSValue MainWidget::export_javascript_api(QQmlEngine& engine){
+QJSValue MainWidget::export_javascript_api(QJSEngine& engine){
 
     QJSValue res = engine.newObject();
 
@@ -8758,6 +8761,51 @@ QString MainWidget::run_macro_on_main_thread(QString macro_string, bool wait_for
     }
 }
 
+void MainWidget::js_log(QString text) {
+
+    QMetaObject::invokeMethod(this, [&, text]() {
+        qDebug() << text;
+        });
+}
+
+QString MainWidget::read_text_file(QString path) {
+    bool is_done = false;
+    QString res;
+
+    QMetaObject::invokeMethod(this, [&, path]() {
+        QFile file(path);
+        if (file.open(QIODeviceBase::ReadOnly)) {
+            res = QString::fromUtf8(file.readAll());
+        }
+        is_done = true;
+        });
+
+    while (!is_done) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    };
+    return res;
+}
+
+QString MainWidget::perform_network_request(QString url) {
+    bool is_done = false;
+    QString res;
+
+    QMetaObject::invokeMethod(this, [&, url]() {
+            QNetworkRequest req;
+            req.setUrl(url);
+            auto reply = network_manager.get(req);
+            reply->setProperty("sioyek_js_extension", "true");
+            QObject::connect(reply, &QNetworkReply::finished, [&, reply]() {
+                res = QString::fromUtf8(reply->readAll());
+                is_done = true;
+                });
+        });
+    while (!is_done) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    };
+    return res;
+}
+
 void MainWidget::execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result) {
     std::unique_ptr<Command> command = command_manager->create_macro_command(this, "", macro_string.toStdWString());
     if (is_done != nullptr) {
@@ -8780,7 +8828,7 @@ void MainWidget::execute_macro_and_return_result(QString macro_string, bool* is_
 void MainWidget::run_javascript_command(std::wstring javascript_code){
     std::thread ext_thread = std::thread([&, javascript_code]() {
             QString content = QString::fromStdWString(javascript_code);
-            QQmlEngine* engine = take_js_engine();
+            QJSEngine* engine = take_js_engine();
             auto res = engine->evaluate(content);
             release_js_engine(engine);
         });

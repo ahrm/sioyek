@@ -329,7 +329,7 @@ public:
     // last time we updated `smooth_scroll_speed` 
     QTime last_speed_update_time = QTime::currentTime();
 
-    std::vector<QQmlEngine*> available_engines;
+    std::vector<QJSEngine*> available_engines;
     std::mutex available_engine_mutex;
     int num_js_engines = 0;
 
@@ -776,10 +776,10 @@ public:
     std::vector<std::wstring> get_new_files_from_scan_directory();
     void scan_new_files_from_scan_directory();
     void export_python_api();
-    QQmlEngine* take_js_engine();
-    void release_js_engine(QQmlEngine* engine);
+    QJSEngine* take_js_engine();
+    void release_js_engine(QJSEngine* engine);
 
-    QJSValue export_javascript_api(QQmlEngine& engine);
+    QJSValue export_javascript_api(QJSEngine& engine);
     void show_custom_option_list(std::vector<std::wstring> option_list);
     void on_socket_deleted(QLocalSocket* deleted_socket);
     QJsonObject get_json_state();
@@ -839,6 +839,9 @@ public:
     void zoom_in_overview();
     void zoom_out_overview();
     Q_INVOKABLE QString run_macro_on_main_thread(QString macro_string, bool wait_for_result=true);
+    Q_INVOKABLE QString perform_network_request(QString url);
+    Q_INVOKABLE QString read_text_file(QString path);
+    Q_INVOKABLE void js_log(QString text);
     Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
     void run_javascript_command(std::wstring javascript_code);
 };
