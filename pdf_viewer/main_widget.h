@@ -841,7 +841,6 @@ public:
     Q_INVOKABLE QString run_macro_on_main_thread(QString macro_string, bool wait_for_result=true);
     Q_INVOKABLE QString perform_network_request(QString url);
     Q_INVOKABLE QString read_text_file(QString path);
-    Q_INVOKABLE void js_log(QString text);
     Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
     void run_javascript_command(std::wstring javascript_code);
 };

@@ -8017,6 +8017,7 @@ QJSEngine* MainWidget::take_js_engine() {
     }
 
     auto js_engine = new QJSEngine();
+    js_engine->installExtensions(QJSEngine::ConsoleExtension);
     num_js_engines++;
 
     available_engine_mutex.unlock();
@@ -8759,13 +8760,6 @@ QString MainWidget::run_macro_on_main_thread(QString macro_string, bool wait_for
         );
         return "";
     }
-}
-
-void MainWidget::js_log(QString text) {
-
-    QMetaObject::invokeMethod(this, [&, text]() {
-        qDebug() << text;
-        });
 }
 
 QString MainWidget::read_text_file(QString path) {
