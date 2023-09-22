@@ -132,6 +132,7 @@ extern bool MULTILINE_MENUS;
 extern bool START_WITH_HELPER_WINDOW;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
+extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
 extern bool PRERENDER_NEXT_PAGE;
 extern bool EMACS_MODE;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
@@ -2092,7 +2093,7 @@ void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_na
                 deserialize_file(changed_config_names, path, true);
             }
         }
-        else if ((conf_name == L"new_command") || (conf_name == L"new_macro")) {
+        else if ((conf_name == L"new_command") || (conf_name == L"new_macro") || (conf_name == L"new_js_command")) {
             std::wstring config_value;
             std::getline(ss, config_value);
             config_value = strip_string(config_value);
@@ -2105,6 +2106,9 @@ void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_na
                 }
                 if (conf_name == L"new_macro") {
                     ADDITIONAL_MACROS[new_command_name] = command_value;
+                }
+                if (conf_name == L"new_js_command") {
+                    ADDITIONAL_JAVASCRIPT_COMMANDS[new_command_name] = std::make_pair(file_path.get_path(), command_value);
                 }
             }
         }

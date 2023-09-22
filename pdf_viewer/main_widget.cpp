@@ -8789,3 +8789,13 @@ void MainWidget::execute_macro_and_return_result(QString macro_string, bool* is_
     }
 
 }
+
+void MainWidget::run_javascript_command(std::wstring javascript_code){
+    std::thread ext_thread = std::thread([&, javascript_code]() {
+            QString content = QString::fromStdWString(javascript_code);
+            QQmlEngine* engine = take_js_engine();
+            auto res = engine->evaluate(content);
+            release_js_engine(engine);
+        });
+    ext_thread.detach();
+}

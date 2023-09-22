@@ -9,6 +9,7 @@
 #include <qstring.h>
 #include <qstringlist.h>
 #include <qlocalsocket.h>
+#include <qfileinfo.h>
 #include "utils.h"
 #include "input.h"
 #include "main_widget.h"
@@ -19,6 +20,7 @@
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
+extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern std::wstring SEARCH_URLS[26];
 extern bool ALPHABETIC_LINK_TAGS;
@@ -1821,6 +1823,25 @@ public:
     std::string get_name() {
 
         return "move_right";
+    }
+
+};
+
+class JavascriptCommand : public Command {
+public:
+    std::string command_name;
+    std::wstring code;
+
+    JavascriptCommand(std::string command_name, std::wstring code_, MainWidget* w) :  Command(w), command_name(command_name) {
+        code = code_;
+    };
+
+    void perform() {
+        widget->run_javascript_command(code);
+    }
+
+    std::string get_name() {
+        return command_name;
     }
 
 };
@@ -5851,6 +5872,28 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
         std::string command_name = utf8_encode(command_name_);
         std::wstring local_command_value = command_value;
         new_commands[command_name] = [command_name, local_command_value, this](MainWidget* w) {return  std::make_unique<CustomCommand>(w, command_name, local_command_value); };
+    }
+
+    for (auto [command_name_, command_files_pair] : ADDITIONAL_JAVASCRIPT_COMMANDS) {
+        std::string command_name = utf8_encode(command_name_);
+        auto [command_parent_file_path, command_file_path] = command_files_pair;
+
+        QDir parent_dir = QFileInfo(QString::fromStdWString(command_parent_file_path)).dir();
+        QFileInfo javascript_file_info(QString::fromStdWString(command_file_path));
+        QString absolute_file_path;
+
+        if (javascript_file_info.isRelative()){
+            absolute_file_path = parent_dir.absoluteFilePath(javascript_file_info.filePath());
+        }
+        else{
+            absolute_file_path = javascript_file_info.absoluteFilePath();
+        }
+        QFile code_file(absolute_file_path);
+        if (code_file.open(QIODevice::ReadOnly)) {
+            QTextStream in(&code_file);
+            QString code = in.readAll();
+            new_commands[command_name] = [command_name, code, this](MainWidget* w) {return std::make_unique<JavascriptCommand>(command_name, code.toStdWString(), w); };
+        }
     }
 
     for (auto [command_name_, macro_value] : ADDITIONAL_MACROS) {
