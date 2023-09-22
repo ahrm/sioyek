@@ -91,6 +91,5 @@
         <file>end.png</file>
         <file>data/embedding.npy</file>
         <file>data/linear.npy</file>
-        <file>data/sioyeklib.qml</file>
     </qresource>
 </RCC>

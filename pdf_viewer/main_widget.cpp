@@ -6290,19 +6290,6 @@ void MainWidget::update_highlight_buttons_position() {
 }
 
 void MainWidget::handle_debug_command() {
-    std::thread ext_thread = std::thread([&]() {
-            QString file_name = ":/data/sioyeklib.qml";
-            QFile js_file(file_name);
-            if (js_file.open(QIODevice::ReadOnly)){
-                QString content = QTextStream(&js_file).readAll();
-                js_file.close();
-
-                QQmlEngine* engine = take_js_engine();
-                auto res = engine->evaluate(content, file_name);
-                release_js_engine(engine);
-            }
-        });
-    ext_thread.detach();
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
