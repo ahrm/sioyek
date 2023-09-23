@@ -14,6 +14,7 @@
 // fix the issue where opening documents using the new button on android doesn't always work
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
+// make volume keys on android configurable
 
 #include <iostream>
 #include <vector>
@@ -4864,11 +4865,13 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
                 }
 #ifdef SIOYEK_ANDROID
 
-                //                if (file_name.size() > 0 && QString::fromStdWString(file_name).startsWith("content://")) {
-                //                    qDebug() << "sioyek: trying to convert " << file_name;
-                //                    file_name = android_file_uri_from_content_uri(QString::fromStdWString(file_name)).toStdWString();
-                //                    qDebug() << "sioyek: result was " << file_name;
-                //                }
+                if (file_name.size() > 0 && QString::fromStdWString(file_name).startsWith("content://")) {
+                    if (!QString::fromStdWString(file_name).startsWith("content://com.android.providers.media.documents")){
+                        qDebug() << "sioyek: trying to convert " << file_name;
+                        file_name = android_file_uri_from_content_uri(QString::fromStdWString(file_name)).toStdWString();
+                        qDebug() << "sioyek: result was " << file_name;
+                    }
+                }
 #endif
                 if (file_name.size() > 0) {
                     pending_command_instance->set_file_requirement(file_name);
