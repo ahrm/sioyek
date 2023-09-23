@@ -14,7 +14,6 @@
 // fix the issue where opening documents using the new button on android doesn't always work
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
-// make volume keys on android configurable
 
 #include <iostream>
 #include <vector>
@@ -181,6 +180,8 @@ extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern std::wstring BOOK_SCAN_PATH;
 extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
+extern std::wstring VOLUME_DOWN_COMMAND;
+extern std::wstring VOLUME_UP_COMMAND;
 
 extern int MAX_TAB_COUNT;
 extern std::wstring BACK_RECT_TAP_COMMAND;
@@ -1855,10 +1856,10 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
 #ifdef SIOYEK_ANDROID
         if (kevent->key() == Qt::Key::Key_VolumeDown) {
-            move_visual_mark_next();
+            execute_macro_if_enabled(VOLUME_DOWN_COMMAND);
         }
         if (kevent->key() == Qt::Key::Key_VolumeUp) {
-            move_visual_mark_prev();
+            execute_macro_if_enabled(VOLUME_UP_COMMAND);
         }
         if (kevent->key() == Qt::Key::Key_MediaTogglePlayPause){
             // handle the tablet button
