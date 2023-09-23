@@ -10,7 +10,6 @@
 // In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 // only write the configs that actually changed in touch mode
 // maybe add progressive search
-// make visual mark down work even when the next page is empty
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
 

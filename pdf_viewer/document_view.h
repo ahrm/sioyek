@@ -48,6 +48,7 @@ private:
 
     int view_width = 0;
     int view_height = 0;
+    bool is_relenting = false;
 
     // in auto resize mode, we automatically set the zoom level to fit the page when resizing the document
     bool is_auto_resize_mode = true;
@@ -129,8 +130,8 @@ public:
     void goto_right();
     void goto_right_smart();
 
-    float get_max_valid_x();
-    float get_min_valid_x();
+    float get_max_valid_x(bool relenting);
+    float get_min_valid_x(bool relenting);
 
     float set_zoom_level(float zl, bool should_exit_auto_resize_mode);
     float zoom_in(float zoom_factor = ZOOM_INC_FACTOR);

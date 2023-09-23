@@ -128,8 +128,22 @@ bool DocumentView::set_offsets(float new_offset_x, float new_offset_y, bool forc
 
     float max_y_offset = current_document->get_accum_page_height(num_pages - 1) + current_document->get_page_height(num_pages - 1);
     float min_y_offset = 0;
-    float min_x_offset = get_min_valid_x();
-    float max_x_offset = get_max_valid_x();
+    float min_x_offset_normal = get_min_valid_x(false);
+    float max_x_offset_normal = get_max_valid_x(false);
+    float min_x_offset_relenting = get_min_valid_x(true);
+    float max_x_offset_relenting = get_max_valid_x(true);
+    float max_x_offset = is_relenting ? max_x_offset_relenting : max_x_offset_normal;
+    float min_x_offset = is_relenting ? min_x_offset_relenting : min_x_offset_normal;
+    float relent_threshold = view_width / 4 / zoom_level;
+
+    if (TOUCH_MODE) {
+        if ((new_offset_x - max_x_offset_normal > relent_threshold) || (min_x_offset_normal - new_offset_x > relent_threshold)) {
+            is_relenting = true;
+        }
+        else {
+            is_relenting = false;
+        }
+    }
 
     if (!force) {
         if (new_offset_y > max_y_offset) { new_offset_y = max_y_offset; truncated = true; }
@@ -996,14 +1010,24 @@ void DocumentView::set_page_offset(int new_offset) {
     current_document->set_page_offset(new_offset);
 }
 
-float DocumentView::get_max_valid_x() {
+float DocumentView::get_max_valid_x(bool relenting) {
     float page_width = current_document->get_page_width(get_center_page_number());
-    return std::abs(-view_width / zoom_level / 2 + page_width / 2);
+    if (!relenting){
+        return std::abs(-view_width / zoom_level / 2 + page_width / 2);
+    }
+    else{
+        return std::abs(-view_width / zoom_level / 2 + 3 * page_width / 2);
+    }
 }
 
-float DocumentView::get_min_valid_x() {
+float DocumentView::get_min_valid_x(bool relenting) {
     float page_width = current_document->get_page_width(get_center_page_number());
-    return -std::abs(-view_width / zoom_level / 2 + page_width / 2);
+    if (!relenting){
+        return -std::abs(-view_width / zoom_level / 2 + page_width / 2);
+    }
+    else{
+        return -std::abs(-view_width / zoom_level / 2 + 3 * page_width / 2);
+    }
 }
 
 void DocumentView::rotate() {
