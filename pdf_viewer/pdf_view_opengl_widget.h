@@ -231,7 +231,7 @@ public:
     void register_on_link_edit_listener(std::function<void(const OpenedBookState&)> listener);
     void set_overview_page(std::optional<OverviewState> overview_page);
     std::optional<OverviewState> get_overview_page();
-    void draw_empty_helper_message(QPainter* painter);
+    void draw_empty_helper_message(QPainter* painter, QString message);
     void set_visible_page_number(std::optional<int> val);
     bool is_presentation_mode();
     NormalizedWindowRect get_overview_rect();

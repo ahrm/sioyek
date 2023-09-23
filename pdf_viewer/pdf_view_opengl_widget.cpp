@@ -1008,7 +1008,10 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
         if (is_helper) {
             //painter->endNativePainting();
-            draw_empty_helper_message(painter);
+            draw_empty_helper_message(painter, "No portals yet");
+        }
+        else {
+            draw_empty_helper_message(painter, "No document");
         }
         return;
     }
@@ -1693,10 +1696,9 @@ std::optional<OverviewState> PdfViewOpenGLWidget::get_overview_page() {
     return overview_page;
 }
 
-void PdfViewOpenGLWidget::draw_empty_helper_message(QPainter* painter) {
+void PdfViewOpenGLWidget::draw_empty_helper_message(QPainter* painter, QString message) {
     // should be called with native painting disabled
 
-    QString message = "No portals yet";
     QFontMetrics fm(QApplication::font());
 #ifdef SIOYEK_QT6
     int message_width = fm.boundingRect(message).width();

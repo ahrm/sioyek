@@ -1728,6 +1728,7 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     }
 
     deselect_document_indices();
+    invalidate_render();
 
 }
 
@@ -5784,44 +5785,46 @@ bool MainWidget::event(QEvent* event) {
                 last_hold_point = mapFromGlobal(QCursor::pos());
                 WindowPos window_pos = WindowPos{ last_hold_point.x(), last_hold_point.y() };
                 AbsoluteDocumentPos hold_abspos = main_document_view->window_to_absolute_document_pos(window_pos);
-                int bookmark_index = doc()->get_bookmark_index_at_pos(hold_abspos);
+                if (doc()) {
+                    int bookmark_index = doc()->get_bookmark_index_at_pos(hold_abspos);
 
-                if (bookmark_index >= 0) {
-                    begin_bookmark_move(bookmark_index, hold_abspos);
-                    selected_bookmark_index = bookmark_index;
-                    show_touch_buttons({ L"Delete", L"Edit" }, {}, [this](int index, std::wstring name) {
-                         
-                        if (selected_bookmark_index > -1) {
-                            if (name == L"Delete") {
-                                doc()->delete_bookmark(selected_bookmark_index);
-                                selected_bookmark_index = -1;
+                    if (bookmark_index >= 0) {
+                        begin_bookmark_move(bookmark_index, hold_abspos);
+                        selected_bookmark_index = bookmark_index;
+                        show_touch_buttons({ L"Delete", L"Edit" }, {}, [this](int index, std::wstring name) {
+
+                            if (selected_bookmark_index > -1) {
+                                if (name == L"Delete") {
+                                    doc()->delete_bookmark(selected_bookmark_index);
+                                    selected_bookmark_index = -1;
+                                    pop_current_widget();
+                                    invalidate_render();
+                                }
+                                else {
+                                    pop_current_widget();
+                                    handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
+                                    return;
+                                }
+                            }
+                            });
+                        //show_touch_delete_button();
+                        return true;
+                    }
+
+                    int portal_index = doc()->get_portal_index_at_pos(hold_abspos);
+                    if (portal_index >= 0) {
+                        begin_portal_move(portal_index, hold_abspos, false);
+                        selected_portal_index = portal_index;
+                        show_touch_buttons({ L"Delete" }, {}, [this](int index, std::wstring name) {
+                            if (selected_portal_index > -1) {
+                                doc()->delete_portal_with_uuid(doc()->get_portals()[selected_portal_index].uuid);
+                                selected_portal_index = -1;
                                 pop_current_widget();
                                 invalidate_render();
                             }
-                            else {
-                                pop_current_widget();
-                                handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
-                                return;
-                            }
-                        }
-                        });
-                    //show_touch_delete_button();
-                    return true;
-                }
-
-                int portal_index = doc()->get_portal_index_at_pos(hold_abspos);
-                if (portal_index >= 0) {
-                    begin_portal_move(portal_index, hold_abspos, false);
-                    selected_portal_index = portal_index;
-                    show_touch_buttons({ L"Delete" }, {}, [this](int index, std::wstring name) {
-                        if (selected_portal_index > -1) {
-                            doc()->delete_portal_with_uuid(doc()->get_portals()[selected_portal_index].uuid);
-                            selected_portal_index = -1;
-                            pop_current_widget();
-                            invalidate_render();
-                        }
-                        });
-                    return true;
+                            });
+                        return true;
+                    }
                 }
                 //opengl_widget->last_selected_block
 
