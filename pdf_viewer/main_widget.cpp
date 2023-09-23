@@ -5887,6 +5887,7 @@ bool MainWidget::event(QEvent* event) {
                 }
                 if ((pinch->state() == Qt::GestureFinished) || (pinch->state() == Qt::GestureCanceled)) {
                     is_pinching = false;
+                    is_dragging = false;
                 }
                 float scale = pinch->scaleFactor();
 
