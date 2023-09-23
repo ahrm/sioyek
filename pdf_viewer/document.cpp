@@ -4005,6 +4005,11 @@ std::wstring Document::detect_paper_name() {
         if (max_block) {
             return get_string_from_stext_block(max_block);
         }
+        else {
+            char buffer[1000];
+            fz_lookup_metadata(context, doc, "info:Title", buffer, 1000);
+            return utf8_decode(buffer);
+        }
     }
     return L"";
 }
