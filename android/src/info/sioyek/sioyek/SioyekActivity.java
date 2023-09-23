@@ -33,6 +33,7 @@ public class SioyekActivity extends QtActivity{
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+        qDebug("sioyek: oncreate called");
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -43,9 +44,9 @@ public class SioyekActivity extends QtActivity{
             if (action != null){
                 Uri intentUri = intent.getData();
                 if (intentUri != null){
-                    if (intentUri.toString().startsWith("content://")){
-                        Toast.makeText(this, "Can't open content files, download the file and open from file manager", Toast.LENGTH_LONG).show();
-                        //finish();
+                    if (intentUri.toString().startsWith("content://") && (!intentUri.toString().startsWith("content://com.android"))){
+                        Toast.makeText(this, "Opening files from other apps is not supported. Download the file and open it from file manager.", Toast.LENGTH_LONG).show();
+                        finish();
                     }
                     isIntentPending = true;
                 }
@@ -222,7 +223,7 @@ public class SioyekActivity extends QtActivity{
      */
     public static boolean isGooglePhotosUri(Uri uri) {
         return "com.google.android.apps.photos.content".equals(uri.getAuthority());
-}
+    }
 
     private void processIntent(){
 
