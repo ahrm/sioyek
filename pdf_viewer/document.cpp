@@ -2640,19 +2640,17 @@ AbsoluteRect Document::get_ith_next_line_from_absolute_y(int page, int line_inde
             }
         }
 
-        if (i > 0) {
-            //next_page = main_document_view->get_current_page_number() + 1;
-            int next_page = page + 1;
-            if (next_page < num_pages()) {
-                return get_ith_next_line_from_absolute_y(next_page, 0, 0, false, out_index, out_page);
+        int tries = 2;
+        int n_pages = num_pages();
+        for (int j = 1; j < tries+1; j++) {
+            int next_page = i > 0 ? page + j : page - j;
+            int next_line_index = i > 0 ? 0 : -1;
+            if (next_page < 0 || (next_page >= n_pages)) break;
+            if (get_page_lines(next_page).size() > 0) {
+                return get_ith_next_line_from_absolute_y(next_page, next_line_index, 0, false, out_index, out_page);
             }
         }
-        else {
-            int next_page = page - 1;
-            if (next_page >= 0) {
-                return get_ith_next_line_from_absolute_y(next_page, -1, 0, false, out_index, out_page);
-            }
-        }
+
         *out_page = page;
         *out_index = line_index;
         return line_rects[line_index];
@@ -4007,7 +4005,7 @@ std::wstring Document::detect_paper_name() {
         }
         else {
             char buffer[1000];
-            fz_lookup_metadata(context, doc, "info:Title", buffer, 1000);
+            fz_lookup_metadata(context, doc, FZ_META_INFO_TITLE, buffer, 1000);
             return utf8_decode(buffer);
         }
     }

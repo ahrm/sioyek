@@ -11,7 +11,6 @@
 // only write the configs that actually changed in touch mode
 // maybe add progressive search
 // make visual mark down work even when the next page is empty
-// fix the issue where opening documents using the new button on android doesn't always work
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
 
