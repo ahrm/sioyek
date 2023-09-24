@@ -44,7 +44,7 @@ public class SioyekActivity extends QtActivity{
             if (action != null){
                 Uri intentUri = intent.getData();
                 if (intentUri != null){
-                    if (intentUri.toString().startsWith("content://") && (!intentUri.toString().startsWith("content://com.android"))){
+                    if (intentUri.toString().startsWith("content://") && (!intentUri.toString().startsWith("content://com.android")) && (intentUri.toString().indexOf("@media") == -1)){
                         Toast.makeText(this, "Opening files from other apps is not supported. Download the file and open it from file manager.", Toast.LENGTH_LONG).show();
                         finish();
                     }
