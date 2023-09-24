@@ -94,6 +94,7 @@ extern bool RENDER_FREETEXT_BORDERS;
 extern bool SHOULD_RENDER_PDF_ANNOTATIONS;
 extern float STRIKE_LINE_WIDTH;
 extern float RULER_COLOR[3];
+extern float RULER_MARKER_COLOR[3];
 extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
 extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
 extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
@@ -582,6 +583,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"ruler_color",
         ConfigType::Color3,
         RULER_COLOR,
+        vec3_serializer,
+        color3_deserializer,
+        color_3_validator
+        });
+    configs.push_back({
+        L"ruler_marker_color",
+        ConfigType::Color3,
+        RULER_MARKER_COLOR,
         vec3_serializer,
         color3_deserializer,
         color_3_validator

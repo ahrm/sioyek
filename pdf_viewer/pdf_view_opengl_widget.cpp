@@ -59,6 +59,7 @@ extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern float STRIKE_LINE_WIDTH;
 extern std::wstring RULER_DISPLAY_MODE;
 extern float RULER_COLOR[3];
+extern float RULER_MARKER_COLOR[3];
 extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 
@@ -1269,9 +1270,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             render_highlight_window(shared_gl_objects.highlight_program, ruler_rect.value(), flags, RULER_UNDERLINE_PIXEL_WIDTH);
         }
         if (underline) {
-            float underline_color[] = { 1.0f, 0.0f, 0.0f, 0.9 };
-            /* float underline_color[] = { 0.0f, 0.0f, 0.0f, 0.9 }; */
-            glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, underline_color);
+            glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, RULER_MARKER_COLOR);
             glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 1.0f);
 
             AbsoluteRect underline_rect;
