@@ -12,6 +12,7 @@
 
 #include <qnetworkaccessmanager.h>
 #include <qquickwidget.h>
+#include <qjsondocument.h>
 
 #include "book.h"
 #include "input.h"
@@ -129,6 +130,8 @@ public:
     PdfViewOpenGLWidget* helper_opengl_widget_ = nullptr;
     QScrollBar* scroll_bar = nullptr;
 
+    QJsonDocument commands_doc_json_document;
+
     // Some commands can not be executed immediately (e.g. because they require a text or symbol
     // input to be completed) this is where they are stored until they can be executed.
     std::unique_ptr<Command> pending_command_instance = nullptr;
@@ -145,7 +148,7 @@ public:
     // code to execute when a command is pressed (for example when we type `goto_beginning` in the command)
     // menu, we will call on_command_done("goto_beginning"). The reason that this is a closure instead of just a
     // method is historical. I am too lazy to change it.
-    std::function<void(std::string)> on_command_done = nullptr;
+    std::function<void(std::string, std::string)> on_command_done = nullptr;
 
     // List of previous locations in the current session. Note that we keep the history even across files
     // hence why `DocumentViewState` has a `document_path` member
@@ -467,8 +470,8 @@ public:
     int get_page_intersecting_rect_index(DocumentRect rect);
     std::optional<AbsoluteRect> get_page_intersecting_rect(DocumentRect rect);
     void focus_rect(DocumentRect rect);
-
     std::optional<float> move_visual_mark_next_get_offset();
+
     void move_visual_mark_next();
     void move_visual_mark_prev();
     AbsoluteRect move_visual_mark(int offset);
@@ -788,6 +791,7 @@ public:
     QJsonArray get_all_json_states();
     void screenshot(std::wstring file_path);
     void framebuffer_screenshot(std::wstring file_path);
+    void export_command_names(std::wstring file_path);
     //void advance_wait_for_render_if_ready();
     bool is_render_ready();
     bool is_search_ready();
@@ -799,6 +803,9 @@ public:
     int get_window_id();
     void add_command_being_performed(Command* new_command);
     void remove_command_being_performed(Command* new_command);
+    void load_command_docs();
+    QString get_command_documentation(QString command_name);
+    void show_command_documentation(QString command_name);
 
     void handle_action_in_menu(std::wstring action);
     std::wstring handle_synctex_to_ruler();

@@ -64,12 +64,12 @@ std::wstring select_document_file_name() {
 }
 
 std::wstring select_json_file_name() {
-    QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", "", "Documents (*.json )");
+    QString file_name = QFileDialog::getSaveFileName(nullptr, "Select Document", "", "Documents (*.json )");
     return file_name.toStdWString();
 }
 
 std::wstring select_any_file_name() {
-    QString file_name = QFileDialog::getOpenFileName(nullptr, "Select File", "", "Any (*)");
+    QString file_name = QFileDialog::getSaveFileName(nullptr, "Select File", "", "Any (*)");
     return file_name.toStdWString();
 }
 
@@ -1047,7 +1047,7 @@ TouchCommandSelector::TouchCommandSelector(bool is_fuzzy, const QStringList& com
     QObject::connect(list_view, &TouchListView::itemSelected, [&](QString val, int index) {
         //main_widget->current_widget = nullptr;
         main_widget->pop_current_widget();
-        main_widget->on_command_done(val.toStdString());
+        main_widget->on_command_done(val.toStdString(), val.toStdString());
         //deleteLater();
         });
 }
@@ -1233,19 +1233,20 @@ QString CommandSelector::get_view_stylesheet_type_name() {
 void CommandSelector::on_select(const QModelIndex& index) {
     bool is_numeric = false;
     line_edit->text().toInt(&is_numeric);
+    std::string query = line_edit->text().toStdString();
     QString name = standard_item_model->data(index).toString();
     //hide();
     main_widget->pop_current_widget();
     parentWidget()->setFocus();
     if (!is_numeric) {
-        (*on_done)(name.toStdString());
+        (*on_done)(name.toStdString(), query);
     }
     else {
-        (*on_done)(line_edit->text().toStdString());
+        (*on_done)(line_edit->text().toStdString(), query);
     }
 }
 
-CommandSelector::CommandSelector(bool is_fuzzy, std::function<void(std::string)>* on_done,
+CommandSelector::CommandSelector(bool is_fuzzy, std::function<void(std::string, std::string)>* on_done,
     MainWidget* parent,
     QStringList elements,
     std::unordered_map<std::string,
@@ -1278,6 +1279,12 @@ bool CommandSelector::on_text_change(const QString& text) {
     std::string search_text_string = text.toStdString();
     std::vector<std::pair<std::string, int>> match_score_pairs;
 
+    QString actual_text = text;
+    if (actual_text.endsWith("?")){
+        actual_text = actual_text.left(actual_text.size()-1);
+        search_text_string = actual_text.toStdString();
+    }
+
     for (int i = 0; i < string_elements.size(); i++) {
         std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
         int score = 0;
@@ -1294,14 +1301,14 @@ bool CommandSelector::on_text_change(const QString& text) {
         });
 
     for (int i = 0; i < string_elements.size(); i++) {
-        if (string_elements.at(i).startsWith(text)) {
+        if (string_elements.at(i).startsWith(actual_text)) {
             matching_element_names.push_back(string_elements.at(i).toStdString());
         }
     }
 
     //if (matching_element_names.size() == 0) {
     for (auto [command, score] : match_score_pairs) {
-        if (score > 60 && (!QString::fromStdString(command).startsWith(text))) {
+        if (score > 60 && (!QString::fromStdString(command).startsWith(actual_text))) {
             matching_element_names.push_back(command);
         }
     }

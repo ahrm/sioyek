@@ -12,8 +12,8 @@
 // maybe add progressive search
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
-// move_visual_mark_* probably should be moved to document_view
 
+#include "qlogging.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -777,17 +777,22 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     text_command_line_edit_container->setLayout(text_command_line_edit_container_layout);
     text_command_line_edit_container->hide();
 
-    on_command_done = [&](std::string command_name) {
-        bool is_numeric = false;
-        int page_number = QString::fromStdString(command_name).toInt(&is_numeric);
-        if (is_numeric) {
-            if (main_document_view) {
-                main_document_view->goto_page(page_number - 1);
-            }
+    on_command_done = [&](std::string command_name, std::string query_text) {
+        if (query_text.size() > 0 && query_text.back() == '?') {
+            show_command_documentation(QString::fromStdString(command_name));
         }
         else {
-            std::unique_ptr<Command> command = this->command_manager->get_command_with_name(this, command_name);
-            handle_command_types(std::move(command), 0);
+            bool is_numeric = false;
+            int page_number = QString::fromStdString(command_name).toInt(&is_numeric);
+            if (is_numeric) {
+                if (main_document_view) {
+                    main_document_view->goto_page(page_number - 1);
+                }
+            }
+            else {
+                std::unique_ptr<Command> command = this->command_manager->get_command_with_name(this, command_name);
+                handle_command_types(std::move(command), 0);
+            }
         }
     };
 
@@ -6344,7 +6349,54 @@ void MainWidget::update_highlight_buttons_position() {
     }
 }
 
+void MainWidget::show_command_documentation(QString command_name) {
+    QTextEdit* text_edit = new QTextEdit(this);
+    int w = width() / 2;
+    int h = height() / 2;
+    text_edit->setReadOnly(true);
+    text_edit->move(width() / 2 - w / 2, height() / 2 - h / 2);
+    text_edit->resize(w, h);
+    auto doc = get_command_documentation(command_name);
+    text_edit->setHtml(doc);
+    push_current_widget(text_edit);
+    text_edit->show();
+}
+
 void MainWidget::handle_debug_command() {
+    QTextEdit* text_edit = new QTextEdit(this);
+    int w = width() / 2;
+    int h = height() / 2;
+    text_edit->setReadOnly(true);
+    text_edit->move(width() / 2 - w / 2, height() / 2 - h / 2);
+    text_edit->resize(w, h);
+    auto doc = get_command_documentation("toggle_dark_mode");
+    //text_edit->setMarkdown("-- `code here` this should be bold");
+    //text_edit->setHtml("<div class=\"document\" id=\"prefs - user - all - and -keys - user - all\">\n<h1 class=\"title\"><code>prefs_user_all</code> and <code>keys_user_all</code></h1>\n<p>Show a list of all <code>prefs_user.config</code> / <code>keys_user.config</code> files discovered by sioyek.</p>\n</div>\n");
+    text_edit->setHtml(doc);
+    push_current_widget(text_edit);
+    text_edit->show();
+    //qDebug() << get_command_documentation("toggle_dark_mode");
+
+    /* QFile json_file(":/data/command_docs.json"); */
+    /* if (json_file.open(QFile::ReadOnly)) { */
+    /*     QJsonDocument json_document = QJsonDocument().fromJson(json_file.readAll()); */
+    /*     QJsonObject root = json_document.object(); */
+    /*     qDebug() << root["toggle_dark_mode"].toString(); */
+    /* } */
+
+
+}
+
+void MainWidget::export_command_names(std::wstring file_path){
+    QFile output_file(QString::fromStdWString(file_path));
+    if (output_file.open(QIODeviceBase::WriteOnly)){
+        QStringList command_names = command_manager->get_all_command_names();
+        for (auto command_name : command_names){
+            output_file.write((command_name + "\n").toUtf8());
+        }
+
+        output_file.close();
+    }
 }
 
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
@@ -8879,4 +8931,19 @@ void MainWidget::run_javascript_command(std::wstring javascript_code){
             release_js_engine(engine);
         });
     ext_thread.detach();
+}
+
+void MainWidget::load_command_docs(){
+    if (commands_doc_json_document.isNull()){
+        QFile json_file(":/data/command_docs.json");
+        if (json_file.open(QFile::ReadOnly)) {
+            commands_doc_json_document = QJsonDocument().fromJson(json_file.readAll());
+            json_file.close();
+        }
+    }
+}
+
+QString MainWidget::get_command_documentation(QString command_name){
+    load_command_docs();
+    return commands_doc_json_document.object()[command_name].toString();
 }

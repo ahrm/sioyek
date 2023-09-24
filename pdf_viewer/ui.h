@@ -534,7 +534,7 @@ private:
     MainWidget* main_widget;
     QStandardItemModel* standard_item_model = nullptr;
     std::unordered_map<std::string, std::vector<std::string>> key_map;
-    std::function<void(std::string)>* on_done = nullptr;
+    std::function<void(std::string, std::string)>* on_done = nullptr;
 
     QList<QStandardItem*> get_item(std::string command_name);
     QStandardItemModel* get_standard_item_model(std::vector<std::string> command_names);
@@ -547,7 +547,7 @@ public:
 
     void on_select(const QModelIndex& index);
 
-    CommandSelector(bool is_fuzzy, std::function<void(std::string)>* on_done,
+    CommandSelector(bool is_fuzzy, std::function<void(std::string, std::string)>* on_done,
         MainWidget* parent,
         QStringList elements,
         std::unordered_map<std::string,

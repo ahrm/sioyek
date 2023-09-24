@@ -1609,6 +1609,37 @@ public:
     bool requires_document() { return false; }
 };
 
+class ExportCommandNamesCommand : public Command {
+public:
+    ExportCommandNamesCommand(MainWidget* w) : Command(w) {};
+
+    std::wstring file_name;
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (file_name.size() == 0) {
+            return Requirement{ RequirementType::File, "File Path" };
+        }
+        else {
+            return {};
+        }
+    }
+
+    void set_file_requirement(std::wstring value) {
+        file_name = value;
+    }
+
+    void perform() {
+        //widget->framebuffer_screenshot(file_name);
+        widget->export_command_names(file_name);
+    }
+
+    std::string get_name() {
+        return "export_command_names";
+    }
+
+    bool requires_document() { return false; }
+};
+
 class GenericWaitCommand : public Command {
 public:
     GenericWaitCommand(MainWidget* w) : Command(w) {};
@@ -5676,6 +5707,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 #ifdef _DEBUG
     new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };
     new_commands["export_python_api"] = [](MainWidget* widget) {return std::make_unique< ExportPythonApiCommand>(widget); };
+    new_commands["export_command_names"] = [](MainWidget* widget) {return std::make_unique< ExportCommandNamesCommand>(widget); };
     new_commands["test_command"] = [](MainWidget* widget) {return std::make_unique< TestCommand>(widget); };
 #endif
 
