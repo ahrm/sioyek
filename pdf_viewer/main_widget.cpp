@@ -12,6 +12,7 @@
 // maybe add progressive search
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
+// move_visual_mark_* probably should be moved to document_view
 
 #include <iostream>
 #include <vector>
@@ -1357,6 +1358,7 @@ void MainWidget::handle_escape() {
         //main_document_view->ruler
         if (!done_anything) {
             main_document_view->exit_ruler_mode();
+            opengl_widget->clear_underline();
         }
     }
     //if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
@@ -2389,7 +2391,10 @@ void MainWidget::handle_click(WindowPos click_pos) {
     }
     else {
         if (!TOUCH_MODE) {
-            if (main_document_view) main_document_view->exit_ruler_mode();
+            if (main_document_view) {
+                 main_document_view->exit_ruler_mode();
+                 opengl_widget->clear_underline();
+            }
             //if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
         }
     }
@@ -4088,6 +4093,28 @@ void MainWidget::changeEvent(QEvent* event) {
     QWidget::changeEvent(event);
 }
 
+std::optional<float> MainWidget::move_visual_mark_next_get_offset(){
+    int prev_line_index = main_document_view->get_line_index();
+    int vertical_line_page = main_document_view->get_vertical_line_page();
+    int current_line_index, current_page;
+    AbsoluteRect current_ruler_rect_absolute = doc()->
+        get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page);
+
+    NormalizedWindowRect current_ruler_rect = current_ruler_rect_absolute.to_window_normalized(main_document_view);
+
+    if (current_ruler_rect.x1 > 1.0f) {
+        float move_amount = -(current_ruler_rect.x1 - 0.9f) / 2.0f * main_document_view->get_view_width();
+        if (std::abs(move_amount) > static_cast<float>(main_window_width)){
+            //return -static_cast<float>(main_window_width);
+            return {};
+        }
+        else{
+            return move_amount;
+        }
+    }
+    return {};
+}
+
 void MainWidget::move_visual_mark_next() {
     opengl_widget->clear_underline();
 
@@ -4095,9 +4122,10 @@ void MainWidget::move_visual_mark_next() {
     int vertical_line_page = main_document_view->get_vertical_line_page();
     int current_line_index, current_page;
 
-    NormalizedWindowRect current_ruler_rect = doc()->
-        get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page)
-        .to_window_normalized(main_document_view);
+    AbsoluteRect current_ruler_rect_absolute = doc()->
+        get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page);
+
+    NormalizedWindowRect current_ruler_rect = current_ruler_rect_absolute.to_window_normalized(main_document_view);
     //current_ruler_rect = main_document_view->absolute_to_window_rect(current_ruler_rect);
 
     if (current_ruler_rect.x1 <= 1.0f) {
@@ -4129,17 +4157,33 @@ void MainWidget::move_visual_mark_next() {
 
         AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
 
-        if (false) {
-            bool is_truncated = move_horizontal(-static_cast<float>(main_window_width));
-
-            if (is_truncated) {
-                opengl_widget->set_underline(abspos);
-            }
+        float move_amount = -(current_ruler_rect.x1 - 0.9f) / 2.0f * main_document_view->get_view_width();
+        if (std::abs(move_amount) > static_cast<float>(main_window_width)){
+            move_horizontal(-static_cast<float>(main_window_width));
         }
-        else {
-            move_horizontal(-static_cast<float>(main_window_width), true);
+        else{
+            move_horizontal(move_amount);
         }
 
+    }
+    std::optional<float> next_offset = move_visual_mark_next_get_offset();
+    if (next_offset){
+        int prev_line_index = main_document_view->get_line_index();
+        AbsoluteRect cr = doc()->
+            get_ith_next_line_from_absolute_y(vertical_line_page, prev_line_index, 0, true, &current_line_index, &current_page);
+
+        WindowPos pos;
+
+        pos.x = main_window_width;
+        pos.y = main_window_height - static_cast<int>((cr.y1 + 1) * main_window_height / 2);
+
+        AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(pos);
+
+        AbsoluteDocumentPos underline_pos;
+        underline_pos.y = cr.y1;
+        underline_pos.x = abspos.x - main_document_view->get_view_width() / main_document_view->get_zoom_level() - next_offset.value() / main_document_view->get_zoom_level();
+        opengl_widget->set_underline(underline_pos);
+        /* opengl_widget->set_underline() */
     }
 }
 
@@ -4182,6 +4226,7 @@ AbsoluteRect MainWidget::move_visual_mark(int offset) {
     if (is_reading) {
         read_current_line();
     }
+    opengl_widget->clear_underline();
     return ruler_rect;
 }
 
@@ -6113,6 +6158,7 @@ void MainWidget::android_handle_visual_mode() {
     if (is_visual_mark_mode()) {
         //opengl_widget->set_should_draw_vertical_line(false);
         main_document_view->exit_ruler_mode();
+        opengl_widget->clear_underline();
     }
     else {
 

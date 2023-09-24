@@ -1197,7 +1197,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         underline_rect.y0 = underline->y - 1.0f;
         underline_rect.y1 = underline->y + 1.0f;
 
-        render_highlight_absolute(shared_gl_objects.highlight_program, underline_rect, false);
+        render_highlight_absolute(shared_gl_objects.highlight_program, underline_rect, HRF_FILL);
     }
 
 

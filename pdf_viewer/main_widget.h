@@ -468,6 +468,7 @@ public:
     std::optional<AbsoluteRect> get_page_intersecting_rect(DocumentRect rect);
     void focus_rect(DocumentRect rect);
 
+    std::optional<float> move_visual_mark_next_get_offset();
     void move_visual_mark_next();
     void move_visual_mark_prev();
     AbsoluteRect move_visual_mark(int offset);
