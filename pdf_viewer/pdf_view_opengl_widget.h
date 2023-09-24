@@ -64,6 +64,7 @@ struct OpenGLSharedResources {
 
     GLint dark_mode_contrast_uniform_location;
     GLint highlight_color_uniform_location;
+    GLint highlight_opacity_uniform_location;
     GLint line_color_uniform_location;
     GLint line_time_uniform_location;
 
