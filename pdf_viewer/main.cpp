@@ -182,16 +182,16 @@ float DARK_MODE_CONTRAST = 0.8f;
 float ZOOM_INC_FACTOR = 1.2f;
 float VERTICAL_MOVE_AMOUNT = 1.0f;
 float HORIZONTAL_MOVE_AMOUNT = 1.0f;
-float MOVE_SCREEN_PERCENTAGE = 0.8f;
+float MOVE_SCREEN_PERCENTAGE = 0.5f;
 const unsigned int CACHE_INVALID_MILIES = 1000;
 const int PERSIST_MILIES = 1000 * 60;
 const int PAGE_PADDINGS = 0;
 const int MAX_PENDING_REQUESTS = 31;
 bool FLAT_TABLE_OF_CONTENTS = false;
 bool SHOULD_USE_MULTIPLE_MONITORS = false;
-bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = true;
+bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = false;
 bool DEFAULT_DARK_MODE = false;
-bool SORT_BOOKMARKS_BY_LOCATION = false;
+bool SORT_BOOKMARKS_BY_LOCATION = true;
 std::wstring LIBGEN_ADDRESS = L"";
 std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 std::wstring INVERSE_SEARCH_COMMAND = L"";
@@ -199,12 +199,12 @@ std::wstring SHARED_DATABASE_PATH = L"";
 std::wstring BOOK_SCAN_PATH = L"";
 std::wstring UI_FONT_FACE_NAME = L"";
 std::wstring DEFAULT_OPEN_FILE_PATH = L"";
-bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = false;
+bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = true;
 bool SHOULD_LAUNCH_NEW_INSTANCE = false;
 bool SHOULD_LAUNCH_NEW_WINDOW = false;
 bool SHOULD_DRAW_UNRENDERED_PAGES = false;
 bool HOVER_OVERVIEW = false;
-bool RERENDER_OVERVIEW = false;
+bool RERENDER_OVERVIEW = true;
 bool LINEAR_TEXTURE_FILTERING = false;
 bool RULER_MODE = true;
 bool SMALL_TOC = false;
@@ -213,10 +213,10 @@ bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE = true;
 bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL = true;
 bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE = false;
 int TEXT_SUMMARY_CONTEXT_SIZE = 49;
-float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.25f;
-float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.1f;
-float RULER_PADDING = 0.0f;
-float RULER_X_PADDING = 0.0f;
+float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.75;
+float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.25f;
+float RULER_PADDING = 1.0f;
+float RULER_X_PADDING = 5.0f;
 std::wstring ITEM_LIST_PREFIX = L">";
 float STRIKE_LINE_WIDTH = 1.0f;
 int RULER_UNDERLINE_PIXEL_WIDTH = 2;
@@ -231,7 +231,7 @@ std::wstring STARTUP_COMMANDS = L"";
 int MAX_TAB_COUNT = 100;
 float SMALL_PIXMAP_SCALE = 0.75f;
 float DISPLAY_RESOLUTION_SCALE = -1;
-float FIT_TO_PAGE_WIDTH_RATIO = 1;
+float FIT_TO_PAGE_WIDTH_RATIO = 0.75;
 int MAIN_WINDOW_SIZE[2] = { -1, -1 };
 int HELPER_WINDOW_SIZE[2] = { -1, -1 };
 int MAIN_WINDOW_MOVE[2] = { -1, -1 };
@@ -255,13 +255,13 @@ bool SHOW_DOC_PATH = false;
 float FASTREAD_OPACITY = 0.5f;
 bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE = true;
 bool SINGLE_CLICK_SELECTS_WORDS = false;
-bool USE_LEGACY_KEYBINDS = true;
-bool MULTILINE_MENUS = false;
+bool USE_LEGACY_KEYBINDS = false;
+bool MULTILINE_MENUS = true;
 bool START_WITH_HELPER_WINDOW = false;
 std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
 std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
-bool PRERENDER_NEXT_PAGE = false;
+bool PRERENDER_NEXT_PAGE = true;
 bool EMACS_MODE = false;
 bool HIGHLIGHT_MIDDLE_CLICK = false;
 float HYPERDRIVE_SPEED_FACTOR = 10.0f;
@@ -301,7 +301,7 @@ bool VERBOSE = false;
 bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
 bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME = true;
 float DEFAULT_TEXT_HIGHLIGHT_COLOR[3] = { 1.0f, 1.0f, 0.0 };
-float DEFAULT_VERTICAL_LINE_COLOR[4] = { 0.0f, 0.0f, 0.0f, 0.5f };
+float DEFAULT_VERTICAL_LINE_COLOR[4] = { 0.0f, 0.0f, 0.0f, 0.1f };
 float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 1.0f, 0.0f };
 float DEFAULT_LINK_HIGHLIGHT_COLOR[3] = { 0.0f, 0.0f, 1.0f };
 float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3] = { 1.0f, 0.0f, 0.0f };
@@ -318,7 +318,7 @@ float EPUB_LINE_SPACING = 2.0f;
 int RELOAD_INTERVAL_MILISECONDS = 200;
 bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE = true;
 
-std::wstring RULER_DISPLAY_MODE = L"slit";
+std::wstring RULER_DISPLAY_MODE = L"underline";
 std::wstring EPUB_CSS;
 QString EPUB_TEMPLATE = "p {\
 line-height: %{line_spacing}em!important;\
@@ -897,9 +897,9 @@ void focus_on_widget(QWidget* widget) {
 
 int main(int argc, char* args[]) {
 
-#ifdef SIOYEK_ANDROID
     SEARCH_URLS['s' - 'a'] = L"https://scholar.google.com/scholar?q=";
     SEARCH_URLS['g' - 'a'] = L"https://www.google.com/search?q=";
+#ifdef SIOYEK_ANDROID
 
     auto r = QtAndroidPrivate::checkPermission("android.permission.WRITE_EXTERNAL_STORAGE").result();
     if (r == QtAndroidPrivate::Denied) {

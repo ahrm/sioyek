@@ -87,6 +87,7 @@ struct Config {
     void save_value_into_default();
     void load_default();
     std::wstring get_type_string() const;
+    bool has_changed_from_default();
 
 };
 

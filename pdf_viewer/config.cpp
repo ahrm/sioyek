@@ -2052,8 +2052,8 @@ void ConfigManager::persist_config() {
 #ifdef SIOYEK_ANDROID
     serialize(android_config_path);
 #else
-    //Path path(L"test.config");
- //   serialize(path);
+    Path path(L"test.config");
+    serialize(path);
 #endif
 
 }
@@ -2373,4 +2373,10 @@ QRect UIRect::to_window(int window_width, int window_height) {
     int left_window = (int)(window_width * (left + 1) / 2.0f);
     int right_window = (int)(window_width * (right + 1) / 2.0f);
     return QRect(left_window, top_window, right_window - left_window, bottom_window - top_window);
+}
+
+bool Config::has_changed_from_default(){
+    std::wstringstream value_string;
+    serialize(value, value_string);
+    return value_string.str() != default_value_string;
 }

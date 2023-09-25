@@ -7,7 +7,6 @@
 // fix the issue where executing non-existant command blocks the python api
 // handle mobile text selection case where the character is not in the current page
 // improve touch highlight select ui
-// In touch mode if we try to move the document outside the view relent after a threshold is reached (allows the user to put annotations and bookmarks outside the viewd area)
 // only write the configs that actually changed in touch mode
 // maybe add progressive search
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
@@ -6368,6 +6367,7 @@ void MainWidget::show_command_documentation(QString command_name) {
 }
 
 void MainWidget::handle_debug_command() {
+    /* persist_config(); */
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -9007,7 +9007,7 @@ void MainWidget::print_undocumented_configs(){
 void MainWidget::print_undocumented_commands(){
     load_command_docs();
     auto is_unimportant_command = [](QString command_name){
-        return command_name[0] == '_' || command_name.startsWith("setconfig_") || command_name.startsWith("toggleconfig");
+        return command_name[0] == '_' || command_name.startsWith("setconfig_") || command_name.startsWith("toggleconfig_");
     };
 
     auto keys = commands_doc_json_document.object().keys();
