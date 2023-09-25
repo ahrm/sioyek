@@ -106,6 +106,8 @@ extern std::wstring VOLUME_DOWN_COMMAND;
 extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
 
+extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
+
 extern bool NO_AUTO_CONFIG;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
@@ -2133,22 +2135,32 @@ void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_na
                 deserialize_file(changed_config_names, path, true);
             }
         }
-        else if ((conf_name == L"new_command") || (conf_name == L"new_macro") || (conf_name == L"new_js_command")) {
+        else if ((conf_name == L"new_command") || (conf_name == L"new_macro") || (conf_name == L"new_js_command") || (conf_name == L"keymap")) {
             std::wstring config_value;
             std::getline(ss, config_value);
             config_value = strip_string(config_value);
             int space_index = config_value.find(L" ");
-            std::wstring new_command_name = config_value.substr(0, space_index);
-            if (new_command_name[0] == '_') {
-                std::wstring command_value = config_value.substr(space_index + 1, config_value.size() - space_index - 1);
-                if (conf_name == L"new_command") {
-                    ADDITIONAL_COMMANDS[new_command_name] = command_value;
-                }
-                if (conf_name == L"new_macro") {
-                    ADDITIONAL_MACROS[new_command_name] = command_value;
-                }
-                if (conf_name == L"new_js_command") {
-                    ADDITIONAL_JAVASCRIPT_COMMANDS[new_command_name] = std::make_pair(file_path.get_path(), command_value);
+
+            if (conf_name == L"keymap") {
+                AdditionalKeymapData keymap_data;
+                keymap_data.file_name = file_path.get_path();
+                keymap_data.line_number = line_number;
+                keymap_data.keymap_string = QString::fromStdWString(config_value).trimmed().toStdWString();
+                ADDITIONAL_KEYMAPS.push_back(keymap_data);
+            }
+            else {
+                std::wstring new_command_name = config_value.substr(0, space_index);
+                if (new_command_name[0] == '_') {
+                    std::wstring command_value = config_value.substr(space_index + 1, config_value.size() - space_index - 1);
+                    if (conf_name == L"new_command") {
+                        ADDITIONAL_COMMANDS[new_command_name] = command_value;
+                    }
+                    if (conf_name == L"new_macro") {
+                        ADDITIONAL_MACROS[new_command_name] = command_value;
+                    }
+                    if (conf_name == L"new_js_command") {
+                        ADDITIONAL_JAVASCRIPT_COMMANDS[new_command_name] = std::make_pair(file_path.get_path(), command_value);
+                    }
                 }
             }
         }
@@ -2194,6 +2206,9 @@ void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_na
 void ConfigManager::deserialize(std::vector<std::string>* changed_config_names, const Path& default_file_path, const Path& auto_path, const std::vector<Path>& user_file_paths) {
 
     ADDITIONAL_COMMANDS.clear();
+    ADDITIONAL_JAVASCRIPT_COMMANDS.clear();
+    ADDITIONAL_MACROS.clear();
+    ADDITIONAL_KEYMAPS.clear();
 
     deserialize_file(changed_config_names, default_file_path);
 

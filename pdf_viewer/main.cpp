@@ -261,6 +261,7 @@ bool START_WITH_HELPER_WINDOW = false;
 std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
 std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
+std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 bool PRERENDER_NEXT_PAGE = true;
 bool EMACS_MODE = false;
 bool HIGHLIGHT_MIDDLE_CLICK = false;
@@ -1134,6 +1135,7 @@ int main(int argc, char* args[]) {
 
         std::vector<std::string> changed_config_file_names;
         config_manager.deserialize(&changed_config_file_names, default_config_path, auto_config_path, user_config_paths);
+        input_handler.reload_config_files(default_keys_path, user_keys_paths);
 
         ConfigFileChangeListener::notify_config_file_changed(&config_manager);
         for (auto window : windows) {

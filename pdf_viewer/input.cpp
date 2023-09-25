@@ -24,6 +24,7 @@ extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern std::wstring SEARCH_URLS[26];
 extern bool ALPHABETIC_LINK_TAGS;
+extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
 extern Path default_config_path;
 extern Path default_keys_path;
@@ -6421,6 +6422,17 @@ InputParseTreeNode* parse_key_config_files(CommandManager* command_manager, cons
     get_keys_file_lines(default_path, command_names, command_keys, command_files, command_line_numbers);
     for (auto upath : user_paths) {
         get_keys_file_lines(upath, command_names, command_keys, command_files, command_line_numbers);
+    }
+
+    for (auto additional_keymap : ADDITIONAL_KEYMAPS) {
+        QString keymap_string = QString::fromStdWString(additional_keymap.keymap_string);
+        int last_space_index = keymap_string.lastIndexOf(' ');
+        std::wstring command_name = keymap_string.left(last_space_index).toStdWString();
+        std::wstring mapping = keymap_string.right(keymap_string.size() - last_space_index - 1).toStdWString();
+        command_names.push_back(parse_command_name(command_name));
+        command_keys.push_back(mapping);
+        command_files.push_back(additional_keymap.file_name);
+        command_line_numbers.push_back(additional_keymap.line_number);
     }
 
     return parse_lines(command_manager, command_keys, command_names, command_files, command_line_numbers);
