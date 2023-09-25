@@ -181,6 +181,7 @@ extern std::wstring BOOK_SCAN_PATH;
 extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
 extern std::wstring VOLUME_DOWN_COMMAND;
 extern std::wstring VOLUME_UP_COMMAND;
+extern int DOCUMENTATION_FONT_SIZE;
 
 extern int MAX_TAB_COUNT;
 extern std::wstring BACK_RECT_TAP_COMMAND;
@@ -778,7 +779,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     text_command_line_edit_container->hide();
 
     on_command_done = [&](std::string command_name, std::string query_text) {
-        if (query_text.size() > 0 && query_text.back() == '?') {
+        if (query_text.size() > 0 && (query_text.back() == '?' || query_text[0] == '?')) {
             show_command_documentation(QString::fromStdString(command_name));
         }
         else {
@@ -6351,6 +6352,10 @@ void MainWidget::update_highlight_buttons_position() {
 
 void MainWidget::show_command_documentation(QString command_name) {
     QTextEdit* text_edit = new QTextEdit(this);
+    text_edit->setStyleSheet(get_status_stylesheet(false, DOCUMENTATION_FONT_SIZE));
+    /* text_edit->setFontSiz */
+    /* text_edit->setTextBackgroundColor(QColor(0, 0, 0)); */
+    /* text_edit->setTextColor(QColor(255, 255, 255)); */
     int w = width() / 2;
     int h = height() / 2;
     text_edit->setReadOnly(true);
@@ -8971,6 +8976,10 @@ QString MainWidget::get_command_documentation(QString command_name){
 
     if (command_name.startsWith("setconfig")){
         QString config_name = command_name.right(command_name.size() - 10);
+        return config_doc_json_document.object()[config_name].toString();
+    }
+    if (command_name.startsWith("toggleconfig")){
+        QString config_name = command_name.right(command_name.size() - 13);
         return config_doc_json_document.object()[config_name].toString();
     }
     else{

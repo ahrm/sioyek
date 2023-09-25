@@ -2455,9 +2455,10 @@ void flat_char_prism(const std::vector<fz_stext_char*>& chars, int page, std::ws
     }
 }
 
-QString get_status_stylesheet(bool nofont) {
-    if ((!nofont) && (STATUS_BAR_FONT_SIZE > -1)) {
-        QString	font_size_stylesheet = QString("font-size: %1px").arg(STATUS_BAR_FONT_SIZE);
+QString get_status_stylesheet(bool nofont, int font_size) {
+    if ((!nofont) && (STATUS_BAR_FONT_SIZE > -1 || font_size > -1)) {
+        int size = font_size > 0 ? font_size : STATUS_BAR_FONT_SIZE;
+        QString	font_size_stylesheet = QString("font-size: %1px").arg(size);
         return QString("background-color: %1; color: %2; border: 0; %3;").arg(
             get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
             get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2]),

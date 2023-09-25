@@ -104,6 +104,7 @@ extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
 extern std::wstring VOLUME_DOWN_COMMAND;
 extern std::wstring VOLUME_UP_COMMAND;
+extern int DOCUMENTATION_FONT_SIZE;
 
 extern bool NO_AUTO_CONFIG;
 
@@ -941,6 +942,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"keyboard_select_font_size",
         ConfigType::Int,
         &KEYBOARD_SELECT_FONT_SIZE,
+        int_serializer,
+        int_deserializer,
+        nullptr,
+        IntExtras{1, 100}
+        });
+    configs.push_back({
+        L"documentation_font_size",
+        ConfigType::Int,
+        &DOCUMENTATION_FONT_SIZE,
         int_serializer,
         int_deserializer,
         nullptr,

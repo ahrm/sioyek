@@ -1284,6 +1284,10 @@ bool CommandSelector::on_text_change(const QString& text) {
         actual_text = actual_text.left(actual_text.size()-1);
         search_text_string = actual_text.toStdString();
     }
+    if (actual_text.startsWith("?")){
+        actual_text = actual_text.right(actual_text.size()-1);
+        search_text_string = actual_text.toStdString();
+    }
 
     for (int i = 0; i < string_elements.size(); i++) {
         std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
