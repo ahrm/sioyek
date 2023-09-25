@@ -794,6 +794,7 @@ public:
     void framebuffer_screenshot(std::wstring file_path);
     void export_command_names(std::wstring file_path);
     void export_config_names(std::wstring file_path);
+    void export_default_config_file(std::wstring file_path);
     void print_undocumented_commands();
     void print_undocumented_configs();
     void print_non_default_configs();

@@ -60,6 +60,7 @@
 #include <qwidget.h>
 #include <qjsengine.h>
 #include <qqmlengine.h>
+#include <qtextdocumentfragment.h>
 
 #include <mupdf/fitz.h>
 
@@ -6368,7 +6369,11 @@ void MainWidget::show_command_documentation(QString command_name) {
 }
 
 void MainWidget::handle_debug_command() {
-    /* persist_config(); */
+    //load_command_docs();
+    ////QTextDocumentFragment::fromHtml(
+    //QString text = QTextDocumentFragment::fromHtml(config_doc_json_document.object()["background_color"].toString()).toPlainText();
+    //qDebug() << text;
+    ////auto config_docs = ;
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -6390,6 +6395,38 @@ void MainWidget::export_config_names(std::wstring file_path){
         //QStringList command_names = command_manager->get_all_command_names();
         for (auto config : configs){
             output_file.write((QString::fromStdWString(config.name) + "\n").toUtf8());
+        }
+
+        output_file.close();
+    }
+}
+
+void MainWidget::export_default_config_file(std::wstring file_path){
+    load_command_docs();
+
+    auto config_docs = config_doc_json_document.object();
+
+    QFile output_file(QString::fromStdWString(file_path));
+    if (output_file.open(QIODeviceBase::WriteOnly)){
+        std::vector<Config> configs = config_manager->get_configs();
+        for (auto config : configs){
+            QString config_name = QString::fromStdWString(config.name);
+            QString config_doc = QTextDocumentFragment::fromHtml(config_docs[config_name].toString()).toPlainText();
+            if (config_doc.size() > 0){
+                QStringList lines = config_doc.split("\n");
+                for (auto line : lines.sliced(1)){
+                    output_file.write(("# " + line + "\n").toUtf8());
+                }
+            }
+
+            if (config.default_value_string.size() > 0){
+                output_file.write((config_name + " " + QString::fromStdWString(config.default_value_string) + "\n\n").toUtf8());
+            }
+            else{
+                output_file.write(("# " + config_name + " " + QString::fromStdWString(config.default_value_string) + "\n\n").toUtf8());
+            }
+
+            /* output_file.write((QString::fromStdWString(config.name) + "\n").toUtf8()); */
         }
 
         output_file.close();
