@@ -18,6 +18,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <set>
 #include <unordered_map>
 #include <optional>
 #include <memory>
@@ -6367,28 +6368,6 @@ void MainWidget::show_command_documentation(QString command_name) {
 }
 
 void MainWidget::handle_debug_command() {
-    QTextEdit* text_edit = new QTextEdit(this);
-    int w = width() / 2;
-    int h = height() / 2;
-    text_edit->setReadOnly(true);
-    text_edit->move(width() / 2 - w / 2, height() / 2 - h / 2);
-    text_edit->resize(w, h);
-    auto doc = get_command_documentation("toggle_dark_mode");
-    //text_edit->setMarkdown("-- `code here` this should be bold");
-    //text_edit->setHtml("<div class=\"document\" id=\"prefs - user - all - and -keys - user - all\">\n<h1 class=\"title\"><code>prefs_user_all</code> and <code>keys_user_all</code></h1>\n<p>Show a list of all <code>prefs_user.config</code> / <code>keys_user.config</code> files discovered by sioyek.</p>\n</div>\n");
-    text_edit->setHtml(doc);
-    push_current_widget(text_edit);
-    text_edit->show();
-    //qDebug() << get_command_documentation("toggle_dark_mode");
-
-    /* QFile json_file(":/data/command_docs.json"); */
-    /* if (json_file.open(QFile::ReadOnly)) { */
-    /*     QJsonDocument json_document = QJsonDocument().fromJson(json_file.readAll()); */
-    /*     QJsonObject root = json_document.object(); */
-    /*     qDebug() << root["toggle_dark_mode"].toString(); */
-    /* } */
-
-
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -8983,5 +8962,69 @@ QString MainWidget::get_command_documentation(QString command_name){
     }
     else{
         return commands_doc_json_document.object()[command_name].toString();
+    }
+}
+
+void MainWidget::print_undocumented_configs(){
+    load_command_docs();
+    std::vector<Config> all_configs = config_manager->get_configs();
+    std::vector<QString> all_config_names;
+    std::set<QString> already_added;
+    auto documented_config_names = config_doc_json_document.object().keys();
+
+    auto translate_config_name = [](QString config_name){
+        if (config_name[config_name.size()-2] == '_'){
+            config_name[config_name.size()-1] = '*';
+            return config_name;
+        }
+        return config_name;
+    };
+
+    for (auto config : all_configs){
+        all_config_names.push_back(QString::fromStdWString(config.name));
+    }
+
+    int index = 0;
+    for (auto config : all_config_names){
+        bool found = false;
+        for (auto doc_config : documented_config_names){
+            if (config == doc_config){
+                found = true;
+                break;
+            }
+        }
+        if (!found){
+            QString translated_config_name = translate_config_name(config);
+            if (already_added.find(translated_config_name) == already_added.end()){
+                qDebug() << index << ": " << translated_config_name;
+                already_added.insert(translated_config_name);
+                index++;
+            }
+        }
+    }
+}
+
+void MainWidget::print_undocumented_commands(){
+    load_command_docs();
+    auto is_unimportant_command = [](QString command_name){
+        return command_name[0] == '_' || command_name.startsWith("setconfig_") || command_name.startsWith("toggleconfig");
+    };
+
+    auto keys = commands_doc_json_document.object().keys();
+    auto all_commands = command_manager->get_all_command_names();
+    int index = 0;
+    for (auto command : all_commands){
+        bool found = false;
+        if (is_unimportant_command(command)) continue;
+        for (auto documented_command : keys){
+            if (command == documented_command){
+                found = true;
+                break;
+            }
+        }
+        if (!found){
+            qDebug() << index << ": " << command;
+            index++;
+        }
     }
 }

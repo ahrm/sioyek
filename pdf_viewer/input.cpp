@@ -1640,6 +1640,8 @@ public:
     bool requires_document() { return false; }
 };
 
+
+
 class ExportConfigNamesCommand : public Command {
 public:
     ExportConfigNamesCommand(MainWidget* w) : Command(w) {};
@@ -2557,6 +2559,34 @@ public:
         return "goto_ruler_portal";
     }
 
+};
+
+class PrintUndocumentedCommandsCommand : public Command {
+public:
+    PrintUndocumentedCommandsCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->print_undocumented_commands();
+    }
+    std::string get_name() {
+        return "print_undocumented_commands";
+    }
+
+
+    bool requires_document() { return false; }
+};
+
+class PrintUndocumentedConfigsCommand : public Command {
+public:
+    PrintUndocumentedConfigsCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->print_undocumented_configs();
+    }
+    std::string get_name() {
+        return "print_undocumented_configs";
+    }
+
+
+    bool requires_document() { return false; }
 };
 
 class ToggleFullscreenCommand : public Command {
@@ -5741,6 +5771,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["export_command_names"] = [](MainWidget* widget) {return std::make_unique< ExportCommandNamesCommand>(widget); };
     new_commands["export_config_names"] = [](MainWidget* widget) {return std::make_unique< ExportConfigNamesCommand>(widget); };
     new_commands["test_command"] = [](MainWidget* widget) {return std::make_unique< TestCommand>(widget); };
+    new_commands["print_undocumented_commands"] = [](MainWidget* widget) {return std::make_unique< PrintUndocumentedCommandsCommand>(widget); };
+    new_commands["print_undocumented_configs"] = [](MainWidget* widget) {return std::make_unique< PrintUndocumentedConfigsCommand>(widget); };
 #endif
 
     command_human_readable_names["goto_beginning"] = "Go to the beginning of the document";
