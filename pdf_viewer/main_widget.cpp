@@ -13,7 +13,6 @@
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
 
-#include "qlogging.h"
 #include <iostream>
 #include <vector>
 #include <string>
