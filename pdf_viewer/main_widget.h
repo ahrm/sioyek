@@ -796,6 +796,7 @@ public:
     void export_config_names(std::wstring file_path);
     void print_undocumented_commands();
     void print_undocumented_configs();
+    void print_non_default_configs();
     //void advance_wait_for_render_if_ready();
     bool is_render_ready();
     bool is_search_ready();

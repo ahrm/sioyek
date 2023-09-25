@@ -2081,6 +2081,9 @@ void ConfigManager::serialize(const Path& path) {
                 continue;
             }
         }
+        if (!it.has_changed_from_default()){
+            continue;
+        }
 
         std::wstringstream ss;
         file << it.name << " ";
@@ -2375,8 +2378,12 @@ QRect UIRect::to_window(int window_width, int window_height) {
     return QRect(left_window, top_window, right_window - left_window, bottom_window - top_window);
 }
 
-bool Config::has_changed_from_default(){
+std::wstring Config::get_current_string(){
     std::wstringstream value_string;
     serialize(value, value_string);
-    return value_string.str() != default_value_string;
+    return value_string.str();
+}
+
+bool Config::has_changed_from_default(){
+    return get_current_string() != default_value_string;
 }

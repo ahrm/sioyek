@@ -2561,6 +2561,20 @@ public:
 
 };
 
+class PrintNonDefaultConfigs : public Command {
+public:
+    PrintNonDefaultConfigs(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->print_non_default_configs();
+    }
+    std::string get_name() {
+        return "print_non_default_configs";
+    }
+
+
+    bool requires_document() { return false; }
+};
+
 class PrintUndocumentedCommandsCommand : public Command {
 public:
     PrintUndocumentedCommandsCommand(MainWidget* w) : Command(w) {};
@@ -5773,6 +5787,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["test_command"] = [](MainWidget* widget) {return std::make_unique< TestCommand>(widget); };
     new_commands["print_undocumented_commands"] = [](MainWidget* widget) {return std::make_unique< PrintUndocumentedCommandsCommand>(widget); };
     new_commands["print_undocumented_configs"] = [](MainWidget* widget) {return std::make_unique< PrintUndocumentedConfigsCommand>(widget); };
+    new_commands["print_non_default_configs"] = [](MainWidget* widget) {return std::make_unique< PrintNonDefaultConfigs>(widget); };
 #endif
 
     command_human_readable_names["goto_beginning"] = "Go to the beginning of the document";

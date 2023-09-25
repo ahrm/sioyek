@@ -9028,3 +9028,15 @@ void MainWidget::print_undocumented_commands(){
         }
     }
 }
+
+void MainWidget::print_non_default_configs(){
+    auto configs = config_manager->get_configs();
+    for (auto conf : configs){
+        if (conf.has_changed_from_default()){
+            qDebug() << "___________";
+            qDebug() << "name: " << conf.name;
+            qDebug() << "default: " << conf.default_value_string;
+            qDebug() << "current: " << conf.get_current_string();
+        }
+    }
+}
