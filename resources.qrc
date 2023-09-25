@@ -92,5 +92,6 @@
         <file>data/embedding.npy</file>
         <file>data/linear.npy</file>
         <file>data/command_docs.json</file>
+        <file>data/config_docs.json</file>
     </qresource>
 </RCC>

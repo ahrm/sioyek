@@ -6399,6 +6399,19 @@ void MainWidget::export_command_names(std::wstring file_path){
     }
 }
 
+void MainWidget::export_config_names(std::wstring file_path){
+    QFile output_file(QString::fromStdWString(file_path));
+    if (output_file.open(QIODeviceBase::WriteOnly)){
+        std::vector<Config> configs = config_manager->get_configs();
+        //QStringList command_names = command_manager->get_all_command_names();
+        for (auto config : configs){
+            output_file.write((QString::fromStdWString(config.name) + "\n").toUtf8());
+        }
+
+        output_file.close();
+    }
+}
+
 std::vector<std::wstring> MainWidget::get_new_files_from_scan_directory() {
     std::vector<std::pair<std::wstring, std::wstring>> path_hash;
     db_manager->get_prev_path_hash_pairs(path_hash);
@@ -8935,15 +8948,32 @@ void MainWidget::run_javascript_command(std::wstring javascript_code){
 
 void MainWidget::load_command_docs(){
     if (commands_doc_json_document.isNull()){
-        QFile json_file(":/data/command_docs.json");
-        if (json_file.open(QFile::ReadOnly)) {
-            commands_doc_json_document = QJsonDocument().fromJson(json_file.readAll());
-            json_file.close();
+        QFile command_json_file(":/data/command_docs.json");
+        QFile config_json_file(":/data/config_docs.json");
+        if (command_json_file.open(QFile::ReadOnly) && config_json_file.open(QFile::ReadOnly)) {
+            commands_doc_json_document = QJsonDocument().fromJson(command_json_file.readAll());
+            config_doc_json_document = QJsonDocument().fromJson(config_json_file.readAll());
+            command_json_file.close();
+            config_json_file.close();
         }
     }
 }
 
 QString MainWidget::get_command_documentation(QString command_name){
     load_command_docs();
-    return commands_doc_json_document.object()[command_name].toString();
+    auto command_parts= command_name.split("_");
+    if (command_parts.at(command_parts.size()-1).size() == 1){
+        if (command_name != "goto_bookmark_g" && command_name != "goto_highlight_g") {
+            command_name = command_name.left(command_name.size()-1) + "*";
+        }
+    }
+
+
+    if (command_name.startsWith("setconfig")){
+        QString config_name = command_name.right(command_name.size() - 10);
+        return config_doc_json_document.object()[config_name].toString();
+    }
+    else{
+        return commands_doc_json_document.object()[command_name].toString();
+    }
 }

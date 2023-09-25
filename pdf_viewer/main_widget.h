@@ -131,6 +131,7 @@ public:
     QScrollBar* scroll_bar = nullptr;
 
     QJsonDocument commands_doc_json_document;
+    QJsonDocument config_doc_json_document;
 
     // Some commands can not be executed immediately (e.g. because they require a text or symbol
     // input to be completed) this is where they are stored until they can be executed.
@@ -792,6 +793,7 @@ public:
     void screenshot(std::wstring file_path);
     void framebuffer_screenshot(std::wstring file_path);
     void export_command_names(std::wstring file_path);
+    void export_config_names(std::wstring file_path);
     //void advance_wait_for_render_if_ready();
     bool is_render_ready();
     bool is_search_ready();
