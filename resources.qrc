@@ -54,6 +54,8 @@
         <file>icons/fullscreen.svg</file>
         <file>icons/fullscreen-enabled.svg</file>
         <file>icons/highlight.svg</file>
+        <file>icons/selection-begin.svg</file>
+        <file>icons/selection-end.svg</file>
         <file>icons/copy.svg</file>
         <file>icons/google.svg</file>
         <file>icons/question.svg</file>

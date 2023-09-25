@@ -7,7 +7,6 @@
 // fix the issue where executing non-existant command blocks the python api
 // handle mobile text selection case where the character is not in the current page
 // improve touch highlight select ui
-// only write the configs that actually changed in touch mode
 // maybe add progressive search
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
@@ -346,8 +345,10 @@ public:
     SelectionIndicator(QWidget* parent, bool begin, MainWidget* w, AbsoluteDocumentPos pos) : QWidget(parent), is_begin(begin), main_widget(w) {
         docpos = pos.to_document(w->doc());
 
-        begin_icon = QIcon(":/icons/arrow-begin.svg");
-        end_icon = QIcon(":/icons/arrow-end.svg");
+        //begin_icon = QIcon(":/icons/arrow-begin.svg");
+        //end_icon = QIcon(":/icons/arrow-end.svg");
+        begin_icon = QIcon(":/icons/selection-begin.svg");
+        end_icon = QIcon(":/icons/selection-end.svg");
     }
 
     void update_pos() {
