@@ -15,10 +15,12 @@ public:
 
 public slots:
     void handleDelete();
+    void handleEdit();
     void handleChangeColor(int);
 
 signals:
     void deletePressed();
+    void editPressed();
     void changeColorPressed(int);
 
 private:

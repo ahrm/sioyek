@@ -613,8 +613,12 @@ HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent) {
     QObject::connect(highlight_buttons, &TouchHighlightButtons::deletePressed, [&]() {
         main_widget->handle_delete_selected_highlight();
         hide();
-        //main_widget->highlight_buttons = nullptr;
-        //deleteLater();
+        });
+
+    QObject::connect(highlight_buttons, &TouchHighlightButtons::editPressed, [&]() {
+        main_widget->run_command_with_name("edit_selected_highlight");
+        //main_widget->handle_delete_selected_highlight();
+        hide();
         });
 
     QObject::connect(highlight_buttons, &TouchHighlightButtons::changeColorPressed, [&](int index) {

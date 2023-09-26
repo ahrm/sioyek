@@ -4336,7 +4336,7 @@ int MainWidget::get_page_intersecting_rect_index(DocumentRect r) {
         std::swap(abs_rect.y0, abs_rect.y1);
     }
 
-    float max_area = -1;
+    float max_area = 0;
     int selected_index = -1;
 
     for (int i = 0; i < line_rects.size(); i++) {
@@ -4345,6 +4345,9 @@ int MainWidget::get_page_intersecting_rect_index(DocumentRect r) {
             max_area = area;
             selected_index = i;
         }
+    }
+    if (selected_index == -1) {
+        return line_rects.size() - 1;
     }
     return selected_index;
 }
@@ -7475,7 +7478,7 @@ QTextToSpeech* MainWidget::get_tts() {
 
             int end = start + length;
 
-            if ((!last_focused_rect.has_value()) || !(last_focused_rect.value() == line_being_read_rect)) {
+            if (!tts_is_about_to_finish && ((!last_focused_rect.has_value()) || !(last_focused_rect.value() == line_being_read_rect))) {
                 last_focused_rect = line_being_read_rect;
                 focus_rect(DocumentRect(line_being_read_rect, ruler_page));
                 invalidate_render();
@@ -9075,6 +9078,19 @@ void MainWidget::print_non_default_configs(){
             qDebug() << "name: " << conf.name;
             qDebug() << "default: " << conf.default_value_string;
             qDebug() << "current: " << conf.get_current_string();
+        }
+    }
+}
+
+void MainWidget::set_text_prompt_text(QString text) {
+
+    if (!TOUCH_MODE) {
+        text_command_line_edit->setText(text);
+    }
+    else {
+        if (current_widget_stack.size() > 0) {
+            TouchTextEdit* text_edit = dynamic_cast<TouchTextEdit*>(current_widget_stack.back());
+            text_edit->set_text(text.toStdWString());
         }
     }
 }

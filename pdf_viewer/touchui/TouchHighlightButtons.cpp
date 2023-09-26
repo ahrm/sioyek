@@ -31,6 +31,11 @@ TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* pare
         SLOT(handleDelete()));
 
     QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(editButtonClicked()),
+        this,
+        SLOT(handleEdit()));
+
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
         SIGNAL(changeColorClicked(int)),
         this,
         SLOT(handleChangeColor(int)));
@@ -38,14 +43,26 @@ TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* pare
 
 }
 void TouchHighlightButtons::setHighlightType(char type) {
+    int index = 0;
+    if (type >= 'a' && type <= 'z') {
+        index = type - 'a';
+    }
+    if (type >= 'A' && type <= 'Z') {
+        index = type - 'A';
+    }
+
     quick_widget->rootContext()->setContextProperty("_index", type - 'a');
-    quick_widget->rootContext()->setContextProperty("_current_color", convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * (type - 'a')]));
+    quick_widget->rootContext()->setContextProperty("_current_color", convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * index]));
     QMetaObject::invokeMethod(quick_widget->rootObject(), "on_restart");
 
 }
 
 void TouchHighlightButtons::handleDelete() {
     emit deletePressed();
+}
+
+void TouchHighlightButtons::handleEdit() {
+    emit editPressed();
 }
 
 void TouchHighlightButtons::handleChangeColor(int index) {

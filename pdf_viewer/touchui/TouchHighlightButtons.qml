@@ -7,6 +7,7 @@ import "qrc:/pdf_viewer/touchui"
 
 Rectangle{
     signal deleteButtonClicked();
+    signal editButtonClicked();
     signal changeColorClicked(index: int);
 
     id: root
@@ -19,51 +20,60 @@ Rectangle{
     } 
 
     TouchButtonGroup{
-        anchors.right: parent.horizontalCenter
-        anchors.rightMargin: 10
+        // anchors.right: parent.horizontalCenter
+        // anchors.rightMargin: 10
+        anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        width: Math.min(parent.width / 5, 75)
+        width: Math.min(3 * parent.width / 5, 225)
 
 
         id: deletebutton
 
         //buttons: ["🗑️"]
-        buttons: ["Delete"]
-        color: "black"
+        buttons: ["Delete", "Edit", ""]
+        // color: "black"
+        colors: ["black", "black", _current_color]
 
+        visible: !root.are_color_buttons_visible
         onButtonClicked: function (index, name){
             if (index == 0){
                 root.deleteButtonClicked();
             }
-        }
-    }
-
-    Rectangle{
-        anchors.left: parent.horizontalCenter
-        anchors.leftMargin: 10
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        width:  Math.min(parent.width / 5, 75)
-        color: _current_color
-        radius: 5
-        id: color_button
-
-        Text{
-            text: "Color"
-            color: _current_color.hslLightness > 0.5 ? "black" : "white"
-            anchors.centerIn: parent
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: {
-                root.are_color_buttons_visible = !root.are_color_buttons_visible;
+            if (index == 1){
+                root.editButtonClicked();
+            }
+            if (index == 2){
+                root.are_color_buttons_visible = true;
             }
         }
-
-
     }
+
+    // Rectangle{
+    //     anchors.left: parent.horizontalCenter
+    //     anchors.leftMargin: 10
+    //     anchors.top: parent.top
+    //     anchors.bottom: parent.bottom
+    //     width:  Math.min(parent.width / 5, 75)
+    //     color: _current_color
+    //     radius: 5
+    //     id: color_button
+
+    //     Text{
+    //         text: "Color"
+    //         color: _current_color.hslLightness > 0.5 ? "black" : "white"
+    //         anchors.centerIn: parent
+    //     }
+
+    //     MouseArea {
+    //         anchors.fill: parent
+    //         onClicked: {
+    //             root.are_color_buttons_visible = !root.are_color_buttons_visible;
+    //         }
+    //     }
+
+
+    // }
     Repeater{
         model: 26
 

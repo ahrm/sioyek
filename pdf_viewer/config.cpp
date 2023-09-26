@@ -2054,8 +2054,8 @@ void ConfigManager::persist_config() {
 #ifdef SIOYEK_ANDROID
     serialize(android_config_path);
 #else
-    Path path(L"test.config");
-    serialize(path);
+    //Path path(L"test.config");
+    //serialize(path);
 #endif
 
 }

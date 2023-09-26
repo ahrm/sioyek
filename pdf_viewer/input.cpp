@@ -2268,9 +2268,11 @@ public:
     void pre_perform() {
         index = widget->selected_bookmark_index;
 
-        widget->text_command_line_edit->setText(
-            QString::fromStdWString(widget->doc()->get_highlights()[widget->selected_highlight_index].text_annot)
-        );
+        widget->set_text_prompt_text(
+            QString::fromStdWString(widget->doc()->get_highlights()[widget->selected_highlight_index].text_annot));
+        //widget->text_command_line_edit->setText(
+        //    QString::fromStdWString(widget->doc()->get_highlights()[widget->selected_highlight_index].text_annot)
+        //);
     }
 
     void perform() {

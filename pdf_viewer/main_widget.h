@@ -857,6 +857,7 @@ public:
     Q_INVOKABLE QString read_text_file(QString path);
     Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
     void run_javascript_command(std::wstring javascript_code);
+    void set_text_prompt_text(QString text);
 };
 
 #endif
