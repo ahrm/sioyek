@@ -14,6 +14,10 @@ Rectangle{
     radius: 5
     property bool are_color_buttons_visible: false
 
+    function on_restart(){
+        root.are_color_buttons_visible = false;
+    } 
+
     TouchButtonGroup{
         anchors.right: parent.horizontalCenter
         anchors.rightMargin: 10

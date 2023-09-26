@@ -40,6 +40,8 @@ TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* pare
 void TouchHighlightButtons::setHighlightType(char type) {
     quick_widget->rootContext()->setContextProperty("_index", type - 'a');
     quick_widget->rootContext()->setContextProperty("_current_color", convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * (type - 'a')]));
+    QMetaObject::invokeMethod(quick_widget->rootObject(), "on_restart");
+
 }
 
 void TouchHighlightButtons::handleDelete() {
