@@ -6,7 +6,6 @@
 // do the todo for link clicks when the document is zoomed in (focus on x too)
 // fix the issue where executing non-existant command blocks the python api
 // handle mobile text selection case where the character is not in the current page
-// improve touch highlight select ui
 // maybe add progressive search
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
