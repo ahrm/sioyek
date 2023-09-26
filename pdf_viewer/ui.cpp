@@ -621,7 +621,12 @@ HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent) {
         //float* color = &HIGHLIGHT_COLORS[3 * index];
 
         //main_widget->handle_delete_selected_highlight();
-        main_widget->change_selected_highlight_type('a' + index);
+        if (index < 26) {
+            main_widget->change_selected_highlight_type('a' + index);
+        }
+        else {
+            main_widget->change_selected_highlight_type('A' + index - 26);
+        }
         hide();
         main_widget->invalidate_render();
         //main_widget->highlight_buttons = nullptr;
@@ -642,7 +647,8 @@ void HighlightButtons::resizeEvent(QResizeEvent* resize_event) {
     int dpi = physicalDpiY();
     float parent_height_in_centimeters = static_cast<float>(parent_height) / dpi * 2.54f;
 
-    int w = static_cast<int>(parent_width / 5);
+    //int w = static_cast<int>(parent_width / 5);
+    int w = parent_width;
     int h = static_cast<int>(static_cast<float>(dpi) / 2.54f);
     w = std::max(w, h * 6);
 

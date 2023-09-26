@@ -14,13 +14,14 @@ TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* pare
     quick_widget->setClearColor(Qt::transparent);
 
     QList<QColor> colors;
-    const int N_COLORS = 5;
+    const int N_COLORS = 26;
     for (int i = 0; i < N_COLORS; i++) {
         colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * i]));
     }
 
     quick_widget->rootContext()->setContextProperty("_colors", QVariant::fromValue(colors));
     quick_widget->rootContext()->setContextProperty("_index", selected_symbol - 'a');
+    quick_widget->rootContext()->setContextProperty("_current_color", convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * (selected_symbol - 'a')]));
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchHighlightButtons.qml"));
 
 
@@ -38,6 +39,7 @@ TouchHighlightButtons::TouchHighlightButtons(char selected_symbol, QWidget* pare
 }
 void TouchHighlightButtons::setHighlightType(char type) {
     quick_widget->rootContext()->setContextProperty("_index", type - 'a');
+    quick_widget->rootContext()->setContextProperty("_current_color", convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * (type - 'a')]));
 }
 
 void TouchHighlightButtons::handleDelete() {
