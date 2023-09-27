@@ -419,7 +419,10 @@ void merge_selected_character_rects(const std::deque<R>& selected_character_rect
         }
         if (touch_vertically) {
             if ((resulting_rects[i + 1].x0 < resulting_rects[i].x1)) {
-                resulting_rects[i + 1].y0 = resulting_rects[i].y1;
+                const float MERGING_LINE_DISTANCE_THRESHOLD = 25.0f;
+                if (std::abs(resulting_rects[i + 1].y0 - resulting_rects[i].y1) < MERGING_LINE_DISTANCE_THRESHOLD) {
+                    resulting_rects[i + 1].y0 = resulting_rects[i].y1;
+                }
             }
         }
     }
