@@ -4088,3 +4088,7 @@ AbsoluteRect Document::to_absolute(int page, fz_quad quad) {
 AbsoluteRect Document::to_absolute(int page, PagelessDocumentRect rect) {
     return DocumentRect(rect, page).to_absolute(this);
 }
+
+fz_context* Document::get_mupdf_context(){
+    return context;
+}

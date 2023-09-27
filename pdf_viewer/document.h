@@ -302,6 +302,7 @@ public:
     int num_freehand_drawings();
     std::vector<BookMark> get_new_sioyek_bookmarks(const std::vector<BookMark>& pdf_bookmarks);
     std::vector<Highlight> get_new_sioyek_highlights(const std::vector<Highlight>& pdf_highlights);
+    fz_context* get_mupdf_context();
 
     int get_page_offset();
     void set_page_offset(int new_offset);

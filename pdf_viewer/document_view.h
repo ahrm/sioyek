@@ -28,9 +28,7 @@ class DocumentView {
 protected:
 
 private:
-    fz_context* mupdf_context = nullptr;
     DatabaseManager* db_manager = nullptr;
-    ConfigManager* config_manager = nullptr;
     DocumentManager* document_manager = nullptr;
     CachedChecksummer* checksummer;
     Document* current_document = nullptr;
@@ -62,9 +60,7 @@ public:
     bool should_show_text_selection_marker = false;
     bool mark_end = true;
 
-    DocumentView(fz_context* mupdf_context, DatabaseManager* db_manager, DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer);
-    DocumentView(fz_context* mupdf_context, DatabaseManager* db_manager, DocumentManager* document_manager, ConfigManager* config_manager, CachedChecksummer* checksummer, bool* invalid_flag,
-        std::wstring path, int view_width, int view_height, float offset_x, float offset_y);
+    DocumentView(DatabaseManager* db_manager, DocumentManager* document_manager, CachedChecksummer* checksummer);
     ~DocumentView();
     float get_zoom_level();
     DocumentViewState get_state();

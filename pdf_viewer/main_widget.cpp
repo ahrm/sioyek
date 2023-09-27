@@ -745,7 +745,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     pdf_renderer->start_threads();
 
 
-    main_document_view = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
+    main_document_view = new DocumentView(db_manager, document_manager, checksummer);
     opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, false, this);
 
     status_label = new QLabel(this);
@@ -6373,12 +6373,8 @@ void MainWidget::show_command_documentation(QString command_name) {
     text_edit->show();
 }
 
+
 void MainWidget::handle_debug_command() {
-    //load_command_docs();
-    ////QTextDocumentFragment::fromHtml(
-    //QString text = QTextDocumentFragment::fromHtml(config_doc_json_document.object()["background_color"].toString()).toPlainText();
-    //qDebug() << text;
-    ////auto config_docs = ;
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -8824,7 +8820,7 @@ bool MainWidget::is_moving_annotations(){
 }
 
 void MainWidget::initialize_helper(){
-    helper_document_view_ = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
+    helper_document_view_ = new DocumentView(db_manager, document_manager, checksummer);
     helper_opengl_widget_ = new PdfViewOpenGLWidget(helper_document_view_, pdf_renderer, config_manager, true);
 #ifdef Q_OS_WIN
     // seems to be required only on windows though. TODO: test this on macos.

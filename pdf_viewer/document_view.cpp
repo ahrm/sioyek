@@ -16,43 +16,16 @@ extern bool EXACT_HIGHLIGHT_SELECT;
 extern bool VERBOSE;
 
 
-DocumentView::DocumentView(fz_context* mupdf_context,
-    DatabaseManager* db_manager,
+DocumentView::DocumentView(DatabaseManager* db_manager,
     DocumentManager* document_manager,
-    ConfigManager* config_manager,
     CachedChecksummer* checksummer) :
-    mupdf_context(mupdf_context),
     db_manager(db_manager),
-    config_manager(config_manager),
     document_manager(document_manager),
     checksummer(checksummer)
 {
 
 }
 DocumentView::~DocumentView() {
-}
-
-DocumentView::DocumentView(fz_context* mupdf_context,
-    DatabaseManager* db_manager,
-    DocumentManager* document_manager,
-    ConfigManager* config_manager,
-    CachedChecksummer* checksummer,
-    bool* invalid_flag,
-    std::wstring path,
-    int view_width,
-    int view_height,
-    float offset_x,
-    float offset_y) :
-    DocumentView(mupdf_context,
-        db_manager,
-        document_manager,
-        config_manager,
-        checksummer)
-
-{
-    on_view_size_change(view_width, view_height);
-    open_document(path, invalid_flag);
-    set_offsets(offset_x, offset_y);
 }
 
 float DocumentView::get_zoom_level() {
@@ -1153,7 +1126,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
             if (pdf_links.size() > 0) {
 
                 for (auto link : pdf_links) {
-                    auto parsed_uri = parse_uri(mupdf_context, link.uri);
+                    auto parsed_uri = parse_uri(get_document()->get_mupdf_context(), link.uri);
                     SmartViewCandidate candid;
                     candid.doc = get_document();
                     candid.source_rect = current_document->document_to_absolute_rect(DocumentRect(link.rects[0], line_page_number));
@@ -1333,7 +1306,7 @@ void DocumentView::get_visible_links(std::vector<PdfLink>& visible_page_links) {
     for (auto page : visible_pages) {
         std::vector<PdfLink> links = get_document()->get_page_merged_pdf_links(page);
         for (auto link : links) {
-            ParsedUri parsed_uri = parse_uri(mupdf_context, link.uri);
+            ParsedUri parsed_uri = parse_uri(get_document()->get_mupdf_context(), link.uri);
             NormalizedWindowRect window_rect = DocumentRect(link.rects[0], page).to_window_normalized(this);
             if (window_rect.is_visible()) {
                 visible_page_links.push_back(link);
