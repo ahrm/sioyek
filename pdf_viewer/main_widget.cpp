@@ -3002,9 +3002,8 @@ void MainWidget::toggle_two_window_mode() {
 
 fz_stext_char* MainWidget::get_closest_character_to_cusrsor(QPoint pos) {
 
-    WindowPos window_pos = { pos.x(), pos.y() };
-    DocumentPos doc_pos = main_document_view->window_to_document_pos_uncentered(window_pos);
-    int current_page = get_current_page_number();
+    DocumentPos doc_pos = WindowPos{ pos.x(), pos.y() }.to_document(main_document_view);
+    int current_page = doc_pos.page;
     fz_stext_page* stext_page = doc()->get_stext_with_page_number(current_page);
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
@@ -5969,8 +5968,12 @@ bool MainWidget::event(QEvent* event) {
 
 void MainWidget::handle_mobile_selection() {
     fz_stext_char* character_under = get_closest_character_to_cusrsor(last_hold_point);
+
+    WindowPos last_hold_point_window_pos = { last_hold_point.x(), last_hold_point.y() };
+    DocumentPos last_hold_point_document_pos = main_document_view->window_to_document_pos_uncentered(last_hold_point_window_pos);
+
     if (character_under) {
-        int current_page = get_current_page_number();
+        int current_page = last_hold_point_document_pos.page;
         AbsoluteRect centered_rect = DocumentRect(rect_from_quad(character_under->quad), current_page).to_absolute(doc());
         main_document_view->selected_character_rects.push_back(centered_rect);
 
