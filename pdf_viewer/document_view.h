@@ -27,15 +27,14 @@ class ConfigManager;
 class DocumentView {
 protected:
 
-private:
     DatabaseManager* db_manager = nullptr;
     DocumentManager* document_manager = nullptr;
     CachedChecksummer* checksummer;
     Document* current_document = nullptr;
 
-    float zoom_level = 0;
-    float offset_x = 0;
-    float offset_y = 0;
+    float zoom_level = 0.0f;
+    float offset_x = 0.0f;
+    float offset_y = 0.0f;
 
     // absolute rect of the current ruler if this is {} then ruler_pos is used instead
     std::optional<AbsoluteRect> ruler_rect;
@@ -68,7 +67,7 @@ public:
     //void set_opened_book_state(const OpenedBookState& state);
     void handle_escape();
     void set_book_state(OpenedBookState state);
-    bool set_offsets(float new_offset_x, float new_offset_y, bool force = false);
+    virtual bool set_offsets(float new_offset_x, float new_offset_y, bool force = false);
     bool set_pos(AbsoluteDocumentPos pos);
     Document* get_document();
     bool is_ruler_mode();
@@ -129,9 +128,9 @@ public:
     float get_max_valid_x(bool relenting);
     float get_min_valid_x(bool relenting);
 
-    float set_zoom_level(float zl, bool should_exit_auto_resize_mode);
-    float zoom_in(float zoom_factor = ZOOM_INC_FACTOR);
-    float zoom_out(float zoom_factor = ZOOM_INC_FACTOR);
+    virtual float set_zoom_level(float zl, bool should_exit_auto_resize_mode);
+    virtual float zoom_in(float zoom_factor = ZOOM_INC_FACTOR);
+    virtual float zoom_out(float zoom_factor = ZOOM_INC_FACTOR);
     float zoom_in_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
     float zoom_out_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
     bool move_absolute(float dx, float dy, bool force = false);
@@ -195,4 +194,16 @@ public:
     std::optional<AbsoluteRect> shrink_selection(bool is_begin, bool word);
 
     std::deque<AbsoluteRect>* get_selected_character_rects();
+};
+
+class ScratchPad : public DocumentView {
+public:
+
+    std::vector<FreehandDrawing> drawings;
+    ScratchPad();
+    bool set_offsets(float new_offset_x, float new_offset_y, bool force = false);
+    float set_zoom_level(float zl, bool should_exit_auto_resize_mode);
+    float zoom_in(float zoom_factor = ZOOM_INC_FACTOR);
+    float zoom_out(float zoom_factor = ZOOM_INC_FACTOR);
+
 };

@@ -9,6 +9,7 @@
 // maybe add progressive search
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
+// touch epub controls
 
 #include <iostream>
 #include <vector>
@@ -491,7 +492,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
-    if ((freehand_drawing_mode == DrawingMode::Drawing) && is_drawing) {
+    if (should_draw(false) && is_drawing) {
         handle_drawing_move(mouse_event->pos(), -1.0f);
         validate_render();
         return;
@@ -652,13 +653,13 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     }
 
     if (should_drag()) {
-        fvec2 diff_doc = (mpos - last_mouse_down_window_pos) / main_document_view->get_zoom_level();
+        fvec2 diff_doc = (mpos - last_mouse_down_window_pos) / dv()->get_zoom_level();
         diff_doc[1] = -diff_doc[1]; // higher document y positions correspond to lower window positions
 
         if (horizontal_scroll_locked) {
             diff_doc.values[0] = 0;
         }
-        main_document_view->set_pos(last_mouse_down_document_offset + diff_doc);
+        dv()->set_pos(last_mouse_down_document_offset + diff_doc);
 
         validate_render();
     }
@@ -745,6 +746,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     pdf_renderer->start_threads();
 
 
+    scratchpad = new ScratchPad();
     main_document_view = new DocumentView(db_manager, document_manager, checksummer);
     opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, false, this);
 
@@ -1302,6 +1304,9 @@ std::wstring MainWidget::get_status_string() {
         status_string += " [DEBUG MODE] ";
         status_string += QString::number(network_manager.findChildren<QNetworkReply*>().size());
     }
+    if (opengl_widget->get_scratchpad()) {
+        status_string += QString("[ zoom: %1]").arg(QString::number(dv()->get_zoom_level()));
+    }
 
     //return ss.str();
     return status_string.toStdWString();
@@ -1518,7 +1523,8 @@ void MainWidget::validate_ui() {
 
 bool MainWidget::move_document(float dx, float dy, bool force) {
     if (main_document_view_has_document()) {
-        return main_document_view->move(dx, dy, force);
+        //return main_document_view->move(dx, dy, force);
+        return dv()->move(dx, dy, force);
     }
     return false;
 }
@@ -2702,7 +2708,7 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
 
-    if ((freehand_drawing_mode == DrawingMode::Drawing) && (mevent->button() == Qt::MouseButton::LeftButton)) {
+    if (should_draw(false) && (mevent->button() == Qt::MouseButton::LeftButton)) {
         start_drawing();
         return;
     }
@@ -2719,9 +2725,9 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
         last_middle_down_time = QTime::currentTime();
         middle_click_hold_command_already_executed = false;
         last_mouse_down_window_pos = WindowPos{ mevent->pos().x(), mevent->pos().y() };
-        last_mouse_down_document_offset = main_document_view->get_offsets();
+        last_mouse_down_document_offset = dv()->get_offsets();
 
-        AbsoluteDocumentPos abs_mpos = main_document_view->window_to_absolute_document_pos(last_mouse_down_window_pos);
+        AbsoluteDocumentPos abs_mpos = dv()->window_to_absolute_document_pos(last_mouse_down_window_pos);
         if ((!bookmark_move_data.has_value()) && (!portal_move_data.has_value())) {
             int bookmark_index = doc()->get_bookmark_index_at_pos(abs_mpos);
             if (bookmark_index >= 0) {
@@ -3056,7 +3062,7 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_las
 }
 
 void MainWidget::smart_jump_under_pos(WindowPos pos) {
-    if (!main_document_view_has_document()) {
+    if ((!main_document_view_has_document()) || opengl_widget->get_scratchpad()) {
         return;
     }
 
@@ -3573,18 +3579,18 @@ void MainWidget::zoom(WindowPos pos, float zoom_factor, bool zoom_in) {
     last_smart_fit_page = {};
     if (zoom_in) {
         if (WHEEL_ZOOM_ON_CURSOR) {
-            main_document_view->zoom_in_cursor(pos, zoom_factor);
+            dv()->zoom_in_cursor(pos, zoom_factor);
         }
         else {
-            main_document_view->zoom_in(zoom_factor);
+            dv()->zoom_in(zoom_factor);
         }
     }
     else {
         if (WHEEL_ZOOM_ON_CURSOR) {
-            main_document_view->zoom_out_cursor(pos, zoom_factor);
+            dv()->zoom_out_cursor(pos, zoom_factor);
         }
         else {
-            main_document_view->zoom_out(zoom_factor);
+            dv()->zoom_out(zoom_factor);
         }
     }
     validate_render();
@@ -5056,7 +5062,7 @@ void MainWidget::handle_horizontal_move(int amount) {
         validate_render();
     }
     else {
-        main_document_view->move(72.0f * amount * HORIZONTAL_MOVE_AMOUNT, 0.0f);
+        dv()->move(72.0f * amount * HORIZONTAL_MOVE_AMOUNT, 0.0f);
         last_smart_fit_page = {};
     }
 }
@@ -5797,7 +5803,7 @@ bool MainWidget::event(QEvent* event) {
         }
     }
 
-    if ((freehand_drawing_mode == DrawingMode::PenDrawing) && te) {
+    if ((should_draw(true)) && te) {
         handle_pen_drawing_event(te);
         event->accept();
         return true;
@@ -6375,6 +6381,13 @@ void MainWidget::show_command_documentation(QString command_name) {
 
 
 void MainWidget::handle_debug_command() {
+    if (opengl_widget->get_scratchpad()) {
+        opengl_widget->set_scratchpad(nullptr);
+    }
+    else {
+        scratchpad->on_view_size_change(width(), height());
+        opengl_widget->set_scratchpad(scratchpad);
+    }
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -7036,15 +7049,20 @@ void MainWidget::handle_pen_drawing_event(QTabletEvent* te) {
 
 void MainWidget::handle_drawing_move(QPoint pos, float pressure) {
     WindowPos current_window_pos = { pos.x(), pos.y() };
-    AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(current_window_pos);
+    AbsoluteDocumentPos mouse_abspos = get_window_abspos(current_window_pos);
     FreehandDrawingPoint fdp;
     fdp.pos = mouse_abspos;
+    float thickness_zoom_factor = 1.0f;
+
+    if (opengl_widget->get_scratchpad()) {
+        thickness_zoom_factor = 1.0f / dv()->get_zoom_level();
+    }
 
     if (pressure > 0) {
-        fdp.thickness = freehand_thickness * (0.5f + pressure * 3);
+        fdp.thickness = freehand_thickness * (0.5f + pressure * 3) * thickness_zoom_factor;
     }
     else {
-        fdp.thickness = freehand_thickness;
+        fdp.thickness = freehand_thickness * thickness_zoom_factor;
     }
     opengl_widget->current_drawing.points.push_back(fdp);
 }
@@ -7069,7 +7087,13 @@ void MainWidget::finish_drawing(QPoint pos) {
     pruned_drawing.points = pruned_points;
     pruned_drawing.type = opengl_widget->current_drawing.type;
     pruned_drawing.creattion_time = QDateTime::currentDateTime();
-    doc()->add_freehand_drawing(pruned_drawing);
+
+    if (opengl_widget->get_scratchpad()) {
+        scratchpad->drawings.push_back(pruned_drawing);
+    }
+    else {
+        doc()->add_freehand_drawing(pruned_drawing);
+    }
 }
 
 
@@ -9091,4 +9115,38 @@ void MainWidget::set_text_prompt_text(QString text) {
             text_edit->set_text(text.toStdWString());
         }
     }
+}
+
+AbsoluteDocumentPos MainWidget::get_window_abspos(WindowPos window_pos) {
+    if (opengl_widget->get_scratchpad()) {
+        return scratchpad->window_to_absolute_document_pos(window_pos);
+    }
+    else {
+        return window_pos.to_absolute(main_document_view);
+    }
+}
+
+DocumentView* MainWidget::dv() {
+    if (opengl_widget->get_scratchpad()) {
+        return scratchpad;
+    }
+    else{
+        return main_document_view;
+    }
+}
+bool MainWidget::should_draw(bool originated_from_pen) {
+
+    if (opengl_widget && opengl_widget->get_scratchpad()) {
+        return true;
+    }
+
+    if (freehand_drawing_mode == DrawingMode::Drawing) {
+        return true;
+    }
+
+    if (freehand_drawing_mode == DrawingMode::PenDrawing && originated_from_pen) {
+        return true;
+    }
+
+    return false;
 }

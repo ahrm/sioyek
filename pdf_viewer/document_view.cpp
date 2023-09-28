@@ -1475,3 +1475,36 @@ AbsoluteDocumentPos SmartViewCandidate::get_abspos(DocumentView* view) {
         return get_document(view)->document_to_absolute_pos(std::get<DocumentPos>(target_pos));
     }
 }
+
+ScratchPad::ScratchPad() : DocumentView(nullptr, nullptr, nullptr) {
+    zoom_level = 1;
+}
+
+bool ScratchPad::set_offsets(float new_offset_x, float new_offset_y, bool force) {
+    offset_x = new_offset_x;
+    offset_y = new_offset_y;
+    return false;
+}
+
+float ScratchPad::set_zoom_level(float zl, bool should_exit_auto_resize_mode) {
+    float min_zoom_level = 0.1f;
+    float max_zoom_level = 1000.0f;
+
+    if (zl < min_zoom_level) {
+        zl = min_zoom_level;
+    }
+    if (zl > max_zoom_level) {
+        zl = max_zoom_level;
+    }
+
+    zoom_level = zl;
+    return zoom_level;
+}
+
+float ScratchPad::zoom_in(float zoom_factor) {
+    return set_zoom_level(zoom_level * zoom_factor, true);
+}
+
+float ScratchPad::zoom_out(float zoom_factor) {
+    return set_zoom_level(zoom_level / zoom_factor, true);
+}

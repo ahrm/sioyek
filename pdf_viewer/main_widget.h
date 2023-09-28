@@ -41,6 +41,7 @@ struct fz_context;
 struct fz_stext_char;
 
 class DocumentView;
+class ScratchPad;
 class Document;
 class InputHandler;
 class ConfigManager;
@@ -139,6 +140,7 @@ public:
     std::vector<Command*> commands_being_performed;
 
     DocumentView* main_document_view = nullptr;
+    ScratchPad* scratchpad = nullptr;
     DocumentView* helper_document_view_ = nullptr;
 
     // A stack of widgets to be displayed (e.g. the bookmark menu or the touch main menu).
@@ -858,6 +860,9 @@ public:
     Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
     void run_javascript_command(std::wstring javascript_code);
     void set_text_prompt_text(QString text);
+    AbsoluteDocumentPos get_window_abspos(WindowPos window_pos);
+    DocumentView* dv();
+    bool should_draw(bool originated_from_pen);
 };
 
 #endif

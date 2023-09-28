@@ -2924,6 +2924,7 @@ Line2D line_from_points(AbsoluteDocumentPos p1, AbsoluteDocumentPos p2) {
 }
 
 std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vector<FreehandDrawingPoint>& points) {
+
     if (points.size() < 3) {
         return points;
     }
@@ -2940,7 +2941,7 @@ std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vecto
         }
 
         Line2D line = line_from_points(pruned_points.back().pos, points[next_index].pos);
-        if (point_distance_from_line(points[candid_index].pos, line) > 0.2f) {
+        if (point_distance_from_line(points[candid_index].pos, line) > (0.2f * points[candid_index].thickness)) {
             pruned_points.push_back(points[candid_index]);
         }
 
