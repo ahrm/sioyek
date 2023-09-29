@@ -10,7 +10,9 @@
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
 // touch epub controls
+// clicking on next visual mark links
 
+#include "qlogging.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -196,6 +198,7 @@ extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
 extern bool DEBUG;
 extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
+extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 
 extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
@@ -500,7 +503,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     if (freehand_drawing_move_data) {
         // update temp drawings of opengl widget
-        AbsoluteDocumentPos mouse_abspos = WindowPos(mouse_event->pos()).to_absolute(main_document_view);
+        //AbsoluteDocumentPos mouse_abspos = WindowPos(mouse_event->pos()).to_absolute(main_document_view);
+        AbsoluteDocumentPos mouse_abspos = get_window_abspos(WindowPos(mouse_event->pos()));
         opengl_widget->moving_drawings.clear();
         move_selected_drawings(mouse_abspos, opengl_widget->moving_drawings);
         validate_render();
@@ -545,7 +549,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
 
     WindowPos mpos(mouse_event->pos());
-    AbsoluteDocumentPos abs_mpos = mpos.to_absolute(main_document_view);
+    AbsoluteDocumentPos abs_mpos = get_window_abspos(mpos);
     NormalizedWindowPos normal_mpos = mpos.to_window_normalized(main_document_view);
 
     if (bookmark_move_data) {
@@ -1443,7 +1447,7 @@ void MainWidget::validate_render() {
         if (horizontal_scroll_locked) {
             move_x = 0;
         }
-        main_document_view->move(move_x, move_y);
+        dv()->move(move_x, move_y);
 
         velocity_x = dampen_velocity(velocity_x, secs);
         velocity_y = dampen_velocity(velocity_y, secs);
@@ -1877,6 +1881,10 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
             // handle the tablet button
             execute_macro_if_enabled(TABLET_PEN_CLICK_COMMAND);
         }
+        if (kevent->key() == Qt::Key::Key_MediaNext){
+            // handle the tablet button
+            execute_macro_if_enabled(TABLET_PEN_DOUBLE_CLICK_COMMAND);
+        }
 #endif
 
 
@@ -1993,16 +2001,11 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
     }
     if (selected_freehand_drawings) {
 
-        AbsoluteDocumentPos mpos_absolute = WindowPos(mapFromGlobal(QCursor::pos())).to_absolute(main_document_view);
+        //AbsoluteDocumentPos mpos_absolute = WindowPos(mapFromGlobal(QCursor::pos())).to_absolute(main_document_view);
+        AbsoluteDocumentPos mpos_absolute = get_window_abspos(WindowPos(mapFromGlobal(QCursor::pos())));
 
         if (selected_freehand_drawings->selection_absrect.contains(mpos_absolute)) {
-            std::vector<FreehandDrawing> moving_drawings = doc()->get_page_freehand_drawings_with_indices(selected_freehand_drawings->page, selected_freehand_drawings->selected_indices);
-            doc()->delete_page_intersecting_drawings(selected_freehand_drawings->page, selected_freehand_drawings->selection_absrect, opengl_widget->visible_drawing_mask);
-            FreehandDrawingMoveData md;
-            md.initial_drawings = moving_drawings;
-            md.initial_mouse_position = mpos_absolute;
-            freehand_drawing_move_data = md;
-            selected_freehand_drawings = {};
+            handle_freehand_drawing_selection_click(mpos_absolute);
             return;
         }
         else {
@@ -2087,7 +2090,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
 
     }
 
-    AbsoluteDocumentPos abs_doc_pos = main_document_view->window_to_absolute_document_pos(click_pos);
+    AbsoluteDocumentPos abs_doc_pos = get_window_abspos(click_pos);
 
     NormalizedWindowPos click_normalized_window_pos = main_document_view->window_to_normalized_window_pos(click_pos);
 
@@ -2182,7 +2185,8 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         //last_mouse_down_x = x_;
         //last_mouse_down_y = y_;
         last_mouse_down_window_pos = click_pos;
-        last_mouse_down_document_offset = main_document_view->get_offsets();
+        last_mouse_down_document_offset = dv()->get_offsets();
+
         //last_mouse_down_window_x = x;
         //last_mouse_down_window_y = y;
 
@@ -2362,6 +2366,9 @@ void MainWidget::handle_click(WindowPos click_pos) {
 
 
     if (!main_document_view_has_document()) {
+        return;
+    }
+    if (is_scratchpad_mode()){
         return;
     }
 
@@ -5957,7 +5964,7 @@ bool MainWidget::event(QEvent* event) {
                         opengl_widget->zoom_overview(scale);
                     }
                     else{
-                        main_document_view->set_zoom_level(main_document_view->get_zoom_level() * scale, true);
+                        dv()->set_zoom_level(dv()->get_zoom_level() * scale, true);
                     }
                 }
                 return true;
@@ -7107,17 +7114,30 @@ void MainWidget::delete_freehand_drawings(AbsoluteRect rect) {
 
 void MainWidget::select_freehand_drawings(AbsoluteRect rect) {
     DocumentRect page_rect = rect.to_document(doc());
-    doc()->get_page_intersecting_drawing_indices(page_rect.page, rect, opengl_widget->visible_drawing_mask);
     SelectedDrawings selected_drawings;
+    std::vector<int> selected_indices;
+    if (opengl_widget->get_scratchpad()) {
+        selected_indices = scratchpad->get_intersecting_drawing_indices(rect);
+    }
+    else {
+        selected_indices = doc()->get_page_intersecting_drawing_indices(page_rect.page, rect, opengl_widget->visible_drawing_mask);;
+    }
+
     selected_drawings.page = page_rect.page;
-    selected_drawings.selected_indices = doc()->get_page_intersecting_drawing_indices(page_rect.page, rect, opengl_widget->visible_drawing_mask);
+    selected_drawings.selected_indices = selected_indices;
     selected_drawings.selection_absrect = rect;
     selected_freehand_drawings = selected_drawings;
     set_rect_select_mode(false);
     clear_selected_rect();
     opengl_widget->moving_drawings.clear();
 
-    opengl_widget->moving_drawings = doc()->get_page_freehand_drawings_with_indices(selected_freehand_drawings->page, selected_freehand_drawings->selected_indices);
+    if (opengl_widget->get_scratchpad()) {
+        opengl_widget->moving_drawings = scratchpad->get_freehand_drawings_with_indices(selected_indices);
+    }
+    else {
+        opengl_widget->moving_drawings = doc()->get_page_freehand_drawings_with_indices(selected_freehand_drawings->page, selected_freehand_drawings->selected_indices);
+    }
+
     invalidate_render();
 }
 
@@ -7639,12 +7659,18 @@ bool MainWidget::should_drag() {
 
 void MainWidget::handle_freehand_drawing_move_finish() {
     QPoint p = last_press_point = mapFromGlobal(QCursor::pos());
-    AbsoluteDocumentPos mpos_absolute = main_document_view->window_to_absolute_document_pos({ p.x(), p.y() });
+    //AbsoluteDocumentPos mpos_absolute = main_document_view->window_to_absolute_document_pos({ p.x(), p.y() });
+    AbsoluteDocumentPos mpos_absolute = get_window_abspos({ p.x(), p.y() });
     std::vector<FreehandDrawing> moved_drawings;
 
     move_selected_drawings(mpos_absolute, moved_drawings);
     for (auto drawing : moved_drawings) {
-        doc()->add_freehand_drawing(drawing);
+        if (opengl_widget->get_scratchpad()) {
+            scratchpad->drawings.push_back(drawing);
+        }
+        else {
+            doc()->add_freehand_drawing(drawing);
+        }
     }
 
     freehand_drawing_move_data = {};
@@ -9134,19 +9160,62 @@ DocumentView* MainWidget::dv() {
         return main_document_view;
     }
 }
+
 bool MainWidget::should_draw(bool originated_from_pen) {
 
-    if (opengl_widget && opengl_widget->get_scratchpad()) {
-        return true;
+    if (rect_select_mode) return false;
+    if (freehand_drawing_move_data || selected_freehand_drawings) return false;
+
+    if (TOUCH_MODE){
+        if (opengl_widget && opengl_widget->get_scratchpad()) {
+            return originated_from_pen;
+        }
+
+        if (freehand_drawing_mode == DrawingMode::Drawing) {
+            return true;
+        }
+
+        if (freehand_drawing_mode == DrawingMode::PenDrawing && originated_from_pen) {
+            return true;
+        }
+    }
+    else{
+        if (opengl_widget && opengl_widget->get_scratchpad()) {
+            return true;
+        }
+
+        if (freehand_drawing_mode == DrawingMode::Drawing) {
+            return true;
+        }
+
+        if (freehand_drawing_mode == DrawingMode::PenDrawing && originated_from_pen) {
+            return true;
+        }
     }
 
-    if (freehand_drawing_mode == DrawingMode::Drawing) {
-        return true;
-    }
-
-    if (freehand_drawing_mode == DrawingMode::PenDrawing && originated_from_pen) {
-        return true;
-    }
 
     return false;
+}
+
+void MainWidget::handle_freehand_drawing_selection_click(AbsoluteDocumentPos click_pos) {
+    std::vector<FreehandDrawing> moving_drawings;
+
+    if (opengl_widget->get_scratchpad()) {
+        moving_drawings = scratchpad->get_freehand_drawings_with_indices(selected_freehand_drawings->selected_indices);
+        scratchpad->delete_intersecting_drawings(selected_freehand_drawings->selection_absrect);
+    }
+    else {
+        moving_drawings = doc()->get_page_freehand_drawings_with_indices(selected_freehand_drawings->page, selected_freehand_drawings->selected_indices);
+        doc()->delete_page_intersecting_drawings(selected_freehand_drawings->page, selected_freehand_drawings->selection_absrect, opengl_widget->visible_drawing_mask);
+    }
+
+    FreehandDrawingMoveData md;
+    md.initial_drawings = moving_drawings;
+    md.initial_mouse_position = click_pos;
+    freehand_drawing_move_data = md;
+    selected_freehand_drawings = {};
+}
+
+bool MainWidget::is_scratchpad_mode(){
+    return opengl_widget->get_scratchpad() != nullptr;
 }

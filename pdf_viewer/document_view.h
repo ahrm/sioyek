@@ -206,4 +206,8 @@ public:
     float zoom_in(float zoom_factor = ZOOM_INC_FACTOR);
     float zoom_out(float zoom_factor = ZOOM_INC_FACTOR);
 
+    std::vector<int> get_intersecting_drawing_indices(AbsoluteRect selection);
+    void delete_intersecting_drawings(AbsoluteRect selection);
+    std::vector<FreehandDrawing> get_freehand_drawings_with_indices(const std::vector<int>& indices);
+
 };

@@ -102,6 +102,7 @@ extern std::wstring BOOK_SCAN_PATH;
 extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
+extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 extern std::wstring VOLUME_DOWN_COMMAND;
 extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
@@ -1406,6 +1407,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"tablet_pen_click_command",
         ConfigType::Macro,
         &TABLET_PEN_CLICK_COMMAND,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"tablet_pen_double_click_command",
+        ConfigType::Macro,
+        &TABLET_PEN_DOUBLE_CLICK_COMMAND,
         string_serializer,
         string_deserializer,
         nullptr

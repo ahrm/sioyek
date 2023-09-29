@@ -311,6 +311,7 @@ public:
     void zoom_overview(float scale);
     void zoom_in_overview();
     void zoom_out_overview();
+    void render_selected_rectangle();
     void set_scratchpad(ScratchPad* pad);
     ScratchPad* get_scratchpad();
 };

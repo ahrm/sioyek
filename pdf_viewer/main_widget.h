@@ -863,6 +863,8 @@ public:
     AbsoluteDocumentPos get_window_abspos(WindowPos window_pos);
     DocumentView* dv();
     bool should_draw(bool originated_from_pen);
+    void handle_freehand_drawing_selection_click(AbsoluteDocumentPos click_pos);
+    bool is_scratchpad_mode();
 };
 
 #endif

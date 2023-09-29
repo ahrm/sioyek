@@ -538,7 +538,13 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWind
 }
 
 void PdfViewOpenGLWidget::render_highlight_absolute(GLuint program, AbsoluteRect absolute_document_rect, int flags) {
-    NormalizedWindowRect window_rect = absolute_document_rect.to_window_normalized(document_view);
+    NormalizedWindowRect window_rect;
+    if (scratchpad) {
+        window_rect = scratchpad->absolute_to_window_rect(absolute_document_rect);
+    }
+    else {
+        window_rect = absolute_document_rect.to_window_normalized(document_view);
+    }
     render_highlight_window(program, window_rect, flags);
 }
 
@@ -564,10 +570,18 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
     }
 
     glEnable(GL_MULTISAMPLE);
+    glEnableVertexAttribArray(0);
     glUseProgram(shared_gl_objects.line_program);
     render_drawings(scratchpad, scratchpad->drawings);
+
+    render_drawings(scratchpad, moving_drawings, true);
+    render_drawings(scratchpad, moving_drawings, false);
+
     render_drawings(scratchpad, pending_drawing);
     glDisable(GL_MULTISAMPLE);
+
+    glUseProgram(shared_gl_objects.highlight_program);
+    render_selected_rectangle();
 
     painter->endNativePainting();
 }
@@ -1250,20 +1264,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             render_highlight_absolute(shared_gl_objects.highlight_program, wrong_character_rect.value(), HRF_FILL | HRF_BORDER);
         }
     }
-    if (selected_rectangle) {
-        enable_stencil();
-        write_to_stencil();
-        float rectangle_color[] = { 0.0f, 0.0f, 0.0f };
-        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
-        glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 0.3f);
-        render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value(), HRF_FILL | HRF_BORDER);
-
-        use_stencil_to_write(false);
-        NormalizedWindowRect window_rect({ -1, -1, 1, 1 });
-        render_highlight_window(shared_gl_objects.highlight_program, window_rect, true);
-
-        disable_stencil();
-    }
+    
+    render_selected_rectangle();
 
     if (document_view->is_ruler_mode()) {
         //render_line_window(shared_gl_objects.vertical_line_program ,vertical_line_location);
@@ -2526,7 +2528,6 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         coordinates.push_back(window_positions[0].x + first_ortho_x);
         coordinates.push_back(window_positions[0].y + first_ortho_y);
         add_coordinates_for_window_point(dv, window_positions[0].x, window_positions[0].y, drawing.points[0].thickness * 2, 10, begin_point_coordinates);
-
         float prev_line_x = first_line_x;
         float prev_line_y = first_line_y;
 
@@ -2893,4 +2894,22 @@ void PdfViewOpenGLWidget::set_scratchpad(ScratchPad* pad) {
 
 ScratchPad* PdfViewOpenGLWidget::get_scratchpad() {
     return scratchpad;
+}
+
+void PdfViewOpenGLWidget::render_selected_rectangle() {
+
+    if (selected_rectangle) {
+        enable_stencil();
+        write_to_stencil();
+        float rectangle_color[] = { 0.0f, 0.0f, 0.0f };
+        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
+        glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 0.3f);
+        render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value(), HRF_FILL | HRF_BORDER);
+
+        use_stencil_to_write(false);
+        NormalizedWindowRect window_rect({ -1, -1, 1, 1 });
+        render_highlight_window(shared_gl_objects.highlight_program, window_rect, true);
+
+        disable_stencil();
+    }
 }

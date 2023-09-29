@@ -371,6 +371,7 @@ std::wstring ALT_CLICK_COMMAND = L"";
 std::wstring ALT_RIGHT_CLICK_COMMAND = L"";
 std::wstring HOLD_MIDDLE_CLICK_COMMAND = L"download_paper_under_cursor";
 std::wstring TABLET_PEN_CLICK_COMMAND = L"[r]move_visual_mark_next";
+std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND = L"toggle_pen_drawing_mode";
 std::wstring VOLUME_DOWN_COMMAND = L"";
 std::wstring VOLUME_UP_COMMAND = L"";
 

@@ -1508,3 +1508,32 @@ float ScratchPad::zoom_in(float zoom_factor) {
 float ScratchPad::zoom_out(float zoom_factor) {
     return set_zoom_level(zoom_level / zoom_factor, true);
 }
+
+std::vector<int> ScratchPad::get_intersecting_drawing_indices(AbsoluteRect selection) {
+    std::vector<int> res;
+
+    for (int i = 0; i < drawings.size(); i++) {
+        for (auto p : drawings[i].points) {
+            if (selection.contains(p.pos)) {
+                res.push_back(i);
+                break;
+            }
+        }
+    }
+    return res;
+}
+
+void ScratchPad::delete_intersecting_drawings(AbsoluteRect selection) {
+    std::vector<int> indices = get_intersecting_drawing_indices(selection);
+    for (int i = 0; i < indices.size(); i++) {
+        drawings.erase(drawings.begin() + indices[indices.size() - 1 - i]);
+    }
+}
+
+std::vector<FreehandDrawing> ScratchPad::get_freehand_drawings_with_indices(const std::vector<int>& indices) {
+    std::vector<FreehandDrawing> res;
+    for (auto index : indices) {
+        res.push_back(drawings[index]);
+    }
+    return res;
+}
