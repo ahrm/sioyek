@@ -9219,3 +9219,17 @@ void MainWidget::handle_freehand_drawing_selection_click(AbsoluteDocumentPos cli
 bool MainWidget::is_scratchpad_mode(){
     return opengl_widget->get_scratchpad() != nullptr;
 }
+
+void MainWidget::toggle_scratchpad_mode(){
+    if (opengl_widget->get_scratchpad()) {
+        opengl_widget->set_scratchpad(nullptr);
+    }
+    else {
+        scratchpad->on_view_size_change(width(), height());
+        opengl_widget->set_scratchpad(scratchpad);
+    }
+}
+
+void MainWidget::add_pixmap_to_scratchpad(QPixmap pixmap) {
+    scratchpad->add_pixmap(pixmap);
+}

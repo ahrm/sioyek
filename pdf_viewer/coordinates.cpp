@@ -208,3 +208,4 @@ bool NormalizedWindowRect::is_visible() {
 WindowRect AbsoluteRect::to_window(DocumentView* document_view) {
     return document_view->normalized_to_window_rect(to_window_normalized(document_view));
 }
+

@@ -865,6 +865,8 @@ public:
     bool should_draw(bool originated_from_pen);
     void handle_freehand_drawing_selection_click(AbsoluteDocumentPos click_pos);
     bool is_scratchpad_mode();
+    void toggle_scratchpad_mode();
+    void add_pixmap_to_scratchpad(QPixmap pixmap);
 };
 
 #endif

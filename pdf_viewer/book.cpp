@@ -323,3 +323,20 @@ AbsoluteDocumentPos BookMark::end_pos() {
 AbsoluteRect BookMark::rect() {
     return AbsoluteRect(begin_pos(), end_pos());
 }
+
+AbsoluteRect FreehandDrawing::bbox(){
+    AbsoluteRect res;
+    if (points.size() > 0) {
+        res.x0 = points[0].pos.x;
+        res.x1 = points[0].pos.x;
+        res.y0 = points[0].pos.y;
+        res.y1 = points[0].pos.y;
+        for (int i = 1; i < points.size(); i++) {
+            res.x0 = std::min(points[i].pos.x, res.x0);
+            res.x1 = std::max(points[i].pos.x, res.x1);
+            res.y0 = std::min(points[i].pos.y, res.y0);
+            res.y1 = std::max(points[i].pos.y, res.y1);
+        }
+    }
+    return res;
+}

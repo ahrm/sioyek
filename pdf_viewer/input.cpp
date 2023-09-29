@@ -1190,6 +1190,49 @@ public:
 
 };
 
+class CopyScreenshotToScratchpad : public Command {
+
+public:
+
+    std::optional<AbsoluteRect> rect_;
+
+    CopyScreenshotToScratchpad(MainWidget* w) : Command(w) {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+        if (!rect_.has_value()) {
+            Requirement req = { RequirementType::Rect, "Screenshot rect" };
+            return req;
+        }
+        return {};
+    }
+
+    void set_rect_requirement(AbsoluteRect value) {
+        rect_ = value;
+    }
+
+    void perform() {
+        widget->clear_selected_rect();
+
+        WindowRect window_rect = rect_->to_window(widget->main_document_view);
+        window_rect.y0 += 1;
+        QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
+
+        QPixmap pixmap(window_qrect.width(), window_qrect.height());
+
+        //widget->render(&pixmap, QPoint(), QRegion(widget->rect()));
+        widget->render(&pixmap, QPoint(), QRegion(window_qrect));
+        widget->toggle_scratchpad_mode();
+        widget->add_pixmap_to_scratchpad(pixmap);
+        widget->invalidate_render();
+
+    }
+
+    std::string get_name() {
+        return "copy_screenshot_to_scratchpad";
+    }
+
+};
 class AddBookmarkFreetextCommand : public Command {
 
 public:
@@ -2983,6 +3026,22 @@ public:
 
     std::string get_name() {
         return "toggle_pen_drawing_mode";
+    }
+
+
+    bool requires_document() { return false; }
+};
+
+class ToggleScratchpadMode : public Command {
+public:
+    ToggleScratchpadMode(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->toggle_scratchpad_mode();
+    }
+
+    std::string get_name() {
+        return "toggle_scratchpad_mode";
     }
 
 
@@ -5643,6 +5702,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["add_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkCommand>(widget); };
     new_commands["add_marked_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkMarkedCommand>(widget); };
     new_commands["add_freetext_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkFreetextCommand>(widget); };
+    new_commands["copy_screenshot_to_scratchpad"] = [](MainWidget* widget) {return std::make_unique< CopyScreenshotToScratchpad>(widget); };
     new_commands["add_highlight"] = [](MainWidget* widget) {return std::make_unique< AddHighlightCommand>(widget); };
     new_commands["goto_toc"] = [](MainWidget* widget) {return std::make_unique< GotoTableOfContentsCommand>(widget); };
     new_commands["goto_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightCommand>(widget); };
@@ -5694,6 +5754,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["toggle_mouse_drag_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleMouseDragMode>(widget); };
     new_commands["toggle_freehand_drawing_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleFreehandDrawingMode>(widget); };
     new_commands["toggle_pen_drawing_mode"] = [](MainWidget* widget) {return std::make_unique< TogglePenDrawingMode>(widget); };
+    new_commands["toggle_scratchpad_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleScratchpadMode>(widget); };
     new_commands["close_window"] = [](MainWidget* widget) {return std::make_unique< CloseWindowCommand>(widget); };
     new_commands["quit"] = [](MainWidget* widget) {return std::make_unique< QuitCommand>(widget); };
     new_commands["escape"] = [](MainWidget* widget) {return std::make_unique< EscapeCommand>(widget); };

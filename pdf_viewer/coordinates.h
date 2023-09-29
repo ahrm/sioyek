@@ -130,6 +130,15 @@ struct EnhancedRect : public R {
     bool contains(const T& point) const {
         return (point.x >= R::x0 && point.x < R::x1 && point.y >= R::y0 && point.y < R::y1);
     }
+
+    EnhancedRect<R, T> union_rect(const EnhancedRect<R, T>& other) {
+        EnhancedRect<R, T> res;
+        res.x0 = std::min(R::x0, other.x0);
+        res.x1 = std::max(R::x1, other.x1);
+        res.y0 = std::min(R::y0, other.y0);
+        res.y1 = std::max(R::y1, other.y1);
+        return res;
+    }
 };
 
 using PagelessDocumentRect = EnhancedRect<fz_rect, PagelessDocumentPos>;

@@ -4,6 +4,7 @@
 #include "checksum.h"
 #include "database.h"
 #include "document.h"
+#include "qlogging.h"
 #include "utils.h"
 #include "config.h"
 #include "ui.h"
@@ -1535,5 +1536,55 @@ std::vector<FreehandDrawing> ScratchPad::get_freehand_drawings_with_indices(cons
     for (auto index : indices) {
         res.push_back(drawings[index]);
     }
+    return res;
+}
+
+void ScratchPad::add_pixmap(QPixmap pixmap) {
+    AbsoluteDocumentPos top_abs_pos = get_bounding_box().bottom_right();
+    int top_window_pos = top_abs_pos.to_window(this).y;
+
+    int pixmap_width = pixmap.width();
+    int pixmap_height = pixmap.height();
+
+    int pixmap_window_left = view_width / 2 - pixmap_width / 2;
+    int pixmap_window_right = view_width / 2 + pixmap_width / 2;
+    int pixmap_window_top = top_window_pos;
+    int pixmap_window_bottom = top_window_pos + pixmap_height;
+
+    WindowPos top_left = { pixmap_window_left, pixmap_window_top };
+    WindowPos bottom_right = { pixmap_window_right, pixmap_window_bottom };
+
+    AbsoluteDocumentPos top_left_abs = top_left.to_absolute(this);
+    AbsoluteDocumentPos bottom_right_abs = bottom_right.to_absolute(this);
+    AbsoluteRect pixmap_rect = AbsoluteRect(top_left_abs, bottom_right_abs);
+    AbsoluteDocumentPos center_pos = pixmap_rect.center();
+    offset_x = center_pos.x;
+    offset_y = center_pos.y;
+
+    pixmaps.push_back(std::make_pair(pixmap, pixmap_rect));
+
+}
+
+AbsoluteRect ScratchPad::get_bounding_box() {
+    AbsoluteRect res;
+    res.x0 = res.x1 = res.y0 = res.y1 = 0;
+
+    if (drawings.size() > 0) {
+        res = drawings[0].bbox();
+    }
+    else if (pixmaps.size() > 0) {
+        res = pixmaps[0].second;
+    }
+    else {
+        return res;
+    }
+
+    for (auto drawing : drawings) {
+        res = res.union_rect(drawing.bbox());
+    }
+    for (auto [_, pixmap_rect] : pixmaps) {
+        res = res.union_rect(pixmap_rect);
+    }
+
     return res;
 }

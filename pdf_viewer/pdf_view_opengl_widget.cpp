@@ -554,6 +554,18 @@ void PdfViewOpenGLWidget::render_highlight_document(GLuint program, DocumentRect
 }
 
 void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
+
+    painter->beginNativePainting();
+    glClearColor(1, 1, 1, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+    painter->endNativePainting();
+
+    for (auto [pixmap, rect] : scratchpad->pixmaps) {
+        WindowRect window_rect = rect.to_window(scratchpad);
+        QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
+        painter->drawPixmap(window_qrect, pixmap);
+    }
+
     painter->beginNativePainting();
 
     glDisable(GL_CULL_FACE);
@@ -561,8 +573,6 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
     glBindVertexArray(vertex_array_object);
     bind_default();
 
-    glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
 
     std::vector<FreehandDrawing> pending_drawing;
     if (current_drawing.points.size() > 1) {

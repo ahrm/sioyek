@@ -161,6 +161,7 @@ struct FreehandDrawing {
     std::vector<FreehandDrawingPoint> points;
     char type;
     QDateTime creattion_time;
+    AbsoluteRect bbox();
 };
 
 struct CharacterAddress {
