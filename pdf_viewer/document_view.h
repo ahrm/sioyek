@@ -200,7 +200,7 @@ class ScratchPad : public DocumentView {
 public:
 
     std::vector<FreehandDrawing> drawings;
-    std::vector<std::pair<QPixmap, AbsoluteRect>> pixmaps;
+    std::vector<PixmapDrawing> pixmaps;
 
     ScratchPad();
     bool set_offsets(float new_offset_x, float new_offset_y, bool force = false);
@@ -209,8 +209,12 @@ public:
     float zoom_out(float zoom_factor = ZOOM_INC_FACTOR);
 
     std::vector<int> get_intersecting_drawing_indices(AbsoluteRect selection);
+    std::vector<int> get_intersecting_pixmap_indices(AbsoluteRect selection);
+    std::vector<SelectedObjectIndex> get_intersecting_objects(AbsoluteRect selection);
     void delete_intersecting_drawings(AbsoluteRect selection);
-    std::vector<FreehandDrawing> get_freehand_drawings_with_indices(const std::vector<int>& indices);
+    void delete_intersecting_pixmaps(AbsoluteRect selection);
+    void delete_intersecting_objects(AbsoluteRect selection);
+    void get_selected_objects_with_indices(const std::vector<SelectedObjectIndex>& indices, std::vector<FreehandDrawing>& freehand_drawings, std::vector<PixmapDrawing>& pixmap_drawings);
     void add_pixmap(QPixmap pixmap);
     AbsoluteRect get_bounding_box();
 

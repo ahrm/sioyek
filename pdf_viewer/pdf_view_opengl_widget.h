@@ -180,6 +180,7 @@ public:
     bool visible_drawing_mask[26];
     FreehandDrawing current_drawing;
     std::vector<FreehandDrawing> moving_drawings;
+    std::vector<PixmapDrawing> moving_pixmaps;
 
 #ifndef NDEBUG
     // properties for visualizing selected blocks, used only for debug

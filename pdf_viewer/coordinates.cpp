@@ -3,6 +3,27 @@
 #include "document.h"
 #include "document_view.h"
 
+bool rects_intersect(fz_rect rect1, fz_rect rect2) {
+    return range_intersects(rect1.x0, rect1.x1, rect2.x0, rect2.x1) && range_intersects(rect1.y0, rect1.y1, rect2.y0, rect2.y1);
+}
+
+bool rects_intersect(fz_irect rect1, fz_irect rect2) {
+    return range_intersects(rect1.x0, rect1.x1, rect2.x0, rect2.x1) && range_intersects(rect1.y0, rect1.y1, rect2.y0, rect2.y1);
+}
+
+bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end) {
+    if (range1_start > range1_end) {
+        std::swap(range1_start, range1_end);
+    }
+    if (range2_start > range2_end) {
+        std::swap(range2_start, range2_end);
+    }
+    if (range2_start > range1_end || range1_start > range2_end) {
+        return false;
+    }
+    return true;
+}
+
 WindowPos::WindowPos(float x_, float y_) {
     x = static_cast<int>(x_);
     y = static_cast<int>(y_);

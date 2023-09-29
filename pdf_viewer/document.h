@@ -260,7 +260,7 @@ public:
     void index_document(bool* invalid_flag);
     void stop_indexing();
     void delete_page_intersecting_drawings(int page, AbsoluteRect absolute_rect, bool mask[26]);
-    std::vector<int> get_page_intersecting_drawing_indices(int page, AbsoluteRect absolute_rect, bool mask[26]);
+    std::vector<SelectedObjectIndex> get_page_intersecting_drawing_indices(int page, AbsoluteRect absolute_rect, bool mask[26]);
 
     std::vector<IndexedData> find_reference_with_string(std::wstring reference_name, int page_number);
     std::vector<IndexedData> find_equation_with_string(std::wstring equation_name, int page_number);
@@ -375,7 +375,7 @@ public:
     std::vector<SearchResult> search_regex(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page);
     float max_y_offset();
     void add_freehand_drawing(FreehandDrawing new_drawing);
-    std::vector<FreehandDrawing> get_page_freehand_drawings_with_indices(int page, const std::vector<int> indices);
+    void get_page_freehand_drawings_with_indices(int page, const std::vector<SelectedObjectIndex>& indices, std::vector<FreehandDrawing>& freehand_drawings, std::vector<PixmapDrawing>& pixmap_drawings);
     void undo_freehand_drawing();
     const std::vector<FreehandDrawing>& get_page_drawings(int page);
     AbsoluteRect to_absolute(int page, fz_quad quad);

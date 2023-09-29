@@ -506,7 +506,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         //AbsoluteDocumentPos mouse_abspos = WindowPos(mouse_event->pos()).to_absolute(main_document_view);
         AbsoluteDocumentPos mouse_abspos = get_window_abspos(WindowPos(mouse_event->pos()));
         opengl_widget->moving_drawings.clear();
-        move_selected_drawings(mouse_abspos, opengl_widget->moving_drawings);
+        opengl_widget->moving_pixmaps.clear();
+        move_selected_drawings(mouse_abspos, opengl_widget->moving_drawings, opengl_widget->moving_pixmaps);
         validate_render();
         return;
     }
@@ -7115,9 +7116,9 @@ void MainWidget::delete_freehand_drawings(AbsoluteRect rect) {
 void MainWidget::select_freehand_drawings(AbsoluteRect rect) {
     DocumentRect page_rect = rect.to_document(doc());
     SelectedDrawings selected_drawings;
-    std::vector<int> selected_indices;
+    std::vector<SelectedObjectIndex> selected_indices;
     if (opengl_widget->get_scratchpad()) {
-        selected_indices = scratchpad->get_intersecting_drawing_indices(rect);
+        selected_indices = scratchpad->get_intersecting_objects(rect);
     }
     else {
         selected_indices = doc()->get_page_intersecting_drawing_indices(page_rect.page, rect, opengl_widget->visible_drawing_mask);;
@@ -7130,12 +7131,17 @@ void MainWidget::select_freehand_drawings(AbsoluteRect rect) {
     set_rect_select_mode(false);
     clear_selected_rect();
     opengl_widget->moving_drawings.clear();
+    opengl_widget->moving_pixmaps.clear();
 
     if (opengl_widget->get_scratchpad()) {
-        opengl_widget->moving_drawings = scratchpad->get_freehand_drawings_with_indices(selected_indices);
+        scratchpad->get_selected_objects_with_indices(selected_indices, opengl_widget->moving_drawings, opengl_widget->moving_pixmaps);
     }
     else {
-        opengl_widget->moving_drawings = doc()->get_page_freehand_drawings_with_indices(selected_freehand_drawings->page, selected_freehand_drawings->selected_indices);
+        doc()->get_page_freehand_drawings_with_indices(
+            selected_freehand_drawings->page,
+            selected_freehand_drawings->selected_indices,
+            opengl_widget->moving_drawings,
+            opengl_widget->moving_pixmaps);
     }
 
     invalidate_render();
@@ -7662,23 +7668,41 @@ void MainWidget::handle_freehand_drawing_move_finish() {
     //AbsoluteDocumentPos mpos_absolute = main_document_view->window_to_absolute_document_pos({ p.x(), p.y() });
     AbsoluteDocumentPos mpos_absolute = get_window_abspos({ p.x(), p.y() });
     std::vector<FreehandDrawing> moved_drawings;
+    std::vector<PixmapDrawing> moved_pixmaps;
 
-    move_selected_drawings(mpos_absolute, moved_drawings);
-    for (auto drawing : moved_drawings) {
-        if (opengl_widget->get_scratchpad()) {
+    move_selected_drawings(mpos_absolute, moved_drawings, moved_pixmaps);
+
+    if (opengl_widget->get_scratchpad()) {
+
+        for (auto drawing : moved_drawings) {
             scratchpad->drawings.push_back(drawing);
         }
-        else {
+        for (auto pixmap_drawing : moved_pixmaps) {
+            scratchpad->pixmaps.push_back(pixmap_drawing);
+        }
+    }
+    else {
+        for (auto drawing : moved_drawings) {
             doc()->add_freehand_drawing(drawing);
         }
     }
 
+    //for (auto drawing : moved_drawings) {
+    //    if (opengl_widget->get_scratchpad()) {
+    //        scratchpad->drawings.push_back(drawing);
+    //    }
+    //    else {
+    //        doc()->add_freehand_drawing(drawing);
+    //    }
+    //}
+
     freehand_drawing_move_data = {};
     opengl_widget->moving_drawings.clear();
+    opengl_widget->moving_pixmaps.clear();
 
 }
 
-void MainWidget::move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings) {
+void MainWidget::move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings, std::vector<PixmapDrawing>& moved_pixmaps) {
     float diff_x = -freehand_drawing_move_data->initial_mouse_position.x + new_pos.x;
     float diff_y = -freehand_drawing_move_data->initial_mouse_position.y + new_pos.y;
 
@@ -7689,6 +7713,15 @@ void MainWidget::move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector
             new_drawing.points[i].pos.y += diff_y;
         }
         moved_drawings.push_back(new_drawing);
+    }
+
+    for (auto pixmap_drawing : freehand_drawing_move_data->initial_pixmaps) {
+        PixmapDrawing new_pixmap = pixmap_drawing;
+        new_pixmap.rect.x0 += diff_x;
+        new_pixmap.rect.x1 += diff_x;
+        new_pixmap.rect.y0 += diff_y;
+        new_pixmap.rect.y1 += diff_y;
+        moved_pixmaps.push_back(new_pixmap);
     }
 }
 
@@ -9199,18 +9232,30 @@ bool MainWidget::should_draw(bool originated_from_pen) {
 
 void MainWidget::handle_freehand_drawing_selection_click(AbsoluteDocumentPos click_pos) {
     std::vector<FreehandDrawing> moving_drawings;
+    std::vector<PixmapDrawing> moving_pixmaps;
 
     if (opengl_widget->get_scratchpad()) {
-        moving_drawings = scratchpad->get_freehand_drawings_with_indices(selected_freehand_drawings->selected_indices);
-        scratchpad->delete_intersecting_drawings(selected_freehand_drawings->selection_absrect);
+        scratchpad->get_selected_objects_with_indices(
+            selected_freehand_drawings->selected_indices,
+            moving_drawings,
+            moving_pixmaps);
+        scratchpad->delete_intersecting_objects(selected_freehand_drawings->selection_absrect);
     }
     else {
-        moving_drawings = doc()->get_page_freehand_drawings_with_indices(selected_freehand_drawings->page, selected_freehand_drawings->selected_indices);
-        doc()->delete_page_intersecting_drawings(selected_freehand_drawings->page, selected_freehand_drawings->selection_absrect, opengl_widget->visible_drawing_mask);
+        doc()->get_page_freehand_drawings_with_indices(
+            selected_freehand_drawings->page,
+            selected_freehand_drawings->selected_indices,
+            moving_drawings,
+            moving_pixmaps);
+        doc()->delete_page_intersecting_drawings(
+            selected_freehand_drawings->page,
+            selected_freehand_drawings->selection_absrect,
+            opengl_widget->visible_drawing_mask);
     }
 
     FreehandDrawingMoveData md;
     md.initial_drawings = moving_drawings;
+    md.initial_pixmaps = moving_pixmaps;
     md.initial_mouse_position = click_pos;
     freehand_drawing_move_data = md;
     selected_freehand_drawings = {};

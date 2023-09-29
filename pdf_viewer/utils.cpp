@@ -133,22 +133,7 @@ int mod(int a, int b)
     return (a % b + b) % b;
 }
 
-bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end) {
-    if (range1_start > range1_end) {
-        std::swap(range1_start, range1_end);
-    }
-    if (range2_start > range2_end) {
-        std::swap(range2_start, range2_end);
-    }
-    if (range2_start > range1_end || range1_start > range2_end) {
-        return false;
-    }
-    return true;
-}
 
-bool rects_intersect(fz_rect rect1, fz_rect rect2) {
-    return range_intersects(rect1.x0, rect1.x1, rect2.x0, rect2.x1) && range_intersects(rect1.y0, rect1.y1, rect2.y0, rect2.y1);
-}
 
 ParsedUri parse_uri(fz_context* mupdf_context, std::string uri) {
     fz_link_dest dest = pdf_parse_link_uri(mupdf_context, uri.c_str());

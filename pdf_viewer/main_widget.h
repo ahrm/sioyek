@@ -84,10 +84,11 @@ struct PortalMoveData {
     bool is_pending = false;
 };
 
+
 struct SelectedDrawings {
     int page;
     AbsoluteRect selection_absrect;
-    std::vector<int> selected_indices;
+    std::vector<SelectedObjectIndex> selected_indices;
 };
 
 struct PendingDownloadPortal {
@@ -100,6 +101,7 @@ struct PendingDownloadPortal {
 
 struct FreehandDrawingMoveData {
     std::vector<FreehandDrawing> initial_drawings;
+    std::vector<PixmapDrawing> initial_pixmaps;
     AbsoluteDocumentPos initial_mouse_position;
 };
 
@@ -746,7 +748,7 @@ public:
     void begin_portal_move(int index, AbsoluteDocumentPos begin_cursor_pos, bool is_pending);
     bool should_drag();
     void handle_freehand_drawing_move_finish();
-    void move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings);
+    void move_selected_drawings(AbsoluteDocumentPos new_pos, std::vector<FreehandDrawing>& moved_drawings, std::vector<PixmapDrawing>& moved_pixmaps);
     bool goto_ith_next_overview(int i);
     void on_overview_source_updated();
     std::optional<std::wstring> get_overview_paper_name();

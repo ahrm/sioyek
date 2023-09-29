@@ -9,11 +9,22 @@
 #include <variant>
 #include <qjsonobject.h>
 #include <qdatetime.h>
+#include <qpixmap.h>
 
 #include "coordinates.h"
 
 class DocumentView;
 class Document;
+
+enum class SelectedObjectType {
+    Drawing,
+    Pixmap
+};
+
+struct SelectedObjectIndex {
+    int index;
+    SelectedObjectType type;
+};
 
 struct BookState {
     std::wstring document_path;
@@ -162,6 +173,11 @@ struct FreehandDrawing {
     char type;
     QDateTime creattion_time;
     AbsoluteRect bbox();
+};
+
+struct PixmapDrawing {
+    QPixmap pixmap;
+    AbsoluteRect rect;
 };
 
 struct CharacterAddress {

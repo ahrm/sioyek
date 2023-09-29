@@ -11,6 +11,9 @@ struct NormalizedWindowPos;
 struct WindowPos;
 
 
+bool rects_intersect(fz_rect rect1, fz_rect rect2);
+bool rects_intersect(fz_irect rect1, fz_irect rect2);
+bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end);
 
 struct PagelessDocumentPos {
     float x;
@@ -129,6 +132,10 @@ struct EnhancedRect : public R {
 
     bool contains(const T& point) const {
         return (point.x >= R::x0 && point.x < R::x1 && point.y >= R::y0 && point.y < R::y1);
+    }
+
+    bool intersects(const EnhancedRect<R, T>& other) const {
+        return rects_intersect(*this, other);
     }
 
     EnhancedRect<R, T> union_rect(const EnhancedRect<R, T>& other) {
