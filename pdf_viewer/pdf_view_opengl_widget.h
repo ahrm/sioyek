@@ -178,6 +178,8 @@ protected:
     void render_transparent_background();
 
 public:
+    std::optional<QImage> cached_framebuffer;
+    int last_cache_num_drawings = -1;
     bool visible_drawing_mask[26];
     FreehandDrawing current_drawing;
     std::vector<FreehandDrawing> moving_drawings;
@@ -316,4 +318,5 @@ public:
     void render_selected_rectangle();
     void set_scratchpad(ScratchPad* pad);
     ScratchPad* get_scratchpad();
+    bool can_use_cached_scratchpad_framebuffer();
 };

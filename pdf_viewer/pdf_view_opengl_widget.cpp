@@ -158,6 +158,32 @@ GLfloat rotation_uvs[4][8] = {
 
 OpenGLSharedResources PdfViewOpenGLWidget::shared_gl_objects;
 
+std::vector<Vec<float, 2>> generate_bezier_with_endpoints_and_velocity(
+    Vec<float, 2> p0, 
+    Vec<float, 2> p1, 
+    Vec<float, 2> v0, 
+    Vec<float, 2> v1, 
+    int n_points
+    ) {
+    float alpha = 1.0f / n_points;
+    std::vector<Vec<float, 2>> points;
+
+    auto q0 = p0;
+    auto q1 = v0;
+    auto q2 = (p1 - p0) * 3 - v0 * 2 - v1;
+    auto q3 = (p0 - p1) * 2 + v0 + v1;
+
+    for (int i = 0; i < n_points; i++) {
+        float t = alpha * i;
+        float tt = t * t;
+        float ttt = tt * t;
+        points.push_back(q0 + q1 *t + q2 * tt + q3 * ttt);
+    }
+
+    return points;
+
+}
+
 bool num_slices_for_page_rect(PagelessDocumentRect page_rect, int* h_slices, int* v_slices) {
     /*
     determines the number of vertical/horizontal slices when rendering
@@ -557,6 +583,8 @@ void PdfViewOpenGLWidget::render_highlight_document(GLuint program, DocumentRect
 
 void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
 
+    bool use_cached_framebuffer = can_use_cached_scratchpad_framebuffer();
+
     painter->beginNativePainting();
     glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -573,6 +601,10 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
         painter->fillRect(window_qrect.adjusted(-2, -2, 2, 2), QColor(255, 255, 0));
         painter->drawPixmap(window_qrect, pixmap);
+    }
+
+    if (use_cached_framebuffer) {
+        painter->drawImage(rect(), cached_framebuffer.value());
     }
 
     painter->beginNativePainting();
@@ -592,27 +624,30 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
     glEnableVertexAttribArray(0);
     glUseProgram(shared_gl_objects.line_program);
 
-    /* std::vector<FreehandDrawing> debug_darwings; */
-    /* std::vector<FreehandDrawingPoint> debug_points; */
+     std::vector<FreehandDrawing> debug_darwings;
+     //std::vector<FreehandDrawingPoint> debug_points;
 
-    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{-100, 0}, 1 }); */
-    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{0, 100}, 1 }); */
-    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{100, 0}, 1 }); */
-    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{200, -100}, 1 }); */
-    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{300, -100}, 1 }); */
-    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{300, -200}, 1 }); */
+     //debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{-100, 0}, 1 });
+     //debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{0, 100}, 1 });
+     //debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{100, 0}, 1 });
+     //debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{200, -100}, 1 });
+     //debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{300, -100}, 1 });
+     //debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{300, -200}, 1 });
 
-    /* FreehandDrawing debug_drawing; */
-    /* debug_drawing.type = 'r'; */
-    /* debug_drawing.points = debug_points; */
-    /* debug_darwings.push_back(debug_drawing); */
-    /* render_drawings(scratchpad, debug_darwings); */
+     //FreehandDrawing debug_drawing;
+     //debug_drawing.type = 'r';
+     //debug_drawing.points = debug_points;
+     //debug_darwings.push_back(debug_drawing);
+     //debug_darwings.push_back(generate_debug_drawing());
+     //render_drawings(scratchpad, debug_darwings);
 
 
-    render_drawings(scratchpad, scratchpad->drawings);
+     if (!use_cached_framebuffer) {
+         render_drawings(scratchpad, scratchpad->drawings);
 
-    render_drawings(scratchpad, moving_drawings, true);
-    render_drawings(scratchpad, moving_drawings, false);
+         render_drawings(scratchpad, moving_drawings, true);
+         render_drawings(scratchpad, moving_drawings, false);
+     }
 
     render_drawings(scratchpad, pending_drawing);
     glDisable(GL_MULTISAMPLE);
@@ -621,6 +656,11 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
     render_selected_rectangle();
 
     painter->endNativePainting();
+
+    if (!use_cached_framebuffer && (current_drawing.points.size() > 0)) {
+        last_cache_num_drawings = scratchpad->drawings.size();
+        cached_framebuffer = grabFramebuffer();
+    }
 }
 
 void PdfViewOpenGLWidget::paintGL() {
@@ -2513,6 +2553,7 @@ T bezier_lerp(T p1, T p2, T p3, T p4, float alpha) {
     return lerp(r1, r2, alpha);
 }
 
+
 FreehandDrawing smoothen_drawing(FreehandDrawing original) {
     if (original.points.size() < 3) {
         return original;
@@ -2521,46 +2562,35 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
     FreehandDrawing res;
     res.creattion_time = original.creattion_time;
     res.type = original.type;
-    std::vector<AbsoluteDocumentPos> original_positions;
-    std::vector<float> original_thicknesses;
-    std::vector<AbsoluteDocumentPos> new_positions;
-    std::vector<float> new_thicknesses;
-    std::vector<FreehandDrawingPoint> new_points;
 
-    for (auto point : original.points) {
-        original_positions.push_back(point.pos);
-        original_thicknesses.push_back(point.thickness);
+    std::vector<Vec<float, 2>> velocities_at_points;
+    velocities_at_points.push_back(original.points[1].pos - original.points[0].pos);
+
+    for (int i = 1; i < original.points.size()-1; i++) {
+        float alpha = 0.5f;
+        velocities_at_points.push_back((original.points[i+1].pos - original.points[i - 1].pos) * alpha);
     }
-    new_positions.push_back(original_positions[0]);
-    new_thicknesses.push_back(original_thicknesses[0]);
+    velocities_at_points.push_back(original.points[original.points.size()-1].pos - original.points[original.points.size()-2].pos);
 
-    //for (int i = 1; i < )
+    FreehandDrawing smoothed_drawing;
+    smoothed_drawing.creattion_time = original.creattion_time;
+    smoothed_drawing.type = original.type;
 
-    for (int i = 1; i < original_positions.size()-1; i++) {
-        auto speed_vector = original_positions[i + 1] - original_positions[i - 1];
-        speed_vector = speed_vector / 2;
-        //speed_vector = speed_vector / speed_vector.norm();
-        AbsoluteDocumentPos p1 = original_positions[i - 1];
-        AbsoluteDocumentPos p2 = original_positions[i] - speed_vector;
-        AbsoluteDocumentPos p3 = original_positions[i] + speed_vector;
-        AbsoluteDocumentPos p4 = original_positions[i + 1];
-        int n_interpolated_points = 10;
-        float alpha_inc = 1.0f / n_interpolated_points;
-        for (int j = 0; j < n_interpolated_points; j++) {
-            auto interpolated = bezier_lerp(p1, p2, p3, p4, alpha_inc * j);
-
-            new_points.push_back(FreehandDrawingPoint{ interpolated, original_thicknesses[i] });
-
+    for (int i = 0; i < original.points.size()-1; i++){
+        int N_POINTS = 3;
+        std::vector<Vec<float, 2>> bezier_curve = generate_bezier_with_endpoints_and_velocity(
+            original.points[i].pos,
+            original.points[i + 1].pos,
+            velocities_at_points[i],
+            velocities_at_points[i + 1],
+            N_POINTS
+        );
+        for (auto p : bezier_curve) {
+            smoothed_drawing.points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{ p.x(), p.y() }, original.points[i].thickness});
         }
     }
+    return smoothed_drawing;
 
-    //new_positions.push_back(original_positions.back());
-    //new_thicknesses.push_back(original_thicknesses.back());
-    new_points.push_back({ original_positions.back(), original_thicknesses.back() });
-
-    res.points = new_points;
-
-    return res;
 }
 
 void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
@@ -2714,10 +2744,10 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         glDrawArrays(GL_TRIANGLE_FAN, 0, begin_point_coordinates.size() / 2);
         bind_points(end_point_coordinates);
         glDrawArrays(GL_TRIANGLE_FAN, 0, end_point_coordinates.size() / 2);
-        for (auto coords : all_point_coordinates) {
-            bind_points(coords);
-            glDrawArrays(GL_TRIANGLE_FAN, 0, coords.size() / 2);
-        }
+        //for (auto coords : all_point_coordinates) {
+        //    bind_points(coords);
+        //    glDrawArrays(GL_TRIANGLE_FAN, 0, coords.size() / 2);
+        //}
     }
 }
 
@@ -3052,4 +3082,13 @@ void PdfViewOpenGLWidget::render_selected_rectangle() {
 
         disable_stencil();
     }
+}
+
+bool PdfViewOpenGLWidget::can_use_cached_scratchpad_framebuffer() {
+    if (current_drawing.points.size() > 0 && cached_framebuffer.has_value()) {
+        if (last_cache_num_drawings == scratchpad->drawings.size()) {
+            return true;
+        }
+    }
+    return false;
 }

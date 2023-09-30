@@ -286,6 +286,15 @@ Vec<float, dim> operator/(const Vec<T, dim>& lhs, float rhs) {
 }
 
 template<typename T, int dim>
+Vec<float, dim> operator*(const Vec<T, dim>& lhs, float rhs) {
+    Vec<float, dim> res;
+    for (int i = 0; i < dim; i++) {
+        res[i] = lhs[i] * rhs;
+    }
+    return res;
+}
+
+template<typename T, int dim>
 Vec<T, dim> operator+(const Vec<T, dim>& lhs, const Vec<T, dim>& rhs) {
     Vec<T, dim> res;
     for (int i = 0; i < dim; i++) {

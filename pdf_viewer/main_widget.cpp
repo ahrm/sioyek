@@ -11,6 +11,7 @@
 // portals are not correctly saved in an updated database
 // touch epub controls
 // clicking on next visual mark links
+//better tablet button handling, the current method is setting dependent
 
 #include "qlogging.h"
 #include <iostream>

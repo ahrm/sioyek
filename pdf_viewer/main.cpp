@@ -112,7 +112,7 @@ float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 0.5f, 0.5f };
 float GAMMA = 1.0f;
 bool DEBUG = false;
 bool DEBUG_DISPLAY_FREEHAND_POINTS = false;
-bool DEBUG_SMOOTH_FREEHAND_DRAWINGS = false;
+bool DEBUG_SMOOTH_FREEHAND_DRAWINGS = true;
 #ifdef SIOYEK_ANDROID
 bool TOUCH_MODE = true;
 #else
