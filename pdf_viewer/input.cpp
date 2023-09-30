@@ -1983,6 +1983,45 @@ public:
 
 };
 
+class SaveScratchpadCommand : public Command {
+public:
+    SaveScratchpadCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->save_scratchpad();
+    }
+
+    std::string get_name() {
+        return "save_scratchpad";
+    }
+
+};
+
+class LoadScratchpadCommand : public Command {
+public:
+    LoadScratchpadCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->load_scratchpad();
+    }
+
+    std::string get_name() {
+        return "load_scratchpad";
+    }
+
+};
+
+class ClearScratchpadCommand : public Command {
+public:
+    ClearScratchpadCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->clear_scratchpad();
+    }
+
+    std::string get_name() {
+        return "clear_scratchpad";
+    }
+
+};
+
 class ZoomInCommand : public Command {
 public:
     ZoomInCommand(MainWidget* w) : Command(w) {};
@@ -5683,6 +5722,9 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["move_right"] = [](MainWidget* widget) {return std::make_unique< MoveRightCommand>(widget); };
     new_commands["move_left_in_overview"] = [](MainWidget* widget) {return std::make_unique< MoveLeftInOverviewCommand>(widget); };
     new_commands["move_right_in_overview"] = [](MainWidget* widget) {return std::make_unique< MoveRightInOverviewCommand>(widget); };
+    new_commands["save_scratchpad"] = [](MainWidget* widget) {return std::make_unique< SaveScratchpadCommand>(widget); };
+    new_commands["load_scratchpad"] = [](MainWidget* widget) {return std::make_unique< LoadScratchpadCommand>(widget); };
+    new_commands["clear_scratchpad"] = [](MainWidget* widget) {return std::make_unique< ClearScratchpadCommand>(widget); };
     new_commands["zoom_in"] = [](MainWidget* widget) {return std::make_unique< ZoomInCommand>(widget); };
     new_commands["zoom_out"] = [](MainWidget* widget) {return std::make_unique< ZoomOutCommand>(widget); };
     new_commands["zoom_in_overview"] = [](MainWidget* widget) {return std::make_unique< ZoomInOverviewCommand>(widget); };

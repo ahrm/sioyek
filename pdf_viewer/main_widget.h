@@ -869,6 +869,9 @@ public:
     bool is_scratchpad_mode();
     void toggle_scratchpad_mode();
     void add_pixmap_to_scratchpad(QPixmap pixmap);
+    void save_scratchpad();
+    void load_scratchpad();
+    void clear_scratchpad();
 };
 
 #endif

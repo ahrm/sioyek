@@ -3866,3 +3866,4 @@ bool is_abbreviation(const std::wstring& txt){
 bool is_in(char c, std::vector<char> candidates){
     return std::find(candidates.begin(), candidates.end(), c) != candidates.end();
 }
+

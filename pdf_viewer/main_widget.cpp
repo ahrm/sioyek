@@ -9286,3 +9286,90 @@ void MainWidget::toggle_scratchpad_mode(){
 void MainWidget::add_pixmap_to_scratchpad(QPixmap pixmap) {
     scratchpad->add_pixmap(pixmap);
 }
+
+void MainWidget::save_scratchpad() {
+    auto scratchpad_file_name = doc()->get_scratchpad_file_path();
+
+    QJsonObject root_object;
+    QJsonObject drawings_object;
+
+    QJsonArray page_drawings_array;
+
+    for (auto& drawing : scratchpad->drawings) {
+        QJsonObject drawing_object;
+        drawing_object["creation_time"] = drawing.creattion_time.toString(Qt::ISODate);
+        drawing_object["type"] = drawing.type;
+        //QJsonArray points;
+        QJsonArray points_xs;
+        QJsonArray points_ys;
+        QJsonArray points_thicknesses;
+
+        for (auto& p : drawing.points) {
+            points_xs.append(p.pos.x);
+            points_ys.append(p.pos.y);
+            points_thicknesses.append(p.thickness);
+        }
+        drawing_object["point_xs"] = points_xs;
+        drawing_object["point_ys"] = points_ys;
+        drawing_object["point_thicknesses"] = points_thicknesses;
+
+        page_drawings_array.append(drawing_object);
+    }
+    //drawings_object[QString::number(page)] = page_drawings_array;
+    //handle_drawing_ui_visibilty
+
+    root_object["drawings"] = page_drawings_array;
+
+
+    QJsonDocument json_doc;
+    json_doc.setObject(root_object);
+
+    QFile json_file(QString::fromStdWString(scratchpad_file_name));
+    json_file.open(QFile::WriteOnly);
+    json_file.write(json_doc.toJson());
+    json_file.close();
+}
+
+void MainWidget::load_scratchpad() {
+    auto scratchpad_file_name = doc()->get_scratchpad_file_path();
+
+
+    QFile json_file(QString::fromStdWString(scratchpad_file_name));
+    if (json_file.open(QFile::ReadOnly)) {
+        QJsonDocument json_document = QJsonDocument().fromJson(json_file.readAll());
+        json_file.close();
+
+        QJsonObject root = json_document.object();
+        QJsonArray drawings_object = root["drawings"].toArray();
+        scratchpad->drawings.clear();
+
+        //for (auto& drawing_json_object : drawings_object)) {
+        for (int i = 0; i < drawings_object.size(); i++){
+
+            QJsonObject drawing_object = drawings_object[i].toObject();
+            FreehandDrawing drawing;
+
+            drawing.creattion_time = QDateTime::fromString(drawing_object["creation_time"].toString(), Qt::ISODate);
+            drawing.type = drawing_object["type"].toInt();
+            QJsonArray x_array = drawing_object["point_xs"].toArray();
+            QJsonArray y_array = drawing_object["point_ys"].toArray();
+            QJsonArray t_array = drawing_object["point_thicknesses"].toArray();
+
+            for (int i = 0; i < x_array.size(); i++) {
+                FreehandDrawingPoint point;
+                point.pos.x = x_array.at(i).toDouble();
+                point.pos.y = y_array.at(i).toDouble();
+                point.thickness = t_array.at(i).toDouble();
+                drawing.points.push_back(point);
+            }
+            scratchpad->drawings.push_back(drawing);
+        }
+
+    }
+
+}
+
+void MainWidget::clear_scratchpad() {
+    scratchpad->drawings.clear();
+    invalidate_render();
+}

@@ -354,6 +354,7 @@ public:
         std::vector<std::vector<PagelessDocumentRect>>* out_line_rects = nullptr);
 
     std::wstring get_drawings_file_path();
+    std::wstring get_scratchpad_file_path();
     std::wstring get_annotations_file_path();
     bool annotations_file_exists();
     bool annotations_file_is_newer_than_database();

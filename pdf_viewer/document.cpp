@@ -3174,6 +3174,18 @@ std::wstring Document::get_drawings_file_path() {
     QString drawing_file_name = filename + ".sioyek.drawings";
     return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
 }
+std::wstring Document::get_scratchpad_file_path() {
+    Path path = Path(file_name);
+#ifdef SIOYEK_ANDROID
+    if (file_name == L":/tutorial.pdf") {
+        QString parent_path = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0);
+        return Path(parent_path.toStdWString()).slash(L"tutorial.pdf.sioyek.scratchpad").get_path();
+    }
+#endif
+    QString filename = QString::fromStdWString(path.filename().value());
+    QString drawing_file_name = filename + ".sioyek.scratchpad";
+    return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+}
 
 bool Document::annotations_file_exists() {
     std::wstring file_path = get_annotations_file_path();
