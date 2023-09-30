@@ -591,6 +591,24 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
     glEnable(GL_MULTISAMPLE);
     glEnableVertexAttribArray(0);
     glUseProgram(shared_gl_objects.line_program);
+
+    /* std::vector<FreehandDrawing> debug_darwings; */
+    /* std::vector<FreehandDrawingPoint> debug_points; */
+
+    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{-100, 0}, 1 }); */
+    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{0, 100}, 1 }); */
+    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{100, 0}, 1 }); */
+    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{200, -100}, 1 }); */
+    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{300, -100}, 1 }); */
+    /* debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{300, -200}, 1 }); */
+
+    /* FreehandDrawing debug_drawing; */
+    /* debug_drawing.type = 'r'; */
+    /* debug_drawing.points = debug_points; */
+    /* debug_darwings.push_back(debug_drawing); */
+    /* render_drawings(scratchpad, debug_darwings); */
+
+
     render_drawings(scratchpad, scratchpad->drawings);
 
     render_drawings(scratchpad, moving_drawings, true);
@@ -2463,7 +2481,7 @@ void PdfViewOpenGLWidget::bind_default() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 }
 
-void PdfViewOpenGLWidget::add_coordinates_for_window_point(DocumentView* dv, float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates) {
+void PdfViewOpenGLWidget::add_coordinates_for_window_point(DocumentView* dv, float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates){
 
     float thickness_x = dv->get_zoom_level() / width();
     float thickness_y = dv->get_zoom_level() / height();
@@ -2520,7 +2538,8 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
 
     for (int i = 1; i < original_positions.size()-1; i++) {
         auto speed_vector = original_positions[i + 1] - original_positions[i - 1];
-        speed_vector = speed_vector / speed_vector.norm();
+        speed_vector = speed_vector / 2;
+        //speed_vector = speed_vector / speed_vector.norm();
         AbsoluteDocumentPos p1 = original_positions[i - 1];
         AbsoluteDocumentPos p2 = original_positions[i] - speed_vector;
         AbsoluteDocumentPos p3 = original_positions[i] + speed_vector;
@@ -2535,8 +2554,9 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
         }
     }
 
-    new_positions.push_back(original_positions[0]);
-    new_thicknesses.push_back(original_thicknesses[0]);
+    //new_positions.push_back(original_positions.back());
+    //new_thicknesses.push_back(original_thicknesses.back());
+    new_points.push_back({ original_positions.back(), original_thicknesses.back() });
 
     res.points = new_points;
 
@@ -2545,6 +2565,7 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
 
 void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
 
+    const int N_POINT_VERTICES = 10;
     float thickness_x = dv->get_zoom_level() / width();
     float thickness_y = dv->get_zoom_level() / height();
     //float thickness_y = thickness_x * width() / height();
@@ -2553,6 +2574,9 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         if (DEBUG_SMOOTH_FREEHAND_DRAWINGS) {
             drawing = smoothen_drawing(drawing);
         }
+        //if (drawings.size() % 2 == 0){
+        //    drawing = smoothen_drawing(drawing);
+        //}
 
         std::vector<NormalizedWindowPos> window_positions;
         if (drawing.points.size() <= 0) {
@@ -2599,12 +2623,13 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
                 float thickness = drawing.points[0].thickness;
 
                 NormalizedWindowPos window_pos = dv->absolute_to_window_pos({ point.pos.x, point.pos.y });
-                add_coordinates_for_window_point(dv, window_pos.x, window_pos.y, thickness * 10, 10, coordinates);
+                add_coordinates_for_window_point(dv, window_pos.x, window_pos.y, thickness * 2, N_POINT_VERTICES, coordinates);
 
                 bind_points(coordinates);
                 glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
                 glDrawArrays(GL_TRIANGLE_FAN, 0, coordinates.size() / 2);
             }
+            continue;
         }
 
         glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
@@ -2617,9 +2642,10 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         std::vector<float> coordinates;
         std::vector<float> begin_point_coordinates;
         std::vector<float> end_point_coordinates;
+        std::vector<std::vector<float>> all_point_coordinates;
 
-        float first_line_x = window_positions[1].x - window_positions[0].x;
-        float first_line_y = window_positions[1].y - window_positions[0].y;
+        float first_line_x = (window_positions[1].x - window_positions[0].x) * width();
+        float first_line_y = (window_positions[1].y - window_positions[0].y) * height();
         float first_line_size = sqrt(first_line_x * first_line_x + first_line_y * first_line_y);
         first_line_x = first_line_x / first_line_size;
         first_line_y = first_line_y / first_line_size;
@@ -2628,17 +2654,18 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         float first_ortho_x = -first_line_y * thickness_x * drawing.points[0].thickness * highlight_factor;
         float first_ortho_y = first_line_x * thickness_y * drawing.points[0].thickness * highlight_factor;
 
+
         coordinates.push_back(window_positions[0].x - first_ortho_x);
         coordinates.push_back(window_positions[0].y - first_ortho_y);
         coordinates.push_back(window_positions[0].x + first_ortho_x);
         coordinates.push_back(window_positions[0].y + first_ortho_y);
-        add_coordinates_for_window_point(dv, window_positions[0].x, window_positions[0].y, drawing.points[0].thickness * 2, 10, begin_point_coordinates);
+        add_coordinates_for_window_point(dv, window_positions[0].x, window_positions[0].y, drawing.points[0].thickness * 2, N_POINT_VERTICES, begin_point_coordinates);
         float prev_line_x = first_line_x;
         float prev_line_y = first_line_y;
 
         for (int line_index = 0; line_index < drawing.points.size() - 1; line_index++) {
-            float line_direction_x = window_positions[line_index + 1].x - window_positions[line_index].x;
-            float line_direction_y = window_positions[line_index + 1].y - window_positions[line_index].y;
+            float line_direction_x = (window_positions[line_index + 1].x - window_positions[line_index].x) * width();
+            float line_direction_y = (window_positions[line_index + 1].y - window_positions[line_index].y) * height();
             float line_size = sqrt(line_direction_x * line_direction_x + line_direction_y * line_direction_y);
             line_direction_x = line_direction_x / line_size;
             line_direction_y = line_direction_y / line_size;
@@ -2661,6 +2688,9 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
             coordinates.push_back(window_positions[line_index + 1].x + ortho_x2);
             coordinates.push_back(window_positions[line_index + 1].y + ortho_y2);
 
+            std::vector<float> point_coordinates;
+            add_coordinates_for_window_point(dv, window_positions[line_index+1].x, window_positions[line_index+1].y, drawing.points[line_index+1].thickness * 2, N_POINT_VERTICES, point_coordinates);
+            all_point_coordinates.push_back(point_coordinates);
 
         }
 
@@ -2668,7 +2698,7 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
             window_positions[drawing.points.size() - 1].x,
             window_positions[drawing.points.size() - 1].y,
             drawing.points[drawing.points.size() - 1].thickness * 2 * highlight_factor,
-            10,
+            N_POINT_VERTICES,
             end_point_coordinates
         );
 
@@ -2684,6 +2714,10 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         glDrawArrays(GL_TRIANGLE_FAN, 0, begin_point_coordinates.size() / 2);
         bind_points(end_point_coordinates);
         glDrawArrays(GL_TRIANGLE_FAN, 0, end_point_coordinates.size() / 2);
+        for (auto coords : all_point_coordinates) {
+            bind_points(coords);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, coords.size() / 2);
+        }
     }
 }
 

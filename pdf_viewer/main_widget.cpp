@@ -413,6 +413,10 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
     main_window_width = size().width();
     main_window_height = size().height();
 
+    if (scratchpad) {
+        scratchpad->on_view_size_change(resize_event->size().width(), resize_event->size().height());
+        invalidate_render();
+    }
     if (main_document_view->get_is_auto_resize_mode()) {
         main_document_view->fit_to_page_width();
         main_document_view->set_offset_y(main_window_height / 2 / main_document_view->get_zoom_level());
@@ -1870,7 +1874,6 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
 
     if (released == false) {
-        qDebug() << "sioyek: " << kevent->key();
 
 #ifdef SIOYEK_ANDROID
         if (kevent->key() == Qt::Key::Key_VolumeDown) {
@@ -7059,6 +7062,7 @@ void MainWidget::handle_pen_drawing_event(QTabletEvent* te) {
 }
 
 void MainWidget::handle_drawing_move(QPoint pos, float pressure) {
+    pressure = 0;
     WindowPos current_window_pos = { pos.x(), pos.y() };
     AbsoluteDocumentPos mouse_abspos = get_window_abspos(current_window_pos);
     FreehandDrawingPoint fdp;
@@ -7066,7 +7070,7 @@ void MainWidget::handle_drawing_move(QPoint pos, float pressure) {
     float thickness_zoom_factor = 1.0f;
 
     if (opengl_widget->get_scratchpad()) {
-        thickness_zoom_factor = 1.0f / dv()->get_zoom_level();
+        thickness_zoom_factor = 1.0f / dv()->get_zoom_level() * 3;
     }
 
     if (pressure > 0) {
