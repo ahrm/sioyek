@@ -19,6 +19,8 @@
 #define GL_MULTISAMPLE  0x809D
 #endif
 
+extern bool DEBUG_DISPLAY_FREEHAND_POINTS;
+extern bool DEBUG_SMOOTH_FREEHAND_DRAWINGS;
 extern Path shader_path;
 extern float GAMMA;
 extern float BACKGROUND_COLOR[3];
@@ -569,7 +571,7 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
     for (auto [pixmap, rect] : moving_pixmaps) { // highlight moving pixmaps
         WindowRect window_rect = rect.to_window(scratchpad);
         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
-        painter->fillRect(window_qrect.adjusted(-1, -1, 1, 1), QColor(255, 255, 0));
+        painter->fillRect(window_qrect.adjusted(-2, -2, 2, 2), QColor(255, 255, 0));
         painter->drawPixmap(window_qrect, pixmap);
     }
 
@@ -2474,6 +2476,73 @@ void PdfViewOpenGLWidget::add_coordinates_for_window_point(DocumentView* dv, flo
         out_coordinates.push_back(window_y + r * thickness_y * std::sin(2 * M_PI * i / point_polygon_vertices) / 2);
     }
 }
+
+template<typename T>
+T lerp(T p1, T p2, float alpha) {
+    float x = p1.x + alpha * (p2.x - p1.x);
+    float y = p1.y + alpha * (p2.y - p1.y);
+    return T{ x, y };
+}
+
+template<typename T>
+T bezier_lerp(T p1, T p2, T p3, T p4, float alpha) {
+    T q1 = lerp(p1, p2, alpha);
+    T q2 = lerp(p2, p3, alpha);
+    T q3 = lerp(p3, p4, alpha);
+
+    T r1 = lerp(q1, q2, alpha);
+    T r2 = lerp(q2, q3, alpha);
+    return lerp(r1, r2, alpha);
+}
+
+FreehandDrawing smoothen_drawing(FreehandDrawing original) {
+    if (original.points.size() < 3) {
+        return original;
+    }
+
+    FreehandDrawing res;
+    res.creattion_time = original.creattion_time;
+    res.type = original.type;
+    std::vector<AbsoluteDocumentPos> original_positions;
+    std::vector<float> original_thicknesses;
+    std::vector<AbsoluteDocumentPos> new_positions;
+    std::vector<float> new_thicknesses;
+    std::vector<FreehandDrawingPoint> new_points;
+
+    for (auto point : original.points) {
+        original_positions.push_back(point.pos);
+        original_thicknesses.push_back(point.thickness);
+    }
+    new_positions.push_back(original_positions[0]);
+    new_thicknesses.push_back(original_thicknesses[0]);
+
+    //for (int i = 1; i < )
+
+    for (int i = 1; i < original_positions.size()-1; i++) {
+        auto speed_vector = original_positions[i + 1] - original_positions[i - 1];
+        speed_vector = speed_vector / speed_vector.norm();
+        AbsoluteDocumentPos p1 = original_positions[i - 1];
+        AbsoluteDocumentPos p2 = original_positions[i] - speed_vector;
+        AbsoluteDocumentPos p3 = original_positions[i] + speed_vector;
+        AbsoluteDocumentPos p4 = original_positions[i + 1];
+        int n_interpolated_points = 10;
+        float alpha_inc = 1.0f / n_interpolated_points;
+        for (int j = 0; j < n_interpolated_points; j++) {
+            auto interpolated = bezier_lerp(p1, p2, p3, p4, alpha_inc * j);
+
+            new_points.push_back(FreehandDrawingPoint{ interpolated, original_thicknesses[i] });
+
+        }
+    }
+
+    new_positions.push_back(original_positions[0]);
+    new_thicknesses.push_back(original_thicknesses[0]);
+
+    res.points = new_points;
+
+    return res;
+}
+
 void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
 
     float thickness_x = dv->get_zoom_level() / width();
@@ -2481,6 +2550,10 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
     //float thickness_y = thickness_x * width() / height();
 
     for (auto drawing : drawings) {
+        if (DEBUG_SMOOTH_FREEHAND_DRAWINGS) {
+            drawing = smoothen_drawing(drawing);
+        }
+
         std::vector<NormalizedWindowPos> window_positions;
         if (drawing.points.size() <= 0) {
             continue;
@@ -2517,6 +2590,21 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
             glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
             glDrawArrays(GL_TRIANGLE_FAN, 0, coordinates.size() / 2);
             continue;
+        }
+
+        if (DEBUG_DISPLAY_FREEHAND_POINTS) {
+            for (auto point : drawing.points) {
+                std::vector<float> coordinates;
+                //float window_x, window_y;
+                float thickness = drawing.points[0].thickness;
+
+                NormalizedWindowPos window_pos = dv->absolute_to_window_pos({ point.pos.x, point.pos.y });
+                add_coordinates_for_window_point(dv, window_pos.x, window_pos.y, thickness * 10, 10, coordinates);
+
+                bind_points(coordinates);
+                glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, coordinates.size() / 2);
+            }
         }
 
         glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
@@ -2598,6 +2686,7 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         glDrawArrays(GL_TRIANGLE_FAN, 0, end_point_coordinates.size() / 2);
     }
 }
+
 
 bool PdfViewOpenGLWidget::is_normalized_y_in_window(float y) {
     return (y >= -1) && (y <= 1);

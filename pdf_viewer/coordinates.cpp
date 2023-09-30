@@ -198,6 +198,10 @@ AbsoluteDocumentPos operator+(const AbsoluteDocumentPos& lhs, const fvec2& rhs) 
     return AbsoluteDocumentPos{ lhs.x + rhs[0], lhs.y + rhs[1]};
 }
 
+AbsoluteDocumentPos operator-(const AbsoluteDocumentPos& lhs, const fvec2& rhs) {
+    return AbsoluteDocumentPos{ lhs.x - rhs[0], lhs.y - rhs[1]};
+}
+
 DocumentPos operator+(const DocumentPos& lhs, const fvec2& rhs) {
     return DocumentPos{ lhs.page, lhs.x + rhs[0], lhs.y + rhs[1]};
 }

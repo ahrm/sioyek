@@ -160,6 +160,8 @@ extern int KEYBOARD_SELECT_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
 extern float CUSTOM_COLOR_CONTRAST;
 extern bool DEBUG;
+extern bool DEBUG_DISPLAY_FREEHAND_POINTS;
+extern bool DEBUG_SMOOTH_FREEHAND_DRAWINGS;
 extern float HIGHLIGHT_DELETE_THRESHOLD;
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern std::wstring STATUS_BAR_FORMAT;
@@ -1800,6 +1802,25 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_deserializer,
         bool_validator
         });
+
+#ifdef _DEBUG
+    configs.push_back({
+        L"debug_display_freehand_poitns",
+        ConfigType::Bool,
+        &DEBUG_DISPLAY_FREEHAND_POINTS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"debug_smooth_freehand_drawings",
+        ConfigType::Bool,
+        &DEBUG_SMOOTH_FREEHAND_DRAWINGS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+#endif
     configs.push_back({
         L"highlight_delete_threshold",
         ConfigType::Float,

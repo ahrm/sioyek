@@ -1870,6 +1870,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
 
     if (released == false) {
+        qDebug() << "sioyek: " << kevent->key();
 
 #ifdef SIOYEK_ANDROID
         if (kevent->key() == Qt::Key::Key_VolumeDown) {
@@ -6396,6 +6397,8 @@ void MainWidget::handle_debug_command() {
         scratchpad->on_view_size_change(width(), height());
         opengl_widget->set_scratchpad(scratchpad);
     }
+    //scratchpad->drawings.clear();
+    //invalidate_render();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){

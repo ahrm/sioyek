@@ -165,6 +165,7 @@ protected:
     void render_scratchpad(QPainter* painter);
     void add_coordinates_for_window_point(DocumentView* dv, float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates);
     void render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted = false);
+    void render_line(DocumentView* dv, FreehandDrawing drawing);
     std::vector<std::pair<QRect, QString>> get_hint_rect_and_texts();
 
     void enable_stencil();

@@ -260,6 +260,15 @@ struct Vec {
         return values[1];
     }
 
+    float norm() {
+        float norm_squared = 0;
+
+        for (int i = 0; i < dim; i++) {
+            norm_squared += values[i] * values[i];
+        }
+        return sqrt(norm_squared);
+    }
+
     NormalizedWindowPos to_normalized_window_pos() {
         return NormalizedWindowPos{ values[0], values[1] };
     }
@@ -301,6 +310,7 @@ ivec2 operator-(const WindowPos& lhs, const WindowPos& rhs);
 
 PagelessDocumentRect rect_from_quad(fz_quad quad);
 AbsoluteDocumentPos operator+(const AbsoluteDocumentPos& lhs, const fvec2& rhs);
+AbsoluteDocumentPos operator-(const AbsoluteDocumentPos& lhs, const fvec2& rhs);
 DocumentPos operator+(const DocumentPos& lhs, const fvec2& rhs);
 NormalizedWindowPos operator+(const NormalizedWindowPos& lhs, const fvec2& rhs);
 WindowPos operator+(const WindowPos& lhs, const ivec2& rhs);
