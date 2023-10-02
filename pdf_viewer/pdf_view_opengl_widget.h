@@ -49,6 +49,7 @@ enum HighlightRenderFlags
     HRF_STRIKE = 1 << 3
 };
 
+
 struct CompiledDrawingData {
     GLuint vao = 0;
     GLuint vertex_buffer = 0;

@@ -19,6 +19,10 @@
 #define GL_MULTISAMPLE  0x809D
 #endif
 
+#ifndef GL_PRIMITIVE_RESTART_FIXED_INDEX
+#define GL_PRIMITIVE_RESTART_FIXED_INDEX  0x8D69
+#endif
+
 extern bool DEBUG_DISPLAY_FREEHAND_POINTS;
 extern bool DEBUG_SMOOTH_FREEHAND_DRAWINGS;
 extern Path shader_path;
@@ -242,6 +246,7 @@ std::string read_file_contents(const Path& path) {
 }
 
 GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_file_path) {
+    qDebug() << "Loading shaders" << vertex_file_path.get_path() << fragment_file_path.get_path();
 
     //const wchar_t* vertex_file_path = vertex_file_path_.c_str();
     //const wchar_t* fragment_file_path = fragment_file_path_.c_str();
@@ -660,11 +665,8 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
         pending_drawing.push_back(current_drawing);
     }
 
-    glEnable(GL_MULTISAMPLE);
-    glEnableVertexAttribArray(0);
-    glUseProgram(shared_gl_objects.line_program);
 
-     std::vector<FreehandDrawing> debug_darwings;
+     //std::vector<FreehandDrawing> debug_darwings;
      //std::vector<FreehandDrawingPoint> debug_points;
 
      //debug_points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{-100, 0}, 1 });
@@ -682,20 +684,21 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
      //render_drawings(scratchpad, debug_darwings);
 
 
-     if (!cached_compiled_drawing_data.has_value()) {
 
-         /* if (!use_cached_framebuffer) { */
-             render_drawings(scratchpad, scratchpad->drawings);
-
-             render_drawings(scratchpad, moving_drawings, true);
-             render_drawings(scratchpad, moving_drawings, false);
-         /* } */
-
-        render_drawings(scratchpad, pending_drawing);
+     if (scratchpad->get_non_compiled_drawings().size() > 100 || scratchpad->is_compile_invalid()) {
+         compile_drawings(scratchpad, scratchpad->get_all_drawings());
      }
-     else {
-         render_compiled_drawings();
-     }
+
+     glEnable(GL_MULTISAMPLE);
+
+     render_compiled_drawings();
+     glEnableVertexAttribArray(0);
+     glUseProgram(shared_gl_objects.line_program);
+     render_drawings(scratchpad, scratchpad->get_non_compiled_drawings());
+     render_drawings(scratchpad, moving_drawings, true);
+     render_drawings(scratchpad, moving_drawings, false);
+     render_drawings(scratchpad, pending_drawing);
+
     glDisable(GL_MULTISAMPLE);
 
     glUseProgram(shared_gl_objects.highlight_program);
@@ -2698,6 +2701,10 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
         glDeleteVertexArrays(1, &cached_compiled_drawing_data->vao);
         cached_compiled_drawing_data = {};
     }
+    if (drawings.size() == 0) {
+        scratchpad->on_compile();
+        return;
+    }
 
 
     //float thickness_x = dv->get_zoom_level() / width();
@@ -2812,6 +2819,7 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
         //glDrawArrays(GL_TRIANGLE_STRIP, 0, coordinates.size() / 2);
     }
     cached_compiled_drawing_data = compile_drawings_into_vertex_and_index_buffers(coordinates, indices, dot_coordinates, dot_indices);
+    scratchpad->on_compile();
 }
 
 //void PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_buffers(std::vector<float>& line_coordinates) {
@@ -2822,6 +2830,7 @@ CompiledDrawingData PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_
 
     //std::vector<unsigned int> indices;
     //int num_rectangles = line_coordinates.size() / 
+
     std::vector<float> dot_uv_coordinates;
     dot_uv_coordinates.reserve(dot_coordinates.size());
     float uv_map[4 * 2] = { 0.0f, 0.0f,

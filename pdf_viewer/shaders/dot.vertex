@@ -1,9 +1,14 @@
 layout (location=0) in vec2 vertex_pos;
+layout (location=1) in vec2 vertex_uv;
 
 uniform vec2 offset;
 uniform vec2 scale;
 
+out vec2 uv;
+
 void main(){
+    uv = vertex_uv;
+    
     vec2 pos = vertex_pos * scale;
     pos.y = -pos.y;
     pos = pos + offset;

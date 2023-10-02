@@ -1511,10 +1511,12 @@ float ScratchPad::zoom_out(float zoom_factor) {
 }
 
 std::vector<int> ScratchPad::get_intersecting_drawing_indices(AbsoluteRect selection) {
+    invalidate_compile();
+
     std::vector<int> res;
 
-    for (int i = 0; i < drawings.size(); i++) {
-        for (auto p : drawings[i].points) {
+    for (int i = 0; i < all_drawings.size(); i++) {
+        for (auto p : all_drawings[i].points) {
             if (selection.contains(p.pos)) {
                 res.push_back(i);
                 break;
@@ -1525,9 +1527,11 @@ std::vector<int> ScratchPad::get_intersecting_drawing_indices(AbsoluteRect selec
 }
 
 void ScratchPad::delete_intersecting_drawings(AbsoluteRect selection) {
+    invalidate_compile();
+
     std::vector<int> indices = get_intersecting_drawing_indices(selection);
     for (int i = 0; i < indices.size(); i++) {
-        drawings.erase(drawings.begin() + indices[indices.size() - 1 - i]);
+        all_drawings.erase(all_drawings.begin() + indices[indices.size() - 1 - i]);
     }
 }
 
@@ -1557,7 +1561,7 @@ void ScratchPad::get_selected_objects_with_indices(const std::vector<SelectedObj
 
     for (auto [index, type] : indices) {
         if (type == SelectedObjectType::Drawing) {
-            freehand_drawings.push_back(drawings[index]);
+            freehand_drawings.push_back(all_drawings[index]);
         }
         else if (type == SelectedObjectType::Pixmap) {
             pixmap_drawings.push_back(pixmaps[index]);
@@ -1595,8 +1599,8 @@ AbsoluteRect ScratchPad::get_bounding_box() {
     AbsoluteRect res;
     res.x0 = res.x1 = res.y0 = res.y1 = 0;
 
-    if (drawings.size() > 0) {
-        res = drawings[0].bbox();
+    if (all_drawings.size() > 0) {
+        res = all_drawings[0].bbox();
     }
     else if (pixmaps.size() > 0) {
         res = pixmaps[0].rect;
@@ -1605,7 +1609,7 @@ AbsoluteRect ScratchPad::get_bounding_box() {
         return res;
     }
 
-    for (auto drawing : drawings) {
+    for (auto drawing : all_drawings) {
         res = res.union_rect(drawing.bbox());
     }
     for (auto [_, pixmap_rect] : pixmaps) {
@@ -1631,9 +1635,37 @@ std::vector<SelectedObjectIndex> ScratchPad::get_intersecting_objects(AbsoluteRe
     return selected_objects;
 }
 
-//const std::vector<FreehandDrawing>& get_all_drawings() {
-//
-//}
-//const std::vector<FreehandDrawing>& get_non_compiled_drawings() {
-//
-//}
+const std::vector<FreehandDrawing>& ScratchPad::get_all_drawings() {
+    return all_drawings;
+}
+
+const std::vector<FreehandDrawing>& ScratchPad::get_non_compiled_drawings() {
+    return non_compiled_drawings;
+}
+
+void ScratchPad::on_compile() {
+    is_compile_valid = true;
+    non_compiled_drawings.clear();
+}
+
+void ScratchPad::invalidate_compile() {
+
+    if (non_compiled_drawings.size() > 0) {
+        is_compile_valid = false;
+    }
+}
+
+void ScratchPad::add_drawing(FreehandDrawing drawing) {
+    all_drawings.push_back(drawing);
+    non_compiled_drawings.push_back(drawing);
+}
+
+void ScratchPad::clear() {
+    all_drawings.clear();
+    non_compiled_drawings.clear();
+    is_compile_valid = false;
+}
+
+bool ScratchPad::is_compile_invalid() {
+    return !is_compile_valid;
+}

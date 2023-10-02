@@ -17,6 +17,9 @@
         <file>pdf_viewer/shaders/vertical_bar_dark.fragment</file>
         <file>pdf_viewer/shaders/line.vertex</file>
         <file>pdf_viewer/shaders/line.fragment</file>
+        <file>pdf_viewer/shaders/compiled_drawing.vertex</file>
+        <file>pdf_viewer/shaders/dot.vertex</file>
+        <file>pdf_viewer/shaders/dot.fragment</file>
         <file>begin.png</file>
         <file>pdf_viewer/touchui/TouchSlider.qml</file>
         <file>pdf_viewer/touchui/TouchCheckbox.qml</file>

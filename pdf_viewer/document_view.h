@@ -200,8 +200,8 @@ class ScratchPad : public DocumentView {
 private:
     std::vector<FreehandDrawing> all_drawings;
     std::vector<FreehandDrawing> non_compiled_drawings;
+    bool is_compile_valid = false;
 public:
-    std::vector<FreehandDrawing> drawings;
 
     std::vector<PixmapDrawing> pixmaps;
 
@@ -221,7 +221,12 @@ public:
     void add_pixmap(QPixmap pixmap);
     AbsoluteRect get_bounding_box();
 
-    //const std::vector<FreehandDrawing>& get_all_drawings();
-    //const std::vector<FreehandDrawing>& get_non_compiled_drawings();
+    const std::vector<FreehandDrawing>& get_all_drawings();
+    const std::vector<FreehandDrawing>& get_non_compiled_drawings();
+    void on_compile();
+    void invalidate_compile();
+    void add_drawing(FreehandDrawing drawing);
+    void clear();
+    bool is_compile_invalid();
 
 };

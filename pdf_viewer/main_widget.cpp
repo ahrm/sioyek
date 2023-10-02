@@ -6411,7 +6411,7 @@ void MainWidget::handle_debug_command() {
     //}
     //invalidate_render();
     //scratchpad->invalidate_compile();
-    opengl_widget->compile_drawings(scratchpad, scratchpad->drawings);
+    opengl_widget->compile_drawings(scratchpad, scratchpad->get_all_drawings());
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -7114,7 +7114,7 @@ void MainWidget::finish_drawing(QPoint pos) {
     pruned_drawing.creattion_time = QDateTime::currentDateTime();
 
     if (opengl_widget->get_scratchpad()) {
-        scratchpad->drawings.push_back(pruned_drawing);
+        scratchpad->add_drawing(pruned_drawing);
         /* opengl_widget->update_framebuffer_cache(); */
     }
     else {
@@ -7694,7 +7694,7 @@ void MainWidget::handle_freehand_drawing_move_finish() {
     if (opengl_widget->get_scratchpad()) {
 
         for (auto drawing : moved_drawings) {
-            scratchpad->drawings.push_back(drawing);
+            scratchpad->add_drawing(drawing);
         }
         for (auto pixmap_drawing : moved_pixmaps) {
             scratchpad->pixmaps.push_back(pixmap_drawing);
@@ -9306,7 +9306,7 @@ void MainWidget::save_scratchpad() {
 
     QJsonArray page_drawings_array;
 
-    for (auto& drawing : scratchpad->drawings) {
+    for (auto& drawing : scratchpad->get_all_drawings()) {
         QJsonObject drawing_object;
         drawing_object["creation_time"] = drawing.creattion_time.toString(Qt::ISODate);
         drawing_object["type"] = drawing.type;
@@ -9352,7 +9352,7 @@ void MainWidget::load_scratchpad() {
 
         QJsonObject root = json_document.object();
         QJsonArray drawings_object = root["drawings"].toArray();
-        scratchpad->drawings.clear();
+        scratchpad->clear();
 
         //for (auto& drawing_json_object : drawings_object)) {
         for (int i = 0; i < drawings_object.size(); i++){
@@ -9373,7 +9373,7 @@ void MainWidget::load_scratchpad() {
                 point.thickness = t_array.at(i).toDouble();
                 drawing.points.push_back(point);
             }
-            scratchpad->drawings.push_back(drawing);
+            scratchpad->add_drawing(drawing);
         }
 
     }
@@ -9381,6 +9381,6 @@ void MainWidget::load_scratchpad() {
 }
 
 void MainWidget::clear_scratchpad() {
-    scratchpad->drawings.clear();
+    scratchpad->clear();
     invalidate_render();
 }
