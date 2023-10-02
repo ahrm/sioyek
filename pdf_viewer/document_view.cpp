@@ -1630,3 +1630,10 @@ std::vector<SelectedObjectIndex> ScratchPad::get_intersecting_objects(AbsoluteRe
 
     return selected_objects;
 }
+
+//const std::vector<FreehandDrawing>& get_all_drawings() {
+//
+//}
+//const std::vector<FreehandDrawing>& get_non_compiled_drawings() {
+//
+//}

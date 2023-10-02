@@ -13,10 +13,12 @@
 #include <memory>
 #include <array>
 
+//#include <qopenglfunctions_3_1.h>
 #include <qopenglwidget.h>
 #include <qopenglextrafunctions.h>
 #include <qopenglfunctions.h>
 #include <qopengl.h>
+
 
 #ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
@@ -47,40 +49,67 @@ enum HighlightRenderFlags
     HRF_STRIKE = 1 << 3
 };
 
+struct CompiledDrawingData {
+    GLuint vao = 0;
+    GLuint vertex_buffer = 0;
+    GLuint index_buffer = 0;
+    GLuint dots_vertex_buffer = 0;
+    GLuint dots_uv_buffer = 0;
+    GLuint dots_index_buffer = 0;
+    int n_elements = 0;
+    int n_dot_elements = 0;
+};
 
 struct OpenGLSharedResources {
-    GLuint vertex_buffer_object;
-    GLuint uv_buffer_object;
-    GLuint line_points_buffer_object;
-    GLuint rendered_program;
-    GLuint rendered_dark_program;
-    GLuint custom_color_program;
-    GLuint unrendered_program;
-    GLuint highlight_program;
-    GLuint vertical_line_program;
-    GLuint vertical_line_dark_program;
-    GLuint separator_program;
-    GLuint stencil_program;
-    GLuint line_program;
+    GLuint vertex_buffer_object = 0;
+    GLuint uv_buffer_object = 0;
+    GLuint line_points_buffer_object = 0;
+    GLuint rendered_program = 0;
+    GLuint rendered_dark_program = 0;
+    GLuint custom_color_program = 0;
+    GLuint unrendered_program = 0;
+    GLuint highlight_program = 0;
+    GLuint vertical_line_program = 0;
+    GLuint vertical_line_dark_program = 0;
+    GLuint separator_program = 0;
+    GLuint stencil_program = 0;
+    GLuint line_program = 0;
+    GLuint compiled_drawing_program = 0;
+    GLuint compiled_dots_program = 0;
 
-    GLint dark_mode_contrast_uniform_location;
-    GLint highlight_color_uniform_location;
-    GLint highlight_opacity_uniform_location;
-    GLint line_color_uniform_location;
-    GLint line_time_uniform_location;
+    GLint dark_mode_contrast_uniform_location = 0;
+    GLint highlight_color_uniform_location = 0;
+    GLint highlight_opacity_uniform_location = 0;
+    GLint line_color_uniform_location = 0;
+    GLint line_time_uniform_location = 0;
 
-    GLint gamma_uniform_location;
+    GLint compiled_drawing_offset_uniform_location = 0;
+    GLint compiled_drawing_scale_uniform_location = 0;
+    GLint compiled_drawing_color_uniform_location = 0;
+    GLint compiled_dot_color_uniform_location = 0;
+    GLint compiled_dot_offset_uniform_location = 0;
+    GLint compiled_dot_scale_uniform_location = 0;
 
-    GLint custom_color_transform_uniform_location;
+    GLint gamma_uniform_location = 0;
 
-    GLint separator_background_color_uniform_location;
-    GLint freehand_line_color_uniform_location;
+    GLint custom_color_transform_uniform_location = 0;
 
-    bool is_initialized;
+    GLint separator_background_color_uniform_location = 0;
+    GLint freehand_line_color_uniform_location = 0;
+
+    GLuint compiled_points_vertex_buffer_object = 0;
+    GLuint compiled_points_index_buffer_object = 0;
+
+    //GLuint test_vao;
+    //GLuint test_vbo;
+    //GLuint test_ibo;
+
+    bool is_initialized = false;
 };
 
 
 class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLExtraFunctions {
+//class PdfViewOpenGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_1 {
 public:
 
     enum ColorPalette {
@@ -165,6 +194,7 @@ protected:
     void render_scratchpad(QPainter* painter);
     void add_coordinates_for_window_point(DocumentView* dv, float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates);
     void render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted = false);
+    void render_compiled_drawings();
     void render_line(DocumentView* dv, FreehandDrawing drawing);
     std::vector<std::pair<QRect, QString>> get_hint_rect_and_texts();
 
@@ -180,10 +210,16 @@ protected:
 public:
     std::optional<QImage> cached_framebuffer;
     int last_cache_num_drawings = -1;
+    float last_cache_offset_x = -1;
+    float last_cache_offset_y = -1;
+    float last_cache_zoom_level = -1;
+    QDateTime last_scratchpad_update_datetime;
+
     bool visible_drawing_mask[26];
     FreehandDrawing current_drawing;
     std::vector<FreehandDrawing> moving_drawings;
     std::vector<PixmapDrawing> moving_pixmaps;
+    std::optional<CompiledDrawingData> cached_compiled_drawing_data = {};
 
 #ifndef NDEBUG
     // properties for visualizing selected blocks, used only for debug
@@ -319,4 +355,10 @@ public:
     void set_scratchpad(ScratchPad* pad);
     ScratchPad* get_scratchpad();
     bool can_use_cached_scratchpad_framebuffer();
+    //void update_framebuffer_cache();
+    void compile_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings);
+    CompiledDrawingData compile_drawings_into_vertex_and_index_buffers(const std::vector<float>& line_coordinates,
+        const std::vector<unsigned int>& indices,
+        const std::vector<float>& dot_coordinates,
+        const std::vector<unsigned int>& dot_indices);
 };

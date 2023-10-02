@@ -158,16 +158,16 @@ GLfloat rotation_uvs[4][8] = {
 
 OpenGLSharedResources PdfViewOpenGLWidget::shared_gl_objects;
 
-std::vector<Vec<float, 2>> generate_bezier_with_endpoints_and_velocity(
+void generate_bezier_with_endpoints_and_velocity(
     Vec<float, 2> p0, 
     Vec<float, 2> p1, 
     Vec<float, 2> v0, 
     Vec<float, 2> v1, 
-    int n_points
+    int n_points,
+    float thickness,
+    std::vector<FreehandDrawingPoint>& output
     ) {
     float alpha = 1.0f / n_points;
-    std::vector<Vec<float, 2>> points;
-
     auto q0 = p0;
     auto q1 = v0;
     auto q2 = (p1 - p0) * 3 - v0 * 2 - v1;
@@ -177,10 +177,9 @@ std::vector<Vec<float, 2>> generate_bezier_with_endpoints_and_velocity(
         float t = alpha * i;
         float tt = t * t;
         float ttt = tt * t;
-        points.push_back(q0 + q1 *t + q2 * tt + q3 * ttt);
+        Vec<float, 2> point = q0 + q1 *t + q2 * tt + q3 * ttt;
+        output.push_back(FreehandDrawingPoint{AbsoluteDocumentPos{point.x(), point.y()}, thickness});
     }
-
-    return points;
 
 }
 
@@ -252,7 +251,7 @@ GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_fil
 
 
 #ifdef SIOYEK_ANDROID
-    std::string header = "#version 300 es\n";
+    std::string header = "#version 310 es\n";
 #else
     std::string header = "#version 330 core\n";
 #endif
@@ -352,6 +351,8 @@ void PdfViewOpenGLWidget::initializeGL() {
         shared_gl_objects.separator_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"), Path(L":/pdf_viewer/shaders/separator.fragment"));
         shared_gl_objects.stencil_program = LoadShaders(Path(L":/pdf_viewer/shaders/stencil.vertex"), Path(L":/pdf_viewer/shaders/stencil.fragment"));
         shared_gl_objects.line_program = LoadShaders(Path(L":/pdf_viewer/shaders/line.vertex"), Path(L":/pdf_viewer/shaders/line.fragment"));
+        shared_gl_objects.compiled_drawing_program = LoadShaders(Path(L":/pdf_viewer/shaders/compiled_drawing.vertex"), Path(L":/pdf_viewer/shaders/line.fragment"));
+        shared_gl_objects.compiled_dots_program = LoadShaders(Path(L":/pdf_viewer/shaders/dot.vertex"), Path(L":/pdf_viewer/shaders/dot.fragment"));
 #else
         shared_gl_objects.rendered_program = LoadShaders(shader_path.slash(L"simple.vertex"), shader_path.slash(L"simple.fragment"));
         shared_gl_objects.rendered_dark_program = LoadShaders(shader_path.slash(L"simple.vertex"), shader_path.slash(L"dark_mode.fragment"));
@@ -363,6 +364,8 @@ void PdfViewOpenGLWidget::initializeGL() {
         shared_gl_objects.separator_program = LoadShaders(shader_path.slash(L"simple.vertex"), shader_path.slash(L"separator.fragment"));
         shared_gl_objects.stencil_program = LoadShaders(shader_path.slash(L"stencil.vertex"), shader_path.slash(L"stencil.fragment"));
         shared_gl_objects.line_program = LoadShaders(shader_path.slash(L"line.vertex"), shader_path.slash(L"line.fragment"));
+        shared_gl_objects.compiled_drawing_program = LoadShaders(shader_path.slash(L"compiled_drawing.vertex"), shader_path.slash(L"line.fragment"));
+        shared_gl_objects.compiled_dots_program = LoadShaders(shader_path.slash(L"dot.vertex"), shader_path.slash(L"dot.fragment"));
 #endif
 
         shared_gl_objects.dark_mode_contrast_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_dark_program, "contrast");
@@ -378,6 +381,43 @@ void PdfViewOpenGLWidget::initializeGL() {
 
         shared_gl_objects.separator_background_color_uniform_location = glGetUniformLocation(shared_gl_objects.separator_program, "background_color");
         shared_gl_objects.freehand_line_color_uniform_location = glGetUniformLocation(shared_gl_objects.line_program, "line_color");
+
+        shared_gl_objects.compiled_drawing_offset_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_drawing_program, "offset");
+        shared_gl_objects.compiled_drawing_scale_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_drawing_program, "scale");
+        shared_gl_objects.compiled_drawing_color_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_drawing_program, "line_color");
+
+        shared_gl_objects.compiled_dot_color_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_dots_program, "dot_color");
+        shared_gl_objects.compiled_dot_offset_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_dots_program, "offset");
+        shared_gl_objects.compiled_dot_scale_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_dots_program, "scale");
+
+        //{ // test
+        //    float vertex_data[] = {
+        //        -0.5f, -0.1f,
+        //        -0.5f, 0.1f,
+        //        0.5f, -0.1f,
+        //        0.5f, 0.1f, // end of strip 1
+        //        -0.5f, -0.4f,
+        //        -0.5f, -0.2f,
+        //        0.5f, -0.4f,
+        //        0.5f, -0.2f
+        //    };
+
+        //    unsigned int index_data[] = {0, 1, 2, 3, 0xFFFFFFFF, 4, 5, 6, 7};
+
+        //    glGenVertexArrays(1, &shared_gl_objects.test_vao);
+        //    glGenBuffers(1, &shared_gl_objects.test_vbo);
+        //    glGenBuffers(1, &shared_gl_objects.test_ibo);
+
+        //    glBindVertexArray(shared_gl_objects.test_vao);
+        //    glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.test_vbo);
+        //    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
+        //    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        //    glEnableVertexAttribArray(0);
+
+        //    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shared_gl_objects.test_ibo);
+        //    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(index_data), index_data, GL_STATIC_DRAW);
+        //    glBindVertexArray(0);
+        //}
 
         glGenBuffers(1, &shared_gl_objects.vertex_buffer_object);
         glGenBuffers(1, &shared_gl_objects.uv_buffer_object);
@@ -583,7 +623,7 @@ void PdfViewOpenGLWidget::render_highlight_document(GLuint program, DocumentRect
 
 void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
 
-    bool use_cached_framebuffer = can_use_cached_scratchpad_framebuffer();
+    /* bool use_cached_framebuffer = can_use_cached_scratchpad_framebuffer(); */
 
     painter->beginNativePainting();
     glClearColor(1, 1, 1, 1);
@@ -603,9 +643,9 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
         painter->drawPixmap(window_qrect, pixmap);
     }
 
-    if (use_cached_framebuffer) {
-        painter->drawImage(rect(), cached_framebuffer.value());
-    }
+    /* if (use_cached_framebuffer) { */
+    /*     painter->drawImage(rect(), cached_framebuffer.value()); */
+    /* } */
 
     painter->beginNativePainting();
 
@@ -642,14 +682,20 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
      //render_drawings(scratchpad, debug_darwings);
 
 
-     if (!use_cached_framebuffer) {
-         render_drawings(scratchpad, scratchpad->drawings);
+     if (!cached_compiled_drawing_data.has_value()) {
 
-         render_drawings(scratchpad, moving_drawings, true);
-         render_drawings(scratchpad, moving_drawings, false);
+         /* if (!use_cached_framebuffer) { */
+             render_drawings(scratchpad, scratchpad->drawings);
+
+             render_drawings(scratchpad, moving_drawings, true);
+             render_drawings(scratchpad, moving_drawings, false);
+         /* } */
+
+        render_drawings(scratchpad, pending_drawing);
      }
-
-    render_drawings(scratchpad, pending_drawing);
+     else {
+         render_compiled_drawings();
+     }
     glDisable(GL_MULTISAMPLE);
 
     glUseProgram(shared_gl_objects.highlight_program);
@@ -657,16 +703,28 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
 
     painter->endNativePainting();
 
-    if (!use_cached_framebuffer && (current_drawing.points.size() > 0)) {
-        last_cache_num_drawings = scratchpad->drawings.size();
-        cached_framebuffer = grabFramebuffer();
-    }
+    /* if (!use_cached_framebuffer && (current_drawing.points.size() > 0)) { */
+    /*     last_cache_num_drawings = scratchpad->drawings.size(); */
+
+    /*     last_cache_offset_x = scratchpad->get_offset_x(); */
+    /*     last_cache_offset_y = scratchpad->get_offset_y(); */
+    /*     last_cache_zoom_level = scratchpad->get_zoom_level(); */
+
+    /*     cached_framebuffer = grabFramebuffer(); */
+    /* } */
+    /* if (use_cached_framebuffer){ */
+    /*     cached_framebuffer = grabFramebuffer(); */
+    /* } */
 }
+
+//void PdfViewOpenGLWidget::update_framebuffer_cache(){
+//    last_cache_num_drawings = scratchpad->drawings.size();
+//    cached_framebuffer = grabFramebuffer();
+//}
 
 void PdfViewOpenGLWidget::paintGL() {
 
     QPainter painter(this);
-    QTextOption option;
 
     QColor red_color = QColor::fromRgb(255, 0, 0);
     painter.setPen(red_color);
@@ -692,7 +750,7 @@ PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRendere
 
     QSurfaceFormat format;
 #ifdef SIOYEK_ANDROID
-    format.setVersion(3, 0);
+    format.setVersion(3, 1);
 #else
     format.setVersion(3, 3);
 #endif
@@ -1119,6 +1177,35 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview) {
 }
 
 void PdfViewOpenGLWidget::my_render(QPainter* painter) {
+
+    //if (true) {
+    //    painter->beginNativePainting();
+    //    float offset[] = {0.0f, 0.0f};
+    //    float scale[] = { 1.0f, 1.0f };
+    //    float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+
+    //    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    //    glClear(GL_COLOR_BUFFER_BIT);
+
+    //    glDisable(GL_CULL_FACE);
+    //    glDisable(GL_BLEND);
+    //    glBindVertexArray(shared_gl_objects.test_vao);
+
+    //    glUseProgram(shared_gl_objects.compiled_drawing_program);
+
+    //    glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.test_vbo);
+    //    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shared_gl_objects.test_ibo);
+    //    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    //    glUniform2fv(shared_gl_objects.compiled_drawing_offset_uniform_location, 1, offset);
+    //    glUniform2fv(shared_gl_objects.compiled_drawing_scale_uniform_location, 1, scale);
+    //    glUniform4fv(shared_gl_objects.compiled_drawing_color_uniform_location, 1, color);
+    //    glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+    //    glEnableVertexAttribArray(0);
+    //    glDrawElements(GL_TRIANGLE_STRIP, 9, GL_UNSIGNED_INT, 0);
+    //    bind_default();
+    //    return;
+    //}
 
     painter->beginNativePainting();
     glDisable(GL_CULL_FACE);
@@ -2564,6 +2651,8 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
     res.type = original.type;
 
     std::vector<Vec<float, 2>> velocities_at_points;
+    velocities_at_points.reserve(original.points.size());
+
     velocities_at_points.push_back(original.points[1].pos - original.points[0].pos);
 
     for (int i = 1; i < original.points.size()-1; i++) {
@@ -2572,28 +2661,283 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
     }
     velocities_at_points.push_back(original.points[original.points.size()-1].pos - original.points[original.points.size()-2].pos);
 
+    int N_POINTS = 10;
     FreehandDrawing smoothed_drawing;
     smoothed_drawing.creattion_time = original.creattion_time;
     smoothed_drawing.type = original.type;
+    smoothed_drawing.points.reserve((original.points.size()-1) * N_POINTS);
 
     for (int i = 0; i < original.points.size()-1; i++){
-        int N_POINTS = 3;
-        std::vector<Vec<float, 2>> bezier_curve = generate_bezier_with_endpoints_and_velocity(
+        generate_bezier_with_endpoints_and_velocity(
             original.points[i].pos,
             original.points[i + 1].pos,
             velocities_at_points[i],
             velocities_at_points[i + 1],
-            N_POINTS
+            N_POINTS,
+            original.points[i].thickness,
+            smoothed_drawing.points
         );
-        for (auto p : bezier_curve) {
-            smoothed_drawing.points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{ p.x(), p.y() }, original.points[i].thickness});
-        }
+        /* for (auto p : bezier_curve) { */
+        /*     smoothed_drawing.points.push_back(FreehandDrawingPoint{ AbsoluteDocumentPos{ p.x(), p.y() }, original.points[i].thickness}); */
+        /* } */
     }
     return smoothed_drawing;
 
 }
 
+void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings) {
+    if (cached_compiled_drawing_data) {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+
+        glDeleteBuffers(1, &cached_compiled_drawing_data->index_buffer);
+        glDeleteBuffers(1, &cached_compiled_drawing_data->vertex_buffer);
+        glDeleteBuffers(1, &cached_compiled_drawing_data->dots_index_buffer);
+        glDeleteBuffers(1, &cached_compiled_drawing_data->dots_vertex_buffer);
+        glDeleteBuffers(1, &cached_compiled_drawing_data->dots_uv_buffer);
+        glDeleteVertexArrays(1, &cached_compiled_drawing_data->vao);
+        cached_compiled_drawing_data = {};
+    }
+
+
+    //float thickness_x = dv->get_zoom_level() / width();
+    //float thickness_y = dv->get_zoom_level() / height();
+
+    float thickness_x = 0.5f;
+    float thickness_y = 0.5f;
+
+    std::vector<float> coordinates;
+    std::vector<unsigned int> indices;
+
+    std::vector<float> dot_coordinates;
+    std::vector<unsigned int> dot_indices;
+    GLuint primitive_restart_index = 0xFFFFFFFF;
+
+    int index = 0;
+    int dot_index = 0;
+
+    auto add_point_coords = [&](FreehandDrawingPoint p) {
+        dot_coordinates.push_back(p.pos.x - p.thickness / 2);
+        dot_coordinates.push_back(p.pos.y - p.thickness / 2);
+        dot_indices.push_back(dot_index++);
+
+        dot_coordinates.push_back(p.pos.x - p.thickness / 2);
+        dot_coordinates.push_back(p.pos.y + p.thickness / 2);
+        dot_indices.push_back(dot_index++);
+
+        dot_coordinates.push_back(p.pos.x + p.thickness / 2);
+        dot_coordinates.push_back(p.pos.y - p.thickness / 2);
+        dot_indices.push_back(dot_index++);
+
+        dot_coordinates.push_back(p.pos.x + p.thickness / 2);
+        dot_coordinates.push_back(p.pos.y + p.thickness / 2);
+        dot_indices.push_back(dot_index++);
+
+        dot_indices.push_back(0xFFFFFFFF);
+    };
+
+    for (auto drawing : drawings) {
+        if (DEBUG_SMOOTH_FREEHAND_DRAWINGS) {
+            drawing = smoothen_drawing(drawing);
+        }
+
+        if (drawing.points.size() <= 0) {
+            continue;
+        }
+        if (!visible_drawing_mask[drawing.type - 'a']) {
+            continue;
+        }
+        if (drawing.points.size() == 1) {
+            add_point_coords(drawing.points[0]);
+
+            continue;
+
+        }
+
+        float first_line_x = (drawing.points[1].pos.x - drawing.points[0].pos.x) * width();
+        float first_line_y = (drawing.points[1].pos.y - drawing.points[0].pos.y) * height();
+        float first_line_size = sqrt(first_line_x * first_line_x + first_line_y * first_line_y);
+        first_line_x = first_line_x / first_line_size;
+        first_line_y = first_line_y / first_line_size;
+
+        float first_ortho_x = -first_line_y * thickness_x * drawing.points[0].thickness;
+        float first_ortho_y = first_line_x * thickness_y * drawing.points[0].thickness;
+
+
+        coordinates.push_back(drawing.points[0].pos.x - first_ortho_x);
+        coordinates.push_back(drawing.points[0].pos.y - first_ortho_y);
+        indices.push_back(index++);
+        coordinates.push_back(drawing.points[0].pos.x + first_ortho_x);
+        coordinates.push_back(drawing.points[0].pos.y + first_ortho_y);
+        indices.push_back(index++);
+
+        float prev_line_x = first_line_x;
+        float prev_line_y = first_line_y;
+
+        add_point_coords(drawing.points[0]);
+        add_point_coords(drawing.points.back());
+        for (int line_index = 0; line_index < drawing.points.size() - 1; line_index++) {
+            float line_direction_x = (drawing.points[line_index + 1].pos.x - drawing.points[line_index].pos.x);
+            float line_direction_y = (drawing.points[line_index + 1].pos.y - drawing.points[line_index].pos.y);
+            float line_size = sqrt(line_direction_x * line_direction_x + line_direction_y * line_direction_y);
+            line_direction_x = line_direction_x / line_size;
+            line_direction_y = line_direction_y / line_size;
+
+            float ortho_x1 = -line_direction_y * thickness_x * drawing.points[line_index].thickness;
+            float ortho_y1 = line_direction_x * thickness_y * drawing.points[line_index].thickness;
+
+            float ortho_x2 = -line_direction_y * thickness_x * drawing.points[line_index + 1].thickness;
+            float ortho_y2 = line_direction_x * thickness_y * drawing.points[line_index + 1].thickness;
+
+            coordinates.push_back(drawing.points[line_index].pos.x - ortho_x1);
+            coordinates.push_back(drawing.points[line_index].pos.y - ortho_y1);
+            indices.push_back(index++);
+            coordinates.push_back(drawing.points[line_index].pos.x + ortho_x1);
+            coordinates.push_back(drawing.points[line_index].pos.y + ortho_y1);
+            indices.push_back(index++);
+
+            coordinates.push_back(drawing.points[line_index + 1].pos.x - ortho_x1);
+            coordinates.push_back(drawing.points[line_index + 1].pos.y - ortho_y1);
+            indices.push_back(index++);
+            coordinates.push_back(drawing.points[line_index + 1].pos.x + ortho_x2);
+            coordinates.push_back(drawing.points[line_index + 1].pos.y + ortho_y2);
+            indices.push_back(index++);
+
+        }
+        indices.push_back(primitive_restart_index);
+
+        //std::vector<int> indices;
+
+        //bind_points(coordinates);
+        //glDrawArrays(GL_TRIANGLE_STRIP, 0, coordinates.size() / 2);
+    }
+    cached_compiled_drawing_data = compile_drawings_into_vertex_and_index_buffers(coordinates, indices, dot_coordinates, dot_indices);
+}
+
+//void PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_buffers(std::vector<float>& line_coordinates) {
+CompiledDrawingData PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_buffers(const std::vector<float>& line_coordinates,
+        const std::vector<unsigned int>& indices,
+        const std::vector<float>& dot_coordinates,
+        const std::vector<unsigned int>& dot_indices){
+
+    //std::vector<unsigned int> indices;
+    //int num_rectangles = line_coordinates.size() / 
+    std::vector<float> dot_uv_coordinates;
+    dot_uv_coordinates.reserve(dot_coordinates.size());
+    float uv_map[4 * 2] = { 0.0f, 0.0f,
+                            1.0f, 0.0f,
+                            0.0f, 1.0f,
+                            1.0f, 1.0f
+    };
+
+    for (int i = 0; i < dot_coordinates.size(); i++) {
+        dot_uv_coordinates.push_back(uv_map[i % 8]);
+    }
+
+    GLuint compiled_drawing_vao;
+    glGenVertexArrays(1, &compiled_drawing_vao);
+    GLuint compiled_vertex_array, compiled_index_array, dots_vertex_buffer, dots_index_buffer, dots_uv_buffer;
+    glGenBuffers(1, &compiled_vertex_array);
+    glGenBuffers(1, &compiled_index_array);
+    glGenBuffers(1, &dots_vertex_buffer);
+    glGenBuffers(1, &dots_index_buffer);
+    glGenBuffers(1, &dots_uv_buffer);
+
+    glBindVertexArray(compiled_drawing_vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, compiled_vertex_array);
+    glBufferData(GL_ARRAY_BUFFER, line_coordinates.size() * sizeof(float), line_coordinates.data(), GL_STATIC_DRAW);
+
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, dots_vertex_buffer);
+    glBufferData(GL_ARRAY_BUFFER, dot_coordinates.size() * sizeof(float), dot_coordinates.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, dots_uv_buffer);
+    glBufferData(GL_ARRAY_BUFFER, dot_uv_coordinates.size() * sizeof(float), dot_uv_coordinates.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, compiled_index_array);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dots_index_buffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, dot_indices.size() * sizeof(unsigned int), dot_indices.data(), GL_STATIC_DRAW);
+
+    CompiledDrawingData res;
+    res.vao = compiled_drawing_vao;
+    res.vertex_buffer = compiled_vertex_array;
+    res.index_buffer = compiled_index_array;
+    res.dots_vertex_buffer = dots_vertex_buffer;
+    res.dots_index_buffer = dots_index_buffer;
+    res.dots_uv_buffer = dots_uv_buffer;
+    res.n_elements = indices.size();
+    res.n_dot_elements = dot_indices.size();
+    return res;
+
+}
+
+void PdfViewOpenGLWidget::render_compiled_drawings() {
+    //NormalizedWindowPos res;
+    //float half_width = static_cast<float>(view_width) / zoom_level / 2;
+    //float half_height = static_cast<float>(view_height) / zoom_level / 2;
+
+    //res.x = (abs.x + offset_x) / half_width;
+    //res.y = (-abs.y + offset_y) / half_height;
+    // res.x = abs.x / half_width + offset_x / half_width
+    //return res;
+
+    if (cached_compiled_drawing_data.has_value()) {
+        float scale[] = {
+            2 * scratchpad->get_zoom_level() / scratchpad->get_view_width() ,
+            2 * scratchpad->get_zoom_level() / scratchpad->get_view_height()
+        };
+        float offset[] = { scratchpad->get_offset_x() * scale[0], scratchpad->get_offset_y() * scale[1]};
+        float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+        //float color[] = {1.0f, 0.0f, 0.0f, 1.0f};
+
+        glBindVertexArray(cached_compiled_drawing_data->vao);
+        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->vertex_buffer);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cached_compiled_drawing_data->index_buffer);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+        glUseProgram(shared_gl_objects.compiled_drawing_program);
+        glUniform2fv(shared_gl_objects.compiled_drawing_offset_uniform_location, 1, offset);
+        glUniform2fv(shared_gl_objects.compiled_drawing_scale_uniform_location, 1, scale);
+        glUniform4fv(shared_gl_objects.compiled_drawing_color_uniform_location, 1, color);
+        //glUniform4fv(shared_gl_objects.compiled_drawing_color_uniform_location, 1, color);
+        glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+        glDrawElements(GL_TRIANGLE_STRIP, cached_compiled_drawing_data->n_elements, GL_UNSIGNED_INT, 0);
+
+        // bind dots buffers
+        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->dots_vertex_buffer);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->dots_uv_buffer);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cached_compiled_drawing_data->dots_index_buffer);
+
+        glUseProgram(shared_gl_objects.compiled_dots_program);
+        glUniform2fv(shared_gl_objects.compiled_dot_offset_uniform_location, 1, offset);
+        glUniform2fv(shared_gl_objects.compiled_dot_scale_uniform_location, 1, scale);
+        glUniform4fv(shared_gl_objects.compiled_dot_color_uniform_location, 1, color);
+
+        glEnable(GL_BLEND);
+        glDrawElements(GL_TRIANGLE_STRIP, cached_compiled_drawing_data->n_dot_elements, GL_UNSIGNED_INT, 0);
+        glDisable(GL_BLEND);
+        //QOpenGLFunctions_3_1().glPrimiti
+        //context()->funct
+
+    }
+}
+
 void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
+
+    float time_diff = last_scratchpad_update_datetime.msecsTo(QDateTime::currentDateTime());
+    last_scratchpad_update_datetime = QDateTime::currentDateTime();
 
     const int N_POINT_VERTICES = 10;
     float thickness_x = dv->get_zoom_level() / width();
@@ -2608,7 +2952,6 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         //    drawing = smoothen_drawing(drawing);
         //}
 
-        std::vector<NormalizedWindowPos> window_positions;
         if (drawing.points.size() <= 0) {
             continue;
         }
@@ -2638,7 +2981,7 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
             float thickness = drawing.points[0].thickness;
 
             NormalizedWindowPos window_pos = dv->absolute_to_window_pos({ drawing.points[0].pos.x, drawing.points[0].pos.y });
-            add_coordinates_for_window_point(dv, window_pos.x, window_pos.y, thickness * 2, 10, coordinates);
+            add_coordinates_for_window_point(dv, window_pos.x, window_pos.y, thickness * 2, N_POINT_VERTICES, coordinates);
 
             bind_points(coordinates);
             glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
@@ -2664,15 +3007,19 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
 
         glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, current_drawing_color);
 
+        std::vector<NormalizedWindowPos> window_positions;
+        window_positions.reserve(drawing.points.size());
+
         for (auto p : drawing.points) {
             NormalizedWindowPos window_pos = dv->absolute_to_window_pos({ p.pos.x, p.pos.y });
             window_positions.push_back(NormalizedWindowPos{ window_pos.x, window_pos.y });
         }
 
         std::vector<float> coordinates;
+        /* coordinates.reserve(drawing.points.size() * 8 - 4); */
         std::vector<float> begin_point_coordinates;
         std::vector<float> end_point_coordinates;
-        std::vector<std::vector<float>> all_point_coordinates;
+        /* std::vector<std::vector<float>> all_point_coordinates; */
 
         float first_line_x = (window_positions[1].x - window_positions[0].x) * width();
         float first_line_y = (window_positions[1].y - window_positions[0].y) * height();
@@ -2718,9 +3065,9 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
             coordinates.push_back(window_positions[line_index + 1].x + ortho_x2);
             coordinates.push_back(window_positions[line_index + 1].y + ortho_y2);
 
-            std::vector<float> point_coordinates;
-            add_coordinates_for_window_point(dv, window_positions[line_index+1].x, window_positions[line_index+1].y, drawing.points[line_index+1].thickness * 2, N_POINT_VERTICES, point_coordinates);
-            all_point_coordinates.push_back(point_coordinates);
+            /* std::vector<float> point_coordinates; */
+            /* add_coordinates_for_window_point(dv, window_positions[line_index+1].x, window_positions[line_index+1].y, drawing.points[line_index+1].thickness * 2, N_POINT_VERTICES, point_coordinates); */
+            /* all_point_coordinates.push_back(point_coordinates); */
 
         }
 
@@ -2743,7 +3090,8 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         bind_points(begin_point_coordinates);
         glDrawArrays(GL_TRIANGLE_FAN, 0, begin_point_coordinates.size() / 2);
         bind_points(end_point_coordinates);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, end_point_coordinates.size() / 2);
+        glDrawArrays(GL_TRIANGLE_FAN, 1, end_point_coordinates.size() / 2);
+
         //for (auto coords : all_point_coordinates) {
         //    bind_points(coords);
         //    glDrawArrays(GL_TRIANGLE_FAN, 0, coords.size() / 2);
@@ -3085,10 +3433,16 @@ void PdfViewOpenGLWidget::render_selected_rectangle() {
 }
 
 bool PdfViewOpenGLWidget::can_use_cached_scratchpad_framebuffer() {
-    if (current_drawing.points.size() > 0 && cached_framebuffer.has_value()) {
-        if (last_cache_num_drawings == scratchpad->drawings.size()) {
-            return true;
-        }
+    float current_offset_x = scratchpad->get_offset_x();
+    float current_offset_y = scratchpad->get_offset_y();
+    float current_zoom_level = scratchpad->get_zoom_level();
+    if ((current_offset_x == last_cache_offset_x) && (current_offset_y == last_cache_offset_y) && (current_zoom_level == last_cache_zoom_level)){
+        return true;
     }
+    /* if (current_drawing.points.size() > 0 && cached_framebuffer.has_value()) { */
+    /*     if (last_cache_num_drawings == scratchpad->drawings.size()) { */
+    /*         return true; */
+    /*     } */
+    /* } */
     return false;
 }

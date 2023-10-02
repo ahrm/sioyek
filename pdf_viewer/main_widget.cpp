@@ -6394,15 +6394,24 @@ void MainWidget::show_command_documentation(QString command_name) {
 
 
 void MainWidget::handle_debug_command() {
-    if (opengl_widget->get_scratchpad()) {
-        opengl_widget->set_scratchpad(nullptr);
-    }
-    else {
-        scratchpad->on_view_size_change(width(), height());
-        opengl_widget->set_scratchpad(scratchpad);
-    }
-    //scratchpad->drawings.clear();
+    //int n_duplicates = 10;
+    //std::vector<FreehandDrawing> new_drawings;
+
+    //for (int i=0; i < n_duplicates; i++){
+    //    for (auto drawing : scratchpad->drawings){
+    //        FreehandDrawing new_drawing = drawing;
+    //        for (auto& point : new_drawing.points){
+    //            point.pos.y += 10 * i;
+    //        }
+    //        new_drawings.push_back(new_drawing);
+    //    }
+    //}
+    //for (auto new_drawing : new_drawings){
+    //    scratchpad->drawings.push_back(new_drawing);
+    //}
     //invalidate_render();
+    //scratchpad->invalidate_compile();
+    opengl_widget->compile_drawings(scratchpad, scratchpad->drawings);
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -7106,10 +7115,12 @@ void MainWidget::finish_drawing(QPoint pos) {
 
     if (opengl_widget->get_scratchpad()) {
         scratchpad->drawings.push_back(pruned_drawing);
+        /* opengl_widget->update_framebuffer_cache(); */
     }
     else {
         doc()->add_freehand_drawing(pruned_drawing);
     }
+    
 }
 
 

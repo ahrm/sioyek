@@ -197,9 +197,12 @@ public:
 };
 
 class ScratchPad : public DocumentView {
+private:
+    std::vector<FreehandDrawing> all_drawings;
+    std::vector<FreehandDrawing> non_compiled_drawings;
 public:
-
     std::vector<FreehandDrawing> drawings;
+
     std::vector<PixmapDrawing> pixmaps;
 
     ScratchPad();
@@ -217,5 +220,8 @@ public:
     void get_selected_objects_with_indices(const std::vector<SelectedObjectIndex>& indices, std::vector<FreehandDrawing>& freehand_drawings, std::vector<PixmapDrawing>& pixmap_drawings);
     void add_pixmap(QPixmap pixmap);
     AbsoluteRect get_bounding_box();
+
+    //const std::vector<FreehandDrawing>& get_all_drawings();
+    //const std::vector<FreehandDrawing>& get_non_compiled_drawings();
 
 };

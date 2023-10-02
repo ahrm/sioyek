@@ -5914,7 +5914,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["show_touch_settings_menu"] = [](MainWidget* widget) {return std::make_unique< ShowTouchSettingsMenu>(widget); };
     //new_commands["stop_search"] = [](MainWidget* widget) {return std::make_unique< StopSearchCommand>(widget); };
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
     new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };
     new_commands["export_python_api"] = [](MainWidget* widget) {return std::make_unique< ExportPythonApiCommand>(widget); };
     new_commands["export_default_config_file"] = [](MainWidget* widget) {return std::make_unique< ExportDefaultConfigFile>(widget); };
@@ -5924,7 +5924,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["print_undocumented_commands"] = [](MainWidget* widget) {return std::make_unique< PrintUndocumentedCommandsCommand>(widget); };
     new_commands["print_undocumented_configs"] = [](MainWidget* widget) {return std::make_unique< PrintUndocumentedConfigsCommand>(widget); };
     new_commands["print_non_default_configs"] = [](MainWidget* widget) {return std::make_unique< PrintNonDefaultConfigs>(widget); };
-#endif
+//#endif
 
     command_human_readable_names["goto_beginning"] = "Go to the beginning of the document";
     command_human_readable_names["goto_end"] = "Go to the end of the document";

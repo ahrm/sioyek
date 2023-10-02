@@ -936,7 +936,7 @@ int main(int argc, char* args[]) {
 
     QSurfaceFormat format;
 #ifdef SIOYEK_ANDROID
-    format.setVersion(3, 0);
+    format.setVersion(3, 1);
 #else
     format.setVersion(3, 3);
 #endif
