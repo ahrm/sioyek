@@ -1527,7 +1527,7 @@ std::vector<int> ScratchPad::get_intersecting_drawing_indices(AbsoluteRect selec
 }
 
 void ScratchPad::delete_intersecting_drawings(AbsoluteRect selection) {
-    invalidate_compile();
+    invalidate_compile(true);
 
     std::vector<int> indices = get_intersecting_drawing_indices(selection);
     for (int i = 0; i < indices.size(); i++) {
@@ -1648,9 +1648,12 @@ void ScratchPad::on_compile() {
     non_compiled_drawings.clear();
 }
 
-void ScratchPad::invalidate_compile() {
+void ScratchPad::invalidate_compile(bool force) {
 
     if (non_compiled_drawings.size() > 0) {
+        is_compile_valid = false;
+    }
+    if (force) {
         is_compile_valid = false;
     }
 }

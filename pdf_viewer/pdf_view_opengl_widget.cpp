@@ -246,8 +246,6 @@ std::string read_file_contents(const Path& path) {
 }
 
 GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_file_path) {
-    qDebug() << "Loading shaders" << vertex_file_path.get_path() << fragment_file_path.get_path();
-
     //const wchar_t* vertex_file_path = vertex_file_path_.c_str();
     //const wchar_t* fragment_file_path = fragment_file_path_.c_str();
     // Create the shaders

@@ -224,7 +224,7 @@ public:
     const std::vector<FreehandDrawing>& get_all_drawings();
     const std::vector<FreehandDrawing>& get_non_compiled_drawings();
     void on_compile();
-    void invalidate_compile();
+    void invalidate_compile(bool force=false);
     void add_drawing(FreehandDrawing drawing);
     void clear();
     bool is_compile_invalid();
