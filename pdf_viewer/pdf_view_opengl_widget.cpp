@@ -246,7 +246,6 @@ std::string read_file_contents(const Path& path) {
 }
 
 GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_file_path) {
-    qDebug() << "compiling" << vertex_file_path.get_path() << " " << fragment_file_path.get_path();
     //const wchar_t* vertex_file_path = vertex_file_path_.c_str();
     //const wchar_t* fragment_file_path = fragment_file_path_.c_str();
     // Create the shaders
@@ -630,8 +629,7 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
     /* bool use_cached_framebuffer = can_use_cached_scratchpad_framebuffer(); */
 
     painter->beginNativePainting();
-    glClearColor(1, 1, 1, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
+    clear_background_color();
     painter->endNativePainting();
 
     for (auto [pixmap, rect] : scratchpad->pixmaps) {
@@ -1233,24 +1231,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
     std::vector<int> visible_pages;
     document_view->get_visible_pages(document_view->get_view_height(), visible_pages);
 
-    if (color_mode == ColorPalette::Dark) {
-        glClearColor(DARK_MODE_BACKGROUND_COLOR[0], DARK_MODE_BACKGROUND_COLOR[1], DARK_MODE_BACKGROUND_COLOR[2], 1.0f);
-    }
-    else if (color_mode == ColorPalette::Custom) {
-        glClearColor(CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[0], CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[1], CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[2], 1.0f);
-    }
-    else {
-        glClearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], 1.0f);
-    }
-
-    // for some reason clearing the stencil buffer tanks the performance on android 
-    // so we only clear it if we absolutely need it
-    if (needs_stencil_buffer()) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    }
-    else {
-        glClear(GL_COLOR_BUFFER_BIT);
-    }
+    clear_background_color();
 
     std::vector<PdfLink> all_visible_links;
 
@@ -2940,6 +2921,13 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
     //res.y = (-abs.y + offset_y) / half_height;
     // res.x = abs.x / half_width + offset_x / half_width
     //return res;
+    float mode_highlight_colors[26 * 3];
+    for (int i = 0; i < 26; i++) {
+        auto res = cc3(&HIGHLIGHT_COLORS[3 * i]);
+        mode_highlight_colors[i * 3 + 0] = res[0];
+        mode_highlight_colors[i * 3 + 1] = res[1];
+        mode_highlight_colors[i * 3 + 2] = res[2];
+    }
 
     if (cached_compiled_drawing_data.has_value()) {
         float scale[] = {
@@ -2966,7 +2954,7 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
         glUseProgram(shared_gl_objects.compiled_drawing_program);
         glUniform2fv(shared_gl_objects.compiled_drawing_offset_uniform_location, 1, offset);
         glUniform2fv(shared_gl_objects.compiled_drawing_scale_uniform_location, 1, scale);
-        glUniform3fv(shared_gl_objects.compiled_drawing_colors_uniform_location, 26, HIGHLIGHT_COLORS);
+        glUniform3fv(shared_gl_objects.compiled_drawing_colors_uniform_location, 26, mode_highlight_colors);
         //glUniform4fv(shared_gl_objects.compiled_drawing_color_uniform_location, 1, color);
         glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
         glDrawElements(GL_TRIANGLE_STRIP, cached_compiled_drawing_data->n_elements, GL_UNSIGNED_INT, 0);
@@ -2989,7 +2977,7 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
         glUseProgram(shared_gl_objects.compiled_dots_program);
         glUniform2fv(shared_gl_objects.compiled_dot_offset_uniform_location, 1, offset);
         glUniform2fv(shared_gl_objects.compiled_dot_scale_uniform_location, 1, scale);
-        glUniform3fv(shared_gl_objects.compiled_dot_color_uniform_location, 26, HIGHLIGHT_COLORS);
+        glUniform3fv(shared_gl_objects.compiled_dot_color_uniform_location, 26, mode_highlight_colors);
 
         glEnable(GL_BLEND);
         glDrawElements(GL_TRIANGLE_STRIP, cached_compiled_drawing_data->n_dot_elements, GL_UNSIGNED_INT, 0);
@@ -3509,4 +3497,25 @@ bool PdfViewOpenGLWidget::can_use_cached_scratchpad_framebuffer() {
     /*     } */
     /* } */
     return false;
+}
+
+void PdfViewOpenGLWidget::clear_background_color() {
+    if (color_mode == ColorPalette::Dark) {
+        glClearColor(DARK_MODE_BACKGROUND_COLOR[0], DARK_MODE_BACKGROUND_COLOR[1], DARK_MODE_BACKGROUND_COLOR[2], 1.0f);
+    }
+    else if (color_mode == ColorPalette::Custom) {
+        glClearColor(CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[0], CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[1], CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[2], 1.0f);
+    }
+    else {
+        glClearColor(BACKGROUND_COLOR[0], BACKGROUND_COLOR[1], BACKGROUND_COLOR[2], 1.0f);
+    }
+
+    // for some reason clearing the stencil buffer tanks the performance on android 
+    // so we only clear it if we absolutely need it
+    if (needs_stencil_buffer()) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
+    else {
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
 }

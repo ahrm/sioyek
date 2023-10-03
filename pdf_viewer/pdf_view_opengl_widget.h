@@ -360,6 +360,7 @@ public:
     bool can_use_cached_scratchpad_framebuffer();
     //void update_framebuffer_cache();
     void compile_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings);
+    void clear_background_color();
     CompiledDrawingData compile_drawings_into_vertex_and_index_buffers(const std::vector<float>& line_coordinates,
         const std::vector<unsigned int>& indices,
         const std::vector<GLint>& line_type_indices,

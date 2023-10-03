@@ -5802,7 +5802,6 @@ int MainWidget::num_visible_links() {
 
 bool MainWidget::event(QEvent* event) {
 
-
     QTabletEvent* te = dynamic_cast<QTabletEvent*>(event);
     QKeyEvent* ke = dynamic_cast<QKeyEvent*>(event);
     if (ke && (ke->type() == QEvent::KeyPress)) {
@@ -7195,7 +7194,9 @@ std::string MainWidget::get_current_mode_string() {
     res += (mouse_drag_mode) ? "d" : "D";
     res += (opengl_widget->is_presentation_mode()) ? "p" : "P";
     res += (opengl_widget->get_overview_page()) ? "o" : "O";
-    res += (opengl_widget->get_is_searching(nullptr)) ? "s" : "S";
+    res += opengl_widget->get_scratchpad() ? "s" : "S";
+    res += (opengl_widget->get_is_searching(nullptr)) ? "f" : "F";
+
     if (main_document_view) {
         res += (main_document_view->selected_character_rects.size() > 0) ? "t" : "T";
     }
