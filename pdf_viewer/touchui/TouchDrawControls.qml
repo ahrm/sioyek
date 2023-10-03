@@ -18,21 +18,25 @@ Rectangle{
     color: "#00ffffff"
     radius: 5
     property bool pen_mode: false
+    property bool are_color_buttons_visible: false
+    property int selected_index: _index
 
     TouchButtonGroup{
         anchors.left: parent.left
+        anchors.right: parent.right
         // anchors.top: parent.top
         // anchors.bottom: parent.bottom
         height: pen_size_slider.visible ? parent.height / 2 : parent.height
         //height: parent.height
-        width: Math.max(parent.width / 5, 150)
+        // width: Math.max(parent.width / 5, 150)
 
 
         id: deletebutton
 
-        buttons: ["❌", "🖋️", "✂️", "P"]
-        colors: ["black", root.pen_mode ? "green" : "black", "black", pen_size_slider.visible ? "green" : "black"]
+        buttons: ["❌", "🖋️", "✂️", "P", ""]
+        colors: ["black", root.pen_mode ? "green" : "black", "black", pen_size_slider.visible ? "green" : "black", _colors[root.selected_index]]
 
+        visible: !are_color_buttons_visible
         onButtonClicked: function (index, name){
             if (index == 0){
                 root.exitDrawModeButtonClicked();
@@ -52,29 +56,44 @@ Rectangle{
             if (index == 3){
                 pen_size_slider.visible = !pen_size_slider.visible;
             }
+            if (index == 4){
+                root.are_color_buttons_visible= !root.are_color_buttons_visible;
+            }
         }
     }
 
-    TouchButtonGroup{
-        anchors.right: parent.right
-        anchors.left: deletebutton.right
-        // anchors.top: parent.top
-        // anchors.bottom: parent.bottom
-        //height: parent.height
-        height: pen_size_slider.visible ? parent.height / 2 : parent.height
-        //width: 4 * parent.width / 5
-        radio: true
+    TouchSymbolColorSelector{
+        colors: _colors
+        anchors.fill: parent
+        visible: root.are_color_buttons_visible
 
-
-        id: color_buttons
-
-        buttons: Array(_colors.length).fill("")
-        colors: _colors;
-
-        onButtonClicked: function (index, name){
+        onColorClicked: function(index){
             root.changeColorClicked(index);
+            root.selected_index = index;
+            //root._index = index;
+            root.are_color_buttons_visible = !root.are_color_buttons_visible;
         }
     }
+    // TouchButtonGroup{
+    //     anchors.right: parent.right
+    //     anchors.left: deletebutton.right
+    //     // anchors.top: parent.top
+    //     // anchors.bottom: parent.bottom
+    //     //height: parent.height
+    //     height: pen_size_slider.visible ? parent.height / 2 : parent.height
+    //     //width: 4 * parent.width / 5
+    //     radio: true
+
+
+    //     id: color_buttons
+
+    //     buttons: Array(_colors.length).fill("")
+    //     colors: _colors;
+
+    //     onButtonClicked: function (index, name){
+    //         root.changeColorClicked(index);
+    //     }
+    // }
     Slider{
         from: 0
         to: 10

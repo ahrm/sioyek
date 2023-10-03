@@ -12,7 +12,7 @@ TouchDrawControls::TouchDrawControls(float pen_size, char selected_symbol, QWidg
     quick_widget->setClearColor(Qt::transparent);
 
     QList<QColor> colors;
-    const int N_COLORS = 5;
+    const int N_COLORS = 26;
     for (int i = 0; i < N_COLORS; i++) {
         colors.push_back(convert_float3_to_qcolor(&HIGHLIGHT_COLORS[3 * i]));
     }

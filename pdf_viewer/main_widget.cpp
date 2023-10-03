@@ -9369,3 +9369,8 @@ void MainWidget::clear_scratchpad() {
     scratchpad->clear();
     invalidate_render();
 }
+
+char MainWidget::get_current_freehand_type() {
+    return current_freehand_type;
+}
+

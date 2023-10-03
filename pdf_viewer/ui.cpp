@@ -549,7 +549,7 @@ TouchTextSelectionButtons::TouchTextSelectionButtons(MainWidget* parent) : QWidg
 
 DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent) {
     main_widget = parent;
-    controls_ui = new TouchDrawControls(parent->freehand_thickness, 'a', this);
+    controls_ui = new TouchDrawControls(parent->freehand_thickness, parent->get_current_freehand_type(), this);
     this->setAttribute(Qt::WA_NoMousePropagation);
 
     QObject::connect(controls_ui, &TouchDrawControls::exitDrawModePressed, [&]() {

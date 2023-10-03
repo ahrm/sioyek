@@ -872,6 +872,7 @@ public:
     void save_scratchpad();
     void load_scratchpad();
     void clear_scratchpad();
+    char get_current_freehand_type();
 };
 
 #endif
