@@ -43,6 +43,7 @@
         <file>pdf_viewer/touchui/TouchDrawControls.qml</file>
         <file>pdf_viewer/touchui/TouchMacroEditor.qml</file>
         <file>pdf_viewer/touchui/TouchGenericButtons.qml</file>
+        <file>pdf_viewer/touchui/TouchSymbolColorSelector.qml</file>
         <file>icons/page.svg</file>
         <file>icons/select_text.svg</file>
         <file>icons/bookmark.svg</file>

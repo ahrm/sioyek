@@ -6393,24 +6393,8 @@ void MainWidget::show_command_documentation(QString command_name) {
 
 
 void MainWidget::handle_debug_command() {
-    //int n_duplicates = 10;
-    //std::vector<FreehandDrawing> new_drawings;
-
-    //for (int i=0; i < n_duplicates; i++){
-    //    for (auto drawing : scratchpad->drawings){
-    //        FreehandDrawing new_drawing = drawing;
-    //        for (auto& point : new_drawing.points){
-    //            point.pos.y += 10 * i;
-    //        }
-    //        new_drawings.push_back(new_drawing);
-    //    }
-    //}
-    //for (auto new_drawing : new_drawings){
-    //    scratchpad->drawings.push_back(new_drawing);
-    //}
-    //invalidate_render();
-    //scratchpad->invalidate_compile();
-    opengl_widget->compile_drawings(scratchpad, scratchpad->get_all_drawings());
+    auto draw_controls = get_draw_controls();
+    draw_controls->show();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
