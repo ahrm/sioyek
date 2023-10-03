@@ -95,6 +95,11 @@
         <file>icons/arrow-begin.svg</file>
         <file>icons/arrow-end.svg</file>
         <file>icons/hourglass.svg</file>
+        <file>icons/adjust.svg</file>
+        <file>icons/close.svg</file>
+        <file>icons/erase.svg</file>
+        <file>icons/finger-index.svg</file>
+        <file>icons/pen.svg</file>
         <file>end.png</file>
         <file>data/embedding.npy</file>
         <file>data/linear.npy</file>

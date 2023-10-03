@@ -34,8 +34,10 @@ Rectangle{
 
         id: deletebutton
 
-        buttons: ["❌", "🖋️", "✂️", "P", ""]
-        colors: ["black", root.pen_mode ? "green" : "black", "black", pen_size_slider.visible ? "green" : "black", _colors[root.selected_index]]
+        //buttons: ["❌", "🖋️", "✂️", "P", ""]
+        buttons: ["qrc:/icons/close.svg", root.pen_mode ?  "qrc:/icons/finger-index.svg" : "qrc:/icons/pen.svg", "qrc:/icons/erase.svg", "qrc:/icons/adjust.svg", ""]
+        tips: ["Close", "Toggle pen mode", "Erase", "Adjust size", "Color"]
+        colors: ["black", "black", "black", pen_size_slider.visible ? "green" : "black", _colors[root.selected_index]]
 
         visible: (!are_color_buttons_visible) && (!is_size_slider_visible)
         onButtonClicked: function (index, name){
