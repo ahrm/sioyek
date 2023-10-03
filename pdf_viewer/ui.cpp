@@ -564,6 +564,15 @@ DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent) {
         main_widget->set_pen_drawing_mode(true);
         });
 
+    QObject::connect(controls_ui, &TouchDrawControls::screenshotPressed, [&]() {
+        main_widget->run_command_with_name("copy_screenshot_to_scratchpad");
+        });
+
+    QObject::connect(controls_ui, &TouchDrawControls::toggleScratchpadPressed, [&]() {
+        main_widget->run_command_with_name("toggle_scratchpad_mode");
+        main_widget->invalidate_render();
+        });
+
     QObject::connect(controls_ui, &TouchDrawControls::disablePenDrawModePressed, [&]() {
         main_widget->set_hand_drawing_mode(true);
         });

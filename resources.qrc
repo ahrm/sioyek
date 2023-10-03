@@ -99,6 +99,8 @@
         <file>icons/close.svg</file>
         <file>icons/erase.svg</file>
         <file>icons/finger-index.svg</file>
+        <file>icons/screenshot.svg</file>
+        <file>icons/swap.svg</file>
         <file>icons/pen.svg</file>
         <file>end.png</file>
         <file>data/embedding.npy</file>

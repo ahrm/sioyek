@@ -58,6 +58,16 @@ TouchDrawControls::TouchDrawControls(float pen_size, char selected_symbol, QWidg
         this,
         SLOT(handlePenSizeChanged(qreal)));
 
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(screenshotClicked()),
+        this,
+        SLOT(handleScreenshot()));
+
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(toggleScratchpadClicked()),
+        this,
+        SLOT(handleToggleScratchpad()));
+
 
 }
 void TouchDrawControls::setDrawType(char type) {
@@ -72,6 +82,10 @@ void TouchDrawControls::handlePenSizeChanged(qreal val) {
     emit penSizeChanged(val);
 }
 
+void TouchDrawControls::handleScreenshot() {
+    emit screenshotPressed();
+}
+
 void TouchDrawControls::handleEnablePenDrawMode() {
     emit enablePenDrawModePressed();
 }
@@ -82,6 +96,10 @@ void TouchDrawControls::handleEraser() {
 
 void TouchDrawControls::handleDisablePenDrawMode() {
     emit disablePenDrawModePressed();
+}
+
+void TouchDrawControls::handleToggleScratchpad() {
+    emit toggleScratchpadPressed();
 }
 
 void TouchDrawControls::handleChangeColor(int index) {
@@ -96,4 +114,11 @@ void TouchDrawControls::resizeEvent(QResizeEvent* resize_event) {
 
 void TouchDrawControls::set_pen_size(float size) {
     quick_widget->rootContext()->setContextProperty("_pen_size", size);
+}
+
+void TouchDrawControls::set_scratchpad_mode(bool mode) {
+    is_in_scratchpad = mode;
+
+    QMetaObject::invokeMethod(quick_widget->rootObject(), "on_scratchpad_mode_change", QVariant::fromValue(mode));
+    //QMetaObject::invokeMethod(quick_widget->rootObject(), "on_scratchpad_mode_change");
 }

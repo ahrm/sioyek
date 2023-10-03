@@ -13,6 +13,8 @@
 // clicking on next visual mark links
 // better tablet button handling, the current method is setting dependent
 // handle multiple documents in compiled scratchpad drawings
+// add ability to copy freehand drawings from scratchpad to document
+// hide the touch drawing buttons while copying for scratchpad
 
 #include "qlogging.h"
 #include <iostream>
@@ -9285,6 +9287,15 @@ void MainWidget::toggle_scratchpad_mode(){
     else {
         scratchpad->on_view_size_change(width(), height());
         opengl_widget->set_scratchpad(scratchpad);
+    }
+
+    if (draw_controls_) {
+        if (opengl_widget->get_scratchpad()) {
+            draw_controls_->controls_ui->set_scratchpad_mode(true);
+        }
+        else {
+            draw_controls_->controls_ui->set_scratchpad_mode(false);
+        }
     }
 }
 

@@ -12,6 +12,12 @@ Rectangle{
     signal disablePenDrawModeClicked();
     signal eraserClicked();
     signal penSizeChanged(size: real);
+    signal screenshotClicked();
+    signal toggleScratchpadClicked();
+
+    function on_scratchpad_mode_change(mode){
+        is_scratchpad = mode;
+    }
 
     id: root
     //color: "black"
@@ -21,6 +27,7 @@ Rectangle{
     property bool are_color_buttons_visible: false
     property bool is_size_slider_visible: false
     property int selected_index: _index
+    property bool is_scratchpad: false
 
     TouchButtonGroup{
         anchors.left: parent.left
@@ -35,9 +42,17 @@ Rectangle{
         id: deletebutton
 
         //buttons: ["❌", "🖋️", "✂️", "P", ""]
-        buttons: ["qrc:/icons/close.svg", root.pen_mode ?  "qrc:/icons/finger-index.svg" : "qrc:/icons/pen.svg", "qrc:/icons/erase.svg", "qrc:/icons/adjust.svg", ""]
-        tips: ["Close", "Toggle pen mode", "Erase", "Adjust size", "Color"]
-        colors: ["black", "black", "black", pen_size_slider.visible ? "green" : "black", _colors[root.selected_index]]
+        buttons: [
+            "qrc:/icons/close.svg",
+            root.pen_mode ?  "qrc:/icons/finger-index.svg" : "qrc:/icons/pen.svg",
+            "qrc:/icons/erase.svg",
+            "qrc:/icons/adjust.svg",
+            "qrc:/icons/screenshot.svg",
+            "qrc:/icons/swap.svg",
+            ""
+        ]
+        tips: ["Close", "Toggle pen mode", "Erase", "Adjust size", "Copy screenshot to scratchpad","Toggle scratchpad" ,"Color"]
+        colors: ["black", "black", "black", "black", "black","black", _colors[root.selected_index]]
 
         visible: (!are_color_buttons_visible) && (!is_size_slider_visible)
         onButtonClicked: function (index, name){
@@ -61,6 +76,12 @@ Rectangle{
                 // pen_size_slider.visible = !pen_size_slider.visible;
             }
             if (index == 4){
+                root.screenshotClicked();
+            }
+            if (index == 5){
+                root.toggleScratchpadClicked();
+            }
+            if (index == 6){
                 root.are_color_buttons_visible= !root.are_color_buttons_visible;
             }
         }
