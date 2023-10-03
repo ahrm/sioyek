@@ -2925,8 +2925,16 @@ std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vecto
             continue;
         }
 
+        float dx0 = points[candid_index].pos.x - pruned_points.back().pos.x;
+        float dy0 = points[candid_index].pos.y - pruned_points.back().pos.y;
+
+        float dx1 = points[next_index].pos.x - points[candid_index].pos.x;
+        float dy1 = points[next_index].pos.y - points[candid_index].pos.y;
+        float dot_product = dx0 * dx1 + dy0 * dy1;
+
         Line2D line = line_from_points(pruned_points.back().pos, points[next_index].pos);
-        if (point_distance_from_line(points[candid_index].pos, line) > (0.2f * points[candid_index].thickness)) {
+        float thickness_factor = std::min(points[candid_index].thickness, 1.0f);
+        if ((dot_product < 0) || (point_distance_from_line(points[candid_index].pos, line) > (0.2f * thickness_factor))) {
             pruned_points.push_back(points[candid_index]);
         }
 

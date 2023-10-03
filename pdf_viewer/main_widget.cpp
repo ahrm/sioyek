@@ -11,7 +11,8 @@
 // portals are not correctly saved in an updated database
 // touch epub controls
 // clicking on next visual mark links
-//better tablet button handling, the current method is setting dependent
+// better tablet button handling, the current method is setting dependent
+// handle multiple documents in compiled scratchpad drawings
 
 #include "qlogging.h"
 #include <iostream>
