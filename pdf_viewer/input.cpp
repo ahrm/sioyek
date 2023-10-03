@@ -4269,6 +4269,20 @@ public:
 
 };
 
+class ShowTouchDrawingMenu : public Command {
+public:
+    ShowTouchDrawingMenu(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->show_draw_controls();
+    }
+
+    std::string get_name() {
+        return "show_touch_draw_controls";
+    }
+
+};
+
 class ShowTouchSettingsMenu : public Command {
 public:
     ShowTouchSettingsMenu(MainWidget* w) : Command(w) {};
@@ -5912,6 +5926,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["select_current_search_match"] = [](MainWidget* widget) {return std::make_unique< SelectCurrentSearchMatchCommand>(widget); };
     new_commands["show_touch_main_menu"] = [](MainWidget* widget) {return std::make_unique< ShowTouchMainMenu>(widget); };
     new_commands["show_touch_settings_menu"] = [](MainWidget* widget) {return std::make_unique< ShowTouchSettingsMenu>(widget); };
+    new_commands["show_touch_draw_controls"] = [](MainWidget* widget) {return std::make_unique< ShowTouchDrawingMenu>(widget); };
     //new_commands["stop_search"] = [](MainWidget* widget) {return std::make_unique< StopSearchCommand>(widget); };
 
 //#ifdef _DEBUG

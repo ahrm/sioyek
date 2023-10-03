@@ -7108,11 +7108,19 @@ void MainWidget::finish_drawing(QPoint pos) {
 
 
 void MainWidget::delete_freehand_drawings(AbsoluteRect rect) {
-    DocumentRect page_rect = rect.to_document(doc());
-    doc()->delete_page_intersecting_drawings(page_rect.page, rect, opengl_widget->visible_drawing_mask);
-    set_rect_select_mode(false);
-    clear_selected_rect();
-    invalidate_render();
+    if (opengl_widget->get_scratchpad()) {
+        scratchpad->delete_intersecting_objects(rect);
+        set_rect_select_mode(false);
+        clear_selected_rect();
+        invalidate_render();
+    }
+    else {
+        DocumentRect page_rect = rect.to_document(doc());
+        doc()->delete_page_intersecting_drawings(page_rect.page, rect, opengl_widget->visible_drawing_mask);
+        set_rect_select_mode(false);
+        clear_selected_rect();
+        invalidate_render();
+    }
 }
 
 void MainWidget::select_freehand_drawings(AbsoluteRect rect) {
@@ -9374,3 +9382,6 @@ char MainWidget::get_current_freehand_type() {
     return current_freehand_type;
 }
 
+void MainWidget::show_draw_controls() {
+    get_draw_controls()->show();
+}

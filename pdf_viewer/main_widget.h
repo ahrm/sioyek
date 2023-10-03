@@ -873,6 +873,7 @@ public:
     void load_scratchpad();
     void clear_scratchpad();
     char get_current_freehand_type();
+    void show_draw_controls();
 };
 
 #endif
