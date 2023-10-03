@@ -1,14 +1,18 @@
 layout (location=0) in vec2 vertex_pos;
 layout (location=1) in vec2 vertex_uv;
+layout (location=2) in int type_index;
 
 uniform vec2 offset;
 uniform vec2 scale;
+uniform vec3 type_colors[26];
 
 out vec2 uv;
+out vec4 type_color;
 
 void main(){
     uv = vertex_uv;
     
+    type_color = vec4(type_colors[type_index], 1.0);
     vec2 pos = vertex_pos * scale;
     pos.y = -pos.y;
     pos = pos + offset;

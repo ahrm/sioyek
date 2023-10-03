@@ -57,6 +57,8 @@ struct CompiledDrawingData {
     GLuint dots_vertex_buffer = 0;
     GLuint dots_uv_buffer = 0;
     GLuint dots_index_buffer = 0;
+    GLuint lines_type_index_buffer = 0;
+    GLuint dots_type_index_buffer = 0;
     int n_elements = 0;
     int n_dot_elements = 0;
 };
@@ -86,7 +88,7 @@ struct OpenGLSharedResources {
 
     GLint compiled_drawing_offset_uniform_location = 0;
     GLint compiled_drawing_scale_uniform_location = 0;
-    GLint compiled_drawing_color_uniform_location = 0;
+    GLint compiled_drawing_colors_uniform_location = 0;
     GLint compiled_dot_color_uniform_location = 0;
     GLint compiled_dot_offset_uniform_location = 0;
     GLint compiled_dot_scale_uniform_location = 0;
@@ -360,6 +362,8 @@ public:
     void compile_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings);
     CompiledDrawingData compile_drawings_into_vertex_and_index_buffers(const std::vector<float>& line_coordinates,
         const std::vector<unsigned int>& indices,
+        const std::vector<GLint>& line_type_indices,
         const std::vector<float>& dot_coordinates,
-        const std::vector<unsigned int>& dot_indices);
+        const std::vector<unsigned int>& dot_indices,
+        const std::vector<GLint>& dot_type_indices);
 };

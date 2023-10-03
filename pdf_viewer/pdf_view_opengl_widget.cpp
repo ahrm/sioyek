@@ -246,6 +246,7 @@ std::string read_file_contents(const Path& path) {
 }
 
 GLuint PdfViewOpenGLWidget::LoadShaders(Path vertex_file_path, Path fragment_file_path) {
+    qDebug() << "compiling" << vertex_file_path.get_path() << " " << fragment_file_path.get_path();
     //const wchar_t* vertex_file_path = vertex_file_path_.c_str();
     //const wchar_t* fragment_file_path = fragment_file_path_.c_str();
     // Create the shaders
@@ -354,7 +355,7 @@ void PdfViewOpenGLWidget::initializeGL() {
         shared_gl_objects.separator_program = LoadShaders(Path(L":/pdf_viewer/shaders/simple.vertex"), Path(L":/pdf_viewer/shaders/separator.fragment"));
         shared_gl_objects.stencil_program = LoadShaders(Path(L":/pdf_viewer/shaders/stencil.vertex"), Path(L":/pdf_viewer/shaders/stencil.fragment"));
         shared_gl_objects.line_program = LoadShaders(Path(L":/pdf_viewer/shaders/line.vertex"), Path(L":/pdf_viewer/shaders/line.fragment"));
-        shared_gl_objects.compiled_drawing_program = LoadShaders(Path(L":/pdf_viewer/shaders/compiled_drawing.vertex"), Path(L":/pdf_viewer/shaders/line.fragment"));
+        shared_gl_objects.compiled_drawing_program = LoadShaders(Path(L":/pdf_viewer/shaders/compiled_drawing.vertex"), Path(L":/pdf_viewer/shaders/compiled_line.fragment"));
         shared_gl_objects.compiled_dots_program = LoadShaders(Path(L":/pdf_viewer/shaders/dot.vertex"), Path(L":/pdf_viewer/shaders/dot.fragment"));
 #else
         shared_gl_objects.rendered_program = LoadShaders(shader_path.slash(L"simple.vertex"), shader_path.slash(L"simple.fragment"));
@@ -367,7 +368,7 @@ void PdfViewOpenGLWidget::initializeGL() {
         shared_gl_objects.separator_program = LoadShaders(shader_path.slash(L"simple.vertex"), shader_path.slash(L"separator.fragment"));
         shared_gl_objects.stencil_program = LoadShaders(shader_path.slash(L"stencil.vertex"), shader_path.slash(L"stencil.fragment"));
         shared_gl_objects.line_program = LoadShaders(shader_path.slash(L"line.vertex"), shader_path.slash(L"line.fragment"));
-        shared_gl_objects.compiled_drawing_program = LoadShaders(shader_path.slash(L"compiled_drawing.vertex"), shader_path.slash(L"line.fragment"));
+        shared_gl_objects.compiled_drawing_program = LoadShaders(shader_path.slash(L"compiled_drawing.vertex"), shader_path.slash(L"compiled_line.fragment"));
         shared_gl_objects.compiled_dots_program = LoadShaders(shader_path.slash(L"dot.vertex"), shader_path.slash(L"dot.fragment"));
 #endif
 
@@ -387,9 +388,9 @@ void PdfViewOpenGLWidget::initializeGL() {
 
         shared_gl_objects.compiled_drawing_offset_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_drawing_program, "offset");
         shared_gl_objects.compiled_drawing_scale_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_drawing_program, "scale");
-        shared_gl_objects.compiled_drawing_color_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_drawing_program, "line_color");
+        shared_gl_objects.compiled_drawing_colors_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_drawing_program, "type_colors");
 
-        shared_gl_objects.compiled_dot_color_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_dots_program, "dot_color");
+        shared_gl_objects.compiled_dot_color_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_dots_program, "type_colors");
         shared_gl_objects.compiled_dot_offset_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_dots_program, "offset");
         shared_gl_objects.compiled_dot_scale_uniform_location = glGetUniformLocation(shared_gl_objects.compiled_dots_program, "scale");
 
@@ -683,7 +684,7 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
 
 
 
-     if (scratchpad->get_non_compiled_drawings().size() > 100 || scratchpad->is_compile_invalid()) {
+     if (scratchpad->get_non_compiled_drawings().size() > 50 || scratchpad->is_compile_invalid()) {
          compile_drawings(scratchpad, scratchpad->get_all_drawings());
      }
 
@@ -2662,7 +2663,7 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
     }
     velocities_at_points.push_back(original.points[original.points.size()-1].pos - original.points[original.points.size()-2].pos);
 
-    int N_POINTS = 10;
+    int N_POINTS = 4;
     FreehandDrawing smoothed_drawing;
     smoothed_drawing.creattion_time = original.creattion_time;
     smoothed_drawing.type = original.type;
@@ -2696,6 +2697,8 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
         glDeleteBuffers(1, &cached_compiled_drawing_data->dots_index_buffer);
         glDeleteBuffers(1, &cached_compiled_drawing_data->dots_vertex_buffer);
         glDeleteBuffers(1, &cached_compiled_drawing_data->dots_uv_buffer);
+        glDeleteBuffers(1, &cached_compiled_drawing_data->lines_type_index_buffer);
+        glDeleteBuffers(1, &cached_compiled_drawing_data->dots_type_index_buffer);
         glDeleteVertexArrays(1, &cached_compiled_drawing_data->vao);
         cached_compiled_drawing_data = {};
     }
@@ -2713,29 +2716,37 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
 
     std::vector<float> coordinates;
     std::vector<unsigned int> indices;
+    std::vector<GLint> type_indices;
+    /* std::vector<short> */ 
 
     std::vector<float> dot_coordinates;
     std::vector<unsigned int> dot_indices;
+    std::vector<GLint> dot_type_indices;
+    /* std::vector<short> */ 
     GLuint primitive_restart_index = 0xFFFFFFFF;
 
     int index = 0;
     int dot_index = 0;
 
-    auto add_point_coords = [&](FreehandDrawingPoint p) {
+    auto add_point_coords = [&](FreehandDrawingPoint p, char index) {
         dot_coordinates.push_back(p.pos.x - p.thickness / 2);
         dot_coordinates.push_back(p.pos.y - p.thickness / 2);
+        dot_type_indices.push_back(index);
         dot_indices.push_back(dot_index++);
 
         dot_coordinates.push_back(p.pos.x - p.thickness / 2);
         dot_coordinates.push_back(p.pos.y + p.thickness / 2);
+        dot_type_indices.push_back(index);
         dot_indices.push_back(dot_index++);
 
         dot_coordinates.push_back(p.pos.x + p.thickness / 2);
         dot_coordinates.push_back(p.pos.y - p.thickness / 2);
+        dot_type_indices.push_back(index);
         dot_indices.push_back(dot_index++);
 
         dot_coordinates.push_back(p.pos.x + p.thickness / 2);
         dot_coordinates.push_back(p.pos.y + p.thickness / 2);
+        dot_type_indices.push_back(index);
         dot_indices.push_back(dot_index++);
 
         dot_indices.push_back(0xFFFFFFFF);
@@ -2753,7 +2764,7 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
             continue;
         }
         if (drawing.points.size() == 1) {
-            add_point_coords(drawing.points[0]);
+            add_point_coords(drawing.points[0], drawing.type - 'a');
 
             continue;
 
@@ -2771,16 +2782,18 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
 
         coordinates.push_back(drawing.points[0].pos.x - first_ortho_x);
         coordinates.push_back(drawing.points[0].pos.y - first_ortho_y);
+        type_indices.push_back(drawing.type - 'a');
         indices.push_back(index++);
         coordinates.push_back(drawing.points[0].pos.x + first_ortho_x);
         coordinates.push_back(drawing.points[0].pos.y + first_ortho_y);
+        type_indices.push_back(drawing.type - 'a');
         indices.push_back(index++);
 
         float prev_line_x = first_line_x;
         float prev_line_y = first_line_y;
 
-        add_point_coords(drawing.points[0]);
-        add_point_coords(drawing.points.back());
+        add_point_coords(drawing.points[0], drawing.type - 'a');
+        add_point_coords(drawing.points.back(), drawing.type - 'a');
         for (int line_index = 0; line_index < drawing.points.size() - 1; line_index++) {
             float line_direction_x = (drawing.points[line_index + 1].pos.x - drawing.points[line_index].pos.x);
             float line_direction_y = (drawing.points[line_index + 1].pos.y - drawing.points[line_index].pos.y);
@@ -2796,16 +2809,22 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
 
             coordinates.push_back(drawing.points[line_index].pos.x - ortho_x1);
             coordinates.push_back(drawing.points[line_index].pos.y - ortho_y1);
+            type_indices.push_back(drawing.type - 'a');
             indices.push_back(index++);
+
             coordinates.push_back(drawing.points[line_index].pos.x + ortho_x1);
             coordinates.push_back(drawing.points[line_index].pos.y + ortho_y1);
+            type_indices.push_back(drawing.type - 'a');
             indices.push_back(index++);
 
             coordinates.push_back(drawing.points[line_index + 1].pos.x - ortho_x1);
             coordinates.push_back(drawing.points[line_index + 1].pos.y - ortho_y1);
+            type_indices.push_back(drawing.type - 'a');
             indices.push_back(index++);
+
             coordinates.push_back(drawing.points[line_index + 1].pos.x + ortho_x2);
             coordinates.push_back(drawing.points[line_index + 1].pos.y + ortho_y2);
+            type_indices.push_back(drawing.type - 'a');
             indices.push_back(index++);
 
         }
@@ -2816,16 +2835,24 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
         //bind_points(coordinates);
         //glDrawArrays(GL_TRIANGLE_STRIP, 0, coordinates.size() / 2);
     }
-    cached_compiled_drawing_data = compile_drawings_into_vertex_and_index_buffers(coordinates, indices, dot_coordinates, dot_indices);
+    cached_compiled_drawing_data = compile_drawings_into_vertex_and_index_buffers(
+        coordinates,
+        indices,
+        type_indices,
+        dot_coordinates,
+        dot_indices,
+        dot_type_indices);
     scratchpad->on_compile();
 }
 
 //void PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_buffers(std::vector<float>& line_coordinates) {
-CompiledDrawingData PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_buffers(const std::vector<float>& line_coordinates,
-        const std::vector<unsigned int>& indices,
-        const std::vector<float>& dot_coordinates,
-        const std::vector<unsigned int>& dot_indices){
 
+CompiledDrawingData PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_buffers(const std::vector<float>& line_coordinates,
+    const std::vector<unsigned int>& indices,
+    const std::vector<GLint>& line_type_indices,
+    const std::vector<float>& dot_coordinates,
+    const std::vector<unsigned int>& dot_indices,
+    const std::vector<GLint>& dot_type_indices){
     //std::vector<unsigned int> indices;
     //int num_rectangles = line_coordinates.size() / 
 
@@ -2843,12 +2870,21 @@ CompiledDrawingData PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_
 
     GLuint compiled_drawing_vao;
     glGenVertexArrays(1, &compiled_drawing_vao);
-    GLuint compiled_vertex_array, compiled_index_array, dots_vertex_buffer, dots_index_buffer, dots_uv_buffer;
+    GLuint compiled_vertex_array,
+        compiled_index_array,
+        dots_vertex_buffer,
+        dots_index_buffer,
+        dots_uv_buffer,
+        lines_type_index_buffer,
+        dots_type_index_buffer;
+
     glGenBuffers(1, &compiled_vertex_array);
     glGenBuffers(1, &compiled_index_array);
     glGenBuffers(1, &dots_vertex_buffer);
     glGenBuffers(1, &dots_index_buffer);
     glGenBuffers(1, &dots_uv_buffer);
+    glGenBuffers(1, &lines_type_index_buffer);
+    glGenBuffers(1, &dots_type_index_buffer);
 
     glBindVertexArray(compiled_drawing_vao);
 
@@ -2856,14 +2892,23 @@ CompiledDrawingData PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_
     glBufferData(GL_ARRAY_BUFFER, line_coordinates.size() * sizeof(float), line_coordinates.data(), GL_STATIC_DRAW);
 
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    //glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    //glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, lines_type_index_buffer);
+    glBufferData(GL_ARRAY_BUFFER, line_type_indices.size() * sizeof(GLint), line_type_indices.data(), GL_STATIC_DRAW);
+
+    //glVertexAttribPointer(1, 1, GL_INT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    //glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, dots_vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, dot_coordinates.size() * sizeof(float), dot_coordinates.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, dots_uv_buffer);
     glBufferData(GL_ARRAY_BUFFER, dot_uv_coordinates.size() * sizeof(float), dot_uv_coordinates.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, dots_type_index_buffer);
+    glBufferData(GL_ARRAY_BUFFER, dot_type_indices.size() * sizeof(GLint), dot_type_indices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, compiled_index_array);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
@@ -2878,6 +2923,8 @@ CompiledDrawingData PdfViewOpenGLWidget::compile_drawings_into_vertex_and_index_
     res.dots_vertex_buffer = dots_vertex_buffer;
     res.dots_index_buffer = dots_index_buffer;
     res.dots_uv_buffer = dots_uv_buffer;
+    res.lines_type_index_buffer = lines_type_index_buffer;
+    res.dots_type_index_buffer = dots_type_index_buffer;
     res.n_elements = indices.size();
     res.n_dot_elements = dot_indices.size();
     return res;
@@ -2904,20 +2951,27 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
         //float color[] = {1.0f, 0.0f, 0.0f, 1.0f};
 
         glBindVertexArray(cached_compiled_drawing_data->vao);
+
         glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->vertex_buffer);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cached_compiled_drawing_data->index_buffer);
-        glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->lines_type_index_buffer);
+        glVertexAttribIPointer(1, 1, GL_INT, 0, 0);
+        glEnableVertexAttribArray(1);
+
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cached_compiled_drawing_data->index_buffer);
 
         glUseProgram(shared_gl_objects.compiled_drawing_program);
         glUniform2fv(shared_gl_objects.compiled_drawing_offset_uniform_location, 1, offset);
         glUniform2fv(shared_gl_objects.compiled_drawing_scale_uniform_location, 1, scale);
-        glUniform4fv(shared_gl_objects.compiled_drawing_color_uniform_location, 1, color);
+        glUniform3fv(shared_gl_objects.compiled_drawing_colors_uniform_location, 26, HIGHLIGHT_COLORS);
         //glUniform4fv(shared_gl_objects.compiled_drawing_color_uniform_location, 1, color);
         glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
         glDrawElements(GL_TRIANGLE_STRIP, cached_compiled_drawing_data->n_elements, GL_UNSIGNED_INT, 0);
 
-        // bind dots buffers
+        //// bind dots buffers
         glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->dots_vertex_buffer);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(0);
@@ -2925,18 +2979,21 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
         glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->dots_uv_buffer);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(1);
+
+        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->dots_type_index_buffer);
+        glVertexAttribIPointer(2, 1, GL_INT, 0, 0);
+        glEnableVertexAttribArray(2);
+
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cached_compiled_drawing_data->dots_index_buffer);
 
         glUseProgram(shared_gl_objects.compiled_dots_program);
         glUniform2fv(shared_gl_objects.compiled_dot_offset_uniform_location, 1, offset);
         glUniform2fv(shared_gl_objects.compiled_dot_scale_uniform_location, 1, scale);
-        glUniform4fv(shared_gl_objects.compiled_dot_color_uniform_location, 1, color);
+        glUniform3fv(shared_gl_objects.compiled_dot_color_uniform_location, 26, HIGHLIGHT_COLORS);
 
         glEnable(GL_BLEND);
         glDrawElements(GL_TRIANGLE_STRIP, cached_compiled_drawing_data->n_dot_elements, GL_UNSIGNED_INT, 0);
         glDisable(GL_BLEND);
-        //QOpenGLFunctions_3_1().glPrimiti
-        //context()->funct
 
     }
 }

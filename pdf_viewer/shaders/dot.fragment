@@ -3,8 +3,8 @@
 precision mediump float;
 
 in vec2 uv;
+in vec4 type_color;
 out vec4 color;
-uniform vec4 dot_color;
 
 void main(){
     float x = (uv.x - 0.5) * 2.0;
@@ -15,10 +15,10 @@ void main(){
 #ifdef GL_OES_standard_derivatives
     float delta = fwidth(r_squared);
     alpha = 1.0 - smoothstep(1.0 - delta, 1.0 + delta, r_squared);
-    color = dot_color * alpha;
+    color = type_color * alpha;
 #else
     if (r_squared <= 1.0){
-        color = dot_color;
+        color = type_color;
     }
     else{
         color = vec4(0.0, 0.0, 0.0, 0.0);

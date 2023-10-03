@@ -20,6 +20,7 @@
         <file>pdf_viewer/shaders/compiled_drawing.vertex</file>
         <file>pdf_viewer/shaders/dot.vertex</file>
         <file>pdf_viewer/shaders/dot.fragment</file>
+        <file>pdf_viewer/shaders/compiled_line.fragment</file>
         <file>begin.png</file>
         <file>pdf_viewer/touchui/TouchSlider.qml</file>
         <file>pdf_viewer/touchui/TouchCheckbox.qml</file>

@@ -1,11 +1,16 @@
 layout (location=0) in vec2 vertex_pos;
+layout (location=1) in int type_index;
 
 uniform vec2 offset;
 uniform vec2 scale;
+uniform vec3 type_colors[26];
+
+out vec3 type_color;
 
 void main(){
     vec2 pos = vertex_pos * scale;
     pos.y = -pos.y;
     pos = pos + offset;
+    type_color = type_colors[type_index];
     gl_Position = vec4(pos, 0.0, 1.0);
 }
