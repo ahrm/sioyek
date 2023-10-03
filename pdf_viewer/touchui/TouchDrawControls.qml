@@ -19,6 +19,7 @@ Rectangle{
     radius: 5
     property bool pen_mode: false
     property bool are_color_buttons_visible: false
+    property bool is_size_slider_visible: false
     property int selected_index: _index
 
     TouchButtonGroup{
@@ -36,7 +37,7 @@ Rectangle{
         buttons: ["❌", "🖋️", "✂️", "P", ""]
         colors: ["black", root.pen_mode ? "green" : "black", "black", pen_size_slider.visible ? "green" : "black", _colors[root.selected_index]]
 
-        visible: !are_color_buttons_visible
+        visible: (!are_color_buttons_visible) && (!is_size_slider_visible)
         onButtonClicked: function (index, name){
             if (index == 0){
                 root.exitDrawModeButtonClicked();
@@ -54,7 +55,8 @@ Rectangle{
                 root.eraserClicked();
             }
             if (index == 3){
-                pen_size_slider.visible = !pen_size_slider.visible;
+                root.is_size_slider_visible = true;
+                // pen_size_slider.visible = !pen_size_slider.visible;
             }
             if (index == 4){
                 root.are_color_buttons_visible= !root.are_color_buttons_visible;
@@ -103,11 +105,19 @@ Rectangle{
         anchors.left: parent.left
         width: parent.width
         height: parent.height / 2
-        visible: false
+        visible: root.is_size_slider_visible
+        property bool is_pressed: false
 
         onValueChanged: {
                 penSizeChanged(value);
                 //pen_size_slider.visible = false;
+        }
+
+        onPressedChanged: function(val){
+            is_pressed = !is_pressed;
+            if (!is_pressed){
+                root.is_size_slider_visible = false;
+            }
         }
     }
 
