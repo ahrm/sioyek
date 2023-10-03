@@ -1218,7 +1218,9 @@ public:
         window_rect.y0 += 1;
         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
 
-        QPixmap pixmap(window_qrect.width(), window_qrect.height());
+        float ratio = QGuiApplication::primaryScreen()->devicePixelRatio();
+        QPixmap pixmap(static_cast<int>(window_qrect.width() * ratio), static_cast<int>(window_qrect.height() * ratio));
+        pixmap.setDevicePixelRatio(ratio);
 
         //widget->render(&pixmap, QPoint(), QRegion(widget->rect()));
         widget->render(&pixmap, QPoint(), QRegion(window_qrect));

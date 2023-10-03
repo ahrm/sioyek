@@ -634,7 +634,13 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
 
     for (auto [pixmap, rect] : scratchpad->pixmaps) {
         WindowRect window_rect = rect.to_window(scratchpad);
-        QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
+
+        QRect window_qrect = QRect(
+            window_rect.x0,
+            window_rect.y0,
+            window_rect.width(),
+            window_rect.height()
+        );
         painter->drawPixmap(window_qrect, pixmap);
     }
 

@@ -1573,8 +1573,9 @@ void ScratchPad::add_pixmap(QPixmap pixmap) {
     AbsoluteDocumentPos top_abs_pos = get_bounding_box().bottom_right();
     int top_window_pos = top_abs_pos.to_window(this).y;
 
-    int pixmap_width = pixmap.width();
-    int pixmap_height = pixmap.height();
+    float dpr = pixmap.devicePixelRatio();
+    int pixmap_width = pixmap.width() / dpr;
+    int pixmap_height = pixmap.height() / dpr;
 
     int pixmap_window_left = view_width / 2 - pixmap_width / 2;
     int pixmap_window_right = view_width / 2 + pixmap_width / 2;
