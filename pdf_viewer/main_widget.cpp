@@ -187,6 +187,7 @@ extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
 extern std::wstring VOLUME_DOWN_COMMAND;
 extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
+extern ScratchPad global_scratchpad;
 
 extern int MAX_TAB_COUNT;
 extern std::wstring BACK_RECT_TAP_COMMAND;
@@ -763,7 +764,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     pdf_renderer->start_threads();
 
 
-    scratchpad = new ScratchPad();
+    //scratchpad = new ScratchPad();
+    scratchpad = &global_scratchpad;
+
     main_document_view = new DocumentView(db_manager, document_manager, checksummer);
     opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, false, this);
 
@@ -5835,6 +5838,11 @@ bool MainWidget::event(QEvent* event) {
         }
     }
 
+    if (event->type() == QEvent::WindowActivate) {
+        if (is_scratchpad_mode()) {
+            scratchpad->on_view_size_change(width(), height());
+        }
+    }
     if ((should_draw(true)) && te) {
         handle_pen_drawing_event(te);
         event->accept();

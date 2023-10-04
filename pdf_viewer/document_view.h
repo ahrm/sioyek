@@ -196,6 +196,7 @@ public:
     std::deque<AbsoluteRect>* get_selected_character_rects();
 };
 
+
 class ScratchPad : public DocumentView {
 private:
     std::vector<FreehandDrawing> all_drawings;
@@ -204,6 +205,7 @@ private:
 public:
 
     std::vector<PixmapDrawing> pixmaps;
+    std::optional<CompiledDrawingData> cached_compiled_drawing_data = {};
 
     ScratchPad();
     bool set_offsets(float new_offset_x, float new_offset_y, bool force = false);

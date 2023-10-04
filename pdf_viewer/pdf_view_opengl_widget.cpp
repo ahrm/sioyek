@@ -2666,19 +2666,19 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
 }
 
 void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings) {
-    if (cached_compiled_drawing_data) {
+    if (scratchpad->cached_compiled_drawing_data) {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
 
-        glDeleteBuffers(1, &cached_compiled_drawing_data->index_buffer);
-        glDeleteBuffers(1, &cached_compiled_drawing_data->vertex_buffer);
-        glDeleteBuffers(1, &cached_compiled_drawing_data->dots_index_buffer);
-        glDeleteBuffers(1, &cached_compiled_drawing_data->dots_vertex_buffer);
-        glDeleteBuffers(1, &cached_compiled_drawing_data->dots_uv_buffer);
-        glDeleteBuffers(1, &cached_compiled_drawing_data->lines_type_index_buffer);
-        glDeleteBuffers(1, &cached_compiled_drawing_data->dots_type_index_buffer);
-        glDeleteVertexArrays(1, &cached_compiled_drawing_data->vao);
-        cached_compiled_drawing_data = {};
+        glDeleteBuffers(1, &scratchpad->cached_compiled_drawing_data->index_buffer);
+        glDeleteBuffers(1, &scratchpad->cached_compiled_drawing_data->vertex_buffer);
+        glDeleteBuffers(1, &scratchpad->cached_compiled_drawing_data->dots_index_buffer);
+        glDeleteBuffers(1, &scratchpad->cached_compiled_drawing_data->dots_vertex_buffer);
+        glDeleteBuffers(1, &scratchpad->cached_compiled_drawing_data->dots_uv_buffer);
+        glDeleteBuffers(1, &scratchpad->cached_compiled_drawing_data->lines_type_index_buffer);
+        glDeleteBuffers(1, &scratchpad->cached_compiled_drawing_data->dots_type_index_buffer);
+        glDeleteVertexArrays(1, &scratchpad->cached_compiled_drawing_data->vao);
+        scratchpad->cached_compiled_drawing_data = {};
     }
     if (drawings.size() == 0) {
         scratchpad->on_compile();
@@ -2813,7 +2813,7 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
         //bind_points(coordinates);
         //glDrawArrays(GL_TRIANGLE_STRIP, 0, coordinates.size() / 2);
     }
-    cached_compiled_drawing_data = compile_drawings_into_vertex_and_index_buffers(
+    scratchpad->cached_compiled_drawing_data = compile_drawings_into_vertex_and_index_buffers(
         coordinates,
         indices,
         type_indices,
@@ -2926,7 +2926,7 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
         mode_highlight_colors[i * 3 + 2] = res[2];
     }
 
-    if (cached_compiled_drawing_data.has_value()) {
+    if (scratchpad->cached_compiled_drawing_data.has_value()) {
         float scale[] = {
             2 * scratchpad->get_zoom_level() / scratchpad->get_view_width() ,
             2 * scratchpad->get_zoom_level() / scratchpad->get_view_height()
@@ -2935,18 +2935,18 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
         float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
         //float color[] = {1.0f, 0.0f, 0.0f, 1.0f};
 
-        glBindVertexArray(cached_compiled_drawing_data->vao);
+        glBindVertexArray(scratchpad->cached_compiled_drawing_data->vao);
 
-        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->vertex_buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, scratchpad->cached_compiled_drawing_data->vertex_buffer);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->lines_type_index_buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, scratchpad->cached_compiled_drawing_data->lines_type_index_buffer);
         glVertexAttribIPointer(1, 1, GL_INT, 0, 0);
         glEnableVertexAttribArray(1);
 
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cached_compiled_drawing_data->index_buffer);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scratchpad->cached_compiled_drawing_data->index_buffer);
 
         glUseProgram(shared_gl_objects.compiled_drawing_program);
         glUniform2fv(shared_gl_objects.compiled_drawing_offset_uniform_location, 1, offset);
@@ -2954,22 +2954,22 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
         glUniform3fv(shared_gl_objects.compiled_drawing_colors_uniform_location, 26, mode_highlight_colors);
         //glUniform4fv(shared_gl_objects.compiled_drawing_color_uniform_location, 1, color);
         glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-        glDrawElements(GL_TRIANGLE_STRIP, cached_compiled_drawing_data->n_elements, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLE_STRIP, scratchpad->cached_compiled_drawing_data->n_elements, GL_UNSIGNED_INT, 0);
 
         //// bind dots buffers
-        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->dots_vertex_buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, scratchpad->cached_compiled_drawing_data->dots_vertex_buffer);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->dots_uv_buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, scratchpad->cached_compiled_drawing_data->dots_uv_buffer);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(1);
 
-        glBindBuffer(GL_ARRAY_BUFFER, cached_compiled_drawing_data->dots_type_index_buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, scratchpad->cached_compiled_drawing_data->dots_type_index_buffer);
         glVertexAttribIPointer(2, 1, GL_INT, 0, 0);
         glEnableVertexAttribArray(2);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cached_compiled_drawing_data->dots_index_buffer);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scratchpad->cached_compiled_drawing_data->dots_index_buffer);
 
         glUseProgram(shared_gl_objects.compiled_dots_program);
         glUniform2fv(shared_gl_objects.compiled_dot_offset_uniform_location, 1, offset);
@@ -2977,7 +2977,7 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
         glUniform3fv(shared_gl_objects.compiled_dot_color_uniform_location, 26, mode_highlight_colors);
 
         glEnable(GL_BLEND);
-        glDrawElements(GL_TRIANGLE_STRIP, cached_compiled_drawing_data->n_dot_elements, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLE_STRIP, scratchpad->cached_compiled_drawing_data->n_dot_elements, GL_UNSIGNED_INT, 0);
         glDisable(GL_BLEND);
 
     }

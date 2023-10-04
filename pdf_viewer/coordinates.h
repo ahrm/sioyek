@@ -2,6 +2,7 @@
 
 #include <qpoint.h>
 #include <mupdf/fitz.h>
+#include <qopengl.h>
 
 class Document;
 class DocumentView;
@@ -14,6 +15,19 @@ struct WindowPos;
 bool rects_intersect(fz_rect rect1, fz_rect rect2);
 bool rects_intersect(fz_irect rect1, fz_irect rect2);
 bool range_intersects(float range1_start, float range1_end, float range2_start, float range2_end);
+
+struct CompiledDrawingData {
+    GLuint vao = 0;
+    GLuint vertex_buffer = 0;
+    GLuint index_buffer = 0;
+    GLuint dots_vertex_buffer = 0;
+    GLuint dots_uv_buffer = 0;
+    GLuint dots_index_buffer = 0;
+    GLuint lines_type_index_buffer = 0;
+    GLuint dots_type_index_buffer = 0;
+    int n_elements = 0;
+    int n_dot_elements = 0;
+};
 
 struct PagelessDocumentPos {
     float x;

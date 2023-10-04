@@ -50,18 +50,6 @@ enum HighlightRenderFlags
 };
 
 
-struct CompiledDrawingData {
-    GLuint vao = 0;
-    GLuint vertex_buffer = 0;
-    GLuint index_buffer = 0;
-    GLuint dots_vertex_buffer = 0;
-    GLuint dots_uv_buffer = 0;
-    GLuint dots_index_buffer = 0;
-    GLuint lines_type_index_buffer = 0;
-    GLuint dots_type_index_buffer = 0;
-    int n_elements = 0;
-    int n_dot_elements = 0;
-};
 
 struct OpenGLSharedResources {
     GLuint vertex_buffer_object = 0;
@@ -222,7 +210,6 @@ public:
     FreehandDrawing current_drawing;
     std::vector<FreehandDrawing> moving_drawings;
     std::vector<PixmapDrawing> moving_pixmaps;
-    std::optional<CompiledDrawingData> cached_compiled_drawing_data = {};
 
 #ifndef NDEBUG
     // properties for visualizing selected blocks, used only for debug
