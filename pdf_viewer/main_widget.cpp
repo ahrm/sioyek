@@ -4727,6 +4727,7 @@ void MainWidget::set_rect_select_mode(bool mode) {
     if (mode == true) {
         opengl_widget->set_selected_rectangle(AbsoluteRect());
     }
+    invalidate_render();
 }
 
 void MainWidget::set_point_select_mode(bool mode) {

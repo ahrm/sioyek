@@ -688,7 +688,7 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
 
 
 
-     if (scratchpad->get_non_compiled_drawings().size() > 50 || scratchpad->is_compile_invalid()) {
+     if (scratchpad->get_non_compiled_drawings().size() > 5 || scratchpad->is_compile_invalid()) {
          compile_drawings(scratchpad, scratchpad->get_all_drawings());
      }
 
@@ -3476,11 +3476,14 @@ void PdfViewOpenGLWidget::render_selected_rectangle() {
 
     if (selected_rectangle) {
         enable_stencil();
+
         write_to_stencil();
         float rectangle_color[] = { 0.0f, 0.0f, 0.0f };
         glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
         glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 0.3f);
-        render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value(), HRF_FILL | HRF_BORDER);
+        if (!(selected_rectangle.value() == fz_empty_rect)) {
+            render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value(), HRF_FILL | HRF_BORDER);
+        }
 
         use_stencil_to_write(false);
         NormalizedWindowRect window_rect({ -1, -1, 1, 1 });
