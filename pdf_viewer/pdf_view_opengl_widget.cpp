@@ -688,7 +688,7 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
 
 
 
-     if (scratchpad->get_non_compiled_drawings().size() > 5 || scratchpad->is_compile_invalid()) {
+     if (scratchpad->get_non_compiled_drawings().size() > 50 || scratchpad->is_compile_invalid()) {
          compile_drawings(scratchpad, scratchpad->get_all_drawings());
      }
 
@@ -704,7 +704,10 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
 
     glDisable(GL_MULTISAMPLE);
 
+    bind_default();
+    glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
     glUseProgram(shared_gl_objects.highlight_program);
+
     render_selected_rectangle();
 
     painter->endNativePainting();
@@ -3486,6 +3489,7 @@ void PdfViewOpenGLWidget::render_selected_rectangle() {
         }
 
         use_stencil_to_write(false);
+
         NormalizedWindowRect window_rect({ -1, -1, 1, 1 });
         render_highlight_window(shared_gl_objects.highlight_program, window_rect, true);
 

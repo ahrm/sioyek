@@ -15,6 +15,7 @@
 // handle multiple documents in compiled scratchpad drawings
 // add ability to copy freehand drawings from scratchpad to document
 // hide the touch drawing buttons while copying for scratchpad
+// don't change mouse cursor to hand when in scratchpad mode
 
 #include "qlogging.h"
 #include <iostream>
