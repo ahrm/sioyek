@@ -15,9 +15,8 @@
 // handle multiple documents in compiled scratchpad drawings
 // add ability to copy freehand drawings from scratchpad to document
 // hide the touch drawing buttons while copying for scratchpad
-// don't change mouse cursor to hand when in scratchpad mode
+// next line highlight rendering in slit ruler mode is not working properly
 
-#include "qlogging.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -4733,6 +4732,14 @@ void MainWidget::reset_highlight_links() {
 
 void MainWidget::set_rect_select_mode(bool mode) {
     rect_select_mode = mode;
+    if (draw_controls_) {
+        if (mode) {
+            draw_controls_->hide();
+        }
+        else {
+            draw_controls_->show();
+        }
+    }
     if (mode == true) {
         opengl_widget->set_selected_rectangle(AbsoluteRect());
     }

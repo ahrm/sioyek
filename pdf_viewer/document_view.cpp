@@ -1666,6 +1666,7 @@ void ScratchPad::add_drawing(FreehandDrawing drawing) {
 
 void ScratchPad::clear() {
     all_drawings.clear();
+    pixmaps.clear();
     non_compiled_drawings.clear();
     is_compile_valid = false;
 }

@@ -1237,6 +1237,7 @@ public:
         md.initial_mouse_position = click_pos;
         widget->freehand_drawing_move_data = md;
         widget->toggle_scratchpad_mode();
+        widget->set_rect_select_mode(false);
         widget->invalidate_render();
     }
 
@@ -1282,6 +1283,7 @@ public:
         widget->render(&pixmap, QPoint(), QRegion(window_qrect));
         widget->toggle_scratchpad_mode();
         widget->add_pixmap_to_scratchpad(pixmap);
+        widget->set_rect_select_mode(false);
         widget->invalidate_render();
     }
 
