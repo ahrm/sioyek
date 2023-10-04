@@ -16,7 +16,6 @@
 // add ability to copy freehand drawings from scratchpad to document
 // hide the touch drawing buttons while copying for scratchpad
 // don't change mouse cursor to hand when in scratchpad mode
-// add a move button to touch menu
 
 #include "qlogging.h"
 #include <iostream>
@@ -511,6 +510,10 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         return;
     }
 
+    WindowPos mpos(mouse_event->pos());
+    AbsoluteDocumentPos abs_mpos = get_window_abspos(mpos);
+    NormalizedWindowPos normal_mpos = mpos.to_window_normalized(main_document_view);
+
     if (freehand_drawing_move_data) {
         // update temp drawings of opengl widget
         //AbsoluteDocumentPos mouse_abspos = WindowPos(mouse_event->pos()).to_absolute(main_document_view);
@@ -519,6 +522,17 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         opengl_widget->moving_pixmaps.clear();
         move_selected_drawings(mouse_abspos, opengl_widget->moving_drawings, opengl_widget->moving_pixmaps);
         validate_render();
+        return;
+    }
+
+    if (rect_select_mode) {
+        if (rect_select_begin.has_value()) {
+            rect_select_end = abs_mpos;
+            AbsoluteRect selected_rect(rect_select_begin.value(), rect_select_end.value());
+            opengl_widget->set_selected_rectangle(selected_rect);
+
+            validate_render();
+        }
         return;
     }
 
@@ -559,9 +573,6 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     }
 
 
-    WindowPos mpos(mouse_event->pos());
-    AbsoluteDocumentPos abs_mpos = get_window_abspos(mpos);
-    NormalizedWindowPos normal_mpos = mpos.to_window_normalized(main_document_view);
 
     if (bookmark_move_data) {
         handle_bookmark_move();
@@ -584,16 +595,6 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     std::optional<PdfLink> link = {};
 
-    if (rect_select_mode) {
-        if (rect_select_begin.has_value()) {
-            rect_select_end = abs_mpos;
-            AbsoluteRect selected_rect(rect_select_begin.value(), rect_select_end.value());
-            opengl_widget->set_selected_rectangle(selected_rect);
-
-            validate_render();
-        }
-        return;
-    }
 
     if (overview_resize_data) {
         // if we are resizing overview page, set the selected side of the overview window to the mosue position
@@ -639,31 +640,33 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
 
     }
 
-    if (opengl_widget->is_window_point_in_overview(normal_mpos)) {
-        link = doc()->get_link_in_pos(opengl_widget->window_pos_to_overview_pos(normal_mpos));
-        if (link) {
+    if (!is_scratchpad_mode()){
+        if (opengl_widget->is_window_point_in_overview(normal_mpos)) {
+            link = doc()->get_link_in_pos(opengl_widget->window_pos_to_overview_pos(normal_mpos));
+            if (link) {
+                setCursor(Qt::PointingHandCursor);
+            }
+            else {
+                setCursor(Qt::ArrowCursor);
+            }
+            return;
+        }
+
+        if (main_document_view && (link = main_document_view->get_link_in_pos(mpos))) {
+            // show hand cursor when hovering over links
             setCursor(Qt::PointingHandCursor);
+
+            // if hover_overview config is set, we show an overview of links while hovering over them
+            if (HOVER_OVERVIEW) {
+                set_overview_link(link.value());
+            }
         }
         else {
             setCursor(Qt::ArrowCursor);
-        }
-        return;
-    }
-
-    if (main_document_view && (link = main_document_view->get_link_in_pos(mpos))) {
-        // show hand cursor when hovering over links
-        setCursor(Qt::PointingHandCursor);
-
-        // if hover_overview config is set, we show an overview of links while hovering over them
-        if (HOVER_OVERVIEW) {
-            set_overview_link(link.value());
-        }
-    }
-    else {
-        setCursor(Qt::ArrowCursor);
-        if (HOVER_OVERVIEW) {
-            set_overview_page({});
-            //            invalidate_render();
+            if (HOVER_OVERVIEW) {
+                set_overview_page({});
+                //            invalidate_render();
+            }
         }
     }
 
@@ -1949,6 +1952,10 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 }
 
 void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed) {
+
+    if (is_scratchpad_mode()){
+        return;
+    }
 
     if (is_rotated()) {
         return;
@@ -6527,6 +6534,9 @@ std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {
 
 
 void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
+    if (is_scratchpad_mode()){
+        return;
+    }
     ensure_internet_permission();
 
     QPoint mouse_pos;
