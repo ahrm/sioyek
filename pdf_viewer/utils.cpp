@@ -137,6 +137,11 @@ int mod(int a, int b)
 
 ParsedUri parse_uri(fz_context* mupdf_context, std::string uri) {
     fz_link_dest dest = pdf_parse_link_uri(mupdf_context, uri.c_str());
+    if (dest.type != FZ_LINK_DEST_XYZ) {
+        float x = dest.x + dest.w / 2;;
+        float y = dest.y + dest.h / 2;
+        return { dest.loc.page + 1, x, y };
+    }
     return { dest.loc.page + 1, dest.x, dest.y };
 }
 
