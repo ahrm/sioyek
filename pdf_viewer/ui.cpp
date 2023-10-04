@@ -565,7 +565,12 @@ DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent) {
         });
 
     QObject::connect(controls_ui, &TouchDrawControls::screenshotPressed, [&]() {
-        main_widget->run_command_with_name("copy_screenshot_to_scratchpad");
+        if (main_widget->is_scratchpad_mode()) {
+            main_widget->run_command_with_name("copy_drawings_from_scratchpad");
+        }
+        else {
+            main_widget->run_command_with_name("copy_screenshot_to_scratchpad");
+        }
         });
 
     QObject::connect(controls_ui, &TouchDrawControls::toggleScratchpadPressed, [&]() {
