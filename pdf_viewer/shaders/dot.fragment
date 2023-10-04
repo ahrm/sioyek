@@ -15,7 +15,7 @@ void main(){
 #ifdef GL_OES_standard_derivatives
     float delta = fwidth(r_squared);
     alpha = 1.0 - smoothstep(1.0 - delta, 1.0 + delta, r_squared);
-    color = type_color * alpha;
+    color = vec4(type_color.rgb, alpha);
 #else
     if (r_squared <= 1.0){
         color = type_color;
