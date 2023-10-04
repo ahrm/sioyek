@@ -447,19 +447,18 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
             QCoreApplication::postEvent(w, resize_event->clone());
         }
     }
-    if (TOUCH_MODE) {
-        if (get_text_selection_buttons()) {
-            QCoreApplication::postEvent(get_text_selection_buttons(), resize_event->clone());
-        }
-        if (get_search_buttons()) {
-            QCoreApplication::postEvent(get_search_buttons(), resize_event->clone());
-        }
-        if (get_highlight_buttons()) {
-            QCoreApplication::postEvent(get_highlight_buttons(), resize_event->clone());
-        }
-        if (get_draw_controls()) {
-            QCoreApplication::postEvent(get_draw_controls(), resize_event->clone());
-        }
+
+    if (text_selection_buttons_) {
+        QCoreApplication::postEvent(get_text_selection_buttons(), resize_event->clone());
+    }
+    if (search_buttons_) {
+        QCoreApplication::postEvent(get_search_buttons(), resize_event->clone());
+    }
+    if (highlight_buttons_) {
+        QCoreApplication::postEvent(get_highlight_buttons(), resize_event->clone());
+    }
+    if (draw_controls_) {
+        QCoreApplication::postEvent(get_draw_controls(), resize_event->clone());
     }
 }
 
