@@ -12,10 +12,6 @@
 // touch epub controls
 // clicking on next visual mark links
 // better tablet button handling, the current method is setting dependent
-// handle multiple documents in compiled scratchpad drawings
-// add ability to copy freehand drawings from scratchpad to document
-// hide the touch drawing buttons while copying for scratchpad
-// next line highlight rendering in slit ruler mode is not working properly
 
 #include <iostream>
 #include <vector>

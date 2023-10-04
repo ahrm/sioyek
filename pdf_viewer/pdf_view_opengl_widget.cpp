@@ -1446,6 +1446,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             render_highlight_window(shared_gl_objects.highlight_program, ruler_rect.value(), flags, RULER_UNDERLINE_PIXEL_WIDTH);
         }
         if (underline) {
+            glUseProgram(shared_gl_objects.highlight_program);
             glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, RULER_MARKER_COLOR);
             glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 1.0f);
 
