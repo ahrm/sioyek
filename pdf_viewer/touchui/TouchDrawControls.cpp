@@ -68,6 +68,21 @@ TouchDrawControls::TouchDrawControls(float pen_size, char selected_symbol, QWidg
         this,
         SLOT(handleToggleScratchpad()));
 
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(saveScratchpadClicked()),
+        this,
+        SLOT(handleSaveScratchpad()));
+
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(loadScratchpadClicked()),
+        this,
+        SLOT(handleLoadScratchpad()));
+
+    QObject::connect(dynamic_cast<QObject*>(quick_widget->rootObject()),
+        SIGNAL(moveClicked()),
+        this,
+        SLOT(handleMove()));
+
 
 }
 void TouchDrawControls::setDrawType(char type) {
@@ -104,6 +119,18 @@ void TouchDrawControls::handleToggleScratchpad() {
 
 void TouchDrawControls::handleChangeColor(int index) {
     emit changeColorPressed(index);
+}
+
+void TouchDrawControls::handleSaveScratchpad() {
+    emit saveScratchpadPressed();
+}
+
+void TouchDrawControls::handleLoadScratchpad() {
+    emit loadScratchpadPressed();
+}
+
+void TouchDrawControls::handleMove() {
+    emit movePressed();
 }
 
 void TouchDrawControls::resizeEvent(QResizeEvent* resize_event) {

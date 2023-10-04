@@ -7206,7 +7206,9 @@ std::string MainWidget::get_current_mode_string() {
 }
 
 void MainWidget::handle_drawing_ui_visibilty() {
-    if (!TOUCH_MODE) return;
+    if (!TOUCH_MODE && (draw_controls_ == nullptr)) {
+        return;
+    }
 
     if (freehand_drawing_mode == DrawingMode::None) {
         get_draw_controls()->hide();
@@ -7785,6 +7787,7 @@ DrawControlsUI* MainWidget::get_draw_controls() {
         draw_controls_->hide();
     }
 
+    draw_controls_->controls_ui->set_scratchpad_mode(is_scratchpad_mode());
     return draw_controls_;
 }
 

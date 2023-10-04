@@ -573,6 +573,21 @@ DrawControlsUI::DrawControlsUI(MainWidget* parent) : QWidget(parent) {
         }
         });
 
+    QObject::connect(controls_ui, &TouchDrawControls::saveScratchpadPressed, [&]() {
+        main_widget->run_command_with_name("save_scratchpad");
+        main_widget->invalidate_render();
+        });
+
+    QObject::connect(controls_ui, &TouchDrawControls::loadScratchpadPressed, [&]() {
+        main_widget->run_command_with_name("load_scratchpad");
+        main_widget->invalidate_render();
+        });
+
+    QObject::connect(controls_ui, &TouchDrawControls::movePressed, [&]() {
+        main_widget->run_command_with_name("select_freehand_drawings");
+        main_widget->invalidate_render();
+        });
+
     QObject::connect(controls_ui, &TouchDrawControls::toggleScratchpadPressed, [&]() {
         main_widget->run_command_with_name("toggle_scratchpad_mode");
         main_widget->invalidate_render();

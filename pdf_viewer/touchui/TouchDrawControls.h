@@ -26,6 +26,9 @@ public slots:
     void handleScreenshot();
     void handleToggleScratchpad();
     void handlePenSizeChanged(qreal size);
+    void handleSaveScratchpad();
+    void handleLoadScratchpad();
+    void handleMove();
 
 signals:
     void exitDrawModePressed();
@@ -36,6 +39,9 @@ signals:
     void penSizeChanged(qreal size);
     void screenshotPressed();
     void toggleScratchpadPressed();
+    void saveScratchpadPressed();
+    void loadScratchpadPressed();
+    void movePressed();
 
 private:
     QQuickWidget* quick_widget = nullptr;

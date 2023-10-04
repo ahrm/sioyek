@@ -102,6 +102,9 @@
         <file>icons/screenshot.svg</file>
         <file>icons/swap.svg</file>
         <file>icons/pen.svg</file>
+        <file>icons/save.svg</file>
+        <file>icons/load.svg</file>
+        <file>icons/move.svg</file>
         <file>end.png</file>
         <file>data/embedding.npy</file>
         <file>data/linear.npy</file>

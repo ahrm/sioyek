@@ -14,6 +14,9 @@ Rectangle{
     signal penSizeChanged(size: real);
     signal screenshotClicked();
     signal toggleScratchpadClicked();
+    signal saveScratchpadClicked();
+    signal loadScratchpadClicked();
+    signal moveClicked();
 
     function on_scratchpad_mode_change(mode){
         is_scratchpad = mode;
@@ -32,29 +35,24 @@ Rectangle{
     TouchButtonGroup{
         anchors.left: parent.left
         anchors.right: parent.right
-        // anchors.top: parent.top
-        // anchors.bottom: parent.bottom
         height: pen_size_slider.visible ? parent.height / 2 : parent.height
-        //height: parent.height
-        // width: Math.max(parent.width / 5, 150)
 
+        visible: !is_scratchpad && (!are_color_buttons_visible) && (!is_size_slider_visible)
+        id: non_scratchpad_buttons
 
-        id: deletebutton
-
-        //buttons: ["❌", "🖋️", "✂️", "P", ""]
         buttons: [
             "qrc:/icons/close.svg",
             root.pen_mode ?  "qrc:/icons/finger-index.svg" : "qrc:/icons/pen.svg",
+            "qrc:/icons/move.svg",
             "qrc:/icons/erase.svg",
             "qrc:/icons/adjust.svg",
             "qrc:/icons/screenshot.svg",
             "qrc:/icons/swap.svg",
             ""
         ]
-        tips: ["Close", "Toggle pen mode", "Erase", "Adjust size", "Copy screenshot to scratchpad","Toggle scratchpad" ,"Color"]
-        colors: ["black", "black", "black", "black", "black","black", _colors[root.selected_index]]
+        tips: ["Close", "Toggle pen mode", "Move", "Erase", "Adjust size", "Copy screenshot to scratchpad","Toggle scratchpad" ,"Color"]
+        colors: ["black", "black", "black", "black", "black", "black","black", _colors[root.selected_index]]
 
-        visible: (!are_color_buttons_visible) && (!is_size_slider_visible)
         onButtonClicked: function (index, name){
             if (index == 0){
                 root.exitDrawModeButtonClicked();
@@ -69,19 +67,86 @@ Rectangle{
                 }
             }
             if (index == 2){
-                root.eraserClicked();
+                root.moveClicked();
             }
             if (index == 3){
+                root.eraserClicked();
+            }
+            if (index == 4){
                 root.is_size_slider_visible = true;
                 // pen_size_slider.visible = !pen_size_slider.visible;
             }
-            if (index == 4){
+            if (index == 5){
                 root.screenshotClicked();
             }
-            if (index == 5){
+            if (index == 6){
                 root.toggleScratchpadClicked();
             }
+            if (index == 7){
+                root.are_color_buttons_visible= !root.are_color_buttons_visible;
+            }
+        }
+    }
+
+    TouchButtonGroup{
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: pen_size_slider.visible ? parent.height / 2 : parent.height
+
+        visible: is_scratchpad && (!are_color_buttons_visible) && (!is_size_slider_visible)
+        id: scratchpad_buttons
+
+        buttons: [
+            "qrc:/icons/close.svg",
+            root.pen_mode ?  "qrc:/icons/finger-index.svg" : "qrc:/icons/pen.svg",
+            "qrc:/icons/move.svg",
+            "qrc:/icons/erase.svg",
+            "qrc:/icons/adjust.svg",
+            "qrc:/icons/screenshot.svg",
+            "qrc:/icons/save.svg",
+            "qrc:/icons/load.svg",
+            "qrc:/icons/swap.svg",
+            ""
+        ]
+        tips: ["Close", "Toggle pen mode", "Move", "Erase", "Adjust size", "Copy screenshot to scratchpad","Save scratchpad", "Load scratchpad", "Toggle scratchpad" ,"Color"]
+        colors: ["black", "black", "black", "black", "black", "black","black", "black", "black", _colors[root.selected_index]]
+
+        onButtonClicked: function (index, name){
+            if (index == 0){
+                root.exitDrawModeButtonClicked();
+            }
+            if (index == 1){
+                root.pen_mode = !root.pen_mode;
+                if (root.pen_mode){
+                    root.enablePenDrawModeClicked();
+                }
+                else{
+                    root.disablePenDrawModeClicked();
+                }
+            }
+            if (index == 2){
+                root.moveClicked();
+            }
+            if (index == 3){
+                root.eraserClicked();
+            }
+            if (index == 4){
+                root.is_size_slider_visible = true;
+                // pen_size_slider.visible = !pen_size_slider.visible;
+            }
+            if (index == 5){
+                root.screenshotClicked();
+            }
             if (index == 6){
+                root.saveScratchpadClicked();
+            }
+            if (index == 7){
+                root.loadScratchpadClicked();
+            }
+            if (index == 8){
+                root.toggleScratchpadClicked();
+            }
+            if (index == 9){
                 root.are_color_buttons_visible= !root.are_color_buttons_visible;
             }
         }
@@ -99,32 +164,12 @@ Rectangle{
             root.are_color_buttons_visible = !root.are_color_buttons_visible;
         }
     }
-    // TouchButtonGroup{
-    //     anchors.right: parent.right
-    //     anchors.left: deletebutton.right
-    //     // anchors.top: parent.top
-    //     // anchors.bottom: parent.bottom
-    //     //height: parent.height
-    //     height: pen_size_slider.visible ? parent.height / 2 : parent.height
-    //     //width: 4 * parent.width / 5
-    //     radio: true
-
-
-    //     id: color_buttons
-
-    //     buttons: Array(_colors.length).fill("")
-    //     colors: _colors;
-
-    //     onButtonClicked: function (index, name){
-    //         root.changeColorClicked(index);
-    //     }
-    // }
     Slider{
         from: 0
         to: 10
         value: _pen_size
         id: pen_size_slider
-        anchors.top: deletebutton.bottom
+        anchors.top: non_scratchpad_buttons.bottom
         anchors.left: parent.left
         width: parent.width
         height: parent.height / 2
@@ -143,47 +188,5 @@ Rectangle{
             }
         }
     }
-
-    // Row{
-    // 	anchors.top: parent.top
-    // 	anchors.bottom: parent.bottom
-    // 	//anchors.left: deletebutton.right
-    // 	anchors.right: parent.right
-    // 	anchors.margins: 2
-    // 	width: parent.width * 3 / 4
-    // 	layoutDirection: Qt.RightToLeft
-    // 	spacing: parent.width / 50
-
-    // 	Repeater{
-
-    // 		model: 4
-
-    // 		Rectangle{
-    // 			//anchors.right: color_b.left
-    // 			//anchors.verticalCenter: parent.verticalCenter
-    // 			width: Math.min(parent.width / 4, parent.height / 1.1)
-    // 			height: width
-    // 			radius: Math.min(width,height)
-    // 			anchors.verticalCenter: parent.verticalCenter
-    // 			//id: color_a
-    // 			color: _colors[3-index]
-    // 			opacity: (3-index) == _index ? 1 : 0.5
-    // 			Text{
-    // 				text: String.fromCharCode(97 + (3 - index))
-    // 				color: "white"
-    // 				//anchors.centerIn: parent
-    // 				//anchors.fill: parent
-    // 				anchors.centerIn: parent
-    // 				z: 10
-    // 			}
-    // 			MouseArea{
-    // 				anchors.fill: parent
-    // 				onClicked: {
-    // 					root.changeColorClicked(3- index);
-    // 				}
-    // 			}
-    // 		}
-    // 	}
-    // }
 }
 
