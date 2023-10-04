@@ -712,18 +712,6 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
 
     painter->endNativePainting();
 
-    /* if (!use_cached_framebuffer && (current_drawing.points.size() > 0)) { */
-    /*     last_cache_num_drawings = scratchpad->drawings.size(); */
-
-    /*     last_cache_offset_x = scratchpad->get_offset_x(); */
-    /*     last_cache_offset_y = scratchpad->get_offset_y(); */
-    /*     last_cache_zoom_level = scratchpad->get_zoom_level(); */
-
-    /*     cached_framebuffer = grabFramebuffer(); */
-    /* } */
-    /* if (use_cached_framebuffer){ */
-    /*     cached_framebuffer = grabFramebuffer(); */
-    /* } */
 }
 
 //void PdfViewOpenGLWidget::update_framebuffer_cache(){

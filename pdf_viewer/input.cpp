@@ -1212,22 +1212,52 @@ public:
     }
 
     void perform() {
-        widget->clear_selected_rect();
+        if (!widget->is_scratchpad_mode()) {
+            widget->clear_selected_rect();
 
-        WindowRect window_rect = rect_->to_window(widget->main_document_view);
-        window_rect.y0 += 1;
-        QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
+            WindowRect window_rect = rect_->to_window(widget->main_document_view);
+            window_rect.y0 += 1;
+            QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
 
-        float ratio = QGuiApplication::primaryScreen()->devicePixelRatio();
-        QPixmap pixmap(static_cast<int>(window_qrect.width() * ratio), static_cast<int>(window_qrect.height() * ratio));
-        pixmap.setDevicePixelRatio(ratio);
+            float ratio = QGuiApplication::primaryScreen()->devicePixelRatio();
+            QPixmap pixmap(static_cast<int>(window_qrect.width() * ratio), static_cast<int>(window_qrect.height() * ratio));
+            pixmap.setDevicePixelRatio(ratio);
 
-        //widget->render(&pixmap, QPoint(), QRegion(widget->rect()));
-        widget->render(&pixmap, QPoint(), QRegion(window_qrect));
-        widget->toggle_scratchpad_mode();
-        widget->add_pixmap_to_scratchpad(pixmap);
-        widget->invalidate_render();
+            //widget->render(&pixmap, QPoint(), QRegion(widget->rect()));
+            widget->render(&pixmap, QPoint(), QRegion(window_qrect));
+            widget->toggle_scratchpad_mode();
+            widget->add_pixmap_to_scratchpad(pixmap);
+            widget->invalidate_render();
+        }
+        else {
+            AbsoluteDocumentPos scratchpad_pos = AbsoluteDocumentPos{ widget->scratchpad->get_offset_x(), widget->scratchpad->get_offset_y() };
+            AbsoluteDocumentPos main_window_pos = widget->main_document_view->get_offsets();
+            AbsoluteDocumentPos click_pos = rect_->center().to_window(widget->scratchpad).to_absolute(widget->main_document_view);
 
+            //float diff_x = main_window_pos.x - scratchpad_pos.x;
+            //float diff_y = main_window_pos.y - scratchpad_pos.y;
+
+            auto indices = widget->scratchpad->get_intersecting_objects(rect_.value());
+            std::vector<FreehandDrawing> drawings;
+            std::vector<PixmapDrawing> pixmaps;
+
+            widget->scratchpad->get_selected_objects_with_indices(indices, drawings, pixmaps);
+
+            for (auto& drawing : drawings) {
+                for (int i = 0; i < drawing.points.size(); i++) {
+                    drawing.points[i].pos = drawing.points[i].pos.to_window(widget->scratchpad).to_absolute(widget->main_document_view);
+                }
+
+            }
+
+            FreehandDrawingMoveData md;
+            md.initial_drawings = drawings;
+            md.initial_pixmaps = {};
+            md.initial_mouse_position = click_pos;
+            widget->freehand_drawing_move_data = md;
+            widget->toggle_scratchpad_mode();
+            widget->invalidate_render();
+        }
     }
 
     std::string get_name() {

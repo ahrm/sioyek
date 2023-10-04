@@ -16,6 +16,7 @@
 // add ability to copy freehand drawings from scratchpad to document
 // hide the touch drawing buttons while copying for scratchpad
 // don't change mouse cursor to hand when in scratchpad mode
+// add a move button to touch menu
 
 #include "qlogging.h"
 #include <iostream>
@@ -9399,3 +9400,4 @@ char MainWidget::get_current_freehand_type() {
 void MainWidget::show_draw_controls() {
     get_draw_controls()->show();
 }
+
