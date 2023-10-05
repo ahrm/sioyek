@@ -10,8 +10,8 @@
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
 // touch epub controls
-// clicking on next visual mark links
 // better tablet button handling, the current method is setting dependent
+// moving exits show link mode
 
 #include <iostream>
 #include <vector>
@@ -9423,4 +9423,3 @@ char MainWidget::get_current_freehand_type() {
 void MainWidget::show_draw_controls() {
     get_draw_controls()->show();
 }
-

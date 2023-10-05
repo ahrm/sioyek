@@ -14,6 +14,16 @@ import android.content.*;
 import android.app.*;
 import android.view.WindowManager;
 import android.widget.Toast;
+import android.net.Uri;
+import android.provider.OpenableColumns;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.String;
+import android.content.Intent;
+import java.io.File;
 
 import java.lang.String;
 import android.content.Intent;
@@ -30,10 +40,12 @@ public class SioyekActivity extends QtActivity{
     public static boolean isIntentPending;
     public static boolean isInitialized;
 
+    private static SioyekActivity instance = null;
+
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        qDebug("sioyek: oncreate called");
+
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -44,14 +56,22 @@ public class SioyekActivity extends QtActivity{
             if (action != null){
                 Uri intentUri = intent.getData();
                 if (intentUri != null){
-                    if (intentUri.toString().startsWith("content://") && (!intentUri.toString().startsWith("content://com.android")) && (intentUri.toString().indexOf("@media") == -1)){
-                        Toast.makeText(this, "Opening files from other apps is not supported. Download the file and open it from file manager.", Toast.LENGTH_LONG).show();
-                        finish();
+                    if (intentUri.toString().startsWith("content://") && (!intentUri.toString().startsWith("content://com.android")) && (!intentUri.toString().startsWith("content://media")) && (intentUri.toString().indexOf("@media") == -1)){
+                        //Toast.makeText(this, "Opening files from other apps is not supported. Download the file and open it from file manager.", Toast.LENGTH_LONG).show();
+
+                        Intent viewIntent = new Intent(getApplicationContext(), SioyekActivity.class);
+                        // viewIntent.setUri(intentUri);
+                        viewIntent.setAction(Intent.ACTION_VIEW);
+                        viewIntent.putExtra("sharedData", intentUri.toString());
+                        startActivity(viewIntent);
+                        //finish();
                     }
                     isIntentPending = true;
                 }
             }
         }
+
+        instance = this;
         if(!Environment.isExternalStorageManager()){
 
             // Uri uri = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
@@ -89,7 +109,48 @@ public class SioyekActivity extends QtActivity{
         }
     }
 
-    public static String getRealPathFromUri(Context context, Uri contentUri) {
+    public static File getFile(Context context, Uri uri) throws IOException {
+        File destinationFilename = new File(context.getFilesDir().getPath() + File.separatorChar + queryName(context, uri));
+
+        if (destinationFilename.exists()){
+            return destinationFilename;
+        }
+
+        try (InputStream ins = context.getContentResolver().openInputStream(uri)) {
+            createFileFromStream(ins, destinationFilename);
+        } catch (Exception ex) {
+            Log.e("Save File", ex.getMessage());
+            ex.printStackTrace();
+        }
+        return destinationFilename;
+    }
+
+    public static void createFileFromStream(InputStream ins, File destination) {
+        try (OutputStream os = new FileOutputStream(destination)) {
+            byte[] buffer = new byte[4096];
+            int length;
+            while ((length = ins.read(buffer)) > 0) {
+                os.write(buffer, 0, length);
+            }
+            os.flush();
+        } catch (Exception ex) {
+            Log.e("Save File", ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+    private static String queryName(Context context, Uri uri) {
+        Cursor returnCursor =
+                context.getContentResolver().query(uri, null, null, null, null);
+        assert returnCursor != null;
+        int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+        returnCursor.moveToFirst();
+        String name = returnCursor.getString(nameIndex);
+        returnCursor.close();
+        return name;
+    }
+
+    public static String getRealPathFromUri(Context context, Uri contentUri) throws IOException{
         Cursor cursor = null;
         try {
             String[] proj = { MediaStore.Images.Media.DATA };
@@ -97,12 +158,20 @@ public class SioyekActivity extends QtActivity{
             int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
             cursor.moveToFirst();
             return cursor.getString(column_index);
-        } finally {
+        }
+        catch(Exception e){
+            qDebug("sioyek: something happened");
+            String newFileName=  getFile(context, contentUri).getPath();
+            qDebug("sioyek: new file name = " + newFileName);
+            return getFile(context, contentUri).getPath();
+        }
+        finally {
             if (cursor != null) {
                 cursor.close();
             }
         }
     }
+
     public static String getPathFromUri(Context context, Uri uri) {
         final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
@@ -230,12 +299,24 @@ public class SioyekActivity extends QtActivity{
         Intent intent = getIntent();
         if (intent.getAction().equals("android.intent.action.VIEW")){
             Uri intentUri = intent.getData();
+            if (intentUri == null){
+                intentUri = Uri.parse(intent.getStringExtra("sharedData"));
+                qDebug("sioyek: got message with sharedData=" + intent.getStringExtra("sharedData"));
+            }
             //String realPath = getRealPathFromUri(getApplicationContext(), intentUri);
             //Uri newUri = Uri.fromFile(new File(realPath));
 
             //setFileUrlReceived(intentUri.toString());
-            String realPath = getRealPathFromUri(this, intentUri);
-            setFileUrlReceived(realPath);
+            String realPath = "";
+            try{
+                realPath = getRealPathFromUri(this, intentUri);
+                //Toast.makeText(this, "trying to open " + realPath, Toast.LENGTH_LONG).show();
+                qDebug("sioyek: trying to open " + realPath );
+                setFileUrlReceived(realPath);
+            }
+            catch(IOException e){
+                qDebug("sioyek: could not open" + realPath);
+            }
         }
         return;
     }
