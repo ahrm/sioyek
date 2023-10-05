@@ -51,6 +51,7 @@ public class SioyekActivity extends QtActivity{
 
 
         Intent intent = getIntent();
+
         if (intent != null){
             String action = intent.getAction();
             if (action != null){
@@ -63,8 +64,11 @@ public class SioyekActivity extends QtActivity{
                         // viewIntent.setUri(intentUri);
                         viewIntent.setAction(Intent.ACTION_VIEW);
                         viewIntent.putExtra("sharedData", intentUri.toString());
+
                         startActivity(viewIntent);
-                        //finish();
+                        if (instance != null){
+                            finish();
+                        }
                     }
                     isIntentPending = true;
                 }
