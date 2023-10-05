@@ -2542,7 +2542,9 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
         stream = fz_open_memory(context, new_buffer, bytes.size());
     }
 
-    return fz_open_document_with_stream(context, "application/pdf", stream);
+    //return fz_open_document_with_stream(context, "application/pdf", stream);
+    std::string file_name_str = utf8_encode(file_name);
+    return fz_open_document_with_stream(context, file_name_str.c_str(), stream);
 #else
     fz_document* doc = fz_open_document(context, utf8_encode(file_name).c_str());
     if (fz_is_document_reflowable(context, doc)) {

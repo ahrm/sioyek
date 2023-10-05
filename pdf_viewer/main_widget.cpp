@@ -1731,7 +1731,7 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     }
 
     if ((path.get_path().size() > 0) && (!has_document)) {
-        show_error_message(L"Could not open file: " + path.get_path());
+        show_error_message(L"Could not open file1: " + path.get_path());
     }
 
     if (offset_x) {
@@ -1782,7 +1782,7 @@ void MainWidget::open_document_at_location(const Path& path_,
     }
 
     if ((path.size() > 0) && (!has_document)) {
-        show_error_message(L"Could not open file: " + path);
+        show_error_message(L"Could not open file2: " + path);
     }
 
     main_document_view->on_view_size_change(main_window_width, main_window_height);
