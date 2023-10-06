@@ -27,7 +27,7 @@ Distro | Link | Maintainer
 Flathub | [sioyek](https://flathub.org/apps/details/com.github.ahrm.sioyek) | [@nbenitez](https://flathub.org/apps/details/com.github.ahrm.sioyek)
 Alpine | [sioyek](https://pkgs.alpinelinux.org/packages?name=sioyek) | [@jirutka](https://github.com/jirutka)
 Arch | [AUR sioyek](https://aur.archlinux.org/packages/sioyek) | [@goggle](https://github.com/goggle)
-Arch | [AUR Sioyek-git](https://aur.archlinux.org/packages/sioyek-git/) | [@randomn4me](https://github.com/randomn4me)
+Arch | [AUR sioyek-git](https://aur.archlinux.org/packages/sioyek-git/) | [@hrdl-github](https://github.com/hrdl-github)
 Arch | [AUR sioyek-appimage](https://aur.archlinux.org/packages/sioyek-appimage/) | [@DhruvaSambrani](https://github.com/DhruvaSambrani)
 Debian | [sioyek](https://packages.debian.org/sioyek) | [@viccie30](https://github.com/viccie30)
 NixOS | [sioyek](https://search.nixos.org/packages?channel=unstable&show=sioyek&from=0&size=50&sort=relevance&type=packages&query=sioyek) | [@podocarp](https://github.com/podocarp)
