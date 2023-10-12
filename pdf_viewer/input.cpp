@@ -10,6 +10,8 @@
 #include <qstringlist.h>
 #include <qlocalsocket.h>
 #include <qfileinfo.h>
+#include <qclipboard.h>
+
 #include "utils.h"
 #include "input.h"
 #include "main_widget.h"
@@ -539,6 +541,47 @@ public:
 
 };
 
+class DownloadClipboardUrlCommand : public Command {
+public:
+
+    DownloadClipboardUrlCommand(MainWidget* w) : Command(w) {
+    };
+
+    void perform() {
+        auto clipboard = QGuiApplication::clipboard();
+        std::wstring url = clipboard->text().toStdWString();
+        widget->download_paper_with_url(url, false, PaperDownloadFinishedAction::OpenInNewWindow);
+    }
+
+    std::string get_name() {
+        return "download_clipboard_url";
+    }
+
+    std::string text_requirement_name() {
+        return "Paper Url";
+    }
+
+};
+class DownloadPaperWithUrlCommand : public TextCommand {
+public:
+
+    DownloadPaperWithUrlCommand(MainWidget* w) : TextCommand(w) {
+    };
+
+    void perform() {
+        widget->download_paper_with_url(text.value(), false, PaperDownloadFinishedAction::OpenInNewWindow);
+    }
+
+    std::string get_name() {
+        return "download_paper_with_url";
+    }
+
+    std::string text_requirement_name() {
+        return "Paper Url";
+    }
+
+};
+
 class ControlMenuCommand : public TextCommand {
 public:
     ControlMenuCommand(MainWidget* w) : TextCommand(w) {
@@ -927,7 +970,7 @@ public:
     DownloadPaperWithNameCommand(MainWidget* w) : TextCommand(w) {};
 
     void perform() {
-        widget->download_paper_with_name(text.value());
+        widget->download_paper_with_name(text.value(), PaperDownloadFinishedAction::OpenInNewWindow);
     }
 
     std::string get_name() {
@@ -4181,7 +4224,7 @@ public:
 
         std::wstring text_ = text.value();
 
-        std::wstring download_url = widget->download_paper_with_name(text_);
+        widget->download_paper_with_name(text_, widget->get_default_paper_download_finish_action());
 
         if (source_rect) {
             widget->download_and_portal(text_, source_rect->center());
@@ -5771,6 +5814,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["edit_selected_bookmark"] = [](MainWidget* widget) {return std::make_unique< EditSelectedBookmarkCommand>(widget); };
     new_commands["edit_selected_highlight"] = [](MainWidget* widget) {return std::make_unique< EditSelectedHighlightCommand>(widget); };
     new_commands["search"] = [](MainWidget* widget) {return std::make_unique< SearchCommand>(widget); };
+    new_commands["download_paper_with_url"] = [](MainWidget* widget) {return std::make_unique< DownloadPaperWithUrlCommand>(widget); };
+    new_commands["download_clipboard_url"] = [](MainWidget* widget) {return std::make_unique< DownloadClipboardUrlCommand>(widget); };
     new_commands["execute_macro"] = [](MainWidget* widget) {return std::make_unique< ExecuteMacroCommand>(widget); };
     new_commands["control_menu"] = [](MainWidget* widget) {return std::make_unique< ControlMenuCommand>(widget); };
     new_commands["set_view_state"] = [](MainWidget* widget) {return std::make_unique< SetViewStateCommand>(widget); };

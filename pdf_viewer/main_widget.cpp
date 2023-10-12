@@ -861,7 +861,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                 // reduce the load on archive.org servers, but if the direct link is not available we use
                 // the archived link instead
                 if (reply_url.find(L"web.archive.org") == -1) {
-                    download_paper_with_url(reply->property("sioyek_archive_url").toString().toStdWString(), true)->setProperty(
+                    PaperDownloadFinishedAction finish_action = get_paper_download_action_from_string(
+                        reply->property("sioyek_finish_action").toString());
+
+                    download_paper_with_url(reply->property("sioyek_archive_url").toString().toStdWString(), true, finish_action)->setProperty(
                         "sioyek_paper_name",
                         reply->property("sioyek_paper_name")
                     );
@@ -881,6 +884,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             }
             //reply->property("sioyek_paper_name").toString().replace("/", "_")
 
+            PaperDownloadFinishedAction finish_action = get_paper_download_action_from_string(reply->property("sioyek_finish_action").toString());
             QString path = QString::fromStdWString(downloaded_papers_path.slash(file_name.toStdWString()).get_path());
             QDir dir;
             dir.mkpath(QString::fromStdWString(downloaded_papers_path.get_path()));
@@ -890,7 +894,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             if (opened) {
                 file.write(pdf_data);
                 file.close();
-                if (PAPER_DOWNLOAD_CREATE_PORTAL) {
+                if (finish_action == PaperDownloadFinishedAction::Portal) {
                     //std::string checksum = this->checksummer->get_checksum(path.toStdWString());
 
                     this->finish_pending_download_portal(
@@ -918,6 +922,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             QByteArray json_data = QByteArray::fromStdString(answer);
             QJsonDocument json_doc = QJsonDocument::fromJson(json_data);
             std::wstring paper_name = reply->property("sioyek_paper_name").toString().toStdWString();
+            PaperDownloadFinishedAction download_finish_action = get_paper_download_action_from_string(
+                reply->property("sioyek_finish_action").toString());
 
             auto get_url_file_size = [&](QString url) {
                 QNetworkRequest req;
@@ -988,12 +994,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             }
 
             if (matching_index > -1) {
-                auto download_reply = download_paper_with_url(hit_urls[matching_index]);
+                auto download_reply = download_paper_with_url(hit_urls[matching_index], false, download_finish_action);
                 download_reply->setProperty("sioyek_paper_name", QString::fromStdWString(paper_name));
                 download_reply->setProperty("sioyek_actual_paper_name", QString::fromStdWString(hit_raw_names[matching_index]));
             }
             else {
-                show_download_paper_menu(hit_names, hit_urls, paper_name);
+                show_download_paper_menu(hit_names, hit_urls, paper_name, download_finish_action);
             }
         }
 
@@ -6522,7 +6528,7 @@ void MainWidget::scan_new_files_from_scan_directory() {
 }
 
 
-std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {
+QNetworkReply* MainWidget::download_paper_with_name(const std::wstring& name, PaperDownloadFinishedAction action) {
     std::wstring download_name = name;
     if (name.size() > 0 && name[0] == ':') {
         download_name = name.substr(1, name.size() - 1);
@@ -6539,7 +6545,8 @@ std::wstring MainWidget::download_paper_with_name(const std::wstring& name) {
     req.setUrl(get_url);
     auto reply = network_manager.get(req);
     reply->setProperty("sioyek_paper_name", QString::fromStdWString(name));
-    return get_url.toString().toStdWString();
+    reply->setProperty("sioyek_finish_action", get_paper_download_finish_action_string(action));
+    return reply;
 }
 
 
@@ -6564,7 +6571,7 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
     if (paper_name) {
         std::wstring bib_text = clean_bib_item(paper_name.value());
 
-        if (PAPER_DOWNLOAD_CREATE_PORTAL) {
+        if (get_default_paper_download_finish_action() == PaperDownloadFinishedAction::Portal) {
             AbsoluteDocumentPos source_position;
             if (opengl_widget->get_overview_page()) {
                 source_position = get_overview_source_rect()->center();
@@ -6577,11 +6584,11 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
         }
         if (TOUCH_MODE) {
             show_text_prompt(bib_text, [this](std::wstring text) {
-                download_paper_with_name(text);
+                QNetworkReply* reply = download_paper_with_name(text, get_default_paper_download_finish_action());
                 });
         }
         else {
-            download_paper_with_name(bib_text);
+            download_paper_with_name(bib_text, get_default_paper_download_finish_action());
         }
     }
 }
@@ -6955,7 +6962,8 @@ void MainWidget::handle_goto_random_page() {
 void MainWidget::show_download_paper_menu(
     const std::vector<std::wstring>& paper_names,
     const std::vector<std::wstring>& download_urls,
-    std::wstring paper_name) {
+    std::wstring paper_name,
+    PaperDownloadFinishedAction action) {
 
 
     // force it to be a double column layout. the second column will asynchronously be filled with
@@ -6967,13 +6975,14 @@ void MainWidget::show_download_paper_menu(
     }
 
     set_filtered_select_menu<std::pair<std::wstring, std::wstring>>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { paper_names, right_names }, values, -1,
-        [&, paper_name](std::pair<std::wstring, std::wstring>* values) {
+        [&, paper_name, action](std::pair<std::wstring, std::wstring>* values) {
             std::wstring actual_paper_name = values->first;
             std::wstring paper_url = values->second;
 
-            auto download_reply = download_paper_with_url(paper_url);
+            auto download_reply = download_paper_with_url(paper_url, false, action);
             download_reply->setProperty("sioyek_paper_name", QString::fromStdWString(paper_name));
             download_reply->setProperty("sioyek_actual_paper_name", QString::fromStdWString(actual_paper_name));
+            download_reply->setProperty("sioyek_finish_action", get_paper_download_finish_action_string(action));
         },
         nullptr);
 
@@ -6982,7 +6991,7 @@ void MainWidget::show_download_paper_menu(
 
 }
 
-QNetworkReply* MainWidget::download_paper_with_url(std::wstring paper_url_, bool use_archive_url) {
+QNetworkReply* MainWidget::download_paper_with_url(std::wstring paper_url_, bool use_archive_url, PaperDownloadFinishedAction action) {
     QString paper_url;
     if (use_archive_url) {
         paper_url = get_direct_pdf_url_from_archive_url(QString::fromStdWString(paper_url_));
@@ -8171,7 +8180,7 @@ void MainWidget::download_and_portal(std::wstring unclean_paper_name, AbsoluteDo
 
     std::wstring cleaned_paper_name = clean_bib_item(unclean_paper_name);
     create_pending_download_portal(source_pos, cleaned_paper_name);
-    download_paper_with_name(cleaned_paper_name);
+    download_paper_with_name(cleaned_paper_name, PaperDownloadFinishedAction::Portal);
 }
 
 void MainWidget::create_pending_download_portal(AbsoluteDocumentPos source_position, std::wstring paper_name) {
@@ -9422,4 +9431,28 @@ char MainWidget::get_current_freehand_type() {
 
 void MainWidget::show_draw_controls() {
     get_draw_controls()->show();
+}
+
+PaperDownloadFinishedAction MainWidget::get_default_paper_download_finish_action() {
+    if (PAPER_DOWNLOAD_CREATE_PORTAL) {
+        return PaperDownloadFinishedAction::Portal;
+    }
+
+    return PaperDownloadFinishedAction::OpenInNewWindow;
+}
+
+QString MainWidget::get_paper_download_finish_action_string(PaperDownloadFinishedAction action) {
+    if (action == PaperDownloadFinishedAction::None) return "none";
+    if (action == PaperDownloadFinishedAction::OpenInSameWindow) return "same_window";
+    if (action == PaperDownloadFinishedAction::OpenInNewWindow) return "new_window";
+    if (action == PaperDownloadFinishedAction::Portal) return "portal";
+    return "";
+}
+
+PaperDownloadFinishedAction MainWidget::get_paper_download_action_from_string(QString str) {
+    if (str == "none") return PaperDownloadFinishedAction::None;
+    if (str == "same_window") return PaperDownloadFinishedAction::OpenInSameWindow;
+    if (str == "new_window") return PaperDownloadFinishedAction::OpenInNewWindow;
+    if (str == "portal") return PaperDownloadFinishedAction::Portal;
+    return PaperDownloadFinishedAction::None;
 }

@@ -105,6 +105,13 @@ struct FreehandDrawingMoveData {
     AbsoluteDocumentPos initial_mouse_position;
 };
 
+enum class PaperDownloadFinishedAction {
+    None,
+    OpenInSameWindow,
+    OpenInNewWindow,
+    Portal
+};
+
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 class MainWidget : public QQuickWidget {
     Q_OBJECT
@@ -407,8 +414,9 @@ public:
     void show_download_paper_menu(
         const std::vector<std::wstring>& paper_names,
         const std::vector<std::wstring>& download_urls,
-        std::wstring paper_name);
-    QNetworkReply* download_paper_with_url(std::wstring paper_url, bool use_archive_url=false);
+        std::wstring paper_name,
+        PaperDownloadFinishedAction action);
+    QNetworkReply* download_paper_with_url(std::wstring paper_url, bool use_archive_url, PaperDownloadFinishedAction action);
 
     QRect get_main_window_rect();
     QRect get_helper_window_rect();
@@ -592,7 +600,7 @@ public:
     void download_paper_under_cursor(bool use_last_touch_pos = false);
     std::optional<std::wstring> get_direct_paper_name_under_pos(DocumentPos docpos);
     std::optional<std::wstring> get_paper_name_under_pos(DocumentPos docpos, bool clean=false);
-    std::wstring download_paper_with_name(const std::wstring& name);
+    QNetworkReply* download_paper_with_name(const std::wstring& name, PaperDownloadFinishedAction action);
     bool is_pos_inside_selected_text(DocumentPos docpos);
     void handle_debug_command();
     void handle_add_marked_data();
@@ -874,6 +882,9 @@ public:
     void clear_scratchpad();
     char get_current_freehand_type();
     void show_draw_controls();
+    PaperDownloadFinishedAction get_default_paper_download_finish_action();
+    QString get_paper_download_finish_action_string(PaperDownloadFinishedAction action);
+    PaperDownloadFinishedAction get_paper_download_action_from_string(QString str);
 };
 
 #endif
