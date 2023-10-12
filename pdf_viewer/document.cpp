@@ -803,20 +803,20 @@ void Document::convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output)
             break;
         }
 
-        TocNode* current_node = new TocNode;
-        current_node->title = utf8_decode(root->title);
-        current_node->x = root->x;
-        current_node->y = root->y;
-        if (root->page.page == -1) {
-            float xp, yp;
-            fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
-            int chapter_page = accum_chapter_pages[loc.chapter];
-            current_node->page = chapter_page + loc.page;
-        }
-        else {
-            current_node->page = root->page.page;
-        }
-        convert_toc_tree(root->down, current_node->children);
+		TocNode* current_node = new TocNode;
+		current_node->title = utf8_decode(root->title);
+		current_node->x = std::isnan(root->x) ? 0.0 : root->x;
+		current_node->y = std::isnan(root->y) ? 0.0 : root->y;
+		if (root->page.page == -1) {
+			float xp, yp;
+			fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
+			int chapter_page = accum_chapter_pages[loc.chapter];
+			current_node->page = chapter_page + loc.page;
+		}
+		else {
+			current_node->page = root->page.page;
+		}
+		convert_toc_tree(root->down, current_node->children);
 
 
         output.push_back(current_node);
