@@ -493,8 +493,8 @@ void Document::convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output)
 
 		TocNode* current_node = new TocNode;
 		current_node->title = utf8_decode(root->title);
-		current_node->x = root->x;
-		current_node->y = root->y;
+		current_node->x = std::isnan(root->x) ? 0.0 : root->x;
+		current_node->y = std::isnan(root->y) ? 0.0 : root->y;
 		if (root->page.page == -1) {
 			float xp, yp;
 			fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
