@@ -126,7 +126,7 @@ jobs:
       run: sudo apt install libharfbuzz-dev
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         version: '5.15.2'
 
@@ -177,7 +177,7 @@ jobs:
       run: sudo apt install libharfbuzz-dev
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         version: '5.15.2'
 
@@ -208,7 +208,7 @@ jobs:
             submodules: 'recursive'
     
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
@@ -236,7 +236,7 @@ jobs:
             submodules: 'recursive'
     
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
@@ -280,7 +280,7 @@ jobs:
       run:  brew install freeglut mesa harfbuzz 
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         version: '5.15.2'
 
@@ -322,7 +322,7 @@ jobs:
       run:  brew install freeglut mesa harfbuzz 
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         version: '6.2.*'
 
