@@ -204,6 +204,7 @@ public:
 	void return_to_last_visual_mark();
 	bool is_visual_mark_mode();
 	void reload();
+	void refresh();
 
 	QString get_font_face_name(); 
 

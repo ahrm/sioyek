@@ -3011,6 +3011,14 @@ void MainWidget::reload() {
     }
 }
 
+void MainWidget::refresh() {
+    if (doc()) {
+      doc()->reload();
+      pdf_renderer->clear_cache();
+      invalidate_render();
+    }
+}
+
 
 void MainWidget::synctex_under_pos(WindowPos position) {
 	auto [page, doc_x, doc_y] = main_document_view->window_to_document_pos(position);

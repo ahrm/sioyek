@@ -1597,6 +1597,16 @@ class ReloadCommand : public Command {
 	}
 };
 
+
+class RefreshCommand : public Command {
+  void perform(MainWidget* widget) {
+    widget->refresh();
+  }
+  std::string get_name() {
+    return "refresh";
+  }
+};
+
 class ReloadConfigCommand : public Command {
 	void perform(MainWidget* widget) {
 		widget->on_config_file_changed(widget->config_manager);
@@ -2297,6 +2307,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["goto_bottom_of_page"] = []() {return std::make_unique< GotoBottomOfPageCommand>(); };
 	new_commands["new_window"] = []() {return std::make_unique< NewWindowCommand>(); };
 	new_commands["reload"] = []() {return std::make_unique< ReloadCommand>(); };
+	new_commands["refresh"] = []() {return std::make_unique< RefreshCommand>(); };
 	new_commands["reload_config"] = []() {return std::make_unique< ReloadConfigCommand>(); };
 	new_commands["synctex_under_cursor"] = []() {return std::make_unique< SynctexUnderCursorCommand>(); };
 	new_commands["set_status_string"] = []() {return std::make_unique< SetStatusStringCommand>(); };

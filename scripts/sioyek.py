@@ -571,6 +571,10 @@ class Sioyek:
         data = None
         self.run_command("reload", data, focus=focus)
 
+    def refresh(self, focus=False):
+        data = None
+        self.run_command("refresh", data, focus=focus)
+
     def synctex_under_cursor(self, focus=False):
         data = None
         self.run_command("synctex_under_cursor", data, focus=focus)
