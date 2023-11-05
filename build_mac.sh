@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 # prerequisite: brew install qt@5 freeglut mesa harfbuzz
 
 #sys_glut_clfags=`pkg-config --cflags glut gl`
@@ -22,7 +23,7 @@ fi
 
 make -j$MAKE_PARALLEL
 
-rm -r build 2> /dev/null
+rm -rf build 2> /dev/null
 mkdir build
 mv sioyek.app build/
 cp -r pdf_viewer/shaders build/sioyek.app/Contents/MacOS/shaders
@@ -32,6 +33,16 @@ cp pdf_viewer/prefs_user.config build/sioyek.app/Contents/MacOS/prefs_user.confi
 cp pdf_viewer/keys.config build/sioyek.app/Contents/MacOS/keys.config
 cp pdf_viewer/keys_user.config build/sioyek.app/Contents/MacOS/keys_user.config
 cp tutorial.pdf build/sioyek.app/Contents/MacOS/tutorial.pdf
+
+# Capture the current PATH
+CURRENT_PATH=$(echo $PATH)
+
+# Define the path to the Info.plist file inside the app bundle
+INFO_PLIST="resources/Info.plist"
+
+# Add LSEnvironment key with PATH to Info.plist
+/usr/libexec/PlistBuddy -c "Add :LSEnvironment dict" "$INFO_PLIST" || echo "LSEnvironment already exists"
+/usr/libexec/PlistBuddy -c "Add :LSEnvironment:PATH string $CURRENT_PATH" "$INFO_PLIST" || /usr/libexec/PlistBuddy -c "Set :LSEnvironment:PATH $CURRENT_PATH" "$INFO_PLIST"
 
 macdeployqt build/sioyek.app -dmg
 zip -r sioyek-release-mac.zip build/sioyek.dmg

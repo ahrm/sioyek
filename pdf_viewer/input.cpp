@@ -482,7 +482,7 @@ class FitToPageHeightSmartCommand : public Command {
 
 class NextPageCommand : public Command {
 	void perform(MainWidget* widget) {
-		widget->main_document_view->move_pages(1 + num_repeats);
+		widget->main_document_view->move_pages(std::max(1, num_repeats));
 	}
 	std::string get_name() {
 		return "next_page";
@@ -491,7 +491,7 @@ class NextPageCommand : public Command {
 
 class PreviousPageCommand : public Command {
 	void perform(MainWidget* widget) {
-		widget->main_document_view->move_pages(-1 - num_repeats);
+		widget->main_document_view->move_pages(std::min(-1, -num_repeats));
 	}
 
 	std::string get_name() {
