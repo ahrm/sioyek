@@ -595,7 +595,7 @@ MainWidget* handle_args(const QStringList& arguments) {
 		if (parser->isSet("new-window")) {
 			should_create_new_window = true;
 		}
-		if (SHOULD_LAUNCH_NEW_WINDOW && (target_window == nullptr) && (!parser->isSet("reuse-window"))) {
+		if (SHOULD_LAUNCH_NEW_WINDOW && (!parser->isSet("reuse-window"))) {
 			should_create_new_window = true;
 		}
 		if (windows[0]->doc() == nullptr) {
