@@ -400,6 +400,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     text_command_line_edit_label = new QLabel();
     text_command_line_edit = new QLineEdit();
+    QObject::connect(text_command_line_edit, &QLineEdit::textChanged, this, &MainWidget::on_text_input);
 
     text_command_line_edit_label->setFont(QFont(get_font_face_name()));
     text_command_line_edit->setFont(QFont(get_font_face_name()));
@@ -536,6 +537,17 @@ MainWidget::~MainWidget() {
 
     if (helper_document_view != nullptr && helper_document_view != main_document_view) {
         delete helper_document_view;
+    }
+}
+
+void MainWidget::on_text_input(const QString &text) {
+    // Convert the QString to a std::wstring
+    std::wstring wtext = text.toStdWString();
+    // if pending command is search
+    if (pending_command_instance->get_name() == "search" || pending_command_instance->get_name() == "chapter_search" || pending_command_instance->get_name() == "regex_search") {
+        // Update the text and perform the search
+        pending_command_instance->set_text_requirement(wtext);
+        perform_search(wtext);
     }
 }
 

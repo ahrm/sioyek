@@ -63,7 +63,8 @@ public:
 	int current_history_index = -1;
 
 	std::wstring custom_status_message = L"";
-
+	void on_text_input(const QString &text);
+	
 	bool* should_quit = nullptr;
 	// last position when mouse was clicked in absolute document space
 	AbsoluteDocumentPos last_mouse_down;
