@@ -12,7 +12,7 @@ on:
 jobs:
   upload-release:
     if: ${{ github.event_name != 'pull_request' }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     needs: [build-mac, build-mac-arm, build-linux, build-windows, build-linux-portable, build-windows-portable]
 
     steps:
@@ -97,7 +97,7 @@ jobs:
 
   build-linux:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Cache apt-get packages
@@ -148,7 +148,7 @@ jobs:
         sudo chown -R $USER_NAME /var/cache/apt/archives
 
   build-linux-portable:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Cache apt-get packages
