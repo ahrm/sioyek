@@ -160,7 +160,10 @@ jobs:
 
     - name: Install libharfbuzz
       run: sudo apt install libharfbuzz-dev
-      
+
+    - name: Install openGL
+      run: sudo apt-get install libglu1-mesa-dev
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
