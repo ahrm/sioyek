@@ -543,6 +543,8 @@ MainWidget::~MainWidget() {
 void MainWidget::on_text_input(const QString &text) {
     // Convert the QString to a std::wstring
     std::wstring wtext = text.toStdWString();
+    if (pending_command_instance == nullptr)
+        return;
     // if pending command is search
     if (pending_command_instance->get_name() == "search" || pending_command_instance->get_name() == "chapter_search" || pending_command_instance->get_name() == "regex_search") {
         // Update the text and perform the search
