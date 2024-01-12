@@ -14,6 +14,8 @@
 #include <memory>
 #include <qcommandlineparser.h>
 
+#include <QKeyEvent>
+
 #include <qstandarditemmodel.h>
 #include <qpoint.h>
 #include <qjsonarray.h>
@@ -439,3 +441,5 @@ std::vector<fz_quad> quads_from_rects(const std::vector<R>& rects) {
 bool is_bright(float color[3]);
 bool is_abbreviation(const std::wstring& txt);
 bool is_in(char c, std::vector<char> candidates);
+
+bool shouldTriggerDelete(QKeyEvent *key_event);

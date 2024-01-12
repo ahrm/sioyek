@@ -1676,7 +1676,7 @@ void BaseSelectorWidget::handle_edit() {
 
 #ifndef SIOYEK_QT6
     void BaseSelectorWidget::keyReleaseEvent(QKeyEvent* event) {
-		if (event->key() == Qt::Key_Delete or event->key() == Qt::Key_Backspace) {
+		if (shouldTriggerDelete(event)) {
             handle_delete();
         }
         QWidget::keyReleaseEvent(event);
