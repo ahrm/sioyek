@@ -182,7 +182,7 @@ public:
 #ifdef SIOYEK_QT6
 			if (event->type() == QEvent::KeyRelease) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-				if (key_event->key() == Qt::Key_Delete) {
+				if (key_event->key() == Qt::Key_Delete  or event->key() == Qt::Key_Backspace) {
 					handle_delete();
 				}
 			}
@@ -294,7 +294,7 @@ public:
 
 #ifndef SIOYEK_QT6
 	void keyReleaseEvent(QKeyEvent* event) override {
-		if (event->key() == Qt::Key_Delete) {
+		if (event->key() == Qt::Key_Delete or event->key() == Qt::Key_Backspace) {
 			handle_delete();
 		}
 		QWidget::keyReleaseEvent(event);
