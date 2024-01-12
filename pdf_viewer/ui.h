@@ -182,7 +182,7 @@ public:
 #ifdef SIOYEK_QT6
 			if (event->type() == QEvent::KeyRelease) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-				if (shouldTriggerDelete(event)) {
+				if (should_trigger_delete(event)) {
 					handle_delete();
 				}
 			}
@@ -294,7 +294,7 @@ public:
 
 #ifndef SIOYEK_QT6
 	void keyReleaseEvent(QKeyEvent* event) override {
-		if (shouldTriggerDelete(event)) {
+		if (should_trigger_delete(event)) {
 			handle_delete();
 		}
 		QWidget::keyReleaseEvent(event);

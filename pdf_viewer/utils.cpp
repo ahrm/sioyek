@@ -2259,7 +2259,7 @@ void convert_color4(float* in_color, int* out_color) {
 	out_color[3] = (int)(in_color[3] * 255);
 }
 
-bool shouldTriggerDelete(QKeyEvent *key_event) {
+bool should_trigger_delete(QKeyEvent *key_event) {
     if (!key_event) {
         return false;
     }
