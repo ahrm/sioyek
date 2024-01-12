@@ -128,7 +128,7 @@ bool MySortFilterProxyModel::filterAcceptsRow(int source_row,
 			if (filterString.size() == 0) return true;
 			std::wstring s1 = filterString.toStdWString();
 			std::wstring s2 = key.toStdWString();
-			int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(s1, s2));
+			int score = calculate_partial_ratio(s1, s2);
 
 			return score > 50;
 		}
@@ -160,8 +160,8 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
 		QString leftData = sourceModel()->data(left).toString();
 		QString rightData = sourceModel()->data(right).toString();
 
-		int left_score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filterString.toStdWString(), leftData.toStdWString()));
-		int right_score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filterString.toStdWString(), rightData.toStdWString()));
+		int left_score = calculate_partial_ratio(filterString.toStdWString(), leftData.toStdWString());
+		int right_score = calculate_partial_ratio(filterString.toStdWString(), rightData.toStdWString());
 		return left_score > right_score;
 	}
 	else {

@@ -210,3 +210,5 @@ void matmul(float m1[], float m2[], float result[]) {
 
 void convert_color4(float* in_color, int* out_color);
 std::string get_aplph_tag(int n, int max_n);
+
+int calculate_partial_ratio(const std::wstring& filterString, const std::wstring& key, bool smart_case_p = true);

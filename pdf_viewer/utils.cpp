@@ -25,6 +25,11 @@
 #include <qnetworkreply.h>
 #include <qscreen.h>
 
+#include "rapidfuzz_amalgamated.hpp"
+
+#include <algorithm>
+#include <locale>
+
 #include <mupdf/pdf.h>
 
 extern std::wstring LIBGEN_ADDRESS;
@@ -42,12 +47,11 @@ extern bool NUMERIC_TAGS;
 #endif
 
 
-std::wstring to_lower(const std::wstring& inp) {
-	std::wstring res;
-	for (char c : inp) {
-		res.push_back(::tolower(c));
-	}
-	return res;
+std::wstring to_lower(const std::wstring& input) {
+    std::wstring output = input;
+    std::transform(output.begin(), output.end(), output.begin(),
+                   [](wchar_t c) { return std::tolower(c, std::locale()); });
+    return output;
 }
 
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages) {
@@ -2255,4 +2259,20 @@ void convert_color4(float* in_color, int* out_color) {
 	out_color[1] = (int)(in_color[1] * 255);
 	out_color[2] = (int)(in_color[2] * 255);
 	out_color[3] = (int)(in_color[3] * 255);
+}
+
+// Your function with smart_case_p parameter
+int calculate_partial_ratio(const std::wstring& filterString, const std::wstring& key, bool smart_case_p) {
+    std::wstring s1 = filterString;
+    std::wstring s2 = key;
+
+    // Convert strings to lowercase if smart_case_p is true and filterString is all lowercase
+    if (smart_case_p && is_all_lower(s1)) {
+        s1 = to_lower(s1);
+        s2 = to_lower(s2);
+    }
+
+    // Calculate the partial ratio score
+    int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(s1, s2));
+    return score;
 }
