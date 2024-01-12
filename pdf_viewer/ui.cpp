@@ -1342,7 +1342,7 @@ bool CommandSelector::on_text_change(const QString& text) {
         std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
         int score = 0;
         if (is_fuzzy) {
-            score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
+			score = calculate_partial_ratio(search_text_string, encoded);
         }
         else {
             fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);

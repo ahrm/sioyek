@@ -1,3 +1,5 @@
+#include "utils.h"
+
 #include "mysortfilterproxymodel.h"
 #include <string>
 
@@ -14,7 +16,7 @@ bool MySortFilterProxyModel::filter_accepts_row_column(int row, int col, const Q
     QString key = sourceModel()->data(source_index, filterRole()).toString();
     std::wstring s1 = filterString.toStdWString();
     std::wstring s2 = key.toStdWString();
-    int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(s1, s2));
+    int score = calculate_partial_ratio(s1, s2);
     return score > 50;
 
 }
@@ -84,8 +86,6 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
         int right_index = right.row();
         int left_score = scores[left_index];
         int right_score = scores[right_index];
-        //int left_score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filterString.toStdWString(), leftData.toStdWString()));
-        //int right_score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filterString.toStdWString(), rightData.toStdWString()));
 
         return left_score > right_score;
     }
@@ -113,7 +113,7 @@ void MySortFilterProxyModel::update_scores() {
     if ((n_cols == 1) || (filter_column_index >= 0)) {
         for (int i = 0; i < n_rows; i++) {
             QString row_data = sourceModel()->data(sourceModel()->index(i, filter_column_index)).toString();
-            int score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filter_wstring, row_data.toStdWString()));
+            int score = calculate_partial_ratio(filter_wstring, row_data.toStdWString());
             scores.push_back(score);
         }
     }
@@ -123,7 +123,8 @@ void MySortFilterProxyModel::update_scores() {
 
             for (int col_index = 0; col_index < n_cols; col_index++) {
                 QString rowcol_data = sourceModel()->data(sourceModel()->index(i, col_index)).toString();
-                int col_score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(filter_wstring, rowcol_data.toStdWString()));
+
+                int col_score = calculate_partial_ratio(filter_wstring, rowcol_data.toStdWString());
                 if (col_score > score) score = col_score;
             }
 

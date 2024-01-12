@@ -30,7 +30,20 @@
 #define LOG(expr) if (VERBOSE) {(expr);};
 
 
-std::wstring to_lower(const std::wstring& inp);
+// std::wstring to_lower(const std::wstring& inp);
+template <typename CharT>
+std::basic_string<CharT> to_lower(const std::basic_string<CharT>& input);
+
+template <typename CharT>
+bool is_all_lower(const std::basic_string<CharT>& input);
+
+template <typename StringType>
+int calculate_partial_ratio(const StringType& filterString, const StringType& key, bool smart_case_p = true);
+
+// Explicit template instantiation declarations for std::wstring and std::string
+extern template int calculate_partial_ratio<std::string>(const std::string&, const std::string&, bool);
+extern template int calculate_partial_ratio<std::wstring>(const std::wstring&, const std::wstring&, bool);
+
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char);
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages);
 int mod(int a, int b);
@@ -443,3 +456,4 @@ bool is_abbreviation(const std::wstring& txt);
 bool is_in(char c, std::vector<char> candidates);
 
 bool should_trigger_delete(QKeyEvent *key_event);
+

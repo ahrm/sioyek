@@ -663,7 +663,7 @@ public:
                 std::string encoded_file = utf8_encode(file.toStdWString());
                 int score = 0;
                 if (is_fuzzy) {
-                    score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(encoded_prefix, encoded_file));
+                    score = calculate_partial_ratio(encoded_prefix, encoded_file);
                 }
                 else {
                     fts::fuzzy_match(encoded_prefix.c_str(), encoded_file.c_str(), score);

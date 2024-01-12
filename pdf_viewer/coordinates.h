@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include <qpoint.h>
 #include <mupdf/fitz.h>
 #include <qopengl.h>
