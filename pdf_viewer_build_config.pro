@@ -1,10 +1,7 @@
 TEMPLATE = app
 TARGET = sioyek
 VERSION = 2.0.0
-INCLUDEPATH += ./pdf_viewer\
-              mupdf/include \
-              zlib
-          
+INCLUDEPATH += ./pdf_viewer
 
 QT += core opengl gui widgets network 3dinput 
 
@@ -76,6 +73,7 @@ SOURCES += pdf_viewer/book.cpp \
 
 
 win32{
+    INCLUDEPATH += mupdf/include zlib
     DEFINES += _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE
     RC_ICONS = pdf_viewer\icon2.ico
     LIBS += -Lmupdf\platform\win32\x64\Release -llibmupdf -Lzlib -lzlib
@@ -88,8 +86,11 @@ unix:!mac {
     QMAKE_CXXFLAGS += -std=c++17
 
     CONFIG(linux_app_image){
+        INCLUDEPATH += mupdf/include zlib
         LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lharfbuzz -lz
-    } else {
+    }
+    else {
+        # We use mupdf and zlib provided by the system
         DEFINES += NON_PORTABLE
         DEFINES += LINUX_STANDARD_PATHS
         LIBS += -ldl -lmupdf -lmupdf-third -lgumbo -lharfbuzz -lfreetype -ljbig2dec -ljpeg -lmujs -lopenjp2 -lz
@@ -108,21 +109,22 @@ unix:!mac {
     tutorial.files = tutorial.pdf
     tutorial.path = $$PREFIX/share/sioyek/
     keys.files = pdf_viewer/keys.config
-    keys.path = $$PREFIX/etc/sioyek
+    keys.path = /etc/sioyek
     prefs.files = pdf_viewer/prefs.config
-    prefs.path = $$PREFIX/etc/sioyek
+    prefs.path = /etc/sioyek
     INSTALLS += target
     INSTALLS += shortcutfiles
     INSTALLS += icon
     INSTALLS += shaders
     INSTALLS += tutorial
     INSTALLS += keys
-    INSTALLS += prefs	
+    INSTALLS += prefs
     DISTFILES += resources/sioyek.desktop\
         resources/sioyek-icon-linux.png
 }
 
 mac {
+    INCLUDEPATH += mupdf/include zlib
     QMAKE_CXXFLAGS += -std=c++17
     LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lz
     CONFIG+=sdk_no_version_check

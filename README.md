@@ -114,6 +114,12 @@ You can customize all key bindings and some UI elements by editing `keys_user.co
 
 ### Linux
 
+#### Arch Linux
+
+```
+sudo pacman -Syu qt5-3d mupdf libmupdf
+```
+
 #### Fedora
 
 Run the following commands to install dependencies, clone the repository and compile sioyek on Fedora (tested on Fedora Workstation 36).
@@ -130,15 +136,17 @@ cd sioyek
 
     Run `qmake --version` to make sure the `qmake` in path is using Qt 5.x.
 2. Install `libharfbuzz`:
-```
-sudo apt install libharfbuzz-dev
-```
-3. Clone the repository and build:
-```
-git clone --recursive https://github.com/ahrm/sioyek
-cd sioyek
-./build_linux.sh
-```
+    ```
+    sudo apt install libharfbuzz-dev
+    ```
+3. Clone the repository:
+    ```
+    git clone --recursive https://github.com/ahrm/sioyek
+    cd sioyek
+    ```
+4. Build it:
+	- If you want to build a portable version, call `./build_linux.sh portable`. All the files you need will be built under the `build/` subdirectory. You can move this directory around and sioyek will still work.
+	- If instead you want to install it locally on your system, run `/build_linux.sh local`. This will install sioyek under `/usr/bin`. NOTE: This will link sioyek against the mupdf and zlib libraries provided by your system, not the sioyek-supplied ones.
 
 ### Windows
 1. Install Visual Studio (tested on 2019, other relatively recent versions should work too)
