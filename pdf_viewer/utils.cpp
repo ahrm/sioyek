@@ -3888,7 +3888,7 @@ bool is_in(char c, std::vector<char> candidates){
     return std::find(candidates.begin(), candidates.end(), c) != candidates.end();
 }
 
-bool shouldTriggerDelete(QKeyEvent *key_event) {
+bool should_trigger_delete(QKeyEvent *key_event) {
     if (!key_event) {
         return false;
     }
