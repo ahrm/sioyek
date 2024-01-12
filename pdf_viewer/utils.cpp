@@ -24,6 +24,8 @@
 #include <qnetworkrequest.h>
 #include <qnetworkreply.h>
 #include <qscreen.h>
+#include <QKeyEvent>
+#include <QtGlobal>
 
 #include <mupdf/pdf.h>
 
@@ -2255,4 +2257,25 @@ void convert_color4(float* in_color, int* out_color) {
 	out_color[1] = (int)(in_color[1] * 255);
 	out_color[2] = (int)(in_color[2] * 255);
 	out_color[3] = (int)(in_color[3] * 255);
+}
+
+bool should_trigger_delete(QKeyEvent *key_event) {
+    if (!key_event) {
+        return false;
+    }
+
+    // Check for the Delete key
+    if (key_event->key() == Qt::Key_Delete) {
+        return true;
+    }
+
+    // On macOS, treat the Backspace key as Delete as well
+#ifdef Q_OS_MAC
+    if (key_event->key() == Qt::Key_Backspace) {
+        return true;
+    }
+#endif
+
+    // For other platforms, Backspace does not trigger delete
+    return false;
 }

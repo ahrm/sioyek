@@ -12,6 +12,8 @@
 #include <memory>
 #include <qcommandlineparser.h>
 
+#include <QKeyEvent>
+
 #include <qstandarditemmodel.h>
 #include <qpoint.h>
 
@@ -210,3 +212,5 @@ void matmul(float m1[], float m2[], float result[]) {
 
 void convert_color4(float* in_color, int* out_color);
 std::string get_aplph_tag(int n, int max_n);
+
+bool should_trigger_delete(QKeyEvent *key_event);
