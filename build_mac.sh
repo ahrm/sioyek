@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 set -exo pipefail
+
 # prerequisite: brew install qt qt@5 freeglut mesa harfbuzz hiredis
 export INCLUDE_PATH=/opt/homebrew/include
 export LIBRARY_PATH=/opt/homebrew/lib
-
-incremental_p="${SIOYEK_BUILD_INCREMENTAL_P}"
-# Using `SIOYEK_BUILD_INCREMENTAL_P=y` will cause the build script to become optimized for the local development builds and not publishing the app.
 
 incremental_p="${SIOYEK_BUILD_INCREMENTAL_P}"
 # Using `SIOYEK_BUILD_INCREMENTAL_P=y` will cause the build script to become optimized for the local development builds and not publishing the app.
@@ -23,11 +21,16 @@ cd mupdf
 make XLIBS="-L${LIBRARY_PATH}"
 cd ..
 
-if [[ $1 == portable ]]; then
-	qmake pdf_viewer_build_config.pro
-else
-	qmake "CONFIG+=non_portable" pdf_viewer_build_config.pro
+qmake_opts=()
+if test -n "${SIOYEK_NIGHT_P}" ; then
+    qmake_opts+=("DEFINES+=NIGHT_P")
 fi
+
+if [[ $1 == portable ]]; then
+    qmake_opts+=("CONFIG+=non_portable")
+fi
+
+qmake "${qmake_opts[@]}" pdf_viewer_build_config.pro
 
 make -j$MAKE_PARALLEL
 

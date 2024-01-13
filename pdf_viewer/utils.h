@@ -26,6 +26,10 @@
 #include "utf8.h"
 #include "coordinates.h"
 
+#ifdef NIGHT_P
+#include <hiredis/hiredis.h>
+#endif
+
 #define LL_ITER(name, start) for(auto name=start;(name);name=name->next)
 #define LOG(expr) if (VERBOSE) {(expr);};
 
