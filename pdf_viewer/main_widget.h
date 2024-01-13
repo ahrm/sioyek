@@ -18,6 +18,8 @@
 #include "input.h"
 #include "path.h"
 
+#include <QMap>
+
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 
@@ -116,6 +118,8 @@ enum class PaperDownloadFinishedAction {
 class MainWidget : public QQuickWidget {
     Q_OBJECT
 public:
+	QMap<int, bool> keyStates;
+
     fz_context* mupdf_context = nullptr;
     DatabaseManager* db_manager = nullptr;
     DocumentManager* document_manager = nullptr;
@@ -362,6 +366,8 @@ public:
     void toggle_titlebar();
 
     void add_text_annotation_to_selected_highlight(const std::wstring& annot_text);
+
+	bool isKeyPressed(int key) const;
 
     // search the `paper_name` in one of the configurable when middle-click or shift+middle-clicking on paper's name
     void handle_search_paper_name(std::wstring paper_name, bool is_shift_pressed);
