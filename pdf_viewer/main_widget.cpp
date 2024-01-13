@@ -2869,13 +2869,21 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     // However, I did not notice a performance degration when testing it briefly.
     bool is_hyper = false;
 
-    zoom_p = zoom_p || is_hyper;
+    bool is_z_pressed = isKeyPressed(Qt::Key_Z);
+
+    zoom_p = zoom_p || is_hyper || is_z_pressed;
     #endif
 
     bool is_shift_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
     bool is_visual_mark_mode = main_document_view->is_ruler_mode() && visual_scroll_mode;
+    bool scroll_horizontally_p = is_shift_pressed;
+
+    #ifdef NIGHT_P
     bool is_esc_pressed = isKeyPressed(Qt::Key_Escape);
-    bool scroll_horizontally_p = is_shift_pressed || is_esc_pressed;
+    bool is_x_pressed = isKeyPressed(Qt::Key_X);
+
+    scroll_horizontally_p = is_shift_pressed || is_esc_pressed || is_x_pressed;
+    #endif
 
 
 #ifdef SIOYEK_QT6
