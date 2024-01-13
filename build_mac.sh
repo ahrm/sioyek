@@ -7,6 +7,9 @@ export LIBRARY_PATH=/opt/homebrew/lib
 incremental_p="${SIOYEK_BUILD_INCREMENTAL_P}"
 # Using `SIOYEK_BUILD_INCREMENTAL_P=y` will cause the build script to become optimized for the local development builds and not publishing the app.
 
+incremental_p="${SIOYEK_BUILD_INCREMENTAL_P}"
+# Using `SIOYEK_BUILD_INCREMENTAL_P=y` will cause the build script to become optimized for the local development builds and not publishing the app.
+
 #sys_glut_clfags=`pkg-config --cflags glut gl`
 #sys_glut_libs=`pkg-config --libs glut gl`
 #sys_harfbuzz_clfags=`pkg-config --cflags harfbuzz`
