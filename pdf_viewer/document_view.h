@@ -16,6 +16,7 @@
 #include "book.h"
 
 extern float ZOOM_INC_FACTOR;
+extern float SCROLL_ZOOM_INC_FACTOR;
 extern const int PAGE_PADDINGS;
 
 class CachedChecksummer;

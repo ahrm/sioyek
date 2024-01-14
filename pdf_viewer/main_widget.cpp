@@ -2989,7 +2989,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     }
 
     if (zoom_p) {
-        float zoom_factor = 1.0f + num_repeats_f * (ZOOM_INC_FACTOR - 1.0f);
+        float zoom_factor = 1.0f + num_repeats_f * (SCROLL_ZOOM_INC_FACTOR - 1.0f);
         zoom(mouse_window_pos, zoom_factor, wevent->angleDelta().y() > 0);
         return;
     }

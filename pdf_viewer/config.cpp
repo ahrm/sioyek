@@ -6,6 +6,7 @@
 //#include <ui.h>
 
 extern float ZOOM_INC_FACTOR;
+extern float SCROLL_ZOOM_INC_FACTOR;
 extern float GAMMA;
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
@@ -717,6 +718,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         float_deserializer,
         nullptr,
         FloatExtras{1.0f, 2.0f}
+        });
+    configs.push_back({
+        L"scroll_zoom_inc_factor",
+        ConfigType::Float,
+        &SCROLL_ZOOM_INC_FACTOR,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{1.0f, 6.0f}
         });
     configs.push_back({
         L"vertical_move_amount",
