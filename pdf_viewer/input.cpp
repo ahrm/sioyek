@@ -4686,6 +4686,19 @@ public:
 
 };
 
+class DeleteLastHighlightCommand : public Command {
+public:
+    DeleteLastHighlightCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		widget->handle_delete_last_highlight();
+	}
+
+	std::string get_name() {
+		return "delete_last_highlight";
+	}
+};
+
 class NoopCommand : public Command {
 public:
 
@@ -6193,6 +6206,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["overview_next_item"] = [](MainWidget* widget) {return std::make_unique< OverviewNextItemCommand>(widget); };
     new_commands["overview_prev_item"] = [](MainWidget* widget) {return std::make_unique< OverviewPrevItemCommand>(widget); };
     new_commands["delete_highlight_under_cursor"] = [](MainWidget* widget) {return std::make_unique< DeleteHighlightUnderCursorCommand>(widget); };
+    new_commands["delete_last_highlight"] = [](MainWidget* widget) {return std::make_unique< DeleteLastHighlightCommand>(widget); };
     new_commands["noop"] = [](MainWidget* widget) {return std::make_unique< NoopCommand>(widget); };
     new_commands["import"] = [](MainWidget* widget) {return std::make_unique< ImportCommand>(widget); };
     new_commands["export"] = [](MainWidget* widget) {return std::make_unique< ExportCommand>(widget); };
@@ -6404,6 +6418,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     command_human_readable_names["overview_next_item"] = "Open an overview to the next search result";
     command_human_readable_names["overview_prev_item"] = "Open an overview to the previous search result";
     command_human_readable_names["delete_highlight_under_cursor"] = "Delete highlight under mouse cursor";
+    command_human_readable_names["delete_last_highlight"] = "Delete the last highlight";
     command_human_readable_names["noop"] = "Do nothing";
     command_human_readable_names["import"] = "Import annotation data from a json file";
     command_human_readable_names["export"] = "Export annotation data to a json file";

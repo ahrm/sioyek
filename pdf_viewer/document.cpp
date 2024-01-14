@@ -471,6 +471,15 @@ void Document::delete_highlight_with_index(int index) {
     is_annotations_dirty = true;
 }
 
+void Document::delete_last_highlight() {
+	if (!highlights.empty()) {
+
+		int last_index = highlights.size() - 1;
+
+		delete_highlight_with_index(last_index);
+	}
+}
+
 void Document::delete_highlight(Highlight hl) {
     for (size_t i = (highlights.size() - 1); i >= 0; i--) {
         if (highlights[i] == hl) {
