@@ -3963,3 +3963,24 @@ int calculate_partial_ratio(const StringType& filterString, const StringType& ke
 // Explicit template instantiation for std::wstring and std::string
 template int calculate_partial_ratio<std::string>(const std::string&, const std::string&, bool);
 template int calculate_partial_ratio<std::wstring>(const std::wstring&, const std::wstring&, bool);
+
+bool match_patterns(const QString& key, const QStringList& patterns) {
+    for (const QString &pattern : patterns) {
+        bool has_upper_case = std::any_of(pattern.begin(), pattern.end(), [](QChar c) { return c.isUpper(); });
+        QRegularExpression::PatternOptions options = has_upper_case ? QRegularExpression::NoPatternOption
+            : QRegularExpression::CaseInsensitiveOption;
+        QRegularExpression regex(pattern, options);
+
+        if (!regex.match(key).hasMatch()) {
+            return false; // If any pattern does not match, reject the string
+        }
+    }
+    return true; // All patterns matched
+}
+
+bool bool_regex_match(const QString& search_text, const QString& key) {
+    if (search_text.isEmpty()) return true;
+
+    QStringList patterns = search_text.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+    return match_patterns(key, patterns);
+}

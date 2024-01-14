@@ -5,6 +5,10 @@
 
 #include "rapidfuzz_amalgamated.hpp"
 
+
+extern bool REGEX_SEARCHING;
+
+
 bool MySortFilterProxyModel::filter_accepts_row_column(int row, int col, const QModelIndex& source_parent) const {
     if (filterString.size() == 0 || filterString == "<NULL>") return true;
 
@@ -16,15 +20,18 @@ bool MySortFilterProxyModel::filter_accepts_row_column(int row, int col, const Q
     QString key = sourceModel()->data(source_index, filterRole()).toString();
     std::wstring s1 = filterString.toStdWString();
     std::wstring s2 = key.toStdWString();
-    int score = calculate_partial_ratio(s1, s2);
-    return score > 50;
-
+    if (REGEX_SEARCHING) {
+        return bool_regex_match(QString::fromStdWString(s1), QString::fromStdWString(s2));
+    } else {
+        int score = calculate_partial_ratio(s1, s2);
+        return score > 50;
+    }
 }
 
 bool MySortFilterProxyModel::filterAcceptsRow(int source_row,
     const QModelIndex& source_parent) const
 {
-    if (is_fuzzy) {
+    if (is_fuzzy || REGEX_SEARCHING) {
 
         int key_column = this->filterKeyColumn();
 
@@ -51,7 +58,7 @@ bool MySortFilterProxyModel::filterAcceptsRow(int source_row,
 
 
 void MySortFilterProxyModel::setFilterCustom(const QString& filterString) {
-    if (is_fuzzy) {
+    if (is_fuzzy || REGEX_SEARCHING) {
         this->filterString = filterString;
         this->setFilterFixedString(filterString);
         update_scores();
@@ -77,8 +84,11 @@ void MySortFilterProxyModel::setFilterCustom(const QString& filterString) {
 bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
     const QModelIndex& right) const
 {
-    if (is_fuzzy) {
-
+    if (REGEX_SEARCHING) {
+		// When regex searching is enabled, maintain the original order
+		return left.row() < right.row();
+    }
+    else if (is_fuzzy) {
         QString leftData = sourceModel()->data(left).toString();
         QString rightData = sourceModel()->data(right).toString();
 
@@ -97,7 +107,7 @@ bool MySortFilterProxyModel::lessThan(const QModelIndex& left,
 MySortFilterProxyModel::MySortFilterProxyModel(bool fuzzy) {
     is_fuzzy = fuzzy;
 
-    if (fuzzy) {
+    if (fuzzy || REGEX_SEARCHING) {
         setDynamicSortFilter(true);
     }
 }
@@ -113,7 +123,14 @@ void MySortFilterProxyModel::update_scores() {
     if ((n_cols == 1) || (filter_column_index >= 0)) {
         for (int i = 0; i < n_rows; i++) {
             QString row_data = sourceModel()->data(sourceModel()->index(i, filter_column_index)).toString();
-            int score = calculate_partial_ratio(filter_wstring, row_data.toStdWString());
+
+            int score = 0;
+            if (REGEX_SEARCHING) {
+                score = bool_regex_match(QString::fromStdWString(filter_wstring), QString::fromStdWString(row_data.toStdWString())) ? 100 : 0;
+            }
+            else {
+                score = calculate_partial_ratio(filter_wstring, row_data.toStdWString());
+            }
             scores.push_back(score);
         }
     }
@@ -124,7 +141,14 @@ void MySortFilterProxyModel::update_scores() {
             for (int col_index = 0; col_index < n_cols; col_index++) {
                 QString rowcol_data = sourceModel()->data(sourceModel()->index(i, col_index)).toString();
 
-                int col_score = calculate_partial_ratio(filter_wstring, rowcol_data.toStdWString());
+                int col_score = 0;
+                if (REGEX_SEARCHING) {
+                    col_score = bool_regex_match(QString::fromStdWString(filter_wstring), QString::fromStdWString(rowcol_data.toStdWString())) ? 100 : 0;
+                }
+                else {
+                    col_score = calculate_partial_ratio(filter_wstring, rowcol_data.toStdWString());
+                }
+
                 if (col_score > score) score = col_score;
             }
 

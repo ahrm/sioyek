@@ -16,6 +16,12 @@
 
 #include <QKeyEvent>
 
+#include <QString>
+#include <QStringList>
+#include <QRegularExpression>
+
+#include <QDebug>
+
 #include <qstandarditemmodel.h>
 #include <qpoint.h>
 #include <qjsonarray.h>
@@ -461,3 +467,5 @@ bool is_in(char c, std::vector<char> candidates);
 
 bool should_trigger_delete(QKeyEvent *key_event);
 
+bool match_patterns(const QString& key, const QStringList& patterns);
+bool bool_regex_match(const QString& search_text, const QString& key);

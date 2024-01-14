@@ -168,6 +168,7 @@ extern bool SHOULD_HIGHLIGHT_LINKS;
 extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
 extern int KEYBOARD_SELECT_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
+extern bool REGEX_SEARCHING;
 extern float CUSTOM_COLOR_CONTRAST;
 extern bool DEBUG;
 extern bool DEBUG_DISPLAY_FREEHAND_POINTS;
@@ -1867,6 +1868,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"fuzzy_searching",
         ConfigType::Bool,
         &FUZZY_SEARCHING,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"regex_searching",
+        ConfigType::Bool,
+        &REGEX_SEARCHING,
         bool_serializer,
         bool_deserializer,
         bool_validator
