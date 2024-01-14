@@ -556,6 +556,10 @@ private:
 				command_key += ck;
 			}
 
+#ifdef Q_OS_MAC
+			// Workaround for QT bug on macOS that puts the scrollbars on our text
+			command_key += "    ";
+#endif
 		}
 		QStandardItem* name_item = new QStandardItem(QString::fromStdString(command_name));
 		QStandardItem* key_item = new QStandardItem(QString::fromStdString(command_key));
