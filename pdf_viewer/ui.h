@@ -631,6 +631,35 @@ public:
 		table_view->horizontalHeader()->hide();
 		table_view->verticalHeader()->hide();
 
+		adjustRowHeights(table_view);
+	}
+
+	void adjustRowHeights(QTableView* table_view) {
+		///
+		// Adjust row height based on the font size
+		QFontMetrics metrics(table_view->font());
+		// Unimportant Bug: The font we retrieve here does not seem to have the correct `height`. We are reliant on the padding below to make things work.
+		int rowHeight = metrics.height() + FONT_SIZE; // Add some padding
+		for (int row = 0; row < standard_item_model->rowCount(); ++row) {
+			table_view->setRowHeight(row, rowHeight);
+		}
+		///
+		// The following alternative sometimes work after entering some characters and deleting them. But it does not work at first.
+		// QStandardItemModel* model = qobject_cast<QStandardItemModel*>(table_view->model());
+		// if (!model) return;
+
+		// for (int row = 0; row < model->rowCount(); ++row) {
+		// 	int maxRowHeight = 10; // set the minimum height
+		// 	for (int col = 0; col < model->columnCount(); ++col) {
+		// 		QStandardItem* item = model->item(row, col);
+		// 		if (item) {
+		// 			QSize itemSizeHint = item->sizeHint();
+		// 			maxRowHeight = qMax(maxRowHeight, itemSizeHint.height());
+		// 		}
+		// 	}
+		// 	table_view->setRowHeight(row, maxRowHeight);
+		// }
+		///
 	}
 
 	virtual bool on_text_change(const QString& text) {
