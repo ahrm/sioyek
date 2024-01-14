@@ -4107,6 +4107,10 @@ void MainWidget::handle_toggle_typing_mode() {
     }
 }
 
+void MainWidget::handle_delete_last_highlight() {
+    main_document_view->delete_last_highlight();
+}
+
 void MainWidget::handle_delete_highlight_under_cursor() {
 	QPoint mouse_pos = mapFromGlobal(QCursor::pos());
 	WindowPos window_pos = WindowPos{ mouse_pos.x(), mouse_pos.y() };
