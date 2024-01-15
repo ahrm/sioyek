@@ -1624,6 +1624,20 @@ public:
     bool requires_document() { return false; }
 };
 
+class PushStateCommand : public Command {
+public:
+    PushStateCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+		widget->push_state();
+	}
+
+	std::string get_name() {
+		return "push_state";
+	}
+	bool requires_document() { return false; }
+};
+
 class PrevStateCommand : public Command {
 public:
     PrevStateCommand(MainWidget* w) : Command(w) {};
@@ -6116,6 +6130,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["portal"] = [](MainWidget* widget) {return std::make_unique< PortalCommand>(widget); };
     new_commands["create_visible_portal"] = [](MainWidget* widget) {return std::make_unique< CreateVisiblePortalCommand>(widget); };
     new_commands["next_state"] = [](MainWidget* widget) {return std::make_unique< NextStateCommand>(widget); };
+	new_commands["push_state"] = [](MainWidget* widget) {return std::make_unique< PushStateCommand>(widget); };
     new_commands["prev_state"] = [](MainWidget* widget) {return std::make_unique< PrevStateCommand>(widget); };
     new_commands["history_forward"] = [](MainWidget* widget) {return std::make_unique< NextStateCommand>(widget); };
     new_commands["history_back"] = [](MainWidget* widget) {return std::make_unique< PrevStateCommand>(widget); };
@@ -6306,6 +6321,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     command_human_readable_names["move_text_mark_down"] = "Move text cursor down";
     command_human_readable_names["move_text_mark_up"] = "Move text cursor up";
     command_human_readable_names["set_mark"] = "Set mark in current location";
+    command_human_readable_names["push_state"] = "Pushes the current state in the navigation history";
     command_human_readable_names["toggle_drawing_mask"] = "Toggle drawing type visibility";
     command_human_readable_names["turn_on_all_drawings"] = "Make all freehand drawings visible";
     command_human_readable_names["turn_off_all_drawings"] = "Make all freehand drawings invisible";
