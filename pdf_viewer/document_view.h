@@ -123,10 +123,13 @@ public:
     void goto_end();
 
     void goto_left();
-    void goto_left_smart();
+	bool goto_left_smart();
 
     void goto_right();
-    void goto_right_smart();
+	bool goto_right_smart();
+
+	bool previous_page_smart();
+	bool next_page_smart();
 
     float get_max_valid_x(bool relenting);
     float get_min_valid_x(bool relenting);
@@ -141,7 +144,7 @@ public:
     void get_absolute_delta_from_doc_delta(float doc_dx, float doc_dy, float* abs_dx, float* abs_dy);
     int get_center_page_number();
     void get_visible_pages(int window_height, std::vector<int>& visible_pages);
-    void move_pages(int num_pages);
+	bool move_pages(int num_pages);
     void move_screens(int num_screens);
     void reset_doc_state();
     void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions = false);
@@ -175,8 +178,8 @@ public:
     int get_page_offset();
     void set_page_offset(int new_offset);
     void rotate();
-    void goto_top_of_page();
-    void goto_bottom_of_page();
+	bool goto_top_of_page();
+	bool goto_bottom_of_page();
     int get_line_index_of_vertical_pos();
     int get_line_index_of_pos(DocumentPos docpos);
     int get_line_index();

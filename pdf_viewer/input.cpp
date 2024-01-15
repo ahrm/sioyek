@@ -2267,6 +2267,40 @@ public:
 
 };
 
+class NextPageSmartCommand : public Command {
+public:
+    NextPageSmartCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+		auto my_num_repeats = std::max(1, num_repeats);
+		for (int i = 0; i < my_num_repeats; i++) {
+			if (!(widget->main_document_view->next_page_smart())) {
+				break;
+			}
+		}
+	}
+	std::string get_name() {
+		return "next_page_smart";
+	}
+};
+
+class PreviousPageSmartCommand : public Command {
+public:
+    PreviousPageSmartCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+		auto my_num_repeats = std::max(1, num_repeats);
+		for (int i = 0; i < my_num_repeats; i++) {
+			if (!(widget->main_document_view->previous_page_smart())) {
+				break;
+			}
+		}
+	}
+	std::string get_name() {
+		return "previous_page_smart";
+	}
+};
+
 class ZoomOutCommand : public Command {
 public:
     ZoomOutCommand(MainWidget* w) : Command(w) {};
@@ -6056,6 +6090,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["fit_to_page_width_smart"] = [](MainWidget* widget) {return std::make_unique< FitToPageWidthSmartCommand>(widget); };
     new_commands["next_page"] = [](MainWidget* widget) {return std::make_unique< NextPageCommand>(widget); };
     new_commands["previous_page"] = [](MainWidget* widget) {return std::make_unique< PreviousPageCommand>(widget); };
+	new_commands["next_page_smart"] = [](MainWidget* widget) {return std::make_unique< NextPageSmartCommand>(widget); };
+	new_commands["previous_page_smart"] = [](MainWidget* widget) {return std::make_unique< PreviousPageSmartCommand>(widget); };
     new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
     new_commands["screenshot"] = [](MainWidget* widget) {return std::make_unique< ScreenshotCommand>(widget); };
     new_commands["framebuffer_screenshot"] = [](MainWidget* widget) {return std::make_unique< FramebufferScreenshotCommand>(widget); };
@@ -6295,6 +6331,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     command_human_readable_names["fit_to_page_width_smart"] = "Fit the page to screen width, ignoring white page margins";
     command_human_readable_names["next_page"] = "Go to next page";
     command_human_readable_names["previous_page"] = "Go to previous page";
+    command_human_readable_names["next_page_smart"] = "Go to next page (tries to go to the next column on two-column pages)";
+    command_human_readable_names["previous_page"] = "Go to previous page (tries to go to the previous column on two-column pages)";
     command_human_readable_names["open_document"] = "Open documents using native file explorer";
     command_human_readable_names["add_bookmark"] = "Add an invisible bookmark in the current location";
     command_human_readable_names["add_marked_bookmark"] = "Add a bookmark in the selected location";
