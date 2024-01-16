@@ -6348,7 +6348,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     command_human_readable_names["next_page"] = "Go to next page";
     command_human_readable_names["previous_page"] = "Go to previous page";
     command_human_readable_names["next_page_smart"] = "Go to next page (tries to go to the next column on two-column pages)";
-    command_human_readable_names["previous_page"] = "Go to previous page (tries to go to the previous column on two-column pages)";
+    command_human_readable_names["previous_page_smart"] = "Go to previous page (tries to go to the previous column on two-column pages)";
     command_human_readable_names["open_document"] = "Open documents using native file explorer";
     command_human_readable_names["add_bookmark"] = "Add an invisible bookmark in the current location";
     command_human_readable_names["add_marked_bookmark"] = "Add a bookmark in the selected location";
