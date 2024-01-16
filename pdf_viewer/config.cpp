@@ -16,6 +16,7 @@ extern float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3];
 extern float DARK_MODE_BACKGROUND_COLOR[3];
 extern float CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[3];
 extern float DARK_MODE_CONTRAST;
+extern bool KEYBOARD_SELECT_COPY_P;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool SMALL_TOC;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
@@ -1876,6 +1877,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"regex_searching",
         ConfigType::Bool,
         &REGEX_SEARCHING,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"keyboard_select_copy_p",
+        ConfigType::Bool,
+        &KEYBOARD_SELECT_COPY_P,
         bool_serializer,
         bool_deserializer,
         bool_validator
