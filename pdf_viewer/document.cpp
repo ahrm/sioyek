@@ -2175,8 +2175,8 @@ void Document::embed_annotations(std::wstring new_file_path) {
         if (bookmark.is_freetext()) {
             annot_rect = bookmark.rect().to_document(this).rect;
 
-            std::string encoded_bookmark_text = utf8_encode(bookmark.description);
-            const char* font_face = bookmark.font_face.size() == 0 ? "Times New Roman" : encoded_bookmark_text.c_str();
+            std::string encoded_font_face = utf8_encode(bookmark.font_face);
+            const char* font_face = bookmark.font_face.size() == 0 ? "Times New Roman" : encoded_font_face.c_str();
             pdf_set_annot_default_appearance(context, bookmark_annot, font_face, bookmark.font_size, 3, bookmark.color);
         }
         else if (bookmark.is_marked()) {
