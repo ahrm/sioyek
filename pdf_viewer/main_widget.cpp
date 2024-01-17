@@ -14,6 +14,8 @@
 // moving exits show link mode
 // test exact highlight select after saving and reloading the document
 // embedded documents don't respect exact highlight select
+// fix the issue where tts on android doesn't start automatically
+// fix the bug where tts doesn't resume properly on android after being paused (starts from the beginning instead of continuing from the last location)
 
 #include <iostream>
 #include <vector>

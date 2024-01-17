@@ -1,3 +1,5 @@
+#ifndef SIOYEK_ANDROID
+
 #include "RunGuard.h"
 
 #include <QCryptographicHash>
@@ -137,3 +139,5 @@ std::string RunGuard::sendMessage(const QByteArray& message, bool wait)
     }
     return "";
 }
+
+#endif // SIOYEK_ANDROID
