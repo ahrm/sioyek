@@ -784,7 +784,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
 
     text_command_line_edit_label = new QLabel();
-    text_command_line_edit = new QLineEdit();
+    text_command_line_edit = new MyLineEdit();
 
     text_command_line_edit_label->setFont(label_font);
     text_command_line_edit->setFont(label_font);
@@ -6012,9 +6012,8 @@ bool MainWidget::event(QEvent* event) {
 
         }
     }
+
     return QWidget::event(event);
-
-
 }
 
 void MainWidget::handle_mobile_selection() {

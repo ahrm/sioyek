@@ -97,6 +97,16 @@ public:
 };
 
 
+class MyLineEdit: public QLineEdit {
+
+public:
+    MyLineEdit(QWidget* parent=nullptr);
+
+    void keyPressEvent(QKeyEvent* event) override;
+    int get_next_word_position();
+    int get_prev_word_position();
+};
+
 class BaseSelectorWidget : public QWidget {
 
 protected:

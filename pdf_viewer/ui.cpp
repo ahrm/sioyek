@@ -23,6 +23,7 @@ extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern float TTS_RATE;
+extern bool EMACS_MODE;
 
 std::wstring select_command_file_name(std::string command_name) {
     if (command_name == "open_document") {
@@ -1383,7 +1384,7 @@ BaseSelectorWidget::BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy,
     QVBoxLayout* layout = new QVBoxLayout;
     setLayout(layout);
 
-    line_edit = new QLineEdit;
+    line_edit = new MyLineEdit;
     abstract_item_view = item_view;
     abstract_item_view->setParent(this);
     abstract_item_view->setModel(proxy_model);
@@ -1559,7 +1560,7 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
                 simulate_move_down();
                 return true;
             }
-            if (((key_event->key() == Qt::Key_P) || (key_event->key() == Qt::Key_K)) && is_control_pressed) {
+            if (((key_event->key() == Qt::Key_P) || (key_event->key() == Qt::Key_K)) && (is_control_pressed && !EMACS_MODE)) {
                 simulate_move_up();
                 return true;
             }
@@ -1697,4 +1698,123 @@ void BaseSelectorWidget::resizeEvent(QResizeEvent* resize_event) {
     setFixedSize(parent_width * 0.9f, parent_height);
     move(parent_width * 0.05f, 0);
     on_config_file_changed();
+}
+
+
+MyLineEdit::MyLineEdit(QWidget* parent) : QLineEdit(parent) {
+}
+
+int MyLineEdit::get_next_word_position() {
+    int current_position = cursorPosition();
+
+    int whitespace_position = text().indexOf(QRegularExpression("\\s"), current_position);
+    if (whitespace_position == -1) {
+        return text().size();
+    }
+    int next_word_position = text().indexOf(QRegularExpression("\\S"), whitespace_position);
+
+    if (next_word_position == -1) {
+        return text().size();
+    }
+    return next_word_position;
+}
+
+int MyLineEdit::get_prev_word_position() {
+    int current_position = qMax(cursorPosition() -1, 0);
+
+    int whitespace_position = text().lastIndexOf(QRegularExpression("\\s"), current_position);
+    if (whitespace_position == -1) {
+        return 0;
+    }
+    int prev_word_position = text().lastIndexOf(QRegularExpression("\\S"), whitespace_position);
+
+    if (prev_word_position == -1) {
+        return 0;
+    }
+
+    return qMin(prev_word_position + 1, text().size());
+}
+
+void MyLineEdit::keyPressEvent(QKeyEvent* event) {
+
+    if (!EMACS_MODE) {
+        return QLineEdit::keyPressEvent(event);
+    }
+    else {
+        bool is_alt_pressed = event->modifiers() & Qt::AltModifier;
+        bool is_control_pressed = event->modifiers() & Qt::ControlModifier;
+
+        if (is_control_pressed && (event->key() == Qt::Key_A)) {
+            setCursorPosition(0);
+            event->accept();
+            return;
+        }
+
+        if (is_control_pressed && (event->key() == Qt::Key_E)) {
+            setCursorPosition(text().size());
+            event->accept();
+            return;
+        }
+
+        if (is_control_pressed && (event->key() == Qt::Key_K)) {
+            QString current_text = text();
+            setText(current_text.left(cursorPosition()));
+            event->accept();
+            return;
+        }
+
+        if (is_control_pressed && (event->key() == Qt::Key_F)) {
+            int next_position = cursorPosition() + 1;
+            if (next_position <= text().size()) {
+                setCursorPosition(next_position);
+            }
+            event->accept();
+            return;
+        }
+
+        if (is_control_pressed && (event->key() == Qt::Key_B)) {
+            int next_position = cursorPosition() - 1;
+            if (next_position >= 0) {
+                setCursorPosition(next_position);
+            }
+            event->accept();
+            return;
+        }
+
+        if (is_control_pressed && (event->key() == Qt::Key_H)) {
+            int current_position = cursorPosition();
+            if (current_position > 0) {
+                QString new_text = text().left(current_position - 1) + text().right(text().size() - current_position);
+                setText(new_text);
+                setCursorPosition(current_position - 1);
+            }
+            event->accept();
+            return;
+        }
+
+        if (is_control_pressed && (event->key() == Qt::Key_D)) {
+            int current_position = cursorPosition();
+            if (current_position < text().size()) {
+                QString new_text = text().left(current_position) + text().right(text().size() - current_position - 1);
+                setText(new_text);
+                setCursorPosition(current_position);
+            }
+            event->accept();
+            return;
+        }
+
+        if (is_alt_pressed && (event->key() == Qt::Key_F)) {
+            setCursorPosition(get_next_word_position());
+            event->accept();
+            return;
+        }
+
+        if (is_alt_pressed && (event->key() == Qt::Key_B)) {
+            setCursorPosition(get_prev_word_position());
+            event->accept();
+            return;
+        }
+        QLineEdit::keyPressEvent(event);
+    }
+
 }
