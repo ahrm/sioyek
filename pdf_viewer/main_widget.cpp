@@ -6667,10 +6667,16 @@ void MainWidget::read_current_line() {
     //std::wstring text = main_document_view->get_selected_line_text().value_or(L"");
     tts_text.clear();
     tts_corresponding_line_rects.clear();
+    tts_corresponding_char_rects.clear();
 
     int page_number  = main_document_view->get_vertical_line_page();
     AbsoluteRect ruler_rect = main_document_view->get_ruler_rect().value_or(fz_empty_rect);
-    doc()->get_page_text_and_line_rects_after_rect(page_number, ruler_rect, tts_text, tts_corresponding_line_rects);
+    doc()->get_page_text_and_line_rects_after_rect(
+        page_number,
+        ruler_rect,
+        tts_text,
+        tts_corresponding_line_rects,
+        tts_corresponding_char_rects);
 
     fz_stext_page* stext_page = doc()->get_stext_with_page_number(page_number);
     std::vector<fz_stext_char*> flat_chars;
@@ -7570,16 +7576,35 @@ QTextToSpeech* MainWidget::get_tts() {
             if (start >= tts_corresponding_line_rects.size()) return;
 
             PagelessDocumentRect line_being_read_rect = tts_corresponding_line_rects[start];
+            PagelessDocumentRect char_being_read_rect = tts_corresponding_char_rects[start];
 
             int ruler_page = main_document_view->get_vertical_line_page();
 
+            DocumentRect char_being_read_document_rect = DocumentRect(char_being_read_rect, ruler_page);
+            NormalizedWindowRect char_being_read_window_rect = char_being_read_document_rect.to_window_normalized(main_document_view);
+
             int end = start + length;
+            if (last_focused_rect.has_value() && (last_focused_rect.value() == line_being_read_rect)) {
+
+                if (char_being_read_window_rect.x0 > 1) {
+                    move_visual_mark_next();
+                }
+            }
 
             if (!tts_is_about_to_finish && ((!last_focused_rect.has_value()) || !(last_focused_rect.value() == line_being_read_rect))) {
                 last_focused_rect = line_being_read_rect;
-                focus_rect(DocumentRect(line_being_read_rect, ruler_page));
+                DocumentRect line_being_read_document_rect = DocumentRect(line_being_read_rect, ruler_page);
+                WindowRect line_being_read_window_rect = line_being_read_document_rect.to_window(main_document_view);
+                NormalizedWindowRect line_being_read_normalized_window_rect = line_being_read_document_rect.to_window_normalized(main_document_view);
+                focus_rect(line_being_read_document_rect);
+
+                if (line_being_read_normalized_window_rect.x0 < -1) { // if the next line is out of view
+                    move_horizontal(-line_being_read_window_rect.x0);
+                }
+
                 invalidate_render();
             }
+                
 
             if ((tts_text.size() - end) <= 2) {
                 tts_is_about_to_finish = true;

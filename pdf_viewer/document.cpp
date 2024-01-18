@@ -4030,7 +4030,11 @@ PageIterator Document::page_iterator(int page_number) {
     return PageIterator(page);
 }
 
-void Document::get_page_text_and_line_rects_after_rect(int page_number, AbsoluteRect after_, std::wstring& text, std::vector<PagelessDocumentRect>& line_rects){
+void Document::get_page_text_and_line_rects_after_rect(int page_number,
+    AbsoluteRect after_,
+    std::wstring& text,
+    std::vector<PagelessDocumentRect>& line_rects,
+    std::vector<PagelessDocumentRect>& char_rects){
     bool begun = false;
     DocumentRect after = after_.to_document(this);
     after.rect.y0 = after.rect.y1 = (after.rect.y0 + after.rect.y1) / 2;
@@ -4049,14 +4053,21 @@ void Document::get_page_text_and_line_rects_after_rect(int page_number, Absolute
             if (begun) {
                 if ((chr->next == nullptr) && (chr->c == '-')) continue;
                 text.push_back(chr->c);
+
                 line_rects.push_back(line->bbox);
+                char_rects.push_back(fz_rect_from_quad(chr->quad));
 
                 if ((chr->next == nullptr)) {
                     text.push_back(' ');
+
                     line_rects.push_back(line->bbox);
+                    char_rects.push_back(fz_rect_from_quad(chr->quad));
+
                     if (line->next == nullptr) {
                         text.push_back('\n');
+
                         line_rects.push_back(line->bbox);
+                        char_rects.push_back(fz_rect_from_quad(chr->quad));
                     }
                 }
             }

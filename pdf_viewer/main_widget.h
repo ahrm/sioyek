@@ -135,6 +135,7 @@ public:
     bool tts_is_about_to_finish = false;
     std::wstring tts_text = L"";
     std::vector<PagelessDocumentRect> tts_corresponding_line_rects;
+    std::vector<PagelessDocumentRect> tts_corresponding_char_rects;
     std::optional<PagelessDocumentRect> last_focused_rect = {};
 
     PdfViewOpenGLWidget* opengl_widget = nullptr;

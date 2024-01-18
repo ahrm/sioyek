@@ -164,7 +164,11 @@ public:
     fz_document* doc = nullptr;
 
     PageIterator page_iterator(int page_number);
-    void get_page_text_and_line_rects_after_rect(int page_number, AbsoluteRect after, std::wstring& text, std::vector<PagelessDocumentRect>& line_rects);
+    void get_page_text_and_line_rects_after_rect(int page_number,
+        AbsoluteRect after,
+        std::wstring& text,
+        std::vector<PagelessDocumentRect>& line_rects,
+        std::vector<PagelessDocumentRect>& char_rects);
     void load_document_metadata_from_db();
     std::string add_bookmark(const std::wstring& desc, float y_offset);
     std::string add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
