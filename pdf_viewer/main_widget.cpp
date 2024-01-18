@@ -14,8 +14,6 @@
 // moving exits show link mode
 // test exact highlight select after saving and reloading the document
 // embedded documents don't respect exact highlight select
-// fix the issue where tts on android doesn't start automatically
-// fix the bug where tts doesn't resume properly on android after being paused (starts from the beginning instead of continuing from the last location)
 
 #include <iostream>
 #include <vector>
@@ -6679,11 +6677,7 @@ void MainWidget::read_current_line() {
     get_flat_chars_from_stext_page(stext_page, flat_chars, true);
 
     get_tts()->setRate(TTS_RATE);
-    is_reading = false;
-    get_tts()->pause();
-    //std::this_thread::sleep_for(std::chrono::milliseconds(50));
     if (word_by_word_reading) {
-        //get_tts()->say(QString::fromStdWString(selected_line_text));
         if (tts_text.size() > 0) {
             get_tts()->say(QString::fromStdWString(tts_text));
         }
@@ -6692,6 +6686,7 @@ void MainWidget::read_current_line() {
         get_tts()->say(QString::fromStdWString(selected_line_text));
         tts_is_about_to_finish = true;
     }
+
     is_reading = true;
 }
 
@@ -6722,14 +6717,24 @@ void MainWidget::handle_stop_reading() {
 }
 
 void MainWidget::handle_play() {
-    is_reading = true;
-    if (get_tts()->state() == QTextToSpeech::Paused) {
-        get_tts()->resume();
-    }
-    else {
-        move_visual_mark(1);
-        invalidate_render();
-    }
+    // I think qt's current implementation of pause/resume is a little buggy
+    // for example it sometimes does not fire sayingWord events after being resumed
+    // so for now we just start reading from start of the current line instead of an actual resume
+    handle_start_reading();
+
+    //if (tts_has_pause_resume_capability) {
+    //    is_reading = true;
+    //    if (get_tts()->state() == QTextToSpeech::Paused) {
+    //        get_tts()->resume();
+    //    }
+    //    else {
+    //        move_visual_mark(1);
+    //        invalidate_render();
+    //    }
+    //}
+    //else {
+    //    handle_start_reading();
+    //}
 }
 
 void MainWidget::handle_pause() {
@@ -7554,15 +7559,7 @@ QTextToSpeech* MainWidget::get_tts() {
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
 
-#ifdef Q_OS_WIN
-    if (tts->availableEngines().indexOf("sapi") != -1) {
-        // at the time of this commit only the sapi engine correctly fires
-        // sayingWord signals, even though all engines report that they support
-        // word boundary signals
-        tts->setEngine("sapi");
-    }
-#endif
-
+    tts_has_pause_resume_capability = tts->engineCapabilities().testFlag(QTextToSpeech::Capability::PauseResume);
     if (tts->engineCapabilities().testFlag(QTextToSpeech::Capability::WordByWordProgress)) {
         word_by_word_reading = true;
     }
@@ -7611,6 +7608,11 @@ QTextToSpeech* MainWidget::get_tts() {
             }
         }
         });
+#endif
+
+#ifdef SIOYEK_ANDROID
+        // wait for the tts engine to be initialized
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
 #endif
 
     return tts;
