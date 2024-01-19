@@ -110,6 +110,7 @@ extern int DOCUMENTATION_FONT_SIZE;
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
 extern bool NO_AUTO_CONFIG;
+extern bool HIDE_OVERLAPPING_LINK_LABELS;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -831,6 +832,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"should_draw_unrendered_pages",
         ConfigType::Bool,
         &SHOULD_DRAW_UNRENDERED_PAGES,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"hide_overlapping_link_labels",
+        ConfigType::Bool,
+        &HIDE_OVERLAPPING_LINK_LABELS,
         bool_serializer,
         bool_deserializer,
         bool_validator

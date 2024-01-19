@@ -68,6 +68,7 @@ extern float RULER_COLOR[3];
 extern float RULER_MARKER_COLOR[3];
 extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
+extern bool HIDE_OVERLAPPING_LINK_LABELS;
 
 extern float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
@@ -1617,11 +1618,13 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             // the link labels difficult. Here we only draw the link text if there are no
             // other close links. This has quadratic runtime but it should not matter since
             // there are not many links in a single PDF page.
-            for (int j = i + 1; j < all_visible_links.size(); j++) {
-                auto other_link = all_visible_links[j];
-                float distance = std::abs(other_link.rects[0].x0 - link.rects[0].x0) + std::abs(other_link.rects[0].y0 - link.rects[0].y0);
-                if (distance < 10) {
-                    should_draw = false;
+            if (HIDE_OVERLAPPING_LINK_LABELS) {
+                for (int j = i + 1; j < all_visible_links.size(); j++) {
+                    auto other_link = all_visible_links[j];
+                    float distance = std::abs(other_link.rects[0].x0 - link.rects[0].x0) + std::abs(other_link.rects[0].y0 - link.rects[0].y0);
+                    if (distance < 10) {
+                        should_draw = false;
+                    }
                 }
             }
 
