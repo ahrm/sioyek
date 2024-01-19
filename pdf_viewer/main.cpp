@@ -300,6 +300,7 @@ bool VIMTEX_WSL_FIX = false;
 float RULER_AUTO_MOVE_SENSITIVITY = 40.0f;
 float TTS_RATE = 0.0f;
 bool VERBOSE = false;
+bool FILL_TEXTBAR_WITH_SELECTED_TEXT = true;
 //UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
 bool PAPER_DOWNLOAD_CREATE_PORTAL = true;

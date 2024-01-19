@@ -227,6 +227,7 @@ extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
 extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
 
 extern bool TOUCH_MODE;
+extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -4951,7 +4952,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
 
             Requirement next_requirement = pending_command_instance->next_requirement(this).value();
             if (next_requirement.type == RequirementType::Text) {
-                show_textbar(utf8_decode(next_requirement.name), true, pending_command_instance->get_text_default_value());
+                show_textbar(utf8_decode(next_requirement.name), FILL_TEXTBAR_WITH_SELECTED_TEXT, pending_command_instance->get_text_default_value());
             }
             else if (next_requirement.type == RequirementType::Symbol) {
                 if (TOUCH_MODE) {

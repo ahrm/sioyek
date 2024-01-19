@@ -111,6 +111,7 @@ extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
 extern bool NO_AUTO_CONFIG;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
+extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
@@ -840,6 +841,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"hide_overlapping_link_labels",
         ConfigType::Bool,
         &HIDE_OVERLAPPING_LINK_LABELS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"fill_textbar_with_selected_text",
+        ConfigType::Bool,
+        &FILL_TEXTBAR_WITH_SELECTED_TEXT,
         bool_serializer,
         bool_deserializer,
         bool_validator
