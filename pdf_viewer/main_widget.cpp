@@ -425,13 +425,14 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         main_document_view->set_offset_y(main_window_height / 2 / main_document_view->get_zoom_level());
     }
 
+    int status_bar_height = get_status_bar_height();
+
     if (text_command_line_edit_container != nullptr) {
         text_command_line_edit_container->move(0, 0);
-        text_command_line_edit_container->resize(main_window_width, 30);
+        text_command_line_edit_container->resize(main_window_width, status_bar_height);
     }
 
     if (status_label != nullptr) {
-        int status_bar_height = get_status_bar_height();
         status_label->move(0, main_window_height - status_bar_height);
         status_label->resize(main_window_width, status_bar_height);
         if (should_show_status_label()) {
