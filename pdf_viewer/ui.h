@@ -273,6 +273,9 @@ public:
         if (selected_index != -1) {
             table_view->selectionModel()->setCurrentIndex(model->index(selected_index, 0), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
         }
+        else {
+            table_view->selectionModel()->setCurrentIndex(model->index(0, 0), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
+        }
 
         table_view->setSelectionMode(QAbstractItemView::SingleSelection);
         table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -507,6 +510,9 @@ public:
         if (selected_index != -1) {
             dynamic_cast<QListView*>(this->get_view())->selectionModel()->setCurrentIndex(string_list_model->index(selected_index), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
         }
+        else {
+            dynamic_cast<QListView*>(this->get_view())->selectionModel()->setCurrentIndex(string_list_model->index(0, 0), QItemSelectionModel::Rows | QItemSelectionModel::SelectCurrent);
+        }
 
     }
 
@@ -616,6 +622,9 @@ public:
         if (current_index != -1) {
             dynamic_cast<QListView*>(get_view())->setCurrentIndex(list_model->index(current_index));
         }
+        else {
+            dynamic_cast<QListView*>(get_view())->setCurrentIndex(list_model->index(0, 0));
+        }
         //dynamic_cast<QListView*>(get_view())->setCurrentIndex();
     }
 
@@ -636,6 +645,7 @@ public:
         dynamic_cast<QListView*>(get_view())->setModel(new_list_model);
         delete list_model;
         list_model = new_list_model;
+        dynamic_cast<QListView*>(get_view())->setCurrentIndex(list_model->index(0, 0));
         return true;
     }
 

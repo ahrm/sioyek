@@ -1311,6 +1311,8 @@ CommandSelector::CommandSelector(bool is_fuzzy, std::function<void(std::string, 
     table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
     table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table_view->setModel(standard_item_model);
+    table_view->setCurrentIndex(standard_item_model->index(0, 0));
+
 
     table_view->horizontalHeader()->setStretchLastSection(true);
     table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -1369,6 +1371,8 @@ bool CommandSelector::on_text_change(const QString& text) {
     dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
     delete standard_item_model;
     standard_item_model = new_standard_item_model;
+    dynamic_cast<QTableView*>(get_view())->setCurrentIndex(standard_item_model->index(0, 0));
+
     return true;
 }
 
