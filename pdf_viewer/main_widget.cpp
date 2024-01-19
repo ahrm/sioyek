@@ -3558,6 +3558,11 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
             if (main_document_view) {
                 selected_line_text = main_document_view->get_selected_line_text().value_or(L"");
                 command_parts[i].replace("%{zoom_level}", QString::number(main_document_view->get_zoom_level()));
+                DocumentPos docpos = main_document_view->get_offsets().to_document(doc());
+                command_parts[i].replace("%{offset_x}", QString::number(main_document_view->get_offset_x()));
+                command_parts[i].replace("%{offset_y}", QString::number(main_document_view->get_offset_y()));
+                command_parts[i].replace("%{offset_x_document}", QString::number(docpos.x));
+                command_parts[i].replace("%{offset_y_document}", QString::number(docpos.y));
             }
 
             if (selected_line_text.size() > 0) {
