@@ -106,6 +106,8 @@ extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 extern std::wstring VOLUME_DOWN_COMMAND;
 extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
+extern int NUM_PRERENDERED_NEXT_SLIDES;
+extern int NUM_PRERENDERED_PREV_SLIDES;
 
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
@@ -960,6 +962,24 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         int_deserializer,
         nullptr,
         IntExtras{1, 100}
+        });
+    configs.push_back({
+        L"num_prerendered_next_slides",
+        ConfigType::Int,
+        &NUM_PRERENDERED_NEXT_SLIDES,
+        int_serializer,
+        int_deserializer,
+        nullptr,
+        IntExtras{0, 5}
+        });
+    configs.push_back({
+        L"num_prerendered_prev_slides",
+        ConfigType::Int,
+        &NUM_PRERENDERED_PREV_SLIDES,
+        int_serializer,
+        int_deserializer,
+        nullptr,
+        IntExtras{0, 5}
         });
     configs.push_back({
         L"keyboard_select_font_size",

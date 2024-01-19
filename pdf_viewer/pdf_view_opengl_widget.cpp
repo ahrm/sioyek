@@ -70,6 +70,9 @@ extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
 
+extern int NUM_PRERENDERED_NEXT_SLIDES;
+extern int NUM_PRERENDERED_PREV_SLIDES;
+
 extern float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
@@ -1236,16 +1239,37 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
     if (is_presentation_mode()) {
         if (PRERENDER_NEXT_PAGE) {
             // request the next page so it is scheduled for rendering in the background thread
-            pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-                visible_page_number.value() + 1,
-                document_view->get_document()->should_render_pdf_annotations(),
-                -1,
-                1,
-                1,
-                document_view->get_zoom_level(),
-                devicePixelRatioF(),
-                nullptr,
-                nullptr);
+
+            for (int i = 0; i < NUM_PRERENDERED_NEXT_SLIDES; i++) {
+
+                if ((visible_page_number.value() + i + 1) < doc()->num_pages()) {
+                    pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+                        visible_page_number.value() + i + 1,
+                        document_view->get_document()->should_render_pdf_annotations(),
+                        -1,
+                        1,
+                        1,
+                        document_view->get_zoom_level(),
+                        devicePixelRatioF(),
+                        nullptr,
+                        nullptr);
+                }
+            }
+            for (int i = 0; i < NUM_PRERENDERED_PREV_SLIDES; i++) {
+
+                if ((visible_page_number.value() - i - 1) >= 0) {
+                    pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+                        visible_page_number.value() - i - 1,
+                        document_view->get_document()->should_render_pdf_annotations(),
+                        -1,
+                        1,
+                        1,
+                        document_view->get_zoom_level(),
+                        devicePixelRatioF(),
+                        nullptr,
+                        nullptr);
+                }
+            }
         }
         render_page(visible_page_number.value());
     }
