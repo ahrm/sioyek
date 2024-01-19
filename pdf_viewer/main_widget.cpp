@@ -4038,15 +4038,12 @@ void MainWidget::handle_link_click(const PdfLink& link) {
     // convert one indexed page to zero indexed page
     page--;
 
-    // we usually just want to center the y offset and not the x offset (otherwise for example
-    // a link at the right side of the screen will be centered, causing most of screen state to be empty)
-    // todo: if the document is so zoomed in that the page doesn't fit inside the screen, center on x also
-    // for example currently if we click on a link on a two column document when we zoomed in on a single column
-    // the target of the link is not visible if it is on the other column
-    //offset_x = main_document_view->get_offset_x();
-
-    //long_jump_to_destination({ page, offset_x, offset_y });
-    long_jump_to_destination(page, offset_y);
+    if (opengl_widget->is_presentation_mode()) {
+        goto_page_with_page_number(page);
+    }
+    else {
+        long_jump_to_destination(page, offset_y);
+    }
 }
 
 void MainWidget::save_auto_config() {
