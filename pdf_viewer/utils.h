@@ -32,7 +32,7 @@ std::wstring to_lower(const std::wstring& inp);
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char);
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages);
 int mod(int a, int b);
-ParsedUri parse_uri(fz_context* mupdf_context, std::string uri);
+ParsedUri parse_uri(fz_context* mupdf_context, fz_document* document, std::string uri);
 char get_symbol(int key, bool is_shift_pressed, const std::vector<char>& special_symbols);
 
 template<typename T>

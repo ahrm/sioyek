@@ -1127,7 +1127,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
             if (pdf_links.size() > 0) {
 
                 for (auto link : pdf_links) {
-                    auto parsed_uri = parse_uri(get_document()->get_mupdf_context(), link.uri);
+                    auto parsed_uri = parse_uri(get_document()->get_mupdf_context(), get_document()->doc, link.uri);
                     SmartViewCandidate candid;
                     candid.doc = get_document();
                     candid.source_rect = current_document->document_to_absolute_rect(DocumentRect(link.rects[0], line_page_number));
@@ -1307,7 +1307,7 @@ void DocumentView::get_visible_links(std::vector<PdfLink>& visible_page_links) {
     for (auto page : visible_pages) {
         std::vector<PdfLink> links = get_document()->get_page_merged_pdf_links(page);
         for (auto link : links) {
-            ParsedUri parsed_uri = parse_uri(get_document()->get_mupdf_context(), link.uri);
+            ParsedUri parsed_uri = parse_uri(get_document()->get_mupdf_context(), get_document()->doc, link.uri);
             NormalizedWindowRect window_rect = DocumentRect(link.rects[0], page).to_window_normalized(this);
             if (window_rect.is_visible()) {
                 visible_page_links.push_back(link);

@@ -474,7 +474,7 @@ void MainWidget::set_overview_position(int page, float offset) {
 
 void MainWidget::set_overview_link(PdfLink link) {
 
-    auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
+    auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, link.uri);
     if (page >= 1) {
         AbsoluteRect source_absolute_rect = DocumentRect(link.rects[0], link.source_page).to_absolute(doc());
         std::wstring source_text = doc()->get_pdf_link_text(link);
@@ -4032,7 +4032,7 @@ void MainWidget::handle_link_click(const PdfLink& link) {
         return;
     }
 
-    auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
+    auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, link.uri);
 
     // convert one indexed page to zero indexed page
     page--;
@@ -5611,7 +5611,7 @@ void MainWidget::handle_portal_to_link(const std::wstring& text) {
     auto selected_link_ = get_selected_link(text);
     if (selected_link_) {
         PdfLink pdf_link = selected_link_.value();
-        ParsedUri parsed_uri = parse_uri(mupdf_context, pdf_link.uri);
+        ParsedUri parsed_uri = parse_uri(mupdf_context, doc()->doc, pdf_link.uri);
 
         AbsoluteDocumentPos src_abspos = DocumentPos {pdf_link.source_page, 0, pdf_link.rects[0].y0}.to_absolute(doc());
         AbsoluteDocumentPos dst_abspos = DocumentPos {parsed_uri.page-1, parsed_uri.x, parsed_uri.y}.to_absolute(doc());
@@ -5642,7 +5642,7 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
                 open_web_url(utf8_decode(link.uri));
             }
             else {
-                auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
+                auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, link.uri);
                 long_jump_to_destination(page - 1, offset_y);
             }
         }
@@ -6616,7 +6616,7 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
 
         PdfLink pdf_link = pdf_link_.value();
         std::wstring link_text = doc()->get_pdf_link_text(pdf_link);
-        auto [link_page, offset_x, offset_y] = parse_uri(mupdf_context, pdf_link.uri);
+        auto [link_page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, pdf_link.uri);
 
         auto res = doc()->get_page_bib_with_reference(link_page - 1, link_text);
         if (res) {
