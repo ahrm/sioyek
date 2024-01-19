@@ -152,7 +152,8 @@ void get_word_rect_list_from_flat_chars(const std::vector<fz_stext_char*>& flat_
     std::vector<std::vector<PagelessDocumentRect>>& flat_word_rects);
 
 std::vector<std::string> get_tags(int n);
-int get_index_from_tag(const std::string& tag);
+int get_num_tag_digits(int n);
+int get_index_from_tag(std::string tag, bool reversed=false);
 std::wstring truncate_string(const std::wstring& inp, int size);
 std::wstring get_page_formatted_string(int page);
 PagelessDocumentRect create_word_rect(const std::vector<PagelessDocumentRect>& chars);

@@ -5574,7 +5574,7 @@ std::optional<PdfLink> MainWidget::get_selected_link(const std::wstring& text) {
         int link_index = 0;
 
         if (ALPHABETIC_LINK_TAGS) {
-            link_index = get_index_from_tag(utf8_encode(text));
+            link_index = get_index_from_tag(utf8_encode(text), true);
         }
         else {
             link_index = std::stoi(text);
@@ -5638,7 +5638,12 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
             }
             else {
                 auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, link.uri);
-                long_jump_to_destination(page - 1, offset_y);
+                if (opengl_widget->is_presentation_mode()) {
+                    goto_page_with_page_number(page - 1);
+                }
+                else {
+                    long_jump_to_destination(page - 1, offset_y);
+                }
             }
         }
     }
@@ -9486,4 +9491,13 @@ PaperDownloadFinishedAction MainWidget::get_paper_download_action_from_string(QS
     if (str == "new_window") return PaperDownloadFinishedAction::OpenInNewWindow;
     if (str == "portal") return PaperDownloadFinishedAction::Portal;
     return PaperDownloadFinishedAction::None;
+}
+
+void MainWidget::set_tag_prefix(std::wstring prefix) {
+
+    opengl_widget->set_tag_prefix(prefix);
+}
+
+void MainWidget::clear_tag_prefix() {
+    opengl_widget->clear_tag_prefix();
 }

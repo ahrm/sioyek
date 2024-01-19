@@ -3275,18 +3275,27 @@ public:
     OpenLinkCommand(MainWidget* w) : Command(w) {};
 protected:
     std::optional<std::wstring> text = {};
+    bool already_pre_performed = false;
 public:
 
     virtual std::string text_requirement_name() {
         return "Label";
     }
 
+    bool is_done() {
+        if ((!ALPHABETIC_LINK_TAGS && text.has_value())) return true;
+        if (ALPHABETIC_LINK_TAGS && text.has_value() && (text.value().size() == get_num_tag_digits(widget->num_visible_links()))) return true;
+        return false;
+    }
+
     virtual std::optional<Requirement> next_requirement(MainWidget* widget) {
-        if (text.has_value()) {
+        bool done = is_done();
+
+        if (done) {
             return {};
         }
         else {
-            if ((widget->num_visible_links() < 26) && ALPHABETIC_LINK_TAGS) {
+            if (ALPHABETIC_LINK_TAGS) {
                 return Requirement{ RequirementType::Symbol, "Label" };
             }
             else if ((widget->num_visible_links() < 10) && (!ALPHABETIC_LINK_TAGS)) {
@@ -3303,8 +3312,12 @@ public:
     }
 
     void pre_perform() {
+        if (already_pre_performed) return;
+
+        widget->clear_tag_prefix();
         widget->set_highlight_links(true, true);
         widget->invalidate_render();
+        already_pre_performed = true;
     }
 
     virtual std::string get_name() {
@@ -3317,9 +3330,18 @@ public:
     }
 
     virtual void set_symbol_requirement(char value) {
-        std::wstring val;
-        val.push_back(value);
-        this->text = val;
+        if (text.has_value()) {
+            text.value().push_back(value);
+        }
+        else {
+            std::wstring val;
+            val.push_back(value);
+            this->text = val;
+        }
+
+        if (!is_done()) {
+            widget->set_tag_prefix(text.value());
+        }
     }
 };
 

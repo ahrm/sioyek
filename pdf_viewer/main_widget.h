@@ -887,6 +887,8 @@ public:
     PaperDownloadFinishedAction get_default_paper_download_finish_action();
     QString get_paper_download_finish_action_string(PaperDownloadFinishedAction action);
     PaperDownloadFinishedAction get_paper_download_action_from_string(QString str);
+    void set_tag_prefix(std::wstring prefix);
+    void clear_tag_prefix();
 };
 
 #endif

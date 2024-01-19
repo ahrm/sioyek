@@ -731,6 +731,7 @@ std::string get_aplph_tag(int n, int max_n) {
         tag.push_back('a' + (n % 26));
         n = n / 26;
     }
+    std::reverse(tag.begin(), tag.end());
     return tag;
 }
 
@@ -754,7 +755,11 @@ std::vector<std::string> get_tags(int n) {
     return res;
 }
 
-int get_index_from_tag(const std::string& tag) {
+int get_index_from_tag(std::string tag, bool reversed) {
+    if (reversed) {
+        std::reverse(tag.begin(), tag.end());
+    }
+
     int res = 0;
     int mult = 1;
 

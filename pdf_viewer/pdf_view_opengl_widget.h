@@ -132,6 +132,7 @@ private:
     bool is_helper = false;
     float percent_done = 0.0f;
     std::optional<int> visible_page_number = {};
+    std::string tag_prefix = "";
 
     QIcon bookmark_icon;
     QIcon portal_icon;
@@ -354,4 +355,6 @@ public:
         const std::vector<float>& dot_coordinates,
         const std::vector<unsigned int>& dot_indices,
         const std::vector<GLint>& dot_type_indices);
+    void set_tag_prefix(std::wstring prefix);
+    void clear_tag_prefix();
 };

@@ -1660,6 +1660,14 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             int window_x = static_cast<int>(window_rect.x0 * view_width / 2 + view_width / 2);
             int window_y = static_cast<int>(-window_rect.y0 * view_height / 2 + view_height / 2);
 
+            if (tag_prefix.size() > 0) {
+                if (index_string.find(tag_prefix) != 0) {
+                    should_draw = false;
+                }
+                else {
+                    index_string = index_string.substr(tag_prefix.size());
+                }
+            }
             if (should_draw) {
                 painter->drawText(window_x, window_y, index_string.c_str());
             }
@@ -3547,4 +3555,12 @@ void PdfViewOpenGLWidget::clear_background_color() {
     else {
         glClear(GL_COLOR_BUFFER_BIT);
     }
+}
+
+void PdfViewOpenGLWidget::set_tag_prefix(std::wstring prefix) {
+    tag_prefix = utf8_encode(prefix);
+}
+
+void PdfViewOpenGLWidget::clear_tag_prefix() {
+    tag_prefix = "";
 }
