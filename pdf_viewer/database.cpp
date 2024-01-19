@@ -122,16 +122,20 @@ static int global_bookmark_select_callback(void* res_vector, int argc, char** ar
     float begin_y = -1;
     float end_x = -1;
     float end_y = -1;
+    bool offset_y_is_set = false;
 
     if (argv[2]) {
         offset_y = atof(argv[2]);
+        offset_y_is_set = true;
     }
     if (argv[3]) {
         begin_x = atof(argv[3]);
     }
     if (argv[4]) {
         begin_y = atof(argv[4]);
-        offset_y = begin_y;
+        if (!offset_y_is_set) {
+            offset_y = begin_y;
+        }
     }
     if (argv[5]) {
         end_x = atof(argv[5]);
