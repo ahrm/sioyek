@@ -227,7 +227,6 @@ extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
 extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
 
 extern bool TOUCH_MODE;
-extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 
 const int MAX_SCROLLBAR = 10000;
 
@@ -2943,17 +2942,13 @@ void MainWidget::show_mark_selector() {
         });
 }
 
-void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text, const std::wstring& initial_value) {
+void MainWidget::show_textbar(const std::wstring& command_name, const std::wstring& initial_value) {
+    QString init = "";
+
+    if (initial_value.size() > 0) {
+        init = QString::fromStdWString(initial_value);
+    }
     if (TOUCH_MODE) {
-        QString init = "";
-
-        if (should_fill_with_selected_text) {
-            init = QString::fromStdWString(get_selected_text());
-        }
-
-        if (initial_value.size() > 0) {
-            init = QString::fromStdWString(initial_value);
-        }
 
         TouchTextEdit* edit_widget = new TouchTextEdit(QString::fromStdWString(command_name), init, this);
 
@@ -2974,8 +2969,8 @@ void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill
     }
     else {
         text_command_line_edit->clear();
-        if (should_fill_with_selected_text) {
-            text_command_line_edit->setText(QString::fromStdWString(get_selected_text()));
+        if (init.size() > 0) {
+            text_command_line_edit->setText(init);
         }
         text_command_line_edit_label->setText(QString::fromStdWString(command_name));
         text_command_line_edit_container->show();
@@ -4946,7 +4941,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
 
             Requirement next_requirement = pending_command_instance->next_requirement(this).value();
             if (next_requirement.type == RequirementType::Text) {
-                show_textbar(utf8_decode(next_requirement.name), FILL_TEXTBAR_WITH_SELECTED_TEXT, pending_command_instance->get_text_default_value());
+                show_textbar(utf8_decode(next_requirement.name), pending_command_instance->get_text_default_value());
             }
             else if (next_requirement.type == RequirementType::Symbol) {
                 if (TOUCH_MODE) {

@@ -391,7 +391,7 @@ public:
     void change_selected_bookmark_text(const std::wstring& new_text);
     void change_selected_highlight_text_annot(const std::wstring& new_text);
     char get_current_selected_highlight_type();
-    void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false, const std::wstring& initial_value = L"");
+    void show_textbar(const std::wstring& command_name, const std::wstring& initial_value = L"");
     void show_mark_selector();
     void toggle_two_window_mode();
     void toggle_window_configuration();

@@ -37,6 +37,7 @@ extern bool VERBOSE;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
 extern bool TOC_JUMP_ALIGN_TOP;
+extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 
 struct CommandInvocation {
     QString command_name;
@@ -533,6 +534,13 @@ public:
 
     bool pushes_state() {
         return true;
+    }
+
+    std::wstring get_text_default_value() {
+        if (FILL_TEXTBAR_WITH_SELECTED_TEXT) {
+            return widget->get_selected_text();
+        }
+        return L"";
     }
 
     std::string text_requirement_name() {
