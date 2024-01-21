@@ -5062,6 +5062,22 @@ public:
     bool requires_document() { return false; }
 };
 
+class ClearCurrentDocumentDrawingsCommand : public Command {
+public:
+    ClearCurrentDocumentDrawingsCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->clear_current_document_drawings();
+    }
+
+    std::string get_name() {
+        return "clear_current_document_drawings";
+    }
+
+
+    bool requires_document() { return false; }
+};
+
 class DeleteFreehandDrawingsCommand : public Command {
 public:
     DeleteFreehandDrawingsCommand(MainWidget* w) : Command(w) {};
@@ -6104,6 +6120,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["undo_marked_data"] = [](MainWidget* widget) {return std::make_unique< UndoMarkedDataCommand>(widget); };
     new_commands["goto_random_page"] = [](MainWidget* widget) {return std::make_unique< GotoRandomPageCommand>(widget); };
     new_commands["clear_current_page_drawings"] = [](MainWidget* widget) {return std::make_unique< ClearCurrentPageDrawingsCommand>(widget); };
+    new_commands["clear_current_document_drawings"] = [](MainWidget* widget) {return std::make_unique< ClearCurrentDocumentDrawingsCommand>(widget); };
     new_commands["delete_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< DeleteFreehandDrawingsCommand>(widget); };
     new_commands["select_freehand_drawings"] = [](MainWidget* widget) {return std::make_unique< SelectFreehandDrawingsCommand>(widget); };
     new_commands["select_current_search_match"] = [](MainWidget* widget) {return std::make_unique< SelectCurrentSearchMatchCommand>(widget); };

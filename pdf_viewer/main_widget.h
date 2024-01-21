@@ -893,6 +893,7 @@ public:
     void show_context_menu();
     QPoint cursor_pos();
     void clear_current_page_drawings();
+    void clear_current_document_drawings();
 };
 
 #endif

@@ -3157,6 +3157,10 @@ void Document::delete_all_page_drawings(int page) {
     is_drawings_dirty = true;
 }
 
+void Document::delete_all_drawings() {
+    page_freehand_drawings.clear();
+}
+
 void Document::delete_page_intersecting_drawings(int page, AbsoluteRect absolute_rect, bool mask[26]) {
     std::vector<FreehandDrawing>& page_drawings = page_freehand_drawings[page];
     std::vector<SelectedObjectIndex> indices_to_delete = get_page_intersecting_drawing_indices(page, absolute_rect, mask);
