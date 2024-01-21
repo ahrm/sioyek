@@ -264,6 +264,7 @@ public:
     void index_document(bool* invalid_flag);
     void stop_indexing();
     void delete_page_intersecting_drawings(int page, AbsoluteRect absolute_rect, bool mask[26]);
+    void delete_all_page_drawings(int page);
     std::vector<SelectedObjectIndex> get_page_intersecting_drawing_indices(int page, AbsoluteRect absolute_rect, bool mask[26]);
 
     std::vector<IndexedData> find_reference_with_string(std::wstring reference_name, int page_number);

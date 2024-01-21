@@ -9544,3 +9544,8 @@ QPoint MainWidget::cursor_pos() {
     return QCursor::pos();
 }
 
+
+void MainWidget::clear_current_page_drawings() {
+    int page_number = get_current_page_number();
+    doc()->delete_all_page_drawings(page_number);
+}
