@@ -2416,7 +2416,7 @@ void MainWidget::handle_click(WindowPos click_pos) {
     }
 
     auto link = main_document_view->get_link_in_pos(click_pos);
-    selected_highlight_index = main_document_view->get_highlight_index_in_pos(click_pos);
+    set_selected_highlight_index(main_document_view->get_highlight_index_in_pos(click_pos));
     selected_bookmark_index = doc()->get_bookmark_index_at_pos(mouse_abspos);
     selected_portal_index = doc()->get_portal_index_at_pos(mouse_abspos);
 
@@ -2735,7 +2735,7 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
             return;
         }
         if (highlight_index != -1) {
-            selected_highlight_index = highlight_index;
+            set_selected_highlight_index(highlight_index);
             handle_command_types(command_manager->get_command_with_name(this, "add_annot_to_highlight"), 0);
         }
     }
@@ -5267,6 +5267,7 @@ void MainWidget::change_selected_highlight_type(char new_type) {
 }
 
 char MainWidget::get_current_selected_highlight_type() {
+
     if (selected_highlight_index != -1) {
         return main_document_view->get_highlight_with_index(selected_highlight_index).type;
     }
@@ -5313,7 +5314,7 @@ void MainWidget::handle_goto_highlight() {
             main_document_view->delete_highlight(*hl);
         },
             [&](Highlight* hl) {
-            selected_highlight_index = doc()->get_highlight_index_with_uuid(hl->uuid);
+            set_selected_highlight_index(doc()->get_highlight_index_with_uuid(hl->uuid));
             pop_current_widget();
             handle_command_types(command_manager->get_command_with_name(this, "edit_selected_highlight"), 0);
         });
@@ -5810,7 +5811,7 @@ void MainWidget::handle_delete_highlight_under_cursor() {
 void MainWidget::handle_delete_selected_highlight() {
     if (selected_highlight_index != -1) {
         main_document_view->delete_highlight_with_index(selected_highlight_index);
-        selected_highlight_index = -1;
+        set_selected_highlight_index(-1);
     }
     validate_render();
 }
@@ -6198,7 +6199,7 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
 
     clear_selected_text();
     clear_selection_indicators();
-    selected_highlight_index = -1;
+    set_selected_highlight_index(-1);
     selected_bookmark_index = -1;
     selected_portal_index = -1;
     clear_highlight_buttons();
@@ -9064,7 +9065,7 @@ void MainWidget::hide_command_line_edit(){
 }
 
 void MainWidget::deselect_document_indices(){
-    selected_highlight_index = -1;
+    set_selected_highlight_index(-1);
     selected_bookmark_index = -1;
     selected_portal_index = -1;
 }
@@ -9552,4 +9553,9 @@ void MainWidget::clear_current_page_drawings() {
 
 void MainWidget::clear_current_document_drawings() {
     doc()->delete_all_drawings();
+}
+
+void MainWidget::set_selected_highlight_index(int index) {
+    selected_highlight_index = index;
+    opengl_widget->set_selected_highlight_index(index);
 }

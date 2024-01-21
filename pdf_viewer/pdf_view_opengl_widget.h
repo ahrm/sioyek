@@ -150,6 +150,7 @@ private:
     int rotation_index = 0;
     bool is_dragging = false;
     bool fastread_mode = false;
+    int selected_highlight_index = -1;
 
     int last_mouse_down_window_x = 0;
     int last_mouse_down_window_y = 0;
@@ -357,4 +358,5 @@ public:
         const std::vector<GLint>& dot_type_indices);
     void set_tag_prefix(std::wstring prefix);
     void clear_tag_prefix();
+    void set_selected_highlight_index(int index);
 };

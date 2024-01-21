@@ -894,6 +894,7 @@ public:
     QPoint cursor_pos();
     void clear_current_page_drawings();
     void clear_current_document_drawings();
+    void set_selected_highlight_index(int index);
 };
 
 #endif

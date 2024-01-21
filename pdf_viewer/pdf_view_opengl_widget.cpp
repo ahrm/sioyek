@@ -3437,6 +3437,9 @@ void PdfViewOpenGLWidget::render_highlight_annotations(){
                     }
                     if (flags == 0) {
                         flags |= HRF_FILL;
+                        if (i == selected_highlight_index) {
+                            flags |= HRF_BORDER;
+                        }
                     }
                     render_highlight_absolute(shared_gl_objects.highlight_program,
                             highlights[i].highlight_rects[j],
@@ -3562,4 +3565,8 @@ void PdfViewOpenGLWidget::set_tag_prefix(std::wstring prefix) {
 
 void PdfViewOpenGLWidget::clear_tag_prefix() {
     tag_prefix = "";
+}
+
+void PdfViewOpenGLWidget::set_selected_highlight_index(int index) {
+    selected_highlight_index = index;
 }
