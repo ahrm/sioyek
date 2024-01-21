@@ -723,6 +723,34 @@ void DocumentView::goto_page(int page) {
 //	set_offset_y(get_page_offset(page) + view_height_in_document_space()/2);
 //}
 
+void DocumentView::fit_to_page_height_and_width_smart() {
+
+    int cp = get_center_page_number();
+    if (cp == -1) return;
+
+    float top_ratio, bottom_ratio;
+    int normal_page_height;
+
+    float left_ratio, right_ratio;
+    int normal_page_width;
+    int page_height = current_document->get_page_size_smart(false, cp, &top_ratio, &bottom_ratio, &normal_page_height);
+    int page_width = current_document->get_page_size_smart(true, cp, &left_ratio, &right_ratio, &normal_page_width);
+
+    float bottom_leftover = 1.0f - bottom_ratio;
+    float right_leftover = 1.0f - right_ratio;
+    float height_imbalance = top_ratio - bottom_leftover;
+    float width_imbalance = left_ratio - right_leftover;
+
+    float height_zoom_level = static_cast<float>(view_height - 20) / page_height;
+    float width_zoom_level = static_cast<float>(view_width - 20) / page_width;
+
+    float best_zoom_level = 1.0f;
+
+    set_zoom_level(qMin(width_zoom_level, height_zoom_level), true);
+    goto_offset_within_page(cp, (height_imbalance / 2.0f + 0.5f) * normal_page_height);
+    set_offset_x(-width_imbalance * normal_page_width / 2.0f);
+}
+
 void DocumentView::fit_to_page_height(bool smart) {
     int cp = get_center_page_number();
     if (cp == -1) return;

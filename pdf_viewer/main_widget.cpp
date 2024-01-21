@@ -6424,8 +6424,6 @@ void MainWidget::show_command_documentation(QString command_name) {
 
 
 void MainWidget::handle_debug_command() {
-    auto draw_controls = get_draw_controls();
-    draw_controls->show();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){

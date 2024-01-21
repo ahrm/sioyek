@@ -2186,6 +2186,19 @@ public:
 
 };
 
+class FitToPageSmartCommand : public Command {
+public:
+    FitToPageSmartCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->main_document_view->fit_to_page_height_and_width_smart();
+    }
+
+    std::string get_name() {
+        return "fit_to_page_smart";
+    }
+
+};
+
 class FitToPageWidthSmartCommand : public Command {
 public:
     FitToPageWidthSmartCommand(MainWidget* w) : Command(w) {};
@@ -5879,6 +5892,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["zoom_out_overview"] = [](MainWidget* widget) {return std::make_unique< ZoomOutOverviewCommand>(widget); };
     new_commands["fit_to_page_width"] = [](MainWidget* widget) {return std::make_unique< FitToPageWidthCommand>(widget); };
     new_commands["fit_to_page_height"] = [](MainWidget* widget) {return std::make_unique< FitToPageHeightCommand>(widget); };
+    new_commands["fit_to_page_smart"] = [](MainWidget* widget) {return std::make_unique< FitToPageSmartCommand>(widget); };
     new_commands["fit_to_page_height_smart"] = [](MainWidget* widget) {return std::make_unique< FitToPageHeightSmartCommand>(widget); };
     new_commands["fit_to_page_width_smart"] = [](MainWidget* widget) {return std::make_unique< FitToPageWidthSmartCommand>(widget); };
     new_commands["next_page"] = [](MainWidget* widget) {return std::make_unique< NextPageCommand>(widget); };
