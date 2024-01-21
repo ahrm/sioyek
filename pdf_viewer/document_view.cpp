@@ -267,6 +267,11 @@ int DocumentView::get_highlight_index_in_pos(WindowPos window_pos) {
     //fz_point pos = { view_x, view_y };
     AbsoluteDocumentPos pos = window_pos.to_absolute(this);
 
+    // if multiple highlights contain the position, we return the smallest highlight
+    // see: https://github.com/ahrm/sioyek/issues/773
+    int smallest_containing_highlight_index = -1;
+    int min_length = INT_MAX;
+
     if (current_document->can_use_highlights()) {
         const std::vector<Highlight>& highlights = current_document->get_highlights();
 
@@ -274,12 +279,16 @@ int DocumentView::get_highlight_index_in_pos(WindowPos window_pos) {
             for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
                 //if (fz_is_point_inside_rect(pos, highlights[i].highlight_rects[j])) {
                 if (highlights[i].highlight_rects[j].contains(pos)) {
-                    return i;
+                    int length = highlights[i].description.size();
+                    if (length < min_length) {
+                        min_length = length;
+                        smallest_containing_highlight_index = i;
+                    }
                 }
             }
         }
     }
-    return -1;
+    return smallest_containing_highlight_index;
 }
 
 void DocumentView::add_mark(char symbol) {
