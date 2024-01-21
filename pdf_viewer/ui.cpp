@@ -1798,6 +1798,18 @@ void MyLineEdit::keyPressEvent(QKeyEvent* event) {
             return;
         }
 
+        if (is_control_pressed && (event->key() == Qt::Key_W)) {
+            int current_position = cursorPosition();
+            if (current_position > 0) {
+                int prev_word_position = get_prev_word_position();
+                QString new_text = text().left(prev_word_position) + text().right(text().size() - current_position);
+                setText(new_text);
+                setCursorPosition(prev_word_position);
+            }
+            event->accept();
+            return;
+        }
+
         if (is_control_pressed && (event->key() == Qt::Key_D)) {
             int current_position = cursorPosition();
             if (current_position < text().size()) {
