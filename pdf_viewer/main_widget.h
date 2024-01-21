@@ -635,6 +635,7 @@ public:
     QTime last_quick_tap_time;
     QTime last_middle_down_time;
     QPoint last_quick_tap_position;
+    std::optional<QPoint> context_menu_right_click_pos = {};
 
     // whether mouse is pressed, `is_pressed` is true, we add mouse positions to `position_buffer`
     bool is_pressed = false;
@@ -889,6 +890,8 @@ public:
     PaperDownloadFinishedAction get_paper_download_action_from_string(QString str);
     void set_tag_prefix(std::wstring prefix);
     void clear_tag_prefix();
+    void show_context_menu();
+    QPoint cursor_pos();
 };
 
 #endif

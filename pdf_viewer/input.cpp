@@ -3082,6 +3082,22 @@ public:
 
 };
 
+class ShowContextMenuCommand : public Command {
+public:
+    ShowContextMenuCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->show_context_menu();
+    }
+
+    std::string get_name() {
+        return "show_context_menu";
+    }
+
+
+    bool requires_document() { return false; }
+};
+
 class ToggleDarkModeCommand : public Command {
 public:
     ToggleDarkModeCommand(MainWidget* w) : Command(w) {};
@@ -3624,7 +3640,7 @@ public:
     SmartJumpUnderCursorCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
+        QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->smart_jump_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
 
@@ -3654,7 +3670,7 @@ public:
     OverviewUnderCursorCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
+        QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->overview_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
 
@@ -3669,7 +3685,7 @@ public:
     SynctexUnderCursorCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
+        QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->synctex_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
 
@@ -3698,7 +3714,7 @@ public:
     VisualMarkUnderCursorCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
+        QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->visual_mark_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
 
@@ -3741,7 +3757,7 @@ public:
     ZoomInCursorCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
+        QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->main_document_view->zoom_in_cursor({ mouse_pos.x(), mouse_pos.y() });
         widget->last_smart_fit_page = {};
     }
@@ -3757,7 +3773,7 @@ public:
     ZoomOutCursorCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        QPoint mouse_pos = widget->mapFromGlobal(QCursor::pos());
+        QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->main_document_view->zoom_out_cursor({ mouse_pos.x(), mouse_pos.y() });
         widget->last_smart_fit_page = {};
     }
@@ -5953,6 +5969,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["screen_up"] = [](MainWidget* widget) {return std::make_unique< ScreenUpCommand>(widget); };
     new_commands["next_chapter"] = [](MainWidget* widget) {return std::make_unique< NextChapterCommand>(widget); };
     new_commands["prev_chapter"] = [](MainWidget* widget) {return std::make_unique< PrevChapterCommand>(widget); };
+    new_commands["show_context_menu"] = [](MainWidget* widget) {return std::make_unique< ShowContextMenuCommand>(widget); };
     new_commands["toggle_dark_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleDarkModeCommand>(widget); };
     new_commands["toggle_presentation_mode"] = [](MainWidget* widget) {return std::make_unique< TogglePresentationModeCommand>(widget); };
     new_commands["turn_on_presentation_mode"] = [](MainWidget* widget) {return std::make_unique< TurnOnPresentationModeCommand>(widget); };

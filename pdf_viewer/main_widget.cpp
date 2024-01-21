@@ -32,6 +32,7 @@
 #include <qdatetime.h>
 #include <qfile.h>
 #include <qdrag.h>
+#include <qmenu.h>
 
 #ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
@@ -186,6 +187,9 @@ extern std::wstring VOLUME_DOWN_COMMAND;
 extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
 extern ScratchPad global_scratchpad;
+
+extern std::wstring CONTEXT_MENU_ITEMS;
+extern bool RIGHT_CLICK_CONTEXT_MENU;
 
 extern int MAX_TAB_COUNT;
 extern std::wstring BACK_RECT_TAP_COMMAND;
@@ -1960,10 +1964,16 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
         return;
     }
 
-    if (is_rotated()) {
+    if (is_shift_pressed || is_control_pressed || is_alt_pressed) {
         return;
     }
-    if (is_shift_pressed || is_control_pressed || is_alt_pressed) {
+
+    if (RIGHT_CLICK_CONTEXT_MENU) {
+        execute_macro_if_enabled(L"show_context_menu");
+        return;
+    }
+
+    if (is_rotated()) {
         return;
     }
 
@@ -3070,7 +3080,7 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_las
         mouse_pos = last_hold_point;
     }
     else {
-        mouse_pos = mapFromGlobal(QCursor::pos());
+        mouse_pos = mapFromGlobal(cursor_pos());
     }
     WindowPos window_pos = { mouse_pos.x(), mouse_pos.y() };
     auto normal_pos = main_document_view->window_to_normalized_window_pos(window_pos);
@@ -3489,7 +3499,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
 
         command_parts.takeFirst();
 
-        QPoint mouse_pos_ = mapFromGlobal(QCursor::pos());
+        QPoint mouse_pos_ = mapFromGlobal(cursor_pos());
         WindowPos mouse_pos = { mouse_pos_.x(), mouse_pos_.y() };
         DocumentPos mouse_pos_document = main_document_view->window_to_document_pos_uncentered(mouse_pos);
 
@@ -5789,7 +5799,7 @@ void MainWidget::handle_toggle_typing_mode() {
 }
 
 void MainWidget::handle_delete_highlight_under_cursor() {
-    QPoint mouse_pos = mapFromGlobal(QCursor::pos());
+    QPoint mouse_pos = mapFromGlobal(cursor_pos());
     WindowPos window_pos = WindowPos{ mouse_pos.x(), mouse_pos.y() };
     int sel_highlight = main_document_view->get_highlight_index_in_pos(window_pos);
     if (sel_highlight != -1) {
@@ -6423,6 +6433,38 @@ void MainWidget::show_command_documentation(QString command_name) {
 }
 
 
+void MainWidget::show_context_menu() {
+    QMenu contextMenu("Context menu", this);
+    QStringList command_names = QString::fromStdWString(CONTEXT_MENU_ITEMS).split('|');
+
+    std::vector<QAction*> actions;
+    //original_cursor_pos = QCursor::pos();
+    context_menu_right_click_pos = QCursor::pos();
+
+    for (auto command_name : command_names) {
+
+        std::string human_readable_name = command_name.toStdString();
+        if (command_manager->command_human_readable_names.find(command_name.toStdString()) != command_manager->command_human_readable_names.end()) {
+            human_readable_name = command_manager->command_human_readable_names[command_name.toStdString()];
+        }
+
+        QAction* action = new QAction(QString::fromStdString(human_readable_name), this);
+        actions.push_back(action);
+        connect(action, &QAction::triggered, [&, command_name]() {
+            execute_macro_if_enabled(command_name.toStdWString());
+            invalidate_render();
+        });
+        contextMenu.addAction(action);
+    }
+
+    contextMenu.exec(QCursor::pos());
+    context_menu_right_click_pos = {};
+
+    for (QAction* action : actions) {
+        delete action;
+    }
+}
+
 void MainWidget::handle_debug_command() {
 }
 
@@ -6561,7 +6603,7 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
         mouse_pos = last_hold_point;
     }
     else {
-        mouse_pos = mapFromGlobal(QCursor::pos());
+        mouse_pos = mapFromGlobal(cursor_pos());
     }
     WindowPos pos(mouse_pos.x(), mouse_pos.y());
     DocumentPos doc_pos = get_document_pos_under_window_pos(pos);
@@ -9494,3 +9536,11 @@ void MainWidget::set_tag_prefix(std::wstring prefix) {
 void MainWidget::clear_tag_prefix() {
     opengl_widget->clear_tag_prefix();
 }
+
+QPoint MainWidget::cursor_pos() {
+    if (context_menu_right_click_pos) {
+        return context_menu_right_click_pos.value();
+    }
+    return QCursor::pos();
+}
+

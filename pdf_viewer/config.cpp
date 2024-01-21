@@ -123,6 +123,9 @@ extern std::wstring ALT_CLICK_COMMAND;
 extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 
+extern std::wstring CONTEXT_MENU_ITEMS;
+extern bool RIGHT_CLICK_CONTEXT_MENU;
+
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
 extern std::wstring FORWARD_RECT_TAP_COMMAND;
@@ -1412,6 +1415,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         nullptr
         });
     configs.push_back({
+        L"context_menu_items",
+        ConfigType::String,
+        &CONTEXT_MENU_ITEMS,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
         L"paper_download_url_path",
         ConfigType::String,
         &PAPER_SEARCH_URL_PATH,
@@ -1594,6 +1605,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         string_serializer,
         string_deserializer,
         nullptr
+        });
+    configs.push_back({
+        L"right_click_context_menu",
+        ConfigType::Bool,
+        &RIGHT_CLICK_CONTEXT_MENU,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
         });
     configs.push_back({
         L"use_legacy_keybinds",
