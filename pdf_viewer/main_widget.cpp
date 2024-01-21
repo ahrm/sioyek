@@ -7607,7 +7607,7 @@ QTextToSpeech* MainWidget::get_tts() {
             }
                 
 
-            if ((tts_text.size() - end) <= 2) {
+            if ((tts_text.size() - end) <= 5) {
                 tts_is_about_to_finish = true;
             }
 
