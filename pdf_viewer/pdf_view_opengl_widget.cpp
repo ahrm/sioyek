@@ -891,6 +891,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     window_rect.y1 = -window_rect.y1;
 
     enable_stencil();
+    glClear(GL_STENCIL_BUFFER_BIT);
     write_to_stencil();
     draw_stencil_rects({ window_rect });
     use_stencil_to_write(true);
@@ -898,6 +899,7 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     int page = AbsoluteDocumentPos{0, overview_page->absolute_offset_y}.to_document(doc(true)).page;
 
     draw_overview_background();
+
 
     render_page(page, true);
     render_page(page-1, true);
@@ -919,9 +921,6 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
 
     disable_stencil();
     draw_overview_border();
-
-
-
 
     return;
 }
