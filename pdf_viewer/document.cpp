@@ -1102,6 +1102,7 @@ void Document::load_page_dimensions(bool force_load_now) {
         fz_drop_context(context_);
 
         are_highlights_loaded = true;
+        *invalid_flag_pointer = true;
 
     };
 
