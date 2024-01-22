@@ -135,12 +135,13 @@ int mod(int a, int b)
 
 ParsedUri parse_uri(fz_context* mupdf_context, fz_document* document, std::string uri) {
     fz_link_dest dest = fz_resolve_link_dest(mupdf_context, document, uri.c_str());
+    int target_page = fz_page_number_from_location(mupdf_context, document, dest.loc) + 1;
     if (dest.type != FZ_LINK_DEST_XYZ) {
         float x = dest.x + dest.w / 2;;
         float y = dest.y + dest.h / 2;
-        return { dest.loc.page + 1, x, y };
+        return { target_page, x, y };
     }
-    return { dest.loc.page + 1, dest.x, dest.y };
+    return { target_page, dest.x, dest.y };
 }
 
 char get_symbol(int key, bool is_shift_pressed, const std::vector<char>& special_symbols) {

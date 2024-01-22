@@ -2847,6 +2847,7 @@ void Document::clear_document_caches() {
         fz_drop_link(context, page_link_pair.second);
     }
     cached_page_links.clear();
+    cached_merged_pdf_links.clear();
 
     delete cached_toc_model;
     cached_toc_model = nullptr;
