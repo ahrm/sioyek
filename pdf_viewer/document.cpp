@@ -1102,6 +1102,9 @@ void Document::load_page_dimensions(bool force_load_now) {
         fz_drop_context(context_);
 
         are_highlights_loaded = true;
+        if (invalid_flag_pointer) {
+            *invalid_flag_pointer = true;
+        }
 
     };
 
@@ -2847,6 +2850,7 @@ void Document::clear_document_caches() {
         fz_drop_link(context, page_link_pair.second);
     }
     cached_page_links.clear();
+    cached_merged_pdf_links.clear();
 
     delete cached_toc_model;
     cached_toc_model = nullptr;

@@ -1008,7 +1008,7 @@ public:
     }
 
     std::string get_name() {
-        return "add_annot_to_highlight";
+        return "add_annot_to_selected_highlight";
     }
 
 
@@ -2524,15 +2524,109 @@ public:
 
 };
 
-class DeleteHighlightCommand : public Command {
+class GenericHighlightCommand : public Command {
+    std::vector<int> visible_highlight_indices;
+    std::string tag;
+    int n_required_tags = 0;
+    bool already_pre_performed = false;
+
 public:
-    DeleteHighlightCommand(MainWidget* w) : Command(w) {};
+    GenericHighlightCommand(MainWidget* w) : Command(w) {};
+
+    void pre_perform() override {
+        if (!already_pre_performed) {
+            if (widget->selected_highlight_index == -1) {
+                visible_highlight_indices = widget->main_document_view->get_visible_highlight_indices();
+                n_required_tags = get_num_tag_digits(visible_highlight_indices.size());
+
+                widget->handle_highlight_tags_pre_perform(visible_highlight_indices);
+            }
+            already_pre_performed = true;
+        }
+    }
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        // since pre_perform must be executed in order to determine the requirements, we manually run it here
+        pre_perform();
+
+        if (tag.size() < n_required_tags) {
+            return Requirement{ RequirementType::Symbol, "tag" };
+        }
+        else {
+            return {};
+        }
+    }
+
+
+    virtual void set_symbol_requirement(char value) {
+        tag.push_back(value);
+    }
+
+    virtual void perform_with_highlight_selected() = 0;
     void perform() {
+        bool should_clear_labels = false;
+        if (tag.size() > 0) {
+            int index = get_index_from_tag(tag);
+            if (index < visible_highlight_indices.size()) {
+                widget->set_selected_highlight_index(visible_highlight_indices[index]);
+            }
+            should_clear_labels = true;
+        }
+
+        perform_with_highlight_selected();
+        //widget->handle_delete_selected_highlight();
+
+        if (should_clear_labels) {
+            widget->clear_keyboard_select_highlights();
+        }
+    }
+};
+
+class DeleteHighlightCommand : public GenericHighlightCommand {
+
+public:
+    DeleteHighlightCommand(MainWidget* w) : GenericHighlightCommand(w) {};
+
+    void perform_with_highlight_selected() {
+
         widget->handle_delete_selected_highlight();
     }
 
+
     std::string get_name() {
         return "delete_highlight";
+    }
+
+};
+
+class ChangeHighlightTypeCommand : public GenericHighlightCommand {
+
+public:
+    ChangeHighlightTypeCommand(MainWidget* w) : GenericHighlightCommand(w) {};
+
+    void perform_with_highlight_selected() {
+        widget->execute_macro_if_enabled(L"add_highlight");
+    }
+
+
+    std::string get_name() {
+        return "change_highlight";
+    }
+
+};
+
+class AddAnnotationToHighlightCommand : public GenericHighlightCommand {
+
+public:
+    AddAnnotationToHighlightCommand(MainWidget* w) : GenericHighlightCommand(w) {};
+
+    void perform_with_highlight_selected() {
+        widget->execute_macro_if_enabled(L"add_annot_to_selected_highlight");
+    }
+
+
+    std::string get_name() {
+        return "add_annot_to_highlight";
     }
 
 };
@@ -5919,7 +6013,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["get_overview_paper_name"] = [](MainWidget* widget) {return std::make_unique< GetOverviewPaperName>(widget); };
     new_commands["get_annotations_json"] = [](MainWidget* widget) {return std::make_unique< GetAnnotationsJsonCommand>(widget); };
     new_commands["toggle_rect_hints"] = [](MainWidget* widget) {return std::make_unique< ToggleRectHintsCommand>(widget); };
-    new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
+    new_commands["add_annot_to_selected_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
+    new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToHighlightCommand>(widget); };
     new_commands["rename"] = [](MainWidget* widget) {return std::make_unique< RenameCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
@@ -5976,6 +6071,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["delete_portal"] = [](MainWidget* widget) {return std::make_unique< DeletePortalCommand>(widget); };
     new_commands["delete_bookmark"] = [](MainWidget* widget) {return std::make_unique< DeleteBookmarkCommand>(widget); };
     new_commands["delete_highlight"] = [](MainWidget* widget) {return std::make_unique< DeleteHighlightCommand>(widget); };
+    new_commands["change_highlight"] = [](MainWidget* widget) {return std::make_unique< ChangeHighlightTypeCommand>(widget); };
     new_commands["goto_link"] = [](MainWidget* widget) {return std::make_unique< GotoPortalCommand>(widget); };
     new_commands["goto_portal"] = [](MainWidget* widget) {return std::make_unique< GotoPortalCommand>(widget); };
     new_commands["edit_link"] = [](MainWidget* widget) {return std::make_unique< EditPortalCommand>(widget); };
@@ -6165,7 +6261,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     command_human_readable_names["edit_selected_bookmark"] = "Edit selected bookmark";
     command_human_readable_names["edit_selected_highlight"] = "Edit the text comment of current selected highlight";
     command_human_readable_names["search"] = "Search";
-    command_human_readable_names["add_annot_to_highlight"] = "Add annotation to selected highlight";
+    command_human_readable_names["add_annot_to_selected_highlight"] = "Add annotation to selected highlight";
     command_human_readable_names["set_freehand_thickness"] = "Set thickness of freehand drawings";
     command_human_readable_names["goto_page_with_label"] = "Go to page with label";
     command_human_readable_names["regex_search"] = "Search using regular expression";

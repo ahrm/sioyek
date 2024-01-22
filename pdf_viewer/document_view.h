@@ -193,8 +193,9 @@ public:
     void get_rects_from_ranges(int page_number, const std::vector<PagelessDocumentRect>& line_char_rects, const std::vector<std::pair<int, int>>& ranges, std::vector<PagelessDocumentRect>& out_rects);
     std::optional<AbsoluteRect> expand_selection(bool is_begin, bool word);
     std::optional<AbsoluteRect> shrink_selection(bool is_begin, bool word);
-
     std::deque<AbsoluteRect>* get_selected_character_rects();
+
+    std::vector<int> get_visible_highlight_indices();
 };
 
 
