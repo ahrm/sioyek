@@ -2525,11 +2525,62 @@ public:
 };
 
 class DeleteHighlightCommand : public Command {
+    std::vector<int> visible_highlight_indices;
+    std::string tag;
+    int n_required_tags = 0;
+    bool already_pre_performed = false;
+
 public:
     DeleteHighlightCommand(MainWidget* w) : Command(w) {};
-    void perform() {
-        widget->handle_delete_selected_highlight();
+
+    void pre_perform() override {
+        if (!already_pre_performed) {
+            if (widget->selected_highlight_index == -1) {
+                visible_highlight_indices = widget->main_document_view->get_visible_highlight_indices();
+                n_required_tags = get_num_tag_digits(visible_highlight_indices.size());
+
+                widget->handle_delete_highlight_pre_perform(visible_highlight_indices);
+                //widget->opengl_widget->set_highlight_words(visible_word_rects);
+                //widget->opengl_widget->set_should_highlight_words(true);
+            }
+            already_pre_performed = true;
+        }
     }
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        // since pre_perform must be executed in order to determine the requirements, we manually run it here
+        pre_perform();
+
+        if (tag.size() < n_required_tags) {
+            return Requirement{ RequirementType::Symbol, "tag" };
+        }
+        else {
+            return {};
+        }
+    }
+
+
+    virtual void set_symbol_requirement(char value) {
+        tag.push_back(value);
+    }
+
+    void perform() {
+        bool should_clear_labels = false;
+        if (tag.size() > 0) {
+            int index = get_index_from_tag(tag);
+            if (index < visible_highlight_indices.size()) {
+                widget->set_selected_highlight_index(visible_highlight_indices[index]);
+            }
+            should_clear_labels = true;
+        }
+
+        widget->handle_delete_selected_highlight();
+
+        if (should_clear_labels) {
+            widget->clear_keyboard_select_highlights();
+        }
+    }
+
 
     std::string get_name() {
         return "delete_highlight";

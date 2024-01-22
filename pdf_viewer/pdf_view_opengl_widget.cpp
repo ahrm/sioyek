@@ -3401,24 +3401,10 @@ void PdfViewOpenGLWidget::render_text_highlights(){
 void PdfViewOpenGLWidget::render_highlight_annotations(){
     if (document_view->get_document()->can_use_highlights()) {
         const std::vector<Highlight>& highlights = document_view->get_document()->get_highlights();
+        std::vector<int> visible_highlight_indices = document_view->get_visible_highlight_indices();
 
-        for (size_t i = 0; i < highlights.size(); i++) {
-
-            NormalizedWindowPos selection_begin_window_pos = document_view->absolute_to_window_pos(
-                    { highlights[i].selection_begin.x, highlights[i].selection_begin.y }
-                    );
-
-            NormalizedWindowPos selection_end_window_pos = document_view->absolute_to_window_pos(
-                    { highlights[i].selection_end.x, highlights[i].selection_end.y }
-                    );
-
-            if (selection_begin_window_pos.y > selection_end_window_pos.y) {
-                std::swap(selection_begin_window_pos.y, selection_end_window_pos.y);
-            }
-
-            bool is_selection_in_window = range_intersects(selection_begin_window_pos.y, selection_end_window_pos.y, -1.0f, 1.0f);
-
-            if (is_selection_in_window) {
+        for (size_t ind = 0; ind < visible_highlight_indices.size(); ind++) {
+            int i = visible_highlight_indices[ind];
                 for (size_t j = 0; j < highlights[i].highlight_rects.size(); j++) {
                     //glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &HIGHLIGHT_COLORS[(highlights[i].type - 'a') * 3]);
                     auto adjusted_highlight_color = cc3(get_highlight_type_color(highlights[i].type));
@@ -3445,7 +3431,6 @@ void PdfViewOpenGLWidget::render_highlight_annotations(){
                             highlights[i].highlight_rects[j],
                             flags);
                 }
-            }
         }
     }
 }

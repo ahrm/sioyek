@@ -289,7 +289,7 @@ void set_filtered_select_menu(MainWidget* main_widget, bool fuzzy, bool multilin
                 },
                 main_widget,
                     [on_delete = std::move(on_delete)](T* val) {
-                    if (val) {
+                    if (val && on_delete) {
                         on_delete(val);
                     }
                 });
@@ -5377,7 +5377,9 @@ void MainWidget::handle_goto_highlight_global() {
                 //validate_render();
                 //open_document(book_state->document_path, 0.0f, book_state->offset_y);
             }
-        }, nullptr);
+        }, [&](BookState* state) {
+            db_manager->delete_highlight(state->uuid);
+        });
 
     show_current_widget();
 }
@@ -9558,4 +9560,24 @@ void MainWidget::clear_current_document_drawings() {
 void MainWidget::set_selected_highlight_index(int index) {
     selected_highlight_index = index;
     opengl_widget->set_selected_highlight_index(index);
+}
+
+void MainWidget::handle_delete_highlight_pre_perform(const std::vector<int>& visible_highlight_indices) {
+    const std::vector<Highlight>& highlights = doc()->get_highlights();
+
+    std::vector<DocumentRect> highlight_rects;
+    for (auto ind : visible_highlight_indices) {
+        const Highlight& highlight = highlights[ind];
+        if (highlight.highlight_rects.size() > 0) {
+            highlight_rects.push_back(highlight.highlight_rects[0].to_document(doc()));
+        }
+    }
+
+    opengl_widget->set_highlight_words(highlight_rects);
+    opengl_widget->set_should_highlight_words(true);
+
+}
+
+void MainWidget::clear_keyboard_select_highlights() {
+    opengl_widget->set_should_highlight_words(false);
 }

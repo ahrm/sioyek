@@ -1711,3 +1711,30 @@ void ScratchPad::clear() {
 bool ScratchPad::is_compile_invalid() {
     return !is_compile_valid;
 }
+
+std::vector<int> DocumentView::get_visible_highlight_indices() {
+
+    const std::vector<Highlight>& highlights = get_document()->get_highlights();
+
+    std::vector<int> res;
+
+    for (size_t i = 0; i < highlights.size(); i++) {
+
+        NormalizedWindowPos selection_begin_window_pos = absolute_to_window_pos(
+            { highlights[i].selection_begin.x, highlights[i].selection_begin.y }
+        );
+
+        NormalizedWindowPos selection_end_window_pos = absolute_to_window_pos(
+            { highlights[i].selection_end.x, highlights[i].selection_end.y }
+        );
+
+        if (selection_begin_window_pos.y > selection_end_window_pos.y) {
+            std::swap(selection_begin_window_pos.y, selection_end_window_pos.y);
+        }
+        if (range_intersects(selection_begin_window_pos.y, selection_end_window_pos.y, -1.0f, 1.0f)) {
+            res.push_back(i);
+        }
+    }
+
+    return res;
+}
