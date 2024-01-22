@@ -1370,6 +1370,9 @@ void MainWidget::handle_escape() {
     }
 
     pending_command_instance = nullptr;
+    set_selected_highlight_index(-1);
+    selected_bookmark_index = -1;
+    selected_portal_index = -1;
     //current_pending_command = {};
 
     pop_current_widget();
@@ -9562,7 +9565,7 @@ void MainWidget::set_selected_highlight_index(int index) {
     opengl_widget->set_selected_highlight_index(index);
 }
 
-void MainWidget::handle_delete_highlight_pre_perform(const std::vector<int>& visible_highlight_indices) {
+void MainWidget::handle_highlight_tags_pre_perform(const std::vector<int>& visible_highlight_indices) {
     const std::vector<Highlight>& highlights = doc()->get_highlights();
 
     std::vector<DocumentRect> highlight_rects;
