@@ -374,6 +374,7 @@ Path auto_config_path(L"");
 Path downloaded_papers_path(L"");
 ScratchPad global_scratchpad;
 
+std::wstring RESIZE_COMMAND = L"";
 std::wstring SHIFT_CLICK_COMMAND = L"overview_under_cursor";
 std::wstring CONTROL_CLICK_COMMAND = L"smart_jump_under_cursor";
 std::wstring SHIFT_RIGHT_CLICK_COMMAND = L"";

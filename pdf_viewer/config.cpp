@@ -116,6 +116,7 @@ extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool ALIGN_LINK_DEST_TO_TOP;
 
+extern std::wstring RESIZE_COMMAND;
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
 extern std::wstring SHIFT_RIGHT_CLICK_COMMAND;
@@ -1404,6 +1405,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"shift_click_command",
         ConfigType::Macro,
         &SHIFT_CLICK_COMMAND,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"resize_command",
+        ConfigType::Macro,
+        &RESIZE_COMMAND,
         string_serializer,
         string_deserializer,
         nullptr

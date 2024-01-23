@@ -192,6 +192,7 @@ extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 
 extern int MAX_TAB_COUNT;
+extern std::wstring RESIZE_COMMAND;
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
 extern std::wstring FORWARD_RECT_TAP_COMMAND;
@@ -468,6 +469,10 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
     if (draw_controls_) {
         QCoreApplication::postEvent(get_draw_controls(), resize_event->clone());
     }
+    if (RESIZE_COMMAND.size() > 0) {
+        execute_macro_if_enabled(RESIZE_COMMAND);
+    }
+
 }
 
 void MainWidget::set_overview_position(int page, float offset) {
