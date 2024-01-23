@@ -2989,6 +2989,9 @@ void MainWidget::show_textbar(const std::wstring& command_name, const std::wstri
         text_command_line_edit_label->setText(QString::fromStdWString(command_name));
         text_command_line_edit_container->show();
         text_command_line_edit->setFocus();
+        if (initial_value.size() > 0) {
+            text_command_line_edit->selectAll();
+        }
     }
 }
 
