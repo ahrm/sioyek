@@ -8376,7 +8376,8 @@ QJSEngine* MainWidget::take_js_engine() {
     js_engine->setObjectOwnership(this, QJSEngine::CppOwnership);
 
     js_engine->globalObject().setProperty("sioyek_api", sioyek_object);
-    js_engine->globalObject().setProperty("sioyek", export_javascript_api(*js_engine));
+    js_engine->globalObject().setProperty("sioyek", export_javascript_api(*js_engine, false));
+    js_engine->globalObject().setProperty("sioyek_async", export_javascript_api(*js_engine, true));
     return js_engine;
 }
 
@@ -8385,7 +8386,7 @@ void MainWidget::release_js_engine(QJSEngine* engine) {
     available_engines.push_back(engine);
 }
 
-QJSValue MainWidget::export_javascript_api(QJSEngine& engine){
+QJSValue MainWidget::export_javascript_api(QJSEngine& engine, bool is_async){
 
     QJSValue res = engine.newObject();
 
@@ -8395,7 +8396,8 @@ QJSValue MainWidget::export_javascript_api(QJSEngine& engine){
         if (command_name_ == "import") {
             command_name_ = "import_";
         }
-        res.setProperty(command_name_, engine.evaluate("(...args)=>{\
+        if (is_async) {
+            res.setProperty(command_name_, engine.evaluate("(...args)=>{\
                 let command_name ='" + command_name_ + "';\
                 let args_strings = args.map((arg)=>{return '' + arg;});\
                 let args_string = args_strings.join(',');\
@@ -8403,13 +8405,31 @@ QJSValue MainWidget::export_javascript_api(QJSEngine& engine){
                 else {return sioyek_api.run_macro_on_main_thread(command_name);}\
                 }"));
 
-        res.setProperty('$' + command_name_, engine.evaluate("(...args)=>{\
+            res.setProperty('$' + command_name_, engine.evaluate("(...args)=>{\
                 let command_name ='" + command_name_ + "';\
                 let args_strings = args.map((arg)=>{return '' + arg;});\
                 let args_string = args_strings.join(',');\
                 if (args_string.length > 0){return sioyek_api.run_macro_on_main_thread(command_name + '(' + args_string + ')');}\
                 else {return sioyek_api.run_macro_on_main_thread(command_name, false);}\
                 }"));
+        }
+        else {
+            res.setProperty(command_name_, engine.evaluate("(...args)=>{\
+                let command_name ='" + command_name_ + "';\
+                let args_strings = args.map((arg)=>{return '' + arg;});\
+                let args_string = args_strings.join(',');\
+                if (args_string.length > 0){return sioyek_api.execute_macro_sync(command_name + '(' + args_string + ')');}\
+                else {return sioyek_api.execute_macro_sync(command_name);}\
+                }"));
+
+            res.setProperty('$' + command_name_, engine.evaluate("(...args)=>{\
+                let command_name ='" + command_name_ + "';\
+                let args_strings = args.map((arg)=>{return '' + arg;});\
+                let args_string = args_strings.join(',');\
+                if (args_string.length > 0){return sioyek_api.execute_macro_sync(command_name + '(' + args_string + ')');}\
+                else {return sioyek_api.execute_macro_sync(command_name);}\
+                }"));
+        }
     }
 
     return res;
@@ -9169,14 +9189,23 @@ void MainWidget::execute_macro_and_return_result(QString macro_string, bool* is_
 
 }
 
-void MainWidget::run_javascript_command(std::wstring javascript_code){
-    std::thread ext_thread = std::thread([&, javascript_code]() {
-            QString content = QString::fromStdWString(javascript_code);
+void MainWidget::run_javascript_command(std::wstring javascript_code, bool is_async){
+
+    QString content = QString::fromStdWString(javascript_code);
+    if (is_async) {
+        std::thread ext_thread = std::thread([&, content]() {
             QJSEngine* engine = take_js_engine();
             auto res = engine->evaluate(content);
             release_js_engine(engine);
-        });
-    ext_thread.detach();
+            });
+        ext_thread.detach();
+    }
+    else {
+        QJSEngine* engine = take_js_engine();
+        auto res = engine->evaluate(content);
+        release_js_engine(engine);
+    }
+
 }
 
 void MainWidget::load_command_docs(){
@@ -9592,4 +9621,18 @@ void MainWidget::handle_goto_link_with_page_and_offset(int page, float y_offset)
         float top_offset = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) / 2.0f;
         main_document_view->move_absolute(0, top_offset);
     }
+}
+
+QString MainWidget::execute_macro_sync(QString macro) {
+    std::unique_ptr<Command> command = command_manager->create_macro_command(this, "", macro.toStdWString());
+    std::wstring result;
+
+    if (is_macro_command_enabled(command.get())) {
+        handle_command_types(std::move(command), 0, &result);
+        invalidate_render();
+
+        return QString::fromStdWString(result);
+    }
+
+    return "";
 }
