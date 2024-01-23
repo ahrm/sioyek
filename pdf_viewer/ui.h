@@ -76,6 +76,7 @@ extern bool SMALL_TOC;
 extern bool MULTILINE_MENUS;
 extern bool EMACS_MODE;
 extern bool TOUCH_MODE;
+extern bool REGEX_SEARCHING;
 
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
@@ -662,8 +663,11 @@ public:
             for (auto file : all_directory_files) {
                 std::string encoded_file = utf8_encode(file.toStdWString());
                 int score = 0;
-                if (is_fuzzy) {
-                    score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(encoded_prefix, encoded_file));
+                if (REGEX_SEARCHING) {
+                    score = bool_regex_match(QString::fromStdString(encoded_prefix), QString::fromStdString(encoded_file)) ? 100 : 0;
+                }
+                else if (is_fuzzy) {
+                    score = calculate_partial_ratio(encoded_prefix, encoded_file);
                 }
                 else {
                     fts::fuzzy_match(encoded_prefix.c_str(), encoded_file.c_str(), score);

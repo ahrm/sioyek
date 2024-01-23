@@ -14,6 +14,14 @@
 #include <memory>
 #include <qcommandlineparser.h>
 
+#include <QKeyEvent>
+
+#include <QString>
+#include <QStringList>
+#include <QRegularExpression>
+
+#include <QDebug>
+
 #include <qstandarditemmodel.h>
 #include <qpoint.h>
 #include <qjsonarray.h>
@@ -24,11 +32,28 @@
 #include "utf8.h"
 #include "coordinates.h"
 
+#ifdef NIGHT_P
+#include <hiredis/hiredis.h>
+#endif
+
 #define LL_ITER(name, start) for(auto name=start;(name);name=name->next)
 #define LOG(expr) if (VERBOSE) {(expr);};
 
 
-std::wstring to_lower(const std::wstring& inp);
+// std::wstring to_lower(const std::wstring& inp);
+template <typename CharT>
+std::basic_string<CharT> to_lower(const std::basic_string<CharT>& input);
+
+template <typename CharT>
+bool is_all_lower(const std::basic_string<CharT>& input);
+
+template <typename StringType>
+int calculate_partial_ratio(const StringType& filterString, const StringType& key, bool smart_case_p = true);
+
+// Explicit template instantiation declarations for std::wstring and std::string
+extern template int calculate_partial_ratio<std::string>(const std::string&, const std::string&, bool);
+extern template int calculate_partial_ratio<std::wstring>(const std::wstring&, const std::wstring&, bool);
+
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char);
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages);
 int mod(int a, int b);
@@ -439,3 +464,8 @@ std::vector<fz_quad> quads_from_rects(const std::vector<R>& rects) {
 bool is_bright(float color[3]);
 bool is_abbreviation(const std::wstring& txt);
 bool is_in(char c, std::vector<char> candidates);
+
+bool should_trigger_delete(QKeyEvent *key_event);
+
+bool match_patterns(const QString& key, const QStringList& patterns);
+bool bool_regex_match(const QString& search_text, const QString& key);

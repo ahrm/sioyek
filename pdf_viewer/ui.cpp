@@ -1341,8 +1341,12 @@ bool CommandSelector::on_text_change(const QString& text) {
     for (int i = 0; i < string_elements.size(); i++) {
         std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
         int score = 0;
-        if (is_fuzzy) {
-            score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
+
+        if (REGEX_SEARCHING) {
+            score = bool_regex_match(QString::fromStdString(search_text_string), QString::fromStdString(encoded)) ? 100 : 0;
+        }
+        else if (is_fuzzy) {
+			score = calculate_partial_ratio(search_text_string, encoded);
         }
         else {
             fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
@@ -1501,7 +1505,7 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
 #ifdef SIOYEK_QT6
         if (event->type() == QEvent::KeyRelease) {
             QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-            if (key_event->key() == Qt::Key_Delete) {
+            if (should_trigger_delete(key_event)) {
                 handle_delete();
             }
             else if (key_event->key() == Qt::Key_Insert) {
@@ -1676,7 +1680,7 @@ void BaseSelectorWidget::handle_edit() {
 
 #ifndef SIOYEK_QT6
     void BaseSelectorWidget::keyReleaseEvent(QKeyEvent* event) {
-        if (event->key() == Qt::Key_Delete) {
+		if (should_trigger_delete(event)) {
             handle_delete();
         }
         QWidget::keyReleaseEvent(event);

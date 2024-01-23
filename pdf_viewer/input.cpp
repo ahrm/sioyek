@@ -1624,6 +1624,20 @@ public:
     bool requires_document() { return false; }
 };
 
+class PushStateCommand : public Command {
+public:
+    PushStateCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+		widget->push_state();
+	}
+
+	std::string get_name() {
+		return "push_state";
+	}
+	bool requires_document() { return false; }
+};
+
 class PrevStateCommand : public Command {
 public:
     PrevStateCommand(MainWidget* w) : Command(w) {};
@@ -2265,6 +2279,40 @@ public:
         return "previous_page";
     }
 
+};
+
+class NextPageSmartCommand : public Command {
+public:
+    NextPageSmartCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+		auto my_num_repeats = std::max(1, num_repeats);
+		for (int i = 0; i < my_num_repeats; i++) {
+			if (!(widget->main_document_view->next_page_smart())) {
+				break;
+			}
+		}
+	}
+	std::string get_name() {
+		return "next_page_smart";
+	}
+};
+
+class PreviousPageSmartCommand : public Command {
+public:
+    PreviousPageSmartCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+		auto my_num_repeats = std::max(1, num_repeats);
+		for (int i = 0; i < my_num_repeats; i++) {
+			if (!(widget->main_document_view->previous_page_smart())) {
+				break;
+			}
+		}
+	}
+	std::string get_name() {
+		return "previous_page_smart";
+	}
 };
 
 class ZoomOutCommand : public Command {
@@ -4686,6 +4734,19 @@ public:
 
 };
 
+class DeleteLastHighlightCommand : public Command {
+public:
+    DeleteLastHighlightCommand(MainWidget* w) : Command(w) {};
+
+	void perform() {
+		widget->handle_delete_last_highlight();
+	}
+
+	std::string get_name() {
+		return "delete_last_highlight";
+	}
+};
+
 class NoopCommand : public Command {
 public:
 
@@ -6043,6 +6104,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["fit_to_page_width_smart"] = [](MainWidget* widget) {return std::make_unique< FitToPageWidthSmartCommand>(widget); };
     new_commands["next_page"] = [](MainWidget* widget) {return std::make_unique< NextPageCommand>(widget); };
     new_commands["previous_page"] = [](MainWidget* widget) {return std::make_unique< PreviousPageCommand>(widget); };
+	new_commands["next_page_smart"] = [](MainWidget* widget) {return std::make_unique< NextPageSmartCommand>(widget); };
+	new_commands["previous_page_smart"] = [](MainWidget* widget) {return std::make_unique< PreviousPageSmartCommand>(widget); };
     new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
     new_commands["screenshot"] = [](MainWidget* widget) {return std::make_unique< ScreenshotCommand>(widget); };
     new_commands["framebuffer_screenshot"] = [](MainWidget* widget) {return std::make_unique< FramebufferScreenshotCommand>(widget); };
@@ -6067,6 +6130,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["portal"] = [](MainWidget* widget) {return std::make_unique< PortalCommand>(widget); };
     new_commands["create_visible_portal"] = [](MainWidget* widget) {return std::make_unique< CreateVisiblePortalCommand>(widget); };
     new_commands["next_state"] = [](MainWidget* widget) {return std::make_unique< NextStateCommand>(widget); };
+	new_commands["push_state"] = [](MainWidget* widget) {return std::make_unique< PushStateCommand>(widget); };
     new_commands["prev_state"] = [](MainWidget* widget) {return std::make_unique< PrevStateCommand>(widget); };
     new_commands["history_forward"] = [](MainWidget* widget) {return std::make_unique< NextStateCommand>(widget); };
     new_commands["history_back"] = [](MainWidget* widget) {return std::make_unique< PrevStateCommand>(widget); };
@@ -6193,6 +6257,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["overview_next_item"] = [](MainWidget* widget) {return std::make_unique< OverviewNextItemCommand>(widget); };
     new_commands["overview_prev_item"] = [](MainWidget* widget) {return std::make_unique< OverviewPrevItemCommand>(widget); };
     new_commands["delete_highlight_under_cursor"] = [](MainWidget* widget) {return std::make_unique< DeleteHighlightUnderCursorCommand>(widget); };
+    new_commands["delete_last_highlight"] = [](MainWidget* widget) {return std::make_unique< DeleteLastHighlightCommand>(widget); };
     new_commands["noop"] = [](MainWidget* widget) {return std::make_unique< NoopCommand>(widget); };
     new_commands["import"] = [](MainWidget* widget) {return std::make_unique< ImportCommand>(widget); };
     new_commands["export"] = [](MainWidget* widget) {return std::make_unique< ExportCommand>(widget); };
@@ -6256,6 +6321,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     command_human_readable_names["move_text_mark_down"] = "Move text cursor down";
     command_human_readable_names["move_text_mark_up"] = "Move text cursor up";
     command_human_readable_names["set_mark"] = "Set mark in current location";
+    command_human_readable_names["push_state"] = "Pushes the current state in the navigation history";
     command_human_readable_names["toggle_drawing_mask"] = "Toggle drawing type visibility";
     command_human_readable_names["turn_on_all_drawings"] = "Make all freehand drawings visible";
     command_human_readable_names["turn_off_all_drawings"] = "Make all freehand drawings invisible";
@@ -6281,6 +6347,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     command_human_readable_names["fit_to_page_width_smart"] = "Fit the page to screen width, ignoring white page margins";
     command_human_readable_names["next_page"] = "Go to next page";
     command_human_readable_names["previous_page"] = "Go to previous page";
+    command_human_readable_names["next_page_smart"] = "Go to next page (tries to go to the next column on two-column pages)";
+    command_human_readable_names["previous_page_smart"] = "Go to previous page (tries to go to the previous column on two-column pages)";
     command_human_readable_names["open_document"] = "Open documents using native file explorer";
     command_human_readable_names["add_bookmark"] = "Add an invisible bookmark in the current location";
     command_human_readable_names["add_marked_bookmark"] = "Add a bookmark in the selected location";
@@ -6404,6 +6472,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     command_human_readable_names["overview_next_item"] = "Open an overview to the next search result";
     command_human_readable_names["overview_prev_item"] = "Open an overview to the previous search result";
     command_human_readable_names["delete_highlight_under_cursor"] = "Delete highlight under mouse cursor";
+    command_human_readable_names["delete_last_highlight"] = "Delete the last highlight";
     command_human_readable_names["noop"] = "Do nothing";
     command_human_readable_names["import"] = "Import annotation data from a json file";
     command_human_readable_names["export"] = "Export annotation data to a json file";
@@ -6887,7 +6956,7 @@ bool is_digit(int key) {
 std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
     int key = 0;
     if (!USE_LEGACY_KEYBINDS) {
-        std::vector<QString> special_texts = { "\b", "\t", " ", "\r", "\n" };
+        std::vector<QString> special_texts = { "\b", "\u007F", "\t", " ", "\r", "\n" };
         if (((key_event->key() >= 'A') && (key_event->key() <= 'Z')) || ((key_event->text().size() > 0) &&
             (std::find(special_texts.begin(), special_texts.end(), key_event->text()) == special_texts.end()))) {
             if (!control_pressed && !alt_pressed) {

@@ -94,6 +94,7 @@
 
 extern int next_window_id;
 
+extern bool KEYBOARD_SELECT_COPY_P;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool MULTILINE_MENUS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
@@ -761,6 +762,17 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     window_id = next_window_id;
     next_window_id++;
 
+    #ifdef NIGHT_P
+    // Initialize the Redis connection
+    redisContext_ = redisConnect("127.0.0.1", 6379);
+
+    if (redisContext_ != nullptr && redisContext_->err) {
+        // If the connection failed, clean up and set the pointer to nullptr
+        redisFree(redisContext_);
+        redisContext_ = nullptr;
+    }
+    #endif
+
     setMouseTracking(true);
     setAcceptDrops(true);
     setAttribute(Qt::WA_DeleteOnClose);
@@ -1135,6 +1147,15 @@ MainWidget::~MainWidget() {
         get_tts()->stop();
     }
     validation_interval_timer->stop();
+
+    #ifdef NIGHT_P
+    // Clean up the Redis connection if it was established
+    if (redisContext_ != nullptr) {
+        redisFree(redisContext_);
+        redisContext_ = nullptr;
+    }
+    #endif
+
     remove_self_from_windows();
 
     if (windows.size() == 0) {
@@ -1908,6 +1929,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
 
     if (released == false) {
+        keyStates[kevent->key()] = true;
 
 #ifdef SIOYEK_ANDROID
         if (kevent->key() == Qt::Key::Key_VolumeDown) {
@@ -1972,9 +1994,37 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
         //for (auto& command : commands) {
         //    handle_command_types(std::move(command), num_repeats);
         //}
+    } else {
+        keyStates[kevent->key()] = false;
     }
 
 }
+
+bool MainWidget::isKeyPressed(int key) const {
+    return keyStates.value(key, false);
+}
+
+#ifdef NIGHT_P
+bool MainWidget::redisFlagGet(const QString &name) {
+    if (redisContext_ == nullptr) {
+        return false; // Return false if the connection was not established
+    }
+
+    redisReply *reply = static_cast<redisReply*>(redisCommand(redisContext_, "GET %s", name.toUtf8().constData()));
+    if (reply == nullptr) {
+        return false; // Return false if the command failed
+    }
+
+    bool result = false; // Default result is false
+    if (reply->type == REDIS_REPLY_STRING) {
+        // Convert the reply to a bool
+        result = (QString(reply->str).toLower() == "true");
+    }
+
+    freeReplyObject(reply); // Free the reply object
+    return result; // Return the result
+}
+#endif
 
 void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed) {
 
@@ -2826,9 +2876,29 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
     bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier) ||
         QApplication::queryKeyboardModifiers().testFlag(Qt::MetaModifier);
+    bool zoom_p = is_control_pressed;
+
+    #ifdef NIGHT_P
+    // bool is_hyper = redisFlagGet("hyper_modality");
+    // @surprise Using =redisFlagGet= here can have performance implications, so I have disabled it.
+    // However, I did not notice a performance degration when testing it briefly.
+    bool is_hyper = false;
+
+    bool is_z_pressed = isKeyPressed(Qt::Key_Z);
+
+    zoom_p = zoom_p || is_hyper || is_z_pressed;
+    #endif
 
     bool is_shift_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
     bool is_visual_mark_mode = main_document_view->is_ruler_mode() && visual_scroll_mode;
+    bool scroll_horizontally_p = is_shift_pressed;
+
+    #ifdef NIGHT_P
+    bool is_esc_pressed = isKeyPressed(Qt::Key_Escape);
+    bool is_x_pressed = isKeyPressed(Qt::Key_X);
+
+    scroll_horizontally_p = is_shift_pressed || is_esc_pressed || is_x_pressed;
+    #endif
 
 
 #ifdef SIOYEK_QT6
@@ -2854,7 +2924,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
         num_repeats = 1;
     }
 
-    if ((!is_control_pressed) && (!is_shift_pressed)) {
+    if ((!zoom_p) && (!scroll_horizontally_p)) {
         if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
             if (wevent->angleDelta().y() > 0) {
                 scroll_overview(-1);
@@ -2933,20 +3003,20 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
         }
     }
 
-    if (is_control_pressed) {
-        float zoom_factor = 1.0f + num_repeats_f * (ZOOM_INC_FACTOR - 1.0f);
+    if (zoom_p) {
+        float zoom_factor = 1.0f + num_repeats_f * (SCROLL_ZOOM_INC_FACTOR - 1.0f);
         zoom(mouse_window_pos, zoom_factor, wevent->angleDelta().y() > 0);
         return;
     }
-    if (is_shift_pressed) {
+    if (scroll_horizontally_p) {
         float inverse_factor = INVERTED_HORIZONTAL_SCROLLING ? -1.0f : 1.0f;
 
         if (wevent->angleDelta().y() > 0) {
-            move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
+            move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f * inverse_factor, false, true);
             return;
         }
         if (wevent->angleDelta().y() < 0) {
-            move_horizontal(72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
+            move_horizontal(72.0f * horizontal_move_amount * num_repeats_f * inverse_factor, false, true);
             return;
         }
 
@@ -3657,8 +3727,8 @@ void MainWidget::zoom(WindowPos pos, float zoom_factor, bool zoom_in) {
     validate_render();
 }
 
-bool MainWidget::move_horizontal(float amount, bool force) {
-    if (!horizontal_scroll_locked) {
+bool MainWidget::move_horizontal(float amount, bool force, bool ignore_lock_p) {
+    if (ignore_lock_p || !horizontal_scroll_locked) {
         bool ret = move_document(amount, 0, force);
         validate_render();
         return ret;
@@ -4677,8 +4747,12 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
                 opengl_widget->set_should_highlight_words(false);
             }
 
+		}
+
+        if (KEYBOARD_SELECT_COPY_P) {
+            copy_to_clipboard(this->selected_text);
         }
-    }
+	}
 }
 
 
@@ -5821,6 +5895,10 @@ void MainWidget::handle_toggle_typing_mode() {
         main_document_view->set_offset_y(typing_location.value().focus_offset());
 
     }
+}
+
+void MainWidget::handle_delete_last_highlight() {
+    main_document_view->delete_last_highlight();
 }
 
 void MainWidget::handle_delete_highlight_under_cursor() {

@@ -2,29 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleName</key>
-	<string>sioyek</string>
-	<key>CFBundleExecutable</key>
-	<string>@EXECUTABLE@</string>
-	<key>CFBundleIconFile</key>
-	<string>@ICON@</string>
-	<key>CFBundleIdentifier</key>
-	<string>info.sioyek.sioyek</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleShortVersionString</key>
-	<string>@SHORT_VERSION@</string>
-	<key>LSMinimumSystemVersion</key>
-	<string>10.15</string>
-	<key>NSPrincipalClass</key>
-	<string>NSApplication</string>
-	<key>NSSupportsAutomaticGraphicsSwitching</key>
-	<true/>
 	<key>CFBundleDocumentTypes</key>
-    <array>
-        <dict>
+	<array>
+		<dict>
 			<key>CFBundleTypeName</key>
 			<string>PDF Document</string>
 			<key>CFBundleTypeRole</key>
@@ -36,6 +16,26 @@
 				<string>com.adobe.pdf</string>
 			</array>
 		</dict>
-    </array>
+	</array>
+	<key>CFBundleExecutable</key>
+	<string>sioyek</string>
+	<key>CFBundleIconFile</key>
+	<string>icon2.ico</string>
+	<key>CFBundleIdentifier</key>
+	<string>info.sioyek.sioyek</string>
+	<key>CFBundleName</key>
+	<string>sioyek</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>2.0</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.15</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
 </dict>
 </plist>

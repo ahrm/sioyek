@@ -18,6 +18,12 @@
 #include "input.h"
 #include "path.h"
 
+#include <QMap>
+
+#ifdef NIGHT_P
+#include <hiredis/hiredis.h>
+#endif
+
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
 
@@ -116,6 +122,8 @@ enum class PaperDownloadFinishedAction {
 class MainWidget : public QQuickWidget {
     Q_OBJECT
 public:
+	QMap<int, bool> keyStates;
+
     fz_context* mupdf_context = nullptr;
     DatabaseManager* db_manager = nullptr;
     DocumentManager* document_manager = nullptr;
@@ -363,8 +371,14 @@ public:
 
     void add_text_annotation_to_selected_highlight(const std::wstring& annot_text);
 
+	bool isKeyPressed(int key) const;
+
     // search the `paper_name` in one of the configurable when middle-click or shift+middle-clicking on paper's name
     void handle_search_paper_name(std::wstring paper_name, bool is_shift_pressed);
+
+    #ifdef NIGHT_P
+	bool redisFlagGet(const QString &name);
+    #endif
 
     void persist(bool persist_drawings = false);
     bool is_pending_link_source_filled();
@@ -519,7 +533,7 @@ public:
     CommandManager* get_command_manager();
 
     void move_vertical(float amount);
-    bool move_horizontal(float amount, bool force = false);
+    bool move_horizontal(float amount, bool force = false, bool ignore_lock_p = false);
     void get_window_params_for_one_window_mode(int* main_window_size, int* main_window_move);
     void get_window_params_for_two_window_mode(int* main_window_size, int* main_window_move, int* helper_window_size, int* helper_window_move);
     void apply_window_params_for_one_window_mode(bool force_resize = false);
@@ -593,6 +607,7 @@ public:
     void handle_toggle_typing_mode();
     void handle_delete_highlight_under_cursor();
     void handle_delete_selected_highlight();
+	void handle_delete_last_highlight();
     void handle_start_reading();
     void handle_stop_reading();
     void handle_play();
@@ -899,6 +914,12 @@ public:
     void handle_highlight_tags_pre_perform(const std::vector<int>& visible_highlight_indices);
     void clear_keyboard_select_highlights();
     void handle_goto_link_with_page_and_offset(int page, float y_offset);
+
+private:
+#ifdef NIGHT_P
+	redisContext *redisContext_; // Member variable to hold the Redis connection
+#endif
+
 };
 
 #endif

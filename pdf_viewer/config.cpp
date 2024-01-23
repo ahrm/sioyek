@@ -6,6 +6,7 @@
 //#include <ui.h>
 
 extern float ZOOM_INC_FACTOR;
+extern float SCROLL_ZOOM_INC_FACTOR;
 extern float GAMMA;
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
@@ -15,6 +16,7 @@ extern float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3];
 extern float DARK_MODE_BACKGROUND_COLOR[3];
 extern float CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[3];
 extern float DARK_MODE_CONTRAST;
+extern bool KEYBOARD_SELECT_COPY_P;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool SMALL_TOC;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
@@ -168,6 +170,7 @@ extern bool SHOULD_HIGHLIGHT_LINKS;
 extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
 extern int KEYBOARD_SELECT_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
+extern bool REGEX_SEARCHING;
 extern float CUSTOM_COLOR_CONTRAST;
 extern bool DEBUG;
 extern bool DEBUG_DISPLAY_FREEHAND_POINTS;
@@ -718,6 +721,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         float_deserializer,
         nullptr,
         FloatExtras{1.0f, 2.0f}
+        });
+    configs.push_back({
+        L"scroll_zoom_inc_factor",
+        ConfigType::Float,
+        &SCROLL_ZOOM_INC_FACTOR,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{1.0f, 6.0f}
         });
     configs.push_back({
         L"vertical_move_amount",
@@ -1866,6 +1878,22 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"fuzzy_searching",
         ConfigType::Bool,
         &FUZZY_SEARCHING,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"regex_searching",
+        ConfigType::Bool,
+        &REGEX_SEARCHING,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"keyboard_select_copy_p",
+        ConfigType::Bool,
+        &KEYBOARD_SELECT_COPY_P,
         bool_serializer,
         bool_deserializer,
         bool_validator
