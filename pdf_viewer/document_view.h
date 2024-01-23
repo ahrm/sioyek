@@ -50,6 +50,7 @@ protected:
     // in auto resize mode, we automatically set the zoom level to fit the page when resizing the document
     bool is_auto_resize_mode = true;
     bool is_ruler_mode_ = false;
+    std::optional<int> presentation_page_number;
 
 public:
     // list of selected characters (e.g. using mouse select) to be highlighted
@@ -196,6 +197,10 @@ public:
     std::deque<AbsoluteRect>* get_selected_character_rects();
 
     std::vector<int> get_visible_highlight_indices();
+    void set_presentation_page_number(std::optional<int> page);
+    std::optional<int> get_presentation_page_number();
+    bool is_presentation_mode();
+
 };
 
 

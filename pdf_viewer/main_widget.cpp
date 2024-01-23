@@ -1242,7 +1242,7 @@ std::wstring MainWidget::get_status_string() {
     if (this->mouse_drag_mode) {
         status_string.replace("%{drag}", " [ drag ]");
     }
-    if (opengl_widget->is_presentation_mode()) {
+    if (main_document_view->is_presentation_mode()) {
         status_string.replace("%{presentation}", " [ presentation ]");
     }
 
@@ -1492,10 +1492,10 @@ void MainWidget::validate_render() {
             last_smart_fit_page = current_page;
         }
     }
-    if (opengl_widget->is_presentation_mode()) {
+    if (main_document_view->is_presentation_mode()) {
         int current_page = get_current_page_number();
         if (current_page >= 0) {
-            opengl_widget->set_visible_page_number(current_page);
+            main_document_view->set_presentation_page_number(current_page);
             if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
                 main_document_view->set_offset_y(
                     main_document_view->get_document()->get_accum_page_height(current_page) +
@@ -2869,7 +2869,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     }
 
                 }
-                else if (opengl_widget->is_presentation_mode()) {
+                else if (main_document_view->is_presentation_mode()) {
                     main_document_view->goto_page(main_document_view->get_center_page_number() - num_repeats);
                     invalidate_render();
                 }
@@ -2895,7 +2895,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                         return;
                     }
                 }
-                else if (opengl_widget->is_presentation_mode()) {
+                else if (main_document_view->is_presentation_mode()) {
                     main_document_view->goto_page(main_document_view->get_center_page_number() + num_repeats);
                     invalidate_render();
                 }
@@ -3309,7 +3309,7 @@ void MainWidget::toggle_fullscreen() {
 }
 
 void MainWidget::toggle_presentation_mode() {
-    if (opengl_widget->is_presentation_mode()) {
+    if (main_document_view->is_presentation_mode()) {
         set_presentation_mode(false);
     }
     else {
@@ -3319,10 +3319,10 @@ void MainWidget::toggle_presentation_mode() {
 
 void MainWidget::set_presentation_mode(bool mode) {
     if (mode) {
-        opengl_widget->set_visible_page_number(get_current_page_number());
+        main_document_view->set_presentation_page_number(get_current_page_number());
     }
     else {
-        opengl_widget->set_visible_page_number({});
+        main_document_view->set_presentation_page_number({});
     }
 }
 
@@ -4044,7 +4044,7 @@ void MainWidget::handle_link_click(const PdfLink& link) {
     // convert one indexed page to zero indexed page
     page--;
 
-    if (opengl_widget->is_presentation_mode()) {
+    if (main_document_view->is_presentation_mode()) {
         goto_page_with_page_number(page);
     }
     else {
@@ -5094,7 +5094,7 @@ void MainWidget::handle_vertical_move(int amount) {
     if (opengl_widget->get_overview_page()) {
         scroll_overview(amount);
     }
-    else if (opengl_widget->is_presentation_mode()) {
+    else if (main_document_view->is_presentation_mode()) {
         main_document_view->move_pages(amount);
     }
     else {
@@ -5106,7 +5106,7 @@ void MainWidget::handle_horizontal_move(int amount) {
     if (opengl_widget->get_overview_page()) {
         return;
     }
-    else if (opengl_widget->is_presentation_mode()) {
+    else if (main_document_view->is_presentation_mode()) {
         main_document_view->move_pages(-amount);
         validate_render();
     }
@@ -5553,7 +5553,7 @@ void MainWidget::handle_open_prev_doc() {
 }
 
 void MainWidget::handle_move_screen(int amount) {
-    if (!opengl_widget->is_presentation_mode()) {
+    if (!main_document_view->is_presentation_mode()) {
         move_document_screens(amount);
     }
     else {
@@ -5650,7 +5650,7 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
             }
             else {
                 auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, link.uri);
-                if (opengl_widget->is_presentation_mode()) {
+                if (main_document_view->is_presentation_mode()) {
                     goto_page_with_page_number(page - 1);
                 }
                 else {
@@ -7281,7 +7281,7 @@ std::string MainWidget::get_current_mode_string() {
     res += (freehand_drawing_mode == DrawingMode::Drawing) ? "q" : "Q";
     res += (freehand_drawing_mode == DrawingMode::PenDrawing) ? "e" : "E";
     res += (mouse_drag_mode) ? "d" : "D";
-    res += (opengl_widget->is_presentation_mode()) ? "p" : "P";
+    res += (main_document_view->is_presentation_mode()) ? "p" : "P";
     res += (opengl_widget->get_overview_page()) ? "o" : "O";
     res += opengl_widget->get_scratchpad() ? "s" : "S";
     res += (opengl_widget->get_is_searching(nullptr)) ? "f" : "F";
