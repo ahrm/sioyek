@@ -229,6 +229,7 @@ extern UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT;
 extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
 
 extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
+extern bool ALIGN_LINK_DEST_TO_TOP;
 
 extern bool TOUCH_MODE;
 
@@ -4047,7 +4048,7 @@ void MainWidget::handle_link_click(const PdfLink& link) {
         goto_page_with_page_number(page);
     }
     else {
-        long_jump_to_destination(page, offset_y);
+        handle_goto_link_with_page_and_offset(page, offset_y);
     }
 }
 
@@ -5653,7 +5654,7 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
                     goto_page_with_page_number(page - 1);
                 }
                 else {
-                    long_jump_to_destination(page - 1, offset_y);
+                    handle_goto_link_with_page_and_offset(page - 1, offset_y);
                 }
             }
         }
@@ -9583,4 +9584,12 @@ void MainWidget::handle_highlight_tags_pre_perform(const std::vector<int>& visib
 
 void MainWidget::clear_keyboard_select_highlights() {
     opengl_widget->set_should_highlight_words(false);
+}
+
+void MainWidget::handle_goto_link_with_page_and_offset(int page, float y_offset) {
+    long_jump_to_destination(page, y_offset);
+    if (ALIGN_LINK_DEST_TO_TOP) {
+        float top_offset = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) / 2.0f;
+        main_document_view->move_absolute(0, top_offset);
+    }
 }

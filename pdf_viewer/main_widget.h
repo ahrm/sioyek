@@ -897,6 +897,7 @@ public:
     void set_selected_highlight_index(int index);
     void handle_highlight_tags_pre_perform(const std::vector<int>& visible_highlight_indices);
     void clear_keyboard_select_highlights();
+    void handle_goto_link_with_page_and_offset(int page, float y_offset);
 };
 
 #endif
