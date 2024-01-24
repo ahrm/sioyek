@@ -45,7 +45,7 @@ void TouchListView::initialize(int selected_index, bool deletable, bool is_tree)
 
 TouchListView::TouchListView(bool is_fuzzy, QAbstractItemModel* items_, int selected_index, QWidget* parent, bool deletable, bool move, bool is_tree) : QWidget(parent) {
 
-    proxy_model = new MySortFilterProxyModel(is_fuzzy);
+    proxy_model = new MySortFilterProxyModel(is_fuzzy, false);
     model = items_;
     if (move) {
         items_->setParent(this);
@@ -55,7 +55,7 @@ TouchListView::TouchListView(bool is_fuzzy, QAbstractItemModel* items_, int sele
 
 TouchListView::TouchListView(bool is_fuzzy, QStringList items_, int selected_index, QWidget* parent, bool deletable) : QWidget(parent) {
 
-    proxy_model = new MySortFilterProxyModel(is_fuzzy);
+    proxy_model = new MySortFilterProxyModel(is_fuzzy, false);
     model = new QStringListModel(items_, this);
     initialize(selected_index, deletable);
 }

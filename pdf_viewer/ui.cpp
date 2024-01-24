@@ -1293,6 +1293,10 @@ void CommandSelector::on_select(const QModelIndex& index) {
     }
 }
 
+CommandSelector::~CommandSelector() {
+    fzf_free_slab(slab);
+}
+
 CommandSelector::CommandSelector(bool is_fuzzy, std::function<void(std::string, std::string)>* on_done,
     MainWidget* parent,
     QStringList elements,
@@ -1302,6 +1306,7 @@ CommandSelector::CommandSelector(bool is_fuzzy, std::function<void(std::string, 
     on_done(on_done),
     main_widget(parent)
 {
+    slab = fzf_make_default_slab();
     string_elements = elements;
     standard_item_model = get_standard_item_model(string_elements);
 
@@ -1328,6 +1333,9 @@ bool CommandSelector::on_text_change(const QString& text) {
     std::string search_text_string = text.toStdString();
     std::vector<std::pair<std::string, int>> match_score_pairs;
 
+    std::string pattern_str = text.toStdString();
+    fzf_pattern_t* pattern = fzf_parse_pattern(CaseSmart, false, (char*)pattern_str.c_str(), true);
+
     QString actual_text = text;
     if (actual_text.endsWith("?")){
         actual_text = actual_text.left(actual_text.size()-1);
@@ -1342,7 +1350,8 @@ bool CommandSelector::on_text_change(const QString& text) {
         std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
         int score = 0;
         if (is_fuzzy) {
-            score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
+            //score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
+            score = fzf_get_score(encoded.c_str(), pattern, slab);
         }
         else {
             fts::fuzzy_match(search_text_string.c_str(), encoded.c_str(), score);
@@ -1367,6 +1376,8 @@ bool CommandSelector::on_text_change(const QString& text) {
     }
     //}
 
+    fzf_free_pattern(pattern);
+
     QStandardItemModel* new_standard_item_model = get_standard_item_model(matching_element_names);
     dynamic_cast<QTableView*>(get_view())->setModel(new_standard_item_model);
     delete standard_item_model;
@@ -1378,8 +1389,9 @@ bool CommandSelector::on_text_change(const QString& text) {
 
 BaseSelectorWidget::BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy, QStandardItemModel* item_model, QWidget* parent) : QWidget(parent) {
 
+    bool is_tree = dynamic_cast<QTreeView*>(item_view) != nullptr;
     is_fuzzy = fuzzy;
-    proxy_model = new MySortFilterProxyModel(fuzzy);
+    proxy_model = new MySortFilterProxyModel(fuzzy, is_tree);
     proxy_model->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 
     if (item_model) {
@@ -1458,6 +1470,9 @@ void BaseSelectorWidget::on_text_changed(const QString& text) {
         QTreeView* t_view = dynamic_cast<QTreeView*>(get_view());
         if (t_view) {
             t_view->expandAll();
+        }
+        else {
+            get_view()->setCurrentIndex(get_view()->model()->index(0, 0));
         }
     }
 }

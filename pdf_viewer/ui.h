@@ -68,6 +68,10 @@
 #include "utils.h"
 #include "config.h"
 
+extern "C" {
+    #include <fzf/fzf.h>
+}
+
 class MainWidget;
 extern std::wstring UI_FONT_FACE_NAME;
 extern int FONT_SIZE;
@@ -551,6 +555,7 @@ private:
     QStandardItemModel* standard_item_model = nullptr;
     std::unordered_map<std::string, std::vector<std::string>> key_map;
     std::function<void(std::string, std::string)>* on_done = nullptr;
+    fzf_slab_t* slab;
 
     QList<QStandardItem*> get_item(std::string command_name);
     QStandardItemModel* get_standard_item_model(std::vector<std::string> command_names);
@@ -568,6 +573,7 @@ public:
         QStringList elements,
         std::unordered_map<std::string,
         std::vector<std::string>> key_map);
+    ~CommandSelector();
 
     virtual bool on_text_change(const QString& text);
 

@@ -92,6 +92,10 @@
 #include <QtCore/private/qandroidextras_p.h>
 #endif
 
+extern "C" {
+    #include <fzf/fzf.h>
+}
+
 extern int next_window_id;
 
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
