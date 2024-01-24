@@ -3572,6 +3572,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
             int selected_rect_page = -1;
             std::optional<DocumentRect> selected_rect_document = get_selected_rect_document();
             if (selected_rect_document) {
+                selected_rect_page = selected_rect_document->page;
                 QString format_string = "%1,%2,%3,%4,%5";
                 QString rect_string = format_string
                     .arg(QString::number(selected_rect_page))
