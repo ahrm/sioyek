@@ -45,6 +45,7 @@ DocumentViewState DocumentView::get_state() {
         res.book_state.ruler_pos = ruler_pos;
         res.book_state.ruler_rect = ruler_rect;
         res.book_state.line_index = line_index;
+        res.book_state.presentation_page = presentation_page_number;
     }
     return res;
 }
@@ -81,6 +82,7 @@ void DocumentView::exit_ruler_mode() {
 void DocumentView::set_book_state(OpenedBookState state) {
     set_offsets(state.offset_x, state.offset_y);
     set_zoom_level(state.zoom_level, true);
+    presentation_page_number = state.presentation_page;
     is_ruler_mode_ = state.ruler_mode;
     ruler_pos = state.ruler_pos;
     ruler_rect = state.ruler_rect;
@@ -629,6 +631,7 @@ void DocumentView::reset_doc_state() {
     zoom_level = 1.0f;
     set_offsets(0.0f, 0.0f);
     is_ruler_mode_ = false;
+    presentation_page_number = {};
 }
 
 void DocumentView::open_document(const std::wstring& doc_path,
@@ -1737,4 +1740,16 @@ std::vector<int> DocumentView::get_visible_highlight_indices() {
     }
 
     return res;
+}
+
+void DocumentView::set_presentation_page_number(std::optional<int> page) {
+    presentation_page_number = page;
+}
+
+std::optional<int> DocumentView::get_presentation_page_number() {
+    return presentation_page_number;
+}
+
+bool DocumentView::is_presentation_mode() {
+    return presentation_page_number.has_value();
 }

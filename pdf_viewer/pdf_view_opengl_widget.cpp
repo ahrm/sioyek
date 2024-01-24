@@ -1147,7 +1147,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview) {
         glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-        if (!is_presentation_mode() && (!in_overview)){
+        if (!document_view->is_presentation_mode() && (!in_overview)){
 
             // render page separator
             glUseProgram(shared_gl_objects.separator_program);
@@ -1235,15 +1235,16 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
     std::vector<PdfLink> all_visible_links;
 
-    if (is_presentation_mode()) {
+    if (document_view->is_presentation_mode()) {
+        int presentation_page_number = document_view->get_presentation_page_number().value();
         if (PRERENDER_NEXT_PAGE) {
             // request the next page so it is scheduled for rendering in the background thread
 
             for (int i = 0; i < NUM_PRERENDERED_NEXT_SLIDES; i++) {
 
-                if ((visible_page_number.value() + i + 1) < doc()->num_pages()) {
+                if ((presentation_page_number + i + 1) < doc()->num_pages()) {
                     pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-                        visible_page_number.value() + i + 1,
+                        presentation_page_number + i + 1,
                         document_view->get_document()->should_render_pdf_annotations(),
                         -1,
                         1,
@@ -1256,9 +1257,9 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             }
             for (int i = 0; i < NUM_PRERENDERED_PREV_SLIDES; i++) {
 
-                if ((visible_page_number.value() - i - 1) >= 0) {
+                if ((presentation_page_number - i - 1) >= 0) {
                     pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-                        visible_page_number.value() - i - 1,
+                        presentation_page_number - i - 1,
                         document_view->get_document()->should_render_pdf_annotations(),
                         -1,
                         1,
@@ -1270,7 +1271,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                 }
             }
         }
-        render_page(visible_page_number.value());
+        render_page(presentation_page_number);
     }
     else {
         std::array<float, 3> link_highlight_color = cc3(DEFAULT_LINK_HIGHLIGHT_COLOR);
@@ -1947,16 +1948,6 @@ void PdfViewOpenGLWidget::draw_empty_helper_message(QPainter* painter, QString m
     painter->drawText(view_width / 2 - message_width / 2, view_height / 2 - message_height / 2, message);
 }
 
-void PdfViewOpenGLWidget::set_visible_page_number(std::optional<int> val) {
-    this->visible_page_number = val;
-}
-
-bool PdfViewOpenGLWidget::is_presentation_mode() {
-    if (visible_page_number) {
-        return true;
-    }
-    return false;
-}
 
 NormalizedWindowRect PdfViewOpenGLWidget::get_overview_rect() {
     NormalizedWindowRect res;

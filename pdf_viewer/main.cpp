@@ -145,7 +145,7 @@ std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
 std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
 std::wstring PAPERS_FOLDER_PATH = L"";
 #ifndef SIOYEK_ANDROID
-std::wstring STATUS_BAR_FORMAT = L"Page %{current_page} / %{num_pages}%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
+std::wstring STATUS_BAR_FORMAT = L"Page %{current_page} / %{num_pages}%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{freehand_drawing}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
 #else
 std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}";
 #endif
@@ -231,6 +231,7 @@ std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";
 std::wstring STARTUP_COMMANDS = L"";
 #endif
 
+bool ALIGN_LINK_DEST_TO_TOP = false;
 int MAX_TAB_COUNT = 100;
 float SMALL_PIXMAP_SCALE = 0.75f;
 float DISPLAY_RESOLUTION_SCALE = -1;
@@ -263,6 +264,7 @@ bool MULTILINE_MENUS = true;
 bool START_WITH_HELPER_WINDOW = false;
 std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
+std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
 std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 bool PRERENDER_NEXT_PAGE = true;
@@ -372,6 +374,7 @@ Path auto_config_path(L"");
 Path downloaded_papers_path(L"");
 ScratchPad global_scratchpad;
 
+std::wstring RESIZE_COMMAND = L"";
 std::wstring SHIFT_CLICK_COMMAND = L"overview_under_cursor";
 std::wstring CONTROL_CLICK_COMMAND = L"smart_jump_under_cursor";
 std::wstring SHIFT_RIGHT_CLICK_COMMAND = L"";
@@ -1094,8 +1097,8 @@ int main(int argc, char* args[]) {
         main_widget->toggle_dark_mode();
     }
 
-    QString startup_commands_list = QString::fromStdWString(STARTUP_COMMANDS);
-    QStringList startup_commands = startup_commands_list.split(";");
+    //QString startup_commands_list = QString::fromStdWString(STARTUP_COMMANDS);
+    //QStringList startup_commands = startup_commands_list.split(";");
     NewFileChecker new_file_checker(PAPERS_FOLDER_PATH, main_widget);
 
 

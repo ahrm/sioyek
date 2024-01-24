@@ -131,7 +131,6 @@ private:
     ColorPalette color_mode = ColorPalette::Normal;
     bool is_helper = false;
     float percent_done = 0.0f;
-    std::optional<int> visible_page_number = {};
     std::string tag_prefix = "";
 
     QIcon bookmark_icon;
@@ -268,8 +267,6 @@ public:
     void set_overview_page(std::optional<OverviewState> overview_page);
     std::optional<OverviewState> get_overview_page();
     void draw_empty_helper_message(QPainter* painter, QString message);
-    void set_visible_page_number(std::optional<int> val);
-    bool is_presentation_mode();
     NormalizedWindowRect get_overview_rect();
     NormalizedWindowRect get_overview_rect_pixel_perfect(int widget_width, int widget_height, int view_width, int view_height);
     std::vector<NormalizedWindowRect> get_overview_border_rects();

@@ -114,7 +114,9 @@ extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 extern bool NO_AUTO_CONFIG;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
+extern bool ALIGN_LINK_DEST_TO_TOP;
 
+extern std::wstring RESIZE_COMMAND;
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
 extern std::wstring SHIFT_RIGHT_CLICK_COMMAND;
@@ -147,6 +149,7 @@ extern bool START_WITH_HELPER_WINDOW;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
+extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
 extern bool PRERENDER_NEXT_PAGE;
 extern bool EMACS_MODE;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
@@ -859,6 +862,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
+        L"align_link_dest_to_top",
+        ConfigType::Bool,
+        &ALIGN_LINK_DEST_TO_TOP,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
         L"check_for_updates_on_startup",
         ConfigType::Bool,
         &SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP,
@@ -1394,6 +1405,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"shift_click_command",
         ConfigType::Macro,
         &SHIFT_CLICK_COMMAND,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"resize_command",
+        ConfigType::Macro,
+        &RESIZE_COMMAND,
         string_serializer,
         string_deserializer,
         nullptr
@@ -2222,7 +2241,7 @@ void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_na
                 deserialize_file(changed_config_names, path, true);
             }
         }
-        else if ((conf_name == L"new_command") || (conf_name == L"new_macro") || (conf_name == L"new_js_command") || (conf_name == L"keymap")) {
+        else if ((conf_name == L"new_command") || (conf_name == L"new_async_js_command") || (conf_name == L"new_macro") || (conf_name == L"new_js_command") || (conf_name == L"keymap")) {
             std::wstring config_value;
             std::getline(ss, config_value);
             config_value = strip_string(config_value);
@@ -2247,6 +2266,9 @@ void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_na
                     }
                     if (conf_name == L"new_js_command") {
                         ADDITIONAL_JAVASCRIPT_COMMANDS[new_command_name] = std::make_pair(file_path.get_path(), command_value);
+                    }
+                    if (conf_name == L"new_async_js_command") {
+                        ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS[new_command_name] = std::make_pair(file_path.get_path(), command_value);
                     }
                 }
             }
@@ -2294,6 +2316,7 @@ void ConfigManager::deserialize(std::vector<std::string>* changed_config_names, 
 
     ADDITIONAL_COMMANDS.clear();
     ADDITIONAL_JAVASCRIPT_COMMANDS.clear();
+    ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS.clear();
     ADDITIONAL_MACROS.clear();
     ADDITIONAL_KEYMAPS.clear();
 

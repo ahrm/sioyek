@@ -192,6 +192,7 @@ extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 
 extern int MAX_TAB_COUNT;
+extern std::wstring RESIZE_COMMAND;
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
 extern std::wstring FORWARD_RECT_TAP_COMMAND;
@@ -229,6 +230,7 @@ extern UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT;
 extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
 
 extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
+extern bool ALIGN_LINK_DEST_TO_TOP;
 
 extern bool TOUCH_MODE;
 
@@ -467,6 +469,10 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
     if (draw_controls_) {
         QCoreApplication::postEvent(get_draw_controls(), resize_event->clone());
     }
+    if (RESIZE_COMMAND.size() > 0) {
+        execute_macro_if_enabled(RESIZE_COMMAND);
+    }
+
 }
 
 void MainWidget::set_overview_position(int page, float offset) {
@@ -1241,7 +1247,7 @@ std::wstring MainWidget::get_status_string() {
     if (this->mouse_drag_mode) {
         status_string.replace("%{drag}", " [ drag ]");
     }
-    if (opengl_widget->is_presentation_mode()) {
+    if (main_document_view->is_presentation_mode()) {
         status_string.replace("%{presentation}", " [ presentation ]");
     }
 
@@ -1259,6 +1265,15 @@ std::wstring MainWidget::get_status_string() {
     }
 
     status_string.replace("%{highlight}", " [ h" + QString::fromStdWString(highlight_select_char) + ":" + select_highlight_type + " ]");
+    QString drawing_mode_string = "";
+    if (freehand_drawing_mode == DrawingMode::Drawing) {
+        drawing_mode_string = QString(" [ freehand:") + current_freehand_type + " ]";
+    }
+    if (freehand_drawing_mode == DrawingMode::PenDrawing) {
+        drawing_mode_string = QString(" [ pen:") + current_freehand_type + " ]";
+    }
+
+    status_string.replace("%{freehand_drawing}", drawing_mode_string);
 
 
     if (SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR) {
@@ -1491,10 +1506,10 @@ void MainWidget::validate_render() {
             last_smart_fit_page = current_page;
         }
     }
-    if (opengl_widget->is_presentation_mode()) {
+    if (main_document_view->is_presentation_mode()) {
         int current_page = get_current_page_number();
         if (current_page >= 0) {
-            opengl_widget->set_visible_page_number(current_page);
+            main_document_view->set_presentation_page_number(current_page);
             if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
                 main_document_view->set_offset_y(
                     main_document_view->get_document()->get_accum_page_height(current_page) +
@@ -2868,7 +2883,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     }
 
                 }
-                else if (opengl_widget->is_presentation_mode()) {
+                else if (main_document_view->is_presentation_mode()) {
                     main_document_view->goto_page(main_document_view->get_center_page_number() - num_repeats);
                     invalidate_render();
                 }
@@ -2894,7 +2909,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                         return;
                     }
                 }
-                else if (opengl_widget->is_presentation_mode()) {
+                else if (main_document_view->is_presentation_mode()) {
                     main_document_view->goto_page(main_document_view->get_center_page_number() + num_repeats);
                     invalidate_render();
                 }
@@ -2988,6 +3003,9 @@ void MainWidget::show_textbar(const std::wstring& command_name, const std::wstri
         text_command_line_edit_label->setText(QString::fromStdWString(command_name));
         text_command_line_edit_container->show();
         text_command_line_edit->setFocus();
+        if (initial_value.size() > 0) {
+            text_command_line_edit->selectAll();
+        }
     }
 }
 
@@ -3308,7 +3326,7 @@ void MainWidget::toggle_fullscreen() {
 }
 
 void MainWidget::toggle_presentation_mode() {
-    if (opengl_widget->is_presentation_mode()) {
+    if (main_document_view->is_presentation_mode()) {
         set_presentation_mode(false);
     }
     else {
@@ -3318,10 +3336,10 @@ void MainWidget::toggle_presentation_mode() {
 
 void MainWidget::set_presentation_mode(bool mode) {
     if (mode) {
-        opengl_widget->set_visible_page_number(get_current_page_number());
+        main_document_view->set_presentation_page_number(get_current_page_number());
     }
     else {
-        opengl_widget->set_visible_page_number({});
+        main_document_view->set_presentation_page_number({});
     }
 }
 
@@ -3349,7 +3367,7 @@ void MainWidget::long_jump_to_destination(DocumentPos pos) {
 
     if (!is_pending_link_source_filled()) {
         push_state();
-        main_document_view->set_offsets(abs_pos.x, abs_pos.y);
+        main_document_view->set_offsets(pos.x, abs_pos.y);
         //main_document_view->goto_offset_within_page({ pos.page, pos.x, pos.y });
     }
     else {
@@ -3550,6 +3568,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
             int selected_rect_page = -1;
             std::optional<DocumentRect> selected_rect_document = get_selected_rect_document();
             if (selected_rect_document) {
+                selected_rect_page = selected_rect_document->page;
                 QString format_string = "%1,%2,%3,%4,%5";
                 QString rect_string = format_string
                     .arg(QString::number(selected_rect_page))
@@ -4043,11 +4062,11 @@ void MainWidget::handle_link_click(const PdfLink& link) {
     // convert one indexed page to zero indexed page
     page--;
 
-    if (opengl_widget->is_presentation_mode()) {
+    if (main_document_view->is_presentation_mode()) {
         goto_page_with_page_number(page);
     }
     else {
-        long_jump_to_destination(page, offset_y);
+        handle_goto_link_with_page_and_offset(page, offset_y);
     }
 }
 
@@ -5093,7 +5112,7 @@ void MainWidget::handle_vertical_move(int amount) {
     if (opengl_widget->get_overview_page()) {
         scroll_overview(amount);
     }
-    else if (opengl_widget->is_presentation_mode()) {
+    else if (main_document_view->is_presentation_mode()) {
         main_document_view->move_pages(amount);
     }
     else {
@@ -5105,7 +5124,7 @@ void MainWidget::handle_horizontal_move(int amount) {
     if (opengl_widget->get_overview_page()) {
         return;
     }
-    else if (opengl_widget->is_presentation_mode()) {
+    else if (main_document_view->is_presentation_mode()) {
         main_document_view->move_pages(-amount);
         validate_render();
     }
@@ -5552,7 +5571,7 @@ void MainWidget::handle_open_prev_doc() {
 }
 
 void MainWidget::handle_move_screen(int amount) {
-    if (!opengl_widget->is_presentation_mode()) {
+    if (!main_document_view->is_presentation_mode()) {
         move_document_screens(amount);
     }
     else {
@@ -5649,11 +5668,11 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
             }
             else {
                 auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, link.uri);
-                if (opengl_widget->is_presentation_mode()) {
+                if (main_document_view->is_presentation_mode()) {
                     goto_page_with_page_number(page - 1);
                 }
                 else {
-                    long_jump_to_destination(page - 1, offset_y);
+                    handle_goto_link_with_page_and_offset(page - 1, offset_y);
                 }
             }
         }
@@ -7280,7 +7299,7 @@ std::string MainWidget::get_current_mode_string() {
     res += (freehand_drawing_mode == DrawingMode::Drawing) ? "q" : "Q";
     res += (freehand_drawing_mode == DrawingMode::PenDrawing) ? "e" : "E";
     res += (mouse_drag_mode) ? "d" : "D";
-    res += (opengl_widget->is_presentation_mode()) ? "p" : "P";
+    res += (main_document_view->is_presentation_mode()) ? "p" : "P";
     res += (opengl_widget->get_overview_page()) ? "o" : "O";
     res += opengl_widget->get_scratchpad() ? "s" : "S";
     res += (opengl_widget->get_is_searching(nullptr)) ? "f" : "F";
@@ -8375,7 +8394,8 @@ QJSEngine* MainWidget::take_js_engine() {
     js_engine->setObjectOwnership(this, QJSEngine::CppOwnership);
 
     js_engine->globalObject().setProperty("sioyek_api", sioyek_object);
-    js_engine->globalObject().setProperty("sioyek", export_javascript_api(*js_engine));
+    js_engine->globalObject().setProperty("sioyek", export_javascript_api(*js_engine, false));
+    js_engine->globalObject().setProperty("sioyek_async", export_javascript_api(*js_engine, true));
     return js_engine;
 }
 
@@ -8384,7 +8404,7 @@ void MainWidget::release_js_engine(QJSEngine* engine) {
     available_engines.push_back(engine);
 }
 
-QJSValue MainWidget::export_javascript_api(QJSEngine& engine){
+QJSValue MainWidget::export_javascript_api(QJSEngine& engine, bool is_async){
 
     QJSValue res = engine.newObject();
 
@@ -8394,7 +8414,8 @@ QJSValue MainWidget::export_javascript_api(QJSEngine& engine){
         if (command_name_ == "import") {
             command_name_ = "import_";
         }
-        res.setProperty(command_name_, engine.evaluate("(...args)=>{\
+        if (is_async) {
+            res.setProperty(command_name_, engine.evaluate("(...args)=>{\
                 let command_name ='" + command_name_ + "';\
                 let args_strings = args.map((arg)=>{return '' + arg;});\
                 let args_string = args_strings.join(',');\
@@ -8402,13 +8423,31 @@ QJSValue MainWidget::export_javascript_api(QJSEngine& engine){
                 else {return sioyek_api.run_macro_on_main_thread(command_name);}\
                 }"));
 
-        res.setProperty('$' + command_name_, engine.evaluate("(...args)=>{\
+            res.setProperty('$' + command_name_, engine.evaluate("(...args)=>{\
                 let command_name ='" + command_name_ + "';\
                 let args_strings = args.map((arg)=>{return '' + arg;});\
                 let args_string = args_strings.join(',');\
                 if (args_string.length > 0){return sioyek_api.run_macro_on_main_thread(command_name + '(' + args_string + ')');}\
                 else {return sioyek_api.run_macro_on_main_thread(command_name, false);}\
                 }"));
+        }
+        else {
+            res.setProperty(command_name_, engine.evaluate("(...args)=>{\
+                let command_name ='" + command_name_ + "';\
+                let args_strings = args.map((arg)=>{return '' + arg;});\
+                let args_string = args_strings.join(',');\
+                if (args_string.length > 0){return sioyek_api.execute_macro_sync(command_name + '(' + args_string + ')');}\
+                else {return sioyek_api.execute_macro_sync(command_name);}\
+                }"));
+
+            res.setProperty('$' + command_name_, engine.evaluate("(...args)=>{\
+                let command_name ='" + command_name_ + "';\
+                let args_strings = args.map((arg)=>{return '' + arg;});\
+                let args_string = args_strings.join(',');\
+                if (args_string.length > 0){return sioyek_api.execute_macro_sync(command_name + '(' + args_string + ')');}\
+                else {return sioyek_api.execute_macro_sync(command_name);}\
+                }"));
+        }
     }
 
     return res;
@@ -9168,14 +9207,23 @@ void MainWidget::execute_macro_and_return_result(QString macro_string, bool* is_
 
 }
 
-void MainWidget::run_javascript_command(std::wstring javascript_code){
-    std::thread ext_thread = std::thread([&, javascript_code]() {
-            QString content = QString::fromStdWString(javascript_code);
+void MainWidget::run_javascript_command(std::wstring javascript_code, bool is_async){
+
+    QString content = QString::fromStdWString(javascript_code);
+    if (is_async) {
+        std::thread ext_thread = std::thread([&, content]() {
             QJSEngine* engine = take_js_engine();
             auto res = engine->evaluate(content);
             release_js_engine(engine);
-        });
-    ext_thread.detach();
+            });
+        ext_thread.detach();
+    }
+    else {
+        QJSEngine* engine = take_js_engine();
+        auto res = engine->evaluate(content);
+        release_js_engine(engine);
+    }
+
 }
 
 void MainWidget::load_command_docs(){
@@ -9583,4 +9631,26 @@ void MainWidget::handle_highlight_tags_pre_perform(const std::vector<int>& visib
 
 void MainWidget::clear_keyboard_select_highlights() {
     opengl_widget->set_should_highlight_words(false);
+}
+
+void MainWidget::handle_goto_link_with_page_and_offset(int page, float y_offset) {
+    long_jump_to_destination(page, y_offset);
+    if (ALIGN_LINK_DEST_TO_TOP) {
+        float top_offset = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) / 2.0f;
+        main_document_view->move_absolute(0, top_offset);
+    }
+}
+
+QString MainWidget::execute_macro_sync(QString macro) {
+    std::unique_ptr<Command> command = command_manager->create_macro_command(this, "", macro.toStdWString());
+    std::wstring result;
+
+    if (is_macro_command_enabled(command.get())) {
+        handle_command_types(std::move(command), 0, &result);
+        invalidate_render();
+
+        return QString::fromStdWString(result);
+    }
+
+    return "";
 }

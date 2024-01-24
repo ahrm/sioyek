@@ -23,6 +23,7 @@ extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
+extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern std::wstring SEARCH_URLS[26];
 extern bool ALPHABETIC_LINK_TAGS;
@@ -2078,13 +2079,15 @@ class JavascriptCommand : public Command {
 public:
     std::string command_name;
     std::wstring code;
+    bool is_async;
 
-    JavascriptCommand(std::string command_name, std::wstring code_, MainWidget* w) :  Command(w), command_name(command_name) {
+    JavascriptCommand(std::string command_name, std::wstring code_, bool is_async_, MainWidget* w) :  Command(w), command_name(command_name) {
         code = code_;
+        is_async = is_async_;
     };
 
     void perform() {
-        widget->run_javascript_command(code);
+        widget->run_javascript_command(code, is_async);
     }
 
     std::string get_name() {
@@ -6433,25 +6436,11 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     }
 
     for (auto [command_name_, command_files_pair] : ADDITIONAL_JAVASCRIPT_COMMANDS) {
-        std::string command_name = utf8_encode(command_name_);
-        auto [command_parent_file_path, command_file_path] = command_files_pair;
+        handle_new_javascript_command(command_name_, command_files_pair, false);
+    }
 
-        QDir parent_dir = QFileInfo(QString::fromStdWString(command_parent_file_path)).dir();
-        QFileInfo javascript_file_info(QString::fromStdWString(command_file_path));
-        QString absolute_file_path;
-
-        if (javascript_file_info.isRelative()){
-            absolute_file_path = parent_dir.absoluteFilePath(javascript_file_info.filePath());
-        }
-        else{
-            absolute_file_path = javascript_file_info.absoluteFilePath();
-        }
-        QFile code_file(absolute_file_path);
-        if (code_file.open(QIODevice::ReadOnly)) {
-            QTextStream in(&code_file);
-            QString code = in.readAll();
-            new_commands[command_name] = [command_name, code, this](MainWidget* w) {return std::make_unique<JavascriptCommand>(command_name, code.toStdWString(), w); };
-        }
+    for (auto [command_name_, command_files_pair] : ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS) {
+        handle_new_javascript_command(command_name_, command_files_pair, true);
     }
 
     for (auto [command_name_, macro_value] : ADDITIONAL_MACROS) {
@@ -6478,6 +6467,27 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 
 }
 
+void CommandManager::handle_new_javascript_command(std::wstring command_name_, std::pair<std::wstring, std::wstring> command_files_pair, bool is_async) {
+        std::string command_name = utf8_encode(command_name_);
+        auto [command_parent_file_path, command_file_path] = command_files_pair;
+
+        QDir parent_dir = QFileInfo(QString::fromStdWString(command_parent_file_path)).dir();
+        QFileInfo javascript_file_info(QString::fromStdWString(command_file_path));
+        QString absolute_file_path;
+
+        if (javascript_file_info.isRelative()){
+            absolute_file_path = parent_dir.absoluteFilePath(javascript_file_info.filePath());
+        }
+        else{
+            absolute_file_path = javascript_file_info.absoluteFilePath();
+        }
+        QFile code_file(absolute_file_path);
+        if (code_file.open(QIODevice::ReadOnly)) {
+            QTextStream in(&code_file);
+            QString code = in.readAll();
+            new_commands[command_name] = [command_name, code, is_async, this](MainWidget* w) {return std::make_unique<JavascriptCommand>(command_name, code.toStdWString(), is_async, w); };
+        }
+}
 
 std::unique_ptr<Command> CommandManager::get_command_with_name(MainWidget* w, std::string name) {
 
