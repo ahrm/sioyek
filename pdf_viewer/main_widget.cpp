@@ -3405,6 +3405,10 @@ void MainWidget::set_current_widget(QWidget* new_widget) {
     }
     current_widget_stack.clear();
     current_widget_stack.push_back(new_widget);
+    
+    if (!TOUCH_MODE) {
+        new_widget->stackUnder(status_label);
+    }
     //if (current_widget != nullptr) {
     //    current_widget->hide();
     //    garbage_widgets.push_back(current_widget);
@@ -8762,7 +8766,7 @@ QJsonObject MainWidget::get_json_annotations() {
     return annots;
 }
 
-void MainWidget::handle_action_in_menu(std::wstring action) {
+QString MainWidget::handle_action_in_menu(std::wstring action) {
 
     BaseSelectorWidget* selector_widget = nullptr;
 
@@ -8780,7 +8784,12 @@ void MainWidget::handle_action_in_menu(std::wstring action) {
         if (action == L"select") {
             selector_widget->simulate_select();
         }
+
+        if (action == L"get") {
+            return selector_widget->get_selected_item();
+        }
     }
+    return "";
 }
 
 std::wstring MainWidget::handle_synctex_to_ruler() {

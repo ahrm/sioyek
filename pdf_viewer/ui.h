@@ -154,6 +154,7 @@ public:
     void simulate_select();
     void handle_delete();
     void handle_edit();
+    QString get_selected_item();
 
 
 #ifndef SIOYEK_QT6

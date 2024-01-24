@@ -598,7 +598,8 @@ public:
 
 
     void perform() {
-        widget->handle_action_in_menu(text.value());
+        QString res = widget->handle_action_in_menu(text.value());
+        result = res.toStdWString();
     }
 
     std::string get_name() {

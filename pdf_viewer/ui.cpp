@@ -1657,6 +1657,13 @@ void BaseSelectorWidget::simulate_move_up() {
     get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
 }
 
+QString BaseSelectorWidget::get_selected_item() {
+    if (get_selected_index()) {
+        return get_view()->model()->data(get_selected_index().value()).toString();
+    }
+    return "";
+}
+
 void BaseSelectorWidget::simulate_select() {
     std::optional<QModelIndex> selected_index = get_selected_index();
     if (selected_index) {
