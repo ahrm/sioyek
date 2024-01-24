@@ -58,6 +58,9 @@ extern float HIGHLIGHT_COLORS[26 * 3];
 extern float BLACK_COLOR[3];
 extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
 
+extern float UI_BACKGROUND_COLOR[3];
+extern float UI_TEXT_COLOR[3];
+
 extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH;
 extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
@@ -2449,22 +2452,30 @@ void flat_char_prism(const std::vector<fz_stext_char*>& chars, int page, std::ws
     }
 }
 
-QString get_status_stylesheet(bool nofont, int font_size) {
+QString get_color_stylesheet(float* bg_color, float* text_color, bool nofont, int font_size) {
     if ((!nofont) && (STATUS_BAR_FONT_SIZE > -1 || font_size > -1)) {
         int size = font_size > 0 ? font_size : STATUS_BAR_FONT_SIZE;
         QString	font_size_stylesheet = QString("font-size: %1px").arg(size);
         return QString("background-color: %1; color: %2; border: 0; %3;").arg(
-            get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
-            get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2]),
+            get_color_qml_string(bg_color[0], bg_color[1], bg_color[2]),
+            get_color_qml_string(text_color[0], text_color[1], text_color[2]),
             font_size_stylesheet
         );
     }
     else {
         return QString("background-color: %1; color: %2; border: 0;").arg(
-            get_color_qml_string(STATUS_BAR_COLOR[0], STATUS_BAR_COLOR[1], STATUS_BAR_COLOR[2]),
-            get_color_qml_string(STATUS_BAR_TEXT_COLOR[0], STATUS_BAR_TEXT_COLOR[1], STATUS_BAR_TEXT_COLOR[2])
+            get_color_qml_string(bg_color[0], bg_color[1], bg_color[2]),
+            get_color_qml_string(text_color[0], text_color[1], text_color[2])
         );
     }
+}
+
+QString get_ui_stylesheet(bool nofont, int font_size) {
+    return get_color_stylesheet(UI_BACKGROUND_COLOR, UI_TEXT_COLOR, nofont, font_size);
+}
+
+QString get_status_stylesheet(bool nofont, int font_size) {
+    return get_color_stylesheet(STATUS_BAR_COLOR, STATUS_BAR_TEXT_COLOR, nofont, font_size);
 }
 
 QString get_list_item_stylesheet() {

@@ -53,6 +53,8 @@ extern bool LINEAR_TEXTURE_FILTERING;
 extern float DISPLAY_RESOLUTION_SCALE;
 extern float STATUS_BAR_COLOR[3];
 extern float STATUS_BAR_TEXT_COLOR[3];
+extern float UI_BACKGROUND_COLOR[3];
+extern float UI_TEXT_COLOR[3];
 extern float UI_SELECTED_TEXT_COLOR[3];
 extern float UI_SELECTED_BACKGROUND_COLOR[3];
 extern int STATUS_BAR_FONT_SIZE;
@@ -1806,6 +1808,22 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         color_3_validator
         });
     configs.push_back({
+        L"ui_text_color",
+        ConfigType::Color3,
+        UI_TEXT_COLOR,
+        vec3_serializer,
+        color3_deserializer,
+        color_3_validator
+        });
+    configs.push_back({
+        L"ui_background_color",
+        ConfigType::Color3,
+        UI_BACKGROUND_COLOR,
+        vec3_serializer,
+        color3_deserializer,
+        color_3_validator
+        });
+    configs.push_back({
         L"ui_selected_text_color",
         ConfigType::Color3,
         UI_SELECTED_TEXT_COLOR,
@@ -1817,14 +1835,6 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"ui_background_color",
         ConfigType::Color3,
         STATUS_BAR_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"ui_text_color",
-        ConfigType::Color3,
-        STATUS_BAR_TEXT_COLOR,
         vec3_serializer,
         color3_deserializer,
         color_3_validator

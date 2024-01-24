@@ -1704,12 +1704,8 @@ void BaseSelectorWidget::on_config_file_changed() {
         font_size_stylesheet = QString("font-size: %1px").arg(FONT_SIZE);
     }
 
-    //setStyleSheet("background-color: black; color: white; border: 0;" + font_size_stylesheet);
-    std::wstring ss = (get_status_stylesheet(true) + font_size_stylesheet).toStdWString();
-    setStyleSheet(get_status_stylesheet(true) + font_size_stylesheet);
-    //get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{background-color: white; color: black;}");
+    setStyleSheet(get_ui_stylesheet(true) + font_size_stylesheet);
     get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item::selected{" + get_selected_stylesheet() + "}");
-    //        get_view()->setStyleSheet(get_view_stylesheet_type_name() + "::item{" + get_list_item_stylesheet() + "}");
 }
 
 void BaseSelectorWidget::resizeEvent(QResizeEvent* resize_event) {
