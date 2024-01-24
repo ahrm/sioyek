@@ -195,6 +195,8 @@ extern ScratchPad global_scratchpad;
 extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 
+extern std::wstring RIGHT_CLICK_COMMAND;
+extern std::wstring MIDDLE_CLICK_COMMAND;
 extern int MAX_TAB_COUNT;
 extern std::wstring RESIZE_COMMAND;
 extern std::wstring BACK_RECT_TAP_COMMAND;
@@ -1992,8 +1994,8 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
         return;
     }
 
-    if (RIGHT_CLICK_CONTEXT_MENU) {
-        execute_macro_if_enabled(L"show_context_menu");
+    if (RIGHT_CLICK_COMMAND.size() > 0) {
+        execute_macro_if_enabled(RIGHT_CLICK_COMMAND);
         return;
     }
 
@@ -2784,6 +2786,10 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
+        if (MIDDLE_CLICK_COMMAND.size() > 0) {
+            execute_macro_if_enabled(MIDDLE_CLICK_COMMAND);
+            return;
+        }
         last_middle_down_time = QTime::currentTime();
         middle_click_hold_command_already_executed = false;
         last_mouse_down_window_pos = WindowPos{ mevent->pos().x(), mevent->pos().y() };

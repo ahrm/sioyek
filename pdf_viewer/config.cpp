@@ -121,6 +121,8 @@ extern bool ALIGN_LINK_DEST_TO_TOP;
 extern std::wstring RESIZE_COMMAND;
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
+extern std::wstring RIGHT_CLICK_COMMAND;
+extern std::wstring MIDDLE_CLICK_COMMAND;
 extern std::wstring SHIFT_RIGHT_CLICK_COMMAND;
 extern std::wstring CONTROL_RIGHT_CLICK_COMMAND;
 extern std::wstring ALT_CLICK_COMMAND;
@@ -1607,6 +1609,22 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"visual_mark_prev_hold_command",
         ConfigType::Macro,
         &VISUAL_MARK_PREV_HOLD_COMMAND,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"right_click_command",
+        ConfigType::Macro,
+        &RIGHT_CLICK_COMMAND,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"middle_click_command",
+        ConfigType::Macro,
+        &MIDDLE_CLICK_COMMAND,
         string_serializer,
         string_deserializer,
         nullptr

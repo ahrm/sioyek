@@ -379,6 +379,8 @@ ScratchPad global_scratchpad;
 std::wstring RESIZE_COMMAND = L"";
 std::wstring SHIFT_CLICK_COMMAND = L"overview_under_cursor";
 std::wstring CONTROL_CLICK_COMMAND = L"smart_jump_under_cursor";
+std::wstring RIGHT_CLICK_COMMAND = L"";
+std::wstring MIDDLE_CLICK_COMMAND = L"";
 std::wstring SHIFT_RIGHT_CLICK_COMMAND = L"";
 std::wstring CONTROL_RIGHT_CLICK_COMMAND = L"";
 std::wstring ALT_CLICK_COMMAND = L"";
