@@ -1267,7 +1267,7 @@ std::wstring MainWidget::get_status_string() {
     status_string.replace("%{highlight}", " [ h" + QString::fromStdWString(highlight_select_char) + ":" + select_highlight_type + " ]");
     QString drawing_mode_string = "";
     if (freehand_drawing_mode == DrawingMode::Drawing) {
-        drawing_mode_string = QString(" [ freehand:") + current_freehand_type + " ]";
+        drawing_mode_string = QString(" [ doodle:") + current_freehand_type " ]";
     }
     if (freehand_drawing_mode == DrawingMode::PenDrawing) {
         drawing_mode_string = QString(" [ pen:") + current_freehand_type + " ]";
