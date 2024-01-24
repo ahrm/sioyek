@@ -3886,3 +3886,22 @@ bool is_in(char c, std::vector<char> candidates){
     return std::find(candidates.begin(), candidates.end(), c) != candidates.end();
 }
 
+
+bool is_doc_valid(fz_context* ctx, std::string path) {
+    bool is_valid = false;
+
+    fz_try(ctx) {
+        fz_document* doc = fz_open_document(ctx, path.c_str());
+        if (doc) {
+            int n_pages = fz_count_pages(ctx, doc);
+            is_valid = n_pages > 0;
+            fz_drop_document(ctx, doc);
+        }
+    }
+    fz_catch(ctx) {
+        is_valid = false;
+    }
+
+    return is_valid;
+
+}
