@@ -966,6 +966,11 @@ int main(int argc, char* args[]) {
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
     OpenWithApplication app(argc, args);
 
+#ifdef Q_OS_WIN
+    // handles dark mode on windows. see: https://github.com/ahrm/sioyek/issues/3
+    app.setStyle("fusion");
+#endif
+
     qmlRegisterType<MySortFilterProxyModel>("MySortFilterProxyModel", 1, 0, "MySortFilterProxyModel");
     QCommandLineParser* parser = get_command_line_parser();
     parser->process(app.arguments());
