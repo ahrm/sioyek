@@ -2154,14 +2154,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         nullptr,
         FloatExtras{0.0f, 100.0f}
         });
-    //configs.push_back({
-    //	L"epub_css",
-    //	ConfigType::String,
-    //	&EPUB_CSS,
-    //	string_serializer,
-    //	string_deserializer,
-    //	nullptr
-    //	});
+    configs.push_back({
+    	L"epub_css",
+    	ConfigType::String,
+    	&EPUB_CSS,
+    	string_serializer,
+    	string_deserializer,
+    	nullptr
+    	});
 
     std::wstring highlight_config_string = L"highlight_color_a";
     std::wstring search_url_config_string = L"search_url_a";

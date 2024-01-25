@@ -332,7 +332,7 @@ int RELOAD_INTERVAL_MILISECONDS = 200;
 bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE = true;
 
 std::wstring RULER_DISPLAY_MODE = L"underline";
-std::wstring EPUB_CSS;
+std::wstring EPUB_CSS = L"";
 QString EPUB_TEMPLATE = "p {\
 line-height: %{line_spacing}em!important;\
 }";

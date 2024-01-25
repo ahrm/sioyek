@@ -2897,6 +2897,11 @@ int Document::reflow(int page) {
     //	fz_set_user_css(context, encoded.c_str());
     //}
 
+    if (EPUB_CSS.size() > 0) {
+        std::string css = utf8_encode(EPUB_CSS);
+        fz_set_user_css(context, css.c_str());
+    }
+
     fz_layout_document(context, doc, EPUB_WIDTH, EPUB_HEIGHT, EPUB_FONT_SIZE);
 
     bool flag = false;
