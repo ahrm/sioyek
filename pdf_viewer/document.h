@@ -116,6 +116,7 @@ private:
     std::vector<float> accum_page_heights;
     std::vector<float> page_heights;
     std::vector<float> page_widths;
+    std::wstring detected_paper_name = L"";
 
     // label of the pages, e.g. "i", "ii", "iii", "1", "2", "3", etc.
     std::vector<std::wstring> page_labels;
@@ -373,6 +374,7 @@ public:
     void load_drawings_async();
     //void persist_drawings_async();
 
+    std::wstring detect_paper_name(fz_context* context, fz_document* doc);
     std::wstring detect_paper_name();
     //void set_only_for_portal(bool val);
     //bool get_only_for_portal();

@@ -1095,6 +1095,8 @@ void Document::load_page_dimensions(bool force_load_now) {
             page_dims_mutex.unlock();
 
             fill_highlight_rects(context_, doc_);
+            detected_paper_name = detect_paper_name(context_, doc_);
+            //db_manager->set_actual_document_name(get_checksum(), detected_paper_name);
 
             fz_drop_document(context_, doc_);
         }
@@ -3990,8 +3992,14 @@ std::vector<std::wstring> DocumentManager::get_tabs() {
 }
 
 std::wstring Document::detect_paper_name() {
+    return detect_paper_name(context, doc);
+}
 
-    fz_stext_page* stext_page = get_stext_with_page_number(0);
+std::wstring Document::detect_paper_name(fz_context* context, fz_document* doc) {
+
+    if (detected_paper_name.size() > 0) return detected_paper_name;
+
+    fz_stext_page* stext_page = get_stext_with_page_number(context, 0, doc);
     if (stext_page) {
 
         //std::wstring max_block_text = L"";

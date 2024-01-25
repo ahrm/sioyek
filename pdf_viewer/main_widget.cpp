@@ -5536,7 +5536,8 @@ void MainWidget::handle_open_all_docs() {
 void MainWidget::handle_open_prev_doc() {
 
     std::vector<std::wstring> opened_docs_names;
-    std::vector<std::wstring> opened_docs_hashes_;
+    std::vector<std::wstring> opened_docs_actual_names;
+    std::vector<std::pair<std::wstring, std::wstring>> opened_docs_hash_names;
     std::vector<std::string> opened_docs_hashes;
     std::wstring current_path = L"";
 
@@ -5545,9 +5546,9 @@ void MainWidget::handle_open_prev_doc() {
     }
 
 
-    db_manager->select_opened_books_path_values(opened_docs_hashes_);
+    db_manager->select_opened_books_path_and_doc_names(opened_docs_hash_names);
 
-    for (const auto& doc_hash_ : opened_docs_hashes_) {
+    for (const auto& [doc_hash_, actual_doc_name] : opened_docs_hash_names) {
         std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
         if (path) {
             if (path == current_path) continue;
@@ -5567,11 +5568,12 @@ void MainWidget::handle_open_prev_doc() {
 #endif
             }
             opened_docs_hashes.push_back(utf8_encode(doc_hash_));
+            opened_docs_actual_names.push_back(actual_doc_name);
         }
     }
 
 
-    set_filtered_select_menu<std::string>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names }, opened_docs_hashes, -1,
+    set_filtered_select_menu<std::string>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names, opened_docs_actual_names }, opened_docs_hashes, -1,
         [&](std::string* doc_hash) {
             if ((doc_hash->size() > 0) && (pending_command_instance)) {
                 pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdString(*doc_hash));

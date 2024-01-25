@@ -834,7 +834,7 @@ void DocumentView::fit_to_page_height_width_minimum(int statusbar_height) {
 
 void DocumentView::persist(bool persist_drawings) {
     if (!current_document) return;
-    db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y);
+    db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y, current_document->detect_paper_name());
     if (persist_drawings) {
         current_document->persist_drawings();
         current_document->persist_annotations();

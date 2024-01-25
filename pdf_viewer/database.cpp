@@ -49,6 +49,7 @@ static int id_callback(void* res_vector, int argc, char** argv, char** col_name)
 
     return 0;
 }
+
 static int opened_book_callback(void* res_vector, int argc, char** argv, char** col_name) {
     std::vector<OpenedBookState>* res = (std::vector<OpenedBookState>*) res_vector;
 
@@ -64,6 +65,7 @@ static int opened_book_callback(void* res_vector, int argc, char** argv, char** 
     return 0;
 }
 
+
 static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col_name) {
     std::vector<std::wstring>* res = (std::vector<std::wstring>*) res_vector;
 
@@ -72,6 +74,20 @@ static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col
     }
 
     res->push_back(utf8_decode(argv[0]));
+    return 0;
+}
+
+static int prev_doc_with_name_callback(void* res_vector, int argc, char** argv, char** col_name) {
+    std::vector<std::pair<std::wstring, std::wstring>>* res = (std::vector<std::pair<std::wstring, std::wstring>>*) res_vector;
+
+    assert(argc == 2);
+
+    std::wstring path = utf8_decode(argv[0]);
+    std::wstring doc_name = L"";
+    if (argv[1]) {
+        doc_name = utf8_decode(argv[1]);
+    }
+    res->push_back(std::make_pair(path, doc_name));
     return 0;
 }
 
@@ -650,11 +666,11 @@ bool DatabaseManager::insert_document_hash(const std::wstring& path, const std::
     return handle_error(insert_error_code, insert_error_message);
 }
 
-bool DatabaseManager::update_book(const std::string& path, float zoom_level, float offset_x, float offset_y) {
+bool DatabaseManager::update_book(const std::string& path, float zoom_level, float offset_x, float offset_y, std::wstring actual_name) {
 
     std::wstringstream ss;
-    ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time) values ('" <<
-        esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'));";
+    ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time, document_name) values ('" <<
+        esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'), '" << esc(actual_name) << "');";
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -920,6 +936,17 @@ bool DatabaseManager::update_mark(const std::string& document_path, char symbol,
         error_message);
 }
 
+bool DatabaseManager::set_actual_document_name(const std::string& checksum, const std::wstring& actual_name) {
+    std::wstringstream ss;
+    ss << "UPDATE opened_books set document_name='" << esc(actual_name) << "' where path='" << esc(checksum) << "';";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        error_code,
+        error_message);
+}
+
 
 bool DatabaseManager::select_opened_book(const std::string& book_path, std::vector<OpenedBookState>& out_result) {
     std::wstringstream ss;
@@ -958,6 +985,16 @@ bool DatabaseManager::select_opened_books_path_values(std::vector<std::wstring>&
     ss << "SELECT path FROM opened_books order by datetime(last_access_time) desc;";
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), prev_doc_callback, &out_result, &error_message);
+    return handle_error(
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::select_opened_books_path_and_doc_names(std::vector<std::pair<std::wstring, std::wstring>>& out_result) {
+    std::wstringstream ss;
+    ss << "SELECT path, document_name FROM opened_books order by datetime(last_access_time) desc;";
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), prev_doc_with_name_callback, &out_result, &error_message);
     return handle_error(
         error_code,
         error_message);
