@@ -106,6 +106,8 @@ float CUSTOM_BACKGROUND_COLOR[3] = { 0.18f, 0.204f, 0.251f };
 float CUSTOM_TEXT_COLOR[3] = { 0.847f, 0.871f, 0.914f };
 float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float STATUS_BAR_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+float UI_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+float UI_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float UI_SELECTED_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float UI_SELECTED_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 0.5f, 0.5f };
@@ -377,6 +379,8 @@ ScratchPad global_scratchpad;
 std::wstring RESIZE_COMMAND = L"";
 std::wstring SHIFT_CLICK_COMMAND = L"overview_under_cursor";
 std::wstring CONTROL_CLICK_COMMAND = L"smart_jump_under_cursor";
+std::wstring RIGHT_CLICK_COMMAND = L"";
+std::wstring MIDDLE_CLICK_COMMAND = L"";
 std::wstring SHIFT_RIGHT_CLICK_COMMAND = L"";
 std::wstring CONTROL_RIGHT_CLICK_COMMAND = L"";
 std::wstring ALT_CLICK_COMMAND = L"";
@@ -961,6 +965,11 @@ int main(int argc, char* args[]) {
 
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
     OpenWithApplication app(argc, args);
+
+#ifdef Q_OS_WIN
+    // handles dark mode on windows. see: https://github.com/ahrm/sioyek/issues/3
+    app.setStyle("fusion");
+#endif
 
     qmlRegisterType<MySortFilterProxyModel>("MySortFilterProxyModel", 1, 0, "MySortFilterProxyModel");
     QCommandLineParser* parser = get_command_line_parser();

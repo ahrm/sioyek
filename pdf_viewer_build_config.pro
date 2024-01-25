@@ -103,7 +103,8 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/utf8/core.h \
            pdf_viewer/utf8/unchecked.h \
            pdf_viewer/RunGuard.h \
-           pdf_viewer/OpenWithApplication.h
+           pdf_viewer/OpenWithApplication.h \
+           fzf/fzf.h
 
 
 SOURCES += pdf_viewer/book.cpp \
@@ -125,7 +126,8 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/utils.cpp \
            pdf_viewer/mysortfilterproxymodel.cpp \
            pdf_viewer/RunGuard.cpp \
-           pdf_viewer/OpenWithApplication.cpp
+           pdf_viewer/OpenWithApplication.cpp \
+           fzf/fzf.c
 
 !android{
            HEADERS += pdf_viewer/synctex/synctex_parser.h \

@@ -92,6 +92,10 @@
 #include <QtCore/private/qandroidextras_p.h>
 #endif
 
+extern "C" {
+    #include <fzf/fzf.h>
+}
+
 extern int next_window_id;
 
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
@@ -191,6 +195,8 @@ extern ScratchPad global_scratchpad;
 extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 
+extern std::wstring RIGHT_CLICK_COMMAND;
+extern std::wstring MIDDLE_CLICK_COMMAND;
 extern int MAX_TAB_COUNT;
 extern std::wstring RESIZE_COMMAND;
 extern std::wstring BACK_RECT_TAP_COMMAND;
@@ -1065,9 +1071,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                 if ((doc->get_milies_since_last_document_update_time() > (doc->get_milies_since_last_edit_time())) &&
                     (doc->get_milies_since_last_edit_time() > RELOAD_INTERVAL_MILISECONDS)) {
 
-                    doc->reload();
-                    pdf_renderer->clear_cache();
-                    invalidate_render();
+                    if (is_doc_valid(this->mupdf_context, utf8_encode(doc->get_path()))) {
+                        doc->reload();
+                        pdf_renderer->clear_cache();
+                        invalidate_render();
+                    }
                 }
             }
         }
@@ -1986,8 +1994,8 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
         return;
     }
 
-    if (RIGHT_CLICK_CONTEXT_MENU) {
-        execute_macro_if_enabled(L"show_context_menu");
+    if (RIGHT_CLICK_COMMAND.size() > 0) {
+        execute_macro_if_enabled(RIGHT_CLICK_COMMAND);
         return;
     }
 
@@ -2778,6 +2786,10 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
+        if (MIDDLE_CLICK_COMMAND.size() > 0) {
+            execute_macro_if_enabled(MIDDLE_CLICK_COMMAND);
+            return;
+        }
         last_middle_down_time = QTime::currentTime();
         middle_click_hold_command_already_executed = false;
         last_mouse_down_window_pos = WindowPos{ mevent->pos().x(), mevent->pos().y() };
@@ -3393,6 +3405,10 @@ void MainWidget::set_current_widget(QWidget* new_widget) {
     }
     current_widget_stack.clear();
     current_widget_stack.push_back(new_widget);
+    
+    if (!TOUCH_MODE) {
+        new_widget->stackUnder(status_label);
+    }
     //if (current_widget != nullptr) {
     //    current_widget->hide();
     //    garbage_widgets.push_back(current_widget);
@@ -8750,7 +8766,7 @@ QJsonObject MainWidget::get_json_annotations() {
     return annots;
 }
 
-void MainWidget::handle_action_in_menu(std::wstring action) {
+QString MainWidget::handle_action_in_menu(std::wstring action) {
 
     BaseSelectorWidget* selector_widget = nullptr;
 
@@ -8768,7 +8784,12 @@ void MainWidget::handle_action_in_menu(std::wstring action) {
         if (action == L"select") {
             selector_widget->simulate_select();
         }
+
+        if (action == L"get") {
+            return selector_widget->get_selected_item();
+        }
     }
+    return "";
 }
 
 std::wstring MainWidget::handle_synctex_to_ruler() {

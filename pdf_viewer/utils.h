@@ -180,6 +180,7 @@ void parse_color(std::wstring color_string, float* out_color, int n_components);
 int get_status_bar_height();
 void flat_char_prism(const std::vector<fz_stext_char*>& chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<PagelessDocumentRect>& rects);
 QString get_status_stylesheet(bool nofont = false, int font_size=-1);
+QString get_ui_stylesheet(bool nofont, int font_size=-1);
 QString get_selected_stylesheet(bool nofont = false);
 
 template<int d1, int d2, int d3>
@@ -439,3 +440,4 @@ std::vector<fz_quad> quads_from_rects(const std::vector<R>& rects) {
 bool is_bright(float color[3]);
 bool is_abbreviation(const std::wstring& txt);
 bool is_in(char c, std::vector<char> candidates);
+bool is_doc_valid(fz_context* ctx, std::string path);

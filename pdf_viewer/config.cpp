@@ -53,6 +53,8 @@ extern bool LINEAR_TEXTURE_FILTERING;
 extern float DISPLAY_RESOLUTION_SCALE;
 extern float STATUS_BAR_COLOR[3];
 extern float STATUS_BAR_TEXT_COLOR[3];
+extern float UI_BACKGROUND_COLOR[3];
+extern float UI_TEXT_COLOR[3];
 extern float UI_SELECTED_TEXT_COLOR[3];
 extern float UI_SELECTED_BACKGROUND_COLOR[3];
 extern int STATUS_BAR_FONT_SIZE;
@@ -119,6 +121,8 @@ extern bool ALIGN_LINK_DEST_TO_TOP;
 extern std::wstring RESIZE_COMMAND;
 extern std::wstring SHIFT_CLICK_COMMAND;
 extern std::wstring CONTROL_CLICK_COMMAND;
+extern std::wstring RIGHT_CLICK_COMMAND;
+extern std::wstring MIDDLE_CLICK_COMMAND;
 extern std::wstring SHIFT_RIGHT_CLICK_COMMAND;
 extern std::wstring CONTROL_RIGHT_CLICK_COMMAND;
 extern std::wstring ALT_CLICK_COMMAND;
@@ -1610,6 +1614,22 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         nullptr
         });
     configs.push_back({
+        L"right_click_command",
+        ConfigType::Macro,
+        &RIGHT_CLICK_COMMAND,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"middle_click_command",
+        ConfigType::Macro,
+        &MIDDLE_CLICK_COMMAND,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
         L"shift_right_click_command",
         ConfigType::Macro,
         &SHIFT_RIGHT_CLICK_COMMAND,
@@ -1806,6 +1826,22 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         color_3_validator
         });
     configs.push_back({
+        L"ui_text_color",
+        ConfigType::Color3,
+        UI_TEXT_COLOR,
+        vec3_serializer,
+        color3_deserializer,
+        color_3_validator
+        });
+    configs.push_back({
+        L"ui_background_color",
+        ConfigType::Color3,
+        UI_BACKGROUND_COLOR,
+        vec3_serializer,
+        color3_deserializer,
+        color_3_validator
+        });
+    configs.push_back({
         L"ui_selected_text_color",
         ConfigType::Color3,
         UI_SELECTED_TEXT_COLOR,
@@ -1817,14 +1853,6 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"ui_background_color",
         ConfigType::Color3,
         STATUS_BAR_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"ui_text_color",
-        ConfigType::Color3,
-        STATUS_BAR_TEXT_COLOR,
         vec3_serializer,
         color3_deserializer,
         color_3_validator

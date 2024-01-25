@@ -13,7 +13,7 @@ TouchConfigMenu::TouchConfigMenu(bool fuzzy, MainWidget* main_widget) :
 
     setAttribute(Qt::WA_NoMousePropagation);
 
-    proxy_model = new MySortFilterProxyModel(fuzzy);
+    proxy_model = new MySortFilterProxyModel(fuzzy, false);
     proxy_model->setParent(this);
 
     proxy_model->setSourceModel(&config_model);
