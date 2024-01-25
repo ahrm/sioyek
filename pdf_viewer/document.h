@@ -229,9 +229,9 @@ public:
     fz_link* get_page_links(int page_number);
     const std::vector<PdfLink>& get_page_merged_pdf_links(int page_number);
     PdfLink pdf_link_from_fz_link(int page, fz_link* link);
-    void add_mark(char symbol, float y_offset);
+    void add_mark(char symbol, float y_offset, std::optional<float> x_offset, std::optional<float> zoom_level);
     bool remove_mark(char symbol);
-    bool get_mark_location_if_exists(char symbol, float* y_offset);
+    std::optional<Mark> get_mark_if_exists(char symbol);
     ~Document();
     const std::vector<TocNode*>& get_toc();
     bool has_toc();

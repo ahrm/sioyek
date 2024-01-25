@@ -577,21 +577,25 @@ const std::vector<Highlight> Document::get_highlights_sorted(char type) const {
 }
 
 
-void Document::add_mark(char symbol, float y_offset) {
+void Document::add_mark(char symbol, float y_offset, std::optional<float> x_offset, std::optional<float> zoom_level) {
     int current_mark_index = get_mark_index(symbol);
     if (current_mark_index == -1) {
         Mark m;
         m.y_offset = y_offset;
         m.symbol = symbol;
         m.update_creation_time();
+        m.x_offset = x_offset;
+        m.zoom_level = zoom_level;
         marks.push_back(m);
-        db_manager->insert_mark(get_checksum(), symbol, y_offset, new_uuid());
+        db_manager->insert_mark(get_checksum(), symbol, y_offset, new_uuid(), x_offset, zoom_level);
         is_annotations_dirty = true;
     }
     else {
         marks[current_mark_index].y_offset = y_offset;
+        marks[current_mark_index].x_offset = x_offset;
+        marks[current_mark_index].zoom_level = zoom_level;
         marks[current_mark_index].update_modification_time();
-        db_manager->update_mark(get_checksum(), symbol, y_offset);
+        db_manager->update_mark(get_checksum(), symbol, y_offset, x_offset, zoom_level);
         is_annotations_dirty = true;
     }
 }
@@ -606,13 +610,12 @@ bool Document::remove_mark(char symbol) {
     return false;
 }
 
-bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
+std::optional<Mark> Document::get_mark_if_exists(char symbol){
     int mark_index = get_mark_index(symbol);
     if (mark_index == -1) {
-        return false;
+        return {};
     }
-    *y_offset = marks[mark_index].y_offset;
-    return true;
+    return marks[mark_index];
 }
 
 Document::Document(fz_context* context, std::wstring file_name, DatabaseManager* db, CachedChecksummer* checksummer) :

@@ -90,7 +90,7 @@
 //#define LINUX_STANDARD_PATHS
 
 
-int DATABASE_VERSION = 1;
+int DATABASE_VERSION = 2;
 std::wstring APPLICATION_NAME = L"sioyek";
 std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;

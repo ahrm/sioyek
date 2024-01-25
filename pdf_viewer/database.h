@@ -23,8 +23,13 @@ private:
 public:
     bool open(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path);
     bool select_opened_book(const std::string& book_path, std::vector<OpenedBookState>& out_result);
-    bool insert_mark(const std::string& checksum, char symbol, float offset_y, std::wstring uuid);
-    bool update_mark(const std::string& checksum, char symbol, float offset_y);
+    bool insert_mark(const std::string& checksum,
+        char symbol,
+        float offset_y,
+        std::wstring uuid,
+        std::optional<float> offset_x = {},
+        std::optional<float> zoom_level = {});
+    bool update_mark(const std::string& checksum, char symbol, float offset_y, std::optional<float> offset_x, std::optional<float> zoom_level);
     bool update_book(const std::string& path, float zoom_level, float offset_x, float offset_y);
     bool select_mark(const std::string& checksum, std::vector<Mark>& out_result);
     bool insert_bookmark(const std::string& checksum, const std::wstring& desc, float offset_y, std::wstring uuid);
@@ -99,6 +104,7 @@ public:
     int set_version();
     bool run_schema_query(const char* query);
     void migrate_version_0_to_1();
+    void migrate_version_1_to_2();
     bool select_all_mark_ids(std::vector<int>& mark_ids);
     bool select_all_bookmark_ids(std::vector<int>& mark_ids);
     bool select_all_highlight_ids(std::vector<int>& mark_ids);

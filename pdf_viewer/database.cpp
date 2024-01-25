@@ -78,13 +78,17 @@ static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col
 static int mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<Mark>* res = (std::vector<Mark>*)res_vector;
-    assert(argc == 5);
+    assert(argc == 7);
 
     char symbol = argv[0][0];
     float offset_y = atof(argv[1]);
-    std::string uuid = argv[2];
-    std::string creation_time = argv[3];
-    std::string modification_time = argv[4];
+    std::optional<float> offset_x = {};
+    std::optional<float> zoom_level = {};
+    if (argv[2]) offset_x = atof(argv[2]);
+    if (argv[3]) zoom_level = atof(argv[3]);
+    std::string uuid = argv[4];
+    std::string creation_time = argv[5];
+    std::string modification_time = argv[6];
 
     Mark m;
     m.y_offset = offset_y;
@@ -92,6 +96,8 @@ static int mark_select_callback(void* res_vector, int argc, char** argv, char** 
     m.uuid = uuid;
     m.creation_time = creation_time;
     m.modification_time = modification_time;
+    m.x_offset = offset_x;
+    m.zoom_level = zoom_level;
 
     res->push_back(m);
     return 0;
@@ -657,11 +663,29 @@ bool DatabaseManager::update_book(const std::string& path, float zoom_level, flo
         error_message);
 }
 
-bool DatabaseManager::insert_mark(const std::string& document_path, char symbol, float offset_y, std::wstring uuid) {
+bool DatabaseManager::insert_mark(
+    const std::string& document_path,
+    char symbol,
+    float offset_y,
+    std::wstring uuid,
+    std::optional<float> offset_x,
+    std::optional<float> zoom_level) {
 
     //todo: probably should escape symbol too
     std::wstringstream ss;
-    ss << "INSERT INTO marks (document_path, symbol, offset_y, uuid, creation_time, modification_time) VALUES ('" << esc(document_path) << "', '" << symbol << "', " << offset_y << ", '" << esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
+    if (!offset_x.has_value()) {
+        ss << "INSERT INTO marks (document_path, symbol, offset_y, uuid, creation_time, modification_time) VALUES ('" << esc(document_path) << "', '" << symbol << "', " << offset_y << ", '" << esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
+    }
+    else {
+        ss << "INSERT INTO marks (document_path, symbol, offset_y, uuid, creation_time, modification_time, offset_x, zoom_level) VALUES ('"
+            << esc(document_path) <<
+            "', '" << symbol <<
+            "', " << offset_y <<
+            ", '" << esc(uuid) <<
+            "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, "
+            << offset_x.value() <<
+            ", " << zoom_level.value() << ");";
+    }
     char* error_message = nullptr;
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -879,10 +903,15 @@ bool DatabaseManager::delete_highlight(const std::string& uuid) {
         error_message);
 }
 
-bool DatabaseManager::update_mark(const std::string& document_path, char symbol, float offset_y) {
+bool DatabaseManager::update_mark(const std::string& document_path, char symbol, float offset_y, std::optional<float> offset_x, std::optional<float> zoom_level) {
 
     std::wstringstream ss;
-    ss << "UPDATE marks set offset_y=" << offset_y << ", modification_time=CURRENT_TIMESTAMP where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
+    if (!offset_x.has_value()) {
+        ss << "UPDATE marks set offset_y=" << offset_y << ", modification_time=CURRENT_TIMESTAMP where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
+    }
+    else {
+        ss << "UPDATE marks set offset_y=" << offset_y << ", offset_x=" << offset_x.value() << ", zoom_level=" << zoom_level.value() << ", modification_time=CURRENT_TIMESTAMP where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
+    }
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -958,7 +987,7 @@ bool DatabaseManager::select_opened_books_path_values(std::vector<std::wstring>&
 
 bool DatabaseManager::select_mark(const std::string& book_path, std::vector<Mark>& out_result) {
     std::wstringstream ss;
-    ss << "select symbol, offset_y, uuid, creation_time, modification_time from marks where document_path='" << esc(book_path) << "';";
+    ss << "select symbol, offset_y, offset_x, zoom_level, uuid, creation_time, modification_time from marks where document_path='" << esc(book_path) << "';";
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), mark_select_callback, &out_result, &error_message);
@@ -1411,7 +1440,7 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
         }
 
         for (const auto& mark : new_marks) {
-            insert_mark(checksum, mark.symbol, mark.y_offset, utf8_decode(mark.uuid));
+            insert_mark(checksum, mark.symbol, mark.y_offset, utf8_decode(mark.uuid), mark.x_offset, mark.zoom_level);
         }
 
         for (const auto& hl : new_highlights) {
@@ -1525,6 +1554,9 @@ void DatabaseManager::ensure_schema_compatibility() {
     int database_file_version = get_version();
     std::vector<std::function<void()>> migrations;
     migrations.push_back([this]() { migrate_version_0_to_1(); });
+    migrations.push_back([this]() { migrate_version_1_to_2(); });
+
+    assert(migrations.size() == DATABASE_VERSION);
 
     if (database_file_version != DATABASE_VERSION) {
         if (database_file_version >= migrations.size()) {
@@ -1544,6 +1576,28 @@ bool DatabaseManager::run_schema_query(const char* query) {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, query, null_callback, 0, &error_message);
     return handle_error(error_code, error_message);
+}
+
+void DatabaseManager::migrate_version_1_to_2() {
+    qDebug() << "Migrating database from version 1 to 2";
+
+    std::vector<std::string> queries_to_run;
+
+    queries_to_run.push_back("ALTER TABLE marks ADD COLUMN offset_x real;");
+    queries_to_run.push_back("ALTER TABLE marks ADD COLUMN zoom_level real;");
+    queries_to_run.push_back("ALTER TABLE opened_books ADD COLUMN document_name TEXT;");
+
+    std::string transaction = "BEGIN TRANSACTION;\n";
+    for (auto q : queries_to_run) {
+        transaction += q + "\n";
+    }
+
+    transaction += "COMMIT;";
+
+    if (!run_schema_query(transaction.c_str())) {
+        qDebug() << "Error: Could not migrate database from version 1 to version 2, rolling back ...";
+        run_schema_query("ROLLBACK;");
+    }
 }
 
 void DatabaseManager::migrate_version_0_to_1() {
