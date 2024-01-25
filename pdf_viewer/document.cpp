@@ -2150,7 +2150,11 @@ void Document::embed_annotations(std::wstring new_file_path) {
         else {
             highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_HIGHLIGHT);
         }
-        float* color = get_highlight_type_color(highlight.type);
+        float* color_ = get_highlight_type_color(highlight.type);
+        float color[3];
+        // lighten highlight colors before embedding (because we use alpha to make it lighter but
+        // the color doesn't take it into accout). Also see: https://github.com/ahrm/sioyek/issues/667
+        lighten_color(color_, color);
 
         pdf_set_annot_color(context, highlight_annot, 3, color);
         if (highlight.text_annot.size() > 0) {

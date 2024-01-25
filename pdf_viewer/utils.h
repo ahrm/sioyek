@@ -233,6 +233,7 @@ QString android_file_uri_from_content_uri(QString uri);
 
 char get_highlight_color_type(float color[3]);
 float* get_highlight_type_color(char type);
+void lighten_color(float input[3], float output[3]);
 std::wstring clean_bib_item(std::wstring bib_item);
 std::wstring clean_link_source_text(std::wstring link_source_text);
 std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vector<FreehandDrawingPoint>& points);

@@ -2853,6 +2853,25 @@ float* get_highlight_type_color(char type) {
     return &HIGHLIGHT_COLORS[0];
 }
 
+void lighten_color(float input[3], float output[3]) {
+    QColor color = qRgb(
+        static_cast<int>(input[0] * 255),
+        static_cast<int>(input[1] * 255),
+        static_cast<int>(input[2] * 255)
+    );
+    float prev_lightness = static_cast<float>(color.lightness()) / 255.0f;
+    int lightness_increase = static_cast<int>((0.9f / prev_lightness) * 100);
+
+    QColor lighter = color;
+    if (lightness_increase > 100) {
+        lighter = color.lighter(lightness_increase);
+    }
+
+    output[0] = lighter.redF();
+    output[1] = lighter.greenF();
+    output[2] = lighter.blueF();
+}
+
 
 QString trim_text_after(QString source, QString needle) {
     int needle_index = source.indexOf(needle);
