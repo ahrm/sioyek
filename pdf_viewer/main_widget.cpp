@@ -8593,6 +8593,8 @@ QJsonObject MainWidget::get_json_state() {
 
         result["selected_text"] = QString::fromStdWString(get_selected_text());
         result["window_id"] = window_id;
+        result["window_width"] = width();
+        result["window_height"] = height();
 
         std::vector<std::wstring> loaded_document_paths = document_manager->get_loaded_document_paths();
         QJsonArray loaded_documents;
@@ -9234,8 +9236,14 @@ void MainWidget::run_javascript_command(std::wstring javascript_code, bool is_as
     }
     else {
         QJSEngine* engine = take_js_engine();
-        auto res = engine->evaluate(content);
+        QStringList stack_trace;
+        auto res = engine->evaluate(content, QString(), 1, &stack_trace);
         release_js_engine(engine);
+        if (stack_trace.size() > 0) {
+            for (auto line : stack_trace) {
+                qDebug() << line;
+            }
+        }
     }
 
 }
@@ -9667,4 +9675,12 @@ QString MainWidget::execute_macro_sync(QString macro) {
     }
 
     return "";
+}
+
+void MainWidget::set_variable(QString name, QVariant var) {
+    js_variables[name] = var;
+}
+
+QVariant MainWidget::get_variable(QString name) {
+    return js_variables[name];
 }
