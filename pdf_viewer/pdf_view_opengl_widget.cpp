@@ -69,6 +69,7 @@ extern float RULER_MARKER_COLOR[3];
 extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
+extern bool PRESERVE_IMAGE_COLORS;
 
 extern int NUM_PRERENDERED_NEXT_SLIDES;
 extern int NUM_PRERENDERED_PREV_SLIDES;
@@ -961,7 +962,7 @@ Document* PdfViewOpenGLWidget::doc(bool overview){
     return document_view->get_document();
 }
 
-void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview) {
+void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool force_light_mode) {
 
     if (!valid_document()) return;
 
@@ -1127,7 +1128,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview) {
         rect_to_quad(window_rect, page_vertices);
 
         if (texture != 0) {
-            bind_program();
+            bind_program(force_light_mode);
             glBindTexture(GL_TEXTURE_2D, texture);
         }
         else {
@@ -1146,6 +1147,33 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview) {
         glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
         glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (!force_light_mode)) {
+            // render images in light mode
+            fz_stext_page * stext_page = document_view->get_document()->get_stext_with_page_number(page_number);
+            std::vector<PagelessDocumentRect> image_rects;
+            for (fz_stext_block* blk = stext_page->first_block; blk != nullptr; blk = blk->next) {
+                if (blk->type == FZ_STEXT_BLOCK_IMAGE) {
+                        float im_x = blk->u.i.transform.e;
+                        float im_y = blk->u.i.transform.f;
+                        float im_w = blk->u.i.transform.a;
+                        float im_h = blk->u.i.transform.d;
+                        PagelessDocumentRect image_rect;
+                        image_rect.x0 = im_x;
+                        image_rect.x1 = im_x + im_w;
+                        image_rect.y0 = im_y;
+                        image_rect.y1 = im_y + im_h;
+                        image_rects.push_back(image_rect);
+                }
+            }
+
+            enable_stencil();
+            write_to_stencil();
+            draw_stencil_rects(page_number, image_rects);
+            use_stencil_to_write(true);
+            render_page(page_number, in_overview, true);
+            disable_stencil();
+        }
 
         if (!document_view->is_presentation_mode() && (!in_overview)){
 
@@ -2118,12 +2146,12 @@ void PdfViewOpenGLWidget::toggle_custom_color_mode() {
     set_custom_color_mode(!(this->color_mode == ColorPalette::Custom));
 }
 
-void PdfViewOpenGLWidget::bind_program() {
-    if (color_mode == ColorPalette::Dark) {
+void PdfViewOpenGLWidget::bind_program(bool force_light) {
+    if ((!force_light) && (color_mode == ColorPalette::Dark)) {
         glUseProgram(shared_gl_objects.rendered_dark_program);
         glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
     }
-    else if (color_mode == ColorPalette::Custom) {
+    else if ((!force_light) && (color_mode == ColorPalette::Custom)) {
         glUseProgram(shared_gl_objects.custom_color_program);
         float transform_matrix[16];
         get_custom_color_transform_matrix(transform_matrix);

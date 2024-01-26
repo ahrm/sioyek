@@ -1220,7 +1220,10 @@ fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_nu
     }
 
     fz_try(ctx) {
-        stext_page = fz_new_stext_page_from_page_number(ctx, doc_, page_number, nullptr);
+        fz_stext_options options;
+        options.flags = FZ_STEXT_PRESERVE_IMAGES;
+        options.scale = 0.0f;
+        stext_page = fz_new_stext_page_from_page_number(ctx, doc_, page_number, &options);
     }
     fz_catch(ctx) {
         failed = true;
