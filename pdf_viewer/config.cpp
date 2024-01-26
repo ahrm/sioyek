@@ -38,6 +38,7 @@ extern std::wstring ITEM_LIST_PREFIX;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern std::wstring UI_FONT_FACE_NAME;
+extern std::wstring STATUS_FONT_FACE_NAME;
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring STARTUP_COMMANDS;
@@ -935,6 +936,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"ui_font",
         ConfigType::String,
         &UI_FONT_FACE_NAME,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"status_font",
+        ConfigType::String,
+        &STATUS_FONT_FACE_NAME,
         string_serializer,
         string_deserializer,
         nullptr

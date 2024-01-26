@@ -435,8 +435,6 @@ public:
     bool is_visual_mark_mode();
     void reload(bool flush = true);
 
-    QString get_font_face_name();
-
     void reset_highlight_links();
     void set_rect_select_mode(bool mode);
     void set_point_select_mode(bool mode);

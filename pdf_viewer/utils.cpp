@@ -64,6 +64,8 @@ extern float UI_TEXT_COLOR[3];
 extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH;
 extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
+extern std::wstring UI_FONT_FACE_NAME;
+extern std::wstring STATUS_FONT_FACE_NAME;
 
 extern bool VERBOSE;
 
@@ -3930,4 +3932,22 @@ bool is_doc_valid(fz_context* ctx, std::string path) {
 
     return is_valid;
 
+}
+
+QString get_ui_font_face_name() {
+    if (UI_FONT_FACE_NAME.empty()) {
+        return "";
+    }
+    else {
+        return QString::fromStdWString(UI_FONT_FACE_NAME);
+    }
+}
+
+QString get_status_font_face_name() {
+    if (STATUS_FONT_FACE_NAME.empty()) {
+        return "Monospace";
+    }
+    else {
+        return QString::fromStdWString(STATUS_FONT_FACE_NAME);
+    }
 }

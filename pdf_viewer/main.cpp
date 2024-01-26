@@ -203,6 +203,7 @@ std::wstring INVERSE_SEARCH_COMMAND = L"";
 std::wstring SHARED_DATABASE_PATH = L"";
 std::wstring BOOK_SCAN_PATH = L"";
 std::wstring UI_FONT_FACE_NAME = L"";
+std::wstring STATUS_FONT_FACE_NAME = L"";
 std::wstring DEFAULT_OPEN_FILE_PATH = L"";
 bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = true;
 bool SHOULD_LAUNCH_NEW_INSTANCE = false;

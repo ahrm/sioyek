@@ -1460,6 +1460,12 @@ BaseSelectorWidget::BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy,
         abstract_item_view->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
         abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
     }
+
+    QString font_face;
+    if (font_face.size() > 0) {
+        abstract_item_view->setFont(get_ui_font_face_name());
+        line_edit->setFont(get_ui_font_face_name());
+    }
 }
 
 void BaseSelectorWidget::on_text_changed(const QString& text) {

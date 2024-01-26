@@ -172,7 +172,6 @@ extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SMARTCASE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
-extern std::wstring UI_FONT_FACE_NAME;
 extern bool SHOULD_HIGHLIGHT_LINKS;
 extern float SCROLL_VIEW_SENSITIVITY;
 extern std::wstring STATUS_BAR_FORMAT;
@@ -786,7 +785,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
-    QFont label_font = QFont(get_font_face_name());
+    QFont label_font = QFont(get_status_font_face_name());
     label_font.setStyleHint(QFont::TypeWriter);
     status_label->setFont(label_font);
 
@@ -1589,9 +1588,9 @@ void MainWidget::move_document_screens(int num_screens) {
 void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 
     status_label->setStyleSheet(get_status_stylesheet());
-    status_label->setFont(QFont(get_font_face_name()));
+    status_label->setFont(QFont(get_status_font_face_name()));
     text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
-    text_command_line_edit->setFont(QFont(get_font_face_name()));
+    text_command_line_edit->setFont(QFont(get_status_font_face_name()));
 
     text_command_line_edit_label->setStyleSheet(get_status_stylesheet());
     text_command_line_edit->setStyleSheet(get_status_stylesheet());
@@ -4762,14 +4761,6 @@ void MainWidget::goto_overview() {
     }
 }
 
-QString MainWidget::get_font_face_name() {
-    if (UI_FONT_FACE_NAME.empty()) {
-        return "Monaco";
-    }
-    else {
-        return QString::fromStdWString(UI_FONT_FACE_NAME);
-    }
-}
 
 void MainWidget::reset_highlight_links() {
     if (SHOULD_HIGHLIGHT_LINKS) {

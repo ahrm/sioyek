@@ -442,3 +442,5 @@ bool is_bright(float color[3]);
 bool is_abbreviation(const std::wstring& txt);
 bool is_in(char c, std::vector<char> candidates);
 bool is_doc_valid(fz_context* ctx, std::string path);
+QString get_ui_font_face_name();
+QString get_status_font_face_name();
