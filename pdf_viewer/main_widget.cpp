@@ -827,6 +827,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             }
             else {
                 std::unique_ptr<Command> command = this->command_manager->get_command_with_name(this, command_name);
+                this->command_manager->update_command_last_use(command_name);
                 handle_command_types(std::move(command), 0);
             }
         }
