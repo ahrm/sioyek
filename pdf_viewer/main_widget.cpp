@@ -6920,9 +6920,13 @@ void MainWidget::goto_page_with_label(std::wstring label) {
 
 void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
     bool should_reflow = false;
+    bool should_invalidate_render = false;
     for (int i = 0; i < config_names->size(); i++) {
         if (QString::fromStdString((*config_names)[i]).startsWith("epub")) {
             should_reflow = true;
+        }
+        if (QString::fromStdString((*config_names)[i]) == "gamma") {
+            should_invalidate_render = true;
         }
     }
     if (should_reflow) {
@@ -6930,6 +6934,9 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         pdf_renderer->delete_old_pages(true, true);
         int new_page = doc()->reflow(get_current_page_number());
         main_document_view->goto_page(new_page);
+    }
+    if (should_invalidate_render) {
+        pdf_renderer->clear_cache();
     }
 }
 

@@ -377,7 +377,7 @@ void PdfViewOpenGLWidget::initializeGL() {
 #endif
 
         shared_gl_objects.dark_mode_contrast_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_dark_program, "contrast");
-        shared_gl_objects.gamma_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_program, "gamma");
+        //shared_gl_objects.gamma_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_program, "gamma");
 
         shared_gl_objects.highlight_color_uniform_location = glGetUniformLocation(shared_gl_objects.highlight_program, "highlight_color");
         shared_gl_objects.highlight_opacity_uniform_location = glGetUniformLocation(shared_gl_objects.highlight_program, "opacity");
@@ -2183,7 +2183,7 @@ void PdfViewOpenGLWidget::bind_program(bool force_light) {
     }
     else {
         glUseProgram(shared_gl_objects.rendered_program);
-        glUniform1f(shared_gl_objects.gamma_uniform_location, GAMMA);
+        //glUniform1f(shared_gl_objects.gamma_uniform_location, GAMMA);
     }
 }
 
