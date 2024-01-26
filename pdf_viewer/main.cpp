@@ -90,7 +90,7 @@
 //#define LINUX_STANDARD_PATHS
 
 
-int DATABASE_VERSION = 1;
+int DATABASE_VERSION = 2;
 std::wstring APPLICATION_NAME = L"sioyek";
 std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;
@@ -203,11 +203,13 @@ std::wstring INVERSE_SEARCH_COMMAND = L"";
 std::wstring SHARED_DATABASE_PATH = L"";
 std::wstring BOOK_SCAN_PATH = L"";
 std::wstring UI_FONT_FACE_NAME = L"";
+std::wstring STATUS_FONT_FACE_NAME = L"";
 std::wstring DEFAULT_OPEN_FILE_PATH = L"";
 bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = true;
 bool SHOULD_LAUNCH_NEW_INSTANCE = false;
 bool SHOULD_LAUNCH_NEW_WINDOW = false;
 bool SHOULD_DRAW_UNRENDERED_PAGES = false;
+bool PRESERVE_IMAGE_COLORS = false;
 bool HOVER_OVERVIEW = false;
 bool RERENDER_OVERVIEW = true;
 bool LINEAR_TEXTURE_FILTERING = false;
@@ -220,6 +222,7 @@ bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE = false;
 int TEXT_SUMMARY_CONTEXT_SIZE = 49;
 float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.75;
 float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.25f;
+float MENU_SCREEN_WDITH_RATIO = 0.9f;
 float RULER_PADDING = 1.0f;
 float RULER_X_PADDING = 5.0f;
 std::wstring ITEM_LIST_PREFIX = L">";
@@ -332,7 +335,7 @@ int RELOAD_INTERVAL_MILISECONDS = 200;
 bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE = true;
 
 std::wstring RULER_DISPLAY_MODE = L"underline";
-std::wstring EPUB_CSS;
+std::wstring EPUB_CSS = L"";
 QString EPUB_TEMPLATE = "p {\
 line-height: %{line_spacing}em!important;\
 }";

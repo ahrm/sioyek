@@ -24,6 +24,7 @@ extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern float TTS_RATE;
 extern bool EMACS_MODE;
+extern float MENU_SCREEN_WDITH_RATIO;
 
 std::wstring select_command_file_name(std::string command_name) {
     if (command_name == "open_document") {
@@ -1460,6 +1461,12 @@ BaseSelectorWidget::BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy,
         abstract_item_view->setHorizontalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
         abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
     }
+
+    QString font_face;
+    if (font_face.size() > 0) {
+        abstract_item_view->setFont(get_ui_font_face_name());
+        line_edit->setFont(get_ui_font_face_name());
+    }
 }
 
 void BaseSelectorWidget::on_text_changed(const QString& text) {
@@ -1719,8 +1726,8 @@ void BaseSelectorWidget::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
     int parent_width = parentWidget()->width();
     int parent_height = parentWidget()->height();
-    setFixedSize(parent_width * 0.9f, parent_height);
-    move(parent_width * 0.05f, 0);
+    setFixedSize(parent_width * MENU_SCREEN_WDITH_RATIO, parent_height);
+    move(parent_width * (1 - MENU_SCREEN_WDITH_RATIO) / 2, 0);
     on_config_file_changed();
 }
 

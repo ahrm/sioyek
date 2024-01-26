@@ -296,7 +296,7 @@ int DocumentView::get_highlight_index_in_pos(WindowPos window_pos) {
 void DocumentView::add_mark(char symbol) {
     //assert(current_document);
     if (current_document) {
-        current_document->add_mark(symbol, offset_y);
+        current_document->add_mark(symbol, offset_y, offset_x, zoom_level);
     }
 }
 
@@ -465,8 +465,13 @@ NormalizedWindowPos DocumentView::window_to_normalized_window_pos(WindowPos wind
 void DocumentView::goto_mark(char symbol) {
     if (current_document) {
         float new_y_offset = 0.0f;
-        if (current_document->get_mark_location_if_exists(symbol, &new_y_offset)) {
-            set_offset_y(new_y_offset);
+        std::optional<Mark> mark = current_document->get_mark_if_exists(symbol);
+        if (mark) {
+            set_offset_y(mark->y_offset);
+            if (mark->x_offset) {
+                set_offset_x(mark->x_offset.value());
+                set_zoom_level(mark->zoom_level.value(), true);
+            }
         }
     }
 }
@@ -829,7 +834,7 @@ void DocumentView::fit_to_page_height_width_minimum(int statusbar_height) {
 
 void DocumentView::persist(bool persist_drawings) {
     if (!current_document) return;
-    db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y);
+    db_manager->update_book(current_document->get_checksum(), zoom_level, offset_x, offset_y, current_document->detect_paper_name());
     if (persist_drawings) {
         current_document->persist_drawings();
         current_document->persist_annotations();

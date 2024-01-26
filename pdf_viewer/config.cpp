@@ -38,6 +38,7 @@ extern std::wstring ITEM_LIST_PREFIX;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern std::wstring UI_FONT_FACE_NAME;
+extern std::wstring STATUS_FONT_FACE_NAME;
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring STARTUP_COMMANDS;
@@ -103,6 +104,7 @@ extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring BOOK_SCAN_PATH;
 extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
+extern bool PRESERVE_IMAGE_COLORS;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
 extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 extern std::wstring VOLUME_DOWN_COMMAND;
@@ -117,6 +119,7 @@ extern bool NO_AUTO_CONFIG;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool ALIGN_LINK_DEST_TO_TOP;
+extern float MENU_SCREEN_WDITH_RATIO;
 
 extern std::wstring RESIZE_COMMAND;
 extern std::wstring SHIFT_CLICK_COMMAND;
@@ -786,6 +789,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
+        L"preserve_image_colors_in_dark_mode",
+        ConfigType::Bool,
+        &PRESERVE_IMAGE_COLORS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
         L"should_use_multiple_monitors",
         ConfigType::Bool,
         &SHOULD_USE_MULTIPLE_MONITORS,
@@ -935,6 +946,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"ui_font",
         ConfigType::String,
         &UI_FONT_FACE_NAME,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"status_font",
+        ConfigType::String,
+        &STATUS_FONT_FACE_NAME,
         string_serializer,
         string_deserializer,
         nullptr
@@ -1718,6 +1737,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
+        L"menu_screen_width_ratio",
+        ConfigType::Bool,
+        &MENU_SCREEN_WDITH_RATIO,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.1f, 1.0f}
+        });
+    configs.push_back({
         L"hyperdrive_speed_factor",
         ConfigType::Bool,
         &HYPERDRIVE_SPEED_FACTOR,
@@ -2154,14 +2182,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         nullptr,
         FloatExtras{0.0f, 100.0f}
         });
-    //configs.push_back({
-    //	L"epub_css",
-    //	ConfigType::String,
-    //	&EPUB_CSS,
-    //	string_serializer,
-    //	string_deserializer,
-    //	nullptr
-    //	});
+    configs.push_back({
+    	L"epub_css",
+    	ConfigType::String,
+    	&EPUB_CSS,
+    	string_serializer,
+    	string_deserializer,
+    	nullptr
+    	});
 
     std::wstring highlight_config_string = L"highlight_color_a";
     std::wstring search_url_config_string = L"search_url_a";

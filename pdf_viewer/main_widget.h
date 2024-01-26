@@ -294,6 +294,8 @@ public:
     int main_window_width = 0;
     int main_window_height = 0;
 
+    QMap<QString, QVariant> js_variables;
+
     QWidget* text_command_line_edit_container = nullptr;
     QLabel* text_command_line_edit_label = nullptr;
     QLineEdit* text_command_line_edit = nullptr;
@@ -434,8 +436,6 @@ public:
     void return_to_last_visual_mark();
     bool is_visual_mark_mode();
     void reload(bool flush = true);
-
-    QString get_font_face_name();
 
     void reset_highlight_links();
     void set_rect_select_mode(bool mode);
@@ -802,7 +802,7 @@ public:
     QJSValue export_javascript_api(QJSEngine& engine, bool is_async);
     void show_custom_option_list(std::vector<std::wstring> option_list);
     void on_socket_deleted(QLocalSocket* deleted_socket);
-    QJsonObject get_json_state();
+    Q_INVOKABLE QJsonObject get_json_state();
     QJsonObject get_json_annotations();
     QJsonArray get_all_json_states();
     void screenshot(std::wstring file_path);
@@ -872,6 +872,8 @@ public:
     Q_INVOKABLE QString read_text_file(QString path);
     Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
     Q_INVOKABLE QString execute_macro_sync(QString macro);
+    Q_INVOKABLE void set_variable(QString name, QVariant var);
+    Q_INVOKABLE QVariant get_variable(QString name);
     void run_javascript_command(std::wstring javascript_code, bool is_async);
     void set_text_prompt_text(QString text);
     AbsoluteDocumentPos get_window_abspos(WindowPos window_pos);
