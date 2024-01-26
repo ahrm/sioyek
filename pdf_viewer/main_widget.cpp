@@ -172,7 +172,6 @@ extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SMARTCASE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
-extern std::wstring UI_FONT_FACE_NAME;
 extern bool SHOULD_HIGHLIGHT_LINKS;
 extern float SCROLL_VIEW_SENSITIVITY;
 extern std::wstring STATUS_BAR_FORMAT;
@@ -786,7 +785,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
-    QFont label_font = QFont(get_font_face_name());
+    QFont label_font = QFont(get_status_font_face_name());
     label_font.setStyleHint(QFont::TypeWriter);
     status_label->setFont(label_font);
 
@@ -1589,9 +1588,9 @@ void MainWidget::move_document_screens(int num_screens) {
 void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 
     status_label->setStyleSheet(get_status_stylesheet());
-    status_label->setFont(QFont(get_font_face_name()));
+    status_label->setFont(QFont(get_status_font_face_name()));
     text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
-    text_command_line_edit->setFont(QFont(get_font_face_name()));
+    text_command_line_edit->setFont(QFont(get_status_font_face_name()));
 
     text_command_line_edit_label->setStyleSheet(get_status_stylesheet());
     text_command_line_edit->setStyleSheet(get_status_stylesheet());
@@ -4762,14 +4761,6 @@ void MainWidget::goto_overview() {
     }
 }
 
-QString MainWidget::get_font_face_name() {
-    if (UI_FONT_FACE_NAME.empty()) {
-        return "Monaco";
-    }
-    else {
-        return QString::fromStdWString(UI_FONT_FACE_NAME);
-    }
-}
 
 void MainWidget::reset_highlight_links() {
     if (SHOULD_HIGHLIGHT_LINKS) {
@@ -5536,7 +5527,8 @@ void MainWidget::handle_open_all_docs() {
 void MainWidget::handle_open_prev_doc() {
 
     std::vector<std::wstring> opened_docs_names;
-    std::vector<std::wstring> opened_docs_hashes_;
+    std::vector<std::wstring> opened_docs_actual_names;
+    std::vector<std::pair<std::wstring, std::wstring>> opened_docs_hash_names;
     std::vector<std::string> opened_docs_hashes;
     std::wstring current_path = L"";
 
@@ -5545,9 +5537,9 @@ void MainWidget::handle_open_prev_doc() {
     }
 
 
-    db_manager->select_opened_books_path_values(opened_docs_hashes_);
+    db_manager->select_opened_books_path_and_doc_names(opened_docs_hash_names);
 
-    for (const auto& doc_hash_ : opened_docs_hashes_) {
+    for (const auto& [doc_hash_, actual_doc_name] : opened_docs_hash_names) {
         std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
         if (path) {
             if (path == current_path) continue;
@@ -5567,11 +5559,12 @@ void MainWidget::handle_open_prev_doc() {
 #endif
             }
             opened_docs_hashes.push_back(utf8_encode(doc_hash_));
+            opened_docs_actual_names.push_back(actual_doc_name);
         }
     }
 
 
-    set_filtered_select_menu<std::string>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names }, opened_docs_hashes, -1,
+    set_filtered_select_menu<std::string>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names, opened_docs_actual_names }, opened_docs_hashes, -1,
         [&](std::string* doc_hash) {
             if ((doc_hash->size() > 0) && (pending_command_instance)) {
                 pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdString(*doc_hash));
@@ -8600,6 +8593,8 @@ QJsonObject MainWidget::get_json_state() {
 
         result["selected_text"] = QString::fromStdWString(get_selected_text());
         result["window_id"] = window_id;
+        result["window_width"] = width();
+        result["window_height"] = height();
 
         std::vector<std::wstring> loaded_document_paths = document_manager->get_loaded_document_paths();
         QJsonArray loaded_documents;
@@ -9241,8 +9236,14 @@ void MainWidget::run_javascript_command(std::wstring javascript_code, bool is_as
     }
     else {
         QJSEngine* engine = take_js_engine();
-        auto res = engine->evaluate(content);
+        QStringList stack_trace;
+        auto res = engine->evaluate(content, QString(), 1, &stack_trace);
         release_js_engine(engine);
+        if (stack_trace.size() > 0) {
+            for (auto line : stack_trace) {
+                qDebug() << line;
+            }
+        }
     }
 
 }
@@ -9674,4 +9675,12 @@ QString MainWidget::execute_macro_sync(QString macro) {
     }
 
     return "";
+}
+
+void MainWidget::set_variable(QString name, QVariant var) {
+    js_variables[name] = var;
+}
+
+QVariant MainWidget::get_variable(QString name) {
+    return js_variables[name];
 }

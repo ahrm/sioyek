@@ -64,6 +64,8 @@ extern float UI_TEXT_COLOR[3];
 extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH;
 extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
+extern std::wstring UI_FONT_FACE_NAME;
+extern std::wstring STATUS_FONT_FACE_NAME;
 
 extern bool VERBOSE;
 
@@ -2564,15 +2566,11 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
     fz_document* doc = fz_open_document(context, utf8_encode(file_name).c_str());
     if (fz_is_document_reflowable(context, doc)) {
 
-        //if (EPUB_CSS.size() > 0) {
-        //	std::string encoded = utf8_encode(EPUB_CSS);
-        //	fz_set_user_css(context, encoded.c_str());
-        //}
-        //else {
-        //	QString temp = EPUB_TEMPLATE;
-        //	std::string encoded = temp.replace("%{line_spacing}", QString::number(EPUB_LINE_SPACING)).toStdString();
-        //	fz_set_user_css(context, encoded.c_str());
-        //}
+        if (EPUB_CSS.size() > 0) {
+            std::string css = utf8_encode(EPUB_CSS);
+            fz_set_user_css(context, css.c_str());
+        }
+
         fz_layout_document(context, doc, EPUB_WIDTH, EPUB_HEIGHT, EPUB_FONT_SIZE);
 
         //int a = 2;
@@ -2855,6 +2853,25 @@ float* get_highlight_type_color(char type) {
         return &HIGHLIGHT_COLORS[(type - 'A') * 3];
     }
     return &HIGHLIGHT_COLORS[0];
+}
+
+void lighten_color(float input[3], float output[3]) {
+    QColor color = qRgb(
+        static_cast<int>(input[0] * 255),
+        static_cast<int>(input[1] * 255),
+        static_cast<int>(input[2] * 255)
+    );
+    float prev_lightness = static_cast<float>(color.lightness()) / 255.0f;
+    int lightness_increase = static_cast<int>((0.9f / prev_lightness) * 100);
+
+    QColor lighter = color;
+    if (lightness_increase > 100) {
+        lighter = color.lighter(lightness_increase);
+    }
+
+    output[0] = lighter.redF();
+    output[1] = lighter.greenF();
+    output[2] = lighter.blueF();
 }
 
 
@@ -3915,4 +3932,22 @@ bool is_doc_valid(fz_context* ctx, std::string path) {
 
     return is_valid;
 
+}
+
+QString get_ui_font_face_name() {
+    if (UI_FONT_FACE_NAME.empty()) {
+        return "";
+    }
+    else {
+        return QString::fromStdWString(UI_FONT_FACE_NAME);
+    }
+}
+
+QString get_status_font_face_name() {
+    if (STATUS_FONT_FACE_NAME.empty()) {
+        return "Monospace";
+    }
+    else {
+        return QString::fromStdWString(STATUS_FONT_FACE_NAME);
+    }
 }

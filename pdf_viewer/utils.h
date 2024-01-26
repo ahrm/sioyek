@@ -233,6 +233,7 @@ QString android_file_uri_from_content_uri(QString uri);
 
 char get_highlight_color_type(float color[3]);
 float* get_highlight_type_color(char type);
+void lighten_color(float input[3], float output[3]);
 std::wstring clean_bib_item(std::wstring bib_item);
 std::wstring clean_link_source_text(std::wstring link_source_text);
 std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vector<FreehandDrawingPoint>& points);
@@ -441,3 +442,5 @@ bool is_bright(float color[3]);
 bool is_abbreviation(const std::wstring& txt);
 bool is_in(char c, std::vector<char> candidates);
 bool is_doc_valid(fz_context* ctx, std::string path);
+QString get_ui_font_face_name();
+QString get_status_font_face_name();

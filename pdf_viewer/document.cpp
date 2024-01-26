@@ -577,21 +577,25 @@ const std::vector<Highlight> Document::get_highlights_sorted(char type) const {
 }
 
 
-void Document::add_mark(char symbol, float y_offset) {
+void Document::add_mark(char symbol, float y_offset, std::optional<float> x_offset, std::optional<float> zoom_level) {
     int current_mark_index = get_mark_index(symbol);
     if (current_mark_index == -1) {
         Mark m;
         m.y_offset = y_offset;
         m.symbol = symbol;
         m.update_creation_time();
+        m.x_offset = x_offset;
+        m.zoom_level = zoom_level;
         marks.push_back(m);
-        db_manager->insert_mark(get_checksum(), symbol, y_offset, new_uuid());
+        db_manager->insert_mark(get_checksum(), symbol, y_offset, new_uuid(), x_offset, zoom_level);
         is_annotations_dirty = true;
     }
     else {
         marks[current_mark_index].y_offset = y_offset;
+        marks[current_mark_index].x_offset = x_offset;
+        marks[current_mark_index].zoom_level = zoom_level;
         marks[current_mark_index].update_modification_time();
-        db_manager->update_mark(get_checksum(), symbol, y_offset);
+        db_manager->update_mark(get_checksum(), symbol, y_offset, x_offset, zoom_level);
         is_annotations_dirty = true;
     }
 }
@@ -606,13 +610,12 @@ bool Document::remove_mark(char symbol) {
     return false;
 }
 
-bool Document::get_mark_location_if_exists(char symbol, float* y_offset) {
+std::optional<Mark> Document::get_mark_if_exists(char symbol){
     int mark_index = get_mark_index(symbol);
     if (mark_index == -1) {
-        return false;
+        return {};
     }
-    *y_offset = marks[mark_index].y_offset;
-    return true;
+    return marks[mark_index];
 }
 
 Document::Document(fz_context* context, std::wstring file_name, DatabaseManager* db, CachedChecksummer* checksummer) :
@@ -1092,6 +1095,8 @@ void Document::load_page_dimensions(bool force_load_now) {
             page_dims_mutex.unlock();
 
             fill_highlight_rects(context_, doc_);
+            detected_paper_name = detect_paper_name(context_, doc_);
+            //db_manager->set_actual_document_name(get_checksum(), detected_paper_name);
 
             fz_drop_document(context_, doc_);
         }
@@ -1215,7 +1220,10 @@ fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_nu
     }
 
     fz_try(ctx) {
-        stext_page = fz_new_stext_page_from_page_number(ctx, doc_, page_number, nullptr);
+        fz_stext_options options;
+        options.flags = FZ_STEXT_PRESERVE_IMAGES;
+        options.scale = 0.0f;
+        stext_page = fz_new_stext_page_from_page_number(ctx, doc_, page_number, &options);
     }
     fz_catch(ctx) {
         failed = true;
@@ -2145,7 +2153,11 @@ void Document::embed_annotations(std::wstring new_file_path) {
         else {
             highlight_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_HIGHLIGHT);
         }
-        float* color = get_highlight_type_color(highlight.type);
+        float* color_ = get_highlight_type_color(highlight.type);
+        float color[3];
+        // lighten highlight colors before embedding (because we use alpha to make it lighter but
+        // the color doesn't take it into accout). Also see: https://github.com/ahrm/sioyek/issues/667
+        lighten_color(color_, color);
 
         pdf_set_annot_color(context, highlight_annot, 3, color);
         if (highlight.text_annot.size() > 0) {
@@ -2891,6 +2903,11 @@ int Document::reflow(int page) {
     //	std::string encoded = temp.replace("%{line_spacing}", QString::number(EPUB_LINE_SPACING)).toStdString();
     //	fz_set_user_css(context, encoded.c_str());
     //}
+
+    if (EPUB_CSS.size() > 0) {
+        std::string css = utf8_encode(EPUB_CSS);
+        fz_set_user_css(context, css.c_str());
+    }
 
     fz_layout_document(context, doc, EPUB_WIDTH, EPUB_HEIGHT, EPUB_FONT_SIZE);
 
@@ -3987,8 +4004,14 @@ std::vector<std::wstring> DocumentManager::get_tabs() {
 }
 
 std::wstring Document::detect_paper_name() {
+    return detect_paper_name(context, doc);
+}
 
-    fz_stext_page* stext_page = get_stext_with_page_number(0);
+std::wstring Document::detect_paper_name(fz_context* context, fz_document* doc) {
+
+    if (detected_paper_name.size() > 0) return detected_paper_name;
+
+    fz_stext_page* stext_page = get_stext_with_page_number(context, 0, doc);
     if (stext_page) {
 
         //std::wstring max_block_text = L"";
