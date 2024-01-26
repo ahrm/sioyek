@@ -2,7 +2,7 @@
 
 set -e
 
-Compile mupdf
+#Compile mupdf
 cd mupdf
 make USE_SYSTEM_HARFBUZZ=yes
 cd ..
