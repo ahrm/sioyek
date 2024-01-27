@@ -6859,7 +6859,7 @@ void get_keys_file_lines(const Path& file_path,
             continue;
         }
 
-        QString line_string = QString::fromStdWString(line);
+        QString line_string = QString::fromStdWString(line).trimmed();
         int last_space_index = line_string.lastIndexOf(' ');
 
         if (last_space_index >= 0){
