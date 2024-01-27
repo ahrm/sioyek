@@ -457,7 +457,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         update_current_history_index();
     }
 
-    if (TOUCH_MODE && (current_widget_stack.size() > 0)) {
+    if ((current_widget_stack.size() > 0)) {
         for (auto w : current_widget_stack) {
             QCoreApplication::postEvent(w, resize_event->clone());
         }
@@ -5607,6 +5607,12 @@ void MainWidget::handle_open_prev_doc() {
         }
         );
 
+    if (!TOUCH_MODE && current_widget_stack.size() > 0) {
+        FilteredSelectTableWindowClass<std::string>* widget = dynamic_cast<FilteredSelectTableWindowClass<std::string>*>(current_widget_stack.back());
+        if (widget) {
+            widget->set_equal_columns();
+        }
+    }
     show_current_widget();
 }
 

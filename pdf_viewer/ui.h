@@ -231,6 +231,7 @@ private:
     std::function<void(T*)> on_done = nullptr;
     std::function<void(T*)> on_delete_function = nullptr;
     std::function<void(T*)> on_edit_function = nullptr;
+    int n_cols = 1;
 
 protected:
 
@@ -292,6 +293,7 @@ public:
         table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
         if (table[0].size() > 0) {
+            n_cols = table.size();
             table_view->horizontalHeader()->setStretchLastSection(false);
             for (int i = 0; i < table.size() - 1; i++) {
                 table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
@@ -311,6 +313,14 @@ public:
         if (selected_index != -1) {
             table_view->scrollTo(this->proxy_model->mapFromSource(table_view->currentIndex()), QAbstractItemView::EnsureVisible);
         }
+    }
+
+    void set_equal_columns() {
+        QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+        for (int i = 0; i < n_cols; i++) {
+            table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
+        }
+
     }
 
     void set_on_edit_function(std::function<void(T*)> edit_func) {
