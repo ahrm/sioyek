@@ -813,6 +813,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     text_command_line_edit_container->setLayout(text_command_line_edit_container_layout);
     text_command_line_edit_container->hide();
 
+    QObject::connect(dynamic_cast<MyLineEdit*>(text_command_line_edit), &MyLineEdit::next_suggestion, this, &MainWidget::on_next_text_suggestion);
+    QObject::connect(dynamic_cast<MyLineEdit*>(text_command_line_edit), &MyLineEdit::prev_suggestion, this, &MainWidget::on_prev_text_suggestion);
+
     on_command_done = [&](std::string command_name, std::string query_text) {
         if (query_text.size() > 0 && (query_text.back() == '?' || query_text[0] == '?')) {
             show_command_documentation(QString::fromStdString(command_name));
@@ -1385,6 +1388,7 @@ void MainWidget::handle_escape() {
     typing_location = {};
     text_command_line_edit->setText("");
     text_command_line_edit_container->hide();
+    text_suggestion_index = 0;
     pending_portal = {};
     synchronize_pending_link();
 
@@ -2984,6 +2988,7 @@ void MainWidget::show_mark_selector() {
 
 void MainWidget::show_textbar(const std::wstring& command_name, const std::wstring& initial_value) {
     QString init = "";
+    text_suggestion_index = 0;
 
     if (initial_value.size() > 0) {
         init = QString::fromStdWString(initial_value);
@@ -5029,7 +5034,29 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
     }
 }
 
+void MainWidget::add_search_term(const std::wstring& term) {
+    auto res = std::find(search_terms.begin(), search_terms.end(), term);
+    if (res != search_terms.end()) {
+
+        int index = res - search_terms.begin();
+
+        for (int i = index; i < search_terms.size() - 1; i++) {
+            std::swap(search_terms[i], search_terms[i + 1]);
+        }
+    }
+    else {
+        search_terms.push_back(term);
+    }
+
+    if (search_terms.size() > 100) {
+        search_terms.pop_front();
+    }
+}
+
+
 void MainWidget::perform_search(std::wstring text, bool is_regex) {
+
+    add_search_term(text);
 
     // When searching, the start position before search is saved in a mark named '0'
     main_document_view->add_mark('/');
@@ -9128,6 +9155,7 @@ DocumentView* MainWidget::helper_document_view(){
 void MainWidget::hide_command_line_edit(){
     text_command_line_edit->setText("");
     text_command_line_edit_container->hide();
+    text_suggestion_index = -1;
     pending_command_instance = {};
     setFocus();
 }
@@ -9691,4 +9719,44 @@ void MainWidget::set_variable(QString name, QVariant var) {
 
 QVariant MainWidget::get_variable(QString name) {
     return js_variables[name];
+}
+
+void MainWidget::on_next_text_suggestion() {
+    bool this_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index).has_value();
+    bool next_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index + 1).has_value();
+    if (!this_has_value && !next_has_value) return;
+
+    text_suggestion_index++;
+    set_current_text_suggestion();
+}
+
+void MainWidget::on_prev_text_suggestion() {
+    bool this_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index).has_value();
+    bool next_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index - 1).has_value();
+    if (!this_has_value && !next_has_value) return;
+
+    text_suggestion_index--;
+    set_current_text_suggestion();
+}
+
+void MainWidget::set_current_text_suggestion() {
+    if (pending_command_instance) {
+        std::optional<std::wstring> suggestion = pending_command_instance->get_text_suggestion(text_suggestion_index);
+        if (suggestion) {
+            text_command_line_edit->setText(QString::fromStdWString(suggestion.value()));
+        }
+        else {
+            text_command_line_edit->setText("");
+        }
+
+    }
+}
+
+std::optional<std::wstring> MainWidget::get_search_suggestion_with_index(int index) {
+    if (index >= 0 || (-index > search_terms.size())) {
+        return {};
+    }
+    else {
+        return search_terms[search_terms.size() + index];
+    }
 }

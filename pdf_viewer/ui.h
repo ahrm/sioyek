@@ -102,6 +102,7 @@ public:
 
 
 class MyLineEdit: public QLineEdit {
+    Q_OBJECT
 
 public:
     MyLineEdit(QWidget* parent=nullptr);
@@ -109,6 +110,10 @@ public:
     void keyPressEvent(QKeyEvent* event) override;
     int get_next_word_position();
     int get_prev_word_position();
+
+signals:
+    void next_suggestion();
+    void prev_suggestion();
 };
 
 class BaseSelectorWidget : public QWidget {

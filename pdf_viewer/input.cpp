@@ -76,6 +76,10 @@ Command::~Command() {
 
 }
 
+std::optional<std::wstring> Command::get_text_suggestion(int index) {
+    return {};
+}
+
 void Command::set_result_socket(QLocalSocket* socket) {
     result_socket = socket;
 }
@@ -536,6 +540,10 @@ public:
 
     bool pushes_state() {
         return true;
+    }
+
+    std::optional<std::wstring> get_text_suggestion(int index) {
+        return widget->get_search_suggestion_with_index(index);
     }
 
     std::wstring get_text_default_value() {

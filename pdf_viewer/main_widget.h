@@ -300,6 +300,9 @@ public:
     QLabel* text_command_line_edit_label = nullptr;
     QLineEdit* text_command_line_edit = nullptr;
     QLabel* status_label = nullptr;
+    int text_suggestion_index = 0;
+
+    std::deque<std::wstring> search_terms;
 
     // determines if the widget render is invalid and needs to be updated
     // when `validation_interval_timer` fired, we check if this is true
@@ -427,6 +430,10 @@ public:
 
     void show_password_prompt_if_required();
     void handle_link_click(const PdfLink& link);
+
+    void on_next_text_suggestion();
+    void on_prev_text_suggestion();
+    void set_current_text_suggestion();
 
     std::wstring get_window_configuration_string();
     std::wstring get_serialized_configuration_string();
@@ -561,6 +568,7 @@ public:
     void set_mark_in_current_location(char symbol);
     void goto_mark(char symbol);
     void advance_command(std::unique_ptr<Command> command, std::wstring* result=nullptr);
+    void add_search_term(const std::wstring& term);
     void perform_search(std::wstring text, bool is_regex = false);
     void overview_to_definition();
     void portal_to_definition();
@@ -901,6 +909,7 @@ public:
     void handle_highlight_tags_pre_perform(const std::vector<int>& visible_highlight_indices);
     void clear_keyboard_select_highlights();
     void handle_goto_link_with_page_and_offset(int page, float y_offset);
+    std::optional<std::wstring> get_search_suggestion_with_index(int index);
 };
 
 #endif
