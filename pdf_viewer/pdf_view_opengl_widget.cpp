@@ -1620,13 +1620,17 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                         flags |= Qt::AlignLeft;
                     }
 
-                    if ((bookmarks[i].description[0] == L'#') && (bookmarks[i].description[1] != L' ')) {
+                    if ((bookmarks[i].description[0] == L'#') && (bookmarks[i].description[1] != L' ' &&
+                                bookmarks[i].description[2] == L' ' )) {
                         char mode = bookmarks[i].description[1];
                         if (mode >= 'a' && mode <= 'z') {
                             std::array<float, 3> box_color = cc3( & HIGHLIGHT_COLORS[3 * (mode - 'a')]);
                             painter->setPen(convert_float3_to_qcolor(&box_color[0]));
                             painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
                         }
+                    }
+                    else if (bookmarks[i].description[0] == L'#') {
+                        painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
                     }
                     else if (bookmarks[i].description[0] == L'#') {
                         painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
