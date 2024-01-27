@@ -84,6 +84,7 @@ public:
     Highlight get_highlight_with_index(int index);
     void delete_highlight_with_index(int index);
     void delete_highlight(Highlight hl);
+    void delete_all_highlights();
     void delete_closest_bookmark_to_offset(float offset);
     float get_offset_x();
     float get_offset_y();
