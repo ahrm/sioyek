@@ -6,6 +6,7 @@
 #include <optional>
 #include <unordered_map>
 #include <mutex>
+#include <qdatetime.h>
 
 #include "path.h"
 #include "coordinates.h"
@@ -78,12 +79,14 @@ public:
 
     std::map < std::string, std::function<std::unique_ptr<Command>(MainWidget*)> > new_commands;
     std::map<std::string, std::string> command_human_readable_names;
+    std::map<std::string, QDateTime> command_last_uses;
 
     CommandManager(ConfigManager* config_manager);
     std::unique_ptr<Command> get_command_with_name(MainWidget* w, std::string name);
     std::unique_ptr<Command> create_macro_command(MainWidget* w, std::string name, std::wstring macro_string);
     QStringList get_all_command_names();
     void handle_new_javascript_command(std::wstring command_name, std::pair<std::wstring, std::wstring> command_files_pair, bool is_async);
+    void update_command_last_use(std::string command_name);
 };
 
 struct InputParseTreeNode {

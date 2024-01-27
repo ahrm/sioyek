@@ -377,7 +377,7 @@ void PdfViewOpenGLWidget::initializeGL() {
 #endif
 
         shared_gl_objects.dark_mode_contrast_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_dark_program, "contrast");
-        shared_gl_objects.gamma_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_program, "gamma");
+        //shared_gl_objects.gamma_uniform_location = glGetUniformLocation(shared_gl_objects.rendered_program, "gamma");
 
         shared_gl_objects.highlight_color_uniform_location = glGetUniformLocation(shared_gl_objects.highlight_program, "highlight_color");
         shared_gl_objects.highlight_opacity_uniform_location = glGetUniformLocation(shared_gl_objects.highlight_program, "opacity");
@@ -1620,7 +1620,20 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                         flags |= Qt::AlignLeft;
                     }
 
-                    painter->drawText(window_qrect, flags, QString::fromStdWString(bookmarks[i].description));
+                    if (bookmarks[i].description == L"#"){
+                        painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                    }
+                    else if ((bookmarks[i].description.size() == 2) && bookmarks[i].description[0] == '#') {
+                        char mode = bookmarks[i].description[1];
+                        if (mode >= 'a' && mode <= 'z') {
+                            std::array<float, 3> box_color = cc3( & HIGHLIGHT_COLORS[3 * (mode - 'a')]);
+                            painter->setPen(convert_float3_to_qcolor(&box_color[0]));
+                            painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                        }
+                    }
+                    else {
+                        painter->drawText(window_qrect, flags, QString::fromStdWString(bookmarks[i].description));
+                    }
 
                 }
 
@@ -2170,7 +2183,7 @@ void PdfViewOpenGLWidget::bind_program(bool force_light) {
     }
     else {
         glUseProgram(shared_gl_objects.rendered_program);
-        glUniform1f(shared_gl_objects.gamma_uniform_location, GAMMA);
+        //glUniform1f(shared_gl_objects.gamma_uniform_location, GAMMA);
     }
 }
 

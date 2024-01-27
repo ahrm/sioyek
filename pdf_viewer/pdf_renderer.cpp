@@ -9,7 +9,7 @@ extern bool TOUCH_MODE;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SMARTCASE_SEARCH;
-
+extern float GAMMA;
 
 
 
@@ -599,6 +599,9 @@ void PdfRenderer::run(int thread_index) {
 
                 }
 
+                if (GAMMA != 1.0f) {
+                    fz_gamma_pixmap(mupdf_context, rendered_pixmap, GAMMA);
+                }
 
                 RenderResponse resp;
                 resp.thread = thread_index;

@@ -81,7 +81,7 @@ struct OpenGLSharedResources {
     GLint compiled_dot_offset_uniform_location = 0;
     GLint compiled_dot_scale_uniform_location = 0;
 
-    GLint gamma_uniform_location = 0;
+    //GLint gamma_uniform_location = 0;
 
     GLint custom_color_transform_uniform_location = 0;
 

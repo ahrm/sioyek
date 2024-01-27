@@ -39,6 +39,7 @@ extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
+extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 
 struct CommandInvocation {
     QString command_name;
@@ -6436,6 +6437,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
         new_commands[command_name] = [command_name, local_command_value, this](MainWidget* w) {return  std::make_unique<CustomCommand>(w, command_name, local_command_value); };
     }
 
+
     for (auto [command_name_, command_files_pair] : ADDITIONAL_JAVASCRIPT_COMMANDS) {
         handle_new_javascript_command(command_name_, command_files_pair, false);
     }
@@ -6466,6 +6468,15 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 
     }
 
+    QDateTime current_time = QDateTime::currentDateTime();
+    for (auto [command_name, _] : new_commands) {
+        command_last_uses[command_name] = current_time;
+    }
+
+}
+
+void CommandManager::update_command_last_use(std::string command_name) {
+    command_last_uses[command_name] = QDateTime::currentDateTime();
 }
 
 void CommandManager::handle_new_javascript_command(std::wstring command_name_, std::pair<std::wstring, std::wstring> command_files_pair, bool is_async) {
@@ -6499,13 +6510,27 @@ std::unique_ptr<Command> CommandManager::get_command_with_name(MainWidget* w, st
 }
 
 QStringList CommandManager::get_all_command_names() {
+    std::vector<std::pair<QDateTime, QString>> pairs;
     QStringList res;
-    //for (const auto &com : commands) {
-    //	res.push_back(QString::fromStdString(com.name));
-    //}
-    for (const auto& com : new_commands) {
-        res.push_back(QString::fromStdString(com.first));
+
+    if (SHOW_MOST_RECENT_COMMANDS_FIRST) {
+        for (const auto& com : new_commands) {
+            pairs.push_back(std::make_pair(command_last_uses[com.first], QString::fromStdString(com.first)));
+        }
+
+        std::sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {return a.first > b.first; });
+
+        for (auto [_, com] : pairs) {
+            res.push_back(com);
+        }
     }
+    else {
+        for (const auto& com : new_commands) {
+            res.push_back(QString::fromStdString(com.first));
+        }
+    }
+
+
     return res;
 }
 

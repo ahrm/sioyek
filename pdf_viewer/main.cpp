@@ -229,6 +229,7 @@ std::wstring ITEM_LIST_PREFIX = L">";
 float STRIKE_LINE_WIDTH = 1.0f;
 int RULER_UNDERLINE_PIXEL_WIDTH = 2;
 bool AUTO_RENAME_DOWNLOADED_PAPERS = false;
+bool SHOW_MOST_RECENT_COMMANDS_FIRST = true;
 
 #ifdef SIOYEK_ANDROID
 std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";
