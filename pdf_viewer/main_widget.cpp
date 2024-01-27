@@ -167,6 +167,7 @@ extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
 extern bool SUPER_FAST_SEARCH;
+extern bool INCREMENTAL_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool CASE_SENSITIVE_SEARCH;
@@ -1375,6 +1376,7 @@ void MainWidget::handle_escape() {
         else if (opengl_widget->get_is_searching(nullptr)) {
             opengl_widget->cancel_search();
             get_search_buttons()->hide();
+            hide_command_line_edit();
             should_return = true;
         }
         if (should_return) {
@@ -1386,8 +1388,7 @@ void MainWidget::handle_escape() {
 
     clear_selection_indicators();
     typing_location = {};
-    text_command_line_edit->setText("");
-    text_command_line_edit_container->hide();
+    hide_command_line_edit();
     text_suggestion_index = 0;
     pending_portal = {};
     synchronize_pending_link();
@@ -5054,9 +5055,11 @@ void MainWidget::add_search_term(const std::wstring& term) {
 }
 
 
-void MainWidget::perform_search(std::wstring text, bool is_regex) {
+void MainWidget::perform_search(std::wstring text, bool is_regex, bool is_incremental) {
 
-    add_search_term(text);
+    if (!is_incremental) {
+        add_search_term(text);
+    }
 
     // When searching, the start position before search is saved in a mark named '0'
     main_document_view->add_mark('/');
@@ -7652,6 +7655,9 @@ void MainWidget::handle_command_text_change(const QString& new_text) {
             doc()->get_bookmarks()[selected_bookmark_index].description = new_text.toStdWString();
             validate_render();
         }
+        if (INCREMENTAL_SEARCH && pending_command_instance->get_name() == "search" && doc()->is_super_fast_index_ready()) {
+            perform_search(new_text.toStdWString(), false, true);
+        }
     }
 }
 
@@ -9155,7 +9161,7 @@ DocumentView* MainWidget::helper_document_view(){
 void MainWidget::hide_command_line_edit(){
     text_command_line_edit->setText("");
     text_command_line_edit_container->hide();
-    text_suggestion_index = -1;
+    text_suggestion_index = 0;
     pending_command_instance = {};
     setFocus();
 }
