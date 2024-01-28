@@ -378,6 +378,47 @@ bool is_stext_page_rtl(fz_stext_page* stext_page) {
     return ((rtl_count / total_count) > 0.5f);
 }
 
+std::vector<fz_stext_char*> reorder_mixed_stext_line(fz_stext_line* line) {
+
+
+    bool rtl = is_stext_line_rtl(line);
+    std::vector<fz_stext_char*> chars = reorder_stext_line(line);
+    auto should_be_reversed = [&](int c) {
+        if (rtl) {
+            return !is_rtl(c);
+        }
+        else {
+            return is_rtl(c);
+        }
+    };
+
+    std::vector<std::pair<int, int>> ltr_spans;
+
+    std::optional<int> range_begin = {};
+
+    for (int i = 0; i < chars.size(); i++) {
+        if (chars[i]->c <= 64) continue;
+
+        if (should_be_reversed(chars[i]->c)) {
+            if (!range_begin.has_value()) range_begin = i;
+        }
+        else {
+            if (range_begin.has_value()) {
+                ltr_spans.push_back(std::make_pair(range_begin.value(), i - 1));
+                range_begin = {};
+            }
+        }
+    }
+    if (range_begin.has_value()) {
+        ltr_spans.push_back(std::make_pair(range_begin.value(), chars.size() - 1));
+    }
+
+    for (auto [begin, end] : ltr_spans) {
+        std::reverse(chars.begin() + begin, chars.begin() + end + 1);
+    }
+    return chars;
+}
+
 std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line) {
 
     std::vector<fz_stext_char*> reordered_chars;
@@ -832,11 +873,11 @@ bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char) {
 }
 
 
-std::wstring get_string_from_stext_block(fz_stext_block* block) {
+std::wstring get_string_from_stext_block(fz_stext_block* block, bool handle_rtl) {
     if (block->type == FZ_STEXT_BLOCK_TEXT) {
         std::wstring res;
         LL_ITER(line, block->u.t.first_line) {
-            res += get_string_from_stext_line(line);
+            res += get_string_from_stext_line(line, handle_rtl);
             if (line->next && res.size() > 0) {
                 if (res.back() == '-') {
                     res.pop_back();
@@ -852,13 +893,23 @@ std::wstring get_string_from_stext_block(fz_stext_block* block) {
         return L"";
     }
 }
-std::wstring get_string_from_stext_line(fz_stext_line* line) {
+std::wstring get_string_from_stext_line(fz_stext_line* line, bool handle_rtl) {
 
-    std::wstring res;
-    LL_ITER(ch, line->first_char) {
-        res.push_back(ch->c);
+    if (!handle_rtl) {
+        std::wstring res;
+        LL_ITER(ch, line->first_char) {
+            res.push_back(ch->c);
+        }
+        return res;
     }
-    return res;
+    else {
+        std::vector<fz_stext_char*> chars = reorder_mixed_stext_line(line);
+        std::wstring res;
+        for (auto ch : chars) {
+            res.push_back(ch->c);
+        }
+        return res;
+    }
 }
 
 std::vector<PagelessDocumentRect> get_char_rects_from_stext_line(fz_stext_line* line) {

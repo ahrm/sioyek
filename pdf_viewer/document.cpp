@@ -4063,7 +4063,7 @@ std::wstring Document::detect_paper_name(fz_context* context, fz_document* doc) 
             }
         }
         if (max_block) {
-            return get_string_from_stext_block(max_block);
+            return get_string_from_stext_block(max_block, true);
         }
         else {
             char buffer[1000];

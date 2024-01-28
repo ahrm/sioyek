@@ -116,7 +116,6 @@ private:
     std::vector<float> accum_page_heights;
     std::vector<float> page_heights;
     std::vector<float> page_widths;
-    std::wstring detected_paper_name = L"";
 
     // label of the pages, e.g. "i", "ii", "iii", "1", "2", "3", etc.
     std::vector<std::wstring> page_labels;
@@ -163,6 +162,7 @@ private:
     int find_highlight_index_with_uuid(const std::string& uuid);
 public:
     fz_document* doc = nullptr;
+    std::wstring detected_paper_name = L"";
 
     PageIterator page_iterator(int page_number);
     void get_page_text_and_line_rects_after_rect(int page_number,
