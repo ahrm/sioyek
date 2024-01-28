@@ -1768,6 +1768,18 @@ int MyLineEdit::get_prev_word_position() {
 
 void MyLineEdit::keyPressEvent(QKeyEvent* event) {
 
+    if ((event->key() == Qt::Key_Up)) {
+        emit prev_suggestion();
+        event->accept();
+        return;
+    }
+
+    if ((event->key() == Qt::Key_Down)) {
+        emit next_suggestion();
+        event->accept();
+        return;
+    }
+
     if (!EMACS_MODE) {
         return QLineEdit::keyPressEvent(event);
     }

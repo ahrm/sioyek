@@ -1145,7 +1145,10 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
             if (!SHOULD_DRAW_UNRENDERED_PAGES) {
                 continue;
             }
-            glUseProgram(shared_gl_objects.unrendered_program);
+            float white[3] = {1, 1, 1};
+            std::array<float, 3> bgcolor = cc3(white);
+            glUseProgram(shared_gl_objects.highlight_program);
+            glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &bgcolor[0]);
         }
 
         glEnableVertexAttribArray(0);

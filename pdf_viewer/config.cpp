@@ -164,6 +164,7 @@ extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
 extern bool SUPER_FAST_SEARCH;
+extern bool INCREMENTAL_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern int PRERENDERED_PAGE_COUNT;
 extern bool CASE_SENSITIVE_SEARCH;
@@ -1792,6 +1793,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"super_fast_search",
         ConfigType::Bool,
         &SUPER_FAST_SEARCH,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"incremental_search",
+        ConfigType::Bool,
+        &INCREMENTAL_SEARCH,
         bool_serializer,
         bool_deserializer,
         bool_validator

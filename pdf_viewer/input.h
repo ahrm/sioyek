@@ -62,6 +62,7 @@ public:
     virtual void on_result_computed();
     virtual void set_result_socket(QLocalSocket* result_socket);
     virtual void set_result_mutex(bool* res_mut, std::wstring* result_location);
+    virtual std::optional<std::wstring> get_text_suggestion(int index);
 
     void set_next_requirement_with_string(std::wstring str);
 
