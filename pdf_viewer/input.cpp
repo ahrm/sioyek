@@ -40,6 +40,7 @@ extern bool FUZZY_SEARCHING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
+extern bool INCREMENTAL_SEARCH;
 
 bool is_command_string_modal(const std::string& command_name) {
     return std::find(command_name.begin(), command_name.end(), '[') != command_name.end();
@@ -538,8 +539,20 @@ public:
     SearchCommand(MainWidget* w) : TextCommand(w) {
     };
 
+    void pre_perform() {
+        if (INCREMENTAL_SEARCH) {
+            widget->main_document_view->add_mark('/');
+        }
+    }
+
+    virtual void on_cancel() override{
+        if (INCREMENTAL_SEARCH) {
+            widget->goto_mark('/');
+        }
+    }
+
     void perform() {
-        widget->perform_search(this->text.value(), false);
+        widget->perform_search(this->text.value(), false, INCREMENTAL_SEARCH);
         if (TOUCH_MODE) {
             widget->show_search_buttons();
         }

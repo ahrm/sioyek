@@ -1374,6 +1374,9 @@ void MainWidget::handle_escape() {
             should_return = true;
         }
         else if (opengl_widget->get_is_searching(nullptr)) {
+            if (pending_command_instance){
+                pending_command_instance->on_cancel();
+            }
             opengl_widget->cancel_search();
             get_search_buttons()->hide();
             hide_command_line_edit();
@@ -5059,10 +5062,10 @@ void MainWidget::perform_search(std::wstring text, bool is_regex, bool is_increm
 
     if (!is_incremental) {
         add_search_term(text);
+        // When searching, the start position before search is saved in a mark named '0'
+        main_document_view->add_mark('/');
     }
 
-    // When searching, the start position before search is saved in a mark named '0'
-    main_document_view->add_mark('/');
 
     int range_begin, range_end;
     std::wstring search_term;
@@ -5083,6 +5086,10 @@ void MainWidget::perform_search(std::wstring text, bool is_regex, bool is_increm
     if (CASE_SENSITIVE_SEARCH) case_sens = SearchCaseSensitivity::CaseSensitive;
     if (SMARTCASE_SEARCH) case_sens = SearchCaseSensitivity::SmartCase;
     opengl_widget->search_text(search_term, case_sens, is_regex, search_range);
+
+    if (is_incremental) {
+        goto_search_result(1);
+    }
 }
 
 void MainWidget::overview_to_definition() {
