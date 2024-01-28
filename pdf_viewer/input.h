@@ -63,6 +63,7 @@ public:
     virtual void set_result_socket(QLocalSocket* result_socket);
     virtual void set_result_mutex(bool* res_mut, std::wstring* result_location);
     virtual std::optional<std::wstring> get_text_suggestion(int index);
+    virtual bool is_menu_command();
 
     void set_next_requirement_with_string(std::wstring str);
 
@@ -135,7 +136,9 @@ public:
     InputHandler(const Path& default_path, const std::vector<Path>& user_paths, CommandManager* cm);
     void reload_config_files(const Path& default_path, const std::vector<Path>& user_path);
     //std::vector<std::unique_ptr<Command>> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
+    int get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* alt_pressed);
     std::unique_ptr<Command> handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats);
+    std::unique_ptr<Command> get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed);
     void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
     std::optional<Path> get_or_create_user_keys_path();

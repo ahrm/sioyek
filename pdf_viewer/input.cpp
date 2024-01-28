@@ -72,6 +72,13 @@ Command::Command(MainWidget* widget_) : widget(widget_) {
 
 }
 
+bool Command::is_menu_command() {
+    // returns true if the command is a macro designed to run only on menus (m)
+    // we then ignore keys in menus if they are bound to such commands so they
+    // can be later handled by our own InputHandler
+    return false;
+}
+
 Command::~Command() {
 
 }
@@ -5740,6 +5747,19 @@ public:
         }
     }
 
+    bool is_menu_command() {
+        if (is_modal) {
+            bool res = false;
+            for (std::string mode : modes) {
+                if (mode == "m") {
+                    res = true;
+                }
+            }
+            return res;
+        }
+        return false;
+    }
+
     void set_generic_requirement(QVariant value) {
         if (is_modal) {
             int current_mode_index = get_current_mode_index();
@@ -6918,15 +6938,30 @@ bool is_digit(int key) {
     return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+std::unique_ptr<Command> InputHandler::get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed) {
+    // get the command for keyevent while we are in a menu. In menus we don't
+    // support key melodies so we just check the children of the root if they match
+    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &alt_pressed);
+    for (auto child : root->children) {
+        if (child->is_final && child->matches(key, shift_pressed, control_pressed, alt_pressed)){
+            if (child->generator.has_value()) {
+                return child->generator.value()(w);
+            }
+        }
+    }
+
+    return {};
+}
+
+int InputHandler::get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* alt_pressed) {
     int key = 0;
     if (!USE_LEGACY_KEYBINDS) {
         std::vector<QString> special_texts = { "\b", "\t", " ", "\r", "\n" };
         if (((key_event->key() >= 'A') && (key_event->key() <= 'Z')) || ((key_event->text().size() > 0) &&
             (std::find(special_texts.begin(), special_texts.end(), key_event->text()) == special_texts.end()))) {
-            if (!control_pressed && !alt_pressed) {
+            if (!(*control_pressed) && !(*alt_pressed)) {
                 // shift is already handled in the returned text
-                shift_pressed = false;
+                *shift_pressed = false;
                 std::wstring text = key_event->text().toStdWString();
                 key = key_event->text().toStdWString()[0];
             }
@@ -6934,8 +6969,8 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
                 auto text = key_event->text();
                 key = key_event->key();
 
-                if ((key >= 'A' && key <= 'Z') && (!shift_pressed)) {
-                    if (!shift_pressed) {
+                if ((key >= 'A' && key <= 'Z') && (!*shift_pressed)) {
+                    if (!*shift_pressed) {
                         key = key - 'A' + 'a';
                     }
                 }
@@ -6956,7 +6991,12 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
         }
 
     }
+    return key;
+}
 
+std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+
+    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &alt_pressed);
     if (current_node == root && is_digit(key)) {
         if (!(key == '0' && (number_stack.size() == 0)) && (!control_pressed) && (!shift_pressed) && (!alt_pressed)) {
             number_stack.push_back('0' + key - Qt::Key::Key_0);
@@ -6992,7 +7032,7 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
             }
         }
     }
-    std::wcerr << "Warning: invalid command (key:" << (char)key << "); resetting to root" << std::endl;
+    LOG(std::wcerr << "Warning: invalid command (key:" << (char)key << "); resetting to root" << std::endl);
     number_stack.clear();
     current_node = root;
     return nullptr;

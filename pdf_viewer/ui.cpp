@@ -1388,7 +1388,7 @@ bool CommandSelector::on_text_change(const QString& text) {
     return true;
 }
 
-BaseSelectorWidget::BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy, QStandardItemModel* item_model, QWidget* parent) : QWidget(parent) {
+BaseSelectorWidget::BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy, QStandardItemModel* item_model, MainWidget* parent) : QWidget(parent) {
 
     bool is_tree = dynamic_cast<QTreeView*>(item_view) != nullptr;
     is_fuzzy = fuzzy;
@@ -1403,7 +1403,7 @@ BaseSelectorWidget::BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy,
     QVBoxLayout* layout = new QVBoxLayout;
     setLayout(layout);
 
-    line_edit = new MyLineEdit;
+    line_edit = new MyLineEdit(parent);
     abstract_item_view = item_view;
     abstract_item_view->setParent(this);
     abstract_item_view->setModel(proxy_model);
@@ -1572,36 +1572,6 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
                 QCoreApplication::postEvent(get_view(), new_key_event);
                 return true;
             }
-            if (EMACS_MODE) {
-                if (((key_event->key() == Qt::Key_V)) && is_control_pressed) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
-                    QCoreApplication::postEvent(get_view(), new_key_event);
-                    return true;
-                }
-                if (((key_event->key() == Qt::Key_V)) && is_alt_pressed) {
-                    QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
-                    QCoreApplication::postEvent(get_view(), new_key_event);
-                    return true;
-                }
-            }
-            if (((key_event->key() == Qt::Key_N) || (key_event->key() == Qt::Key_J)) && is_control_pressed) {
-                simulate_move_down();
-                return true;
-            }
-            if (((key_event->key() == Qt::Key_P) || (key_event->key() == Qt::Key_K)) && (is_control_pressed && !EMACS_MODE)) {
-                simulate_move_up();
-                return true;
-            }
-            if ((key_event->key() == Qt::Key_J) && is_alt_pressed) {
-                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_End, Qt::KeyboardModifier::NoModifier);
-                QCoreApplication::postEvent(get_view(), new_key_event);
-                return true;
-            }
-            if ((key_event->key() == Qt::Key_K) && is_alt_pressed) {
-                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Home, Qt::KeyboardModifier::NoModifier);
-                QCoreApplication::postEvent(get_view(), new_key_event);
-                return true;
-            }
             if ((key_event->key() == Qt::Key_PageDown)) {
                 QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageDown, key_event->modifiers());
                 QCoreApplication::postEvent(get_view(), new_key_event);
@@ -1638,6 +1608,27 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
         }
     }
     return false;
+}
+
+void BaseSelectorWidget::simulate_end() {
+    get_view()->scrollToBottom();
+    int last_index = get_view()->model()->rowCount() - 1;
+    get_view()->setCurrentIndex(get_view()->model()->index(last_index, 0));
+}
+
+void BaseSelectorWidget::simulate_home() {
+    get_view()->scrollToTop();
+    get_view()->setCurrentIndex(get_view()->model()->index(0, 0));
+
+}
+void BaseSelectorWidget::simulate_page_down() {
+    QKeyEvent* new_key_event = new QKeyEvent(QEvent::Type::KeyPress, Qt::Key_PageDown, Qt::KeyboardModifier::NoModifier);
+    QCoreApplication::postEvent(get_view(), new_key_event);
+}
+
+void BaseSelectorWidget::simulate_page_up() {
+    QKeyEvent* new_key_event = new QKeyEvent(QEvent::Type::KeyPress, Qt::Key_PageUp, Qt::KeyboardModifier::NoModifier);
+    QCoreApplication::postEvent(get_view(), new_key_event);
 }
 
 void BaseSelectorWidget::simulate_move_down() {
@@ -1732,7 +1723,8 @@ void BaseSelectorWidget::resizeEvent(QResizeEvent* resize_event) {
 }
 
 
-MyLineEdit::MyLineEdit(QWidget* parent) : QLineEdit(parent) {
+MyLineEdit::MyLineEdit(MainWidget* parent) : QLineEdit(parent) {
+    main_widget = parent;
 }
 
 int MyLineEdit::get_next_word_position() {
@@ -1768,108 +1760,20 @@ int MyLineEdit::get_prev_word_position() {
 
 void MyLineEdit::keyPressEvent(QKeyEvent* event) {
 
-    if ((event->key() == Qt::Key_Up)) {
-        emit prev_suggestion();
-        event->accept();
-        return;
+    bool is_alt_pressed = event->modifiers() & Qt::AltModifier;
+    bool is_control_pressed = event->modifiers() & Qt::ControlModifier;
+    bool is_shift_pressed = event->modifiers() & Qt::ShiftModifier;
+    bool is_invisible = event->text().size() == 0;
+    if (is_invisible || is_alt_pressed || is_control_pressed) {
+        std::unique_ptr<Command> command = main_widget->input_handler->get_menu_command(main_widget, event, is_shift_pressed, is_control_pressed, is_alt_pressed);
+
+        if (command && command->is_menu_command()) {
+            // this command will be handled later by our command manager so we ignore it here.
+            event->ignore();
+            return;
+        }
     }
 
-    if ((event->key() == Qt::Key_Down)) {
-        emit next_suggestion();
-        event->accept();
-        return;
-    }
-
-    if (!EMACS_MODE) {
-        return QLineEdit::keyPressEvent(event);
-    }
-    else {
-        bool is_alt_pressed = event->modifiers() & Qt::AltModifier;
-        bool is_control_pressed = event->modifiers() & Qt::ControlModifier;
-
-        if (is_control_pressed && (event->key() == Qt::Key_A)) {
-            setCursorPosition(0);
-            event->accept();
-            return;
-        }
-
-        if (is_control_pressed && (event->key() == Qt::Key_E)) {
-            setCursorPosition(text().size());
-            event->accept();
-            return;
-        }
-
-        if (is_control_pressed && (event->key() == Qt::Key_K)) {
-            QString current_text = text();
-            setText(current_text.left(cursorPosition()));
-            event->accept();
-            return;
-        }
-
-        if (is_control_pressed && (event->key() == Qt::Key_F)) {
-            int next_position = cursorPosition() + 1;
-            if (next_position <= text().size()) {
-                setCursorPosition(next_position);
-            }
-            event->accept();
-            return;
-        }
-
-        if (is_control_pressed && (event->key() == Qt::Key_B)) {
-            int next_position = cursorPosition() - 1;
-            if (next_position >= 0) {
-                setCursorPosition(next_position);
-            }
-            event->accept();
-            return;
-        }
-
-        if (is_control_pressed && (event->key() == Qt::Key_H)) {
-            int current_position = cursorPosition();
-            if (current_position > 0) {
-                QString new_text = text().left(current_position - 1) + text().right(text().size() - current_position);
-                setText(new_text);
-                setCursorPosition(current_position - 1);
-            }
-            event->accept();
-            return;
-        }
-
-        if (is_control_pressed && (event->key() == Qt::Key_W)) {
-            int current_position = cursorPosition();
-            if (current_position > 0) {
-                int prev_word_position = get_prev_word_position();
-                QString new_text = text().left(prev_word_position) + text().right(text().size() - current_position);
-                setText(new_text);
-                setCursorPosition(prev_word_position);
-            }
-            event->accept();
-            return;
-        }
-
-        if (is_control_pressed && (event->key() == Qt::Key_D)) {
-            int current_position = cursorPosition();
-            if (current_position < text().size()) {
-                QString new_text = text().left(current_position) + text().right(text().size() - current_position - 1);
-                setText(new_text);
-                setCursorPosition(current_position);
-            }
-            event->accept();
-            return;
-        }
-
-        if (is_alt_pressed && (event->key() == Qt::Key_F)) {
-            setCursorPosition(get_next_word_position());
-            event->accept();
-            return;
-        }
-
-        if (is_alt_pressed && (event->key() == Qt::Key_B)) {
-            setCursorPosition(get_prev_word_position());
-            event->accept();
-            return;
-        }
-        QLineEdit::keyPressEvent(event);
-    }
+    return QLineEdit::keyPressEvent(event);
 
 }
