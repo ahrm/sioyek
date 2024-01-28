@@ -1333,6 +1333,51 @@ public:
 
 };
 
+class CopyScreenshotToClipboard : public Command {
+
+public:
+
+    std::optional<AbsoluteRect> rect_;
+
+    CopyScreenshotToClipboard(MainWidget* w) : Command(w) {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+        if (!rect_.has_value()) {
+            Requirement req = { RequirementType::Rect, "Screenshot rect" };
+            return req;
+        }
+        return {};
+    }
+
+    void set_rect_requirement(AbsoluteRect value) {
+        rect_ = value;
+    }
+
+    void perform() {
+        widget->clear_selected_rect();
+
+        WindowRect window_rect = rect_->to_window(widget->main_document_view);
+        window_rect.y0 += 1;
+        QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
+
+        float ratio = QGuiApplication::primaryScreen()->devicePixelRatio();
+        QPixmap pixmap(static_cast<int>(window_qrect.width() * ratio), static_cast<int>(window_qrect.height() * ratio));
+        pixmap.setDevicePixelRatio(ratio);
+
+        //widget->render(&pixmap, QPoint(), QRegion(widget->rect()));
+        widget->render(&pixmap, QPoint(), QRegion(window_qrect));
+        QApplication::clipboard()->setPixmap(pixmap);
+
+        widget->set_rect_select_mode(false);
+        widget->invalidate_render();
+    }
+
+    std::string get_name() {
+        return "copy_screenshot_to_clipboard";
+    }
+
+};
 class CopyScreenshotToScratchpad : public Command {
 
 public:
@@ -6101,6 +6146,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["add_freetext_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkFreetextCommand>(widget); };
     new_commands["copy_drawings_from_scratchpad"] = [](MainWidget* widget) {return std::make_unique< CopyDrawingsFromScratchpadCommand>(widget); };
     new_commands["copy_screenshot_to_scratchpad"] = [](MainWidget* widget) {return std::make_unique< CopyScreenshotToScratchpad>(widget); };
+    new_commands["copy_screenshot_to_clipboard"] = [](MainWidget* widget) {return std::make_unique< CopyScreenshotToClipboard>(widget); };
     new_commands["add_highlight"] = [](MainWidget* widget) {return std::make_unique< AddHighlightCommand>(widget); };
     new_commands["goto_toc"] = [](MainWidget* widget) {return std::make_unique< GotoTableOfContentsCommand>(widget); };
     new_commands["goto_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightCommand>(widget); };
