@@ -158,7 +158,6 @@ extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
 extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
 extern bool PRERENDER_NEXT_PAGE;
-extern bool EMACS_MODE;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
 extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
@@ -1726,14 +1725,6 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"prerender_next_page_presentation",
         ConfigType::Bool,
         &PRERENDER_NEXT_PAGE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"emacs_mode_menus",
-        ConfigType::Bool,
-        &EMACS_MODE,
         bool_serializer,
         bool_deserializer,
         bool_validator

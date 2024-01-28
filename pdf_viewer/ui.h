@@ -78,7 +78,6 @@ extern int FONT_SIZE;
 const int max_select_size = 100;
 extern bool SMALL_TOC;
 extern bool MULTILINE_MENUS;
-extern bool EMACS_MODE;
 extern bool TOUCH_MODE;
 
 

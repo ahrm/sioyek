@@ -23,7 +23,6 @@ extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern float TTS_RATE;
-extern bool EMACS_MODE;
 extern float MENU_SCREEN_WDITH_RATIO;
 
 std::wstring select_command_file_name(std::string command_name) {

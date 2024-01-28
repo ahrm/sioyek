@@ -274,7 +274,6 @@ std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_J
 std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 bool PRERENDER_NEXT_PAGE = true;
-bool EMACS_MODE = false;
 bool HIGHLIGHT_MIDDLE_CLICK = false;
 float HYPERDRIVE_SPEED_FACTOR = 10.0f;
 float SMOOTH_SCROLL_SPEED = 3.0f;
