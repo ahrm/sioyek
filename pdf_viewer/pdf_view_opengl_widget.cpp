@@ -1347,7 +1347,6 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             int max_page = visible_pages[visible_pages.size() - 1];
             for (int i = 1; i < (PRERENDERED_PAGE_COUNT + 1); i++) {
                 if (max_page + i < num_pages) {
-
                     float page_width = document_view->get_document()->get_page_width(max_page + i);
                     float page_height = document_view->get_document()->get_page_width(max_page + i);
                     PagelessDocumentRect page_rect({ 0, 0, page_width, page_height });
@@ -1355,9 +1354,9 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                     num_slices_for_page_rect(page_rect, &nh, &nv);
 
                     pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-                        document_view->get_document()->should_render_pdf_annotations(),
                         max_page + i,
-                        0,
+                        document_view->get_document()->should_render_pdf_annotations(),
+                        -1,
                         nh,
                         nv,
                         document_view->get_zoom_level(),

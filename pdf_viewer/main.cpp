@@ -281,6 +281,11 @@ float SMOOTH_SCROLL_DRAG = 3000.0f;
 int PRERENDERED_PAGE_COUNT = 0;
 std::wstring CONTEXT_MENU_ITEMS = L"";
 bool RIGHT_CLICK_CONTEXT_MENU = false;
+#ifdef SIOYEK_ANDROID
+int NUM_CACHED_PAGES = 10;
+#else
+int NUM_CACHED_PAGES = 5;
+#endif
 
 float PAGE_SEPARATOR_WIDTH = 0.0f;
 float PAGE_SEPARATOR_COLOR[3] = { 0.9f, 0.9f, 0.9f };

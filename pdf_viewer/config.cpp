@@ -112,6 +112,7 @@ extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
 extern int NUM_PRERENDERED_NEXT_SLIDES;
 extern int NUM_PRERENDERED_PREV_SLIDES;
+extern int NUM_CACHED_PAGES;
 
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
@@ -1009,6 +1010,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         int_deserializer,
         nullptr,
         IntExtras{0, 5}
+        });
+    configs.push_back({
+        L"num_cached_pages",
+        ConfigType::Int,
+        &NUM_CACHED_PAGES,
+        int_serializer,
+        int_deserializer,
+        nullptr,
+        IntExtras{0, 100}
         });
     configs.push_back({
         L"num_prerendered_prev_slides",
