@@ -1986,6 +1986,37 @@ public:
 
 };
 
+class WaitCommand : public GenericWaitCommand {
+    std::optional<int> duration = {};
+    QDateTime start_time;
+public:
+    WaitCommand(MainWidget* w) : GenericWaitCommand(w) {
+        start_time = QDateTime::currentDateTime();
+    };
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (duration.has_value()) {
+            return GenericWaitCommand::next_requirement(widget);
+        }
+        else {
+            return Requirement{ RequirementType::Text, "Duration" };
+        }
+    }
+
+
+    void set_text_requirement(std::wstring text) {
+        duration = QString::fromStdWString(text).toInt();
+    }
+
+    bool is_ready() override {
+        return start_time.msecsTo(QDateTime::currentDateTime()) > duration.value();
+    }
+
+    std::string get_name() {
+        return "wait";
+    }
+
+};
 class WaitForIndexingToFinishCommand : public GenericWaitCommand {
 public:
     WaitForIndexingToFinishCommand(MainWidget* w) : GenericWaitCommand(w) {};
@@ -6138,6 +6169,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
     new_commands["screenshot"] = [](MainWidget* widget) {return std::make_unique< ScreenshotCommand>(widget); };
     new_commands["framebuffer_screenshot"] = [](MainWidget* widget) {return std::make_unique< FramebufferScreenshotCommand>(widget); };
+    new_commands["wait"] = [](MainWidget* widget) {return std::make_unique< WaitCommand>(widget); };
     new_commands["wait_for_renders_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForRendersToFinishCommand>(widget); };
     new_commands["wait_for_search_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForSearchToFinishCommand>(widget); };
     new_commands["wait_for_indexing_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForIndexingToFinishCommand>(widget); };
