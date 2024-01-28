@@ -41,6 +41,10 @@ extern bool TOC_JUMP_ALIGN_TOP;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 
+bool is_command_string_modal(const std::string& command_name) {
+    return std::find(command_name.begin(), command_name.end(), '[') != command_name.end();
+}
+
 struct CommandInvocation {
     QString command_name;
     QStringList command_args;
@@ -6731,13 +6735,13 @@ InputParseTreeNode* parse_lines(
             if (!existing_node) {
                 if ((tokens[i] != L"sym") && (tokens[i] != L"txt")) {
                     if (parent_node->is_final) {
-                        std::wcerr
+                        LOG(std::wcerr
                             << L"Warning: key defined in " << command_file_names[j]
                             << L":" << command_line_numbers[j]
                             << L" for " << utf8_decode(command_names[j][0])
                             << L" is unreachable, shadowed by final key sequence defined in "
                             << parent_node->defining_file_path
-                            << L":" << parent_node->defining_file_line << L"\n";
+                            << L":" << parent_node->defining_file_line << L"\n");
                     }
                     auto new_node = new InputParseTreeNode(node);
                     new_node->defining_file_line = command_line_numbers[j];
@@ -6761,17 +6765,19 @@ InputParseTreeNode* parse_lines(
                 (SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
                     (command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
                 if ((parent_node->name_.size() == 0) || parent_node->name_[0].compare(command_names[j][0]) != 0) {
+                    if (!is_command_string_modal(command_names[j][0])) {
 
-                    std::wcerr << L"Warning: key defined in " << parent_node->defining_file_path
-                        << L":" << parent_node->defining_file_line
-                        << L" overwritten by " << command_file_names[j]
-                        << L":" << command_line_numbers[j];
-                    if (parent_node->name_.size() > 0) {
-                        std::wcerr << L". Overriding command: " << line
-                            << L": replacing " << utf8_decode(parent_node->name_[0])
-                            << L" with " << utf8_decode(command_names[j][0]);
+                        std::wcerr << L"Warning: key defined in " << parent_node->defining_file_path
+                            << L":" << parent_node->defining_file_line
+                            << L" overwritten by " << command_file_names[j]
+                            << L":" << command_line_numbers[j];
+                        if (parent_node->name_.size() > 0) {
+                            std::wcerr << L". Overriding command: " << line
+                                << L": replacing " << utf8_decode(parent_node->name_[0])
+                                << L" with " << utf8_decode(command_names[j][0]);
+                        }
+                        std::wcerr << L"\n";
                     }
-                    std::wcerr << L"\n";
                 }
             }
             if ((size_t)i == (tokens.size() - 1)) {
@@ -6812,7 +6818,7 @@ InputParseTreeNode* parse_lines(
                 //if (command_names[j].size())
             }
             else {
-                if (parent_node->is_final && (parent_node->name_.size() > 0)) {
+                if (SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE && parent_node->is_final && (parent_node->name_.size() > 0)) {
                     std::wcerr << L"Warning: unmapping " << utf8_decode(parent_node->name_[0]) << L" because of " << utf8_decode(command_names[j][0]) << L" which uses " << line << L"\n";
                 }
                 parent_node->is_final = false;
