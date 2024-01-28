@@ -111,7 +111,9 @@ struct BookMark : Annotation {
     float get_y_offset() const;
 
     bool is_freetext() const;
+    bool is_box() const;
     bool is_marked() const;
+    std::optional<char> get_type() const;
 
     AbsoluteRect get_rectangle() const;
 };
