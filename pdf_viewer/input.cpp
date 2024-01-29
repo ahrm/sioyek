@@ -4169,6 +4169,20 @@ public:
 
 };
 
+class EmbedAnnotationsInFileCommand : public Command {
+public:
+    EmbedAnnotationsInFileCommand(MainWidget* w) : Command(w) {};
+    void perform() {
+        widget->doc()->embed_annotations_in_file();
+        widget->reload(false);
+    }
+
+    std::string get_name() {
+        return "embed_annotations_in_file";
+    }
+
+};
+
 class ReloadNoFlickerCommand : public Command {
 public:
     ReloadNoFlickerCommand(MainWidget* w) : Command(w) {};
@@ -6206,6 +6220,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["toggle_horizontal_scroll_lock"] = [](MainWidget* widget) {return std::make_unique< ToggleHorizontalLockCommand>(widget); };
     new_commands["execute"] = [](MainWidget* widget) {return std::make_unique< ExecuteCommand>(widget); };
     new_commands["embed_annotations"] = [](MainWidget* widget) {return std::make_unique< EmbedAnnotationsCommand>(widget); };
+    new_commands["embed_annotations_in_file"] = [](MainWidget* widget) {return std::make_unique< EmbedAnnotationsInFileCommand>(widget); };
     new_commands["import_annotations"] = [](MainWidget* widget) {return std::make_unique< ImportAnnotationsCommand>(widget); };
     new_commands["copy_window_size_config"] = [](MainWidget* widget) {return std::make_unique< CopyWindowSizeConfigCommand>(widget); };
     new_commands["toggle_select_highlight"] = [](MainWidget* widget) {return std::make_unique< ToggleSelectHighlightCommand>(widget); };

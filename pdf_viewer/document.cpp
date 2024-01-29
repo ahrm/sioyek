@@ -2075,6 +2075,10 @@ void Document::import_annotations() {
     }
 }
 
+void Document::embed_annotations_in_file() {
+    embed_annotations(file_name);
+}
+
 void Document::embed_annotations(std::wstring new_file_path) {
 
     std::unordered_map<int, fz_page*> cached_pages;
