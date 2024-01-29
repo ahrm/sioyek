@@ -220,6 +220,10 @@ void DocumentView::delete_highlight(Highlight hl) {
     current_document->delete_highlight(hl);
 }
 
+void DocumentView::delete_all_highlights() {
+    current_document->delete_all_highlights();
+}
+
 void DocumentView::delete_closest_bookmark_to_offset(float offset) {
     current_document->delete_closest_bookmark(offset);
 }

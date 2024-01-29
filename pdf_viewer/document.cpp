@@ -480,6 +480,14 @@ void Document::delete_highlight(Highlight hl) {
     }
 }
 
+void Document::delete_all_highlights() {
+    int index;
+    while (!highlights.empty()) {
+        index = highlights.size() - 1;
+        delete_highlight_with_index(index);
+    }
+}
+
 std::optional<Portal> Document::find_closest_portal(float to_offset_y, int* index) {
     int min_index = argminf<Portal>(portals, [to_offset_y](Portal l) {
         return abs(l.src_offset_y - to_offset_y);

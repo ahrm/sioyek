@@ -4796,6 +4796,20 @@ public:
 
 };
 
+class DeleteAllHighlightsCommand : public Command {
+public:
+    DeleteAllHighlightsCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->handle_delete_all_highlights();
+    }
+
+    std::string get_name() {
+        return "delete_all_highlights";
+    }
+
+};
+
 class NoopCommand : public Command {
 public:
 
@@ -6319,6 +6333,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["overview_prev_item"] = [](MainWidget* widget) {return std::make_unique< OverviewPrevItemCommand>(widget); };
     new_commands["delete_highlight_under_cursor"] = [](MainWidget* widget) {return std::make_unique< DeleteHighlightUnderCursorCommand>(widget); };
     new_commands["noop"] = [](MainWidget* widget) {return std::make_unique< NoopCommand>(widget); };
+    new_commands["delete_all_highlights"] = [](MainWidget* widget) {return std::make_unique< DeleteAllHighlightsCommand>(widget); };
     new_commands["import"] = [](MainWidget* widget) {return std::make_unique< ImportCommand>(widget); };
     new_commands["export"] = [](MainWidget* widget) {return std::make_unique< ExportCommand>(widget); };
     new_commands["write_annotations_file"] = [](MainWidget* widget) {return std::make_unique< WriteAnnotationsFileCommand>(widget); };
