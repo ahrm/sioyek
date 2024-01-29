@@ -2357,6 +2357,7 @@ public:
     NextPageCommand(MainWidget* w) : Command(w) {};
     void perform() {
         widget->main_document_view->move_pages(std::max(1, num_repeats));
+        widget->validate_render();
     }
     std::string get_name() {
         return "next_page";
@@ -2369,6 +2370,7 @@ public:
     PreviousPageCommand(MainWidget* w) : Command(w) {};
     void perform() {
         widget->main_document_view->move_pages(std::min(-1, -num_repeats));
+        widget->validate_render();
     }
 
     std::string get_name() {
