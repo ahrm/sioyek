@@ -292,7 +292,6 @@ void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
     }
 }
 
-
 std::string Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
     std::deque<AbsoluteRect> selected_characters;
     std::vector<AbsoluteRect> merged_rects;
@@ -471,6 +470,9 @@ void Document::delete_highlight_with_index(int index) {
     is_annotations_dirty = true;
 }
 
+
+
+
 void Document::delete_highlight(Highlight hl) {
     for (size_t i = (highlights.size() - 1); i >= 0; i--) {
         if (highlights[i] == hl) {
@@ -481,9 +483,11 @@ void Document::delete_highlight(Highlight hl) {
 }
 
 void Document::clear_all_current_document_highlights() {
-    db_manager->delete_all_current_doc_highlights();
-    highlights.clear();
-    is_annotations_dirty = true;
+    if (user_confirms_to_prompt(L"This will remove all the highlights in this document. Do you wish to proceed?")) {
+        db_manager->delete_all_current_doc_highlights(get_checksum());
+        highlights.clear();
+        is_annotations_dirty = true;
+    }
 }
 
 std::optional<Portal> Document::find_closest_portal(float to_offset_y, int* index) {

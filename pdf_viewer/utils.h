@@ -54,6 +54,7 @@ void copy_to_clipboard(const std::wstring& text, bool selection = false);
 void install_app(const char* argv0);
 int get_f_key(std::wstring name);
 void show_error_message(const std::wstring& error_message);
+bool user_confirms_to_prompt(const std::wstring& prompt_message);
 std::wstring utf8_decode(const std::string& encoded_str);
 std::string utf8_encode(const std::wstring& decoded_str);
 // is the character a right to left character
