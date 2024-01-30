@@ -5876,8 +5876,8 @@ void MainWidget::handle_toggle_typing_mode() {
     }
 }
 
-void MainWidget::handle_delete_all_highlights() {
-    main_document_view->delete_all_highlights();
+void MainWidget::handle_clear_all_current_document_highlights() {
+    doc()->clear_all_current_document_highlights();
 }
 
 void MainWidget::handle_delete_highlight_under_cursor() {

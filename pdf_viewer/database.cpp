@@ -941,6 +941,20 @@ bool DatabaseManager::delete_highlight(const std::string& uuid) {
         error_message);
 }
 
+bool DatabaseManager::delete_all_current_doc_highlights() {
+    std::wstringstream ss;
+    // std::wstring threshold = QString::number(HIGHLIGHT_DELETE_THRESHOLD).toStdWString();
+    ss << "DELETE FROM highlights;";
+
+    char* error_message = nullptr;
+
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        "delete_all_current_doc_highlights",
+        error_code,
+        error_message);
+}
+
 bool DatabaseManager::update_mark(const std::string& document_path, char symbol, float offset_y, std::optional<float> offset_x, std::optional<float> zoom_level) {
 
     std::wstringstream ss;

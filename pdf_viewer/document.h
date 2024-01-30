@@ -182,8 +182,8 @@ public:
     std::string add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     void delete_highlight_with_index(int index);
     void delete_highlight(Highlight hl);
+    void clear_all_current_document_highlights();
     int get_bookmark_index_at_pos(AbsoluteDocumentPos abspos);
-    void delete_all_highlights();
     int get_portal_index_at_pos(AbsoluteDocumentPos abspos);
     bool should_render_pdf_annotations();
     void set_should_render_pdf_annotations(bool val);

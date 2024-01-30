@@ -480,12 +480,15 @@ void Document::delete_highlight(Highlight hl) {
     }
 }
 
-void Document::delete_all_highlights() {
+void Document::clear_all_current_document_highlights() {
+    db_manager->delete_all_current_doc_highlights();
+
     int index;
-    while (!highlights.empty()) {
+    while (! highlights.empty()) {
         index = highlights.size() - 1;
-        delete_highlight_with_index(index);
+        highlights.erase(highlights.begin() + index);
     }
+    is_annotations_dirty = true;
 }
 
 std::optional<Portal> Document::find_closest_portal(float to_offset_y, int* index) {

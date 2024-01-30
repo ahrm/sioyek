@@ -600,7 +600,7 @@ public:
     void handle_overview_to_portal();
     void handle_toggle_typing_mode();
     void handle_delete_highlight_under_cursor();
-    void handle_delete_all_highlights();
+    void handle_clear_all_current_document_highlights();
     void handle_delete_selected_highlight();
     void handle_start_reading();
     void handle_stop_reading();
