@@ -482,12 +482,7 @@ void Document::delete_highlight(Highlight hl) {
 
 void Document::clear_all_current_document_highlights() {
     db_manager->delete_all_current_doc_highlights();
-
-    int index;
-    while (! highlights.empty()) {
-        index = highlights.size() - 1;
-        highlights.erase(highlights.begin() + index);
-    }
+    highlights.clear();
     is_annotations_dirty = true;
 }
 
