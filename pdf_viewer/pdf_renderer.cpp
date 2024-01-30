@@ -9,8 +9,8 @@ extern bool TOUCH_MODE;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SMARTCASE_SEARCH;
-
-
+extern float GAMMA;
+extern int NUM_CACHED_PAGES;
 
 
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone) : context_to_clone(context_to_clone),
@@ -282,11 +282,8 @@ void PdfRenderer::delete_old_pages(bool force_all, bool invalidate_all) {
     for (size_t i = 0; i < cached_responses.size(); i++) {
         cached_response_times.push_back(now - cached_responses[i].last_access_time);
     }
-#ifdef SIOYEK_ANDROID
-    int N = 10;
-#else
-    int N = 5;
-#endif
+
+    int N = NUM_CACHED_PAGES;
 
     if (invalidate_all) {
         for (size_t i = 0; i < cached_responses.size(); i++) {
@@ -599,6 +596,9 @@ void PdfRenderer::run(int thread_index) {
 
                 }
 
+                if (GAMMA != 1.0f) {
+                    fz_gamma_pixmap(mupdf_context, rendered_pixmap, GAMMA);
+                }
 
                 RenderResponse resp;
                 resp.thread = thread_index;

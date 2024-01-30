@@ -78,6 +78,8 @@ struct Annotation {
 struct Mark : Annotation {
     float y_offset;
     char symbol;
+    std::optional<float> x_offset = {};
+    std::optional<float> zoom_level = {};
 
     QJsonObject to_json(std::string doc_checksum) const;
     void from_json(const QJsonObject& json_object);
@@ -109,7 +111,9 @@ struct BookMark : Annotation {
     float get_y_offset() const;
 
     bool is_freetext() const;
+    bool is_box() const;
     bool is_marked() const;
+    std::optional<char> get_type() const;
 
     AbsoluteRect get_rectangle() const;
 };

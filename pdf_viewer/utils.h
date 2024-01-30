@@ -72,8 +72,8 @@ fz_stext_char* find_closest_char_to_document_point(const std::vector<fz_stext_ch
 void split_key_string(std::wstring haystack, const std::wstring& needle, std::vector<std::wstring>& res);
 void run_command(std::wstring command, QStringList parameters, bool wait = true);
 
-std::wstring get_string_from_stext_block(fz_stext_block* block);
-std::wstring get_string_from_stext_line(fz_stext_line* line);
+std::wstring get_string_from_stext_block(fz_stext_block* block, bool handle_rtl=false);
+std::wstring get_string_from_stext_line(fz_stext_line* line, bool handle_rtl=false);
 std::vector<PagelessDocumentRect> get_char_rects_from_stext_line(fz_stext_line* line);
 void sleep_ms(unsigned int ms);
 //void open_url(const std::string& url_string);
@@ -233,6 +233,7 @@ QString android_file_uri_from_content_uri(QString uri);
 
 char get_highlight_color_type(float color[3]);
 float* get_highlight_type_color(char type);
+void lighten_color(float input[3], float output[3]);
 std::wstring clean_bib_item(std::wstring bib_item);
 std::wstring clean_link_source_text(std::wstring link_source_text);
 std::vector<FreehandDrawingPoint> prune_freehand_drawing_points(const std::vector<FreehandDrawingPoint>& points);
@@ -441,3 +442,7 @@ bool is_bright(float color[3]);
 bool is_abbreviation(const std::wstring& txt);
 bool is_in(char c, std::vector<char> candidates);
 bool is_doc_valid(fz_context* ctx, std::string path);
+QString get_ui_font_face_name();
+QString get_status_font_face_name();
+std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line);
+std::vector<fz_stext_char*> reorder_mixed_stext_line(fz_stext_line* line);

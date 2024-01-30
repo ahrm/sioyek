@@ -39,6 +39,12 @@ extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
+extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
+extern bool INCREMENTAL_SEARCH;
+
+bool is_command_string_modal(const std::string& command_name) {
+    return std::find(command_name.begin(), command_name.end(), '[') != command_name.end();
+}
 
 struct CommandInvocation {
     QString command_name;
@@ -71,8 +77,19 @@ Command::Command(MainWidget* widget_) : widget(widget_) {
 
 }
 
+bool Command::is_menu_command() {
+    // returns true if the command is a macro designed to run only on menus (m)
+    // we then ignore keys in menus if they are bound to such commands so they
+    // can be later handled by our own InputHandler
+    return false;
+}
+
 Command::~Command() {
 
+}
+
+std::optional<std::wstring> Command::get_text_suggestion(int index) {
+    return {};
 }
 
 void Command::set_result_socket(QLocalSocket* socket) {
@@ -522,8 +539,20 @@ public:
     SearchCommand(MainWidget* w) : TextCommand(w) {
     };
 
+    void pre_perform() {
+        if (INCREMENTAL_SEARCH) {
+            widget->main_document_view->add_mark('/');
+        }
+    }
+
+    virtual void on_cancel() override{
+        if (INCREMENTAL_SEARCH) {
+            widget->goto_mark('/');
+        }
+    }
+
     void perform() {
-        widget->perform_search(this->text.value(), false);
+        widget->perform_search(this->text.value(), false, INCREMENTAL_SEARCH);
         if (TOUCH_MODE) {
             widget->show_search_buttons();
         }
@@ -535,6 +564,10 @@ public:
 
     bool pushes_state() {
         return true;
+    }
+
+    std::optional<std::wstring> get_text_suggestion(int index) {
+        return widget->get_search_suggestion_with_index(index);
     }
 
     std::wstring get_text_default_value() {
@@ -1300,6 +1333,51 @@ public:
 
 };
 
+class CopyScreenshotToClipboard : public Command {
+
+public:
+
+    std::optional<AbsoluteRect> rect_;
+
+    CopyScreenshotToClipboard(MainWidget* w) : Command(w) {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+        if (!rect_.has_value()) {
+            Requirement req = { RequirementType::Rect, "Screenshot rect" };
+            return req;
+        }
+        return {};
+    }
+
+    void set_rect_requirement(AbsoluteRect value) {
+        rect_ = value;
+    }
+
+    void perform() {
+        widget->clear_selected_rect();
+
+        WindowRect window_rect = rect_->to_window(widget->main_document_view);
+        window_rect.y0 += 1;
+        QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.width(), window_rect.height());
+
+        float ratio = QGuiApplication::primaryScreen()->devicePixelRatio();
+        QPixmap pixmap(static_cast<int>(window_qrect.width() * ratio), static_cast<int>(window_qrect.height() * ratio));
+        pixmap.setDevicePixelRatio(ratio);
+
+        //widget->render(&pixmap, QPoint(), QRegion(widget->rect()));
+        widget->render(&pixmap, QPoint(), QRegion(window_qrect));
+        QApplication::clipboard()->setPixmap(pixmap);
+
+        widget->set_rect_select_mode(false);
+        widget->invalidate_render();
+    }
+
+    std::string get_name() {
+        return "copy_screenshot_to_clipboard";
+    }
+
+};
 class CopyScreenshotToScratchpad : public Command {
 
 public:
@@ -1908,6 +1986,37 @@ public:
 
 };
 
+class WaitCommand : public GenericWaitCommand {
+    std::optional<int> duration = {};
+    QDateTime start_time;
+public:
+    WaitCommand(MainWidget* w) : GenericWaitCommand(w) {
+        start_time = QDateTime::currentDateTime();
+    };
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (duration.has_value()) {
+            return GenericWaitCommand::next_requirement(widget);
+        }
+        else {
+            return Requirement{ RequirementType::Text, "Duration" };
+        }
+    }
+
+
+    void set_text_requirement(std::wstring text) {
+        duration = QString::fromStdWString(text).toInt();
+    }
+
+    bool is_ready() override {
+        return start_time.msecsTo(QDateTime::currentDateTime()) > duration.value();
+    }
+
+    std::string get_name() {
+        return "wait";
+    }
+
+};
 class WaitForIndexingToFinishCommand : public GenericWaitCommand {
 public:
     WaitForIndexingToFinishCommand(MainWidget* w) : GenericWaitCommand(w) {};
@@ -2248,6 +2357,7 @@ public:
     NextPageCommand(MainWidget* w) : Command(w) {};
     void perform() {
         widget->main_document_view->move_pages(std::max(1, num_repeats));
+        widget->validate_render();
     }
     std::string get_name() {
         return "next_page";
@@ -2260,6 +2370,7 @@ public:
     PreviousPageCommand(MainWidget* w) : Command(w) {};
     void perform() {
         widget->main_document_view->move_pages(std::min(-1, -num_repeats));
+        widget->validate_render();
     }
 
     std::string get_name() {
@@ -5745,6 +5856,19 @@ public:
         }
     }
 
+    bool is_menu_command() {
+        if (is_modal) {
+            bool res = false;
+            for (std::string mode : modes) {
+                if (mode == "m") {
+                    res = true;
+                }
+            }
+            return res;
+        }
+        return false;
+    }
+
     void set_generic_requirement(QVariant value) {
         if (is_modal) {
             int current_mode_index = get_current_mode_index();
@@ -6061,6 +6185,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["open_document"] = [](MainWidget* widget) {return std::make_unique< OpenDocumentCommand>(widget); };
     new_commands["screenshot"] = [](MainWidget* widget) {return std::make_unique< ScreenshotCommand>(widget); };
     new_commands["framebuffer_screenshot"] = [](MainWidget* widget) {return std::make_unique< FramebufferScreenshotCommand>(widget); };
+    new_commands["wait"] = [](MainWidget* widget) {return std::make_unique< WaitCommand>(widget); };
     new_commands["wait_for_renders_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForRendersToFinishCommand>(widget); };
     new_commands["wait_for_search_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForSearchToFinishCommand>(widget); };
     new_commands["wait_for_indexing_to_finish"] = [](MainWidget* widget) {return std::make_unique< WaitForIndexingToFinishCommand>(widget); };
@@ -6069,6 +6194,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["add_freetext_bookmark"] = [](MainWidget* widget) {return std::make_unique< AddBookmarkFreetextCommand>(widget); };
     new_commands["copy_drawings_from_scratchpad"] = [](MainWidget* widget) {return std::make_unique< CopyDrawingsFromScratchpadCommand>(widget); };
     new_commands["copy_screenshot_to_scratchpad"] = [](MainWidget* widget) {return std::make_unique< CopyScreenshotToScratchpad>(widget); };
+    new_commands["copy_screenshot_to_clipboard"] = [](MainWidget* widget) {return std::make_unique< CopyScreenshotToClipboard>(widget); };
     new_commands["add_highlight"] = [](MainWidget* widget) {return std::make_unique< AddHighlightCommand>(widget); };
     new_commands["goto_toc"] = [](MainWidget* widget) {return std::make_unique< GotoTableOfContentsCommand>(widget); };
     new_commands["goto_highlight"] = [](MainWidget* widget) {return std::make_unique< GotoHighlightCommand>(widget); };
@@ -6451,6 +6577,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
         new_commands[command_name] = [command_name, local_command_value, this](MainWidget* w) {return  std::make_unique<CustomCommand>(w, command_name, local_command_value); };
     }
 
+
     for (auto [command_name_, command_files_pair] : ADDITIONAL_JAVASCRIPT_COMMANDS) {
         handle_new_javascript_command(command_name_, command_files_pair, false);
     }
@@ -6481,6 +6608,15 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 
     }
 
+    QDateTime current_time = QDateTime::currentDateTime();
+    for (auto [command_name, _] : new_commands) {
+        command_last_uses[command_name] = current_time;
+    }
+
+}
+
+void CommandManager::update_command_last_use(std::string command_name) {
+    command_last_uses[command_name] = QDateTime::currentDateTime();
 }
 
 void CommandManager::handle_new_javascript_command(std::wstring command_name_, std::pair<std::wstring, std::wstring> command_files_pair, bool is_async) {
@@ -6514,13 +6650,27 @@ std::unique_ptr<Command> CommandManager::get_command_with_name(MainWidget* w, st
 }
 
 QStringList CommandManager::get_all_command_names() {
+    std::vector<std::pair<QDateTime, QString>> pairs;
     QStringList res;
-    //for (const auto &com : commands) {
-    //	res.push_back(QString::fromStdString(com.name));
-    //}
-    for (const auto& com : new_commands) {
-        res.push_back(QString::fromStdString(com.first));
+
+    if (SHOW_MOST_RECENT_COMMANDS_FIRST) {
+        for (const auto& com : new_commands) {
+            pairs.push_back(std::make_pair(command_last_uses[com.first], QString::fromStdString(com.first)));
+        }
+
+        std::sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {return a.first > b.first; });
+
+        for (auto [_, com] : pairs) {
+            res.push_back(com);
+        }
     }
+    else {
+        for (const auto& com : new_commands) {
+            res.push_back(QString::fromStdString(com.first));
+        }
+    }
+
+
     return res;
 }
 
@@ -6693,13 +6843,13 @@ InputParseTreeNode* parse_lines(
             if (!existing_node) {
                 if ((tokens[i] != L"sym") && (tokens[i] != L"txt")) {
                     if (parent_node->is_final) {
-                        std::wcerr
+                        LOG(std::wcerr
                             << L"Warning: key defined in " << command_file_names[j]
                             << L":" << command_line_numbers[j]
                             << L" for " << utf8_decode(command_names[j][0])
                             << L" is unreachable, shadowed by final key sequence defined in "
                             << parent_node->defining_file_path
-                            << L":" << parent_node->defining_file_line << L"\n";
+                            << L":" << parent_node->defining_file_line << L"\n");
                     }
                     auto new_node = new InputParseTreeNode(node);
                     new_node->defining_file_line = command_line_numbers[j];
@@ -6723,17 +6873,19 @@ InputParseTreeNode* parse_lines(
                 (SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
                     (command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
                 if ((parent_node->name_.size() == 0) || parent_node->name_[0].compare(command_names[j][0]) != 0) {
+                    if (!is_command_string_modal(command_names[j][0])) {
 
-                    LOG(std::wcerr << L"Warning: key defined in " << parent_node->defining_file_path
-                        << L":" << parent_node->defining_file_line
-                        << L" overwritten by " << command_file_names[j]
-                        << L":" << command_line_numbers[j]);
-                    if (parent_node->name_.size() > 0) {
-                        LOG(std::wcerr << L". Overriding command: " << line
-                            << L": replacing " << utf8_decode(parent_node->name_[0])
-                            << L" with " << utf8_decode(command_names[j][0]));
+                        std::wcerr << L"Warning: key defined in " << parent_node->defining_file_path
+                            << L":" << parent_node->defining_file_line
+                            << L" overwritten by " << command_file_names[j]
+                            << L":" << command_line_numbers[j];
+                        if (parent_node->name_.size() > 0) {
+                            std::wcerr << L". Overriding command: " << line
+                                << L": replacing " << utf8_decode(parent_node->name_[0])
+                                << L" with " << utf8_decode(command_names[j][0]);
+                        }
+                        std::wcerr << L"\n";
                     }
-                    LOG(std::wcerr << L"\n");
                 }
             }
             if ((size_t)i == (tokens.size() - 1)) {
@@ -6774,7 +6926,7 @@ InputParseTreeNode* parse_lines(
                 //if (command_names[j].size())
             }
             else {
-                if (parent_node->is_final && (parent_node->name_.size() > 0)) {
+                if (SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE && parent_node->is_final && (parent_node->name_.size() > 0)) {
                     std::wcerr << L"Warning: unmapping " << utf8_decode(parent_node->name_[0]) << L" because of " << utf8_decode(command_names[j][0]) << L" which uses " << line << L"\n";
                 }
                 parent_node->is_final = false;
@@ -6834,7 +6986,7 @@ void get_keys_file_lines(const Path& file_path,
             continue;
         }
 
-        QString line_string = QString::fromStdWString(line);
+        QString line_string = QString::fromStdWString(line).trimmed();
         int last_space_index = line_string.lastIndexOf(' ');
 
         if (last_space_index >= 0){
@@ -6900,15 +7052,30 @@ bool is_digit(int key) {
     return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+std::unique_ptr<Command> InputHandler::get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed) {
+    // get the command for keyevent while we are in a menu. In menus we don't
+    // support key melodies so we just check the children of the root if they match
+    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &alt_pressed);
+    for (auto child : root->children) {
+        if (child->is_final && child->matches(key, shift_pressed, control_pressed, alt_pressed)){
+            if (child->generator.has_value()) {
+                return child->generator.value()(w);
+            }
+        }
+    }
+
+    return {};
+}
+
+int InputHandler::get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* alt_pressed) {
     int key = 0;
     if (!USE_LEGACY_KEYBINDS) {
         std::vector<QString> special_texts = { "\b", "\t", " ", "\r", "\n" };
         if (((key_event->key() >= 'A') && (key_event->key() <= 'Z')) || ((key_event->text().size() > 0) &&
             (std::find(special_texts.begin(), special_texts.end(), key_event->text()) == special_texts.end()))) {
-            if (!control_pressed && !alt_pressed) {
+            if (!(*control_pressed) && !(*alt_pressed)) {
                 // shift is already handled in the returned text
-                shift_pressed = false;
+                *shift_pressed = false;
                 std::wstring text = key_event->text().toStdWString();
                 key = key_event->text().toStdWString()[0];
             }
@@ -6916,8 +7083,8 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
                 auto text = key_event->text();
                 key = key_event->key();
 
-                if ((key >= 'A' && key <= 'Z') && (!shift_pressed)) {
-                    if (!shift_pressed) {
+                if ((key >= 'A' && key <= 'Z') && (!*shift_pressed)) {
+                    if (!*shift_pressed) {
                         key = key - 'A' + 'a';
                     }
                 }
@@ -6938,7 +7105,12 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
         }
 
     }
+    return key;
+}
 
+std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+
+    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &alt_pressed);
     if (current_node == root && is_digit(key)) {
         if (!(key == '0' && (number_stack.size() == 0)) && (!control_pressed) && (!shift_pressed) && (!alt_pressed)) {
             number_stack.push_back('0' + key - Qt::Key::Key_0);
@@ -6974,7 +7146,7 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
             }
         }
     }
-    std::wcerr << "Warning: invalid command (key:" << (char)key << "); resetting to root" << std::endl;
+    LOG(std::wcerr << "Warning: invalid command (key:" << (char)key << "); resetting to root" << std::endl);
     number_stack.clear();
     current_node = root;
     return nullptr;

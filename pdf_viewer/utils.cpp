@@ -64,6 +64,8 @@ extern float UI_TEXT_COLOR[3];
 extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH;
 extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
+extern std::wstring UI_FONT_FACE_NAME;
+extern std::wstring STATUS_FONT_FACE_NAME;
 
 extern bool VERBOSE;
 
@@ -374,6 +376,47 @@ bool is_stext_page_rtl(fz_stext_page* stext_page) {
         }
     }
     return ((rtl_count / total_count) > 0.5f);
+}
+
+std::vector<fz_stext_char*> reorder_mixed_stext_line(fz_stext_line* line) {
+
+
+    bool rtl = is_stext_line_rtl(line);
+    std::vector<fz_stext_char*> chars = reorder_stext_line(line);
+    auto should_be_reversed = [&](int c) {
+        if (rtl) {
+            return !is_rtl(c);
+        }
+        else {
+            return is_rtl(c);
+        }
+    };
+
+    std::vector<std::pair<int, int>> ltr_spans;
+
+    std::optional<int> range_begin = {};
+
+    for (int i = 0; i < chars.size(); i++) {
+        if (chars[i]->c <= 64) continue;
+
+        if (should_be_reversed(chars[i]->c)) {
+            if (!range_begin.has_value()) range_begin = i;
+        }
+        else {
+            if (range_begin.has_value()) {
+                ltr_spans.push_back(std::make_pair(range_begin.value(), i - 1));
+                range_begin = {};
+            }
+        }
+    }
+    if (range_begin.has_value()) {
+        ltr_spans.push_back(std::make_pair(range_begin.value(), chars.size() - 1));
+    }
+
+    for (auto [begin, end] : ltr_spans) {
+        std::reverse(chars.begin() + begin, chars.begin() + end + 1);
+    }
+    return chars;
 }
 
 std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line) {
@@ -830,11 +873,11 @@ bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char) {
 }
 
 
-std::wstring get_string_from_stext_block(fz_stext_block* block) {
+std::wstring get_string_from_stext_block(fz_stext_block* block, bool handle_rtl) {
     if (block->type == FZ_STEXT_BLOCK_TEXT) {
         std::wstring res;
         LL_ITER(line, block->u.t.first_line) {
-            res += get_string_from_stext_line(line);
+            res += get_string_from_stext_line(line, handle_rtl);
             if (line->next && res.size() > 0) {
                 if (res.back() == '-') {
                     res.pop_back();
@@ -850,13 +893,23 @@ std::wstring get_string_from_stext_block(fz_stext_block* block) {
         return L"";
     }
 }
-std::wstring get_string_from_stext_line(fz_stext_line* line) {
+std::wstring get_string_from_stext_line(fz_stext_line* line, bool handle_rtl) {
 
-    std::wstring res;
-    LL_ITER(ch, line->first_char) {
-        res.push_back(ch->c);
+    if (!handle_rtl) {
+        std::wstring res;
+        LL_ITER(ch, line->first_char) {
+            res.push_back(ch->c);
+        }
+        return res;
     }
-    return res;
+    else {
+        std::vector<fz_stext_char*> chars = reorder_mixed_stext_line(line);
+        std::wstring res;
+        for (auto ch : chars) {
+            res.push_back(ch->c);
+        }
+        return res;
+    }
 }
 
 std::vector<PagelessDocumentRect> get_char_rects_from_stext_line(fz_stext_line* line) {
@@ -2564,15 +2617,11 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
     fz_document* doc = fz_open_document(context, utf8_encode(file_name).c_str());
     if (fz_is_document_reflowable(context, doc)) {
 
-        //if (EPUB_CSS.size() > 0) {
-        //	std::string encoded = utf8_encode(EPUB_CSS);
-        //	fz_set_user_css(context, encoded.c_str());
-        //}
-        //else {
-        //	QString temp = EPUB_TEMPLATE;
-        //	std::string encoded = temp.replace("%{line_spacing}", QString::number(EPUB_LINE_SPACING)).toStdString();
-        //	fz_set_user_css(context, encoded.c_str());
-        //}
+        if (EPUB_CSS.size() > 0) {
+            std::string css = utf8_encode(EPUB_CSS);
+            fz_set_user_css(context, css.c_str());
+        }
+
         fz_layout_document(context, doc, EPUB_WIDTH, EPUB_HEIGHT, EPUB_FONT_SIZE);
 
         //int a = 2;
@@ -2855,6 +2904,25 @@ float* get_highlight_type_color(char type) {
         return &HIGHLIGHT_COLORS[(type - 'A') * 3];
     }
     return &HIGHLIGHT_COLORS[0];
+}
+
+void lighten_color(float input[3], float output[3]) {
+    QColor color = qRgb(
+        static_cast<int>(input[0] * 255),
+        static_cast<int>(input[1] * 255),
+        static_cast<int>(input[2] * 255)
+    );
+    float prev_lightness = static_cast<float>(color.lightness()) / 255.0f;
+    int lightness_increase = static_cast<int>((0.9f / prev_lightness) * 100);
+
+    QColor lighter = color;
+    if (lightness_increase > 100) {
+        lighter = color.lighter(lightness_increase);
+    }
+
+    output[0] = lighter.redF();
+    output[1] = lighter.greenF();
+    output[2] = lighter.blueF();
 }
 
 
@@ -3915,4 +3983,22 @@ bool is_doc_valid(fz_context* ctx, std::string path) {
 
     return is_valid;
 
+}
+
+QString get_ui_font_face_name() {
+    if (UI_FONT_FACE_NAME.empty()) {
+        return "";
+    }
+    else {
+        return QString::fromStdWString(UI_FONT_FACE_NAME);
+    }
+}
+
+QString get_status_font_face_name() {
+    if (STATUS_FONT_FACE_NAME.empty()) {
+        return "Monospace";
+    }
+    else {
+        return QString::fromStdWString(STATUS_FONT_FACE_NAME);
+    }
 }

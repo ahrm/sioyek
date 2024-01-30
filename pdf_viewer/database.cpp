@@ -49,6 +49,7 @@ static int id_callback(void* res_vector, int argc, char** argv, char** col_name)
 
     return 0;
 }
+
 static int opened_book_callback(void* res_vector, int argc, char** argv, char** col_name) {
     std::vector<OpenedBookState>* res = (std::vector<OpenedBookState>*) res_vector;
 
@@ -64,6 +65,7 @@ static int opened_book_callback(void* res_vector, int argc, char** argv, char** 
     return 0;
 }
 
+
 static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col_name) {
     std::vector<std::wstring>* res = (std::vector<std::wstring>*) res_vector;
 
@@ -75,16 +77,34 @@ static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col
     return 0;
 }
 
+static int prev_doc_with_name_callback(void* res_vector, int argc, char** argv, char** col_name) {
+    std::vector<std::pair<std::wstring, std::wstring>>* res = (std::vector<std::pair<std::wstring, std::wstring>>*) res_vector;
+
+    assert(argc == 2);
+
+    std::wstring path = utf8_decode(argv[0]);
+    std::wstring doc_name = L"";
+    if (argv[1]) {
+        doc_name = utf8_decode(argv[1]);
+    }
+    res->push_back(std::make_pair(path, doc_name));
+    return 0;
+}
+
 static int mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<Mark>* res = (std::vector<Mark>*)res_vector;
-    assert(argc == 5);
+    assert(argc == 7);
 
     char symbol = argv[0][0];
     float offset_y = atof(argv[1]);
-    std::string uuid = argv[2];
-    std::string creation_time = argv[3];
-    std::string modification_time = argv[4];
+    std::optional<float> offset_x = {};
+    std::optional<float> zoom_level = {};
+    if (argv[2]) offset_x = atof(argv[2]);
+    if (argv[3]) zoom_level = atof(argv[3]);
+    std::string uuid = argv[4];
+    std::string creation_time = argv[5];
+    std::string modification_time = argv[6];
 
     Mark m;
     m.y_offset = offset_y;
@@ -92,6 +112,8 @@ static int mark_select_callback(void* res_vector, int argc, char** argv, char** 
     m.uuid = uuid;
     m.creation_time = creation_time;
     m.modification_time = modification_time;
+    m.x_offset = offset_x;
+    m.zoom_level = zoom_level;
 
     res->push_back(m);
     return 0;
@@ -452,9 +474,9 @@ static int link_select_callback(void* res_vector, int argc, char** argv, char** 
 //	(static_cast<std::vector<std::tuple<Types...>>*>(res_vector))->push_back(item);
 //}
 
-bool handle_error(int error_code, char* error_message) {
+bool handle_error(const QString& func_name, int error_code, char* error_message) {
     if (error_code != SQLITE_OK) {
-        qDebug() << "SQL Error: " << error_message << "\n";
+        qDebug() << "SQL Error in " << func_name << " : " << error_message << "\n";
         sqlite3_free(error_message);
         return false;
     }
@@ -496,6 +518,7 @@ bool DatabaseManager::create_opened_books_table() {
     const char* create_opened_books_sql = "CREATE TABLE IF NOT EXISTS opened_books ("\
         "id INTEGER PRIMARY KEY AUTOINCREMENT,"\
         "path TEXT UNIQUE,"\
+        "document_name TEXT,"\
         "zoom_level REAL,"\
         "offset_x REAL,"\
         "offset_y REAL,"\
@@ -503,7 +526,7 @@ bool DatabaseManager::create_opened_books_table() {
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, create_opened_books_sql, null_callback, 0, &error_message);
-    return handle_error(error_code, error_message);
+    return handle_error("create_opened_books_table", error_code, error_message);
 }
 
 bool DatabaseManager::create_marks_table() {
@@ -511,7 +534,9 @@ bool DatabaseManager::create_marks_table() {
         "id INTEGER PRIMARY KEY AUTOINCREMENT," \
         "document_path TEXT,"\
         "symbol CHAR,"\
+        "offset_x real,"\
         "offset_y real,"\
+        "zoom_level real,"\
         "creation_time timestamp,"\
         "modification_time timestamp,"\
         "uuid TEXT,"\
@@ -520,6 +545,7 @@ bool DatabaseManager::create_marks_table() {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, create_marks_sql, null_callback, 0, &error_message);
     return handle_error(
+        "create_marks_table",
         error_code,
         error_message);
 }
@@ -546,6 +572,7 @@ bool DatabaseManager::create_bookmarks_table() {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, create_bookmarks_sql, null_callback, 0, &error_message);
     return handle_error(
+        "create_bookmarks_table",
         error_code,
         error_message);
 }
@@ -568,6 +595,7 @@ bool DatabaseManager::create_highlights_table() {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, create_highlights_sql, null_callback, 0, &error_message);
     return handle_error(
+        "create_highlights_table",
         error_code,
         error_message);
 }
@@ -582,6 +610,7 @@ bool DatabaseManager::create_document_hash_table() {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(local_db, create_document_hash_sql, null_callback, 0, &error_message);
     return handle_error(
+        "create_document_hash_table",
         error_code,
         error_message);
 }
@@ -603,6 +632,7 @@ bool DatabaseManager::create_links_table() {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, create_marks_sql, null_callback, 0, &error_message);
     return handle_error(
+        "create_links_table",
         error_code,
         error_message);
 }
@@ -637,35 +667,57 @@ bool DatabaseManager::insert_document_hash(const std::wstring& path, const std::
 
     char* delete_error_message = nullptr;
     int delete_error_code = sqlite3_exec(local_db, utf8_encode(delete_ss.str()).c_str(), null_callback, 0, &delete_error_message);
-    handle_error(delete_error_code, delete_error_message);
+    handle_error(
+        "insert_document_hash",
+        delete_error_code, delete_error_message);
 
     char* insert_error_message = nullptr;
     int insert_error_code = sqlite3_exec(local_db, utf8_encode(insert_ss.str()).c_str(), null_callback, 0, &insert_error_message);
-    return handle_error(insert_error_code, insert_error_message);
+    return handle_error("insert_document_hash", insert_error_code, insert_error_message);
 }
 
-bool DatabaseManager::update_book(const std::string& path, float zoom_level, float offset_x, float offset_y) {
+bool DatabaseManager::update_book(const std::string& path, float zoom_level, float offset_x, float offset_y, std::wstring actual_name) {
 
     std::wstringstream ss;
-    ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time) values ('" <<
-        esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'));";
+    ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time, document_name) values ('" <<
+        esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'), '" << esc(actual_name) << "');";
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "update_book",
         error_code,
         error_message);
 }
 
-bool DatabaseManager::insert_mark(const std::string& document_path, char symbol, float offset_y, std::wstring uuid) {
+bool DatabaseManager::insert_mark(
+    const std::string& document_path,
+    char symbol,
+    float offset_y,
+    std::wstring uuid,
+    std::optional<float> offset_x,
+    std::optional<float> zoom_level) {
 
     //todo: probably should escape symbol too
     std::wstringstream ss;
-    ss << "INSERT INTO marks (document_path, symbol, offset_y, uuid, creation_time, modification_time) VALUES ('" << esc(document_path) << "', '" << symbol << "', " << offset_y << ", '" << esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
+    if (!offset_x.has_value()) {
+        ss << "INSERT INTO marks (document_path, symbol, offset_y, uuid, creation_time, modification_time) VALUES ('" << esc(document_path) << "', '" << symbol << "', " << offset_y << ", '" << esc(uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
+    }
+    else {
+        ss << "INSERT INTO marks (document_path, symbol, offset_y, uuid, creation_time, modification_time, offset_x, zoom_level) VALUES ('"
+            << esc(document_path) <<
+            "', '" << symbol <<
+            "', " << offset_y <<
+            ", '" << esc(uuid) <<
+            "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, "
+            << offset_x.value() <<
+            ", " << zoom_level.value() << ");";
+    }
     char* error_message = nullptr;
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "insert_mark",
         error_code,
         error_message);
 }
@@ -678,6 +730,7 @@ bool DatabaseManager::delete_mark_with_symbol(char symbol) {
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "delete_mark_with_symbol",
         error_code,
         error_message);
 }
@@ -690,6 +743,7 @@ bool DatabaseManager::insert_bookmark(const std::string& document_path, const st
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "insert_bookmark",
         error_code,
         error_message);
 }
@@ -702,6 +756,7 @@ bool DatabaseManager::insert_bookmark_marked(const std::string& document_path, c
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "insert_bookmark_marked",
         error_code,
         error_message);
 }
@@ -726,6 +781,7 @@ bool DatabaseManager::insert_bookmark_freetext(const std::string& document_path,
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "insert_bookmark_freetext",
         error_code,
         error_message);
 }
@@ -751,6 +807,7 @@ bool DatabaseManager::insert_highlight(const std::string& document_path,
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "insert_highlight",
         error_code,
         error_message);
 }
@@ -780,6 +837,7 @@ bool DatabaseManager::insert_highlight_with_annotation(const std::string& docume
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "insert_highlight_with_annotation",
         error_code,
         error_message);
 }
@@ -837,6 +895,7 @@ bool DatabaseManager::update_portal(const std::string& uuid, float dst_offset_x,
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "update_portal",
         error_code,
         error_message);
 }
@@ -849,6 +908,7 @@ bool DatabaseManager::delete_portal(const std::string& uuid) {
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "delete_portal",
         error_code,
         error_message);
 }
@@ -861,6 +921,7 @@ bool DatabaseManager::delete_bookmark(const std::string& uuid) {
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "delete_bookmark",
         error_code,
         error_message);
 }
@@ -875,18 +936,37 @@ bool DatabaseManager::delete_highlight(const std::string& uuid) {
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "delete_highlight",
         error_code,
         error_message);
 }
 
-bool DatabaseManager::update_mark(const std::string& document_path, char symbol, float offset_y) {
+bool DatabaseManager::update_mark(const std::string& document_path, char symbol, float offset_y, std::optional<float> offset_x, std::optional<float> zoom_level) {
 
     std::wstringstream ss;
-    ss << "UPDATE marks set offset_y=" << offset_y << ", modification_time=CURRENT_TIMESTAMP where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
+    if (!offset_x.has_value()) {
+        ss << "UPDATE marks set offset_y=" << offset_y << ", modification_time=CURRENT_TIMESTAMP where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
+    }
+    else {
+        ss << "UPDATE marks set offset_y=" << offset_y << ", offset_x=" << offset_x.value() << ", zoom_level=" << zoom_level.value() << ", modification_time=CURRENT_TIMESTAMP where document_path='" << esc(document_path) << "' AND symbol='" << symbol << "';";
+    }
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "update_mark",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::set_actual_document_name(const std::string& checksum, const std::wstring& actual_name) {
+    std::wstringstream ss;
+    ss << "UPDATE opened_books set document_name='" << esc(actual_name) << "' where path='" << esc(checksum) << "';";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        "set_actual_document_name",
         error_code,
         error_message);
 }
@@ -898,6 +978,7 @@ bool DatabaseManager::select_opened_book(const std::string& book_path, std::vect
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), opened_book_callback, &out_result, &error_message);
     return handle_error(
+        "select_opened_book",
         error_code,
         error_message);
 }
@@ -919,6 +1000,7 @@ bool DatabaseManager::delete_opened_book(const std::string& book_path) {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "delete_opened_book",
         error_code,
         error_message);
 }
@@ -930,6 +1012,18 @@ bool DatabaseManager::select_opened_books_path_values(std::vector<std::wstring>&
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), prev_doc_callback, &out_result, &error_message);
     return handle_error(
+        "select_opened_books_path_values",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::select_opened_books_path_and_doc_names(std::vector<std::pair<std::wstring, std::wstring>>& out_result) {
+    std::wstringstream ss;
+    ss << "SELECT path, document_name FROM opened_books order by datetime(last_access_time) desc;";
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), prev_doc_with_name_callback, &out_result, &error_message);
+    return handle_error(
+        "select_opened_books_path_and_doc_names",
         error_code,
         error_message);
 }
@@ -958,11 +1052,12 @@ bool DatabaseManager::select_opened_books_path_values(std::vector<std::wstring>&
 
 bool DatabaseManager::select_mark(const std::string& book_path, std::vector<Mark>& out_result) {
     std::wstringstream ss;
-    ss << "select symbol, offset_y, uuid, creation_time, modification_time from marks where document_path='" << esc(book_path) << "';";
+    ss << "select symbol, offset_y, offset_x, zoom_level, uuid, creation_time, modification_time from marks where document_path='" << esc(book_path) << "';";
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), mark_select_callback, &out_result, &error_message);
     return handle_error(
+        "select_mark",
         error_code,
         error_message);
 }
@@ -974,6 +1069,7 @@ bool DatabaseManager::select_global_mark(char symbol, std::vector<std::pair<std:
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), global_mark_select_callback, &out_result, &error_message);
     return handle_error(
+        "select_global_mark",
         error_code,
         error_message);
 }
@@ -985,6 +1081,7 @@ bool DatabaseManager::select_bookmark(const std::string& book_path, std::vector<
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), bookmark_select_callback, &out_result, &error_message);
     return handle_error(
+        "select_bookmark",
         error_code,
         error_message);
 }
@@ -996,6 +1093,7 @@ bool DatabaseManager::get_path_from_hash(const std::string& checksum, std::vecto
     char* error_message = nullptr;
     int error_code = sqlite3_exec(local_db, utf8_encode(ss.str()).c_str(), wstring_select_callback, &out_paths, &error_message);
     return handle_error(
+        "get_path_from_hash",
         error_code,
         error_message);
 }
@@ -1007,6 +1105,7 @@ bool DatabaseManager::get_hash_from_path(const std::string& path, std::vector<st
     char* error_message = nullptr;
     int error_code = sqlite3_exec(local_db, utf8_encode(ss.str()).c_str(), wstring_select_callback, &out_checksum, &error_message);
     return handle_error(
+        "get_hash_from_path",
         error_code,
         error_message);
 }
@@ -1018,6 +1117,7 @@ bool DatabaseManager::get_prev_path_hash_pairs(std::vector<std::pair<std::wstrin
     char* error_message = nullptr;
     int error_code = sqlite3_exec(local_db, utf8_encode(ss.str()).c_str(), wstring_pair_select_callback, &out_pairs, &error_message);
     return handle_error(
+        "get_prev_path_hash_pairs",
         error_code,
         error_message);
 }
@@ -1029,6 +1129,7 @@ bool DatabaseManager::select_highlight(const std::string& book_path, std::vector
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), highlight_select_callback, &out_result, &error_message);
     return handle_error(
+        "select_highlight",
         error_code,
         error_message);
 }
@@ -1040,6 +1141,7 @@ bool DatabaseManager::select_highlight_with_type(const std::string& book_path, c
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), highlight_select_callback, &out_result, &error_message);
     return handle_error(
+        "select_highlight_with_type",
         error_code,
         error_message);
 }
@@ -1051,6 +1153,7 @@ bool DatabaseManager::global_select_highlight(std::vector<std::pair<std::string,
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), global_highlight_select_callback, &out_result, &error_message);
     return handle_error(
+        "global_select_highlight",
         error_code,
         error_message);
 }
@@ -1062,6 +1165,7 @@ bool DatabaseManager::global_select_bookmark(std::vector<std::pair<std::string, 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), global_bookmark_select_callback, &out_result, &error_message);
     return handle_error(
+        "global_select_bookmark",
         error_code,
         error_message);
 }
@@ -1073,6 +1177,7 @@ bool DatabaseManager::select_links(const std::string& src_document_path, std::ve
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), link_select_callback, &out_result, &error_message);
     return handle_error(
+        "select_links",
         error_code,
         error_message);
 }
@@ -1098,6 +1203,7 @@ bool update_string_value(sqlite3* db,
     char* error_message = nullptr;
     int error_code = sqlite3_exec(db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "update_string_value",
         error_code,
         error_message);
 
@@ -1411,7 +1517,7 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
         }
 
         for (const auto& mark : new_marks) {
-            insert_mark(checksum, mark.symbol, mark.y_offset, utf8_decode(mark.uuid));
+            insert_mark(checksum, mark.symbol, mark.y_offset, utf8_decode(mark.uuid), mark.x_offset, mark.zoom_level);
         }
 
         for (const auto& hl : new_highlights) {
@@ -1509,7 +1615,7 @@ int DatabaseManager::get_version() {
 
     int version = -1;
     int error_code = sqlite3_exec(global_db, "PRAGMA user_version;", version_callback, &version, &error_message);
-    handle_error(error_code, error_message);
+    handle_error("get_version", error_code, error_message);
     return version;
 }
 
@@ -1518,13 +1624,16 @@ int DatabaseManager::set_version() {
 
     std::string query = QString("PRAGMA user_version = %1;").arg(DATABASE_VERSION).toStdString();
     int error_code = sqlite3_exec(global_db, query.c_str(), null_callback, nullptr, &error_message);
-    return handle_error(error_code, error_message);
+    return handle_error("set_version", error_code, error_message);
 }
 
 void DatabaseManager::ensure_schema_compatibility() {
     int database_file_version = get_version();
     std::vector<std::function<void()>> migrations;
     migrations.push_back([this]() { migrate_version_0_to_1(); });
+    migrations.push_back([this]() { migrate_version_1_to_2(); });
+
+    assert(migrations.size() == DATABASE_VERSION);
 
     if (database_file_version != DATABASE_VERSION) {
         if (database_file_version >= migrations.size()) {
@@ -1543,7 +1652,29 @@ void DatabaseManager::ensure_schema_compatibility() {
 bool DatabaseManager::run_schema_query(const char* query) {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, query, null_callback, 0, &error_message);
-    return handle_error(error_code, error_message);
+    return handle_error("run_schema_query", error_code, error_message);
+}
+
+void DatabaseManager::migrate_version_1_to_2() {
+    qDebug() << "Migrating database from version 1 to 2";
+
+    std::vector<std::string> queries_to_run;
+
+    queries_to_run.push_back("ALTER TABLE marks ADD COLUMN offset_x real;");
+    queries_to_run.push_back("ALTER TABLE marks ADD COLUMN zoom_level real;");
+    queries_to_run.push_back("ALTER TABLE opened_books ADD COLUMN document_name TEXT;");
+
+    std::string transaction = "BEGIN TRANSACTION;\n";
+    for (auto q : queries_to_run) {
+        transaction += q + "\n";
+    }
+
+    transaction += "COMMIT;";
+
+    if (!run_schema_query(transaction.c_str())) {
+        qDebug() << "Error: Could not migrate database from version 1 to version 2, rolling back ...";
+        run_schema_query("ROLLBACK;");
+    }
 }
 
 void DatabaseManager::migrate_version_0_to_1() {
@@ -1647,6 +1778,7 @@ bool DatabaseManager::select_all_mark_ids(std::vector<int>& mark_ids) {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, "select id from marks", id_callback, &mark_ids, &error_message);
     return handle_error(
+        "select_all_mark_ids",
         error_code,
         error_message);
 }
@@ -1655,6 +1787,7 @@ bool DatabaseManager::select_all_bookmark_ids(std::vector<int>& bookmark_ids) {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, "select id from bookmarks", id_callback, &bookmark_ids, &error_message);
     return handle_error(
+        "select_all_bookmark_ids",
         error_code,
         error_message);
 }
@@ -1663,6 +1796,7 @@ bool DatabaseManager::select_all_highlight_ids(std::vector<int>& highlight_ids) 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, "select id from highlights", id_callback, &highlight_ids, &error_message);
     return handle_error(
+        "select_all_highlight_ids",
         error_code,
         error_message);
 }
@@ -1671,6 +1805,7 @@ bool DatabaseManager::select_all_portal_ids(std::vector<int>& portal_ids) {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, "select id from links", id_callback, &portal_ids, &error_message);
     return handle_error(
+        "select_all_portal_ids",
         error_code,
         error_message);
 }
@@ -1765,6 +1900,7 @@ bool DatabaseManager::generic_update_run_query(std::string table_name,
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(query).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "genetic_update_run_query",
         error_code,
         error_message);
 }
@@ -1776,6 +1912,7 @@ bool DatabaseManager::generic_insert_run_query(std::string table_name,
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(query).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "generic_insert_run_query",
         error_code,
         error_message);
 }
@@ -1819,6 +1956,7 @@ bool DatabaseManager::update_file_name(std::wstring old_name, std::wstring new_n
     char* error_message = nullptr;
     int error_code = sqlite3_exec(local_db, utf8_encode(query).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "update_file_name",
         error_code,
         error_message);
 }
@@ -1897,6 +2035,7 @@ bool DatabaseManager::delete_annotation(Annotation* annot) {
 
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
     return handle_error(
+        "delete_annotation",
         error_code,
         error_message);
 }

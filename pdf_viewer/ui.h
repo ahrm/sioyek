@@ -78,7 +78,6 @@ extern int FONT_SIZE;
 const int max_select_size = 100;
 extern bool SMALL_TOC;
 extern bool MULTILINE_MENUS;
-extern bool EMACS_MODE;
 extern bool TOUCH_MODE;
 
 
@@ -102,9 +101,11 @@ public:
 
 
 class MyLineEdit: public QLineEdit {
+    Q_OBJECT
 
 public:
-    MyLineEdit(QWidget* parent=nullptr);
+    MainWidget* main_widget;
+    MyLineEdit(MainWidget* parent);
 
     void keyPressEvent(QKeyEvent* event) override;
     int get_next_word_position();
@@ -114,7 +115,7 @@ public:
 class BaseSelectorWidget : public QWidget {
 
 protected:
-    BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy, QStandardItemModel* item_model, QWidget* parent);
+    BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy, QStandardItemModel* item_model, MainWidget* parent);
 
     void on_text_changed(const QString& text);
 
@@ -151,6 +152,10 @@ public:
     bool eventFilter(QObject* obj, QEvent* event) override;
     void simulate_move_down();
     void simulate_move_up();
+    void simulate_page_down();
+    void simulate_page_up();
+    void simulate_end();
+    void simulate_home();
     void simulate_select();
     void handle_delete();
     void handle_edit();
@@ -181,7 +186,7 @@ public:
 
     FilteredTreeSelect(bool fuzzy, QStandardItemModel* item_model,
         std::function<void(const std::vector<int>&)> on_done,
-        QWidget* parent,
+        MainWidget* parent,
         std::vector<int> selected_index) : BaseSelectorWidget(new QTreeView(), fuzzy, item_model, parent),
         on_done(on_done)
     {
@@ -226,6 +231,7 @@ private:
     std::function<void(T*)> on_done = nullptr;
     std::function<void(T*)> on_delete_function = nullptr;
     std::function<void(T*)> on_edit_function = nullptr;
+    int n_cols = 1;
 
 protected:
 
@@ -242,7 +248,7 @@ public:
         std::vector<T> values,
         int selected_index,
         std::function<void(T*)> on_done,
-        QWidget* parent,
+        MainWidget* parent,
         std::function<void(T*)> on_delete_function = nullptr) : BaseSelectorWidget(new QTableView(), fuzzy, nullptr, parent),
         values(values),
         on_done(on_done),
@@ -287,6 +293,7 @@ public:
         table_view->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
         if (table[0].size() > 0) {
+            n_cols = table.size();
             table_view->horizontalHeader()->setStretchLastSection(false);
             for (int i = 0; i < table.size() - 1; i++) {
                 table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
@@ -306,6 +313,14 @@ public:
         if (selected_index != -1) {
             table_view->scrollTo(this->proxy_model->mapFromSource(table_view->currentIndex()), QAbstractItemView::EnsureVisible);
         }
+    }
+
+    void set_equal_columns() {
+        QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+        for (int i = 0; i < n_cols; i++) {
+            table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
+        }
+
     }
 
     void set_on_edit_function(std::function<void(T*)> edit_func) {
@@ -495,7 +510,7 @@ public:
     FilteredSelectWindowClass(bool fuzzy, std::vector<std::wstring> std_string_list,
         std::vector<T> values,
         std::function<void(T*)> on_done,
-        QWidget* parent,
+        MainWidget* parent,
         std::function<void(T*)> on_delete_function = nullptr, int selected_index = -1) : BaseSelectorWidget(new QListView(), fuzzy, nullptr, parent),
         values(values),
         on_done(on_done),
@@ -596,7 +611,7 @@ public:
         return "QListView";
     }
 
-    FileSelector(bool is_fuzzy, std::function<void(std::wstring)> on_done, QWidget* parent, QString last_path) :
+    FileSelector(bool is_fuzzy, std::function<void(std::wstring)> on_done, MainWidget* parent, QString last_path) :
         BaseSelectorWidget(new QListView(), is_fuzzy, nullptr, parent),
         on_done(on_done)
     {

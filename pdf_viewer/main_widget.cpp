@@ -167,12 +167,12 @@ extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
 extern bool SUPER_FAST_SEARCH;
+extern bool INCREMENTAL_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SMARTCASE_SEARCH;
 extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
-extern std::wstring UI_FONT_FACE_NAME;
 extern bool SHOULD_HIGHLIGHT_LINKS;
 extern float SCROLL_VIEW_SENSITIVITY;
 extern std::wstring STATUS_BAR_FORMAT;
@@ -213,6 +213,7 @@ extern bool DEBUG;
 extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
 extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
+extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
 
 extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
@@ -457,7 +458,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
         update_current_history_index();
     }
 
-    if (TOUCH_MODE && (current_widget_stack.size() > 0)) {
+    if ((current_widget_stack.size() > 0)) {
         for (auto w : current_widget_stack) {
             QCoreApplication::postEvent(w, resize_event->clone());
         }
@@ -691,6 +692,12 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         if (horizontal_scroll_locked) {
             diff_doc.values[0] = 0;
         }
+        if (!ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL) {
+            float current_page_width = doc()->get_page_width(get_current_page_number());
+            if ((current_page_width > 0) && ((dv()->get_zoom_level() * current_page_width) < width())) {
+                diff_doc.values[0] = 0;
+            }
+        }
         dv()->set_pos(last_mouse_down_document_offset + diff_doc);
 
         validate_render();
@@ -786,7 +793,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
-    QFont label_font = QFont(get_font_face_name());
+    QFont label_font = QFont(get_status_font_face_name());
     label_font.setStyleHint(QFont::TypeWriter);
     status_label->setFont(label_font);
 
@@ -799,7 +806,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
 
     text_command_line_edit_label = new QLabel();
-    text_command_line_edit = new MyLineEdit();
+    text_command_line_edit = new MyLineEdit(this);
 
     text_command_line_edit_label->setFont(label_font);
     text_command_line_edit->setFont(label_font);
@@ -813,6 +820,9 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     text_command_line_edit_container->setLayout(text_command_line_edit_container_layout);
     text_command_line_edit_container->hide();
+
+    //QObject::connect(dynamic_cast<MyLineEdit*>(text_command_line_edit), &MyLineEdit::next_suggestion, this, &MainWidget::on_next_text_suggestion);
+    //QObject::connect(dynamic_cast<MyLineEdit*>(text_command_line_edit), &MyLineEdit::prev_suggestion, this, &MainWidget::on_prev_text_suggestion);
 
     on_command_done = [&](std::string command_name, std::string query_text) {
         if (query_text.size() > 0 && (query_text.back() == '?' || query_text[0] == '?')) {
@@ -828,6 +838,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             }
             else {
                 std::unique_ptr<Command> command = this->command_manager->get_command_with_name(this, command_name);
+                this->command_manager->update_command_last_use(command_name);
                 handle_command_types(std::move(command), 0);
             }
         }
@@ -1370,8 +1381,12 @@ void MainWidget::handle_escape() {
             should_return = true;
         }
         else if (opengl_widget->get_is_searching(nullptr)) {
+            if (pending_command_instance){
+                pending_command_instance->on_cancel();
+            }
             opengl_widget->cancel_search();
             get_search_buttons()->hide();
+            hide_command_line_edit();
             should_return = true;
         }
         if (should_return) {
@@ -1383,8 +1398,8 @@ void MainWidget::handle_escape() {
 
     clear_selection_indicators();
     typing_location = {};
-    text_command_line_edit->setText("");
-    text_command_line_edit_container->hide();
+    hide_command_line_edit();
+    text_suggestion_index = 0;
     pending_portal = {};
     synchronize_pending_link();
 
@@ -1589,9 +1604,9 @@ void MainWidget::move_document_screens(int num_screens) {
 void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 
     status_label->setStyleSheet(get_status_stylesheet());
-    status_label->setFont(QFont(get_font_face_name()));
+    status_label->setFont(QFont(get_status_font_face_name()));
     text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
-    text_command_line_edit->setFont(QFont(get_font_face_name()));
+    text_command_line_edit->setFont(QFont(get_status_font_face_name()));
 
     text_command_line_edit_label->setStyleSheet(get_status_stylesheet());
     text_command_line_edit->setStyleSheet(get_status_stylesheet());
@@ -2984,6 +2999,7 @@ void MainWidget::show_mark_selector() {
 
 void MainWidget::show_textbar(const std::wstring& command_name, const std::wstring& initial_value) {
     QString init = "";
+    text_suggestion_index = 0;
 
     if (initial_value.size() > 0) {
         init = QString::fromStdWString(initial_value);
@@ -4762,14 +4778,6 @@ void MainWidget::goto_overview() {
     }
 }
 
-QString MainWidget::get_font_face_name() {
-    if (UI_FONT_FACE_NAME.empty()) {
-        return "Monaco";
-    }
-    else {
-        return QString::fromStdWString(UI_FONT_FACE_NAME);
-    }
-}
 
 void MainWidget::reset_highlight_links() {
     if (SHOULD_HIGHLIGHT_LINKS) {
@@ -5037,10 +5045,34 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
     }
 }
 
-void MainWidget::perform_search(std::wstring text, bool is_regex) {
+void MainWidget::add_search_term(const std::wstring& term) {
+    auto res = std::find(search_terms.begin(), search_terms.end(), term);
+    if (res != search_terms.end()) {
 
-    // When searching, the start position before search is saved in a mark named '0'
-    main_document_view->add_mark('/');
+        int index = res - search_terms.begin();
+
+        for (int i = index; i < search_terms.size() - 1; i++) {
+            std::swap(search_terms[i], search_terms[i + 1]);
+        }
+    }
+    else {
+        search_terms.push_back(term);
+    }
+
+    if (search_terms.size() > 100) {
+        search_terms.pop_front();
+    }
+}
+
+
+void MainWidget::perform_search(std::wstring text, bool is_regex, bool is_incremental) {
+
+    if (!is_incremental) {
+        add_search_term(text);
+        // When searching, the start position before search is saved in a mark named '0'
+        main_document_view->add_mark('/');
+    }
+
 
     int range_begin, range_end;
     std::wstring search_term;
@@ -5061,6 +5093,10 @@ void MainWidget::perform_search(std::wstring text, bool is_regex) {
     if (CASE_SENSITIVE_SEARCH) case_sens = SearchCaseSensitivity::CaseSensitive;
     if (SMARTCASE_SEARCH) case_sens = SearchCaseSensitivity::SmartCase;
     opengl_widget->search_text(search_term, case_sens, is_regex, search_range);
+
+    if (is_incremental) {
+        goto_search_result(1);
+    }
 }
 
 void MainWidget::overview_to_definition() {
@@ -5536,7 +5572,8 @@ void MainWidget::handle_open_all_docs() {
 void MainWidget::handle_open_prev_doc() {
 
     std::vector<std::wstring> opened_docs_names;
-    std::vector<std::wstring> opened_docs_hashes_;
+    std::vector<std::wstring> opened_docs_actual_names;
+    std::vector<std::pair<std::wstring, std::wstring>> opened_docs_hash_names;
     std::vector<std::string> opened_docs_hashes;
     std::wstring current_path = L"";
 
@@ -5545,9 +5582,9 @@ void MainWidget::handle_open_prev_doc() {
     }
 
 
-    db_manager->select_opened_books_path_values(opened_docs_hashes_);
+    db_manager->select_opened_books_path_and_doc_names(opened_docs_hash_names);
 
-    for (const auto& doc_hash_ : opened_docs_hashes_) {
+    for (const auto& [doc_hash_, actual_doc_name] : opened_docs_hash_names) {
         std::optional<std::wstring> path = checksummer->get_path(utf8_encode(doc_hash_));
         if (path) {
             if (path == current_path) continue;
@@ -5567,11 +5604,12 @@ void MainWidget::handle_open_prev_doc() {
 #endif
             }
             opened_docs_hashes.push_back(utf8_encode(doc_hash_));
+            opened_docs_actual_names.push_back(actual_doc_name);
         }
     }
 
 
-    set_filtered_select_menu<std::string>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names }, opened_docs_hashes, -1,
+    set_filtered_select_menu<std::string>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { opened_docs_names, opened_docs_actual_names }, opened_docs_hashes, -1,
         [&](std::string* doc_hash) {
             if ((doc_hash->size() > 0) && (pending_command_instance)) {
                 pending_command_instance->set_generic_requirement(QList<QVariant>() << QString::fromStdString(*doc_hash));
@@ -5583,6 +5621,12 @@ void MainWidget::handle_open_prev_doc() {
         }
         );
 
+    if (!TOUCH_MODE && current_widget_stack.size() > 0) {
+        FilteredSelectTableWindowClass<std::string>* widget = dynamic_cast<FilteredSelectTableWindowClass<std::string>*>(current_widget_stack.back());
+        if (widget) {
+            widget->set_equal_columns();
+        }
+    }
     show_current_widget();
 }
 
@@ -6926,9 +6970,13 @@ void MainWidget::goto_page_with_label(std::wstring label) {
 
 void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
     bool should_reflow = false;
+    bool should_invalidate_render = false;
     for (int i = 0; i < config_names->size(); i++) {
         if (QString::fromStdString((*config_names)[i]).startsWith("epub")) {
             should_reflow = true;
+        }
+        if (QString::fromStdString((*config_names)[i]) == "gamma") {
+            should_invalidate_render = true;
         }
     }
     if (should_reflow) {
@@ -6936,6 +6984,9 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         pdf_renderer->delete_old_pages(true, true);
         int new_page = doc()->reflow(get_current_page_number());
         main_document_view->goto_page(new_page);
+    }
+    if (should_invalidate_render) {
+        pdf_renderer->clear_cache();
     }
 }
 
@@ -7319,6 +7370,7 @@ std::string MainWidget::get_current_mode_string() {
     res += (opengl_widget->get_overview_page()) ? "o" : "O";
     res += opengl_widget->get_scratchpad() ? "s" : "S";
     res += (opengl_widget->get_is_searching(nullptr)) ? "f" : "F";
+    res += (is_menu_focused()) ? "m" : "M";
 
     if (main_document_view) {
         res += (main_document_view->selected_character_rects.size() > 0) ? "t" : "T";
@@ -7623,6 +7675,9 @@ void MainWidget::handle_command_text_change(const QString& new_text) {
         if ((pending_command_instance->get_name() == "edit_selected_bookmark") || (pending_command_instance->get_name() == "add_freetext_bookmark")) {
             doc()->get_bookmarks()[selected_bookmark_index].description = new_text.toStdWString();
             validate_render();
+        }
+        if (INCREMENTAL_SEARCH && pending_command_instance->get_name() == "search" && doc()->is_super_fast_index_ready()) {
+            perform_search(new_text.toStdWString(), false, true);
         }
     }
 }
@@ -8600,6 +8655,8 @@ QJsonObject MainWidget::get_json_state() {
 
         result["selected_text"] = QString::fromStdWString(get_selected_text());
         result["window_id"] = window_id;
+        result["window_width"] = width();
+        result["window_height"] = height();
 
         std::vector<std::wstring> loaded_document_paths = document_manager->get_loaded_document_paths();
         QJsonArray loaded_documents;
@@ -8769,10 +8826,12 @@ QJsonObject MainWidget::get_json_annotations() {
 QString MainWidget::handle_action_in_menu(std::wstring action) {
 
     BaseSelectorWidget* selector_widget = nullptr;
+    MyLineEdit* my_line_edit = nullptr;
 
     if (current_widget_stack.size() > 0) {
         selector_widget = dynamic_cast<BaseSelectorWidget*>(current_widget_stack.back());
     }
+    my_line_edit = dynamic_cast<MyLineEdit*>(focusWidget());
 
     if (selector_widget) {
         if (action == L"down") {
@@ -8781,13 +8840,97 @@ QString MainWidget::handle_action_in_menu(std::wstring action) {
         if (action == L"up") {
             selector_widget->simulate_move_up();
         }
+        if (action == L"page_down") {
+            selector_widget->simulate_page_down();
+        }
+        if (action == L"page_up") {
+            selector_widget->simulate_page_up();
+        }
+        if (action == L"menu_begin") {
+            selector_widget->simulate_home();
+        }
+        if (action == L"menu_end") {
+            selector_widget->simulate_end();
+        }
         if (action == L"select") {
             selector_widget->simulate_select();
         }
-
         if (action == L"get") {
             return selector_widget->get_selected_item();
         }
+    }
+    if (my_line_edit) {
+        if (action == L"cursor_backward") {
+            my_line_edit->cursorBackward(false);
+        }
+        else if (action == L"cursor_forward") {
+            my_line_edit->cursorForward(false);
+        }
+        else if (action == L"select_backward") {
+            my_line_edit->cursorBackward(true);
+        }
+        else if (action == L"select_forward") {
+            my_line_edit->cursorForward(true);
+        }
+        else if (action == L"move_word_backward") {
+            my_line_edit->cursorWordBackward(false);
+        }
+        else if (action == L"move_word_forward") {
+            my_line_edit->cursorWordForward(false);
+        }
+        else if (action == L"select_word_backward") {
+            my_line_edit->cursorWordBackward(true);
+        }
+        else if (action == L"select_word_forward") {
+            my_line_edit->cursorWordForward(true);
+        }
+        else if (action == L"move_to_end") {
+            my_line_edit->end(false);
+        }
+        else if (action == L"select_to_end") {
+            my_line_edit->end(true);
+        }
+        else if (action == L"move_to_begin") {
+            my_line_edit->home(false);
+        }
+        else if (action == L"select_all") {
+            my_line_edit->selectAll();
+        }
+        else if (action == L"select_to_begin") {
+            my_line_edit->home(true);
+        }
+        else if (action == L"delete_to_end") {
+            my_line_edit->end(true);
+            my_line_edit->del();
+        }
+        else if (action == L"delete_to_begin") {
+            my_line_edit->home(true);
+            my_line_edit->del();
+        }
+        else if (action == L"delete_next_word") {
+            my_line_edit->cursorWordForward(true);
+            my_line_edit->del();
+        }
+        else if (action == L"delete_prev_word") {
+            my_line_edit->cursorWordBackward(true);
+            my_line_edit->del();
+        }
+        else if (action == L"delete_next_char") {
+            my_line_edit->cursorForward(true);
+            my_line_edit->del();
+        }
+        else if (action == L"delete_prev_char") {
+            my_line_edit->cursorBackward(true);
+            my_line_edit->del();
+        }
+        else if (action == L"next_suggestion") {
+            on_next_text_suggestion();
+        }
+        else if (action == L"prev_suggestion") {
+            on_prev_text_suggestion();
+        }
+
+
     }
     return "";
 }
@@ -9125,6 +9268,7 @@ DocumentView* MainWidget::helper_document_view(){
 void MainWidget::hide_command_line_edit(){
     text_command_line_edit->setText("");
     text_command_line_edit_container->hide();
+    text_suggestion_index = 0;
     pending_command_instance = {};
     setFocus();
 }
@@ -9241,8 +9385,14 @@ void MainWidget::run_javascript_command(std::wstring javascript_code, bool is_as
     }
     else {
         QJSEngine* engine = take_js_engine();
-        auto res = engine->evaluate(content);
+        QStringList stack_trace;
+        auto res = engine->evaluate(content, QString(), 1, &stack_trace);
         release_js_engine(engine);
+        if (stack_trace.size() > 0) {
+            for (auto line : stack_trace) {
+                qDebug() << line;
+            }
+        }
     }
 
 }
@@ -9674,4 +9824,59 @@ QString MainWidget::execute_macro_sync(QString macro) {
     }
 
     return "";
+}
+
+void MainWidget::set_variable(QString name, QVariant var) {
+    js_variables[name] = var;
+}
+
+QVariant MainWidget::get_variable(QString name) {
+    return js_variables[name];
+}
+
+void MainWidget::on_next_text_suggestion() {
+    bool this_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index).has_value();
+    bool next_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index + 1).has_value();
+    if (!this_has_value && !next_has_value) return;
+
+    text_suggestion_index++;
+    set_current_text_suggestion();
+}
+
+void MainWidget::on_prev_text_suggestion() {
+    bool this_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index).has_value();
+    bool next_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index - 1).has_value();
+    if (!this_has_value && !next_has_value) return;
+
+    text_suggestion_index--;
+    set_current_text_suggestion();
+}
+
+void MainWidget::set_current_text_suggestion() {
+    if (pending_command_instance) {
+        std::optional<std::wstring> suggestion = pending_command_instance->get_text_suggestion(text_suggestion_index);
+        if (suggestion) {
+            text_command_line_edit->setText(QString::fromStdWString(suggestion.value()));
+        }
+        else {
+            text_command_line_edit->setText("");
+        }
+
+    }
+}
+
+std::optional<std::wstring> MainWidget::get_search_suggestion_with_index(int index) {
+    if (index >= 0 || (-index > search_terms.size())) {
+        return {};
+    }
+    else {
+        return search_terms[search_terms.size() + index];
+    }
+}
+
+bool MainWidget::is_menu_focused() {
+    if (dynamic_cast<MyLineEdit*>(focusWidget())) {
+        return true;
+    }
+    return false;
 }

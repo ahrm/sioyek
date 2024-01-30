@@ -160,6 +160,22 @@ bool BookMark::is_freetext() const {
     return (begin_y > -1) && (end_y > -1);
 }
 
+std::optional<char> BookMark::get_type() const{
+    if (is_box()) {
+        if (description.size() > 1) {
+            return description[1];
+        }
+    }
+    return {};
+}
+
+bool BookMark::is_box() const {
+    if (description.size() > 0) {
+        return description[0] == '#';
+    }
+    return false;
+}
+
 bool BookMark::is_marked() const {
     return (begin_y > -1) && (end_y == -1);
 }

@@ -81,7 +81,7 @@ struct OpenGLSharedResources {
     GLint compiled_dot_offset_uniform_location = 0;
     GLint compiled_dot_scale_uniform_location = 0;
 
-    GLint gamma_uniform_location = 0;
+    //GLint gamma_uniform_location = 0;
 
     GLint custom_color_transform_uniform_location = 0;
 
@@ -248,7 +248,7 @@ public:
     std::optional<SearchResult> get_current_search_result();
     void goto_search_result(int offset, bool overview = false);
     void render_overview(OverviewState overview);
-    void render_page(int page_number, bool in_overview=false);
+    void render_page(int page_number, bool in_overview=false, bool force_light_mode=false);
     bool get_is_searching(float* prog);
     void search_text(const std::wstring& text, SearchCaseSensitivity case_sensitive = SearchCaseSensitivity::CaseInsensitive, bool regex = false, std::optional<std::pair<int, int>> range = {});
     void set_dark_mode(bool mode);
@@ -284,7 +284,7 @@ public:
     void set_overview_offsets(float offset_x, float offset_y);
     void set_overview_offsets(fvec2 offsets);
 
-    void bind_program();
+    void bind_program(bool force_light=false);
     void cancel_search();
     //void window_pos_to_overview_pos(float window_x, float window_y, float* doc_offset_x, float* doc_offset_y, int* doc_page);
     DocumentPos window_pos_to_overview_pos(NormalizedWindowPos window_pos);

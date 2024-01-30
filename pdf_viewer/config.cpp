@@ -38,6 +38,7 @@ extern std::wstring ITEM_LIST_PREFIX;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
 extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern std::wstring UI_FONT_FACE_NAME;
+extern std::wstring STATUS_FONT_FACE_NAME;
 extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
 extern std::wstring STARTUP_COMMANDS;
@@ -103,6 +104,7 @@ extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring BOOK_SCAN_PATH;
 extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
+extern bool PRESERVE_IMAGE_COLORS;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
 extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 extern std::wstring VOLUME_DOWN_COMMAND;
@@ -110,6 +112,7 @@ extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
 extern int NUM_PRERENDERED_NEXT_SLIDES;
 extern int NUM_PRERENDERED_PREV_SLIDES;
+extern int NUM_CACHED_PAGES;
 
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
@@ -117,6 +120,7 @@ extern bool NO_AUTO_CONFIG;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool ALIGN_LINK_DEST_TO_TOP;
+extern float MENU_SCREEN_WDITH_RATIO;
 
 extern std::wstring RESIZE_COMMAND;
 extern std::wstring SHIFT_CLICK_COMMAND;
@@ -131,6 +135,7 @@ extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 
 extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
+extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
 
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
@@ -155,12 +160,12 @@ extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
 extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
 extern bool PRERENDER_NEXT_PAGE;
-extern bool EMACS_MODE;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
 extern float HYPERDRIVE_SPEED_FACTOR;
 extern float SMOOTH_SCROLL_SPEED;
 extern float SMOOTH_SCROLL_DRAG;
 extern bool SUPER_FAST_SEARCH;
+extern bool INCREMENTAL_SEARCH;
 extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
 extern int PRERENDERED_PAGE_COUNT;
 extern bool CASE_SENSITIVE_SEARCH;
@@ -193,6 +198,7 @@ extern float TTS_RATE;
 extern std::wstring PAPER_SEARCH_URL;
 extern std::wstring RULER_DISPLAY_MODE;
 extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
+extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
@@ -786,6 +792,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
+        L"preserve_image_colors_in_dark_mode",
+        ConfigType::Bool,
+        &PRESERVE_IMAGE_COLORS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
         L"should_use_multiple_monitors",
         ConfigType::Bool,
         &SHOULD_USE_MULTIPLE_MONITORS,
@@ -940,6 +954,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         nullptr
         });
     configs.push_back({
+        L"status_font",
+        ConfigType::String,
+        &STATUS_FONT_FACE_NAME,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
         L"middle_click_search_engine",
         ConfigType::String,
         &MIDDLE_CLICK_SEARCH_ENGINE,
@@ -989,6 +1011,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         int_deserializer,
         nullptr,
         IntExtras{0, 5}
+        });
+    configs.push_back({
+        L"num_cached_pages",
+        ConfigType::Int,
+        &NUM_CACHED_PAGES,
+        int_serializer,
+        int_deserializer,
+        nullptr,
+        IntExtras{0, 100}
         });
     configs.push_back({
         L"num_prerendered_prev_slides",
@@ -1211,6 +1242,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"use_ruler_to_highlight_synctex_line",
         ConfigType::Bool,
         &USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"show_most_recent_commands_first",
+        ConfigType::Bool,
+        &SHOW_MOST_RECENT_COMMANDS_FIRST,
         bool_serializer,
         bool_deserializer,
         bool_validator
@@ -1646,6 +1685,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         nullptr
         });
     configs.push_back({
+        L"allow_horizontal_drag_when_document_is_small",
+        ConfigType::Bool,
+        &ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
         L"right_click_context_menu",
         ConfigType::Bool,
         &RIGHT_CLICK_CONTEXT_MENU,
@@ -1702,20 +1749,21 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
-        L"emacs_mode_menus",
-        ConfigType::Bool,
-        &EMACS_MODE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
         L"highlight_middle_click",
         ConfigType::Bool,
         &HIGHLIGHT_MIDDLE_CLICK,
         bool_serializer,
         bool_deserializer,
         bool_validator
+        });
+    configs.push_back({
+        L"menu_screen_width_ratio",
+        ConfigType::Bool,
+        &MENU_SCREEN_WDITH_RATIO,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.1f, 1.0f}
         });
     configs.push_back({
         L"hyperdrive_speed_factor",
@@ -1755,6 +1803,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"super_fast_search",
         ConfigType::Bool,
         &SUPER_FAST_SEARCH,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"incremental_search",
+        ConfigType::Bool,
+        &INCREMENTAL_SEARCH,
         bool_serializer,
         bool_deserializer,
         bool_validator
@@ -2154,14 +2210,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         nullptr,
         FloatExtras{0.0f, 100.0f}
         });
-    //configs.push_back({
-    //	L"epub_css",
-    //	ConfigType::String,
-    //	&EPUB_CSS,
-    //	string_serializer,
-    //	string_deserializer,
-    //	nullptr
-    //	});
+    configs.push_back({
+    	L"epub_css",
+    	ConfigType::String,
+    	&EPUB_CSS,
+    	string_serializer,
+    	string_deserializer,
+    	nullptr
+    	});
 
     std::wstring highlight_config_string = L"highlight_color_a";
     std::wstring search_url_config_string = L"search_url_a";

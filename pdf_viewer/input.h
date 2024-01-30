@@ -6,6 +6,7 @@
 #include <optional>
 #include <unordered_map>
 #include <mutex>
+#include <qdatetime.h>
 
 #include "path.h"
 #include "coordinates.h"
@@ -61,6 +62,8 @@ public:
     virtual void on_result_computed();
     virtual void set_result_socket(QLocalSocket* result_socket);
     virtual void set_result_mutex(bool* res_mut, std::wstring* result_location);
+    virtual std::optional<std::wstring> get_text_suggestion(int index);
+    virtual bool is_menu_command();
 
     void set_next_requirement_with_string(std::wstring str);
 
@@ -78,12 +81,14 @@ public:
 
     std::map < std::string, std::function<std::unique_ptr<Command>(MainWidget*)> > new_commands;
     std::map<std::string, std::string> command_human_readable_names;
+    std::map<std::string, QDateTime> command_last_uses;
 
     CommandManager(ConfigManager* config_manager);
     std::unique_ptr<Command> get_command_with_name(MainWidget* w, std::string name);
     std::unique_ptr<Command> create_macro_command(MainWidget* w, std::string name, std::wstring macro_string);
     QStringList get_all_command_names();
     void handle_new_javascript_command(std::wstring command_name, std::pair<std::wstring, std::wstring> command_files_pair, bool is_async);
+    void update_command_last_use(std::string command_name);
 };
 
 struct InputParseTreeNode {
@@ -131,7 +136,9 @@ public:
     InputHandler(const Path& default_path, const std::vector<Path>& user_paths, CommandManager* cm);
     void reload_config_files(const Path& default_path, const std::vector<Path>& user_path);
     //std::vector<std::unique_ptr<Command>> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
+    int get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* alt_pressed);
     std::unique_ptr<Command> handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats);
+    std::unique_ptr<Command> get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed);
     void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
     std::optional<Path> get_or_create_user_keys_path();

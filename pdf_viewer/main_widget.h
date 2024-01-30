@@ -294,10 +294,15 @@ public:
     int main_window_width = 0;
     int main_window_height = 0;
 
+    QMap<QString, QVariant> js_variables;
+
     QWidget* text_command_line_edit_container = nullptr;
     QLabel* text_command_line_edit_label = nullptr;
     QLineEdit* text_command_line_edit = nullptr;
     QLabel* status_label = nullptr;
+    int text_suggestion_index = 0;
+
+    std::deque<std::wstring> search_terms;
 
     // determines if the widget render is invalid and needs to be updated
     // when `validation_interval_timer` fired, we check if this is true
@@ -426,6 +431,10 @@ public:
     void show_password_prompt_if_required();
     void handle_link_click(const PdfLink& link);
 
+    void on_next_text_suggestion();
+    void on_prev_text_suggestion();
+    void set_current_text_suggestion();
+
     std::wstring get_window_configuration_string();
     std::wstring get_serialized_configuration_string();
     void save_auto_config();
@@ -434,8 +443,6 @@ public:
     void return_to_last_visual_mark();
     bool is_visual_mark_mode();
     void reload(bool flush = true);
-
-    QString get_font_face_name();
 
     void reset_highlight_links();
     void set_rect_select_mode(bool mode);
@@ -561,7 +568,8 @@ public:
     void set_mark_in_current_location(char symbol);
     void goto_mark(char symbol);
     void advance_command(std::unique_ptr<Command> command, std::wstring* result=nullptr);
-    void perform_search(std::wstring text, bool is_regex = false);
+    void add_search_term(const std::wstring& term);
+    void perform_search(std::wstring text, bool is_regex = false, bool is_incremental=false);
     void overview_to_definition();
     void portal_to_definition();
     void move_visual_mark_command(int amount);
@@ -802,7 +810,7 @@ public:
     QJSValue export_javascript_api(QJSEngine& engine, bool is_async);
     void show_custom_option_list(std::vector<std::wstring> option_list);
     void on_socket_deleted(QLocalSocket* deleted_socket);
-    QJsonObject get_json_state();
+    Q_INVOKABLE QJsonObject get_json_state();
     QJsonObject get_json_annotations();
     QJsonArray get_all_json_states();
     void screenshot(std::wstring file_path);
@@ -872,6 +880,8 @@ public:
     Q_INVOKABLE QString read_text_file(QString path);
     Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
     Q_INVOKABLE QString execute_macro_sync(QString macro);
+    Q_INVOKABLE void set_variable(QString name, QVariant var);
+    Q_INVOKABLE QVariant get_variable(QString name);
     void run_javascript_command(std::wstring javascript_code, bool is_async);
     void set_text_prompt_text(QString text);
     AbsoluteDocumentPos get_window_abspos(WindowPos window_pos);
@@ -899,6 +909,8 @@ public:
     void handle_highlight_tags_pre_perform(const std::vector<int>& visible_highlight_indices);
     void clear_keyboard_select_highlights();
     void handle_goto_link_with_page_and_offset(int page, float y_offset);
+    std::optional<std::wstring> get_search_suggestion_with_index(int index);
+    bool is_menu_focused();
 };
 
 #endif
