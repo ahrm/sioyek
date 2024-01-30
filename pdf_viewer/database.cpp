@@ -941,10 +941,10 @@ bool DatabaseManager::delete_highlight(const std::string& uuid) {
         error_message);
 }
 
-bool DatabaseManager::delete_all_current_doc_highlights() {
+bool DatabaseManager::delete_all_current_doc_highlights(const std::string& doc_checksum) {
     std::wstringstream ss;
-    // std::wstring threshold = QString::number(HIGHLIGHT_DELETE_THRESHOLD).toStdWString();
-    ss << "DELETE FROM highlights;";
+    std::wstring threshold = QString::number(HIGHLIGHT_DELETE_THRESHOLD).toStdWString();
+    ss << std::setprecision(10) << "DELETE FROM highlights where document_path='" << esc(doc_checksum) << "';";
 
     char* error_message = nullptr;
 
