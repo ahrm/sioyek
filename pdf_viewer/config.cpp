@@ -135,6 +135,7 @@ extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 
 extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
+extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
 
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
@@ -1682,6 +1683,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         string_serializer,
         string_deserializer,
         nullptr
+        });
+    configs.push_back({
+        L"allow_horizontal_drag_when_document_is_small",
+        ConfigType::Bool,
+        &ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
         });
     configs.push_back({
         L"right_click_context_menu",
