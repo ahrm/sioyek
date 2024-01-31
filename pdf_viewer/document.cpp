@@ -69,8 +69,15 @@ int Document::get_mark_index(char symbol) {
 
 CharacterIterator::CharacterIterator(fz_stext_page* page) {
     block = page->first_block;
-    line = block->u.t.first_line;
-    chr = line->first_char;
+    while (block != nullptr && (block->type == FZ_STEXT_BLOCK_IMAGE)) block = block->next;
+    if (block != nullptr) {
+        line = block->u.t.first_line;
+        chr = line->first_char;
+    }
+    else {
+        line = nullptr;
+        chr = nullptr;
+    }
 }
 
 CharacterIterator::CharacterIterator(fz_stext_block* b, fz_stext_line* l, fz_stext_char* c) {
@@ -91,8 +98,15 @@ CharacterIterator& CharacterIterator::operator++() {
     }
     if (block->next != nullptr) {
         block = block->next;
-        line = block->u.t.first_line;
-        chr = line->first_char;
+        while (block != nullptr && (block->type == FZ_STEXT_BLOCK_IMAGE)) block = block->next;
+        if (block == nullptr) {
+            line = nullptr;
+            chr = nullptr;
+        }
+        else {
+            line = block->u.t.first_line;
+            chr = line->first_char;
+        }
         return *this;
     }
 

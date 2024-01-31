@@ -2567,6 +2567,9 @@ void convert_color3(float* in_color, int* out_color) {
 
 #ifdef SIOYEK_ANDROID
 
+std::optional<std::function<void(int, int)>> android_global_word_callback = {};
+std::optional<std::function<void(QString)>> android_global_state_change_callback = {};
+
 QJniObject parseUriString(const QString& uriString) {
     return QJniObject::callStaticObjectMethod
     ("android/net/Uri", "parse",
@@ -2585,6 +2588,30 @@ QString android_file_uri_from_content_uri(QString uri) {
         "(Landroid/content/Context;Landroid/net/Uri;)Ljava/lang/String;", activity.object(), uri_object.object());
     return file_uri_object.toString();
 }
+
+void android_tts_say(QString text) {
+
+    QJniObject text_jni = QJniObject::fromString(text);
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    //QJniObject contentResolverObj = activity.callObjectMethod("saySomethingElse", "(Ljava/lang/String;)V", text_jni.object<jstring>());
+    activity.callMethod<void>("ttsSay", "(Ljava/lang/String;)V", text_jni.object<jstring>());
+}
+
+void android_tts_pause(){
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    activity.callMethod<void>("ttsPause");
+}
+
+void android_tts_stop(){
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    activity.callMethod<void>("ttsStop");
+}
+
+void android_tts_set_rate(float rate){
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    activity.callMethod<void>("ttsSetRate", "(F)V", rate);
+}
+
 #endif
 
 fz_document* open_document_with_file_name(fz_context* context, std::wstring file_name) {
@@ -2712,6 +2739,19 @@ void setFileUrlReceived(const QString& url)
     }
 }
 
+void on_android_tts(int begin, int end){
+    if (android_global_word_callback){
+        android_global_word_callback.value()(begin, end - begin);
+    }
+    // qDebug() << "ttsed from " << begin << " to " << end;
+}
+
+void on_android_state_change(QString new_state){
+    if (android_global_state_change_callback){
+        android_global_state_change_callback.value()(new_state);
+    }
+}
+
 extern "C" {
     JNIEXPORT void JNICALL
         Java_info_sioyek_sioyek_SioyekActivity_setFileUrlReceived(JNIEnv* env,
@@ -2735,6 +2775,26 @@ extern "C" {
         Q_UNUSED(obj)
             env->ReleaseStringUTFChars(url, urlStr);
         return;
+    }
+
+    JNIEXPORT void JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_onTts(JNIEnv* env,
+            jobject obj,
+            jint begin, jint end)
+    {
+        on_android_tts((int)begin, (int)end);
+    }
+
+    JNIEXPORT void JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_onTtsStateChange(JNIEnv* env,
+            jobject obj,
+            jstring new_state)
+    {
+
+        const char* state_str = env->GetStringUTFChars(new_state, NULL);
+        Q_UNUSED(obj)
+            env->ReleaseStringUTFChars(new_state, state_str);
+        on_android_state_change(state_str);
     }
 
     //JNIEXPORT void JNICALL
@@ -4002,3 +4062,97 @@ QString get_status_font_face_name() {
         return QString::fromStdWString(STATUS_FONT_FACE_NAME);
     }
 }
+
+
+QtTextToSpeechHandler::QtTextToSpeechHandler() {
+    tts = new QTextToSpeech();
+}
+
+QtTextToSpeechHandler::~QtTextToSpeechHandler() {
+    QObject::disconnect(tts, &QTextToSpeech::sayingWord, nullptr, nullptr);
+    QObject::disconnect(tts, &QTextToSpeech::stateChanged, nullptr, nullptr);
+    delete tts;
+}
+
+void QtTextToSpeechHandler::say(QString text) {
+    tts->say(text);
+}
+
+void QtTextToSpeechHandler::stop() {
+    tts->stop();
+}
+
+void QtTextToSpeechHandler::pause() {
+    tts->pause(QTextToSpeech::BoundaryHint::Immediate);
+}
+
+void QtTextToSpeechHandler::set_rate(float rate) {
+    tts->setRate(rate);
+}
+
+bool QtTextToSpeechHandler::is_pausable() {
+    return tts->engineCapabilities().testFlag(QTextToSpeech::Capability::PauseResume);
+}
+
+bool QtTextToSpeechHandler::is_word_by_word() {
+    return tts->engineCapabilities().testFlag(QTextToSpeech::Capability::WordByWordProgress);
+}
+
+void QtTextToSpeechHandler::set_word_callback(std::function<void(int, int)> callback) {
+    QObject::disconnect(tts, &QTextToSpeech::sayingWord, nullptr, nullptr);
+    word_callback = callback;
+
+    QObject::connect(tts, &QTextToSpeech::sayingWord, [&](const QString& word, qsizetype id, qsizetype start, qsizetype length) {
+        qDebug() << "saying word is called";
+        word_callback.value()(start, length);
+    });
+}
+
+void QtTextToSpeechHandler::set_state_change_callback(std::function<void(QString)> callback) {
+    QObject::disconnect(tts, &QTextToSpeech::stateChanged, nullptr, nullptr);
+    state_change_callback = callback;
+
+    QObject::connect(tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
+        QString new_state_string = QVariant::fromValue(state).toString();
+
+        state_change_callback.value()(new_state_string);
+    });
+}
+
+#ifdef SIOYEK_ANDROID
+
+AndroidTextToSpeechHandler::AndroidTextToSpeechHandler() {
+}
+
+void AndroidTextToSpeechHandler::say(QString text) {
+    android_tts_say(text);
+}
+
+void AndroidTextToSpeechHandler::stop() {
+    android_tts_stop();
+}
+
+void AndroidTextToSpeechHandler::pause() {
+    android_tts_pause();
+}
+
+void AndroidTextToSpeechHandler::set_rate(float rate) {
+    android_tts_set_rate(std::pow(4.0f, rate));
+}
+
+bool AndroidTextToSpeechHandler::is_pausable() {
+    return true;
+}
+
+bool AndroidTextToSpeechHandler::is_word_by_word() {
+    return true;
+}
+
+void AndroidTextToSpeechHandler::set_word_callback(std::function<void(int, int)> callback) {
+    android_global_word_callback = callback;
+}
+
+void AndroidTextToSpeechHandler::set_state_change_callback(std::function<void(QString)> callback) {
+    android_global_state_change_callback = callback;
+}
+#endif

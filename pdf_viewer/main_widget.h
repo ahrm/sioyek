@@ -52,6 +52,7 @@ class Command;
 class PdfViewOpenGLWidget;
 class DatabaseManager;
 class DocumentManager;
+class TextToSpeechHandler;
 
 enum class DrawingMode {
     Drawing,
@@ -112,6 +113,7 @@ enum class PaperDownloadFinishedAction {
     Portal
 };
 
+
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 class MainWidget : public QQuickWidget {
     Q_OBJECT
@@ -127,7 +129,7 @@ public:
     CachedChecksummer* checksummer = nullptr;
     int window_id;
 
-    QTextToSpeech* tts = nullptr;
+    TextToSpeechHandler* tts = nullptr;
     // is the TTS engine currently reading text?
     bool is_reading = false;
     bool word_by_word_reading = false;
@@ -757,7 +759,7 @@ public:
     bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
     bool ensure_internet_permission();
     void handle_command_text_change(const QString& new_text);
-    QTextToSpeech* get_tts();
+    TextToSpeechHandler* get_tts();
     void handle_bookmark_move_finish();
     void handle_bookmark_move();
     void handle_portal_move();

@@ -17,6 +17,7 @@
 #include <qstandarditemmodel.h>
 #include <qpoint.h>
 #include <qjsonarray.h>
+#include <qtexttospeech.h>
 
 #include <mupdf/fitz.h>
 
@@ -205,7 +206,11 @@ QString get_list_item_stylesheet();
 
 #ifdef SIOYEK_ANDROID
 QString android_file_name_from_uri(QString uri);
+void android_tts_say(QString text);
 void check_pending_intents(const QString workingDirPath);
+void android_tts_pause();
+void android_tts_stop();
+void android_tts_set_rate(float rate);
 #endif
 
 float dampen_velocity(float v, float dt);
@@ -446,3 +451,69 @@ QString get_ui_font_face_name();
 QString get_status_font_face_name();
 std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line);
 std::vector<fz_stext_char*> reorder_mixed_stext_line(fz_stext_line* line);
+
+class TextToSpeechHandler {
+public:
+    virtual void set_rate(float rate) = 0;
+    virtual void say(QString text) = 0;
+    virtual void stop() = 0;
+    virtual void pause() = 0;
+    virtual bool is_pausable() = 0;
+    virtual bool is_word_by_word() = 0;
+    virtual void set_word_callback(std::function<void(int, int)>) = 0;
+    virtual void set_state_change_callback(std::function<void(QString)>) = 0;
+};
+
+class QtTextToSpeechHandler : public TextToSpeechHandler {
+public:
+    QTextToSpeech* tts;
+    std::optional<std::function<void(int, int)>> word_callback = {};
+    std::optional<std::function<void(QString)>> state_change_callback = {};
+
+    QtTextToSpeechHandler();
+
+    ~QtTextToSpeechHandler();
+
+    void say(QString text) override;
+
+    void stop() override;
+
+    void pause() override;
+
+    void set_rate(float rate);
+
+    bool is_pausable();
+
+    bool is_word_by_word();
+
+    virtual void set_word_callback(std::function<void(int, int)> callback);
+
+    virtual void set_state_change_callback(std::function<void(QString)> callback);
+};
+
+
+#ifdef SIOYEK_ANDROID
+class AndroidTextToSpeechHandler : public TextToSpeechHandler {
+public:
+    // std::optional<std::function<void(int, int)>> word_callback = {};
+    // std::optional<std::function<void(QString)>> state_change_callback = {};
+
+    AndroidTextToSpeechHandler();
+
+    void say(QString text) override;
+
+    void stop() override;
+
+    void pause() override;
+
+    void set_rate(float rate);
+
+    bool is_pausable();
+
+    bool is_word_by_word();
+
+    void set_word_callback(std::function<void(int, int)> callback);
+
+    void set_state_change_callback(std::function<void(QString)> callback);
+};
+#endif

@@ -247,6 +247,7 @@ extern int RELOAD_INTERVAL_MILISECONDS;
 
 const unsigned int INTERVAL_TIME = 200;
 
+
 bool MainWidget::main_document_view_has_document()
 {
     return (main_document_view != nullptr) && (doc() != nullptr);
@@ -422,6 +423,7 @@ public:
         (is_begin ? &begin_icon : &end_icon)->paint(&painter, rect());
     }
 };
+
 
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
@@ -1161,6 +1163,10 @@ MainWidget::~MainWidget() {
         pdf_renderer->join_threads();
     }
 
+    if (tts) {
+        delete tts;
+    }
+
     // todo: use a reference counting pointer for document so we can delete main_doc
     // and helper_doc in DocumentView's destructor, not here.
     // ideally this function should just become:
@@ -1501,7 +1507,7 @@ void MainWidget::validate_render() {
             last_speed_update_time = QTime::currentTime();
         }
     }
-    if (TOUCH_MODE && is_moving()) {
+    if (is_moving()) {
         auto current_time = QTime::currentTime();
         float secs = current_time.msecsTo(last_speed_update_time) / 1000.0f;
         float move_x = secs * velocity_x;
@@ -1577,7 +1583,7 @@ void MainWidget::validate_render() {
     if (smooth_scroll_mode && (smooth_scroll_speed != 0)) {
         is_render_invalidated = true;
     }
-    if (TOUCH_MODE && is_moving()) {
+    if (is_moving()) {
         is_render_invalidated = true;
     }
 }
@@ -6808,7 +6814,7 @@ void MainWidget::read_current_line() {
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars, true);
 
-    get_tts()->setRate(TTS_RATE);
+    get_tts()->set_rate(TTS_RATE);
     if (word_by_word_reading) {
         if (tts_text.size() > 0) {
             get_tts()->say(QString::fromStdWString(tts_text));
@@ -6834,14 +6840,7 @@ void MainWidget::handle_start_reading() {
 void MainWidget::handle_stop_reading() {
     is_reading = false;
 
-    if (word_by_word_reading) {
-        // we should be able to just call stop() but at the time of this
-        // commit calling stop on a sapi tts object crashes
-        get_tts()->pause();
-    }
-    else {
-        get_tts()->stop();
-    }
+    get_tts()->stop();
 
     if (TOUCH_MODE) {
         pop_current_widget();
@@ -6871,7 +6870,7 @@ void MainWidget::handle_play() {
 
 void MainWidget::handle_pause() {
     is_reading = false;
-    get_tts()->pause(QTextToSpeech::BoundaryHint::Immediate);
+    get_tts()->pause();
 }
 bool MainWidget::should_show_status_label() {
     float prog;
@@ -7692,23 +7691,27 @@ void MainWidget::update_selected_bookmark_font_size() {
     }
 }
 
-QTextToSpeech* MainWidget::get_tts() {
+TextToSpeechHandler* MainWidget::get_tts() {
     if (tts) return tts;
 
-    tts = new QTextToSpeech(this);
+#ifdef SIOYEK_ANDROID
+    tts = new AndroidTextToSpeechHandler();
+#else
+    tts = new QtTextToSpeechHandler();
+#endif
 
 
     //void sayingWord(const QString &word, qsizetype id, qsizetype start, qsizetype length);
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
 
-    tts_has_pause_resume_capability = tts->engineCapabilities().testFlag(QTextToSpeech::Capability::PauseResume);
-    if (tts->engineCapabilities().testFlag(QTextToSpeech::Capability::WordByWordProgress)) {
+    tts_has_pause_resume_capability = tts->is_pausable();
+    if (tts->is_word_by_word()) {
         word_by_word_reading = true;
     }
     
     //void aboutToSynthesize(qsizetype id);
-    QObject::connect(tts, &QTextToSpeech::sayingWord, [&](const QString& word, qsizetype id, qsizetype start, qsizetype length) {
+    tts->set_word_callback([&](int start, int length) {
         if (is_reading) {
             if (start >= tts_corresponding_line_rects.size()) return;
 
@@ -7741,7 +7744,7 @@ QTextToSpeech* MainWidget::get_tts() {
 
                 invalidate_render();
             }
-                
+
 
             if ((tts_text.size() - end) <= 5) {
                 tts_is_about_to_finish = true;
@@ -7750,8 +7753,9 @@ QTextToSpeech* MainWidget::get_tts() {
         }
         });
 
-    QObject::connect(tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
-        if ((state == QTextToSpeech::Ready) || (state == QTextToSpeech::Error)) {
+
+    tts->set_state_change_callback([&](QString state) {
+        if ((state == "Ready") || (state == "Error")) {
             if (is_reading && tts_is_about_to_finish) {
                 tts_is_about_to_finish = false;
                 move_visual_mark(1);
