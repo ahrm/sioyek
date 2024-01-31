@@ -2569,6 +2569,7 @@ void convert_color3(float* in_color, int* out_color) {
 
 std::optional<std::function<void(int, int)>> android_global_word_callback = {};
 std::optional<std::function<void(QString)>> android_global_state_change_callback = {};
+std::optional<std::function<void(QString)>> android_global_external_state_change_callback = {};
 
 QJniObject parseUriString(const QString& uriString) {
     return QJniObject::callStaticObjectMethod
@@ -2752,6 +2753,12 @@ void on_android_state_change(QString new_state){
     }
 }
 
+void on_android_external_state_change(QString new_state){
+    if (android_global_external_state_change_callback){
+        android_global_external_state_change_callback.value()(new_state);
+    }
+}
+
 extern "C" {
     JNIEXPORT void JNICALL
         Java_info_sioyek_sioyek_SioyekActivity_setFileUrlReceived(JNIEnv* env,
@@ -2795,6 +2802,18 @@ extern "C" {
         Q_UNUSED(obj)
             env->ReleaseStringUTFChars(new_state, state_str);
         on_android_state_change(state_str);
+    }
+
+    JNIEXPORT void JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_onExternalTtsStateChange(JNIEnv* env,
+            jobject obj,
+            jstring new_state)
+    {
+
+        const char* state_str = env->GetStringUTFChars(new_state, NULL);
+        Q_UNUSED(obj)
+            env->ReleaseStringUTFChars(new_state, state_str);
+        on_android_external_state_change(state_str);
     }
 
     //JNIEXPORT void JNICALL
@@ -4119,6 +4138,9 @@ void QtTextToSpeechHandler::set_state_change_callback(std::function<void(QString
     });
 }
 
+void QtTextToSpeechHandler::set_external_state_change_callback(std::function<void(QString)> callback) {
+}
+
 #ifdef SIOYEK_ANDROID
 
 AndroidTextToSpeechHandler::AndroidTextToSpeechHandler() {
@@ -4154,5 +4176,9 @@ void AndroidTextToSpeechHandler::set_word_callback(std::function<void(int, int)>
 
 void AndroidTextToSpeechHandler::set_state_change_callback(std::function<void(QString)> callback) {
     android_global_state_change_callback = callback;
+}
+
+void AndroidTextToSpeechHandler::set_external_state_change_callback(std::function<void(QString)> callback) {
+    android_global_external_state_change_callback = callback;
 }
 #endif

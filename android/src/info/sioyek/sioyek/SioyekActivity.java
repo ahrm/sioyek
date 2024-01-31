@@ -70,6 +70,7 @@ public class SioyekActivity extends QtActivity{
     public static native void qDebug(String msg);
     public static native void onTts(int begin, int end);
     public static native void onTtsStateChange(String newState);
+    public static native void onExternalTtsStateChange(String newState);
 
     public static boolean isIntentPending;
     public static boolean isInitialized;
@@ -93,6 +94,15 @@ public class SioyekActivity extends QtActivity{
         public void onReceive(Context context, Intent intent) {
             String state = intent.getStringExtra("state");
             onTtsStateChange(state);
+        }
+    };
+
+    private BroadcastReceiver externalStateMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String state = intent.getStringExtra("state");
+            onExternalTtsStateChange(state);
+            //onTtsStateChange(state);
         }
     };
 
@@ -160,21 +170,29 @@ public class SioyekActivity extends QtActivity{
                 qDebug("sioyek: could not get media controller");
             }
         }, MoreExecutors.directExecutor());
-    }
-
-    @Override
-    public void onResume(){
-        super.onResume();
         LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, new IntentFilter("sioyek_tts"));
         LocalBroadcastManager.getInstance(this).registerReceiver(stateMessageReceiver, new IntentFilter("sioyek_tts_state"));
+        LocalBroadcastManager.getInstance(this).registerReceiver(externalStateMessageReceiver, new IntentFilter("sioyek_external_tts_state"));
     }
 
     @Override
-    public void onPause(){
-        super.onPause();
+    public void onStop(){
+
+        super.onStop();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(messageReceiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(stateMessageReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(externalStateMessageReceiver);
     }
+
+    // @Override
+    // public void onResume(){
+    //     super.onResume();
+    // }
+
+    // @Override
+    // public void onPause(){
+    //     super.onPause();
+    // }
 
     @Override
     public void onNewIntent(Intent intent){

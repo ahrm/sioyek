@@ -462,6 +462,7 @@ public:
     virtual bool is_word_by_word() = 0;
     virtual void set_word_callback(std::function<void(int, int)>) = 0;
     virtual void set_state_change_callback(std::function<void(QString)>) = 0;
+    virtual void set_external_state_change_callback(std::function<void(QString)>) = 0;
 };
 
 class QtTextToSpeechHandler : public TextToSpeechHandler {
@@ -489,6 +490,7 @@ public:
     virtual void set_word_callback(std::function<void(int, int)> callback);
 
     virtual void set_state_change_callback(std::function<void(QString)> callback);
+    virtual void set_external_state_change_callback(std::function<void(QString)> callback);
 };
 
 
@@ -515,5 +517,6 @@ public:
     void set_word_callback(std::function<void(int, int)> callback);
 
     void set_state_change_callback(std::function<void(QString)> callback);
+    void set_external_state_change_callback(std::function<void(QString)> callback);
 };
 #endif

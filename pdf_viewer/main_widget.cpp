@@ -7763,6 +7763,9 @@ TextToSpeechHandler* MainWidget::get_tts() {
             }
         }
         });
+    tts->set_external_state_change_callback([&](QString state){
+        ensure_player_state_(state);
+    });
 
 #else
     QObject::connect(tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
@@ -9883,4 +9886,29 @@ bool MainWidget::is_menu_focused() {
         return true;
     }
     return false;
+}
+
+
+void MainWidget::ensure_player_state(QString state) {
+    if (current_widget_stack.size() > 0) {
+        AudioUI* audio_ui = dynamic_cast<AudioUI*>(current_widget_stack.back());
+        if (audio_ui) {
+            if (state == "Ready") {
+                audio_ui->buttons->set_playing();
+                is_reading = true;
+            }
+            if (state == "Ended") {
+                audio_ui->buttons->set_paused();
+                is_reading = false;
+            }
+        }
+    }
+}
+
+void MainWidget::ensure_player_state_(QString state) {
+    QMetaObject::invokeMethod(this,
+        "ensure_player_state",
+        Qt::QueuedConnection,
+        Q_ARG(QString, state)
+    );
 }

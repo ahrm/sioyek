@@ -71,6 +71,14 @@ public class TextToSpeechService extends MediaSessionService {
     private int tempPauseLocation = 0;
     private String spokenText = "";
 
+    private String getPlayerStateString(int state){
+        if (state == Player.STATE_READY) return "Ready";
+        if (state == Player.STATE_ENDED) return "Ended";
+        if (state == Player.STATE_IDLE) return "Idle";
+        if (state == Player.STATE_BUFFERING) return "Buffering";
+        return "Unknown";
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -84,15 +92,23 @@ public class TextToSpeechService extends MediaSessionService {
                     @Override
                     public int onPlayerCommandRequest(MediaSession session, MediaSession.ControllerInfo controller, int playerCommand) {
 
+                        boolean isFromSioyek = controller.getPackageName().equals(getApplicationContext().getPackageName()); 
+
                         if (playerCommand == SimpleBasePlayer.COMMAND_PLAY_PAUSE){
                             if (tts.isSpeaking()){
                                 pauseLocation = tempPauseLocation + pauseLocation;
                                 tts.stop();
                                 player.updatePlaybackState(Player.STATE_ENDED, true);
+                                if (!isFromSioyek){
+                                    publishExternalTtsState(getPlayerStateString(Player.STATE_ENDED));
+                                }
                             }
                             else{
                                 tts.speak(spokenText.substring(pauseLocation), TextToSpeech.QUEUE_FLUSH, null, "hi");
                                 player.updatePlaybackState(Player.STATE_READY, true);
+                                if (!isFromSioyek){
+                                    publishExternalTtsState(getPlayerStateString(Player.STATE_READY));
+                                }
                             }
                         }
                         return MediaSession.Callback.super.onPlayerCommandRequest(session, controller, playerCommand);
@@ -182,6 +198,13 @@ public class TextToSpeechService extends MediaSessionService {
 
     private void publishTtsState(String state){
         Intent intent = new Intent("sioyek_tts_state");
+        intent.putExtra("state", state);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
+    private void publishExternalTtsState(String state){
+        SioyekActivity.qDebug("SIOYEK publishExternal: " + state );
+        Intent intent = new Intent("sioyek_external_tts_state");
         intent.putExtra("state", state);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
