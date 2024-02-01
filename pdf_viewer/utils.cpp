@@ -141,7 +141,15 @@ int mod(int a, int b)
 ParsedUri parse_uri(fz_context* mupdf_context, fz_document* document, std::string uri) {
     fz_link_dest dest = fz_resolve_link_dest(mupdf_context, document, uri.c_str());
     int target_page = fz_page_number_from_location(mupdf_context, document, dest.loc) + 1;
-    if (dest.type != FZ_LINK_DEST_XYZ) {
+
+    if (std::isnan(dest.x)) {
+        dest.x = 0;
+    }
+
+    if (dest.type == FZ_LINK_DEST_FIT_H) {
+        return { target_page, dest.x, dest.y };
+    }
+    else if (dest.type != FZ_LINK_DEST_XYZ) {
         float x = dest.x + dest.w / 2;;
         float y = dest.y + dest.h / 2;
         return { target_page, x, y };
