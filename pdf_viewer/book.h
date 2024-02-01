@@ -259,6 +259,10 @@ bool operator==(DocumentViewState& lhs, const DocumentViewState& rhs);
 struct SearchResult {
     std::vector<fz_rect> rects;
     int page;
+    int begin_index_in_page;
+    int end_index_in_page;
+
+    void fill(Document* doc);
 };
 
 

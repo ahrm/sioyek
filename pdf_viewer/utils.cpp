@@ -2505,6 +2505,25 @@ void flat_char_prism(const std::vector<fz_stext_char*>& chars, int page, std::ws
     }
 }
 
+void flat_char_prism2(const std::vector<fz_stext_char*>& chars, int page, std::wstring& output_text, std::vector<int>& page_begin_indices){
+    fz_stext_char* last_char = nullptr;
+
+    page_begin_indices.push_back(output_text.size());
+
+    for (int j = 0; j < chars.size(); j++) {
+        if (is_line_separator(last_char, chars[j])) {
+            if (last_char->c == '-') {
+                output_text.pop_back();
+            }
+            else {
+                output_text.push_back(' ');
+            }
+        }
+        output_text.push_back(chars[j]->c);
+        last_char = chars[j];
+    }
+}
+
 QString get_color_stylesheet(float* bg_color, float* text_color, bool nofont, int font_size) {
     if ((!nofont) && (STATUS_BAR_FONT_SIZE > -1 || font_size > -1)) {
         int size = font_size > 0 ? font_size : STATUS_BAR_FONT_SIZE;
@@ -3718,33 +3737,43 @@ std::function<bool(const wchar_t&, const wchar_t&)> get_pred(SearchCaseSensitivi
 }
 
 std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_search_index,
-    const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
-    std::wstring query,
+    const std::vector<int>& page_begin_indices,
+    const std::wstring& query,
     SearchCaseSensitivity case_sensitive,
     int begin_page,
     int min_page,
     int max_page) {
 
     std::vector<SearchResult> output;
-
     std::vector<SearchResult> before_results;
+
+    if (min_page < 0) {
+        min_page = 0;
+    }
+
+    if (max_page > page_begin_indices.size() - 1) {
+        max_page = page_begin_indices.size() - 1;
+    }
+
+    int begin_index = page_begin_indices[min_page];
+    int end_index = max_page == page_begin_indices.size()-1? super_fast_search_index.size() : page_begin_indices[max_page+1];
     bool is_before = true;
 
-    //auto pred = case_sensitive == SearchCaseSensitivity::CaseSensitive ? pred_case_sensitive : pred_case_insensitive;
     auto pred = get_pred(case_sensitive, query);
     auto searcher = std::default_searcher(query.begin(), query.end(), pred);
     auto it = std::search(
-        super_fast_search_index.begin(),
-        super_fast_search_index.end(),
+        super_fast_search_index.begin() + begin_index,
+        super_fast_search_index.begin() + end_index,
         searcher);
+
+    int match_page = min_page;
 
     for (; it != super_fast_search_index.end(); it = std::search(it + 1, super_fast_search_index.end(), searcher)) {
         int start_index = it - super_fast_search_index.begin();
-        std::deque<fz_rect> match_rects;
-        std::vector<fz_rect> compressed_match_rects;
+        //std::deque<fz_rect> match_rects;
+        //std::vector<fz_rect> compressed_match_rects;
 
-        int match_page = super_fast_search_index_pages[start_index];
+        while ((match_page < page_begin_indices.size() - 1) && page_begin_indices[match_page + 1] < start_index) match_page++;
 
         if (match_page >= begin_page) {
             is_before = false;
@@ -3752,14 +3781,10 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
 
         int end_index = start_index + query.size();
 
-
-        for (int j = start_index; j < end_index; j++) {
-            fz_rect rect = super_fast_search_rects[j];
-            match_rects.push_back(rect);
-        }
-
-        merge_selected_character_rects(match_rects, compressed_match_rects);
-        SearchResult res{ compressed_match_rects, match_page };
+        SearchResult res;
+        res.page = match_page;
+        res.begin_index_in_page = start_index - page_begin_indices[match_page];
+        res.end_index_in_page = end_index - page_begin_indices[match_page];
 
         if (!((match_page < min_page) || (match_page > max_page))) {
             if (is_before) {
@@ -3770,78 +3795,28 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
             }
         }
     }
+
     output.insert(output.end(), before_results.begin(), before_results.end());
     return output;
-}
-
-void search_text_with_index_single_page(const std::wstring& super_fast_search_index,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
-    std::wstring query,
-    SearchCaseSensitivity case_sensitive,
-    int page_number,
-    std::vector<SearchResult>* output
-    ){
-
-    auto pred = get_pred(case_sensitive, query);
-    auto searcher = std::default_searcher(query.begin(), query.end(), pred);
-    auto it = std::search(
-        super_fast_search_index.begin(),
-        super_fast_search_index.end(),
-        searcher);
-
-    for (; it != super_fast_search_index.end(); it = std::search(it + 1, super_fast_search_index.end(), searcher)) {
-        int start_index = it - super_fast_search_index.begin();
-        std::deque<fz_rect> match_rects;
-        std::vector<fz_rect> compressed_match_rects;
-
-        int end_index = start_index + query.size();
-
-        for (int j = start_index; j < end_index; j++) {
-            fz_rect rect = super_fast_search_rects[j];
-            match_rects.push_back(rect);
-        }
-
-        merge_selected_character_rects(match_rects, compressed_match_rects);
-        SearchResult res{ compressed_match_rects, page_number };
-
-        output->push_back(res);
-    }
 
 }
+
 
 std::vector<SearchResult> search_regex_with_index(const std::wstring& super_fast_search_index,
-    const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
+    const std::vector<int>& page_begin_indices,
     std::wstring query,
     SearchCaseSensitivity case_sensitive,
     int begin_page,
     int min_page,
-    int max_page) {
-    std::vector<SearchResult> output;
-    search_regex_with_index_( super_fast_search_index,
-        super_fast_search_index_pages,
-        super_fast_search_rects,
-        query,
-        case_sensitive,
-        begin_page,
-        min_page,
-        max_page,
-        &output);
-    return output;
-}
-
-void search_regex_with_index_(const std::wstring& super_fast_search_index,
-    const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
-    std::wstring query,
-    SearchCaseSensitivity case_sensitive,
-    int begin_page,
-    int min_page,
-    int max_page,
-    std::vector<SearchResult>* output)
+    int max_page)
 {
 
+    std::vector<SearchResult> output;
+
     std::wregex regex;
+    if (min_page < 0) min_page = 0;
+    if (max_page > page_begin_indices.size() - 1) max_page = page_begin_indices.size() - 1;
+
     try {
         if (case_sensitive != SearchCaseSensitivity::CaseSensitive) {
             regex = std::wregex(query, std::regex_constants::icase);
@@ -3851,49 +3826,56 @@ void search_regex_with_index_(const std::wstring& super_fast_search_index,
         }
     }
     catch (const std::regex_error&) {
-        return;
+        return output;
     }
 
 
     std::vector<SearchResult> before_results;
     bool is_before = true;
 
-    int offset = 0;
+    int offset = page_begin_indices[min_page];
 
-    std::wstring::const_iterator search_start(super_fast_search_index.begin());
+    std::wstring::const_iterator search_start(super_fast_search_index.begin() + offset);
+
     std::wsmatch match;
     int empty_tolerance = 1000;
 
+
+    int match_page = min_page;
 
     while (std::regex_search(search_start, super_fast_search_index.cend(), match, regex)) {
         std::deque<fz_rect> match_rects;
         std::vector<fz_rect> compressed_match_rects;
 
-        int match_page = super_fast_search_index_pages[offset + match.position()];
+        //int match_page = super_fast_search_index_pages[offset + match.position()];
 
         if (match_page >= begin_page) {
             is_before = false;
         }
 
+        if (match_page > max_page) {
+            break;
+        }
+
         int start_index = offset + match.position();
         int end_index = offset + match.position() + match.length();
+
+        while ((match_page < page_begin_indices.size() - 1) && page_begin_indices[match_page + 1] < start_index) {
+            match_page++;
+        }
+
         if (start_index < end_index) {
-
-
-            for (int j = start_index; j < end_index; j++) {
-                fz_rect rect = super_fast_search_rects[j];
-                match_rects.push_back(rect);
-            }
-
-            merge_selected_character_rects(match_rects, compressed_match_rects);
-            SearchResult res{ compressed_match_rects, match_page };
+            SearchResult res;
+            res.page = match_page;
+            res.begin_index_in_page = start_index - page_begin_indices[match_page];
+            res.end_index_in_page = end_index - page_begin_indices[match_page];
 
             if (!((match_page < min_page) || (match_page > max_page))) {
                 if (is_before) {
                     before_results.push_back(res);
                 }
                 else {
-                    output->push_back(res);
+                    output.push_back(res);
                 }
             }
         }
@@ -3907,7 +3889,8 @@ void search_regex_with_index_(const std::wstring& super_fast_search_index,
         offset = end_index;
         search_start = match.suffix().first;
     }
-    output->insert(output->end(), before_results.begin(), before_results.end());
+    output.insert(output.end(), before_results.begin(), before_results.end());
+    return output;
 
 }
 
@@ -4122,7 +4105,6 @@ void QtTextToSpeechHandler::set_word_callback(std::function<void(int, int)> call
     word_callback = callback;
 
     QObject::connect(tts, &QTextToSpeech::sayingWord, [&](const QString& word, qsizetype id, qsizetype start, qsizetype length) {
-        qDebug() << "saying word is called";
         word_callback.value()(start, length);
     });
 }

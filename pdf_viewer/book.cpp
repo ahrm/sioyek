@@ -1,5 +1,6 @@
 #include "book.h"
 #include "utils.h"
+#include "document.h"
 
 extern float BOOKMARK_RECT_SIZE;
 
@@ -355,4 +356,10 @@ AbsoluteRect FreehandDrawing::bbox(){
         }
     }
     return res;
+}
+
+void SearchResult::fill(Document* doc) {
+    if (rects.size() == 0) {
+        doc->fill_search_result(this);
+    }
 }

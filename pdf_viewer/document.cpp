@@ -1346,8 +1346,7 @@ void Document::index_document(bool* invalid_flag) {
         std::map<std::wstring, std::vector<IndexedData>> local_equation_data;
 
         std::wstring local_super_fast_search_index;
-        std::vector<int> local_super_fast_search_pages;
-        std::vector<PagelessDocumentRect> local_super_fast_search_rects;
+        std::vector<int> local_page_begin_indices;
 
         std::vector<TocNode*> toc_stack;
         std::vector<TocNode*> top_level_nodes;
@@ -1375,7 +1374,7 @@ void Document::index_document(bool* invalid_flag) {
                 get_flat_chars_from_stext_page(stext_page, flat_chars);
 
                 if (SUPER_FAST_SEARCH) {
-                    flat_char_prism(flat_chars, i, local_super_fast_search_index, local_super_fast_search_pages, local_super_fast_search_rects);
+                    flat_char_prism2(flat_chars, i, local_super_fast_search_index, local_page_begin_indices);
                 }
 
                 index_references(stext_page, i, local_reference_data);
@@ -1408,8 +1407,7 @@ void Document::index_document(bool* invalid_flag) {
         generic_indices = std::move(local_generic_data);
 
         super_fast_search_index = std::move(local_super_fast_search_index);
-        super_fast_search_index_pages = std::move(local_super_fast_search_pages);
-        super_fast_search_rects = std::move(local_super_fast_search_rects);
+        super_fast_page_begin_indices = std::move(local_page_begin_indices);
         if (SUPER_FAST_SEARCH) {
             super_fast_search_index_ready = true;
         }
@@ -2490,35 +2488,27 @@ std::optional<PdfLink> Document::get_link_in_pos(const DocumentPos& pos) {
 
 std::wstring Document::get_pdf_link_text(PdfLink link) {
     int page = link.source_page;
-    fz_stext_page* stext_page = get_stext_with_page_number(page);
-    std::vector<fz_stext_char*> flat_chars;
-    get_flat_chars_from_stext_page(stext_page, flat_chars);
-    std::vector<PagelessDocumentRect> flat_chars_rects;
-    std::vector<int> flat_chars_pages;
-    std::wstring flat_chars_text;
-    flat_char_prism(flat_chars,page, flat_chars_text, flat_chars_pages, flat_chars_rects);
 
     std::wstring res;
     for (int rect_index = 0; rect_index < link.rects.size(); rect_index++) {
 
         PagelessDocumentRect current_link_rect = link.rects[rect_index];
 
-        //for (int i = 0; i < flat_chars.size(); i++) {
-        for (int i = 0; i < flat_chars_text.size(); i++) {
-            PagelessDocumentRect charrect = flat_chars_rects[i];
+        for (auto [block, line, chr] : page_iterator(page)) {
+            PagelessDocumentRect charrect = fz_rect_from_quad(chr->quad);
             float y = (charrect.y0 + charrect.y1) / 2;
             float x = (charrect.x0 + charrect.x1) / 2;
             float height = charrect.y1 - charrect.y0;
             float width = charrect.x1 - charrect.x0;
+
             charrect.y0 = y - height / 5;
             charrect.y1 = y + height / 5;
-
             charrect.x0 = x;
             charrect.x1 = x;
-            if (rects_intersect(charrect, current_link_rect)) {
-                res.push_back(flat_chars_text[i]);
-            }
 
+            if (rects_intersect(charrect, current_link_rect)) {
+                res.push_back(chr->c);
+            }
         }
     }
     return res;
@@ -2808,8 +2798,7 @@ std::vector<SearchResult> Document::search_text(std::wstring query, SearchCaseSe
 
     return search_text_with_index(
         super_fast_search_index,
-        super_fast_search_index_pages,
-        super_fast_search_rects,
+        super_fast_page_begin_indices,
         query,
         case_sensitive,
         begin_page,
@@ -2820,9 +2809,9 @@ std::vector<SearchResult> Document::search_text(std::wstring query, SearchCaseSe
 
 std::vector<SearchResult> Document::search_regex(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page)
 {
+
     return search_regex_with_index(super_fast_search_index,
-        super_fast_search_index_pages,
-        super_fast_search_rects,
+        super_fast_page_begin_indices,
         query,
         case_sensitive,
         begin_page,
@@ -2873,6 +2862,8 @@ void Document::clear_document_caches() {
     cached_fastread_highlights.clear();
     cached_line_texts.clear();
     cached_page_line_rects.clear();
+    cached_page_index.clear();
+
 
     for (auto [_, cached_small_pixmap] : cached_small_pixmaps) {
         fz_drop_pixmap(context, cached_small_pixmap);
@@ -2894,8 +2885,7 @@ void Document::clear_document_caches() {
     cached_toc_model = nullptr;
 
     super_fast_search_index.clear();
-    super_fast_search_index_pages.clear();
-    super_fast_search_rects.clear();
+    super_fast_page_begin_indices.clear();
     super_fast_search_index_ready = false;
 
     clear_toc_nodes();
@@ -3881,6 +3871,12 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
 
     if (it != super_fast_search_index.end()) {
         int index = it - super_fast_search_index.begin();
+        int abbr_page = 0;
+
+        while ((abbr_page < num_pages() - 1) && super_fast_page_begin_indices[abbr_page + 1] < index) {
+            abbr_page++;
+        }
+
         while (index > 0 && is_in(super_fast_search_index[index], {' ', '(', ')', '\n'})){
             index--;
         }
@@ -3888,6 +3884,7 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
 
         std::deque<PagelessDocumentRect> raw_rects;
         std::vector<PagelessDocumentRect> merged_rects;
+        CachedPageIndex& abbr_page_index = get_page_index(abbr_page);
 
         while (index > 0 && remaining_abbr.size() > 0){
             if (super_fast_search_index[index] == ' ' || super_fast_search_index[index] == '\n') {
@@ -3899,7 +3896,7 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
                 //}
             }
 
-            PagelessDocumentRect rect = super_fast_search_rects[index];
+            PagelessDocumentRect rect = abbr_page_index.rects[index - super_fast_page_begin_indices[abbr_page]];
             /* overview_highlight_rects.push_back(DocumentRect(rect, super_fast_search_index_pages[index])); */
             raw_rects.push_back(rect);
 
@@ -3910,9 +3907,9 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
         if (raw_rects.size() > 0){
             merge_selected_character_rects(raw_rects, merged_rects, false);
             for (auto r : merged_rects){
-                overview_highlight_rects.push_back(DocumentRect(r, super_fast_search_index_pages[index]));
+                overview_highlight_rects.push_back(DocumentRect(r, abbr_page));
             }
-            return DocumentPos{super_fast_search_index_pages[index], overview_highlight_rects[0].rect.x0, overview_highlight_rects[0].rect.y0};
+            return DocumentPos{abbr_page, overview_highlight_rects[0].rect.x0, overview_highlight_rects[0].rect.y0};
         }
 
         return {};
@@ -3977,9 +3974,13 @@ int Document::find_reference_page_with_reference_text(std::wstring ref) {
         }
     }
     if (filtered_indices.size() > 0) {
-        return super_fast_search_index_pages[filtered_indices.back()];
-        //std::wstring filtered_context = super_fast_search_index.substr(filtered_indices.back(), 200);
-        //int a = 2;
+
+        int res_page = 0;
+        while ((res_page < super_fast_page_begin_indices.size() - 1) && super_fast_page_begin_indices[res_page] < filtered_indices.back()) {
+            res_page++;
+        }
+
+        return res_page;
     }
     return -1;
 
@@ -4178,4 +4179,46 @@ AbsoluteRect Document::to_absolute(int page, PagelessDocumentRect rect) {
 
 fz_context* Document::get_mupdf_context(){
     return context;
+}
+
+CachedPageIndex& Document::get_page_index(int page) {
+    for (auto& [pn, cached] : cached_page_index) {
+        if (pn == page) return cached;
+    }
+
+    if (cached_page_index.size() > 20) {
+        cached_page_index.erase(cached_page_index.begin(), cached_page_index.begin() + 10);
+    }
+
+    CachedPageIndex index;
+    std::vector<int> dummy_pages;
+
+    std::vector<fz_stext_char*> flat_chars;
+    fz_stext_page* stext_page = get_stext_with_page_number(page);
+    get_flat_chars_from_stext_page(stext_page, flat_chars);
+    flat_char_prism(flat_chars, page, index.text, dummy_pages, index.rects);
+
+    cached_page_index.push_back(std::make_pair(page, index));
+    return cached_page_index.back().second;
+}
+
+void Document::fill_search_result(SearchResult* result) {
+    if (result->rects.size() > 0) return;
+
+    int page = result->page;
+    CachedPageIndex& page_index = get_page_index(page);
+
+    int begin_index = result->begin_index_in_page;
+    int end_index = result->end_index_in_page;
+
+    std::deque<fz_rect> raw_rects;
+    std::vector<fz_rect> compressed_rects;
+    end_index = std::min<int>(end_index, page_index.rects.size());
+
+    for (int i = begin_index; i < end_index; i++) {
+        raw_rects.push_back(page_index.rects[i]);
+    }
+
+    merge_selected_character_rects(raw_rects, compressed_rects);
+    result->rects = compressed_rects;
 }

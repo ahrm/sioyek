@@ -394,18 +394,23 @@ void PdfRenderer::run_search(int thread_index)
                 std::vector<fz_stext_char*> flat_chars;
                 get_flat_chars_from_stext_page(stext_page, flat_chars, false);
                 std::wstring page_text;
-                std::vector<int> pages;
-                std::vector<PagelessDocumentRect> rects;
-                flat_char_prism(flat_chars, i, page_text, pages, rects);
+                std::vector<int> page_begin_indices;
+                flat_char_prism2(flat_chars, i, page_text, page_begin_indices);
                 req.search_results_mutex->lock();
 
+                std::vector<SearchResult> page_results;
                 if (req.is_regex == false) {
-                    search_text_with_index_single_page(page_text, rects, req.search_term, search_case_sensitivity, i, req.search_results);
+                    page_results = search_text_with_index(page_text, page_begin_indices, req.search_term, search_case_sensitivity, 0, 0, 0);
                 }
                 else {
-                    search_regex_with_index_(page_text, pages, rects, req.search_term, search_case_sensitivity, i, i, i, req.search_results);
+                    page_results = search_regex_with_index(page_text, page_begin_indices, req.search_term, search_case_sensitivity, 0, 0, 0);
                 }
 
+                for (auto& pr : page_results) {
+                    pr.page = i;
+                }
+
+                req.search_results->insert(req.search_results->end(), page_results.begin(), page_results.end());
                 req.search_results_mutex->unlock();
 
                 if (num_handled_pages % 16 == 0) {
