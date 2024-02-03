@@ -32,6 +32,7 @@ import java.util.ArrayList;
 
 class CustomPlayer extends SimpleBasePlayer{
 
+
     private State state = new State.Builder()
             .setAvailableCommands(new Commands.Builder().addAll(
              COMMAND_PLAY_PAUSE,

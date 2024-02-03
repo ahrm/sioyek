@@ -7809,7 +7809,6 @@ TextToSpeechHandler* MainWidget::get_tts() {
         }
 
         if (is_playing){
-            qDebug() << "SIOYEK: resumeing tts is_playing is true";
             ensure_player_state("Ended");
 
             handle_stop_reading();
@@ -9952,7 +9951,6 @@ bool MainWidget::is_menu_focused() {
 
 
 void MainWidget::ensure_player_state(QString state) {
-    qDebug() << "SIOYEK: ensure player state called with state " << state;
     if (current_widget_stack.size() > 0) {
         AudioUI* audio_ui = dynamic_cast<AudioUI*>(current_widget_stack.back());
         if (audio_ui) {
