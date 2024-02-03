@@ -7695,11 +7695,11 @@ void MainWidget::handle_command_text_change(const QString& new_text) {
     if (pending_command_instance) {
         if ((pending_command_instance->get_name() == "edit_selected_bookmark") || (pending_command_instance->get_name() == "add_freetext_bookmark")) {
             doc()->get_bookmarks()[selected_bookmark_index].description = new_text.toStdWString();
-            validate_render();
         }
         if (INCREMENTAL_SEARCH && pending_command_instance->get_name() == "search" && doc()->is_super_fast_index_ready()) {
             perform_search(new_text.toStdWString(), false, true);
         }
+        validate_render();
     }
 }
 
