@@ -1777,6 +1777,10 @@ VirtualPos DocumentView::absolute_to_virtual_pos(const AbsoluteDocumentPos& absp
     }
 
     DocumentPos docpos = abspos.to_document(current_document);
+    if ((docpos.y == cached_virtual_rects[docpos.page].height()) && (docpos.page < cached_virtual_rects.size()-1)) {
+        docpos.page++;
+        docpos.y = 0;
+    }
     VirtualRect page_virtual_rect = cached_virtual_rects[docpos.page];
 
     VirtualPos pos = page_virtual_rect.top_left();
