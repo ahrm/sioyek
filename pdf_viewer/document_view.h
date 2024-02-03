@@ -45,6 +45,10 @@ protected:
 
     int view_width = 0;
     int view_height = 0;
+
+    // In touch mode normally we don't allow the user to scroll the document horizontally past the 
+    // screen edges, however after the user tries to move the document past a certain distance, we
+    // "relent" and allow the user to scroll horizontally past the screen edges.
     bool is_relenting = false;
 
     // in auto resize mode, we automatically set the zoom level to fit the page when resizing the document
