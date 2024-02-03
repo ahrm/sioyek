@@ -2099,6 +2099,32 @@ public:
     bool requires_document() { return false; }
 };
 
+class MoveDownSmoothCommand : public Command {
+public:
+    MoveDownSmoothCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->handle_move_smooth(-1);
+    }
+
+    std::string get_name() {
+        return "move_down_smooth";
+    }
+};
+
+class MoveUpSmoothCommand : public Command {
+public:
+    MoveUpSmoothCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->handle_move_smooth(1);
+    }
+
+    std::string get_name() {
+        return "move_up_smooth";
+    }
+};
+
 class MoveDownCommand : public Command {
 public:
     MoveDownCommand(MainWidget* w) : Command(w) {};
@@ -6150,6 +6176,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["move_up"] = [](MainWidget* widget) {return std::make_unique< MoveUpCommand>(widget); };
     new_commands["move_left"] = [](MainWidget* widget) {return std::make_unique< MoveLeftCommand>(widget); };
     new_commands["move_right"] = [](MainWidget* widget) {return std::make_unique< MoveRightCommand>(widget); };
+    new_commands["move_down_smooth"] = [](MainWidget* widget) {return std::make_unique< MoveDownSmoothCommand>(widget); };
+    new_commands["move_up_smooth"] = [](MainWidget* widget) {return std::make_unique< MoveUpSmoothCommand>(widget); };
     new_commands["move_left_in_overview"] = [](MainWidget* widget) {return std::make_unique< MoveLeftInOverviewCommand>(widget); };
     new_commands["move_right_in_overview"] = [](MainWidget* widget) {return std::make_unique< MoveRightInOverviewCommand>(widget); };
     new_commands["save_scratchpad"] = [](MainWidget* widget) {return std::make_unique< SaveScratchpadCommand>(widget); };

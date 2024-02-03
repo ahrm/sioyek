@@ -922,6 +922,7 @@ public:
     QString get_rest_of_document_pages_text();
     void focus_on_character_offset_into_document(int character_offset_into_document);
     // void stop_tts_service();
+    void handle_move_smooth(int amount);
 };
 
 #endif

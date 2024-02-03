@@ -195,6 +195,7 @@ extern ScratchPad global_scratchpad;
 
 extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
+extern float SMOOTH_MOVE_MAX_VELOCITY;
 
 extern std::wstring RIGHT_CLICK_COMMAND;
 extern std::wstring MIDDLE_CLICK_COMMAND;
@@ -1520,6 +1521,13 @@ void MainWidget::validate_render() {
 
         velocity_x = dampen_velocity(velocity_x, secs);
         velocity_y = dampen_velocity(velocity_y, secs);
+
+        if (!TOUCH_MODE) {
+            // when using smooth_move commands not in touch mode we stop much faster
+            velocity_x = dampen_velocity(velocity_x, secs);
+            velocity_y = dampen_velocity(velocity_y, secs);
+        }
+
         if (!is_moving()) {
             validation_interval_timer->setInterval(INTERVAL_TIME);
         }
@@ -9997,9 +10005,16 @@ void MainWidget::focus_on_character_offset_into_document(int character_offset_in
     invalidate_render();
 }
 
-// void MainWidget::stop_tts_service(){
-// #ifdef SIOYEK_ANDROID
-//     qDebug() << "SIOYEK: stop tts service called!";
-//     android_tts_stop_service();
-// #endif
-// }
+void MainWidget::handle_move_smooth(int amount) {
+
+    float max_velocity = amount > 0 ? SMOOTH_MOVE_MAX_VELOCITY : -SMOOTH_MOVE_MAX_VELOCITY;
+
+    if (amount > 0) {
+        velocity_y += (max_velocity - velocity_y) / 5.0f;
+    }
+    else {
+        velocity_y -= (velocity_y - max_velocity) / 5.0f;
+    }
+    validation_interval_timer->setInterval(0);
+    last_speed_update_time = QTime::currentTime();
+}
