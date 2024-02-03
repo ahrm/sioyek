@@ -1896,7 +1896,6 @@ bool MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int 
 }
 
 void MainWidget::key_event(bool released, QKeyEvent* kevent) {
-    validate_render();
 
     if (typing_location.has_value()) {
 
@@ -1998,6 +1997,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
 
         if (commands) {
             handle_command_types(std::move(commands), num_repeats);
+            validate_render();
         }
         //for (auto& command : commands) {
         //    handle_command_types(std::move(command), num_repeats);
@@ -6564,10 +6564,6 @@ void MainWidget::show_context_menu() {
 }
 
 void MainWidget::handle_debug_command() {
-    //int page = doc()->get_page_from_character_offset(1525);
-    //qDebug() << page;
-    //focus_on_character_offset_into_document(1600);
-    //invalidate_render();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
