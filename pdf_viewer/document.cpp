@@ -4094,11 +4094,13 @@ PageIterator Document::page_iterator(int page_number) {
     return PageIterator(page);
 }
 
-void Document::get_page_text_and_line_rects_after_rect(int page_number,
+int Document::get_page_text_and_line_rects_after_rect(int page_number,
     AbsoluteRect after_,
     std::wstring& text,
     std::vector<PagelessDocumentRect>& line_rects,
     std::vector<PagelessDocumentRect>& char_rects){
+    int index_into_page = 0;
+
     bool begun = false;
     DocumentRect after = after_.to_document(this);
     after.rect.y0 = after.rect.y1 = (after.rect.y0 + after.rect.y1) / 2;
@@ -4111,6 +4113,10 @@ void Document::get_page_text_and_line_rects_after_rect(int page_number,
 
         if (rects_intersect(after.rect, line->bbox)) {
             begun = true;
+        }
+
+        if (!begun) {
+            index_into_page++;
         }
 
         if (chr->c > 0 && chr->c < 128) {
@@ -4138,6 +4144,7 @@ void Document::get_page_text_and_line_rects_after_rect(int page_number,
         }
 
     }
+    return index_into_page;
 }
 
 std::optional<AbsoluteRect> Document::get_rect_vertically(bool below, AbsoluteRect rect) {
@@ -4221,4 +4228,23 @@ void Document::fill_search_result(SearchResult* result) {
 
     merge_selected_character_rects(raw_rects, compressed_rects);
     result->rects = compressed_rects;
+}
+
+int Document::get_page_offset_into_super_fast_index(int from){
+    return super_fast_page_begin_indices[from];
+}
+
+QString Document::get_rest_of_document_pages_text(int from) {
+    if ((from >= 0) && from < super_fast_page_begin_indices.size()) {
+        return QString::fromStdWString(super_fast_search_index.substr(super_fast_page_begin_indices[from]));
+    }
+    return "";
+}
+
+int Document::get_page_from_character_offset(int offset){
+    int res = 0;
+    while ((res < super_fast_page_begin_indices.size() - 1) && (super_fast_page_begin_indices[res + 1] < offset)){
+        res++;
+    }
+    return res;
 }

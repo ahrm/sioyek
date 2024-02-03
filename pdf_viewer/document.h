@@ -171,11 +171,12 @@ public:
     std::wstring detected_paper_name = L"";
 
     PageIterator page_iterator(int page_number);
-    void get_page_text_and_line_rects_after_rect(int page_number,
+    int get_page_text_and_line_rects_after_rect(int page_number,
         AbsoluteRect after,
         std::wstring& text,
         std::vector<PagelessDocumentRect>& line_rects,
         std::vector<PagelessDocumentRect>& char_rects);
+
     void load_document_metadata_from_db();
     std::string add_bookmark(const std::wstring& desc, float y_offset);
     std::string add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
@@ -196,6 +197,9 @@ public:
     std::vector<Portal> get_intersecting_visible_portals(float absrange_begin, float absrange_end);
     CachedPageIndex& get_page_index(int page);
     void fill_search_result(SearchResult* result);
+    QString get_rest_of_document_pages_text(int from);
+    int get_page_offset_into_super_fast_index(int from);
+    int get_page_from_character_offset(int offset);
 
     void fill_highlight_rects(fz_context* ctx, fz_document* doc);
     void fill_index_highlight_rects(int highlight_index, fz_context* thread_context = nullptr, fz_document* thread_document = nullptr);

@@ -304,6 +304,10 @@ public:
     QLabel* status_label = nullptr;
     int text_suggestion_index = 0;
 
+    int last_pause_rest_of_document_page = -1;
+    int last_page_read = -1;
+    int last_index_into_page_read = -1;
+
     std::deque<std::wstring> search_terms;
 
     // determines if the widget render is invalid and needs to be updated
@@ -915,6 +919,9 @@ public:
     bool is_menu_focused();
     void ensure_player_state_(QString state);
     Q_INVOKABLE void ensure_player_state(QString state);
+    QString get_rest_of_document_pages_text();
+    void focus_on_character_offset_into_document(int character_offset_into_document);
+    // void stop_tts_service();
 };
 
 #endif

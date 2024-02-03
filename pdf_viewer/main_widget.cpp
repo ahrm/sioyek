@@ -14,6 +14,7 @@
 // moving exits show link mode
 // test exact highlight select after saving and reloading the document
 // embedded documents don't respect exact highlight select
+// check if the widget being popped is audio controsl and if it is paused, hide the notification, (also do this when stop button is pressed)
 
 #include <iostream>
 #include <vector>
@@ -3451,7 +3452,13 @@ void MainWidget::push_current_widget(QWidget* new_widget) {
 }
 
 void MainWidget::pop_current_widget(bool canceled) {
+
     if (current_widget_stack.size() > 0) {
+        // if (dynamic_cast<AudioUI*>(current_widget_stack.back())){
+        //     if (!is_reading){
+        //         stop_tts_service();
+        //     }
+        // }
         current_widget_stack.back()->hide();
         current_widget_stack.back()->deleteLater();
         current_widget_stack.pop_back();
@@ -6557,6 +6564,10 @@ void MainWidget::show_context_menu() {
 }
 
 void MainWidget::handle_debug_command() {
+    //int page = doc()->get_page_from_character_offset(1525);
+    //qDebug() << page;
+    //focus_on_character_offset_into_document(1600);
+    //invalidate_render();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -6803,16 +6814,16 @@ void MainWidget::read_current_line() {
 
     int page_number  = main_document_view->get_vertical_line_page();
     AbsoluteRect ruler_rect = main_document_view->get_ruler_rect().value_or(fz_empty_rect);
-    doc()->get_page_text_and_line_rects_after_rect(
+    int index_into_page = doc()->get_page_text_and_line_rects_after_rect(
         page_number,
         ruler_rect,
         tts_text,
         tts_corresponding_line_rects,
         tts_corresponding_char_rects);
 
-    fz_stext_page* stext_page = doc()->get_stext_with_page_number(page_number);
-    std::vector<fz_stext_char*> flat_chars;
-    get_flat_chars_from_stext_page(stext_page, flat_chars, true);
+    //fz_stext_page* stext_page = doc()->get_stext_with_page_number(page_number);
+    //std::vector<fz_stext_char*> flat_chars;
+    //get_flat_chars_from_stext_page(stext_page, flat_chars, true);
 
     get_tts()->set_rate(TTS_RATE);
     if (word_by_word_reading) {
@@ -6825,14 +6836,19 @@ void MainWidget::read_current_line() {
         tts_is_about_to_finish = true;
     }
 
+    last_page_read = page_number;
+    last_index_into_page_read = index_into_page;
+
     is_reading = true;
 }
 
 void MainWidget::handle_start_reading() {
+
     is_reading = true;
     read_current_line();
     if (TOUCH_MODE) {
-        set_current_widget(new AudioUI(this));
+        AudioUI * audio_ui_widget = new AudioUI(this);
+        set_current_widget(audio_ui_widget);
         show_current_widget();
     }
 }
@@ -7763,8 +7779,54 @@ TextToSpeechHandler* MainWidget::get_tts() {
             }
         }
         });
+
     tts->set_external_state_change_callback([&](QString state){
         ensure_player_state_(state);
+    });
+
+    tts->set_on_app_pause_callback([&](){
+
+        bool is_audio_ui_visible = false;
+        if (current_widget_stack.size() > 0){
+            AudioUI* audio_ui = dynamic_cast<AudioUI*>(current_widget_stack.back());
+            if (audio_ui){
+                is_audio_ui_visible = true;
+            }
+        }
+
+        if (is_reading || is_audio_ui_visible) {
+            return get_rest_of_document_pages_text();
+        }
+        else{
+            return QString("");
+        }
+    });
+
+    tts->set_on_app_resume_callback([&](bool is_playing, bool is_on_rest, int offset){
+
+        if (is_reading && (is_playing == false)){
+            is_reading = false;
+        }
+
+        if (is_playing){
+            qDebug() << "SIOYEK: resumeing tts is_playing is true";
+            ensure_player_state("Ended");
+
+            handle_stop_reading();
+
+            if (is_on_rest) {
+                int last_page = last_pause_rest_of_document_page;
+                int last_page_offset = doc()->get_page_offset_into_super_fast_index(last_page);
+                int current_offset_in_document = last_page_offset + offset;
+                focus_on_character_offset_into_document(current_offset_in_document);
+            }
+            else {
+                int last_page = last_page_read;
+                int last_page_offset = doc()->get_page_offset_into_super_fast_index(last_page);
+                int current_offset_into_document = last_page_offset + last_index_into_page_read + offset;
+                focus_on_character_offset_into_document(current_offset_into_document);
+            }
+        }
     });
 
 #else
@@ -9890,6 +9952,7 @@ bool MainWidget::is_menu_focused() {
 
 
 void MainWidget::ensure_player_state(QString state) {
+    qDebug() << "SIOYEK: ensure player state called with state " << state;
     if (current_widget_stack.size() > 0) {
         AudioUI* audio_ui = dynamic_cast<AudioUI*>(current_widget_stack.back());
         if (audio_ui) {
@@ -9912,3 +9975,37 @@ void MainWidget::ensure_player_state_(QString state) {
         Q_ARG(QString, state)
     );
 }
+
+QString MainWidget::get_rest_of_document_pages_text() {
+    int page_number = main_document_view->get_vertical_line_page();
+    last_pause_rest_of_document_page = page_number + 1;
+    return doc()->get_rest_of_document_pages_text(page_number + 1).left(100000);
+}
+
+void MainWidget::focus_on_character_offset_into_document(int character_offset_into_document) {
+    int page = doc()->get_page_from_character_offset(character_offset_into_document);
+    int page_offset = doc()->get_page_offset_into_super_fast_index(page);
+    int character_offset_into_page = character_offset_into_document - page_offset;
+
+    int remaining_line_offset = character_offset_into_page;
+
+    std::vector<std::wstring> page_lines;
+    doc()->get_page_lines(page, &page_lines);
+    int line_index = 0;
+
+    while ((line_index < page_lines.size()) && (remaining_line_offset > page_lines[line_index].size())) {
+        remaining_line_offset -= page_lines[line_index].size();
+        line_index++;
+    }
+
+    //qDebug() << "SIOYEK FOCUS: page " << current_page << " line: " << line_index << " offset was: " << offset;
+    focus_on_line_with_index(page, line_index);
+    invalidate_render();
+}
+
+// void MainWidget::stop_tts_service(){
+// #ifdef SIOYEK_ANDROID
+//     qDebug() << "SIOYEK: stop tts service called!";
+//     android_tts_stop_service();
+// #endif
+// }

@@ -212,6 +212,7 @@ void check_pending_intents(const QString workingDirPath);
 void android_tts_pause();
 void android_tts_stop();
 void android_tts_set_rate(float rate);
+void android_tts_set_rest_of_document(QString rest);
 #endif
 
 float dampen_velocity(float v, float dt);
@@ -448,6 +449,8 @@ public:
     virtual void set_word_callback(std::function<void(int, int)>) = 0;
     virtual void set_state_change_callback(std::function<void(QString)>) = 0;
     virtual void set_external_state_change_callback(std::function<void(QString)>) = 0;
+    virtual void set_on_app_pause_callback(std::function<QString()>) = 0;
+    virtual void set_on_app_resume_callback(std::function<void(bool, bool, int)>) = 0;
 };
 
 class QtTextToSpeechHandler : public TextToSpeechHandler {
@@ -476,6 +479,8 @@ public:
 
     virtual void set_state_change_callback(std::function<void(QString)> callback);
     virtual void set_external_state_change_callback(std::function<void(QString)> callback);
+    virtual void set_on_app_pause_callback(std::function<QString()>);
+    virtual void set_on_app_resume_callback(std::function<void(bool, bool, int)>);
 };
 
 
@@ -503,5 +508,7 @@ public:
 
     void set_state_change_callback(std::function<void(QString)> callback);
     void set_external_state_change_callback(std::function<void(QString)> callback);
+    virtual void set_on_app_pause_callback(std::function<QString()>);
+    virtual void set_on_app_resume_callback(std::function<void(bool, bool, int)>);
 };
 #endif

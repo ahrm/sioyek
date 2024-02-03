@@ -2597,6 +2597,8 @@ void convert_color3(float* in_color, int* out_color) {
 std::optional<std::function<void(int, int)>> android_global_word_callback = {};
 std::optional<std::function<void(QString)>> android_global_state_change_callback = {};
 std::optional<std::function<void(QString)>> android_global_external_state_change_callback = {};
+std::optional<std::function<QString()>> android_global_on_android_app_pause_callback = {};
+std::optional<std::function<void(bool, bool, int)>> android_global_resume_state_callback = {};
 
 QJniObject parseUriString(const QString& uriString) {
     return QJniObject::callStaticObjectMethod
@@ -2638,6 +2640,17 @@ void android_tts_stop(){
 void android_tts_set_rate(float rate){
     QJniObject activity = QNativeInterface::QAndroidApplication::context();
     activity.callMethod<void>("ttsSetRate", "(F)V", rate);
+}
+
+// void android_tts_stop_service(){
+//     QJniObject activity = QNativeInterface::QAndroidApplication::context();
+//     activity.callMethod<void>("stopTtsService", "()V");
+// }
+
+void android_tts_set_rest_of_document(QString rest){
+    QJniObject rest_jni = QJniObject::fromString(rest);
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    activity.callMethod<void>("ttsSetRestOfDocument", "(Ljava/lang/String;)V", rest_jni.object<jstring>());
 }
 
 #endif
@@ -2786,6 +2799,20 @@ void on_android_external_state_change(QString new_state){
     }
 }
 
+void on_android_resume_state(bool is_playing, bool is_on_rest, int offset){
+    if (android_global_resume_state_callback){
+        android_global_resume_state_callback.value()(is_playing, is_on_rest, offset);
+    }
+}
+
+QString on_android_get_rest_on_pause(){
+    if (android_global_on_android_app_pause_callback){
+        QString res = android_global_on_android_app_pause_callback.value()();
+        return res;
+    }
+    return "";
+}
+
 extern "C" {
     JNIEXPORT void JNICALL
         Java_info_sioyek_sioyek_SioyekActivity_setFileUrlReceived(JNIEnv* env,
@@ -2843,17 +2870,29 @@ extern "C" {
         on_android_external_state_change(state_str);
     }
 
-    //JNIEXPORT void JNICALL
-    //  Java_org_ekkescorner_examples_sharex_QShareActivity_setFileReceivedAndSaved(JNIEnv *env,
-    //                                        jobject obj,
-    //                                        jstring url)
-    //{
-    //    const char *urlStr = env->GetStringUTFChars(url, NULL);
-    //    Q_UNUSED (obj)
-    //    setFileReceivedAndSaved(urlStr);
-    //    env->ReleaseStringUTFChars(url, urlStr);
-    //    return;
-    //}
+    JNIEXPORT void JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_onResumeState(JNIEnv* env,
+            jobject obj,
+            jboolean is_playing,
+            jboolean reading_rest,
+            jint offset)
+    {
+
+        Q_UNUSED(obj)
+        on_android_resume_state(is_playing, reading_rest, offset);
+    }
+
+    JNIEXPORT jstring JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_getRestOnPause(JNIEnv* env,
+              jobject obj)
+    {
+
+        Q_UNUSED(obj)
+        QString res = on_android_get_rest_on_pause();
+        std::string res_std = res.toStdString();
+        return env->NewStringUTF(res_std.c_str());
+    }
+
 }
 #endif
 
@@ -4131,6 +4170,15 @@ void QtTextToSpeechHandler::set_state_change_callback(std::function<void(QString
 void QtTextToSpeechHandler::set_external_state_change_callback(std::function<void(QString)> callback) {
 }
 
+
+void QtTextToSpeechHandler::set_on_app_pause_callback(std::function<QString()>){
+
+}
+
+void QtTextToSpeechHandler::set_on_app_resume_callback(std::function<void(bool, bool, int)>){
+
+}
+
 #ifdef SIOYEK_ANDROID
 
 AndroidTextToSpeechHandler::AndroidTextToSpeechHandler() {
@@ -4170,5 +4218,13 @@ void AndroidTextToSpeechHandler::set_state_change_callback(std::function<void(QS
 
 void AndroidTextToSpeechHandler::set_external_state_change_callback(std::function<void(QString)> callback) {
     android_global_external_state_change_callback = callback;
+}
+
+void AndroidTextToSpeechHandler::set_on_app_pause_callback(std::function<QString()> callback){
+    android_global_on_android_app_pause_callback = callback;
+}
+
+void AndroidTextToSpeechHandler::set_on_app_resume_callback(std::function<void(bool, bool, int)> callback){
+    android_global_resume_state_callback = callback;
 }
 #endif

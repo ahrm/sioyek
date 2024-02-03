@@ -71,9 +71,12 @@ public class SioyekActivity extends QtActivity{
     public static native void onTts(int begin, int end);
     public static native void onTtsStateChange(String newState);
     public static native void onExternalTtsStateChange(String newState);
+    public static native String getRestOnPause();
+    public static native void onResumeState(boolean isPlaying, boolean readingRest, int offset);
 
     public static boolean isIntentPending;
     public static boolean isInitialized;
+    public static boolean isPaused = true;
 
     private static SioyekActivity instance = null;
 
@@ -105,7 +108,6 @@ public class SioyekActivity extends QtActivity{
             //onTtsStateChange(state);
         }
     };
-
 
     @Override
     public void onCreate(Bundle savedInstanceState){
@@ -184,15 +186,28 @@ public class SioyekActivity extends QtActivity{
         LocalBroadcastManager.getInstance(this).unregisterReceiver(externalStateMessageReceiver);
     }
 
-    // @Override
-    // public void onResume(){
-    //     super.onResume();
-    // }
+    @Override
+    public void onResume(){
 
-    // @Override
-    // public void onPause(){
-    //     super.onPause();
-    // }
+        isPaused = false;
+        Intent intent = new Intent(getApplicationContext(), TextToSpeechService.class);
+        intent.putExtra("resume", true);
+        startService(intent);
+
+        super.onResume();
+    }
+
+    @Override
+    public void onPause(){
+        isPaused = true;
+        String rest = getRestOnPause();
+
+        if (rest.length() > 0){
+            setTtsRestOfDocument(rest);
+        }
+
+        super.onPause();
+    }
 
     @Override
     public void onNewIntent(Intent intent){
@@ -265,9 +280,7 @@ public class SioyekActivity extends QtActivity{
             return cursor.getString(column_index);
         }
         catch(Exception e){
-            qDebug("sioyek: something happened");
             String newFileName=  getFile(context, contentUri).getPath();
-            qDebug("sioyek: new file name = " + newFileName);
             return getFile(context, contentUri).getPath();
         }
         finally {
@@ -406,7 +419,6 @@ public class SioyekActivity extends QtActivity{
             Uri intentUri = intent.getData();
             if (intentUri == null){
                 intentUri = Uri.parse(intent.getStringExtra("sharedData"));
-                qDebug("sioyek: got message with sharedData=" + intent.getStringExtra("sharedData"));
             }
             //String realPath = getRealPathFromUri(getApplicationContext(), intentUri);
             //Uri newUri = Uri.fromFile(new File(realPath));
@@ -416,7 +428,6 @@ public class SioyekActivity extends QtActivity{
             try{
                 realPath = getRealPathFromUri(this, intentUri);
                 //Toast.makeText(this, "trying to open " + realPath, Toast.LENGTH_LONG).show();
-                qDebug("sioyek: trying to open " + realPath );
                 setFileUrlReceived(realPath);
             }
             catch(IOException e){
@@ -454,11 +465,20 @@ public class SioyekActivity extends QtActivity{
         });
     } 
 
+    public void ttsSetRestOfDocument(String text){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                setTtsRestOfDocument(text);
+            }
+        });
+    } 
+
 
     public void ttsSay(String text){
         Intent intent = new Intent(getApplicationContext(), TextToSpeechService.class);
         intent.putExtra("text", text);
-        startForegroundService(intent);
+        startService(intent);
 
         Handler handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(new Runnable() {
@@ -472,14 +492,13 @@ public class SioyekActivity extends QtActivity{
     public void setTtsRate(float rate){
         Intent intent = new Intent(getApplicationContext(), TextToSpeechService.class);
         intent.putExtra("rate", rate);
-        startForegroundService(intent);
-
-        // Handler handler = new Handler(Looper.getMainLooper());
-        // handler.postDelayed(new Runnable() {
-        //     @Override
-        //     public void run() {
-        //         mediaController.play();
-        //     }
-        // }, 100);
+        startService(intent);
     }
+
+    public void setTtsRestOfDocument(String rest){
+        Intent intent = new Intent(getApplicationContext(), TextToSpeechService.class);
+        intent.putExtra("rest", rest);
+        startService(intent);
+    }
+
 }
