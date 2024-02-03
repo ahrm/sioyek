@@ -65,15 +65,15 @@ WindowPos DocumentPos::to_window(DocumentView* document_view) {
     return document_view->document_to_window_pos_in_pixels_uncentered(*this);
 }
 
-DocumentPos AbsoluteDocumentPos::to_document(Document* doc) {
+DocumentPos AbsoluteDocumentPos::to_document(Document* doc) const{
     return doc->absolute_to_page_pos(*this);
 }
 
-NormalizedWindowPos AbsoluteDocumentPos::to_window_normalized(DocumentView* document_view) {
+NormalizedWindowPos AbsoluteDocumentPos::to_window_normalized(DocumentView* document_view) const{
     return document_view->absolute_to_window_pos(*this);
 }
 
-WindowPos AbsoluteDocumentPos::to_window(DocumentView* document_view) {
+WindowPos AbsoluteDocumentPos::to_window(DocumentView* document_view) const{
     return document_view->absolute_to_window_pos_in_pixels(*this);
 }
 

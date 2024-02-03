@@ -24,6 +24,13 @@ class DatabaseManager;
 class DocumentManager;
 class ConfigManager;
 
+struct VirtualPos {
+    float x;
+    float y;
+};
+
+using VirtualRect = EnhancedRect<fz_rect, VirtualPos>;
+
 class DocumentView {
 protected:
 
@@ -33,8 +40,10 @@ protected:
     Document* current_document = nullptr;
 
     float zoom_level = 0.0f;
-    float offset_x = 0.0f;
-    float offset_y = 0.0f;
+    //float offset_x = 0.0f;
+    //float offset_y = 0.0f;
+    VirtualPos offset = {0, 0};
+    std::vector<VirtualRect> cached_virtual_rects;
 
     // absolute rect of the current ruler if this is {} then ruler_pos is used instead
     std::optional<AbsoluteRect> ruler_rect;
@@ -107,6 +116,7 @@ public:
     //void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
     NormalizedWindowPos absolute_to_window_pos(AbsoluteDocumentPos absolute_pos);
 
+    void fill_cached_virtual_rects(bool force=false);
     NormalizedWindowRect absolute_to_window_rect(AbsoluteRect doc_rect);
     NormalizedWindowPos document_to_window_pos(DocumentPos pos);
     WindowPos absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs_pos);
@@ -204,6 +214,8 @@ public:
     void set_presentation_page_number(std::optional<int> page);
     std::optional<int> get_presentation_page_number();
     bool is_presentation_mode();
+    VirtualPos absolute_to_virtual_pos(const AbsoluteDocumentPos& abspos);
+    AbsoluteDocumentPos virtual_to_absolute_pos(const VirtualPos& vpos);
 
 };
 
