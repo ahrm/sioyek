@@ -1973,7 +1973,6 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
                 text_command_line_edit_container->hide();
                 setFocus();
                 handle_pending_text_command(text_command_line_edit->text().toStdWString());
-                validate_render();
                 return;
             }
         }

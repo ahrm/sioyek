@@ -7355,6 +7355,7 @@ void Command::run() {
     }
     widget->add_command_being_performed(this);
     perform();
+    widget->validate_render();
     on_result_computed();
     widget->remove_command_being_performed(this);
 }
