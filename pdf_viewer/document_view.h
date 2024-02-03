@@ -126,7 +126,7 @@ public:
     WindowRect document_to_window_irect(DocumentRect);
     NormalizedWindowRect document_to_window_rect_pixel_perfect(DocumentRect doc_rect, int pixel_width, int pixel_height, bool banded = false);
     DocumentPos window_to_document_pos(WindowPos window_pos);
-    DocumentPos window_to_document_pos_uncentered(WindowPos window_pos);
+    //DocumentPos window_to_document_pos_uncentered(WindowPos window_pos);
     AbsoluteDocumentPos window_to_absolute_document_pos(WindowPos window_pos);
     NormalizedWindowPos window_to_normalized_window_pos(WindowPos window_pos);
     WindowPos normalized_window_to_window_pos(NormalizedWindowPos normalized_window_pos);
@@ -216,6 +216,8 @@ public:
     bool is_presentation_mode();
     VirtualPos absolute_to_virtual_pos(const AbsoluteDocumentPos& abspos);
     AbsoluteDocumentPos virtual_to_absolute_pos(const VirtualPos& vpos);
+    VirtualPos window_to_virtual_pos(const WindowPos& window_pos);
+    WindowPos virtual_to_window_pos(const VirtualPos& window_pos);
 
 };
 

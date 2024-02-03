@@ -3132,7 +3132,7 @@ DocumentPos MainWidget::get_document_pos_under_window_pos(WindowPos window_pos) 
         return opengl_widget->window_pos_to_overview_pos(normal_pos);
     }
     else {
-        return main_document_view->window_to_document_pos_uncentered(window_pos);
+        return main_document_view->window_to_document_pos(window_pos);
     }
 }
 
@@ -3156,7 +3156,7 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_las
         return main_document_view->get_document()->get_paper_name_at_position(docpos);
     }
     else {
-        DocumentPos doc_pos = main_document_view->window_to_document_pos_uncentered(window_pos);
+        DocumentPos doc_pos = main_document_view->window_to_document_pos(window_pos);
         return get_direct_paper_name_under_pos(doc_pos);
     }
 }
@@ -3182,7 +3182,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
         return;
     }
 
-    auto docpos = main_document_view->window_to_document_pos_uncentered(pos);
+    auto docpos = main_document_view->window_to_document_pos(pos);
 
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(docpos.page);
     std::vector<fz_stext_char*> flat_chars;
@@ -3204,7 +3204,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
 void MainWidget::visual_mark_under_pos(WindowPos pos) {
     //float doc_x, doc_y;
     //int page;
-    DocumentPos document_pos = main_document_view->window_to_document_pos_uncentered(pos);
+    DocumentPos document_pos = main_document_view->window_to_document_pos(pos);
     if (document_pos.page != -1) {
         //opengl_widget->set_should_draw_vertical_line(true);
         fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(document_pos.page);
@@ -3275,7 +3275,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
         }
     }
 
-    DocumentPos docpos = main_document_view->window_to_document_pos_uncentered(pos);
+    DocumentPos docpos = main_document_view->window_to_document_pos(pos);
 
     TextUnderPointerInfo reference_info = find_location_of_text_under_pointer(docpos, true);
     if (reference_info.reference_type != ReferenceType::None) {
@@ -3577,7 +3577,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
 
         QPoint mouse_pos_ = mapFromGlobal(cursor_pos());
         WindowPos mouse_pos = { mouse_pos_.x(), mouse_pos_.y() };
-        DocumentPos mouse_pos_document = main_document_view->window_to_document_pos_uncentered(mouse_pos);
+        DocumentPos mouse_pos_document = main_document_view->window_to_document_pos(mouse_pos);
 
         for (int i = 0; i < command_parts.size(); i++) {
             // lagacy number macros, now replaced with names ones
@@ -6137,7 +6137,7 @@ void MainWidget::handle_mobile_selection() {
     fz_stext_char* character_under = get_closest_character_to_cusrsor(last_hold_point);
 
     WindowPos last_hold_point_window_pos = { last_hold_point.x(), last_hold_point.y() };
-    DocumentPos last_hold_point_document_pos = main_document_view->window_to_document_pos_uncentered(last_hold_point_window_pos);
+    DocumentPos last_hold_point_document_pos = main_document_view->window_to_document_pos(last_hold_point_window_pos);
 
     if (character_under) {
         int current_page = last_hold_point_document_pos.page;

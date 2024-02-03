@@ -94,6 +94,9 @@ bool DocumentView::set_pos(AbsoluteDocumentPos pos) {
 }
 
 bool DocumentView::set_offsets(float new_offset_x, float new_offset_y, bool force) {
+    offset = absolute_to_virtual_pos(AbsoluteDocumentPos{new_offset_x, new_offset_y});
+    return false;
+
     // if move was truncated
     bool truncated = false;
 
@@ -262,7 +265,7 @@ void DocumentView::set_offset_y(float new_offset_y) {
 std::optional<PdfLink> DocumentView::get_link_in_pos(WindowPos pos) {
     if (!current_document) return {};
 
-    DocumentPos doc_pos = window_to_document_pos_uncentered(pos);
+    DocumentPos doc_pos = window_to_document_pos(pos);
     return current_document->get_link_in_pos(doc_pos);
 }
 
@@ -339,13 +342,16 @@ void DocumentView::on_view_size_change(int new_width, int new_height) {
 //}
 
 NormalizedWindowPos DocumentView::absolute_to_window_pos(AbsoluteDocumentPos abs) {
-    NormalizedWindowPos res;
-    float half_width = static_cast<float>(view_width) / zoom_level / 2;
-    float half_height = static_cast<float>(view_height) / zoom_level / 2;
+    VirtualPos vpos = absolute_to_virtual_pos(abs);
+    WindowPos window_pos = virtual_to_window_pos(vpos);
+    return window_pos.to_window_normalized(this);
+    //NormalizedWindowPos res;
+    //float half_width = static_cast<float>(view_width) / zoom_level / 2;
+    //float half_height = static_cast<float>(view_height) / zoom_level / 2;
 
-    res.x = (abs.x + offset.x) / half_width;
-    res.y = (-abs.y + offset.y) / half_height;
-    return res;
+    //res.x = (abs.x + offset.x) / half_width;
+    //res.y = (-abs.y + offset.y) / half_height;
+    //return res;
 
 }
 
@@ -433,22 +439,23 @@ NormalizedWindowRect DocumentView::document_to_window_rect_pixel_perfect(Documen
     return NormalizedWindowRect(top_left_normalized, bottom_right_normalized);
 }
 
-DocumentPos DocumentView::window_to_document_pos_uncentered(WindowPos window_pos) {
-    if (current_document) {
-        return current_document->absolute_to_page_pos_uncentered(
-            { (window_pos.x - view_width / 2) / zoom_level - offset.x,
-            (window_pos.y - view_height / 2) / zoom_level + offset.y });
-    }
-    else {
-        return { -1, 0, 0 };
-    }
-}
+//DocumentPos DocumentView::window_to_document_pos_uncentered(WindowPos window_pos) {
+//    if (current_document) {
+//        return current_document->absolute_to_page_pos_uncentered(
+//            { (window_pos.x - view_width / 2) / zoom_level - offset.x,
+//            (window_pos.y - view_height / 2) / zoom_level + offset.y });
+//    }
+//    else {
+//        return { -1, 0, 0 };
+//    }
+//}
 
 DocumentPos DocumentView::window_to_document_pos(WindowPos window_pos) {
     if (current_document) {
-        return current_document->absolute_to_page_pos_uncentered(
-            { (window_pos.x - view_width / 2) / zoom_level - offset.x,
-            (window_pos.y - view_height / 2) / zoom_level + offset.y });
+        return window_to_absolute_document_pos(window_pos).to_document(current_document);
+        //return current_document->absolute_to_page_pos_uncentered(
+        //    { (window_pos.x - view_width / 2) / zoom_level - offset.x,
+        //    (window_pos.y - view_height / 2) / zoom_level + offset.y });
     }
     else {
         return { -1, 0, 0 };
@@ -456,9 +463,11 @@ DocumentPos DocumentView::window_to_document_pos(WindowPos window_pos) {
 }
 
 AbsoluteDocumentPos DocumentView::window_to_absolute_document_pos(WindowPos window_pos) {
-    float doc_x = (window_pos.x - view_width / 2) / zoom_level - offset.x;
-    float doc_y = (window_pos.y - view_height / 2) / zoom_level + offset.y;
-    return { doc_x, doc_y };
+    VirtualPos virtual_pos = window_to_virtual_pos(window_pos);
+    return virtual_to_absolute_pos(virtual_pos);
+    //float doc_x = (window_pos.x - view_width / 2) / zoom_level - offset.x;
+    //float doc_y = (window_pos.y - view_height / 2) / zoom_level + offset.y;
+    //return { doc_x, doc_y };
 }
 
 NormalizedWindowPos DocumentView::window_to_normalized_window_pos(WindowPos window_pos) {
@@ -617,8 +626,9 @@ int DocumentView::get_center_page_number() {
 void DocumentView::get_visible_pages(int window_height, std::vector<int>& visible_pages) {
     if (!current_document) return;
 
-    float window_y_range_begin = offset.y - window_height / (1.5 * zoom_level);
-    float window_y_range_end = offset.y + window_height / (1.5 * zoom_level);
+    AbsoluteDocumentPos abs_offset = virtual_to_absolute_pos(offset);
+    float window_y_range_begin = abs_offset.y - window_height / (1.5 * zoom_level);
+    float window_y_range_end = abs_offset.y + window_height / (1.5 * zoom_level);
     window_y_range_begin -= 1;
     window_y_range_end += 1;
 
@@ -645,6 +655,7 @@ void DocumentView::reset_doc_state() {
     set_offsets(0.0f, 0.0f);
     is_ruler_mode_ = false;
     presentation_page_number = {};
+    cached_virtual_rects.clear();
 }
 
 void DocumentView::open_document(const std::wstring& doc_path,
@@ -1828,6 +1839,25 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
     if ((cached_virtual_rects.size() == 0) || force) {
         cached_virtual_rects.clear();
         int num_pages = current_document->num_pages();
+
+        //for (int i = 0; i < num_pages; i++) {
+        //    float page_width = current_document->get_page_width(i);
+        //    float page_height = current_document->get_page_height(i);
+        //    VirtualRect page_rect;
+        //    page_rect.x0 = -page_width / 2;
+        //    page_rect.x1 = page_width / 2;
+        //    page_rect.y0 = cum_offset;
+        //    page_rect.y1 = cum_offset + page_height;
+
+        //    if (i % 2 == 1) {
+        //        page_rect.x0 += page_width + page_space;
+        //        page_rect.x1 += page_width + page_space;
+        //        cum_offset += page_height + page_space;
+        //    }
+
+        //    cached_virtual_rects.push_back(page_rect);
+
+        //}
         for (int i = 0; i < num_pages; i++) {
             float page_width = current_document->get_page_width(i);
             float page_height = current_document->get_page_height(i);
@@ -1842,4 +1872,20 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
             cum_offset += page_height + page_space;
         }
     }
+}
+
+VirtualPos DocumentView::window_to_virtual_pos(const WindowPos& window_pos) {
+
+    float vx = (window_pos.x - view_width / 2) / zoom_level - offset.x;
+    float vy = (window_pos.y - view_height / 2) / zoom_level + offset.y;
+    return { vx, vy };
+}
+
+WindowPos DocumentView::virtual_to_window_pos(const VirtualPos& vpos) {
+
+
+    WindowPos res;
+    res.x = (vpos.x + offset.x)* zoom_level + view_width / 2;
+    res.y = (vpos.y - offset.y)* zoom_level + view_height / 2;
+    return res;
 }
