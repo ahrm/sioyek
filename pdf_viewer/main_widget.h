@@ -923,6 +923,7 @@ public:
     void focus_on_character_offset_into_document(int character_offset_into_document);
     // void stop_tts_service();
     void handle_move_smooth(int amount);
+    void handle_toggle_two_panel_mode();
 };
 
 #endif

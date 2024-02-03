@@ -44,6 +44,7 @@ protected:
     //float offset_y = 0.0f;
     VirtualPos offset = {0, 0};
     std::vector<VirtualRect> cached_virtual_rects;
+    bool two_panel_mode = false;
 
     // absolute rect of the current ruler if this is {} then ruler_pos is used instead
     std::optional<AbsoluteRect> ruler_rect;
@@ -149,6 +150,7 @@ public:
     float zoom_in_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
     float zoom_out_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
     bool move_absolute(float dx, float dy, bool force = false);
+    bool move_virtual(float dx, float dy, bool force = false);
     bool move(float dx, float dy, bool force = false);
     void get_absolute_delta_from_doc_delta(float doc_dx, float doc_dy, float* abs_dx, float* abs_dy);
     int get_center_page_number();
@@ -218,6 +220,7 @@ public:
     AbsoluteDocumentPos virtual_to_absolute_pos(const VirtualPos& vpos);
     VirtualPos window_to_virtual_pos(const WindowPos& window_pos);
     WindowPos virtual_to_window_pos(const VirtualPos& window_pos);
+    void toggle_two_panel();
 
 };
 

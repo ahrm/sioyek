@@ -2125,6 +2125,19 @@ public:
     }
 };
 
+class ToggleTwoPanelModeCommand : public Command {
+public:
+    ToggleTwoPanelModeCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->handle_toggle_two_panel_mode();
+    }
+
+    std::string get_name() {
+        return "toggle_two_panel_mode";
+    }
+};
+
 class MoveDownCommand : public Command {
 public:
     MoveDownCommand(MainWidget* w) : Command(w) {};
@@ -6172,6 +6185,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
     new_commands["regex_search"] = [](MainWidget* widget) {return std::make_unique< RegexSearchCommand>(widget); };
     new_commands["chapter_search"] = [](MainWidget* widget) {return std::make_unique< ChapterSearchCommand>(widget); };
+    new_commands["toggle_two_panel_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleTwoPanelModeCommand>(widget); };
     new_commands["move_down"] = [](MainWidget* widget) {return std::make_unique< MoveDownCommand>(widget); };
     new_commands["move_up"] = [](MainWidget* widget) {return std::make_unique< MoveUpCommand>(widget); };
     new_commands["move_left"] = [](MainWidget* widget) {return std::make_unique< MoveLeftCommand>(widget); };

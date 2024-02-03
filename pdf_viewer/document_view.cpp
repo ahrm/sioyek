@@ -598,16 +598,26 @@ float DocumentView::zoom_out_cursor(WindowPos mouse_pos, float zoom_factor) {
     move_absolute(-prev_doc_x + new_doc_x, prev_doc_y - new_doc_y);
     return res;
 }
+
 bool DocumentView::move_absolute(float dx, float dy, bool force) {
     AbsoluteDocumentPos prev_offsets = get_offsets();
 
     return set_offsets(prev_offsets.x + dx, prev_offsets.y + dy, force);
+    //offset.x += dx;
+    //offset.y += dy;
+    //return false;
+}
+
+bool DocumentView::move_virtual(float dx, float dy, bool force) {
+    offset.x += dx;
+    offset.y += dy;
+    return false;
 }
 
 bool DocumentView::move(float dx, float dy, bool force) {
     float abs_dx = (dx / zoom_level);
     float abs_dy = (dy / zoom_level);
-    return move_absolute(abs_dx, abs_dy, force);
+    return move_virtual(abs_dx, abs_dy, force);
 }
 void DocumentView::get_absolute_delta_from_doc_delta(float dx, float dy, float* abs_dx, float* abs_dy) {
     *abs_dx = (dx / zoom_level);
@@ -1807,18 +1817,27 @@ AbsoluteDocumentPos DocumentView::virtual_to_absolute_pos(const VirtualPos& vpos
         return AbsoluteDocumentPos{ vpos.x, vpos.y };
     }
 
-    int page = cached_virtual_rects.size() - 1;
+    int page = -1;
+
+    for (int i = 0; i < cached_virtual_rects.size(); i++) {
+        if (cached_virtual_rects[i].y1 > vpos.y) {
+            page = i;
+            break;
+        }
+    }
 
     for (int i = 0; i < cached_virtual_rects.size(); i++) {
         if (cached_virtual_rects[i].contains(vpos)) {
             page = i;
             break;
         }
-        if (cached_virtual_rects[i].y1 > vpos.y) {
-            page = i;
-            break;
-        }
     }
+
+
+    if (page == -1) {
+        page = cached_virtual_rects.size() - 1;
+    }
+
 
     DocumentPos docpos;
     docpos.x = vpos.x - cached_virtual_rects[page].x0;
@@ -1840,36 +1859,41 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
         cached_virtual_rects.clear();
         int num_pages = current_document->num_pages();
 
-        //for (int i = 0; i < num_pages; i++) {
-        //    float page_width = current_document->get_page_width(i);
-        //    float page_height = current_document->get_page_height(i);
-        //    VirtualRect page_rect;
-        //    page_rect.x0 = -page_width / 2;
-        //    page_rect.x1 = page_width / 2;
-        //    page_rect.y0 = cum_offset;
-        //    page_rect.y1 = cum_offset + page_height;
+        if (two_panel_mode) {
 
-        //    if (i % 2 == 1) {
-        //        page_rect.x0 += page_width + page_space;
-        //        page_rect.x1 += page_width + page_space;
-        //        cum_offset += page_height + page_space;
-        //    }
+            for (int i = 0; i < num_pages; i++) {
+                float page_width = current_document->get_page_width(i);
+                float page_height = current_document->get_page_height(i);
+                VirtualRect page_rect;
+                page_rect.x0 = -page_width / 2;
+                page_rect.x1 = page_width / 2;
+                page_rect.y0 = cum_offset;
+                page_rect.y1 = cum_offset + page_height;
 
-        //    cached_virtual_rects.push_back(page_rect);
+                if (i % 2 == 1) {
+                    page_rect.x0 += page_width + page_space;
+                    page_rect.x1 += page_width + page_space;
+                    cum_offset += page_height + page_space;
+                }
 
-        //}
-        for (int i = 0; i < num_pages; i++) {
-            float page_width = current_document->get_page_width(i);
-            float page_height = current_document->get_page_height(i);
-            VirtualRect page_rect;
-            page_rect.x0 = -page_width / 2;
-            page_rect.x1 = page_width / 2;
-            page_rect.y0 = cum_offset;
-            page_rect.y1 = cum_offset + page_height;
+                cached_virtual_rects.push_back(page_rect);
 
-            cached_virtual_rects.push_back(page_rect);
+            }
+        }
+        else {
+            for (int i = 0; i < num_pages; i++) {
+                float page_width = current_document->get_page_width(i);
+                float page_height = current_document->get_page_height(i);
+                VirtualRect page_rect;
+                page_rect.x0 = -page_width / 2;
+                page_rect.x1 = page_width / 2;
+                page_rect.y0 = cum_offset;
+                page_rect.y1 = cum_offset + page_height;
 
-            cum_offset += page_height + page_space;
+                cached_virtual_rects.push_back(page_rect);
+
+                cum_offset += page_height + page_space;
+            }
         }
     }
 }
@@ -1889,3 +1913,10 @@ WindowPos DocumentView::virtual_to_window_pos(const VirtualPos& vpos) {
     res.y = (vpos.y - offset.y)* zoom_level + view_height / 2;
     return res;
 }
+
+void DocumentView::toggle_two_panel(){
+    two_panel_mode = !two_panel_mode;
+    cached_virtual_rects.clear();
+    fill_cached_virtual_rects();
+}
+

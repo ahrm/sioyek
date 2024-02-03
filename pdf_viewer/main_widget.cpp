@@ -10020,3 +10020,7 @@ void MainWidget::handle_move_smooth(int amount) {
     validation_interval_timer->setInterval(0);
     last_speed_update_time = QTime::currentTime();
 }
+
+void MainWidget::handle_toggle_two_panel_mode() {
+    main_document_view->toggle_two_panel();
+}
