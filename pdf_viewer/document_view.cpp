@@ -1971,19 +1971,20 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
             }
         }
         else {
-            for (int i = 0; i < num_pages; i++) {
-                float page_width = current_document->get_page_width(i);
-                float page_height = current_document->get_page_height(i);
-                VirtualRect page_rect;
-                page_rect.x0 = -page_width / 2;
-                page_rect.x1 = page_width / 2;
-                page_rect.y0 = cum_offset;
-                page_rect.y1 = cum_offset + page_height;
+            cached_virtual_rects.clear();
+            //for (int i = 0; i < num_pages; i++) {
+            //    float page_width = current_document->get_page_width(i);
+            //    float page_height = current_document->get_page_height(i);
+            //    VirtualRect page_rect;
+            //    page_rect.x0 = -page_width / 2;
+            //    page_rect.x1 = page_width / 2;
+            //    page_rect.y0 = cum_offset;
+            //    page_rect.y1 = cum_offset + page_height;
 
-                cached_virtual_rects.push_back(page_rect);
+            //    cached_virtual_rects.push_back(page_rect);
 
-                cum_offset += page_height + PAGE_SPACE_Y;
-            }
+            //    cum_offset += page_height + PAGE_SPACE_Y;
+            //}
         }
     }
 }
