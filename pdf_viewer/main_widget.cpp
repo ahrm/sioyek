@@ -1476,11 +1476,11 @@ void MainWidget::keyPressEvent(QKeyEvent* kevent) {
             }
         }
     }
-    key_event(false, kevent);
+    key_event(false, kevent, kevent->isAutoRepeat());
 }
 
 void MainWidget::keyReleaseEvent(QKeyEvent* kevent) {
-    key_event(true, kevent);
+    key_event(true, kevent, kevent->isAutoRepeat());
 }
 
 void MainWidget::validate_render() {
@@ -1913,8 +1913,14 @@ bool MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int 
 
 }
 
-void MainWidget::key_event(bool released, QKeyEvent* kevent) {
+void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat) {
 
+    if (released && (!is_auto_repeat)) {
+        if (last_performed_command) {
+            last_performed_command->perform_up();
+            last_performed_command = {};
+        }
+    }
     if (typing_location.has_value()) {
 
         if (released == false) {
@@ -2015,8 +2021,13 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
             &num_repeats);
 
         if (commands) {
-            handle_command_types(std::move(commands), num_repeats);
-            validate_render();
+            if (last_performed_command && last_performed_command->is_holdable() && commands->get_name() == last_performed_command->get_name()) {
+                last_performed_command->on_key_hold();
+            }
+            else {
+                handle_command_types(std::move(commands), num_repeats);
+                validate_render();
+            }
         }
         //for (auto& command : commands) {
         //    handle_command_types(std::move(command), num_repeats);
@@ -5021,6 +5032,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
                 }
                 //*result = new_command->get_result()
             }
+            last_performed_command = std::move(new_command);
             //pending_command_instance = nullptr;
         }
         else {
@@ -10046,3 +10058,9 @@ void MainWidget::handle_toggle_two_page_mode() {
         }
     }
 }
+
+
+void MainWidget::ensure_zero_interval_timer(){
+    validation_interval_timer->setInterval(INTERVAL_TIME);
+}
+

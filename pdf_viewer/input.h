@@ -38,6 +38,7 @@ protected:
     MainWidget* widget = nullptr;
     std::optional<std::wstring> result = {};
 public:
+
     QLocalSocket* result_socket = nullptr;
     std::wstring* result_holder = nullptr;
     bool* is_done = nullptr;
@@ -64,6 +65,9 @@ public:
     virtual void set_result_mutex(bool* res_mut, std::wstring* result_location);
     virtual std::optional<std::wstring> get_text_suggestion(int index);
     virtual bool is_menu_command();
+    virtual void perform_up();
+    virtual bool is_holdable();
+    virtual void on_key_hold();
 
     void set_next_requirement_with_string(std::wstring str);
 

@@ -151,6 +151,7 @@ public:
     // input to be completed) this is where they are stored until they can be executed.
     std::unique_ptr<Command> pending_command_instance = nullptr;
     std::vector<Command*> commands_being_performed;
+    std::unique_ptr<Command> last_performed_command;
 
     DocumentView* main_document_view = nullptr;
     ScratchPad* scratchpad = nullptr;
@@ -383,7 +384,7 @@ public:
     std::wstring get_status_string();
     void handle_escape();
     bool is_waiting_for_symbol();
-    void key_event(bool released, QKeyEvent* kevent);
+    void key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat=false);
     void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
     void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
     void on_config_changed(std::string config_name);
@@ -925,6 +926,7 @@ public:
     // void stop_tts_service();
     void handle_move_smooth(int amount);
     void handle_toggle_two_page_mode();
+    void ensure_zero_interval_timer();
 };
 
 #endif

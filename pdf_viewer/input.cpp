@@ -77,6 +77,14 @@ Command::Command(MainWidget* widget_) : widget(widget_) {
 
 }
 
+bool Command::is_holdable() {
+    return false;
+}
+
+void Command::on_key_hold() {
+
+}
+
 bool Command::is_menu_command() {
     // returns true if the command is a macro designed to run only on menus (m)
     // we then ignore keys in menus if they are bound to such commands so they
@@ -90,6 +98,9 @@ Command::~Command() {
 
 std::optional<std::wstring> Command::get_text_suggestion(int index) {
     return {};
+}
+
+void Command::perform_up() {
 }
 
 void Command::set_result_socket(QLocalSocket* socket) {
@@ -2100,6 +2111,7 @@ public:
 };
 
 class MoveDownSmoothCommand : public Command {
+    bool was_held = false;
 public:
     MoveDownSmoothCommand(MainWidget* w) : Command(w) {};
 
@@ -2107,12 +2119,27 @@ public:
         widget->handle_move_smooth(-1);
     }
 
+    void perform_up() {
+        if (was_held) widget->velocity_y = 0;
+    }
+
     std::string get_name() {
         return "move_down_smooth";
+    }
+
+    bool is_holdable() {
+        return true;
+    }
+
+    void on_key_hold() {
+        was_held = true;
+        perform();
+        widget->validate_render();
     }
 };
 
 class MoveUpSmoothCommand : public Command {
+    bool was_held = false;
 public:
     MoveUpSmoothCommand(MainWidget* w) : Command(w) {};
 
@@ -2120,8 +2147,22 @@ public:
         widget->handle_move_smooth(1);
     }
 
+    void perform_up() {
+        if (was_held) widget->velocity_y = 0;
+    }
+
     std::string get_name() {
         return "move_up_smooth";
+    }
+
+    bool is_holdable() {
+        return true;
+    }
+
+    void on_key_hold() {
+        was_held = true;
+        perform();
+        widget->validate_render();
     }
 };
 
@@ -5779,6 +5820,7 @@ struct ParseState {
 
 };
 
+
 class MacroCommand : public Command {
     std::vector<std::unique_ptr<Command>> commands;
     std::vector<std::string> modes;
@@ -6138,6 +6180,61 @@ public:
 
 };
 
+class HoldableCommand : public Command {
+    std::unique_ptr<Command> down_command = {};
+    std::unique_ptr<Command> up_command = {};
+    std::unique_ptr<Command> hold_command = {};
+    std::string name;
+    CommandManager* command_manager;
+
+public:
+    HoldableCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(widget_) {
+        command_manager = manager;
+        name = name_;
+        QString str = QString::fromStdWString(commands_);
+        QStringList parts = str.split('|');
+        if (parts.size() == 2) {
+            down_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{down}", parts[0].toStdWString());
+            up_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{up}", parts[1].toStdWString());
+        }
+        else {
+            down_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{down}", parts[0].toStdWString());
+            hold_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{hold}", parts[1].toStdWString());
+            up_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{up}", parts[2].toStdWString());
+        }
+    }
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        // holdable commands can't have requirements
+        return {};
+    }
+
+    bool requires_document() {
+        return true;
+    }
+
+    void perform() {
+        down_command->run();
+    }
+
+    void perform_up() {
+        up_command->run();
+    }
+
+    void on_key_hold() {
+        if (hold_command) {
+            hold_command->run();
+        }
+    }
+
+
+    bool is_holdable() {
+        return true;
+    }
+
+
+};
+
 CommandManager::CommandManager(ConfigManager* config_manager) {
 
     new_commands["goto_beginning"] = [](MainWidget* widget) {return std::make_unique< GotoBeginningCommand>(widget); };
@@ -6396,6 +6493,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     //new_commands["stop_search"] = [](MainWidget* widget) {return std::make_unique< StopSearchCommand>(widget); };
 
 //#ifdef _DEBUG
+    //HoldableCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(widget_) {
     new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };
     new_commands["export_python_api"] = [](MainWidget* widget) {return std::make_unique< ExportPythonApiCommand>(widget); };
     new_commands["export_default_config_file"] = [](MainWidget* widget) {return std::make_unique< ExportDefaultConfigFile>(widget); };
