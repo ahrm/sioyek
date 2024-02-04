@@ -234,3 +234,10 @@ WindowRect AbsoluteRect::to_window(DocumentView* document_view) {
     return document_view->normalized_to_window_rect(to_window_normalized(document_view));
 }
 
+VirtualPos operator+(const VirtualPos& lhs, const fvec2& rhs) {
+    return VirtualPos{ lhs.x + rhs[0], lhs.y + rhs[1]};
+}
+
+VirtualPos operator-(const VirtualPos& lhs, const fvec2& rhs) {
+    return VirtualPos{ lhs.x - rhs[0], lhs.y - rhs[1]};
+}

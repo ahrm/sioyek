@@ -24,12 +24,6 @@ class DatabaseManager;
 class DocumentManager;
 class ConfigManager;
 
-struct VirtualPos {
-    float x;
-    float y;
-};
-
-using VirtualRect = EnhancedRect<fz_rect, VirtualPos>;
 
 class DocumentView {
 protected:
@@ -84,6 +78,7 @@ public:
     void set_book_state(OpenedBookState state);
     virtual bool set_offsets(float new_offset_x, float new_offset_y, bool force = false);
     bool set_pos(AbsoluteDocumentPos pos);
+    void set_virtual_pos(VirtualPos pos);
     Document* get_document();
     bool is_ruler_mode();
     void exit_ruler_mode();
@@ -102,6 +97,7 @@ public:
     float get_offset_x();
     float get_offset_y();
     AbsoluteDocumentPos get_offsets();
+    VirtualPos get_virtual_offset();
     int get_view_height();
     int get_view_width();
     void set_null_document();
@@ -219,7 +215,8 @@ public:
     VirtualPos absolute_to_virtual_pos(const AbsoluteDocumentPos& abspos);
     AbsoluteDocumentPos virtual_to_absolute_pos(const VirtualPos& vpos);
     VirtualPos window_to_virtual_pos(const WindowPos& window_pos);
-    WindowPos virtual_to_window_pos(const VirtualPos& window_pos);
+    WindowPos virtual_to_window_pos(const VirtualPos& virtual_pos);
+    NormalizedWindowRect virtual_to_normalized_window_rect(const VirtualRect& virtual_rect);
     void toggle_two_panel();
 
 };

@@ -15,7 +15,7 @@ extern float RULER_PADDING;
 extern float RULER_X_PADDING;
 extern bool EXACT_HIGHLIGHT_SELECT;
 extern bool VERBOSE;
-
+extern float PAGE_SPACE;
 
 DocumentView::DocumentView(DatabaseManager* db_manager,
     DocumentManager* document_manager,
@@ -93,9 +93,16 @@ bool DocumentView::set_pos(AbsoluteDocumentPos pos) {
     return set_offsets(pos.x, pos.y);
 }
 
+void DocumentView::set_virtual_pos(VirtualPos pos) {
+    if (two_panel_mode) {
+        offset = pos;
+    }
+    else {
+        set_offsets(pos.x, pos.y);
+    }
+}
+
 bool DocumentView::set_offsets(float new_offset_x, float new_offset_y, bool force) {
-    offset = absolute_to_virtual_pos(AbsoluteDocumentPos{new_offset_x, new_offset_y});
-    return false;
 
     // if move was truncated
     bool truncated = false;
@@ -240,6 +247,10 @@ float DocumentView::get_offset_y() {
 
 AbsoluteDocumentPos DocumentView::get_offsets() {
     return virtual_to_absolute_pos(offset);
+}
+
+VirtualPos DocumentView::get_virtual_offset() {
+    return offset;
 }
 
 int DocumentView::get_view_height() {
@@ -617,7 +628,12 @@ bool DocumentView::move_virtual(float dx, float dy, bool force) {
 bool DocumentView::move(float dx, float dy, bool force) {
     float abs_dx = (dx / zoom_level);
     float abs_dy = (dy / zoom_level);
-    return move_virtual(abs_dx, abs_dy, force);
+    if (two_panel_mode) {
+        return move_virtual(abs_dx, abs_dy, force);
+    }
+    else {
+        move_absolute(abs_dx, abs_dy, force);
+    }
 }
 void DocumentView::get_absolute_delta_from_doc_delta(float dx, float dy, float* abs_dx, float* abs_dy) {
     *abs_dx = (dx / zoom_level);
@@ -642,7 +658,18 @@ void DocumentView::get_visible_pages(int window_height, std::vector<int>& visibl
     window_y_range_begin -= 1;
     window_y_range_end += 1;
 
-    current_document->get_visible_pages(window_y_range_begin, window_y_range_end, visible_pages);
+    if (two_panel_mode) {
+        fill_cached_virtual_rects();
+
+        for (int i = 0; i < cached_virtual_rects.size(); i++){
+            if (virtual_to_normalized_window_rect(cached_virtual_rects[i]).is_visible()) {
+                visible_pages.push_back(i);
+            }
+        }
+    }
+    else {
+        current_document->get_visible_pages(window_y_range_begin, window_y_range_end, visible_pages);
+    }
 }
 
 void DocumentView::move_pages(int num_pages) {
@@ -838,10 +865,19 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
     else {
         int page_width = current_document->get_page_width(cp);
         int virtual_view_width = view_width;
+
         if (ratio) {
             virtual_view_width = static_cast<int>(static_cast<float>(view_width) * FIT_TO_PAGE_WIDTH_RATIO);
         }
-        set_offset_x(0);
+
+        if (two_panel_mode) {
+            offset.x = 0;
+            page_width += page_width + PAGE_SPACE;
+        }
+        else {
+            set_offset_x(0);
+        }
+
         set_zoom_level(static_cast<float>(virtual_view_width) / page_width, true);
     }
 
@@ -1792,13 +1828,17 @@ bool DocumentView::is_presentation_mode() {
 }
 
 VirtualPos DocumentView::absolute_to_virtual_pos(const AbsoluteDocumentPos& abspos) {
+    if (!two_panel_mode) {
+        return VirtualPos{ abspos.x, abspos.y };
+    }
+
     fill_cached_virtual_rects();
     if (cached_virtual_rects.size() == 0) {
         return VirtualPos{ abspos.x, abspos.y };
     }
 
     DocumentPos docpos = abspos.to_document(current_document);
-    if ((docpos.y == cached_virtual_rects[docpos.page].height()) && (docpos.page < cached_virtual_rects.size()-1)) {
+    if ((std::abs(docpos.y - cached_virtual_rects[docpos.page].height()) < 0.01f) && (docpos.page < cached_virtual_rects.size()-1)) {
         docpos.page++;
         docpos.y = 0;
     }
@@ -1812,6 +1852,10 @@ VirtualPos DocumentView::absolute_to_virtual_pos(const AbsoluteDocumentPos& absp
 }
 
 AbsoluteDocumentPos DocumentView::virtual_to_absolute_pos(const VirtualPos& vpos) {
+    if (!two_panel_mode) {
+        return AbsoluteDocumentPos{ vpos.x, vpos.y };
+    }
+
     fill_cached_virtual_rects();
     if (cached_virtual_rects.size() == 0) {
         return AbsoluteDocumentPos{ vpos.x, vpos.y };
@@ -1851,7 +1895,6 @@ AbsoluteDocumentPos DocumentView::virtual_to_absolute_pos(const VirtualPos& vpos
 void DocumentView::fill_cached_virtual_rects(bool force) {
     if (!current_document) return;
 
-    float page_space = 10;
 
     float cum_offset = 0;
 
@@ -1871,10 +1914,15 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
                 page_rect.y1 = cum_offset + page_height;
 
                 if (i % 2 == 1) {
-                    page_rect.x0 += page_width + page_space;
-                    page_rect.x1 += page_width + page_space;
-                    cum_offset += page_height + page_space;
+                    page_rect.x0 += (page_width + PAGE_SPACE) / 2;
+                    page_rect.x1 += (page_width + PAGE_SPACE) /2 ;
+                    cum_offset += page_height + PAGE_SPACE;
                 }
+                else {
+                    page_rect.x0 -= (page_width + PAGE_SPACE) / 2;
+                    page_rect.x1 -= (page_width + PAGE_SPACE) /2 ;
+                }
+
 
                 cached_virtual_rects.push_back(page_rect);
 
@@ -1892,7 +1940,7 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
 
                 cached_virtual_rects.push_back(page_rect);
 
-                cum_offset += page_height + page_space;
+                cum_offset += page_height + PAGE_SPACE;
             }
         }
     }
@@ -1918,5 +1966,12 @@ void DocumentView::toggle_two_panel(){
     two_panel_mode = !two_panel_mode;
     cached_virtual_rects.clear();
     fill_cached_virtual_rects();
+}
+
+
+NormalizedWindowRect DocumentView::virtual_to_normalized_window_rect(const VirtualRect& virtual_rect){
+    NormalizedWindowPos top_left = virtual_to_window_pos(VirtualPos{ virtual_rect.x0, virtual_rect.y0 }).to_window_normalized(this);
+    NormalizedWindowPos bottom_right = virtual_to_window_pos(VirtualPos{ virtual_rect.x1, virtual_rect.y1 }).to_window_normalized(this);
+    return NormalizedWindowRect(top_left, bottom_right);
 }
 

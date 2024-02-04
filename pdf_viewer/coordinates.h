@@ -337,3 +337,14 @@ AbsoluteDocumentPos operator-(const AbsoluteDocumentPos& lhs, const fvec2& rhs);
 DocumentPos operator+(const DocumentPos& lhs, const fvec2& rhs);
 NormalizedWindowPos operator+(const NormalizedWindowPos& lhs, const fvec2& rhs);
 WindowPos operator+(const WindowPos& lhs, const ivec2& rhs);
+
+struct VirtualPos {
+    float x;
+    float y;
+};
+
+VirtualPos operator+(const VirtualPos& lhs, const fvec2& rhs);
+
+VirtualPos operator-(const VirtualPos& lhs, const fvec2& rhs);
+
+using VirtualRect = EnhancedRect<fz_rect, VirtualPos>;

@@ -121,6 +121,7 @@ extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool ALIGN_LINK_DEST_TO_TOP;
 extern float MENU_SCREEN_WDITH_RATIO;
+extern float PAGE_SPACE;
 
 extern std::wstring RESIZE_COMMAND;
 extern std::wstring SHIFT_CLICK_COMMAND;
@@ -1757,6 +1758,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_serializer,
         bool_deserializer,
         bool_validator
+        });
+    configs.push_back({
+        L"page_space",
+        ConfigType::Bool,
+        &PAGE_SPACE,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.0f, 100.0f}
         });
     configs.push_back({
         L"menu_screen_width_ratio",

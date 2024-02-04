@@ -184,7 +184,8 @@ public:
     // The document offset (offset_x and offset_y) when mouse was last pressed
     // we use this to update the offset when dragging the mouse in some modes
     // for example in touch mode or when dragging while holding middle mouse button
-    AbsoluteDocumentPos last_mouse_down_document_offset;
+    //AbsoluteDocumentPos last_mouse_down_document_offset;
+    VirtualPos last_mouse_down_document_virtual_offset;
 
     // last window position when mouse was clicked, we use this in mouse drag mode
     WindowPos last_mouse_down_window_pos;

@@ -702,7 +702,8 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
                 diff_doc.values[0] = 0;
             }
         }
-        dv()->set_pos(last_mouse_down_document_offset + diff_doc);
+        //dv()->set_pos(last_mouse_down_document_offset + diff_doc);
+        dv()->set_virtual_pos(last_mouse_down_document_virtual_offset + diff_doc);
 
         validate_render();
     }
@@ -2273,7 +2274,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         //last_mouse_down_x = x_;
         //last_mouse_down_y = y_;
         last_mouse_down_window_pos = click_pos;
-        last_mouse_down_document_offset = dv()->get_offsets();
+        last_mouse_down_document_virtual_offset = dv()->get_virtual_offset();
 
         //last_mouse_down_window_x = x;
         //last_mouse_down_window_y = y;
@@ -2824,7 +2825,7 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
         last_middle_down_time = QTime::currentTime();
         middle_click_hold_command_already_executed = false;
         last_mouse_down_window_pos = WindowPos{ mevent->pos().x(), mevent->pos().y() };
-        last_mouse_down_document_offset = dv()->get_offsets();
+        last_mouse_down_document_virtual_offset = dv()->get_virtual_offset();
 
         AbsoluteDocumentPos abs_mpos = dv()->window_to_absolute_document_pos(last_mouse_down_window_pos);
         if ((!bookmark_move_data.has_value()) && (!portal_move_data.has_value())) {
@@ -6997,6 +6998,9 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         }
         if (QString::fromStdString((*config_names)[i]) == "gamma") {
             should_invalidate_render = true;
+        }
+        if (QString::fromStdString((*config_names)[i]) == "page_space") {
+            main_document_view->fill_cached_virtual_rects(true);
         }
     }
     if (should_reflow) {
