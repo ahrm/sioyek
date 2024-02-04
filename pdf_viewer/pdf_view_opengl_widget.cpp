@@ -1192,7 +1192,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
             disable_stencil();
         }
 
-        if (!document_view->is_presentation_mode() && (!in_overview)){
+        if (!document_view->is_presentation_mode() && (!in_overview) && (!document_view->is_two_page_mode())){
 
             // render page separator
             glUseProgram(shared_gl_objects.separator_program);
