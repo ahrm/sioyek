@@ -15,7 +15,8 @@ extern float RULER_PADDING;
 extern float RULER_X_PADDING;
 extern bool EXACT_HIGHLIGHT_SELECT;
 extern bool VERBOSE;
-extern float PAGE_SPACE;
+extern float PAGE_SPACE_X;
+extern float PAGE_SPACE_Y;
 
 DocumentView::DocumentView(DatabaseManager* db_manager,
     DocumentManager* document_manager,
@@ -880,7 +881,7 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
 
         if (two_panel_mode) {
             offset.x = 0;
-            page_width += page_width + PAGE_SPACE;
+            page_width += page_width + PAGE_SPACE_X;
         }
         else {
             set_offset_x(0);
@@ -1922,13 +1923,13 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
                 page_rect.y1 = cum_offset + page_height;
 
                 if (i % 2 == 1) {
-                    page_rect.x0 += (page_width + PAGE_SPACE) / 2;
-                    page_rect.x1 += (page_width + PAGE_SPACE) /2 ;
-                    cum_offset += page_height + PAGE_SPACE;
+                    page_rect.x0 += (page_width + PAGE_SPACE_X) / 2;
+                    page_rect.x1 += (page_width + PAGE_SPACE_X) /2 ;
+                    cum_offset += page_height + PAGE_SPACE_Y;
                 }
                 else {
-                    page_rect.x0 -= (page_width + PAGE_SPACE) / 2;
-                    page_rect.x1 -= (page_width + PAGE_SPACE) /2 ;
+                    page_rect.x0 -= (page_width + PAGE_SPACE_X) / 2;
+                    page_rect.x1 -= (page_width + PAGE_SPACE_X) /2 ;
                 }
 
 
@@ -1948,7 +1949,7 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
 
                 cached_virtual_rects.push_back(page_rect);
 
-                cum_offset += page_height + PAGE_SPACE;
+                cum_offset += page_height + PAGE_SPACE_Y;
             }
         }
     }

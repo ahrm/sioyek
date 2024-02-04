@@ -216,7 +216,8 @@ extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
 extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
-extern float PAGE_SPACE;
+extern float PAGE_SPACE_X;
+extern float PAGE_SPACE_Y;
 
 extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
@@ -701,7 +702,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
             float current_page_width = doc()->get_page_width(get_current_page_number());
 
             if (dv()->is_two_pane_mode()) {
-                current_page_width += current_page_width + PAGE_SPACE;
+                current_page_width += current_page_width + PAGE_SPACE_X;
             }
 
             if ((current_page_width > 0) && ((dv()->get_zoom_level() * current_page_width) < width())) {
@@ -7005,7 +7006,7 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         if (QString::fromStdString((*config_names)[i]) == "gamma") {
             should_invalidate_render = true;
         }
-        if (QString::fromStdString((*config_names)[i]) == "page_space") {
+        if (QString::fromStdString((*config_names)[i]).startsWith("page_space")) {
             main_document_view->fill_cached_virtual_rects(true);
         }
     }
