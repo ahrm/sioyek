@@ -10,7 +10,6 @@ extern bool TOUCH_MODE;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SMARTCASE_SEARCH;
 extern float GAMMA;
-extern int NUM_CACHED_PAGES;
 
 
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone) : context_to_clone(context_to_clone),
@@ -283,7 +282,7 @@ void PdfRenderer::delete_old_pages(bool force_all, bool invalidate_all) {
         cached_response_times.push_back(now - cached_responses[i].last_access_time);
     }
 
-    int N = NUM_CACHED_PAGES;
+    int N = num_cached_pages;
 
     if (invalidate_all) {
         for (size_t i = 0; i < cached_responses.size(); i++) {
@@ -720,4 +719,8 @@ int PdfRenderer::get_pending_response_index_with_thread_index(const RenderReques
         }
     }
     return -1;
+}
+
+void PdfRenderer::set_num_cached_pages(int n_cached_pages) {
+    num_cached_pages = n_cached_pages;
 }

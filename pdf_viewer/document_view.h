@@ -38,7 +38,7 @@ protected:
     //float offset_y = 0.0f;
     VirtualPos offset = {0, 0};
     std::vector<VirtualRect> cached_virtual_rects;
-    bool two_panel_mode = false;
+    bool two_page_mode = false;
 
     // absolute rect of the current ruler if this is {} then ruler_pos is used instead
     std::optional<AbsoluteRect> ruler_rect;
@@ -217,8 +217,8 @@ public:
     VirtualPos window_to_virtual_pos(const WindowPos& window_pos);
     WindowPos virtual_to_window_pos(const VirtualPos& virtual_pos);
     NormalizedWindowRect virtual_to_normalized_window_rect(const VirtualRect& virtual_rect);
-    void toggle_two_panel();
-    bool is_two_pane_mode();
+    void toggle_two_page();
+    bool is_two_page_mode();
 
 };
 

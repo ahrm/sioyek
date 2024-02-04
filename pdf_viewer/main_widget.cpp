@@ -192,6 +192,7 @@ extern std::wstring VOLUME_DOWN_COMMAND;
 extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
 extern ScratchPad global_scratchpad;
+extern int NUM_CACHED_PAGES;
 
 extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
@@ -701,7 +702,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         if (!ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL) {
             float current_page_width = doc()->get_page_width(get_current_page_number());
 
-            if (dv()->is_two_pane_mode()) {
+            if (dv()->is_two_page_mode()) {
                 current_page_width += current_page_width + PAGE_SPACE_X;
             }
 
@@ -794,6 +795,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
     pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
+    pdf_renderer->set_num_cached_pages(NUM_CACHED_PAGES);
     pdf_renderer->start_threads();
 
 
@@ -9243,7 +9245,9 @@ void MainWidget::handle_fit_to_page_width(bool smart) {
 
     if (smart) {
         int current_page = get_current_page_number();
-        last_smart_fit_page = current_page;
+        if (!main_document_view->is_two_page_mode()) {
+            last_smart_fit_page = current_page;
+        }
     }
     else {
         last_smart_fit_page = {};
@@ -10031,6 +10035,14 @@ void MainWidget::handle_move_smooth(int amount) {
     last_speed_update_time = QTime::currentTime();
 }
 
-void MainWidget::handle_toggle_two_panel_mode() {
-    main_document_view->toggle_two_panel();
+void MainWidget::handle_toggle_two_page_mode() {
+    main_document_view->toggle_two_page();
+    if (NUM_CACHED_PAGES < 6) {
+        if (main_document_view->is_two_page_mode()) {
+            pdf_renderer->set_num_cached_pages(NUM_CACHED_PAGES * 2);
+        }
+        else {
+            pdf_renderer->set_num_cached_pages(NUM_CACHED_PAGES);
+        }
+    }
 }

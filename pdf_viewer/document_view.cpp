@@ -95,7 +95,7 @@ bool DocumentView::set_pos(AbsoluteDocumentPos pos) {
 }
 
 void DocumentView::set_virtual_pos(VirtualPos pos) {
-    if (two_panel_mode) {
+    if (two_page_mode) {
         offset = pos;
     }
     else {
@@ -271,7 +271,7 @@ void DocumentView::set_offset_x(float new_offset_x) {
 }
 
 void DocumentView::set_offset_y(float new_offset_y) {
-    if (is_two_pane_mode()) {
+    if (is_two_page_mode()) {
         AbsoluteDocumentPos current = get_offsets();
         current.y = new_offset_y;
         VirtualPos new_pos = absolute_to_virtual_pos(current);
@@ -637,7 +637,7 @@ bool DocumentView::move_virtual(float dx, float dy, bool force) {
 bool DocumentView::move(float dx, float dy, bool force) {
     float abs_dx = (dx / zoom_level);
     float abs_dy = (dy / zoom_level);
-    if (two_panel_mode) {
+    if (two_page_mode) {
         return move_virtual(abs_dx, abs_dy, force);
     }
     else {
@@ -667,7 +667,7 @@ void DocumentView::get_visible_pages(int window_height, std::vector<int>& visibl
     window_y_range_begin -= 1;
     window_y_range_end += 1;
 
-    if (two_panel_mode) {
+    if (two_page_mode) {
         fill_cached_virtual_rects();
 
         for (int i = 0; i < cached_virtual_rects.size(); i++){
@@ -856,20 +856,53 @@ void DocumentView::fit_to_page_height(bool smart) {
 }
 
 void DocumentView::fit_to_page_width(bool smart, bool ratio) {
+    if (!current_document) return;
+
     int cp = get_center_page_number();
     if (cp == -1) return;
 
     //int page_width = current_document->get_page_width(cp);
     if (smart) {
 
-        float left_ratio, right_ratio;
-        int normal_page_width;
-        int page_width = current_document->get_page_size_smart(true, cp, &left_ratio, &right_ratio, &normal_page_width);
-        float right_leftover = 1.0f - right_ratio;
-        float imbalance = left_ratio - right_leftover;
+        if (two_page_mode) {
+            int num_pages = current_document->num_pages();
+            int other_page = cp;
+            if (cp % 2 == 0) {
+                if (cp + 1 < num_pages) {
+                    other_page = cp + 1;
+                }
+            }
+            else {
+                other_page = cp - 1;
+            }
+            float left_left_ratio, left_right_ratio;
+            int left_normal_page_width;
+            int left_page_width = current_document->get_page_size_smart(true, cp, &left_left_ratio, &left_right_ratio, &left_normal_page_width);
 
-        set_zoom_level(static_cast<float>(view_width) / page_width, false);
-        set_offset_x(-imbalance * normal_page_width / 2.0f);
+            float right_left_ratio, right_right_ratio;
+            int right_normal_page_width;
+            int right_page_width = current_document->get_page_size_smart(true, other_page, &right_left_ratio, &right_right_ratio, &right_normal_page_width);
+
+            float right_leftover = 1.0f - right_right_ratio;
+            float imbalance = left_left_ratio - right_leftover;
+
+            left_page_width += static_cast<int>((1-left_right_ratio) * left_normal_page_width);
+            right_page_width += static_cast<int>(right_left_ratio * right_normal_page_width);
+
+            set_zoom_level(static_cast<float>(view_width) / (left_page_width + right_page_width + PAGE_SPACE_X), false);
+            offset.x = -imbalance * (left_normal_page_width + right_normal_page_width + PAGE_SPACE_X) / 4.0f;
+        }
+
+        else {
+            float left_ratio, right_ratio;
+            int normal_page_width;
+            int page_width = current_document->get_page_size_smart(true, cp, &left_ratio, &right_ratio, &normal_page_width);
+            float right_leftover = 1.0f - right_ratio;
+            float imbalance = left_ratio - right_leftover;
+
+            set_zoom_level(static_cast<float>(view_width) / page_width, false);
+            set_offset_x(-imbalance * normal_page_width / 2.0f);
+        }
     }
     else {
         int page_width = current_document->get_page_width(cp);
@@ -879,7 +912,7 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
             virtual_view_width = static_cast<int>(static_cast<float>(view_width) * FIT_TO_PAGE_WIDTH_RATIO);
         }
 
-        if (two_panel_mode) {
+        if (two_page_mode) {
             offset.x = 0;
             page_width += page_width + PAGE_SPACE_X;
         }
@@ -1837,7 +1870,7 @@ bool DocumentView::is_presentation_mode() {
 }
 
 VirtualPos DocumentView::absolute_to_virtual_pos(const AbsoluteDocumentPos& abspos) {
-    if (!two_panel_mode) {
+    if (!two_page_mode) {
         return VirtualPos{ abspos.x, abspos.y };
     }
 
@@ -1861,7 +1894,7 @@ VirtualPos DocumentView::absolute_to_virtual_pos(const AbsoluteDocumentPos& absp
 }
 
 AbsoluteDocumentPos DocumentView::virtual_to_absolute_pos(const VirtualPos& vpos) {
-    if (!two_panel_mode) {
+    if (!two_page_mode) {
         return AbsoluteDocumentPos{ vpos.x, vpos.y };
     }
 
@@ -1911,7 +1944,7 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
         cached_virtual_rects.clear();
         int num_pages = current_document->num_pages();
 
-        if (two_panel_mode) {
+        if (two_page_mode) {
 
             for (int i = 0; i < num_pages; i++) {
                 float page_width = current_document->get_page_width(i);
@@ -1971,10 +2004,10 @@ WindowPos DocumentView::virtual_to_window_pos(const VirtualPos& vpos) {
     return res;
 }
 
-void DocumentView::toggle_two_panel(){
+void DocumentView::toggle_two_page(){
     AbsoluteDocumentPos current_abs_offset = get_offsets();
 
-    two_panel_mode = !two_panel_mode;
+    two_page_mode = !two_page_mode;
     cached_virtual_rects.clear();
     fill_cached_virtual_rects();
 
@@ -1989,6 +2022,6 @@ NormalizedWindowRect DocumentView::virtual_to_normalized_window_rect(const Virtu
     return NormalizedWindowRect(top_left, bottom_right);
 }
 
-bool DocumentView::is_two_pane_mode() {
-    return two_panel_mode;
+bool DocumentView::is_two_page_mode() {
+    return two_page_mode;
 }
