@@ -216,6 +216,7 @@ extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
 extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
+extern float PAGE_SPACE;
 
 extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
@@ -698,6 +699,11 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         }
         if (!ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL) {
             float current_page_width = doc()->get_page_width(get_current_page_number());
+
+            if (dv()->is_two_pane_mode()) {
+                current_page_width += current_page_width + PAGE_SPACE;
+            }
+
             if ((current_page_width > 0) && ((dv()->get_zoom_level() * current_page_width) < width())) {
                 diff_doc.values[0] = 0;
             }

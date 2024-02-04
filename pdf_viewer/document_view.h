@@ -218,6 +218,7 @@ public:
     WindowPos virtual_to_window_pos(const VirtualPos& virtual_pos);
     NormalizedWindowRect virtual_to_normalized_window_rect(const VirtualRect& virtual_rect);
     void toggle_two_panel();
+    bool is_two_pane_mode();
 
 };
 

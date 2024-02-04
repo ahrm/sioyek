@@ -270,7 +270,15 @@ void DocumentView::set_offset_x(float new_offset_x) {
 }
 
 void DocumentView::set_offset_y(float new_offset_y) {
-    set_offsets(get_offset_x(), new_offset_y);
+    if (is_two_pane_mode()) {
+        AbsoluteDocumentPos current = get_offsets();
+        current.y = new_offset_y;
+        VirtualPos new_pos = absolute_to_virtual_pos(current);
+        offset.y = new_pos.y;
+    }
+    else {
+        set_offsets(get_offset_x(), new_offset_y);
+    }
 }
 
 std::optional<PdfLink> DocumentView::get_link_in_pos(WindowPos pos) {
@@ -662,7 +670,7 @@ void DocumentView::get_visible_pages(int window_height, std::vector<int>& visibl
         fill_cached_virtual_rects();
 
         for (int i = 0; i < cached_virtual_rects.size(); i++){
-            if (virtual_to_normalized_window_rect(cached_virtual_rects[i]).is_visible()) {
+            if (virtual_to_normalized_window_rect(cached_virtual_rects[i]).is_visible(0.5f)) {
                 visible_pages.push_back(i);
             }
         }
@@ -1963,9 +1971,14 @@ WindowPos DocumentView::virtual_to_window_pos(const VirtualPos& vpos) {
 }
 
 void DocumentView::toggle_two_panel(){
+    AbsoluteDocumentPos current_abs_offset = get_offsets();
+
     two_panel_mode = !two_panel_mode;
     cached_virtual_rects.clear();
     fill_cached_virtual_rects();
+
+    set_offsets(current_abs_offset.x, current_abs_offset.y);
+    fit_to_page_width();
 }
 
 
@@ -1975,3 +1988,6 @@ NormalizedWindowRect DocumentView::virtual_to_normalized_window_rect(const Virtu
     return NormalizedWindowRect(top_left, bottom_right);
 }
 
+bool DocumentView::is_two_pane_mode() {
+    return two_panel_mode;
+}
