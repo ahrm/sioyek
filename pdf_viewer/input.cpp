@@ -29,6 +29,9 @@ extern std::wstring SEARCH_URLS[26];
 extern bool ALPHABETIC_LINK_TAGS;
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
+extern float EPUB_WIDTH;
+extern float EPUB_HEIGHT;
+
 extern Path default_config_path;
 extern Path default_keys_path;
 extern std::vector<Path> user_config_paths;
@@ -2185,6 +2188,22 @@ public:
     }
 };
 
+class FitEpubToWindowCommand : public Command {
+public:
+    FitEpubToWindowCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+
+        EPUB_WIDTH = widget->width() / widget->dv()->get_zoom_level();
+        EPUB_HEIGHT = widget->height() / widget->dv()->get_zoom_level();
+        widget->on_config_changed("epub_width");
+    }
+
+    std::string get_name() {
+        return "fit_epub_to_window";
+    }
+};
+
 class MoveDownCommand : public Command {
 public:
     MoveDownCommand(MainWidget* w) : Command(w) {};
@@ -2197,8 +2216,6 @@ public:
     std::string get_name() {
         return "move_down";
     }
-
-
 };
 
 class MoveUpCommand : public Command {
@@ -5641,6 +5658,34 @@ public:
         }
         else {
 
+
+            if (text.value().size() > 1) {
+                if (text.value().substr(0, 2) == L"+=" || text.value().substr(0, 2) == L"-=") {
+                    std::wstring config_name_encoded = utf8_decode(config_name);
+                    Config* config_mut = widget->config_manager->get_mut_config_with_name(config_name_encoded);
+                    ConfigType config_type = config_mut->config_type;
+
+                    if (config_type == ConfigType::Int) {
+                        int mult = text.value()[0] == '+' ? 1 : -1;
+                        int* config_ptr = (int*)config_mut->value;
+                        int prev_value = *config_ptr;
+                        int new_value = QString::fromStdWString(text.value()).right(text.value().size() - 2).toInt();
+                        *config_ptr += mult * new_value;
+                        widget->on_config_changed(config_name);
+                        return;
+                    }
+
+                    if (config_type == ConfigType::Float) {
+                        float mult = text.value()[0] == '+' ? 1 : -1;
+                        float* config_ptr = (float*)config_mut->value;
+                        float prev_value = *config_ptr;
+                        float new_value = QString::fromStdWString(text.value()).right(text.value().size() - 2).toFloat();
+                        *config_ptr += mult * new_value;
+                        widget->on_config_changed(config_name);
+                        return;
+                    }
+                }
+            }
             if (widget->config_manager->deserialize_config(config_name, text.value())) {
                 widget->on_config_changed(config_name);
             }
@@ -5654,7 +5699,6 @@ public:
 
     bool requires_document() { return false; }
 };
-
 
 
 
@@ -6289,6 +6333,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["regex_search"] = [](MainWidget* widget) {return std::make_unique< RegexSearchCommand>(widget); };
     new_commands["chapter_search"] = [](MainWidget* widget) {return std::make_unique< ChapterSearchCommand>(widget); };
     new_commands["toggle_two_page_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleTwoPageModeCommand>(widget); };
+    new_commands["fit_epub_to_window"] = [](MainWidget* widget) {return std::make_unique< FitEpubToWindowCommand>(widget); };
     new_commands["move_down"] = [](MainWidget* widget) {return std::make_unique< MoveDownCommand>(widget); };
     new_commands["move_up"] = [](MainWidget* widget) {return std::make_unique< MoveUpCommand>(widget); };
     new_commands["move_left"] = [](MainWidget* widget) {return std::make_unique< MoveLeftCommand>(widget); };
