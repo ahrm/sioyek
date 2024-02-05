@@ -2119,21 +2119,20 @@ public:
     bool requires_document() { return false; }
 };
 
-class MoveDownSmoothCommand : public Command {
+
+class MoveSmoothCommand : public Command {
     bool was_held = false;
 public:
-    MoveDownSmoothCommand(MainWidget* w) : Command(w) {};
+    MoveSmoothCommand(MainWidget* w) : Command(w) {};
+
+    virtual bool is_down() = 0;
 
     void perform() {
-        widget->handle_move_smooth(-1);
+        widget->handle_move_smooth_press(is_down());
     }
 
     void perform_up() {
         if (was_held) widget->velocity_y = 0;
-    }
-
-    std::string get_name() {
-        return "move_down_smooth";
     }
 
     bool is_holdable() {
@@ -2142,36 +2141,34 @@ public:
 
     void on_key_hold() {
         was_held = true;
-        perform();
+        widget->handle_move_smooth_hold(is_down());
         widget->validate_render();
     }
 };
 
-class MoveUpSmoothCommand : public Command {
-    bool was_held = false;
+class MoveUpSmoothCommand : public MoveSmoothCommand {
 public:
-    MoveUpSmoothCommand(MainWidget* w) : Command(w) {};
+    MoveUpSmoothCommand(MainWidget* w) : MoveSmoothCommand(w) {};
 
-    void perform() {
-        widget->handle_move_smooth(1);
-    }
-
-    void perform_up() {
-        if (was_held) widget->velocity_y = 0;
+    bool is_down() {
+        return false;
     }
 
     std::string get_name() {
         return "move_up_smooth";
     }
+};
 
-    bool is_holdable() {
+class MoveDownSmoothCommand : public MoveSmoothCommand {
+public:
+    MoveDownSmoothCommand(MainWidget* w) : MoveSmoothCommand(w) {};
+
+    bool is_down() {
         return true;
     }
 
-    void on_key_hold() {
-        was_held = true;
-        perform();
-        widget->validate_render();
+    std::string get_name() {
+        return "move_down_smooth";
     }
 };
 

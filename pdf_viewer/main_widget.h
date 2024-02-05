@@ -924,9 +924,11 @@ public:
     QString get_rest_of_document_pages_text();
     void focus_on_character_offset_into_document(int character_offset_into_document);
     // void stop_tts_service();
-    void handle_move_smooth(int amount);
+    void handle_move_smooth_press(bool down);
+    void handle_move_smooth_hold(bool down);
     void handle_toggle_two_page_mode();
     void ensure_zero_interval_timer();
+    void set_last_performed_command(std::unique_ptr<Command> command);
 };
 
 #endif

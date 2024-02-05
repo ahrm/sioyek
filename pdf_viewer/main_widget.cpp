@@ -197,6 +197,7 @@ extern int NUM_CACHED_PAGES;
 extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 extern float SMOOTH_MOVE_MAX_VELOCITY;
+extern float SMOOTH_MOVE_INITIAL_VELOCITY;
 
 extern std::wstring RIGHT_CLICK_COMMAND;
 extern std::wstring MIDDLE_CLICK_COMMAND;
@@ -1916,10 +1917,7 @@ bool MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int 
 void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat) {
 
     if (released && (!is_auto_repeat)) {
-        if (last_performed_command) {
-            last_performed_command->perform_up();
-            last_performed_command = {};
-        }
+        set_last_performed_command({});
     }
     if (typing_location.has_value()) {
 
@@ -5032,8 +5030,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
                 }
                 //*result = new_command->get_result()
             }
-            last_performed_command = std::move(new_command);
-            //pending_command_instance = nullptr;
+            set_last_performed_command(std::move(new_command));
         }
         else {
             pending_command_instance = std::move(new_command);
@@ -10033,16 +10030,30 @@ void MainWidget::focus_on_character_offset_into_document(int character_offset_in
     invalidate_render();
 }
 
-void MainWidget::handle_move_smooth(int amount) {
+void MainWidget::handle_move_smooth_press(bool down) {
 
-    float max_velocity = amount > 0 ? SMOOTH_MOVE_MAX_VELOCITY : -SMOOTH_MOVE_MAX_VELOCITY;
+    float mult = down ? -1 : 1;
 
-    if (amount > 0) {
-        velocity_y += (max_velocity - velocity_y) / 5.0f;
+    velocity_y += mult * SMOOTH_MOVE_INITIAL_VELOCITY;
+    if (std::abs(velocity_y) > SMOOTH_MOVE_MAX_VELOCITY) {
+        if (down) velocity_y = -SMOOTH_MOVE_MAX_VELOCITY;
+        else velocity_y = SMOOTH_MOVE_MAX_VELOCITY;
     }
-    else {
+    validation_interval_timer->setInterval(0);
+    last_speed_update_time = QTime::currentTime();
+}
+
+void MainWidget::handle_move_smooth_hold(bool down) {
+
+    float max_velocity = down ? -SMOOTH_MOVE_MAX_VELOCITY : SMOOTH_MOVE_MAX_VELOCITY;
+
+    if (down) {
         velocity_y -= (velocity_y - max_velocity) / 5.0f;
     }
+    else {
+        velocity_y += (max_velocity - velocity_y) / 5.0f;
+    }
+
     validation_interval_timer->setInterval(0);
     last_speed_update_time = QTime::currentTime();
 }
@@ -10064,3 +10075,11 @@ void MainWidget::ensure_zero_interval_timer(){
     validation_interval_timer->setInterval(INTERVAL_TIME);
 }
 
+
+void MainWidget::set_last_performed_command(std::unique_ptr<Command> command) {
+    if (last_performed_command) {
+        last_performed_command->perform_up();
+    }
+
+    last_performed_command = std::move(command);
+}
