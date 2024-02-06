@@ -6140,8 +6140,23 @@ public:
                 if (commands[i]->next_requirement(widget)) {
                     return commands[i]->next_requirement(widget);
                 }
+                else {
+                    if (!performed[i]) {
+                        perform_subcommand(i);
+                    }
+                }
             }
             return {};
+        }
+    }
+
+    void perform_subcommand(int index) {
+        if (!performed[index]) {
+            if (commands[index]->pushes_state()) {
+                widget->push_state();
+            }
+            commands[index]->run();
+            performed[index] = true;
         }
     }
 
@@ -6164,13 +6179,11 @@ public:
 
     void perform() {
         if (!is_modal) {
-            for (std::unique_ptr<Command>& subcommand : commands) {
+            for (int i = 0; i < commands.size(); i++) {
 
-                if (subcommand->pushes_state()) {
-                    widget->push_state();
+                if (!performed[i]) {
+                    perform_subcommand(i);
                 }
-
-                subcommand->run();
             }
         }
         else {
