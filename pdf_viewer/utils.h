@@ -512,3 +512,5 @@ public:
     virtual void set_on_app_resume_callback(std::function<void(bool, bool, int)>);
 };
 #endif
+
+std::wstring get_path_extras_file_name(const std::wstring& path);

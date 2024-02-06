@@ -948,6 +948,7 @@ void DocumentView::persist(bool persist_drawings) {
     if (persist_drawings) {
         current_document->persist_drawings();
         current_document->persist_annotations();
+        current_document->persist_extras();
     }
 }
 

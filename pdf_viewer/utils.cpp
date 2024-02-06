@@ -30,6 +30,8 @@
 #include <qscreen.h>
 #include <qjsonarray.h>
 #include <quuid.h>
+#include <qjsondocument.h>
+#include "path.h"
 
 #ifdef SIOYEK_ANDROID
 #include <QtCore/private/qandroidextras_p.h>
@@ -81,6 +83,40 @@ std::wstring to_lower(const std::wstring& inp) {
         res.push_back(::tolower(c));
     }
     return res;
+}
+
+std::wstring get_path_extras_file_name(const std::wstring& path_) {
+    Path path = Path(path_);
+    QString filename = QString::fromStdWString(path.filename().value());
+    QString drawing_file_name = filename + ".sioyek.extras";
+    std::wstring extras_file_path = path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+    return extras_file_path;
+}
+
+void get_path_epub_size(const std::wstring& path, float* out_width, float* out_height) {
+    QString extras_file_path = QString::fromStdWString(get_path_extras_file_name(path));
+    QFileInfo extras_file_info(extras_file_path);
+
+    float width = EPUB_WIDTH;
+    float height = EPUB_HEIGHT;
+
+    if (extras_file_info.exists()) {
+        QFile extras_file(extras_file_path);
+        if (extras_file.open(QIODevice::ReadOnly)) {
+            QByteArray data = extras_file.readAll();
+            QJsonDocument doc = QJsonDocument::fromJson(data);
+            QJsonObject object = doc.object();
+            if (object.find("epub_width") != object.end()) {
+                width = object["epub_width"].toDouble();
+                height = object["epub_height"].toDouble();
+
+            }
+            extras_file.close();
+        }
+    }
+
+    *out_width = width;
+    *out_height = height;
 }
 
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages) {
@@ -2682,6 +2718,9 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
     std::string file_name_str = utf8_encode(file_name);
     return fz_open_document_with_stream(context, file_name_str.c_str(), stream);
 #else
+    float epub_width, epub_height;
+    get_path_epub_size(file_name, &epub_width, &epub_height);
+
     fz_document* doc = fz_open_document(context, utf8_encode(file_name).c_str());
     if (fz_is_document_reflowable(context, doc)) {
 
@@ -2690,7 +2729,7 @@ fz_document* open_document_with_file_name(fz_context* context, std::wstring file
             fz_set_user_css(context, css.c_str());
         }
 
-        fz_layout_document(context, doc, EPUB_WIDTH, EPUB_HEIGHT, EPUB_FONT_SIZE);
+        fz_layout_document(context, doc, epub_width, epub_height, EPUB_FONT_SIZE);
 
         //int a = 2;
     }

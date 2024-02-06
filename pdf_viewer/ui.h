@@ -316,11 +316,12 @@ public:
     }
 
     void set_equal_columns() {
-        QTableView* table_view = dynamic_cast<QTableView*>(get_view());
-        for (int i = 0; i < n_cols; i++) {
-            table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
+        if (string_list_model) {
+            QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+            for (int i = 0; i < n_cols; i++) {
+                table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
+            }
         }
-
     }
 
     void set_on_edit_function(std::function<void(T*)> edit_func) {

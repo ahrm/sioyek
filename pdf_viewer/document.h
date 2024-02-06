@@ -97,6 +97,8 @@ private:
     std::wstring super_fast_search_index;
     std::vector<int> super_fast_page_begin_indices;
 
+    QJsonObject extras;
+
     // DEPRECATED a page offset which could manually be set to make the page numbers correct
     // on PDF files with page numbers that start at a number other than 1. This is now
     // unnecessary because mupdf 1.22 allows us to get actual page labels
@@ -300,6 +302,15 @@ public:
     std::vector<DocumentPos> find_generic_locations(const std::wstring& type, const std::wstring& name);
     bool can_use_highlights();
 
+    bool load_extras();
+    bool persist_extras();
+    std::optional<QVariant> get_extra(QString name);
+
+    template<typename T>
+    void set_extra(QString name, T value) {
+        extras[name] = value;
+    }
+
     std::vector<std::wstring> get_page_bib_candidates(int page_number, std::vector<PagelessDocumentRect>* out_end_rects = nullptr);
     std::optional<std::pair<std::wstring, PagelessDocumentRect>> get_page_bib_with_reference(int page_number, std::wstring reference_text);
 
@@ -375,6 +386,7 @@ public:
 
     std::wstring get_drawings_file_path();
     std::wstring get_scratchpad_file_path();
+    std::wstring get_extras_file_path();
     std::wstring get_annotations_file_path();
     bool annotations_file_exists();
     bool annotations_file_is_newer_than_database();
