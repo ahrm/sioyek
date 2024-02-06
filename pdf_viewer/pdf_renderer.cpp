@@ -612,11 +612,13 @@ void PdfRenderer::run(int thread_index) {
 
                 cached_response_mutex.lock();
                 int index = get_pending_response_index_with_thread_index(req, thread_index);
-                cached_responses[index].last_access_time = QDateTime::currentMSecsSinceEpoch();
-                cached_responses[index].pixmap = rendered_pixmap;
-                cached_responses[index].width = rendered_pixmap->w;
-                cached_responses[index].height = rendered_pixmap->h;
-                cached_responses[index].pending = false;
+                if (index >= 0) {
+                    cached_responses[index].last_access_time = QDateTime::currentMSecsSinceEpoch();
+                    cached_responses[index].pixmap = rendered_pixmap;
+                    cached_responses[index].width = rendered_pixmap->w;
+                    cached_responses[index].height = rendered_pixmap->h;
+                    cached_responses[index].pending = false;
+                }
 
                 cached_response_mutex.unlock();
 
