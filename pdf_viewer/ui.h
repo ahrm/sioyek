@@ -316,7 +316,7 @@ public:
     }
 
     void set_equal_columns() {
-        if (string_list_model) {
+        if (item_strings.size() > 0) {
             QTableView* table_view = dynamic_cast<QTableView*>(get_view());
             for (int i = 0; i < n_cols; i++) {
                 table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);

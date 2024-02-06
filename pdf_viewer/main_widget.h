@@ -930,6 +930,7 @@ public:
     void handle_toggle_two_page_mode();
     void ensure_zero_interval_timer();
     void set_last_performed_command(std::unique_ptr<Command> command);
+    void make_current_menu_columns_equal();
 };
 
 #endif
