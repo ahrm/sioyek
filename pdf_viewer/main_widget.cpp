@@ -1575,8 +1575,13 @@ void MainWidget::validate_render() {
         }
     }
 
+    bool should_update_portal = false;
     if (main_document_view && main_document_view->get_document() && is_helper_visible()) {
         std::optional<Portal> link = main_document_view->find_closest_portal();
+        if (!(link == last_dispplayed_portal)) {
+            should_update_portal = true;
+            last_dispplayed_portal = link;
+        }
 
         if (link) {
             helper_document_view()->goto_portal(&link.value());
@@ -1591,7 +1596,7 @@ void MainWidget::validate_render() {
         opengl_widget->update();
     }
 
-    if (is_helper_visible()) {
+    if (is_helper_visible() && (should_update_portal || helper_opengl_widget()->hasFocus())) {
         helper_opengl_widget()->update();
     }
 
