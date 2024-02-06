@@ -3501,7 +3501,7 @@ bool PdfViewOpenGLWidget::on_vertical_scroll(){
         should_highlight_words = false;
         res = true;
     }
-    if (should_highlight_links){
+    if (should_highlight_links && !SHOULD_HIGHLIGHT_LINKS){
         should_highlight_links = false;
         res = true;
     }

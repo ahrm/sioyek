@@ -11,8 +11,6 @@
 // portals are not correctly saved in an updated database
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
-// moving exits show link mode
-// test exact highlight select after saving and reloading the document
 
 #include <iostream>
 #include <vector>
@@ -7014,6 +7012,9 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         }
         if (QString::fromStdString((*config_names)[i]) == "gamma") {
             should_invalidate_render = true;
+        }
+        if (QString::fromStdString((*config_names)[i]) == "highlight_links") {
+            opengl_widget->set_highlight_links(SHOULD_HIGHLIGHT_LINKS, false);
         }
         if (QString::fromStdString((*config_names)[i]).startsWith("page_space")) {
             main_document_view->fill_cached_virtual_rects(true);

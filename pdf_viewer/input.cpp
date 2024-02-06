@@ -5538,6 +5538,7 @@ public:
         //widget->config_manager->deserialize_config(config_name, text.value());
         auto conf = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
         *(bool*)conf->value = !*(bool*)conf->value;
+        widget->on_config_changed(config_name);
 	}
 
 	std::string get_name() {
