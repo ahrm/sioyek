@@ -974,6 +974,8 @@ void Document::reload(std::string password) {
 }
 
 bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string password, bool temp) {
+    load_extras();
+
     last_update_time = QDateTime::currentDateTime();
     if (doc == nullptr) {
         fz_try(context) {
@@ -2905,6 +2907,10 @@ void Document::load_document_caches(bool* invalid_flag, bool force_now) {
 
 int Document::reflow(int page) {
 
+    set_extra("epub_width", EPUB_WIDTH);
+    set_extra("epub_height", EPUB_HEIGHT);
+    persist_extras();
+
     fz_bookmark last_position_bookmark = fz_make_bookmark(context,
         doc, fz_location_from_page_number(context, doc, page));
 
@@ -3221,6 +3227,7 @@ std::wstring Document::get_drawings_file_path() {
     QString drawing_file_name = filename + ".sioyek.drawings";
     return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
 }
+
 std::wstring Document::get_scratchpad_file_path() {
     Path path = Path(file_name);
 #ifdef SIOYEK_ANDROID
@@ -3232,6 +3239,10 @@ std::wstring Document::get_scratchpad_file_path() {
     QString filename = QString::fromStdWString(path.filename().value());
     QString drawing_file_name = filename + ".sioyek.scratchpad";
     return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+}
+
+std::wstring Document::get_extras_file_path() {
+    return get_path_extras_file_name(file_name);
 }
 
 bool Document::annotations_file_exists() {
@@ -4248,3 +4259,44 @@ int Document::get_page_from_character_offset(int offset){
     }
     return res;
 }
+
+bool Document::load_extras() {
+    QString extras_file_path = QString::fromStdWString(get_extras_file_path());
+    QFileInfo extras_file_info = QFileInfo(extras_file_path);
+    if (extras_file_info.exists()) {
+        QFile extras_file = QFile(extras_file_path);
+        if (extras_file.open(QIODevice::ReadOnly)) {
+            QByteArray data = extras_file.readAll();
+            QJsonDocument json_doc = QJsonDocument::fromJson(data);
+            extras = json_doc.object();
+            extras_file.close();
+            return true;
+        }
+    }
+    return false;
+
+}
+
+bool Document::persist_extras() {
+    QString extras_file_path = QString::fromStdWString(get_extras_file_path());
+    QFile extras_file = QFile(extras_file_path);
+    if (!extras.isEmpty()) {
+        if (extras_file.open(QIODevice::WriteOnly)) {
+            QJsonDocument doc;
+            doc.setObject(extras);
+            QByteArray data = doc.toJson();
+            extras_file.write(data);
+            extras_file.close();
+            return true;
+        }
+    }
+
+    return false;
+}
+std::optional<QVariant> Document::get_extra(QString name) {
+    if (extras.find(name) != extras.end()) {
+        return extras[name].toVariant();
+    }
+    return {};
+}
+
