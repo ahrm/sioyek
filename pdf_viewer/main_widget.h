@@ -52,6 +52,7 @@ class Command;
 class PdfViewOpenGLWidget;
 class DatabaseManager;
 class DocumentManager;
+class TextToSpeechHandler;
 
 enum class DrawingMode {
     Drawing,
@@ -112,6 +113,7 @@ enum class PaperDownloadFinishedAction {
     Portal
 };
 
+
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 class MainWidget : public QQuickWidget {
     Q_OBJECT
@@ -127,7 +129,7 @@ public:
     CachedChecksummer* checksummer = nullptr;
     int window_id;
 
-    QTextToSpeech* tts = nullptr;
+    TextToSpeechHandler* tts = nullptr;
     // is the TTS engine currently reading text?
     bool is_reading = false;
     bool word_by_word_reading = false;
@@ -149,6 +151,7 @@ public:
     // input to be completed) this is where they are stored until they can be executed.
     std::unique_ptr<Command> pending_command_instance = nullptr;
     std::vector<Command*> commands_being_performed;
+    std::unique_ptr<Command> last_performed_command;
 
     DocumentView* main_document_view = nullptr;
     ScratchPad* scratchpad = nullptr;
@@ -182,7 +185,8 @@ public:
     // The document offset (offset_x and offset_y) when mouse was last pressed
     // we use this to update the offset when dragging the mouse in some modes
     // for example in touch mode or when dragging while holding middle mouse button
-    AbsoluteDocumentPos last_mouse_down_document_offset;
+    //AbsoluteDocumentPos last_mouse_down_document_offset;
+    VirtualPos last_mouse_down_document_virtual_offset;
 
     // last window position when mouse was clicked, we use this in mouse drag mode
     WindowPos last_mouse_down_window_pos;
@@ -302,6 +306,10 @@ public:
     QLabel* status_label = nullptr;
     int text_suggestion_index = 0;
 
+    int last_pause_rest_of_document_page = -1;
+    int last_page_read = -1;
+    int last_index_into_page_read = -1;
+
     std::deque<std::wstring> search_terms;
 
     // determines if the widget render is invalid and needs to be updated
@@ -376,7 +384,7 @@ public:
     std::wstring get_status_string();
     void handle_escape();
     bool is_waiting_for_symbol();
-    void key_event(bool released, QKeyEvent* kevent);
+    void key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat=false);
     void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
     void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
     void on_config_changed(std::string config_name);
@@ -757,7 +765,7 @@ public:
     bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
     bool ensure_internet_permission();
     void handle_command_text_change(const QString& new_text);
-    QTextToSpeech* get_tts();
+    TextToSpeechHandler* get_tts();
     void handle_bookmark_move_finish();
     void handle_bookmark_move();
     void handle_portal_move();
@@ -911,6 +919,16 @@ public:
     void handle_goto_link_with_page_and_offset(int page, float y_offset);
     std::optional<std::wstring> get_search_suggestion_with_index(int index);
     bool is_menu_focused();
+    void ensure_player_state_(QString state);
+    Q_INVOKABLE void ensure_player_state(QString state);
+    QString get_rest_of_document_pages_text();
+    void focus_on_character_offset_into_document(int character_offset_into_document);
+    // void stop_tts_service();
+    void handle_move_smooth_press(bool down);
+    void handle_move_smooth_hold(bool down);
+    void handle_toggle_two_page_mode();
+    void ensure_zero_interval_timer();
+    void set_last_performed_command(std::unique_ptr<Command> command);
 };
 
 #endif

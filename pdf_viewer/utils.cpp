@@ -141,7 +141,15 @@ int mod(int a, int b)
 ParsedUri parse_uri(fz_context* mupdf_context, fz_document* document, std::string uri) {
     fz_link_dest dest = fz_resolve_link_dest(mupdf_context, document, uri.c_str());
     int target_page = fz_page_number_from_location(mupdf_context, document, dest.loc) + 1;
-    if (dest.type != FZ_LINK_DEST_XYZ) {
+
+    if (std::isnan(dest.x)) {
+        dest.x = 0;
+    }
+
+    if (dest.type == FZ_LINK_DEST_FIT_H) {
+        return { target_page, dest.x, dest.y };
+    }
+    else if (dest.type != FZ_LINK_DEST_XYZ) {
         float x = dest.x + dest.w / 2;;
         float y = dest.y + dest.h / 2;
         return { target_page, x, y };
@@ -2505,6 +2513,25 @@ void flat_char_prism(const std::vector<fz_stext_char*>& chars, int page, std::ws
     }
 }
 
+void flat_char_prism2(const std::vector<fz_stext_char*>& chars, int page, std::wstring& output_text, std::vector<int>& page_begin_indices){
+    fz_stext_char* last_char = nullptr;
+
+    page_begin_indices.push_back(output_text.size());
+
+    for (int j = 0; j < chars.size(); j++) {
+        if (is_line_separator(last_char, chars[j])) {
+            if (last_char->c == '-') {
+                output_text.pop_back();
+            }
+            else {
+                output_text.push_back(' ');
+            }
+        }
+        output_text.push_back(chars[j]->c);
+        last_char = chars[j];
+    }
+}
+
 QString get_color_stylesheet(float* bg_color, float* text_color, bool nofont, int font_size) {
     if ((!nofont) && (STATUS_BAR_FONT_SIZE > -1 || font_size > -1)) {
         int size = font_size > 0 ? font_size : STATUS_BAR_FONT_SIZE;
@@ -2567,6 +2594,12 @@ void convert_color3(float* in_color, int* out_color) {
 
 #ifdef SIOYEK_ANDROID
 
+std::optional<std::function<void(int, int)>> android_global_word_callback = {};
+std::optional<std::function<void(QString)>> android_global_state_change_callback = {};
+std::optional<std::function<void(QString)>> android_global_external_state_change_callback = {};
+std::optional<std::function<QString()>> android_global_on_android_app_pause_callback = {};
+std::optional<std::function<void(bool, bool, int)>> android_global_resume_state_callback = {};
+
 QJniObject parseUriString(const QString& uriString) {
     return QJniObject::callStaticObjectMethod
     ("android/net/Uri", "parse",
@@ -2585,6 +2618,41 @@ QString android_file_uri_from_content_uri(QString uri) {
         "(Landroid/content/Context;Landroid/net/Uri;)Ljava/lang/String;", activity.object(), uri_object.object());
     return file_uri_object.toString();
 }
+
+void android_tts_say(QString text) {
+
+    QJniObject text_jni = QJniObject::fromString(text);
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    //QJniObject contentResolverObj = activity.callObjectMethod("saySomethingElse", "(Ljava/lang/String;)V", text_jni.object<jstring>());
+    activity.callMethod<void>("ttsSay", "(Ljava/lang/String;)V", text_jni.object<jstring>());
+}
+
+void android_tts_pause(){
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    activity.callMethod<void>("ttsPause");
+}
+
+void android_tts_stop(){
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    activity.callMethod<void>("ttsStop");
+}
+
+void android_tts_set_rate(float rate){
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    activity.callMethod<void>("ttsSetRate", "(F)V", rate);
+}
+
+// void android_tts_stop_service(){
+//     QJniObject activity = QNativeInterface::QAndroidApplication::context();
+//     activity.callMethod<void>("stopTtsService", "()V");
+// }
+
+void android_tts_set_rest_of_document(QString rest){
+    QJniObject rest_jni = QJniObject::fromString(rest);
+    QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    activity.callMethod<void>("ttsSetRestOfDocument", "(Ljava/lang/String;)V", rest_jni.object<jstring>());
+}
+
 #endif
 
 fz_document* open_document_with_file_name(fz_context* context, std::wstring file_name) {
@@ -2712,6 +2780,39 @@ void setFileUrlReceived(const QString& url)
     }
 }
 
+void on_android_tts(int begin, int end){
+    if (android_global_word_callback){
+        android_global_word_callback.value()(begin, end - begin);
+    }
+    // qDebug() << "ttsed from " << begin << " to " << end;
+}
+
+void on_android_state_change(QString new_state){
+    if (android_global_state_change_callback){
+        android_global_state_change_callback.value()(new_state);
+    }
+}
+
+void on_android_external_state_change(QString new_state){
+    if (android_global_external_state_change_callback){
+        android_global_external_state_change_callback.value()(new_state);
+    }
+}
+
+void on_android_resume_state(bool is_playing, bool is_on_rest, int offset){
+    if (android_global_resume_state_callback){
+        android_global_resume_state_callback.value()(is_playing, is_on_rest, offset);
+    }
+}
+
+QString on_android_get_rest_on_pause(){
+    if (android_global_on_android_app_pause_callback){
+        QString res = android_global_on_android_app_pause_callback.value()();
+        return res;
+    }
+    return "";
+}
+
 extern "C" {
     JNIEXPORT void JNICALL
         Java_info_sioyek_sioyek_SioyekActivity_setFileUrlReceived(JNIEnv* env,
@@ -2737,17 +2838,61 @@ extern "C" {
         return;
     }
 
-    //JNIEXPORT void JNICALL
-    //  Java_org_ekkescorner_examples_sharex_QShareActivity_setFileReceivedAndSaved(JNIEnv *env,
-    //                                        jobject obj,
-    //                                        jstring url)
-    //{
-    //    const char *urlStr = env->GetStringUTFChars(url, NULL);
-    //    Q_UNUSED (obj)
-    //    setFileReceivedAndSaved(urlStr);
-    //    env->ReleaseStringUTFChars(url, urlStr);
-    //    return;
-    //}
+    JNIEXPORT void JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_onTts(JNIEnv* env,
+            jobject obj,
+            jint begin, jint end)
+    {
+        on_android_tts((int)begin, (int)end);
+    }
+
+    JNIEXPORT void JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_onTtsStateChange(JNIEnv* env,
+            jobject obj,
+            jstring new_state)
+    {
+
+        const char* state_str = env->GetStringUTFChars(new_state, NULL);
+        Q_UNUSED(obj)
+            env->ReleaseStringUTFChars(new_state, state_str);
+        on_android_state_change(state_str);
+    }
+
+    JNIEXPORT void JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_onExternalTtsStateChange(JNIEnv* env,
+            jobject obj,
+            jstring new_state)
+    {
+
+        const char* state_str = env->GetStringUTFChars(new_state, NULL);
+        Q_UNUSED(obj)
+            env->ReleaseStringUTFChars(new_state, state_str);
+        on_android_external_state_change(state_str);
+    }
+
+    JNIEXPORT void JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_onResumeState(JNIEnv* env,
+            jobject obj,
+            jboolean is_playing,
+            jboolean reading_rest,
+            jint offset)
+    {
+
+        Q_UNUSED(obj)
+        on_android_resume_state(is_playing, reading_rest, offset);
+    }
+
+    JNIEXPORT jstring JNICALL
+        Java_info_sioyek_sioyek_SioyekActivity_getRestOnPause(JNIEnv* env,
+              jobject obj)
+    {
+
+        Q_UNUSED(obj)
+        QString res = on_android_get_rest_on_pause();
+        std::string res_std = res.toStdString();
+        return env->NewStringUTF(res_std.c_str());
+    }
+
 }
 #endif
 
@@ -3639,33 +3784,43 @@ std::function<bool(const wchar_t&, const wchar_t&)> get_pred(SearchCaseSensitivi
 }
 
 std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_search_index,
-    const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
-    std::wstring query,
+    const std::vector<int>& page_begin_indices,
+    const std::wstring& query,
     SearchCaseSensitivity case_sensitive,
     int begin_page,
     int min_page,
     int max_page) {
 
     std::vector<SearchResult> output;
-
     std::vector<SearchResult> before_results;
+
+    if (min_page < 0) {
+        min_page = 0;
+    }
+
+    if (max_page > page_begin_indices.size() - 1) {
+        max_page = page_begin_indices.size() - 1;
+    }
+
+    int begin_index = page_begin_indices[min_page];
+    int end_index = max_page == page_begin_indices.size()-1? super_fast_search_index.size() : page_begin_indices[max_page+1];
     bool is_before = true;
 
-    //auto pred = case_sensitive == SearchCaseSensitivity::CaseSensitive ? pred_case_sensitive : pred_case_insensitive;
     auto pred = get_pred(case_sensitive, query);
     auto searcher = std::default_searcher(query.begin(), query.end(), pred);
     auto it = std::search(
-        super_fast_search_index.begin(),
-        super_fast_search_index.end(),
+        super_fast_search_index.begin() + begin_index,
+        super_fast_search_index.begin() + end_index,
         searcher);
+
+    int match_page = min_page;
 
     for (; it != super_fast_search_index.end(); it = std::search(it + 1, super_fast_search_index.end(), searcher)) {
         int start_index = it - super_fast_search_index.begin();
-        std::deque<fz_rect> match_rects;
-        std::vector<fz_rect> compressed_match_rects;
+        //std::deque<fz_rect> match_rects;
+        //std::vector<fz_rect> compressed_match_rects;
 
-        int match_page = super_fast_search_index_pages[start_index];
+        while ((match_page < page_begin_indices.size() - 1) && page_begin_indices[match_page + 1] < start_index) match_page++;
 
         if (match_page >= begin_page) {
             is_before = false;
@@ -3673,14 +3828,10 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
 
         int end_index = start_index + query.size();
 
-
-        for (int j = start_index; j < end_index; j++) {
-            fz_rect rect = super_fast_search_rects[j];
-            match_rects.push_back(rect);
-        }
-
-        merge_selected_character_rects(match_rects, compressed_match_rects);
-        SearchResult res{ compressed_match_rects, match_page };
+        SearchResult res;
+        res.page = match_page;
+        res.begin_index_in_page = start_index - page_begin_indices[match_page];
+        res.end_index_in_page = end_index - page_begin_indices[match_page];
 
         if (!((match_page < min_page) || (match_page > max_page))) {
             if (is_before) {
@@ -3691,78 +3842,28 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
             }
         }
     }
+
     output.insert(output.end(), before_results.begin(), before_results.end());
     return output;
-}
-
-void search_text_with_index_single_page(const std::wstring& super_fast_search_index,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
-    std::wstring query,
-    SearchCaseSensitivity case_sensitive,
-    int page_number,
-    std::vector<SearchResult>* output
-    ){
-
-    auto pred = get_pred(case_sensitive, query);
-    auto searcher = std::default_searcher(query.begin(), query.end(), pred);
-    auto it = std::search(
-        super_fast_search_index.begin(),
-        super_fast_search_index.end(),
-        searcher);
-
-    for (; it != super_fast_search_index.end(); it = std::search(it + 1, super_fast_search_index.end(), searcher)) {
-        int start_index = it - super_fast_search_index.begin();
-        std::deque<fz_rect> match_rects;
-        std::vector<fz_rect> compressed_match_rects;
-
-        int end_index = start_index + query.size();
-
-        for (int j = start_index; j < end_index; j++) {
-            fz_rect rect = super_fast_search_rects[j];
-            match_rects.push_back(rect);
-        }
-
-        merge_selected_character_rects(match_rects, compressed_match_rects);
-        SearchResult res{ compressed_match_rects, page_number };
-
-        output->push_back(res);
-    }
 
 }
+
 
 std::vector<SearchResult> search_regex_with_index(const std::wstring& super_fast_search_index,
-    const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
+    const std::vector<int>& page_begin_indices,
     std::wstring query,
     SearchCaseSensitivity case_sensitive,
     int begin_page,
     int min_page,
-    int max_page) {
-    std::vector<SearchResult> output;
-    search_regex_with_index_( super_fast_search_index,
-        super_fast_search_index_pages,
-        super_fast_search_rects,
-        query,
-        case_sensitive,
-        begin_page,
-        min_page,
-        max_page,
-        &output);
-    return output;
-}
-
-void search_regex_with_index_(const std::wstring& super_fast_search_index,
-    const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
-    std::wstring query,
-    SearchCaseSensitivity case_sensitive,
-    int begin_page,
-    int min_page,
-    int max_page,
-    std::vector<SearchResult>* output)
+    int max_page)
 {
 
+    std::vector<SearchResult> output;
+
     std::wregex regex;
+    if (min_page < 0) min_page = 0;
+    if (max_page > page_begin_indices.size() - 1) max_page = page_begin_indices.size() - 1;
+
     try {
         if (case_sensitive != SearchCaseSensitivity::CaseSensitive) {
             regex = std::wregex(query, std::regex_constants::icase);
@@ -3772,49 +3873,56 @@ void search_regex_with_index_(const std::wstring& super_fast_search_index,
         }
     }
     catch (const std::regex_error&) {
-        return;
+        return output;
     }
 
 
     std::vector<SearchResult> before_results;
     bool is_before = true;
 
-    int offset = 0;
+    int offset = page_begin_indices[min_page];
 
-    std::wstring::const_iterator search_start(super_fast_search_index.begin());
+    std::wstring::const_iterator search_start(super_fast_search_index.begin() + offset);
+
     std::wsmatch match;
     int empty_tolerance = 1000;
 
+
+    int match_page = min_page;
 
     while (std::regex_search(search_start, super_fast_search_index.cend(), match, regex)) {
         std::deque<fz_rect> match_rects;
         std::vector<fz_rect> compressed_match_rects;
 
-        int match_page = super_fast_search_index_pages[offset + match.position()];
+        //int match_page = super_fast_search_index_pages[offset + match.position()];
 
         if (match_page >= begin_page) {
             is_before = false;
         }
 
+        if (match_page > max_page) {
+            break;
+        }
+
         int start_index = offset + match.position();
         int end_index = offset + match.position() + match.length();
+
+        while ((match_page < page_begin_indices.size() - 1) && page_begin_indices[match_page + 1] < start_index) {
+            match_page++;
+        }
+
         if (start_index < end_index) {
-
-
-            for (int j = start_index; j < end_index; j++) {
-                fz_rect rect = super_fast_search_rects[j];
-                match_rects.push_back(rect);
-            }
-
-            merge_selected_character_rects(match_rects, compressed_match_rects);
-            SearchResult res{ compressed_match_rects, match_page };
+            SearchResult res;
+            res.page = match_page;
+            res.begin_index_in_page = start_index - page_begin_indices[match_page];
+            res.end_index_in_page = end_index - page_begin_indices[match_page];
 
             if (!((match_page < min_page) || (match_page > max_page))) {
                 if (is_before) {
                     before_results.push_back(res);
                 }
                 else {
-                    output->push_back(res);
+                    output.push_back(res);
                 }
             }
         }
@@ -3828,7 +3936,8 @@ void search_regex_with_index_(const std::wstring& super_fast_search_index,
         offset = end_index;
         search_start = match.suffix().first;
     }
-    output->insert(output->end(), before_results.begin(), before_results.end());
+    output.insert(output.end(), before_results.begin(), before_results.end());
+    return output;
 
 }
 
@@ -4002,3 +4111,120 @@ QString get_status_font_face_name() {
         return QString::fromStdWString(STATUS_FONT_FACE_NAME);
     }
 }
+
+
+QtTextToSpeechHandler::QtTextToSpeechHandler() {
+    tts = new QTextToSpeech();
+}
+
+QtTextToSpeechHandler::~QtTextToSpeechHandler() {
+    QObject::disconnect(tts, &QTextToSpeech::sayingWord, nullptr, nullptr);
+    QObject::disconnect(tts, &QTextToSpeech::stateChanged, nullptr, nullptr);
+    delete tts;
+}
+
+void QtTextToSpeechHandler::say(QString text) {
+    tts->say(text);
+}
+
+void QtTextToSpeechHandler::stop() {
+    tts->stop();
+}
+
+void QtTextToSpeechHandler::pause() {
+    tts->pause(QTextToSpeech::BoundaryHint::Immediate);
+}
+
+void QtTextToSpeechHandler::set_rate(float rate) {
+    tts->setRate(rate);
+}
+
+bool QtTextToSpeechHandler::is_pausable() {
+    return tts->engineCapabilities().testFlag(QTextToSpeech::Capability::PauseResume);
+}
+
+bool QtTextToSpeechHandler::is_word_by_word() {
+    return tts->engineCapabilities().testFlag(QTextToSpeech::Capability::WordByWordProgress);
+}
+
+void QtTextToSpeechHandler::set_word_callback(std::function<void(int, int)> callback) {
+    QObject::disconnect(tts, &QTextToSpeech::sayingWord, nullptr, nullptr);
+    word_callback = callback;
+
+    QObject::connect(tts, &QTextToSpeech::sayingWord, [&](const QString& word, qsizetype id, qsizetype start, qsizetype length) {
+        word_callback.value()(start, length);
+    });
+}
+
+void QtTextToSpeechHandler::set_state_change_callback(std::function<void(QString)> callback) {
+    QObject::disconnect(tts, &QTextToSpeech::stateChanged, nullptr, nullptr);
+    state_change_callback = callback;
+
+    QObject::connect(tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
+        QString new_state_string = QVariant::fromValue(state).toString();
+
+        state_change_callback.value()(new_state_string);
+    });
+}
+
+void QtTextToSpeechHandler::set_external_state_change_callback(std::function<void(QString)> callback) {
+}
+
+
+void QtTextToSpeechHandler::set_on_app_pause_callback(std::function<QString()>){
+
+}
+
+void QtTextToSpeechHandler::set_on_app_resume_callback(std::function<void(bool, bool, int)>){
+
+}
+
+#ifdef SIOYEK_ANDROID
+
+AndroidTextToSpeechHandler::AndroidTextToSpeechHandler() {
+}
+
+void AndroidTextToSpeechHandler::say(QString text) {
+    android_tts_say(text);
+}
+
+void AndroidTextToSpeechHandler::stop() {
+    android_tts_stop();
+}
+
+void AndroidTextToSpeechHandler::pause() {
+    android_tts_pause();
+}
+
+void AndroidTextToSpeechHandler::set_rate(float rate) {
+    android_tts_set_rate(std::pow(4.0f, rate));
+}
+
+bool AndroidTextToSpeechHandler::is_pausable() {
+    return true;
+}
+
+bool AndroidTextToSpeechHandler::is_word_by_word() {
+    return true;
+}
+
+void AndroidTextToSpeechHandler::set_word_callback(std::function<void(int, int)> callback) {
+    android_global_word_callback = callback;
+}
+
+void AndroidTextToSpeechHandler::set_state_change_callback(std::function<void(QString)> callback) {
+    android_global_state_change_callback = callback;
+}
+
+void AndroidTextToSpeechHandler::set_external_state_change_callback(std::function<void(QString)> callback) {
+    android_global_external_state_change_callback = callback;
+}
+
+void AndroidTextToSpeechHandler::set_on_app_pause_callback(std::function<QString()> callback){
+    android_global_on_android_app_pause_callback = callback;
+}
+
+void AndroidTextToSpeechHandler::set_on_app_resume_callback(std::function<void(bool, bool, int)> callback){
+    android_global_resume_state_callback = callback;
+}
+#endif

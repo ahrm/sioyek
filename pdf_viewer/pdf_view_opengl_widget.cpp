@@ -865,6 +865,10 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
     std::optional<SearchResult> result_ = set_search_result_offset(offset);
     if (result_) {
         SearchResult result = result_.value();
+
+        if (result.rects.size() == 0) {
+            result.fill(doc());
+        }
         float new_offset_y = result.rects.front().y0 + document_view->get_document()->get_accum_page_height(result.page);
         if (overview) {
             OverviewState state = { new_offset_y, 0, -1, nullptr };
@@ -1188,7 +1192,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
             disable_stencil();
         }
 
-        if (!document_view->is_presentation_mode() && (!in_overview)){
+        if (!document_view->is_presentation_mode() && (!in_overview) && (!document_view->is_two_page_mode())){
 
             // render page separator
             glUseProgram(shared_gl_objects.separator_program);
@@ -1406,7 +1410,9 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         int index = current_search_result_index;
         if (index == -1) index = 0;
 
-        SearchResult current_search_result = search_results[index];
+        SearchResult& current_search_result = search_results[index];
+        current_search_result.fill(doc());
+
         glUseProgram(shared_gl_objects.highlight_program);
         //glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
 
@@ -1419,7 +1425,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 0.3f);
             for (int visible_search_index : visible_search_indices) {
                 if (visible_search_index != current_search_result_index) {
-                    SearchResult res = search_results[visible_search_index];
+                    SearchResult& res = search_results[visible_search_index];
+                    res.fill(doc());
                     for (auto rect : res.rects) {
                         render_highlight_document(shared_gl_objects.highlight_program, DocumentRect { rect, res.page });
                     }

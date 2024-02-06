@@ -50,9 +50,9 @@ struct AbsoluteDocumentPos {
     // this is the concatenated y-coordinate of the current page (sum of all page heights up to current location)
     float y;
 
-    DocumentPos to_document(Document* doc);
-    NormalizedWindowPos to_window_normalized(DocumentView* document_view);
-    WindowPos to_window(DocumentView* document_view);
+    DocumentPos to_document(Document* doc) const;
+    NormalizedWindowPos to_window_normalized(DocumentView* document_view) const;
+    WindowPos to_window(DocumentView* document_view) const;
 };
 
 // normalized window coordinates. x and y are in the range [-1, 1]
@@ -187,7 +187,7 @@ struct NormalizedWindowRect : public EnhancedRect<fz_rect, NormalizedWindowPos> 
     NormalizedWindowRect();
 
 
-    bool is_visible();
+    bool is_visible(float tolerance=0.0f);
 };
 
 
@@ -337,3 +337,14 @@ AbsoluteDocumentPos operator-(const AbsoluteDocumentPos& lhs, const fvec2& rhs);
 DocumentPos operator+(const DocumentPos& lhs, const fvec2& rhs);
 NormalizedWindowPos operator+(const NormalizedWindowPos& lhs, const fvec2& rhs);
 WindowPos operator+(const WindowPos& lhs, const ivec2& rhs);
+
+struct VirtualPos {
+    float x;
+    float y;
+};
+
+VirtualPos operator+(const VirtualPos& lhs, const fvec2& rhs);
+
+VirtualPos operator-(const VirtualPos& lhs, const fvec2& rhs);
+
+using VirtualRect = EnhancedRect<fz_rect, VirtualPos>;

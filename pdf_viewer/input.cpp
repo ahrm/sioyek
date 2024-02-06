@@ -29,6 +29,9 @@ extern std::wstring SEARCH_URLS[26];
 extern bool ALPHABETIC_LINK_TAGS;
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
+extern float EPUB_WIDTH;
+extern float EPUB_HEIGHT;
+
 extern Path default_config_path;
 extern Path default_keys_path;
 extern std::vector<Path> user_config_paths;
@@ -42,8 +45,17 @@ extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 extern bool INCREMENTAL_SEARCH;
 
-bool is_command_string_modal(const std::string& command_name) {
+bool is_command_string_modal(const std::wstring& command_name) {
     return std::find(command_name.begin(), command_name.end(), '[') != command_name.end();
+}
+
+std::vector<std::string> parse_command_name(const QString& command_names) {
+    QStringList parts = command_names.split(';');
+    std::vector<std::string> res;
+    for (int i = 0; i < parts.size(); i++) {
+        res.push_back(parts.at(i).toStdString());
+    }
+    return res;
 }
 
 struct CommandInvocation {
@@ -77,6 +89,14 @@ Command::Command(MainWidget* widget_) : widget(widget_) {
 
 }
 
+bool Command::is_holdable() {
+    return false;
+}
+
+void Command::on_key_hold() {
+
+}
+
 bool Command::is_menu_command() {
     // returns true if the command is a macro designed to run only on menus (m)
     // we then ignore keys in menus if they are bound to such commands so they
@@ -90,6 +110,9 @@ Command::~Command() {
 
 std::optional<std::wstring> Command::get_text_suggestion(int index) {
     return {};
+}
+
+void Command::perform_up() {
 }
 
 void Command::set_result_socket(QLocalSocket* socket) {
@@ -2099,6 +2122,88 @@ public:
     bool requires_document() { return false; }
 };
 
+
+class MoveSmoothCommand : public Command {
+    bool was_held = false;
+public:
+    MoveSmoothCommand(MainWidget* w) : Command(w) {};
+
+    virtual bool is_down() = 0;
+
+    void perform() {
+        widget->handle_move_smooth_press(is_down());
+    }
+
+    void perform_up() {
+        if (was_held) widget->velocity_y = 0;
+    }
+
+    bool is_holdable() {
+        return true;
+    }
+
+    void on_key_hold() {
+        was_held = true;
+        widget->handle_move_smooth_hold(is_down());
+        widget->validate_render();
+    }
+};
+
+class MoveUpSmoothCommand : public MoveSmoothCommand {
+public:
+    MoveUpSmoothCommand(MainWidget* w) : MoveSmoothCommand(w) {};
+
+    bool is_down() {
+        return false;
+    }
+
+    std::string get_name() {
+        return "move_up_smooth";
+    }
+};
+
+class MoveDownSmoothCommand : public MoveSmoothCommand {
+public:
+    MoveDownSmoothCommand(MainWidget* w) : MoveSmoothCommand(w) {};
+
+    bool is_down() {
+        return true;
+    }
+
+    std::string get_name() {
+        return "move_down_smooth";
+    }
+};
+
+class ToggleTwoPageModeCommand : public Command {
+public:
+    ToggleTwoPageModeCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+        widget->handle_toggle_two_page_mode();
+    }
+
+    std::string get_name() {
+        return "toggle_two_page_mode";
+    }
+};
+
+class FitEpubToWindowCommand : public Command {
+public:
+    FitEpubToWindowCommand(MainWidget* w) : Command(w) {};
+
+    void perform() {
+
+        EPUB_WIDTH = widget->width() / widget->dv()->get_zoom_level();
+        EPUB_HEIGHT = widget->height() / widget->dv()->get_zoom_level();
+        widget->on_config_changed("epub_width");
+    }
+
+    std::string get_name() {
+        return "fit_epub_to_window";
+    }
+};
+
 class MoveDownCommand : public Command {
 public:
     MoveDownCommand(MainWidget* w) : Command(w) {};
@@ -2111,8 +2216,6 @@ public:
     std::string get_name() {
         return "move_down";
     }
-
-
 };
 
 class MoveUpCommand : public Command {
@@ -2357,7 +2460,6 @@ public:
     NextPageCommand(MainWidget* w) : Command(w) {};
     void perform() {
         widget->main_document_view->move_pages(std::max(1, num_repeats));
-        widget->validate_render();
     }
     std::string get_name() {
         return "next_page";
@@ -2370,7 +2472,6 @@ public:
     PreviousPageCommand(MainWidget* w) : Command(w) {};
     void perform() {
         widget->main_document_view->move_pages(std::min(-1, -num_repeats));
-        widget->validate_render();
     }
 
     std::string get_name() {
@@ -5571,6 +5672,34 @@ public:
         }
         else {
 
+
+            if (text.value().size() > 1) {
+                if (text.value().substr(0, 2) == L"+=" || text.value().substr(0, 2) == L"-=") {
+                    std::wstring config_name_encoded = utf8_decode(config_name);
+                    Config* config_mut = widget->config_manager->get_mut_config_with_name(config_name_encoded);
+                    ConfigType config_type = config_mut->config_type;
+
+                    if (config_type == ConfigType::Int) {
+                        int mult = text.value()[0] == '+' ? 1 : -1;
+                        int* config_ptr = (int*)config_mut->value;
+                        int prev_value = *config_ptr;
+                        int new_value = QString::fromStdWString(text.value()).right(text.value().size() - 2).toInt();
+                        *config_ptr += mult * new_value;
+                        widget->on_config_changed(config_name);
+                        return;
+                    }
+
+                    if (config_type == ConfigType::Float) {
+                        float mult = text.value()[0] == '+' ? 1 : -1;
+                        float* config_ptr = (float*)config_mut->value;
+                        float prev_value = *config_ptr;
+                        float new_value = QString::fromStdWString(text.value()).right(text.value().size() - 2).toFloat();
+                        *config_ptr += mult * new_value;
+                        widget->on_config_changed(config_name);
+                        return;
+                    }
+                }
+            }
             if (widget->config_manager->deserialize_config(config_name, text.value())) {
                 widget->on_config_changed(config_name);
             }
@@ -5584,7 +5713,6 @@ public:
 
     bool requires_document() { return false; }
 };
-
 
 
 
@@ -5755,6 +5883,7 @@ struct ParseState {
 
 
 };
+
 
 class MacroCommand : public Command {
     std::vector<std::unique_ptr<Command>> commands;
@@ -6115,6 +6244,61 @@ public:
 
 };
 
+class HoldableCommand : public Command {
+    std::unique_ptr<Command> down_command = {};
+    std::unique_ptr<Command> up_command = {};
+    std::unique_ptr<Command> hold_command = {};
+    std::string name;
+    CommandManager* command_manager;
+
+public:
+    HoldableCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(widget_) {
+        command_manager = manager;
+        name = name_;
+        QString str = QString::fromStdWString(commands_);
+        QStringList parts = str.split('|');
+        if (parts.size() == 2) {
+            down_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{down}", parts[0].toStdWString());
+            up_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{up}", parts[1].toStdWString());
+        }
+        else {
+            down_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{down}", parts[0].toStdWString());
+            hold_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{hold}", parts[1].toStdWString());
+            up_command = std::make_unique<MacroCommand>(widget, manager, name_ + "{up}", parts[2].toStdWString());
+        }
+    }
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        // holdable commands can't have requirements
+        return {};
+    }
+
+    bool requires_document() {
+        return true;
+    }
+
+    void perform() {
+        down_command->run();
+    }
+
+    void perform_up() {
+        up_command->run();
+    }
+
+    void on_key_hold() {
+        if (hold_command) {
+            hold_command->run();
+        }
+    }
+
+
+    bool is_holdable() {
+        return true;
+    }
+
+
+};
+
 CommandManager::CommandManager(ConfigManager* config_manager) {
 
     new_commands["goto_beginning"] = [](MainWidget* widget) {return std::make_unique< GotoBeginningCommand>(widget); };
@@ -6162,10 +6346,14 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
     new_commands["regex_search"] = [](MainWidget* widget) {return std::make_unique< RegexSearchCommand>(widget); };
     new_commands["chapter_search"] = [](MainWidget* widget) {return std::make_unique< ChapterSearchCommand>(widget); };
+    new_commands["toggle_two_page_mode"] = [](MainWidget* widget) {return std::make_unique< ToggleTwoPageModeCommand>(widget); };
+    new_commands["fit_epub_to_window"] = [](MainWidget* widget) {return std::make_unique< FitEpubToWindowCommand>(widget); };
     new_commands["move_down"] = [](MainWidget* widget) {return std::make_unique< MoveDownCommand>(widget); };
     new_commands["move_up"] = [](MainWidget* widget) {return std::make_unique< MoveUpCommand>(widget); };
     new_commands["move_left"] = [](MainWidget* widget) {return std::make_unique< MoveLeftCommand>(widget); };
     new_commands["move_right"] = [](MainWidget* widget) {return std::make_unique< MoveRightCommand>(widget); };
+    new_commands["move_down_smooth"] = [](MainWidget* widget) {return std::make_unique< MoveDownSmoothCommand>(widget); };
+    new_commands["move_up_smooth"] = [](MainWidget* widget) {return std::make_unique< MoveUpSmoothCommand>(widget); };
     new_commands["move_left_in_overview"] = [](MainWidget* widget) {return std::make_unique< MoveLeftInOverviewCommand>(widget); };
     new_commands["move_right_in_overview"] = [](MainWidget* widget) {return std::make_unique< MoveRightInOverviewCommand>(widget); };
     new_commands["save_scratchpad"] = [](MainWidget* widget) {return std::make_unique< SaveScratchpadCommand>(widget); };
@@ -6371,6 +6559,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     //new_commands["stop_search"] = [](MainWidget* widget) {return std::make_unique< StopSearchCommand>(widget); };
 
 //#ifdef _DEBUG
+    //HoldableCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(widget_) {
     new_commands["debug"] = [](MainWidget* widget) {return std::make_unique< DebugCommand>(widget); };
     new_commands["export_python_api"] = [](MainWidget* widget) {return std::make_unique< ExportPythonApiCommand>(widget); };
     new_commands["export_default_config_file"] = [](MainWidget* widget) {return std::make_unique< ExportDefaultConfigFile>(widget); };
@@ -6816,7 +7005,7 @@ InputParseTreeNode* parse_lines(
     InputParseTreeNode* root,
     CommandManager* command_manager,
     const std::vector<std::wstring>& lines,
-    const std::vector<std::vector<std::string>>& command_names,
+    const std::vector<std::wstring>& command_strings,
     const std::vector<std::wstring>& command_file_names,
     const std::vector<int>& command_line_numbers
 ) {
@@ -6846,7 +7035,7 @@ InputParseTreeNode* parse_lines(
                         LOG(std::wcerr
                             << L"Warning: key defined in " << command_file_names[j]
                             << L":" << command_line_numbers[j]
-                            << L" for " << utf8_decode(command_names[j][0])
+                            << L" for " << command_strings[j]
                             << L" is unreachable, shadowed by final key sequence defined in "
                             << parent_node->defining_file_path
                             << L":" << parent_node->defining_file_line << L"\n");
@@ -6872,8 +7061,8 @@ InputParseTreeNode* parse_lines(
             else if (((size_t)i == (tokens.size() - 1)) &&
                 (SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE ||
                     (command_file_names[j].compare(parent_node->defining_file_path)) == 0)) {
-                if ((parent_node->name_.size() == 0) || parent_node->name_[0].compare(command_names[j][0]) != 0) {
-                    if (!is_command_string_modal(command_names[j][0])) {
+                if ((parent_node->name_.size() == 0) || parent_node->name_[0].compare(utf8_encode(command_strings[j])) != 0) {
+                    if (!is_command_string_modal(command_strings[j])) {
 
                         std::wcerr << L"Warning: key defined in " << parent_node->defining_file_path
                             << L":" << parent_node->defining_file_line
@@ -6882,7 +7071,7 @@ InputParseTreeNode* parse_lines(
                         if (parent_node->name_.size() > 0) {
                             std::wcerr << L". Overriding command: " << line
                                 << L": replacing " << utf8_decode(parent_node->name_[0])
-                                << L" with " << utf8_decode(command_names[j][0]);
+                                << L" with " << command_strings[j];
                         }
                         std::wcerr << L"\n";
                     }
@@ -6890,30 +7079,43 @@ InputParseTreeNode* parse_lines(
             }
             if ((size_t)i == (tokens.size() - 1)) {
                 parent_node->is_final = true;
+
+                QString command_name_qstr = QString::fromStdWString(command_strings[j]);
+                std::vector<std::string> command_names = parse_command_name(command_name_qstr);
                 std::vector<std::string> previous_names = std::move(parent_node->name_);
                 parent_node->name_ = {};
                 parent_node->defining_file_line = command_line_numbers[j];
                 parent_node->defining_file_path = command_file_names[j];
-                for (size_t k = 0; k < command_names[j].size(); k++) {
-                    parent_node->name_.push_back(command_names[j][k]);
+                for (size_t k = 0; k < command_names.size(); k++) {
+                    parent_node->name_.push_back(command_names[k]);
                 }
-                if (command_names[j].size() == 1 && (command_names[j][0].find("[") == -1) && (command_names[j][0].find("(") == -1)) {
-                    if (command_manager->new_commands.find(command_names[j][0]) != command_manager->new_commands.end()) {
-                        parent_node->generator = command_manager->new_commands[command_names[j][0]];
+                if (command_name_qstr.startsWith("{holdable}")) {
+                    if (command_name_qstr.indexOf("|") == -1) {
+                        qDebug() << "Error in " << command_file_names[j] << ":" << command_line_numbers[j] << ": holdable command " << command_name_qstr << " does not contain a | character";
                     }
                     else {
-                        std::wcerr << L"Warning: command " << utf8_decode(command_names[j][0]) << L" used in " << parent_node->defining_file_path
+                        std::wstring actual_command = command_name_qstr.mid(10).toStdWString();
+                        parent_node->generator = [command_manager, actual_command](MainWidget* w) {return std::make_unique<HoldableCommand>(
+                            w, command_manager, "", actual_command); };
+                    }
+                }
+                else if (command_names.size() == 1 && (command_names[0].find("[") == -1) && (command_names[0].find("(") == -1)) {
+                    if (command_manager->new_commands.find(command_names[0]) != command_manager->new_commands.end()) {
+                        parent_node->generator = command_manager->new_commands[command_names[0]];
+                    }
+                    else {
+                        std::wcerr << L"Warning: command " << utf8_decode(command_names[0]) << L" used in " << parent_node->defining_file_path
                             << L":" << parent_node->defining_file_line << L" not found.\n";
                     }
                 }
                 else {
                     QStringList command_parts;
-                    for (int k = 0; k < command_names[j].size(); k++) {
-                        command_parts.append(QString::fromStdString(command_names[j][k]));
+                    for (int k = 0; k < command_names.size(); k++) {
+                        command_parts.append(QString::fromStdString(command_names[k]));
                     }
 
                     // is the command incomplete and should be appended to previous command instead of replacing it?
-                    if (is_command_incomplete_macro(command_names[j])) {
+                    if (is_command_incomplete_macro(command_names)) {
                         for (int k = 0; k < previous_names.size(); k++) {
                             command_parts.append(QString::fromStdString(previous_names[k]));
                             parent_node->name_.push_back(previous_names[k]);
@@ -6927,7 +7129,7 @@ InputParseTreeNode* parse_lines(
             }
             else {
                 if (SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE && parent_node->is_final && (parent_node->name_.size() > 0)) {
-                    std::wcerr << L"Warning: unmapping " << utf8_decode(parent_node->name_[0]) << L" because of " << utf8_decode(command_names[j][0]) << L" which uses " << line << L"\n";
+                    std::wcerr << L"Warning: unmapping " << utf8_decode(parent_node->name_[0]) << L" because of " << command_strings[j] << L" which uses " << line << L"\n";
                 }
                 parent_node->is_final = false;
             }
@@ -6941,7 +7143,7 @@ InputParseTreeNode* parse_lines(
 InputParseTreeNode* parse_lines(
     CommandManager* command_manager,
     const std::vector<std::wstring>& lines,
-    const std::vector<std::vector<std::string>>& command_names,
+    const std::vector<std::wstring>& command_names,
     const std::vector<std::wstring>& command_file_names,
     const std::vector<int>& command_line_numbers
 ) {
@@ -6956,17 +7158,9 @@ InputParseTreeNode* parse_lines(
 
 }
 
-std::vector<std::string> parse_command_name(const std::wstring& command_names) {
-    QStringList parts = QString::fromStdWString(command_names).split(';');
-    std::vector<std::string> res;
-    for (int i = 0; i < parts.size(); i++) {
-        res.push_back(parts.at(i).toStdString());
-    }
-    return res;
-}
 
 void get_keys_file_lines(const Path& file_path,
-    std::vector<std::vector<std::string>>& command_names,
+    std::vector<std::wstring>& command_strings,
     std::vector<std::wstring>& command_keys,
     std::vector<std::wstring>& command_files,
     std::vector<int>& command_line_numbers) {
@@ -6993,7 +7187,7 @@ void get_keys_file_lines(const Path& file_path,
             std::wstring command_name = line_string.left(last_space_index).trimmed().toStdWString();
             std::wstring command_key = line_string.right(line_string.size() - last_space_index - 1).trimmed().toStdWString();
             
-            command_names.push_back(parse_command_name(command_name));
+            command_strings.push_back(command_name);
             command_keys.push_back(command_key);
             command_files.push_back(default_path_name);
             command_line_numbers.push_back(line_number);
@@ -7008,14 +7202,14 @@ InputParseTreeNode* parse_key_config_files(CommandManager* command_manager, cons
 
     std::wifstream default_infile = open_wifstream(default_path.get_path());
 
-    std::vector<std::vector<std::string>> command_names;
+    std::vector<std::wstring> command_strings;
     std::vector<std::wstring> command_keys;
     std::vector<std::wstring> command_files;
     std::vector<int> command_line_numbers;
 
-    get_keys_file_lines(default_path, command_names, command_keys, command_files, command_line_numbers);
+    get_keys_file_lines(default_path, command_strings, command_keys, command_files, command_line_numbers);
     for (auto upath : user_paths) {
-        get_keys_file_lines(upath, command_names, command_keys, command_files, command_line_numbers);
+        get_keys_file_lines(upath, command_strings, command_keys, command_files, command_line_numbers);
     }
 
     for (auto additional_keymap : ADDITIONAL_KEYMAPS) {
@@ -7023,13 +7217,13 @@ InputParseTreeNode* parse_key_config_files(CommandManager* command_manager, cons
         int last_space_index = keymap_string.lastIndexOf(' ');
         std::wstring command_name = keymap_string.left(last_space_index).toStdWString();
         std::wstring mapping = keymap_string.right(keymap_string.size() - last_space_index - 1).toStdWString();
-        command_names.push_back(parse_command_name(command_name));
+        command_strings.push_back(command_name);
         command_keys.push_back(mapping);
         command_files.push_back(additional_keymap.file_name);
         command_line_numbers.push_back(additional_keymap.line_number);
     }
 
-    return parse_lines(command_manager, command_keys, command_names, command_files, command_line_numbers);
+    return parse_lines(command_manager, command_keys, command_strings, command_files, command_line_numbers);
 }
 
 
@@ -7344,6 +7538,7 @@ void Command::run() {
     }
     widget->add_command_being_performed(this);
     perform();
+    widget->validate_render();
     on_result_computed();
     widget->remove_command_being_performed(this);
 }

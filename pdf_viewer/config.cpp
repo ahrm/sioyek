@@ -121,6 +121,8 @@ extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool ALIGN_LINK_DEST_TO_TOP;
 extern float MENU_SCREEN_WDITH_RATIO;
+extern float PAGE_SPACE_X;
+extern float PAGE_SPACE_Y;
 
 extern std::wstring RESIZE_COMMAND;
 extern std::wstring SHIFT_CLICK_COMMAND;
@@ -204,6 +206,9 @@ extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
 extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
+
+extern float SMOOTH_MOVE_MAX_VELOCITY;
+extern float SMOOTH_MOVE_INITIAL_VELOCITY;
 
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
@@ -1757,6 +1762,24 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
+        L"page_space_x",
+        ConfigType::Bool,
+        &PAGE_SPACE_X,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.0f, 100.0f}
+        });
+    configs.push_back({
+        L"page_space_y",
+        ConfigType::Bool,
+        &PAGE_SPACE_Y,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.0f, 100.0f}
+        });
+    configs.push_back({
         L"menu_screen_width_ratio",
         ConfigType::Bool,
         &MENU_SCREEN_WDITH_RATIO,
@@ -2182,6 +2205,24 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         float_deserializer,
         nullptr,
         FloatExtras{-1.0f, 1.0f}
+        });
+    configs.push_back({
+        L"smooth_move_max_velocity",
+        ConfigType::Float,
+        &SMOOTH_MOVE_MAX_VELOCITY,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.0f, 100000.0f}
+        });
+    configs.push_back({
+        L"smooth_move_initial_velocity",
+        ConfigType::Float,
+        &SMOOTH_MOVE_INITIAL_VELOCITY,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.0f, 100000.0f}
         });
     configs.push_back({
         L"epub_width",

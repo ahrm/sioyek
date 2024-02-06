@@ -55,6 +55,11 @@ public:
     CharacterIterator end() const;
 };
 
+struct CachedPageIndex {
+    std::wstring text;
+    std::vector<PagelessDocumentRect> rects;
+};
+
 class Document {
 
 private:
@@ -82,14 +87,15 @@ private:
     std::vector<int> flat_toc_pages;
     std::map<int, std::vector<AbsoluteRect>> cached_page_line_rects;
     std::map<int, std::vector<std::wstring>> cached_line_texts;
+    std::deque<std::pair<int, CachedPageIndex>> cached_page_index;
 
     bool super_fast_search_index_ready = false;
     // super fast index is the concatenated text of all pages along with two lists which map the
     // characters to pages and rects of those characters this index is built only if the 
     // super_fast_search config option is enabled
+
     std::wstring super_fast_search_index;
-    std::vector<int> super_fast_search_index_pages;
-    std::vector<PagelessDocumentRect> super_fast_search_rects;
+    std::vector<int> super_fast_page_begin_indices;
 
     // DEPRECATED a page offset which could manually be set to make the page numbers correct
     // on PDF files with page numbers that start at a number other than 1. This is now
@@ -165,11 +171,12 @@ public:
     std::wstring detected_paper_name = L"";
 
     PageIterator page_iterator(int page_number);
-    void get_page_text_and_line_rects_after_rect(int page_number,
+    int get_page_text_and_line_rects_after_rect(int page_number,
         AbsoluteRect after,
         std::wstring& text,
         std::vector<PagelessDocumentRect>& line_rects,
         std::vector<PagelessDocumentRect>& char_rects);
+
     void load_document_metadata_from_db();
     std::string add_bookmark(const std::wstring& desc, float y_offset);
     std::string add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
@@ -188,6 +195,11 @@ public:
     void set_should_render_pdf_annotations(bool val);
     bool get_should_render_pdf_annotations();
     std::vector<Portal> get_intersecting_visible_portals(float absrange_begin, float absrange_end);
+    CachedPageIndex& get_page_index(int page);
+    void fill_search_result(SearchResult* result);
+    QString get_rest_of_document_pages_text(int from);
+    int get_page_offset_into_super_fast_index(int from);
+    int get_page_from_character_offset(int offset);
 
     void fill_highlight_rects(fz_context* ctx, fz_document* doc);
     void fill_index_highlight_rects(int highlight_index, fz_context* thread_context = nullptr, fz_document* thread_document = nullptr);

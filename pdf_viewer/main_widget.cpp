@@ -14,6 +14,7 @@
 // moving exits show link mode
 // test exact highlight select after saving and reloading the document
 // embedded documents don't respect exact highlight select
+// check if the widget being popped is audio controsl and if it is paused, hide the notification, (also do this when stop button is pressed)
 
 #include <iostream>
 #include <vector>
@@ -191,9 +192,12 @@ extern std::wstring VOLUME_DOWN_COMMAND;
 extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
 extern ScratchPad global_scratchpad;
+extern int NUM_CACHED_PAGES;
 
 extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
+extern float SMOOTH_MOVE_MAX_VELOCITY;
+extern float SMOOTH_MOVE_INITIAL_VELOCITY;
 
 extern std::wstring RIGHT_CLICK_COMMAND;
 extern std::wstring MIDDLE_CLICK_COMMAND;
@@ -214,6 +218,8 @@ extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
 extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
+extern float PAGE_SPACE_X;
+extern float PAGE_SPACE_Y;
 
 extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
@@ -246,6 +252,7 @@ const int MAX_SCROLLBAR = 10000;
 extern int RELOAD_INTERVAL_MILISECONDS;
 
 const unsigned int INTERVAL_TIME = 200;
+
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -422,6 +429,7 @@ public:
         (is_begin ? &begin_icon : &end_icon)->paint(&painter, rect());
     }
 };
+
 
 void MainWidget::resizeEvent(QResizeEvent* resize_event) {
     QWidget::resizeEvent(resize_event);
@@ -694,11 +702,17 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         }
         if (!ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL) {
             float current_page_width = doc()->get_page_width(get_current_page_number());
+
+            if (dv()->is_two_page_mode()) {
+                current_page_width += current_page_width + PAGE_SPACE_X;
+            }
+
             if ((current_page_width > 0) && ((dv()->get_zoom_level() * current_page_width) < width())) {
                 diff_doc.values[0] = 0;
             }
         }
-        dv()->set_pos(last_mouse_down_document_offset + diff_doc);
+        //dv()->set_pos(last_mouse_down_document_offset + diff_doc);
+        dv()->set_virtual_pos(last_mouse_down_document_virtual_offset + diff_doc);
 
         validate_render();
     }
@@ -782,6 +796,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
     pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
+    pdf_renderer->set_num_cached_pages(NUM_CACHED_PAGES);
     pdf_renderer->start_threads();
 
 
@@ -1161,6 +1176,10 @@ MainWidget::~MainWidget() {
         pdf_renderer->join_threads();
     }
 
+    if (tts) {
+        delete tts;
+    }
+
     // todo: use a reference counting pointer for document so we can delete main_doc
     // and helper_doc in DocumentView's destructor, not here.
     // ideally this function should just become:
@@ -1458,11 +1477,11 @@ void MainWidget::keyPressEvent(QKeyEvent* kevent) {
             }
         }
     }
-    key_event(false, kevent);
+    key_event(false, kevent, kevent->isAutoRepeat());
 }
 
 void MainWidget::keyReleaseEvent(QKeyEvent* kevent) {
-    key_event(true, kevent);
+    key_event(true, kevent, kevent->isAutoRepeat());
 }
 
 void MainWidget::validate_render() {
@@ -1501,7 +1520,7 @@ void MainWidget::validate_render() {
             last_speed_update_time = QTime::currentTime();
         }
     }
-    if (TOUCH_MODE && is_moving()) {
+    if (is_moving()) {
         auto current_time = QTime::currentTime();
         float secs = current_time.msecsTo(last_speed_update_time) / 1000.0f;
         float move_x = secs * velocity_x;
@@ -1513,6 +1532,13 @@ void MainWidget::validate_render() {
 
         velocity_x = dampen_velocity(velocity_x, secs);
         velocity_y = dampen_velocity(velocity_y, secs);
+
+        if (!TOUCH_MODE) {
+            // when using smooth_move commands not in touch mode we stop much faster
+            velocity_x = dampen_velocity(velocity_x, secs);
+            velocity_y = dampen_velocity(velocity_y, secs);
+        }
+
         if (!is_moving()) {
             validation_interval_timer->setInterval(INTERVAL_TIME);
         }
@@ -1577,7 +1603,7 @@ void MainWidget::validate_render() {
     if (smooth_scroll_mode && (smooth_scroll_speed != 0)) {
         is_render_invalidated = true;
     }
-    if (TOUCH_MODE && is_moving()) {
+    if (is_moving()) {
         is_render_invalidated = true;
     }
 }
@@ -1888,9 +1914,11 @@ bool MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int 
 
 }
 
-void MainWidget::key_event(bool released, QKeyEvent* kevent) {
-    validate_render();
+void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat) {
 
+    if (released && (!is_auto_repeat)) {
+        set_last_performed_command({});
+    }
     if (typing_location.has_value()) {
 
         if (released == false) {
@@ -1978,6 +2006,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
                 pending_command_instance->set_symbol_requirement(symb);
                 advance_command(std::move(pending_command_instance));
             }
+            validate_render();
             return;
         }
         int num_repeats = 0;
@@ -1990,7 +2019,13 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent) {
             &num_repeats);
 
         if (commands) {
-            handle_command_types(std::move(commands), num_repeats);
+            if (last_performed_command && last_performed_command->is_holdable() && commands->get_name() == last_performed_command->get_name()) {
+                last_performed_command->on_key_hold();
+            }
+            else {
+                handle_command_types(std::move(commands), num_repeats);
+                validate_render();
+            }
         }
         //for (auto& command : commands) {
         //    handle_command_types(std::move(command), num_repeats);
@@ -2257,7 +2292,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
         //last_mouse_down_x = x_;
         //last_mouse_down_y = y_;
         last_mouse_down_window_pos = click_pos;
-        last_mouse_down_document_offset = dv()->get_offsets();
+        last_mouse_down_document_virtual_offset = dv()->get_virtual_offset();
 
         //last_mouse_down_window_x = x;
         //last_mouse_down_window_y = y;
@@ -2808,7 +2843,7 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
         last_middle_down_time = QTime::currentTime();
         middle_click_hold_command_already_executed = false;
         last_mouse_down_window_pos = WindowPos{ mevent->pos().x(), mevent->pos().y() };
-        last_mouse_down_document_offset = dv()->get_offsets();
+        last_mouse_down_document_virtual_offset = dv()->get_virtual_offset();
 
         AbsoluteDocumentPos abs_mpos = dv()->window_to_absolute_document_pos(last_mouse_down_window_pos);
         if ((!bookmark_move_data.has_value()) && (!portal_move_data.has_value())) {
@@ -3115,7 +3150,7 @@ DocumentPos MainWidget::get_document_pos_under_window_pos(WindowPos window_pos) 
         return opengl_widget->window_pos_to_overview_pos(normal_pos);
     }
     else {
-        return main_document_view->window_to_document_pos_uncentered(window_pos);
+        return main_document_view->window_to_document_pos(window_pos);
     }
 }
 
@@ -3139,7 +3174,7 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_cursor(bool use_las
         return main_document_view->get_document()->get_paper_name_at_position(docpos);
     }
     else {
-        DocumentPos doc_pos = main_document_view->window_to_document_pos_uncentered(window_pos);
+        DocumentPos doc_pos = main_document_view->window_to_document_pos(window_pos);
         return get_direct_paper_name_under_pos(doc_pos);
     }
 }
@@ -3165,7 +3200,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
         return;
     }
 
-    auto docpos = main_document_view->window_to_document_pos_uncentered(pos);
+    auto docpos = main_document_view->window_to_document_pos(pos);
 
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(docpos.page);
     std::vector<fz_stext_char*> flat_chars;
@@ -3187,7 +3222,7 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
 void MainWidget::visual_mark_under_pos(WindowPos pos) {
     //float doc_x, doc_y;
     //int page;
-    DocumentPos document_pos = main_document_view->window_to_document_pos_uncentered(pos);
+    DocumentPos document_pos = main_document_view->window_to_document_pos(pos);
     if (document_pos.page != -1) {
         //opengl_widget->set_should_draw_vertical_line(true);
         fz_pixmap* pixmap = main_document_view->get_document()->get_small_pixmap(document_pos.page);
@@ -3258,7 +3293,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
         }
     }
 
-    DocumentPos docpos = main_document_view->window_to_document_pos_uncentered(pos);
+    DocumentPos docpos = main_document_view->window_to_document_pos(pos);
 
     TextUnderPointerInfo reference_info = find_location_of_text_under_pointer(docpos, true);
     if (reference_info.reference_type != ReferenceType::None) {
@@ -3445,7 +3480,13 @@ void MainWidget::push_current_widget(QWidget* new_widget) {
 }
 
 void MainWidget::pop_current_widget(bool canceled) {
+
     if (current_widget_stack.size() > 0) {
+        // if (dynamic_cast<AudioUI*>(current_widget_stack.back())){
+        //     if (!is_reading){
+        //         stop_tts_service();
+        //     }
+        // }
         current_widget_stack.back()->hide();
         current_widget_stack.back()->deleteLater();
         current_widget_stack.pop_back();
@@ -3554,7 +3595,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
 
         QPoint mouse_pos_ = mapFromGlobal(cursor_pos());
         WindowPos mouse_pos = { mouse_pos_.x(), mouse_pos_.y() };
-        DocumentPos mouse_pos_document = main_document_view->window_to_document_pos_uncentered(mouse_pos);
+        DocumentPos mouse_pos_document = main_document_view->window_to_document_pos(mouse_pos);
 
         for (int i = 0; i < command_parts.size(); i++) {
             // lagacy number macros, now replaced with names ones
@@ -4989,7 +5030,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
                 }
                 //*result = new_command->get_result()
             }
-            //pending_command_instance = nullptr;
+            set_last_performed_command(std::move(new_command));
         }
         else {
             pending_command_instance = std::move(new_command);
@@ -6114,7 +6155,7 @@ void MainWidget::handle_mobile_selection() {
     fz_stext_char* character_under = get_closest_character_to_cusrsor(last_hold_point);
 
     WindowPos last_hold_point_window_pos = { last_hold_point.x(), last_hold_point.y() };
-    DocumentPos last_hold_point_document_pos = main_document_view->window_to_document_pos_uncentered(last_hold_point_window_pos);
+    DocumentPos last_hold_point_document_pos = main_document_view->window_to_document_pos(last_hold_point_window_pos);
 
     if (character_under) {
         int current_page = last_hold_point_document_pos.page;
@@ -6797,18 +6838,18 @@ void MainWidget::read_current_line() {
 
     int page_number  = main_document_view->get_vertical_line_page();
     AbsoluteRect ruler_rect = main_document_view->get_ruler_rect().value_or(fz_empty_rect);
-    doc()->get_page_text_and_line_rects_after_rect(
+    int index_into_page = doc()->get_page_text_and_line_rects_after_rect(
         page_number,
         ruler_rect,
         tts_text,
         tts_corresponding_line_rects,
         tts_corresponding_char_rects);
 
-    fz_stext_page* stext_page = doc()->get_stext_with_page_number(page_number);
-    std::vector<fz_stext_char*> flat_chars;
-    get_flat_chars_from_stext_page(stext_page, flat_chars, true);
+    //fz_stext_page* stext_page = doc()->get_stext_with_page_number(page_number);
+    //std::vector<fz_stext_char*> flat_chars;
+    //get_flat_chars_from_stext_page(stext_page, flat_chars, true);
 
-    get_tts()->setRate(TTS_RATE);
+    get_tts()->set_rate(TTS_RATE);
     if (word_by_word_reading) {
         if (tts_text.size() > 0) {
             get_tts()->say(QString::fromStdWString(tts_text));
@@ -6819,14 +6860,19 @@ void MainWidget::read_current_line() {
         tts_is_about_to_finish = true;
     }
 
+    last_page_read = page_number;
+    last_index_into_page_read = index_into_page;
+
     is_reading = true;
 }
 
 void MainWidget::handle_start_reading() {
+
     is_reading = true;
     read_current_line();
     if (TOUCH_MODE) {
-        set_current_widget(new AudioUI(this));
+        AudioUI * audio_ui_widget = new AudioUI(this);
+        set_current_widget(audio_ui_widget);
         show_current_widget();
     }
 }
@@ -6834,14 +6880,7 @@ void MainWidget::handle_start_reading() {
 void MainWidget::handle_stop_reading() {
     is_reading = false;
 
-    if (word_by_word_reading) {
-        // we should be able to just call stop() but at the time of this
-        // commit calling stop on a sapi tts object crashes
-        get_tts()->pause();
-    }
-    else {
-        get_tts()->stop();
-    }
+    get_tts()->stop();
 
     if (TOUCH_MODE) {
         pop_current_widget();
@@ -6871,7 +6910,7 @@ void MainWidget::handle_play() {
 
 void MainWidget::handle_pause() {
     is_reading = false;
-    get_tts()->pause(QTextToSpeech::BoundaryHint::Immediate);
+    get_tts()->pause();
 }
 bool MainWidget::should_show_status_label() {
     float prog;
@@ -6977,6 +7016,9 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         }
         if (QString::fromStdString((*config_names)[i]) == "gamma") {
             should_invalidate_render = true;
+        }
+        if (QString::fromStdString((*config_names)[i]).startsWith("page_space")) {
+            main_document_view->fill_cached_virtual_rects(true);
         }
     }
     if (should_reflow) {
@@ -7674,11 +7716,11 @@ void MainWidget::handle_command_text_change(const QString& new_text) {
     if (pending_command_instance) {
         if ((pending_command_instance->get_name() == "edit_selected_bookmark") || (pending_command_instance->get_name() == "add_freetext_bookmark")) {
             doc()->get_bookmarks()[selected_bookmark_index].description = new_text.toStdWString();
-            validate_render();
         }
         if (INCREMENTAL_SEARCH && pending_command_instance->get_name() == "search" && doc()->is_super_fast_index_ready()) {
             perform_search(new_text.toStdWString(), false, true);
         }
+        validate_render();
     }
 }
 
@@ -7692,23 +7734,27 @@ void MainWidget::update_selected_bookmark_font_size() {
     }
 }
 
-QTextToSpeech* MainWidget::get_tts() {
+TextToSpeechHandler* MainWidget::get_tts() {
     if (tts) return tts;
 
-    tts = new QTextToSpeech(this);
+#ifdef SIOYEK_ANDROID
+    tts = new AndroidTextToSpeechHandler();
+#else
+    tts = new QtTextToSpeechHandler();
+#endif
 
 
     //void sayingWord(const QString &word, qsizetype id, qsizetype start, qsizetype length);
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
 
-    tts_has_pause_resume_capability = tts->engineCapabilities().testFlag(QTextToSpeech::Capability::PauseResume);
-    if (tts->engineCapabilities().testFlag(QTextToSpeech::Capability::WordByWordProgress)) {
+    tts_has_pause_resume_capability = tts->is_pausable();
+    if (tts->is_word_by_word()) {
         word_by_word_reading = true;
     }
     
     //void aboutToSynthesize(qsizetype id);
-    QObject::connect(tts, &QTextToSpeech::sayingWord, [&](const QString& word, qsizetype id, qsizetype start, qsizetype length) {
+    tts->set_word_callback([&](int start, int length) {
         if (is_reading) {
             if (start >= tts_corresponding_line_rects.size()) return;
 
@@ -7741,7 +7787,7 @@ QTextToSpeech* MainWidget::get_tts() {
 
                 invalidate_render();
             }
-                
+
 
             if ((tts_text.size() - end) <= 5) {
                 tts_is_about_to_finish = true;
@@ -7750,8 +7796,9 @@ QTextToSpeech* MainWidget::get_tts() {
         }
         });
 
-    QObject::connect(tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
-        if ((state == QTextToSpeech::Ready) || (state == QTextToSpeech::Error)) {
+
+    tts->set_state_change_callback([&](QString state) {
+        if ((state == "Ready") || (state == "Error")) {
             if (is_reading && tts_is_about_to_finish) {
                 tts_is_about_to_finish = false;
                 move_visual_mark(1);
@@ -7759,6 +7806,54 @@ QTextToSpeech* MainWidget::get_tts() {
             }
         }
         });
+
+    tts->set_external_state_change_callback([&](QString state){
+        ensure_player_state_(state);
+    });
+
+    tts->set_on_app_pause_callback([&](){
+
+        bool is_audio_ui_visible = false;
+        if (current_widget_stack.size() > 0){
+            AudioUI* audio_ui = dynamic_cast<AudioUI*>(current_widget_stack.back());
+            if (audio_ui){
+                is_audio_ui_visible = true;
+            }
+        }
+
+        if (is_reading || is_audio_ui_visible) {
+            return get_rest_of_document_pages_text();
+        }
+        else{
+            return QString("");
+        }
+    });
+
+    tts->set_on_app_resume_callback([&](bool is_playing, bool is_on_rest, int offset){
+
+        if (is_reading && (is_playing == false)){
+            is_reading = false;
+        }
+
+        if (is_playing){
+            ensure_player_state("Ended");
+
+            handle_stop_reading();
+
+            if (is_on_rest) {
+                int last_page = last_pause_rest_of_document_page;
+                int last_page_offset = doc()->get_page_offset_into_super_fast_index(last_page);
+                int current_offset_in_document = last_page_offset + offset;
+                focus_on_character_offset_into_document(current_offset_in_document);
+            }
+            else {
+                int last_page = last_page_read;
+                int last_page_offset = doc()->get_page_offset_into_super_fast_index(last_page);
+                int current_offset_into_document = last_page_offset + last_index_into_page_read + offset;
+                focus_on_character_offset_into_document(current_offset_into_document);
+            }
+        }
+    });
 
 #else
     QObject::connect(tts, &QTextToSpeech::stateChanged, [&](QTextToSpeech::State state) {
@@ -9159,7 +9254,9 @@ void MainWidget::handle_fit_to_page_width(bool smart) {
 
     if (smart) {
         int current_page = get_current_page_number();
-        last_smart_fit_page = current_page;
+        if (!main_document_view->is_two_page_mode()) {
+            last_smart_fit_page = current_page;
+        }
     }
     else {
         last_smart_fit_page = {};
@@ -9879,4 +9976,110 @@ bool MainWidget::is_menu_focused() {
         return true;
     }
     return false;
+}
+
+
+void MainWidget::ensure_player_state(QString state) {
+    if (current_widget_stack.size() > 0) {
+        AudioUI* audio_ui = dynamic_cast<AudioUI*>(current_widget_stack.back());
+        if (audio_ui) {
+            if (state == "Ready") {
+                audio_ui->buttons->set_playing();
+                is_reading = true;
+            }
+            if (state == "Ended") {
+                audio_ui->buttons->set_paused();
+                is_reading = false;
+            }
+        }
+    }
+}
+
+void MainWidget::ensure_player_state_(QString state) {
+    QMetaObject::invokeMethod(this,
+        "ensure_player_state",
+        Qt::QueuedConnection,
+        Q_ARG(QString, state)
+    );
+}
+
+QString MainWidget::get_rest_of_document_pages_text() {
+    int page_number = main_document_view->get_vertical_line_page();
+    last_pause_rest_of_document_page = page_number + 1;
+    return doc()->get_rest_of_document_pages_text(page_number + 1).left(100000);
+}
+
+void MainWidget::focus_on_character_offset_into_document(int character_offset_into_document) {
+    int page = doc()->get_page_from_character_offset(character_offset_into_document);
+    int page_offset = doc()->get_page_offset_into_super_fast_index(page);
+    int character_offset_into_page = character_offset_into_document - page_offset;
+
+    int remaining_line_offset = character_offset_into_page;
+
+    std::vector<std::wstring> page_lines;
+    doc()->get_page_lines(page, &page_lines);
+    int line_index = 0;
+
+    while ((line_index < page_lines.size()) && (remaining_line_offset > page_lines[line_index].size())) {
+        remaining_line_offset -= page_lines[line_index].size();
+        line_index++;
+    }
+
+    //qDebug() << "SIOYEK FOCUS: page " << current_page << " line: " << line_index << " offset was: " << offset;
+    focus_on_line_with_index(page, line_index);
+    invalidate_render();
+}
+
+void MainWidget::handle_move_smooth_press(bool down) {
+
+    float mult = down ? -1 : 1;
+
+    velocity_y += mult * SMOOTH_MOVE_INITIAL_VELOCITY;
+    if (std::abs(velocity_y) > SMOOTH_MOVE_MAX_VELOCITY) {
+        if (down) velocity_y = -SMOOTH_MOVE_MAX_VELOCITY;
+        else velocity_y = SMOOTH_MOVE_MAX_VELOCITY;
+    }
+    validation_interval_timer->setInterval(0);
+    last_speed_update_time = QTime::currentTime();
+}
+
+void MainWidget::handle_move_smooth_hold(bool down) {
+
+    float max_velocity = down ? -SMOOTH_MOVE_MAX_VELOCITY : SMOOTH_MOVE_MAX_VELOCITY;
+
+    if (down) {
+        velocity_y -= (velocity_y - max_velocity) / 5.0f;
+    }
+    else {
+        velocity_y += (max_velocity - velocity_y) / 5.0f;
+    }
+
+    validation_interval_timer->setInterval(0);
+    last_speed_update_time = QTime::currentTime();
+}
+
+void MainWidget::handle_toggle_two_page_mode() {
+    main_document_view->toggle_two_page();
+    if (NUM_CACHED_PAGES < 6) {
+        if (main_document_view->is_two_page_mode()) {
+            pdf_renderer->set_num_cached_pages(NUM_CACHED_PAGES * 2);
+        }
+        else {
+            pdf_renderer->set_num_cached_pages(NUM_CACHED_PAGES);
+        }
+    }
+}
+
+
+void MainWidget::ensure_zero_interval_timer(){
+    validation_interval_timer->setInterval(INTERVAL_TIME);
+}
+
+
+void MainWidget::set_last_performed_command(std::unique_ptr<Command> command) {
+    if (last_performed_command) {
+        last_performed_command->perform_up();
+    }
+
+    last_performed_command = std::move(command);
 }

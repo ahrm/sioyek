@@ -32,15 +32,82 @@ import android.net.Uri;
 import android.util.Log;
 import android.content.ContentResolver;
 import android.webkit.MimeTypeMap;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
+
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+import android.view.View;
+
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.media3.session.MediaController;
+import androidx.media3.session.SessionToken;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+import androidx.navigation.ui.AppBarConfiguration;
+import androidx.navigation.ui.NavigationUI;
+
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+
+import android.view.Menu;
+import android.view.MenuItem;
+
+
 
 public class SioyekActivity extends QtActivity{
     public static native void setFileUrlReceived(String url);
     public static native void qDebug(String msg);
+    public static native void onTts(int begin, int end);
+    public static native void onTtsStateChange(String newState);
+    public static native void onExternalTtsStateChange(String newState);
+    public static native String getRestOnPause();
+    public static native void onResumeState(boolean isPlaying, boolean readingRest, int offset);
 
     public static boolean isIntentPending;
     public static boolean isInitialized;
+    public static boolean isPaused = true;
 
     private static SioyekActivity instance = null;
+
+    private MediaController mediaController = null;
+    private SessionToken ttsSessionToken = null;
+
+    private BroadcastReceiver messageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int begin = intent.getIntExtra("begin", 0);
+            int end = intent.getIntExtra("end", 0);
+            onTts(begin, end);
+        }
+    };
+
+    private BroadcastReceiver stateMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String state = intent.getStringExtra("state");
+            onTtsStateChange(state);
+        }
+    };
+
+    private BroadcastReceiver externalStateMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String state = intent.getStringExtra("state");
+            onExternalTtsStateChange(state);
+            //onTtsStateChange(state);
+        }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState){
@@ -48,7 +115,6 @@ public class SioyekActivity extends QtActivity{
 
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
 
         Intent intent = getIntent();
 
@@ -91,6 +157,56 @@ public class SioyekActivity extends QtActivity{
             }
         }
 
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        ttsSessionToken = new SessionToken(getApplicationContext(), new ComponentName(getApplicationContext(), TextToSpeechService.class));
+        ListenableFuture<MediaController> controllerFuture = new MediaController.Builder(getApplicationContext(), ttsSessionToken).buildAsync();
+        controllerFuture.addListener(() -> {
+            try{
+                mediaController = controllerFuture.get();
+            }
+            catch(Exception e){
+                qDebug("sioyek: could not get media controller");
+            }
+        }, MoreExecutors.directExecutor());
+        LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, new IntentFilter("sioyek_tts"));
+        LocalBroadcastManager.getInstance(this).registerReceiver(stateMessageReceiver, new IntentFilter("sioyek_tts_state"));
+        LocalBroadcastManager.getInstance(this).registerReceiver(externalStateMessageReceiver, new IntentFilter("sioyek_external_tts_state"));
+    }
+
+    @Override
+    public void onStop(){
+
+        super.onStop();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(messageReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(stateMessageReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(externalStateMessageReceiver);
+    }
+
+    @Override
+    public void onResume(){
+
+        isPaused = false;
+        Intent intent = new Intent(getApplicationContext(), TextToSpeechService.class);
+        intent.putExtra("resume", true);
+        startService(intent);
+
+        super.onResume();
+    }
+
+    @Override
+    public void onPause(){
+        isPaused = true;
+        String rest = getRestOnPause();
+
+        if (rest.length() > 0){
+            setTtsRestOfDocument(rest);
+        }
+
+        super.onPause();
     }
 
     @Override
@@ -164,9 +280,7 @@ public class SioyekActivity extends QtActivity{
             return cursor.getString(column_index);
         }
         catch(Exception e){
-            qDebug("sioyek: something happened");
             String newFileName=  getFile(context, contentUri).getPath();
-            qDebug("sioyek: new file name = " + newFileName);
             return getFile(context, contentUri).getPath();
         }
         finally {
@@ -305,7 +419,6 @@ public class SioyekActivity extends QtActivity{
             Uri intentUri = intent.getData();
             if (intentUri == null){
                 intentUri = Uri.parse(intent.getStringExtra("sharedData"));
-                qDebug("sioyek: got message with sharedData=" + intent.getStringExtra("sharedData"));
             }
             //String realPath = getRealPathFromUri(getApplicationContext(), intentUri);
             //Uri newUri = Uri.fromFile(new File(realPath));
@@ -315,7 +428,6 @@ public class SioyekActivity extends QtActivity{
             try{
                 realPath = getRealPathFromUri(this, intentUri);
                 //Toast.makeText(this, "trying to open " + realPath, Toast.LENGTH_LONG).show();
-                qDebug("sioyek: trying to open " + realPath );
                 setFileUrlReceived(realPath);
             }
             catch(IOException e){
@@ -324,4 +436,69 @@ public class SioyekActivity extends QtActivity{
         }
         return;
     }
+
+    public void ttsPause(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mediaController.pause();
+            }
+        });
+
+    } 
+
+    public void ttsStop(){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mediaController.stop();
+            }
+        });
+    } 
+
+    public void ttsSetRate(float rate){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                setTtsRate(rate);
+            }
+        });
+    } 
+
+    public void ttsSetRestOfDocument(String text){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                setTtsRestOfDocument(text);
+            }
+        });
+    } 
+
+
+    public void ttsSay(String text){
+        Intent intent = new Intent(getApplicationContext(), TextToSpeechService.class);
+        intent.putExtra("text", text);
+        startService(intent);
+
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mediaController.play();
+            }
+        }, 100);
+    }
+
+    public void setTtsRate(float rate){
+        Intent intent = new Intent(getApplicationContext(), TextToSpeechService.class);
+        intent.putExtra("rate", rate);
+        startService(intent);
+    }
+
+    public void setTtsRestOfDocument(String rest){
+        Intent intent = new Intent(getApplicationContext(), TextToSpeechService.class);
+        intent.putExtra("rest", rest);
+        startService(intent);
+    }
+
 }

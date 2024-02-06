@@ -920,7 +920,6 @@ class AudioUI : public ConfigUI {
 public:
     AudioUI(MainWidget* parent);
     void resizeEvent(QResizeEvent* resize_event) override;
-private:
     TouchAudioButtons* buttons = nullptr;
 };
 
