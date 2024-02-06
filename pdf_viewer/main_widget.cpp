@@ -13,8 +13,6 @@
 // better tablet button handling, the current method is setting dependent
 // moving exits show link mode
 // test exact highlight select after saving and reloading the document
-// embedded documents don't respect exact highlight select
-// check if the widget being popped is audio controsl and if it is paused, hide the notification, (also do this when stop button is pressed)
 
 #include <iostream>
 #include <vector>
