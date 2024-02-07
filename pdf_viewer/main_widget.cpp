@@ -6611,7 +6611,6 @@ void MainWidget::show_context_menu() {
 }
 
 void MainWidget::handle_debug_command() {
-    highlight_window_points();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){

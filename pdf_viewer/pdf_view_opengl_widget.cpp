@@ -116,6 +116,7 @@ extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
 extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
 extern std::wstring EDIT_PORTAL_TAP_COMMAND;
 extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
+extern std::wstring TAG_FONT_FACE;
 
 GLfloat g_quad_vertex[] = {
     -1.0f, -1.0f,
@@ -2391,7 +2392,8 @@ void PdfViewOpenGLWidget::setup_text_painter(QPainter* painter) {
     convert_color4(KEYBOARD_SELECT_TEXT_COLOR, textcolor);
 
     QBrush background_brush = QBrush(QColor(bgcolor[0], bgcolor[1], bgcolor[2], bgcolor[3]));
-    QFont font;
+    QFont font(QString::fromStdWString(TAG_FONT_FACE));
+    font.setStyleHint(QFont::Monospace);
     font.setPixelSize(KEYBOARD_SELECT_FONT_SIZE);
     painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
     painter->setBackground(background_brush);

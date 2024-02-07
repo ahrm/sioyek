@@ -202,6 +202,7 @@ extern std::wstring RULER_DISPLAY_MODE;
 extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 extern bool USE_KEYBOARD_POINT_SELECTION;
+extern std::wstring TAG_FONT_FACE;
 
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
@@ -2264,6 +2265,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     	L"epub_css",
     	ConfigType::String,
     	&EPUB_CSS,
+    	string_serializer,
+    	string_deserializer,
+    	nullptr
+    	});
+    configs.push_back({
+    	L"tag_font_face",
+    	ConfigType::String,
+    	&TAG_FONT_FACE,
     	string_serializer,
     	string_deserializer,
     	nullptr

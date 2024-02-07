@@ -324,6 +324,7 @@ float SMOOTH_MOVE_INITIAL_VELOCITY = 1000;
 float PAGE_SPACE_X = 10.0f;
 float PAGE_SPACE_Y = 10.0f;
 bool USE_KEYBOARD_POINT_SELECTION = false;
+std::wstring TAG_FONT_FACE = L"Monaco";
 //UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
 bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
