@@ -90,6 +90,8 @@ struct NormalizedWindowRect;
 //    PagelessDocumentRect();
 //    PagelessDocumentRect(fz_rect r);
 //};
+
+
 template<typename R, typename T>
 struct EnhancedRect : public R {
 
@@ -113,27 +115,27 @@ struct EnhancedRect : public R {
         R::y1 = bottom_right.y;
     }
 
-    S width() {
+    S width() const{ 
         return R::x1 - R::x0;
     }
 
-    S height() {
+    S height() const {
         return R::y1 - R::y0;
     }
 
-    S area() {
+    S area() const {
         return (R::x1 - R::x0) * (R::y1 - R::y0);
     }
 
-    T center() {
+    T center() const {
         return T{ (R::x0 + R::x1) / 2, (R::y0 + R::y1) / 2 };
     }
 
-    T top_left() {
+    T top_left() const {
         return T{ R::x0, R::y0 };
     }
 
-    T bottom_right() {
+    T bottom_right() const {
         return T{ R::x1, R::y1 };
     }
 
@@ -160,7 +162,9 @@ struct EnhancedRect : public R {
         res.y1 = std::max(R::y1, other.y1);
         return res;
     }
+
 };
+
 
 using PagelessDocumentRect = EnhancedRect<fz_rect, PagelessDocumentPos>;
 using WindowRect = EnhancedRect<fz_irect, WindowPos>;
@@ -180,6 +184,7 @@ struct DocumentRect {
     DocumentPos top_left();
     DocumentPos bottom_right();
 };
+
 
 struct NormalizedWindowRect : public EnhancedRect<fz_rect, NormalizedWindowPos>  {
     NormalizedWindowRect(NormalizedWindowPos top_left, NormalizedWindowPos bottom_right);
@@ -348,3 +353,5 @@ VirtualPos operator+(const VirtualPos& lhs, const fvec2& rhs);
 VirtualPos operator-(const VirtualPos& lhs, const fvec2& rhs);
 
 using VirtualRect = EnhancedRect<fz_rect, VirtualPos>;
+
+DocumentRect to_document(const WindowRect& window_rect, DocumentView* dv);

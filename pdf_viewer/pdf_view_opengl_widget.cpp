@@ -1681,7 +1681,19 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
             int window_y1 = static_cast<int>(-window_rect.y1 * view_height / 2 + view_height / 2);
 
-            painter->drawText(window_x0, (window_y0 + window_y1) / 2, tags[i].c_str());
+            QString remaining_tag = QString::fromStdString(tags[i]);
+            if (tag_prefix.size() > 0) {
+                if (remaining_tag.startsWith(QString::fromStdString(tag_prefix))) {
+                    remaining_tag = remaining_tag.mid(tag_prefix.size());
+                }
+                else {
+                    remaining_tag = "";
+                }
+            }
+            
+            if (remaining_tag.size() > 0) {
+                painter->drawText(window_x0, (window_y0 + window_y1) / 2, remaining_tag);
+            }
         }
     }
 

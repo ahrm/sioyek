@@ -933,6 +933,8 @@ public:
     void ensure_zero_interval_timer();
     void set_last_performed_command(std::unique_ptr<Command> command);
     void make_current_menu_columns_equal();
+    DocumentPos get_index_document_pos(int index);
+    void highlight_window_points();
 };
 
 #endif

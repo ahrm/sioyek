@@ -3790,6 +3790,106 @@ public:
     }
 };
 
+
+KeyboardSelectPointCommand::KeyboardSelectPointCommand(MainWidget* w, std::unique_ptr<Command> original_command) : Command(w) {
+    origin = std::move(original_command);
+    std::optional<Requirement> next_requirement = origin->next_requirement(widget);
+    if (next_requirement && next_requirement->type == Rect) {
+        requires_rect = true;
+    }
+    //if(origin->next_requirement(widget) && origin->next_requirement(widget)-> )
+};
+
+void KeyboardSelectPointCommand::on_cancel() {
+    origin->on_cancel();
+
+}
+
+bool KeyboardSelectPointCommand::is_done() {
+    if (!text.has_value()) return false;
+
+    if (requires_rect) {
+        return text.value().size() == 4;
+    }
+    else {
+        return text.value().size() == 2;
+    }
+}
+
+std::optional<Requirement> KeyboardSelectPointCommand::next_requirement(MainWidget* widget) {
+    bool done = is_done();
+
+    if (done) {
+        return {};
+    }
+    else {
+        return Requirement{ RequirementType::Symbol, "Label" };
+    }
+}
+
+void KeyboardSelectPointCommand::perform() {
+
+    widget->clear_tag_prefix();
+    result = text.value();
+
+    if (requires_rect) {
+
+        std::string tag1 = utf8_encode(result.value().substr(0, 2));
+        std::string tag2 = utf8_encode(result.value().substr(2, 2));
+        int index1 = get_index_from_tag(tag1);
+        int index2 = get_index_from_tag(tag2);
+        AbsoluteDocumentPos pos1 = widget->get_index_document_pos(index1).to_absolute(widget->doc());
+        AbsoluteDocumentPos pos2 = widget->get_index_document_pos(index2).to_absolute(widget->doc());
+        AbsoluteRect rect(pos1, pos2);
+        origin->set_rect_requirement(rect);
+        widget->set_rect_select_mode(false);
+        //origin->set_point_requirement(abspos);
+    }
+    else {
+
+        int index = get_index_from_tag(utf8_encode(result.value()));
+        AbsoluteDocumentPos abspos = widget->get_index_document_pos(index).to_absolute(widget->doc());
+        origin->set_point_requirement(abspos);
+    }
+
+    widget->clear_keyboard_select_highlights();
+    widget->advance_command(std::move(origin));
+}
+
+void KeyboardSelectPointCommand::pre_perform() {
+    if (already_pre_performed) return;
+
+    widget->clear_tag_prefix();
+    widget->highlight_window_points();
+    widget->invalidate_render();
+    already_pre_performed = true;
+}
+
+std::string KeyboardSelectPointCommand::get_name() {
+    return "keyboard_point_select";
+}
+ 
+
+void KeyboardSelectPointCommand::set_symbol_requirement(char value) {
+    if (text.has_value()) {
+        text.value().push_back(value);
+    }
+    else {
+        std::wstring val;
+        val.push_back(value);
+        this->text = val;
+    }
+
+    if (!is_done()) {
+        if (requires_rect && (text.value().size() >= 2)) {
+            widget->set_tag_prefix(text.value().substr(2));
+        }
+        else {
+            widget->set_tag_prefix(text.value());
+        }
+    }
+}
+
 class OverviewLinkCommand : public OpenLinkCommand {
 public:
     OverviewLinkCommand(MainWidget* w) : OpenLinkCommand(w) {};
@@ -6543,6 +6643,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["toggle_pdf_annotations"] = [](MainWidget* widget) {return std::make_unique< TogglePDFAnnotationsCommand>(widget); };
     new_commands["q"] = [](MainWidget* widget) {return std::make_unique< CloseWindowCommand>(widget); };
     new_commands["open_link"] = [](MainWidget* widget) {return std::make_unique< OpenLinkCommand>(widget); };
+    //new_commands["keyboard_point_select"] = [](MainWidget* widget) {return std::make_unique<KeyboardSelectPointCommand>(widget); };
     new_commands["overview_link"] = [](MainWidget* widget) {return std::make_unique< OverviewLinkCommand>(widget); };
     new_commands["portal_to_link"] = [](MainWidget* widget) {return std::make_unique< PortalToLinkCommand>(widget); };
     new_commands["copy_link"] = [](MainWidget* widget) {return std::make_unique< CopyLinkCommand>(widget); };

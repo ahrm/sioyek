@@ -241,6 +241,7 @@ extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
 
 extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
 extern bool ALIGN_LINK_DEST_TO_TOP;
+extern bool USE_KEYBOARD_POINT_SELECTION;
 
 extern bool TOUCH_MODE;
 
@@ -1414,14 +1415,14 @@ void MainWidget::handle_escape() {
 
     clear_selection_indicators();
     typing_location = {};
+    if (pending_command_instance) {
+        pending_command_instance->on_cancel();
+    }
     hide_command_line_edit();
     text_suggestion_index = 0;
     pending_portal = {};
     synchronize_pending_link();
 
-    if (pending_command_instance) {
-        pending_command_instance->on_cancel();
-    }
 
     pending_command_instance = nullptr;
     set_selected_highlight_index(-1);
@@ -4839,7 +4840,12 @@ void MainWidget::set_rect_select_mode(bool mode) {
         }
     }
     if (mode == true) {
-        opengl_widget->set_selected_rectangle(AbsoluteRect());
+        if (USE_KEYBOARD_POINT_SELECTION) {
+            handle_command_types(std::make_unique<KeyboardSelectPointCommand>(this, std::move(pending_command_instance)), 0);
+        }
+        else {
+            opengl_widget->set_selected_rectangle(AbsoluteRect());
+        }
     }
     invalidate_render();
 }
@@ -4848,7 +4854,12 @@ void MainWidget::set_point_select_mode(bool mode) {
 
     point_select_mode = mode;
     if (mode == true) {
-        opengl_widget->set_selected_rectangle(AbsoluteRect());
+        if (USE_KEYBOARD_POINT_SELECTION) {
+            handle_command_types(std::make_unique<KeyboardSelectPointCommand>(this, std::move(pending_command_instance)), 0);
+        }
+        else {
+            opengl_widget->set_selected_rectangle(AbsoluteRect());
+        }
     }
 }
 
@@ -6594,6 +6605,7 @@ void MainWidget::show_context_menu() {
 }
 
 void MainWidget::handle_debug_command() {
+    highlight_window_points();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -7720,7 +7732,6 @@ void MainWidget::toggle_pdf_annotations() {
 
 void MainWidget::handle_command_text_change(const QString& new_text) {
     if (pending_command_instance) {
-        qDebug() << pending_command_instance->get_name();
         if ((pending_command_instance->get_name() == "edit_selected_bookmark") || (pending_command_instance->get_name() == "add_freetext_bookmark")) {
             doc()->get_bookmarks()[selected_bookmark_index].description = new_text.toStdWString();
         }
@@ -10116,4 +10127,30 @@ void MainWidget::make_current_menu_columns_equal() {
             widget2->set_equal_columns();
         }
     }
+}
+
+DocumentPos MainWidget::get_index_document_pos(int index){
+    const int x_res = 26;
+    const int y_res = 26;
+
+    int x = index / x_res;
+    int y = index % y_res;
+    int window_width = main_document_view->get_view_width();
+    int window_height = main_document_view->get_view_height() - get_status_bar_height();
+
+    int begin_x = x * window_width / x_res;
+    int end_y = (y + 1) * window_height / y_res;
+
+    return WindowPos{ begin_x, end_y }.to_document(main_document_view);
+}
+
+void MainWidget::highlight_window_points() {
+    std::vector<DocumentRect> document_rects;
+
+    for (int index = 0; index < 26 * 26; index++) {
+        DocumentPos docpos = get_index_document_pos(index);
+        document_rects.push_back(DocumentRect(docpos, docpos, docpos.page));
+    }
+    opengl_widget->set_highlight_words(document_rects);
+    opengl_widget->set_should_highlight_words(true);
 }

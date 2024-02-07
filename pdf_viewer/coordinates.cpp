@@ -241,3 +241,9 @@ VirtualPos operator+(const VirtualPos& lhs, const fvec2& rhs) {
 VirtualPos operator-(const VirtualPos& lhs, const fvec2& rhs) {
     return VirtualPos{ lhs.x - rhs[0], lhs.y - rhs[1]};
 }
+
+DocumentRect to_document(const WindowRect& window_rect, DocumentView* dv) {
+    DocumentPos top_left = window_rect.top_left().to_document(dv);
+    DocumentPos bottom_right = window_rect.bottom_right().to_document(dv);
+    return DocumentRect(top_left, bottom_right, top_left.page);
+}

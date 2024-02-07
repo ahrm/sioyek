@@ -152,3 +152,28 @@ public:
 };
 
 bool is_macro_command_enabled(Command* command);
+
+class KeyboardSelectPointCommand : public Command {
+protected:
+    std::optional<std::wstring> text = {};
+    bool already_pre_performed = false;
+    std::unique_ptr<Command> origin;
+    bool requires_rect = false;
+public:
+
+    KeyboardSelectPointCommand(MainWidget* w, std::unique_ptr<Command> original_command);
+
+    bool is_done();
+
+    virtual std::optional<Requirement> next_requirement(MainWidget* widget);
+
+    virtual void perform();
+    virtual void on_cancel() override;
+
+    void pre_perform();
+
+    virtual std::string get_name();
+
+
+    virtual void set_symbol_requirement(char value);
+};

@@ -201,6 +201,7 @@ extern std::wstring PAPER_SEARCH_URL;
 extern std::wstring RULER_DISPLAY_MODE;
 extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
+extern bool USE_KEYBOARD_POINT_SELECTION;
 
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
@@ -1255,6 +1256,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"show_most_recent_commands_first",
         ConfigType::Bool,
         &SHOW_MOST_RECENT_COMMANDS_FIRST,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"keyboard_point_selection",
+        ConfigType::Bool,
+        &USE_KEYBOARD_POINT_SELECTION,
         bool_serializer,
         bool_deserializer,
         bool_validator
