@@ -93,6 +93,12 @@ public:
     QStringList get_all_command_names();
     void handle_new_javascript_command(std::wstring command_name, std::pair<std::wstring, std::wstring> command_files_pair, bool is_async);
     void update_command_last_use(std::string command_name);
+
+    template<typename T>
+    void register_command() {
+        new_commands[T::cname]  = [](MainWidget* widget) {return std::make_unique<T>(widget); };
+        command_human_readable_names[T::cname] = T::hname;
+    }
 };
 
 struct InputParseTreeNode {
