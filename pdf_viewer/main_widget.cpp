@@ -1430,7 +1430,7 @@ void MainWidget::handle_escape() {
 
     pending_command_instance = nullptr;
     set_selected_highlight_index(-1);
-    selected_bookmark_index = -1;
+    set_selected_bookmark_index(-1);
     selected_portal_index = -1;
     //current_pending_command = {};
 
@@ -2497,7 +2497,7 @@ void MainWidget::handle_click(WindowPos click_pos) {
 
     auto link = main_document_view->get_link_in_pos(click_pos);
     set_selected_highlight_index(main_document_view->get_highlight_index_in_pos(click_pos));
-    selected_bookmark_index = doc()->get_bookmark_index_at_pos(mouse_abspos);
+    set_selected_bookmark_index(doc()->get_bookmark_index_at_pos(mouse_abspos));
     selected_portal_index = doc()->get_portal_index_at_pos(mouse_abspos);
 
     if (selected_portal_index >= 0) {
@@ -2810,7 +2810,7 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
         int highlight_index = main_document_view->get_highlight_index_in_pos(click_pos);
 
         if (bookmark_index != -1) {
-            selected_bookmark_index = bookmark_index;
+            set_selected_bookmark_index(bookmark_index);
             handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
             return;
         }
@@ -5337,7 +5337,7 @@ void MainWidget::handle_goto_bookmark() {
             main_document_view->delete_closest_bookmark_to_offset(bm->get_y_offset());
         },
             [&](BookMark* bm) {
-            selected_bookmark_index = doc()->get_bookmark_index_with_uuid(bm->uuid);
+            set_selected_bookmark_index(doc()->get_bookmark_index_with_uuid(bm->uuid));
             pop_current_widget();
             handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
         }
@@ -5955,7 +5955,7 @@ void MainWidget::handle_delete_selected_highlight() {
 void MainWidget::handle_delete_selected_bookmark() {
     if (selected_bookmark_index != -1) {
         main_document_view->delete_bookmark_with_index(selected_bookmark_index);
-        selected_bookmark_index = -1;
+        set_selected_bookmark_index(-1);
     }
     validate_render();
 }
@@ -6050,13 +6050,13 @@ bool MainWidget::event(QEvent* event) {
 
                     if (bookmark_index >= 0) {
                         begin_bookmark_move(bookmark_index, hold_abspos);
-                        selected_bookmark_index = bookmark_index;
+                        set_selected_bookmark_index(bookmark_index);
                         show_touch_buttons({ L"Delete", L"Edit" }, {}, [this](int index, std::wstring name) {
 
                             if (selected_bookmark_index > -1) {
                                 if (name == L"Delete") {
                                     doc()->delete_bookmark(selected_bookmark_index);
-                                    selected_bookmark_index = -1;
+                                    set_selected_bookmark_index(-1);
                                     pop_current_widget();
                                     invalidate_render();
                                 }
@@ -6344,7 +6344,7 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
     clear_selected_text();
     clear_selection_indicators();
     set_selected_highlight_index(-1);
-    selected_bookmark_index = -1;
+    set_selected_bookmark_index(-1);
     selected_portal_index = -1;
     clear_highlight_buttons();
     clear_search_buttons();
@@ -9395,7 +9395,7 @@ void MainWidget::hide_command_line_edit(){
 
 void MainWidget::deselect_document_indices(){
     set_selected_highlight_index(-1);
-    selected_bookmark_index = -1;
+    set_selected_bookmark_index(-1);
     selected_portal_index = -1;
 }
 
@@ -9902,6 +9902,11 @@ void MainWidget::clear_current_document_drawings() {
 void MainWidget::set_selected_highlight_index(int index) {
     selected_highlight_index = index;
     opengl_widget->set_selected_highlight_index(index);
+}
+
+void MainWidget::set_selected_bookmark_index(int index) {
+    selected_bookmark_index = index;
+    opengl_widget->set_selected_bookmark_index(index);
 }
 
 void MainWidget::handle_highlight_tags_pre_perform(const std::vector<int>& visible_highlight_indices) {

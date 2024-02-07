@@ -150,6 +150,7 @@ private:
     bool is_dragging = false;
     bool fastread_mode = false;
     int selected_highlight_index = -1;
+    int selected_bookmark_index = -1;
 
     int last_mouse_down_window_x = 0;
     int last_mouse_down_window_y = 0;
@@ -356,4 +357,5 @@ public:
     void set_tag_prefix(std::wstring prefix);
     void clear_tag_prefix();
     void set_selected_highlight_index(int index);
+    void set_selected_bookmark_index(int index);
 };

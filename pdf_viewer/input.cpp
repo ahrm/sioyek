@@ -1568,7 +1568,10 @@ public:
     void set_rect_requirement(AbsoluteRect value) {
         rect_ = value;
         pending_index = widget->doc()->add_incomplete_freetext_bookmark(value);
-        widget->selected_bookmark_index = pending_index;
+        widget->set_selected_bookmark_index(pending_index);
+
+        widget->clear_selected_rect();
+        widget->validate_render();
     }
 
 
@@ -1581,10 +1584,17 @@ public:
 
     void perform() {
         //widget->doc()->add_freetext_bookmark(text_.value(), rect_.value());
-        std::string uuid = widget->doc()->add_pending_freetext_bookmark(pending_index, text_.value());
+        if (text_.value().size() > 0) {
+            std::string uuid = widget->doc()->add_pending_freetext_bookmark(pending_index, text_.value());
+            result = utf8_decode(uuid);
+        }
+        else {
+            widget->doc()->undo_pending_bookmark(pending_index);
+            result = L"";
+        }
+
         widget->clear_selected_rect();
         widget->invalidate_render();
-        result = utf8_decode(uuid);
     }
 
     std::string get_name() {
@@ -3075,7 +3085,7 @@ public:
     void perform_with_selected_index(std::optional<int> index) override {
         if (index) {
             if (index < visible_item_indices.size()) {
-                widget->selected_bookmark_index = visible_item_indices[index.value()];
+                widget->set_selected_bookmark_index(visible_item_indices[index.value()]);
             }
         }
 

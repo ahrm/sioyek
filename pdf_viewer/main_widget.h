@@ -916,6 +916,7 @@ public:
     void clear_current_page_drawings();
     void clear_current_document_drawings();
     void set_selected_highlight_index(int index);
+    void set_selected_bookmark_index(int index);
     void handle_highlight_tags_pre_perform(const std::vector<int>& visible_highlight_indices);
     void handle_visible_bookmark_tags_pre_perform(const std::vector<int>& visible_bookmark_indices);
     void clear_keyboard_select_highlights();

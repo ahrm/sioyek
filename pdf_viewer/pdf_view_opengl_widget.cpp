@@ -1647,6 +1647,12 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                         }
                     }
                     else {
+                        if (i == selected_bookmark_index) {
+                            float temp_color[3] = {0.5f, 0.5f, 0.5f};
+                            painter->setPen(convert_float3_to_qcolor(&temp_color[0]));
+                            painter->setPen(Qt::DashLine);
+                            painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                        }
                         painter->drawText(window_qrect, flags, QString::fromStdWString(bookmarks[i].description));
                     }
 
@@ -3624,4 +3630,8 @@ void PdfViewOpenGLWidget::clear_tag_prefix() {
 
 void PdfViewOpenGLWidget::set_selected_highlight_index(int index) {
     selected_highlight_index = index;
+}
+
+void PdfViewOpenGLWidget::set_selected_bookmark_index(int index) {
+    selected_bookmark_index = index;
 }
