@@ -5080,9 +5080,11 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
             }
             else if (next_requirement.type == RequirementType::Rect) {
                 set_rect_select_mode(true);
+                validate_render();
             }
             else if (next_requirement.type == RequirementType::Point) {
                 set_point_select_mode(true);
+                validate_render();
             }
             else if (next_requirement.type == RequirementType::Generic) {
                 pending_command_instance->handle_generic_requirement();
