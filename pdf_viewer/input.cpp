@@ -3823,7 +3823,17 @@ std::optional<Requirement> KeyboardSelectPointCommand::next_requirement(MainWidg
         return {};
     }
     else {
-        return Requirement{ RequirementType::Symbol, "Label" };
+        if (requires_rect) {
+            if (text.has_value() && text.value().size() >= 2) {
+                return Requirement{ RequirementType::Symbol, "bottom right location" };
+            }
+            else {
+                return Requirement{ RequirementType::Symbol, "top left location" };
+            }
+        }
+        else {
+            return Requirement{ RequirementType::Symbol, "point location" };
+        }
     }
 }
 

@@ -9,8 +9,6 @@
 // portals are not correctly saved in an updated database
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
-// marked and freetext bookmark input order is not consistent
-// add ability to select points or rectangles using keyboard
 
 
 #include <iostream>
@@ -1261,7 +1259,13 @@ std::wstring MainWidget::get_status_string() {
     //if (current_pending_command && current_pending_command.value().requires_symbol) {
     if (is_waiting_for_symbol()) {
         std::wstring wcommand_name = utf8_decode(pending_command_instance->next_requirement(this).value().name);
-        status_string.replace("%{waiting_for_symbol}", " " + QString::fromStdString(pending_command_instance->get_name()) + " waiting for symbol");
+        QString hint_name = QString::fromStdString(pending_command_instance->get_name());
+
+        if (wcommand_name.size() > 0) {
+            hint_name += "(" + QString::fromStdWString(wcommand_name) + ")";
+        }
+
+        status_string.replace("%{waiting_for_symbol}", " " + hint_name+ " waiting for symbol");
     }
     if (main_document_view != nullptr && main_document_view->get_document() != nullptr &&
         main_document_view->get_document()->get_is_indexing()) {
