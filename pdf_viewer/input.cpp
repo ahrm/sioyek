@@ -1235,12 +1235,12 @@ public:
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
 
-        if (!text_.has_value()) {
-            Requirement req = { RequirementType::Text, "Bookmark Text" };
-            return req;
-        }
         if (!point_.has_value()) {
             Requirement req = { RequirementType::Point, "Bookmark Location" };
+            return req;
+        }
+        if (!text_.has_value()) {
+            Requirement req = { RequirementType::Text, "Bookmark Text" };
             return req;
         }
         return {};
