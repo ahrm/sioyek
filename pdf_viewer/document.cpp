@@ -485,6 +485,14 @@ void Document::delete_highlight_with_index(int index) {
     is_annotations_dirty = true;
 }
 
+void Document::delete_bookmark_with_index(int index) {
+    BookMark bookmark_to_delete = bookmarks[index];
+
+    db_manager->delete_bookmark(bookmark_to_delete.uuid);
+    bookmarks.erase(bookmarks.begin() + index);
+    is_annotations_dirty = true;
+}
+
 void Document::delete_highlight(Highlight hl) {
     for (size_t i = (highlights.size() - 1); i >= 0; i--) {
         if (highlights[i] == hl) {

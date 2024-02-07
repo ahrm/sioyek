@@ -2651,9 +2651,6 @@ public:
                 );
             }
         }
-        else {
-            show_error_message(L"No bookmark is selected");
-        }
     }
 
     void on_cancel() {
@@ -2663,10 +2660,20 @@ public:
         }
     }
 
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (widget->selected_bookmark_index == -1) return {};
+        return TextCommand::next_requirement(widget);
+    }
+
     void perform() {
-        std::wstring text_ = text.value();
-        widget->change_selected_bookmark_text(text_);
-        widget->invalidate_render();
+        if (widget->selected_bookmark_index != -1) {
+            std::wstring text_ = text.value();
+            widget->change_selected_bookmark_text(text_);
+            widget->invalidate_render();
+        }
+        else {
+            show_error_message(L"No bookmark is selected");
+        }
     }
 
     std::string get_name() {
@@ -2737,25 +2744,30 @@ public:
     std::string get_name() {
         return "delete_bookmark";
     }
-
 };
 
-class GenericHighlightCommand : public Command {
-    std::vector<int> visible_highlight_indices;
+class GenericVisibleSelectCommand : public Command {
+protected:
+    std::vector<int> visible_item_indices;
     std::string tag;
     int n_required_tags = 0;
     bool already_pre_performed = false;
 
 public:
-    GenericHighlightCommand(MainWidget* w) : Command(w) {};
+    GenericVisibleSelectCommand(MainWidget* w) : Command(w) {};
+
+    virtual std::vector<int> get_visible_item_indices() = 0;
+    virtual void handle_indices_pre_perform() = 0;
 
     void pre_perform() override {
         if (!already_pre_performed) {
             if (widget->selected_highlight_index == -1) {
-                visible_highlight_indices = widget->main_document_view->get_visible_highlight_indices();
-                n_required_tags = get_num_tag_digits(visible_highlight_indices.size());
+                visible_item_indices = get_visible_item_indices();
+                n_required_tags = get_num_tag_digits(visible_item_indices.size());
 
-                widget->handle_highlight_tags_pre_perform(visible_highlight_indices);
+                handle_indices_pre_perform();
+                widget->invalidate_render();
+                //widget->handle_highlight_tags_pre_perform(visible_item_indices);
             }
             already_pre_performed = true;
         }
@@ -2778,23 +2790,110 @@ public:
         tag.push_back(value);
     }
 
-    virtual void perform_with_highlight_selected() = 0;
+    virtual void perform_with_selected_index(std::optional<int> index) = 0;
+
     void perform() {
         bool should_clear_labels = false;
         if (tag.size() > 0) {
             int index = get_index_from_tag(tag);
-            if (index < visible_highlight_indices.size()) {
-                widget->set_selected_highlight_index(visible_highlight_indices[index]);
-            }
+            perform_with_selected_index(index);
+            //if (index < visible_item_indices.size()) {
+            //    widget->set_selected_highlight_index(visible_highlight_indices[index]);
+            //}
             should_clear_labels = true;
         }
-
-        perform_with_highlight_selected();
-        //widget->handle_delete_selected_highlight();
+        else {
+            perform_with_selected_index({});
+        }
 
         if (should_clear_labels) {
             widget->clear_keyboard_select_highlights();
         }
+    }
+};
+
+
+class GenericHighlightCommand : public GenericVisibleSelectCommand {
+
+public:
+    GenericHighlightCommand(MainWidget* w) : GenericVisibleSelectCommand(w) {};
+
+    std::vector<int> get_visible_item_indices() override {
+        return widget->main_document_view->get_visible_highlight_indices();
+    }
+
+    void handle_indices_pre_perform() override {
+        widget->handle_highlight_tags_pre_perform(visible_item_indices);
+
+    }
+
+    virtual void perform_with_highlight_selected() = 0;
+
+    void perform_with_selected_index(std::optional<int> index) override {
+        if (index) {
+            if (index < visible_item_indices.size()) {
+                widget->set_selected_highlight_index(visible_item_indices[index.value()]);
+            }
+        }
+
+        perform_with_highlight_selected();
+    }
+
+};
+
+class GenericVisibleBookmarkCommand : public GenericVisibleSelectCommand {
+
+public:
+    GenericVisibleBookmarkCommand(MainWidget* w) : GenericVisibleSelectCommand(w) {};
+
+    std::vector<int> get_visible_item_indices() override {
+        return widget->main_document_view->get_visible_bookmark_indices();
+    }
+
+
+    void handle_indices_pre_perform() override {
+        widget->handle_visible_bookmark_tags_pre_perform(visible_item_indices);
+    }
+
+    virtual void perform_with_bookmark_selected() = 0;
+
+    void perform_with_selected_index(std::optional<int> index) override {
+        if (index) {
+            if (index < visible_item_indices.size()) {
+                widget->selected_bookmark_index = visible_item_indices[index.value()];
+            }
+        }
+
+        perform_with_bookmark_selected();
+    }
+
+};
+
+class DeleteVisibleBookmarkCommand : public GenericVisibleBookmarkCommand {
+
+public:
+    DeleteVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(w) {};
+
+    void perform_with_bookmark_selected() override {
+        widget->handle_delete_selected_bookmark();
+    }
+
+    std::string get_name() {
+        return "delete_visible_bookmark";
+    }
+};
+
+class EditVisibleBookmarkCommand : public GenericVisibleBookmarkCommand {
+
+public:
+    EditVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(w) {};
+
+    void perform_with_bookmark_selected() override {
+        widget->execute_macro_if_enabled(L"edit_selected_bookmark");
+    }
+
+    std::string get_name() {
+        return "edit_visible_bookmark";
     }
 };
 
@@ -2803,17 +2902,16 @@ class DeleteHighlightCommand : public GenericHighlightCommand {
 public:
     DeleteHighlightCommand(MainWidget* w) : GenericHighlightCommand(w) {};
 
-    void perform_with_highlight_selected() {
-
+    void perform_with_highlight_selected() override {
         widget->handle_delete_selected_highlight();
     }
-
 
     std::string get_name() {
         return "delete_highlight";
     }
 
 };
+
 
 class ChangeHighlightTypeCommand : public GenericHighlightCommand {
 
@@ -6237,7 +6335,7 @@ public:
             for (auto& command : commands) {
                 res += command->get_name();
             }
-            return "{macro}" + res;
+            return res;
             //return "[macro]" + commands[0]->get_name();
         }
     }
@@ -6341,6 +6439,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["toggle_rect_hints"] = [](MainWidget* widget) {return std::make_unique< ToggleRectHintsCommand>(widget); };
     new_commands["add_annot_to_selected_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToSelectedHighlightCommand>(widget); };
     new_commands["add_annot_to_highlight"] = [](MainWidget* widget) {return std::make_unique< AddAnnotationToHighlightCommand>(widget); };
+    new_commands["change_highlight"] = [](MainWidget* widget) {return std::make_unique< ChangeHighlightTypeCommand>(widget); };
     new_commands["rename"] = [](MainWidget* widget) {return std::make_unique< RenameCommand>(widget); };
     new_commands["set_freehand_thickness"] = [](MainWidget* widget) {return std::make_unique< SetFreehandThickness>(widget); };
     new_commands["goto_page_with_label"] = [](MainWidget* widget) {return std::make_unique< GotoPageWithLabel>(widget); };
@@ -6403,7 +6502,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     new_commands["delete_portal"] = [](MainWidget* widget) {return std::make_unique< DeletePortalCommand>(widget); };
     new_commands["delete_bookmark"] = [](MainWidget* widget) {return std::make_unique< DeleteBookmarkCommand>(widget); };
     new_commands["delete_highlight"] = [](MainWidget* widget) {return std::make_unique< DeleteHighlightCommand>(widget); };
-    new_commands["change_highlight"] = [](MainWidget* widget) {return std::make_unique< ChangeHighlightTypeCommand>(widget); };
+    new_commands["delete_visible_bookmark"] = [](MainWidget* widget) {return std::make_unique< DeleteVisibleBookmarkCommand>(widget); };
+    new_commands["edit_visible_bookmark"] = [](MainWidget* widget) {return std::make_unique< EditVisibleBookmarkCommand>(widget); };
     new_commands["goto_link"] = [](MainWidget* widget) {return std::make_unique< GotoPortalCommand>(widget); };
     new_commands["goto_portal"] = [](MainWidget* widget) {return std::make_unique< GotoPortalCommand>(widget); };
     new_commands["edit_link"] = [](MainWidget* widget) {return std::make_unique< EditPortalCommand>(widget); };

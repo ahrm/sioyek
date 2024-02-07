@@ -9,6 +9,9 @@
 // portals are not correctly saved in an updated database
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
+// marked and freetext bookmark input order is not consistent
+// add ability to select points or rectangles using keyboard
+
 
 #include <iostream>
 #include <vector>
@@ -5932,6 +5935,14 @@ void MainWidget::handle_delete_selected_highlight() {
     validate_render();
 }
 
+void MainWidget::handle_delete_selected_bookmark() {
+    if (selected_bookmark_index != -1) {
+        main_document_view->delete_bookmark_with_index(selected_bookmark_index);
+        selected_bookmark_index = -1;
+    }
+    validate_render();
+}
+
 void MainWidget::synchronize_pending_link() {
     for (auto window : windows) {
         if (window != this) {
@@ -7709,6 +7720,7 @@ void MainWidget::toggle_pdf_annotations() {
 
 void MainWidget::handle_command_text_change(const QString& new_text) {
     if (pending_command_instance) {
+        qDebug() << pending_command_instance->get_name();
         if ((pending_command_instance->get_name() == "edit_selected_bookmark") || (pending_command_instance->get_name() == "add_freetext_bookmark")) {
             doc()->get_bookmarks()[selected_bookmark_index].description = new_text.toStdWString();
         }
@@ -9890,6 +9902,20 @@ void MainWidget::handle_highlight_tags_pre_perform(const std::vector<int>& visib
     opengl_widget->set_highlight_words(highlight_rects);
     opengl_widget->set_should_highlight_words(true);
 
+}
+
+void MainWidget::handle_visible_bookmark_tags_pre_perform(const std::vector<int>& visible_bookmark_indices){
+    const std::vector<BookMark>& bookmarks = doc()->get_bookmarks();
+
+    std::vector<DocumentRect> bookmark_rects;
+    for (auto ind : visible_bookmark_indices) {
+        const BookMark& bookmark = bookmarks[ind];
+        AbsoluteRect bookmark_rect = bookmark.get_rectangle();
+        bookmark_rects.push_back(bookmark_rect.to_document(doc()));
+    }
+
+    opengl_widget->set_highlight_words(bookmark_rects);
+    opengl_widget->set_should_highlight_words(true);
 }
 
 void MainWidget::clear_keyboard_select_highlights() {

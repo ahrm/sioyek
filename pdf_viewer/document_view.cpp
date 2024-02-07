@@ -230,6 +230,10 @@ void DocumentView::delete_highlight_with_index(int index) {
     current_document->delete_highlight_with_index(index);
 }
 
+void DocumentView::delete_bookmark_with_index(int index) {
+    current_document->delete_bookmark_with_index(index);
+}
+
 void DocumentView::delete_highlight(Highlight hl) {
     current_document->delete_highlight(hl);
 }
@@ -641,7 +645,7 @@ bool DocumentView::move(float dx, float dy, bool force) {
         return move_virtual(abs_dx, abs_dy, force);
     }
     else {
-        move_absolute(abs_dx, abs_dy, force);
+        return move_absolute(abs_dx, abs_dy, force);
     }
 }
 void DocumentView::get_absolute_delta_from_doc_delta(float dx, float dy, float* abs_dx, float* abs_dy) {
@@ -1829,6 +1833,19 @@ void ScratchPad::clear() {
 
 bool ScratchPad::is_compile_invalid() {
     return !is_compile_valid;
+}
+
+std::vector<int> DocumentView::get_visible_bookmark_indices() {
+    const std::vector<BookMark>& bookmarks = get_document()->get_bookmarks();
+    std::vector<int> res;
+    for (int i = 0; i < bookmarks.size(); i++) {
+        if (bookmarks[i].is_marked() || bookmarks[i].is_freetext()) {
+            if (bookmarks[i].get_rectangle().to_window_normalized(this).is_visible()) {
+                res.push_back(i);
+            }
+        }
+    }
+    return res;
 }
 
 std::vector<int> DocumentView::get_visible_highlight_indices() {

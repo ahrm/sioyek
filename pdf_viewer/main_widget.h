@@ -609,6 +609,7 @@ public:
     void handle_toggle_typing_mode();
     void handle_delete_highlight_under_cursor();
     void handle_delete_selected_highlight();
+    void handle_delete_selected_bookmark();
     void handle_start_reading();
     void handle_stop_reading();
     void handle_play();
@@ -916,6 +917,7 @@ public:
     void clear_current_document_drawings();
     void set_selected_highlight_index(int index);
     void handle_highlight_tags_pre_perform(const std::vector<int>& visible_highlight_indices);
+    void handle_visible_bookmark_tags_pre_perform(const std::vector<int>& visible_bookmark_indices);
     void clear_keyboard_select_highlights();
     void handle_goto_link_with_page_and_offset(int page, float y_offset);
     std::optional<std::wstring> get_search_suggestion_with_index(int index);

@@ -92,6 +92,7 @@ public:
     void delete_closest_bookmark();
     Highlight get_highlight_with_index(int index);
     void delete_highlight_with_index(int index);
+    void delete_bookmark_with_index(int index);
     void delete_highlight(Highlight hl);
     void delete_closest_bookmark_to_offset(float offset);
     float get_offset_x();
@@ -209,6 +210,7 @@ public:
     std::deque<AbsoluteRect>* get_selected_character_rects();
 
     std::vector<int> get_visible_highlight_indices();
+    std::vector<int> get_visible_bookmark_indices();
     void set_presentation_page_number(std::optional<int> page);
     std::optional<int> get_presentation_page_number();
     bool is_presentation_mode();

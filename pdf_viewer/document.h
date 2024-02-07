@@ -190,6 +190,7 @@ public:
     std::string add_highlight(const std::wstring& desc, const std::vector<AbsoluteRect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     std::string add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     void delete_highlight_with_index(int index);
+    void delete_bookmark_with_index(int index);
     void delete_highlight(Highlight hl);
     int get_bookmark_index_at_pos(AbsoluteDocumentPos abspos);
     int get_portal_index_at_pos(AbsoluteDocumentPos abspos);
