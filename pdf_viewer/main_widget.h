@@ -384,7 +384,7 @@ public:
     std::wstring get_status_string();
     void handle_escape();
     bool is_waiting_for_symbol();
-    void key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat=false);
+    void key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat = false);
     void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
     void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
     void on_config_changed(std::string config_name);
@@ -481,7 +481,7 @@ public:
     ~MainWidget();
 
     //void handle_command(NewCommand* command, int num_repeats);
-    bool handle_command_types(std::unique_ptr<Command> command, int num_repeats, std::wstring* result=nullptr);
+    bool handle_command_types(std::unique_ptr<Command> command, int num_repeats, std::wstring* result = nullptr);
     void handle_pending_text_command(std::wstring text);
 
     void invalidate_render();
@@ -522,13 +522,13 @@ public:
     void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
     void set_current_widget(QWidget* new_widget);
     void push_current_widget(QWidget* new_widget);
-    void pop_current_widget(bool canceled=false);
+    void pop_current_widget(bool canceled = false);
     void show_current_widget();
     bool focus_on_visual_mark_pos(bool moving_down);
     void toggle_visual_scroll_mode();
     void set_overview_link(PdfLink link);
     void set_overview_position(int page, float offset);
-    ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects=nullptr);
+    ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects = nullptr);
     TextUnderPointerInfo find_location_of_text_under_pointer(DocumentPos docpos, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
     CommandManager* get_command_manager();
@@ -551,7 +551,7 @@ public:
 
     bool is_rotated();
     void on_new_paper_added(const std::wstring& file_path);
-    void scroll_overview(int vertical_amount, int horizontal_amount=0);
+    void scroll_overview(int vertical_amount, int horizontal_amount = 0);
     int get_current_page_number() const;
     std::wstring get_current_page_label();
     void goto_page_with_page_number(int page_number);
@@ -575,9 +575,9 @@ public:
     bool is_rect_visible(DocumentRect rect);
     void set_mark_in_current_location(char symbol);
     void goto_mark(char symbol);
-    void advance_command(std::unique_ptr<Command> command, std::wstring* result=nullptr);
+    void advance_command(std::unique_ptr<Command> command, std::wstring* result = nullptr);
     void add_search_term(const std::wstring& term);
-    void perform_search(std::wstring text, bool is_regex = false, bool is_incremental=false);
+    void perform_search(std::wstring text, bool is_regex = false, bool is_incremental = false);
     void overview_to_definition();
     void portal_to_definition();
     void move_visual_mark_command(int amount);
@@ -617,7 +617,7 @@ public:
     void read_current_line();
     void download_paper_under_cursor(bool use_last_touch_pos = false);
     std::optional<std::wstring> get_direct_paper_name_under_pos(DocumentPos docpos);
-    std::optional<std::wstring> get_paper_name_under_pos(DocumentPos docpos, bool clean=false);
+    std::optional<std::wstring> get_paper_name_under_pos(DocumentPos docpos, bool clean = false);
     QNetworkReply* download_paper_with_name(const std::wstring& name, PaperDownloadFinishedAction action);
     bool is_pos_inside_selected_text(DocumentPos docpos);
     void handle_debug_command();
@@ -668,6 +668,7 @@ public:
     // this is used so we can keep track of mouse movement after press and holding on ruler rect
     WindowPos ruler_moving_last_window_pos;
     int ruler_moving_distance_traveled = 0;
+    std::optional<Portal> last_dispplayed_portal = {};
 
 
     void update_highlight_buttons_position();
@@ -929,6 +930,7 @@ public:
     void handle_toggle_two_page_mode();
     void ensure_zero_interval_timer();
     void set_last_performed_command(std::unique_ptr<Command> command);
+    void make_current_menu_columns_equal();
 };
 
 #endif

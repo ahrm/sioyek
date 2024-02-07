@@ -2,19 +2,13 @@
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
-// write iterators to iterate on stext blocks/lines/chars instead of creating arrays
 // do the todo for link clicks when the document is zoomed in (focus on x too)
 // fix the issue where executing non-existant command blocks the python api
 // handle mobile text selection case where the character is not in the current page
-// maybe add progressive search
 // make sure database migrations goes smoothly. Test with database files from previous sioyek versions.
 // portals are not correctly saved in an updated database
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
-// moving exits show link mode
-// test exact highlight select after saving and reloading the document
-// embedded documents don't respect exact highlight select
-// check if the widget being popped is audio controsl and if it is paused, hide the notification, (also do this when stop button is pressed)
 
 #include <iostream>
 #include <vector>
@@ -1579,8 +1573,13 @@ void MainWidget::validate_render() {
         }
     }
 
+    bool should_update_portal = false;
     if (main_document_view && main_document_view->get_document() && is_helper_visible()) {
         std::optional<Portal> link = main_document_view->find_closest_portal();
+        if (!(link == last_dispplayed_portal)) {
+            should_update_portal = true;
+            last_dispplayed_portal = link;
+        }
 
         if (link) {
             helper_document_view()->goto_portal(&link.value());
@@ -1595,7 +1594,7 @@ void MainWidget::validate_render() {
         opengl_widget->update();
     }
 
-    if (is_helper_visible()) {
+    if (is_helper_visible() && (should_update_portal || helper_opengl_widget()->hasFocus())) {
         helper_opengl_widget()->update();
     }
 
@@ -1903,9 +1902,6 @@ bool MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int 
         new_command->set_num_repeats(num_repeats);
         if (new_command->pushes_state()) {
             push_state();
-        }
-        if (main_document_view_has_document()) {
-            main_document_view->disable_auto_resize_mode();
         }
         advance_command(std::move(new_command), result);
         update_scrollbar();
@@ -5662,12 +5658,7 @@ void MainWidget::handle_open_prev_doc() {
         }
         );
 
-    if (!TOUCH_MODE && current_widget_stack.size() > 0) {
-        FilteredSelectTableWindowClass<std::string>* widget = dynamic_cast<FilteredSelectTableWindowClass<std::string>*>(current_widget_stack.back());
-        if (widget) {
-            widget->set_equal_columns();
-        }
-    }
+    make_current_menu_columns_equal();
     show_current_widget();
 }
 
@@ -7017,6 +7008,9 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         if (QString::fromStdString((*config_names)[i]) == "gamma") {
             should_invalidate_render = true;
         }
+        if (QString::fromStdString((*config_names)[i]) == "highlight_links") {
+            opengl_widget->set_highlight_links(SHOULD_HIGHLIGHT_LINKS, false);
+        }
         if (QString::fromStdString((*config_names)[i]).startsWith("page_space")) {
             main_document_view->fill_cached_virtual_rects(true);
         }
@@ -7620,6 +7614,7 @@ void MainWidget::handle_goto_loaded_document() {
             }
         }
         );
+    make_current_menu_columns_equal();
     show_current_widget();
 }
 
@@ -10082,4 +10077,17 @@ void MainWidget::set_last_performed_command(std::unique_ptr<Command> command) {
     }
 
     last_performed_command = std::move(command);
+}
+
+void MainWidget::make_current_menu_columns_equal() {
+    if (!TOUCH_MODE && current_widget_stack.size() > 0) {
+        FilteredSelectTableWindowClass<std::string>* widget = dynamic_cast<FilteredSelectTableWindowClass<std::string>*>(current_widget_stack.back());
+        FilteredSelectTableWindowClass<std::wstring>* widget2 = dynamic_cast<FilteredSelectTableWindowClass<std::wstring>*>(current_widget_stack.back());
+        if (widget) {
+            widget->set_equal_columns();
+        }
+        if (widget2) {
+            widget2->set_equal_columns();
+        }
+    }
 }
