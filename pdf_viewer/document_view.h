@@ -230,6 +230,7 @@ public:
 
     float get_page_space_x();
     float get_page_space_y();
+    bool fast_coordinates();
 
 };
 

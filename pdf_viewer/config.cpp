@@ -116,6 +116,7 @@ extern int NUM_CACHED_PAGES;
 
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
+extern bool REAL_PAGE_SEPARATION;
 extern bool NO_AUTO_CONFIG;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
@@ -874,6 +875,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"hide_overlapping_link_labels",
         ConfigType::Bool,
         &HIDE_OVERLAPPING_LINK_LABELS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"real_page_separation",
+        ConfigType::Bool,
+        &REAL_PAGE_SEPARATION,
         bool_serializer,
         bool_deserializer,
         bool_validator
