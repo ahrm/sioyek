@@ -3810,8 +3810,16 @@ bool pred_case_sensitive(const wchar_t& c1, const wchar_t& c2) {
     return c1 == c2;
 }
 
+wchar_t case_sensitive_hash(const wchar_t& c){
+    return c;
+}
+
 bool pred_case_insensitive(const wchar_t& c1, const wchar_t& c2) {
     return std::tolower(c1) == std::tolower(c2);
+}
+
+wchar_t case_insensitive_hash(const wchar_t& c){
+    return std::tolower(c);
 }
 
 // a function to return a pred based on case sensitivity
@@ -3820,6 +3828,13 @@ std::function<bool(const wchar_t&, const wchar_t&)> get_pred(SearchCaseSensitivi
     if (cs == SearchCaseSensitivity::CaseInsensitive) return pred_case_insensitive;
     if (QString::fromStdWString(query).isLower()) return pred_case_insensitive;
     return pred_case_sensitive;
+}
+
+std::function<wchar_t(const wchar_t&)> get_hash(SearchCaseSensitivity cs, const std::wstring& query) {
+    if (cs == SearchCaseSensitivity::CaseSensitive) return case_sensitive_hash;
+    if (cs == SearchCaseSensitivity::CaseInsensitive) return case_insensitive_hash;
+    if (QString::fromStdWString(query).isLower()) return case_insensitive_hash;
+    return case_sensitive_hash;
 }
 
 std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_search_index,
@@ -3846,7 +3861,8 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
     bool is_before = true;
 
     auto pred = get_pred(case_sensitive, query);
-    auto searcher = std::default_searcher(query.begin(), query.end(), pred);
+    auto hash = get_hash(case_sensitive, query);
+    auto searcher = std::boyer_moore_searcher(query.begin(), query.end(), hash, pred);
     auto it = std::search(
         super_fast_search_index.begin() + begin_index,
         super_fast_search_index.begin() + end_index,

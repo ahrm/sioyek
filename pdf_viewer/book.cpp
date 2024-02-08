@@ -4,7 +4,7 @@
 
 extern float BOOKMARK_RECT_SIZE;
 
-bool operator==(DocumentViewState& lhs, const DocumentViewState& rhs)
+bool operator==(const DocumentViewState& lhs, const DocumentViewState& rhs)
 {
     return (lhs.book_state.offset_x == rhs.book_state.offset_x) &&
         (lhs.book_state.offset_y == rhs.book_state.offset_y) &&

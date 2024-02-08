@@ -254,7 +254,7 @@ struct Portal : Annotation {
 };
 
 
-bool operator==(DocumentViewState& lhs, const DocumentViewState& rhs);
+bool operator==(const DocumentViewState& lhs, const DocumentViewState& rhs);
 
 struct SearchResult {
     std::vector<fz_rect> rects;

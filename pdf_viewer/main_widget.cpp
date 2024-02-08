@@ -9,7 +9,6 @@
 // portals are not correctly saved in an updated database
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
-// faster super_fast_search?
 
 
 #include <iostream>
