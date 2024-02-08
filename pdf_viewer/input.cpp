@@ -3968,7 +3968,8 @@ public:
     NewWindowCommand(MainWidget* w) : Command(w) {};
 
     void perform() {
-        widget->handle_new_window();
+        int new_id = widget->handle_new_window()->window_id;
+        result = QString::number(new_id).toStdWString();
     }
 
     std::string get_name() {
@@ -5192,6 +5193,28 @@ public:
 
     void perform() {
         widget->long_jump_to_destination(widget->selection_begin.y);
+    }
+
+    std::string get_name() {
+        return cname;
+    }
+
+};
+
+class SetWindowRectCommand : public TextCommand {
+public:
+    static inline const std::string cname = "set_window_rect";
+    static inline const std::string hname = "Move and resize the window to the given coordinates (in pixels).";
+    SetWindowRectCommand(MainWidget* w) : TextCommand(w) {};
+
+    void perform() {
+        QStringList parts = QString::fromStdWString(text.value()).split(' ');
+        int x0 = parts[0].toInt();
+        int y0 = parts[1].toInt();
+        int w = parts[2].toInt();
+        int h = parts[3].toInt();
+        widget->resize(w, h);
+        widget->move(x0, y0);
     }
 
     std::string get_name() {
@@ -7295,7 +7318,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<PrintUndocumentedCommandsCommand>();
     register_command<PrintUndocumentedConfigsCommand>();
     register_command<PrintNonDefaultConfigs>();
-
+    register_command<SetWindowRectCommand>();
 
     for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
         std::string command_name = utf8_encode(command_name_);

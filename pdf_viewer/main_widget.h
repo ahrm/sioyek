@@ -884,7 +884,7 @@ public:
     void deselect_document_indices();
     void zoom_in_overview();
     void zoom_out_overview();
-    Q_INVOKABLE QString run_macro_on_main_thread(QString macro_string, bool wait_for_result=true);
+    Q_INVOKABLE QString run_macro_on_main_thread(QString macro_string, bool wait_for_result=true, int target_window_id=-1);
     Q_INVOKABLE QString perform_network_request(QString url);
     Q_INVOKABLE QString read_text_file(QString path);
     Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
@@ -936,5 +936,7 @@ public:
     DocumentPos get_index_document_pos(int index);
     void highlight_window_points();
 };
+
+MainWidget* get_window_with_window_id(int window_id);
 
 #endif

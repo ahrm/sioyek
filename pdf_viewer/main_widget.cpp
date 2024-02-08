@@ -10,8 +10,6 @@
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
 // faster super_fast_search?
-// handle this issue: https://github.com/ahrm/sioyek/issues/670
-// add a config option to use actual page separation
 
 
 #include <iostream>
@@ -252,6 +250,13 @@ extern int RELOAD_INTERVAL_MILISECONDS;
 
 const unsigned int INTERVAL_TIME = 200;
 
+
+MainWidget* get_window_with_window_id(int window_id) {
+    for (auto window : windows) {
+        if (window->get_window_id() == window_id) return window;
+    }
+    return nullptr;
+}
 
 bool MainWidget::main_document_view_has_document()
 {
@@ -9434,11 +9439,17 @@ void MainWidget::zoom_out_overview(){
     opengl_widget->zoom_out_overview();
 }
 
-QString MainWidget::run_macro_on_main_thread(QString macro_string, bool wait_for_result) {
+QString MainWidget::run_macro_on_main_thread(QString macro_string, bool wait_for_result, int target_window_id) {
+    MainWidget* target = this;
+    if (target_window_id != -1) {
+        target = get_window_with_window_id(target_window_id);
+        if (target == nullptr) return "";
+    }
+
     bool is_done = false;
     std::wstring result;
     if (wait_for_result) {
-        QMetaObject::invokeMethod(this,
+        QMetaObject::invokeMethod(target,
             "execute_macro_and_return_result",
             Qt::QueuedConnection,
             Q_ARG(QString, macro_string),
@@ -9451,7 +9462,7 @@ QString MainWidget::run_macro_on_main_thread(QString macro_string, bool wait_for
         return QString::fromStdWString(result);
     }
     else {
-        QMetaObject::invokeMethod(this,
+        QMetaObject::invokeMethod(target,
             "execute_macro_and_return_result",
             Qt::QueuedConnection,
             Q_ARG(QString, macro_string),

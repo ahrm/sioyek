@@ -672,12 +672,6 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
     }
 }
 
-MainWidget* get_window_with_window_id(int window_id) {
-    for (auto window : windows) {
-        if (window->get_window_id() == window_id) return window;
-    }
-    return nullptr;
-}
 
 MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
     if (!QFile::exists(QString::fromStdWString(file_path))) {
