@@ -37,13 +37,15 @@ protected:
     int num_repeats = 1;
     MainWidget* widget = nullptr;
     std::optional<std::wstring> result = {};
+    std::string command_cname;
 public:
 
+    static inline const bool developer_only = false;
     QLocalSocket* result_socket = nullptr;
     std::wstring* result_holder = nullptr;
     bool* is_done = nullptr;
 
-    Command(MainWidget* widget);
+    Command(std::string name, MainWidget* widget);
     virtual std::optional<Requirement> next_requirement(MainWidget* widget);
     virtual std::optional<std::wstring> get_result();
 
@@ -96,8 +98,16 @@ public:
 
     template<typename T>
     void register_command() {
-        new_commands[T::cname]  = [](MainWidget* widget) {return std::make_unique<T>(widget); };
-        command_human_readable_names[T::cname] = T::hname;
+        bool is_developer_mode = false;
+
+#ifdef SIOYEK_DEVELOPER
+        is_developer_mode = true;
+#endif
+
+        if (is_developer_mode || !T::developer_only) {
+            new_commands[T::cname]  = [](MainWidget* widget) {return std::make_unique<T>(widget); };
+            command_human_readable_names[T::cname] = T::hname;
+        }
     }
 };
 

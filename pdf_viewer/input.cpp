@@ -85,7 +85,7 @@ struct CommandInvocation {
     }
 };
 
-Command::Command(MainWidget* widget_) : widget(widget_) {
+Command::Command(std::string name, MainWidget* widget_) : command_cname(name), widget(widget_) {
 
 }
 
@@ -180,7 +180,7 @@ void Command::set_next_requirement_with_string(std::wstring str) {
 class GenericPathCommand : public Command {
 public:
     std::optional<std::wstring> selected_path = {};
-    GenericPathCommand(MainWidget* w) : Command(w) {};
+    GenericPathCommand(std::string name, MainWidget* w) : Command(name, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) override {
         if (selected_path) {
@@ -199,7 +199,7 @@ public:
 
 class GenericGotoLocationCommand : public Command {
 public:
-    GenericGotoLocationCommand(MainWidget* w) : Command(w) {};
+    GenericGotoLocationCommand(std::string name, MainWidget* w) : Command(name, w) {};
 
     std::optional<float> target_location = {};
 
@@ -230,7 +230,7 @@ public:
 
     std::optional<QVariant> target_location;
     bool is_hash = false;
-    GenericPathAndLocationCommadn(MainWidget* w, bool is_hash_ = false) : Command(w) { is_hash = is_hash_; };
+    GenericPathAndLocationCommadn(std::string name, MainWidget* w, bool is_hash_ = false) : Command(name, w) { is_hash = is_hash_; };
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
         if (target_location) {
@@ -277,11 +277,12 @@ public:
         return true;
     }
 };
+
 class SymbolCommand : public Command {
 protected:
     char symbol = 0;
 public:
-    SymbolCommand(MainWidget* w) : Command(w) {}
+    SymbolCommand(std::string name, MainWidget* w) : Command(name, w) {}
     virtual std::optional<Requirement> next_requirement(MainWidget* widget) {
         if (symbol == 0) {
             return Requirement{ RequirementType::Symbol, "symbol" };
@@ -301,7 +302,7 @@ protected:
     std::optional<std::wstring> text = {};
 public:
 
-    TextCommand(MainWidget* w) : Command(w) {}
+    TextCommand(std::string name, MainWidget* w) : Command(name, w) {}
 
     virtual std::string text_requirement_name() {
         return "text";
@@ -326,7 +327,7 @@ public:
     static inline const std::string cname = "goto_mark";
     static inline const std::string hname = "Go to marked location";
 
-    GotoMark(MainWidget* w) : SymbolCommand(w) {}
+    GotoMark(MainWidget* w) : SymbolCommand(cname, w) {}
 
     bool pushes_state() {
         return true;
@@ -354,7 +355,7 @@ public:
     static inline const std::string cname = "set_mark";
     static inline const std::string hname = "Set mark in current location";
 
-    SetMark(MainWidget* w) : SymbolCommand(w) {}
+    SetMark(MainWidget* w) : SymbolCommand(cname, w) {}
 
     std::string get_name() {
         return cname;
@@ -372,7 +373,7 @@ public:
     static inline const std::string cname = "toggle_drawing_mask";
     static inline const std::string hname = "Toggle drawing type visibility";
 
-    ToggleDrawingMask(MainWidget* w) : SymbolCommand(w) {}
+    ToggleDrawingMask(MainWidget* w) : SymbolCommand(cname, w) {}
 
     std::string get_name() {
         return cname;
@@ -387,7 +388,7 @@ class GotoLoadedDocumentCommand : public GenericPathCommand {
 public:
     static inline const std::string cname = "goto_tab";
     static inline const std::string hname = "Open tab";
-    GotoLoadedDocumentCommand(MainWidget* w) : GenericPathCommand(w) {}
+    GotoLoadedDocumentCommand(MainWidget* w) : GenericPathCommand(cname, w) {}
 
     void handle_generic_requirement() {
         widget->handle_goto_loaded_document();
@@ -411,7 +412,7 @@ class NextItemCommand : public Command {
 public:
     static inline const std::string cname = "next_item";
     static inline const std::string hname = "Go to next search result";
-    NextItemCommand(MainWidget* w) : Command(w) {}
+    NextItemCommand(MainWidget* w) : Command(cname, w) {}
 
     void perform() {
         if (num_repeats == 0) num_repeats++;
@@ -428,15 +429,11 @@ class PrevItemCommand : public Command {
 public:
     static inline const std::string cname = "previous_item";
     static inline const std::string hname = "Go to previous search result";
-    PrevItemCommand(MainWidget* w) : Command(w) {};
+    PrevItemCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         if (num_repeats == 0) num_repeats++;
         widget->goto_search_result(-num_repeats);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -445,16 +442,12 @@ class ToggleTextMarkCommand : public Command {
 public:
     static inline const std::string cname = "toggle_text_mark";
     static inline const std::string hname = "Move text cursor to other end of selection";
-    ToggleTextMarkCommand(MainWidget* w) : Command(w) {};
+    ToggleTextMarkCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         //if (num_repeats == 0) num_repeats++;
         widget->handle_toggle_text_mark();
         //widget->invalidate_render();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -463,137 +456,97 @@ class MoveTextMarkForwardCommand : public Command {
 public:
     static inline const std::string cname = "move_text_mark_forward";
     static inline const std::string hname = "Move text cursor forward";
-    MoveTextMarkForwardCommand(MainWidget* w) : Command(w) {};
+    MoveTextMarkForwardCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         //if (num_repeats == 0) num_repeats++;
         widget->handle_move_text_mark_forward(false);
         //widget->invalidate_render();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveTextMarkDownCommand : public Command {
 public:
     static inline const std::string cname = "move_text_mark_down";
     static inline const std::string hname = "Move text cursor down";
-    MoveTextMarkDownCommand(MainWidget* w) : Command(w) {};
+    MoveTextMarkDownCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_move_text_mark_down();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveTextMarkUpCommand : public Command {
 public:
     static inline const std::string cname = "move_text_mark_up";
     static inline const std::string hname = "Move text cursor up";
-    MoveTextMarkUpCommand(MainWidget* w) : Command(w) {};
+    MoveTextMarkUpCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_move_text_mark_up();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveTextMarkForwardWordCommand : public Command {
 public:
     static inline const std::string cname = "move_text_mark_forward_word";
     static inline const std::string hname = "Move text cursor forward to the next word";
-    MoveTextMarkForwardWordCommand(MainWidget* w) : Command(w) {};
+    MoveTextMarkForwardWordCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_move_text_mark_forward(true);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveTextMarkBackwardCommand : public Command {
 public:
     static inline const std::string cname = "move_text_mark_backward";
     static inline const std::string hname = "Move text cursor backward";
-    MoveTextMarkBackwardCommand(MainWidget* w) : Command(w) {};
+    MoveTextMarkBackwardCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_move_text_mark_backward(false);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveTextMarkBackwardWordCommand : public Command {
 public:
     static inline const std::string cname = "move_text_mark_backward_word";
     static inline const std::string hname = "Move text cursor backward to the previous word";
-    MoveTextMarkBackwardWordCommand(MainWidget* w) : Command(w) {};
+    MoveTextMarkBackwardWordCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_move_text_mark_backward(true);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class StartReadingCommand : public Command {
 public:
     static inline const std::string cname = "start_reading";
     static inline const std::string hname = "Read using text to speech";
-    StartReadingCommand(MainWidget* w) : Command(w) {};
+    StartReadingCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_start_reading();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class StopReadingCommand : public Command {
 public:
     static inline const std::string cname = "stop_reading";
     static inline const std::string hname = "Stop reading";
-    StopReadingCommand(MainWidget* w) : Command(w) {};
+    StopReadingCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_stop_reading();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class SearchCommand : public TextCommand {
 public:
     static inline const std::string cname = "search";
     static inline const std::string hname = "Search the PDF document";
-    SearchCommand(MainWidget* w) : TextCommand(w) {
+    SearchCommand(MainWidget* w) : TextCommand(cname, w) {
     };
 
     void pre_perform() {
@@ -613,10 +566,6 @@ public:
         if (TOUCH_MODE) {
             widget->show_search_buttons();
         }
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
     bool pushes_state() {
@@ -645,17 +594,13 @@ public:
     static inline const std::string cname = "download_clipboard_url";
     static inline const std::string hname = "";
 
-    DownloadClipboardUrlCommand(MainWidget* w) : Command(w) {
+    DownloadClipboardUrlCommand(MainWidget* w) : Command(cname, w) {
     };
 
     void perform() {
         auto clipboard = QGuiApplication::clipboard();
         std::wstring url = clipboard->text().toStdWString();
         widget->download_paper_with_url(url, false, PaperDownloadFinishedAction::OpenInNewWindow);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
     std::string text_requirement_name() {
@@ -668,15 +613,11 @@ public:
     static inline const std::string cname = "download_paper_with_url";
     static inline const std::string hname = "";
 
-    DownloadPaperWithUrlCommand(MainWidget* w) : TextCommand(w) {
+    DownloadPaperWithUrlCommand(MainWidget* w) : TextCommand(cname, w) {
     };
 
     void perform() {
         widget->download_paper_with_url(text.value(), false, PaperDownloadFinishedAction::OpenInNewWindow);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
     std::string text_requirement_name() {
@@ -689,17 +630,13 @@ class ControlMenuCommand : public TextCommand {
 public:
     static inline const std::string cname = "control_menu";
     static inline const std::string hname = "";
-    ControlMenuCommand(MainWidget* w) : TextCommand(w) {
+    ControlMenuCommand(MainWidget* w) : TextCommand(cname, w) {
     };
 
 
     void perform() {
         QString res = widget->handle_action_in_menu(text.value());
         result = res.toStdWString();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
     std::string text_requirement_name() {
@@ -712,15 +649,11 @@ class ExecuteMacroCommand : public TextCommand {
 public:
     static inline const std::string cname = "execute_macro";
     static inline const std::string hname = "";
-    ExecuteMacroCommand(MainWidget* w) : TextCommand(w) {
+    ExecuteMacroCommand(MainWidget* w) : TextCommand(cname, w) {
     };
 
     void perform() {
         widget->execute_macro_if_enabled(text.value());
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
     std::string text_requirement_name() {
@@ -733,7 +666,7 @@ class SetViewStateCommand : public TextCommand {
 public:
     static inline const std::string cname = "set_view_state";
     static inline const std::string hname = "";
-    SetViewStateCommand(MainWidget* w) : TextCommand(w) {
+    SetViewStateCommand(MainWidget* w) : TextCommand(cname, w) {
     };
 
     void perform() {
@@ -753,10 +686,6 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 
     std::string text_requirement_name() {
         return "State String";
@@ -771,7 +700,7 @@ private:
 public:
     static inline const std::string cname = "test_command";
     static inline const std::string hname = "";
-    TestCommand(MainWidget* w) : Command(w) {};
+    TestCommand(MainWidget* w) : Command(cname, w) {};
 
     void set_text_requirement(std::wstring value) {
         if (!text1.has_value()) {
@@ -798,10 +727,6 @@ public:
         show_error_message(result.value());
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GetConfigNoDialogCommand : public Command {
@@ -809,7 +734,7 @@ class GetConfigNoDialogCommand : public Command {
 public:
     static inline const std::string cname = "get_config_no_dialog";
     static inline const std::string hname = "";
-    GetConfigNoDialogCommand(MainWidget* w) : Command(w) {};
+    GetConfigNoDialogCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
         if (!command_name.has_value()) {
@@ -845,10 +770,6 @@ public:
         result = output.str();
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ShowTextPromptCommand : public Command {
@@ -858,7 +779,7 @@ class ShowTextPromptCommand : public Command {
 public:
     static inline const std::string cname = "show_text_prompt";
     static inline const std::string hname = "";
-    ShowTextPromptCommand(MainWidget* w) : Command(w) {};
+    ShowTextPromptCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
         if (!prompt_title.has_value()) {
@@ -901,10 +822,6 @@ public:
     void perform() {
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GetStateJsonCommand : public Command {
@@ -912,18 +829,13 @@ class GetStateJsonCommand : public Command {
 public:
     static inline const std::string cname = "get_state_json";
     static inline const std::string hname = "";
-    GetStateJsonCommand(MainWidget* w) : Command(w) {};
+    GetStateJsonCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         QJsonDocument doc(widget->get_all_json_states());
         std::wstring json_str = utf8_decode(doc.toJson(QJsonDocument::Compact).toStdString());
         result = json_str;
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GetPaperNameCommand : public Command {
@@ -931,16 +843,11 @@ class GetPaperNameCommand : public Command {
 public:
     static inline const std::string cname = "get_paper_name";
     static inline const std::string hname = "";
-    GetPaperNameCommand(MainWidget* w) : Command(w) {};
+    GetPaperNameCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         result = widget->doc()->detect_paper_name();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GetOverviewPaperName : public Command {
@@ -948,17 +855,12 @@ class GetOverviewPaperName : public Command {
 public:
     static inline const std::string cname = "get_overview_paper_name";
     static inline const std::string hname = "";
-    GetOverviewPaperName(MainWidget* w) : Command(w) {};
+    GetOverviewPaperName(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         std::optional<std::wstring> paper_name = widget->get_overview_paper_name();
         result = paper_name.value_or(L"");
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ToggleRectHintsCommand : public Command {
@@ -966,14 +868,10 @@ class ToggleRectHintsCommand : public Command {
 public:
     static inline const std::string cname = "toggle_rect_hints";
     static inline const std::string hname = "";
-    ToggleRectHintsCommand(MainWidget* w) : Command(w) {};
+    ToggleRectHintsCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_rect_hints();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -983,16 +881,12 @@ class GetAnnotationsJsonCommand : public Command {
 public:
     static inline const std::string cname = "get_annotations_json";
     static inline const std::string hname = "";
-    GetAnnotationsJsonCommand(MainWidget* w) : Command(w) {};
+    GetAnnotationsJsonCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         QJsonDocument doc(widget->get_json_annotations());
         std::wstring json_str = utf8_decode(doc.toJson(QJsonDocument::Compact).toStdString());
         result = json_str;
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -1006,7 +900,7 @@ private:
 public:
     static inline const std::string cname = "show_custom_options";
     static inline const std::string hname = "";
-    ShowOptionsCommand(MainWidget* w) : Command(w) {};
+    ShowOptionsCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
         if (options.size() == 0) {
@@ -1035,10 +929,6 @@ public:
     }
 
     void perform() {
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -1072,7 +962,7 @@ class GetConfigCommand : public TextCommand {
 public:
     static inline const std::string cname = "get_config_value";
     static inline const std::string hname = "";
-    GetConfigCommand(MainWidget* w) : TextCommand(w) {};
+    GetConfigCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         auto configs = widget->config_manager->get_configs_ptr();
@@ -1085,10 +975,6 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
     std::string text_requirement_name() {
         return "Config Name";
     }
@@ -1099,14 +985,10 @@ class DownloadPaperWithNameCommand : public TextCommand {
 public:
     static inline const std::string cname = "download_paper_with_name";
     static inline const std::string hname = "";
-    DownloadPaperWithNameCommand(MainWidget* w) : TextCommand(w) {};
+    DownloadPaperWithNameCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         widget->download_paper_with_name(text.value(), PaperDownloadFinishedAction::OpenInNewWindow);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
     std::string text_requirement_name() {
@@ -1119,7 +1001,7 @@ class AddAnnotationToSelectedHighlightCommand : public TextCommand {
 public:
     static inline const std::string cname = "add_annot_to_selected_highlight";
     static inline const std::string hname = "Add annotation to selected highlight";
-    AddAnnotationToSelectedHighlightCommand(MainWidget* w) : TextCommand(w) {};
+    AddAnnotationToSelectedHighlightCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         widget->add_text_annotation_to_selected_highlight(this->text.value());
@@ -1133,10 +1015,6 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 
     std::string text_requirement_name() {
         return "Comment";
@@ -1147,7 +1025,7 @@ class RenameCommand : public TextCommand {
 public:
     static inline const std::string cname = "rename";
     static inline const std::string hname = "";
-    RenameCommand(MainWidget* w) : TextCommand(w) {};
+    RenameCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         //widget->add_text_annotation_to_selected_highlight(this->text.value());
@@ -1165,11 +1043,6 @@ public:
 
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     std::string text_requirement_name() {
         return "New Name";
     }
@@ -1179,7 +1052,7 @@ class SetFreehandThickness : public TextCommand {
 public:
     static inline const std::string cname = "set_freehand_thickness";
     static inline const std::string hname = "Set thickness of freehand drawings";
-    SetFreehandThickness(MainWidget* w) : TextCommand(w) {};
+    SetFreehandThickness(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         float thickness = QString::fromStdWString(this->text.value()).toFloat();
@@ -1189,11 +1062,6 @@ public:
         //	widget->show_search_buttons();
         //}
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
 
     std::string text_requirement_name() {
@@ -1205,16 +1073,11 @@ class GotoPageWithLabel : public TextCommand {
 public:
     static inline const std::string cname = "goto_page_with_label";
     static inline const std::string hname = "Go to page with label";
-    GotoPageWithLabel(MainWidget* w) : TextCommand(w) {};
+    GotoPageWithLabel(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         widget->goto_page_with_label(text.value());
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool pushes_state() {
         return true;
@@ -1229,7 +1092,7 @@ class ChapterSearchCommand : public TextCommand {
 public:
     static inline const std::string cname = "chapter_search";
     static inline const std::string hname = "Search current chapter";
-    ChapterSearchCommand(MainWidget* w) : TextCommand(w) {};
+    ChapterSearchCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         widget->perform_search(this->text.value(), false);
@@ -1249,11 +1112,6 @@ public:
         return true;
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     std::string text_requirement_name() {
         return "Search Term";
     }
@@ -1263,16 +1121,11 @@ class RegexSearchCommand : public TextCommand {
 public:
     static inline const std::string cname = "regex_search";
     static inline const std::string hname = "Search using regular expression";
-    RegexSearchCommand(MainWidget* w) : TextCommand(w) {};
+    RegexSearchCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         widget->perform_search(this->text.value(), true);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool pushes_state() {
         return true;
@@ -1287,15 +1140,11 @@ class AddBookmarkCommand : public TextCommand {
 public:
     static inline const std::string cname = "add_bookmark";
     static inline const std::string hname = "Add an invisible bookmark in the current location";
-    AddBookmarkCommand(MainWidget* w) : TextCommand(w) {}
+    AddBookmarkCommand(MainWidget* w) : TextCommand(cname, w) {}
 
     void perform() {
         std::string uuid = widget->main_document_view->add_bookmark(text.value());
         result = utf8_decode(uuid);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 
@@ -1313,7 +1162,7 @@ public:
     std::optional<std::wstring> text_;
     std::optional<AbsoluteDocumentPos> point_;
 
-    AddBookmarkMarkedCommand(MainWidget* w) : Command(w) {};
+    AddBookmarkMarkedCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
 
@@ -1343,10 +1192,6 @@ public:
         widget->invalidate_render();
         result = utf8_decode(uuid);
     }
-
-    std::string get_name() {
-        return cname;
-    }
 };
 
 
@@ -1358,7 +1203,7 @@ public:
 
     std::optional<AbsoluteDocumentPos> point_;
 
-    CreateVisiblePortalCommand(MainWidget* w) : Command(w) {};
+    CreateVisiblePortalCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
 
@@ -1377,10 +1222,6 @@ public:
         widget->start_creating_rect_portal(point_.value());
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class CopyDrawingsFromScratchpadCommand : public Command {
@@ -1391,7 +1232,7 @@ public:
 
     std::optional<AbsoluteRect> rect_;
 
-    CopyDrawingsFromScratchpadCommand(MainWidget* w) : Command(w) {};
+    CopyDrawingsFromScratchpadCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
 
@@ -1436,10 +1277,6 @@ public:
         widget->invalidate_render();
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class CopyScreenshotToClipboard : public Command {
@@ -1450,7 +1287,7 @@ public:
 
     std::optional<AbsoluteRect> rect_;
 
-    CopyScreenshotToClipboard(MainWidget* w) : Command(w) {};
+    CopyScreenshotToClipboard(MainWidget* w) : Command(cname, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
 
@@ -1484,11 +1321,8 @@ public:
         widget->invalidate_render();
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
+
 class CopyScreenshotToScratchpad : public Command {
 
 public:
@@ -1497,7 +1331,7 @@ public:
 
     std::optional<AbsoluteRect> rect_;
 
-    CopyScreenshotToScratchpad(MainWidget* w) : Command(w) {};
+    CopyScreenshotToScratchpad(MainWidget* w) : Command(cname, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
 
@@ -1530,12 +1364,8 @@ public:
         widget->set_rect_select_mode(false);
         widget->invalidate_render();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
+
 class AddBookmarkFreetextCommand : public Command {
 
 public:
@@ -1546,7 +1376,7 @@ public:
     std::optional<AbsoluteRect> rect_;
     int pending_index = -1;
 
-    AddBookmarkFreetextCommand(MainWidget* w) : Command(w) {};
+    AddBookmarkFreetextCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
 
@@ -1596,43 +1426,28 @@ public:
         widget->clear_selected_rect();
         widget->invalidate_render();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoBookmarkCommand : public GenericGotoLocationCommand {
 public:
     static inline const std::string cname = "goto_bookmark";
     static inline const std::string hname = "Open the bookmark list of current document";
-    GotoBookmarkCommand(MainWidget* w) : GenericGotoLocationCommand(w) {};
+    GotoBookmarkCommand(MainWidget* w) : GenericGotoLocationCommand(cname, w) {};
 
     void handle_generic_requirement() {
         widget->handle_goto_bookmark();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoPortalListCommand : public GenericGotoLocationCommand {
 public:
     static inline const std::string cname = "goto_portal_list";
     static inline const std::string hname = "";
-    GotoPortalListCommand(MainWidget* w) : GenericGotoLocationCommand(w) {};
+    GotoPortalListCommand(MainWidget* w) : GenericGotoLocationCommand(cname, w) {};
 
     void handle_generic_requirement() {
         widget->handle_goto_portal_list();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoBookmarkGlobalCommand : public GenericPathAndLocationCommadn {
@@ -1640,18 +1455,11 @@ public:
     static inline const std::string cname = "goto_bookmark_g";
     static inline const std::string hname = "Open the bookmark list of all documents";
 
-    GotoBookmarkGlobalCommand(MainWidget* w) : GenericPathAndLocationCommadn(w) {};
+    GotoBookmarkGlobalCommand(MainWidget* w) : GenericPathAndLocationCommadn(cname, w) {};
 
     void handle_generic_requirement() {
         widget->handle_goto_bookmark_global();
     }
-
-
-    std::string get_name() {
-        return cname;
-    }
-
-
     bool requires_document() { return false; }
 };
 
@@ -1659,7 +1467,7 @@ class IncreaseFreetextBookmarkFontSizeCommand : public Command {
 public:
     static inline const std::string cname = "increase_freetext_font_size";
     static inline const std::string hname = "Increase freetext bookmark font size";
-    IncreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(w) {};
+    IncreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         FREETEXT_BOOKMARK_FONT_SIZE *= 1.1f;
@@ -1669,18 +1477,13 @@ public:
         widget->update_selected_bookmark_font_size();
 
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class DecreaseFreetextBookmarkFontSizeCommand : public Command {
 public:
     static inline const std::string cname = "decrease_freetext_font_size";
     static inline const std::string hname = "Decrease freetext bookmark font size";
-    DecreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(w) {};
+    DecreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         FREETEXT_BOOKMARK_FONT_SIZE /= 1.1f;
@@ -1689,11 +1492,6 @@ public:
         }
         widget->update_selected_bookmark_font_size();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 
@@ -1701,16 +1499,11 @@ class GotoHighlightCommand : public GenericGotoLocationCommand {
 public:
     static inline const std::string cname = "goto_highlight";
     static inline const std::string hname = "Open the highlight list of the current document";
-    GotoHighlightCommand(MainWidget* w) : GenericGotoLocationCommand(w) {};
+    GotoHighlightCommand(MainWidget* w) : GenericGotoLocationCommand(cname, w) {};
 
     void handle_generic_requirement() {
         widget->handle_goto_highlight();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 
@@ -1719,16 +1512,11 @@ public:
     static inline const std::string cname = "goto_highlight_g";
     static inline const std::string hname = "Open the highlight list of the all documents";
 
-    GotoHighlightGlobalCommand(MainWidget* w) : GenericPathAndLocationCommadn(w) {};
+    GotoHighlightGlobalCommand(MainWidget* w) : GenericPathAndLocationCommadn(cname, w) {};
 
     void handle_generic_requirement() {
         widget->handle_goto_highlight_global();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
     bool requires_document() { return false; }
 };
 
@@ -1736,7 +1524,7 @@ class GotoTableOfContentsCommand : public GenericPathCommand {
 public:
     static inline const std::string cname = "goto_toc";
     static inline const std::string hname = "Open table of contents";
-    GotoTableOfContentsCommand(MainWidget* w) : GenericPathCommand(w) {};
+    GotoTableOfContentsCommand(MainWidget* w) : GenericPathCommand(cname, w) {};
 
     std::optional<QVariant>  target_location = {};
 
@@ -1792,42 +1580,27 @@ public:
     }
 
     bool pushes_state() { return true; }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class PortalCommand : public Command {
 public:
     static inline const std::string cname = "portal";
     static inline const std::string hname = "Start creating a portal";
-    PortalCommand(MainWidget* w) : Command(w) {};
+    PortalCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_portal();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ToggleWindowConfigurationCommand : public Command {
 public:
     static inline const std::string cname = "toggle_window_configuration";
     static inline const std::string hname = "Toggle between one window and two window configuration";
-    ToggleWindowConfigurationCommand(MainWidget* w) : Command(w) {};
+    ToggleWindowConfigurationCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->toggle_window_configuration();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -1836,16 +1609,11 @@ class NextStateCommand : public Command {
 public:
     static inline const std::string cname = "next_state";
     static inline const std::string hname = "Go forward in history";
-    NextStateCommand(MainWidget* w) : Command(w) {};
+    NextStateCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->next_state();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -1854,16 +1622,11 @@ class PrevStateCommand : public Command {
 public:
     static inline const std::string cname = "prev_state";
     static inline const std::string hname = "Go backward in history";
-    PrevStateCommand(MainWidget* w) : Command(w) {};
+    PrevStateCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->prev_state();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -1872,7 +1635,7 @@ class AddHighlightCommand : public SymbolCommand {
 public:
     static inline const std::string cname = "add_highlight";
     static inline const std::string hname = "Highlight selected text";
-    AddHighlightCommand(MainWidget* w) : SymbolCommand(w) {};
+    AddHighlightCommand(MainWidget* w) : SymbolCommand(cname, w) {};
 
     void perform() {
         result = widget->handle_add_highlight(symbol);
@@ -1882,27 +1645,17 @@ public:
         std::vector<char> res = { '_', };
         return res;
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class CommandPaletteCommand : public Command {
 public:
     static inline const std::string cname = "command_palette";
     static inline const std::string hname = "";
-    CommandPaletteCommand(MainWidget* w) : Command(w) {};
+    CommandPaletteCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->show_command_palette();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -1911,7 +1664,7 @@ class CommandCommand : public Command {
 public:
     static inline const std::string cname = "command";
     static inline const std::string hname = "";
-    CommandCommand(MainWidget* w) : Command(w) {};
+    CommandCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         QStringList command_names = widget->command_manager->get_all_command_names();
@@ -1930,11 +1683,6 @@ public:
 
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     bool requires_document() { return false; }
 };
 
@@ -1942,7 +1690,7 @@ class ScreenshotCommand : public Command {
 public:
     static inline const std::string cname = "screenshot";
     static inline const std::string hname = "";
-    ScreenshotCommand(MainWidget* w) : Command(w) {};
+    ScreenshotCommand(MainWidget* w) : Command(cname, w) {};
 
     std::wstring file_name;
 
@@ -1962,11 +1710,6 @@ public:
     void perform() {
         widget->screenshot(file_name);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
     bool requires_document() { return false; }
 };
 
@@ -1974,7 +1717,7 @@ class FramebufferScreenshotCommand : public Command {
 public:
     static inline const std::string cname = "framebuffer_screenshot";
     static inline const std::string hname = "";
-    FramebufferScreenshotCommand(MainWidget* w) : Command(w) {};
+    FramebufferScreenshotCommand(MainWidget* w) : Command(cname, w) {};
 
     std::wstring file_name;
 
@@ -1995,10 +1738,6 @@ public:
         widget->framebuffer_screenshot(file_name);
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
     bool requires_document() { return false; }
 };
 
@@ -2006,7 +1745,7 @@ class ExportDefaultConfigFile : public Command {
 public:
     static inline const std::string cname = "export_default_config_file";
     static inline const std::string hname = "";
-    ExportDefaultConfigFile(MainWidget* w) : Command(w) {};
+    ExportDefaultConfigFile(MainWidget* w) : Command(cname, w) {};
 
     std::wstring file_name;
 
@@ -2027,17 +1766,14 @@ public:
         widget->export_default_config_file(file_name);
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
     bool requires_document() { return false; }
 };
+
 class ExportCommandNamesCommand : public Command {
 public:
     static inline const std::string cname = "export_command_names";
     static inline const std::string hname = "";
-    ExportCommandNamesCommand(MainWidget* w) : Command(w) {};
+    ExportCommandNamesCommand(MainWidget* w) : Command(cname, w) {};
 
     std::wstring file_name;
 
@@ -2059,10 +1795,6 @@ public:
         widget->export_command_names(file_name);
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
     bool requires_document() { return false; }
 };
 
@@ -2072,7 +1804,7 @@ class ExportConfigNamesCommand : public Command {
 public:
     static inline const std::string cname = "export_config_names";
     static inline const std::string hname = "";
-    ExportConfigNamesCommand(MainWidget* w) : Command(w) {};
+    ExportConfigNamesCommand(MainWidget* w) : Command(cname, w) {};
 
     std::wstring file_name;
 
@@ -2094,16 +1826,12 @@ public:
         widget->export_config_names(file_name);
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
     bool requires_document() { return false; }
 };
 
 class GenericWaitCommand : public Command {
 public:
-    GenericWaitCommand(MainWidget* w) : Command(w) {};
+    GenericWaitCommand(std::string name, MainWidget* w) : Command(name, w) {};
     bool finished = false;
     QTimer* timer = nullptr;
     QMetaObject::Connection timer_connection;
@@ -2157,7 +1885,7 @@ class WaitCommand : public GenericWaitCommand {
 public:
     static inline const std::string cname = "wait";
     static inline const std::string hname = "";
-    WaitCommand(MainWidget* w) : GenericWaitCommand(w) {
+    WaitCommand(MainWidget* w) : GenericWaitCommand(cname, w) {
         start_time = QDateTime::currentDateTime();
     };
 
@@ -2178,17 +1906,13 @@ public:
     bool is_ready() override {
         return start_time.msecsTo(QDateTime::currentDateTime()) > duration.value();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
+
 class WaitForIndexingToFinishCommand : public GenericWaitCommand {
 public:
     static inline const std::string cname = "wait_for_indexing_to_finish";
     static inline const std::string hname = "";
-    WaitForIndexingToFinishCommand(MainWidget* w) : GenericWaitCommand(w) {};
+    WaitForIndexingToFinishCommand(MainWidget* w) : GenericWaitCommand(cname, w) {};
 
     void set_generic_requirement(QVariant value)
     {
@@ -2198,50 +1922,35 @@ public:
     bool is_ready() override {
         return widget->is_index_ready();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class WaitForRendersToFinishCommand : public GenericWaitCommand {
 public:
     static inline const std::string cname = "wait_for_renders_to_finish";
     static inline const std::string hname = "";
-    WaitForRendersToFinishCommand(MainWidget* w) : GenericWaitCommand(w) {};
+    WaitForRendersToFinishCommand(MainWidget* w) : GenericWaitCommand(cname, w) {};
 
     bool is_ready() override {
         return widget->is_render_ready();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class WaitForSearchToFinishCommand : public GenericWaitCommand {
 public:
     static inline const std::string cname = "wait_for_search_to_finish";
     static inline const std::string hname = "";
-    WaitForSearchToFinishCommand(MainWidget* w) : GenericWaitCommand(w) {};
+    WaitForSearchToFinishCommand(MainWidget* w) : GenericWaitCommand(cname, w) {};
 
     bool is_ready() override {
         return widget->is_search_ready();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class OpenDocumentCommand : public Command {
 public:
     static inline const std::string cname = "open_document";
     static inline const std::string hname = "open_document";
-    OpenDocumentCommand(MainWidget* w) : Command(w) {};
+    OpenDocumentCommand(MainWidget* w) : Command(cname, w) {};
 
     std::wstring file_name;
 
@@ -2266,11 +1975,6 @@ public:
         widget->open_document(file_name);
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     bool requires_document() { return false; }
 };
 
@@ -2278,7 +1982,7 @@ public:
 class MoveSmoothCommand : public Command {
     bool was_held = false;
 public:
-    MoveSmoothCommand(MainWidget* w) : Command(w) {};
+    MoveSmoothCommand(std::string name, MainWidget* w) : Command(name, w) {};
 
     virtual bool is_down() = 0;
 
@@ -2305,14 +2009,10 @@ class MoveUpSmoothCommand : public MoveSmoothCommand {
 public:
     static inline const std::string cname = "move_up_smooth";
     static inline const std::string hname = "";
-    MoveUpSmoothCommand(MainWidget* w) : MoveSmoothCommand(w) {};
+    MoveUpSmoothCommand(MainWidget* w) : MoveSmoothCommand(cname, w) {};
 
     bool is_down() {
         return false;
-    }
-
-    std::string get_name() {
-        return cname;
     }
 };
 
@@ -2320,14 +2020,10 @@ class MoveDownSmoothCommand : public MoveSmoothCommand {
 public:
     static inline const std::string cname = "move_down_smooth";
     static inline const std::string hname = "";
-    MoveDownSmoothCommand(MainWidget* w) : MoveSmoothCommand(w) {};
+    MoveDownSmoothCommand(MainWidget* w) : MoveSmoothCommand(cname, w) {};
 
     bool is_down() {
         return true;
-    }
-
-    std::string get_name() {
-        return cname;
     }
 };
 
@@ -2335,14 +2031,10 @@ class ToggleTwoPageModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_two_page_mode";
     static inline const std::string hname = "";
-    ToggleTwoPageModeCommand(MainWidget* w) : Command(w) {};
+    ToggleTwoPageModeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_toggle_two_page_mode();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 };
 
@@ -2350,7 +2042,7 @@ class FitEpubToWindowCommand : public Command {
 public:
     static inline const std::string cname = "fit_epub_to_window";
     static inline const std::string hname = "";
-    FitEpubToWindowCommand(MainWidget* w) : Command(w) {};
+    FitEpubToWindowCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
 
@@ -2358,25 +2050,17 @@ public:
         EPUB_HEIGHT = widget->height() / widget->dv()->get_zoom_level();
         widget->on_config_changed("epub_width");
     }
-
-    std::string get_name() {
-        return cname;
-    }
 };
 
 class MoveDownCommand : public Command {
 public:
     static inline const std::string cname = "move_down";
     static inline const std::string hname = "Move down";
-    MoveDownCommand(MainWidget* w) : Command(w) {};
+    MoveDownCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->handle_vertical_move(rp);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 };
 
@@ -2384,81 +2068,56 @@ class MoveUpCommand : public Command {
 public:
     static inline const std::string cname = "move_up";
     static inline const std::string hname = "Move up";
-    MoveUpCommand(MainWidget* w) : Command(w) {};
+    MoveUpCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->handle_vertical_move(-rp);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveLeftInOverviewCommand : public Command {
 public:
     static inline const std::string cname = "move_left_in_overview";
     static inline const std::string hname = "";
-    MoveLeftInOverviewCommand(MainWidget* w) : Command(w) {};
+    MoveLeftInOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->scroll_overview(0, 1);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveRightInOverviewCommand : public Command {
 public:
     static inline const std::string cname = "move_right_in_overview";
     static inline const std::string hname = "";
-    MoveRightInOverviewCommand(MainWidget* w) : Command(w) {};
+    MoveRightInOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->scroll_overview(0, -1);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveLeftCommand : public Command {
 public:
     static inline const std::string cname = "move_left";
     static inline const std::string hname = "Move left";
-    MoveLeftCommand(MainWidget* w) : Command(w) {};
+    MoveLeftCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->handle_horizontal_move(-rp);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveRightCommand : public Command {
 public:
     static inline const std::string cname = "move_right";
     static inline const std::string hname = "Move right";
-    MoveRightCommand(MainWidget* w) : Command(w) {};
+    MoveRightCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->handle_horizontal_move(rp);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class JavascriptCommand : public Command {
@@ -2467,7 +2126,7 @@ public:
     std::wstring code;
     bool is_async;
 
-    JavascriptCommand(std::string command_name, std::wstring code_, bool is_async_, MainWidget* w) :  Command(w), command_name(command_name) {
+    JavascriptCommand(std::string command_name, std::wstring code_, bool is_async_, MainWidget* w) :  Command(command_name, w), command_name(command_name) {
         code = code_;
         is_async = is_async_;
     };
@@ -2486,120 +2145,81 @@ class SaveScratchpadCommand : public Command {
 public:
     static inline const std::string cname = "save_scratchpad";
     static inline const std::string hname = "";
-    SaveScratchpadCommand(MainWidget* w) : Command(w) {};
+    SaveScratchpadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->save_scratchpad();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class LoadScratchpadCommand : public Command {
 public:
     static inline const std::string cname = "load_scratchpad";
     static inline const std::string hname = "";
-    LoadScratchpadCommand(MainWidget* w) : Command(w) {};
+    LoadScratchpadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->load_scratchpad();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ClearScratchpadCommand : public Command {
 public:
     static inline const std::string cname = "clear_scratchpad";
     static inline const std::string hname = "";
-    ClearScratchpadCommand(MainWidget* w) : Command(w) {};
+    ClearScratchpadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->clear_scratchpad();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ZoomInCommand : public Command {
 public:
     static inline const std::string cname = "zoom_in";
     static inline const std::string hname = "Zoom in";
-    ZoomInCommand(MainWidget* w) : Command(w) {};
+    ZoomInCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->zoom_in();
         widget->last_smart_fit_page = {};
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ZoomOutOverviewCommand : public Command {
 public:
     static inline const std::string cname = "zoom_out_overview";
     static inline const std::string hname = "";
-    ZoomOutOverviewCommand(MainWidget* w) : Command(w) {};
+    ZoomOutOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->zoom_out_overview();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ZoomInOverviewCommand : public Command {
 public:
     static inline const std::string cname = "zoom_in_overview";
     static inline const std::string hname = "";
-    ZoomInOverviewCommand(MainWidget* w) : Command(w) {};
+    ZoomInOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->zoom_in_overview();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class FitToPageWidthCommand : public Command {
 public:
     static inline const std::string cname = "fit_to_page_width";
     static inline const std::string hname = "Fit the page to screen width";
-    FitToPageWidthCommand(MainWidget* w) : Command(w) {};
+    FitToPageWidthCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_fit_to_page_width(false);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class FitToPageSmartCommand : public Command {
 public:
     static inline const std::string cname = "fit_to_page_smart";
     static inline const std::string hname = "";
-    FitToPageSmartCommand(MainWidget* w) : Command(w) {};
+    FitToPageSmartCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->fit_to_page_height_and_width_smart();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -2608,109 +2228,75 @@ class FitToPageWidthSmartCommand : public Command {
 public:
     static inline const std::string cname = "fit_to_page_width_smart";
     static inline const std::string hname = "Fit the page to screen width, ignoring white page margins";
-    FitToPageWidthSmartCommand(MainWidget* w) : Command(w) {};
+    FitToPageWidthSmartCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->handle_fit_to_page_width(true);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class FitToPageHeightCommand : public Command {
 public:
     static inline const std::string cname = "fit_to_page_height";
     static inline const std::string hname = "Fit the page to screen height";
-    FitToPageHeightCommand(MainWidget* w) : Command(w) {};
+    FitToPageHeightCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->fit_to_page_height();
         widget->last_smart_fit_page = {};
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class FitToPageHeightSmartCommand : public Command {
 public:
     static inline const std::string cname = "fit_to_page_height_smart";
     static inline const std::string hname = "Fit the page to screen height, ignoring white page margins";
-    FitToPageHeightSmartCommand(MainWidget* w) : Command(w) {};
+    FitToPageHeightSmartCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->fit_to_page_height(true);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class NextPageCommand : public Command {
 public:
     static inline const std::string cname = "next_page";
     static inline const std::string hname = "Go to next page";
-    NextPageCommand(MainWidget* w) : Command(w) {};
+    NextPageCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->move_pages(std::max(1, num_repeats));
     }
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class PreviousPageCommand : public Command {
 public:
     static inline const std::string cname = "previous_page";
     static inline const std::string hname = "Go to previous page";
-    PreviousPageCommand(MainWidget* w) : Command(w) {};
+    PreviousPageCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->move_pages(std::min(-1, -num_repeats));
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ZoomOutCommand : public Command {
 public:
     static inline const std::string cname = "zoom_out";
     static inline const std::string hname = "Zoom out";
-    ZoomOutCommand(MainWidget* w) : Command(w) {};
+    ZoomOutCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->main_document_view->zoom_out();
         widget->last_smart_fit_page = {};
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoDefinitionCommand : public Command {
 public:
     static inline const std::string cname = "goto_definition";
     static inline const std::string hname = "Go to the reference in current highlighted line";
-    GotoDefinitionCommand(MainWidget* w) : Command(w) {};
+    GotoDefinitionCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         if (widget->main_document_view->goto_definition()) {
             widget->main_document_view->exit_ruler_mode();
         }
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool pushes_state() {
         return true;
@@ -2722,28 +2308,19 @@ class OverviewDefinitionCommand : public Command {
 public:
     static inline const std::string cname = "overview_definition";
     static inline const std::string hname = "Open an overview to the reference in current highlighted line";
-    OverviewDefinitionCommand(MainWidget* w) : Command(w) {};
+    OverviewDefinitionCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->overview_to_definition();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class PortalToDefinitionCommand : public Command {
 public:
     static inline const std::string cname = "portal_to_definition";
     static inline const std::string hname = "Create a portal to the definition in current highlighted line";
-    PortalToDefinitionCommand(MainWidget* w) : Command(w) {};
+    PortalToDefinitionCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->portal_to_definition();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -2752,60 +2329,41 @@ class MoveVisualMarkDownCommand : public Command {
 public:
     static inline const std::string cname = "move_visual_mark_down";
     static inline const std::string hname = "Move current highlighted line down";
-    MoveVisualMarkDownCommand(MainWidget* w) : Command(w) {};
+    MoveVisualMarkDownCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->move_visual_mark_command(rp);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveVisualMarkUpCommand : public Command {
 public:
     static inline const std::string cname = "move_visual_mark_up";
     static inline const std::string hname = "Move current highlighted line up";
-    MoveVisualMarkUpCommand(MainWidget* w) : Command(w) {};
+    MoveVisualMarkUpCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->move_visual_mark_command(-rp);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveVisualMarkNextCommand : public Command {
 public:
     static inline const std::string cname = "move_visual_mark_next";
     static inline const std::string hname = "Move the current highlighted line to the next unread text";
-    MoveVisualMarkNextCommand(MainWidget* w) : Command(w) {};
+    MoveVisualMarkNextCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->move_visual_mark_next();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class MoveVisualMarkPrevCommand : public Command {
 public:
     static inline const std::string cname = "move_visual_mark_prev";
     static inline const std::string hname = "Move the current highlighted line to the previous";
-    MoveVisualMarkPrevCommand(MainWidget* w) : Command(w) {};
+    MoveVisualMarkPrevCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->move_visual_mark_prev();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -2815,7 +2373,7 @@ class GotoPageWithPageNumberCommand : public TextCommand {
 public:
     static inline const std::string cname = "goto_page_with_page_number";
     static inline const std::string hname = "Go to page with page number";
-    GotoPageWithPageNumberCommand(MainWidget* w) : TextCommand(w) {};
+    GotoPageWithPageNumberCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         std::wstring text_ = text.value();
@@ -2824,11 +2382,6 @@ public:
             widget->main_document_view->goto_page(dest + widget->main_document_view->get_page_offset());
         }
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     std::string text_requirement_name() {
         return "Page Number";
@@ -2847,7 +2400,7 @@ public:
     float initial_font_size;
     int index = -1;
 
-    EditSelectedBookmarkCommand(MainWidget* w) : TextCommand(w) {};
+    EditSelectedBookmarkCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void pre_perform() {
 
@@ -2895,11 +2448,6 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     std::string text_requirement_name() {
         return "Bookmark Text";
     }
@@ -2912,27 +2460,26 @@ public:
     static inline const std::string hname = "Edit the text comment of current selected highlight";
     int index = -1;
 
-    EditSelectedHighlightCommand(MainWidget* w) : TextCommand(w) {};
+    EditSelectedHighlightCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void pre_perform() {
-        index = widget->selected_bookmark_index;
+        index = widget->selected_highlight_index;
 
-        widget->set_text_prompt_text(
-            QString::fromStdWString(widget->doc()->get_highlights()[widget->selected_highlight_index].text_annot));
+        if (index != -1) {
+            widget->set_text_prompt_text(
+                QString::fromStdWString(widget->doc()->get_highlights()[index].text_annot));
+        }
         //widget->text_command_line_edit->setText(
         //    QString::fromStdWString(widget->doc()->get_highlights()[widget->selected_highlight_index].text_annot)
         //);
     }
 
     void perform() {
-        std::wstring text_ = text.value();
-        widget->change_selected_highlight_text_annot(text_);
+        if (index != -1) {
+            std::wstring text_ = text.value();
+            widget->change_selected_highlight_text_annot(text_);
+        }
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     std::string text_requirement_name() {
         return "Highlight Annotation";
@@ -2944,30 +2491,21 @@ class DeletePortalCommand : public Command {
 public:
     static inline const std::string cname = "delete_portal";
     static inline const std::string hname = "Delete the closest portal";
-    DeletePortalCommand(MainWidget* w) : Command(w) {};
+    DeletePortalCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->delete_closest_portal();
         widget->validate_render();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class DeleteBookmarkCommand : public Command {
 public:
     static inline const std::string cname = "delete_bookmark";
     static inline const std::string hname = "Delete the closest bookmark";
-    DeleteBookmarkCommand(MainWidget* w) : Command(w) {};
+    DeleteBookmarkCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->delete_closest_bookmark();
         widget->validate_render();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 };
 
@@ -2979,7 +2517,7 @@ protected:
     bool already_pre_performed = false;
 
 public:
-    GenericVisibleSelectCommand(MainWidget* w) : Command(w) {};
+    GenericVisibleSelectCommand(std::string name, MainWidget* w) : Command(name, w) {};
 
     virtual std::vector<int> get_visible_item_indices() = 0;
     virtual void handle_indices_pre_perform() = 0;
@@ -3041,7 +2579,7 @@ public:
 class GenericHighlightCommand : public GenericVisibleSelectCommand {
 
 public:
-    GenericHighlightCommand(MainWidget* w) : GenericVisibleSelectCommand(w) {};
+    GenericHighlightCommand(std::string name, MainWidget* w) : GenericVisibleSelectCommand(name, w) {};
 
     std::vector<int> get_visible_item_indices() override {
         return widget->main_document_view->get_visible_highlight_indices();
@@ -3069,7 +2607,7 @@ public:
 class GenericVisibleBookmarkCommand : public GenericVisibleSelectCommand {
 
 public:
-    GenericVisibleBookmarkCommand(MainWidget* w) : GenericVisibleSelectCommand(w) {};
+    GenericVisibleBookmarkCommand(std::string name, MainWidget* w) : GenericVisibleSelectCommand(name, w) {};
 
     std::vector<int> get_visible_item_indices() override {
         return widget->main_document_view->get_visible_bookmark_indices();
@@ -3099,14 +2637,10 @@ class DeleteVisibleBookmarkCommand : public GenericVisibleBookmarkCommand {
 public:
     static inline const std::string cname = "delete_visible_bookmark";
     static inline const std::string hname = "";
-    DeleteVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(w) {};
+    DeleteVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(cname, w) {};
 
     void perform_with_bookmark_selected() override {
         widget->handle_delete_selected_bookmark();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 };
 
@@ -3115,14 +2649,10 @@ class EditVisibleBookmarkCommand : public GenericVisibleBookmarkCommand {
 public:
     static inline const std::string cname = "edit_visible_bookmark";
     static inline const std::string hname = "";
-    EditVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(w) {};
+    EditVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(cname, w) {};
 
     void perform_with_bookmark_selected() override {
         widget->execute_macro_if_enabled(L"edit_selected_bookmark");
-    }
-
-    std::string get_name() {
-        return cname;
     }
 };
 
@@ -3131,16 +2661,11 @@ class DeleteHighlightCommand : public GenericHighlightCommand {
 public:
     static inline const std::string cname = "delete_highlight";
     static inline const std::string hname = "Delete the selected highlight";
-    DeleteHighlightCommand(MainWidget* w) : GenericHighlightCommand(w) {};
+    DeleteHighlightCommand(MainWidget* w) : GenericHighlightCommand(cname, w) {};
 
     void perform_with_highlight_selected() override {
         widget->handle_delete_selected_highlight();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 
@@ -3149,15 +2674,10 @@ class ChangeHighlightTypeCommand : public GenericHighlightCommand {
 public:
     static inline const std::string cname = "change_highlight";
     static inline const std::string hname = "";
-    ChangeHighlightTypeCommand(MainWidget* w) : GenericHighlightCommand(w) {};
+    ChangeHighlightTypeCommand(MainWidget* w) : GenericHighlightCommand(cname, w) {};
 
     void perform_with_highlight_selected() {
         widget->execute_macro_if_enabled(L"add_highlight");
-    }
-
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -3167,15 +2687,10 @@ class AddAnnotationToHighlightCommand : public GenericHighlightCommand {
 public:
     static inline const std::string cname = "add_annot_to_highlight";
     static inline const std::string hname = "";
-    AddAnnotationToHighlightCommand(MainWidget* w) : GenericHighlightCommand(w) {};
+    AddAnnotationToHighlightCommand(MainWidget* w) : GenericHighlightCommand(cname, w) {};
 
     void perform_with_highlight_selected() {
         widget->execute_macro_if_enabled(L"add_annot_to_selected_highlight");
-    }
-
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -3184,7 +2699,7 @@ class GotoPortalCommand : public Command {
 public:
     static inline const std::string cname = "goto_portal";
     static inline const std::string hname = "Goto closest portal destination";
-    GotoPortalCommand(MainWidget* w) : Command(w) {};
+    GotoPortalCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         std::optional<Portal> link = widget->main_document_view->find_closest_portal();
         if (link) {
@@ -3195,18 +2710,13 @@ public:
     bool pushes_state() {
         return true;
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class EditPortalCommand : public Command {
 public:
     static inline const std::string cname = "edit_portal";
     static inline const std::string hname = "Edit portal";
-    EditPortalCommand(MainWidget* w) : Command(w) {};
+    EditPortalCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         std::optional<Portal> link = widget->main_document_view->find_closest_portal();
         if (link) {
@@ -3218,27 +2728,17 @@ public:
     bool pushes_state() {
         return true;
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class OpenPrevDocCommand : public GenericPathAndLocationCommadn {
 public:
     static inline const std::string cname = "open_prev_doc";
     static inline const std::string hname = "Open the list of previously opened documents";
-    OpenPrevDocCommand(MainWidget* w) : GenericPathAndLocationCommadn(w, true) {};
+    OpenPrevDocCommand(MainWidget* w) : GenericPathAndLocationCommadn(cname, w, true) {};
 
     void handle_generic_requirement() {
         widget->handle_open_prev_doc();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3247,16 +2747,11 @@ class OpenAllDocsCommand : public GenericPathAndLocationCommadn {
 public:
     static inline const std::string cname = "open_all_docs";
     static inline const std::string hname = "";
-    OpenAllDocsCommand(MainWidget* w) : GenericPathAndLocationCommadn(w, true) {};
+    OpenAllDocsCommand(MainWidget* w) : GenericPathAndLocationCommadn(cname, w, true) {};
 
     void handle_generic_requirement() {
         widget->handle_open_all_docs();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3266,7 +2761,7 @@ class OpenDocumentEmbeddedCommand : public GenericPathCommand {
 public:
     static inline const std::string cname = "open_document_embedded";
     static inline const std::string hname = "Open an embedded file explorer";
-    OpenDocumentEmbeddedCommand(MainWidget* w) : GenericPathCommand(w) {};
+    OpenDocumentEmbeddedCommand(MainWidget* w) : GenericPathCommand(cname, w) {};
 
     void handle_generic_requirement() {
 
@@ -3289,11 +2784,6 @@ public:
         return true;
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     bool requires_document() { return false; }
 };
 
@@ -3301,7 +2791,7 @@ class OpenDocumentEmbeddedFromCurrentPathCommand : public GenericPathCommand {
 public:
     static inline const std::string cname = "open_document_embedded_from_current_path";
     static inline const std::string hname = "Open an embedded file explorer, starting in the directory of current document";
-    OpenDocumentEmbeddedFromCurrentPathCommand(MainWidget* w) : GenericPathCommand(w) {};
+    OpenDocumentEmbeddedFromCurrentPathCommand(MainWidget* w) : GenericPathCommand(cname, w) {};
 
     void handle_generic_requirement() {
         std::wstring last_file_name = widget->get_current_file_name().value_or(L"");
@@ -3325,11 +2815,6 @@ public:
         return true;
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     bool requires_document() { return false; }
 };
 
@@ -3337,13 +2822,9 @@ class CopyCommand : public Command {
 public:
     static inline const std::string cname = "copy";
     static inline const std::string hname = "Copy";
-    CopyCommand(MainWidget* w) : Command(w) {};
+    CopyCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         copy_to_clipboard(widget->get_selected_text());
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -3352,7 +2833,7 @@ class GotoBeginningCommand : public Command {
 public:
     static inline const std::string cname = "goto_beginning";
     static inline const std::string hname = "Go to the beginning of the document";
-    GotoBeginningCommand(MainWidget* w) : Command(w) {};
+    GotoBeginningCommand(MainWidget* w) : Command(cname, w) {};
 public:
     void perform() {
         if (num_repeats) {
@@ -3367,17 +2848,13 @@ public:
         return true;
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoEndCommand : public Command {
 public:
     static inline const std::string cname = "goto_end";
     static inline const std::string hname = "Go to the end of the document";
-    GotoEndCommand(MainWidget* w) : Command(w) {};
+    GotoEndCommand(MainWidget* w) : Command(cname, w) {};
 public:
     void perform() {
         widget->main_document_view->goto_end();
@@ -3386,34 +2863,24 @@ public:
     bool pushes_state() {
         return true;
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class OverviewRulerPortalCommand : public Command {
 public:
     static inline const std::string cname = "overview_to_ruler_portal";
     static inline const std::string hname = "";
-    OverviewRulerPortalCommand(MainWidget* w) : Command(w) {};
+    OverviewRulerPortalCommand(MainWidget* w) : Command(cname, w) {};
 public:
     void perform() {
         widget->handle_overview_to_ruler_portal();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoRulerPortalCommand : public Command {
 public:
     static inline const std::string cname = "goto_ruler_portal";
     static inline const std::string hname = "";
-    GotoRulerPortalCommand(MainWidget* w) : Command(w) {};
+    GotoRulerPortalCommand(MainWidget* w) : Command(cname, w) {};
     std::optional<char> mark = {};
 
 public:
@@ -3457,25 +2924,16 @@ public:
         return true;
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class PrintNonDefaultConfigs : public Command {
 public:
     static inline const std::string cname = "print_non_default_configs";
     static inline const std::string hname = "";
-    PrintNonDefaultConfigs(MainWidget* w) : Command(w) {};
+    PrintNonDefaultConfigs(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->print_non_default_configs();
     }
-    std::string get_name() {
-        return cname;
-    }
-
-
     bool requires_document() { return false; }
 };
 
@@ -3483,14 +2941,10 @@ class PrintUndocumentedCommandsCommand : public Command {
 public:
     static inline const std::string cname = "print_undocumented_commands";
     static inline const std::string hname = "";
-    PrintUndocumentedCommandsCommand(MainWidget* w) : Command(w) {};
+    PrintUndocumentedCommandsCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->print_undocumented_commands();
     }
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3499,14 +2953,10 @@ class PrintUndocumentedConfigsCommand : public Command {
 public:
     static inline const std::string cname = "print_undocumented_configs";
     static inline const std::string hname = "";
-    PrintUndocumentedConfigsCommand(MainWidget* w) : Command(w) {};
+    PrintUndocumentedConfigsCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->print_undocumented_configs();
     }
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3515,14 +2965,10 @@ class ToggleFullscreenCommand : public Command {
 public:
     static inline const std::string cname = "toggle_fullscreen";
     static inline const std::string hname = "Toggle fullscreen mode";
-    ToggleFullscreenCommand(MainWidget* w) : Command(w) {};
+    ToggleFullscreenCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->toggle_fullscreen();
     }
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3531,15 +2977,10 @@ class MaximizeCommand : public Command {
 public:
     static inline const std::string cname = "maximize";
     static inline const std::string hname = "";
-    MaximizeCommand(MainWidget* w) : Command(w) {};
+    MaximizeCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->maximize_window();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3548,14 +2989,10 @@ class ToggleOneWindowCommand : public Command {
 public:
     static inline const std::string cname = "toggle_one_window";
     static inline const std::string hname = "Open/close helper window";
-    ToggleOneWindowCommand(MainWidget* w) : Command(w) {};
+    ToggleOneWindowCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->toggle_two_window_mode();
     }
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3564,14 +3001,10 @@ class ToggleHighlightCommand : public Command {
 public:
     static inline const std::string cname = "toggle_highlight";
     static inline const std::string hname = "Toggle whether PDF links are highlighted";
-    ToggleHighlightCommand(MainWidget* w) : Command(w) {};
+    ToggleHighlightCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->toggle_highlight_links();
     }
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3580,14 +3013,10 @@ class ToggleSynctexCommand : public Command {
 public:
     static inline const std::string cname = "toggle_synctex";
     static inline const std::string hname = "Toggle synctex mode";
-    ToggleSynctexCommand(MainWidget* w) : Command(w) {};
+    ToggleSynctexCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->toggle_synctex_mode();
     }
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3596,14 +3025,10 @@ class TurnOnSynctexCommand : public Command {
 public:
     static inline const std::string cname = "turn_on_synctex";
     static inline const std::string hname = "Turn synxtex mode on";
-    TurnOnSynctexCommand(MainWidget* w) : Command(w) {};
+    TurnOnSynctexCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->set_synctex_mode(true);
     }
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3612,14 +3037,10 @@ class ToggleShowLastCommand : public Command {
 public:
     static inline const std::string cname = "toggle_show_last_command";
     static inline const std::string hname = "Toggle whether the last command is shown in statusbar";
-    ToggleShowLastCommand(MainWidget* w) : Command(w) {};
+    ToggleShowLastCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->should_show_last_command = !widget->should_show_last_command;
     }
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 
@@ -3627,7 +3048,7 @@ class ForwardSearchCommand : public Command {
 public:
     static inline const std::string cname = "synctex_forward_search";
     static inline const std::string hname = "";
-    ForwardSearchCommand(MainWidget* w) : Command(w) {};
+    ForwardSearchCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<std::wstring> file_path = {};
     std::optional<int> line = {};
@@ -3664,17 +3085,13 @@ public:
         widget->do_synctex_forward_search(widget->doc()->get_path(), file_path.value(), line.value(), column.value_or(0));
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ExternalSearchCommand : public SymbolCommand {
 public:
     static inline const std::string cname = "external_search";
     static inline const std::string hname = "Search using external search engines";
-    ExternalSearchCommand(MainWidget* w) : SymbolCommand(w) {};
+    ExternalSearchCommand(MainWidget* w) : SymbolCommand(cname, w) {};
     void perform() {
         std::wstring selected_text = widget->get_selected_text();
 
@@ -3693,39 +3110,27 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class OpenSelectedUrlCommand : public Command {
 public:
     static inline const std::string cname = "open_selected_url";
     static inline const std::string hname = "";
-    OpenSelectedUrlCommand(MainWidget* w) : Command(w) {};
+    OpenSelectedUrlCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         open_web_url((widget->get_selected_text()).c_str());
     }
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ScreenDownCommand : public Command {
 public:
     static inline const std::string cname = "screen_down";
     static inline const std::string hname = "Move screen down";
-    ScreenDownCommand(MainWidget* w) : Command(w) {};
+    ScreenDownCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->handle_move_screen(rp);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -3734,15 +3139,11 @@ class ScreenUpCommand : public Command {
 public:
     static inline const std::string cname = "screen_up";
     static inline const std::string hname = "Move screen up";
-    ScreenUpCommand(MainWidget* w) : Command(w) {};
+    ScreenUpCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->handle_move_screen(-rp);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -3751,15 +3152,11 @@ class NextChapterCommand : public Command {
 public:
     static inline const std::string cname = "next_chapter";
     static inline const std::string hname = "Go to next chapter";
-    NextChapterCommand(MainWidget* w) : Command(w) {};
+    NextChapterCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->main_document_view->goto_chapter(rp);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -3768,15 +3165,11 @@ class PrevChapterCommand : public Command {
 public:
     static inline const std::string cname = "prev_chapter";
     static inline const std::string hname = "Go to previous chapter";
-    PrevChapterCommand(MainWidget* w) : Command(w) {};
+    PrevChapterCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->main_document_view->goto_chapter(-rp);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -3785,16 +3178,11 @@ class ShowContextMenuCommand : public Command {
 public:
     static inline const std::string cname = "show_context_menu";
     static inline const std::string hname = "";
-    ShowContextMenuCommand(MainWidget* w) : Command(w) {};
+    ShowContextMenuCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->show_context_menu();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3803,14 +3191,11 @@ class ToggleDarkModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_dark_mode";
     static inline const std::string hname = "Toggle dark mode";
-    ToggleDarkModeCommand(MainWidget* w) : Command(w) {};
+
+    ToggleDarkModeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_dark_mode();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 
@@ -3821,16 +3206,11 @@ class ToggleCustomColorMode : public Command {
 public:
     static inline const std::string cname = "toggle_custom_color";
     static inline const std::string hname = "Toggle custom color mode";
-    ToggleCustomColorMode(MainWidget* w) : Command(w) {};
+    ToggleCustomColorMode(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_custom_color_mode();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3839,16 +3219,11 @@ class TogglePresentationModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_presentation_mode";
     static inline const std::string hname = "Toggle presentation mode";
-    TogglePresentationModeCommand(MainWidget* w) : Command(w) {};
+    TogglePresentationModeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_presentation_mode();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3857,16 +3232,11 @@ class TurnOnPresentationModeCommand : public Command {
 public:
     static inline const std::string cname = "turn_on_presentation_mode";
     static inline const std::string hname = "Turn on presentation mode";
-    TurnOnPresentationModeCommand(MainWidget* w) : Command(w) {};
+    TurnOnPresentationModeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->set_presentation_mode(true);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3875,16 +3245,11 @@ class ToggleMouseDragMode : public Command {
 public:
     static inline const std::string cname = "toggle_mouse_drag_mode";
     static inline const std::string hname = "Toggle mouse drag mode";
-    ToggleMouseDragMode(MainWidget* w) : Command(w) {};
+    ToggleMouseDragMode(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_mouse_drag_mode();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3893,16 +3258,11 @@ class ToggleFreehandDrawingMode : public Command {
 public:
     static inline const std::string cname = "toggle_freehand_drawing_mode";
     static inline const std::string hname = "Toggle freehand drawing mode";
-    ToggleFreehandDrawingMode(MainWidget* w) : Command(w) {};
+    ToggleFreehandDrawingMode(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_freehand_drawing_mode();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3911,16 +3271,11 @@ class TogglePenDrawingMode : public Command {
 public:
     static inline const std::string cname = "toggle_pen_drawing_mode";
     static inline const std::string hname = "Toggle pen drawing mode";
-    TogglePenDrawingMode(MainWidget* w) : Command(w) {};
+    TogglePenDrawingMode(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_pen_drawing_mode();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3929,16 +3284,11 @@ class ToggleScratchpadMode : public Command {
 public:
     static inline const std::string cname = "toggle_scratchpad_mode";
     static inline const std::string hname = "";
-    ToggleScratchpadMode(MainWidget* w) : Command(w) {};
+    ToggleScratchpadMode(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_scratchpad_mode();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3947,16 +3297,11 @@ class CloseWindowCommand : public Command {
 public:
     static inline const std::string cname = "close_window";
     static inline const std::string hname = "Close window";
-    CloseWindowCommand(MainWidget* w) : Command(w) {};
+    CloseWindowCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->close();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3965,17 +3310,12 @@ class NewWindowCommand : public Command {
 public:
     static inline const std::string cname = "new_window";
     static inline const std::string hname = "Open a new window";
-    NewWindowCommand(MainWidget* w) : Command(w) {};
+    NewWindowCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         int new_id = widget->handle_new_window()->window_id;
         result = QString::number(new_id).toStdWString();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -3984,15 +3324,11 @@ class QuitCommand : public Command {
 public:
     static inline const std::string cname = "quit";
     static inline const std::string hname = "Quit";
-    QuitCommand(MainWidget* w) : Command(w) {};
+    QuitCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_close_event();
         QApplication::quit();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 
@@ -4003,16 +3339,11 @@ class EscapeCommand : public Command {
 public:
     static inline const std::string cname = "escape";
     static inline const std::string hname = "Escape";
-    EscapeCommand(MainWidget* w) : Command(w) {};
+    EscapeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_escape();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -4021,16 +3352,11 @@ class TogglePDFAnnotationsCommand : public Command {
 public:
     static inline const std::string cname = "toggle_pdf_annotations";
     static inline const std::string hname = "Toggle whether PDF annotations should be rendered";
-    TogglePDFAnnotationsCommand(MainWidget* w) : Command(w) {};
+    TogglePDFAnnotationsCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_pdf_annotations();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return true; }
 };
@@ -4039,7 +3365,7 @@ class OpenLinkCommand : public Command {
 public:
     static inline const std::string cname = "open_link";
     static inline const std::string hname = "Go to PDF links using keyboard";
-    OpenLinkCommand(MainWidget* w) : Command(w) {};
+    OpenLinkCommand(MainWidget* w) : Command(cname, w) {};
 protected:
     std::optional<std::wstring> text = {};
     bool already_pre_performed = false;
@@ -4087,11 +3413,6 @@ public:
         already_pre_performed = true;
     }
 
-    virtual std::string get_name() {
-        return cname;
-    }
-
-
     virtual void set_text_requirement(std::wstring value) {
         this->text = value;
     }
@@ -4113,7 +3434,7 @@ public:
 };
 
 
-KeyboardSelectPointCommand::KeyboardSelectPointCommand(MainWidget* w, std::unique_ptr<Command> original_command) : Command(w) {
+KeyboardSelectPointCommand::KeyboardSelectPointCommand(MainWidget* w, std::unique_ptr<Command> original_command) : Command("keyboard_point_select", w) {
     origin = std::move(original_command);
     std::optional<Requirement> next_requirement = origin->next_requirement(widget);
     if (next_requirement && next_requirement->type == Rect) {
@@ -4235,8 +3556,6 @@ public:
     std::string get_name() {
         return cname;
     }
-
-
 };
 
 class PortalToLinkCommand : public OpenLinkCommand {
@@ -4252,15 +3571,13 @@ public:
     std::string get_name() {
         return cname;
     }
-
-
 };
 
 class CopyLinkCommand : public TextCommand {
 public:
     static inline const std::string cname = "copy_link";
     static inline const std::string hname = "Copy URL of PDF links using keyboard";
-    CopyLinkCommand(MainWidget* w) : TextCommand(w) {};
+    CopyLinkCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         widget->handle_open_link(text.value(), true);
@@ -4270,10 +3587,6 @@ public:
         widget->set_highlight_links(true, true);
         widget->invalidate_render();
 
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 
@@ -4286,7 +3599,7 @@ class KeyboardSelectCommand : public TextCommand {
 public:
     static inline const std::string cname = "keyboard_select";
     static inline const std::string hname = "Select text using keyboard";
-    KeyboardSelectCommand(MainWidget* w) : TextCommand(w) {};
+    KeyboardSelectCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         widget->handle_keyboard_select(text.value());
@@ -4297,11 +3610,6 @@ public:
 
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     std::string text_requirement_name() {
         return "Labels";
     }
@@ -4311,7 +3619,7 @@ class KeyboardOverviewCommand : public TextCommand {
 public:
     static inline const std::string cname = "keyboard_overview";
     static inline const std::string hname = "Open an overview using keyboard";
-    KeyboardOverviewCommand(MainWidget* w) : TextCommand(w) {};
+    KeyboardOverviewCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         std::optional<fz_irect> rect_ = widget->get_tag_window_rect(utf8_encode(text.value()));
@@ -4327,11 +3635,6 @@ public:
 
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     std::string text_requirement_name() {
         return "Label";
     }
@@ -4341,7 +3644,7 @@ class KeyboardSmartjumpCommand : public TextCommand {
 public:
     static inline const std::string cname = "keyboard_smart_jump";
     static inline const std::string hname = "Smart jump using keyboard";
-    KeyboardSmartjumpCommand(MainWidget* w) : TextCommand(w) {};
+    KeyboardSmartjumpCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         std::optional<fz_irect> rect_ = widget->get_tag_window_rect(utf8_encode(text.value()));
@@ -4360,11 +3663,6 @@ public:
         return true;
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     std::string text_requirement_name() {
         return "Label";
     }
@@ -4374,16 +3672,11 @@ class KeysCommand : public Command {
 public:
     static inline const std::string cname = "keys";
     static inline const std::string hname = "Open the default keys config file";
-    KeysCommand(MainWidget* w) : Command(w) {};
+    KeysCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         open_file(default_keys_path.get_path(), true);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -4392,7 +3685,7 @@ class KeysUserCommand : public Command {
 public:
     static inline const std::string cname = "keys_user";
     static inline const std::string hname = "Open the default keys_user config file";
-    KeysUserCommand(MainWidget* w) : Command(w) {};
+    KeysUserCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         std::optional<Path> key_file_path = widget->input_handler->get_or_create_user_keys_path();
@@ -4401,11 +3694,6 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     bool requires_document() { return false; }
 };
 
@@ -4413,16 +3701,11 @@ class KeysUserAllCommand : public Command {
 public:
     static inline const std::string cname = "keys_user_all";
     static inline const std::string hname = "List all user keys config files";
-    KeysUserAllCommand(MainWidget* w) : Command(w) {};
+    KeysUserAllCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_keys_user_all();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -4431,16 +3714,11 @@ class PrefsCommand : public Command {
 public:
     static inline const std::string cname = "prefs";
     static inline const std::string hname = "Open the default prefs config file";
-    PrefsCommand(MainWidget* w) : Command(w) {};
+    PrefsCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         open_file(default_config_path.get_path(), true);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -4449,7 +3727,7 @@ class PrefsUserCommand : public Command {
 public:
     static inline const std::string cname = "prefs_user";
     static inline const std::string hname = "Open the default prefs_user config file";
-    PrefsUserCommand(MainWidget* w) : Command(w) {};
+    PrefsUserCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         std::optional<Path> pref_file_path = widget->config_manager->get_or_create_user_config_file();
@@ -4458,11 +3736,6 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     bool requires_document() { return false; }
 };
 
@@ -4470,16 +3743,11 @@ class PrefsUserAllCommand : public Command {
 public:
     static inline const std::string cname = "prefs_user_all";
     static inline const std::string hname = "List all user keys config files";
-    PrefsUserAllCommand(MainWidget* w) : Command(w) {};
+    PrefsUserAllCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_prefs_user_all();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -4488,15 +3756,11 @@ class FitToPageWidthRatioCommand : public Command {
 public:
     static inline const std::string cname = "fit_to_page_width_ratio";
     static inline const std::string hname = "Fit page to a percentage of window width";
-    FitToPageWidthRatioCommand(MainWidget* w) : Command(w) {};
+    FitToPageWidthRatioCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->main_document_view->fit_to_page_width(false, true);
         widget->last_smart_fit_page = {};
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4505,31 +3769,22 @@ class SmartJumpUnderCursorCommand : public Command {
 public:
     static inline const std::string cname = "smart_jump_under_cursor";
     static inline const std::string hname = "Perform a smart jump to the reference under cursor";
-    SmartJumpUnderCursorCommand(MainWidget* w) : Command(w) {};
+    SmartJumpUnderCursorCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->smart_jump_under_pos({ mouse_pos.x(), mouse_pos.y() });
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class DownloadPaperUnderCursorCommand : public Command {
 public:
     static inline const std::string cname = "download_paper_under_cursor";
     static inline const std::string hname = "Try to download the paper name under cursor";
-    DownloadPaperUnderCursorCommand(MainWidget* w) : Command(w) {};
+    DownloadPaperUnderCursorCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->download_paper_under_cursor();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4539,15 +3794,11 @@ class OverviewUnderCursorCommand : public Command {
 public:
     static inline const std::string cname = "overview_under_cursor";
     static inline const std::string hname = "Open an overview to the reference under cursor";
-    OverviewUnderCursorCommand(MainWidget* w) : Command(w) {};
+    OverviewUnderCursorCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->overview_under_pos({ mouse_pos.x(), mouse_pos.y() });
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4556,15 +3807,11 @@ class SynctexUnderCursorCommand : public Command {
 public:
     static inline const std::string cname = "synctex_under_cursor";
     static inline const std::string hname = "Perform a synctex search to the tex file location corresponding to cursor location";
-    SynctexUnderCursorCommand(MainWidget* w) : Command(w) {};
+    SynctexUnderCursorCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->synctex_under_pos({ mouse_pos.x(), mouse_pos.y() });
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4573,14 +3820,10 @@ class SynctexUnderRulerCommand : public Command {
 public:
     static inline const std::string cname = "synctex_under_ruler";
     static inline const std::string hname = "";
-    SynctexUnderRulerCommand(MainWidget* w) : Command(w) {};
+    SynctexUnderRulerCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         result = widget->handle_synctex_to_ruler();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4589,15 +3832,11 @@ class VisualMarkUnderCursorCommand : public Command {
 public:
     static inline const std::string cname = "visual_mark_under_cursor";
     static inline const std::string hname = "Highlight the line under cursor";
-    VisualMarkUnderCursorCommand(MainWidget* w) : Command(w) {};
+    VisualMarkUnderCursorCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->visual_mark_under_pos({ mouse_pos.x(), mouse_pos.y() });
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4606,14 +3845,10 @@ class CloseOverviewCommand : public Command {
 public:
     static inline const std::string cname = "close_overview";
     static inline const std::string hname = "Close overview window";
-    CloseOverviewCommand(MainWidget* w) : Command(w) {};
+    CloseOverviewCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->set_overview_page({});
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4622,14 +3857,10 @@ class CloseVisualMarkCommand : public Command {
 public:
     static inline const std::string cname = "close_visual_mark";
     static inline const std::string hname = "Stop ruler mode";
-    CloseVisualMarkCommand(MainWidget* w) : Command(w) {};
+    CloseVisualMarkCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->main_document_view->exit_ruler_mode();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4638,16 +3869,12 @@ class ZoomInCursorCommand : public Command {
 public:
     static inline const std::string cname = "zoom_in_cursor";
     static inline const std::string hname = "Zoom in centered on mouse cursor";
-    ZoomInCursorCommand(MainWidget* w) : Command(w) {};
+    ZoomInCursorCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->main_document_view->zoom_in_cursor({ mouse_pos.x(), mouse_pos.y() });
         widget->last_smart_fit_page = {};
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4656,16 +3883,12 @@ class ZoomOutCursorCommand : public Command {
 public:
     static inline const std::string cname = "zoom_out_cursor";
     static inline const std::string hname = "Zoom out centered on mouse cursor";
-    ZoomOutCursorCommand(MainWidget* w) : Command(w) {};
+    ZoomOutCursorCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         QPoint mouse_pos = widget->mapFromGlobal(widget->cursor_pos());
         widget->main_document_view->zoom_out_cursor({ mouse_pos.x(), mouse_pos.y() });
         widget->last_smart_fit_page = {};
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4674,14 +3897,10 @@ class GotoLeftCommand : public Command {
 public:
     static inline const std::string cname = "goto_left";
     static inline const std::string hname = "Go to far left side of the page";
-    GotoLeftCommand(MainWidget* w) : Command(w) {};
+    GotoLeftCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->main_document_view->goto_left();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4690,14 +3909,10 @@ class GotoLeftSmartCommand : public Command {
 public:
     static inline const std::string cname = "goto_left_smart";
     static inline const std::string hname = "Go to far left side of the page, ignoring white page margins";
-    GotoLeftSmartCommand(MainWidget* w) : Command(w) {};
+    GotoLeftSmartCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->main_document_view->goto_left_smart();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4706,14 +3921,10 @@ class GotoRightCommand : public Command {
 public:
     static inline const std::string cname = "goto_right";
     static inline const std::string hname = "Go to far right side of the page";
-    GotoRightCommand(MainWidget* w) : Command(w) {};
+    GotoRightCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->main_document_view->goto_right();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4722,14 +3933,10 @@ class GotoRightSmartCommand : public Command {
 public:
     static inline const std::string cname = "goto_right_smart";
     static inline const std::string hname = "Go to far right side of the page, ignoring white page margins";
-    GotoRightSmartCommand(MainWidget* w) : Command(w) {};
+    GotoRightSmartCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->main_document_view->goto_right_smart();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4738,15 +3945,11 @@ class RotateClockwiseCommand : public Command {
 public:
     static inline const std::string cname = "rotate_clockwise";
     static inline const std::string hname = "Rotate clockwise";
-    RotateClockwiseCommand(MainWidget* w) : Command(w) {};
+    RotateClockwiseCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->main_document_view->rotate();
         widget->rotate_clockwise();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4755,15 +3958,11 @@ class RotateCounterClockwiseCommand : public Command {
 public:
     static inline const std::string cname = "rotate_counterclockwise";
     static inline const std::string hname = "Rotate counter clockwise";
-    RotateCounterClockwiseCommand(MainWidget* w) : Command(w) {};
+    RotateCounterClockwiseCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->main_document_view->rotate();
         widget->rotate_counterclockwise();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4772,7 +3971,7 @@ class GotoNextHighlightCommand : public Command {
 public:
     static inline const std::string cname = "goto_next_highlight";
     static inline const std::string hname = "Go to the next highlight";
-    GotoNextHighlightCommand(MainWidget* w) : Command(w) {};
+    GotoNextHighlightCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         auto next_highlight = widget->main_document_view->get_document()->get_next_highlight(widget->main_document_view->get_offset_y());
@@ -4780,18 +3979,13 @@ public:
             widget->long_jump_to_destination(next_highlight.value().selection_begin.y);
         }
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoPrevHighlightCommand : public Command {
 public:
     static inline const std::string cname = "goto_prev_highlight";
     static inline const std::string hname = "Go to the previous highlight";
-    GotoPrevHighlightCommand(MainWidget* w) : Command(w) {};
+    GotoPrevHighlightCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
 
@@ -4800,18 +3994,13 @@ public:
             widget->long_jump_to_destination(prev_highlight.value().selection_begin.y);
         }
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoNextHighlightOfTypeCommand : public Command {
 public:
     static inline const std::string cname = "goto_next_highlight_of_type";
     static inline const std::string hname = "Go to the next highlight with the current highlight type";
-    GotoNextHighlightOfTypeCommand(MainWidget* w) : Command(w) {};
+    GotoNextHighlightOfTypeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         auto next_highlight = widget->main_document_view->get_document()->get_next_highlight(widget->main_document_view->get_offset_y(), widget->select_highlight_type);
@@ -4820,17 +4009,13 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoPrevHighlightOfTypeCommand : public Command {
 public:
     static inline const std::string cname = "goto_prev_highlight_of_type";
     static inline const std::string hname = "Go to the previous highlight with the current highlight type";
-    GotoPrevHighlightOfTypeCommand(MainWidget* w) : Command(w) {};
+    GotoPrevHighlightOfTypeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         auto prev_highlight = widget->main_document_view->get_document()->get_prev_highlight(widget->main_document_view->get_offset_y(), widget->select_highlight_type);
@@ -4838,26 +4023,16 @@ public:
             widget->long_jump_to_destination(prev_highlight.value().selection_begin.y);
         }
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class SetSelectHighlightTypeCommand : public SymbolCommand {
 public:
     static inline const std::string cname = "set_select_highlight_type";
     static inline const std::string hname = "Set the selected highlight type";
-    SetSelectHighlightTypeCommand(MainWidget* w) : SymbolCommand(w) {};
+    SetSelectHighlightTypeCommand(MainWidget* w) : SymbolCommand(cname, w) {};
     void perform() {
         widget->select_highlight_type = symbol;
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -4866,15 +4041,10 @@ class SetFreehandType : public SymbolCommand {
 public:
     static inline const std::string cname = "set_freehand_type";
     static inline const std::string hname = "Set the freehand drawing color type";
-    SetFreehandType(MainWidget* w) : SymbolCommand(w) {};
+    SetFreehandType(MainWidget* w) : SymbolCommand(cname, w) {};
     void perform() {
         widget->current_freehand_type = symbol;
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -4883,16 +4053,12 @@ class AddHighlightWithCurrentTypeCommand : public Command {
 public:
     static inline const std::string cname = "add_highlight_with_current_type";
     static inline const std::string hname = "Highlight selected text with current selected highlight type";
-    AddHighlightWithCurrentTypeCommand(MainWidget* w) : Command(w) {};
+    AddHighlightWithCurrentTypeCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         if (widget->main_document_view->selected_character_rects.size() > 0) {
             widget->main_document_view->add_highlight(widget->selection_begin, widget->selection_end, widget->select_highlight_type);
             widget->clear_selected_text();
         }
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4901,15 +4067,10 @@ class UndoDrawingCommand : public Command {
 public:
     static inline const std::string cname = "undo_drawing";
     static inline const std::string hname = "Undo freehand drawing";
-    UndoDrawingCommand(MainWidget* w) : Command(w) {};
+    UndoDrawingCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->handle_undo_drawing();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return true; }
 };
@@ -4919,16 +4080,11 @@ class EnterPasswordCommand : public TextCommand {
 public:
     static inline const std::string cname = "enter_password";
     static inline const std::string hname = "Enter password";
-    EnterPasswordCommand(MainWidget* w) : TextCommand(w) {};
+    EnterPasswordCommand(MainWidget* w) : TextCommand(cname, w) {};
     void perform() {
         std::string password = utf8_encode(text.value());
         widget->add_password(widget->main_document_view->get_document()->get_path(), password);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     std::string text_requirement_name() {
         return "Password";
@@ -4939,14 +4095,9 @@ class ToggleFastreadCommand : public Command {
 public:
     static inline const std::string cname = "toggle_fastread";
     static inline const std::string hname = "Go to top of current page";
-    ToggleFastreadCommand(MainWidget* w) : Command(w) {};
+    ToggleFastreadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->toggle_fastread();
-    }
-
-
-    std::string get_name() {
-        return cname;
     }
 };
 
@@ -4954,13 +4105,9 @@ class GotoTopOfPageCommand : public Command {
 public:
     static inline const std::string cname = "goto_top_of_page";
     static inline const std::string hname = "Go to top of current page";
-    GotoTopOfPageCommand(MainWidget* w) : Command(w) {};
+    GotoTopOfPageCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->goto_top_of_page();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4969,13 +4116,9 @@ class GotoBottomOfPageCommand : public Command {
 public:
     static inline const std::string cname = "goto_bottom_of_page";
     static inline const std::string hname = "Go to bottom of current page";
-    GotoBottomOfPageCommand(MainWidget* w) : Command(w) {};
+    GotoBottomOfPageCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->main_document_view->goto_bottom_of_page();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4984,13 +4127,9 @@ class ReloadCommand : public Command {
 public:
     static inline const std::string cname = "reload";
     static inline const std::string hname = "Reload document";
-    ReloadCommand(MainWidget* w) : Command(w) {};
+    ReloadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->reload();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -4999,13 +4138,9 @@ class ReloadNoFlickerCommand : public Command {
 public:
     static inline const std::string cname = "reload_no_flicker";
     static inline const std::string hname = "Reload document with no screen flickering";
-    ReloadNoFlickerCommand(MainWidget* w) : Command(w) {};
+    ReloadNoFlickerCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->reload(false);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5014,15 +4149,10 @@ class ReloadConfigCommand : public Command {
 public:
     static inline const std::string cname = "reload_config";
     static inline const std::string hname = "Reload configs";
-    ReloadConfigCommand(MainWidget* w) : Command(w) {};
+    ReloadConfigCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->on_config_file_changed(widget->config_manager);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5031,15 +4161,10 @@ class TurnOnAllDrawings : public Command {
 public:
     static inline const std::string cname = "turn_on_all_drawings";
     static inline const std::string hname = "Make all freehand drawings visible";
-    TurnOnAllDrawings(MainWidget* w) : Command(w) {};
+    TurnOnAllDrawings(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->hande_turn_on_all_drawings();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5048,15 +4173,10 @@ class TurnOffAllDrawings : public Command {
 public:
     static inline const std::string cname = "turn_off_all_drawings";
     static inline const std::string hname = "Make all freehand drawings invisible";
-    TurnOffAllDrawings(MainWidget* w) : Command(w) {};
+    TurnOffAllDrawings(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->hande_turn_off_all_drawings();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5065,14 +4185,10 @@ class SetStatusStringCommand : public TextCommand {
 public:
     static inline const std::string cname = "set_status_string";
     static inline const std::string hname = "Set custom message to be shown in statusbar";
-    SetStatusStringCommand(MainWidget* w) : TextCommand(w) {};
+    SetStatusStringCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         widget->set_status_message(text.value());
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
     std::string text_requirement_name() {
@@ -5087,15 +4203,10 @@ class ClearStatusStringCommand : public Command {
 public:
     static inline const std::string cname = "clear_status_string";
     static inline const std::string hname = "Clear custom statusbar message";
-    ClearStatusStringCommand(MainWidget* w) : Command(w) {};
+    ClearStatusStringCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->set_status_message(L"");
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5104,15 +4215,10 @@ class ToggleTittlebarCommand : public Command {
 public:
     static inline const std::string cname = "toggle_titlebar";
     static inline const std::string hname = "Toggle window titlebar";
-    ToggleTittlebarCommand(MainWidget* w) : Command(w) {};
+    ToggleTittlebarCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->toggle_titlebar();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5121,7 +4227,7 @@ class NextPreviewCommand : public Command {
 public:
     static inline const std::string cname = "next_overview";
     static inline const std::string hname = "Go to the next candidate in overview window";
-    NextPreviewCommand(MainWidget* w) : Command(w) {};
+    NextPreviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         if (widget->smart_view_candidates.size() > 0) {
             //widget->index_into_candidates = (widget->index_into_candidates + 1) % widget->smart_view_candidates.size();
@@ -5130,17 +4236,13 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class PreviousPreviewCommand : public Command {
 public:
     static inline const std::string cname = "previous_overview";
     static inline const std::string hname = "Go to the previous candidate in overview window";
-    PreviousPreviewCommand(MainWidget* w) : Command(w) {};
+    PreviousPreviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         if (widget->smart_view_candidates.size() > 0) {
             //widget->index_into_candidates = mod(widget->index_into_candidates - 1, widget->smart_view_candidates.size());
@@ -5148,24 +4250,15 @@ public:
             widget->goto_ith_next_overview(-1);
         }
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class GotoOverviewCommand : public Command {
 public:
     static inline const std::string cname = "goto_overview";
     static inline const std::string hname = "Go to the current overview location";
-    GotoOverviewCommand(MainWidget* w) : Command(w) {};
+    GotoOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->goto_overview();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5174,13 +4267,9 @@ class PortalToOverviewCommand : public Command {
 public:
     static inline const std::string cname = "portal_to_overview";
     static inline const std::string hname = "Create a portal to the current overview location";
-    PortalToOverviewCommand(MainWidget* w) : Command(w) {};
+    PortalToOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->handle_portal_to_overview();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5189,14 +4278,10 @@ class GotoSelectedTextCommand : public Command {
 public:
     static inline const std::string cname = "goto_selected_text";
     static inline const std::string hname = "Go to the location of current selected text";
-    GotoSelectedTextCommand(MainWidget* w) : Command(w) {};
+    GotoSelectedTextCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->long_jump_to_destination(widget->selection_begin.y);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5205,7 +4290,7 @@ class SetWindowRectCommand : public TextCommand {
 public:
     static inline const std::string cname = "set_window_rect";
     static inline const std::string hname = "Move and resize the window to the given coordinates (in pixels).";
-    SetWindowRectCommand(MainWidget* w) : TextCommand(w) {};
+    SetWindowRectCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         QStringList parts = QString::fromStdWString(text.value()).split(' ');
@@ -5217,27 +4302,18 @@ public:
         widget->move(x0, y0);
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class FocusTextCommand : public TextCommand {
 public:
     static inline const std::string cname = "focus_text";
     static inline const std::string hname = "Focus on the given text";
-    FocusTextCommand(MainWidget* w) : TextCommand(w) {};
+    FocusTextCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         std::wstring text_ = text.value();
         widget->handle_focus_text(text_);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     std::string text_requirement_name() {
         return "Text to focus";
@@ -5251,7 +4327,7 @@ public:
     std::optional<AbsoluteRect> source_rect = {};
     std::wstring src_doc_path;
 
-    DownloadOverviewPaperCommand(MainWidget* w) : TextCommand(w) {};
+    DownloadOverviewPaperCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
 
@@ -5290,11 +4366,6 @@ public:
         }
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
-
     std::string text_requirement_name() {
         return "Paper Name";
     }
@@ -5304,16 +4375,11 @@ class GotoWindowCommand : public Command {
 public:
     static inline const std::string cname = "goto_window";
     static inline const std::string hname = "Open a list of all sioyek windows";
-    GotoWindowCommand(MainWidget* w) : Command(w) {};
+    GotoWindowCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_goto_window();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5322,16 +4388,11 @@ class ToggleSmoothScrollModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_smooth_scroll_mode";
     static inline const std::string hname = "Toggle smooth scroll mode";
-    ToggleSmoothScrollModeCommand(MainWidget* w) : Command(w) {};
+    ToggleSmoothScrollModeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_toggle_smooth_scroll_mode();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5340,7 +4401,7 @@ class ToggleScrollbarCommand : public Command {
 public:
     static inline const std::string cname = "toggle_scrollbar";
     static inline const std::string hname = "Toggle scrollbar";
-    ToggleScrollbarCommand(MainWidget* w) : Command(w) {};
+    ToggleScrollbarCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_scrollbar();
@@ -5348,24 +4409,16 @@ public:
 
     bool requires_document() { return false; }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class OverviewToPortalCommand : public Command {
 public:
     static inline const std::string cname = "overview_to_portal";
     static inline const std::string hname = "Open an overview to the closest portal";
-    OverviewToPortalCommand(MainWidget* w) : Command(w) {};
+    OverviewToPortalCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_overview_to_portal();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5374,14 +4427,10 @@ class ScanNewFilesFromScanDirCommand : public Command {
 public:
     static inline const std::string cname = "scan_new_files";
     static inline const std::string hname = "";
-    ScanNewFilesFromScanDirCommand(MainWidget* w) : Command(w) {};
+    ScanNewFilesFromScanDirCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->scan_new_files_from_scan_directory();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5390,15 +4439,12 @@ class DebugCommand : public Command {
 public:
     inline static const std::string cname = "debug";
     inline static const std::string hname = "[internal]";
+    static inline const bool developer_only = true;
 
-    DebugCommand(MainWidget* w) : Command(w) {};
+    DebugCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_debug_command();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5407,14 +4453,10 @@ class ShowTouchMainMenu : public Command {
 public:
     static inline const std::string cname = "show_touch_main_menu";
     static inline const std::string hname = "";
-    ShowTouchMainMenu(MainWidget* w) : Command(w) {};
+    ShowTouchMainMenu(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->show_touch_main_menu();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5423,14 +4465,10 @@ class ShowTouchDrawingMenu : public Command {
 public:
     static inline const std::string cname = "show_touch_draw_controls";
     static inline const std::string hname = "";
-    ShowTouchDrawingMenu(MainWidget* w) : Command(w) {};
+    ShowTouchDrawingMenu(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->show_draw_controls();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5439,14 +4477,10 @@ class ShowTouchSettingsMenu : public Command {
 public:
     static inline const std::string cname = "show_touch_settings_menu";
     static inline const std::string hname = "";
-    ShowTouchSettingsMenu(MainWidget* w) : Command(w) {};
+    ShowTouchSettingsMenu(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->show_touch_settings_menu();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5456,14 +4490,10 @@ class ExportPythonApiCommand : public Command {
 public:
     static inline const std::string cname = "export_python_api";
     static inline const std::string hname = "";
-    ExportPythonApiCommand(MainWidget* w) : Command(w) {};
+    ExportPythonApiCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->export_python_api();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5472,44 +4502,22 @@ class SelectCurrentSearchMatchCommand : public Command {
 public:
     static inline const std::string cname = "select_current_search_match";
     static inline const std::string hname = "";
-    SelectCurrentSearchMatchCommand(MainWidget* w) : Command(w) {};
+    SelectCurrentSearchMatchCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_select_current_search_match();
     }
 
-    std::string get_name() {
-        return cname;
-    }
-
 };
-
-//class StopSearchCommand : public Command {
-//public:
-//    StopSearchCommand(MainWidget* w) : Command(w) {};
-//
-//    void perform() {
-//        widget->handle_stop_search();
-//    }
-//
-//    std::string get_name() {
-//        return "stop_search";
-//    }
-//
-//};
 
 class SelectRectCommand : public Command {
 public:
     static inline const std::string cname = "select_rect";
     static inline const std::string hname = "Select a rectangle to be used in other commands";
-    SelectRectCommand(MainWidget* w) : Command(w) {};
+    SelectRectCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->set_rect_select_mode(true);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5518,14 +4526,10 @@ class ToggleTypingModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_typing_mode";
     static inline const std::string hname = "Toggle typing minigame";
-    ToggleTypingModeCommand(MainWidget* w) : Command(w) {};
+    ToggleTypingModeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_toggle_typing_mode();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5534,16 +4538,11 @@ class DonateCommand : public Command {
 public:
     static inline const std::string cname = "donate";
     static inline const std::string hname = "Donate to support sioyek's development";
-    DonateCommand(MainWidget* w) : Command(w) {};
+    DonateCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         open_web_url(L"https://www.buymeacoffee.com/ahrm");
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5552,15 +4551,11 @@ class OverviewNextItemCommand : public Command {
 public:
     static inline const std::string cname = "overview_next_item";
     static inline const std::string hname = "Open an overview to the next search result";
-    OverviewNextItemCommand(MainWidget* w) : Command(w) {};
+    OverviewNextItemCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         if (num_repeats == 0) num_repeats++;
         widget->goto_search_result(num_repeats, true);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5569,15 +4564,11 @@ class OverviewPrevItemCommand : public Command {
 public:
     static inline const std::string cname = "overview_prev_item";
     static inline const std::string hname = "Open an overview to the previous search result";
-    OverviewPrevItemCommand(MainWidget* w) : Command(w) {};
+    OverviewPrevItemCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         if (num_repeats == 0) num_repeats++;
         widget->goto_search_result(-num_repeats, true);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5586,14 +4577,10 @@ class DeleteHighlightUnderCursorCommand : public Command {
 public:
     static inline const std::string cname = "delete_highlight_under_cursor";
     static inline const std::string hname = "Delete highlight under mouse cursor";
-    DeleteHighlightUnderCursorCommand(MainWidget* w) : Command(w) {};
+    DeleteHighlightUnderCursorCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_delete_highlight_under_cursor();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5603,15 +4590,10 @@ public:
     static inline const std::string cname = "noop";
     static inline const std::string hname = "Do nothing";
 
-    NoopCommand(MainWidget* widget_) : Command(widget_) {}
+    NoopCommand(MainWidget* widget_) : Command(cname, widget_) {}
 
     void perform() {
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5620,17 +4602,12 @@ class ImportCommand : public Command {
 public:
     static inline const std::string cname = "import";
     static inline const std::string hname = "Import annotation data from a json file";
-    ImportCommand(MainWidget* w) : Command(w) {};
+    ImportCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         std::wstring import_file_name = select_json_file_name();
         widget->import_json(import_file_name);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5639,17 +4616,12 @@ class ExportCommand : public Command {
 public:
     static inline const std::string cname = "export";
     static inline const std::string hname = "Export annotation data to a json file";
-    ExportCommand(MainWidget* w) : Command(w) {};
+    ExportCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         std::wstring export_file_name = select_new_json_file_name();
         widget->export_json(export_file_name);
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5658,14 +4630,10 @@ class WriteAnnotationsFileCommand : public Command {
 public:
     static inline const std::string cname = "write_annotations_file";
     static inline const std::string hname = "";
-    WriteAnnotationsFileCommand(MainWidget* w) : Command(w) {};
+    WriteAnnotationsFileCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->doc()->persist_annotations(true);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5674,14 +4642,10 @@ class LoadAnnotationsFileCommand : public Command {
 public:
     static inline const std::string cname = "load_annotations_file";
     static inline const std::string hname = "";
-    LoadAnnotationsFileCommand(MainWidget* w) : Command(w) {};
+    LoadAnnotationsFileCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->doc()->load_annotations();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5690,14 +4654,10 @@ class LoadAnnotationsFileSyncDeletedCommand : public Command {
 public:
     static inline const std::string cname = "import_annotations_file_sync_deleted";
     static inline const std::string hname = "";
-    LoadAnnotationsFileSyncDeletedCommand(MainWidget* w) : Command(w) {};
+    LoadAnnotationsFileSyncDeletedCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->doc()->load_annotations(true);
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5706,14 +4666,10 @@ class EnterVisualMarkModeCommand : public Command {
 public:
     static inline const std::string cname = "enter_visual_mark_mode";
     static inline const std::string hname = "Enter ruler mode using keyboard";
-    EnterVisualMarkModeCommand(MainWidget* w) : Command(w) {};
+    EnterVisualMarkModeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->visual_mark_under_pos({ widget->width() / 2, widget->height() / 2 });
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5722,48 +4678,35 @@ class SetPageOffsetCommand : public TextCommand {
 public:
     static inline const std::string cname = "set_page_offset";
     static inline const std::string hname = "Toggle visual scroll mode";
-    SetPageOffsetCommand(MainWidget* w) : TextCommand(w) {};
+    SetPageOffsetCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         if (is_string_numeric(text.value().c_str()) && text.value().size() < 6) { // make sure the page number is valid
             widget->main_document_view->set_page_offset(std::stoi(text.value().c_str()));
         }
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class ToggleVisualScrollCommand : public Command {
 public:
     static inline const std::string cname = "toggle_visual_scroll";
     static inline const std::string hname = "Toggle visual scroll mode";
-    ToggleVisualScrollCommand(MainWidget* w) : Command(w) {};
+    ToggleVisualScrollCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_visual_scroll_mode();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
+
 
 class ToggleHorizontalLockCommand : public Command {
 public:
     static inline const std::string cname = "toggle_horizontal_scroll_lock";
     static inline const std::string hname = "Toggle horizontal lock";
-    ToggleHorizontalLockCommand(MainWidget* w) : Command(w) {};
+    ToggleHorizontalLockCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->horizontal_scroll_locked = !widget->horizontal_scroll_locked;
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5772,16 +4715,11 @@ class ExecuteCommand : public TextCommand {
 public:
     static inline const std::string cname = "execute";
     static inline const std::string hname = "Execute shell command";
-    ExecuteCommand(MainWidget* w) : TextCommand(w) {};
+    ExecuteCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
         widget->execute_command(text.value());
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5790,14 +4728,10 @@ class ImportAnnotationsCommand : public Command {
 public:
     static inline const std::string cname = "import_annotations";
     static inline const std::string hname = "Import PDF annotations into sioyek";
-    ImportAnnotationsCommand(MainWidget* w) : Command(w) {};
+    ImportAnnotationsCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->doc()->import_annotations();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5806,7 +4740,7 @@ class EmbedAnnotationsCommand : public Command {
 public:
     static inline const std::string cname = "embed_annotations";
     static inline const std::string hname = "";
-    EmbedAnnotationsCommand(MainWidget* w) : Command(w) {};
+    EmbedAnnotationsCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
@@ -5814,27 +4748,17 @@ public:
             widget->main_document_view->get_document()->embed_annotations(embedded_pdf_file_name);
         }
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class CopyWindowSizeConfigCommand : public Command {
 public:
     static inline const std::string cname = "copy_window_size_config";
     static inline const std::string hname = "Copy current window size configuration";
-    CopyWindowSizeConfigCommand(MainWidget* w) : Command(w) {};
+    CopyWindowSizeConfigCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         copy_to_clipboard(widget->get_window_configuration_string());
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -5843,14 +4767,10 @@ class ToggleSelectHighlightCommand : public Command {
 public:
     static inline const std::string cname = "toggle_select_highlight";
     static inline const std::string hname = "Toggle select highlight mode";
-    ToggleSelectHighlightCommand(MainWidget* w) : Command(w) {};
+    ToggleSelectHighlightCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->is_select_highlight_mode = !widget->is_select_highlight_mode;
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 };
@@ -5859,17 +4779,13 @@ class OpenLastDocumentCommand : public Command {
 public:
     static inline const std::string cname = "open_last_document";
     static inline const std::string hname = "Switch to previous opened document";
-    OpenLastDocumentCommand(MainWidget* w) : Command(w) {};
+    OpenLastDocumentCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         auto last_opened_file = widget->get_last_opened_file_checksum();
         if (last_opened_file) {
             widget->open_document_with_hash(last_opened_file.value());
         }
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 
@@ -5880,16 +4796,11 @@ class AddMarkedDataCommand : public Command {
 public:
     static inline const std::string cname = "add_marked_data";
     static inline const std::string hname = "";
-    AddMarkedDataCommand(MainWidget* w) : Command(w) {};
+    AddMarkedDataCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_add_marked_data();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return true; }
 };
@@ -5898,16 +4809,11 @@ class UndoMarkedDataCommand : public Command {
 public:
     static inline const std::string cname = "undo_marked_data";
     static inline const std::string hname = "[internal]";
-    UndoMarkedDataCommand(MainWidget* w) : Command(w) {};
+    UndoMarkedDataCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_undo_marked_data();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return true; }
 };
@@ -5916,16 +4822,11 @@ class GotoRandomPageCommand : public Command {
 public:
     static inline const std::string cname = "goto_random_page";
     static inline const std::string hname = "[internal]";
-    GotoRandomPageCommand(MainWidget* w) : Command(w) {};
+    GotoRandomPageCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_goto_random_page();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return true; }
 };
@@ -5934,16 +4835,11 @@ class RemoveMarkedDataCommand : public Command {
 public:
     static inline const std::string cname = "remove_marked_data";
     static inline const std::string hname = "[internal]";
-    RemoveMarkedDataCommand(MainWidget* w) : Command(w) {};
+    RemoveMarkedDataCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_remove_marked_data();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return true; }
 };
@@ -5952,16 +4848,11 @@ class ExportMarkedDataCommand : public Command {
 public:
     static inline const std::string cname = "export_marked_data";
     static inline const std::string hname = "[internal]";
-    ExportMarkedDataCommand(MainWidget* w) : Command(w) {};
+    ExportMarkedDataCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->handle_export_marked_data();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return true; }
 };
@@ -5970,16 +4861,11 @@ class ToggleStatusbarCommand : public Command {
 public:
     static inline const std::string cname = "toggle_statusbar";
     static inline const std::string hname = "Toggle statusbar";
-    ToggleStatusbarCommand(MainWidget* w) : Command(w) {};
+    ToggleStatusbarCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->toggle_statusbar();
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -6052,7 +4938,7 @@ private:
 
 
 public:
-    LazyCommand(MainWidget* widget_, CommandManager* manager, CommandInvocation invocation) : Command(widget_), noop(widget_) {
+    LazyCommand(std::string name, MainWidget* widget_, CommandManager* manager, CommandInvocation invocation) : Command(name, widget_), noop(widget_) {
         command_manager = manager;
         command_name = invocation.command_name.toStdString();
         for (auto arg : invocation.command_args) {
@@ -6103,14 +4989,10 @@ class ClearCurrentPageDrawingsCommand : public Command {
 public:
     static inline const std::string cname = "clear_current_page_drawings";
     static inline const std::string hname = "";
-    ClearCurrentPageDrawingsCommand(MainWidget* w) : Command(w) {};
+    ClearCurrentPageDrawingsCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->clear_current_page_drawings();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 
@@ -6121,14 +5003,10 @@ class ClearCurrentDocumentDrawingsCommand : public Command {
 public:
     static inline const std::string cname = "clear_current_document_drawings";
     static inline const std::string hname = "";
-    ClearCurrentDocumentDrawingsCommand(MainWidget* w) : Command(w) {};
+    ClearCurrentDocumentDrawingsCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
         widget->clear_current_document_drawings();
-    }
-
-    std::string get_name() {
-        return cname;
     }
 
 
@@ -6139,7 +5017,7 @@ class DeleteFreehandDrawingsCommand : public Command {
 public:
     static inline const std::string cname = "delete_freehand_drawings";
     static inline const std::string hname = "Add a text bookmark in the selected rectangle";
-    DeleteFreehandDrawingsCommand(MainWidget* w) : Command(w) {};
+    DeleteFreehandDrawingsCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<AbsoluteRect> rect_;
     DrawingMode original_drawing_mode = DrawingMode::None;
@@ -6174,18 +5052,13 @@ public:
         widget->delete_freehand_drawings(rect_.value());
         widget->freehand_drawing_mode = original_drawing_mode;
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class SelectFreehandDrawingsCommand : public Command {
 public:
     static inline const std::string cname = "select_freehand_drawings";
     static inline const std::string hname = "Select freehand drawings";
-    SelectFreehandDrawingsCommand(MainWidget* w) : Command(w) {};
+    SelectFreehandDrawingsCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<AbsoluteRect> rect_;
     DrawingMode original_drawing_mode = DrawingMode::None;
@@ -6220,11 +5093,6 @@ public:
         widget->select_freehand_drawings(rect_.value());
         widget->freehand_drawing_mode = original_drawing_mode;
     }
-
-    std::string get_name() {
-        return cname;
-    }
-
 };
 
 class CustomCommand : public Command {
@@ -6237,7 +5105,7 @@ class CustomCommand : public Command {
 
 public:
 
-    CustomCommand(MainWidget* widget_, std::string name_, std::wstring command_) : Command(widget_) {
+    CustomCommand(MainWidget* widget_, std::string name_, std::wstring command_) : Command(name_, widget_) {
         raw_command = command_;
         name = name_;
     }
@@ -6281,7 +5149,7 @@ public:
 class ToggleConfigCommand : public Command {
 	std::string config_name;
 public:
-	ToggleConfigCommand(MainWidget* widget, std::string config_name_) : Command(widget){
+	ToggleConfigCommand(MainWidget* widget, std::string config_name_) : Command("toggleconfig_" + config_name_, widget) {
 		config_name = config_name_;
 	}
 
@@ -6292,10 +5160,6 @@ public:
         widget->on_config_changed(config_name);
 	}
 
-	std::string get_name() {
-		return "toggleconfig_" + config_name;
-	}
-	
 	bool requires_document() { return false; }
 };
 
@@ -6304,7 +5168,7 @@ class ConfigCommand : public Command {
     std::optional<std::wstring> text = {};
     ConfigManager* config_manager;
 public:
-    ConfigCommand(MainWidget* widget_, std::string config_name_, ConfigManager* config_manager_) : Command(widget_), config_manager(config_manager_) {
+    ConfigCommand(MainWidget* widget_, std::string config_name_, ConfigManager* config_manager_) : Command("setconfig_" + config_name_, widget_), config_manager(config_manager_) {
         config_name = config_name_;
     }
 
@@ -6443,11 +5307,6 @@ public:
             }
         }
     }
-
-    std::string get_name() {
-        return "setconfig_" + config_name;
-    }
-
 
     bool requires_document() { return false; }
 };
@@ -6646,7 +5505,7 @@ public:
             return std::move(subcommand);
         }
         else {
-            return std::move(std::make_unique<LazyCommand>(widget, widget->command_manager, invocation));
+            return std::move(std::make_unique<LazyCommand>(subcommand->get_name(), widget, widget->command_manager, invocation));
         }
     }
 
@@ -6665,7 +5524,7 @@ public:
         }
     }
 
-    MacroCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(widget_) {
+    MacroCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(name_, widget_) {
         //commands = std::move(commands_);
         command_manager = manager;
         name = name_;
@@ -7003,7 +5862,7 @@ class HoldableCommand : public Command {
     CommandManager* command_manager;
 
 public:
-    HoldableCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(widget_) {
+    HoldableCommand(MainWidget* widget_, CommandManager* manager, std::string name_, std::wstring commands_) : Command(name_, widget_) {
         command_manager = manager;
         name = name_;
         QString str = QString::fromStdWString(commands_);
@@ -8110,7 +6969,7 @@ std::vector<char> Command::special_symbols() {
 
 
 std::string Command::get_name() {
-    return "";
+    return command_cname;
 }
 
 
