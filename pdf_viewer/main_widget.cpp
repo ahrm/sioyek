@@ -2628,8 +2628,9 @@ TextUnderPointerInfo MainWidget::find_location_of_text_under_pointer(DocumentPos
                 res.source_text = generic_pair.value().first + L" " + generic_pair.value().second;
             }
 
-            res.page = candidates[index_into_candidates].page;
-            res.offset = candidates[index_into_candidates].y;
+            res.targets.push_back(candidates[index_into_candidates]);
+            //res.page = candidates[index_into_candidates].page;
+            //res.offset = candidates[index_into_candidates].y;
             res.reference_type = ReferenceType::Generic;
             return res;
         }
@@ -2639,8 +2640,10 @@ TextUnderPointerInfo MainWidget::find_location_of_text_under_pointer(DocumentPos
         if (eqdata_.size() > 0) {
             IndexedData refdata = eqdata_[0];
             res.source_text = refdata.text;
-            res.page = refdata.page;
-            res.offset = refdata.y_offset;
+
+            res.targets.push_back(DocumentPos{refdata.page, 0, refdata.y_offset});
+            //res.page = refdata.page;
+            //res.offset = refdata.y_offset;
             res.reference_type = ReferenceType::Equation;
             return res;
         }
@@ -2649,18 +2652,23 @@ TextUnderPointerInfo MainWidget::find_location_of_text_under_pointer(DocumentPos
     if (reference_text_on_pointer) {
         std::vector<IndexedData> refdata_ = main_document_view->get_document()->find_reference_with_string(reference_text_on_pointer.value(), current_page_number);
         if (refdata_.size() > 0) {
-            IndexedData refdata = refdata_[0];
-            res.source_text = refdata.text;
-            res.page = refdata.page;
-            res.offset = refdata.y_offset;
             res.reference_type = ReferenceType::Reference;
+
+            for (auto refdata : refdata_) {
+                res.source_text = refdata.text;
+                res.targets.push_back(DocumentPos{refdata.page, 0, refdata.y_offset});
+            }
+
             return res;
         }
 
     }
     if (is_pos_inside_selected_text(docpos)){
         if (selected_text.size() > 0 && doc()->is_super_fast_index_ready()) {
-            res.reference_type = find_location_of_selected_text(&res.page, &res.offset, &res.source_rect, &res.source_text, &res.overview_highlight_rects);
+            int target_page;
+            float target_y_offset;
+            res.reference_type = find_location_of_selected_text(&target_page, &target_y_offset, &res.source_rect, &res.source_text, &res.overview_highlight_rects);
+            res.targets.push_back(DocumentPos{ target_page, 0, target_y_offset });
             return res;
             /* ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects) { */
         }
@@ -2672,8 +2680,9 @@ TextUnderPointerInfo MainWidget::find_location_of_text_under_pointer(DocumentPos
             std::optional<DocumentPos> abbr_definition_location = doc()->find_abbreviation(abbr_under_pointer.value(), res.overview_highlight_rects);
             if (abbr_definition_location){
                 res.source_text = abbr_under_pointer.value();
-                res.page = abbr_definition_location->page;
-                res.offset = abbr_definition_location->y;
+                res.targets.push_back(DocumentPos{ abbr_definition_location->page, 0, abbr_definition_location->y});
+                //res.page = abbr_definition_location->page;
+                //res.offset = abbr_definition_location->y;
                 res.reference_type = ReferenceType::Abbreviation;
                 return res;
             }
@@ -2924,12 +2933,22 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     }
 
     if ((!is_control_pressed) && (!is_shift_pressed)) {
-        if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
-            if (wevent->angleDelta().y() > 0) {
-                scroll_overview(-1);
+        if (opengl_widget->get_overview_page()) {
+            if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
+                if (wevent->angleDelta().y() > 0) {
+                    scroll_overview(-1);
+                }
+                if (wevent->angleDelta().y() < 0) {
+                    scroll_overview(1);
+                }
             }
-            if (wevent->angleDelta().y() < 0) {
-                scroll_overview(1);
+            else {
+                if (wevent->angleDelta().y() > 0) {
+                    goto_ith_next_overview(-1);
+                }
+                if (wevent->angleDelta().y() < 0) {
+                    goto_ith_next_overview(1);
+                }
             }
             validate_render();
         }
@@ -3214,8 +3233,8 @@ void MainWidget::smart_jump_under_pos(WindowPos pos) {
     get_flat_chars_from_stext_page(stext_page, flat_chars);
 
     TextUnderPointerInfo text_under_pos_info = find_location_of_text_under_pointer(docpos);
-    if (text_under_pos_info.reference_type != ReferenceType::None){
-        long_jump_to_destination(text_under_pos_info.page, text_under_pos_info.offset);
+    if ((text_under_pos_info.reference_type != ReferenceType::None) && (text_under_pos_info.targets.size() > 0)){
+        long_jump_to_destination(text_under_pos_info.targets[0].page, text_under_pos_info.targets[0].y);
     }
     else {
         std::optional<std::wstring> paper_name_on_pointer = main_document_view->get_document()->get_paper_name_at_position(flat_chars, docpos.pageless());
@@ -3303,16 +3322,16 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
     DocumentPos docpos = main_document_view->window_to_document_pos(pos);
 
     TextUnderPointerInfo reference_info = find_location_of_text_under_pointer(docpos, true);
-    if (reference_info.reference_type != ReferenceType::None) {
+    if ((reference_info.reference_type != ReferenceType::None) && (reference_info.targets.size() > 0)) {
         int pos_page = main_document_view->window_to_document_pos(pos).page;
         //opengl_widget->set_selected_rectangle(overview_source_rect_absolute);
 
-        SmartViewCandidate current_candid;
-        current_candid.source_rect = reference_info.source_rect;
-        current_candid.target_pos = DocumentPos{ reference_info.page, 0, reference_info.offset };
-        current_candid.source_text = reference_info.source_text;
-        smart_view_candidates = { current_candid };
-        set_overview_position(reference_info.page, reference_info.offset);
+        //SmartViewCandidate current_candid;
+        //current_candid.source_rect = reference_info.source_rect;
+        //current_candid.target_pos = reference_info.targets[0];
+        //current_candid.source_text = reference_info.source_text;
+        //smart_view_candidates = { current_candid };
+        set_overview_position(reference_info.targets[0].page, reference_info.targets[0].y);
         opengl_widget->set_overview_highlights(reference_info.overview_highlight_rects);
         return true;
     }
@@ -6822,9 +6841,9 @@ std::optional<std::wstring> MainWidget::get_paper_name_under_pos(DocumentPos doc
 
         if (ref_){
             TextUnderPointerInfo reference_info = find_location_of_text_under_pointer(docpos);
-            if (reference_info.reference_type == ReferenceType::Reference){
+            if ((reference_info.reference_type == ReferenceType::Reference) && (reference_info.targets.size() > 0)){
                 std::wstring ref = ref_.value();
-                auto res = doc()->get_page_bib_with_reference(reference_info.page, ref);
+                auto res = doc()->get_page_bib_with_reference(reference_info.targets[0].page, ref);
                 if (res) {
                     if (clean) {
                         return get_paper_name_from_reference_text(res.value().first);

@@ -63,8 +63,7 @@ enum class DrawingMode {
 
 struct TextUnderPointerInfo{
     ReferenceType reference_type;
-    int page;
-    float offset;
+    std::vector<DocumentPos> targets;
     AbsoluteRect source_rect;
     std::wstring source_text;
     std::vector<DocumentRect> overview_highlight_rects;
