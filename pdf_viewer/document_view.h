@@ -60,6 +60,9 @@ protected:
     bool is_ruler_mode_ = false;
     std::optional<int> presentation_page_number;
 
+    float page_space_x = 0;
+    float page_space_y = 0;
+
 public:
     // list of selected characters (e.g. using mouse select) to be highlighted
     std::deque<AbsoluteRect> selected_character_rects;
@@ -215,12 +218,18 @@ public:
     std::optional<int> get_presentation_page_number();
     bool is_presentation_mode();
     VirtualPos absolute_to_virtual_pos(const AbsoluteDocumentPos& abspos);
+    VirtualPos document_to_virtual_pos(DocumentPos docpos);
     AbsoluteDocumentPos virtual_to_absolute_pos(const VirtualPos& vpos);
     VirtualPos window_to_virtual_pos(const WindowPos& window_pos);
     WindowPos virtual_to_window_pos(const VirtualPos& virtual_pos);
     NormalizedWindowRect virtual_to_normalized_window_rect(const VirtualRect& virtual_rect);
     void toggle_two_page();
     bool is_two_page_mode();
+    void set_page_space_x(float space_x);
+    void set_page_space_y(float space_y);
+
+    float get_page_space_x();
+    float get_page_space_y();
 
 };
 

@@ -9,6 +9,11 @@
 // portals are not correctly saved in an updated database
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
+// render only smart page boxes in two column mode
+// faster super_fast_search?
+// handle this issue: https://github.com/ahrm/sioyek/issues/670
+// add a config option to use actual page separation
+// paper download portals are not working?
 
 
 #include <iostream>
@@ -7030,16 +7035,20 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
     bool should_reflow = false;
     bool should_invalidate_render = false;
     for (int i = 0; i < config_names->size(); i++) {
-        if (QString::fromStdString((*config_names)[i]).startsWith("epub")) {
+        QString confname = QString::fromStdString((*config_names)[i]);
+
+        if (confname.startsWith("epub")) {
             should_reflow = true;
         }
-        if (QString::fromStdString((*config_names)[i]) == "gamma") {
+        if (confname == "gamma") {
             should_invalidate_render = true;
         }
-        if (QString::fromStdString((*config_names)[i]) == "highlight_links") {
+        if (confname == "highlight_links") {
             opengl_widget->set_highlight_links(SHOULD_HIGHLIGHT_LINKS, false);
         }
-        if (QString::fromStdString((*config_names)[i]).startsWith("page_space")) {
+        if (confname.startsWith("page_space")) {
+            if (confname == "page_space_x") main_document_view->set_page_space_x(PAGE_SPACE_X);
+            if (confname == "page_space_y") main_document_view->set_page_space_y(PAGE_SPACE_Y);
             main_document_view->fill_cached_virtual_rects(true);
         }
     }

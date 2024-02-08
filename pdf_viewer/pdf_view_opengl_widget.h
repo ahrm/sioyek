@@ -249,7 +249,7 @@ public:
     std::optional<SearchResult> get_current_search_result();
     void goto_search_result(int offset, bool overview = false);
     void render_overview(OverviewState overview);
-    void render_page(int page_number, bool in_overview=false, bool force_light_mode=false);
+    void render_page(int page_number, bool in_overview=false, bool force_light_mode=false, bool stencils_allowed=true);
     bool get_is_searching(float* prog);
     void search_text(const std::wstring& text, SearchCaseSensitivity case_sensitive = SearchCaseSensitivity::CaseInsensitive, bool regex = false, std::optional<std::pair<int, int>> range = {});
     void set_dark_mode(bool mode);

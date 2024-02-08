@@ -896,8 +896,8 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     window_rect.y0 = -window_rect.y0;
     window_rect.y1 = -window_rect.y1;
 
-    enable_stencil();
     glClear(GL_STENCIL_BUFFER_BIT);
+    enable_stencil();
     write_to_stencil();
     draw_stencil_rects({ window_rect });
     use_stencil_to_write(true);
@@ -907,9 +907,9 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     draw_overview_background();
 
 
-    render_page(page, true);
-    render_page(page-1, true);
-    render_page(page+1, true);
+    render_page(page, true, false, false);
+    render_page(page-1, true, false, false);
+    render_page(page+1, true, false, false);
 
     std::optional<SearchResult> highlighted_result = get_current_search_result();
     // highlight the overview search result
@@ -977,7 +977,7 @@ Document* PdfViewOpenGLWidget::doc(bool overview){
     return document_view->get_document();
 }
 
-void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool force_light_mode) {
+void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool force_light_mode, bool stencils_allowed) {
 
     if (!valid_document()) return;
 
@@ -1065,6 +1065,23 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
 
         WindowRect full_page_irect = fz_round_rect(fz_transform_rect(full_page_rect,
             fz_scale(zoom_level, zoom_level)));
+        PagelessDocumentRect page_content = full_page_rect;
+        if (document_view->get_page_space_x() < 0) {
+            if (page_number % 2 == 1) {
+                page_content.x0 -= document_view->get_page_space_x();
+            }
+            else {
+                page_content.x1 += document_view->get_page_space_x();
+            }
+        }
+
+        if (document_view->is_two_page_mode() && (stencils_allowed)) {
+            glClear(GL_STENCIL_BUFFER_BIT);
+            enable_stencil();
+            write_to_stencil();
+            draw_stencil_rects(page_number, {page_content});
+            use_stencil_to_write(true);
+        }
 
         if (is_sliced) {
 
@@ -1165,8 +1182,12 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
         glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
         glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        
+        if (document_view->is_two_page_mode() && (stencils_allowed)) {
+            disable_stencil();
+        }
 
-        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (!force_light_mode)) {
+        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (!force_light_mode) && (stencils_allowed)) {
             // render images in light mode
             fz_stext_page * stext_page = document_view->get_document()->get_stext_with_page_number(page_number);
             std::vector<PagelessDocumentRect> image_rects;
@@ -1185,11 +1206,12 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
                 }
             }
 
+            glClear(GL_STENCIL_BUFFER_BIT);
             enable_stencil();
             write_to_stencil();
             draw_stencil_rects(page_number, image_rects);
             use_stencil_to_write(true);
-            render_page(page_number, in_overview, true);
+            render_page(page_number, in_overview, true, false);
             disable_stencil();
         }
 

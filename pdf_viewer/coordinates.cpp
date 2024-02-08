@@ -53,15 +53,15 @@ bool are_same(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs) {
 //	return are_same(lhs.x, rhs.x) && are_same(lhs.y, rhs.y);
 //}
 
-AbsoluteDocumentPos DocumentPos::to_absolute(Document* doc) {
+AbsoluteDocumentPos DocumentPos::to_absolute(Document* doc) const{
     return doc->document_to_absolute_pos(*this);
 }
 
-NormalizedWindowPos DocumentPos::to_window_normalized(DocumentView* document_view) {
+NormalizedWindowPos DocumentPos::to_window_normalized(DocumentView* document_view) const{
     return document_view->document_to_window_pos(*this);
 }
 
-WindowPos DocumentPos::to_window(DocumentView* document_view) {
+WindowPos DocumentPos::to_window(DocumentView* document_view) const{
     return document_view->document_to_window_pos_in_pixels_uncentered(*this);
 }
 

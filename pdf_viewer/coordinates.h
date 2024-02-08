@@ -40,9 +40,9 @@ struct DocumentPos {
     float y;
 
     PagelessDocumentPos pageless() const;
-    AbsoluteDocumentPos to_absolute(Document* doc);
-    NormalizedWindowPos to_window_normalized(DocumentView* document_view);
-    WindowPos to_window(DocumentView* document_view);
+    AbsoluteDocumentPos to_absolute(Document* doc) const;
+    NormalizedWindowPos to_window_normalized(DocumentView* document_view) const;
+    WindowPos to_window(DocumentView* document_view) const;
 };
 
 struct AbsoluteDocumentPos {

@@ -1773,7 +1773,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         });
     configs.push_back({
         L"page_space_x",
-        ConfigType::Bool,
+        ConfigType::Float,
         &PAGE_SPACE_X,
         float_serializer,
         float_deserializer,
@@ -1782,7 +1782,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         });
     configs.push_back({
         L"page_space_y",
-        ConfigType::Bool,
+        ConfigType::Float,
         &PAGE_SPACE_Y,
         float_serializer,
         float_deserializer,
@@ -1791,7 +1791,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         });
     configs.push_back({
         L"menu_screen_width_ratio",
-        ConfigType::Bool,
+        ConfigType::Float,
         &MENU_SCREEN_WDITH_RATIO,
         float_serializer,
         float_deserializer,
@@ -1800,7 +1800,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         });
     configs.push_back({
         L"hyperdrive_speed_factor",
-        ConfigType::Bool,
+        ConfigType::Float,
         &HYPERDRIVE_SPEED_FACTOR,
         float_serializer,
         float_deserializer,
