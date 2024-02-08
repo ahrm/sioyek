@@ -9,11 +9,9 @@
 // portals are not correctly saved in an updated database
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
-// render only smart page boxes in two column mode
 // faster super_fast_search?
 // handle this issue: https://github.com/ahrm/sioyek/issues/670
 // add a config option to use actual page separation
-// paper download portals are not working?
 
 
 #include <iostream>
@@ -7231,6 +7229,7 @@ QNetworkReply* MainWidget::download_paper_with_url(std::wstring paper_url_, bool
 
     auto res = network_manager.get(req);
     res->setProperty("sioyek_archive_url", QString::fromStdWString(paper_url_));
+    res->setProperty("sioyek_finish_action", get_paper_download_finish_action_string(action));
     return res;
 }
 
