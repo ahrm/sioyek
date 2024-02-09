@@ -22,8 +22,8 @@
 extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
 extern bool USE_LEGACY_KEYBINDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
-extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
-extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
+extern std::map<std::wstring, JsCommandInfo> ADDITIONAL_JAVASCRIPT_COMMANDS;
+extern std::map<std::wstring, JsCommandInfo> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 extern std::wstring SEARCH_URLS[26];
 extern bool ALPHABETIC_LINK_TAGS;
@@ -2124,15 +2124,17 @@ class JavascriptCommand : public Command {
 public:
     std::string command_name;
     std::wstring code;
+    std::optional<std::wstring> entry_point = {};
     bool is_async;
 
-    JavascriptCommand(std::string command_name, std::wstring code_, bool is_async_, MainWidget* w) :  Command(command_name, w), command_name(command_name) {
+    JavascriptCommand(std::string command_name, std::wstring code_, std::optional<std::wstring> entry_point_, bool is_async_, MainWidget* w) :  Command(command_name, w), command_name(command_name) {
         code = code_;
+        entry_point = entry_point_;
         is_async = is_async_;
     };
 
     void perform() {
-        widget->run_javascript_command(code, is_async);
+        widget->run_javascript_command(code, entry_point, is_async);
     }
 
     std::string get_name() {
@@ -6186,12 +6188,12 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     }
 
 
-    for (auto [command_name_, command_files_pair] : ADDITIONAL_JAVASCRIPT_COMMANDS) {
-        handle_new_javascript_command(command_name_, command_files_pair, false);
+    for (auto [command_name_, js_command_info] : ADDITIONAL_JAVASCRIPT_COMMANDS) {
+        handle_new_javascript_command(command_name_, js_command_info, false);
     }
 
-    for (auto [command_name_, command_files_pair] : ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS) {
-        handle_new_javascript_command(command_name_, command_files_pair, true);
+    for (auto [command_name_, js_command_info] : ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS) {
+        handle_new_javascript_command(command_name_, js_command_info, true);
     }
 
     for (auto [command_name_, macro_value] : ADDITIONAL_MACROS) {
@@ -6227,9 +6229,9 @@ void CommandManager::update_command_last_use(std::string command_name) {
     command_last_uses[command_name] = QDateTime::currentDateTime();
 }
 
-void CommandManager::handle_new_javascript_command(std::wstring command_name_, std::pair<std::wstring, std::wstring> command_files_pair, bool is_async) {
+void CommandManager::handle_new_javascript_command(std::wstring command_name_, JsCommandInfo info, bool is_async) {
         std::string command_name = utf8_encode(command_name_);
-        auto [command_parent_file_path, command_file_path] = command_files_pair;
+        auto [command_parent_file_path, command_file_path, entry_point] = info;
 
         QDir parent_dir = QFileInfo(QString::fromStdWString(command_parent_file_path)).dir();
         QFileInfo javascript_file_info(QString::fromStdWString(command_file_path));
@@ -6245,7 +6247,9 @@ void CommandManager::handle_new_javascript_command(std::wstring command_name_, s
         if (code_file.open(QIODevice::ReadOnly)) {
             QTextStream in(&code_file);
             QString code = in.readAll();
-            new_commands[command_name] = [command_name, code, is_async, this](MainWidget* w) {return std::make_unique<JavascriptCommand>(command_name, code.toStdWString(), is_async, w); };
+            new_commands[command_name] = [command_name, code, entry_point, is_async, this](MainWidget* w) {
+                return std::make_unique<JavascriptCommand>(command_name, code.toStdWString(), entry_point, is_async, w);
+                };
         }
 }
 

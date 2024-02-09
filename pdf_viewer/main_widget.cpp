@@ -9555,9 +9555,13 @@ void MainWidget::execute_macro_and_return_result(QString macro_string, bool* is_
 
 }
 
-void MainWidget::run_javascript_command(std::wstring javascript_code, bool is_async){
+void MainWidget::run_javascript_command(std::wstring javascript_code, std::optional<std::wstring> entry_point, bool is_async){
 
     QString content = QString::fromStdWString(javascript_code);
+    if (entry_point.has_value()) {
+        content += "\n" + QString::fromStdWString(entry_point.value()) + "()";
+    }
+
     if (is_async) {
         std::thread ext_thread = std::thread([&, content]() {
             QJSEngine* engine = take_js_engine(true);

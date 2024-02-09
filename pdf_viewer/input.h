@@ -10,6 +10,7 @@
 
 #include "path.h"
 #include "coordinates.h"
+#include "utils.h"
 
 class QLocalSocket;
 class MainWidget;
@@ -93,7 +94,7 @@ public:
     std::unique_ptr<Command> get_command_with_name(MainWidget* w, std::string name);
     std::unique_ptr<Command> create_macro_command(MainWidget* w, std::string name, std::wstring macro_string);
     QStringList get_all_command_names();
-    void handle_new_javascript_command(std::wstring command_name, std::pair<std::wstring, std::wstring> command_files_pair, bool is_async);
+    void handle_new_javascript_command(std::wstring command_name, JsCommandInfo command_files_pair, bool is_async);
     void update_command_last_use(std::string command_name);
 
     template<typename T>

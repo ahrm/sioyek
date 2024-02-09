@@ -28,6 +28,11 @@
 #define LL_ITER(name, start) for(auto name=start;(name);name=name->next)
 #define LOG(expr) if (VERBOSE) {(expr);};
 
+struct JsCommandInfo {
+    std::wstring pref_file_path;
+    std::wstring js_file_path;
+    std::optional<std::wstring> entry_point;
+};
 
 std::wstring to_lower(const std::wstring& inp);
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char);

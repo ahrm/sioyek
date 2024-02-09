@@ -270,8 +270,10 @@ bool USE_LEGACY_KEYBINDS = false;
 bool MULTILINE_MENUS = true;
 bool START_WITH_HELPER_WINDOW = false;
 std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
-std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
-std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
+
+
+std::map<std::wstring, JsCommandInfo> ADDITIONAL_JAVASCRIPT_COMMANDS;
+std::map<std::wstring, JsCommandInfo> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
 std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 bool PRERENDER_NEXT_PAGE = true;
