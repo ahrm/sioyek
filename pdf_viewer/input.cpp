@@ -6191,21 +6191,25 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
         std::string command_name = utf8_encode(command_name_);
         std::wstring local_command_value = command_value;
         new_commands[command_name] = [command_name, local_command_value, this](MainWidget* w) {return  std::make_unique<CustomCommand>(w, command_name, local_command_value); };
+        command_required_prefixes[QString::fromStdString(command_name)] = "_";
     }
 
 
     for (auto [command_name_, js_command_info] : ADDITIONAL_JAVASCRIPT_COMMANDS) {
         handle_new_javascript_command(command_name_, js_command_info, false);
+        command_required_prefixes[QString::fromStdWString(command_name_)] = "_";
     }
 
     for (auto [command_name_, js_command_info] : ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS) {
         handle_new_javascript_command(command_name_, js_command_info, true);
+        command_required_prefixes[QString::fromStdWString(command_name_)] = "_";
     }
 
     for (auto [command_name_, macro_value] : ADDITIONAL_MACROS) {
         std::string command_name = utf8_encode(command_name_);
         std::wstring local_macro_value = macro_value;
         new_commands[command_name] = [command_name, local_macro_value, this](MainWidget* w) {return std::make_unique<MacroCommand>(w, this, command_name, local_macro_value); };
+        command_required_prefixes[QString::fromStdString(command_name)] = "_";
     }
 
     std::vector<Config> configs = config_manager->get_configs();
@@ -6227,8 +6231,14 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     }
 
     QDateTime current_time = QDateTime::currentDateTime();
+    QDateTime older_time = current_time.addSecs(-1);
     for (auto [command_name, _] : new_commands) {
-        command_last_uses[command_name] = current_time;
+        if (command_name.size() > 0 && command_name[0] == '_') {
+            command_last_uses[command_name] = older_time;
+        }
+        else {
+            command_last_uses[command_name] = current_time;
+        }
     }
 
 }
@@ -6278,7 +6288,9 @@ QStringList CommandManager::get_all_command_names() {
             pairs.push_back(std::make_pair(command_last_uses[com.first], QString::fromStdString(com.first)));
         }
 
-        std::sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {return a.first > b.first; });
+        std::sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {
+            return a.first > b.first;
+            });
 
         for (auto [_, com] : pairs) {
             res.push_back(com);
