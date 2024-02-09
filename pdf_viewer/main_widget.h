@@ -358,7 +358,8 @@ public:
     // last time we updated `smooth_scroll_speed` 
     QTime last_speed_update_time = QTime::currentTime();
 
-    std::vector<QJSEngine*> available_engines;
+    QJSEngine* sync_js_engine = nullptr;
+    std::vector<QJSEngine*> available_async_engines;
     std::mutex available_engine_mutex;
     int num_js_engines = 0;
 
@@ -813,8 +814,8 @@ public:
     std::vector<std::wstring> get_new_files_from_scan_directory();
     void scan_new_files_from_scan_directory();
     void export_python_api();
-    QJSEngine* take_js_engine();
-    void release_js_engine(QJSEngine* engine);
+    QJSEngine* take_js_engine(bool async);
+    void release_async_js_engine(QJSEngine* engine);
 
     QJSValue export_javascript_api(QJSEngine& engine, bool is_async);
     void show_custom_option_list(std::vector<std::wstring> option_list);

@@ -1183,6 +1183,16 @@ MainWidget::~MainWidget() {
         delete tts;
     }
 
+    if (sync_js_engine != nullptr) {
+        sync_js_engine->collectGarbage();
+        delete sync_js_engine;
+    }
+
+    for (int i = 0; i < available_async_engines.size(); i++) {
+        available_async_engines[i]->collectGarbage();
+        delete available_async_engines[i];
+    }
+
     // todo: use a reference counting pointer for document so we can delete main_doc
     // and helper_doc in DocumentView's destructor, not here.
     // ideally this function should just become:
@@ -8587,19 +8597,36 @@ void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
     opengl_widget->set_overview_page(overview);
 }
 
-QJSEngine* MainWidget::take_js_engine() {
+QJSEngine* MainWidget::take_js_engine(bool async) {
     //std::lock_guard guard(available_engine_mutex);
+    if (!async) {
+        if (sync_js_engine != nullptr) {
+            return sync_js_engine;
+        }
+
+        auto js_engine = new QJSEngine();
+        js_engine->installExtensions(QJSEngine::ConsoleExtension);
+
+        QJSValue sioyek_object = js_engine->newQObject(this);
+        js_engine->setObjectOwnership(this, QJSEngine::CppOwnership);
+
+        js_engine->globalObject().setProperty("sioyek_api", sioyek_object);
+        js_engine->globalObject().setProperty("sioyek", export_javascript_api(*js_engine, false));
+        sync_js_engine = js_engine;
+        return sync_js_engine;
+
+    }
     available_engine_mutex.lock();
 
-    while (num_js_engines > 4 && (available_engines.size() == 0)) {
+    while (num_js_engines > 4 && (available_async_engines.size() == 0)) {
         available_engine_mutex.unlock();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         available_engine_mutex.lock();
     }
 
-    if (available_engines.size() > 0) {
-        auto res = available_engines.back();
-        available_engines.pop_back();
+    if (available_async_engines.size() > 0) {
+        auto res = available_async_engines.back();
+        available_async_engines.pop_back();
         available_engine_mutex.unlock();
         return res;
     }
@@ -8614,14 +8641,13 @@ QJSEngine* MainWidget::take_js_engine() {
     js_engine->setObjectOwnership(this, QJSEngine::CppOwnership);
 
     js_engine->globalObject().setProperty("sioyek_api", sioyek_object);
-    js_engine->globalObject().setProperty("sioyek", export_javascript_api(*js_engine, false));
-    js_engine->globalObject().setProperty("sioyek_async", export_javascript_api(*js_engine, true));
+    js_engine->globalObject().setProperty("sioyek", export_javascript_api(*js_engine, true));
     return js_engine;
 }
 
-void MainWidget::release_js_engine(QJSEngine* engine) {
+void MainWidget::release_async_js_engine(QJSEngine* engine) {
     std::lock_guard guard(available_engine_mutex);
-    available_engines.push_back(engine);
+    available_async_engines.push_back(engine);
 }
 
 QJSValue MainWidget::export_javascript_api(QJSEngine& engine, bool is_async){
@@ -9534,17 +9560,17 @@ void MainWidget::run_javascript_command(std::wstring javascript_code, bool is_as
     QString content = QString::fromStdWString(javascript_code);
     if (is_async) {
         std::thread ext_thread = std::thread([&, content]() {
-            QJSEngine* engine = take_js_engine();
+            QJSEngine* engine = take_js_engine(true);
             auto res = engine->evaluate(content);
-            release_js_engine(engine);
+            release_async_js_engine(engine);
             });
         ext_thread.detach();
     }
     else {
-        QJSEngine* engine = take_js_engine();
+        QJSEngine* engine = take_js_engine(false);
         QStringList stack_trace;
         auto res = engine->evaluate(content, QString(), 1, &stack_trace);
-        release_js_engine(engine);
+        //release_js_engine(engine);
         if (stack_trace.size() > 0) {
             for (auto line : stack_trace) {
                 qDebug() << line;
