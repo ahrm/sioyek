@@ -24,6 +24,7 @@ extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern float TTS_RATE;
 extern float MENU_SCREEN_WDITH_RATIO;
+extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 
 std::wstring select_command_file_name(std::string command_name) {
     if (command_name == "open_document") {
@@ -1089,7 +1090,13 @@ void IntConfigUI::resizeEvent(QResizeEvent* resize_event) {
 
 TouchCommandSelector::TouchCommandSelector(bool is_fuzzy, const QStringList& commands, MainWidget* mw) : QWidget(mw) {
     main_widget = mw;
-    list_view = new TouchListView(is_fuzzy, commands, -1, this);
+    QStringList touch_commands;
+    for (auto com : commands) {
+        if (!(com.startsWith("toggleconfig_") || com.startsWith("setconfig_"))) {
+            touch_commands.push_back(com);
+        }
+    }
+    list_view = new TouchListView(is_fuzzy, touch_commands, -1, this);
 
     QObject::connect(list_view, &TouchListView::itemSelected, [&](QString val, int index) {
         //main_widget->current_widget = nullptr;
@@ -1297,18 +1304,34 @@ CommandSelector::~CommandSelector() {
     fzf_free_slab(slab);
 }
 
+QStringList CommandSelector::get_elements_matching_prefix(QString text) {
+    QStringList res;
+
+    for (int i = 0; i < string_elements.size(); i++) {
+        QString required_prefix = prefixes[string_elements[i]];
+        bool show_because_command_was_recent = SHOW_MOST_RECENT_COMMANDS_FIRST ? i < 10 : false;
+        if (show_because_command_was_recent || required_prefix.size() == 0 || text.startsWith(required_prefix)) {
+            res.push_back(string_elements[i]);
+        }
+    }
+    return res;
+}
+
 CommandSelector::CommandSelector(bool is_fuzzy, std::function<void(std::string, std::string)>* on_done,
     MainWidget* parent,
     QStringList elements,
-    std::unordered_map<std::string,
-    std::vector<std::string>> key_map) : BaseSelectorWidget(new QTableView(), is_fuzzy, nullptr, parent),
+    const std::unordered_map<QString, QString>& required_prefixed,
+    std::unordered_map<std::string, std::vector<std::string>> key_map
+) : BaseSelectorWidget(new QTableView(), is_fuzzy, nullptr, parent),
+    prefixes(required_prefixed),
     key_map(key_map),
     on_done(on_done),
     main_widget(parent)
 {
     slab = fzf_make_default_slab();
     string_elements = elements;
-    standard_item_model = get_standard_item_model(string_elements);
+
+    standard_item_model = get_standard_item_model(get_elements_matching_prefix(""));
 
     QTableView* table_view = dynamic_cast<QTableView*>(get_view());
 
@@ -1333,8 +1356,6 @@ bool CommandSelector::on_text_change(const QString& text) {
     std::string search_text_string = text.toStdString();
     std::vector<std::pair<std::string, int>> match_score_pairs;
 
-    std::string pattern_str = text.toStdString();
-    fzf_pattern_t* pattern = fzf_parse_pattern(CaseSmart, false, (char*)pattern_str.c_str(), true);
 
     QString actual_text = text;
 
@@ -1357,8 +1378,13 @@ bool CommandSelector::on_text_change(const QString& text) {
         search_text_string = actual_text.toStdString();
     }
 
-    for (int i = 0; i < string_elements.size(); i++) {
-        std::string encoded = utf8_encode(string_elements.at(i).toStdWString());
+    std::string pattern_str = actual_text.toStdString();
+    fzf_pattern_t* pattern = fzf_parse_pattern(CaseSmart, false, (char*)pattern_str.c_str(), true);
+
+    QStringList elements_matching_prefix = get_elements_matching_prefix(actual_text);
+
+    for (int i = 0; i < elements_matching_prefix.size(); i++) {
+        std::string encoded = utf8_encode(elements_matching_prefix.at(i).toStdWString());
         int score = 0;
         if (is_fuzzy) {
             //score = static_cast<int>(rapidfuzz::fuzz::partial_ratio(search_text_string, encoded));
@@ -1373,9 +1399,9 @@ bool CommandSelector::on_text_change(const QString& text) {
         return lhs.second > rhs.second;
         });
 
-    for (int i = 0; i < string_elements.size(); i++) {
-        if (string_elements.at(i).startsWith(actual_text)) {
-            matching_element_names.push_back(string_elements.at(i).toStdString());
+    for (int i = 0; i < elements_matching_prefix.size(); i++) {
+        if (elements_matching_prefix.at(i).startsWith(actual_text)) {
+            matching_element_names.push_back(elements_matching_prefix.at(i).toStdString());
         }
     }
 

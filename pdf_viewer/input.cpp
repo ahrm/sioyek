@@ -1671,7 +1671,13 @@ public:
         if (!TOUCH_MODE) {
 
             widget->set_current_widget(new CommandSelector(
-                FUZZY_SEARCHING, &widget->on_command_done, widget, command_names, widget->input_handler->get_command_key_mappings()));
+                FUZZY_SEARCHING,
+                &widget->on_command_done,
+                widget,
+                command_names,
+                widget->command_manager->command_required_prefixes,
+                widget->input_handler->get_command_key_mappings())
+            );
         }
         else {
 
@@ -6210,10 +6216,12 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
         std::string config_set_command_name = "setconfig_" + confname;
         //commands.push_back({ config_set_command_name, true, false , false, false, true, {} });
         new_commands[config_set_command_name] = [confname, config_manager](MainWidget* w) {return std::make_unique<ConfigCommand>(w, confname, config_manager); };
+        command_required_prefixes[QString::fromStdString(config_set_command_name)] = "setconfig_";
 
         if (conf.config_type == ConfigType::Bool) {
             std::string config_toggle_command_name = "toggleconfig_" + confname;
             new_commands[config_toggle_command_name] = [confname, config_manager](MainWidget* w) {return std::make_unique<ToggleConfigCommand>(w, confname); };
+            command_required_prefixes[QString::fromStdString(config_toggle_command_name)] = "toggleconfig_";
         }
 
     }

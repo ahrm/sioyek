@@ -89,6 +89,7 @@ public:
     std::map < std::string, std::function<std::unique_ptr<Command>(MainWidget*)> > new_commands;
     std::map<std::string, std::string> command_human_readable_names;
     std::map<std::string, QDateTime> command_last_uses;
+    std::unordered_map<QString, QString> command_required_prefixes;
 
     CommandManager(ConfigManager* config_manager);
     std::unique_ptr<Command> get_command_with_name(MainWidget* w, std::string name);
@@ -108,6 +109,7 @@ public:
         if (is_developer_mode || !T::developer_only) {
             new_commands[T::cname]  = [](MainWidget* widget) {return std::make_unique<T>(widget); };
             command_human_readable_names[T::cname] = T::hname;
+            command_required_prefixes[QString::fromStdString(T::cname)] = "";
         }
     }
 };
