@@ -10041,21 +10041,25 @@ QVariant MainWidget::get_variable(QString name) {
 }
 
 void MainWidget::on_next_text_suggestion() {
-    bool this_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index).has_value();
-    bool next_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index + 1).has_value();
-    if (!this_has_value && !next_has_value) return;
+    if (pending_command_instance) {
+        bool this_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index).has_value();
+        bool next_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index + 1).has_value();
+        if (!this_has_value && !next_has_value) return;
 
-    text_suggestion_index++;
-    set_current_text_suggestion();
+        text_suggestion_index++;
+        set_current_text_suggestion();
+    }
 }
 
 void MainWidget::on_prev_text_suggestion() {
-    bool this_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index).has_value();
-    bool next_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index - 1).has_value();
-    if (!this_has_value && !next_has_value) return;
+    if (pending_command_instance) {
+        bool this_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index).has_value();
+        bool next_has_value = pending_command_instance->get_text_suggestion(text_suggestion_index - 1).has_value();
+        if (!this_has_value && !next_has_value) return;
 
-    text_suggestion_index--;
-    set_current_text_suggestion();
+        text_suggestion_index--;
+        set_current_text_suggestion();
+    }
 }
 
 void MainWidget::set_current_text_suggestion() {

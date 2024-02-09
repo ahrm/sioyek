@@ -1337,6 +1337,17 @@ bool CommandSelector::on_text_change(const QString& text) {
     fzf_pattern_t* pattern = fzf_parse_pattern(CaseSmart, false, (char*)pattern_str.c_str(), true);
 
     QString actual_text = text;
+
+    if (actual_text.startsWith("!")) {
+        actual_text = "toggleconfig_" + actual_text.right(actual_text.size() - 1);
+        search_text_string = actual_text.toStdString();
+    }
+
+    if (actual_text.startsWith("=")) {
+        actual_text = "setconfig_" + actual_text.right(actual_text.size() - 1);
+        search_text_string = actual_text.toStdString();
+    }
+
     if (actual_text.endsWith("?")){
         actual_text = actual_text.left(actual_text.size()-1);
         search_text_string = actual_text.toStdString();
