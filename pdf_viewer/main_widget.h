@@ -936,6 +936,7 @@ public:
     void make_current_menu_columns_equal();
     DocumentPos get_index_document_pos(int index);
     void highlight_window_points();
+    void set_highlighted_tags(std::vector<std::string> tags);
 };
 
 MainWidget* get_window_with_window_id(int window_id);

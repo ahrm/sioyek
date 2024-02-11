@@ -71,6 +71,7 @@ public:
     virtual void perform_up();
     virtual bool is_holdable();
     virtual void on_key_hold();
+    virtual void on_text_change(const QString& new_text);
 
     void set_next_requirement_with_string(std::wstring str);
 

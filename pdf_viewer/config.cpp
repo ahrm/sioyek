@@ -191,6 +191,9 @@ extern bool INVERTED_HORIZONTAL_SCROLLING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
 extern float KEYBOARD_SELECT_TEXT_COLOR[4];
+extern float KEYBOARD_SELECTED_TAG_TEXT_COLOR[4];
+extern float KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO[4];
+
 extern bool AUTOCENTER_VISUAL_SCROLL;
 extern bool ALPHABETIC_LINK_TAGS;
 extern bool VIMTEX_WSL_FIX;
@@ -2076,6 +2079,22 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"keyboard_select_text_color",
         ConfigType::Color4,
         &KEYBOARD_SELECT_TEXT_COLOR,
+        vec4_serializer,
+        vec4_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"keyboard_selected_tag_text_color",
+        ConfigType::Color4,
+        &KEYBOARD_SELECTED_TAG_TEXT_COLOR,
+        vec4_serializer,
+        vec4_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"keyboard_selected_tag_background_color",
+        ConfigType::Color4,
+        &KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO,
         vec4_serializer,
         vec4_deserializer,
         nullptr

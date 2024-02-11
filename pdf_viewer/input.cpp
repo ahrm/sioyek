@@ -89,6 +89,10 @@ Command::Command(std::string name, MainWidget* widget_) : command_cname(name), w
 
 }
 
+void Command::on_text_change(const QString& new_text) {
+
+}
+
 bool Command::is_holdable() {
     return false;
 }
@@ -548,6 +552,12 @@ public:
     static inline const std::string hname = "Search the PDF document";
     SearchCommand(MainWidget* w) : TextCommand(cname, w) {
     };
+
+    void on_text_change(const QString& new_text) override {
+        if (INCREMENTAL_SEARCH && widget->doc()->is_super_fast_index_ready()) {
+            widget->perform_search(new_text.toStdWString(), false, true);
+        }
+    }
 
     void pre_perform() {
         if (INCREMENTAL_SEARCH) {
@@ -1377,6 +1387,10 @@ public:
     int pending_index = -1;
 
     AddBookmarkFreetextCommand(MainWidget* w) : Command(cname, w) {};
+
+    void on_text_change(const QString& new_text) override {
+        widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description = new_text.toStdWString();
+    }
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
 
@@ -2409,6 +2423,10 @@ public:
     int index = -1;
 
     EditSelectedBookmarkCommand(MainWidget* w) : TextCommand(cname, w) {};
+
+    void on_text_change(const QString& new_text) override {
+        widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description = new_text.toStdWString();
+    }
 
     void pre_perform() {
 
@@ -3453,6 +3471,7 @@ KeyboardSelectPointCommand::KeyboardSelectPointCommand(MainWidget* w, std::uniqu
 
 void KeyboardSelectPointCommand::on_cancel() {
     origin->on_cancel();
+    widget->set_highlighted_tags({});
 
 }
 
@@ -3491,6 +3510,7 @@ std::optional<Requirement> KeyboardSelectPointCommand::next_requirement(MainWidg
 void KeyboardSelectPointCommand::perform() {
 
     widget->clear_tag_prefix();
+    widget->set_highlighted_tags({});
     result = text.value();
 
     if (requires_rect) {
@@ -3547,6 +3567,13 @@ void KeyboardSelectPointCommand::set_symbol_requirement(char value) {
         }
         else {
             widget->set_tag_prefix(text.value());
+        }
+    }
+    // update selected tags
+    if (text.has_value()) {
+        if (text->size() >= 2) {
+            std::string tag = utf8_encode(text.value().substr(0, 2));
+            widget->set_highlighted_tags({ tag });
         }
     }
 }
@@ -3609,8 +3636,23 @@ public:
     static inline const std::string hname = "Select text using keyboard";
     KeyboardSelectCommand(MainWidget* w) : TextCommand(cname, w) {};
 
+    void on_text_change(const QString& new_text) override {
+        std::vector<std::string> selected_tags;
+        QStringList tags = new_text.split(" ");
+        for (auto& tag : tags) {
+            selected_tags.push_back(tag.toStdString());
+        }
+        widget->set_highlighted_tags(selected_tags);
+    }
+
+    void on_cancel() override {
+        widget->set_highlighted_tags({});
+
+    }
+
     void perform() {
         widget->handle_keyboard_select(text.value());
+        widget->set_highlighted_tags({});
     }
 
     void pre_perform() {

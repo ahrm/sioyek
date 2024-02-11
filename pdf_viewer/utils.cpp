@@ -2131,6 +2131,7 @@ QString get_color_qml_string(float r, float g, float b) {
     return res;
 }
 
+
 void hexademical_to_normalized_color(std::wstring color_string, float* color, int n_components) {
     if (color_string[0] == '#') {
         color_string = color_string.substr(1, color_string.size() - 1);
@@ -2616,14 +2617,14 @@ QString get_selected_stylesheet(bool nofont) {
     }
 }
 
-void convert_color4(float* in_color, int* out_color) {
+void convert_color4(const float* in_color, int* out_color) {
     out_color[0] = (int)(in_color[0] * 255);
     out_color[1] = (int)(in_color[1] * 255);
     out_color[2] = (int)(in_color[2] * 255);
     out_color[3] = (int)(in_color[3] * 255);
 }
 
-void convert_color3(float* in_color, int* out_color) {
+void convert_color3(const float* in_color, int* out_color) {
     out_color[0] = (int)(in_color[0] * 255);
     out_color[1] = (int)(in_color[1] * 255);
     out_color[2] = (int)(in_color[2] * 255);
@@ -2744,8 +2745,20 @@ void convert_qcolor_to_float3(const QColor& color, float* out_floats) {
     *(out_floats + 2) = static_cast<float>(color.blue()) / 255.0f;
 }
 
+//QColor convert_float3_to_qcolor(const float* floats) {
+//    return QColor(get_color_qml_string(floats[0], floats[1], floats[2]));
+//}
+
 QColor convert_float3_to_qcolor(const float* floats) {
-    return QColor(get_color_qml_string(floats[0], floats[1], floats[2]));
+    int colors[3];
+    convert_color3(floats, colors);
+    return QColor(qRgb(colors[0], colors[1], colors[2]));
+}
+
+QColor convert_float4_to_qcolor(const float* floats) {
+    int colors[4];
+    convert_color4(floats, colors);
+    return QColor(qRgba(colors[0], colors[1], colors[2], colors[3]));
 }
 
 void convert_qcolor_to_float4(const QColor& color, float* out_floats) {

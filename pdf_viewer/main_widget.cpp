@@ -9,6 +9,7 @@
 // portals are not correctly saved in an updated database
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
+// name of command in statusbar is not correct when key is overloaded 
 
 
 #include <iostream>
@@ -1331,6 +1332,9 @@ std::wstring MainWidget::get_status_string() {
     }
 
     status_string.replace("%{freehand_drawing}", drawing_mode_string);
+    if (status_string.indexOf("%{mode_string}") != -1) {
+        status_string.replace("%{mode_string}", QString::fromStdString(get_current_mode_string()));
+    }
 
 
     if (SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR) {
@@ -6649,6 +6653,7 @@ void MainWidget::show_context_menu() {
 }
 
 void MainWidget::handle_debug_command() {
+    opengl_widget->set_highlighted_tags({"aa", "bb", "cc"});
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -7780,12 +7785,7 @@ void MainWidget::toggle_pdf_annotations() {
 
 void MainWidget::handle_command_text_change(const QString& new_text) {
     if (pending_command_instance) {
-        if ((pending_command_instance->get_name() == "edit_selected_bookmark") || (pending_command_instance->get_name() == "add_freetext_bookmark")) {
-            doc()->get_bookmarks()[selected_bookmark_index].description = new_text.toStdWString();
-        }
-        if (INCREMENTAL_SEARCH && pending_command_instance->get_name() == "search" && doc()->is_super_fast_index_ready()) {
-            perform_search(new_text.toStdWString(), false, true);
-        }
+        pending_command_instance->on_text_change(new_text);
         validate_render();
     }
 }
@@ -10237,3 +10237,8 @@ void MainWidget::highlight_window_points() {
     opengl_widget->set_highlight_words(document_rects);
     opengl_widget->set_should_highlight_words(true);
 }
+
+void MainWidget::set_highlighted_tags(std::vector<std::string> tags) {
+    opengl_widget->set_highlighted_tags(tags);
+}
+
