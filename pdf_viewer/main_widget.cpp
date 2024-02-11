@@ -5982,6 +5982,9 @@ void MainWidget::handle_delete_highlight_under_cursor() {
     WindowPos window_pos = WindowPos{ mouse_pos.x(), mouse_pos.y() };
     int sel_highlight = main_document_view->get_highlight_index_in_pos(window_pos);
     if (sel_highlight != -1) {
+        if (selected_highlight_index == sel_highlight) {
+            selected_highlight_index = -1;
+        }
         main_document_view->delete_highlight_with_index(sel_highlight);
     }
 }
