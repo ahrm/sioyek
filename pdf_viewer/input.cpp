@@ -5879,6 +5879,16 @@ public:
         return -1;
     }
 
+
+    void on_text_change(const QString& new_text) {
+        if (is_modal) {
+            int mode_index = get_current_mode_index();
+            if (mode_index != -1) {
+                commands[mode_index]->on_text_change(new_text);
+            }
+        }
+    }
+
     bool mode_matches(std::string current_mode, std::string command_mode) {
         for (auto c : command_mode) {
             if (current_mode.find(c) == std::string::npos) {
