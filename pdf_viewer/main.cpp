@@ -980,7 +980,7 @@ int main(int argc, char* args[]) {
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
     OpenWithApplication app(argc, args);
 
-    int font_id = QFontDatabase::addApplicationFont(":/resources/Inconsolata.ttf");
+    int font_id = QFontDatabase::addApplicationFont(":/resources/fonts/JetBrainsMono.ttf");
     global_font_family = QFontDatabase::applicationFontFamilies(font_id).at(0);
     if (TAG_FONT_FACE.size() == 0) {
         TAG_FONT_FACE = global_font_family.toStdWString();

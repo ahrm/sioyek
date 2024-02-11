@@ -4870,7 +4870,9 @@ void MainWidget::reset_highlight_links() {
 }
 
 void MainWidget::set_rect_select_mode(bool mode) {
-    rect_select_mode = mode;
+    if (!USE_KEYBOARD_POINT_SELECTION) {
+        rect_select_mode = mode;
+    }
     if (draw_controls_) {
         if (mode) {
             draw_controls_->hide();
