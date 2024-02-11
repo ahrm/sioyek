@@ -183,15 +183,26 @@ ParsedUri parse_uri(fz_context* mupdf_context, fz_document* document, std::strin
         dest.x = 0;
     }
 
+    ParsedUri res;
     if (dest.type == FZ_LINK_DEST_FIT_H) {
-        return { target_page, dest.x, dest.y };
+        res = { target_page, dest.x, dest.y };
     }
     else if (dest.type != FZ_LINK_DEST_XYZ) {
         float x = dest.x + dest.w / 2;;
         float y = dest.y + dest.h / 2;
-        return { target_page, x, y };
+        res = { target_page, x, y };
     }
-    return { target_page, dest.x, dest.y };
+    else {
+     res = { target_page, dest.x, dest.y };
+    }
+
+    if (std::isnan(res.x)) {
+        res.x = 0;
+    }
+    if (std::isnan(res.y)) {
+        res.y = 0;
+    }
+    return res;
 }
 
 char get_symbol(int key, bool is_shift_pressed, const std::vector<char>& special_symbols) {
