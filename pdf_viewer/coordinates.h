@@ -40,9 +40,9 @@ struct DocumentPos {
     float y;
 
     PagelessDocumentPos pageless() const;
-    AbsoluteDocumentPos to_absolute(Document* doc);
-    NormalizedWindowPos to_window_normalized(DocumentView* document_view);
-    WindowPos to_window(DocumentView* document_view);
+    AbsoluteDocumentPos to_absolute(Document* doc) const;
+    NormalizedWindowPos to_window_normalized(DocumentView* document_view) const;
+    WindowPos to_window(DocumentView* document_view) const;
 };
 
 struct AbsoluteDocumentPos {
@@ -50,9 +50,9 @@ struct AbsoluteDocumentPos {
     // this is the concatenated y-coordinate of the current page (sum of all page heights up to current location)
     float y;
 
-    DocumentPos to_document(Document* doc);
-    NormalizedWindowPos to_window_normalized(DocumentView* document_view);
-    WindowPos to_window(DocumentView* document_view);
+    DocumentPos to_document(Document* doc) const;
+    NormalizedWindowPos to_window_normalized(DocumentView* document_view) const;
+    WindowPos to_window(DocumentView* document_view) const;
 };
 
 // normalized window coordinates. x and y are in the range [-1, 1]
@@ -90,6 +90,8 @@ struct NormalizedWindowRect;
 //    PagelessDocumentRect();
 //    PagelessDocumentRect(fz_rect r);
 //};
+
+
 template<typename R, typename T>
 struct EnhancedRect : public R {
 
@@ -113,27 +115,27 @@ struct EnhancedRect : public R {
         R::y1 = bottom_right.y;
     }
 
-    S width() {
+    S width() const{ 
         return R::x1 - R::x0;
     }
 
-    S height() {
+    S height() const {
         return R::y1 - R::y0;
     }
 
-    S area() {
+    S area() const {
         return (R::x1 - R::x0) * (R::y1 - R::y0);
     }
 
-    T center() {
+    T center() const {
         return T{ (R::x0 + R::x1) / 2, (R::y0 + R::y1) / 2 };
     }
 
-    T top_left() {
+    T top_left() const {
         return T{ R::x0, R::y0 };
     }
 
-    T bottom_right() {
+    T bottom_right() const {
         return T{ R::x1, R::y1 };
     }
 
@@ -160,7 +162,9 @@ struct EnhancedRect : public R {
         res.y1 = std::max(R::y1, other.y1);
         return res;
     }
+
 };
+
 
 using PagelessDocumentRect = EnhancedRect<fz_rect, PagelessDocumentPos>;
 using WindowRect = EnhancedRect<fz_irect, WindowPos>;
@@ -181,13 +185,14 @@ struct DocumentRect {
     DocumentPos bottom_right();
 };
 
+
 struct NormalizedWindowRect : public EnhancedRect<fz_rect, NormalizedWindowPos>  {
     NormalizedWindowRect(NormalizedWindowPos top_left, NormalizedWindowPos bottom_right);
     NormalizedWindowRect(fz_rect r);
     NormalizedWindowRect();
 
 
-    bool is_visible();
+    bool is_visible(float tolerance=0.0f);
 };
 
 
@@ -337,3 +342,16 @@ AbsoluteDocumentPos operator-(const AbsoluteDocumentPos& lhs, const fvec2& rhs);
 DocumentPos operator+(const DocumentPos& lhs, const fvec2& rhs);
 NormalizedWindowPos operator+(const NormalizedWindowPos& lhs, const fvec2& rhs);
 WindowPos operator+(const WindowPos& lhs, const ivec2& rhs);
+
+struct VirtualPos {
+    float x;
+    float y;
+};
+
+VirtualPos operator+(const VirtualPos& lhs, const fvec2& rhs);
+
+VirtualPos operator-(const VirtualPos& lhs, const fvec2& rhs);
+
+using VirtualRect = EnhancedRect<fz_rect, VirtualPos>;
+
+DocumentRect to_document(const WindowRect& window_rect, DocumentView* dv);

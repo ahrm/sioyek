@@ -116,6 +116,7 @@ extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
 extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
 extern std::wstring EDIT_PORTAL_TAP_COMMAND;
 extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
+extern std::wstring TAG_FONT_FACE;
 
 GLfloat g_quad_vertex[] = {
     -1.0f, -1.0f,
@@ -865,6 +866,10 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
     std::optional<SearchResult> result_ = set_search_result_offset(offset);
     if (result_) {
         SearchResult result = result_.value();
+
+        if (result.rects.size() == 0) {
+            result.fill(doc());
+        }
         float new_offset_y = result.rects.front().y0 + document_view->get_document()->get_accum_page_height(result.page);
         if (overview) {
             OverviewState state = { new_offset_y, 0, -1, nullptr };
@@ -891,8 +896,8 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     window_rect.y0 = -window_rect.y0;
     window_rect.y1 = -window_rect.y1;
 
-    enable_stencil();
     glClear(GL_STENCIL_BUFFER_BIT);
+    enable_stencil();
     write_to_stencil();
     draw_stencil_rects({ window_rect });
     use_stencil_to_write(true);
@@ -902,9 +907,9 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     draw_overview_background();
 
 
-    render_page(page, true);
-    render_page(page-1, true);
-    render_page(page+1, true);
+    render_page(page, true, false, false);
+    render_page(page-1, true, false, false);
+    render_page(page+1, true, false, false);
 
     std::optional<SearchResult> highlighted_result = get_current_search_result();
     // highlight the overview search result
@@ -972,7 +977,7 @@ Document* PdfViewOpenGLWidget::doc(bool overview){
     return document_view->get_document();
 }
 
-void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool force_light_mode) {
+void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool force_light_mode, bool stencils_allowed) {
 
     if (!valid_document()) return;
 
@@ -1060,6 +1065,23 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
 
         WindowRect full_page_irect = fz_round_rect(fz_transform_rect(full_page_rect,
             fz_scale(zoom_level, zoom_level)));
+        PagelessDocumentRect page_content = full_page_rect;
+        if (document_view->get_page_space_x() < 0) {
+            if (page_number % 2 == 1) {
+                page_content.x0 -= document_view->get_page_space_x();
+            }
+            else {
+                page_content.x1 += document_view->get_page_space_x();
+            }
+        }
+
+        if (document_view->is_two_page_mode() && (stencils_allowed)) {
+            glClear(GL_STENCIL_BUFFER_BIT);
+            enable_stencil();
+            write_to_stencil();
+            draw_stencil_rects(page_number, {page_content});
+            use_stencil_to_write(true);
+        }
 
         if (is_sliced) {
 
@@ -1160,8 +1182,12 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
         glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
         glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        
+        if (document_view->is_two_page_mode() && (stencils_allowed)) {
+            disable_stencil();
+        }
 
-        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (!force_light_mode)) {
+        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (!force_light_mode) && (stencils_allowed)) {
             // render images in light mode
             fz_stext_page * stext_page = document_view->get_document()->get_stext_with_page_number(page_number);
             std::vector<PagelessDocumentRect> image_rects;
@@ -1180,15 +1206,16 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
                 }
             }
 
+            glClear(GL_STENCIL_BUFFER_BIT);
             enable_stencil();
             write_to_stencil();
             draw_stencil_rects(page_number, image_rects);
             use_stencil_to_write(true);
-            render_page(page_number, in_overview, true);
+            render_page(page_number, in_overview, true, false);
             disable_stencil();
         }
 
-        if (!document_view->is_presentation_mode() && (!in_overview)){
+        if (!document_view->is_presentation_mode() && (!in_overview) && (!document_view->is_two_page_mode())){
 
             // render page separator
             glUseProgram(shared_gl_objects.separator_program);
@@ -1406,7 +1433,9 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         int index = current_search_result_index;
         if (index == -1) index = 0;
 
-        SearchResult current_search_result = search_results[index];
+        SearchResult& current_search_result = search_results[index];
+        current_search_result.fill(doc());
+
         glUseProgram(shared_gl_objects.highlight_program);
         //glUniform3fv(g_shared_resources.highlight_color_uniform_location, 1, highlight_color_temp);
 
@@ -1419,7 +1448,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 0.3f);
             for (int visible_search_index : visible_search_indices) {
                 if (visible_search_index != current_search_result_index) {
-                    SearchResult res = search_results[visible_search_index];
+                    SearchResult& res = search_results[visible_search_index];
+                    res.fill(doc());
                     for (auto rect : res.rects) {
                         render_highlight_document(shared_gl_objects.highlight_program, DocumentRect { rect, res.page });
                     }
@@ -1639,6 +1669,12 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                         }
                     }
                     else {
+                        if (i == selected_bookmark_index) {
+                            float temp_color[3] = {0.5f, 0.5f, 0.5f};
+                            painter->setPen(convert_float3_to_qcolor(&temp_color[0]));
+                            painter->setPen(Qt::DashLine);
+                            painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                        }
                         painter->drawText(window_qrect, flags, QString::fromStdWString(bookmarks[i].description));
                     }
 
@@ -1674,7 +1710,19 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
             int window_y1 = static_cast<int>(-window_rect.y1 * view_height / 2 + view_height / 2);
 
-            painter->drawText(window_x0, (window_y0 + window_y1) / 2, tags[i].c_str());
+            QString remaining_tag = QString::fromStdString(tags[i]);
+            if (tag_prefix.size() > 0) {
+                if (remaining_tag.startsWith(QString::fromStdString(tag_prefix))) {
+                    remaining_tag = remaining_tag.mid(tag_prefix.size());
+                }
+                else {
+                    remaining_tag = "";
+                }
+            }
+            
+            if (remaining_tag.size() > 0) {
+                painter->drawText(window_x0, (window_y0 + window_y1) / 2, remaining_tag);
+            }
         }
     }
 
@@ -2372,7 +2420,8 @@ void PdfViewOpenGLWidget::setup_text_painter(QPainter* painter) {
     convert_color4(KEYBOARD_SELECT_TEXT_COLOR, textcolor);
 
     QBrush background_brush = QBrush(QColor(bgcolor[0], bgcolor[1], bgcolor[2], bgcolor[3]));
-    QFont font;
+    QFont font(QString::fromStdWString(TAG_FONT_FACE));
+    font.setStyleHint(QFont::Monospace);
     font.setPixelSize(KEYBOARD_SELECT_FONT_SIZE);
     painter->setBackgroundMode(Qt::BGMode::OpaqueMode);
     painter->setBackground(background_brush);
@@ -3494,7 +3543,7 @@ bool PdfViewOpenGLWidget::on_vertical_scroll(){
         should_highlight_words = false;
         res = true;
     }
-    if (should_highlight_links){
+    if (should_highlight_links && !SHOULD_HIGHLIGHT_LINKS){
         should_highlight_links = false;
         res = true;
     }
@@ -3603,4 +3652,8 @@ void PdfViewOpenGLWidget::clear_tag_prefix() {
 
 void PdfViewOpenGLWidget::set_selected_highlight_index(int index) {
     selected_highlight_index = index;
+}
+
+void PdfViewOpenGLWidget::set_selected_bookmark_index(int index) {
+    selected_bookmark_index = index;
 }

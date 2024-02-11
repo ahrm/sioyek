@@ -24,6 +24,7 @@ class DatabaseManager;
 class DocumentManager;
 class ConfigManager;
 
+
 class DocumentView {
 protected:
 
@@ -33,8 +34,11 @@ protected:
     Document* current_document = nullptr;
 
     float zoom_level = 0.0f;
-    float offset_x = 0.0f;
-    float offset_y = 0.0f;
+    //float offset_x = 0.0f;
+    //float offset_y = 0.0f;
+    VirtualPos offset = {0, 0};
+    std::vector<VirtualRect> cached_virtual_rects;
+    bool two_page_mode = false;
 
     // absolute rect of the current ruler if this is {} then ruler_pos is used instead
     std::optional<AbsoluteRect> ruler_rect;
@@ -45,12 +49,19 @@ protected:
 
     int view_width = 0;
     int view_height = 0;
+
+    // In touch mode normally we don't allow the user to scroll the document horizontally past the 
+    // screen edges, however after the user tries to move the document past a certain distance, we
+    // "relent" and allow the user to scroll horizontally past the screen edges.
     bool is_relenting = false;
 
     // in auto resize mode, we automatically set the zoom level to fit the page when resizing the document
     bool is_auto_resize_mode = true;
     bool is_ruler_mode_ = false;
     std::optional<int> presentation_page_number;
+
+    float page_space_x = 0;
+    float page_space_y = 0;
 
 public:
     // list of selected characters (e.g. using mouse select) to be highlighted
@@ -70,6 +81,7 @@ public:
     void set_book_state(OpenedBookState state);
     virtual bool set_offsets(float new_offset_x, float new_offset_y, bool force = false);
     bool set_pos(AbsoluteDocumentPos pos);
+    void set_virtual_pos(VirtualPos pos);
     Document* get_document();
     bool is_ruler_mode();
     void exit_ruler_mode();
@@ -83,11 +95,13 @@ public:
     void delete_closest_bookmark();
     Highlight get_highlight_with_index(int index);
     void delete_highlight_with_index(int index);
+    void delete_bookmark_with_index(int index);
     void delete_highlight(Highlight hl);
     void delete_closest_bookmark_to_offset(float offset);
     float get_offset_x();
     float get_offset_y();
     AbsoluteDocumentPos get_offsets();
+    VirtualPos get_virtual_offset();
     int get_view_height();
     int get_view_width();
     void set_null_document();
@@ -103,6 +117,7 @@ public:
     //void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
     NormalizedWindowPos absolute_to_window_pos(AbsoluteDocumentPos absolute_pos);
 
+    void fill_cached_virtual_rects(bool force=false);
     NormalizedWindowRect absolute_to_window_rect(AbsoluteRect doc_rect);
     NormalizedWindowPos document_to_window_pos(DocumentPos pos);
     WindowPos absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abs_pos);
@@ -112,7 +127,7 @@ public:
     WindowRect document_to_window_irect(DocumentRect);
     NormalizedWindowRect document_to_window_rect_pixel_perfect(DocumentRect doc_rect, int pixel_width, int pixel_height, bool banded = false);
     DocumentPos window_to_document_pos(WindowPos window_pos);
-    DocumentPos window_to_document_pos_uncentered(WindowPos window_pos);
+    //DocumentPos window_to_document_pos_uncentered(WindowPos window_pos);
     AbsoluteDocumentPos window_to_absolute_document_pos(WindowPos window_pos);
     NormalizedWindowPos window_to_normalized_window_pos(WindowPos window_pos);
     WindowPos normalized_window_to_window_pos(NormalizedWindowPos normalized_window_pos);
@@ -135,6 +150,7 @@ public:
     float zoom_in_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
     float zoom_out_cursor(WindowPos mouse_pos, float zoom_factor = ZOOM_INC_FACTOR);
     bool move_absolute(float dx, float dy, bool force = false);
+    bool move_virtual(float dx, float dy, bool force = false);
     bool move(float dx, float dy, bool force = false);
     void get_absolute_delta_from_doc_delta(float doc_dx, float doc_dy, float* abs_dx, float* abs_dy);
     int get_center_page_number();
@@ -197,9 +213,24 @@ public:
     std::deque<AbsoluteRect>* get_selected_character_rects();
 
     std::vector<int> get_visible_highlight_indices();
+    std::vector<int> get_visible_bookmark_indices();
     void set_presentation_page_number(std::optional<int> page);
     std::optional<int> get_presentation_page_number();
     bool is_presentation_mode();
+    VirtualPos absolute_to_virtual_pos(const AbsoluteDocumentPos& abspos);
+    VirtualPos document_to_virtual_pos(DocumentPos docpos);
+    AbsoluteDocumentPos virtual_to_absolute_pos(const VirtualPos& vpos);
+    VirtualPos window_to_virtual_pos(const WindowPos& window_pos);
+    WindowPos virtual_to_window_pos(const VirtualPos& virtual_pos);
+    NormalizedWindowRect virtual_to_normalized_window_rect(const VirtualRect& virtual_rect);
+    void toggle_two_page();
+    bool is_two_page_mode();
+    void set_page_space_x(float space_x);
+    void set_page_space_y(float space_y);
+
+    float get_page_space_x();
+    float get_page_space_y();
+    bool fast_coordinates();
 
 };
 

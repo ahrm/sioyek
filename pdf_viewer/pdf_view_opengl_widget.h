@@ -150,6 +150,7 @@ private:
     bool is_dragging = false;
     bool fastread_mode = false;
     int selected_highlight_index = -1;
+    int selected_bookmark_index = -1;
 
     int last_mouse_down_window_x = 0;
     int last_mouse_down_window_y = 0;
@@ -248,7 +249,7 @@ public:
     std::optional<SearchResult> get_current_search_result();
     void goto_search_result(int offset, bool overview = false);
     void render_overview(OverviewState overview);
-    void render_page(int page_number, bool in_overview=false, bool force_light_mode=false);
+    void render_page(int page_number, bool in_overview=false, bool force_light_mode=false, bool stencils_allowed=true);
     bool get_is_searching(float* prog);
     void search_text(const std::wstring& text, SearchCaseSensitivity case_sensitive = SearchCaseSensitivity::CaseInsensitive, bool regex = false, std::optional<std::pair<int, int>> range = {});
     void set_dark_mode(bool mode);
@@ -356,4 +357,5 @@ public:
     void set_tag_prefix(std::wstring prefix);
     void clear_tag_prefix();
     void set_selected_highlight_index(int index);
+    void set_selected_bookmark_index(int index);
 };

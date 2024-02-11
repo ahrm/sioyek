@@ -12,6 +12,8 @@ public:
     TouchAudioButtons(QWidget* parent = nullptr);
     void resizeEvent(QResizeEvent* resize_event) override;
     void set_rate(float rate);
+    void set_playing();
+    void set_paused();
 
 public slots:
     void handlePlay();

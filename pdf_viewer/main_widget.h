@@ -52,6 +52,7 @@ class Command;
 class PdfViewOpenGLWidget;
 class DatabaseManager;
 class DocumentManager;
+class TextToSpeechHandler;
 
 enum class DrawingMode {
     Drawing,
@@ -62,8 +63,7 @@ enum class DrawingMode {
 
 struct TextUnderPointerInfo{
     ReferenceType reference_type;
-    int page;
-    float offset;
+    std::vector<DocumentPos> targets;
     AbsoluteRect source_rect;
     std::wstring source_text;
     std::vector<DocumentRect> overview_highlight_rects;
@@ -112,6 +112,7 @@ enum class PaperDownloadFinishedAction {
     Portal
 };
 
+
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 class MainWidget : public QQuickWidget {
     Q_OBJECT
@@ -127,7 +128,7 @@ public:
     CachedChecksummer* checksummer = nullptr;
     int window_id;
 
-    QTextToSpeech* tts = nullptr;
+    TextToSpeechHandler* tts = nullptr;
     // is the TTS engine currently reading text?
     bool is_reading = false;
     bool word_by_word_reading = false;
@@ -149,6 +150,7 @@ public:
     // input to be completed) this is where they are stored until they can be executed.
     std::unique_ptr<Command> pending_command_instance = nullptr;
     std::vector<Command*> commands_being_performed;
+    std::unique_ptr<Command> last_performed_command;
 
     DocumentView* main_document_view = nullptr;
     ScratchPad* scratchpad = nullptr;
@@ -182,7 +184,8 @@ public:
     // The document offset (offset_x and offset_y) when mouse was last pressed
     // we use this to update the offset when dragging the mouse in some modes
     // for example in touch mode or when dragging while holding middle mouse button
-    AbsoluteDocumentPos last_mouse_down_document_offset;
+    //AbsoluteDocumentPos last_mouse_down_document_offset;
+    VirtualPos last_mouse_down_document_virtual_offset;
 
     // last window position when mouse was clicked, we use this in mouse drag mode
     WindowPos last_mouse_down_window_pos;
@@ -302,6 +305,10 @@ public:
     QLabel* status_label = nullptr;
     int text_suggestion_index = 0;
 
+    int last_pause_rest_of_document_page = -1;
+    int last_page_read = -1;
+    int last_index_into_page_read = -1;
+
     std::deque<std::wstring> search_terms;
 
     // determines if the widget render is invalid and needs to be updated
@@ -351,7 +358,8 @@ public:
     // last time we updated `smooth_scroll_speed` 
     QTime last_speed_update_time = QTime::currentTime();
 
-    std::vector<QJSEngine*> available_engines;
+    QJSEngine* sync_js_engine = nullptr;
+    std::vector<QJSEngine*> available_async_engines;
     std::mutex available_engine_mutex;
     int num_js_engines = 0;
 
@@ -376,7 +384,7 @@ public:
     std::wstring get_status_string();
     void handle_escape();
     bool is_waiting_for_symbol();
-    void key_event(bool released, QKeyEvent* kevent);
+    void key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat = false);
     void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
     void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
     void on_config_changed(std::string config_name);
@@ -473,7 +481,7 @@ public:
     ~MainWidget();
 
     //void handle_command(NewCommand* command, int num_repeats);
-    bool handle_command_types(std::unique_ptr<Command> command, int num_repeats, std::wstring* result=nullptr);
+    bool handle_command_types(std::unique_ptr<Command> command, int num_repeats, std::wstring* result = nullptr);
     void handle_pending_text_command(std::wstring text);
 
     void invalidate_render();
@@ -514,13 +522,13 @@ public:
     void update_closest_link_with_opened_book_state(const OpenedBookState& new_state);
     void set_current_widget(QWidget* new_widget);
     void push_current_widget(QWidget* new_widget);
-    void pop_current_widget(bool canceled=false);
+    void pop_current_widget(bool canceled = false);
     void show_current_widget();
     bool focus_on_visual_mark_pos(bool moving_down);
     void toggle_visual_scroll_mode();
     void set_overview_link(PdfLink link);
     void set_overview_position(int page, float offset);
-    ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects=nullptr);
+    ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects = nullptr);
     TextUnderPointerInfo find_location_of_text_under_pointer(DocumentPos docpos, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
     CommandManager* get_command_manager();
@@ -543,7 +551,7 @@ public:
 
     bool is_rotated();
     void on_new_paper_added(const std::wstring& file_path);
-    void scroll_overview(int vertical_amount, int horizontal_amount=0);
+    void scroll_overview(int vertical_amount, int horizontal_amount = 0);
     int get_current_page_number() const;
     std::wstring get_current_page_label();
     void goto_page_with_page_number(int page_number);
@@ -567,9 +575,9 @@ public:
     bool is_rect_visible(DocumentRect rect);
     void set_mark_in_current_location(char symbol);
     void goto_mark(char symbol);
-    void advance_command(std::unique_ptr<Command> command, std::wstring* result=nullptr);
+    void advance_command(std::unique_ptr<Command> command, std::wstring* result = nullptr);
     void add_search_term(const std::wstring& term);
-    void perform_search(std::wstring text, bool is_regex = false, bool is_incremental=false);
+    void perform_search(std::wstring text, bool is_regex = false, bool is_incremental = false);
     void overview_to_definition();
     void portal_to_definition();
     void move_visual_mark_command(int amount);
@@ -602,6 +610,7 @@ public:
     void handle_delete_highlight_under_cursor();
     void handle_clear_all_current_document_highlights();
     void handle_delete_selected_highlight();
+    void handle_delete_selected_bookmark();
     void handle_start_reading();
     void handle_stop_reading();
     void handle_play();
@@ -610,7 +619,7 @@ public:
     void read_current_line();
     void download_paper_under_cursor(bool use_last_touch_pos = false);
     std::optional<std::wstring> get_direct_paper_name_under_pos(DocumentPos docpos);
-    std::optional<std::wstring> get_paper_name_under_pos(DocumentPos docpos, bool clean=false);
+    std::optional<std::wstring> get_paper_name_under_pos(DocumentPos docpos, bool clean = false);
     QNetworkReply* download_paper_with_name(const std::wstring& name, PaperDownloadFinishedAction action);
     bool is_pos_inside_selected_text(DocumentPos docpos);
     void handle_debug_command();
@@ -661,6 +670,7 @@ public:
     // this is used so we can keep track of mouse movement after press and holding on ruler rect
     WindowPos ruler_moving_last_window_pos;
     int ruler_moving_distance_traveled = 0;
+    std::optional<Portal> last_dispplayed_portal = {};
 
 
     void update_highlight_buttons_position();
@@ -758,7 +768,7 @@ public:
     bool execute_macro_from_origin(std::wstring macro_command_string, QLocalSocket* origin);
     bool ensure_internet_permission();
     void handle_command_text_change(const QString& new_text);
-    QTextToSpeech* get_tts();
+    TextToSpeechHandler* get_tts();
     void handle_bookmark_move_finish();
     void handle_bookmark_move();
     void handle_portal_move();
@@ -805,8 +815,8 @@ public:
     std::vector<std::wstring> get_new_files_from_scan_directory();
     void scan_new_files_from_scan_directory();
     void export_python_api();
-    QJSEngine* take_js_engine();
-    void release_js_engine(QJSEngine* engine);
+    QJSEngine* take_js_engine(bool async);
+    void release_async_js_engine(QJSEngine* engine);
 
     QJSValue export_javascript_api(QJSEngine& engine, bool is_async);
     void show_custom_option_list(std::vector<std::wstring> option_list);
@@ -876,14 +886,14 @@ public:
     void deselect_document_indices();
     void zoom_in_overview();
     void zoom_out_overview();
-    Q_INVOKABLE QString run_macro_on_main_thread(QString macro_string, bool wait_for_result=true);
+    Q_INVOKABLE QString run_macro_on_main_thread(QString macro_string, bool wait_for_result=true, int target_window_id=-1);
     Q_INVOKABLE QString perform_network_request(QString url);
     Q_INVOKABLE QString read_text_file(QString path);
     Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
     Q_INVOKABLE QString execute_macro_sync(QString macro);
     Q_INVOKABLE void set_variable(QString name, QVariant var);
     Q_INVOKABLE QVariant get_variable(QString name);
-    void run_javascript_command(std::wstring javascript_code, bool is_async);
+    void run_javascript_command(std::wstring javascript_code, std::optional<std::wstring> entry_point, bool is_async);
     void set_text_prompt_text(QString text);
     AbsoluteDocumentPos get_window_abspos(WindowPos window_pos);
     DocumentView* dv();
@@ -907,11 +917,28 @@ public:
     void clear_current_page_drawings();
     void clear_current_document_drawings();
     void set_selected_highlight_index(int index);
+    void set_selected_bookmark_index(int index);
     void handle_highlight_tags_pre_perform(const std::vector<int>& visible_highlight_indices);
+    void handle_visible_bookmark_tags_pre_perform(const std::vector<int>& visible_bookmark_indices);
     void clear_keyboard_select_highlights();
     void handle_goto_link_with_page_and_offset(int page, float y_offset);
     std::optional<std::wstring> get_search_suggestion_with_index(int index);
     bool is_menu_focused();
+    void ensure_player_state_(QString state);
+    Q_INVOKABLE void ensure_player_state(QString state);
+    QString get_rest_of_document_pages_text();
+    void focus_on_character_offset_into_document(int character_offset_into_document);
+    // void stop_tts_service();
+    void handle_move_smooth_press(bool down);
+    void handle_move_smooth_hold(bool down);
+    void handle_toggle_two_page_mode();
+    void ensure_zero_interval_timer();
+    void set_last_performed_command(std::unique_ptr<Command> command);
+    void make_current_menu_columns_equal();
+    DocumentPos get_index_document_pos(int index);
+    void highlight_window_points();
 };
+
+MainWidget* get_window_with_window_id(int window_id);
 
 #endif

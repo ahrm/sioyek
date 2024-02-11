@@ -55,6 +55,11 @@ public:
     CharacterIterator end() const;
 };
 
+struct CachedPageIndex {
+    std::wstring text;
+    std::vector<PagelessDocumentRect> rects;
+};
+
 class Document {
 
 private:
@@ -82,14 +87,17 @@ private:
     std::vector<int> flat_toc_pages;
     std::map<int, std::vector<AbsoluteRect>> cached_page_line_rects;
     std::map<int, std::vector<std::wstring>> cached_line_texts;
+    std::deque<std::pair<int, CachedPageIndex>> cached_page_index;
 
     bool super_fast_search_index_ready = false;
     // super fast index is the concatenated text of all pages along with two lists which map the
     // characters to pages and rects of those characters this index is built only if the 
     // super_fast_search config option is enabled
+
     std::wstring super_fast_search_index;
-    std::vector<int> super_fast_search_index_pages;
-    std::vector<PagelessDocumentRect> super_fast_search_rects;
+    std::vector<int> super_fast_page_begin_indices;
+
+    QJsonObject extras;
 
     // DEPRECATED a page offset which could manually be set to make the page numbers correct
     // on PDF files with page numbers that start at a number other than 1. This is now
@@ -165,11 +173,12 @@ public:
     std::wstring detected_paper_name = L"";
 
     PageIterator page_iterator(int page_number);
-    void get_page_text_and_line_rects_after_rect(int page_number,
+    int get_page_text_and_line_rects_after_rect(int page_number,
         AbsoluteRect after,
         std::wstring& text,
         std::vector<PagelessDocumentRect>& line_rects,
         std::vector<PagelessDocumentRect>& char_rects);
+
     void load_document_metadata_from_db();
     std::string add_bookmark(const std::wstring& desc, float y_offset);
     std::string add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
@@ -181,6 +190,7 @@ public:
     std::string add_highlight(const std::wstring& desc, const std::vector<AbsoluteRect>& highlight_rects, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     std::string add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
     void delete_highlight_with_index(int index);
+    void delete_bookmark_with_index(int index);
     void delete_highlight(Highlight hl);
     void delete_all_current_doc_highlights();
     void clear_all_current_document_highlights();
@@ -190,6 +200,11 @@ public:
     void set_should_render_pdf_annotations(bool val);
     bool get_should_render_pdf_annotations();
     std::vector<Portal> get_intersecting_visible_portals(float absrange_begin, float absrange_end);
+    CachedPageIndex& get_page_index(int page);
+    void fill_search_result(SearchResult* result);
+    QString get_rest_of_document_pages_text(int from);
+    int get_page_offset_into_super_fast_index(int from);
+    int get_page_from_character_offset(int offset);
 
     void fill_highlight_rects(fz_context* ctx, fz_document* doc);
     void fill_index_highlight_rects(int highlight_index, fz_context* thread_context = nullptr, fz_document* thread_document = nullptr);
@@ -290,6 +305,15 @@ public:
     std::vector<DocumentPos> find_generic_locations(const std::wstring& type, const std::wstring& name);
     bool can_use_highlights();
 
+    bool load_extras();
+    bool persist_extras();
+    std::optional<QVariant> get_extra(QString name);
+
+    template<typename T>
+    void set_extra(QString name, T value) {
+        extras[name] = value;
+    }
+
     std::vector<std::wstring> get_page_bib_candidates(int page_number, std::vector<PagelessDocumentRect>* out_end_rects = nullptr);
     std::optional<std::pair<std::wstring, PagelessDocumentRect>> get_page_bib_with_reference(int page_number, std::wstring reference_text);
 
@@ -364,6 +388,7 @@ public:
 
     std::wstring get_drawings_file_path();
     std::wstring get_scratchpad_file_path();
+    std::wstring get_extras_file_path();
     std::wstring get_annotations_file_path();
     bool annotations_file_exists();
     bool annotations_file_is_newer_than_database();

@@ -116,11 +116,14 @@ extern int NUM_CACHED_PAGES;
 
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
+extern bool REAL_PAGE_SEPARATION;
 extern bool NO_AUTO_CONFIG;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool ALIGN_LINK_DEST_TO_TOP;
 extern float MENU_SCREEN_WDITH_RATIO;
+extern float PAGE_SPACE_X;
+extern float PAGE_SPACE_Y;
 
 extern std::wstring RESIZE_COMMAND;
 extern std::wstring SHIFT_CLICK_COMMAND;
@@ -135,6 +138,7 @@ extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 
 extern std::wstring CONTEXT_MENU_ITEMS;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
+extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
 
 extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
@@ -156,8 +160,8 @@ extern bool MULTILINE_MENUS;
 extern bool START_WITH_HELPER_WINDOW;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
-extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
-extern std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
+extern std::map<std::wstring, JsCommandInfo> ADDITIONAL_JAVASCRIPT_COMMANDS;
+extern std::map<std::wstring, JsCommandInfo> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
 extern bool PRERENDER_NEXT_PAGE;
 extern bool HIGHLIGHT_MIDDLE_CLICK;
 extern float HYPERDRIVE_SPEED_FACTOR;
@@ -198,11 +202,16 @@ extern std::wstring PAPER_SEARCH_URL;
 extern std::wstring RULER_DISPLAY_MODE;
 extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
+extern bool USE_KEYBOARD_POINT_SELECTION;
+extern std::wstring TAG_FONT_FACE;
 
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
 extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
+
+extern float SMOOTH_MOVE_MAX_VELOCITY;
+extern float SMOOTH_MOVE_INITIAL_VELOCITY;
 
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
@@ -871,6 +880,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
+        L"real_page_separation",
+        ConfigType::Bool,
+        &REAL_PAGE_SEPARATION,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
         L"fill_textbar_with_selected_text",
         ConfigType::Bool,
         &FILL_TEXTBAR_WITH_SELECTED_TEXT,
@@ -1249,6 +1266,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"show_most_recent_commands_first",
         ConfigType::Bool,
         &SHOW_MOST_RECENT_COMMANDS_FIRST,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"keyboard_point_selection",
+        ConfigType::Bool,
+        &USE_KEYBOARD_POINT_SELECTION,
         bool_serializer,
         bool_deserializer,
         bool_validator
@@ -1684,6 +1709,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         nullptr
         });
     configs.push_back({
+        L"allow_horizontal_drag_when_document_is_small",
+        ConfigType::Bool,
+        &ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
         L"right_click_context_menu",
         ConfigType::Bool,
         &RIGHT_CLICK_CONTEXT_MENU,
@@ -1748,8 +1781,26 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
+        L"page_space_x",
+        ConfigType::Float,
+        &PAGE_SPACE_X,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.0f, 100.0f}
+        });
+    configs.push_back({
+        L"page_space_y",
+        ConfigType::Float,
+        &PAGE_SPACE_Y,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.0f, 100.0f}
+        });
+    configs.push_back({
         L"menu_screen_width_ratio",
-        ConfigType::Bool,
+        ConfigType::Float,
         &MENU_SCREEN_WDITH_RATIO,
         float_serializer,
         float_deserializer,
@@ -1758,7 +1809,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         });
     configs.push_back({
         L"hyperdrive_speed_factor",
-        ConfigType::Bool,
+        ConfigType::Float,
         &HYPERDRIVE_SPEED_FACTOR,
         float_serializer,
         float_deserializer,
@@ -2175,6 +2226,24 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         FloatExtras{-1.0f, 1.0f}
         });
     configs.push_back({
+        L"smooth_move_max_velocity",
+        ConfigType::Float,
+        &SMOOTH_MOVE_MAX_VELOCITY,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.0f, 100000.0f}
+        });
+    configs.push_back({
+        L"smooth_move_initial_velocity",
+        ConfigType::Float,
+        &SMOOTH_MOVE_INITIAL_VELOCITY,
+        float_serializer,
+        float_deserializer,
+        nullptr,
+        FloatExtras{0.0f, 100000.0f}
+        });
+    configs.push_back({
         L"epub_width",
         ConfigType::Float,
         &EPUB_WIDTH,
@@ -2205,6 +2274,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     	L"epub_css",
     	ConfigType::String,
     	&EPUB_CSS,
+    	string_serializer,
+    	string_deserializer,
+    	nullptr
+    	});
+    configs.push_back({
+    	L"tag_font_face",
+    	ConfigType::String,
+    	&TAG_FONT_FACE,
     	string_serializer,
     	string_deserializer,
     	nullptr
@@ -2333,17 +2410,38 @@ void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_na
                 std::wstring new_command_name = config_value.substr(0, space_index);
                 if (new_command_name[0] == '_') {
                     std::wstring command_value = config_value.substr(space_index + 1, config_value.size() - space_index - 1);
+
                     if (conf_name == L"new_command") {
                         ADDITIONAL_COMMANDS[new_command_name] = command_value;
                     }
                     if (conf_name == L"new_macro") {
                         ADDITIONAL_MACROS[new_command_name] = command_value;
                     }
-                    if (conf_name == L"new_js_command") {
-                        ADDITIONAL_JAVASCRIPT_COMMANDS[new_command_name] = std::make_pair(file_path.get_path(), command_value);
-                    }
-                    if (conf_name == L"new_async_js_command") {
-                        ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS[new_command_name] = std::make_pair(file_path.get_path(), command_value);
+                    if (conf_name == L"new_js_command" || conf_name == L"new_async_js_command") {
+                        QString qcommand_value = QString::fromStdWString(command_value);
+                        QStringList parts = qcommand_value.split("::");
+                        bool has_entry_point = parts.size() >= 2;
+
+                        if (conf_name == L"new_js_command") {
+                            if (has_entry_point) {
+                                ADDITIONAL_JAVASCRIPT_COMMANDS[new_command_name] = JsCommandInfo{
+                                    file_path.get_path(), parts.first().toStdWString(), parts.last().toStdWString()};
+                            }
+                            else {
+                                ADDITIONAL_JAVASCRIPT_COMMANDS[new_command_name] = JsCommandInfo{
+                                    file_path.get_path(), command_value, {} };
+                            }
+                        }
+                        if (conf_name == L"new_async_js_command") {
+                            if (has_entry_point) {
+                                ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS[new_command_name] = JsCommandInfo{
+                                    file_path.get_path(), parts.first().toStdWString(), parts.last().toStdWString()};
+                            }
+                            else {
+                                ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS[new_command_name] = JsCommandInfo{
+                                    file_path.get_path(), command_value, {} };
+                            }
+                        }
                     }
                 }
             }

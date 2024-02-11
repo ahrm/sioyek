@@ -10,6 +10,7 @@
 
 #include "path.h"
 #include "coordinates.h"
+#include "utils.h"
 
 class QLocalSocket;
 class MainWidget;
@@ -37,12 +38,15 @@ protected:
     int num_repeats = 1;
     MainWidget* widget = nullptr;
     std::optional<std::wstring> result = {};
+    std::string command_cname;
 public:
+
+    static inline const bool developer_only = false;
     QLocalSocket* result_socket = nullptr;
     std::wstring* result_holder = nullptr;
     bool* is_done = nullptr;
 
-    Command(MainWidget* widget);
+    Command(std::string name, MainWidget* widget);
     virtual std::optional<Requirement> next_requirement(MainWidget* widget);
     virtual std::optional<std::wstring> get_result();
 
@@ -64,6 +68,9 @@ public:
     virtual void set_result_mutex(bool* res_mut, std::wstring* result_location);
     virtual std::optional<std::wstring> get_text_suggestion(int index);
     virtual bool is_menu_command();
+    virtual void perform_up();
+    virtual bool is_holdable();
+    virtual void on_key_hold();
 
     void set_next_requirement_with_string(std::wstring str);
 
@@ -82,13 +89,29 @@ public:
     std::map < std::string, std::function<std::unique_ptr<Command>(MainWidget*)> > new_commands;
     std::map<std::string, std::string> command_human_readable_names;
     std::map<std::string, QDateTime> command_last_uses;
+    std::unordered_map<QString, QString> command_required_prefixes;
 
     CommandManager(ConfigManager* config_manager);
     std::unique_ptr<Command> get_command_with_name(MainWidget* w, std::string name);
     std::unique_ptr<Command> create_macro_command(MainWidget* w, std::string name, std::wstring macro_string);
     QStringList get_all_command_names();
-    void handle_new_javascript_command(std::wstring command_name, std::pair<std::wstring, std::wstring> command_files_pair, bool is_async);
+    void handle_new_javascript_command(std::wstring command_name, JsCommandInfo command_files_pair, bool is_async);
     void update_command_last_use(std::string command_name);
+
+    template<typename T>
+    void register_command() {
+        bool is_developer_mode = false;
+
+#ifdef SIOYEK_DEVELOPER
+        is_developer_mode = true;
+#endif
+
+        if (is_developer_mode || !T::developer_only) {
+            new_commands[T::cname]  = [](MainWidget* widget) {return std::make_unique<T>(widget); };
+            command_human_readable_names[T::cname] = T::hname;
+            command_required_prefixes[QString::fromStdString(T::cname)] = "";
+        }
+    }
 };
 
 struct InputParseTreeNode {
@@ -148,3 +171,28 @@ public:
 };
 
 bool is_macro_command_enabled(Command* command);
+
+class KeyboardSelectPointCommand : public Command {
+protected:
+    std::optional<std::wstring> text = {};
+    bool already_pre_performed = false;
+    std::unique_ptr<Command> origin;
+    bool requires_rect = false;
+public:
+
+    KeyboardSelectPointCommand(MainWidget* w, std::unique_ptr<Command> original_command);
+
+    bool is_done();
+
+    virtual std::optional<Requirement> next_requirement(MainWidget* widget);
+
+    virtual void perform();
+    virtual void on_cancel() override;
+
+    void pre_perform();
+
+    virtual std::string get_name();
+
+
+    virtual void set_symbol_requirement(char value);
+};

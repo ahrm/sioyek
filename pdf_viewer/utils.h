@@ -17,6 +17,7 @@
 #include <qstandarditemmodel.h>
 #include <qpoint.h>
 #include <qjsonarray.h>
+#include <qtexttospeech.h>
 
 #include <mupdf/fitz.h>
 
@@ -27,6 +28,11 @@
 #define LL_ITER(name, start) for(auto name=start;(name);name=name->next)
 #define LOG(expr) if (VERBOSE) {(expr);};
 
+struct JsCommandInfo {
+    std::wstring pref_file_path;
+    std::wstring js_file_path;
+    std::optional<std::wstring> entry_point;
+};
 
 std::wstring to_lower(const std::wstring& inp);
 bool is_separator(fz_stext_char* last_char, fz_stext_char* current_char);
@@ -179,6 +185,7 @@ void hexademical_to_normalized_color(std::wstring color_string, float* color, in
 void parse_command_string(std::wstring command_string, std::string& command_name, std::wstring& command_data);
 void parse_color(std::wstring color_string, float* out_color, int n_components);
 int get_status_bar_height();
+void flat_char_prism2(const std::vector<fz_stext_char*>& chars, int page, std::wstring& output_text, std::vector<int>& page_begin_indices);
 void flat_char_prism(const std::vector<fz_stext_char*>& chars, int page, std::wstring& output_text, std::vector<int>& pages, std::vector<PagelessDocumentRect>& rects);
 QString get_status_stylesheet(bool nofont = false, int font_size=-1);
 QString get_ui_stylesheet(bool nofont, int font_size=-1);
@@ -206,7 +213,12 @@ QString get_list_item_stylesheet();
 
 #ifdef SIOYEK_ANDROID
 QString android_file_name_from_uri(QString uri);
+void android_tts_say(QString text);
 void check_pending_intents(const QString workingDirPath);
+void android_tts_pause();
+void android_tts_stop();
+void android_tts_set_rate(float rate);
+void android_tts_set_rest_of_document(QString rest);
 #endif
 
 float dampen_velocity(float v, float dt);
@@ -329,10 +341,10 @@ bool is_dot_index_end_of_a_reference(const std::vector<DocumentCharacter>& flat_
 std::wstring remove_et_al(std::wstring ref);
 void get_flat_chars_from_stext_page_for_bib_detection(fz_stext_page* stext_page, std::vector<DocumentCharacter>& flat_chars);
 QJsonObject rect_to_json(fz_rect rect);
+
 std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_search_index,
-    const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
-    std::wstring query,
+    const std::vector<int>& page_begin_indices,
+    const std::wstring& query,
     SearchCaseSensitivity case_sensitive,
     int begin_page,
     int min_page,
@@ -341,31 +353,15 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
 bool pred_case_sensitive(const wchar_t& c1, const wchar_t& c2);
 bool pred_case_insensitive(const wchar_t& c1, const wchar_t& c2);
 
-void search_text_with_index_single_page(const std::wstring& super_fast_search_index,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
-    std::wstring query,
-    SearchCaseSensitivity case_sensitive,
-    int page_number,
-    std::vector<SearchResult>* output
-    );
+
 std::vector<SearchResult> search_regex_with_index(const std::wstring& super_fast_search_index,
-    const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
+    const std::vector<int>& page_begin_indcies,
     std::wstring query,
     SearchCaseSensitivity case_sensitive,
     int begin_page,
     int min_page,
     int max_page);
 
-void search_regex_with_index_(const std::wstring& super_fast_search_index,
-    const std::vector<int>& super_fast_search_index_pages,
-    const std::vector<PagelessDocumentRect>& super_fast_search_rects,
-    std::wstring query,
-    SearchCaseSensitivity case_sensitive,
-    int begin_page,
-    int min_page,
-    int max_page,
-    std::vector<SearchResult>* output);
 float rect_area(fz_rect rect);
 std::vector<std::wstring> get_path_unique_prefix(const std::vector<std::wstring>& paths);
 bool is_block_vertical(fz_stext_block* block);
@@ -447,3 +443,80 @@ QString get_ui_font_face_name();
 QString get_status_font_face_name();
 std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line);
 std::vector<fz_stext_char*> reorder_mixed_stext_line(fz_stext_line* line);
+
+class TextToSpeechHandler {
+public:
+    virtual void set_rate(float rate) = 0;
+    virtual void say(QString text) = 0;
+    virtual void stop() = 0;
+    virtual void pause() = 0;
+    virtual bool is_pausable() = 0;
+    virtual bool is_word_by_word() = 0;
+    virtual void set_word_callback(std::function<void(int, int)>) = 0;
+    virtual void set_state_change_callback(std::function<void(QString)>) = 0;
+    virtual void set_external_state_change_callback(std::function<void(QString)>) = 0;
+    virtual void set_on_app_pause_callback(std::function<QString()>) = 0;
+    virtual void set_on_app_resume_callback(std::function<void(bool, bool, int)>) = 0;
+};
+
+class QtTextToSpeechHandler : public TextToSpeechHandler {
+public:
+    QTextToSpeech* tts;
+    std::optional<std::function<void(int, int)>> word_callback = {};
+    std::optional<std::function<void(QString)>> state_change_callback = {};
+
+    QtTextToSpeechHandler();
+
+    ~QtTextToSpeechHandler();
+
+    void say(QString text) override;
+
+    void stop() override;
+
+    void pause() override;
+
+    void set_rate(float rate);
+
+    bool is_pausable();
+
+    bool is_word_by_word();
+
+    virtual void set_word_callback(std::function<void(int, int)> callback);
+
+    virtual void set_state_change_callback(std::function<void(QString)> callback);
+    virtual void set_external_state_change_callback(std::function<void(QString)> callback);
+    virtual void set_on_app_pause_callback(std::function<QString()>);
+    virtual void set_on_app_resume_callback(std::function<void(bool, bool, int)>);
+};
+
+
+#ifdef SIOYEK_ANDROID
+class AndroidTextToSpeechHandler : public TextToSpeechHandler {
+public:
+    // std::optional<std::function<void(int, int)>> word_callback = {};
+    // std::optional<std::function<void(QString)>> state_change_callback = {};
+
+    AndroidTextToSpeechHandler();
+
+    void say(QString text) override;
+
+    void stop() override;
+
+    void pause() override;
+
+    void set_rate(float rate);
+
+    bool is_pausable();
+
+    bool is_word_by_word();
+
+    void set_word_callback(std::function<void(int, int)> callback);
+
+    void set_state_change_callback(std::function<void(QString)> callback);
+    void set_external_state_change_callback(std::function<void(QString)> callback);
+    virtual void set_on_app_pause_callback(std::function<QString()>);
+    virtual void set_on_app_resume_callback(std::function<void(bool, bool, int)>);
+};
+#endif
+
+std::wstring get_path_extras_file_name(const std::wstring& path);

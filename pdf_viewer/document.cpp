@@ -69,8 +69,15 @@ int Document::get_mark_index(char symbol) {
 
 CharacterIterator::CharacterIterator(fz_stext_page* page) {
     block = page->first_block;
-    line = block->u.t.first_line;
-    chr = line->first_char;
+    while (block != nullptr && (block->type == FZ_STEXT_BLOCK_IMAGE)) block = block->next;
+    if (block != nullptr) {
+        line = block->u.t.first_line;
+        chr = line->first_char;
+    }
+    else {
+        line = nullptr;
+        chr = nullptr;
+    }
 }
 
 CharacterIterator::CharacterIterator(fz_stext_block* b, fz_stext_line* l, fz_stext_char* c) {
@@ -91,8 +98,15 @@ CharacterIterator& CharacterIterator::operator++() {
     }
     if (block->next != nullptr) {
         block = block->next;
-        line = block->u.t.first_line;
-        chr = line->first_char;
+        while (block != nullptr && (block->type == FZ_STEXT_BLOCK_IMAGE)) block = block->next;
+        if (block == nullptr) {
+            line = nullptr;
+            chr = nullptr;
+        }
+        else {
+            line = block->u.t.first_line;
+            chr = line->first_char;
+        }
         return *this;
     }
 
@@ -470,8 +484,13 @@ void Document::delete_highlight_with_index(int index) {
     is_annotations_dirty = true;
 }
 
+void Document::delete_bookmark_with_index(int index) {
+    BookMark bookmark_to_delete = bookmarks[index];
 
-
+    db_manager->delete_bookmark(bookmark_to_delete.uuid);
+    bookmarks.erase(bookmarks.begin() + index);
+    is_annotations_dirty = true;
+}
 
 void Document::delete_highlight(Highlight hl) {
     for (size_t i = (highlights.size() - 1); i >= 0; i--) {
@@ -870,8 +889,26 @@ const std::vector<PdfLink>& Document::get_page_merged_pdf_links(int page_number)
 
     fz_link* current_link = get_page_links(page_number);
 
+    auto should_add_link = [&]() {
+        if (links_to_merge.size() == 0) {
+            return false;
+        }
+        if (links_to_merge.back().uri == current_link->uri) {
+            if (links_to_merge.back().rects.size() > 0) {
+                if (std::abs(links_to_merge.back().rects[0].y1 - current_link->rect.y1) > 2 * links_to_merge.back().rects[0].height()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        else {
+            return true;
+        }
+
+        };
+
     while (current_link) {
-        if (links_to_merge.size() > 0 && (links_to_merge.back().uri != current_link->uri)) {
+        if (should_add_link()) {
             PdfLink merged_link = merge_links(links_to_merge);
             //merged_link.uri = links_to_merge[0].uri;
             //merged_link.source_page = links_to_merge[0].source_page;
@@ -970,6 +1007,8 @@ void Document::reload(std::string password) {
 }
 
 bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string password, bool temp) {
+    load_extras();
+
     last_update_time = QDateTime::currentDateTime();
     if (doc == nullptr) {
         fz_try(context) {
@@ -1342,8 +1381,7 @@ void Document::index_document(bool* invalid_flag) {
         std::map<std::wstring, std::vector<IndexedData>> local_equation_data;
 
         std::wstring local_super_fast_search_index;
-        std::vector<int> local_super_fast_search_pages;
-        std::vector<PagelessDocumentRect> local_super_fast_search_rects;
+        std::vector<int> local_page_begin_indices;
 
         std::vector<TocNode*> toc_stack;
         std::vector<TocNode*> top_level_nodes;
@@ -1371,7 +1409,7 @@ void Document::index_document(bool* invalid_flag) {
                 get_flat_chars_from_stext_page(stext_page, flat_chars);
 
                 if (SUPER_FAST_SEARCH) {
-                    flat_char_prism(flat_chars, i, local_super_fast_search_index, local_super_fast_search_pages, local_super_fast_search_rects);
+                    flat_char_prism2(flat_chars, i, local_super_fast_search_index, local_page_begin_indices);
                 }
 
                 index_references(stext_page, i, local_reference_data);
@@ -1404,8 +1442,7 @@ void Document::index_document(bool* invalid_flag) {
         generic_indices = std::move(local_generic_data);
 
         super_fast_search_index = std::move(local_super_fast_search_index);
-        super_fast_search_index_pages = std::move(local_super_fast_search_pages);
-        super_fast_search_rects = std::move(local_super_fast_search_rects);
+        super_fast_page_begin_indices = std::move(local_page_begin_indices);
         if (SUPER_FAST_SEARCH) {
             super_fast_search_index_ready = true;
         }
@@ -2142,7 +2179,7 @@ void Document::embed_annotations(std::wstring new_file_path) {
         std::vector<PagelessDocumentRect> selected_characters_page_rects;
         std::wstring selected_text;
 
-        get_text_selection(highlight.selection_begin, highlight.selection_end, true, selected_characters, selected_text);
+        get_text_selection(highlight.selection_begin, highlight.selection_end, !EXACT_HIGHLIGHT_SELECT, selected_characters, selected_text);
         merge_selected_character_rects(selected_characters, merged_characters, highlight.type != '_');
 
         for (auto absrect : merged_characters) {
@@ -2486,35 +2523,27 @@ std::optional<PdfLink> Document::get_link_in_pos(const DocumentPos& pos) {
 
 std::wstring Document::get_pdf_link_text(PdfLink link) {
     int page = link.source_page;
-    fz_stext_page* stext_page = get_stext_with_page_number(page);
-    std::vector<fz_stext_char*> flat_chars;
-    get_flat_chars_from_stext_page(stext_page, flat_chars);
-    std::vector<PagelessDocumentRect> flat_chars_rects;
-    std::vector<int> flat_chars_pages;
-    std::wstring flat_chars_text;
-    flat_char_prism(flat_chars,page, flat_chars_text, flat_chars_pages, flat_chars_rects);
 
     std::wstring res;
     for (int rect_index = 0; rect_index < link.rects.size(); rect_index++) {
 
         PagelessDocumentRect current_link_rect = link.rects[rect_index];
 
-        //for (int i = 0; i < flat_chars.size(); i++) {
-        for (int i = 0; i < flat_chars_text.size(); i++) {
-            PagelessDocumentRect charrect = flat_chars_rects[i];
+        for (auto [block, line, chr] : page_iterator(page)) {
+            PagelessDocumentRect charrect = fz_rect_from_quad(chr->quad);
             float y = (charrect.y0 + charrect.y1) / 2;
             float x = (charrect.x0 + charrect.x1) / 2;
             float height = charrect.y1 - charrect.y0;
             float width = charrect.x1 - charrect.x0;
+
             charrect.y0 = y - height / 5;
             charrect.y1 = y + height / 5;
-
             charrect.x0 = x;
             charrect.x1 = x;
-            if (rects_intersect(charrect, current_link_rect)) {
-                res.push_back(flat_chars_text[i]);
-            }
 
+            if (rects_intersect(charrect, current_link_rect)) {
+                res.push_back(chr->c);
+            }
         }
     }
     return res;
@@ -2804,8 +2833,7 @@ std::vector<SearchResult> Document::search_text(std::wstring query, SearchCaseSe
 
     return search_text_with_index(
         super_fast_search_index,
-        super_fast_search_index_pages,
-        super_fast_search_rects,
+        super_fast_page_begin_indices,
         query,
         case_sensitive,
         begin_page,
@@ -2816,9 +2844,9 @@ std::vector<SearchResult> Document::search_text(std::wstring query, SearchCaseSe
 
 std::vector<SearchResult> Document::search_regex(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page)
 {
+
     return search_regex_with_index(super_fast_search_index,
-        super_fast_search_index_pages,
-        super_fast_search_rects,
+        super_fast_page_begin_indices,
         query,
         case_sensitive,
         begin_page,
@@ -2869,6 +2897,8 @@ void Document::clear_document_caches() {
     cached_fastread_highlights.clear();
     cached_line_texts.clear();
     cached_page_line_rects.clear();
+    cached_page_index.clear();
+
 
     for (auto [_, cached_small_pixmap] : cached_small_pixmaps) {
         fz_drop_pixmap(context, cached_small_pixmap);
@@ -2890,8 +2920,7 @@ void Document::clear_document_caches() {
     cached_toc_model = nullptr;
 
     super_fast_search_index.clear();
-    super_fast_search_index_pages.clear();
-    super_fast_search_rects.clear();
+    super_fast_page_begin_indices.clear();
     super_fast_search_index_ready = false;
 
     clear_toc_nodes();
@@ -2910,6 +2939,10 @@ void Document::load_document_caches(bool* invalid_flag, bool force_now) {
 }
 
 int Document::reflow(int page) {
+
+    set_extra("epub_width", EPUB_WIDTH);
+    set_extra("epub_height", EPUB_HEIGHT);
+    persist_extras();
 
     fz_bookmark last_position_bookmark = fz_make_bookmark(context,
         doc, fz_location_from_page_number(context, doc, page));
@@ -3227,6 +3260,7 @@ std::wstring Document::get_drawings_file_path() {
     QString drawing_file_name = filename + ".sioyek.drawings";
     return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
 }
+
 std::wstring Document::get_scratchpad_file_path() {
     Path path = Path(file_name);
 #ifdef SIOYEK_ANDROID
@@ -3238,6 +3272,10 @@ std::wstring Document::get_scratchpad_file_path() {
     QString filename = QString::fromStdWString(path.filename().value());
     QString drawing_file_name = filename + ".sioyek.scratchpad";
     return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+}
+
+std::wstring Document::get_extras_file_path() {
+    return get_path_extras_file_name(file_name);
 }
 
 bool Document::annotations_file_exists() {
@@ -3877,6 +3915,12 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
 
     if (it != super_fast_search_index.end()) {
         int index = it - super_fast_search_index.begin();
+        int abbr_page = 0;
+
+        while ((abbr_page < num_pages() - 1) && super_fast_page_begin_indices[abbr_page + 1] < index) {
+            abbr_page++;
+        }
+
         while (index > 0 && is_in(super_fast_search_index[index], {' ', '(', ')', '\n'})){
             index--;
         }
@@ -3884,6 +3928,7 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
 
         std::deque<PagelessDocumentRect> raw_rects;
         std::vector<PagelessDocumentRect> merged_rects;
+        CachedPageIndex& abbr_page_index = get_page_index(abbr_page);
 
         while (index > 0 && remaining_abbr.size() > 0){
             if (super_fast_search_index[index] == ' ' || super_fast_search_index[index] == '\n') {
@@ -3895,7 +3940,7 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
                 //}
             }
 
-            PagelessDocumentRect rect = super_fast_search_rects[index];
+            PagelessDocumentRect rect = abbr_page_index.rects[index - super_fast_page_begin_indices[abbr_page]];
             /* overview_highlight_rects.push_back(DocumentRect(rect, super_fast_search_index_pages[index])); */
             raw_rects.push_back(rect);
 
@@ -3906,9 +3951,9 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
         if (raw_rects.size() > 0){
             merge_selected_character_rects(raw_rects, merged_rects, false);
             for (auto r : merged_rects){
-                overview_highlight_rects.push_back(DocumentRect(r, super_fast_search_index_pages[index]));
+                overview_highlight_rects.push_back(DocumentRect(r, abbr_page));
             }
-            return DocumentPos{super_fast_search_index_pages[index], overview_highlight_rects[0].rect.x0, overview_highlight_rects[0].rect.y0};
+            return DocumentPos{abbr_page, overview_highlight_rects[0].rect.x0, overview_highlight_rects[0].rect.y0};
         }
 
         return {};
@@ -3973,9 +4018,13 @@ int Document::find_reference_page_with_reference_text(std::wstring ref) {
         }
     }
     if (filtered_indices.size() > 0) {
-        return super_fast_search_index_pages[filtered_indices.back()];
-        //std::wstring filtered_context = super_fast_search_index.substr(filtered_indices.back(), 200);
-        //int a = 2;
+
+        int res_page = 0;
+        while ((res_page < super_fast_page_begin_indices.size() - 1) && super_fast_page_begin_indices[res_page] < filtered_indices.back()) {
+            res_page++;
+        }
+
+        return res_page;
     }
     return -1;
 
@@ -4089,11 +4138,13 @@ PageIterator Document::page_iterator(int page_number) {
     return PageIterator(page);
 }
 
-void Document::get_page_text_and_line_rects_after_rect(int page_number,
+int Document::get_page_text_and_line_rects_after_rect(int page_number,
     AbsoluteRect after_,
     std::wstring& text,
     std::vector<PagelessDocumentRect>& line_rects,
     std::vector<PagelessDocumentRect>& char_rects){
+    int index_into_page = 0;
+
     bool begun = false;
     DocumentRect after = after_.to_document(this);
     after.rect.y0 = after.rect.y1 = (after.rect.y0 + after.rect.y1) / 2;
@@ -4106,6 +4157,10 @@ void Document::get_page_text_and_line_rects_after_rect(int page_number,
 
         if (rects_intersect(after.rect, line->bbox)) {
             begun = true;
+        }
+
+        if (!begun) {
+            index_into_page++;
         }
 
         if (chr->c > 0 && chr->c < 128) {
@@ -4133,6 +4188,7 @@ void Document::get_page_text_and_line_rects_after_rect(int page_number,
         }
 
     }
+    return index_into_page;
 }
 
 std::optional<AbsoluteRect> Document::get_rect_vertically(bool below, AbsoluteRect rect) {
@@ -4175,3 +4231,105 @@ AbsoluteRect Document::to_absolute(int page, PagelessDocumentRect rect) {
 fz_context* Document::get_mupdf_context(){
     return context;
 }
+
+CachedPageIndex& Document::get_page_index(int page) {
+    for (auto& [pn, cached] : cached_page_index) {
+        if (pn == page) return cached;
+    }
+
+    if (cached_page_index.size() > 20) {
+        cached_page_index.erase(cached_page_index.begin(), cached_page_index.begin() + 10);
+    }
+
+    CachedPageIndex index;
+    std::vector<int> dummy_pages;
+
+    std::vector<fz_stext_char*> flat_chars;
+    fz_stext_page* stext_page = get_stext_with_page_number(page);
+    get_flat_chars_from_stext_page(stext_page, flat_chars);
+    flat_char_prism(flat_chars, page, index.text, dummy_pages, index.rects);
+
+    cached_page_index.push_back(std::make_pair(page, index));
+    return cached_page_index.back().second;
+}
+
+void Document::fill_search_result(SearchResult* result) {
+    if (result->rects.size() > 0) return;
+
+    int page = result->page;
+    CachedPageIndex& page_index = get_page_index(page);
+
+    int begin_index = result->begin_index_in_page;
+    int end_index = result->end_index_in_page;
+
+    std::deque<fz_rect> raw_rects;
+    std::vector<fz_rect> compressed_rects;
+    end_index = std::min<int>(end_index, page_index.rects.size());
+
+    for (int i = begin_index; i < end_index; i++) {
+        raw_rects.push_back(page_index.rects[i]);
+    }
+
+    merge_selected_character_rects(raw_rects, compressed_rects);
+    result->rects = compressed_rects;
+}
+
+int Document::get_page_offset_into_super_fast_index(int from){
+    return super_fast_page_begin_indices[from];
+}
+
+QString Document::get_rest_of_document_pages_text(int from) {
+    if ((from >= 0) && from < super_fast_page_begin_indices.size()) {
+        return QString::fromStdWString(super_fast_search_index.substr(super_fast_page_begin_indices[from]));
+    }
+    return "";
+}
+
+int Document::get_page_from_character_offset(int offset){
+    int res = 0;
+    while ((res < super_fast_page_begin_indices.size() - 1) && (super_fast_page_begin_indices[res + 1] < offset)){
+        res++;
+    }
+    return res;
+}
+
+bool Document::load_extras() {
+    QString extras_file_path = QString::fromStdWString(get_extras_file_path());
+    QFileInfo extras_file_info = QFileInfo(extras_file_path);
+    if (extras_file_info.exists()) {
+        QFile extras_file = QFile(extras_file_path);
+        if (extras_file.open(QIODevice::ReadOnly)) {
+            QByteArray data = extras_file.readAll();
+            QJsonDocument json_doc = QJsonDocument::fromJson(data);
+            extras = json_doc.object();
+            extras_file.close();
+            return true;
+        }
+    }
+    return false;
+
+}
+
+bool Document::persist_extras() {
+    QString extras_file_path = QString::fromStdWString(get_extras_file_path());
+    QFile extras_file = QFile(extras_file_path);
+    if (!extras.isEmpty()) {
+        if (extras_file.open(QIODevice::WriteOnly)) {
+            QJsonDocument doc;
+            doc.setObject(extras);
+            QByteArray data = doc.toJson();
+            extras_file.write(data);
+            extras_file.close();
+            return true;
+        }
+    }
+
+    return false;
+}
+std::optional<QVariant> Document::get_extra(QString name) {
+    if (extras.find(name) != extras.end()) {
+        return extras[name].toVariant();
+    }
+    return {};
+}
+

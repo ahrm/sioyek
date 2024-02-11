@@ -230,6 +230,7 @@ float STRIKE_LINE_WIDTH = 1.0f;
 int RULER_UNDERLINE_PIXEL_WIDTH = 2;
 bool AUTO_RENAME_DOWNLOADED_PAPERS = false;
 bool SHOW_MOST_RECENT_COMMANDS_FIRST = true;
+bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL = false;
 
 #ifdef SIOYEK_ANDROID
 std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";
@@ -269,8 +270,10 @@ bool USE_LEGACY_KEYBINDS = false;
 bool MULTILINE_MENUS = true;
 bool START_WITH_HELPER_WINDOW = false;
 std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
-std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_JAVASCRIPT_COMMANDS;
-std::map<std::wstring, std::pair<std::wstring, std::wstring>> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
+
+
+std::map<std::wstring, JsCommandInfo> ADDITIONAL_JAVASCRIPT_COMMANDS;
+std::map<std::wstring, JsCommandInfo> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
 std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
 std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 bool PRERENDER_NEXT_PAGE = true;
@@ -289,7 +292,7 @@ int NUM_CACHED_PAGES = 5;
 
 float PAGE_SEPARATOR_WIDTH = 0.0f;
 float PAGE_SEPARATOR_COLOR[3] = { 0.9f, 0.9f, 0.9f };
-bool SUPER_FAST_SEARCH = false;
+bool SUPER_FAST_SEARCH = true;
 bool INCREMENTAL_SEARCH = false;
 bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR = false;
 bool SHOW_CLOSE_PORTAL_IN_STATUSBAR = false;
@@ -318,6 +321,12 @@ bool VERBOSE = false;
 bool FILL_TEXTBAR_WITH_SELECTED_TEXT = true;
 int NUM_PRERENDERED_NEXT_SLIDES = 1;
 int NUM_PRERENDERED_PREV_SLIDES = 0;
+float SMOOTH_MOVE_MAX_VELOCITY = 5000;
+float SMOOTH_MOVE_INITIAL_VELOCITY = 1000;
+float PAGE_SPACE_X = 10.0f;
+float PAGE_SPACE_Y = 10.0f;
+bool USE_KEYBOARD_POINT_SELECTION = false;
+std::wstring TAG_FONT_FACE = L"";
 //UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
 bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
@@ -332,6 +341,7 @@ float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT = 1.0f;
 float FREETEXT_BOOKMARK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float FREETEXT_BOOKMARK_FONT_SIZE = 8.0f;
 bool RENDER_FREETEXT_BORDERS = false;
+bool REAL_PAGE_SEPARATION = false;
 
 float EPUB_WIDTH = 400;
 float EPUB_HEIGHT = 700;
@@ -422,6 +432,7 @@ std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND = L"";
 std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND = L"";
 
 std::vector<MainWidget*> windows;
+QString global_font_family;
 
 //std::vector<float> embedding_weights;
 //std::vector<float> linear_weights;
@@ -664,12 +675,6 @@ void add_paths_to_file_system_watcher(QFileSystemWatcher& watcher, const Path& d
     }
 }
 
-MainWidget* get_window_with_window_id(int window_id) {
-    for (auto window : windows) {
-        if (window->get_window_id() == window_id) return window;
-    }
-    return nullptr;
-}
 
 MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
     if (!QFile::exists(QString::fromStdWString(file_path))) {
@@ -974,6 +979,13 @@ int main(int argc, char* args[]) {
 
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
     OpenWithApplication app(argc, args);
+
+    int font_id = QFontDatabase::addApplicationFont(":/resources/fonts/JetBrainsMono.ttf");
+    global_font_family = QFontDatabase::applicationFontFamilies(font_id).at(0);
+    if (TAG_FONT_FACE.size() == 0) {
+        TAG_FONT_FACE = global_font_family.toStdWString();
+    }
+
 
 #ifdef Q_OS_WIN
     // handles dark mode on windows. see: https://github.com/ahrm/sioyek/issues/3

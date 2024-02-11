@@ -316,11 +316,12 @@ public:
     }
 
     void set_equal_columns() {
-        QTableView* table_view = dynamic_cast<QTableView*>(get_view());
-        for (int i = 0; i < n_cols; i++) {
-            table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
+        if (item_strings.size() > 0) {
+            QTableView* table_view = dynamic_cast<QTableView*>(get_view());
+            for (int i = 0; i < n_cols; i++) {
+                table_view->horizontalHeader()->setSectionResizeMode(i, QHeaderView::Stretch);
+            }
         }
-
     }
 
     void set_on_edit_function(std::function<void(T*)> edit_func) {
@@ -570,12 +571,14 @@ private:
     MainWidget* main_widget;
     QStandardItemModel* standard_item_model = nullptr;
     std::unordered_map<std::string, std::vector<std::string>> key_map;
+    std::unordered_map<QString, QString> prefixes;
     std::function<void(std::string, std::string)>* on_done = nullptr;
     fzf_slab_t* slab;
 
     QList<QStandardItem*> get_item(std::string command_name);
     QStandardItemModel* get_standard_item_model(std::vector<std::string> command_names);
     QStandardItemModel* get_standard_item_model(QStringList command_names);
+    QStringList get_elements_matching_prefix(QString prefix);
 
 protected:
 public:
@@ -587,8 +590,8 @@ public:
     CommandSelector(bool is_fuzzy, std::function<void(std::string, std::string)>* on_done,
         MainWidget* parent,
         QStringList elements,
-        std::unordered_map<std::string,
-        std::vector<std::string>> key_map);
+        const std::unordered_map<QString, QString>& required_prefixed,
+        std::unordered_map<std::string, std::vector<std::string>> key_map);
     ~CommandSelector();
 
     virtual bool on_text_change(const QString& text);
@@ -920,7 +923,6 @@ class AudioUI : public ConfigUI {
 public:
     AudioUI(MainWidget* parent);
     void resizeEvent(QResizeEvent* resize_event) override;
-private:
     TouchAudioButtons* buttons = nullptr;
 };
 

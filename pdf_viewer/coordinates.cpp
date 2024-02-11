@@ -53,27 +53,27 @@ bool are_same(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs) {
 //	return are_same(lhs.x, rhs.x) && are_same(lhs.y, rhs.y);
 //}
 
-AbsoluteDocumentPos DocumentPos::to_absolute(Document* doc) {
+AbsoluteDocumentPos DocumentPos::to_absolute(Document* doc) const{
     return doc->document_to_absolute_pos(*this);
 }
 
-NormalizedWindowPos DocumentPos::to_window_normalized(DocumentView* document_view) {
+NormalizedWindowPos DocumentPos::to_window_normalized(DocumentView* document_view) const{
     return document_view->document_to_window_pos(*this);
 }
 
-WindowPos DocumentPos::to_window(DocumentView* document_view) {
+WindowPos DocumentPos::to_window(DocumentView* document_view) const{
     return document_view->document_to_window_pos_in_pixels_uncentered(*this);
 }
 
-DocumentPos AbsoluteDocumentPos::to_document(Document* doc) {
+DocumentPos AbsoluteDocumentPos::to_document(Document* doc) const{
     return doc->absolute_to_page_pos(*this);
 }
 
-NormalizedWindowPos AbsoluteDocumentPos::to_window_normalized(DocumentView* document_view) {
+NormalizedWindowPos AbsoluteDocumentPos::to_window_normalized(DocumentView* document_view) const{
     return document_view->absolute_to_window_pos(*this);
 }
 
-WindowPos AbsoluteDocumentPos::to_window(DocumentView* document_view) {
+WindowPos AbsoluteDocumentPos::to_window(DocumentView* document_view) const{
     return document_view->absolute_to_window_pos_in_pixels(*this);
 }
 
@@ -226,11 +226,24 @@ PagelessDocumentRect rect_from_quad(fz_quad quad) {
     return PagelessDocumentRect(fz_rect_from_quad(quad));
 }
 
-bool NormalizedWindowRect::is_visible() {
-    return (x1 >= -1) && (x0 <= 1) && (y0 >= -1) && (y1 <= 1);
+bool NormalizedWindowRect::is_visible(float t) {
+    return (x1 >= -1) && (x0 <= 1) && (y0 >= (-1 - t)) && (y1 <= (1 + t));
 }
 
 WindowRect AbsoluteRect::to_window(DocumentView* document_view) {
     return document_view->normalized_to_window_rect(to_window_normalized(document_view));
 }
 
+VirtualPos operator+(const VirtualPos& lhs, const fvec2& rhs) {
+    return VirtualPos{ lhs.x + rhs[0], lhs.y + rhs[1]};
+}
+
+VirtualPos operator-(const VirtualPos& lhs, const fvec2& rhs) {
+    return VirtualPos{ lhs.x - rhs[0], lhs.y - rhs[1]};
+}
+
+DocumentRect to_document(const WindowRect& window_rect, DocumentView* dv) {
+    DocumentPos top_left = window_rect.top_left().to_document(dv);
+    DocumentPos bottom_right = window_rect.bottom_right().to_document(dv);
+    return DocumentRect(top_left, bottom_right, top_left.page);
+}
