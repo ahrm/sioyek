@@ -3,6 +3,7 @@
 #include <qpoint.h>
 #include <mupdf/fitz.h>
 #include <qopengl.h>
+#include <algorithm>
 
 class Document;
 class DocumentView;
