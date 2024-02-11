@@ -882,8 +882,26 @@ const std::vector<PdfLink>& Document::get_page_merged_pdf_links(int page_number)
 
     fz_link* current_link = get_page_links(page_number);
 
+    auto should_add_link = [&]() {
+        if (links_to_merge.size() == 0) {
+            return false;
+        }
+        if (links_to_merge.back().uri == current_link->uri) {
+            if (links_to_merge.back().rects.size() > 0) {
+                if (std::abs(links_to_merge.back().rects[0].y1 - current_link->rect.y1) > 2 * links_to_merge.back().rects[0].height()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        else {
+            return true;
+        }
+
+        };
+
     while (current_link) {
-        if (links_to_merge.size() > 0 && (links_to_merge.back().uri != current_link->uri)) {
+        if (should_add_link()) {
             PdfLink merged_link = merge_links(links_to_merge);
             //merged_link.uri = links_to_merge[0].uri;
             //merged_link.source_page = links_to_merge[0].source_page;

@@ -71,6 +71,7 @@ extern std::wstring STATUS_FONT_FACE_NAME;
 
 extern bool VERBOSE;
 
+extern QString global_font_family;
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -4160,7 +4161,7 @@ QString get_ui_font_face_name() {
 
 QString get_status_font_face_name() {
     if (STATUS_FONT_FACE_NAME.empty()) {
-        return "Monospace";
+        return global_font_family;
     }
     else {
         return QString::fromStdWString(STATUS_FONT_FACE_NAME);

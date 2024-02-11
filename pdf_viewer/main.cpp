@@ -326,7 +326,7 @@ float SMOOTH_MOVE_INITIAL_VELOCITY = 1000;
 float PAGE_SPACE_X = 10.0f;
 float PAGE_SPACE_Y = 10.0f;
 bool USE_KEYBOARD_POINT_SELECTION = false;
-std::wstring TAG_FONT_FACE = L"Monaco";
+std::wstring TAG_FONT_FACE = L"";
 //UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
 bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
@@ -432,6 +432,7 @@ std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND = L"";
 std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND = L"";
 
 std::vector<MainWidget*> windows;
+QString global_font_family;
 
 //std::vector<float> embedding_weights;
 //std::vector<float> linear_weights;
@@ -978,6 +979,13 @@ int main(int argc, char* args[]) {
 
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts, true);
     OpenWithApplication app(argc, args);
+
+    int font_id = QFontDatabase::addApplicationFont(":/resources/Inconsolata.ttf");
+    global_font_family = QFontDatabase::applicationFontFamilies(font_id).at(0);
+    if (TAG_FONT_FACE.size() == 0) {
+        TAG_FONT_FACE = global_font_family.toStdWString();
+    }
+
 
 #ifdef Q_OS_WIN
     // handles dark mode on windows. see: https://github.com/ahrm/sioyek/issues/3
