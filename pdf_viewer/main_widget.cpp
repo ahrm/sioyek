@@ -3545,16 +3545,14 @@ bool MainWidget::focus_on_visual_mark_pos(bool moving_down) {
 
     float thresh = 1 - VISUAL_MARK_NEXT_PAGE_THRESHOLD;
     NormalizedWindowRect ruler_window_rect = main_document_view->get_ruler_window_rect().value();
-    //main_document_view->absolute_to_window_pos(0, main_document_view->get_vertical_line_pos(), &window_x, &window_y);
-    //if ((window_y < -thresh) || (window_y > thresh)) {
+
     if (ruler_window_rect.y0 < -1 || ruler_window_rect.y1 > 1) {
         main_document_view->goto_vertical_line_pos();
         return true;
     }
+
     if ((moving_down && (ruler_window_rect.y0 < -thresh)) || ((!moving_down) && (ruler_window_rect.y1 > thresh))) {
         main_document_view->goto_vertical_line_pos();
-        //float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION;
-        //main_document_view->move_absolute(0, -distance);
         return true;
     }
     return false;
@@ -4402,8 +4400,10 @@ AbsoluteRect MainWidget::move_visual_mark(int offset) {
     main_document_view->set_line_index(new_line_index, new_page);
     //main_document_view->set_vertical_line_rect(ruler_rect);
     if (focus_on_visual_mark_pos(moving_down)) {
-        float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
-        main_document_view->move_absolute(0, distance);
+        if (!main_document_view->is_two_page_mode()) {
+            float distance = (main_document_view->get_view_height() / main_document_view->get_zoom_level()) * VISUAL_MARK_NEXT_PAGE_FRACTION / 2;
+            main_document_view->move_absolute(0, distance);
+        }
     }
     if (is_reading) {
         read_current_line();
