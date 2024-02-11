@@ -5555,7 +5555,7 @@ public:
             return std::move(subcommand);
         }
         else {
-            return std::move(std::make_unique<LazyCommand>(subcommand->get_name(), widget, widget->command_manager, invocation));
+            return std::move(std::make_unique<LazyCommand>(subcommand_name, widget, widget->command_manager, invocation));
         }
     }
 
