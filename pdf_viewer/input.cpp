@@ -5893,11 +5893,22 @@ public:
             return name;
         }
         else {
-            std::string res;
-            for (auto& command : commands) {
-                res += command->get_name();
+            if (is_modal) {
+                std::string current_mode_string = widget->get_current_mode_string();
+                for (int i = 0; i < modes.size(); i++) {
+                    if (mode_matches(current_mode_string, modes[i])) {
+                        return commands[i]->get_name();
+                    }
+                }
             }
-            return res;
+            else {
+
+                std::string res;
+                for (auto& command : commands) {
+                    res += command->get_name();
+                }
+                return res;
+            }
             //return "[macro]" + commands[0]->get_name();
         }
     }
