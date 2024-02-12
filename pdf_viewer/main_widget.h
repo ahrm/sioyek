@@ -911,7 +911,8 @@ public:
     PaperDownloadFinishedAction get_paper_download_action_from_string(QString str);
     void set_tag_prefix(std::wstring prefix);
     void clear_tag_prefix();
-    void show_context_menu();
+    void show_contextual_context_menu();
+    void show_context_menu(QString menu="");
     QPoint cursor_pos();
     void clear_current_page_drawings();
     void clear_current_document_drawings();

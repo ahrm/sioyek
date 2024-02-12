@@ -2546,11 +2546,12 @@ public:
     GenericVisibleSelectCommand(std::string name, MainWidget* w) : Command(name, w) {};
 
     virtual std::vector<int> get_visible_item_indices() = 0;
+    virtual int get_selected_item_index() = 0;
     virtual void handle_indices_pre_perform() = 0;
 
     void pre_perform() override {
         if (!already_pre_performed) {
-            if (widget->selected_highlight_index == -1) {
+            if (get_selected_item_index() == -1) {
                 visible_item_indices = get_visible_item_indices();
                 n_required_tags = get_num_tag_digits(visible_item_indices.size());
 
@@ -2607,6 +2608,10 @@ class GenericHighlightCommand : public GenericVisibleSelectCommand {
 public:
     GenericHighlightCommand(std::string name, MainWidget* w) : GenericVisibleSelectCommand(name, w) {};
 
+    int get_selected_item_index() override{
+        return widget->selected_highlight_index;
+    }
+
     std::vector<int> get_visible_item_indices() override {
         return widget->main_document_view->get_visible_highlight_indices();
     }
@@ -2635,6 +2640,10 @@ class GenericVisibleBookmarkCommand : public GenericVisibleSelectCommand {
 public:
     GenericVisibleBookmarkCommand(std::string name, MainWidget* w) : GenericVisibleSelectCommand(name, w) {};
 
+    int get_selected_item_index() override{
+        return widget->selected_bookmark_index;
+    }
+
     std::vector<int> get_visible_item_indices() override {
         return widget->main_document_view->get_visible_bookmark_indices();
     }
@@ -2662,7 +2671,7 @@ class DeleteVisibleBookmarkCommand : public GenericVisibleBookmarkCommand {
 
 public:
     static inline const std::string cname = "delete_visible_bookmark";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Delete a visible bookmark";
     DeleteVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(cname, w) {};
 
     void perform_with_bookmark_selected() override {
@@ -3208,6 +3217,19 @@ public:
 
     void perform() {
         widget->show_context_menu();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class ShowCustomContextMenuCommand : public TextCommand {
+public:
+    static inline const std::string cname = "show_custom_context_menu";
+    static inline const std::string hname = "";
+    ShowCustomContextMenuCommand(MainWidget* w) : TextCommand(cname, w) {};
+
+    void perform() {
+        widget->show_context_menu(QString::fromStdWString(text.value()));
     }
 
     bool requires_document() { return false; }
@@ -5887,6 +5909,11 @@ public:
                 commands[mode_index]->on_text_change(new_text);
             }
         }
+        else {
+            if (commands.size() == 1) {
+                commands[0]->on_text_change(new_text);
+            }
+        }
     }
 
     bool mode_matches(std::string current_mode, std::string command_mode) {
@@ -6114,6 +6141,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<NextChapterCommand>();
     register_command<PrevChapterCommand>();
     register_command<ShowContextMenuCommand>();
+    register_command<ShowCustomContextMenuCommand>();
     register_command<ToggleDarkModeCommand>();
     register_command<TogglePresentationModeCommand>();
     register_command<TurnOnPresentationModeCommand>();

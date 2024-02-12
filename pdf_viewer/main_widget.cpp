@@ -10,6 +10,7 @@
 // touch epub controls
 // better tablet button handling, the current method is setting dependent
 // name of command in statusbar is not correct when key is overloaded 
+// smartviewcandidates are not filled when right clicking on a link?
 
 
 #include <iostream>
@@ -6623,9 +6624,52 @@ void MainWidget::show_command_documentation(QString command_name) {
 }
 
 
-void MainWidget::show_context_menu() {
+void MainWidget::show_contextual_context_menu() {
+    auto p = mapFromGlobal(QCursor::pos());
+    WindowPos window_pos = WindowPos{
+        p.x(), p.y()
+    };
+    AbsoluteDocumentPos abs_pos = window_pos.to_absolute(main_document_view);
+    NormalizedWindowPos normal_pos = window_pos.to_window_normalized(main_document_view);
+
+
+
+    if (opengl_widget->get_overview_page()) {
+        if (opengl_widget->is_window_point_in_overview({ normal_pos.x, normal_pos.y })) {
+            show_context_menu("close_overview|toggle_dark_mode|smart_jump_under_cursor");
+        }
+        else {
+            show_context_menu("close_overview");
+        }
+    }
+    else {
+        int sel_highlight = main_document_view->get_highlight_index_in_pos(window_pos);
+        int sel_bookmark = doc()->get_bookmark_index_at_pos(abs_pos);
+
+        if (sel_highlight != -1) {
+            selected_highlight_index = sel_highlight;
+            show_context_menu("delete_highlight_under_cursor|add_highlight(r)|add_highlight(g)|add_highlight(b)");
+        }
+        if (sel_bookmark != -1) {
+            selected_bookmark_index = sel_bookmark;
+            show_context_menu("delete_visible_bookmark|edit_selected_bookmark");
+        }
+        else {
+            show_context_menu("toggle_dark_mode|toggle_custom_color");
+        }
+    }
+}
+
+void MainWidget::show_context_menu(QString menu_string) {
     QMenu contextMenu("Context menu", this);
-    QStringList command_names = QString::fromStdWString(CONTEXT_MENU_ITEMS).split('|');
+    QStringList command_names;
+
+    if (menu_string.size() == 0) {
+        command_names = QString::fromStdWString(CONTEXT_MENU_ITEMS).split('|');
+    }
+    else {
+        command_names = menu_string.split('|');
+    }
 
     std::vector<QAction*> actions;
     //original_cursor_pos = QCursor::pos();
@@ -6656,7 +6700,7 @@ void MainWidget::show_context_menu() {
 }
 
 void MainWidget::handle_debug_command() {
-    opengl_widget->set_highlighted_tags({"aa", "bb", "cc"});
+    //show_contextual_context_menu();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -6806,7 +6850,7 @@ void MainWidget::download_paper_under_cursor(bool use_last_touch_pos) {
 
         if (get_default_paper_download_finish_action() == PaperDownloadFinishedAction::Portal) {
             AbsoluteDocumentPos source_position;
-            if (opengl_widget->get_overview_page()) {
+            if (opengl_widget->get_overview_page() && get_overview_source_rect())  {
                 source_position = get_overview_source_rect()->center();
             }
             else {
