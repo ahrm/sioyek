@@ -34,5 +34,15 @@ cp pdf_viewer/keys.config build/sioyek.app/Contents/MacOS/keys.config
 cp pdf_viewer/keys_user.config build/sioyek.app/Contents/MacOS/keys_user.config
 cp tutorial.pdf build/sioyek.app/Contents/MacOS/tutorial.pdf
 
+# Capture the current PATH
+CURRENT_PATH=$(echo $PATH)
+
+# Define the path to the Info.plist file inside the app bundle
+INFO_PLIST="build/sioyek.app/Contents/Info.plist"
+
+# Add LSEnvironment key with PATH to Info.plist
+/usr/libexec/PlistBuddy -c "Add :LSEnvironment dict" "$INFO_PLIST" || echo "LSEnvironment already exists"
+/usr/libexec/PlistBuddy -c "Add :LSEnvironment:PATH string $CURRENT_PATH" "$INFO_PLIST" || /usr/libexec/PlistBuddy -c "Set :LSEnvironment:PATH $CURRENT_PATH" "$INFO_PLIST"
+
 macdeployqt build/sioyek.app -dmg
 zip -r sioyek-release-mac.zip build/sioyek.dmg
