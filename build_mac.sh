@@ -46,4 +46,3 @@ INFO_PLIST="build/sioyek.app/Contents/Info.plist"
 
 macdeployqt build/sioyek.app -dmg
 zip -r sioyek-release-mac.zip build/sioyek.dmg
-codesign --force --deep --sign - build/sioyek.app
