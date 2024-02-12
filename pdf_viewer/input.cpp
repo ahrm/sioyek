@@ -4835,10 +4835,24 @@ public:
     static inline const std::string hname = "";
     EmbedAnnotationsCommand(MainWidget* w) : Command(cname, w) {};
 
+    std::optional<std::wstring> file_path = {};
+
+    virtual void set_file_requirement(std::wstring value) {
+        file_path = value;
+    }
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!file_path.has_value()) {
+            Requirement req = { RequirementType::File, "File Path" };
+            return req;
+        }
+        return {};
+    }
+
     void perform() {
-        std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
-        if (embedded_pdf_file_name.size() > 0) {
-            widget->main_document_view->get_document()->embed_annotations(embedded_pdf_file_name);
+        //std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
+        if (file_path->size() > 0) {
+            widget->main_document_view->get_document()->embed_annotations(file_path.value());
         }
     }
 };
