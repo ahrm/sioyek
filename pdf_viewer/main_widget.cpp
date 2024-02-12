@@ -191,7 +191,13 @@ extern int DOCUMENTATION_FONT_SIZE;
 extern ScratchPad global_scratchpad;
 extern int NUM_CACHED_PAGES;
 
+extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
 extern std::wstring CONTEXT_MENU_ITEMS;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_LINKS;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 extern float SMOOTH_MOVE_MAX_VELOCITY;
 extern float SMOOTH_MOVE_INITIAL_VELOCITY;
@@ -520,7 +526,6 @@ void MainWidget::set_overview_link(PdfLink link) {
 }
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
-
     if (is_pinching){
         // no need to handle move events when a pinch to zoom is in progress
         return;
@@ -2070,6 +2075,9 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
         return;
     }
 
+    if (SHOW_RIGHT_CLICK_CONTEXT_MENU && down && show_contextual_context_menu()) {
+        return;
+    }
     if (RIGHT_CLICK_COMMAND.size() > 0) {
         execute_macro_if_enabled(RIGHT_CLICK_COMMAND);
         return;
@@ -2726,22 +2734,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         return;
     }
 
-    if (bookmark_move_data) {
-        handle_bookmark_move_finish();
-        bookmark_move_data = {};
-        is_dragging = false;
-        return;
-    }
-
-    if (portal_move_data) {
-        handle_portal_move_finish();
-        portal_move_data = {};
-        is_dragging = false;
-        return;
-    }
-    if (freehand_drawing_move_data) {
-        handle_freehand_drawing_move_finish();
-        invalidate_render();
+    if (handle_annotation_move_finish()) {
         return;
     }
 
@@ -6624,7 +6617,7 @@ void MainWidget::show_command_documentation(QString command_name) {
 }
 
 
-void MainWidget::show_contextual_context_menu() {
+bool MainWidget::show_contextual_context_menu() {
     auto p = mapFromGlobal(QCursor::pos());
     WindowPos window_pos = WindowPos{
         p.x(), p.y()
@@ -6633,13 +6626,18 @@ void MainWidget::show_contextual_context_menu() {
     NormalizedWindowPos normal_pos = window_pos.to_window_normalized(main_document_view);
 
 
-
     if (opengl_widget->get_overview_page()) {
         if (opengl_widget->is_window_point_in_overview({ normal_pos.x, normal_pos.y })) {
-            show_context_menu("close_overview|toggle_dark_mode|smart_jump_under_cursor");
+            if (CONTEXT_MENU_ITEMS_FOR_OVERVIEW.size() > 0) {
+                show_context_menu(QString::fromStdWString(CONTEXT_MENU_ITEMS_FOR_OVERVIEW));
+                return true;
+            }
         }
-        else {
-            show_context_menu("close_overview");
+    }
+    else if (is_pos_inside_selected_text(window_pos)) {
+        if (CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT.size() > 0) {
+            show_context_menu(QString::fromStdWString(CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT));
+            return true;
         }
     }
     else {
@@ -6647,20 +6645,29 @@ void MainWidget::show_contextual_context_menu() {
         int sel_bookmark = doc()->get_bookmark_index_at_pos(abs_pos);
 
         if (sel_highlight != -1) {
-            selected_highlight_index = sel_highlight;
-            show_context_menu("delete_highlight_under_cursor|add_highlight(r)|add_highlight(g)|add_highlight(b)");
+            set_selected_highlight_index(sel_highlight);
+            if (CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS.size() > 0) {
+                show_context_menu(QString::fromStdWString(CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS));
+                return true;
+            }
         }
         if (sel_bookmark != -1) {
-            selected_bookmark_index = sel_bookmark;
-            show_context_menu("delete_visible_bookmark|edit_selected_bookmark");
-        }
-        else {
-            show_context_menu("toggle_dark_mode|toggle_custom_color");
+            set_selected_bookmark_index(sel_bookmark);
+            if (CONTEXT_MENU_ITEMS_FOR_BOOKMARKS.size() > 0) {
+                show_context_menu(QString::fromStdWString(CONTEXT_MENU_ITEMS_FOR_BOOKMARKS));
+                return true;
+            }
         }
     }
+    return false;
 }
 
 void MainWidget::show_context_menu(QString menu_string) {
+    // since the context menu overrides the main widget's event loop, the validate_render
+    // call below is necessary to ensure that changes due to showing the context menu
+    // (e.g. the right clicked highlight being selected) are displayed
+    validate_render();
+
     QMenu contextMenu("Context menu", this);
     QStringList command_names;
 
@@ -6700,7 +6707,7 @@ void MainWidget::show_context_menu(QString menu_string) {
 }
 
 void MainWidget::handle_debug_command() {
-    //show_contextual_context_menu();
+    show_contextual_context_menu();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -10289,3 +10296,57 @@ void MainWidget::set_highlighted_tags(std::vector<std::string> tags) {
     opengl_widget->set_highlighted_tags(tags);
 }
 
+AbsoluteDocumentPos MainWidget::get_mouse_abspos() {
+    auto pos = mapFromGlobal(QCursor::pos());
+    WindowPos window_pos = { pos.x(), pos.y() };
+    AbsoluteDocumentPos abspos = window_pos.to_absolute(main_document_view);
+    return abspos;
+}
+
+void MainWidget::move_selected_bookmark_to_mouse_cursor() {
+    if ((selected_bookmark_index != -1) && (selected_bookmark_index < doc()->get_bookmarks().size())) {
+
+        AbsoluteDocumentPos mouse_abspos = get_mouse_abspos();
+        BookMark& bm = doc()->get_bookmarks()[selected_bookmark_index];
+        if (bm.end_x == -1) {
+            bm.begin_x = mouse_abspos.x;
+            bm.begin_y = mouse_abspos.y;
+        }
+        else{
+            float width = bm.end_x - bm.begin_x;
+            float height = bm.end_y - bm.end_x;
+            bm.begin_x = mouse_abspos.x;
+            bm.begin_y = mouse_abspos.y;
+            bm.end_x = bm.begin_x + width;
+            bm.end_y = bm.begin_y + height;
+        }
+
+    }
+}
+
+bool MainWidget::handle_annotation_move_finish(){
+
+    if (bookmark_move_data) {
+        handle_bookmark_move_finish();
+        bookmark_move_data = {};
+        is_dragging = false;
+        is_selecting = false;
+        return true;
+    }
+
+    if (portal_move_data) {
+        handle_portal_move_finish();
+        portal_move_data = {};
+        is_dragging = false;
+        is_selecting = false;
+        return true;
+    }
+    if (freehand_drawing_move_data) {
+        handle_freehand_drawing_move_finish();
+        invalidate_render();
+        is_selecting = false;
+        return true;
+    }
+
+    false;
+}

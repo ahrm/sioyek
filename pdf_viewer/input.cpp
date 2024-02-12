@@ -2414,6 +2414,27 @@ public:
     }
 };
 
+class MoveSelectedBookmarkCommand : public Command {
+public:
+    static inline const std::string cname = "move_selected_bookmark";
+    static inline const std::string hname = "Move selected bookmark";
+
+    bool use_keyboard = false;
+
+    MoveSelectedBookmarkCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        if (widget->selected_bookmark_index != -1) {
+
+            AbsoluteDocumentPos mouse_abspos = widget->get_mouse_abspos();
+            widget->move_selected_bookmark_to_mouse_cursor();
+            widget->begin_bookmark_move(widget->selected_bookmark_index, mouse_abspos);
+        }
+
+    }
+
+};
+
 class EditSelectedBookmarkCommand : public TextCommand {
 public:
     static inline const std::string cname = "edit_selected_bookmark";
@@ -6277,6 +6298,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<PrintUndocumentedConfigsCommand>();
     register_command<PrintNonDefaultConfigs>();
     register_command<SetWindowRectCommand>();
+    register_command<MoveSelectedBookmarkCommand>();
 
     for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
         std::string command_name = utf8_encode(command_name_);

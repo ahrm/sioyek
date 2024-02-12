@@ -136,7 +136,13 @@ extern std::wstring ALT_CLICK_COMMAND;
 extern std::wstring ALT_RIGHT_CLICK_COMMAND;
 extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
 
+extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
 extern std::wstring CONTEXT_MENU_ITEMS;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_LINKS;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS;
+extern std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
 
@@ -798,6 +804,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"adjust_annotation_colors_for_dark_mode",
         ConfigType::Bool,
         &ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"right_click_context_menu",
+        ConfigType::Bool,
+        &SHOW_RIGHT_CLICK_CONTEXT_MENU,
         bool_serializer,
         bool_deserializer,
         bool_validator
@@ -1507,6 +1521,46 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"context_menu_items",
         ConfigType::String,
         &CONTEXT_MENU_ITEMS,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"context_menu_items_for_links",
+        ConfigType::String,
+        &CONTEXT_MENU_ITEMS_FOR_LINKS,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"context_menu_items_for_selected_text",
+        ConfigType::String,
+        &CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"context_menu_items_for_highlights",
+        ConfigType::String,
+        &CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"context_menu_items_for_bookmarks",
+        ConfigType::String,
+        &CONTEXT_MENU_ITEMS_FOR_BOOKMARKS,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"context_menu_items_for_overview",
+        ConfigType::String,
+        &CONTEXT_MENU_ITEMS_FOR_OVERVIEW,
         string_serializer,
         string_deserializer,
         nullptr

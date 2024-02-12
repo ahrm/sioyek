@@ -911,7 +911,7 @@ public:
     PaperDownloadFinishedAction get_paper_download_action_from_string(QString str);
     void set_tag_prefix(std::wstring prefix);
     void clear_tag_prefix();
-    void show_contextual_context_menu();
+    bool show_contextual_context_menu();
     void show_context_menu(QString menu="");
     QPoint cursor_pos();
     void clear_current_page_drawings();
@@ -938,6 +938,9 @@ public:
     DocumentPos get_index_document_pos(int index);
     void highlight_window_points();
     void set_highlighted_tags(std::vector<std::string> tags);
+    AbsoluteDocumentPos get_mouse_abspos();
+    void move_selected_bookmark_to_mouse_cursor();
+    bool handle_annotation_move_finish();
 };
 
 MainWidget* get_window_with_window_id(int window_id);

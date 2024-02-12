@@ -282,7 +282,14 @@ float HYPERDRIVE_SPEED_FACTOR = 10.0f;
 float SMOOTH_SCROLL_SPEED = 3.0f;
 float SMOOTH_SCROLL_DRAG = 3000.0f;
 int PRERENDERED_PAGE_COUNT = 0;
+bool SHOW_RIGHT_CLICK_CONTEXT_MENU = false;
 std::wstring CONTEXT_MENU_ITEMS = L"";
+std::wstring CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT = L"copy|add_highlight(a)|add_highlight(b)|add_highlight(c)";
+std::wstring CONTEXT_MENU_ITEMS_FOR_LINKS = L"";
+std::wstring CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS = L"delete_highlight|edit_selected_highlight|add_highlight(a)|add_highlight(b)|add_highlight(c)";
+std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS = L"delete_visible_bookmark|edit_selected_bookmark|move_selected_bookmark";
+std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW = L"";
+
 bool RIGHT_CLICK_CONTEXT_MENU = false;
 #ifdef SIOYEK_ANDROID
 int NUM_CACHED_PAGES = 10;
