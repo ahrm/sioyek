@@ -1627,8 +1627,9 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
                         fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
                         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                        bool is_highlighted = i == selected_bookmark_index;
 
-                        render_ui_icon_for_current_color_mode(painter, bookmark_icon, bookmark_icon_white, window_qrect);
+                        render_ui_icon_for_current_color_mode(painter, bookmark_icon, bookmark_icon_white, window_qrect, is_highlighted);
 
                     }
                 }
@@ -3493,12 +3494,18 @@ QColor PdfViewOpenGLWidget::qcc4(const float* input_color) {
     return convert_float4_to_qcolor(&result[0]);
 }
 
-void PdfViewOpenGLWidget::render_ui_icon_for_current_color_mode(QPainter* painter, const QIcon& icon_black, const QIcon& icon_white, QRect window_qrect){
+void PdfViewOpenGLWidget::render_ui_icon_for_current_color_mode(QPainter* painter, const QIcon& icon_black, const QIcon& icon_white, QRect window_qrect, bool is_highlighted){
 
     float visible_annotation_icon_color[3] = {1, 1, 1};
     float mode_color[3] = {0};
-    get_color_for_current_mode(visible_annotation_icon_color, mode_color);
-    int num_adjust_pixels = static_cast<int>(window_qrect.width() * 0.1f);
+    if (!is_highlighted) {
+        get_color_for_current_mode(visible_annotation_icon_color, mode_color);
+    }
+    else {
+        float visible_annotation_highlight_color[3] = {1, 1, 0};
+        get_color_for_current_mode(visible_annotation_highlight_color, mode_color);
+    }
+    int num_adjust_pixels = static_cast<int>(window_qrect.width() * 0.065f);
 
     painter->fillRect(window_qrect.adjusted(num_adjust_pixels, num_adjust_pixels, -num_adjust_pixels, -num_adjust_pixels), convert_float3_to_qcolor(mode_color));
 
