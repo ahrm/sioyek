@@ -151,13 +151,29 @@ build_windows.bat
 ```
 
 ### Mac
-1. Install Xcode and Qt 5.
-2. Clone the repository and build:
+1. Uninstall previous Qt6 installed by Homebrew
+2. Install Xcode.
+3. Install Qt6.
+```
+pip install aqtinstall
+cd /path/to/qt
+aqt install-qt mac desktop 6.6.1 clang_64 -m all
+export Qt6_DIR=/path/to/qt/6.6.1/macos/
+export QT_PLUGIN_PATH=/path/to/qt/6.6.1/macos/plugins
+export PKG_CONFIG_PATH=/path/to/qt/6.6.1/macos/lib/pkgconfig
+export QML2_IMPORT_PATH=/path/to/qt/6.6.1/macos/qml
+export PATH="/path/to/qt/6.6.1/macos/bin:$PATH"
+```
+4. Clone the repository, build and install:
 ```
 git clone --recursive https://github.com/ahrm/sioyek
 cd sioyek
 chmod +x build_mac.sh
-./build_mac.sh
+setopt PIPE_FAIL PRINT_EXIT_VALUE ERR_RETURN SOURCE_TRACE XTRACE
+MAKE_PARALLEL=8 ./build_mac.sh
+
+mv build/sioyek.app /Applications/
+sudo codesign --force --sign - --deep /Applications/sioyek.app
 ```
 
 ## Donation
