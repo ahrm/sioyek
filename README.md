@@ -27,7 +27,7 @@ Distro | Link | Maintainer
 Flathub | [sioyek](https://flathub.org/apps/details/com.github.ahrm.sioyek) | [@nbenitez](https://flathub.org/apps/details/com.github.ahrm.sioyek)
 Alpine | [sioyek](https://pkgs.alpinelinux.org/packages?name=sioyek) | [@jirutka](https://github.com/jirutka)
 Arch | [AUR sioyek](https://aur.archlinux.org/packages/sioyek) | [@goggle](https://github.com/goggle)
-Arch | [AUR Sioyek-git](https://aur.archlinux.org/packages/sioyek-git/) | [@randomn4me](https://github.com/randomn4me)
+Arch | [AUR sioyek-git](https://aur.archlinux.org/packages/sioyek-git/) | [@hrdl-github](https://github.com/hrdl-github)
 Arch | [AUR sioyek-appimage](https://aur.archlinux.org/packages/sioyek-appimage/) | [@DhruvaSambrani](https://github.com/DhruvaSambrani)
 Debian | [sioyek](https://packages.debian.org/sioyek) | [@viccie30](https://github.com/viccie30)
 NixOS | [sioyek](https://search.nixos.org/packages?channel=unstable&show=sioyek&from=0&size=50&sort=relevance&type=packages&query=sioyek) | [@podocarp](https://github.com/podocarp)
@@ -151,13 +151,27 @@ build_windows.bat
 ```
 
 ### Mac
-1. Install Xcode and Qt 5.
-2. Clone the repository and build:
-```
+1. Install Xcode.
+2. Clone the repository and build: (The code below is in Zsh, which is the default shell on macOS.)
+```zsh
+(
+setopt PIPE_FAIL PRINT_EXIT_VALUE ERR_RETURN SOURCE_TRACE XTRACE
+
 git clone --recursive https://github.com/ahrm/sioyek
 cd sioyek
 chmod +x build_mac.sh
-./build_mac.sh
+
+brew install 'qt@5' freeglut mesa harfbuzz
+
+export PATH="/opt/homebrew/opt/qt@5/bin:$PATH"
+#: The above is needed to make =qmake= from =qt= be found.
+#: Find the path using =brew info 'qt@5'=.
+
+MAKE_PARALLEL=8 ./build_mac.sh
+
+mv build/sioyek.app /Applications/
+sudo codesign --force --sign - --deep /Applications/sioyek.app
+)
 ```
 
 ## Donation
