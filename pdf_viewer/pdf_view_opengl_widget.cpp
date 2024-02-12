@@ -1677,6 +1677,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                             float temp_color[3] = {0.5f, 0.5f, 0.5f};
                             painter->setPen(convert_float3_to_qcolor(&temp_color[0]));
                             painter->setPen(Qt::DashLine);
+                            QRect fill_rect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                            painter->fillRect(fill_rect, QColor(255, 255, 0, 128));
                             painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
                         }
                         painter->drawText(window_qrect, flags, QString::fromStdWString(bookmarks[i].description));
