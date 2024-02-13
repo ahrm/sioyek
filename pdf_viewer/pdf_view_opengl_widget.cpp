@@ -79,6 +79,8 @@ extern float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
 extern float DEFAULT_VERTICAL_LINE_COLOR[4];
+extern float KEYBOARD_SELECTED_TAG_TEXT_COLOR[4];
+extern float KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO[4];
 
 extern int RULER_UNDERLINE_PIXEL_WIDTH;
 extern UIRect PORTRAIT_EDIT_PORTAL_UI_RECT;
@@ -798,6 +800,7 @@ void PdfViewOpenGLWidget::handle_escape() {
     should_show_numbers = false;
     character_highlight_rect = {};
     wrong_character_rect = {};
+    highlighted_tags = {};
 }
 
 void PdfViewOpenGLWidget::toggle_highlight_links() {
@@ -1624,8 +1627,9 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
                         fz_irect window_rect = document_view->normalized_to_window_rect(bookmark_normalized_window_rect);
                         QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                        bool is_highlighted = i == selected_bookmark_index;
 
-                        render_ui_icon_for_current_color_mode(painter, bookmark_icon, bookmark_icon_white, window_qrect);
+                        render_ui_icon_for_current_color_mode(painter, bookmark_icon, bookmark_icon_white, window_qrect, is_highlighted);
 
                     }
                 }
@@ -1673,6 +1677,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                             float temp_color[3] = {0.5f, 0.5f, 0.5f};
                             painter->setPen(convert_float3_to_qcolor(&temp_color[0]));
                             painter->setPen(Qt::DashLine);
+                            QRect fill_rect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                            painter->fillRect(fill_rect, QColor(255, 255, 0, 128));
                             painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
                         }
                         painter->drawText(window_qrect, flags, QString::fromStdWString(bookmarks[i].description));
@@ -1710,6 +1716,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
             int window_y1 = static_cast<int>(-window_rect.y1 * view_height / 2 + view_height / 2);
 
+            bool highlighted = is_tag_highlighted(tags[i]);
             QString remaining_tag = QString::fromStdString(tags[i]);
             if (tag_prefix.size() > 0) {
                 if (remaining_tag.startsWith(QString::fromStdString(tag_prefix))) {
@@ -1721,7 +1728,18 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             }
             
             if (remaining_tag.size() > 0) {
-                painter->drawText(window_x0, (window_y0 + window_y1) / 2, remaining_tag);
+                if (highlighted) {
+                    auto original_pen = painter->pen();
+                    auto original_background = painter->background();
+                    painter->setPen(qcc4(KEYBOARD_SELECTED_TAG_TEXT_COLOR));
+                    painter->setBackground(qcc4(KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO));
+                    painter->drawText(window_x0, (window_y0 + window_y1) / 2, remaining_tag);
+                    painter->setPen(original_pen);
+                    painter->setBackground(original_background);
+                }
+                else {
+                    painter->drawText(window_x0, (window_y0 + window_y1) / 2, remaining_tag);
+                }
             }
         }
     }
@@ -3466,12 +3484,30 @@ std::array<float, 4> PdfViewOpenGLWidget::cc4(const float* input_color) {
     return result;
 }
 
-void PdfViewOpenGLWidget::render_ui_icon_for_current_color_mode(QPainter* painter, const QIcon& icon_black, const QIcon& icon_white, QRect window_qrect){
+QColor PdfViewOpenGLWidget::qcc3(const float* input_color) {
+    std::array<float, 3> result;
+    get_color_for_current_mode(input_color, &result[0]);
+    return convert_float3_to_qcolor(&result[0]);
+}
+
+QColor PdfViewOpenGLWidget::qcc4(const float* input_color) {
+    std::array<float, 4> result;
+    get_color_for_current_mode(input_color, &result[0]);
+    return convert_float4_to_qcolor(&result[0]);
+}
+
+void PdfViewOpenGLWidget::render_ui_icon_for_current_color_mode(QPainter* painter, const QIcon& icon_black, const QIcon& icon_white, QRect window_qrect, bool is_highlighted){
 
     float visible_annotation_icon_color[3] = {1, 1, 1};
     float mode_color[3] = {0};
-    get_color_for_current_mode(visible_annotation_icon_color, mode_color);
-    int num_adjust_pixels = static_cast<int>(window_qrect.width() * 0.1f);
+    if (!is_highlighted) {
+        get_color_for_current_mode(visible_annotation_icon_color, mode_color);
+    }
+    else {
+        float visible_annotation_highlight_color[3] = {1, 1, 0};
+        get_color_for_current_mode(visible_annotation_highlight_color, mode_color);
+    }
+    int num_adjust_pixels = static_cast<int>(window_qrect.width() * 0.065f);
 
     painter->fillRect(window_qrect.adjusted(num_adjust_pixels, num_adjust_pixels, -num_adjust_pixels, -num_adjust_pixels), convert_float3_to_qcolor(mode_color));
 
@@ -3656,4 +3692,14 @@ void PdfViewOpenGLWidget::set_selected_highlight_index(int index) {
 
 void PdfViewOpenGLWidget::set_selected_bookmark_index(int index) {
     selected_bookmark_index = index;
+}
+
+void PdfViewOpenGLWidget::set_highlighted_tags(std::vector<std::string> tags) {
+    highlighted_tags = tags;
+}
+bool PdfViewOpenGLWidget::is_tag_highlighted(const std::string& tag) {
+    for (auto& htag : highlighted_tags) {
+        if (tag == htag) return true;
+    }
+    return false;
 }

@@ -147,7 +147,7 @@ std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
 std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
 std::wstring PAPERS_FOLDER_PATH = L"";
 #ifndef SIOYEK_ANDROID
-std::wstring STATUS_BAR_FORMAT = L"Page %{current_page} / %{num_pages}%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{freehand_drawing}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
+std::wstring STATUS_BAR_FORMAT = L"[ %{current_page} / %{num_pages} ]%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{freehand_drawing}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
 #else
 std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}";
 #endif
@@ -282,7 +282,14 @@ float HYPERDRIVE_SPEED_FACTOR = 10.0f;
 float SMOOTH_SCROLL_SPEED = 3.0f;
 float SMOOTH_SCROLL_DRAG = 3000.0f;
 int PRERENDERED_PAGE_COUNT = 0;
+bool SHOW_RIGHT_CLICK_CONTEXT_MENU = false;
 std::wstring CONTEXT_MENU_ITEMS = L"";
+std::wstring CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT = L"copy|add_highlight(a)|add_highlight(b)|add_highlight(c)";
+std::wstring CONTEXT_MENU_ITEMS_FOR_LINKS = L"";
+std::wstring CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS = L"delete_highlight|edit_selected_highlight|add_highlight(a)|add_highlight(b)|add_highlight(c)";
+std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS = L"delete_visible_bookmark|edit_selected_bookmark|move_selected_bookmark";
+std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW = L"";
+
 bool RIGHT_CLICK_CONTEXT_MENU = false;
 #ifdef SIOYEK_ANDROID
 int NUM_CACHED_PAGES = 10;
@@ -312,6 +319,9 @@ float HIGHLIGHT_DELETE_THRESHOLD = 0.1f;
 float SCROLL_VIEW_SENSITIVITY = 1.0f;
 float KEYBOARD_SELECT_BACKGROUND_COLOR[] = { 0.9f , 0.75f, 0.0f, 1.0f };
 float KEYBOARD_SELECT_TEXT_COLOR[] = { 0.0f , 0.0f, 0.5f, 1.0f };
+float KEYBOARD_SELECTED_TAG_TEXT_COLOR[] = { 1.0f , 1.0f, 1.0f, 1.0f };
+float KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO[] = { 0.0f , 0.0f, 0.0f, 1.0f };
+
 bool AUTOCENTER_VISUAL_SCROLL = false;
 bool ALPHABETIC_LINK_TAGS = false;
 bool VIMTEX_WSL_FIX = false;

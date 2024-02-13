@@ -89,6 +89,10 @@ Command::Command(std::string name, MainWidget* widget_) : command_cname(name), w
 
 }
 
+void Command::on_text_change(const QString& new_text) {
+
+}
+
 bool Command::is_holdable() {
     return false;
 }
@@ -548,6 +552,12 @@ public:
     static inline const std::string hname = "Search the PDF document";
     SearchCommand(MainWidget* w) : TextCommand(cname, w) {
     };
+
+    void on_text_change(const QString& new_text) override {
+        if (INCREMENTAL_SEARCH && widget->doc()->is_super_fast_index_ready()) {
+            widget->perform_search(new_text.toStdWString(), false, true);
+        }
+    }
 
     void pre_perform() {
         if (INCREMENTAL_SEARCH) {
@@ -1377,6 +1387,10 @@ public:
     int pending_index = -1;
 
     AddBookmarkFreetextCommand(MainWidget* w) : Command(cname, w) {};
+
+    void on_text_change(const QString& new_text) override {
+        widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description = new_text.toStdWString();
+    }
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
 
@@ -2400,6 +2414,27 @@ public:
     }
 };
 
+class MoveSelectedBookmarkCommand : public Command {
+public:
+    static inline const std::string cname = "move_selected_bookmark";
+    static inline const std::string hname = "Move selected bookmark";
+
+    bool use_keyboard = false;
+
+    MoveSelectedBookmarkCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        if (widget->selected_bookmark_index != -1) {
+
+            AbsoluteDocumentPos mouse_abspos = widget->get_mouse_abspos();
+            widget->move_selected_bookmark_to_mouse_cursor();
+            widget->begin_bookmark_move(widget->selected_bookmark_index, mouse_abspos);
+        }
+
+    }
+
+};
+
 class EditSelectedBookmarkCommand : public TextCommand {
 public:
     static inline const std::string cname = "edit_selected_bookmark";
@@ -2409,6 +2444,10 @@ public:
     int index = -1;
 
     EditSelectedBookmarkCommand(MainWidget* w) : TextCommand(cname, w) {};
+
+    void on_text_change(const QString& new_text) override {
+        widget->doc()->get_bookmarks()[widget->selected_bookmark_index].description = new_text.toStdWString();
+    }
 
     void pre_perform() {
 
@@ -2528,11 +2567,12 @@ public:
     GenericVisibleSelectCommand(std::string name, MainWidget* w) : Command(name, w) {};
 
     virtual std::vector<int> get_visible_item_indices() = 0;
+    virtual int get_selected_item_index() = 0;
     virtual void handle_indices_pre_perform() = 0;
 
     void pre_perform() override {
         if (!already_pre_performed) {
-            if (widget->selected_highlight_index == -1) {
+            if (get_selected_item_index() == -1) {
                 visible_item_indices = get_visible_item_indices();
                 n_required_tags = get_num_tag_digits(visible_item_indices.size());
 
@@ -2589,6 +2629,10 @@ class GenericHighlightCommand : public GenericVisibleSelectCommand {
 public:
     GenericHighlightCommand(std::string name, MainWidget* w) : GenericVisibleSelectCommand(name, w) {};
 
+    int get_selected_item_index() override{
+        return widget->selected_highlight_index;
+    }
+
     std::vector<int> get_visible_item_indices() override {
         return widget->main_document_view->get_visible_highlight_indices();
     }
@@ -2617,6 +2661,10 @@ class GenericVisibleBookmarkCommand : public GenericVisibleSelectCommand {
 public:
     GenericVisibleBookmarkCommand(std::string name, MainWidget* w) : GenericVisibleSelectCommand(name, w) {};
 
+    int get_selected_item_index() override{
+        return widget->selected_bookmark_index;
+    }
+
     std::vector<int> get_visible_item_indices() override {
         return widget->main_document_view->get_visible_bookmark_indices();
     }
@@ -2644,7 +2692,7 @@ class DeleteVisibleBookmarkCommand : public GenericVisibleBookmarkCommand {
 
 public:
     static inline const std::string cname = "delete_visible_bookmark";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Delete a visible bookmark";
     DeleteVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(cname, w) {};
 
     void perform_with_bookmark_selected() override {
@@ -3195,6 +3243,19 @@ public:
     bool requires_document() { return false; }
 };
 
+class ShowCustomContextMenuCommand : public TextCommand {
+public:
+    static inline const std::string cname = "show_custom_context_menu";
+    static inline const std::string hname = "";
+    ShowCustomContextMenuCommand(MainWidget* w) : TextCommand(cname, w) {};
+
+    void perform() {
+        widget->show_context_menu(QString::fromStdWString(text.value()));
+    }
+
+    bool requires_document() { return false; }
+};
+
 class ToggleDarkModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_dark_mode";
@@ -3453,6 +3514,7 @@ KeyboardSelectPointCommand::KeyboardSelectPointCommand(MainWidget* w, std::uniqu
 
 void KeyboardSelectPointCommand::on_cancel() {
     origin->on_cancel();
+    widget->set_highlighted_tags({});
 
 }
 
@@ -3491,6 +3553,7 @@ std::optional<Requirement> KeyboardSelectPointCommand::next_requirement(MainWidg
 void KeyboardSelectPointCommand::perform() {
 
     widget->clear_tag_prefix();
+    widget->set_highlighted_tags({});
     result = text.value();
 
     if (requires_rect) {
@@ -3547,6 +3610,13 @@ void KeyboardSelectPointCommand::set_symbol_requirement(char value) {
         }
         else {
             widget->set_tag_prefix(text.value());
+        }
+    }
+    // update selected tags
+    if (text.has_value()) {
+        if (text->size() >= 2) {
+            std::string tag = utf8_encode(text.value().substr(0, 2));
+            widget->set_highlighted_tags({ tag });
         }
     }
 }
@@ -3609,8 +3679,23 @@ public:
     static inline const std::string hname = "Select text using keyboard";
     KeyboardSelectCommand(MainWidget* w) : TextCommand(cname, w) {};
 
+    void on_text_change(const QString& new_text) override {
+        std::vector<std::string> selected_tags;
+        QStringList tags = new_text.split(" ");
+        for (auto& tag : tags) {
+            selected_tags.push_back(tag.toStdString());
+        }
+        widget->set_highlighted_tags(selected_tags);
+    }
+
+    void on_cancel() override {
+        widget->set_highlighted_tags({});
+
+    }
+
     void perform() {
         widget->handle_keyboard_select(text.value());
+        widget->set_highlighted_tags({});
     }
 
     void pre_perform() {
@@ -4764,10 +4849,24 @@ public:
     static inline const std::string hname = "";
     EmbedAnnotationsCommand(MainWidget* w) : Command(cname, w) {};
 
+    std::optional<std::wstring> file_path = {};
+
+    virtual void set_file_requirement(std::wstring value) {
+        file_path = value;
+    }
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!file_path.has_value()) {
+            Requirement req = { RequirementType::File, "File Path" };
+            return req;
+        }
+        return {};
+    }
+
     void perform() {
-        std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
-        if (embedded_pdf_file_name.size() > 0) {
-            widget->main_document_view->get_document()->embed_annotations(embedded_pdf_file_name);
+        //std::wstring embedded_pdf_file_name = select_new_pdf_file_name();
+        if (file_path->size() > 0) {
+            widget->main_document_view->get_document()->embed_annotations(file_path.value());
         }
     }
 };
@@ -5527,7 +5626,7 @@ public:
             return std::move(subcommand);
         }
         else {
-            return std::move(std::make_unique<LazyCommand>(subcommand->get_name(), widget, widget->command_manager, invocation));
+            return std::move(std::make_unique<LazyCommand>(subcommand_name, widget, widget->command_manager, invocation));
         }
     }
 
@@ -5851,6 +5950,21 @@ public:
         return -1;
     }
 
+
+    void on_text_change(const QString& new_text) {
+        if (is_modal) {
+            int mode_index = get_current_mode_index();
+            if (mode_index != -1) {
+                commands[mode_index]->on_text_change(new_text);
+            }
+        }
+        else {
+            if (commands.size() == 1) {
+                commands[0]->on_text_change(new_text);
+            }
+        }
+    }
+
     bool mode_matches(std::string current_mode, std::string command_mode) {
         for (auto c : command_mode) {
             if (current_mode.find(c) == std::string::npos) {
@@ -5865,11 +5979,22 @@ public:
             return name;
         }
         else {
-            std::string res;
-            for (auto& command : commands) {
-                res += command->get_name();
+            if (is_modal) {
+                std::string current_mode_string = widget->get_current_mode_string();
+                for (int i = 0; i < modes.size(); i++) {
+                    if (mode_matches(current_mode_string, modes[i])) {
+                        return commands[i]->get_name();
+                    }
+                }
             }
-            return res;
+            else {
+
+                std::string res;
+                for (auto& command : commands) {
+                    res += command->get_name();
+                }
+                return res;
+            }
             //return "[macro]" + commands[0]->get_name();
         }
     }
@@ -6518,6 +6643,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<NextChapterCommand>();
     register_command<PrevChapterCommand>();
     register_command<ShowContextMenuCommand>();
+    register_command<ShowCustomContextMenuCommand>();
     register_command<ToggleDarkModeCommand>();
     register_command<TogglePresentationModeCommand>();
     register_command<TurnOnPresentationModeCommand>();
@@ -6653,6 +6779,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<PrintUndocumentedConfigsCommand>();
     register_command<PrintNonDefaultConfigs>();
     register_command<SetWindowRectCommand>();
+    register_command<MoveSelectedBookmarkCommand>();
 
 
     for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {

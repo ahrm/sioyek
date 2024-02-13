@@ -132,6 +132,7 @@ private:
     bool is_helper = false;
     float percent_done = 0.0f;
     std::string tag_prefix = "";
+    std::vector<std::string> highlighted_tags;
 
     QIcon bookmark_icon;
     QIcon portal_icon;
@@ -328,11 +329,13 @@ public:
     void hide_rect_hints();
     bool is_showing_rect_hints();
     void get_color_for_current_mode(const float* input_color, float* output_color);
-    void render_ui_icon_for_current_color_mode(QPainter* painter, const QIcon& icon_black, const QIcon& icon_white, QRect rect);
+    void render_ui_icon_for_current_color_mode(QPainter* painter, const QIcon& icon_black, const QIcon& icon_white, QRect rect, bool is_highlighted=false);
     void render_text_highlights();
     void render_highlight_annotations();
     std::array<float, 3> cc3(const float* input_color);
     std::array<float, 4> cc4(const float* input_color);
+    QColor qcc3(const float* input_color);
+    QColor qcc4(const float* input_color);
     void set_overview_highlights(const std::vector<DocumentRect>& rects);
     bool needs_stencil_buffer();
     void draw_overview_background();
@@ -358,4 +361,6 @@ public:
     void clear_tag_prefix();
     void set_selected_highlight_index(int index);
     void set_selected_bookmark_index(int index);
+    void set_highlighted_tags(std::vector<std::string> tags);
+    bool is_tag_highlighted(const std::string& tag);
 };

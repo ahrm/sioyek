@@ -203,9 +203,10 @@ void matmul(const float m1[], const float m2[], float result[]) {
     }
 }
 
-void convert_color3(float* in_color, int* out_color);
-void convert_color4(float* in_color, int* out_color);
+void convert_color3(const float* in_color, int* out_color);
+void convert_color4(const float* in_color, int* out_color);
 QColor convert_float3_to_qcolor(const float* floats);
+QColor convert_float4_to_qcolor(const float* floats);
 std::string get_aplph_tag(int n, int max_n);
 fz_document* open_document_with_file_name(fz_context* context, std::wstring file_name);
 
