@@ -77,6 +77,7 @@ public:
 
     virtual void run();
     virtual std::string get_name();
+    virtual std::string get_human_readable_name();
     virtual std::wstring get_text_default_value();
     virtual ~Command();
 };
@@ -197,3 +198,14 @@ public:
 
     virtual void set_symbol_requirement(char value);
 };
+
+struct MenuItems;
+
+using RecursiveItem = std::variant<std::unique_ptr<Command>, std::unique_ptr<MenuItems>>;
+
+struct MenuItems {
+    std::wstring name;
+    std::vector<RecursiveItem> items;
+};
+
+std::unique_ptr<MenuItems> parse_menu_string(MainWidget* widget, QString name, QString menu_string);

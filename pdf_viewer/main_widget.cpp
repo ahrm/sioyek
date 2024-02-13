@@ -6668,42 +6668,92 @@ void MainWidget::show_context_menu(QString menu_string) {
     // (e.g. the right clicked highlight being selected) are displayed
     validate_render();
 
-    QMenu contextMenu("Context menu", this);
+    auto menu = parse_menu_string(this, "menu", menu_string);
+    show_recursive_context_menu(std::move(menu));
+    //QMenu contextMenu("Context menu", this);
+    //QStringList command_names;
+
+    //if (menu_string.size() == 0) {
+    //    command_names = QString::fromStdWString(CONTEXT_MENU_ITEMS).split('|');
+    //}
+    //else {
+    //    command_names = menu_string.split('|');
+    //}
+
+    //std::vector<QAction*> actions;
+    ////original_cursor_pos = QCursor::pos();
+    //context_menu_right_click_pos = QCursor::pos();
+
+    //for (auto command_name : command_names) {
+
+    //    std::string human_readable_name = command_name.toStdString();
+    //    if (command_manager->command_human_readable_names.find(command_name.toStdString()) != command_manager->command_human_readable_names.end()) {
+    //        human_readable_name = command_manager->command_human_readable_names[command_name.toStdString()];
+    //    }
+
+    //    QAction* action = new QAction(QString::fromStdString(human_readable_name), this);
+    //    actions.push_back(action);
+    //    connect(action, &QAction::triggered, [&, command_name]() {
+    //        execute_macro_if_enabled(command_name.toStdWString());
+    //        invalidate_render();
+    //    });
+    //    contextMenu.addAction(action);
+    //}
+
+    //contextMenu.exec(QCursor::pos());
+    //context_menu_right_click_pos = {};
+
+    //for (QAction* action : actions) {
+    //    delete action;
+    //}
+}
+
+QMenu* MainWidget::get_menu_from_items(std::unique_ptr<MenuItems> items, QWidget* parent) {
+    QMenu* contextMenu = new QMenu(QString::fromStdWString(items->name), parent);
     QStringList command_names;
 
-    if (menu_string.size() == 0) {
-        command_names = QString::fromStdWString(CONTEXT_MENU_ITEMS).split('|');
-    }
-    else {
-        command_names = menu_string.split('|');
-    }
-
     std::vector<QAction*> actions;
-    //original_cursor_pos = QCursor::pos();
     context_menu_right_click_pos = QCursor::pos();
 
-    for (auto command_name : command_names) {
+    for (auto&& subitem : items->items) {
 
-        std::string human_readable_name = command_name.toStdString();
-        if (command_manager->command_human_readable_names.find(command_name.toStdString()) != command_manager->command_human_readable_names.end()) {
-            human_readable_name = command_manager->command_human_readable_names[command_name.toStdString()];
+        if (std::holds_alternative<std::unique_ptr<Command>>(subitem)) {
+            std::unique_ptr<Command> subcommand = std::get<std::unique_ptr<Command>>(std::move(subitem));
+            std::string command_name = subcommand->get_human_readable_name();
+
+            QAction* action = new QAction(QString::fromStdString(command_name), contextMenu);
+            actions.push_back(action);
+            connect(action, &QAction::triggered, [&, command_name, subcommand = std::move(subcommand)]() mutable {
+                //execute_macro_if_enabled(command_name.toStdWString());
+                handle_command_types(std::move(subcommand), 0);
+                invalidate_render();
+            });
+            contextMenu->addAction(action);
         }
+        else {
+            std::unique_ptr<MenuItems> submenu_ = std::get<std::unique_ptr<MenuItems>>(std::move(subitem));
+            QMenu* submenu = get_menu_from_items(std::move(submenu_), contextMenu);
+            contextMenu->addMenu(submenu);
 
-        QAction* action = new QAction(QString::fromStdString(human_readable_name), this);
-        actions.push_back(action);
-        connect(action, &QAction::triggered, [&, command_name]() {
-            execute_macro_if_enabled(command_name.toStdWString());
-            invalidate_render();
-        });
-        contextMenu.addAction(action);
+        }
     }
+    return contextMenu;
+}
 
-    contextMenu.exec(QCursor::pos());
+void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
+    // since the context menu overrides the main widget's event loop, the validate_render
+    // call below is necessary to ensure that changes due to showing the context menu
+    // (e.g. the right clicked highlight being selected) are displayed
+    validate_render();
+
+    context_menu_right_click_pos = QCursor::pos();
+
+    QMenu* context_menu = get_menu_from_items(std::move(items), this);
+
+    context_menu->exec(QCursor::pos());
     context_menu_right_click_pos = {};
 
-    for (QAction* action : actions) {
-        delete action;
-    }
+    delete context_menu;
 }
 
 void MainWidget::handle_debug_command() {
