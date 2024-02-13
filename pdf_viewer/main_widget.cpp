@@ -10364,7 +10364,7 @@ void MainWidget::move_selected_bookmark_to_mouse_cursor() {
         }
         else{
             float width = bm.end_x - bm.begin_x;
-            float height = bm.end_y - bm.end_x;
+            float height = bm.end_y - bm.begin_y;
             bm.begin_x = mouse_abspos.x;
             bm.begin_y = mouse_abspos.y;
             bm.end_x = bm.begin_x + width;
