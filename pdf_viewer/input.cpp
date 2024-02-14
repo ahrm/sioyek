@@ -1271,7 +1271,9 @@ public:
     }
 
     void perform() {
-        widget->perform_search(this->text.value(), false, INCREMENTAL_SEARCH);
+        // this search is not incremental even if incremental search is activated
+        // (for example it should update the search terms list)
+        widget->perform_search(this->text.value(), false, false);
         if (TOUCH_MODE) {
             widget->show_search_buttons();
         }
@@ -5900,12 +5902,53 @@ public:
 	bool requires_document() { return false; }
 };
 
+class SaveConfigCommand : public Command {
+	std::string config_name;
+public:
+	SaveConfigCommand(MainWidget* widget, std::string config_name_) : Command("saveconfig_" + config_name_, widget) {
+		config_name = config_name_;
+	}
+
+	void perform() {
+        auto conf = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
+        conf->is_auto = true;
+        widget->save_auto_config();
+	}
+
+	bool requires_document() { return false; }
+};
+
+
+class DeleteConfigCommand : public Command {
+	std::string config_name;
+public:
+	DeleteConfigCommand(MainWidget* widget, std::string config_name_) : Command("deleteconfig_" + config_name_, widget) {
+		config_name = config_name_;
+	}
+
+	void perform() {
+        auto conf = widget->config_manager->get_mut_config_with_name(utf8_decode(config_name));
+        conf->is_auto = false;
+        widget->save_auto_config();
+	}
+
+	bool requires_document() { return false; }
+};
+
 class ConfigCommand : public Command {
     std::string config_name;
     std::optional<std::wstring> text = {};
     ConfigManager* config_manager;
+    bool save_after_set = false;
 public:
-    ConfigCommand(MainWidget* widget_, std::string config_name_, ConfigManager* config_manager_) : Command("setconfig_" + config_name_, widget_), config_manager(config_manager_) {
+    ConfigCommand(
+        MainWidget* widget_,
+        std::string config_name_,
+        ConfigManager* config_manager_,
+        bool save_after_set_=false) :
+        Command((save_after_set_ ? "setsaveconfig_" : "setconfig_") + config_name_, widget_), config_manager(config_manager_) {
+
+        save_after_set = save_after_set_;
         config_name = config_name_;
     }
 
@@ -6024,7 +6067,7 @@ public:
                         int prev_value = *config_ptr;
                         int new_value = QString::fromStdWString(text.value()).right(text.value().size() - 2).toInt();
                         *config_ptr += mult * new_value;
-                        widget->on_config_changed(config_name);
+                        widget->on_config_changed(config_name, save_after_set);
                         return;
                     }
 
@@ -6034,13 +6077,13 @@ public:
                         float prev_value = *config_ptr;
                         float new_value = QString::fromStdWString(text.value()).right(text.value().size() - 2).toFloat();
                         *config_ptr += mult * new_value;
-                        widget->on_config_changed(config_name);
+                        widget->on_config_changed(config_name, save_after_set);
                         return;
                     }
                 }
             }
             if (widget->config_manager->deserialize_config(config_name, text.value())) {
-                widget->on_config_changed(config_name);
+                widget->on_config_changed(config_name, save_after_set);
             }
         }
     }
@@ -6578,9 +6621,20 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 
         std::string confname = utf8_encode(conf.name);
         std::string config_set_command_name = "setconfig_" + confname;
-        //commands.push_back({ config_set_command_name, true, false , false, false, true, {} });
         new_commands[config_set_command_name] = [confname, config_manager](MainWidget* w) {return std::make_unique<ConfigCommand>(w, confname, config_manager); };
         command_required_prefixes[QString::fromStdString(config_set_command_name)] = "setconfig_";
+
+        std::string config_setsave_command_name = "setsaveconfig_" + confname;
+        new_commands[config_setsave_command_name] = [confname, config_manager](MainWidget* w) {return std::make_unique<ConfigCommand>(w, confname, config_manager, true); };
+        command_required_prefixes[QString::fromStdString(config_setsave_command_name)] = "setsaveconfig_";
+
+        std::string config_save_command_name = "saveconfig_" + confname;
+        new_commands[config_save_command_name] = [confname, config_manager](MainWidget* w) {return std::make_unique<SaveConfigCommand>(w, confname); };
+        command_required_prefixes[QString::fromStdString(config_save_command_name)] = "saveconfig_";
+
+        std::string config_delete_command_name = "deleteconfig_" + confname;
+        new_commands[config_delete_command_name] = [confname, config_manager](MainWidget* w) {return std::make_unique<DeleteConfigCommand>(w, confname); };
+        command_required_prefixes[QString::fromStdString(config_delete_command_name)] = "deleteconfig_";
 
         if (conf.config_type == ConfigType::Bool) {
             std::string config_toggle_command_name = "toggleconfig_" + confname;

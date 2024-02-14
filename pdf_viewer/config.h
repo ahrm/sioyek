@@ -85,6 +85,7 @@ struct Config {
     bool (*validator) (const std::wstring& value) = nullptr;
     std::variant<FloatExtras, IntExtras, EmptyExtras> extras = EmptyExtras{};
     std::wstring default_value_string;
+    bool is_auto = false;
 
     //    QWidget* (*configurator_ui)(MainWidget* main_widget, void* location);
 
@@ -94,6 +95,7 @@ struct Config {
     std::wstring get_type_string() const;
     std::wstring get_current_string();
     bool has_changed_from_default();
+    bool is_empty_string();
 
 };
 
@@ -109,11 +111,12 @@ public:
 
     ConfigManager(const Path& default_path, const Path& auto_path, const std::vector<Path>& user_paths);
     void serialize(const Path& path);
+    void serialize_auto_configs(std::wofstream& stream);
     void restore_default();
     void clear_file(const Path& path);
     void persist_config();
     void deserialize(std::vector<std::string>* changed_config_names, const Path& default_file_path, const Path& auto_path, const std::vector<Path>& user_file_paths);
-    void deserialize_file(std::vector<std::string>* changed_config_names, const Path& file_path, bool warn_if_not_exists = false);
+    void deserialize_file(std::vector<std::string>* changed_config_names, const Path& file_path, bool warn_if_not_exists = false, bool is_auto=false);
     template<typename T>
     const T* get_config(std::wstring name) {
 
@@ -130,6 +133,7 @@ public:
     std::vector<Config>* get_configs_ptr();
     bool deserialize_config(std::string config_name, std::wstring config_value);
     void restore_defaults_in_memory();
+    std::vector<std::wstring> get_auto_config_names();
 };
 
 class ConfigModel : public QAbstractTableModel {

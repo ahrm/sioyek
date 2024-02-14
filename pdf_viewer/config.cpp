@@ -2403,16 +2403,49 @@ void ConfigManager::clear_file(const Path& path) {
     file.close();
 }
 
+void ConfigManager::serialize_auto_configs(std::wofstream& stream) {
+    std::vector<std::wstring> auto_config_names = get_auto_config_names();
+    std::vector<std::wstring> exceptions = {
+        L"main_window_size",
+        L"single_main_window_size",
+        L"main_window_move",
+        L"single_main_window_move",
+        L"helper_window_size",
+        L"helper_window_move",
+        L"overview_size",
+        L"overview_offset",
+    };
+
+    auto is_exception = [&](const std::wstring& config_name) {
+        return std::find(exceptions.begin(), exceptions.end(), config_name) != exceptions.end();
+        };
+
+    for (auto& conf : configs) {
+        if (conf.is_auto && (!is_exception(conf.name))) {
+            if (conf.is_empty_string()) {
+                continue;
+            }
+            if (!conf.has_changed_from_default()) {
+                continue;
+            }
+
+            std::wstringstream ss;
+            stream << conf.name << " ";
+            if (conf.get_value()) {
+                conf.serialize(conf.get_value(), ss);
+            }
+            stream << ss.str() << std::endl;
+        }
+    }
+}
 void ConfigManager::serialize(const Path& path) {
 
     std::wofstream file = open_wofstream(path.get_path());
 
     for (auto it : configs) {
 
-        if ((it.config_type == ConfigType::String) || (it.config_type == ConfigType::Macro) || (it.config_type == ConfigType::FilePath) || (it.config_type == ConfigType::FolderPath)) {
-            if (((std::wstring*)it.value)->size() == 0) {
-                continue;
-            }
+        if (it.is_empty_string()) {
+            continue;
         }
         if (!it.has_changed_from_default()){
             continue;
@@ -2429,7 +2462,7 @@ void ConfigManager::serialize(const Path& path) {
     file.close();
 }
 
-void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_names, const Path& file_path, bool warn_if_not_exists) {
+void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_names, const Path& file_path, bool warn_if_not_exists, bool is_auto) {
 
     std::wstring line;
     std::wifstream default_file = open_wifstream(file_path.get_path());
@@ -2532,6 +2565,10 @@ void ConfigManager::deserialize_file(std::vector<std::string>* changed_config_na
 
             std::wstringstream config_value_stream(config_value);
 
+            if (is_auto) {
+                conf->is_auto = true;
+            }
+
             if ((conf != nullptr) && (conf->validator != nullptr)) {
                 if (!conf->validator(config_value)) {
                     std::wcout << L"Error in config file " << file_path.get_path() << L" at line " << line_number << L" : " << line << L"\n";
@@ -2569,7 +2606,7 @@ void ConfigManager::deserialize(std::vector<std::string>* changed_config_names, 
     deserialize_file(changed_config_names, default_file_path);
 
     if (!NO_AUTO_CONFIG) {
-        deserialize_file(changed_config_names, auto_path);
+        deserialize_file(changed_config_names, auto_path, false, true);
     }
 
     for (const auto& user_file_path : user_file_paths) {
@@ -2757,4 +2794,24 @@ std::wstring Config::get_current_string(){
 
 bool Config::has_changed_from_default(){
     return get_current_string() != default_value_string;
+}
+
+std::vector<std::wstring> ConfigManager::get_auto_config_names() {
+    std::vector<std::wstring> res;
+
+    for (auto& c : configs) {
+        if (c.is_auto) {
+            res.push_back(c.name);
+        }
+    }
+    return res;
+}
+
+bool Config::is_empty_string() {
+    if ((config_type == ConfigType::String) || (config_type == ConfigType::Macro) || (config_type == ConfigType::FilePath) || (config_type == ConfigType::FolderPath)) {
+        if (((std::wstring*)value)->size() == 0) {
+            return true;
+        }
+    }
+    return false;
 }

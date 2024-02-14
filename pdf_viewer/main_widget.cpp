@@ -4182,6 +4182,10 @@ void MainWidget::handle_link_click(const PdfLink& link) {
 void MainWidget::save_auto_config() {
     std::wofstream outfile(auto_config_path.get_path_utf8());
     outfile << get_serialized_configuration_string();
+#ifndef SIOYEK_ANDROID
+    outfile << L"\n";
+    config_manager->serialize_auto_configs(outfile);
+#endif
     outfile.close();
 }
 
@@ -6757,7 +6761,11 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
-    show_contextual_context_menu();
+    //std::vector<std::wstring> auto_config_names = config_manager->get_auto_config_names();
+    //for (auto name : auto_config_names) {
+    //    std::wcout << name << L"\n";
+    //}
+    //show_contextual_context_menu();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -7205,10 +7213,18 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
     }
 }
 
-void MainWidget::on_config_changed(std::string config_name) {
+void MainWidget::on_config_changed(std::string config_name, bool should_save) {
     std::vector<std::string> config_names;
     config_names.push_back(config_name);
     on_configs_changed(&config_names);
+
+    if (should_save) {
+        auto conf = config_manager->get_mut_config_with_name(utf8_decode(config_name));
+        if (conf) {
+            conf->is_auto = true;
+            save_auto_config();
+        }
+    }
 }
 
 void MainWidget::handle_undo_marked_data() {
