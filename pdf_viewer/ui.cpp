@@ -643,7 +643,7 @@ HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent) {
     //layout = new QHBoxLayout();
 
     //delete_highlight_button = new QPushButton("Delete");
-    //buttons_widget = new 
+    //buttons_widget = new
     highlight_buttons = new TouchHighlightButtons(main_widget->get_current_selected_highlight_type(), this);
 
     QObject::connect(highlight_buttons, &TouchHighlightButtons::deletePressed, [&]() {
@@ -1597,7 +1597,8 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
         }
         if ((event->type() == QEvent::KeyPress)) {
             QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-            bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
+            bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier);
+            bool is_meta_pressed = key_event->modifiers().testFlag(Qt::MetaModifier);
             bool is_alt_pressed = key_event->modifiers().testFlag(Qt::AltModifier);
 
             if (TOUCH_MODE) {
