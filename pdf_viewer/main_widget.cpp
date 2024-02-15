@@ -10414,5 +10414,5 @@ bool MainWidget::handle_annotation_move_finish(){
         return true;
     }
 
-    false;
+    return false;
 }
