@@ -6679,7 +6679,7 @@ void CommandManager::handle_new_javascript_command(std::wstring command_name_, J
         if (code_file.open(QIODevice::ReadOnly)) {
             QTextStream in(&code_file);
             QString code = in.readAll();
-            new_commands[command_name] = [command_name, code, entry_point, is_async, this](MainWidget* w) {
+            new_commands[command_name] = [command_name, code, entry_point=entry_point, is_async, this](MainWidget* w) {
                 return std::make_unique<JavascriptCommand>(command_name, code.toStdWString(), entry_point, is_async, w);
                 };
         }
