@@ -6761,6 +6761,7 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
+    pdf_renderer->debug();
     //std::vector<std::wstring> auto_config_names = config_manager->get_auto_config_names();
     //for (auto name : auto_config_names) {
     //    std::wcout << name << L"\n";

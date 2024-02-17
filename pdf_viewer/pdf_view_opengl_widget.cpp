@@ -1105,6 +1105,8 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
                 (h_index + 1) * slice_width,
                 (v_index + 1) * slice_height
             };
+            //WindowRect page_irect = DocumentRect{page_rect, page_number}.to_window(document_view);
+
             WindowRect page_irect;
             page_irect.x0 = ((full_page_irect.x1 - full_page_irect.x0) / nh_) * h_index;
             page_irect.x1 = ((full_page_irect.x1 - full_page_irect.x0) / nh_) * (h_index + 1);
@@ -1383,16 +1385,18 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                     int nh, nv;
                     num_slices_for_page_rect(page_rect, &nh, &nv);
 
-                    pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-                        max_page + i,
-                        document_view->get_document()->should_render_pdf_annotations(),
-                        -1,
-                        nh,
-                        nv,
-                        document_view->get_zoom_level(),
-                        devicePixelRatioF(),
-                        nullptr,
-                        nullptr);
+                    for (int k = 0; k < nh * nv; k++) {
+                        pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+                            max_page + i,
+                            document_view->get_document()->should_render_pdf_annotations(),
+                            k,
+                            nh,
+                            nv,
+                            document_view->get_zoom_level(),
+                            devicePixelRatioF(),
+                            nullptr,
+                            nullptr);
+                    }
                 }
             }
         }

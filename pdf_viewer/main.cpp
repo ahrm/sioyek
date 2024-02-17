@@ -292,7 +292,7 @@ std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW = L"";
 
 bool RIGHT_CLICK_CONTEXT_MENU = false;
 #ifdef SIOYEK_ANDROID
-int NUM_CACHED_PAGES = 10;
+int NUM_CACHED_PAGES = 3;
 #else
 int NUM_CACHED_PAGES = 5;
 #endif
