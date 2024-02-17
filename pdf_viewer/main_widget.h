@@ -811,6 +811,7 @@ public:
     void download_selected_text();
     void smart_jump_to_selected_text();
     void show_text_prompt(std::wstring initial_value, std::function<void(std::wstring)> on_select);
+    void show_touch_buttons_for_overview_type(std::string type);
     void set_overview_page(std::optional<OverviewState> overview);
     std::vector<std::wstring> get_new_files_from_scan_directory();
     void scan_new_files_from_scan_directory();

@@ -1320,7 +1320,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                 return result;
             }
 
-            std::wstring item_regex(L"[a-zA-Z]{2,}[ \t]+[0-9]+(\.[0-9]+)*");
+            std::wstring item_regex(L"[a-zA-Z]{2,}\\.?[ \t]+[0-9]+(\.[0-9]+)*");
             std::wstring reference_regex(L"\\[[a-zA-Z0-9, ]+\\]");
             std::wstring equation_regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
 

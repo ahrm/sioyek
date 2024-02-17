@@ -8317,6 +8317,12 @@ bool MainWidget::goto_ith_next_overview(int i) {
 }
 
 void MainWidget::on_overview_source_updated() {
+    if (current_widget_stack.size() > 0 && dynamic_cast<TouchGenericButtons*>(current_widget_stack.back())) {
+        if (index_into_candidates >= 0 && index_into_candidates < smart_view_candidates.size()) {
+            auto& current_candidate = smart_view_candidates[index_into_candidates];
+            show_touch_buttons_for_overview_type(reference_type_string(current_candidate.reference_type));
+        }
+    }
 }
 
 std::optional<AbsoluteRect> MainWidget::get_overview_source_rect() {
@@ -8569,6 +8575,11 @@ void MainWidget::handle_goto_ruler_portal(std::string tag) {
 
 
 void MainWidget::show_touch_buttons(std::vector<std::wstring> buttons, std::vector<std::wstring> tips, std::function<void(int, std::wstring)> on_select, bool top) {
+
+    if (current_widget_stack.size() > 0 && dynamic_cast<TouchGenericButtons*>(current_widget_stack.back())) {
+        pop_current_widget();
+    }
+
     TouchGenericButtons* generic_buttons = new TouchGenericButtons(buttons, tips, top, this);
     QObject::connect(generic_buttons, &TouchGenericButtons::buttonPressed, [this, on_select](int index, std::wstring name) {
         on_select(index, name);
@@ -8667,6 +8678,50 @@ void MainWidget::show_text_prompt(std::wstring initial_value, std::function<void
     show_current_widget();
 }
 
+void MainWidget::show_touch_buttons_for_overview_type(std::string type) {
+    std::vector<std::wstring> button_icons;
+    std::vector<std::wstring> button_names;
+
+    button_icons = { L"qrc:/icons/go-to-file.svg" };
+    button_names = { L"Go" };
+
+    if (type == "reference" || type == "link") {
+        button_icons.push_back(L"qrc:/icons/paper-download.svg");
+        button_names.push_back(L"Download");
+    }
+
+    if (smart_view_candidates.size() > 1) {
+        button_icons.insert(button_icons.begin(), L"qrc:/icons/next.svg");
+        button_names.insert(button_names.begin(), L"Prev");
+        button_icons.insert(button_icons.end(), L"qrc:/icons/previous.svg");
+        button_names.insert(button_names.end(), L"Next");
+    }
+    show_touch_buttons(
+        button_icons,
+        button_names,
+        [this](int index, std::wstring name) {
+            QString name_qstring = QString::fromStdWString(name);
+
+            if (name_qstring.endsWith("next.svg")) {
+                goto_ith_next_overview(-1);
+                invalidate_render();
+            }
+            if (name_qstring.endsWith("previous.svg")) {
+                goto_ith_next_overview(1);
+                invalidate_render();
+            }
+            if (name_qstring.endsWith("go-to-file.svg")) {
+                goto_overview();
+                invalidate_render();
+            }
+            if (name_qstring.endsWith("paper-download.svg")) {
+                //execute_macro_if_enabled(L"download_overview_paper");
+                auto command = command_manager->get_command_with_name(this, "download_overview_paper");
+                handle_command_types(std::move(command), 1);
+            }
+        });
+}
+
 void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
 
     if (!overview){
@@ -8676,47 +8731,7 @@ void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
         if (overview) {
             if (!opengl_widget->get_overview_page().has_value()) {
                 // show the overview buttons when a new overview is displayed
-                std::vector<std::wstring> button_icons;
-                std::vector<std::wstring> button_names;
-
-                button_icons = { L"qrc:/icons/go-to-file.svg" };
-                button_names = { L"Go" };
-
-                if (overview->overview_type == "reference" || overview->overview_type == "link") {
-                    button_icons.push_back(L"qrc:/icons/paper-download.svg" );
-                    button_names.push_back(L"Download");
-                }
-
-                if (smart_view_candidates.size() > 1){
-                    button_icons.insert(button_icons.begin(), L"qrc:/icons/next.svg");
-                    button_names.insert(button_names.begin(), L"Prev");
-                    button_icons.insert(button_icons.end(), L"qrc:/icons/previous.svg");
-                    button_names.insert(button_names.end(), L"Next");
-                }
-                show_touch_buttons(
-                    button_icons,
-                    button_names,
-                    [this](int index, std::wstring name) {
-                    QString name_qstring = QString::fromStdWString(name);
-
-                    if (name_qstring.endsWith("next.svg")) {
-                        goto_ith_next_overview(-1);
-                        invalidate_render();
-                    }
-                    if (name_qstring.endsWith("previous.svg")) {
-                        goto_ith_next_overview(1);
-                        invalidate_render();
-                    }
-                    if (name_qstring.endsWith("go-to-file.svg")) {
-                        goto_overview();
-                        invalidate_render();
-                    }
-                    if (name_qstring.endsWith("paper-download.svg")) {
-                        //execute_macro_if_enabled(L"download_overview_paper");
-                        auto command = command_manager->get_command_with_name(this, "download_overview_paper");
-                        handle_command_types(std::move(command), 1);
-                    }
-                    });
+                show_touch_buttons_for_overview_type(overview->overview_type.value_or(""));
             }
         }
         else {
