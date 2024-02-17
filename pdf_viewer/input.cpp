@@ -45,6 +45,7 @@ extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 extern bool INCREMENTAL_SEARCH;
 
+extern float SMOOTH_MOVE_MAX_VELOCITY;
 bool is_command_string_modal(const std::wstring& command_name) {
     return std::find(command_name.begin(), command_name.end(), '[') != command_name.end();
 }
@@ -2708,11 +2709,12 @@ public:
     virtual bool is_down() = 0;
 
     void perform() {
-        widget->handle_move_smooth_press(is_down());
+        widget->handle_move_smooth_hold(is_down());
+        widget->set_fixed_velocity(is_down() ? -SMOOTH_MOVE_MAX_VELOCITY : SMOOTH_MOVE_MAX_VELOCITY);
     }
 
     void perform_up() {
-        if (was_held) widget->velocity_y = 0;
+        widget->set_fixed_velocity(0);
     }
 
     bool is_holdable() {

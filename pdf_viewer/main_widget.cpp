@@ -200,7 +200,6 @@ extern std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS;
 extern std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 extern float SMOOTH_MOVE_MAX_VELOCITY;
-extern float SMOOTH_MOVE_INITIAL_VELOCITY;
 
 extern std::wstring RIGHT_CLICK_COMMAND;
 extern std::wstring MIDDLE_CLICK_COMMAND;
@@ -1562,13 +1561,17 @@ void MainWidget::validate_render() {
         }
         dv()->move(move_x, move_y);
 
-        velocity_x = dampen_velocity(velocity_x, secs);
-        velocity_y = dampen_velocity(velocity_y, secs);
-
-        if (!TOUCH_MODE) {
-            // when using smooth_move commands not in touch mode we stop much faster
+        if (!is_velocity_fixed) {
             velocity_x = dampen_velocity(velocity_x, secs);
             velocity_y = dampen_velocity(velocity_y, secs);
+        }
+
+        if (!TOUCH_MODE) {
+            if (!is_velocity_fixed) {
+                // when using smooth_move commands not in touch mode we stop much faster
+                velocity_x = dampen_velocity(velocity_x, secs);
+                velocity_y = dampen_velocity(velocity_y, secs);
+            }
         }
 
         if (!is_moving()) {
@@ -1642,6 +1645,9 @@ void MainWidget::validate_render() {
     }
     if (is_moving()) {
         is_render_invalidated = true;
+        if (!hasFocus()) { // stop scrolling if the windows doesn't have focus
+            set_fixed_velocity(0);
+        }
     }
 }
 
@@ -10271,18 +10277,18 @@ void MainWidget::focus_on_character_offset_into_document(int character_offset_in
     invalidate_render();
 }
 
-void MainWidget::handle_move_smooth_press(bool down) {
-
-    float mult = down ? -1 : 1;
-
-    velocity_y += mult * SMOOTH_MOVE_INITIAL_VELOCITY;
-    if (std::abs(velocity_y) > SMOOTH_MOVE_MAX_VELOCITY) {
-        if (down) velocity_y = -SMOOTH_MOVE_MAX_VELOCITY;
-        else velocity_y = SMOOTH_MOVE_MAX_VELOCITY;
-    }
-    validation_interval_timer->setInterval(0);
-    last_speed_update_time = QTime::currentTime();
-}
+//void MainWidget::handle_move_smooth_press(bool down) {
+//
+//    float mult = down ? -1 : 1;
+//
+//    velocity_y += mult * SMOOTH_MOVE_INITIAL_VELOCITY;
+//    if (std::abs(velocity_y) > SMOOTH_MOVE_MAX_VELOCITY) {
+//        if (down) velocity_y = -SMOOTH_MOVE_MAX_VELOCITY;
+//        else velocity_y = SMOOTH_MOVE_MAX_VELOCITY;
+//    }
+//    validation_interval_timer->setInterval(0);
+//    last_speed_update_time = QTime::currentTime();
+//}
 
 void MainWidget::handle_move_smooth_hold(bool down) {
 
@@ -10421,4 +10427,12 @@ bool MainWidget::handle_annotation_move_finish(){
     }
 
     return false;
+}
+
+void MainWidget::set_fixed_velocity(float vel) {
+    velocity_y = vel;
+    is_velocity_fixed = true;
+    if (vel == 0) {
+        is_velocity_fixed = false;
+    }
 }

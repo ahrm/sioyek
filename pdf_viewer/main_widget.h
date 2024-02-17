@@ -660,6 +660,7 @@ public:
     std::deque<std::pair<QTime, QPoint>> position_buffer;
     float velocity_x = 0;
     float velocity_y = 0;
+    bool is_velocity_fixed = false;
 
     // indicates if mouse was in next/prev ruler rect in touch mode
     // if this is the case, we use mouse movement to perform next/prev ruler command
@@ -931,7 +932,7 @@ public:
     QString get_rest_of_document_pages_text();
     void focus_on_character_offset_into_document(int character_offset_into_document);
     // void stop_tts_service();
-    void handle_move_smooth_press(bool down);
+    //void handle_move_smooth_press(bool down);
     void handle_move_smooth_hold(bool down);
     void handle_toggle_two_page_mode();
     void ensure_zero_interval_timer();
@@ -943,6 +944,7 @@ public:
     AbsoluteDocumentPos get_mouse_abspos();
     void move_selected_bookmark_to_mouse_cursor();
     bool handle_annotation_move_finish();
+    void set_fixed_velocity(float vel);
 };
 
 MainWidget* get_window_with_window_id(int window_id);

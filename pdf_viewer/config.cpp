@@ -220,7 +220,7 @@ extern float EPUB_FONT_SIZE;
 extern std::wstring EPUB_CSS;
 
 extern float SMOOTH_MOVE_MAX_VELOCITY;
-extern float SMOOTH_MOVE_INITIAL_VELOCITY;
+//extern float SMOOTH_MOVE_INITIAL_VELOCITY;
 
 extern UIRect PORTRAIT_BACK_UI_RECT;
 extern UIRect PORTRAIT_FORWARD_UI_RECT;
@@ -2307,15 +2307,15 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         nullptr,
         FloatExtras{0.0f, 100000.0f}
         });
-    configs.push_back({
-        L"smooth_move_initial_velocity",
-        ConfigType::Float,
-        &SMOOTH_MOVE_INITIAL_VELOCITY,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 100000.0f}
-        });
+    //configs.push_back({
+    //    L"smooth_move_initial_velocity",
+    //    ConfigType::Float,
+    //    &SMOOTH_MOVE_INITIAL_VELOCITY,
+    //    float_serializer,
+    //    float_deserializer,
+    //    nullptr,
+    //    FloatExtras{0.0f, 100000.0f}
+    //    });
     configs.push_back({
         L"epub_width",
         ConfigType::Float,
