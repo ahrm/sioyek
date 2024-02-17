@@ -3984,9 +3984,12 @@ int Document::find_reference_page_with_reference_text(std::wstring ref) {
     std::vector<int> filtered_indices;
 
     for (auto index : found_indices) {
-        int context_first = std::max(index - 100, 0);
-        int context_last = std::min(index + 100, static_cast<int>(super_fast_search_index.size()-1));
+        const int context_prev_size = 50;
+        const int context_next_size = 400;
+        int context_first = std::max(index - context_prev_size, 0);
+        int context_last = std::min(index + context_next_size, static_cast<int>(super_fast_search_index.size()-1));
         bool found_all = true;
+        std::wstring context_substring = super_fast_search_index.substr(context_first, context_last - context_first);
 
         for (int i = 0; i < parts.size(); i++) {
             if (parts[i].size() < 4 && parts[i].startsWith("et")) {
@@ -4013,7 +4016,7 @@ int Document::find_reference_page_with_reference_text(std::wstring ref) {
     if (filtered_indices.size() > 0) {
 
         int res_page = 0;
-        while ((res_page < super_fast_page_begin_indices.size() - 1) && super_fast_page_begin_indices[res_page] < filtered_indices.back()) {
+        while ((res_page < super_fast_page_begin_indices.size() - 1) && super_fast_page_begin_indices[res_page + 1] < filtered_indices.back()) {
             res_page++;
         }
 
