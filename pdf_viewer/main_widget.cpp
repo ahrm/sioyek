@@ -501,9 +501,12 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
 }
 
-void MainWidget::set_overview_position(int page, float offset) {
+void MainWidget::set_overview_position(int page, float offset, std::optional<std::string> overview_type) {
     if (page >= 0) {
-        set_overview_page(OverviewState{ DocumentPos{ page, 0, offset }.to_absolute(doc()).y, 0, -1, nullptr});
+
+        auto overview_state = OverviewState{ DocumentPos{ page, 0, offset }.to_absolute(doc()).y, 0, -1, nullptr };
+        overview_state.overview_type = overview_type;
+        set_overview_page(overview_state);
         invalidate_render();
     }
 }
@@ -521,7 +524,7 @@ void MainWidget::set_overview_link(PdfLink link) {
         current_candidate.source_text = source_text;
         smart_view_candidates = { current_candidate };
         index_into_candidates = 0;
-        set_overview_position(page - 1, offset_y);
+        set_overview_position(page - 1, offset_y, "link");
     }
 }
 
@@ -3312,6 +3315,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
                 OverviewState overview;
                 overview.doc = dst_doc;
                 overview.absolute_offset_y = portal.value().dst.book_state.offset_y;
+                overview.overview_type = "portal";
                 set_overview_page(overview);
                 invalidate_render();
                 return true;
@@ -3343,7 +3347,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
         //current_candid.target_pos = reference_info.targets[0];
         //current_candid.source_text = reference_info.source_text;
         //smart_view_candidates = { current_candid };
-        set_overview_position(reference_info.targets[0].page, reference_info.targets[0].y);
+        set_overview_position(reference_info.targets[0].page, reference_info.targets[0].y, reference_type_string(reference_info.reference_type));
         opengl_widget->set_overview_highlights(reference_info.overview_highlight_rects);
         return true;
     }
@@ -5212,7 +5216,7 @@ void MainWidget::overview_to_definition() {
             DocumentPos first_docpos = candidates[0].get_docpos(main_document_view);
             smart_view_candidates = candidates;
             index_into_candidates = 0;
-            set_overview_position(first_docpos.page, first_docpos.y);
+            set_overview_position(first_docpos.page, first_docpos.y, reference_type_string(candidates[0].reference_type));
             on_overview_source_updated();
         }
     }
@@ -8668,13 +8672,20 @@ void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
                 // show the overview buttons when a new overview is displayed
                 std::vector<std::wstring> button_icons;
                 std::vector<std::wstring> button_names;
-                if (smart_view_candidates.size() > 1){
-                    button_icons = { L"qrc:/icons/next.svg", L"qrc:/icons/go-to-file.svg", L"qrc:/icons/paper-download.svg", L"qrc:/icons/previous.svg"};
-                    button_names = {L"Prev", L"Go", L"Download", L"Next"};
+
+                button_icons = { L"qrc:/icons/go-to-file.svg" };
+                button_names = { L"Go" };
+
+                if (overview->overview_type == "reference" || overview->overview_type == "link") {
+                    button_icons.push_back(L"qrc:/icons/paper-download.svg" );
+                    button_names.push_back(L"Download");
                 }
-                else{
-                    button_icons = { L"qrc:/icons/go-to-file.svg", L"qrc:/icons/paper-download.svg"};
-                    button_names = {L"Go", L"Download"};
+
+                if (smart_view_candidates.size() > 1){
+                    button_icons.insert(button_icons.begin(), L"qrc:/icons/next.svg");
+                    button_names.insert(button_names.begin(), L"Prev");
+                    button_icons.insert(button_icons.end(), L"qrc:/icons/previous.svg");
+                    button_names.insert(button_names.end(), L"Next");
                 }
                 show_touch_buttons(
                     button_icons,

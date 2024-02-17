@@ -527,7 +527,7 @@ public:
     bool focus_on_visual_mark_pos(bool moving_down);
     void toggle_visual_scroll_mode();
     void set_overview_link(PdfLink link);
-    void set_overview_position(int page, float offset);
+    void set_overview_position(int page, float offset, std::optional<std::string> overview_type = {});
     ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects = nullptr);
     TextUnderPointerInfo find_location_of_text_under_pointer(DocumentPos docpos, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
