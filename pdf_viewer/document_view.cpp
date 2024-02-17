@@ -418,11 +418,18 @@ WindowPos DocumentView::document_to_window_pos_in_pixels_uncentered(DocumentPos 
 }
 
 WindowPos DocumentView::document_to_window_pos_in_pixels_banded(DocumentPos doc_pos) {
-    AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
-    WindowPos window_pos;
-    window_pos.y = static_cast<int>(std::roundf((abspos.y - offset.y) * zoom_level + static_cast<float>(view_height) / 2.0f));
-    window_pos.x = static_cast<int>(std::roundf((abspos.x + offset.x) * zoom_level + static_cast<float>(view_width) / 2.0f));
-    return window_pos;
+    if (is_two_page_mode() || (REAL_PAGE_SEPARATION)) {
+        VirtualPos vpos = document_to_virtual_pos(doc_pos);
+        WindowPos window_pos = virtual_to_window_pos(vpos);
+        return window_pos;
+    }
+    else {
+        AbsoluteDocumentPos abspos = current_document->document_to_absolute_pos(doc_pos);
+        WindowPos window_pos;
+        window_pos.y = static_cast<int>(std::roundf((abspos.y - offset.y) * zoom_level + static_cast<float>(view_height) / 2.0f));
+        window_pos.x = static_cast<int>(std::roundf((abspos.x + offset.x) * zoom_level + static_cast<float>(view_width) / 2.0f));
+        return window_pos;
+    }
 }
 
 WindowRect DocumentView::document_to_window_irect(DocumentRect doc_rect) {

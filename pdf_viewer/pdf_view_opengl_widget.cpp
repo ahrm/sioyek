@@ -1105,7 +1105,6 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
                 (h_index + 1) * slice_width,
                 (v_index + 1) * slice_height
             };
-            //WindowRect page_irect = DocumentRect{page_rect, page_number}.to_window(document_view);
 
             WindowRect page_irect;
             page_irect.x0 = ((full_page_irect.x1 - full_page_irect.x0) / nh_) * h_index;
@@ -1117,15 +1116,8 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
             page_irect.y0 = ((full_page_irect.y1 - full_page_irect.y0) / nv_) * v_index;
             page_irect.y1 = ((full_page_irect.y1 - full_page_irect.y0) / nv_) * (v_index + 1);
             if (v_index == (nv_ - 1)) {
-                //page_irect.y0 += 1;
                 page_irect.y1 = full_page_irect.y1;
             }
-
-            //fz_irect page_irect = fz_round_rect(fz_transform_rect(page_rect,
-            //	fz_scale(document_view->get_zoom_level(), document_view->get_zoom_level())));
-            //if (v_index > 0) {
-            //	page_irect.y0 += 1;
-            //}
 
             float w = full_page_rect.x1 - full_page_rect.x0;
             float h = full_page_rect.y1 - full_page_rect.y0;
