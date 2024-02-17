@@ -9,6 +9,7 @@
 #include <cassert>
 #include "utils.h"
 #include <optional>
+#include <functional>
 #include <cstring>
 #include <sstream>
 #include <string>
@@ -3887,7 +3888,13 @@ std::vector<SearchResult> search_text_with_index(const std::wstring& super_fast_
 
     auto pred = get_pred(case_sensitive, query);
     auto hash = get_hash(case_sensitive, query);
+#ifdef SIOYEK_ANDROID
+    // for some reason at the time of this commit std::boyer_moore_searcher doesn't
+    // compile on android even though we are using c++17
+    auto searcher = std::default_searcher(query.begin(), query.end(), pred);
+#else
     auto searcher = std::boyer_moore_searcher(query.begin(), query.end(), hash, pred);
+#endif
     auto it = std::search(
         super_fast_search_index.begin() + begin_index,
         super_fast_search_index.begin() + end_index,
