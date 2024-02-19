@@ -1939,6 +1939,10 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
                     if (current_char->c != '-')
                     {
                         selected_text.push_back(' ');
+                        if ((is_word_selection) && (!word_selecting)) {
+                            selected_text.clear();
+                            selected_characters.clear();
+                        }
                     }
                     else {
                         selected_text.pop_back();
