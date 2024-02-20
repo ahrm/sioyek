@@ -7498,6 +7498,7 @@ void MainWidget::start_drawing() {
     is_drawing = true;
     opengl_widget->current_drawing.points.clear();
     opengl_widget->current_drawing.type = current_freehand_type;
+    opengl_widget->current_drawing.alpha = freehand_alpha;
 }
 
 void MainWidget::finish_drawing(QPoint pos) {
@@ -7513,6 +7514,7 @@ void MainWidget::finish_drawing(QPoint pos) {
     FreehandDrawing pruned_drawing;
     pruned_drawing.points = pruned_points;
     pruned_drawing.type = opengl_widget->current_drawing.type;
+    pruned_drawing.alpha = opengl_widget->current_drawing.alpha;
     pruned_drawing.creattion_time = QDateTime::currentDateTime();
 
     if (opengl_widget->get_scratchpad()) {
@@ -10059,6 +10061,14 @@ void MainWidget::clear_scratchpad() {
 
 char MainWidget::get_current_freehand_type() {
     return current_freehand_type;
+}
+
+float MainWidget::get_current_freehand_alpha() {
+    return freehand_alpha;
+}
+
+void MainWidget::set_current_freehand_alpha(float alpha) {
+    freehand_alpha = alpha;
 }
 
 void MainWidget::show_draw_controls() {

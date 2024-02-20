@@ -4901,6 +4901,26 @@ public:
     bool requires_document() { return false; }
 };
 
+class SetFreehandAlphaCommand : public TextCommand {
+public:
+    static inline const std::string cname = "set_freehand_alpha";
+    static inline const std::string hname = "Set the freehand drawing alpha";
+    SetFreehandAlphaCommand(MainWidget* w) : TextCommand(cname, w) {};
+    void perform() {
+        if (text.has_value() && text->size() > 0) {
+            bool was_number = false;
+            float alpha = QString::fromStdWString(text.value()).toFloat(&was_number);
+            if (!was_number || alpha > 1 || alpha < 0) {
+                alpha = 1.0f;
+            }
+            widget->set_current_freehand_alpha(alpha);
+
+        }
+    }
+
+    bool requires_document() { return false; }
+};
+
 class AddHighlightWithCurrentTypeCommand : public Command {
 public:
     static inline const std::string cname = "add_highlight_with_current_type";
@@ -6489,6 +6509,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<ToggleCustomColorMode>();
     register_command<SetSelectHighlightTypeCommand>();
     register_command<SetFreehandType>();
+    register_command<SetFreehandAlphaCommand>();
     register_command<ToggleWindowConfigurationCommand>();
     register_command<PrefsUserAllCommand>();
     register_command<KeysUserAllCommand>();

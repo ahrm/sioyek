@@ -232,6 +232,10 @@ public:
 
     // color type to use when freehand drawing
     char current_freehand_type = 'r';
+
+    // alpha of freehand drawings
+    float freehand_alpha = 1.0f;
+
     // line thickness of freehand drawings
     float freehand_thickness = 1.0f;
 
@@ -907,6 +911,8 @@ public:
     void load_scratchpad();
     void clear_scratchpad();
     char get_current_freehand_type();
+    float get_current_freehand_alpha();
+    void set_current_freehand_alpha(float alpha);
     void show_draw_controls();
     PaperDownloadFinishedAction get_default_paper_download_finish_action();
     QString get_paper_download_finish_action_string(PaperDownloadFinishedAction action);

@@ -3468,6 +3468,11 @@ void Document::load_drawings() {
 
                 drawing.creattion_time = QDateTime::fromString(drawing_object["creation_time"].toString(), Qt::ISODate);
                 drawing.type = drawing_object["type"].toInt();
+
+                if (drawing_object.contains("alpha")) {
+                    drawing.alpha = drawing_object["alpha"].toDouble();
+                }
+
                 QJsonArray x_array = drawing_object["point_xs"].toArray();
                 QJsonArray y_array = drawing_object["point_ys"].toArray();
                 QJsonArray t_array = drawing_object["point_thicknesses"].toArray();
@@ -3537,6 +3542,7 @@ void Document::persist_drawings(bool force) {
             QJsonObject drawing_object;
             drawing_object["creation_time"] = drawing.creattion_time.toString(Qt::ISODate);
             drawing_object["type"] = drawing.type;
+            drawing_object["alpha"] = drawing.alpha;
             //QJsonArray points;
             QJsonArray points_xs;
             QJsonArray points_ys;

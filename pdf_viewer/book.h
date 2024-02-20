@@ -177,6 +177,7 @@ struct DocumentCharacter {
 struct FreehandDrawing {
     std::vector<FreehandDrawingPoint> points;
     char type;
+    float alpha = 1;
     QDateTime creattion_time;
     AbsoluteRect bbox();
 };

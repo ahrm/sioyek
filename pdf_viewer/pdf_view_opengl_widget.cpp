@@ -2773,10 +2773,6 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
         return original;
     }
 
-    FreehandDrawing res;
-    res.creattion_time = original.creattion_time;
-    res.type = original.type;
-
     std::vector<Vec<float, 2>> velocities_at_points;
     velocities_at_points.reserve(original.points.size());
 
@@ -2792,6 +2788,7 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
     FreehandDrawing smoothed_drawing;
     smoothed_drawing.creattion_time = original.creattion_time;
     smoothed_drawing.type = original.type;
+    smoothed_drawing.alpha = original.alpha;
     smoothed_drawing.points.reserve((original.points.size()-1) * N_POINTS);
 
     for (int i = 0; i < original.points.size()-1; i++){
@@ -3132,6 +3129,13 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
 
 void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
 
+    if (drawings.size() == 0) return;
+
+    glEnable(GL_BLEND);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    glEnable(GL_DEPTH_TEST);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
     float time_diff = last_scratchpad_update_datetime.msecsTo(QDateTime::currentDateTime());
     last_scratchpad_update_datetime = QDateTime::currentDateTime();
 
@@ -3140,7 +3144,9 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
     float thickness_y = dv->get_zoom_level() / height();
     //float thickness_y = thickness_x * width() / height();
 
-    for (auto drawing : drawings) {
+    for (int i = drawings.size() - 1; i >= 0; i--) {
+        auto drawing = drawings[i];
+
         if (DEBUG_SMOOTH_FREEHAND_DRAWINGS) {
             drawing = smoothen_drawing(drawing);
         }
@@ -3158,7 +3164,7 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         float current_drawing_color_[4] = { HIGHLIGHT_COLORS[(drawing.type - 'a') * 3],
             HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 1],
              HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 2],
-            1.0f
+            drawing.alpha
         };
         float current_drawing_color[4] = {0};
         get_color_for_current_mode(current_drawing_color_, current_drawing_color);
@@ -3293,6 +3299,8 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         //    glDrawArrays(GL_TRIANGLE_FAN, 0, coords.size() / 2);
         //}
     }
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 }
 
 
