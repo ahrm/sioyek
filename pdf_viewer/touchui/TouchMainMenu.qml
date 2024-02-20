@@ -39,6 +39,10 @@ Rectangle{
     signal drawingModeButtonClicked();
     signal downloadPaperClicked();
 
+    property bool is_fit: _fit;
+    property bool is_ruler: _ruler;
+    property bool is_locked: _locked;
+
     ColumnLayout{
         spacing: 0
         anchors.fill: parent
@@ -71,7 +75,7 @@ Rectangle{
                     _fullscreen ? "qrc:/icons/fullscreen-enabled.svg" : "qrc:/icons/fullscreen.svg",
                     "qrc:/icons/bookmark.svg",
                     "qrc:/icons/highlight.svg",
-                    _ruler ? "qrc:/icons/ruler-enabled.svg" : "qrc:/icons/ruler.svg" ,
+                    is_ruler ? "qrc:/icons/ruler-enabled.svg" : "qrc:/icons/ruler.svg" ,
                     ]
 
                     tips: ["Select Text",
@@ -110,7 +114,9 @@ Rectangle{
                             case 7:
                                 /* emit */ highlightsClicked(); break;
                             case 8:
-                                /* emit */ rulerModeClicked(); break;
+                                /* emit */ rulerModeClicked();
+                                is_ruler = !is_ruler;
+                                break;
                             default:
                         }
                     }
@@ -136,10 +142,10 @@ Rectangle{
                     "qrc:/icons/unlink.svg",
                     _speaking ? "qrc:/icons/tts-enabled.svg" :  "qrc:/icons/tts.svg",
                     "qrc:/icons/draw.svg",
-                    _locked ? "qrc:/icons/lock-enabled.svg" :"qrc:/icons/lock.svg",
+                    is_locked ? "qrc:/icons/lock-enabled.svg" :"qrc:/icons/lock.svg",
                     "qrc:/icons/bookmark-g.svg",
                     "qrc:/icons/highlight-g.svg",
-                    _fit ? "qrc:/icons/fit-horizontal-enabled.svg" :  "qrc:/icons/fit-horizontal.svg",
+                    is_fit ? "qrc:/icons/fit-horizontal-enabled.svg" :  "qrc:/icons/fit-horizontal.svg",
                     "qrc:/icons/paper-download.svg"
                     ]
 
@@ -165,25 +171,37 @@ Rectangle{
                     onButtonClicked: function (index, name){
                         switch (index){
                             case 0:
-                                /* emit */ addBookmarkClicked(); break;
+                                /* emit */ addBookmarkClicked();
+                                break;
                             case 1:
-                                /* emit */ portalClicked(); break;
+                                /* emit */ portalClicked();
+                                break;
                             case 2:
-                                /* emit */ deletePortalClicked(); break;
+                                /* emit */ deletePortalClicked();
+                                break;
                             case 3:
-                                /* emit */ ttsClicked(); break;
+                                /* emit */ ttsClicked();
+                                break;
                             case 4:
-                                /* emit */ drawingModeButtonClicked(); break;
+                                /* emit */ drawingModeButtonClicked();
+                                break;
                             case 5:
-                                /* emit */ horizontalLockClicked(); break;
+                                /* emit */ horizontalLockClicked();
+                                is_locked = !is_locked;
+                                break;
                             case 6:
-                                /* emit */ globalBookmarksClicked(); break;
+                                /* emit */ globalBookmarksClicked();
+                                break;
                             case 7:
-                                /* emit */ globalHighlightsClicked(); break;
+                                /* emit */ globalHighlightsClicked();
+                                break;
                             case 8:
-                                /* emit */ fitToPageWidthClicked(); break;
+                                /* emit */ fitToPageWidthClicked();
+                                is_fit = !is_fit;
+                                break;
                             case 9:
-                                /* emit */ downloadPaperClicked(); break;
+                                /* emit */ downloadPaperClicked();
+                                break;
                             default:
                         }
                     }
