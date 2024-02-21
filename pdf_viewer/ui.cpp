@@ -269,7 +269,7 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
-        main_widget->pop_current_widget();
+        //main_widget->pop_current_widget();
         main_widget->invalidate_render();
         });
 
@@ -302,7 +302,7 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
         });
 
     QObject::connect(main_menu, &TouchMainMenu::horizontalLockClicked, [&]() {
-        main_widget->run_command_with_name("toggle_horizontal_scroll_lock", true);
+        main_widget->run_command_with_name("toggle_horizontal_scroll_lock");
         });
 
     //    QObject::connect(set_background_color, &QPushButton::pressed, [&](){
@@ -352,7 +352,7 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
-        main_widget->pop_current_widget();
+        //main_widget->pop_current_widget();
         main_widget->invalidate_render();
         });
 
@@ -361,7 +361,7 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
-        main_widget->pop_current_widget();
+        //main_widget->pop_current_widget();
         main_widget->invalidate_render();
         });
 
@@ -370,7 +370,7 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
         //main_widget->current_widget = {};
         //deleteLater();
         assert(main_widget->current_widget_stack.back() == this);
-        main_widget->pop_current_widget();
+        //main_widget->pop_current_widget();
         main_widget->invalidate_render();
         });
 
@@ -385,7 +385,7 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
 
         if (main_widget->last_smart_fit_page) {
             main_widget->last_smart_fit_page = {};
-            main_widget->pop_current_widget();
+            //main_widget->pop_current_widget();
             main_widget->invalidate_render();
         }
         else {
@@ -394,7 +394,7 @@ AndroidSelector::AndroidSelector(QWidget* parent) : QWidget(parent) {
             int current_page = main_widget->get_current_page_number();
             main_widget->last_smart_fit_page = current_page;
 
-            main_widget->pop_current_widget();
+            //main_widget->pop_current_widget();
             main_widget->invalidate_render();
         }
         });
@@ -1092,7 +1092,7 @@ TouchCommandSelector::TouchCommandSelector(bool is_fuzzy, const QStringList& com
     main_widget = mw;
     QStringList touch_commands;
     for (auto com : commands) {
-        if (!(com.startsWith("toggleconfig_") || com.startsWith("setconfig_"))) {
+        if (!(com.startsWith("toggleconfig_") || com.startsWith("setconfig_") || com.startsWith("saveconfig_") || com.startsWith("deleteconfig_") || com.startsWith("setsaveconfig_"))) {
             touch_commands.push_back(com);
         }
     }
@@ -1359,6 +1359,11 @@ bool CommandSelector::on_text_change(const QString& text) {
 
     QString actual_text = text;
 
+    if (actual_text.startsWith("+=")) {
+        actual_text = "setsaveconfig_" + actual_text.right(actual_text.size() - 2);
+        search_text_string = actual_text.toStdString();
+    }
+
     if (actual_text.startsWith("!")) {
         actual_text = "toggleconfig_" + actual_text.right(actual_text.size() - 1);
         search_text_string = actual_text.toStdString();
@@ -1366,6 +1371,17 @@ bool CommandSelector::on_text_change(const QString& text) {
 
     if (actual_text.startsWith("=")) {
         actual_text = "setconfig_" + actual_text.right(actual_text.size() - 1);
+        search_text_string = actual_text.toStdString();
+    }
+
+    if (actual_text.startsWith("+")) {
+        actual_text = "saveconfig_" + actual_text.right(actual_text.size() - 1);
+        search_text_string = actual_text.toStdString();
+    }
+
+
+    if (actual_text.startsWith("-")) {
+        actual_text = "deleteconfig_" + actual_text.right(actual_text.size() - 1);
         search_text_string = actual_text.toStdString();
     }
 

@@ -200,7 +200,6 @@ extern std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS;
 extern std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 extern float SMOOTH_MOVE_MAX_VELOCITY;
-extern float SMOOTH_MOVE_INITIAL_VELOCITY;
 
 extern std::wstring RIGHT_CLICK_COMMAND;
 extern std::wstring MIDDLE_CLICK_COMMAND;
@@ -501,9 +500,12 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 
 }
 
-void MainWidget::set_overview_position(int page, float offset) {
+void MainWidget::set_overview_position(int page, float offset, std::optional<std::string> overview_type) {
     if (page >= 0) {
-        set_overview_page(OverviewState{ DocumentPos{ page, 0, offset }.to_absolute(doc()).y, 0, -1, nullptr});
+
+        auto overview_state = OverviewState{ DocumentPos{ page, 0, offset }.to_absolute(doc()).y, 0, -1, nullptr };
+        overview_state.overview_type = overview_type;
+        set_overview_page(overview_state);
         invalidate_render();
     }
 }
@@ -521,7 +523,7 @@ void MainWidget::set_overview_link(PdfLink link) {
         current_candidate.source_text = source_text;
         smart_view_candidates = { current_candidate };
         index_into_candidates = 0;
-        set_overview_position(page - 1, offset_y);
+        set_overview_position(page - 1, offset_y, "link");
     }
 }
 
@@ -1559,13 +1561,17 @@ void MainWidget::validate_render() {
         }
         dv()->move(move_x, move_y);
 
-        velocity_x = dampen_velocity(velocity_x, secs);
-        velocity_y = dampen_velocity(velocity_y, secs);
-
-        if (!TOUCH_MODE) {
-            // when using smooth_move commands not in touch mode we stop much faster
+        if (!is_velocity_fixed) {
             velocity_x = dampen_velocity(velocity_x, secs);
             velocity_y = dampen_velocity(velocity_y, secs);
+        }
+
+        if (!TOUCH_MODE) {
+            if (!is_velocity_fixed) {
+                // when using smooth_move commands not in touch mode we stop much faster
+                velocity_x = dampen_velocity(velocity_x, secs);
+                velocity_y = dampen_velocity(velocity_y, secs);
+            }
         }
 
         if (!is_moving()) {
@@ -1639,6 +1645,9 @@ void MainWidget::validate_render() {
     }
     if (is_moving()) {
         is_render_invalidated = true;
+        if (!hasFocus()) { // stop scrolling if the windows doesn't have focus
+            set_fixed_velocity(0);
+        }
     }
 }
 
@@ -3312,6 +3321,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
                 OverviewState overview;
                 overview.doc = dst_doc;
                 overview.absolute_offset_y = portal.value().dst.book_state.offset_y;
+                overview.overview_type = "portal";
                 set_overview_page(overview);
                 invalidate_render();
                 return true;
@@ -3343,7 +3353,7 @@ bool MainWidget::overview_under_pos(WindowPos pos) {
         //current_candid.target_pos = reference_info.targets[0];
         //current_candid.source_text = reference_info.source_text;
         //smart_view_candidates = { current_candid };
-        set_overview_position(reference_info.targets[0].page, reference_info.targets[0].y);
+        set_overview_position(reference_info.targets[0].page, reference_info.targets[0].y, reference_type_string(reference_info.reference_type));
         opengl_widget->set_overview_highlights(reference_info.overview_highlight_rects);
         return true;
     }
@@ -4182,6 +4192,10 @@ void MainWidget::handle_link_click(const PdfLink& link) {
 void MainWidget::save_auto_config() {
     std::wofstream outfile(auto_config_path.get_path_utf8());
     outfile << get_serialized_configuration_string();
+#ifndef SIOYEK_ANDROID
+    outfile << L"\n";
+    config_manager->serialize_auto_configs(outfile);
+#endif
     outfile.close();
 }
 
@@ -5208,7 +5222,7 @@ void MainWidget::overview_to_definition() {
             DocumentPos first_docpos = candidates[0].get_docpos(main_document_view);
             smart_view_candidates = candidates;
             index_into_candidates = 0;
-            set_overview_position(first_docpos.page, first_docpos.y);
+            set_overview_position(first_docpos.page, first_docpos.y, reference_type_string(candidates[0].reference_type));
             on_overview_source_updated();
         }
     }
@@ -6672,46 +6686,95 @@ void MainWidget::show_context_menu(QString menu_string) {
     // (e.g. the right clicked highlight being selected) are displayed
     validate_render();
 
-    QMenu contextMenu("Context menu", this);
+    auto menu = parse_menu_string(this, "menu", menu_string);
+    show_recursive_context_menu(std::move(menu));
+    //QMenu contextMenu("Context menu", this);
+    //QStringList command_names;
+
+    //if (menu_string.size() == 0) {
+    //    command_names = QString::fromStdWString(CONTEXT_MENU_ITEMS).split('|');
+    //}
+    //else {
+    //    command_names = menu_string.split('|');
+    //}
+
+    //std::vector<QAction*> actions;
+    ////original_cursor_pos = QCursor::pos();
+    //context_menu_right_click_pos = QCursor::pos();
+
+    //for (auto command_name : command_names) {
+
+    //    std::string human_readable_name = command_name.toStdString();
+    //    if (command_manager->command_human_readable_names.find(command_name.toStdString()) != command_manager->command_human_readable_names.end()) {
+    //        human_readable_name = command_manager->command_human_readable_names[command_name.toStdString()];
+    //    }
+
+    //    QAction* action = new QAction(QString::fromStdString(human_readable_name), this);
+    //    actions.push_back(action);
+    //    connect(action, &QAction::triggered, [&, command_name]() {
+    //        execute_macro_if_enabled(command_name.toStdWString());
+    //        invalidate_render();
+    //    });
+    //    contextMenu.addAction(action);
+    //}
+
+    //contextMenu.exec(QCursor::pos());
+    //context_menu_right_click_pos = {};
+
+    //for (QAction* action : actions) {
+    //    delete action;
+    //}
+}
+
+QMenu* MainWidget::get_menu_from_items(std::unique_ptr<MenuItems> items, QWidget* parent) {
+    QMenu* contextMenu = new QMenu(QString::fromStdWString(items->name), parent);
     QStringList command_names;
 
-    if (menu_string.size() == 0) {
-        command_names = QString::fromStdWString(CONTEXT_MENU_ITEMS).split('|');
-    }
-    else {
-        command_names = menu_string.split('|');
-    }
-
     std::vector<QAction*> actions;
-    //original_cursor_pos = QCursor::pos();
     context_menu_right_click_pos = QCursor::pos();
 
-    for (auto command_name : command_names) {
+    for (auto&& subitem : items->items) {
 
-        std::string human_readable_name = command_name.toStdString();
-        if (command_manager->command_human_readable_names.find(command_name.toStdString()) != command_manager->command_human_readable_names.end()) {
-            human_readable_name = command_manager->command_human_readable_names[command_name.toStdString()];
+        if (std::holds_alternative<std::unique_ptr<Command>>(subitem)) {
+            std::unique_ptr<Command> subcommand = std::get<std::unique_ptr<Command>>(std::move(subitem));
+            std::string command_name = subcommand->get_human_readable_name();
+
+            QAction* action = new QAction(QString::fromStdString(command_name), contextMenu);
+            actions.push_back(action);
+            connect(action, &QAction::triggered, [&, command_name, subcommand = std::move(subcommand)]() mutable {
+                //execute_macro_if_enabled(command_name.toStdWString());
+                handle_command_types(std::move(subcommand), 0);
+                invalidate_render();
+            });
+            contextMenu->addAction(action);
         }
+        else {
+            std::unique_ptr<MenuItems> submenu_ = std::get<std::unique_ptr<MenuItems>>(std::move(subitem));
+            QMenu* submenu = get_menu_from_items(std::move(submenu_), contextMenu);
+            contextMenu->addMenu(submenu);
 
-        QAction* action = new QAction(QString::fromStdString(human_readable_name), this);
-        actions.push_back(action);
-        connect(action, &QAction::triggered, [&, command_name]() {
-            execute_macro_if_enabled(command_name.toStdWString());
-            invalidate_render();
-        });
-        contextMenu.addAction(action);
+        }
     }
+    return contextMenu;
+}
 
-    contextMenu.exec(QCursor::pos());
+void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
+    // since the context menu overrides the main widget's event loop, the validate_render
+    // call below is necessary to ensure that changes due to showing the context menu
+    // (e.g. the right clicked highlight being selected) are displayed
+    validate_render();
+
+    context_menu_right_click_pos = QCursor::pos();
+
+    QMenu* context_menu = get_menu_from_items(std::move(items), this);
+
+    context_menu->exec(QCursor::pos());
     context_menu_right_click_pos = {};
 
-    for (QAction* action : actions) {
-        delete action;
-    }
+    delete context_menu;
 }
 
 void MainWidget::handle_debug_command() {
-    show_contextual_context_menu();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -7159,10 +7222,18 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
     }
 }
 
-void MainWidget::on_config_changed(std::string config_name) {
+void MainWidget::on_config_changed(std::string config_name, bool should_save) {
     std::vector<std::string> config_names;
     config_names.push_back(config_name);
     on_configs_changed(&config_names);
+
+    if (should_save) {
+        auto conf = config_manager->get_mut_config_with_name(utf8_decode(config_name));
+        if (conf) {
+            conf->is_auto = true;
+            save_auto_config();
+        }
+    }
 }
 
 void MainWidget::handle_undo_marked_data() {
@@ -7431,6 +7502,7 @@ void MainWidget::start_drawing() {
     is_drawing = true;
     opengl_widget->current_drawing.points.clear();
     opengl_widget->current_drawing.type = current_freehand_type;
+    opengl_widget->current_drawing.alpha = freehand_alpha;
 }
 
 void MainWidget::finish_drawing(QPoint pos) {
@@ -7446,6 +7518,7 @@ void MainWidget::finish_drawing(QPoint pos) {
     FreehandDrawing pruned_drawing;
     pruned_drawing.points = pruned_points;
     pruned_drawing.type = opengl_widget->current_drawing.type;
+    pruned_drawing.alpha = opengl_widget->current_drawing.alpha;
     pruned_drawing.creattion_time = QDateTime::currentDateTime();
 
     if (opengl_widget->get_scratchpad()) {
@@ -8250,6 +8323,12 @@ bool MainWidget::goto_ith_next_overview(int i) {
 }
 
 void MainWidget::on_overview_source_updated() {
+    if (current_widget_stack.size() > 0 && dynamic_cast<TouchGenericButtons*>(current_widget_stack.back())) {
+        if (index_into_candidates >= 0 && index_into_candidates < smart_view_candidates.size()) {
+            auto& current_candidate = smart_view_candidates[index_into_candidates];
+            show_touch_buttons_for_overview_type(reference_type_string(current_candidate.reference_type));
+        }
+    }
 }
 
 std::optional<AbsoluteRect> MainWidget::get_overview_source_rect() {
@@ -8502,6 +8581,11 @@ void MainWidget::handle_goto_ruler_portal(std::string tag) {
 
 
 void MainWidget::show_touch_buttons(std::vector<std::wstring> buttons, std::vector<std::wstring> tips, std::function<void(int, std::wstring)> on_select, bool top) {
+
+    if (current_widget_stack.size() > 0 && dynamic_cast<TouchGenericButtons*>(current_widget_stack.back())) {
+        pop_current_widget();
+    }
+
     TouchGenericButtons* generic_buttons = new TouchGenericButtons(buttons, tips, top, this);
     QObject::connect(generic_buttons, &TouchGenericButtons::buttonPressed, [this, on_select](int index, std::wstring name) {
         on_select(index, name);
@@ -8600,6 +8684,50 @@ void MainWidget::show_text_prompt(std::wstring initial_value, std::function<void
     show_current_widget();
 }
 
+void MainWidget::show_touch_buttons_for_overview_type(std::string type) {
+    std::vector<std::wstring> button_icons;
+    std::vector<std::wstring> button_names;
+
+    button_icons = { L"qrc:/icons/go-to-file.svg" };
+    button_names = { L"Go" };
+
+    if (type == "reference" || type == "link") {
+        button_icons.push_back(L"qrc:/icons/paper-download.svg");
+        button_names.push_back(L"Download");
+    }
+
+    if (smart_view_candidates.size() > 1) {
+        button_icons.insert(button_icons.begin(), L"qrc:/icons/next.svg");
+        button_names.insert(button_names.begin(), L"Prev");
+        button_icons.insert(button_icons.end(), L"qrc:/icons/previous.svg");
+        button_names.insert(button_names.end(), L"Next");
+    }
+    show_touch_buttons(
+        button_icons,
+        button_names,
+        [this](int index, std::wstring name) {
+            QString name_qstring = QString::fromStdWString(name);
+
+            if (name_qstring.endsWith("next.svg")) {
+                goto_ith_next_overview(-1);
+                invalidate_render();
+            }
+            if (name_qstring.endsWith("previous.svg")) {
+                goto_ith_next_overview(1);
+                invalidate_render();
+            }
+            if (name_qstring.endsWith("go-to-file.svg")) {
+                goto_overview();
+                invalidate_render();
+            }
+            if (name_qstring.endsWith("paper-download.svg")) {
+                //execute_macro_if_enabled(L"download_overview_paper");
+                auto command = command_manager->get_command_with_name(this, "download_overview_paper");
+                handle_command_types(std::move(command), 1);
+            }
+        });
+}
+
 void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
 
     if (!overview){
@@ -8609,40 +8737,7 @@ void MainWidget::set_overview_page(std::optional<OverviewState> overview) {
         if (overview) {
             if (!opengl_widget->get_overview_page().has_value()) {
                 // show the overview buttons when a new overview is displayed
-                std::vector<std::wstring> button_icons;
-                std::vector<std::wstring> button_names;
-                if (smart_view_candidates.size() > 1){
-                    button_icons = { L"qrc:/icons/next.svg", L"qrc:/icons/go-to-file.svg", L"qrc:/icons/paper-download.svg", L"qrc:/icons/previous.svg"};
-                    button_names = {L"Prev", L"Go", L"Download", L"Next"};
-                }
-                else{
-                    button_icons = { L"qrc:/icons/go-to-file.svg", L"qrc:/icons/paper-download.svg"};
-                    button_names = {L"Go", L"Download"};
-                }
-                show_touch_buttons(
-                    button_icons,
-                    button_names,
-                    [this](int index, std::wstring name) {
-                    QString name_qstring = QString::fromStdWString(name);
-
-                    if (name_qstring.endsWith("next.svg")) {
-                        goto_ith_next_overview(-1);
-                        invalidate_render();
-                    }
-                    if (name_qstring.endsWith("previous.svg")) {
-                        goto_ith_next_overview(1);
-                        invalidate_render();
-                    }
-                    if (name_qstring.endsWith("go-to-file.svg")) {
-                        goto_overview();
-                        invalidate_render();
-                    }
-                    if (name_qstring.endsWith("paper-download.svg")) {
-                        //execute_macro_if_enabled(L"download_overview_paper");
-                        auto command = command_manager->get_command_with_name(this, "download_overview_paper");
-                        handle_command_types(std::move(command), 1);
-                    }
-                    });
+                show_touch_buttons_for_overview_type(overview->overview_type.value_or(""));
             }
         }
         else {
@@ -9972,6 +10067,14 @@ char MainWidget::get_current_freehand_type() {
     return current_freehand_type;
 }
 
+float MainWidget::get_current_freehand_alpha() {
+    return freehand_alpha;
+}
+
+void MainWidget::set_current_freehand_alpha(float alpha) {
+    freehand_alpha = alpha;
+}
+
 void MainWidget::show_draw_controls() {
     get_draw_controls()->show();
 }
@@ -10203,18 +10306,18 @@ void MainWidget::focus_on_character_offset_into_document(int character_offset_in
     invalidate_render();
 }
 
-void MainWidget::handle_move_smooth_press(bool down) {
-
-    float mult = down ? -1 : 1;
-
-    velocity_y += mult * SMOOTH_MOVE_INITIAL_VELOCITY;
-    if (std::abs(velocity_y) > SMOOTH_MOVE_MAX_VELOCITY) {
-        if (down) velocity_y = -SMOOTH_MOVE_MAX_VELOCITY;
-        else velocity_y = SMOOTH_MOVE_MAX_VELOCITY;
-    }
-    validation_interval_timer->setInterval(0);
-    last_speed_update_time = QTime::currentTime();
-}
+//void MainWidget::handle_move_smooth_press(bool down) {
+//
+//    float mult = down ? -1 : 1;
+//
+//    velocity_y += mult * SMOOTH_MOVE_INITIAL_VELOCITY;
+//    if (std::abs(velocity_y) > SMOOTH_MOVE_MAX_VELOCITY) {
+//        if (down) velocity_y = -SMOOTH_MOVE_MAX_VELOCITY;
+//        else velocity_y = SMOOTH_MOVE_MAX_VELOCITY;
+//    }
+//    validation_interval_timer->setInterval(0);
+//    last_speed_update_time = QTime::currentTime();
+//}
 
 void MainWidget::handle_move_smooth_hold(bool down) {
 
@@ -10318,7 +10421,7 @@ void MainWidget::move_selected_bookmark_to_mouse_cursor() {
         }
         else{
             float width = bm.end_x - bm.begin_x;
-            float height = bm.end_y - bm.end_x;
+            float height = bm.end_y - bm.begin_y;
             bm.begin_x = mouse_abspos.x;
             bm.begin_y = mouse_abspos.y;
             bm.end_x = bm.begin_x + width;
@@ -10352,5 +10455,13 @@ bool MainWidget::handle_annotation_move_finish(){
         return true;
     }
 
-    false;
+    return false;
+}
+
+void MainWidget::set_fixed_velocity(float vel) {
+    velocity_y = vel;
+    is_velocity_fixed = true;
+    if (vel == 0) {
+        is_velocity_fixed = false;
+    }
 }

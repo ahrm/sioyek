@@ -232,6 +232,10 @@ public:
 
     // color type to use when freehand drawing
     char current_freehand_type = 'r';
+
+    // alpha of freehand drawings
+    float freehand_alpha = 1.0f;
+
     // line thickness of freehand drawings
     float freehand_thickness = 1.0f;
 
@@ -387,7 +391,7 @@ public:
     void key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat = false);
     void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
     void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
-    void on_config_changed(std::string config_name);
+    void on_config_changed(std::string config_name, bool should_save=false);
     void on_configs_changed(std::vector<std::string>* config_names);
 
     void next_state();
@@ -527,7 +531,7 @@ public:
     bool focus_on_visual_mark_pos(bool moving_down);
     void toggle_visual_scroll_mode();
     void set_overview_link(PdfLink link);
-    void set_overview_position(int page, float offset);
+    void set_overview_position(int page, float offset, std::optional<std::string> overview_type = {});
     ReferenceType find_location_of_selected_text(int* out_page, float* out_offset, AbsoluteRect* out_rect, std::wstring* out_source_text, std::vector<DocumentRect>* out_highlight_rects = nullptr);
     TextUnderPointerInfo find_location_of_text_under_pointer(DocumentPos docpos, bool update_candidates = false);
     std::optional<std::wstring> get_current_file_name();
@@ -661,6 +665,7 @@ public:
     std::deque<std::pair<QTime, QPoint>> position_buffer;
     float velocity_x = 0;
     float velocity_y = 0;
+    bool is_velocity_fixed = false;
 
     // indicates if mouse was in next/prev ruler rect in touch mode
     // if this is the case, we use mouse movement to perform next/prev ruler command
@@ -811,6 +816,7 @@ public:
     void download_selected_text();
     void smart_jump_to_selected_text();
     void show_text_prompt(std::wstring initial_value, std::function<void(std::wstring)> on_select);
+    void show_touch_buttons_for_overview_type(std::string type);
     void set_overview_page(std::optional<OverviewState> overview);
     std::vector<std::wstring> get_new_files_from_scan_directory();
     void scan_new_files_from_scan_directory();
@@ -906,6 +912,8 @@ public:
     void load_scratchpad();
     void clear_scratchpad();
     char get_current_freehand_type();
+    float get_current_freehand_alpha();
+    void set_current_freehand_alpha(float alpha);
     void show_draw_controls();
     PaperDownloadFinishedAction get_default_paper_download_finish_action();
     QString get_paper_download_finish_action_string(PaperDownloadFinishedAction action);
@@ -914,6 +922,8 @@ public:
     void clear_tag_prefix();
     bool show_contextual_context_menu();
     void show_context_menu(QString menu="");
+    QMenu* get_menu_from_items(std::unique_ptr<MenuItems> items, QWidget* parent);
+    void show_recursive_context_menu(std::unique_ptr<MenuItems> items);
     QPoint cursor_pos();
     void clear_current_page_drawings();
     void clear_current_document_drawings();
@@ -930,7 +940,7 @@ public:
     QString get_rest_of_document_pages_text();
     void focus_on_character_offset_into_document(int character_offset_into_document);
     // void stop_tts_service();
-    void handle_move_smooth_press(bool down);
+    //void handle_move_smooth_press(bool down);
     void handle_move_smooth_hold(bool down);
     void handle_toggle_two_page_mode();
     void ensure_zero_interval_timer();
@@ -942,6 +952,7 @@ public:
     AbsoluteDocumentPos get_mouse_abspos();
     void move_selected_bookmark_to_mouse_cursor();
     bool handle_annotation_move_finish();
+    void set_fixed_velocity(float vel);
 };
 
 MainWidget* get_window_with_window_id(int window_id);

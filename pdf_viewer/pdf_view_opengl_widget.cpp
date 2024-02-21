@@ -1105,6 +1105,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
                 (h_index + 1) * slice_width,
                 (v_index + 1) * slice_height
             };
+
             WindowRect page_irect;
             page_irect.x0 = ((full_page_irect.x1 - full_page_irect.x0) / nh_) * h_index;
             page_irect.x1 = ((full_page_irect.x1 - full_page_irect.x0) / nh_) * (h_index + 1);
@@ -1115,15 +1116,8 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
             page_irect.y0 = ((full_page_irect.y1 - full_page_irect.y0) / nv_) * v_index;
             page_irect.y1 = ((full_page_irect.y1 - full_page_irect.y0) / nv_) * (v_index + 1);
             if (v_index == (nv_ - 1)) {
-                //page_irect.y0 += 1;
                 page_irect.y1 = full_page_irect.y1;
             }
-
-            //fz_irect page_irect = fz_round_rect(fz_transform_rect(page_rect,
-            //	fz_scale(document_view->get_zoom_level(), document_view->get_zoom_level())));
-            //if (v_index > 0) {
-            //	page_irect.y0 += 1;
-            //}
 
             float w = full_page_rect.x1 - full_page_rect.x0;
             float h = full_page_rect.y1 - full_page_rect.y0;
@@ -1383,16 +1377,18 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                     int nh, nv;
                     num_slices_for_page_rect(page_rect, &nh, &nv);
 
-                    pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
-                        max_page + i,
-                        document_view->get_document()->should_render_pdf_annotations(),
-                        -1,
-                        nh,
-                        nv,
-                        document_view->get_zoom_level(),
-                        devicePixelRatioF(),
-                        nullptr,
-                        nullptr);
+                    for (int k = 0; k < nh * nv; k++) {
+                        pdf_renderer->find_rendered_page(document_view->get_document()->get_path(),
+                            max_page + i,
+                            document_view->get_document()->should_render_pdf_annotations(),
+                            k,
+                            nh,
+                            nv,
+                            document_view->get_zoom_level(),
+                            devicePixelRatioF(),
+                            nullptr,
+                            nullptr);
+                    }
                 }
             }
         }
@@ -2777,10 +2773,6 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
         return original;
     }
 
-    FreehandDrawing res;
-    res.creattion_time = original.creattion_time;
-    res.type = original.type;
-
     std::vector<Vec<float, 2>> velocities_at_points;
     velocities_at_points.reserve(original.points.size());
 
@@ -2796,6 +2788,7 @@ FreehandDrawing smoothen_drawing(FreehandDrawing original) {
     FreehandDrawing smoothed_drawing;
     smoothed_drawing.creattion_time = original.creattion_time;
     smoothed_drawing.type = original.type;
+    smoothed_drawing.alpha = original.alpha;
     smoothed_drawing.points.reserve((original.points.size()-1) * N_POINTS);
 
     for (int i = 0; i < original.points.size()-1; i++){
@@ -3136,6 +3129,13 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
 
 void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
 
+    if (drawings.size() == 0) return;
+
+    glEnable(GL_BLEND);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    glEnable(GL_DEPTH_TEST);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
     float time_diff = last_scratchpad_update_datetime.msecsTo(QDateTime::currentDateTime());
     last_scratchpad_update_datetime = QDateTime::currentDateTime();
 
@@ -3144,7 +3144,9 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
     float thickness_y = dv->get_zoom_level() / height();
     //float thickness_y = thickness_x * width() / height();
 
-    for (auto drawing : drawings) {
+    for (int i = drawings.size() - 1; i >= 0; i--) {
+        auto drawing = drawings[i];
+
         if (DEBUG_SMOOTH_FREEHAND_DRAWINGS) {
             drawing = smoothen_drawing(drawing);
         }
@@ -3162,7 +3164,7 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         float current_drawing_color_[4] = { HIGHLIGHT_COLORS[(drawing.type - 'a') * 3],
             HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 1],
              HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 2],
-            1.0f
+            drawing.alpha
         };
         float current_drawing_color[4] = {0};
         get_color_for_current_mode(current_drawing_color_, current_drawing_color);
@@ -3297,6 +3299,8 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
         //    glDrawArrays(GL_TRIANGLE_FAN, 0, coords.size() / 2);
         //}
     }
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 }
 
 

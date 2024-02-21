@@ -37,6 +37,7 @@ struct OverviewState {
     float absolute_offset_x = 0;
     float zoom_level = -1;
     Document* doc = nullptr;
+    std::optional<std::string> overview_type;
 };
 
 struct OpenedBookState {
@@ -176,6 +177,7 @@ struct DocumentCharacter {
 struct FreehandDrawing {
     std::vector<FreehandDrawingPoint> points;
     char type;
+    float alpha = 1;
     QDateTime creattion_time;
     AbsoluteRect bbox();
 };
@@ -289,14 +291,18 @@ enum class ReferenceType {
     Equation,
     Reference,
     Abbreviation,
+    Link,
     None
 };
+
+std::string reference_type_string(ReferenceType rt);
 
 struct SmartViewCandidate {
     Document* doc = nullptr;
     AbsoluteRect source_rect;
     std::wstring source_text;
     std::variant<DocumentPos, AbsoluteDocumentPos> target_pos;
+    ReferenceType reference_type = ReferenceType::None;
 
     Document* get_document(DocumentView* view);
     DocumentPos get_docpos(DocumentView* view);

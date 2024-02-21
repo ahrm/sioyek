@@ -282,7 +282,7 @@ void PdfRenderer::delete_old_pages(bool force_all, bool invalidate_all) {
         cached_response_times.push_back(now - cached_responses[i].last_access_time);
     }
 
-    int N = num_cached_pages;
+    int N = num_cached_pages * NUM_V_SLICES * NUM_H_SLICES;
 
     if (invalidate_all) {
         for (size_t i = 0; i < cached_responses.size(); i++) {
@@ -707,8 +707,9 @@ void PdfRenderer::free_all_resources_for_document(std::wstring doc_path) {
 void PdfRenderer::debug() {
     cached_response_mutex.lock();
     for (auto resp : cached_responses) {
-        std::wcout << resp.request.path << L" " << resp.request.page << L" " << resp.request.zoom_level << std::endl;
+        std::wcout << resp.request.path << L" " << resp.request.page << L" " << resp.request.zoom_level << "(" << resp.width << "*" << resp.height << ")" << std::endl;
     }
+    std::wcout << "________________________________________\n";
     cached_response_mutex.unlock();
 }
 

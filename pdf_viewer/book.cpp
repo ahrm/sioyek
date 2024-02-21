@@ -363,3 +363,13 @@ void SearchResult::fill(Document* doc) {
         doc->fill_search_result(this);
     }
 }
+
+std::string reference_type_string(ReferenceType rt) {
+    if (rt == ReferenceType::None) return "none";
+    if (rt == ReferenceType::Equation) return "equation";
+    if (rt == ReferenceType::Reference) return "reference";
+    if (rt == ReferenceType::Abbreviation) return "abbreviation";
+    if (rt == ReferenceType::Generic) return "generic";
+    if (rt == ReferenceType::Link) return "link";
+    return "";
+}
