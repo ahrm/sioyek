@@ -3981,7 +3981,7 @@ void MainWidget::open_document(const std::wstring& doc_path,
     }
 }
 
-#ifndef Q_OS_MACOS
+// #ifndef Q_OS_MACOS
 void MainWidget::dragEnterEvent(QDragEnterEvent* e)
 {
     e->acceptProposedAction();
@@ -4010,7 +4010,7 @@ void MainWidget::dropEvent(QDropEvent* event)
         open_document(path, &is_render_invalidated);
     }
 }
-#endif
+// #endif
 
 void MainWidget::highlight_ruler_portals() {
     std::vector<Portal> portals = get_ruler_portals();

@@ -750,11 +750,11 @@ protected:
     void mouseMoveEvent(QMouseEvent* mouse_event) override;
 
     // we already handle drag and drop on macos elsewhere
-#ifndef Q_OS_MACOS
+// #ifndef Q_OS_MACOS
     void dragEnterEvent(QDragEnterEvent* e) override;
     void dragMoveEvent(QDragMoveEvent* e) override;
     void dropEvent(QDropEvent* event) override;
-#endif
+// #endif
 
     void closeEvent(QCloseEvent* close_event) override;
     void keyPressEvent(QKeyEvent* kevent) override;
