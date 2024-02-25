@@ -250,6 +250,10 @@ extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
 
 extern int RELOAD_INTERVAL_MILISECONDS;
 
+#ifdef Q_OS_MACOS
+extern float MACOS_TITLEBAR_COLOR[3];
+#endif
+
 #ifdef SIOYEK_ANDROID
 extern Path android_config_path;
 #endif
@@ -2061,6 +2065,17 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_deserializer,
         bool_validator
         });
+
+#ifdef Q_OS_MACOS
+    configs.push_back({
+        L"macos_titlebar_color",
+        ConfigType::Color3,
+        MACOS_TITLEBAR_COLOR,
+        vec3_serializer,
+        color3_deserializer,
+        color_3_validator
+        });
+#endif
 
 #ifdef _DEBUG
     configs.push_back({

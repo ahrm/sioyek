@@ -94,6 +94,10 @@ extern "C" {
     #include <fzf/fzf.h>
 }
 
+#ifdef Q_OS_MACOS
+extern "C" void changeTitlebarColor(WId, double, double, double, double);
+#endif
+
 extern int next_window_id;
 
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
@@ -256,6 +260,9 @@ extern int RELOAD_INTERVAL_MILISECONDS;
 
 const unsigned int INTERVAL_TIME = 200;
 
+#ifdef Q_OS_MACOS
+extern float MACOS_TITLEBAR_COLOR[3];
+#endif
 
 MainWidget* get_window_with_window_id(int window_id) {
     for (auto window : windows) {
@@ -1171,6 +1178,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 #endif
 
         });
+
+#ifdef Q_OS_MACOS
+    if (MACOS_TITLEBAR_COLOR[0] >= 0){
+        changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
+    }
+#endif
 
     setFocus();
 }
@@ -6791,6 +6804,7 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
+    changeTitlebarColor(winId(), 1.0, 0.0, 0.0, 0.5);
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -7220,6 +7234,11 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
     bool should_invalidate_render = false;
     for (int i = 0; i < config_names->size(); i++) {
         QString confname = QString::fromStdString((*config_names)[i]);
+#ifdef Q_OS_MACOS
+        if (confname == "macos_titlebar_color"){
+            changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
+        }
+#endif
 
         if (confname.startsWith("epub")) {
             should_reflow = true;

@@ -360,6 +360,10 @@ float EPUB_LINE_SPACING = 2.0f;
 int RELOAD_INTERVAL_MILISECONDS = 200;
 bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE = true;
 
+#ifdef Q_OS_MACOS
+float MACOS_TITLEBAR_COLOR[3] = { -1.0f, -1.0f, -1.0f };
+#endif
+
 std::wstring RULER_DISPLAY_MODE = L"underline";
 std::wstring EPUB_CSS = L"";
 QString EPUB_TEMPLATE = "p {\
