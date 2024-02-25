@@ -6840,7 +6840,6 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
-    changeTitlebarColor(winId(), 1.0, 0.0, 0.0, 0.5);
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
