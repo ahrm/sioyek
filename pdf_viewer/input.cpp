@@ -140,7 +140,7 @@ struct ParseState {
             }
         }
         else {
-            while (!str[index].isSpace() && (str[index] != ')') && (str[index] != ',')) {
+            while ((str[index] != ')') && (str[index] != ',')) {
                 arg.push_back(str[index]);
                 index++;
             }
