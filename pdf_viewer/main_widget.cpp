@@ -2956,7 +2956,14 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
 #ifdef SIOYEK_QT6
     int num_repeats = abs(wevent->angleDelta().y() / 120);
-    float num_repeats_f = abs(wevent->angleDelta().y() / 120.0);
+    float num_repeats_f_y = abs(wevent->angleDelta().y() / 120.0);
+    float num_repeats_f_x = abs(wevent->angleDelta().x() / 120.0);
+    if (std::abs(num_repeats_f_x) > std::abs(num_repeats_f_y)){
+        num_repeats_f_y = 0;
+    }
+    else{
+        num_repeats_f_x = 0;
+    }
 #else
     int num_repeats = abs(wevent->delta() / 120);
     float num_repeats_f = abs(wevent->delta() / 120.0);
@@ -2973,10 +2980,10 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
             if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
                 if (is_touchpad){
                     if (wevent->angleDelta().y() > 0) {
-                        scroll_overview_vertical(-72.0f * vertical_move_amount * num_repeats_f);
+                        scroll_overview_vertical(-72.0f * vertical_move_amount * num_repeats_f_y);
                     }
                     if (wevent->angleDelta().y() < 0) {
-                        scroll_overview_vertical(72.0f * vertical_move_amount * num_repeats_f);
+                        scroll_overview_vertical(72.0f * vertical_move_amount * num_repeats_f_y);
                     }
                 }
                 else{
@@ -3023,9 +3030,9 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     invalidate_render();
                 }
                 else {
-                    move_vertical(-72.0f * vertical_move_amount * num_repeats_f);
+                    move_vertical(-72.0f * vertical_move_amount * num_repeats_f_y);
                     update_scrollbar();
-                    return;
+                    // return;
                 }
             }
             if (wevent->angleDelta().y() < 0) {
@@ -3049,33 +3056,34 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     invalidate_render();
                 }
                 else {
-                    move_vertical(72.0f * vertical_move_amount * num_repeats_f);
+                    move_vertical(72.0f * vertical_move_amount * num_repeats_f_y);
                     update_scrollbar();
-                    return;
+                    // return;
                 }
             }
 
             float inverse_factor = INVERTED_HORIZONTAL_SCROLLING ? -1.0f : 1.0f;
 
             if (wevent->angleDelta().x() > 0) {
-                move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
+                move_horizontal(72.0f * horizontal_move_amount * num_repeats_f_x * inverse_factor);
                 return;
             }
             if (wevent->angleDelta().x() < 0) {
-                move_horizontal(72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
+                move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f_x * inverse_factor);
                 return;
             }
         }
     }
 
     if (is_control_pressed) {
-        float zoom_factor = 1.0f + num_repeats_f * (ZOOM_INC_FACTOR - 1.0f);
+        float zoom_factor = 1.0f + num_repeats_f_y * (ZOOM_INC_FACTOR - 1.0f);
         zoom(mouse_window_pos, zoom_factor, wevent->angleDelta().y() > 0);
         return;
     }
     if (is_shift_pressed) {
         float inverse_factor = INVERTED_HORIZONTAL_SCROLLING ? -1.0f : 1.0f;
 
+#ifndef Q_OS_MACOS
         if (wevent->angleDelta().y() > 0) {
             move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
             return;
@@ -3084,6 +3092,17 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
             move_horizontal(72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
             return;
         }
+#else
+        // macos handles the conversion of shift+wheel to horizontal scrolling
+        if (wevent->angleDelta().y() > 0) {
+            move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f_y * inverse_factor);
+            return;
+        }
+        if (wevent->angleDelta().y() < 0) {
+            move_horizontal(72.0f * horizontal_move_amount * num_repeats_f_y * inverse_factor);
+            return;
+        }
+#endif
 
     }
 }
