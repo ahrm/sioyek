@@ -101,7 +101,7 @@ public:
     void update_command_last_use(std::string command_name);
 
     template<typename T>
-    void register_command() {
+    void register_command(std::string alias_name="") {
         bool is_developer_mode = false;
 
 #ifdef SIOYEK_DEVELOPER
@@ -109,9 +109,11 @@ public:
 #endif
 
         if (is_developer_mode || !T::developer_only) {
-            new_commands[T::cname]  = [](MainWidget* widget) {return std::make_unique<T>(widget); };
-            command_human_readable_names[T::cname] = T::hname;
-            command_required_prefixes[QString::fromStdString(T::cname)] = "";
+            std::string name = alias_name.size() > 0 ? alias_name : T::cname;
+            bool is_alias = alias_name.size() > 0;
+            new_commands[name]  = [](MainWidget* widget) {return std::make_unique<T>(widget); };
+            command_human_readable_names[name] = is_alias ? "alias for " + T::cname : T::hname;
+            command_required_prefixes[QString::fromStdString(name)] = "";
         }
     }
 };

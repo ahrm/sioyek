@@ -6624,6 +6624,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<PrintNonDefaultConfigs>();
     register_command<SetWindowRectCommand>();
     register_command<MoveSelectedBookmarkCommand>();
+    register_command<CloseWindowCommand>("q");
 
     for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
         std::string command_name = utf8_encode(command_name_);
