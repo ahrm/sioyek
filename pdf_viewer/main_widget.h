@@ -556,6 +556,7 @@ public:
     bool is_rotated();
     void on_new_paper_added(const std::wstring& file_path);
     void scroll_overview(int vertical_amount, int horizontal_amount = 0);
+    void scroll_overview_vertical(float amount);
     int get_current_page_number() const;
     std::wstring get_current_page_label();
     void goto_page_with_page_number(int page_number);
