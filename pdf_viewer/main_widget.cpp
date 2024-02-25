@@ -10542,5 +10542,8 @@ void MainWidget::set_fixed_velocity(float vel) {
     is_velocity_fixed = true;
     if (vel == 0) {
         is_velocity_fixed = false;
+        if (validation_interval_timer->interval() == 0){
+            validation_interval_timer->setInterval(INTERVAL_TIME);
+        }
     }
 }
