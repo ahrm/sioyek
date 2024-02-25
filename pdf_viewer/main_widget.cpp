@@ -3083,26 +3083,43 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
     if (is_shift_pressed) {
         float inverse_factor = INVERTED_HORIZONTAL_SCROLLING ? -1.0f : 1.0f;
 
-#ifndef Q_OS_MACOS
-        if (wevent->angleDelta().y() > 0) {
-            move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
-            return;
-        }
-        if (wevent->angleDelta().y() < 0) {
-            move_horizontal(72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
-            return;
-        }
-#else
-        // macos handles the conversion of shift+wheel to horizontal scrolling
-        if (wevent->angleDelta().y() > 0) {
-            move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f_y * inverse_factor);
-            return;
-        }
-        if (wevent->angleDelta().y() < 0) {
-            move_horizontal(72.0f * horizontal_move_amount * num_repeats_f_y * inverse_factor);
-            return;
-        }
+        bool is_macos = false;
+#ifdef Q_OS_MACOS
+        is_macos = true;
 #endif
+        if (is_macos){
+            if (is_touchpad){
+                if (wevent->angleDelta().y() > 0) {
+                    move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f_y * inverse_factor);
+                    return;
+                }
+                if (wevent->angleDelta().y() < 0) {
+                    move_horizontal(72.0f * horizontal_move_amount * num_repeats_f_y * inverse_factor);
+                    return;
+                }
+            }
+            else{
+                if (wevent->angleDelta().x() > 0) {
+                    move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f_x * inverse_factor);
+                    return;
+                }
+                if (wevent->angleDelta().x() < 0) {
+                    move_horizontal(72.0f * horizontal_move_amount * num_repeats_f_x * inverse_factor);
+                    return;
+                }
+            }
+        }
+        else{
+            if (wevent->angleDelta().y() > 0) {
+                move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f_y * inverse_factor);
+                return;
+            }
+            if (wevent->angleDelta().y() < 0) {
+                move_horizontal(72.0f * horizontal_move_amount * num_repeats_f_y * inverse_factor);
+                return;
+            }
+        }
+
 
     }
 }
