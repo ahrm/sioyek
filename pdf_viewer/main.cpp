@@ -605,7 +605,7 @@ void configure_paths() {
     default_keys_path = parent_path.slash(L"keys.config");
     tutorial_path = parent_path.slash(L"tutorial.pdf");
 
-#ifdef NON_PORTABLE
+#if defined(NON_PORTABLE) || defined(Q_OS_MACOS)
     user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
     user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
     for (int i = all_config_paths.size() - 1; i > 0; i--) {
