@@ -615,6 +615,7 @@ public:
     void handle_delete_selected_highlight();
     void handle_delete_selected_bookmark();
     void handle_start_reading();
+    void handle_toggle_reading();
     void handle_stop_reading();
     void handle_play();
     void handle_undo_drawing();

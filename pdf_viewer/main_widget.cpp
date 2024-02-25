@@ -7066,6 +7066,15 @@ void MainWidget::handle_stop_reading() {
     }
 }
 
+void MainWidget::handle_toggle_reading() {
+    if (is_reading){
+        handle_stop_reading();
+    }
+    else{
+        handle_start_reading();
+    }
+}
+
 void MainWidget::handle_play() {
     // I think qt's current implementation of pause/resume is a little buggy
     // for example it sometimes does not fire sayingWord events after being resumed

@@ -1246,6 +1246,17 @@ public:
     }
 };
 
+class ToggleReadingCommand : public Command {
+public:
+    static inline const std::string cname = "toggle_reading";
+    static inline const std::string hname = "Start reading or pause if we are already reading.";
+    ToggleReadingCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->handle_toggle_reading();
+    }
+};
+
 class SearchCommand : public TextCommand {
 public:
     static inline const std::string cname = "search";
@@ -6587,6 +6598,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<ToggleStatusbarCommand>();
     register_command<StartReadingCommand>();
     register_command<StopReadingCommand>();
+    register_command<ToggleReadingCommand>();
     register_command<ScanNewFilesFromScanDirCommand>();
     register_command<AddMarkedDataCommand>();
     register_command<RemoveMarkedDataCommand>();
