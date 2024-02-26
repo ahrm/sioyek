@@ -6770,6 +6770,10 @@ void print_tree_node(InputParseTreeNode node) {
         std::wcerr << "Ctrl+";
     }
 
+    if (node.command_modifier) {
+        std::wcerr << "Cmd+";
+    }
+
     if (node.shift_modifier) {
         std::wcerr << "Shift+";
     }
@@ -6798,6 +6802,10 @@ InputParseTreeNode parse_token(std::wstring token) {
     for (size_t i = 0; i < subcommands.size() - 1; i++) {
         if (subcommands[i] == L"C") {
             res.control_modifier = true;
+        }
+
+        if (subcommands[i] == L"D") {
+            res.command_modifier = true;
         }
 
         if (subcommands[i] == L"S") {
@@ -7139,12 +7147,12 @@ bool is_digit(int key) {
     return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-std::unique_ptr<Command> InputHandler::get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed) {
+std::unique_ptr<Command> InputHandler::get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool command_pressed, bool alt_pressed) {
     // get the command for keyevent while we are in a menu. In menus we don't
     // support key melodies so we just check the children of the root if they match
-    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &alt_pressed);
+    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &command_pressed, &alt_pressed);
     for (auto child : root->children) {
-        if (child->is_final && child->matches(key, shift_pressed, control_pressed, alt_pressed)){
+        if (child->is_final && child->matches(key, shift_pressed, control_pressed, command_pressed, alt_pressed)){
             if (child->generator.has_value()) {
                 return child->generator.value()(w);
             }
@@ -7154,13 +7162,13 @@ std::unique_ptr<Command> InputHandler::get_menu_command(MainWidget* w, QKeyEvent
     return {};
 }
 
-int InputHandler::get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* alt_pressed) {
+int InputHandler::get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* command_pressed, bool* alt_pressed) {
     int key = 0;
     if (!USE_LEGACY_KEYBINDS) {
         std::vector<QString> special_texts = { "\b", "\t", " ", "\r", "\n" };
         if (((key_event->key() >= 'A') && (key_event->key() <= 'Z')) || ((key_event->text().size() > 0) &&
             (std::find(special_texts.begin(), special_texts.end(), key_event->text()) == special_texts.end()))) {
-            if (!(*control_pressed) && !(*alt_pressed)) {
+            if (!(*control_pressed) && !(*alt_pressed) && !(*command_pressed)) {
                 // shift is already handled in the returned text
                 *shift_pressed = false;
                 std::wstring text = key_event->text().toStdWString();
@@ -7195,11 +7203,11 @@ int InputHandler::get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool*
     return key;
 }
 
-std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool command_pressed, bool alt_pressed, int* num_repeats) {
 
-    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &alt_pressed);
+    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &command_pressed, &alt_pressed);
     if (current_node == root && is_digit(key)) {
-        if (!(key == '0' && (number_stack.size() == 0)) && (!control_pressed) && (!shift_pressed) && (!alt_pressed)) {
+        if (!(key == '0' && (number_stack.size() == 0)) && (!control_pressed) && (!shift_pressed) && (!alt_pressed) && (!command_pressed)) {
             number_stack.push_back('0' + key - Qt::Key::Key_0);
             return nullptr;
         }
@@ -7207,7 +7215,7 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
 
     for (InputParseTreeNode* child : current_node->children) {
         //if (child->command == key && child->shift_modifier == shift_pressed && child->control_modifier == control_pressed){
-        if (child->matches(key, shift_pressed, control_pressed, alt_pressed)) {
+        if (child->matches(key, shift_pressed, control_pressed, command_pressed, alt_pressed)) {
             if (child->is_final == true) {
                 current_node = root;
                 //cout << child->name << endl;
@@ -7261,14 +7269,15 @@ bool InputParseTreeNode::is_same(const InputParseTreeNode* other) {
     return (command == other->command) &&
         (shift_modifier == other->shift_modifier) &&
         (control_modifier == other->control_modifier) &&
+        (command_modifier == other->command_modifier) &&
         (alt_modifier == other->alt_modifier) &&
         (requires_symbol == other->requires_symbol) &&
         (requires_text == other->requires_text);
 }
 
-bool InputParseTreeNode::matches(int key, bool shift, bool ctrl, bool alt)
+bool InputParseTreeNode::matches(int key, bool shift, bool ctrl, bool cmd, bool alt)
 {
-    return (key == this->command) && (shift == this->shift_modifier) && (ctrl == this->control_modifier) && (alt == this->alt_modifier);
+    return (key == this->command) && (shift == this->shift_modifier) && (ctrl == this->control_modifier) && (cmd == this->command_modifier) && (alt == this->alt_modifier);
 }
 
 std::optional<Path> InputHandler::get_or_create_user_keys_path() {
@@ -7354,7 +7363,8 @@ std::string InputHandler::get_key_name_from_key_code(int key_code) const {
 std::string InputHandler::get_key_string_from_tree_node_sequence(const std::vector<InputParseTreeNode*> seq) const {
     std::string res;
     for (size_t i = 0; i < seq.size(); i++) {
-        if (seq[i]->alt_modifier || seq[i]->shift_modifier || seq[i]->control_modifier) {
+        bool has_modifier = seq[i]->alt_modifier || seq[i]->shift_modifier || seq[i]->control_modifier || seq[i]->command_modifier;
+        if (has_modifier) {
             res += "<";
         }
         std::string current_key_command_name = get_key_name_from_key_code(seq[i]->command);
@@ -7365,11 +7375,14 @@ std::string InputHandler::get_key_string_from_tree_node_sequence(const std::vect
         if (seq[i]->control_modifier) {
             res += "C-";
         }
+        if (seq[i]->command_modifier) {
+            res += "D-";
+        }
         if (seq[i]->shift_modifier) {
             res += "S-";
         }
         res += current_key_command_name;
-        if (seq[i]->alt_modifier || seq[i]->shift_modifier || seq[i]->control_modifier) {
+        if (has_modifier) {
             res += ">";
         }
     }

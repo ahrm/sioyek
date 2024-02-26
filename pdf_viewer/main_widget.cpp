@@ -2047,6 +2047,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
         std::vector<int> ignored_codes = {
             Qt::Key::Key_Shift,
             Qt::Key::Key_Control,
+            Qt::Key::Key_Meta,
             Qt::Key::Key_Alt
         };
         if (std::find(ignored_codes.begin(), ignored_codes.end(), kevent->key()) != ignored_codes.end()) {
@@ -2063,11 +2064,20 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
             return;
         }
         int num_repeats = 0;
-        bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier) || (kevent->modifiers() & Qt::MetaModifier);
+
+#ifdef Q_OS_MACOS
+        bool is_meta_pressed = (kevent->modifiers() & Qt::ControlModifier);
+        bool is_control_pressed =  (kevent->modifiers() & Qt::MetaModifier);
+#else
+        bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier);
+        bool is_meta_pressed = false;
+#endif
+
         std::unique_ptr<Command> commands = input_handler->handle_key(this,
             kevent,
             kevent->modifiers() & Qt::ShiftModifier,
             is_control_pressed,
+            is_meta_pressed,
             kevent->modifiers() & Qt::AltModifier,
             &num_repeats);
 
@@ -2087,13 +2097,13 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
 
 }
 
-void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed) {
+void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_command_pressed, bool is_alt_pressed) {
 
     if (is_scratchpad_mode()){
         return;
     }
 
-    if (is_shift_pressed || is_control_pressed || is_alt_pressed) {
+    if (is_shift_pressed || is_control_pressed || is_command_pressed || is_alt_pressed) {
         return;
     }
 
@@ -2154,12 +2164,12 @@ void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shif
 
 }
 
-void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed) {
+void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_command_pressed, bool is_alt_pressed) {
 
     if (is_rotated()) {
         return;
     }
-    if (is_shift_pressed || is_control_pressed || is_alt_pressed) {
+    if (is_shift_pressed || is_control_pressed || is_alt_pressed || is_command_pressed) {
         return;
     }
     if (selected_freehand_drawings) {
@@ -2747,6 +2757,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
 
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
+    bool is_command_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::MetaModifier);
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
 
 
@@ -2777,11 +2788,15 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         else if (is_control_pressed) {
             execute_macro_if_enabled(CONTROL_CLICK_COMMAND);
         }
+        else if (is_command_pressed) {
+            //todo: replace with command click commadn
+            execute_macro_if_enabled(CONTROL_CLICK_COMMAND);
+        }
         else if (is_alt_pressed) {
             execute_macro_if_enabled(ALT_CLICK_COMMAND);
         }
         else {
-            handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
+            handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
             if (is_select_highlight_mode && (main_document_view->selected_character_rects.size() > 0)) {
                 main_document_view->add_highlight(selection_begin, selection_end, select_highlight_type);
                 clear_selected_text();
@@ -2800,11 +2815,15 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
         else if (is_control_pressed) {
             execute_macro_if_enabled(CONTROL_RIGHT_CLICK_COMMAND);
         }
+        else if (is_command_pressed) {
+            //todo: replace with command right click command
+            execute_macro_if_enabled(CONTROL_RIGHT_CLICK_COMMAND);
+        }
         else if (is_alt_pressed) {
             execute_macro_if_enabled(ALT_RIGHT_CLICK_COMMAND);
         }
         else {
-            handle_right_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
+            handle_right_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
         }
     }
 
@@ -2870,6 +2889,7 @@ void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
+    bool is_command_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::MetaModifier);
     bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
 
     if (should_draw(false) && (mevent->button() == Qt::MouseButton::LeftButton)) {
@@ -2878,11 +2898,11 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::LeftButton) {
-        handle_left_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_alt_pressed);
+        handle_left_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
-        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_alt_pressed);
+        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
     }
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
@@ -4820,8 +4840,8 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
                 WindowPos begin_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(begin_doc_pos);
                 WindowPos end_window_pos = main_document_view->document_to_window_pos_in_pixels_uncentered(end_doc_pos);
 
-                handle_left_click(begin_window_pos, true, false, false, false);
-                handle_left_click(end_window_pos, false, false, false, false);
+                handle_left_click(begin_window_pos, true, false, false, false, false);
+                handle_left_click(end_window_pos, false, false, false, false, false);
             }
         }
 
@@ -4840,8 +4860,8 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
                 WindowRect erect = schar_rects[schar_rects.size() - 2];
                 int w = erect.x1 - erect.x0;
 
-                handle_left_click({ (srect.x0 + srect.x1) / 2 - 1, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
-                handle_left_click({ erect.x0 , (erect.y0 + erect.y1) / 2 }, false, false, false, false);
+                handle_left_click({ (srect.x0 + srect.x1) / 2 - 1, (srect.y0 + srect.y1) / 2 }, true, false, false, false, false);
+                handle_left_click({ erect.x0 , (erect.y0 + erect.y1) / 2 }, false, false, false, false, false);
                 opengl_widget->set_should_highlight_words(false);
             }
         }
@@ -4858,16 +4878,16 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
                 WindowRect erect = echar_rects[0];
                 int w = erect.x1 - erect.x0;
 
-                handle_left_click({ (srect.x0 + srect.x1) / 2 - 1, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
-                handle_left_click({ erect.x0 - w / 2 , (erect.y0 + erect.y1) / 2 }, false, false, false, false);
+                handle_left_click({ (srect.x0 + srect.x1) / 2 - 1, (srect.y0 + srect.y1) / 2 }, true, false, false, false, false);
+                handle_left_click({ erect.x0 - w / 2 , (erect.y0 + erect.y1) / 2 }, false, false, false, false, false);
                 opengl_widget->set_should_highlight_words(false);
             }
             else if (srect_.has_value() && erect_.has_value()) {
                 WindowRect srect = srect_.value();
                 WindowRect erect = erect_.value();
 
-                handle_left_click({ srect.x0 + 5, (srect.y0 + srect.y1) / 2 }, true, false, false, false);
-                handle_left_click({ erect.x0 - 5 , (erect.y0 + erect.y1) / 2 }, false, false, false, false);
+                handle_left_click({ srect.x0 + 5, (srect.y0 + srect.y1) / 2 }, true, false, false, false, false);
+                handle_left_click({ erect.x0 - 5 , (erect.y0 + erect.y1) / 2 }, false, false, false, false, false);
                 opengl_widget->set_should_highlight_words(false);
             }
 

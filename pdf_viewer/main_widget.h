@@ -389,8 +389,8 @@ public:
     void handle_escape();
     bool is_waiting_for_symbol();
     void key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat = false);
-    void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
-    void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
+    void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_command_pressed, bool is_alt_pressed);
+    void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_command_pressed, bool is_alt_pressed);
     void on_config_changed(std::string config_name, bool should_save=false);
     void on_configs_changed(std::vector<std::string>* config_names);
 
