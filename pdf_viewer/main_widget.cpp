@@ -1192,11 +1192,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
     }
 
-    // menu_bar = new QMenuBar(this);
     menu_bar = create_main_menu_bar();
-
     setMenuBar(menu_bar);
-
 
 #endif
 
@@ -2085,7 +2082,7 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
         bool is_control_pressed =  (kevent->modifiers() & Qt::MetaModifier);
 #else
         bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier);
-        bool is_meta_pressed = false;
+        bool is_meta_pressed = (kevent->modifiers() & Qt::MetaModifier);
 #endif
 
         std::unique_ptr<Command> commands = input_handler->handle_key(this,
