@@ -4266,6 +4266,34 @@ void QtTextToSpeechHandler::set_on_app_resume_callback(std::function<void(bool, 
 
 }
 
+QString translate_key_mapping_to_macos(QString mapping){
+
+    mapping = mapping.replace("D", "⌘");
+    mapping = mapping.replace("C", "^");
+    mapping = mapping.replace("S", "⇧");
+
+    mapping = mapping.replace("<left>", "◀");
+    mapping = mapping.replace("<up>", "▲");
+    mapping = mapping.replace("<right>", "▶");
+    mapping = mapping.replace("<down>", "▼");
+
+    mapping = mapping.replace("<pageup>", "↑");
+    mapping = mapping.replace("<pagedown>", "↓");
+
+    mapping.replace("--", "<temp>");
+    if (mapping.size() > 1){
+        mapping.replace("-", "");
+    }
+    mapping.replace("<temp>", "-");
+
+
+    if (mapping.startsWith("<") && mapping.endsWith(">")){
+        return mapping.mid(1, mapping.size()-2);
+    }
+
+    return mapping;
+}
+
 #ifdef SIOYEK_ANDROID
 
 AndroidTextToSpeechHandler::AndroidTextToSpeechHandler() {

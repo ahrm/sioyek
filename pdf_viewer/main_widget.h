@@ -128,6 +128,7 @@ public:
     InputHandler* input_handler = nullptr;
     CachedChecksummer* checksummer = nullptr;
     QWidget* central_widget = nullptr;
+    QMenuBar* menu_bar = nullptr;
     int window_id;
 
     TextToSpeechHandler* tts = nullptr;
@@ -956,6 +957,7 @@ public:
     void move_selected_bookmark_to_mouse_cursor();
     bool handle_annotation_move_finish();
     void set_fixed_velocity(float vel);
+    QMenuBar* create_main_menu_bar();
 };
 
 MainWidget* get_window_with_window_id(int window_id);

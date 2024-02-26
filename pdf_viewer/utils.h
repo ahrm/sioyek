@@ -520,3 +520,4 @@ public:
 #endif
 
 std::wstring get_path_extras_file_name(const std::wstring& path);
+QString translate_key_mapping_to_macos(QString mapping);

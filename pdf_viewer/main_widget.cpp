@@ -64,6 +64,7 @@
 #include <qjsengine.h>
 #include <qqmlengine.h>
 #include <qtextdocumentfragment.h>
+#include <qmenubar.h>
 
 #include <mupdf/fitz.h>
 
@@ -1190,6 +1191,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     if (MACOS_TITLEBAR_COLOR[0] >= 0){
         changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
     }
+
+    // menu_bar = new QMenuBar(this);
+    menu_bar = create_main_menu_bar();
+
+    setMenuBar(menu_bar);
 
 
 #endif
@@ -10575,4 +10581,54 @@ void MainWidget::set_fixed_velocity(float vel) {
             validation_interval_timer->setInterval(INTERVAL_TIME);
         }
     }
+}
+
+QMenuBar* MainWidget::create_main_menu_bar(){
+
+    std::vector<std::string> commands = {
+        "zoom_in",
+        "zoom_out",
+        "next_page",
+        "previous_page",
+        "fit_to_page_width",
+        "fit_to_page_width_smart",
+        "goto_bookmark"
+    };
+
+    QMenuBar* menu_bar = new QMenuBar(this);
+    // menu_bar->addMenu("Test")->addAction("something")->setShortcut(QKeySequence::fromString("Ctrl+A"));
+    // menu_bar->addMenu("Second")->addAction("Third");
+    QMenu* command_menu = menu_bar->addMenu("Commands");
+    auto command_key_mappings = input_handler->get_command_key_mappings();
+
+    for (auto command : commands){
+        auto human_readable_name = command_manager->get_command_with_name(this, command)->get_human_readable_name();
+        std::vector<std::string> key_mappings;
+
+        if (command_key_mappings.find(command) != command_key_mappings.end()){
+            key_mappings = command_key_mappings[command];
+        }
+
+        QString action_menu_name = QString::fromStdString(human_readable_name);
+
+        if (command_key_mappings.size() > 0){
+            action_menu_name += " ( " + translate_key_mapping_to_macos(QString::fromStdString(key_mappings[0])) + " ) ";
+        }
+
+        auto command_action = command_menu->addAction(action_menu_name);
+        connect(command_action, &QAction::triggered, [&, command](){
+        execute_macro_if_enabled(utf8_decode(command));
+        });
+    }
+    QMenu* help_menu = menu_bar->addMenu("Help");
+    QAction* donate_action = help_menu->addAction("Donate");
+    // donate_action->setShortcut(QKeySequence(Qt::Key_PageDown));
+    donate_action->setShortcut(QKeySequence(Qt::Key_Meta | Qt::Key_PageDown));
+
+    // test_action->setShortcut(QKeySequence::fromString("Ctrl+P, Ctrl+A"));
+
+    connect(donate_action, &QAction::triggered, [&](){
+        execute_macro_if_enabled(L"donate");
+    });
+    return menu_bar;
 }
