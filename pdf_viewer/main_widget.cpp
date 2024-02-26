@@ -792,7 +792,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     CachedChecksummer* checksummer,
     bool* should_quit_ptr,
     QWidget* parent) :
-    QQuickWidget(parent),
+    QMainWindow(parent),
     mupdf_context(mupdf_context),
     db_manager(db_manager),
     document_manager(document_manager),
@@ -806,6 +806,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     //quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
     window_id = next_window_id;
     next_window_id++;
+
+    central_widget = new QWidget(this);
 
     setMouseTracking(true);
     setAcceptDrops(true);
@@ -825,7 +827,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     main_document_view = new DocumentView(db_manager, document_manager, checksummer);
     opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, false, this);
 
-    status_label = new QLabel(this);
+    status_label = new QLabel(central_widget);
     status_label->setStyleSheet(get_status_stylesheet());
     QFont label_font = QFont(get_status_font_face_name());
     label_font.setStyleHint(QFont::TypeWriter);
@@ -1139,7 +1141,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     layout->setContentsMargins(0, 0, 0, 0);
     opengl_widget->setAttribute(Qt::WA_TransparentForMouseEvents);
     layout->addLayout(hlayout);
-    setLayout(layout);
+    central_widget->setLayout(layout);
+    setCentralWidget(central_widget);
+
+    opengl_widget->stackUnder(status_label);
+    // setLayout(layout);
 
     scroll_bar->setMinimum(0);
     scroll_bar->setMaximum(MAX_SCROLLBAR);
@@ -1180,9 +1186,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         });
 
 #ifdef Q_OS_MACOS
+    // only apply titlebar menu if the user has specifically changed it in settings
     if (MACOS_TITLEBAR_COLOR[0] >= 0){
         changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
     }
+
+
 #endif
 
     setFocus();

@@ -13,6 +13,7 @@
 #include <qnetworkaccessmanager.h>
 #include <qquickwidget.h>
 #include <qjsondocument.h>
+#include <qmainwindow.h>
 
 #include "book.h"
 #include "input.h"
@@ -114,7 +115,7 @@ enum class PaperDownloadFinishedAction {
 
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
-class MainWidget : public QQuickWidget {
+class MainWidget : public QMainWindow {
     Q_OBJECT
 public:
     fz_context* mupdf_context = nullptr;
@@ -126,6 +127,7 @@ public:
     PdfRenderer* pdf_renderer = nullptr;
     InputHandler* input_handler = nullptr;
     CachedChecksummer* checksummer = nullptr;
+    QWidget* central_widget = nullptr;
     int window_id;
 
     TextToSpeechHandler* tts = nullptr;
