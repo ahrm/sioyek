@@ -4276,7 +4276,9 @@ QString translate_key_mapping_to_macos(QString mapping){
     mapping = mapping.replace("<up>", "▲");
     mapping = mapping.replace("<right>", "▶");
     mapping = mapping.replace("<down>", "▼");
+    
 
+    mapping = mapping.replace("<backspace>", "⌫");
     mapping = mapping.replace("<pageup>", "↑");
     mapping = mapping.replace("<pagedown>", "↓");
 

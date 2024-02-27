@@ -1261,7 +1261,7 @@ public:
 class ToggleReadingCommand : public Command {
 public:
     static inline const std::string cname = "toggle_reading";
-    static inline const std::string hname = "Start reading or pause if we are already reading.";
+    static inline const std::string hname = "Start/Pause reading the selected line";
     ToggleReadingCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
@@ -1759,7 +1759,7 @@ public:
 class RenameCommand : public TextCommand {
 public:
     static inline const std::string cname = "rename";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Rename the current file";
     RenameCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
@@ -2181,7 +2181,7 @@ public:
 class GotoPortalListCommand : public GenericGotoLocationCommand {
 public:
     static inline const std::string cname = "goto_portal_list";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Open the portal list of current document";
     GotoPortalListCommand(MainWidget* w) : GenericGotoLocationCommand(cname, w) {};
 
     void handle_generic_requirement() {
@@ -2825,7 +2825,7 @@ public:
 class MoveLeftInOverviewCommand : public Command {
 public:
     static inline const std::string cname = "move_left_in_overview";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Move left in the overview window";
     MoveLeftInOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->scroll_overview(0, 1);
@@ -2835,7 +2835,7 @@ public:
 class MoveRightInOverviewCommand : public Command {
 public:
     static inline const std::string cname = "move_right_in_overview";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Move right in the overview window";
     MoveRightInOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->scroll_overview(0, -1);
@@ -2912,7 +2912,7 @@ public:
 class ClearScratchpadCommand : public Command {
 public:
     static inline const std::string cname = "clear_scratchpad";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Clear all scratchpad content";
     ClearScratchpadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->clear_scratchpad();
@@ -2933,7 +2933,7 @@ public:
 class ZoomOutOverviewCommand : public Command {
 public:
     static inline const std::string cname = "zoom_out_overview";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Zoom out the overview window";
     ZoomOutOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->zoom_out_overview();
@@ -2943,7 +2943,7 @@ public:
 class ZoomInOverviewCommand : public Command {
 public:
     static inline const std::string cname = "zoom_in_overview";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Zoom in the overview window";
     ZoomInOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->zoom_in_overview();
@@ -3758,7 +3758,7 @@ public:
 class MaximizeCommand : public Command {
 public:
     static inline const std::string cname = "maximize";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Maximize window";
     MaximizeCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->maximize_window();
@@ -5218,7 +5218,7 @@ public:
 class DownloadOverviewPaperCommand : public TextCommand {
 public:
     static inline const std::string cname = "download_overview_paper";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Download the referenced paper overview window";
     std::optional<AbsoluteRect> source_rect = {};
     std::wstring src_doc_path;
 
@@ -5622,7 +5622,7 @@ public:
 class EmbedAnnotationsCommand : public Command {
 public:
     static inline const std::string cname = "embed_annotations";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Embed the annotations into a new PDF file";
     EmbedAnnotationsCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<std::wstring> file_path = {};

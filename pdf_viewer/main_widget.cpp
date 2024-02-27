@@ -1202,12 +1202,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
     }
 
-
-#endif
-
     menu_bar = create_main_menu_bar();
     setMenuBar(menu_bar);
     menu_bar->stackUnder(text_command_line_edit_container);
+
+#endif
+
 
 
     setFocus();
@@ -7170,6 +7170,12 @@ void MainWidget::read_current_line() {
 
 void MainWidget::handle_start_reading() {
 
+    int line_index = main_document_view->get_line_index();
+    if (line_index == -1) {
+        show_error_message(L"You must select a line first (e.g. by right clicking on a line)");
+        return;
+    }
+
     is_reading = true;
     read_current_line();
     if (TOUCH_MODE) {
@@ -7329,6 +7335,12 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         }
 #endif
 
+        if (confname == "tts_rate") {
+            if (is_reading) {
+                handle_stop_reading();
+                handle_start_reading();
+            }
+        }
         if (confname.startsWith("epub")) {
             should_reflow = true;
         }
@@ -10613,10 +10625,17 @@ void MainWidget::create_menu_from_menu_node(
         // this is a command
 
         std::string command = items->name.toStdString();
-        auto human_readable_name = command_manager->get_command_with_name(this, command)->get_human_readable_name();
+        if (command[0] == '-' && command.size() == 1) {
+            parent->addSeparator();
+            return;
+        }
+        std::string human_readable_name;
 
         if (items->doc.size() > 0) {
             human_readable_name = items->doc.toStdString();
+        }
+        else {
+            human_readable_name = command_manager->get_command_with_name(this, command)->get_human_readable_name();
         }
 
         std::vector<std::string> key_mappings;
@@ -10633,7 +10652,14 @@ void MainWidget::create_menu_from_menu_node(
 
         auto command_action = parent->addAction(action_menu_name);
         connect(command_action, &QAction::triggered, [&, command](){
-        execute_macro_if_enabled(utf8_decode(command));
+
+            auto cmd = command_manager->get_command_with_name(this, command);
+            if (cmd) {
+                handle_command_types(std::move(cmd), 0);
+            }
+            else {
+                execute_macro_if_enabled(utf8_decode(command));
+            }
         });
 
     }
@@ -10668,7 +10694,9 @@ QMenuBar* MainWidget::create_main_menu_bar(){
             new MenuNode{ "open_document_embedded_from_current_path", "", {}},
             new MenuNode{ "open_last_document", "", {}},
             new MenuNode{ "goto_tab", "", {}},
+            new MenuNode{ "-", "", {}},
             new MenuNode{ "download_clipboard_url", "", {}},
+            new MenuNode{ "rename", "", {}},
         }
     };
 
@@ -10680,6 +10708,21 @@ QMenuBar* MainWidget::create_main_menu_bar(){
             new MenuNode{ "save_scratchpad", "", {}},
             new MenuNode{ "load_scratchpad", "", {}},
             new MenuNode{ "copy_screenshot_to_scratchpad", "", {}},
+            new MenuNode{ "clear_scratchpad", "", {}},
+        }
+    };
+
+    MenuNode* ruler_menu = new MenuNode{
+        "Ruler",
+        "",
+        {
+            new MenuNode{ "move_visual_mark_down", "", {}},
+            new MenuNode{ "move_visual_mark_up", "", {}},
+            new MenuNode{ "goto_mark(`)", "Go to the last ruler location", {}},
+            new MenuNode{ "toggle_visual_scroll", "Use mouse wheel to move the ruler", {}},
+            new MenuNode{ "overview_definition", "", {}},
+            new MenuNode{ "goto_definition", "", {}},
+            new MenuNode{ "portal_to_definition", "", {}},
         }
     };
 
@@ -10687,11 +10730,27 @@ QMenuBar* MainWidget::create_main_menu_bar(){
         "Window",
         "",
         {
+            new MenuNode{ "toggle_fullscreen", "", {} },
+            new MenuNode{ "maximize", "", {} },
             new MenuNode{ "new_window", "", {}},
             new MenuNode { "close_window", "", {} },
             new MenuNode { "toggle_window_configuration", "", {} },
             new MenuNode{ "goto_window", "", {} },
-            scratchpad_menu
+        }
+    };
+
+    MenuNode* overview_view_menu = new MenuNode{
+        "Overview",
+        "",
+        {
+            new MenuNode{ "zoom_in_overview", "", {} },
+            new MenuNode { "zoom_out_overview", "", {} },
+            new MenuNode { "move_left_in_overview", "", {} },
+            new MenuNode { "move_right_in_overview", "", {} },
+            new MenuNode { "close_overview", "", {} },
+            new MenuNode { "next_overview", "", {} },
+            new MenuNode { "previous_overview", "", {} },
+            new MenuNode { "download_overview_paper", "", {} },
         }
     };
 
@@ -10699,7 +10758,6 @@ QMenuBar* MainWidget::create_main_menu_bar(){
         "View",
         "",
         {
-            new MenuNode{ "toggle_fullscreen", "", {} },
             new MenuNode { "zoom_in", "", {} },
             new MenuNode { "zoom_out", "", {} },
             new MenuNode{ "fit_to_page_width", "", {} },
@@ -10707,11 +10765,16 @@ QMenuBar* MainWidget::create_main_menu_bar(){
             new MenuNode{ "fit_to_page_height", "", {} },
             new MenuNode{ "fit_to_page_height_smart", "", {} },
             new MenuNode{ "toggle_presentation_mode", "", {} },
+            new MenuNode{ "-", "", {} },
             new MenuNode{ "toggle_two_page_mode", "", {} },
             new MenuNode{ "toggle_dark_mode", "", {} },
             new MenuNode{ "toggle_custom_color", "", {} },
             new MenuNode{ "toggle_scrollbar", "", {} },
+            new MenuNode{ "toggle_statusbar", "", {} },
+            new MenuNode{ "toggle_horizontal_scroll_lock", "", {} },
+            new MenuNode{ "toggle_pdf_annotations", "", {} },
             new MenuNode{ "toggleconfig_preserve_image_colors_in_dark_mode", "Toggle preserve image colors in dark mode", {} },
+            overview_view_menu
         }
     };
 
@@ -10720,12 +10783,24 @@ QMenuBar* MainWidget::create_main_menu_bar(){
         "",
         {
             new MenuNode{ "goto_page_with_page_number", "", {} },
+            new MenuNode{ "goto_page_with_label", "", {} },
             new MenuNode{ "goto_toc", "", {} },
             new MenuNode{ "next_page", "", {} },
             new MenuNode { "previous_page", "", {} },
+            new MenuNode { "goto_beginning", "", {} },
+            new MenuNode { "goto_end", "", {} },
+            new MenuNode { "screen_down", "", {} },
+            new MenuNode { "screen_up", "", {} },
+            new MenuNode{ "-", "", {} },
+            new MenuNode { "next_state", "", {} },
+            new MenuNode { "prev_state", "", {} },
+            new MenuNode{ "-", "", {} },
             new MenuNode { "search", "", {} },
+            new MenuNode { "regex_search", "", {} },
             new MenuNode { "next_item", "", {} },
             new MenuNode { "previous_item", "", {} },
+            new MenuNode { "overview_next_item", "", {} },
+            new MenuNode { "overview_prev_item", "", {} },
         }
     };
 
@@ -10739,9 +10814,18 @@ QMenuBar* MainWidget::create_main_menu_bar(){
             new MenuNode{ "add_marked_bookmark", "", {} },
             new MenuNode{ "add_freetext_bookmark", "", {} },
             new MenuNode{ "delete_visible_bookmark", "", {} },
+            new MenuNode{ "edit_visible_bookmark", "Edit the selected bookmark", {} },
         }
     };
 
+    MenuNode* mark_menu = new MenuNode{
+        "Marks",
+        "",
+        {
+            new MenuNode{ "set_mark", "", {} },
+            new MenuNode{ "goto_mark", "", {} },
+        }
+    };
     MenuNode* highlight_menu = new MenuNode{
         "Highlights",
         "",
@@ -10749,8 +10833,22 @@ QMenuBar* MainWidget::create_main_menu_bar(){
             new MenuNode{ "goto_highlight", "", {} },
             new MenuNode{ "goto_highlight_g", "", {} },
             new MenuNode{ "add_highlight", "", {} },
+            new MenuNode{ "add_annot_to_selected_highlight", "", {} },
             new MenuNode{ "add_highlight_with_current_type", "", {} },
+            new MenuNode{ "edit_visible_highlight", "Edit the selected highlight", {} },
             new MenuNode{ "delete_highlight", "", {} },
+        }
+    };
+
+    MenuNode* portal_menu = new MenuNode{
+        "Portals",
+        "",
+        {
+            new MenuNode{ "portal", "Set the source/destination of a portal", {} },
+            new MenuNode{ "create_visible_portal", "Set the source of a portal visible on the document", {} },
+            new MenuNode{ "delete_portal", "", {} },
+            new MenuNode{ "toggle_window_configuration", "", {} },
+            new MenuNode{ "goto_portal_list", "", {} },
         }
     };
 
@@ -10770,13 +10868,52 @@ QMenuBar* MainWidget::create_main_menu_bar(){
         "Annotations",
         "",
         {
+            mark_menu,
             bookmark_menu,
             highlight_menu,
+            portal_menu,
             drawing_menu,
+            new MenuNode{ "embed_annotations", "", {} },
+            new MenuNode{ "import_annotations", "", {} },
         }
     };
 
-    std::vector<MenuNode*> top_level_menus = {file_menu_node, window_menu_node, view_menu, navigate_menu, annotation_menu};
+    MenuNode* tools_menu = new MenuNode{
+        "Tools",
+        "",
+        {
+            new MenuNode{ "command", "Show the list of all commands", {} },
+            new MenuNode{ "command_palette", "Show the command palette", {} },
+            new MenuNode{ "toggle_reading", "", {} },
+            new MenuNode{ "setconfig_tts_rate", "Set reading speed", {} },
+            new MenuNode{ "toggle_synctex", "", {} },
+            scratchpad_menu,
+            ruler_menu,
+        }
+    };
+
+    MenuNode* prefs_menu = new MenuNode{
+        "Preferences",
+        "",
+        {
+            new MenuNode{ "prefs_user", "", {} },
+            new MenuNode{ "keys_user", "", {} },
+            new MenuNode{ "prefs_user_all", "", {} },
+            new MenuNode{ "keys_user_all", "", {} },
+            new MenuNode{ "keys", "", {} },
+            new MenuNode{ "prefs", "", {} },
+        }
+    };
+
+    std::vector<MenuNode*> top_level_menus = {
+        file_menu_node,
+        window_menu_node,
+        view_menu,
+        navigate_menu,
+        annotation_menu,
+        tools_menu,
+        prefs_menu,
+    };
     //std::vector<std::string> commands = {
     //    "zoom_in",
     //    "zoom_out",
