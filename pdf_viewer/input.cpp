@@ -567,24 +567,36 @@ public:
         }
     }
 
-    void set_rect_requirement(AbsoluteRect value) {
+
+    int get_command_index_for_requirement_type(RequirementType reqtype) {
         if (is_modal) {
-            int current_mode_index = get_current_mode_index();
-            if (current_mode_index >= 0) {
-                commands[current_mode_index]->set_rect_requirement(value);
-            }
+            return get_current_mode_index();
         }
         else {
-
             for (int i = 0; i < commands.size(); i++) {
                 std::optional<Requirement> req = commands[i]->next_requirement(widget);
                 if (req) {
-                    if (req.value().type == RequirementType::Rect) {
-                        commands[i]->set_rect_requirement(value);
+                    if (req.value().type == reqtype) {
+                        return i;
                     }
-                    return;
+                    return -1;
                 }
             }
+        }
+        return -1;
+    }
+
+    void set_rect_requirement(AbsoluteRect value) {
+        int index = get_command_index_for_requirement_type(RequirementType::Rect);
+        if (index >= 0) {
+            commands[index]->set_rect_requirement(value);
+        }
+    }
+
+    void set_point_requirement(AbsoluteDocumentPos value) {
+        int index = get_command_index_for_requirement_type(RequirementType::Point);
+        if (index >= 0) {
+            commands[index]->set_point_requirement(value);
         }
     }
 
@@ -1260,7 +1272,7 @@ public:
 class SearchCommand : public TextCommand {
 public:
     static inline const std::string cname = "search";
-    static inline const std::string hname = "Search the PDF document";
+    static inline const std::string hname = "Search";
     SearchCommand(MainWidget* w) : TextCommand(cname, w) {
     };
 
@@ -1315,7 +1327,7 @@ public:
 class DownloadClipboardUrlCommand : public Command {
 public:
     static inline const std::string cname = "download_clipboard_url";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Download clipboard URL";
 
     DownloadClipboardUrlCommand(MainWidget* w) : Command(cname, w) {
     };
@@ -2050,7 +2062,7 @@ class CopyScreenshotToScratchpad : public Command {
 
 public:
     static inline const std::string cname = "copy_screenshot_to_scratchpad";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Copy window screenshot to scratchpad";
 
     std::optional<AbsoluteRect> rect_;
 
@@ -2682,7 +2694,7 @@ public:
 class OpenDocumentCommand : public Command {
 public:
     static inline const std::string cname = "open_document";
-    static inline const std::string hname = "open_document";
+    static inline const std::string hname = "Open a document using the native file explorer";
     OpenDocumentCommand(MainWidget* w) : Command(cname, w) {};
 
     std::wstring file_name;
@@ -2764,7 +2776,7 @@ public:
 class ToggleTwoPageModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_two_page_mode";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Toggle two page mode";
     ToggleTwoPageModeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
@@ -2880,7 +2892,7 @@ public:
 class SaveScratchpadCommand : public Command {
 public:
     static inline const std::string cname = "save_scratchpad";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Save scratchpad file";
     SaveScratchpadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->save_scratchpad();
@@ -2890,7 +2902,7 @@ public:
 class LoadScratchpadCommand : public Command {
 public:
     static inline const std::string cname = "load_scratchpad";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Load scratchpad file";
     LoadScratchpadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->load_scratchpad();
@@ -4121,7 +4133,7 @@ public:
 class ToggleScratchpadMode : public Command {
 public:
     static inline const std::string cname = "toggle_scratchpad_mode";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Toggle scratchpad";
     ToggleScratchpadMode(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
@@ -5666,6 +5678,10 @@ public:
     static inline const std::string hname = "Switch to previous opened document";
     OpenLastDocumentCommand(MainWidget* w) : Command(cname, w) {};
 
+    bool pushes_state() {
+        return true;
+    }
+
     void perform() {
         auto last_opened_file = widget->get_last_opened_file_checksum();
         if (last_opened_file) {
@@ -5788,7 +5804,7 @@ public:
 class DeleteFreehandDrawingsCommand : public Command {
 public:
     static inline const std::string cname = "delete_freehand_drawings";
-    static inline const std::string hname = "Add a text bookmark in the selected rectangle";
+    static inline const std::string hname = "Delete freehand drawings in selected rectangle";
     DeleteFreehandDrawingsCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<AbsoluteRect> rect_;

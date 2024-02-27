@@ -808,13 +808,14 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     window_id = next_window_id;
     next_window_id++;
 
-    central_widget = new QWidget(this);
 
     setMouseTracking(true);
     setAcceptDrops(true);
     setAttribute(Qt::WA_DeleteOnClose);
     setAttribute(Qt::WA_AcceptTouchEvents);
 
+
+    central_widget = new QWidget(this);
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
     pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
@@ -828,11 +829,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     main_document_view = new DocumentView(db_manager, document_manager, checksummer);
     opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, false, this);
 
-    status_label = new QLabel(central_widget);
+    status_label = new QLabel(this);
     status_label->setStyleSheet(get_status_stylesheet());
     QFont label_font = QFont(get_status_font_face_name());
     label_font.setStyleHint(QFont::TypeWriter);
     status_label->setFont(label_font);
+    opengl_widget->stackUnder(status_label);
 
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
@@ -842,7 +844,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
 
-    text_command_line_edit_label = new QLabel();
+    text_command_line_edit_label = new QLabel(this);
     text_command_line_edit = new MyLineEdit(this);
 
     text_command_line_edit_label->setFont(label_font);
@@ -1135,6 +1137,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     QVBoxLayout* layout = new QVBoxLayout;
     QHBoxLayout* hlayout = new QHBoxLayout;
 
+
     hlayout->addWidget(opengl_widget);
     hlayout->addWidget(scroll_bar);
 
@@ -1142,10 +1145,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     layout->setContentsMargins(0, 0, 0, 0);
     opengl_widget->setAttribute(Qt::WA_TransparentForMouseEvents);
     layout->addLayout(hlayout);
+
     central_widget->setLayout(layout);
+    opengl_widget->stackUnder(status_label);
     setCentralWidget(central_widget);
 
-    opengl_widget->stackUnder(status_label);
+
     // setLayout(layout);
 
     scroll_bar->setMinimum(0);
@@ -1192,10 +1197,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
     }
 
-    menu_bar = create_main_menu_bar();
-    setMenuBar(menu_bar);
 
 #endif
+    //menu_bar = create_main_menu_bar();
+    //setMenuBar(menu_bar);
+    //menu_bar->stackUnder(text_command_line_edit_container);
+
 
     setFocus();
 }
@@ -3600,7 +3607,12 @@ void MainWidget::set_current_widget(QWidget* new_widget) {
     current_widget_stack.push_back(new_widget);
     
     if (!TOUCH_MODE) {
-        new_widget->stackUnder(status_label);
+        if (new_widget) {
+            new_widget->stackUnder(status_label);
+            if (menu_bar) {
+                menu_bar->stackUnder(new_widget);
+            }
+        }
     }
     //if (current_widget != nullptr) {
     //    current_widget->hide();
@@ -6872,6 +6884,10 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
+    //opengl_widget->stackUnder(status_label);
+    //central_widget->hide();
+    opengl_widget->hide();
+    qDebug() << status_label->size() << " " << status_label->pos();
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -10580,25 +10596,17 @@ void MainWidget::set_fixed_velocity(float vel) {
     }
 }
 
-QMenuBar* MainWidget::create_main_menu_bar(){
 
-    std::vector<std::string> commands = {
-        "zoom_in",
-        "zoom_out",
-        "next_page",
-        "previous_page",
-        "fit_to_page_width",
-        "fit_to_page_width_smart",
-        "goto_bookmark"
-    };
+void MainWidget::create_menu_from_menu_node(
+    QMenu* parent,
+    MenuNode* items,
+    std::unordered_map<std::string,
+    std::vector<std::string>>& command_key_mappings) {
 
-    QMenuBar* menu_bar = new QMenuBar(this);
-    // menu_bar->addMenu("Test")->addAction("something")->setShortcut(QKeySequence::fromString("Ctrl+A"));
-    // menu_bar->addMenu("Second")->addAction("Third");
-    QMenu* command_menu = menu_bar->addMenu("Commands");
-    auto command_key_mappings = input_handler->get_command_key_mappings();
+    if (items->children.size() == 0) {
+        // this is a command
 
-    for (auto command : commands){
+        std::string command = items->name.toStdString();
         auto human_readable_name = command_manager->get_command_with_name(this, command)->get_human_readable_name();
         std::vector<std::string> key_mappings;
 
@@ -10608,15 +10616,188 @@ QMenuBar* MainWidget::create_main_menu_bar(){
 
         QString action_menu_name = QString::fromStdString(human_readable_name);
 
-        if (command_key_mappings.size() > 0){
+        if (key_mappings.size() > 0){
             action_menu_name += " ( " + translate_key_mapping_to_macos(QString::fromStdString(key_mappings[0])) + " ) ";
         }
 
-        auto command_action = command_menu->addAction(action_menu_name);
+        auto command_action = parent->addAction(action_menu_name);
         connect(command_action, &QAction::triggered, [&, command](){
         execute_macro_if_enabled(utf8_decode(command));
         });
+
     }
+    else {
+        auto menu = parent->addMenu(items->name);
+        for (auto&& child : items->children) {
+            create_menu_from_menu_node(menu, child, command_key_mappings);
+        }
+    }
+}
+
+QMenuBar* MainWidget::create_main_menu_bar(){
+
+
+    //MenuNode* submenu = new MenuNode{
+    //    "Zoom",
+    //   {
+    //        new MenuNode{ "zoom_in", {} },
+    //        new MenuNode{ "zoom_out", {} },
+    //        new MenuNode{ "fit_to_page_width", {} },
+    //        new MenuNode{ "fit_to_page_width_smart", {} }
+    //    }
+    //};
+
+    MenuNode* file_menu_node = new MenuNode{
+        "File",
+        {
+            new MenuNode{ "open_document", {} },
+            new MenuNode { "open_prev_doc", {} },
+            new MenuNode { "open_document_embedded", {} },
+            new MenuNode{ "open_document_embedded_from_current_path", {} },
+            new MenuNode{ "open_last_document", {} },
+            new MenuNode{ "goto_tab", {} },
+            new MenuNode{ "download_clipboard_url", {} },
+        }
+    };
+
+    MenuNode* scratchpad_menu = new MenuNode{
+        "Scratchpad",
+        {
+            new MenuNode{ "toggle_scratchpad_mode", {} },
+            new MenuNode{ "save_scratchpad", {} },
+            new MenuNode{ "load_scratchpad", {} },
+            new MenuNode{ "copy_screenshot_to_scratchpad", {} },
+        }
+    };
+
+    MenuNode* window_menu_node = new MenuNode{
+        "Window",
+        {
+            new MenuNode{ "new_window", {} },
+            new MenuNode { "close_window", {} },
+            new MenuNode { "toggle_window_configuration", {} },
+            new MenuNode{ "goto_window", {} },
+            scratchpad_menu
+        }
+    };
+
+    MenuNode* view_menu = new MenuNode{
+        "View",
+        {
+            new MenuNode{ "toggle_fullscreen", {} },
+            new MenuNode { "zoom_in", {} },
+            new MenuNode { "zoom_out", {} },
+            new MenuNode{ "fit_to_page_width", {} },
+            new MenuNode{ "fit_to_page_width_smart", {} },
+            new MenuNode{ "fit_to_page_height", {} },
+            new MenuNode{ "fit_to_page_height_smart", {} },
+            new MenuNode{ "toggle_presentation_mode", {} },
+            new MenuNode{ "toggle_two_page_mode", {} },
+            new MenuNode{ "toggle_dark_mode", {} },
+            new MenuNode{ "toggle_custom_color", {} },
+            new MenuNode{ "toggle_scrollbar", {} },
+        }
+    };
+
+    MenuNode* navigate_menu = new MenuNode{
+        "Naviagte",
+        {
+            new MenuNode{ "goto_page_with_page_number", {} },
+            new MenuNode{ "goto_toc", {} },
+            new MenuNode{ "next_page", {} },
+            new MenuNode { "previous_page", {} },
+            new MenuNode { "search", {} },
+            new MenuNode { "next_item", {} },
+            new MenuNode { "previous_item", {} },
+        }
+    };
+
+    MenuNode* bookmark_menu = new MenuNode{
+        "Bookmarks",
+        {
+            new MenuNode{ "goto_bookmark", {} },
+            new MenuNode{ "goto_bookmark_g", {} },
+            new MenuNode{ "add_bookmark", {} },
+            new MenuNode{ "add_marked_bookmark", {} },
+            new MenuNode{ "add_freetext_bookmark", {} },
+            new MenuNode{ "delete_visible_bookmark", {} },
+        }
+    };
+
+    MenuNode* highlight_menu = new MenuNode{
+        "Highlights",
+        {
+            new MenuNode{ "goto_highlight", {} },
+            new MenuNode{ "goto_highlight_g", {} },
+            new MenuNode{ "add_highlight", {} },
+            new MenuNode{ "add_highlight_with_current_type", {} },
+            new MenuNode{ "delete_highlight", {} },
+        }
+    };
+
+    MenuNode* drawing_menu = new MenuNode{
+        "Drawings",
+        {
+            new MenuNode{ "toggle_freehand_drawing_mode", {} },
+            new MenuNode{ "delete_freehand_drawings", {} },
+            new MenuNode{ "set_freehand_thickness", {} },
+            new MenuNode{ "set_freehand_type", {} },
+            new MenuNode{ "toggle_drawing_mask", {} },
+        }
+    };
+
+    MenuNode* annotation_menu = new MenuNode{
+        "Annotations",
+        {
+            bookmark_menu,
+            highlight_menu,
+            drawing_menu,
+        }
+    };
+
+    std::vector<MenuNode*> top_level_menus = {file_menu_node, window_menu_node, view_menu, navigate_menu, annotation_menu};
+    //std::vector<std::string> commands = {
+    //    "zoom_in",
+    //    "zoom_out",
+    //    "next_page",
+    //    "previous_page",
+    //    "fit_to_page_width",
+    //    "fit_to_page_width_smart",
+    //    "goto_bookmark"
+    //};
+
+    auto command_key_mappings = input_handler->get_command_key_mappings();
+    QMenuBar* menu_bar = new QMenuBar(this);
+    for (auto top_level_menu : top_level_menus) {
+        auto parent_menu = menu_bar->addMenu(top_level_menu->name);
+        for (auto child : top_level_menu->children) {
+            create_menu_from_menu_node(parent_menu, child, command_key_mappings);
+        }
+    }
+    //for (auto submenu )
+    // menu_bar->addMenu("Test")->addAction("something")->setShortcut(QKeySequence::fromString("Ctrl+A"));
+    // menu_bar->addMenu("Second")->addAction("Third");
+    //QMenu* command_menu = menu_bar->addMenu("Commands");
+
+    //for (auto command : commands){
+    //    auto human_readable_name = command_manager->get_command_with_name(this, command)->get_human_readable_name();
+    //    std::vector<std::string> key_mappings;
+
+    //    if (command_key_mappings.find(command) != command_key_mappings.end()){
+    //        key_mappings = command_key_mappings[command];
+    //    }
+
+    //    QString action_menu_name = QString::fromStdString(human_readable_name);
+
+    //    if (command_key_mappings.size() > 0){
+    //        action_menu_name += " ( " + translate_key_mapping_to_macos(QString::fromStdString(key_mappings[0])) + " ) ";
+    //    }
+
+    //    auto command_action = command_menu->addAction(action_menu_name);
+    //    connect(command_action, &QAction::triggered, [&, command](){
+    //    execute_macro_if_enabled(utf8_decode(command));
+    //    });
+    //}
     QMenu* help_menu = menu_bar->addMenu("Help");
     QAction* donate_action = help_menu->addAction("Donate");
     // donate_action->setShortcut(QKeySequence(Qt::Key_PageDown));
@@ -10627,5 +10808,17 @@ QMenuBar* MainWidget::create_main_menu_bar(){
     connect(donate_action, &QAction::triggered, [&](){
         execute_macro_if_enabled(L"donate");
     });
+
+    for (auto top_level_menu : top_level_menus) {
+        delete_menu_nodes(top_level_menu);
+    }
+
     return menu_bar;
+}
+
+void MainWidget::delete_menu_nodes(MenuNode* items) {
+    for (auto child : items->children) {
+        delete_menu_nodes(child);
+    }
+    delete items;
 }

@@ -61,6 +61,10 @@ enum class DrawingMode {
     None
 };
 
+struct MenuNode {
+    QString name;
+    std::vector<MenuNode*> children;
+};
 
 struct TextUnderPointerInfo{
     ReferenceType reference_type;
@@ -115,6 +119,7 @@ enum class PaperDownloadFinishedAction {
 
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
+//class MainWidget : public QQuickWidget {
 class MainWidget : public QMainWindow {
     Q_OBJECT
 public:
@@ -958,6 +963,8 @@ public:
     bool handle_annotation_move_finish();
     void set_fixed_velocity(float vel);
     QMenuBar* create_main_menu_bar();
+    void create_menu_from_menu_node(QMenu* parent, MenuNode* items, std::unordered_map<std::string, std::vector<std::string>>& command_key_mappings);
+    void delete_menu_nodes(MenuNode* items);
 };
 
 MainWidget* get_window_with_window_id(int window_id);
