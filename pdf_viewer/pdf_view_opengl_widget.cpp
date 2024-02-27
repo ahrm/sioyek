@@ -3630,8 +3630,9 @@ void PdfViewOpenGLWidget::render_selected_rectangle() {
         enable_stencil();
 
         write_to_stencil();
-        float rectangle_color[] = { 0.0f, 0.0f, 0.0f };
-        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
+        float rectangle_color_[] = { 0.0f, 0.0f, 0.0f };
+        auto rectangle_color = cc3(rectangle_color_);
+        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &rectangle_color[0]);
         glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 0.3f);
         if (!(selected_rectangle.value() == fz_empty_rect)) {
             render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value(), HRF_FILL | HRF_BORDER);
