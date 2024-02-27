@@ -793,7 +793,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     CachedChecksummer* checksummer,
     bool* should_quit_ptr,
     QWidget* parent) :
+#ifdef SIOYEK_ANDROID
+    QQuickWidget(parent),
+#else
     QMainWindow(parent),
+#endif
     mupdf_context(mupdf_context),
     db_manager(db_manager),
     document_manager(document_manager),
@@ -1146,12 +1150,13 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     opengl_widget->setAttribute(Qt::WA_TransparentForMouseEvents);
     layout->addLayout(hlayout);
 
+#ifdef SIOYEK_ANDROID
+     setLayout(layout);
+#else
     central_widget->setLayout(layout);
     opengl_widget->stackUnder(status_label);
     setCentralWidget(central_widget);
-
-
-    // setLayout(layout);
+#endif
 
     scroll_bar->setMinimum(0);
     scroll_bar->setMaximum(MAX_SCROLLBAR);
@@ -1197,11 +1202,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
     }
 
+    menu_bar = create_main_menu_bar();
+    setMenuBar(menu_bar);
+    menu_bar->stackUnder(text_command_line_edit_container);
 
 #endif
-    //menu_bar = create_main_menu_bar();
-    //setMenuBar(menu_bar);
-    //menu_bar->stackUnder(text_command_line_edit_container);
 
 
     setFocus();
