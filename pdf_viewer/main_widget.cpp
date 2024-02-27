@@ -1202,11 +1202,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
     }
 
+
+#endif
+
     menu_bar = create_main_menu_bar();
     setMenuBar(menu_bar);
     menu_bar->stackUnder(text_command_line_edit_container);
-
-#endif
 
 
     setFocus();
@@ -10613,6 +10614,11 @@ void MainWidget::create_menu_from_menu_node(
 
         std::string command = items->name.toStdString();
         auto human_readable_name = command_manager->get_command_with_name(this, command)->get_human_readable_name();
+
+        if (items->doc.size() > 0) {
+            human_readable_name = items->doc.toStdString();
+        }
+
         std::vector<std::string> key_mappings;
 
         if (command_key_mappings.find(command) != command_key_mappings.end()){
@@ -10654,105 +10660,115 @@ QMenuBar* MainWidget::create_main_menu_bar(){
 
     MenuNode* file_menu_node = new MenuNode{
         "File",
+        "",
         {
-            new MenuNode{ "open_document", {} },
-            new MenuNode { "open_prev_doc", {} },
-            new MenuNode { "open_document_embedded", {} },
-            new MenuNode{ "open_document_embedded_from_current_path", {} },
-            new MenuNode{ "open_last_document", {} },
-            new MenuNode{ "goto_tab", {} },
-            new MenuNode{ "download_clipboard_url", {} },
+            new MenuNode{ "open_document", "", {}},
+            new MenuNode { "open_prev_doc", "", {}},
+            new MenuNode { "open_document_embedded", "", {}},
+            new MenuNode{ "open_document_embedded_from_current_path", "", {}},
+            new MenuNode{ "open_last_document", "", {}},
+            new MenuNode{ "goto_tab", "", {}},
+            new MenuNode{ "download_clipboard_url", "", {}},
         }
     };
 
     MenuNode* scratchpad_menu = new MenuNode{
         "Scratchpad",
+        "",
         {
-            new MenuNode{ "toggle_scratchpad_mode", {} },
-            new MenuNode{ "save_scratchpad", {} },
-            new MenuNode{ "load_scratchpad", {} },
-            new MenuNode{ "copy_screenshot_to_scratchpad", {} },
+            new MenuNode{ "toggle_scratchpad_mode", "", {}},
+            new MenuNode{ "save_scratchpad", "", {}},
+            new MenuNode{ "load_scratchpad", "", {}},
+            new MenuNode{ "copy_screenshot_to_scratchpad", "", {}},
         }
     };
 
     MenuNode* window_menu_node = new MenuNode{
         "Window",
+        "",
         {
-            new MenuNode{ "new_window", {} },
-            new MenuNode { "close_window", {} },
-            new MenuNode { "toggle_window_configuration", {} },
-            new MenuNode{ "goto_window", {} },
+            new MenuNode{ "new_window", "", {}},
+            new MenuNode { "close_window", "", {} },
+            new MenuNode { "toggle_window_configuration", "", {} },
+            new MenuNode{ "goto_window", "", {} },
             scratchpad_menu
         }
     };
 
     MenuNode* view_menu = new MenuNode{
         "View",
+        "",
         {
-            new MenuNode{ "toggle_fullscreen", {} },
-            new MenuNode { "zoom_in", {} },
-            new MenuNode { "zoom_out", {} },
-            new MenuNode{ "fit_to_page_width", {} },
-            new MenuNode{ "fit_to_page_width_smart", {} },
-            new MenuNode{ "fit_to_page_height", {} },
-            new MenuNode{ "fit_to_page_height_smart", {} },
-            new MenuNode{ "toggle_presentation_mode", {} },
-            new MenuNode{ "toggle_two_page_mode", {} },
-            new MenuNode{ "toggle_dark_mode", {} },
-            new MenuNode{ "toggle_custom_color", {} },
-            new MenuNode{ "toggle_scrollbar", {} },
+            new MenuNode{ "toggle_fullscreen", "", {} },
+            new MenuNode { "zoom_in", "", {} },
+            new MenuNode { "zoom_out", "", {} },
+            new MenuNode{ "fit_to_page_width", "", {} },
+            new MenuNode{ "fit_to_page_width_smart", "", {} },
+            new MenuNode{ "fit_to_page_height", "", {} },
+            new MenuNode{ "fit_to_page_height_smart", "", {} },
+            new MenuNode{ "toggle_presentation_mode", "", {} },
+            new MenuNode{ "toggle_two_page_mode", "", {} },
+            new MenuNode{ "toggle_dark_mode", "", {} },
+            new MenuNode{ "toggle_custom_color", "", {} },
+            new MenuNode{ "toggle_scrollbar", "", {} },
+            new MenuNode{ "toggleconfig_preserve_image_colors_in_dark_mode", "Toggle preserve image colors in dark mode", {} },
         }
     };
 
     MenuNode* navigate_menu = new MenuNode{
         "Naviagte",
+        "",
         {
-            new MenuNode{ "goto_page_with_page_number", {} },
-            new MenuNode{ "goto_toc", {} },
-            new MenuNode{ "next_page", {} },
-            new MenuNode { "previous_page", {} },
-            new MenuNode { "search", {} },
-            new MenuNode { "next_item", {} },
-            new MenuNode { "previous_item", {} },
+            new MenuNode{ "goto_page_with_page_number", "", {} },
+            new MenuNode{ "goto_toc", "", {} },
+            new MenuNode{ "next_page", "", {} },
+            new MenuNode { "previous_page", "", {} },
+            new MenuNode { "search", "", {} },
+            new MenuNode { "next_item", "", {} },
+            new MenuNode { "previous_item", "", {} },
         }
     };
 
     MenuNode* bookmark_menu = new MenuNode{
         "Bookmarks",
+        "",
         {
-            new MenuNode{ "goto_bookmark", {} },
-            new MenuNode{ "goto_bookmark_g", {} },
-            new MenuNode{ "add_bookmark", {} },
-            new MenuNode{ "add_marked_bookmark", {} },
-            new MenuNode{ "add_freetext_bookmark", {} },
-            new MenuNode{ "delete_visible_bookmark", {} },
+            new MenuNode{ "goto_bookmark", "", {} },
+            new MenuNode{ "goto_bookmark_g", "", {} },
+            new MenuNode{ "add_bookmark", "", {} },
+            new MenuNode{ "add_marked_bookmark", "", {} },
+            new MenuNode{ "add_freetext_bookmark", "", {} },
+            new MenuNode{ "delete_visible_bookmark", "", {} },
         }
     };
 
     MenuNode* highlight_menu = new MenuNode{
         "Highlights",
+        "",
         {
-            new MenuNode{ "goto_highlight", {} },
-            new MenuNode{ "goto_highlight_g", {} },
-            new MenuNode{ "add_highlight", {} },
-            new MenuNode{ "add_highlight_with_current_type", {} },
-            new MenuNode{ "delete_highlight", {} },
+            new MenuNode{ "goto_highlight", "", {} },
+            new MenuNode{ "goto_highlight_g", "", {} },
+            new MenuNode{ "add_highlight", "", {} },
+            new MenuNode{ "add_highlight_with_current_type", "", {} },
+            new MenuNode{ "delete_highlight", "", {} },
         }
     };
 
     MenuNode* drawing_menu = new MenuNode{
         "Drawings",
+        "",
         {
-            new MenuNode{ "toggle_freehand_drawing_mode", {} },
-            new MenuNode{ "delete_freehand_drawings", {} },
-            new MenuNode{ "set_freehand_thickness", {} },
-            new MenuNode{ "set_freehand_type", {} },
-            new MenuNode{ "toggle_drawing_mask", {} },
+            new MenuNode{ "toggle_freehand_drawing_mode", "", {} },
+            new MenuNode{ "delete_freehand_drawings", "", {} },
+            new MenuNode{ "set_freehand_thickness", "", {} },
+            new MenuNode{ "set_freehand_type", "", {} },
+            new MenuNode{ "toggle_drawing_mask", "", {} },
         }
     };
 
     MenuNode* annotation_menu = new MenuNode{
         "Annotations",
+        "",
         {
             bookmark_menu,
             highlight_menu,

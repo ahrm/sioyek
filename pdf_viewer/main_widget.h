@@ -63,6 +63,7 @@ enum class DrawingMode {
 
 struct MenuNode {
     QString name;
+    QString doc;
     std::vector<MenuNode*> children;
 };
 

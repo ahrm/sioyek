@@ -3418,7 +3418,7 @@ class DeleteVisibleBookmarkCommand : public GenericVisibleBookmarkCommand {
 
 public:
     static inline const std::string cname = "delete_visible_bookmark";
-    static inline const std::string hname = "Delete a visible bookmark";
+    static inline const std::string hname = "Delete the selected bookmark";
     DeleteVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(cname, w) {};
 
     void perform_with_bookmark_selected() override {
