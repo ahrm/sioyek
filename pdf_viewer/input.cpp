@@ -3941,6 +3941,10 @@ public:
         widget->main_document_view->goto_chapter(rp);
     }
 
+    bool pushes_state() {
+        return true;
+    }
+
 };
 
 class PrevChapterCommand : public Command {
@@ -3952,6 +3956,10 @@ public:
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->main_document_view->goto_chapter(-rp);
+    }
+
+    bool pushes_state() {
+        return true;
     }
 
 };

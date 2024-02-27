@@ -1060,6 +1060,10 @@ void DocumentView::goto_chapter(int diff) {
         index++;
     }
 
+    if (index < chapter_pages.size() && chapter_pages[index] > curr_page) {
+        index--;
+    }
+
     int new_index = index + diff;
     if (new_index < 0) {
         goto_page(0);
