@@ -1133,7 +1133,10 @@ int main(int argc, char* args[]) {
 
 #ifndef SIOYEK_ANDROID
     guard.on_delete = std::move([&](QLocalSocket* deleted_socket) {
-        main_widget->on_socket_deleted(deleted_socket);
+        if (windows.size() > 0) {
+            windows[0]->on_socket_deleted(deleted_socket);
+        }
+        //main_widget->on_socket_deleted(deleted_socket);
         });
 #endif
 
