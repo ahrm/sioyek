@@ -1,4 +1,4 @@
-// deduplicate database code
+﻿// deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
@@ -4761,13 +4761,9 @@ std::wstring MainWidget::synctex_under_pos(WindowPos position) {
             std::string column_string = std::to_string(column);
 
             if (inverse_search_command.size() > 0) {
-#ifdef Q_OS_WIN
-                QString command = QString::fromStdWString(inverse_search_command).arg(new_path, line_string.c_str(), column_string.c_str());
-#else
-                QString command = QString::fromStdWString(inverse_search_command).arg(file_name, line_string.c_str(), column_string.c_str());
-#endif
-                res = QString("%1 %2 %3").arg(new_path, QString::number(line), QString::number(column)).toStdWString();
-                QProcess::startDetached(command);
+                QString command = QString::fromStdWString(inverse_search_command).arg(new_path, line_string.c_str());
+                QStringList args = QProcess::splitCommand(command);
+                QProcess::startDetached(args[0], args.mid(1));
             }
             else {
                 show_error_message(L"inverse_search_command is not set in prefs_user.config");
