@@ -4761,7 +4761,11 @@ std::wstring MainWidget::synctex_under_pos(WindowPos position) {
             std::string column_string = std::to_string(column);
 
             if (inverse_search_command.size() > 0) {
-                QString command = QString::fromStdWString(inverse_search_command).arg(new_path, line_string.c_str());
+#ifdef Q_OS_WIN
+                QString command = QString::fromStdWString(inverse_search_command).arg(new_path, line_string.c_str(), column_string.c_str());
+#else
+                QString command = QString::fromStdWString(inverse_search_command).arg(file_name, line_string.c_str(), column_string.c_str());
+#endif
                 QStringList args = QProcess::splitCommand(command);
                 QProcess::startDetached(args[0], args.mid(1));
             }
