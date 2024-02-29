@@ -468,31 +468,28 @@ std::wstring strip_uri(std::wstring pdf_file_name) {
 QStringList convert_arguments(QStringList input_args) {
     // convert the relative path of filename (if it exists) to absolute path
 
+    QCommandLineParser* parser = get_command_line_parser();
+    parser->parse(input_args);
+
     QStringList output_args;
+    QString path_arg = "";
+    if (parser->positionalArguments().size() > 0) {
+        // the first positional argument is the path
+        path_arg = parser->positionalArguments()[0];
+    }
 
-    //the first argument is always path of the executable
-    output_args.push_back(input_args.at(0));
-    input_args.pop_front();
-
-    if (input_args.size() > 0) {
-        QString path = input_args.at(0);
-
-        bool is_path_argument = true;
-
-        if (path.size() > 2 && path.startsWith("--")) {
-            is_path_argument = false;
-        }
-
-        if (is_path_argument) {
-            std::wstring path_wstring = strip_uri(path.toStdWString());
+    for (auto arg : input_args) {
+        if (arg == path_arg) {
+            std::wstring path_wstring = strip_uri(arg.toStdWString());
             Path path_object(path_wstring);
             output_args.push_back(QString::fromStdWString(path_object.get_path()));
-            input_args.pop_front();
+        }
+        else {
+            output_args.push_back(arg);
         }
     }
-    for (int i = 0; i < input_args.size(); i++) {
-        output_args.push_back(input_args.at(i));
-    }
+
+    delete parser;
 
     return output_args;
 }
