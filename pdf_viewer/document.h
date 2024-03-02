@@ -182,8 +182,8 @@ public:
     void load_document_metadata_from_db();
     std::string add_bookmark(const std::wstring& desc, float y_offset);
     std::string add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
-    int add_incomplete_freetext_bookmark(AbsoluteRect absrect);
-    std::string add_pending_freetext_bookmark(int index, const std::wstring& desc);
+    int add_incomplete_bookmark(BookMark incomplete_bookmark);
+    std::string add_pending_bookmark(int index, const std::wstring& desc);
     void undo_pending_bookmark(int index);
     void add_freetext_bookmark(const std::wstring& desc, AbsoluteRect absrect);
     void add_freetext_bookmark_with_color(const std::wstring& desc, AbsoluteRect absrect, float* color, float font_size = -1);
