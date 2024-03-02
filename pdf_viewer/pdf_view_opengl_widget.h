@@ -134,6 +134,8 @@ private:
     std::string tag_prefix = "";
     std::vector<std::string> highlighted_tags;
 
+    std::optional<AbsoluteRect> pending_portal_rect = {};
+
     QIcon bookmark_icon;
     QIcon portal_icon;
     QIcon bookmark_icon_white;
@@ -363,4 +365,5 @@ public:
     void set_selected_bookmark_index(int index);
     void set_highlighted_tags(std::vector<std::string> tags);
     bool is_tag_highlighted(const std::string& tag);
+    void set_pending_portal_position(std::optional<AbsoluteRect> rect);
 };

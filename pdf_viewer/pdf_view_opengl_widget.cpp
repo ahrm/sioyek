@@ -1608,6 +1608,10 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             }
         }
 
+        if (pending_portal_rect) {
+            render_portal_rect(painter, pending_portal_rect.value(), true);
+        }
+
         for (int i = 0; i < bookmarks.size(); i++) {
             if (bookmarks[i].begin_y > -1) {
                 if (bookmarks[i].end_x == -1) {
@@ -3707,4 +3711,8 @@ bool PdfViewOpenGLWidget::is_tag_highlighted(const std::string& tag) {
         if (tag == htag) return true;
     }
     return false;
+}
+
+void PdfViewOpenGLWidget::set_pending_portal_position(std::optional<AbsoluteRect> rect) {
+    pending_portal_rect = rect;
 }

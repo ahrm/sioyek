@@ -277,7 +277,7 @@ public:
 
     // An incomplete portal that is being created. The source of the portal is filled
     // but the destination still needs to be set.
-    std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_portal;
+    std::optional<std::pair<std::optional<std::wstring>, Portal>> current_pending_portal;
 
     // the current freehand drawing mode. None means we are not drawing anything
     // Drawing means we use the mouse to draw a freehand diagram
@@ -969,6 +969,8 @@ public:
     QMenuBar* create_main_menu_bar();
     void create_menu_from_menu_node(QMenu* parent, MenuNode* items, std::unordered_map<std::string, std::vector<std::string>>& command_key_mappings);
     void delete_menu_nodes(MenuNode* items);
+    void set_pending_portal(std::optional<std::wstring> doc_path, Portal portal);
+    void set_pending_portal(std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_portal);
 };
 
 MainWidget* get_window_with_window_id(int window_id);

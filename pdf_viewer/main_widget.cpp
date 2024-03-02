@@ -1260,7 +1260,7 @@ MainWidget::~MainWidget() {
 }
 
 bool MainWidget::is_pending_link_source_filled() {
-    return (pending_portal && pending_portal->first);
+    return (current_pending_portal && current_pending_portal->first);
 }
 
 std::wstring MainWidget::get_status_string() {
@@ -1488,7 +1488,7 @@ void MainWidget::handle_escape() {
     }
     hide_command_line_edit();
     text_suggestion_index = 0;
-    pending_portal = {};
+    set_pending_portal({});
     synchronize_pending_link();
 
 
@@ -3487,8 +3487,7 @@ void MainWidget::start_creating_rect_portal(AbsoluteDocumentPos location) {
     //new_portal.src_rect_end_y = rect.y1;
 
 
-    pending_portal = std::make_pair<std::wstring, Portal>(main_document_view->get_document()->get_path(),
-        std::move(new_portal));
+    set_pending_portal(main_document_view->get_document()->get_path(), new_portal);
 
     synchronize_pending_link();
     refresh_all_windows();
@@ -3499,17 +3498,17 @@ void MainWidget::handle_portal() {
     if (!main_document_view_has_document()) return;
 
     if (is_pending_link_source_filled()) {
-        auto [source_path, pl] = pending_portal.value();
+        auto [source_path, pl] = current_pending_portal.value();
         pl.dst = main_document_view->get_checksum_state();
 
         if (source_path.has_value()) {
             add_portal(source_path.value(), pl);
         }
 
-        pending_portal = {};
+        set_pending_portal({});
     }
     else {
-        pending_portal = std::make_pair<std::wstring, Portal>(main_document_view->get_document()->get_path(),
+        set_pending_portal(main_document_view->get_document()->get_path(),
             Portal::with_src_offset(main_document_view->get_offset_y()));
     }
 
@@ -3559,10 +3558,10 @@ void MainWidget::set_presentation_mode(bool mode) {
 }
 
 void MainWidget::complete_pending_link(const PortalViewState& destination_view_state) {
-    Portal& pl = pending_portal.value().second;
+    Portal& pl = current_pending_portal.value().second;
     pl.dst = destination_view_state;
     main_document_view->get_document()->add_portal(pl);
-    pending_portal = {};
+    set_pending_portal({});
 }
 
 void MainWidget::long_jump_to_destination(int page, float offset_y) {
@@ -6132,7 +6131,7 @@ void MainWidget::handle_delete_selected_bookmark() {
 void MainWidget::synchronize_pending_link() {
     for (auto window : windows) {
         if (window != this) {
-            window->pending_portal = pending_portal;
+            window->set_pending_portal(current_pending_portal);
         }
     }
     refresh_all_windows();
@@ -10931,4 +10930,19 @@ void MainWidget::delete_menu_nodes(MenuNode* items) {
         delete_menu_nodes(child);
     }
     delete items;
+}
+
+void MainWidget::set_pending_portal(std::optional<std::wstring> doc_path, Portal portal) {
+    set_pending_portal(std::make_pair(doc_path, portal));
+}
+
+void MainWidget::set_pending_portal(std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_portal) {
+    current_pending_portal = pending_portal;
+
+    if (pending_portal) {
+        opengl_widget->set_pending_portal_position(pending_portal->second.get_rectangle());
+    }
+    else {
+        opengl_widget->set_pending_portal_position({});
+    }
 }
