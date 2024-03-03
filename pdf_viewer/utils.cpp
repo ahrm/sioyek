@@ -188,6 +188,11 @@ ParsedUri parse_uri(fz_context* mupdf_context, fz_document* document, std::strin
     if (dest.type == FZ_LINK_DEST_FIT_H) {
         res = { target_page, dest.x, dest.y };
     }
+    else if (dest.type == FZ_LINK_DEST_FIT_R) {
+        // this looks weird but it works for the one document I have with this reference type
+        // (programming massively parallel processors) it may be wrong though
+        res = { target_page+1, dest.x, -dest.y };
+    }
     else if (dest.type != FZ_LINK_DEST_XYZ) {
         float x = dest.x + dest.w / 2;;
         float y = dest.y + dest.h / 2;
