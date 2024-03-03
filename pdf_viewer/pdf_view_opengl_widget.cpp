@@ -873,13 +873,19 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
         if (result.rects.size() == 0) {
             result.fill(doc());
         }
-        float new_offset_y = result.rects.front().y0 + document_view->get_document()->get_accum_page_height(result.page);
+
+        float page_width = document_view->get_document()->get_page_width(result.page);
+        float page_offset = document_view->get_document()->get_accum_page_height(result.page);
+
+        float new_offset_y = result.rects.front().y0 + page_offset;
+        float new_offset_x = page_width / 2 - result.rects.front().x0;
+
         if (overview) {
             OverviewState state = { new_offset_y, 0, -1, nullptr };
             set_overview_page(state);
         }
         else {
-            document_view->set_offset_y(new_offset_y);
+            document_view->set_offsets(new_offset_x, new_offset_y, false);
         }
     }
 }
