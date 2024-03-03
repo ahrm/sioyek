@@ -4333,3 +4333,7 @@ std::optional<QVariant> Document::get_extra(QString name) {
     return {};
 }
 
+std::wstring Document::get_detected_paper_name_if_exists() {
+    return detected_paper_name;
+}
+

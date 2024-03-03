@@ -193,6 +193,7 @@ extern bool DEBUG_SMOOTH_FREEHAND_DRAWINGS;
 extern float HIGHLIGHT_DELETE_THRESHOLD;
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern std::wstring STATUS_BAR_FORMAT;
+extern std::wstring RIGHT_STATUS_BAR_FORMAT;
 extern bool INVERTED_HORIZONTAL_SCROLLING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
@@ -2116,6 +2117,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"status_bar_format",
         ConfigType::String,
         &STATUS_BAR_FORMAT,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"right_status_bar_format",
+        ConfigType::String,
+        &RIGHT_STATUS_BAR_FORMAT,
         string_serializer,
         string_deserializer,
         nullptr

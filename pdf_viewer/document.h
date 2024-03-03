@@ -425,6 +425,8 @@ public:
     QJsonArray get_portals_json();
     QJsonArray get_marks_json();
 
+    std::wstring get_detected_paper_name_if_exists();
+
     friend class DocumentManager;
 };
 

@@ -179,6 +179,7 @@ extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
 extern bool SHOULD_HIGHLIGHT_LINKS;
 extern float SCROLL_VIEW_SENSITIVITY;
 extern std::wstring STATUS_BAR_FORMAT;
+extern std::wstring RIGHT_STATUS_BAR_FORMAT;
 extern bool INVERTED_HORIZONTAL_SCROLLING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern bool AUTOCENTER_VISUAL_SCROLL;
@@ -833,11 +834,29 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     main_document_view = new DocumentView(db_manager, document_manager, checksummer);
     opengl_widget = new PdfViewOpenGLWidget(main_document_view, pdf_renderer, config_manager, false, this);
 
-    status_label = new QLabel(this);
-    status_label->setStyleSheet(get_status_stylesheet());
     QFont label_font = QFont(get_status_font_face_name());
     label_font.setStyleHint(QFont::TypeWriter);
+
+    status_label = new QWidget(this);
     status_label->setFont(label_font);
+    status_label->setStyleSheet(get_status_stylesheet());
+
+    status_label_left = new QLabel();
+    status_label_left->setStyleSheet(get_status_stylesheet());
+    status_label_left->setFont(label_font);
+
+    status_label_right = new QLabel();
+    status_label_right->setStyleSheet(get_status_stylesheet());
+    status_label_right->setFont(label_font);
+
+    QHBoxLayout* status_label_layout = new QHBoxLayout();
+    status_label_layout->setContentsMargins(0, 0, 0, 0);
+
+    status_label_layout->addWidget(status_label_left, 1);
+    status_label_layout->addWidget(status_label_right);
+
+    status_label->setLayout(status_label_layout);
+
     opengl_widget->stackUnder(status_label);
 
     // automatically open the helper window in second monitor
@@ -1263,11 +1282,16 @@ bool MainWidget::is_pending_link_source_filled() {
     return (current_pending_portal && current_pending_portal->first);
 }
 
-std::wstring MainWidget::get_status_string() {
+std::wstring MainWidget::get_status_string(bool is_right) {
 
     QString status_string = QString::fromStdWString(STATUS_BAR_FORMAT);
+    if (is_right) {
+        status_string = QString::fromStdWString(RIGHT_STATUS_BAR_FORMAT);
+    }
 
+    if (status_string.size() == 0) return L"";
     if (main_document_view->get_document() == nullptr) return L"";
+
     std::wstring chapter_name = main_document_view->get_current_chapter_name();
 
     status_string.replace("%{current_page}", QString::number(get_current_page_number() + 1));
@@ -1352,6 +1376,9 @@ std::wstring MainWidget::get_status_string() {
         status_string.replace("%{presentation}", " [ presentation ]");
     }
 
+    if (status_string.indexOf("%{auto_name}") != -1) {
+        status_string.replace("%{auto_name}", QString::fromStdWString(doc()->get_detected_paper_name_if_exists()));
+    }
     if (visual_scroll_mode) {
         status_string.replace("%{visual_scroll}", " [ visual scroll ]");
     }
@@ -1687,7 +1714,8 @@ void MainWidget::validate_render() {
 }
 
 void MainWidget::validate_ui() {
-    status_label->setText(QString::fromStdWString(get_status_string()));
+    status_label_left->setText(QString::fromStdWString(get_status_string(false)));
+    status_label_right->setText(QString::fromStdWString(get_status_string(true)));
     is_ui_invalidated = false;
 }
 
@@ -6886,10 +6914,7 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
-    //opengl_widget->stackUnder(status_label);
-    //central_widget->hide();
-    opengl_widget->hide();
-    qDebug() << status_label->size() << " " << status_label->pos();
+    status_label_right->setText("[ hey there! ]");
 }
 
 void MainWidget::export_command_names(std::wstring file_path){

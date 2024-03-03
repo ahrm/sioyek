@@ -318,7 +318,9 @@ public:
     QWidget* text_command_line_edit_container = nullptr;
     QLabel* text_command_line_edit_label = nullptr;
     QLineEdit* text_command_line_edit = nullptr;
-    QLabel* status_label = nullptr;
+    QLabel* status_label_left = nullptr;
+    QLabel* status_label_right = nullptr;
+    QWidget* status_label = nullptr;
     int text_suggestion_index = 0;
 
     int last_pause_rest_of_document_page = -1;
@@ -397,7 +399,7 @@ public:
 
     void persist(bool persist_drawings = false);
     bool is_pending_link_source_filled();
-    std::wstring get_status_string();
+    std::wstring get_status_string(bool is_right);
     void handle_escape();
     bool is_waiting_for_symbol();
     void key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat = false);
