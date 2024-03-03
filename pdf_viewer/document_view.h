@@ -33,9 +33,13 @@ protected:
     CachedChecksummer* checksummer;
     Document* current_document = nullptr;
 
+    // the zoom level of the view. This is the ratio between dimensions in
+    // view space and dimensions in document space.
     float zoom_level = 0.0f;
-    //float offset_x = 0.0f;
-    //float offset_y = 0.0f;
+    // The position of the view in the document, in document space. `offset.y`
+    // if the offset of the center of the document from the center of the view.
+    // `offset.x` is the offset of the center of the  view from the top of the
+    // document.
     VirtualPos offset = {0, 0};
     std::vector<VirtualRect> cached_virtual_rects;
     bool two_page_mode = false;
@@ -47,7 +51,9 @@ protected:
     // index of the current highlighted line in ruler mode
     int line_index = -1;
 
+    // The width of the view, in view space.
     int view_width = 0;
+    // The height of the view, in view space.
     int view_height = 0;
 
     // In touch mode normally we don't allow the user to scroll the document horizontally past the 

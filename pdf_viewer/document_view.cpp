@@ -1168,6 +1168,11 @@ void DocumentView::set_page_offset(int new_offset) {
     current_document->set_page_offset(new_offset);
 }
 
+// The minimum value that `offset_x` can have. This is when the right edge of
+// the current page is at the right edge of the view, or when the left edge of
+// the page is at the left edge of the view, whichever is bigger. If
+// `relenting` is true, the view is allowed to go a extra page beyond the
+// border.
 float DocumentView::get_max_valid_x(bool relenting) {
     float page_width = current_document->get_page_width(get_center_page_number());
     if (!relenting){
@@ -1178,6 +1183,11 @@ float DocumentView::get_max_valid_x(bool relenting) {
     }
 }
 
+// The minimum value that `offset_x` can have. This is when the left edge of
+// the current page is at the left edge of the view, or when the right edge of
+// the page is at the right edge of the view, whichever is smaller. If
+// `relenting` is true, the view is allowed to go a extra page beyond the
+// border.
 float DocumentView::get_min_valid_x(bool relenting) {
     float page_width = current_document->get_page_width(get_center_page_number());
     if (!relenting){
