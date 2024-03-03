@@ -821,6 +821,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
 
     central_widget = new QWidget(this);
+    central_widget->setAttribute(Qt::WA_TransparentForMouseEvents);
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
     pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
