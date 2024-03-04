@@ -877,15 +877,35 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
         float page_width = document_view->get_document()->get_page_width(result.page);
         float page_offset = document_view->get_document()->get_accum_page_height(result.page);
 
+        float zoom_level = document_view->get_zoom_level();
+        float view_width = document_view->get_view_width() / zoom_level;
+
+        float view_left =  document_view->get_offset_x() - view_width / 2;
+        float view_right =  document_view->get_offset_x() + view_width / 2;
+
+        float min_x = document_view->get_min_valid_x(false);
+        float max_x = document_view->get_max_valid_x(false);
+
         float new_offset_y = result.rects.front().y0 + page_offset;
-        float new_offset_x = page_width / 2 - result.rects.front().x0;
+        float new_offset_x = page_width / 2 - (result.rects.front().x0 + result.rects.front().x1) / 2;
+
+        // only change offset_x if the search result is not in view
+        if (new_offset_x > view_left && new_offset_x < view_right) {
+            new_offset_x = document_view->get_offset_x();
+        }
+
+        // `set_offsets` would alredy ensure that the new_offset_x is within
+        // the bounds, but it have a special logic for "relenting" that we want
+        // to avoid.
+        if (new_offset_x < min_x) new_offset_x = min_x;
+        if (new_offset_x > max_x) new_offset_x = max_x;
 
         if (overview) {
             OverviewState state = { new_offset_y, 0, -1, nullptr };
             set_overview_page(state);
         }
         else {
-            document_view->set_offsets(new_offset_x, new_offset_y, false);
+            document_view->set_offsets(new_offset_x, new_offset_y, true);
         }
     }
 }
