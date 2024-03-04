@@ -701,6 +701,7 @@ public:
         }
     }
 
+
     int get_current_mode_index() {
         if (is_modal) {
             std::string mode_str = widget->get_current_mode_string();
@@ -713,6 +714,18 @@ public:
 
         }
 
+        return -1;
+    }
+
+    int get_current_executing_command_index() {
+        if (is_modal) {
+            return get_current_mode_index();
+        }
+        else {
+            for (int i = 0; i < performed.size(); i++) {
+                if (!performed[i]) return i;
+            }
+        }
         return -1;
     }
 
@@ -729,6 +742,14 @@ public:
                 commands[0]->on_text_change(new_text);
             }
         }
+    }
+
+    std::vector<char> special_symbols() {
+        int command_index = get_current_executing_command_index();
+        if (command_index != -1) {
+            return commands[command_index]->special_symbols();
+        }
+        return {};
     }
 
     bool mode_matches(std::string current_mode, std::string command_mode) {
