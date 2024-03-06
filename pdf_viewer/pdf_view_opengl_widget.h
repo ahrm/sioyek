@@ -106,7 +106,8 @@ public:
     enum ColorPalette {
         Normal,
         Dark,
-        Custom
+        Custom,
+        None
     };
 
     ColorPalette get_current_color_mode();
@@ -252,7 +253,7 @@ public:
     std::optional<SearchResult> get_current_search_result();
     void goto_search_result(int offset, bool overview = false);
     void render_overview(OverviewState overview);
-    void render_page(int page_number, bool in_overview=false, bool force_light_mode=false, bool stencils_allowed=true);
+    void render_page(int page_number, bool in_overview=false, ColorPalette forced_palette=ColorPalette::None, bool stencils_allowed=true);
     bool get_is_searching(float* prog);
     void search_text(const std::wstring& text, SearchCaseSensitivity case_sensitive = SearchCaseSensitivity::CaseInsensitive, bool regex = false, std::optional<std::pair<int, int>> range = {});
     void set_dark_mode(bool mode);
@@ -288,7 +289,7 @@ public:
     void set_overview_offsets(float offset_x, float offset_y);
     void set_overview_offsets(fvec2 offsets);
 
-    void bind_program(bool force_light=false);
+    void bind_program(ColorPalette forced_palette=ColorPalette::None);
     void cancel_search();
     //void window_pos_to_overview_pos(float window_x, float window_y, float* doc_offset_x, float* doc_offset_y, int* doc_page);
     DocumentPos window_pos_to_overview_pos(NormalizedWindowPos window_pos);

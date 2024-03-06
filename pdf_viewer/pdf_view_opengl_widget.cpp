@@ -70,6 +70,7 @@ extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool PRESERVE_IMAGE_COLORS;
+extern bool INVERTED_PRESERVED_IMAGE_COLORS;
 
 extern int NUM_PRERENDERED_NEXT_SLIDES;
 extern int NUM_PRERENDERED_PREV_SLIDES;
@@ -918,9 +919,9 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     draw_overview_background();
 
 
-    render_page(page, true, false, false);
-    render_page(page-1, true, false, false);
-    render_page(page+1, true, false, false);
+    render_page(page, true, ColorPalette::None, false);
+    render_page(page-1, true, ColorPalette::None, false);
+    render_page(page+1, true, ColorPalette::None, false);
 
     std::optional<SearchResult> highlighted_result = get_current_search_result();
     // highlight the overview search result
@@ -988,7 +989,7 @@ Document* PdfViewOpenGLWidget::doc(bool overview){
     return document_view->get_document();
 }
 
-void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool force_light_mode, bool stencils_allowed) {
+void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, ColorPalette forced_color_palette, bool stencils_allowed) {
 
     if (!valid_document()) return;
 
@@ -1165,7 +1166,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
         rect_to_quad(window_rect, page_vertices);
 
         if (texture != 0) {
-            bind_program(force_light_mode);
+            bind_program(forced_color_palette);
             glBindTexture(GL_TEXTURE_2D, texture);
         }
         else {
@@ -1192,8 +1193,8 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
             disable_stencil();
         }
 
-        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (!force_light_mode) && (stencils_allowed)) {
-            // render images in light mode
+        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (forced_color_palette == ColorPalette::None) && (stencils_allowed)) {
+            // render images in forced palette mode
             fz_stext_page * stext_page = document_view->get_document()->get_stext_with_page_number(page_number);
             std::vector<PagelessDocumentRect> image_rects;
             for (fz_stext_block* blk = stext_page->first_block; blk != nullptr; blk = blk->next) {
@@ -1216,7 +1217,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
             write_to_stencil();
             draw_stencil_rects(page_number, image_rects);
             use_stencil_to_write(true);
-            render_page(page_number, in_overview, true, false);
+            render_page(page_number, in_overview, INVERTED_PRESERVED_IMAGE_COLORS ? ColorPalette::Dark : ColorPalette::Normal, false);
             disable_stencil();
         }
 
@@ -2250,12 +2251,13 @@ void PdfViewOpenGLWidget::toggle_custom_color_mode() {
     set_custom_color_mode(!(this->color_mode == ColorPalette::Custom));
 }
 
-void PdfViewOpenGLWidget::bind_program(bool force_light) {
-    if ((!force_light) && (color_mode == ColorPalette::Dark)) {
+void PdfViewOpenGLWidget::bind_program(ColorPalette forced_palette) {
+    ColorPalette mode = forced_palette == None ? color_mode : forced_palette;
+    if (mode == ColorPalette::Dark) {
         glUseProgram(shared_gl_objects.rendered_dark_program);
         glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
     }
-    else if ((!force_light) && (color_mode == ColorPalette::Custom)) {
+    else if (mode == ColorPalette::Custom) {
         glUseProgram(shared_gl_objects.custom_color_program);
         float transform_matrix[16];
         get_custom_color_transform_matrix(transform_matrix);
