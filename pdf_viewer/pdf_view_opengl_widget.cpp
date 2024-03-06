@@ -873,7 +873,8 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
         if (result.rects.size() == 0) {
             result.fill(doc());
         }
-        float new_offset_y = result.rects.front().y0 + document_view->get_document()->get_accum_page_height(result.page);
+        float result_center_y = (result.rects.front().y0 + result.rects.front().y1) / 2;
+        float new_offset_y = result_center_y + document_view->get_document()->get_accum_page_height(result.page);
         DocumentRect result_rect(result.rects.front(), result.page);
         NormalizedWindowRect result_normalized_rect = result_rect.to_window_normalized(document_view);
 
@@ -883,11 +884,9 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
         }
         else {
             document_view->set_offset_y(new_offset_y);
-            if (result_normalized_rect.x0 < -1) {
-                document_view->move(-(result_normalized_rect.x0 + 1) * document_view->get_view_width(), 0);
-            }
-            if (result_normalized_rect.x0 > 1) {
-                document_view->move(-(result_normalized_rect.x0 - 1) * document_view->get_view_width(), 0);
+            float normalized_center_x = (result_normalized_rect.x0 + result_normalized_rect.x1) / 2;
+            if (normalized_center_x < -1 || normalized_center_x > 1) {
+                document_view->move(-normalized_center_x / 2 * document_view->get_view_width(), 0);
             }
         }
     }
