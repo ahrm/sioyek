@@ -71,6 +71,7 @@ extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool PRESERVE_IMAGE_COLORS;
 extern bool INVERTED_PRESERVED_IMAGE_COLORS;
+extern bool INVERT_SELECTED_TEXT;
 
 extern int NUM_PRERENDERED_NEXT_SLIDES;
 extern int NUM_PRERENDERED_PREV_SLIDES;
@@ -553,7 +554,12 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWind
     }
 
     glEnable(GL_BLEND);
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    if (flags & HighlightRenderFlags::HRF_INVERTED) {
+        glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_ZERO, GL_ONE, GL_ZERO);
+    }
+    else {
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    }
     glDisable(GL_CULL_FACE);
 
     glUseProgram(program);
@@ -3551,7 +3557,12 @@ void PdfViewOpenGLWidget::render_text_highlights(){
     merge_selected_character_rects(*document_view->get_selected_character_rects(), bounding_rects);
 
     for (auto rect : bounding_rects) {
-        render_highlight_absolute(shared_gl_objects.highlight_program, rect, HRF_FILL | HRF_BORDER);
+        if (INVERT_SELECTED_TEXT) {
+            render_highlight_absolute(shared_gl_objects.highlight_program, rect, HRF_FILL | HRF_INVERTED);
+        }
+        else {
+            render_highlight_absolute(shared_gl_objects.highlight_program, rect, HRF_FILL | HRF_BORDER);
+        }
     }
 }
 

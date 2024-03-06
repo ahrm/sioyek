@@ -114,6 +114,7 @@ extern int DOCUMENTATION_FONT_SIZE;
 extern int NUM_PRERENDERED_NEXT_SLIDES;
 extern int NUM_PRERENDERED_PREV_SLIDES;
 extern int NUM_CACHED_PAGES;
+extern bool INVERT_SELECTED_TEXT;
 
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
@@ -834,6 +835,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"inverted_preserved_image_colors",
         ConfigType::Bool,
         &INVERTED_PRESERVED_IMAGE_COLORS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"invert_selected_text",
+        ConfigType::Bool,
+        &INVERT_SELECTED_TEXT,
         bool_serializer,
         bool_deserializer,
         bool_validator

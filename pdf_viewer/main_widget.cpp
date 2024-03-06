@@ -6915,7 +6915,6 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
-    status_label_right->setText("[ hey there! ]");
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
