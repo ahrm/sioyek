@@ -1217,7 +1217,12 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, ColorPa
             write_to_stencil();
             draw_stencil_rects(page_number, image_rects);
             use_stencil_to_write(true);
-            render_page(page_number, in_overview, INVERTED_PRESERVED_IMAGE_COLORS ? ColorPalette::Dark : ColorPalette::Normal, false);
+            ColorPalette target_palette = ColorPalette::Normal;
+            if (color_mode == ColorPalette::Custom && INVERTED_PRESERVED_IMAGE_COLORS) {
+                target_palette = ColorPalette::Dark;
+            }
+
+            render_page(page_number, in_overview, target_palette, false);
             disable_stencil();
         }
 
