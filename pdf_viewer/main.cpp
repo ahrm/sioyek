@@ -235,6 +235,7 @@ bool AUTO_RENAME_DOWNLOADED_PAPERS = false;
 bool SHOW_MOST_RECENT_COMMANDS_FIRST = true;
 bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL = false;
 bool INVERT_SELECTED_TEXT = false;
+bool IGNORE_SCROLL_EVENTS = false;
 
 #ifdef SIOYEK_ANDROID
 std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";

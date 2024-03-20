@@ -196,6 +196,7 @@ extern std::wstring VOLUME_UP_COMMAND;
 extern int DOCUMENTATION_FONT_SIZE;
 extern ScratchPad global_scratchpad;
 extern int NUM_CACHED_PAGES;
+extern bool IGNORE_SCROLL_EVENTS;
 
 extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
 extern std::wstring CONTEXT_MENU_ITEMS;
@@ -2999,6 +3000,8 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
 }
 
 void MainWidget::wheelEvent(QWheelEvent* wevent) {
+
+    if (IGNORE_SCROLL_EVENTS) return;
 
     float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
     float horizontal_move_amount = HORIZONTAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
