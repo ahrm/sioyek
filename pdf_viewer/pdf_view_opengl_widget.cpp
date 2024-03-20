@@ -880,6 +880,9 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
         if (result.rects.size() == 0) {
             result.fill(doc());
         }
+        if (result.rects.size() == 0){
+            return;
+        }
         float result_center_y = (result.rects.front().y0 + result.rects.front().y1) / 2;
         float new_offset_y = result_center_y + document_view->get_document()->get_accum_page_height(result.page);
         DocumentRect result_rect(result.rects.front(), result.page);
