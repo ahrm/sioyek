@@ -368,6 +368,7 @@ bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE = true;
 
 #ifdef Q_OS_MACOS
 float MACOS_TITLEBAR_COLOR[3] = { -1.0f, -1.0f, -1.0f };
+bool MACOS_HIDE_TITLEBAR = false;
 #endif
 
 std::wstring RULER_DISPLAY_MODE = L"underline";

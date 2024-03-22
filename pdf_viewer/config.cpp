@@ -257,6 +257,7 @@ extern int RELOAD_INTERVAL_MILISECONDS;
 
 #ifdef Q_OS_MACOS
 extern float MACOS_TITLEBAR_COLOR[3];
+extern bool MACOS_HIDE_TITLEBAR;
 #endif
 
 #ifdef SIOYEK_ANDROID
@@ -2111,6 +2112,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         vec3_serializer,
         color3_deserializer,
         color_3_validator
+        });
+    configs.push_back({
+        L"macos_hide_titlebar",
+        ConfigType::Bool,
+        &MACOS_HIDE_TITLEBAR,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
         });
 #endif
 
