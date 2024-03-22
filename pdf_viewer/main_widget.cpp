@@ -10968,7 +10968,10 @@ void MainWidget::set_pending_portal(std::optional<std::pair<std::optional<std::w
     current_pending_portal = pending_portal;
 
     if (pending_portal) {
-        opengl_widget->set_pending_portal_position(pending_portal->second.get_rectangle());
+        if (pending_portal->second.src_offset_x.has_value()){
+            // show pending portal icon for visible portals only
+            opengl_widget->set_pending_portal_position(pending_portal->second.get_rectangle());
+        }
     }
     else {
         opengl_widget->set_pending_portal_position({});
