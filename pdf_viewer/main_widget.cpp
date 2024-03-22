@@ -197,6 +197,7 @@ extern int DOCUMENTATION_FONT_SIZE;
 extern ScratchPad global_scratchpad;
 extern int NUM_CACHED_PAGES;
 extern bool IGNORE_SCROLL_EVENTS;
+extern bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE;
 
 extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
 extern std::wstring CONTEXT_MENU_ITEMS;
@@ -1807,13 +1808,22 @@ void MainWidget::do_synctex_forward_search(const Path& pdf_file_path, const Path
                 std::optional<AbsoluteRect> line_rect_absolute = get_page_intersecting_rect(highlight_rects[0]);
                 if (line_rect_absolute){
                     DocumentRect line_rect = line_rect_absolute->to_document(doc());
+                    bool should_recenter = true;
+                    if (DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE){
+                        NormalizedWindowRect line_window_rect = line_rect.to_window_normalized(main_document_view);
+                        if (line_window_rect.is_visible()){
+                            should_recenter = false;
+                        }
+                    }
 
                     opengl_widget->set_synctex_highlights({ line_rect });
                     if (highlight_rects.size() == 0) {
                         main_document_view->goto_page(target_page);
                     }
                     else {
-                        main_document_view->goto_offset_within_page(target_page, highlight_rects[0].rect.y0);
+                        if (should_recenter){
+                            main_document_view->goto_offset_within_page(target_page, highlight_rects[0].rect.y0);
+                        }
                     }
                 }
             }

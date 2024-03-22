@@ -116,6 +116,7 @@ extern int NUM_PRERENDERED_PREV_SLIDES;
 extern int NUM_CACHED_PAGES;
 extern bool INVERT_SELECTED_TEXT;
 extern bool IGNORE_SCROLL_EVENTS;
+extern bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE;
 
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
@@ -852,6 +853,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"ignore_scroll_events",
         ConfigType::Bool,
         &IGNORE_SCROLL_EVENTS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"dont_center_if_synctex_rect_is_visible",
+        ConfigType::Bool,
+        &DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE,
         bool_serializer,
         bool_deserializer,
         bool_validator
