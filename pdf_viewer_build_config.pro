@@ -194,7 +194,7 @@ unix:!mac:!android {
 
 mac {
     QMAKE_CXXFLAGS += -std=c++17
-    LIBS += -ldl -Lmupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lz
+    LIBS += -ldl -L$$PWD/mupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lz
     CONFIG+=sdk_no_version_check
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 11
     ICON = pdf_viewer\icon2.ico
