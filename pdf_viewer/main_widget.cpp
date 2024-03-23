@@ -3579,21 +3579,11 @@ void MainWidget::toggle_fullscreen() {
             helper_opengl_widget()->setWindowState(Qt::WindowState::WindowMaximized);
         }
         setWindowState(Qt::WindowState::WindowMaximized);
-#ifndef Q_OS_MACOS
-        if (MACOS_HIDE_TITLEBAR) {
-          hideWindowTitleBarButtons(winId());
-        }
-#endif
     }
     else {
         if (is_helper_visible()){
             helper_opengl_widget()->setWindowState(Qt::WindowState::WindowFullScreen);
         }
-#ifndef Q_OS_MACOS
-        if (MACOS_HIDE_TITLEBAR) {
-          showWindowTitleBarButtons(winId());
-        }
-#endif
         setWindowState(Qt::WindowState::WindowFullScreen);
     }
 }
