@@ -27,6 +27,7 @@ extern bool SHOULD_DRAW_UNRENDERED_PAGES;
 extern bool HOVER_OVERVIEW;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 extern bool DEFAULT_DARK_MODE;
+extern bool USE_SYSTEM_THEME;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern std::wstring SEARCH_URLS[26];
 extern std::wstring EXECUTE_COMMANDS[26];
@@ -703,6 +704,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"default_dark_mode",
         ConfigType::Bool,
         &DEFAULT_DARK_MODE,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"use_system_theme",
+        ConfigType::Bool,
+        &USE_SYSTEM_THEME,
         bool_serializer,
         bool_deserializer,
         bool_validator

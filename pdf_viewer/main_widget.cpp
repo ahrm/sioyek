@@ -35,6 +35,9 @@
 #ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
 #endif
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+#include <QStyleHints>
+#endif
 
 #include <qkeyevent.h>
 #include <qlabel.h>
@@ -199,6 +202,7 @@ extern ScratchPad global_scratchpad;
 extern int NUM_CACHED_PAGES;
 extern bool IGNORE_SCROLL_EVENTS;
 extern bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE;
+extern bool USE_SYSTEM_THEME;
 
 extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
 extern std::wstring CONTEXT_MENU_ITEMS;
@@ -1232,6 +1236,10 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     menu_bar = create_main_menu_bar();
     setMenuBar(menu_bar);
     menu_bar->stackUnder(text_command_line_edit_container);
+#endif
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    set_system_mode();
 #endif
 
     setFocus();
@@ -4442,6 +4450,13 @@ void MainWidget::changeEvent(QEvent* event) {
             //main_window_height = get_current_monitor_height();
         }
     }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    if (event->type() == QEvent::ThemeChange) {
+      set_system_mode();
+    }
+#endif
+
     QWidget::changeEvent(event);
 }
 
@@ -6756,16 +6771,55 @@ int MainWidget::get_current_colorscheme_index() {
 }
 
 void MainWidget::set_dark_mode() {
-    opengl_widget->set_dark_mode(true);
+    if (opengl_widget->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Dark) {    
+        opengl_widget->set_dark_mode(true);
+    }
+    if (helper_opengl_widget_) {
+        if (helper_opengl_widget_->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Dark) {    
+            helper_opengl_widget_->set_dark_mode(true);
+        }
+    }
 }
 
 void MainWidget::set_light_mode() {
-    opengl_widget->set_dark_mode(false);
+    if (opengl_widget->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Normal) {    
+        opengl_widget->set_dark_mode(false);
+    }
+    if (helper_opengl_widget_) {
+        if (helper_opengl_widget_->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Normal) {    
+            helper_opengl_widget_->set_dark_mode(false);
+        }
+    }
 }
 
 void MainWidget::set_custom_color_mode() {
-    opengl_widget->set_custom_color_mode(true);
+    if (opengl_widget->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Custom) {    
+        opengl_widget->set_custom_color_mode(true);
+    }
+    if (helper_opengl_widget_) {
+        if (helper_opengl_widget_->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Custom) {    
+            helper_opengl_widget_->set_custom_color_mode(true);
+        }
+    }
 }
+
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+void MainWidget::set_system_mode() {
+    if (USE_SYSTEM_THEME) {
+        QStyleHints *styleHints =  QGuiApplication::styleHints();
+        switch (styleHints->colorScheme()) {
+            case Qt::ColorScheme::Unknown:
+            case Qt::ColorScheme::Light:
+                set_light_mode();
+                break;
+            case Qt::ColorScheme::Dark:
+                set_dark_mode();
+                break;
+        }
+    }
+}
+#endif
 
 void MainWidget::update_highlight_buttons_position() {
     if (selected_highlight_index != -1) {
@@ -7378,6 +7432,9 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
             changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
         }
 #endif
+        if (confname == "use_system_theme") {
+            set_system_mode();
+        }
 
         if (confname == "tts_rate") {
             if (is_reading) {
@@ -9770,6 +9827,11 @@ void MainWidget::initialize_helper(){
     helper_opengl_widget_->show();
     helper_opengl_widget_->hide();
 #endif
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    set_system_mode();
+#endif
+
     helper_opengl_widget_->register_on_link_edit_listener([this](OpenedBookState state) {
             this->update_closest_link_with_opened_book_state(state);
             });
