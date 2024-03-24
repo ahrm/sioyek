@@ -98,8 +98,6 @@ extern "C" {
 #ifdef Q_OS_MACOS
 extern "C" void changeTitlebarColor(WId, double, double, double, double);
 extern "C" void hideWindowTitleBar(WId);
-extern "C" void showWindowTitleBarButtons(WId);
-extern "C" void hideWindowTitleBarButtons(WId);
 #endif
 
 extern int next_window_id;
@@ -1229,7 +1227,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     }
 
     if (MACOS_HIDE_TITLEBAR) {
-      hideWindowTitleBar(winId());
+        hideWindowTitleBar(winId());
     }
     menu_bar = create_main_menu_bar();
     setMenuBar(menu_bar);
@@ -4075,7 +4073,7 @@ void MainWidget::apply_window_params_for_two_window_mode() {
 
 #ifdef Q_OS_MACOS
     if (MACOS_HIDE_TITLEBAR) {
-      hideWindowTitleBar(helper_window->winId());
+        hideWindowTitleBar(helper_window->winId());
     }
 #endif
     //int main_window_width = QApplication::desktop()->screenGeometry(0).width();
@@ -9767,7 +9765,7 @@ void MainWidget::initialize_helper(){
 #ifdef Q_OS_MACOS
     QWidget* helper_window = get_top_level_widget(helper_opengl_widget_);
     if (MACOS_HIDE_TITLEBAR) {
-      hideWindowTitleBar(helper_window->winId());
+        hideWindowTitleBar(helper_window->winId());
     }
     helper_opengl_widget_->show();
     helper_opengl_widget_->hide();
