@@ -28,6 +28,7 @@ extern bool HOVER_OVERVIEW;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 extern bool DEFAULT_DARK_MODE;
 extern bool USE_SYSTEM_THEME;
+extern bool USE_CUSTOM_AS_DARK;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern std::wstring SEARCH_URLS[26];
 extern std::wstring EXECUTE_COMMANDS[26];
@@ -712,6 +713,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"use_system_theme",
         ConfigType::Bool,
         &USE_SYSTEM_THEME,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"use_custom_as_dark",
+        ConfigType::Bool,
+        &USE_CUSTOM_AS_DARK,
         bool_serializer,
         bool_deserializer,
         bool_validator

@@ -203,6 +203,7 @@ extern int NUM_CACHED_PAGES;
 extern bool IGNORE_SCROLL_EVENTS;
 extern bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE;
 extern bool USE_SYSTEM_THEME;
+extern bool USE_CUSTOM_AS_DARK;
 
 extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
 extern std::wstring CONTEXT_MENU_ITEMS;
@@ -3747,10 +3748,14 @@ CommandManager* MainWidget::get_command_manager() {
 }
 
 void MainWidget::toggle_dark_mode() {
-    this->opengl_widget->toggle_dark_mode();
+    if (USE_CUSTOM_AS_DARK) {
+        toggle_custom_color_mode();
+    } else {
+        this->opengl_widget->toggle_dark_mode();
 
-    if (helper_opengl_widget_) {
-        helper_opengl_widget_->toggle_dark_mode();
+        if (helper_opengl_widget_) {
+            helper_opengl_widget_->toggle_dark_mode();
+        }
     }
 }
 
@@ -6771,12 +6776,16 @@ int MainWidget::get_current_colorscheme_index() {
 }
 
 void MainWidget::set_dark_mode() {
-    if (opengl_widget->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Dark) {    
-        opengl_widget->set_dark_mode(true);
-    }
-    if (helper_opengl_widget_) {
-        if (helper_opengl_widget_->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Dark) {    
-            helper_opengl_widget_->set_dark_mode(true);
+    if (USE_CUSTOM_AS_DARK) {
+        set_custom_color_mode();
+    } else{
+        if (opengl_widget->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Dark) {    
+            opengl_widget->set_dark_mode(true);
+        }
+        if (helper_opengl_widget_) {
+            if (helper_opengl_widget_->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Dark) {    
+                helper_opengl_widget_->set_dark_mode(true);
+            }
         }
     }
 }
