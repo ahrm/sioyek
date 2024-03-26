@@ -389,6 +389,7 @@ public:
     void set_dark_mode();
     void set_light_mode();
     void set_custom_color_mode();
+    void set_system_mode();
     void toggle_statusbar();
     void toggle_titlebar();
 

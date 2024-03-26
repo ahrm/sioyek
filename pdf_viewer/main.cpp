@@ -199,6 +199,7 @@ bool FLAT_TABLE_OF_CONTENTS = false;
 bool SHOULD_USE_MULTIPLE_MONITORS = false;
 bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = false;
 bool DEFAULT_DARK_MODE = false;
+bool USE_SYSTEM_THEME = false;
 bool SORT_BOOKMARKS_BY_LOCATION = true;
 std::wstring LIBGEN_ADDRESS = L"";
 std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
@@ -1144,7 +1145,7 @@ int main(int argc, char* args[]) {
         });
 #endif
 
-    if (DEFAULT_DARK_MODE) {
+    if (DEFAULT_DARK_MODE && !USE_SYSTEM_THEME) {
         main_widget->toggle_dark_mode();
     }
 
