@@ -372,3 +372,15 @@ tutorial/*.bbl
 tutorial/*.blg
 *.o.d
 compile_commands.json
+
+sioyek_autogen/*
+sioyek.app/*
+qrc_resources.cpp
+*.cmake
+bak/*
+CMakeFiles/*
+CMakeCache.txt
+.rcc/*
+.qt_plugins/*
+.qt/*
+.DS_STORE
