@@ -35,9 +35,6 @@
 #ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
 #endif
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-#include <QStyleHints>
-#endif
 
 #include <qkeyevent.h>
 #include <qlabel.h>
@@ -68,6 +65,7 @@
 #include <qqmlengine.h>
 #include <qtextdocumentfragment.h>
 #include <qmenubar.h>
+#include <qstylehints.h>
 
 #include <mupdf/fitz.h>
 
@@ -203,6 +201,7 @@ extern int NUM_CACHED_PAGES;
 extern bool IGNORE_SCROLL_EVENTS;
 extern bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE;
 extern bool USE_SYSTEM_THEME;
+extern bool USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME;
 
 extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
 extern std::wstring CONTEXT_MENU_ITEMS;
@@ -1239,7 +1238,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 #endif
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-    set_system_mode();
+    set_color_mode_to_system_theme();
 #endif
 
     setFocus();
@@ -4453,7 +4452,7 @@ void MainWidget::changeEvent(QEvent* event) {
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     if (event->type() == QEvent::ThemeChange) {
-      set_system_mode();
+      set_color_mode_to_system_theme();
     }
 #endif
 
@@ -6804,22 +6803,24 @@ void MainWidget::set_custom_color_mode() {
 }
 
 
+void MainWidget::set_color_mode_to_system_theme() {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-void MainWidget::set_system_mode() {
     if (USE_SYSTEM_THEME) {
-        QStyleHints *styleHints =  QGuiApplication::styleHints();
-        switch (styleHints->colorScheme()) {
-            case Qt::ColorScheme::Unknown:
-            case Qt::ColorScheme::Light:
-                set_light_mode();
-                break;
-            case Qt::ColorScheme::Dark:
+        QStyleHints *style_hints =  QGuiApplication::styleHints();
+        if (style_hints->colorScheme() == Qt::ColorScheme::Light){
+            set_light_mode();
+        }
+        if (style_hints->colorScheme() == Qt::ColorScheme::Dark){
+            if (USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME){
+                set_custom_color_mode();
+            }
+            else{
                 set_dark_mode();
-                break;
+            }
         }
     }
-}
 #endif
+}
 
 void MainWidget::update_highlight_buttons_position() {
     if (selected_highlight_index != -1) {
@@ -7433,7 +7434,7 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         }
 #endif
         if (confname == "use_system_theme") {
-            set_system_mode();
+            set_color_mode_to_system_theme();
         }
 
         if (confname == "tts_rate") {
@@ -9828,9 +9829,7 @@ void MainWidget::initialize_helper(){
     helper_opengl_widget_->hide();
 #endif
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-    set_system_mode();
-#endif
+    set_color_mode_to_system_theme();
 
     helper_opengl_widget_->register_on_link_edit_listener([this](OpenedBookState state) {
             this->update_closest_link_with_opened_book_state(state);
