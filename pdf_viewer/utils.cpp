@@ -4350,3 +4350,20 @@ void AndroidTextToSpeechHandler::set_on_app_resume_callback(std::function<void(b
     android_global_resume_state_callback = callback;
 }
 #endif
+
+
+bool is_platform_meta_pressed(QKeyEvent* kevent){
+#ifdef Q_OS_MACOS
+        return (kevent->modifiers() & Qt::ControlModifier);
+#else
+        return (kevent->modifiers() & Qt::MetaModifier);
+#endif
+}
+
+bool is_platform_control_pressed(QKeyEvent* kevent){
+#ifdef Q_OS_MACOS
+        return (kevent->modifiers() & Qt::MetaModifier);
+#else
+        return (kevent->modifiers() & Qt::ControlModifier);
+#endif
+}

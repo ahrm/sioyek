@@ -1813,9 +1813,9 @@ int MyLineEdit::get_prev_word_position() {
 void MyLineEdit::keyPressEvent(QKeyEvent* event) {
 
     bool is_alt_pressed = event->modifiers() & Qt::AltModifier;
-    bool is_control_pressed = event->modifiers() & Qt::ControlModifier;
+    bool is_control_pressed = is_platform_control_pressed(event);
     bool is_shift_pressed = event->modifiers() & Qt::ShiftModifier;
-    bool is_meta_pressed = event->modifiers() & Qt::MetaModifier;
+    bool is_meta_pressed = is_platform_meta_pressed(event);
     bool is_invisible = event->text().size() == 0;
     if (is_invisible || is_alt_pressed || is_control_pressed) {
         std::unique_ptr<Command> command = main_widget->input_handler->get_menu_command(main_widget, event, is_shift_pressed, is_control_pressed, is_meta_pressed, is_alt_pressed);

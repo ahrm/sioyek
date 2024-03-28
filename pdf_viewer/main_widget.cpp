@@ -2139,13 +2139,8 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
         }
         int num_repeats = 0;
 
-#ifdef Q_OS_MACOS
-        bool is_meta_pressed = (kevent->modifiers() & Qt::ControlModifier);
-        bool is_control_pressed =  (kevent->modifiers() & Qt::MetaModifier);
-#else
-        bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier);
-        bool is_meta_pressed = (kevent->modifiers() & Qt::MetaModifier);
-#endif
+        bool is_meta_pressed = is_platform_meta_pressed(kevent);
+        bool is_control_pressed =  is_platform_control_pressed(kevent);
 
         std::unique_ptr<Command> commands = input_handler->handle_key(this,
             kevent,
