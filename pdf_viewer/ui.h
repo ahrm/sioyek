@@ -182,7 +182,7 @@ public:
 #ifdef SIOYEK_QT6
 			if (event->type() == QEvent::KeyRelease) {
 				QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-				if (should_trigger_delete(event)) {
+				if (should_trigger_delete(key_event)) {
 					handle_delete();
 				}
 			}
