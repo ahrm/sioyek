@@ -13,6 +13,7 @@
 #include <qnetworkaccessmanager.h>
 #include <qquickwidget.h>
 #include <qjsondocument.h>
+#include <qmainwindow.h>
 
 #include "book.h"
 #include "input.h"
@@ -60,6 +61,11 @@ enum class DrawingMode {
     None
 };
 
+struct MenuNode {
+    QString name;
+    QString doc;
+    std::vector<MenuNode*> children;
+};
 
 struct TextUnderPointerInfo{
     ReferenceType reference_type;
@@ -114,7 +120,11 @@ enum class PaperDownloadFinishedAction {
 
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
+#ifdef SIOYEK_ANDROID
 class MainWidget : public QQuickWidget {
+#else
+class MainWidget : public QMainWindow {
+#endif
     Q_OBJECT
 public:
     fz_context* mupdf_context = nullptr;
@@ -126,6 +136,8 @@ public:
     PdfRenderer* pdf_renderer = nullptr;
     InputHandler* input_handler = nullptr;
     CachedChecksummer* checksummer = nullptr;
+    QWidget* central_widget = nullptr;
+    QMenuBar* menu_bar = nullptr;
     int window_id;
 
     TextToSpeechHandler* tts = nullptr;
@@ -265,7 +277,7 @@ public:
 
     // An incomplete portal that is being created. The source of the portal is filled
     // but the destination still needs to be set.
-    std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_portal;
+    std::optional<std::pair<std::optional<std::wstring>, Portal>> current_pending_portal;
 
     // the current freehand drawing mode. None means we are not drawing anything
     // Drawing means we use the mouse to draw a freehand diagram
@@ -306,7 +318,9 @@ public:
     QWidget* text_command_line_edit_container = nullptr;
     QLabel* text_command_line_edit_label = nullptr;
     QLineEdit* text_command_line_edit = nullptr;
-    QLabel* status_label = nullptr;
+    QLabel* status_label_left = nullptr;
+    QLabel* status_label_right = nullptr;
+    QWidget* status_label = nullptr;
     int text_suggestion_index = 0;
 
     int last_pause_rest_of_document_page = -1;
@@ -375,6 +389,7 @@ public:
     void set_dark_mode();
     void set_light_mode();
     void set_custom_color_mode();
+    void set_color_mode_to_system_theme();
     void toggle_statusbar();
     void toggle_titlebar();
 
@@ -385,12 +400,12 @@ public:
 
     void persist(bool persist_drawings = false);
     bool is_pending_link_source_filled();
-    std::wstring get_status_string();
+    std::wstring get_status_string(bool is_right);
     void handle_escape();
     bool is_waiting_for_symbol();
     void key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat = false);
-    void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
-    void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
+    void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_command_pressed, bool is_alt_pressed);
+    void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_command_pressed, bool is_alt_pressed);
     void on_config_changed(std::string config_name, bool should_save=false);
     void on_configs_changed(std::vector<std::string>* config_names);
 
@@ -556,6 +571,7 @@ public:
     bool is_rotated();
     void on_new_paper_added(const std::wstring& file_path);
     void scroll_overview(int vertical_amount, int horizontal_amount = 0);
+    void scroll_overview_vertical(float amount);
     int get_current_page_number() const;
     std::wstring get_current_page_label();
     void goto_page_with_page_number(int page_number);
@@ -616,6 +632,7 @@ public:
     void handle_delete_selected_highlight();
     void handle_delete_selected_bookmark();
     void handle_start_reading();
+    void handle_toggle_reading();
     void handle_stop_reading();
     void handle_play();
     void handle_undo_drawing();
@@ -751,11 +768,11 @@ protected:
     void mouseMoveEvent(QMouseEvent* mouse_event) override;
 
     // we already handle drag and drop on macos elsewhere
-#ifndef Q_OS_MACOS
+// #ifndef Q_OS_MACOS
     void dragEnterEvent(QDragEnterEvent* e) override;
     void dragMoveEvent(QDragMoveEvent* e) override;
     void dropEvent(QDropEvent* event) override;
-#endif
+// #endif
 
     void closeEvent(QCloseEvent* close_event) override;
     void keyPressEvent(QKeyEvent* kevent) override;
@@ -953,6 +970,11 @@ public:
     void move_selected_bookmark_to_mouse_cursor();
     bool handle_annotation_move_finish();
     void set_fixed_velocity(float vel);
+    QMenuBar* create_main_menu_bar();
+    void create_menu_from_menu_node(QMenu* parent, MenuNode* items, std::unordered_map<std::string, std::vector<std::string>>& command_key_mappings);
+    void delete_menu_nodes(MenuNode* items);
+    void set_pending_portal(std::optional<std::wstring> doc_path, Portal portal);
+    void set_pending_portal(std::optional<std::pair<std::optional<std::wstring>, Portal>> pending_portal);
 };
 
 MainWidget* get_window_with_window_id(int window_id);

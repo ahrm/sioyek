@@ -38,12 +38,14 @@ extern std::vector<Path> user_config_paths;
 extern std::vector<Path> user_keys_paths;
 extern bool TOUCH_MODE;
 extern bool VERBOSE;
+extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern bool FUZZY_SEARCHING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 extern bool INCREMENTAL_SEARCH;
+
 
 extern float SMOOTH_MOVE_MAX_VELOCITY;
 bool is_command_string_modal(const std::wstring& command_name) {
@@ -140,7 +142,7 @@ struct ParseState {
             }
         }
         else {
-            while (!str[index].isSpace() && (str[index] != ')') && (str[index] != ',')) {
+            while ((str[index] != ')') && (str[index] != ',')) {
                 arg.push_back(str[index]);
                 index++;
             }
@@ -567,24 +569,36 @@ public:
         }
     }
 
-    void set_rect_requirement(AbsoluteRect value) {
+
+    int get_command_index_for_requirement_type(RequirementType reqtype) {
         if (is_modal) {
-            int current_mode_index = get_current_mode_index();
-            if (current_mode_index >= 0) {
-                commands[current_mode_index]->set_rect_requirement(value);
-            }
+            return get_current_mode_index();
         }
         else {
-
             for (int i = 0; i < commands.size(); i++) {
                 std::optional<Requirement> req = commands[i]->next_requirement(widget);
                 if (req) {
-                    if (req.value().type == RequirementType::Rect) {
-                        commands[i]->set_rect_requirement(value);
+                    if (req.value().type == reqtype) {
+                        return i;
                     }
-                    return;
+                    return -1;
                 }
             }
+        }
+        return -1;
+    }
+
+    void set_rect_requirement(AbsoluteRect value) {
+        int index = get_command_index_for_requirement_type(RequirementType::Rect);
+        if (index >= 0) {
+            commands[index]->set_rect_requirement(value);
+        }
+    }
+
+    void set_point_requirement(AbsoluteDocumentPos value) {
+        int index = get_command_index_for_requirement_type(RequirementType::Point);
+        if (index >= 0) {
+            commands[index]->set_point_requirement(value);
         }
     }
 
@@ -687,6 +701,7 @@ public:
         }
     }
 
+
     int get_current_mode_index() {
         if (is_modal) {
             std::string mode_str = widget->get_current_mode_string();
@@ -699,6 +714,18 @@ public:
 
         }
 
+        return -1;
+    }
+
+    int get_current_executing_command_index() {
+        if (is_modal) {
+            return get_current_mode_index();
+        }
+        else {
+            for (int i = 0; i < performed.size(); i++) {
+                if (!performed[i]) return i;
+            }
+        }
         return -1;
     }
 
@@ -715,6 +742,14 @@ public:
                 commands[0]->on_text_change(new_text);
             }
         }
+    }
+
+    std::vector<char> special_symbols() {
+        int command_index = get_current_executing_command_index();
+        if (command_index != -1) {
+            return commands[command_index]->special_symbols();
+        }
+        return {};
     }
 
     bool mode_matches(std::string current_mode, std::string command_mode) {
@@ -1246,10 +1281,21 @@ public:
     }
 };
 
+class ToggleReadingCommand : public Command {
+public:
+    static inline const std::string cname = "toggle_reading";
+    static inline const std::string hname = "Start/Pause reading the selected line";
+    ToggleReadingCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->handle_toggle_reading();
+    }
+};
+
 class SearchCommand : public TextCommand {
 public:
     static inline const std::string cname = "search";
-    static inline const std::string hname = "Search the PDF document";
+    static inline const std::string hname = "Search";
     SearchCommand(MainWidget* w) : TextCommand(cname, w) {
     };
 
@@ -1304,7 +1350,7 @@ public:
 class DownloadClipboardUrlCommand : public Command {
 public:
     static inline const std::string cname = "download_clipboard_url";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Download clipboard URL";
 
     DownloadClipboardUrlCommand(MainWidget* w) : Command(cname, w) {
     };
@@ -1736,7 +1782,7 @@ public:
 class RenameCommand : public TextCommand {
 public:
     static inline const std::string cname = "rename";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Rename the current file";
     RenameCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
@@ -1873,6 +1919,7 @@ public:
 
     std::optional<std::wstring> text_;
     std::optional<AbsoluteDocumentPos> point_;
+    int pending_index = -1;
 
     AddBookmarkMarkedCommand(MainWidget* w) : Command(cname, w) {};
 
@@ -1896,13 +1943,33 @@ public:
 
     void set_point_requirement(AbsoluteDocumentPos value) {
         point_ = value;
+
+        BookMark incomplete_bookmark;
+
+        incomplete_bookmark.begin_x = value.x;
+        incomplete_bookmark.begin_y = value.y;
+
+        pending_index = widget->doc()->add_incomplete_bookmark(incomplete_bookmark);
+        widget->set_selected_bookmark_index(pending_index);
+        widget->invalidate_render();
     }
 
+    void on_cancel() override {
+        if (pending_index != -1) {
+            widget->doc()->undo_pending_bookmark(pending_index);
+        }
+    }
 
     void perform() {
-        std::string uuid = widget->doc()->add_marked_bookmark(text_.value(), point_.value());
-        widget->invalidate_render();
-        result = utf8_decode(uuid);
+        if (text_->size() > 0) {
+            std::string uuid = widget->doc()->add_pending_bookmark(pending_index, text_.value());
+            widget->invalidate_render();
+            result = utf8_decode(uuid);
+            widget->set_selected_bookmark_index(-1);
+        }
+        else {
+            widget->doc()->undo_pending_bookmark(pending_index);
+        }
     }
 };
 
@@ -2039,7 +2106,7 @@ class CopyScreenshotToScratchpad : public Command {
 
 public:
     static inline const std::string cname = "copy_screenshot_to_scratchpad";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Copy window screenshot to scratchpad";
 
     std::optional<AbsoluteRect> rect_;
 
@@ -2113,7 +2180,17 @@ public:
 
     void set_rect_requirement(AbsoluteRect value) {
         rect_ = value;
-        pending_index = widget->doc()->add_incomplete_freetext_bookmark(value);
+        BookMark incomplete_bookmark;
+
+        incomplete_bookmark.begin_x = value.x0;
+        incomplete_bookmark.begin_y = value.y0;
+        incomplete_bookmark.end_x = value.x1;
+        incomplete_bookmark.end_y = value.y1;
+        incomplete_bookmark.color[0] = FREETEXT_BOOKMARK_COLOR[0];
+        incomplete_bookmark.color[1] = FREETEXT_BOOKMARK_COLOR[1];
+        incomplete_bookmark.color[2] = FREETEXT_BOOKMARK_COLOR[2];
+
+        pending_index = widget->doc()->add_incomplete_bookmark(incomplete_bookmark);
         widget->set_selected_bookmark_index(pending_index);
 
         widget->clear_selected_rect();
@@ -2131,8 +2208,9 @@ public:
     void perform() {
         //widget->doc()->add_freetext_bookmark(text_.value(), rect_.value());
         if (text_.value().size() > 0) {
-            std::string uuid = widget->doc()->add_pending_freetext_bookmark(pending_index, text_.value());
+            std::string uuid = widget->doc()->add_pending_bookmark(pending_index, text_.value());
             result = utf8_decode(uuid);
+            widget->set_selected_bookmark_index(-1);
         }
         else {
             widget->doc()->undo_pending_bookmark(pending_index);
@@ -2158,7 +2236,7 @@ public:
 class GotoPortalListCommand : public GenericGotoLocationCommand {
 public:
     static inline const std::string cname = "goto_portal_list";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Open the portal list of current document";
     GotoPortalListCommand(MainWidget* w) : GenericGotoLocationCommand(cname, w) {};
 
     void handle_generic_requirement() {
@@ -2671,7 +2749,7 @@ public:
 class OpenDocumentCommand : public Command {
 public:
     static inline const std::string cname = "open_document";
-    static inline const std::string hname = "open_document";
+    static inline const std::string hname = "Open a document using the native file explorer";
     OpenDocumentCommand(MainWidget* w) : Command(cname, w) {};
 
     std::wstring file_name;
@@ -2753,7 +2831,7 @@ public:
 class ToggleTwoPageModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_two_page_mode";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Toggle two page mode";
     ToggleTwoPageModeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
@@ -2802,7 +2880,7 @@ public:
 class MoveLeftInOverviewCommand : public Command {
 public:
     static inline const std::string cname = "move_left_in_overview";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Move left in the overview window";
     MoveLeftInOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->scroll_overview(0, 1);
@@ -2812,7 +2890,7 @@ public:
 class MoveRightInOverviewCommand : public Command {
 public:
     static inline const std::string cname = "move_right_in_overview";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Move right in the overview window";
     MoveRightInOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->scroll_overview(0, -1);
@@ -2869,7 +2947,7 @@ public:
 class SaveScratchpadCommand : public Command {
 public:
     static inline const std::string cname = "save_scratchpad";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Save scratchpad file";
     SaveScratchpadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->save_scratchpad();
@@ -2879,7 +2957,7 @@ public:
 class LoadScratchpadCommand : public Command {
 public:
     static inline const std::string cname = "load_scratchpad";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Load scratchpad file";
     LoadScratchpadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->load_scratchpad();
@@ -2889,7 +2967,7 @@ public:
 class ClearScratchpadCommand : public Command {
 public:
     static inline const std::string cname = "clear_scratchpad";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Clear all scratchpad content";
     ClearScratchpadCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->clear_scratchpad();
@@ -2910,7 +2988,7 @@ public:
 class ZoomOutOverviewCommand : public Command {
 public:
     static inline const std::string cname = "zoom_out_overview";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Zoom out the overview window";
     ZoomOutOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->zoom_out_overview();
@@ -2920,7 +2998,7 @@ public:
 class ZoomInOverviewCommand : public Command {
 public:
     static inline const std::string cname = "zoom_in_overview";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Zoom in the overview window";
     ZoomInOverviewCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->zoom_in_overview();
@@ -3395,7 +3473,7 @@ class DeleteVisibleBookmarkCommand : public GenericVisibleBookmarkCommand {
 
 public:
     static inline const std::string cname = "delete_visible_bookmark";
-    static inline const std::string hname = "Delete a visible bookmark";
+    static inline const std::string hname = "Delete the selected bookmark";
     DeleteVisibleBookmarkCommand(MainWidget* w) : GenericVisibleBookmarkCommand(cname, w) {};
 
     void perform_with_bookmark_selected() override {
@@ -3735,7 +3813,7 @@ public:
 class MaximizeCommand : public Command {
 public:
     static inline const std::string cname = "maximize";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Maximize window";
     MaximizeCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
         widget->maximize_window();
@@ -3918,6 +3996,10 @@ public:
         widget->main_document_view->goto_chapter(rp);
     }
 
+    bool pushes_state() {
+        return true;
+    }
+
 };
 
 class PrevChapterCommand : public Command {
@@ -3929,6 +4011,10 @@ public:
     void perform() {
         int rp = num_repeats == 0 ? 1 : num_repeats;
         widget->main_document_view->goto_chapter(-rp);
+    }
+
+    bool pushes_state() {
+        return true;
     }
 
 };
@@ -4110,7 +4196,7 @@ public:
 class ToggleScratchpadMode : public Command {
 public:
     static inline const std::string cname = "toggle_scratchpad_mode";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Toggle scratchpad";
     ToggleScratchpadMode(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
@@ -5210,7 +5296,7 @@ public:
 class DownloadOverviewPaperCommand : public TextCommand {
 public:
     static inline const std::string cname = "download_overview_paper";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Download the referenced paper overview window";
     std::optional<AbsoluteRect> source_rect = {};
     std::wstring src_doc_path;
 
@@ -5614,7 +5700,7 @@ public:
 class EmbedAnnotationsCommand : public Command {
 public:
     static inline const std::string cname = "embed_annotations";
-    static inline const std::string hname = "";
+    static inline const std::string hname = "Embed the annotations into a new PDF file";
     EmbedAnnotationsCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<std::wstring> file_path = {};
@@ -5669,6 +5755,10 @@ public:
     static inline const std::string cname = "open_last_document";
     static inline const std::string hname = "Switch to previous opened document";
     OpenLastDocumentCommand(MainWidget* w) : Command(cname, w) {};
+
+    bool pushes_state() {
+        return true;
+    }
 
     void perform() {
         auto last_opened_file = widget->get_last_opened_file_checksum();
@@ -5792,7 +5882,7 @@ public:
 class DeleteFreehandDrawingsCommand : public Command {
 public:
     static inline const std::string cname = "delete_freehand_drawings";
-    static inline const std::string hname = "Add a text bookmark in the selected rectangle";
+    static inline const std::string hname = "Delete freehand drawings in selected rectangle";
     DeleteFreehandDrawingsCommand(MainWidget* w) : Command(cname, w) {};
 
     std::optional<AbsoluteRect> rect_;
@@ -7055,6 +7145,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<ToggleStatusbarCommand>();
     register_command<StartReadingCommand>();
     register_command<StopReadingCommand>();
+    register_command<ToggleReadingCommand>();
     register_command<ScanNewFilesFromScanDirCommand>();
     register_command<AddMarkedDataCommand>();
     register_command<RemoveMarkedDataCommand>();
@@ -7080,6 +7171,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<PrintNonDefaultConfigs>();
     register_command<SetWindowRectCommand>();
     register_command<MoveSelectedBookmarkCommand>();
+    register_command<CloseWindowCommand>("q");
 
 
     for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
@@ -7226,6 +7318,10 @@ void print_tree_node(InputParseTreeNode node) {
         std::wcerr << "Ctrl+";
     }
 
+    if (node.command_modifier) {
+        std::wcerr << "Cmd+";
+    }
+
     if (node.shift_modifier) {
         std::wcerr << "Shift+";
     }
@@ -7254,6 +7350,10 @@ InputParseTreeNode parse_token(std::wstring token) {
     for (size_t i = 0; i < subcommands.size() - 1; i++) {
         if (subcommands[i] == L"C") {
             res.control_modifier = true;
+        }
+
+        if (subcommands[i] == L"D") {
+            res.command_modifier = true;
         }
 
         if (subcommands[i] == L"S") {
@@ -7595,12 +7695,12 @@ bool is_digit(int key) {
     return key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9;
 }
 
-std::unique_ptr<Command> InputHandler::get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed) {
+std::unique_ptr<Command> InputHandler::get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool command_pressed, bool alt_pressed) {
     // get the command for keyevent while we are in a menu. In menus we don't
     // support key melodies so we just check the children of the root if they match
-    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &alt_pressed);
+    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &command_pressed, &alt_pressed);
     for (auto child : root->children) {
-        if (child->is_final && child->matches(key, shift_pressed, control_pressed, alt_pressed)){
+        if (child->is_final && child->matches(key, shift_pressed, control_pressed, command_pressed, alt_pressed)){
             if (child->generator.has_value()) {
                 return child->generator.value()(w);
             }
@@ -7610,13 +7710,13 @@ std::unique_ptr<Command> InputHandler::get_menu_command(MainWidget* w, QKeyEvent
     return {};
 }
 
-int InputHandler::get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* alt_pressed) {
+int InputHandler::get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* command_pressed, bool* alt_pressed) {
     int key = 0;
     if (!USE_LEGACY_KEYBINDS) {
         std::vector<QString> special_texts = { "\b", "\t", " ", "\r", "\n" };
         if (((key_event->key() >= 'A') && (key_event->key() <= 'Z')) || ((key_event->text().size() > 0) &&
             (std::find(special_texts.begin(), special_texts.end(), key_event->text()) == special_texts.end()))) {
-            if (!(*control_pressed) && !(*alt_pressed)) {
+            if (!(*control_pressed) && !(*alt_pressed) && !(*command_pressed)) {
                 // shift is already handled in the returned text
                 *shift_pressed = false;
                 std::wstring text = key_event->text().toStdWString();
@@ -7651,11 +7751,11 @@ int InputHandler::get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool*
     return key;
 }
 
-std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats) {
+std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool command_pressed, bool alt_pressed, int* num_repeats) {
 
-    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &alt_pressed);
+    int key = get_event_key(key_event, &shift_pressed, &control_pressed, &command_pressed, &alt_pressed);
     if (current_node == root && is_digit(key)) {
-        if (!(key == '0' && (number_stack.size() == 0)) && (!control_pressed) && (!shift_pressed) && (!alt_pressed)) {
+        if (!(key == '0' && (number_stack.size() == 0)) && (!control_pressed) && (!shift_pressed) && (!alt_pressed) && (!command_pressed)) {
             number_stack.push_back('0' + key - Qt::Key::Key_0);
             return nullptr;
         }
@@ -7663,7 +7763,7 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
 
     for (InputParseTreeNode* child : current_node->children) {
         //if (child->command == key && child->shift_modifier == shift_pressed && child->control_modifier == control_pressed){
-        if (child->matches(key, shift_pressed, control_pressed, alt_pressed)) {
+        if (child->matches(key, shift_pressed, control_pressed, command_pressed, alt_pressed)) {
             if (child->is_final == true) {
                 current_node = root;
                 //cout << child->name << endl;
@@ -7717,14 +7817,15 @@ bool InputParseTreeNode::is_same(const InputParseTreeNode* other) {
     return (command == other->command) &&
         (shift_modifier == other->shift_modifier) &&
         (control_modifier == other->control_modifier) &&
+        (command_modifier == other->command_modifier) &&
         (alt_modifier == other->alt_modifier) &&
         (requires_symbol == other->requires_symbol) &&
         (requires_text == other->requires_text);
 }
 
-bool InputParseTreeNode::matches(int key, bool shift, bool ctrl, bool alt)
+bool InputParseTreeNode::matches(int key, bool shift, bool ctrl, bool cmd, bool alt)
 {
-    return (key == this->command) && (shift == this->shift_modifier) && (ctrl == this->control_modifier) && (alt == this->alt_modifier);
+    return (key == this->command) && (shift == this->shift_modifier) && (ctrl == this->control_modifier) && (cmd == this->command_modifier) && (alt == this->alt_modifier);
 }
 
 std::optional<Path> InputHandler::get_or_create_user_keys_path() {
@@ -7810,7 +7911,8 @@ std::string InputHandler::get_key_name_from_key_code(int key_code) const {
 std::string InputHandler::get_key_string_from_tree_node_sequence(const std::vector<InputParseTreeNode*> seq) const {
     std::string res;
     for (size_t i = 0; i < seq.size(); i++) {
-        if (seq[i]->alt_modifier || seq[i]->shift_modifier || seq[i]->control_modifier) {
+        bool has_modifier = seq[i]->alt_modifier || seq[i]->shift_modifier || seq[i]->control_modifier || seq[i]->command_modifier;
+        if (has_modifier) {
             res += "<";
         }
         std::string current_key_command_name = get_key_name_from_key_code(seq[i]->command);
@@ -7821,11 +7923,14 @@ std::string InputHandler::get_key_string_from_tree_node_sequence(const std::vect
         if (seq[i]->control_modifier) {
             res += "C-";
         }
+        if (seq[i]->command_modifier) {
+            res += "D-";
+        }
         if (seq[i]->shift_modifier) {
             res += "S-";
         }
         res += current_key_command_name;
-        if (seq[i]->alt_modifier || seq[i]->shift_modifier || seq[i]->control_modifier) {
+        if (has_modifier) {
             res += ">";
         }
     }

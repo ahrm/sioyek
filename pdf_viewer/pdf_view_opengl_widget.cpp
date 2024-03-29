@@ -70,6 +70,8 @@ extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 extern bool HIDE_OVERLAPPING_LINK_LABELS;
 extern bool PRESERVE_IMAGE_COLORS;
+extern bool INVERTED_PRESERVED_IMAGE_COLORS;
+extern bool INVERT_SELECTED_TEXT;
 
 extern int NUM_PRERENDERED_NEXT_SLIDES;
 extern int NUM_PRERENDERED_PREV_SLIDES;
@@ -552,7 +554,12 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWind
     }
 
     glEnable(GL_BLEND);
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    if (flags & HighlightRenderFlags::HRF_INVERTED) {
+        glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_ZERO, GL_ONE, GL_ZERO);
+    }
+    else {
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    }
     glDisable(GL_CULL_FACE);
 
     glUseProgram(program);
@@ -873,13 +880,24 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
         if (result.rects.size() == 0) {
             result.fill(doc());
         }
-        float new_offset_y = result.rects.front().y0 + document_view->get_document()->get_accum_page_height(result.page);
+        if (result.rects.size() == 0){
+            return;
+        }
+        float result_center_y = (result.rects.front().y0 + result.rects.front().y1) / 2;
+        float new_offset_y = result_center_y + document_view->get_document()->get_accum_page_height(result.page);
+        DocumentRect result_rect(result.rects.front(), result.page);
+        NormalizedWindowRect result_normalized_rect = result_rect.to_window_normalized(document_view);
+
         if (overview) {
             OverviewState state = { new_offset_y, 0, -1, nullptr };
             set_overview_page(state);
         }
         else {
             document_view->set_offset_y(new_offset_y);
+            float normalized_center_x = (result_normalized_rect.x0 + result_normalized_rect.x1) / 2;
+            if (normalized_center_x < -1 || normalized_center_x > 1) {
+                document_view->move(-normalized_center_x / 2 * document_view->get_view_width(), 0);
+            }
         }
     }
 }
@@ -910,9 +928,9 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     draw_overview_background();
 
 
-    render_page(page, true, false, false);
-    render_page(page-1, true, false, false);
-    render_page(page+1, true, false, false);
+    render_page(page, true, ColorPalette::None, false);
+    render_page(page-1, true, ColorPalette::None, false);
+    render_page(page+1, true, ColorPalette::None, false);
 
     std::optional<SearchResult> highlighted_result = get_current_search_result();
     // highlight the overview search result
@@ -980,7 +998,7 @@ Document* PdfViewOpenGLWidget::doc(bool overview){
     return document_view->get_document();
 }
 
-void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool force_light_mode, bool stencils_allowed) {
+void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, ColorPalette forced_color_palette, bool stencils_allowed) {
 
     if (!valid_document()) return;
 
@@ -1157,7 +1175,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
         rect_to_quad(window_rect, page_vertices);
 
         if (texture != 0) {
-            bind_program(force_light_mode);
+            bind_program(forced_color_palette);
             glBindTexture(GL_TEXTURE_2D, texture);
         }
         else {
@@ -1184,8 +1202,8 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
             disable_stencil();
         }
 
-        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (!force_light_mode) && (stencils_allowed)) {
-            // render images in light mode
+        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (forced_color_palette == ColorPalette::None) && (stencils_allowed)) {
+            // render images in forced palette mode
             fz_stext_page * stext_page = document_view->get_document()->get_stext_with_page_number(page_number);
             std::vector<PagelessDocumentRect> image_rects;
             for (fz_stext_block* blk = stext_page->first_block; blk != nullptr; blk = blk->next) {
@@ -1208,7 +1226,12 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, bool fo
             write_to_stencil();
             draw_stencil_rects(page_number, image_rects);
             use_stencil_to_write(true);
-            render_page(page_number, in_overview, true, false);
+            ColorPalette target_palette = ColorPalette::Normal;
+            if (color_mode == ColorPalette::Custom && INVERTED_PRESERVED_IMAGE_COLORS) {
+                target_palette = ColorPalette::Dark;
+            }
+
+            render_page(page_number, in_overview, target_palette, false);
             disable_stencil();
         }
 
@@ -1606,6 +1629,10 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             if (portals[i].is_visible()) {
                 render_portal_rect(painter, portals[i].get_rectangle(), false);
             }
+        }
+
+        if (pending_portal_rect) {
+            render_portal_rect(painter, pending_portal_rect.value(), true);
         }
 
         for (int i = 0; i < bookmarks.size(); i++) {
@@ -2238,12 +2265,13 @@ void PdfViewOpenGLWidget::toggle_custom_color_mode() {
     set_custom_color_mode(!(this->color_mode == ColorPalette::Custom));
 }
 
-void PdfViewOpenGLWidget::bind_program(bool force_light) {
-    if ((!force_light) && (color_mode == ColorPalette::Dark)) {
+void PdfViewOpenGLWidget::bind_program(ColorPalette forced_palette) {
+    ColorPalette mode = forced_palette == None ? color_mode : forced_palette;
+    if (mode == ColorPalette::Dark) {
         glUseProgram(shared_gl_objects.rendered_dark_program);
         glUniform1f(shared_gl_objects.dark_mode_contrast_uniform_location, DARK_MODE_CONTRAST);
     }
-    else if ((!force_light) && (color_mode == ColorPalette::Custom)) {
+    else if (mode == ColorPalette::Custom) {
         glUseProgram(shared_gl_objects.custom_color_program);
         float transform_matrix[16];
         get_custom_color_transform_matrix(transform_matrix);
@@ -3532,7 +3560,12 @@ void PdfViewOpenGLWidget::render_text_highlights(){
     merge_selected_character_rects(*document_view->get_selected_character_rects(), bounding_rects);
 
     for (auto rect : bounding_rects) {
-        render_highlight_absolute(shared_gl_objects.highlight_program, rect, HRF_FILL | HRF_BORDER);
+        if (INVERT_SELECTED_TEXT) {
+            render_highlight_absolute(shared_gl_objects.highlight_program, rect, HRF_FILL | HRF_INVERTED);
+        }
+        else {
+            render_highlight_absolute(shared_gl_objects.highlight_program, rect, HRF_FILL | HRF_BORDER);
+        }
     }
 }
 
@@ -3630,8 +3663,9 @@ void PdfViewOpenGLWidget::render_selected_rectangle() {
         enable_stencil();
 
         write_to_stencil();
-        float rectangle_color[] = { 0.0f, 0.0f, 0.0f };
-        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, rectangle_color);
+        float rectangle_color_[] = { 0.0f, 0.0f, 0.0f };
+        auto rectangle_color = cc3(rectangle_color_);
+        glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &rectangle_color[0]);
         glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 0.3f);
         if (!(selected_rectangle.value() == fz_empty_rect)) {
             render_highlight_absolute(shared_gl_objects.highlight_program, selected_rectangle.value(), HRF_FILL | HRF_BORDER);
@@ -3706,4 +3740,8 @@ bool PdfViewOpenGLWidget::is_tag_highlighted(const std::string& tag) {
         if (tag == htag) return true;
     }
     return false;
+}
+
+void PdfViewOpenGLWidget::set_pending_portal_position(std::optional<AbsoluteRect> rect) {
+    pending_portal_rect = rect;
 }

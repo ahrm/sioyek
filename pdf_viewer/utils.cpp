@@ -188,6 +188,11 @@ ParsedUri parse_uri(fz_context* mupdf_context, fz_document* document, std::strin
     if (dest.type == FZ_LINK_DEST_FIT_H) {
         res = { target_page, dest.x, dest.y };
     }
+    else if (dest.type == FZ_LINK_DEST_FIT_R) {
+        // this looks weird but it works for the one document I have with this reference type
+        // (programming massively parallel processors) it may be wrong though
+        res = { target_page+1, dest.x, -dest.y };
+    }
     else if (dest.type != FZ_LINK_DEST_XYZ) {
         float x = dest.x + dest.w / 2;;
         float y = dest.y + dest.h / 2;
@@ -4277,6 +4282,36 @@ void QtTextToSpeechHandler::set_on_app_resume_callback(std::function<void(bool, 
 
 }
 
+QString translate_key_mapping_to_macos(QString mapping){
+
+    mapping = mapping.replace("D", "⌘");
+    mapping = mapping.replace("C", "^");
+    mapping = mapping.replace("S", "⇧");
+
+    mapping = mapping.replace("<left>", "◀");
+    mapping = mapping.replace("<up>", "▲");
+    mapping = mapping.replace("<right>", "▶");
+    mapping = mapping.replace("<down>", "▼");
+    
+
+    mapping = mapping.replace("<backspace>", "⌫");
+    mapping = mapping.replace("<pageup>", "↑");
+    mapping = mapping.replace("<pagedown>", "↓");
+
+    mapping.replace("--", "<temp>");
+    if (mapping.size() > 1){
+        mapping.replace("-", "");
+    }
+    mapping.replace("<temp>", "-");
+
+
+    if (mapping.startsWith("<") && mapping.endsWith(">")){
+        return mapping.mid(1, mapping.size()-2);
+    }
+
+    return mapping;
+}
+
 #ifdef SIOYEK_ANDROID
 
 AndroidTextToSpeechHandler::AndroidTextToSpeechHandler() {
@@ -4326,3 +4361,20 @@ void AndroidTextToSpeechHandler::set_on_app_resume_callback(std::function<void(b
     android_global_resume_state_callback = callback;
 }
 #endif
+
+
+bool is_platform_meta_pressed(QKeyEvent* kevent){
+#ifdef Q_OS_MACOS
+        return (kevent->modifiers() & Qt::ControlModifier);
+#else
+        return (kevent->modifiers() & Qt::MetaModifier);
+#endif
+}
+
+bool is_platform_control_pressed(QKeyEvent* kevent){
+#ifdef Q_OS_MACOS
+        return (kevent->modifiers() & Qt::MetaModifier);
+#else
+        return (kevent->modifiers() & Qt::ControlModifier);
+#endif
+}

@@ -101,7 +101,7 @@ public:
     void update_command_last_use(std::string command_name);
 
     template<typename T>
-    void register_command() {
+    void register_command(std::string alias_name="") {
         bool is_developer_mode = false;
 
 #ifdef SIOYEK_DEVELOPER
@@ -109,9 +109,11 @@ public:
 #endif
 
         if (is_developer_mode || !T::developer_only) {
-            new_commands[T::cname]  = [](MainWidget* widget) {return std::make_unique<T>(widget); };
-            command_human_readable_names[T::cname] = T::hname;
-            command_required_prefixes[QString::fromStdString(T::cname)] = "";
+            std::string name = alias_name.size() > 0 ? alias_name : T::cname;
+            bool is_alias = alias_name.size() > 0;
+            new_commands[name]  = [](MainWidget* widget) {return std::make_unique<T>(widget); };
+            command_human_readable_names[name] = is_alias ? "alias for " + T::cname : T::hname;
+            command_required_prefixes[QString::fromStdString(name)] = "";
         }
     }
 };
@@ -127,6 +129,7 @@ struct InputParseTreeNode {
     bool shift_modifier = false;
     bool control_modifier = false;
     bool alt_modifier = false;
+    bool command_modifier = false;
     bool requires_text = false;
     bool requires_symbol = false;
     bool is_root = false;
@@ -137,7 +140,7 @@ struct InputParseTreeNode {
     int defining_file_line;
 
     bool is_same(const InputParseTreeNode* other);
-    bool matches(int key, bool shift, bool ctrl, bool alt);
+    bool matches(int key, bool shift, bool ctrl, bool cmd, bool alt);
 };
 
 
@@ -161,9 +164,9 @@ public:
     InputHandler(const Path& default_path, const std::vector<Path>& user_paths, CommandManager* cm);
     void reload_config_files(const Path& default_path, const std::vector<Path>& user_path);
     //std::vector<std::unique_ptr<Command>> handle_key(QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed ,int* num_repeats);
-    int get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* alt_pressed);
-    std::unique_ptr<Command> handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed, int* num_repeats);
-    std::unique_ptr<Command> get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool alt_pressed);
+    int get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* is_command_pressed, bool* alt_pressed);
+    std::unique_ptr<Command> handle_key(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool is_command_pressed, bool alt_pressed, int* num_repeats);
+    std::unique_ptr<Command> get_menu_command(MainWidget* w, QKeyEvent* key_event, bool shift_pressed, bool control_pressed, bool command_pressed, bool alt_pressed);
     void delete_current_parse_tree(InputParseTreeNode* node_to_delete);
 
     std::optional<Path> get_or_create_user_keys_path();

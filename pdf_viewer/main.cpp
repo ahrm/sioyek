@@ -133,6 +133,7 @@ bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME = true;
 bool NO_AUTO_CONFIG = false;
 bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE = true;
 bool HIDE_OVERLAPPING_LINK_LABELS = true;
+bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE = false;
 
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];
@@ -148,8 +149,10 @@ std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
 std::wstring PAPERS_FOLDER_PATH = L"";
 #ifndef SIOYEK_ANDROID
 std::wstring STATUS_BAR_FORMAT = L"[ %{current_page} / %{num_pages} ]%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{freehand_drawing}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
+std::wstring RIGHT_STATUS_BAR_FORMAT = L"";
 #else
 std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}";
+std::wstring RIGHT_STATUS_BAR_FORMAT = L"%{auto_name}";
 #endif
 
 int next_window_id = 0;
@@ -196,6 +199,8 @@ bool FLAT_TABLE_OF_CONTENTS = false;
 bool SHOULD_USE_MULTIPLE_MONITORS = false;
 bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = false;
 bool DEFAULT_DARK_MODE = false;
+bool USE_SYSTEM_THEME = false;
+bool USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME = false;
 bool SORT_BOOKMARKS_BY_LOCATION = true;
 std::wstring LIBGEN_ADDRESS = L"";
 std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
@@ -210,6 +215,7 @@ bool SHOULD_LAUNCH_NEW_INSTANCE = false;
 bool SHOULD_LAUNCH_NEW_WINDOW = false;
 bool SHOULD_DRAW_UNRENDERED_PAGES = false;
 bool PRESERVE_IMAGE_COLORS = false;
+bool INVERTED_PRESERVED_IMAGE_COLORS = false;
 bool HOVER_OVERVIEW = false;
 bool RERENDER_OVERVIEW = true;
 bool LINEAR_TEXTURE_FILTERING = false;
@@ -231,6 +237,8 @@ int RULER_UNDERLINE_PIXEL_WIDTH = 2;
 bool AUTO_RENAME_DOWNLOADED_PAPERS = false;
 bool SHOW_MOST_RECENT_COMMANDS_FIRST = true;
 bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL = false;
+bool INVERT_SELECTED_TEXT = false;
+bool IGNORE_SCROLL_EVENTS = false;
 
 #ifdef SIOYEK_ANDROID
 std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";
@@ -360,6 +368,11 @@ float EPUB_LINE_SPACING = 2.0f;
 int RELOAD_INTERVAL_MILISECONDS = 200;
 bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE = true;
 
+#ifdef Q_OS_MACOS
+float MACOS_TITLEBAR_COLOR[3] = { -1.0f, -1.0f, -1.0f };
+bool MACOS_HIDE_TITLEBAR = false;
+#endif
+
 std::wstring RULER_DISPLAY_MODE = L"underline";
 std::wstring EPUB_CSS = L"";
 QString EPUB_TEMPLATE = "p {\
@@ -464,31 +477,28 @@ std::wstring strip_uri(std::wstring pdf_file_name) {
 QStringList convert_arguments(QStringList input_args) {
     // convert the relative path of filename (if it exists) to absolute path
 
+    QCommandLineParser* parser = get_command_line_parser();
+    parser->parse(input_args);
+
     QStringList output_args;
+    QString path_arg = "";
+    if (parser->positionalArguments().size() > 0) {
+        // the first positional argument is the path
+        path_arg = parser->positionalArguments()[0];
+    }
 
-    //the first argument is always path of the executable
-    output_args.push_back(input_args.at(0));
-    input_args.pop_front();
-
-    if (input_args.size() > 0) {
-        QString path = input_args.at(0);
-
-        bool is_path_argument = true;
-
-        if (path.size() > 2 && path.startsWith("--")) {
-            is_path_argument = false;
-        }
-
-        if (is_path_argument) {
-            std::wstring path_wstring = strip_uri(path.toStdWString());
+    for (auto arg : input_args) {
+        if (arg == path_arg) {
+            std::wstring path_wstring = strip_uri(arg.toStdWString());
             Path path_object(path_wstring);
             output_args.push_back(QString::fromStdWString(path_object.get_path()));
-            input_args.pop_front();
+        }
+        else {
+            output_args.push_back(arg);
         }
     }
-    for (int i = 0; i < input_args.size(); i++) {
-        output_args.push_back(input_args.at(i));
-    }
+
+    delete parser;
 
     return output_args;
 }
@@ -605,7 +615,7 @@ void configure_paths() {
     default_keys_path = parent_path.slash(L"keys.config");
     tutorial_path = parent_path.slash(L"tutorial.pdf");
 
-#ifdef NON_PORTABLE
+#if defined(NON_PORTABLE) || defined(Q_OS_MACOS)
     user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
     user_keys_paths.push_back(standard_data_path.slash(L"keys_user.config"));
     for (int i = all_config_paths.size() - 1; i > 0; i--) {
@@ -1129,11 +1139,14 @@ int main(int argc, char* args[]) {
 
 #ifndef SIOYEK_ANDROID
     guard.on_delete = std::move([&](QLocalSocket* deleted_socket) {
-        main_widget->on_socket_deleted(deleted_socket);
+        if (windows.size() > 0) {
+            windows[0]->on_socket_deleted(deleted_socket);
+        }
+        //main_widget->on_socket_deleted(deleted_socket);
         });
 #endif
 
-    if (DEFAULT_DARK_MODE) {
+    if (DEFAULT_DARK_MODE && !USE_SYSTEM_THEME) {
         main_widget->toggle_dark_mode();
     }
 

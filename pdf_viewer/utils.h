@@ -14,6 +14,7 @@
 #include <memory>
 #include <qcommandlineparser.h>
 
+#include <qkeyevent.h>
 #include <qstandarditemmodel.h>
 #include <qpoint.h>
 #include <qjsonarray.h>
@@ -521,3 +522,7 @@ public:
 #endif
 
 std::wstring get_path_extras_file_name(const std::wstring& path);
+QString translate_key_mapping_to_macos(QString mapping);
+
+bool is_platform_meta_pressed(QKeyEvent* kevent);
+bool is_platform_control_pressed(QKeyEvent* kevent);

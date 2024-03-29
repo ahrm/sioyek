@@ -215,24 +215,13 @@ std::string Document::add_marked_bookmark(const std::wstring& desc, AbsoluteDocu
     return bookmark.uuid;
 }
 
-int Document::add_incomplete_freetext_bookmark(AbsoluteRect absrect) {
-    BookMark bookmark;
-
-    bookmark.begin_x = absrect.x0;
-    bookmark.begin_y = absrect.y0;
-    bookmark.end_x = absrect.x1;
-    bookmark.end_y = absrect.y1;
-    bookmark.color[0] = FREETEXT_BOOKMARK_COLOR[0];
-    bookmark.color[1] = FREETEXT_BOOKMARK_COLOR[1];
-    bookmark.color[2] = FREETEXT_BOOKMARK_COLOR[2];
-    //bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
-
-    bookmark.uuid = new_uuid_utf8();
-    bookmarks.push_back(bookmark);
+int Document::add_incomplete_bookmark(BookMark incomplete_bookmark){
+    incomplete_bookmark.uuid = new_uuid_utf8();
+    bookmarks.push_back(incomplete_bookmark);
     return bookmarks.size() - 1;
 }
 
-std::string Document::add_pending_freetext_bookmark(int index, const std::wstring& desc) {
+std::string Document::add_pending_bookmark(int index, const std::wstring& desc) {
     BookMark& bookmark = bookmarks[index];
     bookmark.description = desc;
     bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
@@ -1885,6 +1874,13 @@ void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection
         if (i == page_end) {
             char_end = find_closest_char_to_document_point(flat_chars, page_point2, &location_index2);
         }
+
+        if (char_begin == char_end && (char_begin != nullptr)) {
+            selected_text.push_back(char_begin->c);
+            selected_characters.push_back(to_absolute(i, char_begin->quad));
+            return;
+        }
+
         if (flat_chars.size() > 0) {
             if (char_begin == nullptr) {
                 char_begin = flat_chars[0];
@@ -4349,5 +4345,9 @@ std::optional<QVariant> Document::get_extra(QString name) {
         return extras[name].toVariant();
     }
     return {};
+}
+
+std::wstring Document::get_detected_paper_name_if_exists() {
+    return detected_paper_name;
 }
 

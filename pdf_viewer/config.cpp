@@ -27,6 +27,8 @@ extern bool SHOULD_DRAW_UNRENDERED_PAGES;
 extern bool HOVER_OVERVIEW;
 //extern bool AUTO_EMBED_ANNOTATIONS;
 extern bool DEFAULT_DARK_MODE;
+extern bool USE_SYSTEM_THEME;
+extern bool USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern std::wstring SEARCH_URLS[26];
 extern std::wstring EXECUTE_COMMANDS[26];
@@ -105,6 +107,7 @@ extern std::wstring BOOK_SCAN_PATH;
 extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
 extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
 extern bool PRESERVE_IMAGE_COLORS;
+extern bool INVERTED_PRESERVED_IMAGE_COLORS;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
 extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 extern std::wstring VOLUME_DOWN_COMMAND;
@@ -113,6 +116,9 @@ extern int DOCUMENTATION_FONT_SIZE;
 extern int NUM_PRERENDERED_NEXT_SLIDES;
 extern int NUM_PRERENDERED_PREV_SLIDES;
 extern int NUM_CACHED_PAGES;
+extern bool INVERT_SELECTED_TEXT;
+extern bool IGNORE_SCROLL_EVENTS;
+extern bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE;
 
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
@@ -193,6 +199,7 @@ extern bool DEBUG_SMOOTH_FREEHAND_DRAWINGS;
 extern float HIGHLIGHT_DELETE_THRESHOLD;
 extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern std::wstring STATUS_BAR_FORMAT;
+extern std::wstring RIGHT_STATUS_BAR_FORMAT;
 extern bool INVERTED_HORIZONTAL_SCROLLING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
@@ -249,6 +256,11 @@ extern std::wstring PAPER_SEARCH_TILE_PATH;
 extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
 
 extern int RELOAD_INTERVAL_MILISECONDS;
+
+#ifdef Q_OS_MACOS
+extern float MACOS_TITLEBAR_COLOR[3];
+extern bool MACOS_HIDE_TITLEBAR;
+#endif
 
 #ifdef SIOYEK_ANDROID
 extern Path android_config_path;
@@ -698,6 +710,22 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
     configs.push_back({
+        L"use_system_theme",
+        ConfigType::Bool,
+        &USE_SYSTEM_THEME,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"use_custom_color_as_dark_system_theme",
+        ConfigType::Bool,
+        &USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
         L"render_freetext_borders",
         ConfigType::Bool,
         &RENDER_FREETEXT_BORDERS,
@@ -820,6 +848,38 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"preserve_image_colors_in_dark_mode",
         ConfigType::Bool,
         &PRESERVE_IMAGE_COLORS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"inverted_preserved_image_colors",
+        ConfigType::Bool,
+        &INVERTED_PRESERVED_IMAGE_COLORS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"invert_selected_text",
+        ConfigType::Bool,
+        &INVERT_SELECTED_TEXT,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"ignore_scroll_events",
+        ConfigType::Bool,
+        &IGNORE_SCROLL_EVENTS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"dont_center_if_synctex_rect_is_visible",
+        ConfigType::Bool,
+        &DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE,
         bool_serializer,
         bool_deserializer,
         bool_validator
@@ -2062,6 +2122,25 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         bool_validator
         });
 
+#ifdef Q_OS_MACOS
+    configs.push_back({
+        L"macos_titlebar_color",
+        ConfigType::Color3,
+        MACOS_TITLEBAR_COLOR,
+        vec3_serializer,
+        color3_deserializer,
+        color_3_validator
+        });
+    configs.push_back({
+        L"macos_hide_titlebar",
+        ConfigType::Bool,
+        &MACOS_HIDE_TITLEBAR,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+#endif
+
 #ifdef _DEBUG
     configs.push_back({
         L"debug_display_freehand_poitns",
@@ -2101,6 +2180,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"status_bar_format",
         ConfigType::String,
         &STATUS_BAR_FORMAT,
+        string_serializer,
+        string_deserializer,
+        nullptr
+        });
+    configs.push_back({
+        L"right_status_bar_format",
+        ConfigType::String,
+        &RIGHT_STATUS_BAR_FORMAT,
         string_serializer,
         string_deserializer,
         nullptr
