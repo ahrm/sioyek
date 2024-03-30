@@ -1401,6 +1401,10 @@ public:
         return "Action";
     }
 
+    bool requires_document(){
+        return false;
+    }
+
 };
 
 class ExecuteMacroCommand : public TextCommand {
