@@ -8,6 +8,7 @@
 #include <optional>
 #include <variant>
 #include <map>
+#include <functional>
 #include <qwidget.h>
 #include <qabstractitemmodel.h>
 
@@ -80,9 +81,9 @@ struct Config {
     std::wstring name;
     ConfigType config_type;
     void* value = nullptr;
-    void (*serialize) (void*, std::wstringstream&) = nullptr;
-    void* (*deserialize) (std::wstringstream&, void* res, bool* changed) = nullptr;
-    bool (*validator) (const std::wstring& value) = nullptr;
+    std::function<void(void*, std::wstringstream&)> serialize = nullptr;
+    std::function<void*(std::wstringstream&, void* res, bool* changed)> deserialize = nullptr;
+    std::function<bool(const std::wstring& value)> validator = nullptr;
     std::variant<FloatExtras, IntExtras, EmptyExtras> extras = EmptyExtras{};
     std::wstring default_value_string;
     bool is_auto = false;

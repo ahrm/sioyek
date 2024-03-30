@@ -541,43 +541,174 @@ bool bool_validator(const std::wstring& str) {
     return false;
 }
 
+auto ivec2_serializer = vec_n_serializer<2, int>;
+auto ivec2_deserializer = vec_n_deserializer<2, int>;
+auto fvec2_serializer = vec_n_serializer<2, float>;
+auto fvec2_deserializer = vec_n_deserializer<2, float>;
+auto vec3_serializer = vec_n_serializer<3, float>;
+auto vec4_serializer = vec_n_serializer<4, float>;
+auto vec3_deserializer = vec_n_deserializer<3, float>;
+auto vec4_deserializer = vec_n_deserializer<4, float>;
+auto float_deserializer = generic_deserializer<float>;
+auto int_deserializer = generic_deserializer<int>;
+auto bool_deserializer = generic_deserializer<bool>;
+auto color3_deserializer = colorn_deserializer<3>;
+auto color4_deserializer = colorn_deserializer<4>;
+auto color_3_validator = colorn_validator<3>;
+auto color_4_validator = colorn_validator<4>;
 
+class ConfigBuilder{
+
+private:
+    std::wstring name;
+    ConfigType config_type;
+    void* value = nullptr;
+    std::function<void(void*, std::wstringstream&)> serialize = nullptr;
+    std::function<void*(std::wstringstream&, void* res, bool* changed)> deserialize = nullptr;
+    std::function<bool(const std::wstring& value)> validator = nullptr;
+    std::variant<FloatExtras, IntExtras, EmptyExtras> extras = EmptyExtras{};
+    bool is_auto = false;
+
+    std::function<void(void*, std::wstringstream&)> get_serializer(){
+        if (serialize) return serialize;
+        switch(config_type){
+        case Int: return int_serializer;
+        case Float: return float_serializer;
+        case Color3: return vec3_serializer;
+        case Color4: return vec4_serializer;
+        case Bool: return bool_serializer;
+        case String: return string_serializer;
+        case FilePath: return string_serializer;
+        case FolderPath: return string_serializer;
+        case IVec2: return ivec2_serializer;
+        case FVec2: return fvec2_serializer;
+        case EnableRectangle: return rect_serializer;
+        case Range: return fvec2_serializer;
+        case Macro: return string_serializer;
+        default: assert(false);
+        }
+    }
+
+    std::function<void*(std::wstringstream&, void* res, bool* changed)> get_deserializer(){
+        if (deserialize) return deserialize;
+        switch(config_type){
+        case Int: return int_deserializer;
+        case Float: return float_deserializer;
+        case Color3: return color3_deserializer;
+        case Color4: return color4_deserializer;
+        case Bool: return bool_deserializer;
+        case String: return string_deserializer;
+        case FilePath: return string_deserializer;
+        case FolderPath: return string_deserializer;
+        case IVec2: return ivec2_deserializer;
+        case FVec2: return fvec2_deserializer;
+        case EnableRectangle: return rect_deserializer;
+        case Range: return fvec2_deserializer;
+        case Macro: return string_deserializer;
+        default: assert(false);
+        }
+
+    }
+
+    std::function<bool(const std::wstring& value)> get_validator(){
+        if (validator) return validator;
+        switch(config_type){
+        case Int: return nullptr;
+        case Float: return nullptr;
+        case Color3: return color_3_validator;
+        case Color4: return color_4_validator;
+        case Bool: return bool_validator;
+        case String: return nullptr;
+        case FilePath: return nullptr;
+        case FolderPath: return nullptr;
+        case IVec2: return nullptr;
+        case FVec2: return nullptr;
+        case EnableRectangle: return nullptr;
+        case Range: return nullptr;
+        case Macro: return nullptr;
+        default: assert(false);
+        }
+
+    }
+
+public:
+    ConfigBuilder(std::wstring config_name, ConfigType ctype, void* cvalue){
+        name = config_name;
+        config_type = ctype;
+        value = cvalue;
+    }
+
+    static ConfigBuilder color3(std::wstring config_name, void* val){
+        return ConfigBuilder(config_name, ConfigType::Color3, val);
+    }
+
+    static ConfigBuilder color4(std::wstring config_name, void* val){
+        return ConfigBuilder(config_name, ConfigType::Color4, val);
+    }
+
+    static ConfigBuilder boolean(std::wstring config_name, void* val){
+        return ConfigBuilder(config_name, ConfigType::Bool, val);
+    }
+
+    ConfigBuilder serializer(std::function<void(void*, std::wstringstream&)> ser){
+        this->serialize = ser;
+        return *this;
+    }
+
+    ConfigBuilder deserializer(std::function<void*(std::wstringstream&, void* res, bool* changed)> deser){
+        this->deserialize = deser;
+        return *this;
+    }
+
+    ConfigBuilder valid(std::function<bool(const std::wstring& value)> validator_){
+        this->validator = validator_;
+        return *this;
+    }
+
+    ConfigBuilder extra(std::variant<FloatExtras, IntExtras, EmptyExtras> extras_){
+        this->extras = extras_;
+        return *this;
+    }
+
+    ConfigBuilder auto_(){
+        this->is_auto = true;
+        return *this;
+    }
+
+    Config build(){
+        Config res;
+        res.name = name;
+        res.config_type = config_type;
+        res.value = value;
+        res.serialize = get_serializer();
+        res.deserialize = get_deserializer();
+        res.validator = get_validator();
+        res.extras = extras;
+        res.is_auto = is_auto;
+        res.load_default();
+        return res;
+    }
+
+};
 
 ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, const std::vector<Path>& user_paths) {
 
     user_config_paths = user_paths;
-    auto ivec2_serializer = vec_n_serializer<2, int>;
-    auto ivec2_deserializer = vec_n_deserializer<2, int>;
-    auto fvec2_serializer = vec_n_serializer<2, float>;
-    auto fvec2_deserializer = vec_n_deserializer<2, float>;
-    auto vec3_serializer = vec_n_serializer<3, float>;
-    auto vec4_serializer = vec_n_serializer<4, float>;
-    auto vec3_deserializer = vec_n_deserializer<3, float>;
-    auto vec4_deserializer = vec_n_deserializer<4, float>;
-    auto float_deserializer = generic_deserializer<float>;
-    auto int_deserializer = generic_deserializer<int>;
-    auto bool_deserializer = generic_deserializer<bool>;
-    auto color3_deserializer = colorn_deserializer<3>;
-    auto color4_deserializer = colorn_deserializer<4>;
-    auto color_3_validator = colorn_validator<3>;
-    auto color_4_validator = colorn_validator<4>;
 
-    configs.push_back({
-        L"text_highlight_color",
-        ConfigType::Color3,
-        DEFAULT_TEXT_HIGHLIGHT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"vertical_line_color",
-        ConfigType::Color4,
-        DEFAULT_VERTICAL_LINE_COLOR,
-        vec4_serializer,
-        color4_deserializer,
-        color_4_validator
-        });
+    auto add_color3 = [&](std::wstring name, void* location){
+        configs.push_back(
+            ConfigBuilder::color3(name, location).build()
+            );
+    };
+
+    auto add_color4 = [&](std::wstring name, void* location){
+        configs.push_back(
+            ConfigBuilder::color4(name, location).build()
+            );
+    };
+
+    add_color3(L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR);
+    add_color4(L"vertical_line_color",DEFAULT_VERTICAL_LINE_COLOR);
     configs.push_back({
         L"visual_mark_color",
         ConfigType::Color4,
@@ -2470,9 +2601,9 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         configs.push_back({ execute_command_config_string, ConfigType::String, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer, nullptr });
     }
 
-    for (auto& config : configs) {
-        config.save_value_into_default();
-    }
+    // for (auto& config : configs) {
+    //     config.save_value_into_default();
+    // }
 
     deserialize(nullptr, default_path, auto_path, user_paths);
 }
