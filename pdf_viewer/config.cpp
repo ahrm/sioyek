@@ -167,6 +167,7 @@ extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
 extern std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
 
+extern bool ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW;
 extern bool USE_LEGACY_KEYBINDS;
 extern bool MULTILINE_MENUS;
 extern bool START_WITH_HELPER_WINDOW;
@@ -1845,6 +1846,14 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         L"use_legacy_keybinds",
         ConfigType::Bool,
         &USE_LEGACY_KEYBINDS,
+        bool_serializer,
+        bool_deserializer,
+        bool_validator
+        });
+    configs.push_back({
+        L"allow_main_view_scroll_while_in_overview",
+        ConfigType::Bool,
+        &ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW,
         bool_serializer,
         bool_deserializer,
         bool_validator

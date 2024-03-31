@@ -202,6 +202,7 @@ extern bool IGNORE_SCROLL_EVENTS;
 extern bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE;
 extern bool USE_SYSTEM_THEME;
 extern bool USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME;
+extern bool ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW;
 
 extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
 extern std::wstring CONTEXT_MENU_ITEMS;
@@ -3088,11 +3089,17 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                 }
             }
             else {
-                if (wevent->angleDelta().y() > 0) {
-                    goto_ith_next_overview(-1);
+                if (ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW) {
+                    move_vertical(-72.0f * vertical_move_amount * num_repeats_f_y);
+                    update_scrollbar();
                 }
-                if (wevent->angleDelta().y() < 0) {
-                    goto_ith_next_overview(1);
+                else {
+                    if (wevent->angleDelta().y() > 0) {
+                        goto_ith_next_overview(-1);
+                    }
+                    if (wevent->angleDelta().y() < 0) {
+                        goto_ith_next_overview(1);
+                    }
                 }
             }
             validate_render();

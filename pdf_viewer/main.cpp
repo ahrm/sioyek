@@ -291,6 +291,7 @@ float SMOOTH_SCROLL_SPEED = 3.0f;
 float SMOOTH_SCROLL_DRAG = 3000.0f;
 int PRERENDERED_PAGE_COUNT = 0;
 bool SHOW_RIGHT_CLICK_CONTEXT_MENU = false;
+bool ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW = false;
 std::wstring CONTEXT_MENU_ITEMS = L"";
 std::wstring CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT = L"copy|add_highlight(a)|add_highlight(b)|add_highlight(c)";
 std::wstring CONTEXT_MENU_ITEMS_FOR_LINKS = L"";
