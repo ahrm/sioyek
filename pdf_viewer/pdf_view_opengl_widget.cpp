@@ -107,8 +107,8 @@ extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
 extern std::wstring FORWARD_RECT_TAP_COMMAND;
 extern std::wstring FORWARD_RECT_HOLD_COMMAND;
-extern std::wstring EDIT_PORTAL_TAP_COMMAND;
-extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
+extern std::wstring TOP_CENTER_TAP_COMMAND;
+extern std::wstring TOP_CENTER_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_NEXT_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
@@ -118,8 +118,8 @@ extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
 extern std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
 extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
-extern std::wstring EDIT_PORTAL_TAP_COMMAND;
-extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
+extern std::wstring TOP_CENTER_TAP_COMMAND;
+extern std::wstring TOP_CENTER_HOLD_COMMAND;
 extern std::wstring TAG_FONT_FACE;
 
 GLfloat g_quad_vertex[] = {
@@ -3412,7 +3412,7 @@ std::vector<std::pair<QRect, QString>> PdfViewOpenGLWidget::get_hint_rect_and_te
             UIRectDescriptor {&PORTRAIT_VISUAL_MARK_NEXT, &VISUAL_MARK_NEXT_TAP_COMMAND, &VISUAL_MARK_NEXT_HOLD_COMMAND, "move_ruler_next"},
             UIRectDescriptor {&PORTRAIT_MIDDLE_LEFT_UI_RECT, &MIDDLE_LEFT_RECT_TAP_COMMAND, &MIDDLE_LEFT_RECT_HOLD_COMMAND, "middle_left"},
             UIRectDescriptor {&PORTRAIT_MIDDLE_RIGHT_UI_RECT, &MIDDLE_RIGHT_RECT_TAP_COMMAND, &MIDDLE_RIGHT_RECT_HOLD_COMMAND, "middle_right"},
-            UIRectDescriptor {&PORTRAIT_EDIT_PORTAL_UI_RECT, &EDIT_PORTAL_TAP_COMMAND, &EDIT_PORTAL_HOLD_COMMAND, "edit_portal"},
+            UIRectDescriptor {&PORTRAIT_EDIT_PORTAL_UI_RECT, &TOP_CENTER_TAP_COMMAND, &TOP_CENTER_HOLD_COMMAND, "edit_portal"},
         };
     }
     else {
@@ -3423,7 +3423,7 @@ std::vector<std::pair<QRect, QString>> PdfViewOpenGLWidget::get_hint_rect_and_te
             UIRectDescriptor {&LANDSCAPE_VISUAL_MARK_NEXT, &VISUAL_MARK_NEXT_TAP_COMMAND, &VISUAL_MARK_NEXT_HOLD_COMMAND, "move_ruler_next"},
             UIRectDescriptor {&LANDSCAPE_MIDDLE_LEFT_UI_RECT, &MIDDLE_LEFT_RECT_TAP_COMMAND, &MIDDLE_LEFT_RECT_HOLD_COMMAND, "middle_left"},
             UIRectDescriptor {&LANDSCAPE_MIDDLE_RIGHT_UI_RECT, &MIDDLE_RIGHT_RECT_TAP_COMMAND, &MIDDLE_RIGHT_RECT_HOLD_COMMAND, "middle_right"},
-            UIRectDescriptor {&LANDSCAPE_EDIT_PORTAL_UI_RECT, &EDIT_PORTAL_TAP_COMMAND, &EDIT_PORTAL_HOLD_COMMAND, "edit_portal"},
+            UIRectDescriptor {&LANDSCAPE_EDIT_PORTAL_UI_RECT, &TOP_CENTER_TAP_COMMAND, &TOP_CENTER_HOLD_COMMAND, "edit_portal"},
         };
     }
 

@@ -222,8 +222,8 @@ extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
 extern std::wstring FORWARD_RECT_TAP_COMMAND;
 extern std::wstring FORWARD_RECT_HOLD_COMMAND;
-extern std::wstring EDIT_PORTAL_TAP_COMMAND;
-extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
+extern std::wstring TOP_CENTER_TAP_COMMAND;
+extern std::wstring TOP_CENTER_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_NEXT_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
@@ -6357,7 +6357,7 @@ bool MainWidget::event(QEvent* event) {
                         return true;
                     }
                     if (is_in_edit_portal_rect(window_pos)) {
-                        handle_command_types(command_manager->create_macro_command(this, "", EDIT_PORTAL_HOLD_COMMAND), 0);
+                        handle_command_types(command_manager->create_macro_command(this, "", TOP_CENTER_HOLD_COMMAND), 0);
                         invalidate_render();
                         return true;
                     }
@@ -6555,7 +6555,7 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
     }
 
     if (is_in_edit_portal_rect(click_pos)) {
-        if (execute_macro_if_enabled(EDIT_PORTAL_TAP_COMMAND)) {
+        if (execute_macro_if_enabled(TOP_CENTER_TAP_COMMAND)) {
             return true;
         }
     }

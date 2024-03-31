@@ -90,314 +90,11 @@
 //#define LINUX_STANDARD_PATHS
 
 
+std::string APPLICATION_VERSION = "2.0.0";
 int DATABASE_VERSION = 2;
 std::wstring APPLICATION_NAME = L"sioyek";
 std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;
-int FONT_SIZE = -1;
-int STATUS_BAR_FONT_SIZE = -1;
-std::string APPLICATION_VERSION = "2.0.0";
-float BACKGROUND_COLOR[3] = { 0.97f, 0.97f, 0.97f };
-float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-float CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-float RULER_COLOR[3] = { 0.5f, 0.5f, 0.5f };
-float RULER_MARKER_COLOR[3] = { 1.0f, 0.0f, 0.0f };
-float CUSTOM_BACKGROUND_COLOR[3] = { 0.18f, 0.204f, 0.251f };
-float CUSTOM_TEXT_COLOR[3] = { 0.847f, 0.871f, 0.914f };
-float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-float STATUS_BAR_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
-float UI_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
-float UI_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-float UI_SELECTED_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-float UI_SELECTED_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
-float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 0.5f, 0.5f };
-float GAMMA = 1.0f;
-bool DEBUG = false;
-bool DEBUG_DISPLAY_FREEHAND_POINTS = false;
-bool DEBUG_SMOOTH_FREEHAND_DRAWINGS = true;
-#ifdef SIOYEK_ANDROID
-bool TOUCH_MODE = true;
-#else
-bool TOUCH_MODE = false;
-#endif
-
-#ifdef SIOYEK_ANDROID
-bool SLICED_RENDERING = true;
-#else
-bool SLICED_RENDERING = false;
-#endif
-int NUM_V_SLICES = 5;
-int NUM_H_SLICES = 1;
-bool SHOULD_RENDER_PDF_ANNOTATIONS = true;
-bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME = true;
-bool NO_AUTO_CONFIG = false;
-bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE = true;
-bool HIDE_OVERLAPPING_LINK_LABELS = true;
-bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE = false;
-
-std::wstring SEARCH_URLS[26];
-std::wstring EXECUTE_COMMANDS[26];
-std::wstring TEXT_HIGHLIGHT_URL = L"http://localhost:5000/";
-std::wstring PAPER_SEARCH_URL = L"https://search.fatcat.wiki/fatcat_release/_search?q=%{query}";
-
-std::wstring PAPER_SEARCH_URL_PATH = L"hits.hits[]._source.best_pdf_url";
-std::wstring PAPER_SEARCH_TILE_PATH = L"hits.hits[]._source.title";
-std::wstring PAPER_SEARCH_CONTRIB_PATH = L"hits.hits[]._source.contrib_names";
-
-std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
-std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
-std::wstring PAPERS_FOLDER_PATH = L"";
-#ifndef SIOYEK_ANDROID
-std::wstring STATUS_BAR_FORMAT = L"[ %{current_page} / %{num_pages} ]%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{freehand_drawing}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
-std::wstring RIGHT_STATUS_BAR_FORMAT = L"";
-#else
-std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}";
-std::wstring RIGHT_STATUS_BAR_FORMAT = L"%{auto_name}";
-#endif
-
-int next_window_id = 0;
-float BLACK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-float HIGHLIGHT_COLORS[26 * 3] = { \
-0.94, 0.64, 1.00, \
-0.00, 0.46, 0.86, \
-0.60, 0.25, 0.00, \
-0.30, 0.00, 0.36, \
-0.10, 0.10, 0.10, \
-0.00, 0.36, 0.19, \
-0.17, 0.81, 0.28, \
-1.00, 0.80, 0.60, \
-0.50, 0.50, 0.50, \
-0.58, 1.00, 0.71, \
-0.56, 0.49, 0.00, \
-0.62, 0.80, 0.00, \
-0.76, 0.00, 0.53, \
-0.00, 0.20, 0.50, \
-1.00, 0.64, 0.02, \
-1.00, 0.66, 0.73, \
-0.26, 0.40, 0.00, \
-1.00, 0.00, 0.06, \
-0.37, 0.95, 0.95, \
-0.00, 0.60, 0.56, \
-0.88, 1.00, 0.40, \
-0.45, 0.04, 1.00, \
-0.60, 0.00, 0.00, \
-1.00, 1.00, 0.50, \
-1.00, 1.00, 0.00, \
-1.00, 0.31, 0.02
-};
-
-float DARK_MODE_CONTRAST = 0.8f;
-float ZOOM_INC_FACTOR = 1.2f;
-float VERTICAL_MOVE_AMOUNT = 1.0f;
-float HORIZONTAL_MOVE_AMOUNT = 1.0f;
-float MOVE_SCREEN_PERCENTAGE = 0.5f;
-const unsigned int CACHE_INVALID_MILIES = 1000;
-const int PERSIST_MILIES = 1000 * 60;
-const int PAGE_PADDINGS = 0;
-const int MAX_PENDING_REQUESTS = 31;
-bool FLAT_TABLE_OF_CONTENTS = false;
-bool SHOULD_USE_MULTIPLE_MONITORS = false;
-bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = false;
-bool DEFAULT_DARK_MODE = false;
-bool USE_SYSTEM_THEME = false;
-bool USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME = false;
-bool SORT_BOOKMARKS_BY_LOCATION = true;
-std::wstring LIBGEN_ADDRESS = L"";
-std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
-std::wstring INVERSE_SEARCH_COMMAND = L"";
-std::wstring SHARED_DATABASE_PATH = L"";
-std::wstring BOOK_SCAN_PATH = L"";
-std::wstring UI_FONT_FACE_NAME = L"";
-std::wstring STATUS_FONT_FACE_NAME = L"";
-std::wstring DEFAULT_OPEN_FILE_PATH = L"";
-bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = true;
-bool SHOULD_LAUNCH_NEW_INSTANCE = false;
-bool SHOULD_LAUNCH_NEW_WINDOW = false;
-bool SHOULD_DRAW_UNRENDERED_PAGES = false;
-bool PRESERVE_IMAGE_COLORS = false;
-bool INVERTED_PRESERVED_IMAGE_COLORS = false;
-bool HOVER_OVERVIEW = false;
-bool RERENDER_OVERVIEW = true;
-bool LINEAR_TEXTURE_FILTERING = false;
-bool RULER_MODE = true;
-bool SMALL_TOC = false;
-bool WHEEL_ZOOM_ON_CURSOR = false;
-bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE = true;
-bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL = true;
-bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE = false;
-int TEXT_SUMMARY_CONTEXT_SIZE = 49;
-float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.75;
-float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.25f;
-float MENU_SCREEN_WDITH_RATIO = 0.9f;
-float RULER_PADDING = 1.0f;
-float RULER_X_PADDING = 5.0f;
-std::wstring ITEM_LIST_PREFIX = L">";
-float STRIKE_LINE_WIDTH = 1.0f;
-int RULER_UNDERLINE_PIXEL_WIDTH = 2;
-bool AUTO_RENAME_DOWNLOADED_PAPERS = false;
-bool SHOW_MOST_RECENT_COMMANDS_FIRST = true;
-bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL = false;
-bool INVERT_SELECTED_TEXT = false;
-bool IGNORE_SCROLL_EVENTS = false;
-
-#ifdef SIOYEK_ANDROID
-std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";
-#else
-std::wstring STARTUP_COMMANDS = L"";
-#endif
-
-bool ALIGN_LINK_DEST_TO_TOP = false;
-int MAX_TAB_COUNT = 100;
-float SMALL_PIXMAP_SCALE = 0.75f;
-float DISPLAY_RESOLUTION_SCALE = -1;
-float FIT_TO_PAGE_WIDTH_RATIO = 0.75;
-int MAIN_WINDOW_SIZE[2] = { -1, -1 };
-int HELPER_WINDOW_SIZE[2] = { -1, -1 };
-int MAIN_WINDOW_MOVE[2] = { -1, -1 };
-int HELPER_WINDOW_MOVE[2] = { -1, -1 };
-float TOUCHPAD_SENSITIVITY = 1.0f;
-int SINGLE_MAIN_WINDOW_SIZE[2] = { -1, -1 };
-int SINGLE_MAIN_WINDOW_MOVE[2] = { -1, -1 };
-bool ENABLE_EXPERIMENTAL_FEATURES = false;
-bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS = true;
-int MAX_CREATED_TABLE_OF_CONTENTS_SIZE = 5000;
-bool FORCE_CUSTOM_LINE_ALGORITHM = false;
-float OVERVIEW_SIZE[2] = { 0.8f, 0.4f };
-float OVERVIEW_OFFSET[2] = { 0.0f, 0.0f };
-bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE = false;
-#ifdef SIOYEK_ANDROID
-bool EXACT_HIGHLIGHT_SELECT = true;
-#else
-bool EXACT_HIGHLIGHT_SELECT = false;
-#endif
-bool SHOW_DOC_PATH = false;
-float FASTREAD_OPACITY = 0.5f;
-bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE = true;
-bool SINGLE_CLICK_SELECTS_WORDS = false;
-bool USE_LEGACY_KEYBINDS = false;
-bool MULTILINE_MENUS = true;
-bool START_WITH_HELPER_WINDOW = false;
-std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
-
-
-std::map<std::wstring, JsCommandInfo> ADDITIONAL_JAVASCRIPT_COMMANDS;
-std::map<std::wstring, JsCommandInfo> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
-std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
-std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
-bool PRERENDER_NEXT_PAGE = true;
-bool HIGHLIGHT_MIDDLE_CLICK = false;
-float HYPERDRIVE_SPEED_FACTOR = 10.0f;
-float SMOOTH_SCROLL_SPEED = 3.0f;
-float SMOOTH_SCROLL_DRAG = 3000.0f;
-int PRERENDERED_PAGE_COUNT = 0;
-bool SHOW_RIGHT_CLICK_CONTEXT_MENU = false;
-bool ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW = false;
-std::wstring CONTEXT_MENU_ITEMS = L"";
-std::wstring CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT = L"copy|add_highlight(a)|add_highlight(b)|add_highlight(c)";
-std::wstring CONTEXT_MENU_ITEMS_FOR_LINKS = L"";
-std::wstring CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS = L"delete_highlight|edit_selected_highlight|add_highlight(a)|add_highlight(b)|add_highlight(c)";
-std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS = L"delete_visible_bookmark|edit_selected_bookmark|move_selected_bookmark";
-std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW = L"";
-
-bool RIGHT_CLICK_CONTEXT_MENU = false;
-#ifdef SIOYEK_ANDROID
-int NUM_CACHED_PAGES = 3;
-#else
-int NUM_CACHED_PAGES = 5;
-#endif
-
-float PAGE_SEPARATOR_WIDTH = 0.0f;
-float PAGE_SEPARATOR_COLOR[3] = { 0.9f, 0.9f, 0.9f };
-bool SUPER_FAST_SEARCH = true;
-bool INCREMENTAL_SEARCH = false;
-bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR = false;
-bool SHOW_CLOSE_PORTAL_IN_STATUSBAR = false;
-bool CASE_SENSITIVE_SEARCH = false;
-bool SMARTCASE_SEARCH = false;
-bool SHOW_DOCUMENT_NAME_IN_STATUSBAR = false;
-bool NUMERIC_TAGS = false;
-bool SHOULD_HIGHLIGHT_LINKS = false;
-bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH = false;
-int KEYBOARD_SELECT_FONT_SIZE = 20;
-int DOCUMENTATION_FONT_SIZE = 16;
-bool FUZZY_SEARCHING = false;
-bool INVERTED_HORIZONTAL_SCROLLING = false;
-bool TOC_JUMP_ALIGN_TOP = false;
-float CUSTOM_COLOR_CONTRAST = 0.5f;
-float HIGHLIGHT_DELETE_THRESHOLD = 0.1f;
-float SCROLL_VIEW_SENSITIVITY = 1.0f;
-float KEYBOARD_SELECT_BACKGROUND_COLOR[] = { 0.9f , 0.75f, 0.0f, 1.0f };
-float KEYBOARD_SELECT_TEXT_COLOR[] = { 0.0f , 0.0f, 0.5f, 1.0f };
-float KEYBOARD_SELECTED_TAG_TEXT_COLOR[] = { 1.0f , 1.0f, 1.0f, 1.0f };
-float KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO[] = { 0.0f , 0.0f, 0.0f, 1.0f };
-
-bool AUTOCENTER_VISUAL_SCROLL = false;
-bool ALPHABETIC_LINK_TAGS = false;
-bool VIMTEX_WSL_FIX = false;
-float RULER_AUTO_MOVE_SENSITIVITY = 40.0f;
-float TTS_RATE = 0.0f;
-bool VERBOSE = false;
-bool FILL_TEXTBAR_WITH_SELECTED_TEXT = true;
-int NUM_PRERENDERED_NEXT_SLIDES = 1;
-int NUM_PRERENDERED_PREV_SLIDES = 0;
-float SMOOTH_MOVE_MAX_VELOCITY = 1500;
-//float SMOOTH_MOVE_INITIAL_VELOCITY = 1500;
-float PAGE_SPACE_X = 10.0f;
-float PAGE_SPACE_Y = 10.0f;
-bool USE_KEYBOARD_POINT_SELECTION = false;
-std::wstring TAG_FONT_FACE = L"";
-//UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
-
-bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
-bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME = true;
-float DEFAULT_TEXT_HIGHLIGHT_COLOR[3] = { 1.0f, 1.0f, 0.0 };
-float DEFAULT_VERTICAL_LINE_COLOR[4] = { 0.0f, 0.0f, 0.0f, 0.1f };
-float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 1.0f, 0.0f };
-float DEFAULT_LINK_HIGHLIGHT_COLOR[3] = { 0.0f, 0.0f, 1.0f };
-float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3] = { 1.0f, 0.0f, 0.0f };
-float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT = 1.0f;
-
-float FREETEXT_BOOKMARK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
-float FREETEXT_BOOKMARK_FONT_SIZE = 8.0f;
-bool RENDER_FREETEXT_BORDERS = false;
-bool REAL_PAGE_SEPARATION = false;
-
-float EPUB_WIDTH = 400;
-float EPUB_HEIGHT = 700;
-float EPUB_FONT_SIZE = 14;
-float EPUB_LINE_SPACING = 2.0f;
-int RELOAD_INTERVAL_MILISECONDS = 200;
-bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE = true;
-
-#ifdef Q_OS_MACOS
-float MACOS_TITLEBAR_COLOR[3] = { -1.0f, -1.0f, -1.0f };
-bool MACOS_HIDE_TITLEBAR = false;
-#endif
-
-std::wstring RULER_DISPLAY_MODE = L"underline";
-std::wstring EPUB_CSS = L"";
-QString EPUB_TEMPLATE = "p {\
-line-height: %{line_spacing}em!important;\
-}";
-
-UIRect PORTRAIT_EDIT_PORTAL_UI_RECT = { true, -0.2f, 0.2f, -1.0f, -0.7f };
-UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT = { true, -0.2f, 0.2f, -1.0f, -0.7f };
-
-UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT = { true, -1.0f, -0.7f, -0.3f, 0.3f };
-UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT = { true, 0.7f, 1.0f, -0.3f, 0.3f };
-UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT = { true, -1.0f, -0.7f, -0.3f, 0.3f };
-UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT = { true, 0.7f, 1.0f, -0.3f, 0.3f };
-
-UIRect PORTRAIT_BACK_UI_RECT = { true, -1.0f, -0.7f, -1.0f, -0.7f };
-UIRect PORTRAIT_FORWARD_UI_RECT = { true, 0.7f, 1.0f, -1.0f, -0.7 };
-UIRect LANDSCAPE_BACK_UI_RECT = { true, -1.0f, -0.7f, -1.0f, -0.7f };
-UIRect LANDSCAPE_FORWARD_UI_RECT = { true, 0.7f, 1.0f, -1.0f, -0.7 };
-
-UIRect PORTRAIT_VISUAL_MARK_PREV = { true, -1.0f, -0.7f, 0.7f, 1.0f };
-UIRect PORTRAIT_VISUAL_MARK_NEXT = { true, 0.7f, 1.0f, 0.7f, 1.0f };
-UIRect LANDSCAPE_VISUAL_MARK_PREV = { true, -1.0f, -0.7f, 0.7f, 1.0f };
-UIRect LANDSCAPE_VISUAL_MARK_NEXT = { true, 0.7f, 1.0f, 0.7f, 1.0f };
-float BOOKMARK_RECT_SIZE = 8.0f;
 
 Path standard_data_path;
 Path default_config_path(L"");
@@ -407,59 +104,45 @@ std::vector<Path> user_keys_paths = {};
 Path database_file_path(L"");
 Path local_database_file_path(L"");
 Path global_database_file_path(L"");
-#ifdef SIOYEK_ANDROID
+
+#ifdef SIOYEK_MOBILE
 Path tutorial_path(L":/tutorial.pdf");
 Path android_config_path(L"");
 #else
 Path tutorial_path(L"");
 #endif
+
+#ifdef SIOYEK_ANDROID
+extern Path android_config_path;
+#endif
+
 Path last_opened_file_address_path(L"");
 Path shader_path(L"");
 Path auto_config_path(L"");
 Path downloaded_papers_path(L"");
 ScratchPad global_scratchpad;
 
-std::wstring RESIZE_COMMAND = L"";
-std::wstring SHIFT_CLICK_COMMAND = L"overview_under_cursor";
-std::wstring CONTROL_CLICK_COMMAND = L"smart_jump_under_cursor";
-std::wstring RIGHT_CLICK_COMMAND = L"";
-std::wstring MIDDLE_CLICK_COMMAND = L"";
-std::wstring SHIFT_RIGHT_CLICK_COMMAND = L"";
-std::wstring CONTROL_RIGHT_CLICK_COMMAND = L"";
-std::wstring ALT_CLICK_COMMAND = L"";
-std::wstring ALT_RIGHT_CLICK_COMMAND = L"";
-std::wstring HOLD_MIDDLE_CLICK_COMMAND = L"download_paper_under_cursor";
-std::wstring TABLET_PEN_CLICK_COMMAND = L"[s]show_touch_draw_controls;[r]move_visual_mark_next";
-//std::wstring TABLET_PEN_CLICK_COMMAND = L"[s]show_touch_main_menu;[r]move_visual_mark_next";
-//std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND = L"toggle_scratchpad_mode";
-std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND = L"load_scratchpad";
-std::wstring VOLUME_DOWN_COMMAND = L"";
-std::wstring VOLUME_UP_COMMAND = L"";
-
-std::wstring BACK_RECT_TAP_COMMAND = L"history_back";
-std::wstring BACK_RECT_HOLD_COMMAND = L"goto_mark";
-std::wstring FORWARD_RECT_TAP_COMMAND = L"history_forward";
-std::wstring FORWARD_RECT_HOLD_COMMAND = L"set_mark";
-std::wstring EDIT_PORTAL_TAP_COMMAND = L"edit_portal";
-std::wstring EDIT_PORTAL_HOLD_COMMAND = L"";
-std::wstring VISUAL_MARK_NEXT_TAP_COMMAND = L"";
-std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND = L"";
-std::wstring VISUAL_MARK_PREV_TAP_COMMAND = L"";
-std::wstring VISUAL_MARK_PREV_HOLD_COMMAND = L"";
-std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND = L"";
-std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND = L"";
-#ifdef SIOYEK_ANDROID
-std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND = L"overview_definition";
-#else
-std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND = L"";
-#endif
-std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND = L"";
-
+int next_window_id = 0;
 std::vector<MainWidget*> windows;
 QString global_font_family;
 
-//std::vector<float> embedding_weights;
-//std::vector<float> linear_weights;
+extern bool VERBOSE;
+extern bool USE_SYSTEM_THEME;
+extern std::wstring TAG_FONT_FACE;
+extern bool START_WITH_HELPER_WINDOW;
+extern int MAIN_WINDOW_SIZE[2];
+extern int HELPER_WINDOW_SIZE[2];
+extern int MAIN_WINDOW_MOVE[2];
+extern int HELPER_WINDOW_MOVE[2];
+extern std::wstring STARTUP_COMMANDS;
+extern bool SHOULD_LAUNCH_NEW_WINDOW;
+extern bool SHOULD_LAUNCH_NEW_INSTANCE;
+extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP;
+extern std::wstring SHARED_DATABASE_PATH;
+extern std::wstring SEARCH_URLS[26];
+extern std::wstring PAPERS_FOLDER_PATH;
+extern bool NO_AUTO_CONFIG;
+extern bool DEFAULT_DARK_MODE;
 
 std::wstring strip_uri(std::wstring pdf_file_name) {
 
