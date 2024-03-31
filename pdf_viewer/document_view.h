@@ -8,6 +8,7 @@
 #include <thread>
 #include <optional>
 #include <deque>
+#include <mutex>
 
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
