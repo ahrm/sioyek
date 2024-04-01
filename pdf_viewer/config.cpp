@@ -22,7 +22,6 @@ float UI_SELECTED_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float UI_SELECTED_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 0.5f, 0.5f };
 float GAMMA = 1.0f;
-bool DEBUG = false;
 bool DEBUG_DISPLAY_FREEHAND_POINTS = false;
 bool DEBUG_SMOOTH_FREEHAND_DRAWINGS = true;
 #ifdef SIOYEK_MOBILE
@@ -988,7 +987,6 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"highlight_links", &SHOULD_HIGHLIGHT_LINKS);
     add_bool(L"should_highlight_unselected_search", &SHOULD_HIGHLIGHT_UNSELECTED_SEARCH);
     add_bool(L"fuzzy_searching", &FUZZY_SEARCHING);
-    add_bool(L"debug", &DEBUG);
     add_bool(L"inverted_horizontal_scrolling", &INVERTED_HORIZONTAL_SCROLLING);
     add_bool(L"toc_jump_align_top", &TOC_JUMP_ALIGN_TOP);
     add_bool(L"autocenter_visual_scroll", &AUTOCENTER_VISUAL_SCROLL);
