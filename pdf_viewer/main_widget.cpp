@@ -3090,7 +3090,12 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
             }
             else {
                 if (ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW) {
-                    move_vertical(-72.0f * vertical_move_amount * num_repeats_f_y);
+                    if (wevent->angleDelta().y() > 0) {
+                        move_vertical(-72.0f * vertical_move_amount * num_repeats_f_y);
+                    }
+                    else {
+                        move_vertical(72.0f * vertical_move_amount * num_repeats_f_y);
+                    }
                     update_scrollbar();
                 }
                 else {
