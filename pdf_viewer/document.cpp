@@ -57,6 +57,7 @@ extern float FREETEXT_BOOKMARK_FONT_SIZE;
 extern std::wstring SHARED_DATABASE_PATH;
 extern bool DEBUG;
 extern bool EXACT_HIGHLIGHT_SELECT;
+extern std::wstring ANNOTATIONS_DIR_PATH;
 
 int Document::get_mark_index(char symbol) {
     for (size_t i = 0; i < marks.size(); i++) {
@@ -3233,6 +3234,7 @@ void Document::delete_all_page_drawings(int page) {
 
 void Document::delete_all_drawings() {
     page_freehand_drawings.clear();
+    is_drawings_dirty = true;
 }
 
 void Document::delete_page_intersecting_drawings(int page, AbsoluteRect absolute_rect, bool mask[26]) {
@@ -3246,6 +3248,21 @@ void Document::delete_page_intersecting_drawings(int page, AbsoluteRect absolute
     is_drawings_dirty = true;
 }
 
+std::wstring Document::get_addtional_sioyek_file_path(QString type) {
+    if (ANNOTATIONS_DIR_PATH.size() == 0) {
+        Path path = Path(file_name);
+        QString filename = QString::fromStdWString(path.filename().value());
+        QString drawing_file_name = filename + ".sioyek." + type;
+        return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+    }
+    else {
+        Path parent_path(ANNOTATIONS_DIR_PATH);
+        std::wstring escaped_path = (QString::fromStdWString(file_name).replace("/", "_").replace("\\", "_").replace(":", "_") + ".sioyek." + type).toStdWString();
+        return parent_path.slash(escaped_path).get_path();
+
+    }
+}
+
 std::wstring Document::get_drawings_file_path() {
     Path path = Path(file_name);
 #ifdef SIOYEK_ANDROID
@@ -3254,9 +3271,7 @@ std::wstring Document::get_drawings_file_path() {
         return Path(parent_path.toStdWString()).slash(L"tutorial.pdf.sioyek.drawings").get_path();
     }
 #endif
-    QString filename = QString::fromStdWString(path.filename().value());
-    QString drawing_file_name = filename + ".sioyek.drawings";
-    return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+    return get_addtional_sioyek_file_path("drawings");
 }
 
 std::wstring Document::get_scratchpad_file_path() {
@@ -3267,9 +3282,7 @@ std::wstring Document::get_scratchpad_file_path() {
         return Path(parent_path.toStdWString()).slash(L"tutorial.pdf.sioyek.scratchpad").get_path();
     }
 #endif
-    QString filename = QString::fromStdWString(path.filename().value());
-    QString drawing_file_name = filename + ".sioyek.scratchpad";
-    return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+    return get_addtional_sioyek_file_path("scratchpad");
 }
 
 std::wstring Document::get_extras_file_path() {
@@ -3301,9 +3314,7 @@ std::wstring Document::get_annotations_file_path() {
         return Path(parent_path.toStdWString()).slash(L"tutorial.pdf.sioyek.annotations").get_path();
     }
 #endif
-    QString filename = QString::fromStdWString(path.filename().value());
-    QString drawing_file_name = filename + ".sioyek.annotations";
-    return path.file_parent().slash(drawing_file_name.toStdWString()).get_path();
+    return get_addtional_sioyek_file_path("annotations");
 }
 
 
