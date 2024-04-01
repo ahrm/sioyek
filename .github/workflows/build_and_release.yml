@@ -12,7 +12,7 @@ on:
 jobs:
   upload-release:
     if: ${{ github.event_name != 'pull_request' }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     needs: [build-mac, build-mac-arm, build-linux, build-windows, build-linux-portable, build-windows-portable]
 
     steps:
@@ -97,11 +97,11 @@ jobs:
 
   build-linux:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
 
     steps:
     - name: Cache apt-get packages
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       env:
         cache-name: cache-deb-packages
       with:
@@ -118,17 +118,19 @@ jobs:
         version: 9
         platform: x64
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
             submodules: 'recursive'
 
-    - name: Install libharfbuzz
-      run: sudo apt install libharfbuzz-dev
+    - name: Install dependencies
+      run: sudo apt install libharfbuzz-dev libxrandr-dev libxi-dev libglu1-mesa-dev fuse libxcb-cursor0 libspeechd2
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
-        version: '5.15.2'
+        version: '6.6.1'
+        modules: 'all'
+        cache: true
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
@@ -148,11 +150,11 @@ jobs:
         sudo chown -R $USER_NAME /var/cache/apt/archives
 
   build-linux-portable:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
 
     steps:
     - name: Cache apt-get packages
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       env:
         cache-name: cache-deb-packages
       with:
@@ -169,17 +171,19 @@ jobs:
         version: 9
         platform: x64
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
             submodules: 'recursive'
 
-    - name: Install libharfbuzz
-      run: sudo apt install libharfbuzz-dev
+    - name: Install dependencies
+      run: sudo apt install libharfbuzz-dev libxrandr-dev libxi-dev libglu1-mesa-dev fuse libxcb-cursor0 libspeechd2
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
-        version: '5.15.2'
+        version: '6.6.1'
+        modules: 'all'
+        cache: true
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
@@ -203,15 +207,20 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
             submodules: 'recursive'
     
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.6.1'
+        modules: 'all'
+        cache: true
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
+
     - name: Add msvc-dev-cmd
       uses: ilammy/msvc-dev-cmd@v1
       
@@ -231,12 +240,16 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
             submodules: 'recursive'
     
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.6.1'
+        modules: 'all'
+        cache: true
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
@@ -256,33 +269,35 @@ jobs:
 
   build-mac:
 
-    runs-on: macos-11
+    runs-on: macos-13
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
             submodules: 'recursive'
 
     - name: Cache Homebrew packages
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       env:
         cache-name: homebrew
       with:
         path: ~/Library/Caches/Homebrew
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+        key: ${{ runner.os }}-intel-build-${{ env.cache-name }}-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
+          ${{ runner.os }}-intel-build-${{ env.cache-name }}-
+          ${{ runner.os }}-intel-build-
+          ${{ runner.os }}-intel-
 
     - name: Install dependencies
       run:  brew install freeglut mesa harfbuzz 
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
-        version: '5.15.2'
+        version: '6.6.1'
+        modules: 'all'
+        cache: true
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
@@ -298,39 +313,42 @@ jobs:
 
   build-mac-arm:
 
-    runs-on: macos-11
+    runs-on: macos-14
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
             submodules: 'recursive'
 
     - name: Cache Homebrew packages
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       env:
         cache-name: homebrew
       with:
         path: ~/Library/Caches/Homebrew
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+        key: ${{ runner.os }}-arm-build-${{ env.cache-name }}-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
+          ${{ runner.os }}-arm-build-${{ env.cache-name }}-
+          ${{ runner.os }}-arm-build-
+          ${{ runner.os }}-arm-
 
     - name: Install dependencies
       run:  brew install freeglut mesa harfbuzz 
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
-        version: '6.2.*'
+        version: '6.6.1'
+        modules: 'all'
+        cache: true
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
-        chmod +x build_mac_arm.sh
-        MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) ./build_mac_arm.sh
+        chmod +x build_mac.sh
+        MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) ./build_mac.sh
+        mv sioyek-release-mac.zip sioyek-release-mac-arm.zip
         
     - name: upload mac artifact
       uses: actions/upload-artifact@v1
