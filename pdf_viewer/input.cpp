@@ -5566,11 +5566,20 @@ class ExportCommand : public Command {
 public:
     static inline const std::string cname = "export";
     static inline const std::string hname = "Export annotation data to a json file";
+    std::optional<std::wstring> file_name = {};
     ExportCommand(MainWidget* w) : Command(cname, w) {};
 
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (file_name.has_value()) return {};
+        return Requirement{ RequirementType::File, "Json file" };
+    }
+
+    void set_file_requirement(std::wstring value) {
+        file_name = value;
+    }
+
     void perform() {
-        std::wstring export_file_name = select_new_json_file_name();
-        widget->export_json(export_file_name);
+        widget->export_json(file_name.value());
     }
 
     bool requires_document() { return false; }
