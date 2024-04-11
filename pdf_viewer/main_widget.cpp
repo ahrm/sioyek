@@ -9374,6 +9374,22 @@ void MainWidget::handle_select_current_search_match() {
     }
 }
 
+void MainWidget::handle_select_ruler_text() {
+    std::optional<AbsoluteRect> ruler_rect_ = main_document_view->get_ruler_rect();
+    if (ruler_rect_) {
+        auto ruler_rect = ruler_rect_.value();
+
+        AbsoluteDocumentPos abspos_begin = ruler_rect.center_left();
+        AbsoluteDocumentPos abspos_end = ruler_rect.center_right();
+
+        selection_begin = abspos_begin;
+        selection_end = abspos_end;
+
+        main_document_view->selected_character_rects.clear();
+        doc()->get_text_selection(abspos_begin, abspos_end, false, main_document_view->selected_character_rects, selected_text);
+    }
+}
+
 void MainWidget::handle_stop_search() {
     opengl_widget->cancel_search();
     if (TOUCH_MODE) {

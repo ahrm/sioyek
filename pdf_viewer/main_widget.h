@@ -861,6 +861,7 @@ public:
     void advance_waiting_command(std::string waiting_command_name);
     std::string get_user_agent_string();
     void handle_select_current_search_match();
+    void handle_select_ruler_text();
     void handle_stop_search();
     int get_window_id();
     void add_command_being_performed(Command* new_command);

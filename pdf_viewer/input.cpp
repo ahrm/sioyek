@@ -5472,6 +5472,18 @@ public:
 
 };
 
+class SelectRulerTextCommand : public Command {
+public:
+    static inline const std::string cname = "select_ruler_text";
+    static inline const std::string hname = "Select the text of current highlighted ruler line";
+    SelectRulerTextCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->handle_select_ruler_text();
+    }
+
+};
+
 class SelectRectCommand : public Command {
 public:
     static inline const std::string cname = "select_rect";
@@ -6702,6 +6714,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<DeleteFreehandDrawingsCommand>();
     register_command<SelectFreehandDrawingsCommand>();
     register_command<SelectCurrentSearchMatchCommand>();
+    register_command<SelectRulerTextCommand>();
     register_command<ShowTouchMainMenu>();
     register_command<ShowTouchSettingsMenu>();
     register_command<ShowTouchDrawingMenu>();
