@@ -2791,8 +2791,18 @@ public:
     virtual bool is_down() = 0;
 
     void perform() {
-        widget->handle_move_smooth_hold(is_down());
-        widget->set_fixed_velocity(is_down() ? -SMOOTH_MOVE_MAX_VELOCITY : SMOOTH_MOVE_MAX_VELOCITY);
+        if (widget->main_document_view->is_ruler_mode()) {
+            if (is_down()) {
+                widget->move_visual_mark_next();
+            }
+            else {
+                widget->move_visual_mark_prev();
+            }
+        }
+        else {
+            widget->handle_move_smooth_hold(is_down());
+            widget->set_fixed_velocity(is_down() ? -SMOOTH_MOVE_MAX_VELOCITY : SMOOTH_MOVE_MAX_VELOCITY);
+        }
     }
 
     void perform_up() {
@@ -2800,6 +2810,16 @@ public:
     }
 
     bool is_holdable() {
+
+        if (widget->main_document_view->is_ruler_mode()) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    bool requires_document() {
         return true;
     }
 
