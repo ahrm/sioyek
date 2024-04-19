@@ -2048,7 +2048,6 @@ void check_for_updates(QWidget* parent, std::string current_version) {
             }
 
             std::string version_from_latest_release = reply_url.substr(expected_resolved_url_start.length(), reply_url.length() - 1);
-            version_from_latest_release = "69.420.0";
             if (version_from_latest_release != current_version) {
             int ret = QMessageBox::information(parent, "Update",
                     QString::fromStdString( "New version of sioyek is available.\nDo you want to update from version "
