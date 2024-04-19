@@ -2032,34 +2032,36 @@ float type_name_similarity_score(std::wstring name1, std::wstring name2) {
 }
 
 void check_for_updates(QWidget* parent, std::string current_version) {
+    QString latest_release_url = "https://github.com/ahrm/sioyek/releases/latest";
+    QNetworkAccessManager* manager = new QNetworkAccessManager;
 
-    return;
-    //QString url = "https://github.com/ahrm/sioyek/releases/latest";
-    //QNetworkAccessManager* manager = new QNetworkAccessManager;
+    QObject::connect(manager, &QNetworkAccessManager::finished, [=](QNetworkReply *reply) {
+            std::string reply_url = reply->url().toString().toStdString();
+            std::string expected_resolved_url_start = "https://github.com/ahrm/sioyek/releases/tag/v";
+            bool is_started_with_expected_url = reply_url.rfind(expected_resolved_url_start, 0) == 0;
 
-    //QObject::connect(manager, &QNetworkAccessManager::finished, [=](QNetworkReply *reply) {
-    //	std::string response_text = reply->readAll().toStdString();
-    //	int first_index = response_text.find("\"");
-    //	int last_index = response_text.rfind("\"");
-    //	std::string url_string = response_text.substr(first_index + 1, last_index - first_index - 1);
+            //If the latest release url is not resolved into a url that starts with https://github.com/ahrm/sioyek/releases/tag/v
+            //Then there's a possibly a connection error or the release is in non-standard form.
+            //For example https://github.com/ahrm/sioyek/releases/tag/2143354635
+            if(reply_url == latest_release_url.toStdString() || !is_started_with_expected_url) {
+                return;
+            }
 
-    //	std::vector<std::wstring> parts;
-    //	split_path(utf8_decode(url_string), parts);
-    //	if (parts.size() > 0) {
-    //		std::string version_string = utf8_encode(parts.back().substr(1, parts.back().size() - 1));
-
-    //		if (version_string != current_version) {
-    //			int ret = QMessageBox::information(parent, "Update", QString::fromStdString("Do you want to update from " + current_version + " to " + version_string + "?"),
-    //				QMessageBox::Ok | QMessageBox::Cancel,
-    //				QMessageBox::Cancel);
-    //			if (ret == QMessageBox::Ok) {
-    //				open_web_url(url);
-    //			}
-    //		}
-
-    //	}
-    //	});
-    //manager->get(QNetworkRequest(QUrl(url)));
+            std::string version_from_latest_release = reply_url.substr(expected_resolved_url_start.length(), reply_url.length() - 1);
+            version_from_latest_release = "69.420.0";
+            if (version_from_latest_release != current_version) {
+            int ret = QMessageBox::information(parent, "Update",
+                    QString::fromStdString( "New version of sioyek is available.\nDo you want to update from version "
+                            + current_version + " to version " + version_from_latest_release + "?"),
+                    QMessageBox::Ok | QMessageBox::Cancel,
+                    QMessageBox::Cancel);
+                if (ret == QMessageBox::Ok) {
+                    open_web_url(latest_release_url);
+                    }
+                }
+            }
+    );
+    manager->get(QNetworkRequest(QUrl(latest_release_url)));
 }
 
 QString expand_home_dir(QString path) {
