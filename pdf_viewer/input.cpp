@@ -2310,7 +2310,6 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["focus_text"] = []() {return std::make_unique< FocusTextCommand>(); };
 	new_commands["goto_window"] = []() {return std::make_unique< GotoWindowCommand>(); };
 	new_commands["toggle_smooth_scroll_mode"] = []() {return std::make_unique< ToggleSmoothScrollModeCommand>(); };
-	new_commands["goto_begining"] = []() {return std::make_unique< GotoBeginningCommand>(); };
 	new_commands["toggle_scrollbar"] = []() {return std::make_unique< ToggleScrollbarCommand>(); };
 	new_commands["overview_to_portal"] = []() {return std::make_unique< OverviewToPortalCommand>(); };
 	new_commands["select_rect"] = []() {return std::make_unique< SelectRectCommand>(); };

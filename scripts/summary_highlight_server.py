@@ -31,7 +31,7 @@ def decode(outputs_ids):
 
 def roll_encoding(encoding):
     # by default if encodings are smaller than maximum length, they are padded with
-    # zeroes at the end. We need the zero padding to be at the begining for next
+    # zeroes at the end. We need the zero padding to be at the beginning for next
     # character prediction to work
     new_encoding = torch.clone(encoding)
     num_rows = encoding.shape[0]

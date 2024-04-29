@@ -83,9 +83,9 @@ class Sioyek:
         else:
             subprocess.run(params)
 
-    def goto_begining(self, focus=False):
+    def goto_beginning(self, focus=False):
         data = None
-        self.run_command("goto_begining", data, focus=focus)
+        self.run_command("goto_beginning", data, focus=focus)
 
     def goto_end(self, focus=False):
         data = None
