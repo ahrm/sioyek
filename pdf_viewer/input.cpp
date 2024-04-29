@@ -740,7 +740,7 @@ public:
 			main_widget->main_document_view->goto_page(num_repeats - 1 + main_widget->main_document_view->get_page_offset());
 		}
 		else {
-			main_widget->main_document_view->set_offset_y(0.0f);
+			main_widget->main_document_view->goto_beginning();
 		}
 	}
 

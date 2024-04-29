@@ -106,6 +106,7 @@ public:
 	NormalizedWindowPos window_to_normalized_window_pos(WindowPos window_pos);
 	void goto_mark(char symbol);
 	void goto_end();
+	void goto_beginning();
 
 	void goto_left();
 	void goto_left_smart();
