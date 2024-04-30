@@ -737,7 +737,7 @@ class GotoBeginningCommand : public Command {
 public:
 	void perform(MainWidget* main_widget) {
 		if (num_repeats) {
-			main_widget->main_document_view->goto_page(num_repeats - 1 + main_widget->main_document_view->get_page_offset());
+			main_widget->main_document_view->goto_page(num_repeats + main_widget->main_document_view->get_page_offset());
 		}
 		else {
 			main_widget->main_document_view->goto_beginning();
@@ -756,8 +756,10 @@ public:
 class GotoEndCommand : public Command {
 public:
 	void perform(MainWidget* main_widget) {
+		int num_pages = main_widget->main_document_view->get_document()->num_pages()-1;
 		if (num_repeats > 0) {
-			main_widget->main_document_view->goto_page(num_repeats - 1 + main_widget->main_document_view->get_page_offset());
+			main_widget->main_document_view->goto_page(num_pages - num_repeats);
+			main_widget->main_document_view->goto_bottom_of_page();
 		}
 		else {
 			main_widget->main_document_view->goto_end();
