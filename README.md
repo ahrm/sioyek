@@ -119,7 +119,7 @@ You can customize all key bindings and some UI elements by editing `keys_user.co
 Run the following commands to install dependencies, clone the repository and compile sioyek on Fedora (tested on Fedora Workstation 36).
 
 ```
-sudo dnf install qt5-qtbase-devel qt5-qtbase-static qt5-qt3d-devel harfbuzz-devel
+sudo dnf install qt5-qtbase-devel qt5-qtbase-static qt5-qt3d-devel harfbuzz-devel mesa-libGL-devel glfw-devel
 git clone --recursive https://github.com/ahrm/sioyek
 cd sioyek
 ./build_linux.sh
