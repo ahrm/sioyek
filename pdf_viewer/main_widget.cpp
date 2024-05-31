@@ -5973,8 +5973,9 @@ void MainWidget::handle_overview_link(const std::wstring& text) {
     auto selected_link_ = get_selected_link(text);
     if (selected_link_) {
         PdfLink pdf_link;
-        pdf_link.rects = selected_link_.value().rects;
-        pdf_link.uri = selected_link_.value().uri;
+        pdf_link.rects = selected_link_->rects;
+        pdf_link.uri = selected_link_->uri;
+        pdf_link.source_page = selected_link_->source_page;
         set_overview_link(pdf_link);
     }
     reset_highlight_links();
