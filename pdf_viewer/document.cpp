@@ -1231,7 +1231,9 @@ fz_stext_page* Document::get_stext_with_page_number(fz_context* ctx, int page_nu
         doc_ = doc;
     }
     else {
-        nocache = true;
+        if (doc_ != doc) {
+            nocache = true;
+        }
     }
 
     const int MAX_CACHED_STEXT_PAGES = 10;
