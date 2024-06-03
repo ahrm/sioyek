@@ -1840,6 +1840,17 @@ class DeleteHighlightUnderCursorCommand : public Command {
 	}
 };
 
+class DeleteLastHighlightCommand : public Command {
+
+	void perform(MainWidget* widget) {
+		widget->handle_delete_last_highlight();
+	}
+
+	std::string get_name() {
+		return "delete_last_highlight";
+	}
+};
+
 class NoopCommand : public Command {
 
 	void perform(MainWidget* widget) {
@@ -2319,6 +2330,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
 	new_commands["overview_next_item"] = []() {return std::make_unique< OverviewNextItemCommand>(); };
 	new_commands["overview_prev_item"] = []() {return std::make_unique< OverviewPrevItemCommand>(); };
 	new_commands["delete_highlight_under_cursor"] = []() {return std::make_unique< DeleteHighlightUnderCursorCommand>(); };
+	new_commands["delete_last_highlight"] = []() {return std::make_unique< DeleteLastHighlightCommand>(); };
 	new_commands["noop"] = []() {return std::make_unique< NoopCommand>(); };
 	new_commands["import"] = []() {return std::make_unique< ImportCommand>(); };
 	new_commands["export"] = []() {return std::make_unique< ExportCommand>(); };
