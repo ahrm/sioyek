@@ -270,6 +270,7 @@ const unsigned int INTERVAL_TIME = 200;
 
 #ifdef Q_OS_MACOS
 extern float MACOS_TITLEBAR_COLOR[3];
+extern float MACOS_DARK_TITLEBAR_COLOR[3];
 extern bool MACOS_HIDE_TITLEBAR;
 #endif
 
@@ -1226,7 +1227,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 #ifdef Q_OS_MACOS
     // only apply titlebar menu if the user has specifically changed it in settings
     if (MACOS_TITLEBAR_COLOR[0] >= 0){
-        changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
+        float *titlebar_colors = MACOS_TITLEBAR_COLOR;
+        if(opengl_widget->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Normal && MACOS_DARK_TITLEBAR_COLOR[0] >= 0) {
+            titlebar_colors = MACOS_DARK_TITLEBAR_COLOR;
+        }
+        changeTitlebarColor(winId(), titlebar_colors[0], titlebar_colors[1], titlebar_colors[2], 1.0f);
     }
 
     if (MACOS_HIDE_TITLEBAR) {
@@ -6825,6 +6830,16 @@ void MainWidget::set_color_mode_to_system_theme() {
                 set_dark_mode();
             }
         }
+#ifdef Q_OS_MACOS
+        if (MACOS_TITLEBAR_COLOR[0] >= 0){
+            float *titlebar_colors = MACOS_TITLEBAR_COLOR;
+            if(opengl_widget->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Normal && MACOS_DARK_TITLEBAR_COLOR[0] >= 0) {
+                titlebar_colors = MACOS_DARK_TITLEBAR_COLOR;
+            }
+            changeTitlebarColor(winId(), titlebar_colors[0], titlebar_colors[1], titlebar_colors[2], 1.0f);
+        }
+#endif
+
     }
 #endif
 }
@@ -7436,8 +7451,12 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
     for (int i = 0; i < config_names->size(); i++) {
         QString confname = QString::fromStdString((*config_names)[i]);
 #ifdef Q_OS_MACOS
-        if (confname == "macos_titlebar_color"){
-            changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
+        if (confname == "macos_titlebar_color" || confname == "macos_dark_titlebar_color"){
+            float *titlebar_colors = MACOS_TITLEBAR_COLOR;
+            if(opengl_widget->get_current_color_mode() != PdfViewOpenGLWidget::ColorPalette::Normal && MACOS_DARK_TITLEBAR_COLOR[0] >= 0) {
+              titlebar_colors = MACOS_DARK_TITLEBAR_COLOR;
+            }
+            changeTitlebarColor(winId(), titlebar_colors[0], titlebar_colors[1], titlebar_colors[2], 1.0f);
         }
 #endif
         if (confname == "use_system_theme") {
