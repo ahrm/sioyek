@@ -1590,6 +1590,10 @@ bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int*
     int current_page_number = get_current_page_number();
 
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
+    if (!stext_page) {
+      // can happen if the reference was stale (e.g. file got overwritten etc.)
+      return false;
+    }
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
 
