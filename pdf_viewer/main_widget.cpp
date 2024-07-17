@@ -1093,9 +1093,14 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     show_password_prompt_if_required();
 
     if (main_document_view_has_document()) {
+      if (doc()->num_pages() > 0) {
         scroll_bar->setSingleStep(std::max(MAX_SCROLLBAR / doc()->num_pages() / 10, 1));
         scroll_bar->setPageStep(MAX_SCROLLBAR / doc()->num_pages());
-        update_scrollbar();
+      } else {
+        scroll_bar->setSingleStep(1);
+        scroll_bar->setPageStep(10);
+      }
+      update_scrollbar();
     }
 
 
@@ -1585,6 +1590,10 @@ bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int*
     int current_page_number = get_current_page_number();
 
     fz_stext_page* stext_page = main_document_view->get_document()->get_stext_with_page_number(page);
+    if (!stext_page) {
+      // can happen if the reference was stale (e.g. file got overwritten etc.)
+      return false;
+    }
     std::vector<fz_stext_char*> flat_chars;
     get_flat_chars_from_stext_page(stext_page, flat_chars);
 
