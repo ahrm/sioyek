@@ -5,266 +5,350 @@
 #include <qdir.h>
 //#include <ui.h>
 
-extern float ZOOM_INC_FACTOR;
-extern float GAMMA;
-extern float VERTICAL_MOVE_AMOUNT;
-extern float HORIZONTAL_MOVE_AMOUNT;
-extern float MOVE_SCREEN_PERCENTAGE;
-extern float BACKGROUND_COLOR[3];
-extern float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3];
-extern float DARK_MODE_BACKGROUND_COLOR[3];
-extern float CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[3];
-extern float DARK_MODE_CONTRAST;
-extern bool FLAT_TABLE_OF_CONTENTS;
-extern bool SMALL_TOC;
-extern bool SHOULD_USE_MULTIPLE_MONITORS;
-extern bool SORT_BOOKMARKS_BY_LOCATION;
-extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE;
-extern bool SHOULD_LAUNCH_NEW_INSTANCE;
-extern bool SHOULD_LAUNCH_NEW_WINDOW;
-extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP;
-extern bool SHOULD_DRAW_UNRENDERED_PAGES;
-extern bool HOVER_OVERVIEW;
-//extern bool AUTO_EMBED_ANNOTATIONS;
-extern bool DEFAULT_DARK_MODE;
-extern bool USE_SYSTEM_THEME;
-extern bool USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME;
-extern float HIGHLIGHT_COLORS[26 * 3];
-extern std::wstring SEARCH_URLS[26];
-extern std::wstring EXECUTE_COMMANDS[26];
-extern std::wstring LIBGEN_ADDRESS;
-extern std::wstring GOOGLE_SCHOLAR_ADDRESS;
-extern std::wstring INVERSE_SEARCH_COMMAND;
-extern std::wstring SHARED_DATABASE_PATH;
-extern std::wstring ITEM_LIST_PREFIX;
-extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
-extern float VISUAL_MARK_NEXT_PAGE_THRESHOLD;
-extern std::wstring UI_FONT_FACE_NAME;
-extern std::wstring STATUS_FONT_FACE_NAME;
-extern std::wstring MIDDLE_CLICK_SEARCH_ENGINE;
-extern std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE;
-extern std::wstring STARTUP_COMMANDS;
-extern std::wstring SHUTDOWN_COMMANDS;
-extern int FONT_SIZE;
-extern int RULER_UNDERLINE_PIXEL_WIDTH;
-extern float CUSTOM_BACKGROUND_COLOR[3];
-extern float CUSTOM_TEXT_COLOR[3];
-extern bool RERENDER_OVERVIEW;
-extern bool WHEEL_ZOOM_ON_CURSOR;
-extern bool RULER_MODE;
-extern bool LINEAR_TEXTURE_FILTERING;
-extern float DISPLAY_RESOLUTION_SCALE;
-extern float STATUS_BAR_COLOR[3];
-extern float STATUS_BAR_TEXT_COLOR[3];
-extern float UI_BACKGROUND_COLOR[3];
-extern float UI_TEXT_COLOR[3];
-extern float UI_SELECTED_TEXT_COLOR[3];
-extern float UI_SELECTED_BACKGROUND_COLOR[3];
-extern int STATUS_BAR_FONT_SIZE;
-extern int MAIN_WINDOW_SIZE[2];
-extern int HELPER_WINDOW_SIZE[2];
-extern int MAIN_WINDOW_MOVE[2];
-extern int HELPER_WINDOW_MOVE[2];
-extern float TOUCHPAD_SENSITIVITY;
-extern float SCROLL_VIEW_SENSITIVITY;
-extern float PAGE_SEPARATOR_WIDTH;
-extern float PAGE_SEPARATOR_COLOR[3];
-extern int SINGLE_MAIN_WINDOW_SIZE[2];
-extern int SINGLE_MAIN_WINDOW_MOVE[2];
-extern float FIT_TO_PAGE_WIDTH_RATIO;
-extern float RULER_PADDING;
-extern float RULER_X_PADDING;
-extern std::wstring TEXT_HIGHLIGHT_URL;
-extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE;
-extern bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL;
-extern int TEXT_SUMMARY_CONTEXT_SIZE;
-extern bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE;
-extern std::wstring PAPERS_FOLDER_PATH;
-extern bool ENABLE_EXPERIMENTAL_FEATURES;
-extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
-extern int MAX_CREATED_TABLE_OF_CONTENTS_SIZE;
-extern bool FORCE_CUSTOM_LINE_ALGORITHM;
-extern float OVERVIEW_SIZE[2];
-extern float OVERVIEW_OFFSET[2];
-extern bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE;
-extern bool EXACT_HIGHLIGHT_SELECT;
-extern bool SHOW_DOC_PATH;
-extern float FASTREAD_OPACITY;
-extern bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE;
-extern bool SINGLE_CLICK_SELECTS_WORDS;
-extern float EPUB_LINE_SPACING;
-extern float FREETEXT_BOOKMARK_COLOR[3];
-extern float FREETEXT_BOOKMARK_FONT_SIZE;
-extern bool RENDER_FREETEXT_BORDERS;
-extern bool SHOULD_RENDER_PDF_ANNOTATIONS;
-extern float STRIKE_LINE_WIDTH;
-extern float RULER_COLOR[3];
-extern float RULER_MARKER_COLOR[3];
-extern bool PAPER_DOWNLOAD_CREATE_PORTAL;
-extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
-extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
-extern std::wstring BOOK_SCAN_PATH;
-extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
-extern bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE;
-extern bool PRESERVE_IMAGE_COLORS;
-extern bool INVERTED_PRESERVED_IMAGE_COLORS;
-extern std::wstring TABLET_PEN_CLICK_COMMAND;
-extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
-extern std::wstring VOLUME_DOWN_COMMAND;
-extern std::wstring VOLUME_UP_COMMAND;
-extern int DOCUMENTATION_FONT_SIZE;
-extern int NUM_PRERENDERED_NEXT_SLIDES;
-extern int NUM_PRERENDERED_PREV_SLIDES;
-extern int NUM_CACHED_PAGES;
-extern bool INVERT_SELECTED_TEXT;
-extern bool IGNORE_SCROLL_EVENTS;
-extern bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE;
+int FONT_SIZE = -1;
+int STATUS_BAR_FONT_SIZE = -1;
+float BACKGROUND_COLOR[3] = { 0.97f, 0.97f, 0.97f };
+float DARK_MODE_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float RULER_COLOR[3] = { 0.5f, 0.5f, 0.5f };
+float RULER_MARKER_COLOR[3] = { 1.0f, 0.0f, 0.0f };
+float CUSTOM_BACKGROUND_COLOR[3] = { 0.18f, 0.204f, 0.251f };
+float CUSTOM_TEXT_COLOR[3] = { 0.847f, 0.871f, 0.914f };
+float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float STATUS_BAR_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+float UI_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+float UI_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float UI_SELECTED_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float UI_SELECTED_BACKGROUND_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+float UNSELECTED_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 0.5f, 0.5f };
+float GAMMA = 1.0f;
+bool DEBUG_DISPLAY_FREEHAND_POINTS = false;
+bool DEBUG_SMOOTH_FREEHAND_DRAWINGS = true;
+#ifdef SIOYEK_MOBILE
+bool TOUCH_MODE = true;
+#else
+bool TOUCH_MODE = false;
+#endif
 
-extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
+#ifdef SIOYEK_MOBILE
+bool SLICED_RENDERING = true;
+#else
+bool SLICED_RENDERING = false;
+#endif
+int NUM_V_SLICES = 5;
+int NUM_H_SLICES = 1;
+bool SHOULD_RENDER_PDF_ANNOTATIONS = true;
+bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME = true;
+bool NO_AUTO_CONFIG = false;
+bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE = true;
+bool HIDE_OVERLAPPING_LINK_LABELS = true;
+bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE = false;
 
-extern bool REAL_PAGE_SEPARATION;
-extern bool NO_AUTO_CONFIG;
-extern bool HIDE_OVERLAPPING_LINK_LABELS;
-extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
-extern bool ALIGN_LINK_DEST_TO_TOP;
-extern float MENU_SCREEN_WDITH_RATIO;
-extern float PAGE_SPACE_X;
-extern float PAGE_SPACE_Y;
+// when the window rect size is not an exact integer, mupdf rounds up and 
+// this can cause a pixel strip on documents with dark background color
+// this is a workaround for which basically doesn't render the last pixel strip
+bool BACKGROUND_PIXEL_FIX = false;
 
-extern std::wstring RESIZE_COMMAND;
-extern std::wstring SHIFT_CLICK_COMMAND;
-extern std::wstring CONTROL_CLICK_COMMAND;
-extern std::wstring RIGHT_CLICK_COMMAND;
-extern std::wstring MIDDLE_CLICK_COMMAND;
-extern std::wstring SHIFT_RIGHT_CLICK_COMMAND;
-extern std::wstring CONTROL_RIGHT_CLICK_COMMAND;
-extern std::wstring ALT_CLICK_COMMAND;
-extern std::wstring ALT_RIGHT_CLICK_COMMAND;
-extern std::wstring HOLD_MIDDLE_CLICK_COMMAND;
+std::wstring SEARCH_URLS[26];
+std::wstring EXECUTE_COMMANDS[26];
+std::wstring TEXT_HIGHLIGHT_URL = L"http://localhost:5000/";
+std::wstring PAPER_SEARCH_URL = L"https://search.fatcat.wiki/fatcat_release/_search?q=%{query}";
 
-extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
-extern std::wstring CONTEXT_MENU_ITEMS;
-extern std::wstring CONTEXT_MENU_ITEMS_FOR_LINKS;
-extern std::wstring CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT;
-extern std::wstring CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS;
-extern std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS;
-extern std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW;
-extern bool RIGHT_CLICK_CONTEXT_MENU;
-extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
+std::wstring PAPER_SEARCH_URL_PATH = L"hits.hits[]._source.best_pdf_url";
+std::wstring PAPER_SEARCH_TILE_PATH = L"hits.hits[]._source.title";
+std::wstring PAPER_SEARCH_CONTRIB_PATH = L"hits.hits[]._source.contrib_names";
 
-extern std::wstring BACK_RECT_TAP_COMMAND;
-extern std::wstring BACK_RECT_HOLD_COMMAND;
-extern std::wstring FORWARD_RECT_TAP_COMMAND;
-extern std::wstring FORWARD_RECT_HOLD_COMMAND;
-extern std::wstring EDIT_PORTAL_TAP_COMMAND;
-extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
-extern std::wstring VISUAL_MARK_NEXT_TAP_COMMAND;
-extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
-extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
-extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
-extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
-extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
-extern std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND;
-extern std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND;
+std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
+std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
+std::wstring PAPERS_FOLDER_PATH = L"";
+#ifndef SIOYEK_MOBILE
+std::wstring STATUS_BAR_FORMAT = L"[ %{current_page} / %{num_pages} ]%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{freehand_drawing}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
+std::wstring RIGHT_STATUS_BAR_FORMAT = L"";
+#else
+std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}%{current_requirement_desc}";
+std::wstring RIGHT_STATUS_BAR_FORMAT = L"%{auto_name}";
+#endif
 
-extern bool USE_LEGACY_KEYBINDS;
-extern bool MULTILINE_MENUS;
-extern bool START_WITH_HELPER_WINDOW;
-extern std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
-extern std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
-extern std::map<std::wstring, JsCommandInfo> ADDITIONAL_JAVASCRIPT_COMMANDS;
-extern std::map<std::wstring, JsCommandInfo> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
-extern bool PRERENDER_NEXT_PAGE;
-extern bool HIGHLIGHT_MIDDLE_CLICK;
-extern float HYPERDRIVE_SPEED_FACTOR;
-extern float SMOOTH_SCROLL_SPEED;
-extern float SMOOTH_SCROLL_DRAG;
-extern bool SUPER_FAST_SEARCH;
-extern bool INCREMENTAL_SEARCH;
-extern bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR;
-extern int PRERENDERED_PAGE_COUNT;
-extern bool CASE_SENSITIVE_SEARCH;
-extern bool SMARTCASE_SEARCH;
-extern bool SHOW_DOCUMENT_NAME_IN_STATUSBAR;
-extern bool SHOW_CLOSE_PORTAL_IN_STATUSBAR;
-extern bool NUMERIC_TAGS;
-extern bool SHOULD_HIGHLIGHT_LINKS;
-extern bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH;
-extern int KEYBOARD_SELECT_FONT_SIZE;
-extern bool FUZZY_SEARCHING;
-extern float CUSTOM_COLOR_CONTRAST;
-extern bool DEBUG;
-extern bool DEBUG_DISPLAY_FREEHAND_POINTS;
-extern bool DEBUG_SMOOTH_FREEHAND_DRAWINGS;
-extern float HIGHLIGHT_DELETE_THRESHOLD;
-extern std::wstring DEFAULT_OPEN_FILE_PATH;
-extern std::wstring STATUS_BAR_FORMAT;
-extern std::wstring RIGHT_STATUS_BAR_FORMAT;
-extern bool INVERTED_HORIZONTAL_SCROLLING;
-extern bool TOC_JUMP_ALIGN_TOP;
-extern float KEYBOARD_SELECT_BACKGROUND_COLOR[4];
-extern float KEYBOARD_SELECT_TEXT_COLOR[4];
-extern float KEYBOARD_SELECTED_TAG_TEXT_COLOR[4];
-extern float KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO[4];
+float BLACK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float HIGHLIGHT_COLORS[26 * 3] = { \
+0.94, 0.64, 1.00, \
+0.00, 0.46, 0.86, \
+0.60, 0.25, 0.00, \
+0.30, 0.00, 0.36, \
+0.10, 0.10, 0.10, \
+0.00, 0.36, 0.19, \
+0.17, 0.81, 0.28, \
+1.00, 0.80, 0.60, \
+0.50, 0.50, 0.50, \
+0.58, 1.00, 0.71, \
+0.56, 0.49, 0.00, \
+0.62, 0.80, 0.00, \
+0.76, 0.00, 0.53, \
+0.00, 0.20, 0.50, \
+1.00, 0.64, 0.02, \
+1.00, 0.66, 0.73, \
+0.26, 0.40, 0.00, \
+1.00, 0.00, 0.06, \
+0.37, 0.95, 0.95, \
+0.00, 0.60, 0.56, \
+0.88, 1.00, 0.40, \
+0.45, 0.04, 1.00, \
+0.60, 0.00, 0.00, \
+1.00, 1.00, 0.50, \
+1.00, 1.00, 0.00, \
+1.00, 0.31, 0.02
+};
 
-extern bool AUTOCENTER_VISUAL_SCROLL;
-extern bool ALPHABETIC_LINK_TAGS;
-extern bool VIMTEX_WSL_FIX;
-extern float RULER_AUTO_MOVE_SENSITIVITY;
-extern bool SLICED_RENDERING;
-extern bool TOUCH_MODE;
-extern float TTS_RATE;
-extern std::wstring PAPER_SEARCH_URL;
-extern std::wstring RULER_DISPLAY_MODE;
-extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
-extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
-extern bool USE_KEYBOARD_POINT_SELECTION;
-extern std::wstring TAG_FONT_FACE;
+float DARK_MODE_CONTRAST = 0.8f;
+float ZOOM_INC_FACTOR = 1.2f;
+float VERTICAL_MOVE_AMOUNT = 1.0f;
+float HORIZONTAL_MOVE_AMOUNT = 1.0f;
+float MOVE_SCREEN_PERCENTAGE = 0.5f;
+unsigned int CACHE_INVALID_MILIES = 1000;
+int PERSIST_MILIES = 1000 * 60;
+int PAGE_PADDINGS = 0;
+int MAX_PENDING_REQUESTS = 31;
+bool FLAT_TABLE_OF_CONTENTS = false;
+bool SHOULD_USE_MULTIPLE_MONITORS = false;
+bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP = false;
+bool DEFAULT_DARK_MODE = false;
+bool USE_SYSTEM_THEME = false;
+bool USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME = false;
+bool SORT_BOOKMARKS_BY_LOCATION = true;
+std::wstring LIBGEN_ADDRESS = L"";
+std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
+std::wstring INVERSE_SEARCH_COMMAND = L"";
+std::wstring SHARED_DATABASE_PATH = L"";
+std::wstring BOOK_SCAN_PATH = L"";
+std::wstring UI_FONT_FACE_NAME = L"";
+std::wstring STATUS_FONT_FACE_NAME = L"";
+std::wstring DEFAULT_OPEN_FILE_PATH = L"";
+std::wstring ANNOTATIONS_DIR_PATH = L"";
+bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE = true;
+bool SHOULD_LAUNCH_NEW_INSTANCE = false;
+bool SHOULD_LAUNCH_NEW_WINDOW = false;
+bool SHOULD_DRAW_UNRENDERED_PAGES = false;
+bool PRESERVE_IMAGE_COLORS = false;
+bool INVERTED_PRESERVED_IMAGE_COLORS = false;
+bool HOVER_OVERVIEW = false;
+bool RERENDER_OVERVIEW = true;
+bool LINEAR_TEXTURE_FILTERING = false;
+bool RULER_MODE = true;
+bool SMALL_TOC = false;
+bool WHEEL_ZOOM_ON_CURSOR = false;
+bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE = true;
+bool TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL = true;
+bool USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE = false;
+int TEXT_SUMMARY_CONTEXT_SIZE = 49;
+float VISUAL_MARK_NEXT_PAGE_FRACTION = 0.75;
+float VISUAL_MARK_NEXT_PAGE_THRESHOLD = 0.25f;
+float MENU_SCREEN_WDITH_RATIO = 0.9f;
+float RULER_PADDING = 1.0f;
+float RULER_X_PADDING = 5.0f;
+std::wstring ITEM_LIST_PREFIX = L">";
+float STRIKE_LINE_WIDTH = 1.0f;
+int RULER_UNDERLINE_PIXEL_WIDTH = 2;
+bool AUTO_RENAME_DOWNLOADED_PAPERS = false;
+bool SHOW_MOST_RECENT_COMMANDS_FIRST = true;
+bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL = false;
+bool INVERT_SELECTED_TEXT = false;
+bool IGNORE_SCROLL_EVENTS = false;
 
-extern float EPUB_WIDTH;
-extern float EPUB_HEIGHT;
-extern float EPUB_FONT_SIZE;
-extern std::wstring EPUB_CSS;
+#ifdef SIOYEK_MOBILE
+std::wstring STARTUP_COMMANDS = L"toggle_mouse_drag_mode;toggle_fullscreen";
+#else
+std::wstring STARTUP_COMMANDS = L"";
+#endif
 
-extern float SMOOTH_MOVE_MAX_VELOCITY;
-//extern float SMOOTH_MOVE_INITIAL_VELOCITY;
+bool ALIGN_LINK_DEST_TO_TOP = false;
+int MAX_TAB_COUNT = 100;
+float SMALL_PIXMAP_SCALE = 0.75f;
+float DISPLAY_RESOLUTION_SCALE = -1;
+float FIT_TO_PAGE_WIDTH_RATIO = 0.75;
+int MAIN_WINDOW_SIZE[2] = { -1, -1 };
+int HELPER_WINDOW_SIZE[2] = { -1, -1 };
+int MAIN_WINDOW_MOVE[2] = { -1, -1 };
+int HELPER_WINDOW_MOVE[2] = { -1, -1 };
+float TOUCHPAD_SENSITIVITY = 1.0f;
+int SINGLE_MAIN_WINDOW_SIZE[2] = { -1, -1 };
+int SINGLE_MAIN_WINDOW_MOVE[2] = { -1, -1 };
+bool ENABLE_EXPERIMENTAL_FEATURES = false;
+bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS = true;
+int MAX_CREATED_TABLE_OF_CONTENTS_SIZE = 5000;
+bool FORCE_CUSTOM_LINE_ALGORITHM = false;
+float OVERVIEW_SIZE[2] = { 0.8f, 0.4f };
+float OVERVIEW_OFFSET[2] = { 0.0f, 0.0f };
+bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE = false;
+#ifdef SIOYEK_MOBILE
+bool EXACT_HIGHLIGHT_SELECT = true;
+#else
+bool EXACT_HIGHLIGHT_SELECT = false;
+#endif
+bool SHOW_DOC_PATH = false;
+float FASTREAD_OPACITY = 0.5f;
+bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE = true;
+bool SINGLE_CLICK_SELECTS_WORDS = false;
+bool USE_LEGACY_KEYBINDS = false;
+bool MULTILINE_MENUS = true;
+bool START_WITH_HELPER_WINDOW = false;
+std::map<std::wstring, std::wstring> ADDITIONAL_COMMANDS;
 
-extern UIRect PORTRAIT_BACK_UI_RECT;
-extern UIRect PORTRAIT_FORWARD_UI_RECT;
-extern UIRect LANDSCAPE_BACK_UI_RECT;
-extern UIRect LANDSCAPE_FORWARD_UI_RECT;
 
-extern UIRect PORTRAIT_VISUAL_MARK_PREV;
-extern UIRect PORTRAIT_VISUAL_MARK_NEXT;
-extern UIRect LANDSCAPE_VISUAL_MARK_PREV;
-extern UIRect LANDSCAPE_VISUAL_MARK_NEXT;
+std::map<std::wstring, JsCommandInfo> ADDITIONAL_JAVASCRIPT_COMMANDS;
+std::map<std::wstring, JsCommandInfo> ADDITIONAL_ASYNC_JAVASCRIPT_COMMANDS;
+std::map<std::wstring, std::wstring> ADDITIONAL_MACROS;
+std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
+bool PRERENDER_NEXT_PAGE = true;
+bool HIGHLIGHT_MIDDLE_CLICK = false;
+float HYPERDRIVE_SPEED_FACTOR = 10.0f;
+float SMOOTH_SCROLL_SPEED = 3.0f;
+float SMOOTH_SCROLL_DRAG = 3000.0f;
+int PRERENDERED_PAGE_COUNT = 0;
+bool SHOW_RIGHT_CLICK_CONTEXT_MENU = false;
+bool ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW = false;
+std::wstring CONTEXT_MENU_ITEMS = L"";
+std::wstring CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT = L"copy|add_highlight(a)|add_highlight(b)|add_highlight(c)";
+std::wstring CONTEXT_MENU_ITEMS_FOR_LINKS = L"";
+std::wstring CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS = L"delete_highlight|edit_selected_highlight|add_highlight(a)|add_highlight(b)|add_highlight(c)";
+std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS = L"delete_visible_bookmark|edit_selected_bookmark|move_selected_bookmark";
+std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW = L"";
 
-extern UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT;
-extern UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT;
-extern UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT;
-extern UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT;
+bool RIGHT_CLICK_CONTEXT_MENU = false;
+#ifdef SIOYEK_MOBILE
+int NUM_CACHED_PAGES = 3;
+#else
+int NUM_CACHED_PAGES = 5;
+#endif
 
-extern float DEFAULT_TEXT_HIGHLIGHT_COLOR[3];
-extern float DEFAULT_VERTICAL_LINE_COLOR[4];
-extern float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3];
-extern float DEFAULT_LINK_HIGHLIGHT_COLOR[3];
-extern float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3];
-extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
+float PAGE_SEPARATOR_WIDTH = 0.0f;
+float PAGE_SEPARATOR_COLOR[3] = { 0.9f, 0.9f, 0.9f };
+bool SUPER_FAST_SEARCH = true;
+bool INCREMENTAL_SEARCH = false;
+bool SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR = false;
+bool SHOW_CLOSE_PORTAL_IN_STATUSBAR = false;
+bool CASE_SENSITIVE_SEARCH = false;
+bool SMARTCASE_SEARCH = false;
+bool SHOW_DOCUMENT_NAME_IN_STATUSBAR = false;
+bool NUMERIC_TAGS = false;
+bool SHOULD_HIGHLIGHT_LINKS = false;
+bool SHOULD_HIGHLIGHT_UNSELECTED_SEARCH = false;
+int KEYBOARD_SELECT_FONT_SIZE = 20;
+int DOCUMENTATION_FONT_SIZE = 16;
+bool FUZZY_SEARCHING = false;
+bool INVERTED_HORIZONTAL_SCROLLING = false;
+bool TOC_JUMP_ALIGN_TOP = false;
+float CUSTOM_COLOR_CONTRAST = 0.5f;
+float HIGHLIGHT_DELETE_THRESHOLD = 0.1f;
+float SCROLL_VIEW_SENSITIVITY = 1.0f;
+float KEYBOARD_SELECT_BACKGROUND_COLOR[] = { 0.9f , 0.75f, 0.0f, 1.0f };
+float KEYBOARD_SELECT_TEXT_COLOR[] = { 0.0f , 0.0f, 0.5f, 1.0f };
+float KEYBOARD_SELECTED_TAG_TEXT_COLOR[] = { 1.0f , 1.0f, 1.0f, 1.0f };
+float KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO[] = { 0.0f , 0.0f, 0.0f, 1.0f };
 
-extern std::wstring PAPER_SEARCH_URL_PATH;
-extern std::wstring PAPER_SEARCH_TILE_PATH;
-extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
+bool AUTOCENTER_VISUAL_SCROLL = false;
+bool ALPHABETIC_LINK_TAGS = false;
+bool VIMTEX_WSL_FIX = false;
+float RULER_AUTO_MOVE_SENSITIVITY = 40.0f;
+float TTS_RATE = 0.0f;
+bool VERBOSE = true;
+bool FILL_TEXTBAR_WITH_SELECTED_TEXT = true;
+int NUM_PRERENDERED_NEXT_SLIDES = 1;
+int NUM_PRERENDERED_PREV_SLIDES = 0;
+float SMOOTH_MOVE_MAX_VELOCITY = 1500;
+//float SMOOTH_MOVE_INITIAL_VELOCITY = 1500;
+float PAGE_SPACE_X = 10.0f;
+float PAGE_SPACE_Y = 10.0f;
+bool USE_KEYBOARD_POINT_SELECTION = false;
+std::wstring TAG_FONT_FACE = L"";
+//UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
-extern int RELOAD_INTERVAL_MILISECONDS;
+bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
+bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME = true;
+float DEFAULT_TEXT_HIGHLIGHT_COLOR[3] = { 1.0f, 1.0f, 0.0 };
+float DEFAULT_VERTICAL_LINE_COLOR[4] = { 0.0f, 0.0f, 0.0f, 0.1f };
+float DEFAULT_SEARCH_HIGHLIGHT_COLOR[3] = { 0.0f, 1.0f, 0.0f };
+float DEFAULT_LINK_HIGHLIGHT_COLOR[3] = { 0.0f, 0.0f, 1.0f };
+float DEFAULT_SYNCTEX_HIGHLIGHT_COLOR[3] = { 1.0f, 0.0f, 0.0f };
+float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT = 1.0f;
+
+float FREETEXT_BOOKMARK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
+float FREETEXT_BOOKMARK_FONT_SIZE = 8.0f;
+bool RENDER_FREETEXT_BORDERS = false;
+bool REAL_PAGE_SEPARATION = false;
+
+float EPUB_WIDTH = 400;
+float EPUB_HEIGHT = 700;
+float EPUB_FONT_SIZE = 14;
+float EPUB_LINE_SPACING = 2.0f;
+int RELOAD_INTERVAL_MILISECONDS = 200;
+bool ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE = true;
 
 #ifdef Q_OS_MACOS
-extern float MACOS_TITLEBAR_COLOR[3];
-extern bool MACOS_HIDE_TITLEBAR;
+float MACOS_TITLEBAR_COLOR[3] = { -1.0f, -1.0f, -1.0f };
+bool MACOS_HIDE_TITLEBAR = false;
 #endif
 
-#ifdef SIOYEK_ANDROID
-extern Path android_config_path;
+std::wstring RULER_DISPLAY_MODE = L"underline";
+std::wstring EPUB_CSS = L"";
+QString EPUB_TEMPLATE = "p {\
+line-height: %{line_spacing}em!important;\
+}";
+
+UIRect PORTRAIT_EDIT_PORTAL_UI_RECT = { true, -0.2f, 0.2f, -1.0f, -0.7f };
+UIRect LANDSCAPE_EDIT_PORTAL_UI_RECT = { true, -0.2f, 0.2f, -1.0f, -0.7f };
+
+UIRect PORTRAIT_MIDDLE_LEFT_UI_RECT = { true, -1.0f, -0.7f, -0.3f, 0.3f };
+UIRect PORTRAIT_MIDDLE_RIGHT_UI_RECT = { true, 0.7f, 1.0f, -0.3f, 0.3f };
+UIRect LANDSCAPE_MIDDLE_LEFT_UI_RECT = { true, -1.0f, -0.7f, -0.3f, 0.3f };
+UIRect LANDSCAPE_MIDDLE_RIGHT_UI_RECT = { true, 0.7f, 1.0f, -0.3f, 0.3f };
+
+UIRect PORTRAIT_BACK_UI_RECT = { true, -1.0f, -0.7f, -1.0f, -0.7f };
+UIRect PORTRAIT_FORWARD_UI_RECT = { true, 0.7f, 1.0f, -1.0f, -0.7 };
+UIRect LANDSCAPE_BACK_UI_RECT = { true, -1.0f, -0.7f, -1.0f, -0.7f };
+UIRect LANDSCAPE_FORWARD_UI_RECT = { true, 0.7f, 1.0f, -1.0f, -0.7 };
+
+UIRect PORTRAIT_VISUAL_MARK_PREV = { true, -1.0f, -0.7f, 0.7f, 1.0f };
+UIRect PORTRAIT_VISUAL_MARK_NEXT = { true, 0.7f, 1.0f, 0.7f, 1.0f };
+UIRect LANDSCAPE_VISUAL_MARK_PREV = { true, -1.0f, -0.7f, 0.7f, 1.0f };
+UIRect LANDSCAPE_VISUAL_MARK_NEXT = { true, 0.7f, 1.0f, 0.7f, 1.0f };
+float BOOKMARK_RECT_SIZE = 8.0f;
+
+std::wstring RESIZE_COMMAND = L"";
+std::wstring SHIFT_CLICK_COMMAND = L"overview_under_cursor";
+std::wstring CONTROL_CLICK_COMMAND = L"smart_jump_under_cursor";
+std::wstring RIGHT_CLICK_COMMAND = L"";
+std::wstring MIDDLE_CLICK_COMMAND = L"";
+std::wstring SHIFT_RIGHT_CLICK_COMMAND = L"";
+std::wstring CONTROL_RIGHT_CLICK_COMMAND = L"";
+std::wstring ALT_CLICK_COMMAND = L"";
+std::wstring ALT_RIGHT_CLICK_COMMAND = L"";
+std::wstring HOLD_MIDDLE_CLICK_COMMAND = L"download_paper_under_cursor";
+std::wstring TABLET_PEN_CLICK_COMMAND = L"[s]show_touch_draw_controls;[r]move_visual_mark_next";
+//std::wstring TABLET_PEN_CLICK_COMMAND = L"[s]show_touch_main_menu;[r]move_visual_mark_next";
+//std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND = L"toggle_scratchpad_mode";
+std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND = L"load_scratchpad";
+std::wstring VOLUME_DOWN_COMMAND = L"";
+std::wstring VOLUME_UP_COMMAND = L"";
+
+std::wstring BACK_RECT_TAP_COMMAND = L"prev_state";
+std::wstring BACK_RECT_HOLD_COMMAND = L"goto_mark";
+std::wstring FORWARD_RECT_TAP_COMMAND = L"next_state";
+std::wstring FORWARD_RECT_HOLD_COMMAND = L"set_mark";
+std::wstring TOP_CENTER_TAP_COMMAND = L"show_touch_main_menu";
+std::wstring TOP_CENTER_HOLD_COMMAND = L"toggle_dark_mode";
+std::wstring VISUAL_MARK_NEXT_TAP_COMMAND = L"";
+std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND = L"";
+std::wstring VISUAL_MARK_PREV_TAP_COMMAND = L"";
+std::wstring VISUAL_MARK_PREV_HOLD_COMMAND = L"";
+std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND = L"";
+std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND = L"";
+#ifdef SIOYEK_MOBILE
+std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND = L"overview_definition";
+#else
+std::wstring MIDDLE_RIGHT_RECT_TAP_COMMAND = L"";
 #endif
+std::wstring MIDDLE_RIGHT_RECT_HOLD_COMMAND = L"";
+
 
 bool UIRect::contains(NormalizedWindowPos window_pos) {
     return enabled && (window_pos.x >= left) && (window_pos.x <= right) && (-window_pos.y <= bottom) && (-window_pos.y >= top);
@@ -491,7 +575,7 @@ bool colorn_validator(const std::wstring& str) {
             }
 
         }
-        std::wcout << L"Error: required 3 values for color, but got " << parts.size() << "\n";
+        std::wcout << L"Error: required " << N << " values for color, but got " << parts.size() << "\n";
         return false;
     }
     if (!ensure_between_0_and_1(parts)) {
@@ -540,1912 +624,478 @@ bool bool_validator(const std::wstring& str) {
     return false;
 }
 
+auto ivec2_serializer = vec_n_serializer<2, int>;
+auto ivec2_deserializer = vec_n_deserializer<2, int>;
+auto fvec2_serializer = vec_n_serializer<2, float>;
+auto fvec2_deserializer = vec_n_deserializer<2, float>;
+auto vec3_serializer = vec_n_serializer<3, float>;
+auto vec4_serializer = vec_n_serializer<4, float>;
+auto vec3_deserializer = vec_n_deserializer<3, float>;
+auto vec4_deserializer = vec_n_deserializer<4, float>;
+auto float_deserializer = generic_deserializer<float>;
+auto int_deserializer = generic_deserializer<int>;
+auto bool_deserializer = generic_deserializer<bool>;
+auto color3_deserializer = colorn_deserializer<3>;
+auto color4_deserializer = colorn_deserializer<4>;
+auto color_3_validator = colorn_validator<3>;
+auto color_4_validator = colorn_validator<4>;
 
+class ConfigBuilder{
+
+private:
+    std::wstring name;
+    ConfigType config_type;
+    void* value = nullptr;
+    std::function<void(void*, std::wstringstream&)> serialize = nullptr;
+    std::function<void*(std::wstringstream&, void* res, bool* changed)> deserialize = nullptr;
+    std::function<bool(const std::wstring& value)> validator = nullptr;
+    std::variant<FloatExtras, IntExtras, EmptyExtras> extras = EmptyExtras{};
+    bool is_auto = false;
+
+    std::function<void(void*, std::wstringstream&)> get_serializer(){
+        if (serialize) return serialize;
+        switch(config_type){
+        case Int: return int_serializer;
+        case Float: return float_serializer;
+        case Color3: return vec3_serializer;
+        case Color4: return vec4_serializer;
+        case Bool: return bool_serializer;
+        case String: return string_serializer;
+        case FilePath: return string_serializer;
+        case FolderPath: return string_serializer;
+        case IVec2: return ivec2_serializer;
+        case FVec2: return fvec2_serializer;
+        case EnableRectangle: return rect_serializer;
+        case Range: return fvec2_serializer;
+        case Macro: return string_serializer;
+        default: assert(false);
+        }
+    }
+
+    std::function<void*(std::wstringstream&, void* res, bool* changed)> get_deserializer(){
+        if (deserialize) return deserialize;
+        switch(config_type){
+        case Int: return int_deserializer;
+        case Float: return float_deserializer;
+        case Color3: return color3_deserializer;
+        case Color4: return color4_deserializer;
+        case Bool: return bool_deserializer;
+        case String: return string_deserializer;
+        case FilePath: return string_deserializer;
+        case FolderPath: return string_deserializer;
+        case IVec2: return ivec2_deserializer;
+        case FVec2: return fvec2_deserializer;
+        case EnableRectangle: return rect_deserializer;
+        case Range: return fvec2_deserializer;
+        case Macro: return string_deserializer;
+        default: assert(false);
+        }
+
+    }
+
+    std::function<bool(const std::wstring& value)> get_validator(){
+        if (validator) return validator;
+        switch(config_type){
+        case Int: return nullptr;
+        case Float: return nullptr;
+        case Color3: return color_3_validator;
+        case Color4: return color_4_validator;
+        case Bool: return bool_validator;
+        case String: return nullptr;
+        case FilePath: return nullptr;
+        case FolderPath: return nullptr;
+        case IVec2: return nullptr;
+        case FVec2: return nullptr;
+        case EnableRectangle: return nullptr;
+        case Range: return nullptr;
+        case Macro: return nullptr;
+        default: assert(false);
+        }
+
+    }
+
+public:
+    ConfigBuilder(std::wstring config_name, ConfigType ctype, void* cvalue){
+        name = config_name;
+        config_type = ctype;
+        value = cvalue;
+    }
+
+    static ConfigBuilder color3(std::wstring config_name, float* val){
+        return ConfigBuilder(config_name, ConfigType::Color3, val);
+    }
+
+    static ConfigBuilder color4(std::wstring config_name, float* val){
+        return ConfigBuilder(config_name, ConfigType::Color4, val);
+    }
+
+    static ConfigBuilder boolean(std::wstring config_name, bool* val){
+        return ConfigBuilder(config_name, ConfigType::Bool, val);
+    }
+
+    static ConfigBuilder floatc(std::wstring config_name, float* val, FloatExtras ex){
+        return ConfigBuilder(config_name, ConfigType::Float, val).extra(ex);
+    }
+
+    static ConfigBuilder intc(std::wstring config_name, int* val, IntExtras ex){
+        return ConfigBuilder(config_name, ConfigType::Int, val).extra(ex);
+    }
+
+    static ConfigBuilder string(std::wstring config_name, std::wstring* val){
+        return ConfigBuilder(config_name, ConfigType::String, val);
+    }
+
+    static ConfigBuilder macro(std::wstring config_name, std::wstring* val){
+        return ConfigBuilder(config_name, ConfigType::Macro, val);
+    }
+
+    static ConfigBuilder ivec2(std::wstring config_name, int* val){
+        return ConfigBuilder(config_name, ConfigType::IVec2, val);
+    }
+
+    static ConfigBuilder fvec2(std::wstring config_name, float* val){
+        return ConfigBuilder(config_name, ConfigType::FVec2, val);
+    }
+
+    static ConfigBuilder rect(std::wstring config_name, UIRect* val){
+        return ConfigBuilder(config_name, ConfigType::EnableRectangle, val);
+    }
+
+    ConfigBuilder serializer(std::function<void(void*, std::wstringstream&)> ser){
+        this->serialize = ser;
+        return *this;
+    }
+
+    ConfigBuilder deserializer(std::function<void*(std::wstringstream&, void* res, bool* changed)> deser){
+        this->deserialize = deser;
+        return *this;
+    }
+
+    ConfigBuilder valid(std::function<bool(const std::wstring& value)> validator_){
+        this->validator = validator_;
+        return *this;
+    }
+
+    ConfigBuilder extra(std::variant<FloatExtras, IntExtras, EmptyExtras> extras_){
+        this->extras = extras_;
+        return *this;
+    }
+
+    ConfigBuilder auto_(){
+        this->is_auto = true;
+        return *this;
+    }
+
+    Config build(){
+        Config res;
+        res.name = name;
+        res.config_type = config_type;
+        res.value = value;
+        res.serialize = get_serializer();
+        res.deserialize = get_deserializer();
+        res.validator = get_validator();
+        res.extras = extras;
+        res.is_auto = is_auto;
+        res.load_default();
+        return res;
+    }
+
+};
 
 ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, const std::vector<Path>& user_paths) {
 
     user_config_paths = user_paths;
-    auto ivec2_serializer = vec_n_serializer<2, int>;
-    auto ivec2_deserializer = vec_n_deserializer<2, int>;
-    auto fvec2_serializer = vec_n_serializer<2, float>;
-    auto fvec2_deserializer = vec_n_deserializer<2, float>;
-    auto vec3_serializer = vec_n_serializer<3, float>;
-    auto vec4_serializer = vec_n_serializer<4, float>;
-    auto vec3_deserializer = vec_n_deserializer<3, float>;
-    auto vec4_deserializer = vec_n_deserializer<4, float>;
-    auto float_deserializer = generic_deserializer<float>;
-    auto int_deserializer = generic_deserializer<int>;
-    auto bool_deserializer = generic_deserializer<bool>;
-    auto color3_deserializer = colorn_deserializer<3>;
-    auto color4_deserializer = colorn_deserializer<4>;
-    auto color_3_validator = colorn_validator<3>;
-    auto color_4_validator = colorn_validator<4>;
 
-    configs.push_back({
-        L"text_highlight_color",
-        ConfigType::Color3,
-        DEFAULT_TEXT_HIGHLIGHT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"vertical_line_color",
-        ConfigType::Color4,
-        DEFAULT_VERTICAL_LINE_COLOR,
-        vec4_serializer,
-        color4_deserializer,
-        color_4_validator
-        });
-    configs.push_back({
-        L"visual_mark_color",
-        ConfigType::Color4,
-        DEFAULT_VERTICAL_LINE_COLOR,
-        vec4_serializer,
-        color4_deserializer,
-        color_4_validator
-        });
-    configs.push_back({
-        L"search_highlight_color",
-        ConfigType::Color3,
-        DEFAULT_SEARCH_HIGHLIGHT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"unselected_search_highlight_color",
-        ConfigType::Color3,
-        UNSELECTED_SEARCH_HIGHLIGHT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"freetext_bookmark_color",
-        ConfigType::Color3,
-        FREETEXT_BOOKMARK_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"link_highlight_color",
-        ConfigType::Color3 ,
-        DEFAULT_LINK_HIGHLIGHT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"synctex_highlight_color",
-        ConfigType::Color3,
-        DEFAULT_SYNCTEX_HIGHLIGHT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"synctex_highlight_timeout",
-        ConfigType::Float,
-        &HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{-1.0f, 100.0f}
-        });
-    configs.push_back({
-        L"ruler_color",
-        ConfigType::Color3,
-        RULER_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"ruler_marker_color",
-        ConfigType::Color3,
-        RULER_MARKER_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"background_color",
-        ConfigType::Color3,
-        BACKGROUND_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"dark_mode_background_color",
-        ConfigType::Color3,
-        DARK_MODE_BACKGROUND_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"custom_color_mode_empty_background_color",
-        ConfigType::Color3,
-        CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"dark_mode_contrast",
-        ConfigType::Float,
-        &DARK_MODE_CONTRAST,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 1.0f}
-        });
-    configs.push_back({
-        L"freetext_bookmark_font_size",
-        ConfigType::Float,
-        &FREETEXT_BOOKMARK_FONT_SIZE,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 100.0f}
-        });
-    configs.push_back({
-        L"custom_color_contrast",
-        ConfigType::Float,
-        &CUSTOM_COLOR_CONTRAST,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 1.0f}
-        });
-    configs.push_back({
-        L"default_dark_mode",
-        ConfigType::Bool,
-        &DEFAULT_DARK_MODE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"use_system_theme",
-        ConfigType::Bool,
-        &USE_SYSTEM_THEME,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"use_custom_color_as_dark_system_theme",
-        ConfigType::Bool,
-        &USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"render_freetext_borders",
-        ConfigType::Bool,
-        &RENDER_FREETEXT_BORDERS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"google_scholar_address",
-        ConfigType::String,
-        &GOOGLE_SCHOLAR_ADDRESS,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"item_list_prefix",
-        ConfigType::String,
-        &ITEM_LIST_PREFIX,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"inverse_search_command",
-        ConfigType::String,
-        &INVERSE_SEARCH_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"libgen_address",
-        ConfigType::String,
-        &LIBGEN_ADDRESS,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"zoom_inc_factor",
-        ConfigType::Float,
-        &ZOOM_INC_FACTOR,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{1.0f, 2.0f}
-        });
-    configs.push_back({
-        L"vertical_move_amount",
-        ConfigType::Float,
-        &VERTICAL_MOVE_AMOUNT,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.1f, 10.0f}
-        });
+    auto add_color3 = [&](std::wstring name, float* location){
+        configs.push_back(
+            ConfigBuilder::color3(name, location).build()
+            );
+    };
 
-    configs.push_back({
-        L"horizontal_move_amount",
-        ConfigType::Float,
-        &HORIZONTAL_MOVE_AMOUNT,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.1f, 10.0f}
-        });
-    configs.push_back({
-        L"move_screen_percentage",
-        ConfigType::Float,
-        &MOVE_SCREEN_PERCENTAGE,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 1.0f}
-        });
-    configs.push_back({
-        L"strike_line_width",
-        ConfigType::Float,
-        &STRIKE_LINE_WIDTH,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 10.0f}
-        });
-    configs.push_back({
-        L"move_screen_ratio",
-        ConfigType::Float,
-        &MOVE_SCREEN_PERCENTAGE,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 1.0f}
-        });
-    configs.push_back({
-        L"flat_toc",
-        ConfigType::Bool,
-        &FLAT_TABLE_OF_CONTENTS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"adjust_annotation_colors_for_dark_mode",
-        ConfigType::Bool,
-        &ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"right_click_context_menu",
-        ConfigType::Bool,
-        &SHOW_RIGHT_CLICK_CONTEXT_MENU,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"preserve_image_colors_in_dark_mode",
-        ConfigType::Bool,
-        &PRESERVE_IMAGE_COLORS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"inverted_preserved_image_colors",
-        ConfigType::Bool,
-        &INVERTED_PRESERVED_IMAGE_COLORS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"invert_selected_text",
-        ConfigType::Bool,
-        &INVERT_SELECTED_TEXT,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"ignore_scroll_events",
-        ConfigType::Bool,
-        &IGNORE_SCROLL_EVENTS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"dont_center_if_synctex_rect_is_visible",
-        ConfigType::Bool,
-        &DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"should_use_multiple_monitors",
-        ConfigType::Bool,
-        &SHOULD_USE_MULTIPLE_MONITORS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"paper_download_should_create_portal",
-        ConfigType::Bool,
-        &PAPER_DOWNLOAD_CREATE_PORTAL,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"paper_download_should_detect_paper_name",
-        ConfigType::Bool,
-        &PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"automatically_download_matching_paper_name",
-        ConfigType::Bool,
-        &AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"should_load_tutorial_when_no_other_file",
-        ConfigType::Bool,
-        &SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"should_launch_new_instance",
-        ConfigType::Bool,
-        &SHOULD_LAUNCH_NEW_INSTANCE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"should_launch_new_window",
-        ConfigType::Bool,
-        &SHOULD_LAUNCH_NEW_WINDOW,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"should_draw_unrendered_pages",
-        ConfigType::Bool,
-        &SHOULD_DRAW_UNRENDERED_PAGES,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"hide_overlapping_link_labels",
-        ConfigType::Bool,
-        &HIDE_OVERLAPPING_LINK_LABELS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"real_page_separation",
-        ConfigType::Bool,
-        &REAL_PAGE_SEPARATION,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"fill_textbar_with_selected_text",
-        ConfigType::Bool,
-        &FILL_TEXTBAR_WITH_SELECTED_TEXT,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"align_link_dest_to_top",
-        ConfigType::Bool,
-        &ALIGN_LINK_DEST_TO_TOP,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"check_for_updates_on_startup",
-        ConfigType::Bool,
-        &SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"sort_bookmarks_by_location",
-        ConfigType::Bool,
-        &SORT_BOOKMARKS_BY_LOCATION,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"shared_database_path",
-        ConfigType::String,
-        &SHARED_DATABASE_PATH,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"ruler_display_mode",
-        ConfigType::String,
-        &RULER_DISPLAY_MODE,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"hover_overview",
-        ConfigType::Bool,
-        &HOVER_OVERVIEW,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"visual_mark_next_page_fraction",
-        ConfigType::Float,
-        &VISUAL_MARK_NEXT_PAGE_FRACTION,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{-2.0, 2.0}
-        });
-    configs.push_back({
-        L"visual_mark_next_page_threshold",
-        ConfigType::Float,
-        &VISUAL_MARK_NEXT_PAGE_THRESHOLD,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{-2.0, 2.0}
-        });
-    configs.push_back({
-        L"ui_font",
-        ConfigType::String,
-        &UI_FONT_FACE_NAME,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"status_font",
-        ConfigType::String,
-        &STATUS_FONT_FACE_NAME,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"middle_click_search_engine",
-        ConfigType::String,
-        &MIDDLE_CLICK_SEARCH_ENGINE,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"shift_middle_click_search_engine",
-        ConfigType::String,
-        &SHIFT_MIDDLE_CLICK_SEARCH_ENGINE,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"startup_commands",
-        ConfigType::Macro,
-        &STARTUP_COMMANDS,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"font_size",
-        ConfigType::Int,
-        &FONT_SIZE,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{1, 100}
-        });
-    configs.push_back({
-        L"ruler_pixel_width",
-        ConfigType::Int,
-        &RULER_UNDERLINE_PIXEL_WIDTH,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{1, 100}
-        });
-    configs.push_back({
-        L"num_prerendered_next_slides",
-        ConfigType::Int,
-        &NUM_PRERENDERED_NEXT_SLIDES,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{0, 5}
-        });
-    configs.push_back({
-        L"num_cached_pages",
-        ConfigType::Int,
-        &NUM_CACHED_PAGES,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{0, 100}
-        });
-    configs.push_back({
-        L"num_prerendered_prev_slides",
-        ConfigType::Int,
-        &NUM_PRERENDERED_PREV_SLIDES,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{0, 5}
-        });
-    configs.push_back({
-        L"keyboard_select_font_size",
-        ConfigType::Int,
-        &KEYBOARD_SELECT_FONT_SIZE,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{1, 100}
-        });
-    configs.push_back({
-        L"documentation_font_size",
-        ConfigType::Int,
-        &DOCUMENTATION_FONT_SIZE,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{1, 100}
-        });
-    configs.push_back({
-        L"status_bar_font_size",
-        ConfigType::Int,
-        &STATUS_BAR_FONT_SIZE,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{1, 100}
-        });
-    configs.push_back({
-        L"custom_background_color",
-        ConfigType::Color3,
-        CUSTOM_BACKGROUND_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"custom_text_color",
-        ConfigType::Color3,
-        CUSTOM_TEXT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"rerender_overview",
-        ConfigType::Bool,
-        &RERENDER_OVERVIEW,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"wheel_zoom_on_cursor",
-        ConfigType::Bool,
-        &WHEEL_ZOOM_ON_CURSOR,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"linear_filter",
-        ConfigType::Bool,
-        &LINEAR_TEXTURE_FILTERING,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"display_resolution_scale",
-        ConfigType::Float,
-        &DISPLAY_RESOLUTION_SCALE,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{-1.0f, 2.0f}
-        });
-    configs.push_back({
-        L"status_bar_color",
-        ConfigType::Color3,
-        STATUS_BAR_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"status_bar_text_color",
-        ConfigType::Color3,
-        STATUS_BAR_TEXT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"main_window_size",
-        ConfigType::IVec2,
-        &MAIN_WINDOW_SIZE,
-        ivec2_serializer,
-        ivec2_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"helper_window_size",
-        ConfigType::IVec2,
-        &HELPER_WINDOW_SIZE,
-        ivec2_serializer,
-        ivec2_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"main_window_move",
-        ConfigType::IVec2,
-        &MAIN_WINDOW_MOVE,
-        ivec2_serializer,
-        ivec2_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"helper_window_move",
-        ConfigType::IVec2,
-        &HELPER_WINDOW_MOVE,
-        ivec2_serializer,
-        ivec2_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"touchpad_sensitivity",
-        ConfigType::Float,
-        &TOUCHPAD_SENSITIVITY,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 10.0f}
-        });
-    configs.push_back({
-        L"scrollview_sensitivity",
-        ConfigType::Float,
-        &SCROLL_VIEW_SENSITIVITY,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 10.0f}
-        });
-    configs.push_back({
-        L"page_separator_width",
-        ConfigType::Float,
-        &PAGE_SEPARATOR_WIDTH,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 10.0f}
-        });
-    configs.push_back({
-        L"page_separator_color",
-        ConfigType::Color3,
-        PAGE_SEPARATOR_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"single_main_window_size",
-        ConfigType::IVec2,
-        &SINGLE_MAIN_WINDOW_SIZE,
-        ivec2_serializer,
-        ivec2_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"single_main_window_move",
-        ConfigType::IVec2,
-        &SINGLE_MAIN_WINDOW_MOVE,
-        ivec2_serializer,
-        ivec2_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"fit_to_page_width_ratio",
-        ConfigType::Float,
-        &FIT_TO_PAGE_WIDTH_RATIO,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.25f, 1.0f}
-        });
-    configs.push_back({
-        L"collapsed_toc",
-        ConfigType::Bool,
-        &SMALL_TOC,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"render_pdf_annotations",
-        ConfigType::Bool,
-        &SHOULD_RENDER_PDF_ANNOTATIONS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"ruler_mode",
-        ConfigType::Bool,
-        &RULER_MODE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"use_ruler_to_highlight_synctex_line",
-        ConfigType::Bool,
-        &USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"show_most_recent_commands_first",
-        ConfigType::Bool,
-        &SHOW_MOST_RECENT_COMMANDS_FIRST,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"keyboard_point_selection",
-        ConfigType::Bool,
-        &USE_KEYBOARD_POINT_SELECTION,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"ruler_padding",
-        ConfigType::Float,
-        &RULER_PADDING,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 10.0f}
-        });
-    configs.push_back({
-        L"ruler_x_padding",
-        ConfigType::Float,
-        &RULER_X_PADDING,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 10.0f}
-        });
-    configs.push_back({
-        L"ruler_auto_move_sensitivity",
-        ConfigType::Float,
-        &RULER_AUTO_MOVE_SENSITIVITY,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 200.0f}
-        });
-    configs.push_back({
-        L"text_summary_url",
-        ConfigType::String,
-        &TEXT_HIGHLIGHT_URL,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"text_summary_should_refine",
-        ConfigType::Bool,
-        &TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"paper_search_url",
-        ConfigType::String,
-        &PAPER_SEARCH_URL,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"text_summary_should_fill",
-        ConfigType::Bool,
-        &TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"text_summary_context_size",
-        ConfigType::Int,
-        &TEXT_SUMMARY_CONTEXT_SIZE,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{1, 100}
-        });
-    configs.push_back({
-        L"use_heuristic_if_text_summary_not_available",
-        ConfigType::Bool,
-        &USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"papers_folder_path",
-        ConfigType::String,
-        &PAPERS_FOLDER_PATH,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"enable_experimental_features",
-        ConfigType::Bool,
-        &ENABLE_EXPERIMENTAL_FEATURES,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"create_table_of_contents_if_not_exists",
-        ConfigType::Bool,
-        &CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"max_created_toc_size",
-        ConfigType::Int,
-        &MAX_CREATED_TABLE_OF_CONTENTS_SIZE,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{0, 100000}
-        });
-    configs.push_back({
-        L"force_custom_line_algorithm",
-        ConfigType::Bool,
-        &FORCE_CUSTOM_LINE_ALGORITHM,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"overview_size",
-        ConfigType::FVec2,
-        &OVERVIEW_SIZE,
-        fvec2_serializer,
-        fvec2_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"overview_offset",
-        ConfigType::FVec2,
-        &OVERVIEW_OFFSET,
-        fvec2_serializer,
-        fvec2_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"ignore_whitespace_in_presentation_mode",
-        ConfigType::Bool,
-        &IGNORE_WHITESPACE_IN_PRESENTATION_MODE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"exact_highlight_select",
-        ConfigType::Bool,
-        &EXACT_HIGHLIGHT_SELECT,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"show_doc_path",
-        ConfigType::Bool,
-        &SHOW_DOC_PATH,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"fastread_opacity",
-        ConfigType::Float,
-        &FASTREAD_OPACITY,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 1.0f}
-        });
-    configs.push_back({
-        L"should_warn_about_user_key_override",
-        ConfigType::Bool,
-        &SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"scan_path",
-        ConfigType::String,
-        &BOOK_SCAN_PATH,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"single_click_selects_words",
-        ConfigType::Bool,
-        &SINGLE_CLICK_SELECTS_WORDS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"shift_click_command",
-        ConfigType::Macro,
-        &SHIFT_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"resize_command",
-        ConfigType::Macro,
-        &RESIZE_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"control_click_command",
-        ConfigType::Macro,
-        &CONTROL_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"hold_middle_click_command",
-        ConfigType::Macro,
-        &HOLD_MIDDLE_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"context_menu_items",
-        ConfigType::String,
-        &CONTEXT_MENU_ITEMS,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"context_menu_items_for_links",
-        ConfigType::String,
-        &CONTEXT_MENU_ITEMS_FOR_LINKS,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"context_menu_items_for_selected_text",
-        ConfigType::String,
-        &CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"context_menu_items_for_highlights",
-        ConfigType::String,
-        &CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"context_menu_items_for_bookmarks",
-        ConfigType::String,
-        &CONTEXT_MENU_ITEMS_FOR_BOOKMARKS,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"context_menu_items_for_overview",
-        ConfigType::String,
-        &CONTEXT_MENU_ITEMS_FOR_OVERVIEW,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"paper_download_url_path",
-        ConfigType::String,
-        &PAPER_SEARCH_URL_PATH,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"paper_download_title_path",
-        ConfigType::String,
-        &PAPER_SEARCH_TILE_PATH,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"paper_download_contrib_path",
-        ConfigType::String,
-        &PAPER_SEARCH_CONTRIB_PATH,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"back_rect_tap_command",
-        ConfigType::Macro,
-        &BACK_RECT_TAP_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"tablet_pen_click_command",
-        ConfigType::Macro,
-        &TABLET_PEN_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"tablet_pen_double_click_command",
-        ConfigType::Macro,
-        &TABLET_PEN_DOUBLE_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"volume_down_command",
-        ConfigType::Macro,
-        &VOLUME_DOWN_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"volume_down_command",
-        ConfigType::Macro,
-        &VOLUME_UP_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"back_rect_hold_command",
-        ConfigType::Macro,
-        &BACK_RECT_HOLD_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"forward_rect_tap_command",
-        ConfigType::Macro,
-        &FORWARD_RECT_TAP_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"forward_rect_hold_command",
-        ConfigType::Macro,
-        &FORWARD_RECT_HOLD_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"edit_portal_tap_command",
-        ConfigType::Macro,
-        &EDIT_PORTAL_TAP_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"edit_portal_hold_command",
-        ConfigType::Macro,
-        &EDIT_PORTAL_HOLD_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"middle_left_rect_tap_command",
-        ConfigType::Macro,
-        &MIDDLE_LEFT_RECT_TAP_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"middle_left_rect_hold_command",
-        ConfigType::Macro,
-        &MIDDLE_LEFT_RECT_HOLD_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"middle_right_rect_tap_command",
-        ConfigType::Macro,
-        &MIDDLE_RIGHT_RECT_TAP_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"middle_right_rect_hold_command",
-        ConfigType::Macro,
-        &MIDDLE_RIGHT_RECT_HOLD_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"visual_mark_next_tap_command",
-        ConfigType::Macro,
-        &VISUAL_MARK_NEXT_TAP_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"visual_mark_next_hold_command",
-        ConfigType::Macro,
-        &VISUAL_MARK_NEXT_HOLD_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"visual_mark_prev_tap_command",
-        ConfigType::Macro,
-        &VISUAL_MARK_PREV_TAP_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"visual_mark_prev_hold_command",
-        ConfigType::Macro,
-        &VISUAL_MARK_PREV_HOLD_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"right_click_command",
-        ConfigType::Macro,
-        &RIGHT_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"middle_click_command",
-        ConfigType::Macro,
-        &MIDDLE_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"shift_right_click_command",
-        ConfigType::Macro,
-        &SHIFT_RIGHT_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"control_right_click_command",
-        ConfigType::Macro,
-        &CONTROL_RIGHT_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"allow_horizontal_drag_when_document_is_small",
-        ConfigType::Bool,
-        &ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"right_click_context_menu",
-        ConfigType::Bool,
-        &RIGHT_CLICK_CONTEXT_MENU,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"use_legacy_keybinds",
-        ConfigType::Bool,
-        &USE_LEGACY_KEYBINDS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"alt_click_command",
-        ConfigType::Macro,
-        &ALT_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"alt_right_click_command",
-        ConfigType::Macro,
-        &ALT_RIGHT_CLICK_COMMAND,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"multiline_menus",
-        ConfigType::Bool,
-        &MULTILINE_MENUS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"start_with_helper_window",
-        ConfigType::Bool,
-        &START_WITH_HELPER_WINDOW,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"prerender_next_page_presentation",
-        ConfigType::Bool,
-        &PRERENDER_NEXT_PAGE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"highlight_middle_click",
-        ConfigType::Bool,
-        &HIGHLIGHT_MIDDLE_CLICK,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"page_space_x",
-        ConfigType::Float,
-        &PAGE_SPACE_X,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 100.0f}
-        });
-    configs.push_back({
-        L"page_space_y",
-        ConfigType::Float,
-        &PAGE_SPACE_Y,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 100.0f}
-        });
-    configs.push_back({
-        L"menu_screen_width_ratio",
-        ConfigType::Float,
-        &MENU_SCREEN_WDITH_RATIO,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.1f, 1.0f}
-        });
-    configs.push_back({
-        L"hyperdrive_speed_factor",
-        ConfigType::Float,
-        &HYPERDRIVE_SPEED_FACTOR,
-        float_serializer,
-        float_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"smooth_scroll_speed",
-        ConfigType::Float,
-        &SMOOTH_SCROLL_SPEED,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 20.0f}
-        });
-    configs.push_back({
-        L"smooth_scroll_drag",
-        ConfigType::Float,
-        &SMOOTH_SCROLL_DRAG,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{10.0f, 10000.0f}
-        });
-    configs.push_back({
-        L"auto_rename_downloaded_papers",
-        ConfigType::Bool,
-        &AUTO_RENAME_DOWNLOADED_PAPERS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"super_fast_search",
-        ConfigType::Bool,
-        &SUPER_FAST_SEARCH,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"incremental_search",
-        ConfigType::Bool,
-        &INCREMENTAL_SEARCH,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"show_closest_bookmark_in_statusbar",
-        ConfigType::Bool,
-        &SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"show_close_portal_in_statusbar",
-        ConfigType::Bool,
-        &SHOW_CLOSE_PORTAL_IN_STATUSBAR,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"prerendered_page_count",
-        ConfigType::Int,
-        &PRERENDERED_PAGE_COUNT,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{0, 10}
-        });
-    configs.push_back({
-        L"reload_interval_miliseconds",
-        ConfigType::Int,
-        &RELOAD_INTERVAL_MILISECONDS,
-        int_serializer,
-        int_deserializer,
-        nullptr,
-        IntExtras{0, 10000}
-        });
-    configs.push_back({
-        L"case_sensitive_search",
-        ConfigType::Bool,
-        &CASE_SENSITIVE_SEARCH,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"smartcase_search",
-        ConfigType::Bool,
-        &SMARTCASE_SEARCH,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"show_document_name_in_statusbar",
-        ConfigType::Bool,
-        &SHOW_DOCUMENT_NAME_IN_STATUSBAR,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"ui_selected_background_color",
-        ConfigType::Color3,
-        UI_SELECTED_BACKGROUND_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"ui_text_color",
-        ConfigType::Color3,
-        UI_TEXT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"ui_background_color",
-        ConfigType::Color3,
-        UI_BACKGROUND_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"ui_selected_text_color",
-        ConfigType::Color3,
-        UI_SELECTED_TEXT_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"ui_background_color",
-        ConfigType::Color3,
-        STATUS_BAR_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"numeric_tags",
-        ConfigType::Bool,
-        &NUMERIC_TAGS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"highlight_links",
-        ConfigType::Bool,
-        &SHOULD_HIGHLIGHT_LINKS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"should_highlight_unselected_search",
-        ConfigType::Bool,
-        &SHOULD_HIGHLIGHT_UNSELECTED_SEARCH,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"gamma",
-        ConfigType::Float,
-        &GAMMA,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 1.0f}
-        });
-    configs.push_back({
-        L"fuzzy_searching",
-        ConfigType::Bool,
-        &FUZZY_SEARCHING,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"debug",
-        ConfigType::Bool,
-        &DEBUG,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
+    auto add_color4 = [&](std::wstring name, float* location){
+        configs.push_back(
+            ConfigBuilder::color4(name, location).build()
+            );
+    };
+
+    auto add_bool = [&](std::wstring name, bool* location){
+        configs.push_back(
+            ConfigBuilder::boolean(name, location).build()
+            );
+    };
+
+    auto add_string = [&](std::wstring name, std::wstring* location){
+        configs.push_back(
+            ConfigBuilder::string(name, location).build()
+            );
+    };
+
+    auto add_macro = [&](std::wstring name, std::wstring* location){
+        configs.push_back(
+            ConfigBuilder::macro(name, location).build()
+            );
+    };
+
+    auto add_ivec2 = [&](std::wstring name, int* location){
+        configs.push_back(
+            ConfigBuilder::ivec2(name, location).build()
+            );
+    };
+
+    auto add_fvec2 = [&](std::wstring name, float* location){
+        configs.push_back(
+            ConfigBuilder::fvec2(name, location).build()
+            );
+    };
+
+    auto add_rect = [&](std::wstring name, UIRect* location){
+        configs.push_back(
+            ConfigBuilder::rect(name, location).build()
+            );
+    };
+
+    auto add_float = [&](std::wstring name, float* location, FloatExtras extras){
+        configs.push_back(
+            ConfigBuilder::floatc(name, location, extras).build()
+            );
+    };
+
+    auto add_int = [&](std::wstring name, int* location, IntExtras extras){
+        configs.push_back(
+            ConfigBuilder::intc(name, location, extras).build()
+            );
+    };
+
+    add_color3(L"text_highlight_color", DEFAULT_TEXT_HIGHLIGHT_COLOR);
+    add_color3(L"search_highlight_color", DEFAULT_SEARCH_HIGHLIGHT_COLOR);
+    add_color3(L"unselected_search_highlight_color", UNSELECTED_SEARCH_HIGHLIGHT_COLOR);
+    add_color3(L"freetext_bookmark_color", FREETEXT_BOOKMARK_COLOR);
+    add_color3(L"link_highlight_color", DEFAULT_LINK_HIGHLIGHT_COLOR);
+    add_color3(L"synctex_highlight_color", DEFAULT_SYNCTEX_HIGHLIGHT_COLOR);
+    add_color3(L"ruler_color", RULER_COLOR);
+    add_color3(L"ruler_marker_color", RULER_MARKER_COLOR);
+    add_color3(L"background_color", BACKGROUND_COLOR);
+    add_color3(L"dark_mode_background_color", DARK_MODE_BACKGROUND_COLOR);
+    add_color3(L"custom_color_mode_empty_background_color", CUSTOM_COLOR_MODE_EMPTY_BACKGROUND_COLOR);
+    add_color3(L"custom_background_color", CUSTOM_BACKGROUND_COLOR);
+    add_color3(L"custom_text_color", CUSTOM_TEXT_COLOR);
+    add_color3(L"status_bar_color", STATUS_BAR_COLOR);
+    add_color3(L"status_bar_text_color", STATUS_BAR_TEXT_COLOR);
+    add_color3(L"page_separator_color", PAGE_SEPARATOR_COLOR);
+    add_color3(L"ui_selected_background_color", UI_SELECTED_BACKGROUND_COLOR);
+    add_color3(L"ui_text_color", UI_TEXT_COLOR);
+    add_color3(L"ui_background_color", UI_BACKGROUND_COLOR);
+    add_color3(L"ui_selected_text_color", UI_SELECTED_TEXT_COLOR);
+    add_color3(L"ui_background_color", STATUS_BAR_COLOR);
+    add_color4(L"vertical_line_color",DEFAULT_VERTICAL_LINE_COLOR);
+    add_color4(L"visual_mark_color",DEFAULT_VERTICAL_LINE_COLOR);
+    add_color4(L"keyboard_select_background_color", KEYBOARD_SELECT_BACKGROUND_COLOR);
+    add_color4(L"keyboard_select_text_color", KEYBOARD_SELECT_TEXT_COLOR);
+    add_color4(L"keyboard_selected_tag_text_color", KEYBOARD_SELECTED_TAG_TEXT_COLOR);
+    add_color4(L"keyboard_selected_tag_background_color", KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO);
+    add_float(L"synctex_highlight_timeout", &HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT, FloatExtras{-1.0f, 100.0f});
+    add_float(L"dark_mode_contrast", &DARK_MODE_CONTRAST, FloatExtras{0.0f, 1.0f});
+    add_float(L"freetext_bookmark_font_size", &FREETEXT_BOOKMARK_FONT_SIZE, FloatExtras{0.0f, 100.0f});
+    add_float(L"custom_color_contrast", &CUSTOM_COLOR_CONTRAST, FloatExtras{0.0f, 1.0f});
+    add_float(L"zoom_inc_factor", &ZOOM_INC_FACTOR, FloatExtras{1.0f, 2.0f});
+    add_float(L"vertical_move_amount", &VERTICAL_MOVE_AMOUNT, FloatExtras{0.1f, 10.0f});
+    add_float(L"horizontal_move_amount", &HORIZONTAL_MOVE_AMOUNT, FloatExtras{0.1f, 10.0f});
+    add_float(L"move_screen_percentage", &MOVE_SCREEN_PERCENTAGE, FloatExtras{0.0f, 1.0f});
+    add_float(L"strike_line_width", &STRIKE_LINE_WIDTH, FloatExtras{0.0f, 10.0f});
+    add_float(L"move_screen_ratio", &MOVE_SCREEN_PERCENTAGE, FloatExtras{0.0f, 1.0f});
+    add_float(L"visual_mark_next_page_fraction", &VISUAL_MARK_NEXT_PAGE_FRACTION, FloatExtras{-2.0f, 2.0f});
+    add_float(L"visual_mark_next_page_threshold", &VISUAL_MARK_NEXT_PAGE_THRESHOLD, FloatExtras{-2.0f, 2.0f});
+    add_float(L"touchpad_sensitivity", &TOUCHPAD_SENSITIVITY, FloatExtras{0.0f, 10.0f});
+    add_float(L"scrollview_sensitivity", &SCROLL_VIEW_SENSITIVITY, FloatExtras{0.0f, 10.0f});
+    add_float(L"page_separator_width", &PAGE_SEPARATOR_WIDTH, FloatExtras{0.0f, 10.0f});
+    add_float(L"fit_to_page_width_ratio", &FIT_TO_PAGE_WIDTH_RATIO, FloatExtras{0.25f, 1.0f});
+    add_float(L"ruler_padding", &RULER_PADDING, FloatExtras{0.0f, 10.0f});
+    add_float(L"ruler_x_padding", &RULER_X_PADDING, FloatExtras{0.0f, 10.0f});
+    add_float(L"ruler_auto_move_sensitivity", &RULER_AUTO_MOVE_SENSITIVITY, FloatExtras{0.0f, 200.0f});
+    add_float(L"fastread_opacity", &FASTREAD_OPACITY, FloatExtras{0.0f, 1.0f});
+    add_float(L"page_space_x", &PAGE_SPACE_X, FloatExtras{0.0f, 100.0f});
+    add_float(L"page_space_y", &PAGE_SPACE_Y, FloatExtras{0.0f, 100.0f});
+    add_float(L"menu_screen_width_ratio", &MENU_SCREEN_WDITH_RATIO, FloatExtras{0.0f, 1.0f});
+    add_float(L"menu_screen_width_ratio", &MENU_SCREEN_WDITH_RATIO, FloatExtras{0.0f, 1.0f});
+    add_float(L"smooth_scroll_speed", &SMOOTH_SCROLL_SPEED, FloatExtras{0.0f, 20.0f});
+    add_float(L"smooth_scroll_drag", &SMOOTH_SCROLL_DRAG, FloatExtras{10.0f, 10000.0f});
+    add_float(L"gamma", &GAMMA, FloatExtras{0.0f, 1.0f});
+    add_float(L"highlight_delete_threshold", &HIGHLIGHT_DELETE_THRESHOLD, FloatExtras{0.0f, 0.1f});
+    add_float(L"tts_rate", &TTS_RATE, FloatExtras{-1.0f, 1.0f});
+    add_float(L"smooth_move_max_velocity", &SMOOTH_MOVE_MAX_VELOCITY, FloatExtras{0.0f, 100000.0f});
+    add_float(L"epub_width", &EPUB_WIDTH, FloatExtras{0.0f, 1000.0f});
+    add_float(L"epub_height", &EPUB_HEIGHT, FloatExtras{0.0f, 1000.0f});
+    add_float(L"epub_font_size", &EPUB_FONT_SIZE, FloatExtras{0.0f, 100.0f});
+    add_bool(L"default_dark_mode", &DEFAULT_DARK_MODE);
+    add_bool(L"use_system_theme", &USE_SYSTEM_THEME);
+    add_bool(L"use_custom_color_as_dark_system_theme", &USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME);
+    add_bool(L"render_freetext_borders", &RENDER_FREETEXT_BORDERS);
+    add_bool(L"flat_toc", &FLAT_TABLE_OF_CONTENTS);
+    add_bool(L"adjust_annotation_colors_for_dark_mode", &ADJUST_ANNOTATION_COLORS_FOR_DARK_MODE);
+    add_bool(L"right_click_context_menu", &SHOW_RIGHT_CLICK_CONTEXT_MENU);
+    add_bool(L"preserve_image_colors_in_dark_mode", &PRESERVE_IMAGE_COLORS);
+    add_bool(L"inverted_preserved_image_colors", &INVERTED_PRESERVED_IMAGE_COLORS);
+    add_bool(L"invert_selected_text", &INVERT_SELECTED_TEXT);
+    add_bool(L"ignore_scroll_events", &IGNORE_SCROLL_EVENTS);
+    add_bool(L"dont_center_if_synctex_rect_is_visible", &DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE);
+    add_bool(L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS);
+    add_bool(L"paper_download_should_create_portal", &PAPER_DOWNLOAD_CREATE_PORTAL);
+    add_bool(L"paper_download_should_detect_paper_name", &PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME);
+    add_bool(L"automatically_download_matching_paper_name", &AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME);
+    add_bool(L"should_load_tutorial_when_no_other_file", &SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE);
+    add_bool(L"should_launch_new_instance", &SHOULD_LAUNCH_NEW_INSTANCE);
+    add_bool(L"should_launch_new_window", &SHOULD_LAUNCH_NEW_WINDOW);
+    add_bool(L"should_draw_unrendered_pages", &SHOULD_DRAW_UNRENDERED_PAGES);
+    add_bool(L"hide_overlapping_link_labels", &HIDE_OVERLAPPING_LINK_LABELS);
+    add_bool(L"real_page_separation", &REAL_PAGE_SEPARATION);
+    add_bool(L"fill_textbar_with_selected_text", &FILL_TEXTBAR_WITH_SELECTED_TEXT);
+    add_bool(L"align_link_dest_to_top", &ALIGN_LINK_DEST_TO_TOP);
+    add_bool(L"check_for_updates_on_startup", &SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP);
+    add_bool(L"sort_bookmarks_by_location", &SORT_BOOKMARKS_BY_LOCATION);
+    add_bool(L"hover_overview", &HOVER_OVERVIEW);
+    add_bool(L"rerender_overview", &RERENDER_OVERVIEW);
+    add_bool(L"wheel_zoom_on_cursor", &WHEEL_ZOOM_ON_CURSOR);
+    add_bool(L"linear_filter", &LINEAR_TEXTURE_FILTERING);
+    add_bool(L"collapsed_toc", &SMALL_TOC);
+    add_bool(L"render_pdf_annotations", &SHOULD_RENDER_PDF_ANNOTATIONS);
+    add_bool(L"ruler_mode", &RULER_MODE);
+    add_bool(L"use_ruler_to_highlight_synctex_line", &USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE);
+    add_bool(L"show_most_recent_commands_first", &SHOW_MOST_RECENT_COMMANDS_FIRST);
+    add_bool(L"keyboard_point_selection", &USE_KEYBOARD_POINT_SELECTION);
+    add_bool(L"text_summary_should_refine", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_REFINE);
+    add_bool(L"text_summary_should_fill", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL);
+    add_bool(L"use_heuristic_if_text_summary_not_available", &USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE);
+    add_bool(L"enable_experimental_features", &ENABLE_EXPERIMENTAL_FEATURES);
+    add_bool(L"create_table_of_contents_if_not_exists", &CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS);
+    add_bool(L"force_custom_line_algorithm", &FORCE_CUSTOM_LINE_ALGORITHM);
+    add_bool(L"ignore_whitespace_in_presentation_mode", &IGNORE_WHITESPACE_IN_PRESENTATION_MODE);
+    add_bool(L"exact_highlight_select", &EXACT_HIGHLIGHT_SELECT);
+    add_bool(L"show_doc_path", &SHOW_DOC_PATH);
+    add_bool(L"should_warn_about_user_key_override", &SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE);
+    add_bool(L"single_click_selects_words", &SINGLE_CLICK_SELECTS_WORDS);
+    add_bool(L"allow_horizontal_drag_when_document_is_small", &ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL);
+    add_bool(L"right_click_context_menu", &RIGHT_CLICK_CONTEXT_MENU);
+    add_bool(L"use_legacy_keybinds", &USE_LEGACY_KEYBINDS);
+    add_bool(L"multiline_menus", &MULTILINE_MENUS);
+    add_bool(L"start_with_helper_window", &START_WITH_HELPER_WINDOW);
+    add_bool(L"prerender_next_page_presentation", &PRERENDER_NEXT_PAGE);
+    add_bool(L"highlight_middle_click", &HIGHLIGHT_MIDDLE_CLICK);
+    add_bool(L"auto_rename_downloaded_papers", &AUTO_RENAME_DOWNLOADED_PAPERS);
+    add_bool(L"super_fast_search", &SUPER_FAST_SEARCH);
+    add_bool(L"incremental_search", &INCREMENTAL_SEARCH);
+    add_bool(L"show_closest_bookmark_in_statusbar", &SHOW_CLOSEST_BOOKMARK_IN_STATUSBAR);
+    add_bool(L"show_close_portal_in_statusbar", &SHOW_CLOSE_PORTAL_IN_STATUSBAR);
+    add_bool(L"case_sensitive_search", &CASE_SENSITIVE_SEARCH);
+    add_bool(L"smartcase_search", &SMARTCASE_SEARCH);
+    add_bool(L"show_document_name_in_statusbar", &SHOW_DOCUMENT_NAME_IN_STATUSBAR);
+    add_bool(L"numeric_tags", &NUMERIC_TAGS);
+    add_bool(L"highlight_links", &SHOULD_HIGHLIGHT_LINKS);
+    add_bool(L"should_highlight_unselected_search", &SHOULD_HIGHLIGHT_UNSELECTED_SEARCH);
+    add_bool(L"fuzzy_searching", &FUZZY_SEARCHING);
+    add_bool(L"inverted_horizontal_scrolling", &INVERTED_HORIZONTAL_SCROLLING);
+    add_bool(L"toc_jump_align_top", &TOC_JUMP_ALIGN_TOP);
+    add_bool(L"autocenter_visual_scroll", &AUTOCENTER_VISUAL_SCROLL);
+    add_bool(L"alphabetic_link_tags", &ALPHABETIC_LINK_TAGS);
+    add_bool(L"vimtex_wsl_fix", &VIMTEX_WSL_FIX);
+    add_bool(L"sliced_rendering", &SLICED_RENDERING);
+    add_bool(L"touch_mode", &TOUCH_MODE);
+    add_bool(L"allow_main_view_scroll_while_in_overview", &ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW);
+    add_bool(L"background_pixel_fix", &BACKGROUND_PIXEL_FIX);
+    add_string(L"google_scholar_address", &GOOGLE_SCHOLAR_ADDRESS);
+    add_string(L"item_list_prefix", &ITEM_LIST_PREFIX);
+    add_string(L"inverse_search_command", &INVERSE_SEARCH_COMMAND);
+    add_string(L"libgen_address", &LIBGEN_ADDRESS);
+    add_string(L"shared_database_path", &SHARED_DATABASE_PATH);
+    add_string(L"ruler_display_mode", &RULER_DISPLAY_MODE);
+    add_string(L"ui_font", &UI_FONT_FACE_NAME);
+    add_string(L"status_font", &STATUS_FONT_FACE_NAME);
+    add_string(L"middle_click_search_engine", &MIDDLE_CLICK_SEARCH_ENGINE);
+    add_string(L"shift_middle_click_search_engine", &SHIFT_MIDDLE_CLICK_SEARCH_ENGINE);
+    add_string(L"text_summary_url", &TEXT_HIGHLIGHT_URL);
+    add_string(L"paper_search_url", &PAPER_SEARCH_URL);
+    add_string(L"papers_folder_path", &PAPERS_FOLDER_PATH);
+    add_string(L"scan_path", &BOOK_SCAN_PATH);
+    add_string(L"context_menu_items", &CONTEXT_MENU_ITEMS);
+    add_string(L"context_menu_items_for_links", &CONTEXT_MENU_ITEMS_FOR_LINKS);
+    add_string(L"context_menu_items_for_selected_text", &CONTEXT_MENU_ITEMS_FOR_SELECTED_TEXT);
+    add_string(L"context_menu_items_for_highlights", &CONTEXT_MENU_ITEMS_FOR_HIGHLIGHTS);
+    add_string(L"context_menu_items_for_bookmarks", &CONTEXT_MENU_ITEMS_FOR_BOOKMARKS);
+    add_string(L"context_menu_items_for_overview", &CONTEXT_MENU_ITEMS_FOR_OVERVIEW);
+    add_string(L"paper_download_url_path", &PAPER_SEARCH_URL_PATH);
+    add_string(L"paper_download_title_path", &PAPER_SEARCH_TILE_PATH);
+    add_string(L"paper_download_contrib_path", &PAPER_SEARCH_CONTRIB_PATH);
+    add_string(L"default_open_file_path", &DEFAULT_OPEN_FILE_PATH);
+    add_string(L"annotations_directory", &ANNOTATIONS_DIR_PATH);
+    add_string(L"status_bar_format", &STATUS_BAR_FORMAT);
+    add_string(L"right_status_bar_format", &RIGHT_STATUS_BAR_FORMAT);
+    add_string(L"epub_css", &EPUB_CSS);
+    add_string(L"tag_font_face", &TAG_FONT_FACE);
+    add_macro(L"startup_commands", &STARTUP_COMMANDS);
+    add_macro(L"shift_click_command", &SHIFT_CLICK_COMMAND);
+    add_macro(L"resize_command", &RESIZE_COMMAND);
+    add_macro(L"control_click_command", &CONTROL_CLICK_COMMAND);
+    add_macro(L"hold_middle_click_command", &HOLD_MIDDLE_CLICK_COMMAND);
+    add_macro(L"back_rect_tap_command", &BACK_RECT_TAP_COMMAND);
+    add_macro(L"tablet_pen_click_command", &TABLET_PEN_CLICK_COMMAND);
+    add_macro(L"tablet_pen_double_click_command", &TABLET_PEN_DOUBLE_CLICK_COMMAND);
+    add_macro(L"volume_down_command", &VOLUME_DOWN_COMMAND);
+    add_macro(L"volume_down_command", &VOLUME_UP_COMMAND);
+    add_macro(L"back_rect_hold_command", &BACK_RECT_HOLD_COMMAND);
+    add_macro(L"forward_rect_tap_command", &FORWARD_RECT_TAP_COMMAND);
+    add_macro(L"forward_rect_hold_command", &FORWARD_RECT_HOLD_COMMAND);
+    add_macro(L"top_center_tap_command", &TOP_CENTER_TAP_COMMAND);
+    add_macro(L"top_center_hold_command", &TOP_CENTER_HOLD_COMMAND);
+    add_macro(L"middle_left_rect_tap_command", &MIDDLE_LEFT_RECT_TAP_COMMAND);
+    add_macro(L"middle_left_rect_hold_command", &MIDDLE_LEFT_RECT_HOLD_COMMAND);
+    add_macro(L"middle_right_rect_tap_command", &MIDDLE_RIGHT_RECT_TAP_COMMAND);
+    add_macro(L"middle_right_rect_hold_command", &MIDDLE_RIGHT_RECT_HOLD_COMMAND);
+    add_macro(L"visual_mark_next_tap_command", &VISUAL_MARK_NEXT_TAP_COMMAND);
+    add_macro(L"visual_mark_next_hold_command", &VISUAL_MARK_NEXT_HOLD_COMMAND);
+    add_macro(L"visual_mark_prev_tap_command", &VISUAL_MARK_PREV_TAP_COMMAND);
+    add_macro(L"visual_mark_prev_hold_command", &VISUAL_MARK_PREV_HOLD_COMMAND);
+    add_macro(L"right_click_command", &RIGHT_CLICK_COMMAND);
+    add_macro(L"middle_click_command", &MIDDLE_CLICK_COMMAND);
+    add_macro(L"shift_right_click_command", &SHIFT_RIGHT_CLICK_COMMAND);
+    add_macro(L"control_right_click_command", &CONTROL_RIGHT_CLICK_COMMAND);
+    add_macro(L"alt_click_command", &ALT_CLICK_COMMAND);
+    add_macro(L"alt_right_click_command", &ALT_RIGHT_CLICK_COMMAND);
+    add_int(L"font_size", &FONT_SIZE, IntExtras{1, 100});
+    add_int(L"ruler_pixel_width", &RULER_UNDERLINE_PIXEL_WIDTH, IntExtras{1, 100});
+    add_int(L"num_prerendered_next_slides", &NUM_PRERENDERED_NEXT_SLIDES, IntExtras{0, 5});
+    add_int(L"num_cached_pages", &NUM_CACHED_PAGES, IntExtras{0, 100});
+    add_int(L"num_prerendered_prev_slides", &NUM_PRERENDERED_PREV_SLIDES, IntExtras{0, 5});
+    add_int(L"keyboard_select_font_size", &KEYBOARD_SELECT_FONT_SIZE, IntExtras{1, 100});
+    add_int(L"documentation_font_size", &DOCUMENTATION_FONT_SIZE, IntExtras{1, 100});
+    add_int(L"status_bar_font_size", &STATUS_BAR_FONT_SIZE, IntExtras{1, 100});
+    add_int(L"text_summary_context_size", &TEXT_SUMMARY_CONTEXT_SIZE, IntExtras{1, 100});
+    add_int(L"max_created_toc_size", &MAX_CREATED_TABLE_OF_CONTENTS_SIZE, IntExtras{1, 100000});
+    add_int(L"prerendered_page_count", &PRERENDERED_PAGE_COUNT, IntExtras{0, 10});
+    add_int(L"reload_interval_miliseconds", &RELOAD_INTERVAL_MILISECONDS, IntExtras{0, 10000});
+    add_ivec2(L"main_window_size", MAIN_WINDOW_SIZE);
+    add_ivec2(L"helper_window_size", HELPER_WINDOW_SIZE);
+    add_ivec2(L"main_window_move", MAIN_WINDOW_MOVE);
+    add_ivec2(L"helper_window_move", HELPER_WINDOW_MOVE);
+    add_ivec2(L"single_main_window_size", SINGLE_MAIN_WINDOW_SIZE);
+    add_ivec2(L"single_main_window_move", SINGLE_MAIN_WINDOW_MOVE);
+    add_fvec2(L"overview_size", OVERVIEW_SIZE);
+    add_fvec2(L"overview_offset", OVERVIEW_OFFSET);
+    add_rect(L"portrait_back_ui_rect", &PORTRAIT_BACK_UI_RECT);
+    add_rect(L"portrait_forward_ui_rect", &PORTRAIT_FORWARD_UI_RECT);
+    add_rect(L"landscape_back_ui_rect", &LANDSCAPE_BACK_UI_RECT);
+    add_rect(L"landscape_forward_ui_rect", &LANDSCAPE_FORWARD_UI_RECT);
+    add_rect(L"portrait_visual_mark_next", &PORTRAIT_VISUAL_MARK_NEXT);
+    add_rect(L"landscape_middle_right_rect", &LANDSCAPE_MIDDLE_RIGHT_UI_RECT);
+    add_rect(L"landscape_middle_left_rect", &LANDSCAPE_MIDDLE_LEFT_UI_RECT);
+    add_rect(L"portrait_middle_right_rect", &PORTRAIT_MIDDLE_RIGHT_UI_RECT);
+    add_rect(L"portrait_middle_left_rect", &PORTRAIT_MIDDLE_LEFT_UI_RECT);
+    add_rect(L"portrait_visual_mark_prev", &PORTRAIT_VISUAL_MARK_PREV);
+    add_rect(L"landscape_visual_mark_next", &LANDSCAPE_VISUAL_MARK_NEXT);
+    add_rect(L"landscape_visual_mark_prev", &LANDSCAPE_VISUAL_MARK_PREV);
 
 #ifdef Q_OS_MACOS
-    configs.push_back({
-        L"macos_titlebar_color",
-        ConfigType::Color3,
-        MACOS_TITLEBAR_COLOR,
-        vec3_serializer,
-        color3_deserializer,
-        color_3_validator
-        });
-    configs.push_back({
-        L"macos_hide_titlebar",
-        ConfigType::Bool,
-        &MACOS_HIDE_TITLEBAR,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
+    add_color3(L"macos_titlebar_color", MACOS_TITLEBAR_COLOR);
+    add_bool(L"macos_hide_titlebar", &MACOS_HIDE_TITLEBAR);
 #endif
-
-#ifdef _DEBUG
-    configs.push_back({
-        L"debug_display_freehand_poitns",
-        ConfigType::Bool,
-        &DEBUG_DISPLAY_FREEHAND_POINTS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"debug_smooth_freehand_drawings",
-        ConfigType::Bool,
-        &DEBUG_SMOOTH_FREEHAND_DRAWINGS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-#endif
-    configs.push_back({
-        L"highlight_delete_threshold",
-        ConfigType::Float,
-        &HIGHLIGHT_DELETE_THRESHOLD,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 0.1f}
-        });
-    configs.push_back({
-        L"default_open_file_path",
-        ConfigType::String,
-        &DEFAULT_OPEN_FILE_PATH,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"status_bar_format",
-        ConfigType::String,
-        &STATUS_BAR_FORMAT,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"right_status_bar_format",
-        ConfigType::String,
-        &RIGHT_STATUS_BAR_FORMAT,
-        string_serializer,
-        string_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"inverted_horizontal_scrolling",
-        ConfigType::Bool,
-        &INVERTED_HORIZONTAL_SCROLLING,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"toc_jump_align_top",
-        ConfigType::Bool,
-        &TOC_JUMP_ALIGN_TOP,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"keyboard_select_background_color",
-        ConfigType::Color4,
-        &KEYBOARD_SELECT_BACKGROUND_COLOR,
-        vec4_serializer,
-        vec4_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"keyboard_select_text_color",
-        ConfigType::Color4,
-        &KEYBOARD_SELECT_TEXT_COLOR,
-        vec4_serializer,
-        vec4_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"keyboard_selected_tag_text_color",
-        ConfigType::Color4,
-        &KEYBOARD_SELECTED_TAG_TEXT_COLOR,
-        vec4_serializer,
-        vec4_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"keyboard_selected_tag_background_color",
-        ConfigType::Color4,
-        &KEYBOARD_SELECTED_TAG_BACKGROUND_COLRO,
-        vec4_serializer,
-        vec4_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"autocenter_visual_scroll",
-        ConfigType::Bool,
-        &AUTOCENTER_VISUAL_SCROLL,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"alphabetic_link_tags",
-        ConfigType::Bool,
-        &ALPHABETIC_LINK_TAGS,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"vimtex_wsl_fix",
-        ConfigType::Bool,
-        &VIMTEX_WSL_FIX,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"portrait_back_ui_rect",
-        ConfigType::EnableRectangle,
-        &PORTRAIT_BACK_UI_RECT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"portrait_forward_ui_rect",
-        ConfigType::EnableRectangle,
-        &PORTRAIT_FORWARD_UI_RECT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"landscape_back_ui_rect",
-        ConfigType::EnableRectangle,
-        &LANDSCAPE_BACK_UI_RECT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"landscape_forward_ui_rect",
-        ConfigType::EnableRectangle,
-        &LANDSCAPE_FORWARD_UI_RECT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"portrait_visual_mark_next",
-        ConfigType::EnableRectangle,
-        &PORTRAIT_VISUAL_MARK_NEXT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"landscape_middle_right_rect",
-        ConfigType::EnableRectangle,
-        &LANDSCAPE_MIDDLE_RIGHT_UI_RECT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"landscape_middle_left_rect",
-        ConfigType::EnableRectangle,
-        &LANDSCAPE_MIDDLE_LEFT_UI_RECT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"portrait_middle_right_rect",
-        ConfigType::EnableRectangle,
-        &PORTRAIT_MIDDLE_RIGHT_UI_RECT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"portrait_middle_left_rect",
-        ConfigType::EnableRectangle,
-        &PORTRAIT_MIDDLE_LEFT_UI_RECT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"portrait_visual_mark_prev",
-        ConfigType::EnableRectangle,
-        &PORTRAIT_VISUAL_MARK_PREV,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"landscape_visual_mark_next",
-        ConfigType::EnableRectangle,
-        &LANDSCAPE_VISUAL_MARK_NEXT,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"landscape_visual_mark_prev",
-        ConfigType::EnableRectangle,
-        &LANDSCAPE_VISUAL_MARK_PREV,
-        rect_serializer,
-        rect_deserializer,
-        nullptr
-        });
-    configs.push_back({
-        L"sliced_rendering",
-        ConfigType::Bool,
-        &SLICED_RENDERING,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"touch_mode",
-        ConfigType::Bool,
-        &TOUCH_MODE,
-        bool_serializer,
-        bool_deserializer,
-        bool_validator
-        });
-    configs.push_back({
-        L"tts_rate",
-        ConfigType::Float,
-        &TTS_RATE,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{-1.0f, 1.0f}
-        });
-    configs.push_back({
-        L"smooth_move_max_velocity",
-        ConfigType::Float,
-        &SMOOTH_MOVE_MAX_VELOCITY,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 100000.0f}
-        });
-    //configs.push_back({
-    //    L"smooth_move_initial_velocity",
-    //    ConfigType::Float,
-    //    &SMOOTH_MOVE_INITIAL_VELOCITY,
-    //    float_serializer,
-    //    float_deserializer,
-    //    nullptr,
-    //    FloatExtras{0.0f, 100000.0f}
-    //    });
-    configs.push_back({
-        L"epub_width",
-        ConfigType::Float,
-        &EPUB_WIDTH,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 1000.0f}
-        });
-    configs.push_back({
-        L"epub_height",
-        ConfigType::Float,
-        &EPUB_HEIGHT,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 1000.0f}
-        });
-    configs.push_back({
-        L"epub_font_size",
-        ConfigType::Float,
-        &EPUB_FONT_SIZE,
-        float_serializer,
-        float_deserializer,
-        nullptr,
-        FloatExtras{0.0f, 100.0f}
-        });
-    configs.push_back({
-    	L"epub_css",
-    	ConfigType::String,
-    	&EPUB_CSS,
-    	string_serializer,
-    	string_deserializer,
-    	nullptr
-    	});
-    configs.push_back({
-    	L"tag_font_face",
-    	ConfigType::String,
-    	&TAG_FONT_FACE,
-    	string_serializer,
-    	string_deserializer,
-    	nullptr
-    	});
 
     std::wstring highlight_config_string = L"highlight_color_a";
     std::wstring search_url_config_string = L"search_url_a";
@@ -2461,9 +1111,9 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
         configs.push_back({ execute_command_config_string, ConfigType::String, &EXECUTE_COMMANDS[letter - 'a'], string_serializer, string_deserializer, nullptr });
     }
 
-    for (auto& config : configs) {
-        config.save_value_into_default();
-    }
+    // for (auto& config : configs) {
+    //     config.save_value_into_default();
+    // }
 
     deserialize(nullptr, default_path, auto_path, user_paths);
 }

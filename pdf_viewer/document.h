@@ -386,6 +386,7 @@ public:
         std::vector<std::wstring>* line_texts = nullptr,
         std::vector<std::vector<PagelessDocumentRect>>* out_line_rects = nullptr);
 
+    std::wstring get_addtional_sioyek_file_path(QString type);
     std::wstring get_drawings_file_path();
     std::wstring get_scratchpad_file_path();
     std::wstring get_extras_file_path();

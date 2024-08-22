@@ -19,8 +19,6 @@
 
 #include "book.h"
 
-extern const int MAX_PENDING_REQUESTS;
-extern const unsigned int CACHE_INVALID_MILIES;
 
 struct RenderRequest {
     std::wstring path;

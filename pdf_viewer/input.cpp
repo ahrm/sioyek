@@ -1401,6 +1401,10 @@ public:
         return "Action";
     }
 
+    bool requires_document(){
+        return false;
+    }
+
 };
 
 class ExecuteMacroCommand : public TextCommand {
@@ -2787,8 +2791,18 @@ public:
     virtual bool is_down() = 0;
 
     void perform() {
-        widget->handle_move_smooth_hold(is_down());
-        widget->set_fixed_velocity(is_down() ? -SMOOTH_MOVE_MAX_VELOCITY : SMOOTH_MOVE_MAX_VELOCITY);
+        if (widget->main_document_view->is_ruler_mode()) {
+            if (is_down()) {
+                widget->move_visual_mark_next();
+            }
+            else {
+                widget->move_visual_mark_prev();
+            }
+        }
+        else {
+            widget->handle_move_smooth_hold(is_down());
+            widget->set_fixed_velocity(is_down() ? -SMOOTH_MOVE_MAX_VELOCITY : SMOOTH_MOVE_MAX_VELOCITY);
+        }
     }
 
     void perform_up() {
@@ -2796,6 +2810,16 @@ public:
     }
 
     bool is_holdable() {
+
+        if (widget->main_document_view->is_ruler_mode()) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    bool requires_document() {
         return true;
     }
 
@@ -5483,6 +5507,18 @@ public:
 
 };
 
+class SelectRulerTextCommand : public Command {
+public:
+    static inline const std::string cname = "select_ruler_text";
+    static inline const std::string hname = "Select the text of current highlighted ruler line";
+    SelectRulerTextCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->handle_select_ruler_text();
+    }
+
+};
+
 class SelectRectCommand : public Command {
 public:
     static inline const std::string cname = "select_rect";
@@ -5577,11 +5613,20 @@ class ExportCommand : public Command {
 public:
     static inline const std::string cname = "export";
     static inline const std::string hname = "Export annotation data to a json file";
+    std::optional<std::wstring> file_name = {};
     ExportCommand(MainWidget* w) : Command(cname, w) {};
 
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (file_name.has_value()) return {};
+        return Requirement{ RequirementType::File, "Json file" };
+    }
+
+    void set_file_requirement(std::wstring value) {
+        file_name = value;
+    }
+
     void perform() {
-        std::wstring export_file_name = select_new_json_file_name();
-        widget->export_json(export_file_name);
+        widget->export_json(file_name.value());
     }
 
     bool requires_document() { return false; }
@@ -7157,6 +7202,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<DeleteFreehandDrawingsCommand>();
     register_command<SelectFreehandDrawingsCommand>();
     register_command<SelectCurrentSearchMatchCommand>();
+    register_command<SelectRulerTextCommand>();
     register_command<ShowTouchMainMenu>();
     register_command<ShowTouchSettingsMenu>();
     register_command<ShowTouchDrawingMenu>();

@@ -8,6 +8,7 @@
 #include <thread>
 #include <optional>
 #include <deque>
+#include <mutex>
 
 #include <mupdf/fitz.h>
 #include "sqlite3.h"
@@ -16,7 +17,6 @@
 #include "book.h"
 
 extern float ZOOM_INC_FACTOR;
-extern const int PAGE_PADDINGS;
 
 class CachedChecksummer;
 class Document;

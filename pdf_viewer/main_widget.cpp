@@ -202,6 +202,7 @@ extern bool IGNORE_SCROLL_EVENTS;
 extern bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE;
 extern bool USE_SYSTEM_THEME;
 extern bool USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME;
+extern bool ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW;
 
 extern bool SHOW_RIGHT_CLICK_CONTEXT_MENU;
 extern std::wstring CONTEXT_MENU_ITEMS;
@@ -221,13 +222,12 @@ extern std::wstring BACK_RECT_TAP_COMMAND;
 extern std::wstring BACK_RECT_HOLD_COMMAND;
 extern std::wstring FORWARD_RECT_TAP_COMMAND;
 extern std::wstring FORWARD_RECT_HOLD_COMMAND;
-extern std::wstring EDIT_PORTAL_TAP_COMMAND;
-extern std::wstring EDIT_PORTAL_HOLD_COMMAND;
+extern std::wstring TOP_CENTER_TAP_COMMAND;
+extern std::wstring TOP_CENTER_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_NEXT_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_NEXT_HOLD_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_TAP_COMMAND;
 extern std::wstring VISUAL_MARK_PREV_HOLD_COMMAND;
-extern bool DEBUG;
 extern bool AUTOMATICALLY_DOWNLOAD_MATCHING_PAPER_NAME;
 extern std::wstring TABLET_PEN_CLICK_COMMAND;
 extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
@@ -1486,10 +1486,10 @@ std::wstring MainWidget::get_status_string(bool is_right) {
     status_string.replace("%{search_progress}", "");
     status_string.replace("%{download}", "");
 
-    if (DEBUG) {
-        status_string += " [DEBUG MODE] ";
-        status_string += QString::number(network_manager.findChildren<QNetworkReply*>().size());
-    }
+    //if (DEBUG) {
+    //    status_string += " [DEBUG MODE] ";
+    //    status_string += QString::number(network_manager.findChildren<QNetworkReply*>().size());
+    //}
     if (opengl_widget->get_scratchpad()) {
         status_string += QString("[ zoom: %1]").arg(QString::number(dv()->get_zoom_level()));
     }
@@ -3088,11 +3088,22 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                 }
             }
             else {
-                if (wevent->angleDelta().y() > 0) {
-                    goto_ith_next_overview(-1);
+                if (ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW) {
+                    if (wevent->angleDelta().y() > 0) {
+                        move_vertical(-72.0f * vertical_move_amount * num_repeats_f_y);
+                    }
+                    else {
+                        move_vertical(72.0f * vertical_move_amount * num_repeats_f_y);
+                    }
+                    update_scrollbar();
                 }
-                if (wevent->angleDelta().y() < 0) {
-                    goto_ith_next_overview(1);
+                else {
+                    if (wevent->angleDelta().y() > 0) {
+                        goto_ith_next_overview(-1);
+                    }
+                    if (wevent->angleDelta().y() < 0) {
+                        goto_ith_next_overview(1);
+                    }
                 }
             }
             validate_render();
@@ -5962,8 +5973,9 @@ void MainWidget::handle_overview_link(const std::wstring& text) {
     auto selected_link_ = get_selected_link(text);
     if (selected_link_) {
         PdfLink pdf_link;
-        pdf_link.rects = selected_link_.value().rects;
-        pdf_link.uri = selected_link_.value().uri;
+        pdf_link.rects = selected_link_->rects;
+        pdf_link.uri = selected_link_->uri;
+        pdf_link.source_page = selected_link_->source_page;
         set_overview_link(pdf_link);
     }
     reset_highlight_links();
@@ -6349,7 +6361,7 @@ bool MainWidget::event(QEvent* event) {
                         return true;
                     }
                     if (is_in_edit_portal_rect(window_pos)) {
-                        handle_command_types(command_manager->create_macro_command(this, "", EDIT_PORTAL_HOLD_COMMAND), 0);
+                        handle_command_types(command_manager->create_macro_command(this, "", TOP_CENTER_HOLD_COMMAND), 0);
                         invalidate_render();
                         return true;
                     }
@@ -6547,7 +6559,7 @@ bool MainWidget::handle_quick_tap(WindowPos click_pos) {
     }
 
     if (is_in_edit_portal_rect(click_pos)) {
-        if (execute_macro_if_enabled(EDIT_PORTAL_TAP_COMMAND)) {
+        if (execute_macro_if_enabled(TOP_CENTER_TAP_COMMAND)) {
             return true;
         }
     }
@@ -9364,6 +9376,22 @@ void MainWidget::handle_select_current_search_match() {
         main_document_view->selected_character_rects.clear();
         doc()->get_text_selection(abspos_begin, abspos_end, false, main_document_view->selected_character_rects, selected_text);
         handle_stop_search();
+    }
+}
+
+void MainWidget::handle_select_ruler_text() {
+    std::optional<AbsoluteRect> ruler_rect_ = main_document_view->get_ruler_rect();
+    if (ruler_rect_) {
+        auto ruler_rect = ruler_rect_.value();
+
+        AbsoluteDocumentPos abspos_begin = ruler_rect.center_left();
+        AbsoluteDocumentPos abspos_end = ruler_rect.center_right();
+
+        selection_begin = abspos_begin;
+        selection_end = abspos_end;
+
+        main_document_view->selected_character_rects.clear();
+        doc()->get_text_selection(abspos_begin, abspos_end, false, main_document_view->selected_character_rects, selected_text);
     }
 }
 

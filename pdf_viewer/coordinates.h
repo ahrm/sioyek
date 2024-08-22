@@ -136,6 +136,14 @@ struct EnhancedRect : public R {
         return T{ R::x0, R::y0 };
     }
 
+    T center_left() const {
+        return T{ R::x0, (R::y0 + R::y1) / 2};
+    }
+
+    T center_right() const {
+        return T{ R::x1, (R::y0 + R::y1) / 2};
+    }
+
     T bottom_right() const {
         return T{ R::x1, R::y1 };
     }

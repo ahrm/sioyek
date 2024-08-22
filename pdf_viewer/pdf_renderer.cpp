@@ -10,7 +10,12 @@ extern bool TOUCH_MODE;
 extern bool CASE_SENSITIVE_SEARCH;
 extern bool SMARTCASE_SEARCH;
 extern float GAMMA;
-
+extern float DARK_MODE_CONTRAST;
+extern float CUSTOM_BACKGROUND_COLOR[3];
+extern float CUSTOM_TEXT_COLOR[3];
+extern float CUSTOM_COLOR_CONTRAST;
+extern int MAX_PENDING_REQUESTS;
+extern unsigned int CACHE_INVALID_MILIES;
 
 PdfRenderer::PdfRenderer(int num_threads, bool* should_quit_pointer, fz_context* context_to_clone) : context_to_clone(context_to_clone),
 pixmaps_to_drop(num_threads),

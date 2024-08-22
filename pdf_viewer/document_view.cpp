@@ -18,6 +18,11 @@ extern bool VERBOSE;
 extern float PAGE_SPACE_X;
 extern float PAGE_SPACE_Y;
 extern bool REAL_PAGE_SEPARATION;
+extern float OVERVIEW_SIZE[2];
+extern float OVERVIEW_OFFSET[2];
+extern bool SHOULD_HIGHLIGHT_LINKS;
+extern float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT;
+extern int PAGE_PADDINGS;
 
 DocumentView::DocumentView(DatabaseManager* db_manager,
     DocumentManager* document_manager,
