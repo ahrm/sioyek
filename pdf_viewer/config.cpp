@@ -44,6 +44,11 @@ bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE = true;
 bool HIDE_OVERLAPPING_LINK_LABELS = true;
 bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE = false;
 
+// when the window rect size is not an exact integer, mupdf rounds up and 
+// this can cause a pixel strip on documents with dark background color
+// this is a workaround for which basically doesn't render the last pixel strip
+bool BACKGROUND_PIXEL_FIX = false;
+
 std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];
 std::wstring TEXT_HIGHLIGHT_URL = L"http://localhost:5000/";
@@ -995,6 +1000,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"sliced_rendering", &SLICED_RENDERING);
     add_bool(L"touch_mode", &TOUCH_MODE);
     add_bool(L"allow_main_view_scroll_while_in_overview", &ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW);
+    add_bool(L"background_pixel_fix", &BACKGROUND_PIXEL_FIX);
     add_string(L"google_scholar_address", &GOOGLE_SCHOLAR_ADDRESS);
     add_string(L"item_list_prefix", &ITEM_LIST_PREFIX);
     add_string(L"inverse_search_command", &INVERSE_SEARCH_COMMAND);
