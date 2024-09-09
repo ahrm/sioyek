@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="20"
+   height="21"
+   viewBox="0 0 20 21"
+   fill="none"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="fullscreen-enabled.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8">
+    <linearGradient
+       id="linearGradient814-1">
+      <stop
+         style="stop-color:#00b2ff;stop-opacity:1;"
+         offset="0"
+         id="stop2285" />
+      <stop
+         style="stop-color:#ff8400;stop-opacity:1;"
+         offset="1"
+         id="stop2287" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient814">
+      <stop
+         style="stop-color:#00b2ff;stop-opacity:1;"
+         offset="0"
+         id="stop2280" />
+      <stop
+         style="stop-color:#ff8400;stop-opacity:1;"
+         offset="1"
+         id="stop2282" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient814-2">
+      <stop
+         style="stop-color:#00b2ff;stop-opacity:1;"
+         offset="0"
+         id="stop812" />
+      <stop
+         style="stop-color:#ff8400;stop-opacity:1;"
+         offset="1"
+         id="stop810" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient814-1"
+       id="linearGradient816"
+       x1="0"
+       y1="10.998709"
+       x2="20"
+       y2="10.998709"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="41.761905"
+     inkscape:cx="9.518244"
+     inkscape:cy="10.535918"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4" />
+  <path
+     d="M8.71 12.2887C8.80373 12.3817 8.87812 12.4923 8.92889 12.6141C8.97966 12.736 9.0058 12.8667 9.0058 12.9987C9.0058 13.1307 8.97966 13.2614 8.92889 13.3833C8.87812 13.5052 8.80373 13.6158 8.71 13.7087L3.41 18.9987H6C6.26522 18.9987 6.51957 19.1041 6.70711 19.2916C6.89464 19.4791 7 19.7335 7 19.9987C7 20.2639 6.89464 20.5183 6.70711 20.7058C6.51957 20.8934 6.26522 20.9987 6 20.9987H1C0.734784 20.9987 0.48043 20.8934 0.292893 20.7058C0.105357 20.5183 0 20.2639 0 19.9987V14.9987C0 14.7335 0.105357 14.4791 0.292893 14.2916C0.48043 14.1041 0.734784 13.9987 1 13.9987C1.26522 13.9987 1.51957 14.1041 1.70711 14.2916C1.89464 14.4791 2 14.7335 2 14.9987V17.5887L7.29 12.2887C7.38296 12.195 7.49356 12.1206 7.61542 12.0698C7.73728 12.0191 7.86799 11.9929 8 11.9929C8.13201 11.9929 8.26272 12.0191 8.38458 12.0698C8.50644 12.1206 8.61704 12.195 8.71 12.2887ZM19 0.998718H14C13.7348 0.998718 13.4804 1.10408 13.2929 1.29161C13.1054 1.47915 13 1.7335 13 1.99872C13 2.26393 13.1054 2.51829 13.2929 2.70583C13.4804 2.89336 13.7348 2.99872 14 2.99872H16.59L11.29 8.28872C11.1963 8.38168 11.1219 8.49228 11.0711 8.61414C11.0203 8.736 10.9942 8.86671 10.9942 8.99872C10.9942 9.13073 11.0203 9.26144 11.0711 9.3833C11.1219 9.50515 11.1963 9.61576 11.29 9.70872C11.383 9.80245 11.4936 9.87684 11.6154 9.92761C11.7373 9.97838 11.868 10.0045 12 10.0045C12.132 10.0045 12.2627 9.97838 12.3846 9.92761C12.5064 9.87684 12.617 9.80245 12.71 9.70872L18 4.40872V6.99872C18 7.26393 18.1054 7.51829 18.2929 7.70582C18.4804 7.89336 18.7348 7.99872 19 7.99872C19.2652 7.99872 19.5196 7.89336 19.7071 7.70582C19.8946 7.51829 20 7.26393 20 6.99872V1.99872C20 1.7335 19.8946 1.47915 19.7071 1.29161C19.5196 1.10408 19.2652 0.998718 19 0.998718Z"
+     fill="#231F20"
+     id="path2"
+     style="fill:url(#linearGradient816);fill-opacity:1.0" />
+</svg>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="Layer_1"
+   x="0px"
+   y="0px"
+   width="64px"
+   height="64px"
+   viewBox="0 0 64 64"
+   enable-background="new 0 0 64 64"
+   xml:space="preserve"
+   sodipodi:docname="fit-horizontal.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs15" /><sodipodi:namedview
+   id="namedview13"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   showgrid="false"
+   inkscape:zoom="13.703125"
+   inkscape:cx="28.132269"
+   inkscape:cy="43.712657"
+   inkscape:window-width="1920"
+   inkscape:window-height="1057"
+   inkscape:window-x="-8"
+   inkscape:window-y="-8"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="Layer_1" />
+
+
+
+
+<g
+   id="g857"
+   transform="matrix(-0.74950682,0,0,0.75,55.984218,8)"
+   style="stroke:#ffffff;stroke-opacity:1"><polyline
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     stroke-linejoin="bevel"
+     stroke-miterlimit="10"
+     points="16,25 9,32 16,39    "
+     id="polyline2"
+     style="stroke:#ffffff;stroke-opacity:1" /><polyline
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     stroke-linejoin="bevel"
+     stroke-miterlimit="10"
+     points="48,39 55,32    48,25 "
+     id="polyline4"
+     style="stroke:#ffffff;stroke-opacity:1" /><polyline
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     stroke-miterlimit="10"
+     points="55,32 43,32 9,32 "
+     id="polyline6"
+     style="stroke:#ffffff;stroke-opacity:1" /><line
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     stroke-miterlimit="10"
+     x1="63"
+     y1="0"
+     x2="63"
+     y2="64"
+     id="line8"
+     style="stroke:#ffffff;stroke-opacity:1" /><line
+     fill="none"
+     stroke="#000000"
+     stroke-width="2"
+     stroke-miterlimit="10"
+     x1="1"
+     y1="0"
+     x2="1"
+     y2="64"
+     id="line10"
+     style="stroke:#ffffff;stroke-opacity:1" /></g>
+</svg>

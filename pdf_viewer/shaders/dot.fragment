@@ -1,0 +1,27 @@
+#extension GL_OES_standard_derivatives : enable
+
+precision mediump float;
+
+in vec2 uv;
+in vec4 type_color;
+out vec4 color;
+
+void main(){
+    float x = (uv.x - 0.5) * 2.0;
+    float y = (uv.y - 0.5) * 2.0;
+    float r_squared = x * x + y * y;
+    float alpha = 1.0;
+
+#ifdef GL_OES_standard_derivatives
+    float delta = fwidth(r_squared);
+    alpha = 1.0 - smoothstep(1.0 - delta, 1.0 + delta, r_squared);
+    color = vec4(type_color.rgb, alpha);
+#else
+    if (r_squared <= 1.0){
+        color = type_color;
+    }
+    else{
+        color = vec4(0.0, 0.0, 0.0, 0.0);
+    }
+#endif
+}

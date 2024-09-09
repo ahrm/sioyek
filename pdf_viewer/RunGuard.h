@@ -1,3 +1,4 @@
+#ifndef SIOYEK_ANDROID
 #ifndef SINGLE_INSTANCE_GUARD_H
 #define SINGLE_INSTANCE_GUARD_H
 
@@ -6,6 +7,7 @@
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QLocalSocket>
 
+#include <functional>
 /**
  * This is an control to guarantee that only one application instance exists at
  * any time.
@@ -54,15 +56,16 @@ class RunGuard : public QObject
     Q_OBJECT
 
 public:
-    explicit RunGuard(const QString &key);
+    std::function<void(QLocalSocket*)> on_delete;
+    explicit RunGuard(const QString& key);
     ~RunGuard();
 
     bool isPrimary();
     bool isSecondary();
-    void sendMessage(const QByteArray &message);
+    std::string sendMessage(const QByteArray& message, bool wait=false);
 
 signals:
-    void messageReceived(const QByteArray &message);
+    void messageReceived(const QByteArray& message, QLocalSocket* socket);
 
 private slots:
     void onNewConnection();
@@ -73,10 +76,12 @@ private:
     const QString sharedMemLockKey;
     const QString memoryKey;
 
-    QSharedMemory *memory;
-    QLocalServer *server = nullptr;
+    QSharedMemory* memory;
+    QLocalServer* server = nullptr;
 
-    void readMessage(QLocalSocket *socket);
+    void readMessage(QLocalSocket* socket);
 };
 
 #endif // SINGLE_INSTANCE_GUARD_H
+
+#endif // SIOYEK_ANDROID

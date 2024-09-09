@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   x="0px"
+   y="0px"
+   width="24px"
+   height="24px"
+   viewBox="0 0 24 24"
+   enable-background="new 0 0 24 24"
+   xml:space="preserve"
+   id="svg16"
+   sodipodi:docname="file-swap.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs20" /><sodipodi:namedview
+   id="namedview18"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   showgrid="false"
+   inkscape:zoom="36.541667"
+   inkscape:cx="9.6738883"
+   inkscape:cy="12.013683"
+   inkscape:window-width="1920"
+   inkscape:window-height="1057"
+   inkscape:window-x="-8"
+   inkscape:window-y="-8"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="svg16" />
+<g
+   id="Frames-24px">
+	<rect
+   fill="none"
+   width="24"
+   height="24"
+   id="rect2" />
+</g>
+<g
+   id="Outline"
+   style="fill:#ffffff">
+	<g
+   id="g13"
+   style="fill:#ffffff">
+		<polygon
+   fill="#757575"
+   points="20,2 20,4.586 16.707,1.293 15.293,2.707 18.586,6 16,6 16,8 22,8 22,2   "
+   id="polygon5"
+   style="fill:#ffffff" />
+		<polygon
+   fill="#757575"
+   points="8,18 8,16 2,16 2,22 4,22 4,19.414 7.293,22.707 8.707,21.293 5.414,18   "
+   id="polygon7"
+   style="fill:#ffffff" />
+		<path
+   fill="#757575"
+   d="M19,9h-7c-1.103,0-2,0.898-2,2v9c0,1.103,0.897,2,2,2h7c1.103,0,2-0.897,2-2v-9C21,9.898,20.103,9,19,9z      M12,20v-9h7l0.001,9H12z"
+   id="path9"
+   style="fill:#ffffff" />
+		<path
+   fill="#757575"
+   d="M5,4h7l0,4h2V4c0-1.102-0.897-2-2-2H5C3.897,2,3,2.898,3,4v9c0,1.103,0.897,2,2,2h4v-2H5V4z"
+   id="path11"
+   style="fill:#ffffff" />
+	</g>
+</g>
+</svg>

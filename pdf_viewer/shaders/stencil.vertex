@@ -1,6 +1,3 @@
-
-#version 330 core
-
 out vec2 screen_pos;
 layout (location=0) in vec2 vertex_pos;
 

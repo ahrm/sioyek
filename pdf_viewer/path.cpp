@@ -1,6 +1,7 @@
 #include <qdir.h>
-#include "path.h"
 #include <qfileinfo.h>
+#include "path.h"
+#include "utils.h"
 
 Path::Path() : Path(L"")
 {
@@ -8,57 +9,83 @@ Path::Path() : Path(L"")
 
 Path::Path(std::wstring pathname)
 {
-	pathname = strip_string(pathname);
-	canon_path = get_canonical_path(pathname);
+    pathname = strip_string(pathname);
+    canon_path = get_canonical_path(pathname);
 }
 
 Path Path::slash(const std::wstring& suffix) const
 {
-	std::wstring new_path = concatenate_path(get_path(), suffix);
-	return Path(new_path);
+    std::wstring new_path = concatenate_path(get_path(), suffix);
+    return Path(new_path);
 }
 
 std::optional<std::wstring> Path::filename() const
 {
-	std::vector<std::wstring> all_parts;
-	parts(all_parts);
-	if (all_parts.size() > 0) {
-		return all_parts[all_parts.size() - 1];
-	}
-	return {};
+    std::vector<std::wstring> all_parts;
+    parts(all_parts);
+    if (all_parts.size() > 0) {
+        return all_parts[all_parts.size() - 1];
+    }
+    return {};
+}
+
+std::optional<std::wstring> Path::filename_no_ext() const
+{
+    std::optional<std::wstring> name_ = filename();
+    if (name_) {
+        std::wstring name = name_.value();
+        if (QString::fromStdWString(name).endsWith(".pdf")) {
+            return name.substr(0, name.size() - 4);
+        }
+        else {
+            return name;
+        }
+    }
+    return {};
 }
 
 Path Path::file_parent() const
 {
-	QFileInfo info(QString::fromStdWString(get_path()));
-	return Path(info.dir().absolutePath().toStdWString());
+    QFileInfo info(QString::fromStdWString(get_path()));
+    return Path(info.dir().absolutePath().toStdWString());
 }
 
 std::wstring Path::get_path() const
 {
+#ifdef SIOYEK_ANDROID
+    if (canon_path.substr(0, 2) == L"/:") {
+        return canon_path.substr(1, canon_path.size() - 1);
+    }
+    if (canon_path.substr(0, 9) == L"content:/") {
+        return canon_path;
+    }
+    if (canon_path[0] == ':') {
+        return canon_path;
+    }
+#endif
 
-	if (canon_path.size() == 0) return canon_path;
+    if (canon_path.size() == 0) return canon_path;
 
 #ifdef Q_OS_WIN
-	return canon_path;
+    return canon_path;
 #else
-	if (canon_path[0] != '/'){
-		return L"/" + canon_path;
-	}
-	else{
-		return  canon_path;
-	}
+    if (canon_path[0] != '/') {
+        return L"/" + canon_path;
+    }
+    else {
+        return  canon_path;
+    }
 #endif
 }
 
 std::string Path::get_path_utf8() const
 {
-	return std::move(utf8_encode(get_path()));
+    return std::move(utf8_encode(get_path()));
 }
 
 void Path::create_directories()
 {
-	QDir().mkpath(QString::fromStdWString(canon_path));
+    QDir().mkpath(QString::fromStdWString(canon_path));
 }
 
 //std::wstring Path::add_redundant_dot() const
@@ -69,27 +96,27 @@ void Path::create_directories()
 
 bool Path::dir_exists() const
 {
-	return QDir(QString::fromStdWString(canon_path)).exists();
+    return QDir(QString::fromStdWString(canon_path)).exists();
 }
 
 bool Path::file_exists() const
 {
-	return QFile::exists(QString::fromStdWString(canon_path));
+    return QFile::exists(QString::fromStdWString(canon_path));
 }
 
 void Path::parts(std::vector<std::wstring>& res) const
 {
-	split_path(canon_path, res);
+    split_path(canon_path, res);
 }
 
 std::wostream& operator<<(std::wostream& stream, const Path& path) {
-	stream << path.get_path();
-	return stream;
+    stream << path.get_path();
+    return stream;
 }
 
 void copy_file(Path src, Path dst)
 {
-	QFile::copy(QString::fromStdWString(src.get_path()), QString::fromStdWString(dst.get_path()));
+    QFile::copy(QString::fromStdWString(src.get_path()), QString::fromStdWString(dst.get_path()));
 }
 
 

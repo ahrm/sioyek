@@ -2,7 +2,7 @@
 
 #include "checksum.h"
 
-std::string compute_checksum(const QString &file_name, QCryptographicHash::Algorithm hash_algorithm)
+std::string compute_checksum(const QString& file_name, QCryptographicHash::Algorithm hash_algorithm)
 {
     QFile infile(file_name);
     qint64 file_size = infile.size();
@@ -15,7 +15,7 @@ std::string compute_checksum(const QString &file_name, QCryptographicHash::Algor
         int read_size = qMin(file_size, buffer_size);
 
         QCryptographicHash hash(hash_algorithm);
-        while (read_size > 0 && (bytes_read = infile.read(buffer, read_size)) > 0) 
+        while (read_size > 0 && (bytes_read = infile.read(buffer, read_size)) > 0)
         {
             file_size -= bytes_read;
             hash.addData(buffer, bytes_read);
@@ -25,16 +25,16 @@ std::string compute_checksum(const QString &file_name, QCryptographicHash::Algor
         infile.close();
         return QString(hash.result().toHex()).toStdString();
     }
-	return "";
+    return "";
 }
 
-CachedChecksummer::CachedChecksummer(const std::vector<std::pair<std::wstring, std::wstring>>* loaded_checksums){
+CachedChecksummer::CachedChecksummer(const std::vector<std::pair<std::wstring, std::wstring>>* loaded_checksums) {
     if (loaded_checksums) {
-		for (const auto& [path, checksum_] : *loaded_checksums) {
-			std::string checksum = QString::fromStdWString(checksum_).toStdString();
-			cached_checksums[path] = checksum;
-			cached_paths[checksum].push_back(path);
-		}
+        for (const auto& [path, checksum_] : *loaded_checksums) {
+            std::string checksum = QString::fromStdWString(checksum_).toStdString();
+            cached_checksums[path] = checksum;
+            cached_paths[checksum].push_back(path);
+        }
     }
 }
 
@@ -48,14 +48,14 @@ std::optional<std::string> CachedChecksummer::get_checksum_fast(std::wstring fil
 
 std::string CachedChecksummer::get_checksum(std::wstring file_path) {
 
-		auto cached_checksum = get_checksum_fast(file_path);
+    auto cached_checksum = get_checksum_fast(file_path);
 
-		if (!cached_checksum) {
-			std::string checksum = compute_checksum(QString::fromStdWString(file_path), QCryptographicHash::Md5);
-			cached_checksums[file_path] = checksum;
-            cached_paths[checksum].push_back(file_path);
-		}
-		return cached_checksums[file_path];
+    if (!cached_checksum) {
+        std::string checksum = compute_checksum(QString::fromStdWString(file_path), QCryptographicHash::Md5);
+        cached_checksums[file_path] = checksum;
+        cached_paths[checksum].push_back(file_path);
+    }
+    return cached_checksums[file_path];
 
 }
 
@@ -68,4 +68,11 @@ std::optional<std::wstring> CachedChecksummer::get_path(std::string checksum) {
         }
     }
     return {};
+}
+
+int CachedChecksummer::num_docs_with_checksum(std::string checksum) {
+    if (cached_paths.find(checksum) != cached_paths.end()) {
+        return cached_paths[checksum].size();
+    }
+    return 0;
 }
