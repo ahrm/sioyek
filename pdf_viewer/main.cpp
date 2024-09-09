@@ -801,6 +801,7 @@ int main(int argc, char* args[]) {
 
     bool quit = false;
 
+    qDebug() << "SIOYEK";
     InputHandler input_handler(default_keys_path, user_keys_paths, command_manager);
 
     std::vector<std::pair<std::wstring, std::wstring>> prev_path_hash_pairs;

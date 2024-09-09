@@ -3,7 +3,7 @@ set -e
 
 # Compile mupdf
 cd mupdf
-make USE_SYSTEM_HARFBUZZ=yes
+make USE_SYSTEM_HARFBUZZ=yes -j$(nproc)
 cd ..
 
 # set QMAKE if not already defined

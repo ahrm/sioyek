@@ -7000,6 +7000,9 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
+    // print the version of mupdf header and library
+
+    qDebug() << "mupdf header version: " << FZ_VERSION;
 }
 
 void MainWidget::export_command_names(std::wstring file_path){

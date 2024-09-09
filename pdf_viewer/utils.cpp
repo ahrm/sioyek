@@ -12,6 +12,7 @@
 #include <functional>
 #include <cstring>
 #include <sstream>
+#include <algorithm>
 #include <string>
 #include <qclipboard.h>
 #include <qguiapplication.h>
