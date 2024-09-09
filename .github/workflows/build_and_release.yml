@@ -9,7 +9,7 @@ on:
     branches:
       - "*"
 
-  # workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   upload-release:
