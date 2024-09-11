@@ -62,6 +62,7 @@ extern float TOUCHPAD_SENSITIVITY;
 extern float SCROLL_VIEW_SENSITIVITY;
 extern float PAGE_SEPARATOR_WIDTH;
 extern float PAGE_SEPARATOR_COLOR[3];
+extern float DARK_MODE_PAGE_SEPARATOR_COLOR[3];
 extern int SINGLE_MAIN_WINDOW_SIZE[2];
 extern int SINGLE_MAIN_WINDOW_MOVE[2];
 extern float FIT_TO_PAGE_WIDTH_RATIO;
@@ -377,6 +378,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"scrollview_sensitivity", &SCROLL_VIEW_SENSITIVITY, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"page_separator_width", &PAGE_SEPARATOR_WIDTH, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"page_separator_color", PAGE_SEPARATOR_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
+	configs.push_back({ L"dark_mode_page_separator_color", DARK_MODE_PAGE_SEPARATOR_COLOR, vec3_serializer, color3_deserializer, color_3_validator });
 	configs.push_back({ L"single_main_window_size", &SINGLE_MAIN_WINDOW_SIZE, ivec2_serializer, ivec2_deserializer, nullptr });
 	configs.push_back({ L"single_main_window_move", &SINGLE_MAIN_WINDOW_MOVE, ivec2_serializer, ivec2_deserializer, nullptr });
 	configs.push_back({ L"fit_to_page_width_ratio", &FIT_TO_PAGE_WIDTH_RATIO, float_serializer, float_deserializer, nullptr });
