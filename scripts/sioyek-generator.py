@@ -2,7 +2,7 @@
 script used to generate sioyek.py file
 '''
 sioyek_commands = {
-    "goto_begining": [False,	False,	False,	True],
+    "goto_beginning": [False,	False,	False,	True],
     "goto_end": [False,	False,	False,	True],
     "goto_definition": [False,	False,	False,	False],
     "overview_definition": [False,	False,	False,	False],
