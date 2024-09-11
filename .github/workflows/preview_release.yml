@@ -1,5 +1,5 @@
 
-name: Build Release
+name: Preview Release
 
 on:
   push:
