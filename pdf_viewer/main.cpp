@@ -733,7 +733,8 @@ int main(int argc, char* args[]) {
 		use_single_instance = false;
 	}
 
-	RunGuard guard("sioyek");
+	char* instance_name = get_argv_value(argc, args, "--instance-name");
+	RunGuard guard(instance_name ? instance_name : "sioyek");
 
 	if (!guard.isPrimary()) {
 		QStringList sent_args = convert_arguments(app.arguments());
