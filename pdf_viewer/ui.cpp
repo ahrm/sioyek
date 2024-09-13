@@ -1683,28 +1683,15 @@ void BaseSelectorWidget::simulate_page_up() {
     QCoreApplication::postEvent(get_view(), new_key_event);
 }
 
+
 void BaseSelectorWidget::simulate_move_down() {
-    QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() + 1, 0);
-    int nrows = get_view()->model()->rowCount();
-
-    if (next_index.row() > nrows || next_index.row() < 0) {
-        next_index = get_view()->model()->index(0, 0);
-    }
-
-    get_view()->setCurrentIndex(next_index);
-    get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
+    QKeyEvent* move_down_event = new QKeyEvent(QEvent::Type::KeyPress, Qt::Key_Down, Qt::KeyboardModifier::NoModifier);
+    QCoreApplication::postEvent(get_view(), move_down_event);
 }
 
 void BaseSelectorWidget::simulate_move_up() {
-    QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() - 1, 0);
-    int nrows = get_view()->model()->rowCount();
-
-    if (next_index.row() > nrows || next_index.row() < 0) {
-        next_index = get_view()->model()->index(get_view()->model()->rowCount() - 1, 0);
-    }
-
-    get_view()->setCurrentIndex(next_index);
-    get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
+    QKeyEvent* move_up_event = new QKeyEvent(QEvent::Type::KeyPress, Qt::Key_Up, Qt::KeyboardModifier::NoModifier);
+    QCoreApplication::postEvent(get_view(), move_up_event);
 }
 
 QString BaseSelectorWidget::get_selected_item() {
