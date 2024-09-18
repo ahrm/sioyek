@@ -1958,14 +1958,14 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     show_password_prompt_if_required();
 
     if (main_document_view_has_document()) {
-      if (doc()->num_pages() > 0) {
-        scroll_bar->setSingleStep(std::max(MAX_SCROLLBAR / doc()->num_pages() / 10, 1));
-        scroll_bar->setPageStep(MAX_SCROLLBAR / doc()->num_pages());
-      } else {
-        scroll_bar->setSingleStep(1);
-        scroll_bar->setPageStep(10);
-      }
-      update_scrollbar();
+        if (doc()->num_pages() > 0) {
+            scroll_bar->setSingleStep(std::max(MAX_SCROLLBAR / doc()->num_pages() / 10, 1));
+            scroll_bar->setPageStep(MAX_SCROLLBAR / doc()->num_pages());
+        } else {
+            scroll_bar->setSingleStep(1);
+            scroll_bar->setPageStep(10);
+        }
+        update_scrollbar();
     }
 
     deselect_document_indices();
@@ -9759,7 +9759,10 @@ QStringListModel* MainWidget::get_new_command_list_model() {
 }
 
 void MainWidget::add_password(std::wstring path, std::string password) {
-    pdf_renderer->add_password(path, password);
+    if (doc()){
+        doc()->reload(password);
+        pdf_renderer->add_password(path, password);
+    }
 }
 
 void MainWidget::handle_fit_to_page_width(bool smart) {
