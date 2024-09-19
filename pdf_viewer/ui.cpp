@@ -1288,6 +1288,12 @@ void CommandSelector::on_select(const QModelIndex& index) {
     bool is_numeric = false;
     line_edit->text().toInt(&is_numeric);
     std::string query = line_edit->text().toStdString();
+
+    // when the command text is just a number, we handle it differently by jumping to the page number
+    if (is_numeric && !index.isValid()){
+        (*on_done)(line_edit->text().toStdString(), query);
+    }
+
     QString name = standard_item_model->data(index).toString();
     //hide();
     main_widget->pop_current_widget();
@@ -1543,7 +1549,14 @@ void BaseSelectorWidget::on_delete(const QModelIndex& source_index, const QModel
 void BaseSelectorWidget::on_edit(const QModelIndex& source_index, const QModelIndex& selected_index) {}
 
 void BaseSelectorWidget::on_return_no_select(const QString& text) {
-    if (get_view()->model()->hasIndex(0, 0)) {
+    bool is_numeric = false;
+    text.toInt(&is_numeric);
+
+    if (is_numeric){
+        auto invalid_index = get_view()->model()->index(-1, 0);
+        on_select(invalid_index);
+    }
+    else if (get_view()->model()->hasIndex(0, 0)) {
         on_select(get_view()->model()->index(0, 0));
     }
 }

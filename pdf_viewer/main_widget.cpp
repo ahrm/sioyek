@@ -904,6 +904,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             if (is_numeric) {
                 if (main_document_view) {
                     main_document_view->goto_page(page_number - 1);
+                    invalidate_render();
                 }
             }
             else {
