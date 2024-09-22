@@ -45,7 +45,7 @@ extern bool TOC_JUMP_ALIGN_TOP;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 extern bool INCREMENTAL_SEARCH;
-
+extern bool GG_USES_LABELS;
 
 extern float SMOOTH_MOVE_MAX_VELOCITY;
 bool is_command_string_modal(const std::wstring& command_name) {
@@ -3698,7 +3698,12 @@ public:
 public:
     void perform() {
         if (num_repeats) {
-            widget->main_document_view->goto_page(num_repeats - 1 + widget->main_document_view->get_page_offset());
+            if (GG_USES_LABELS){
+                widget->goto_page_with_label(QString::number(num_repeats).toStdWString());
+            }
+            else{
+                widget->main_document_view->goto_page(num_repeats - 1 + widget->main_document_view->get_page_offset());
+            }
         }
         else {
             widget->main_document_view->set_offset_y(0.0f);

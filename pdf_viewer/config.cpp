@@ -43,6 +43,7 @@ bool NO_AUTO_CONFIG = false;
 bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE = true;
 bool HIDE_OVERLAPPING_LINK_LABELS = true;
 bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE = false;
+bool GG_USES_LABELS = false;
 
 // when the window rect size is not an exact integer, mupdf rounds up and 
 // this can cause a pixel strip on documents with dark background color
@@ -938,6 +939,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"invert_selected_text", &INVERT_SELECTED_TEXT);
     add_bool(L"ignore_scroll_events", &IGNORE_SCROLL_EVENTS);
     add_bool(L"dont_center_if_synctex_rect_is_visible", &DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE);
+    add_bool(L"gg_uses_labels", &GG_USES_LABELS);
     add_bool(L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS);
     add_bool(L"paper_download_should_create_portal", &PAPER_DOWNLOAD_CREATE_PORTAL);
     add_bool(L"paper_download_should_detect_paper_name", &PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME);
