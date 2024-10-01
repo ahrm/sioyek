@@ -1059,6 +1059,13 @@ public:
     virtual void set_text_requirement(std::wstring value) {
         this->text = value;
     }
+
+    std::wstring get_text_default_value() {
+        if (FILL_TEXTBAR_WITH_SELECTED_TEXT) {
+            return widget->get_selected_text();
+        }
+        return L"";
+    }
 };
 
 class GotoMark : public SymbolCommand {
@@ -1334,12 +1341,6 @@ public:
         return widget->get_search_suggestion_with_index(index);
     }
 
-    std::wstring get_text_default_value() {
-        if (FILL_TEXTBAR_WITH_SELECTED_TEXT) {
-            return widget->get_selected_text();
-        }
-        return L"";
-    }
 
     std::string text_requirement_name() {
         return "Search Term";
