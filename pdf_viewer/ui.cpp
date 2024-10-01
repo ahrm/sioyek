@@ -1588,7 +1588,7 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
 #ifdef SIOYEK_QT6
         if (event->type() == QEvent::KeyRelease) {
             QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-            if (key_event->key() == Qt::Key_Delete) {
+            if (should_trigger_delete(key_event)) {
                 handle_delete();
             }
             else if (key_event->key() == Qt::Key_Insert) {
@@ -1748,7 +1748,7 @@ void BaseSelectorWidget::handle_edit() {
 
 #ifndef SIOYEK_QT6
     void BaseSelectorWidget::keyReleaseEvent(QKeyEvent* event) {
-        if (event->key() == Qt::Key_Delete) {
+		if (should_trigger_delete(event)) {
             handle_delete();
         }
         QWidget::keyReleaseEvent(event);
