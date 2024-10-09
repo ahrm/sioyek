@@ -604,6 +604,7 @@ MainWidget* handle_args(const QStringList& arguments, QLocalSocket* origin=nullp
             target_window->push_state();
             target_window->open_document_at_location(pdf_file_name, page.value_or(0), x_loc, y_loc, zoom_level);
         }
+        focus_on_widget(target_window);
     }
     else if (latex_file_name) {
         if (target_window) {
@@ -619,6 +620,7 @@ MainWidget* handle_args(const QStringList& arguments, QLocalSocket* origin=nullp
             target_window->push_state();
             target_window->open_document(pdf_file_name);
         }
+        focus_on_widget(target_window);
     }
 
     invalidate_render();

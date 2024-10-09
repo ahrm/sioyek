@@ -1968,7 +1968,6 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
         }
         update_scrollbar();
     }
-    focus_on_widget(this);
 
     deselect_document_indices();
     invalidate_render();
