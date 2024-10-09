@@ -398,8 +398,10 @@ MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
                 std::string path1 = utf8_encode(window->doc()->get_path());
                 std::string path2 = utf8_encode(file_path);
 #endif
-                if (std::filesystem::equivalent(path1, path2)) {
-                    return window;
+                if (std::filesystem::exists(path1) && std::filesystem::exists(path2)) {
+                    if (std::filesystem::equivalent(path1, path2)) {
+                        return window;
+                    }
                 }
             }
         }
