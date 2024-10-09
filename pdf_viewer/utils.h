@@ -56,6 +56,8 @@ int argminf(const std::vector<T>& collection, std::function<float(T)> f) {
     }
     return min_index;
 }
+
+void focus_on_widget(QWidget* widget);
 void rect_to_quad(fz_rect rect, float quad[8]);
 void copy_to_clipboard(const std::wstring& text, bool selection = false);
 void install_app(const char* argv0);
