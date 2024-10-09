@@ -9,11 +9,13 @@ on:
     branches:
       - "*"
 
+  workflow_dispatch:
+
 jobs:
   upload-release:
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ (github.event_name == 'workflow_dispatch') || (github.event_name != 'pull_request') }}
     runs-on: ubuntu-20.04
-    needs: [build-mac, build-mac-arm, build-linux, build-windows, build-linux-portable, build-windows-portable]
+    needs: [build-mac, build-mac-arm, build-linux, build-windows]
 
     steps:
     - uses: actions/checkout@v1
@@ -24,13 +26,13 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        release_name: Release ${{ github.sha }}
         draft: false
         prerelease: false   
     - name: download artifacts
-      uses: actions/download-artifact@v1
-      with:
-        name: uploads     
+      uses: actions/download-artifact@v4
+      # with:
+      #   name: uploads     
     - name: upload mac
       id: upload-mac
       uses: actions/upload-release-asset@v1.0.1
@@ -38,7 +40,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./uploads/sioyek-release-mac.zip
+        asset_path: ./mac-uploads/sioyek-release-mac.zip
         asset_name: sioyek-release-mac.zip
         asset_content_type: application/zip   
 
@@ -49,7 +51,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./uploads/sioyek-release-mac-arm.zip
+        asset_path: ./mac-arm-uploads/sioyek-release-mac-arm.zip
         asset_name: sioyek-release-mac-arm.zip
         asset_content_type: application/zip   
 
@@ -60,7 +62,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./uploads/sioyek-release-linux.zip
+        asset_path: ./linux-uploads/sioyek-release-linux.zip
         asset_name: sioyek-release-linux.zip
         asset_content_type: application/zip   
     - name: upload windows
@@ -70,30 +72,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./uploads/sioyek-release-windows.zip
+        asset_path: ./windows-uploads/sioyek-release-windows.zip
         asset_name: sioyek-release-windows.zip
         asset_content_type: application/zip
-    - name: upload linux-portable
-      id: upload-linux-portable
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./uploads/sioyek-release-linux-portable.zip
-        asset_name: sioyek-release-linux-portable.zip
-        asset_content_type: application/zip   
-    - name: upload windows-portable
-      id: upload-windows-portable
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./uploads/sioyek-release-windows-portable.zip
-        asset_name: sioyek-release-windows-portable.zip
-        asset_content_type: application/zip
-    
 
   build-linux:
 
@@ -112,6 +93,11 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
+    - name: Install LinuxDeploy
+      uses: miurahr/install-linuxdeploy-action@v1
+      with:
+        plugins: qt appimage
+
     - name: Set up GCC
       uses: egor-tensin/setup-gcc@v1
       with:
@@ -126,77 +112,24 @@ jobs:
       run: sudo apt install libharfbuzz-dev libxrandr-dev libxi-dev libglu1-mesa-dev fuse libxcb-cursor0 libspeechd2
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v4
       with:
-        version: '6.6.1'
+        version: '6.7.2'
         modules: 'all'
         cache: true
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
 
-      run: MAKE_PARALLEL=$(nproc) ./build_and_release.sh
+      run: MAKE_PARALLEL=$(nproc) ./linuxdeploy_build_and_release.sh
       env:
         CC:   gcc-9
         CXX:  g++-9
     - name: upload linux artifact
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
-        name: uploads
+        name: linux-uploads
         path: sioyek-release-linux.zip
-    - name: Workaround apt-get cache permission (https://github.com/actions/cache/issues/324)
-      run: |
-        export USER_NAME=$(whoami)
-        sudo chown -R $USER_NAME /var/cache/apt/archives
-
-  build-linux-portable:
-    runs-on: ubuntu-20.04
-
-    steps:
-    - name: Cache apt-get packages
-      uses: actions/cache@v4
-      env:
-        cache-name: cache-deb-packages
-      with:
-        path: /var/cache/apt/archives
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}-portable
-        restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
-
-    - name: Set up GCC
-      uses: egor-tensin/setup-gcc@v1
-      with:
-        version: 9
-        platform: x64
-
-    - uses: actions/checkout@v4
-      with:
-            submodules: 'recursive'
-
-    - name: Install dependencies
-      run: sudo apt install libharfbuzz-dev libxrandr-dev libxi-dev libglu1-mesa-dev fuse libxcb-cursor0 libspeechd2
-      
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: '6.6.1'
-        modules: 'all'
-        cache: true
-
-    - name: Build
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-
-      run: MAKE_PARALLEL=$(nproc) ./build_and_release.sh portable
-      env:
-        CC:   gcc-9
-        CXX:  g++-9
-    - name: upload linux artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: uploads
-        path: sioyek-release-linux-portable.zip
     - name: Workaround apt-get cache permission (https://github.com/actions/cache/issues/324)
       run: |
         export USER_NAME=$(whoami)
@@ -212,9 +145,9 @@ jobs:
             submodules: 'recursive'
     
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v4
       with:
-        version: '6.6.1'
+        version: '6.7.2'
         modules: 'all'
         cache: true
 
@@ -230,43 +163,11 @@ jobs:
       run: .\build_windows.bat non_portable
       
     - name: upload windows artifact
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
-        name: uploads
+        name: windows-uploads
         path: sioyek-release-windows.zip
         
-  build-windows-portable:
-
-    runs-on: windows-latest
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-            submodules: 'recursive'
-    
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: '6.6.1'
-        modules: 'all'
-        cache: true
-
-    - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
-    - name: Add msvc-dev-cmd
-      uses: ilammy/msvc-dev-cmd@v1
-      
-      
-    - name: Build Sioyek
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: .\build_windows.bat portable
-      
-    - name: upload windows artifact
-      uses: actions/upload-artifact@v1
-      with:
-        name: uploads
-        path: sioyek-release-windows-portable.zip
-
   build-mac:
 
     runs-on: macos-13
@@ -293,9 +194,9 @@ jobs:
       run:  brew install freeglut mesa harfbuzz 
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v4
       with:
-        version: '6.6.1'
+        version: '6.7.2'
         modules: 'all'
         cache: true
 
@@ -306,9 +207,9 @@ jobs:
         MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) ./build_mac.sh
         
     - name: upload mac artifact
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
-        name: uploads
+        name: mac-uploads
         path: sioyek-release-mac.zip
 
   build-mac-arm:
@@ -337,9 +238,9 @@ jobs:
       run:  brew install freeglut mesa harfbuzz 
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v4
       with:
-        version: '6.6.1'
+        version: '6.7.2'
         modules: 'all'
         cache: true
 
@@ -351,7 +252,7 @@ jobs:
         mv sioyek-release-mac.zip sioyek-release-mac-arm.zip
         
     - name: upload mac artifact
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
-        name: uploads
+        name: mac-arm-uploads
         path: sioyek-release-mac-arm.zip

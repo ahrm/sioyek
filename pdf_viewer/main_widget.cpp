@@ -828,7 +828,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
 
     central_widget = new QWidget(this);
-    central_widget->setAttribute(Qt::WA_TransparentForMouseEvents);
+    // central_widget->setAttribute(Qt::WA_TransparentForMouseEvents);
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
     pdf_renderer = new PdfRenderer(4, should_quit_ptr, mupdf_context);
@@ -904,6 +904,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             if (is_numeric) {
                 if (main_document_view) {
                     main_document_view->goto_page(page_number - 1);
+                    invalidate_render();
                 }
             }
             else {
@@ -1958,8 +1959,13 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     show_password_prompt_if_required();
 
     if (main_document_view_has_document()) {
-        scroll_bar->setSingleStep(std::max(MAX_SCROLLBAR / doc()->num_pages() / 10, 1));
-        scroll_bar->setPageStep(MAX_SCROLLBAR / doc()->num_pages());
+        if (doc()->num_pages() > 0) {
+            scroll_bar->setSingleStep(std::max(MAX_SCROLLBAR / doc()->num_pages() / 10, 1));
+            scroll_bar->setPageStep(MAX_SCROLLBAR / doc()->num_pages());
+        } else {
+            scroll_bar->setSingleStep(1);
+            scroll_bar->setPageStep(10);
+        }
         update_scrollbar();
     }
 
@@ -3029,9 +3035,11 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
     bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier) ||
         QApplication::queryKeyboardModifiers().testFlag(Qt::MetaModifier);
+    bool zoom_p = is_control_pressed;
 
     bool is_shift_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
     bool is_visual_mark_mode = main_document_view->is_ruler_mode() && visual_scroll_mode;
+    bool scroll_horizontally_p = is_shift_pressed;
 
 
 #ifdef SIOYEK_QT6
@@ -3066,7 +3074,8 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
     bool is_touchpad = wevent->pointingDevice()->pointerType() == QPointingDevice::PointerType::Finger;
 
-    if ((!is_control_pressed) && (!is_shift_pressed)) {
+
+    if ((!zoom_p) && (!scroll_horizontally_p)) {
         if (opengl_widget->get_overview_page()) {
             if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
                 if (is_touchpad){
@@ -3177,12 +3186,12 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
         }
     }
 
-    if (is_control_pressed) {
-        float zoom_factor = 1.0f + num_repeats_f_y * (ZOOM_INC_FACTOR - 1.0f);
+    if (zoom_p) {
+        float zoom_factor = 1.0f + num_repeats_f_y * (SCROLL_ZOOM_INC_FACTOR - 1.0f);
         zoom(mouse_window_pos, zoom_factor, wevent->angleDelta().y() > 0);
         return;
     }
-    if (is_shift_pressed) {
+    if (scroll_horizontally_p) {
         float inverse_factor = INVERTED_HORIZONTAL_SCROLLING ? -1.0f : 1.0f;
 
         bool is_macos = false;
@@ -7004,6 +7013,9 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
+    // print the version of mupdf header and library
+
+    qDebug() << "mupdf header version: " << FZ_VERSION;
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -9755,7 +9767,10 @@ QStringListModel* MainWidget::get_new_command_list_model() {
 }
 
 void MainWidget::add_password(std::wstring path, std::string password) {
-    pdf_renderer->add_password(path, password);
+    if (doc()){
+        doc()->reload(password);
+        pdf_renderer->add_password(path, password);
+    }
 }
 
 void MainWidget::handle_fit_to_page_width(bool smart) {

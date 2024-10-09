@@ -43,6 +43,7 @@ bool NO_AUTO_CONFIG = false;
 bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE = true;
 bool HIDE_OVERLAPPING_LINK_LABELS = true;
 bool DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE = false;
+bool GG_USES_LABELS = false;
 
 // when the window rect size is not an exact integer, mupdf rounds up and 
 // this can cause a pixel strip on documents with dark background color
@@ -101,6 +102,7 @@ float HIGHLIGHT_COLORS[26 * 3] = { \
 
 float DARK_MODE_CONTRAST = 0.8f;
 float ZOOM_INC_FACTOR = 1.2f;
+float SCROLL_ZOOM_INC_FACTOR = 1.2f;
 float VERTICAL_MOVE_AMOUNT = 1.0f;
 float HORIZONTAL_MOVE_AMOUNT = 1.0f;
 float MOVE_SCREEN_PERCENTAGE = 0.5f;
@@ -898,6 +900,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_float(L"freetext_bookmark_font_size", &FREETEXT_BOOKMARK_FONT_SIZE, FloatExtras{0.0f, 100.0f});
     add_float(L"custom_color_contrast", &CUSTOM_COLOR_CONTRAST, FloatExtras{0.0f, 1.0f});
     add_float(L"zoom_inc_factor", &ZOOM_INC_FACTOR, FloatExtras{1.0f, 2.0f});
+    add_float(L"scroll_zoom_inc_factor", &SCROLL_ZOOM_INC_FACTOR, FloatExtras{1.0f, 2.0f});
     add_float(L"vertical_move_amount", &VERTICAL_MOVE_AMOUNT, FloatExtras{0.1f, 10.0f});
     add_float(L"horizontal_move_amount", &HORIZONTAL_MOVE_AMOUNT, FloatExtras{0.1f, 10.0f});
     add_float(L"move_screen_percentage", &MOVE_SCREEN_PERCENTAGE, FloatExtras{0.0f, 1.0f});
@@ -938,6 +941,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"invert_selected_text", &INVERT_SELECTED_TEXT);
     add_bool(L"ignore_scroll_events", &IGNORE_SCROLL_EVENTS);
     add_bool(L"dont_center_if_synctex_rect_is_visible", &DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE);
+    add_bool(L"gg_uses_labels", &GG_USES_LABELS);
     add_bool(L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS);
     add_bool(L"paper_download_should_create_portal", &PAPER_DOWNLOAD_CREATE_PORTAL);
     add_bool(L"paper_download_should_detect_paper_name", &PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME);

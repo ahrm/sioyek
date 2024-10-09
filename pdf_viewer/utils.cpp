@@ -12,6 +12,7 @@
 #include <functional>
 #include <cstring>
 #include <sstream>
+#include <algorithm>
 #include <string>
 #include <qclipboard.h>
 #include <qguiapplication.h>
@@ -4194,6 +4195,32 @@ bool is_doc_valid(fz_context* ctx, std::string path) {
     }
 
     return is_valid;
+}
+
+bool should_trigger_delete(QKeyEvent *key_event) {
+    if (!key_event) {
+        return false;
+    }
+
+    // Check for the Delete key
+    if (key_event->key() == Qt::Key_Delete) {
+        return true;
+    }
+
+    // On macOS, treat Shift+Backspace as Delete as well
+#ifdef Q_OS_MAC
+    auto key = key_event->key();
+    bool backspace_p = (key == Qt::Key_Backspace);
+
+    bool is_control_cmd_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
+    // I did extensive tests on trying to detect Shift+Backspace on QT 6.6 on macOS 14. But the event for Shift+Backspace was simply not sent to us. I tested both =event->type() == QEvent::KeyRelease= and =event->type() == QEvent::KeyPress=.
+
+    if (backspace_p && is_control_cmd_pressed) {
+        return true;
+    }
+#endif
+
+    return false;
 
 }
 

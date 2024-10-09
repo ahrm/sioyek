@@ -45,7 +45,7 @@ extern bool TOC_JUMP_ALIGN_TOP;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 extern bool INCREMENTAL_SEARCH;
-
+extern bool GG_USES_LABELS;
 
 extern float SMOOTH_MOVE_MAX_VELOCITY;
 bool is_command_string_modal(const std::wstring& command_name) {
@@ -1059,6 +1059,13 @@ public:
     virtual void set_text_requirement(std::wstring value) {
         this->text = value;
     }
+
+    std::wstring get_text_default_value() {
+        if (FILL_TEXTBAR_WITH_SELECTED_TEXT) {
+            return widget->get_selected_text();
+        }
+        return L"";
+    }
 };
 
 class GotoMark : public SymbolCommand {
@@ -1334,12 +1341,6 @@ public:
         return widget->get_search_suggestion_with_index(index);
     }
 
-    std::wstring get_text_default_value() {
-        if (FILL_TEXTBAR_WITH_SELECTED_TEXT) {
-            return widget->get_selected_text();
-        }
-        return L"";
-    }
 
     std::string text_requirement_name() {
         return "Search Term";
@@ -3698,7 +3699,12 @@ public:
 public:
     void perform() {
         if (num_repeats) {
-            widget->main_document_view->goto_page(num_repeats - 1 + widget->main_document_view->get_page_offset());
+            if (GG_USES_LABELS){
+                widget->goto_page_with_label(QString::number(num_repeats).toStdWString());
+            }
+            else{
+                widget->main_document_view->goto_page(num_repeats - 1 + widget->main_document_view->get_page_offset());
+            }
         }
         else {
             widget->main_document_view->set_offset_y(0.0f);
@@ -7759,7 +7765,7 @@ std::unique_ptr<Command> InputHandler::get_menu_command(MainWidget* w, QKeyEvent
 int InputHandler::get_event_key(QKeyEvent* key_event, bool* shift_pressed, bool* control_pressed, bool* command_pressed, bool* alt_pressed) {
     int key = 0;
     if (!USE_LEGACY_KEYBINDS) {
-        std::vector<QString> special_texts = { "\b", "\t", " ", "\r", "\n" };
+        std::vector<QString> special_texts = { "\b", "\u007F", "\t", " ", "\r", "\n" };
         if (((key_event->key() >= 'A') && (key_event->key() <= 'Z')) || ((key_event->text().size() > 0) &&
             (std::find(special_texts.begin(), special_texts.end(), key_event->text()) == special_texts.end()))) {
             if (!(*control_pressed) && !(*alt_pressed) && !(*command_pressed)) {

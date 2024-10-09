@@ -1288,6 +1288,12 @@ void CommandSelector::on_select(const QModelIndex& index) {
     bool is_numeric = false;
     line_edit->text().toInt(&is_numeric);
     std::string query = line_edit->text().toStdString();
+
+    // when the command text is just a number, we handle it differently by jumping to the page number
+    if (is_numeric && !index.isValid()){
+        (*on_done)(line_edit->text().toStdString(), query);
+    }
+
     QString name = standard_item_model->data(index).toString();
     //hide();
     main_widget->pop_current_widget();
@@ -1543,7 +1549,14 @@ void BaseSelectorWidget::on_delete(const QModelIndex& source_index, const QModel
 void BaseSelectorWidget::on_edit(const QModelIndex& source_index, const QModelIndex& selected_index) {}
 
 void BaseSelectorWidget::on_return_no_select(const QString& text) {
-    if (get_view()->model()->hasIndex(0, 0)) {
+    bool is_numeric = false;
+    text.toInt(&is_numeric);
+
+    if (is_numeric){
+        auto invalid_index = get_view()->model()->index(-1, 0);
+        on_select(invalid_index);
+    }
+    else if (get_view()->model()->hasIndex(0, 0)) {
         on_select(get_view()->model()->index(0, 0));
     }
 }
@@ -1575,7 +1588,7 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
 #ifdef SIOYEK_QT6
         if (event->type() == QEvent::KeyRelease) {
             QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-            if (key_event->key() == Qt::Key_Delete) {
+            if (should_trigger_delete(key_event)) {
                 handle_delete();
             }
             else if (key_event->key() == Qt::Key_Insert) {
@@ -1683,28 +1696,15 @@ void BaseSelectorWidget::simulate_page_up() {
     QCoreApplication::postEvent(get_view(), new_key_event);
 }
 
+
 void BaseSelectorWidget::simulate_move_down() {
-    QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() + 1, 0);
-    int nrows = get_view()->model()->rowCount();
-
-    if (next_index.row() > nrows || next_index.row() < 0) {
-        next_index = get_view()->model()->index(0, 0);
-    }
-
-    get_view()->setCurrentIndex(next_index);
-    get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
+    QKeyEvent* move_down_event = new QKeyEvent(QEvent::Type::KeyPress, Qt::Key_Down, Qt::KeyboardModifier::NoModifier);
+    QCoreApplication::postEvent(get_view(), move_down_event);
 }
 
 void BaseSelectorWidget::simulate_move_up() {
-    QModelIndex next_index = get_view()->model()->index(get_view()->currentIndex().row() - 1, 0);
-    int nrows = get_view()->model()->rowCount();
-
-    if (next_index.row() > nrows || next_index.row() < 0) {
-        next_index = get_view()->model()->index(get_view()->model()->rowCount() - 1, 0);
-    }
-
-    get_view()->setCurrentIndex(next_index);
-    get_view()->scrollTo(next_index, QAbstractItemView::ScrollHint::EnsureVisible);
+    QKeyEvent* move_up_event = new QKeyEvent(QEvent::Type::KeyPress, Qt::Key_Up, Qt::KeyboardModifier::NoModifier);
+    QCoreApplication::postEvent(get_view(), move_up_event);
 }
 
 QString BaseSelectorWidget::get_selected_item() {
@@ -1748,7 +1748,7 @@ void BaseSelectorWidget::handle_edit() {
 
 #ifndef SIOYEK_QT6
     void BaseSelectorWidget::keyReleaseEvent(QKeyEvent* event) {
-        if (event->key() == Qt::Key_Delete) {
+		if (should_trigger_delete(event)) {
             handle_delete();
         }
         QWidget::keyReleaseEvent(event);

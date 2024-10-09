@@ -445,6 +445,7 @@ QString get_ui_font_face_name();
 QString get_status_font_face_name();
 std::vector<fz_stext_char*> reorder_stext_line(fz_stext_line* line);
 std::vector<fz_stext_char*> reorder_mixed_stext_line(fz_stext_line* line);
+bool should_trigger_delete(QKeyEvent *key_event);
 
 class TextToSpeechHandler {
 public:
