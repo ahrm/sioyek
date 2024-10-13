@@ -7967,14 +7967,20 @@ void MainWidget::handle_move_text_mark_backward(bool word) {
     }
 }
 
-const std::wstring& MainWidget::get_selected_text() {
-    if (selected_text_is_dirty) {
+const std::wstring& MainWidget::get_selected_text(bool insert_newlines) {
+    if (selected_text_is_dirty || insert_newlines) {
         std::deque<AbsoluteRect> dummy_rects;
-        main_document_view->get_text_selection(selection_begin,
-            selection_end,
-            is_word_selecting,
-            dummy_rects,
-            selected_text);
+
+        if (insert_newlines) {
+            selected_text = doc()->get_raw_text_selection(selection_begin, selection_end);
+        }
+        else {
+            main_document_view->get_text_selection(selection_begin,
+                selection_end,
+                is_word_selecting,
+                dummy_rects,
+                selected_text);
+        }
 
         selected_text_is_dirty = false;
     }

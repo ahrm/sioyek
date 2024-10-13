@@ -1805,6 +1805,53 @@ void Document::get_text_selection(AbsoluteDocumentPos selection_begin,
     std::wstring& selected_text) {
     get_text_selection(context, selection_begin, selection_end, is_word_selection, selected_characters, selected_text);
 }
+
+std::wstring Document::get_raw_text_selection(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end) {
+    DocumentPos page_pos1 = absolute_to_page_pos_uncentered(selection_begin);
+    DocumentPos page_pos2 = absolute_to_page_pos_uncentered(selection_end);
+
+    fz_stext_page* page = get_stext_with_page_number(page_pos1.page);
+    fz_stext_char* closest_char_to_begin = nullptr;
+    float closest_char_to_begin_distance = 1000000;
+    fz_stext_char* closest_char_to_end = nullptr;
+    float closest_char_to_end_distance = 1000000;
+
+    for (auto [block, line, chr] : PageIterator(page)) {
+        fz_rect rect = fz_rect_from_quad(chr->quad);
+        float center_x = (rect.x0 + rect.x1) / 2;
+        float center_y = (rect.y0 + rect.y1) / 2;
+        DocumentPos docpos = DocumentPos{ page_pos1.page, center_x, center_y };
+        float begin_distance = std::abs(docpos.x - page_pos1.x) + std::abs(docpos.y - page_pos1.y);
+        float end_distance = std::abs(docpos.x - page_pos2.x) + std::abs(docpos.y - page_pos2.y);
+        if (begin_distance < closest_char_to_begin_distance) {
+            closest_char_to_begin = chr;
+            closest_char_to_begin_distance = begin_distance;
+        }
+
+        if (end_distance < closest_char_to_end_distance) {
+            closest_char_to_end = chr;
+            closest_char_to_end_distance = end_distance;
+        }
+    }
+
+    std::wstring result;
+    bool reached_begin = false;
+    for (auto [block, line, chr] : PageIterator(page)) {
+        if (chr == closest_char_to_end) break;
+        if (chr == closest_char_to_begin) {
+            reached_begin = true;
+        }
+        if (reached_begin) {
+            result.push_back(chr->c);
+            if (chr->next == nullptr) {
+                result.push_back('\n');
+            }
+        }
+    }
+    return result;
+
+}
+
 void Document::get_text_selection(fz_context* ctx, AbsoluteDocumentPos selection_begin,
     AbsoluteDocumentPos selection_end,
     bool is_word_selection,

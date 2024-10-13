@@ -29,6 +29,7 @@ extern std::wstring SEARCH_URLS[26];
 extern bool ALPHABETIC_LINK_TAGS;
 extern std::vector<AdditionalKeymapData> ADDITIONAL_KEYMAPS;
 
+extern bool ADD_NEWLINES_WHEN_COPYING_TEXT;
 extern float EPUB_WIDTH;
 extern float EPUB_HEIGHT;
 
@@ -3686,7 +3687,7 @@ public:
     static inline const std::string hname = "Copy";
     CopyCommand(MainWidget* w) : Command(cname, w) {};
     void perform() {
-        copy_to_clipboard(widget->get_selected_text());
+        copy_to_clipboard(widget->get_selected_text(ADD_NEWLINES_WHEN_COPYING_TEXT));
     }
 
 };

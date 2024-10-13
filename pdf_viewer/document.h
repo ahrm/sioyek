@@ -327,6 +327,8 @@ public:
         std::wstring& selected_text,
         fz_document* doc = nullptr);
 
+    std::wstring get_raw_text_selection(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end);
+
     bool is_bookmark_new(const BookMark& bookmark);
     bool is_highlight_new(const Highlight& highlight);
     bool is_drawing_new(const FreehandDrawing& drawing);
