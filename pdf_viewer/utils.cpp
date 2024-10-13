@@ -51,6 +51,7 @@ extern float STATUS_BAR_TEXT_COLOR[3];
 extern float UI_SELECTED_TEXT_COLOR[3];
 extern float UI_SELECTED_BACKGROUND_COLOR[3];
 extern bool NUMERIC_TAGS;
+extern bool ALWAYS_COPY_SELECTED_TEXT;
 
 extern QString EPUB_TEMPLATE;
 extern float EPUB_LINE_SPACING;
@@ -252,7 +253,12 @@ void copy_to_clipboard(const std::wstring& text, bool selection) {
         clipboard->setText(qtext);
     }
     else {
-        clipboard->setText(qtext, QClipboard::Selection);
+        if (ALWAYS_COPY_SELECTED_TEXT) {
+            clipboard->setText(qtext);
+        }
+        else {
+            clipboard->setText(qtext, QClipboard::Selection);
+        }
     }
 }
 
