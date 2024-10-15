@@ -51,6 +51,7 @@ extern float STATUS_BAR_TEXT_COLOR[3];
 extern float UI_SELECTED_TEXT_COLOR[3];
 extern float UI_SELECTED_BACKGROUND_COLOR[3];
 extern bool NUMERIC_TAGS;
+extern bool ALWAYS_COPY_SELECTED_TEXT;
 
 extern QString EPUB_TEMPLATE;
 extern float EPUB_LINE_SPACING;
@@ -61,6 +62,8 @@ extern std::wstring EPUB_CSS;
 extern float HIGHLIGHT_COLORS[26 * 3];
 extern float BLACK_COLOR[3];
 extern bool PAPER_DOWNLOAD_AUTODETECT_PAPER_NAME;
+
+extern Path last_opened_file_address_path;
 
 extern float UI_BACKGROUND_COLOR[3];
 extern float UI_TEXT_COLOR[3];
@@ -252,7 +255,12 @@ void copy_to_clipboard(const std::wstring& text, bool selection) {
         clipboard->setText(qtext);
     }
     else {
-        clipboard->setText(qtext, QClipboard::Selection);
+        if (ALWAYS_COPY_SELECTED_TEXT) {
+            clipboard->setText(qtext);
+        }
+        else {
+            clipboard->setText(qtext, QClipboard::Selection);
+        }
     }
 }
 
@@ -4404,4 +4412,23 @@ bool is_platform_control_pressed(QKeyEvent* kevent){
 #else
         return (kevent->modifiers() & Qt::ControlModifier);
 #endif
+}
+
+std::vector<std::wstring> get_last_opened_file_name() {
+    static bool is_cached = false;
+    static std::vector<std::wstring> cached_result = {};
+
+    if (is_cached) return cached_result;
+
+    std::string file_path_;
+    std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
+    std::vector<std::wstring> res;
+    while (std::getline(last_state_file, file_path_)) {
+        res.push_back(utf8_decode(file_path_));
+    }
+    last_state_file.close();
+    cached_result = res;
+    is_cached = true;
+
+    return res;
 }

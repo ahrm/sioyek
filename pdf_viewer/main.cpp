@@ -398,8 +398,10 @@ MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
                 std::string path1 = utf8_encode(window->doc()->get_path());
                 std::string path2 = utf8_encode(file_path);
 #endif
-                if (std::filesystem::equivalent(path1, path2)) {
-                    return window;
+                if (std::filesystem::exists(path1) && std::filesystem::exists(path2)) {
+                    if (std::filesystem::equivalent(path1, path2)) {
+                        return window;
+                    }
                 }
             }
         }
@@ -407,23 +409,6 @@ MainWidget* get_window_with_opened_file_path(const std::wstring& file_path) {
     return nullptr;
 }
 
-std::vector<std::wstring> get_last_opened_file_name() {
-    std::string file_path_;
-    std::ifstream last_state_file(last_opened_file_address_path.get_path_utf8());
-    std::vector<std::wstring> res;
-    while (std::getline(last_state_file, file_path_)) {
-        res.push_back(utf8_decode(file_path_));
-    }
-    last_state_file.close();
-
-    return res;
-    //if (file_path_.size() > 0) {
-    //    return utf8_decode(file_path_);
-    //}
-    //else {
-    //    return {};
-    //}
-}
 
 void invalidate_render() {
     for (auto window : windows) {

@@ -730,7 +730,7 @@ public:
     void handle_move_text_mark_up();
     void handle_toggle_text_mark();
 
-    const std::wstring& get_selected_text();
+    const std::wstring& get_selected_text(bool insert_newlines=false);
     void move_selection_end(bool expand, bool word);
     void move_selection_begin(bool expand, bool word);
     void shrink_selection_end();
