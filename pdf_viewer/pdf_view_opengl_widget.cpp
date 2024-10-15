@@ -1319,7 +1319,14 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             draw_empty_helper_message(painter, "No portals yet");
         }
         else {
-            draw_empty_helper_message(painter, "No document");
+            std::vector<std::wstring> last_opened_file_path = get_last_opened_file_name();
+
+            if (last_opened_file_path.size() > 0) {
+                draw_empty_helper_message(painter, "Document " + QString::fromStdWString(last_opened_file_path[0]) + " does not exist");
+            }
+            else {
+                draw_empty_helper_message(painter, "No document");
+            }
         }
         return;
     }

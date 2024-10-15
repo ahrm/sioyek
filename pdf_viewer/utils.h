@@ -526,3 +526,4 @@ QString translate_key_mapping_to_macos(QString mapping);
 
 bool is_platform_meta_pressed(QKeyEvent* kevent);
 bool is_platform_control_pressed(QKeyEvent* kevent);
+std::vector<std::wstring> get_last_opened_file_name();
