@@ -4342,7 +4342,13 @@ void MainWidget::handle_link_click(const PdfLink& link) {
     }
 
     if (link.uri.substr(0, 4).compare("file") == 0) {
-        QString path_uri = QString::fromStdString(link.uri.substr(7, link.uri.size() - 7));
+        QString path_uri;
+        if (link.uri.substr(0, 7) == "file://") {
+            path_uri = QString::fromStdString(link.uri.substr(7, link.uri.size() - 7)); // skip file://
+        }
+        else {
+            path_uri = QString::fromStdString(link.uri.substr(5, link.uri.size() - 5)); // skip file:
+        }
         auto parts = path_uri.split('#');
         std::wstring path_part = parts.at(0).toStdWString();
         auto docpath = doc()->get_path();
