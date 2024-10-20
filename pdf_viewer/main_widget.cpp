@@ -1997,19 +1997,21 @@ void MainWidget::open_document_at_location(const Path& path_,
     if ((path.size() > 0) && (!has_document)) {
         show_error_message(L"Could not open file2: " + path);
     }
+    else {
+        main_document_view->on_view_size_change(main_window_width, main_window_height);
 
-    main_document_view->on_view_size_change(main_window_width, main_window_height);
+        AbsoluteDocumentPos absolute_pos = DocumentPos{ page, x_loc.value_or(0), y_loc.value_or(0) }.to_absolute(doc());
 
-    AbsoluteDocumentPos absolute_pos = DocumentPos{ page, x_loc.value_or(0), y_loc.value_or(0) }.to_absolute(doc());
+        if (x_loc) {
+            main_document_view->set_offset_x(absolute_pos.x);
+        }
+        main_document_view->set_offset_y(absolute_pos.y);
 
-    if (x_loc) {
-        main_document_view->set_offset_x(absolute_pos.x);
+        if (zoom_level) {
+            main_document_view->set_zoom_level(zoom_level.value(), true);
+        }
     }
-    main_document_view->set_offset_y(absolute_pos.y);
 
-    if (zoom_level) {
-        main_document_view->set_zoom_level(zoom_level.value(), true);
-    }
 
     // reset smart fit when changing documents
     last_smart_fit_page = {};
