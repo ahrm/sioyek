@@ -4357,9 +4357,30 @@ void MainWidget::handle_link_click(const PdfLink& link) {
         Path linked_file_path = Path(doc()->get_path()).file_parent().slash(path_part);
         int page = 0;
         if (parts.size() > 0) {
-            std::string page_string = parts.at(1).toStdString();
-            page_string = page_string.substr(5, page_string.size() - 5);
-            page = QString::fromStdString(page_string).toInt() - 1;
+            if (parts.at(1).startsWith("nameddest")) {
+                QString standard_uri = QString::fromStdString(link.uri);
+                if (standard_uri.startsWith("file:") && !(standard_uri.startsWith("file://"))) {
+                    standard_uri = "file://" + standard_uri.mid(5);
+                }
+
+                Document* linked_doc = document_manager->get_document(linked_file_path.get_path());
+                if (!linked_doc->doc) {
+                    linked_doc->open(nullptr);
+                }
+
+                if (linked_doc && linked_doc->doc) {
+                    ParsedUri parsed_uri = parse_uri(mupdf_context, linked_doc->doc, standard_uri.toStdString());
+                    page = parsed_uri.page - 1;
+                    push_state();
+                    open_document_at_location(linked_file_path, page, parsed_uri.x, parsed_uri.y, {});
+                    return;
+                }
+            }
+            else {
+                std::string page_string = parts.at(1).toStdString();
+                page_string = page_string.substr(5, page_string.size() - 5);
+                page = QString::fromStdString(page_string).toInt() - 1;
+            }
         }
         push_state();
         open_document_at_location(linked_file_path, page, {}, {}, {});
