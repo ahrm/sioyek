@@ -1997,19 +1997,21 @@ void MainWidget::open_document_at_location(const Path& path_,
     if ((path.size() > 0) && (!has_document)) {
         show_error_message(L"Could not open file2: " + path);
     }
+    else {
+        main_document_view->on_view_size_change(main_window_width, main_window_height);
 
-    main_document_view->on_view_size_change(main_window_width, main_window_height);
+        AbsoluteDocumentPos absolute_pos = DocumentPos{ page, x_loc.value_or(0), y_loc.value_or(0) }.to_absolute(doc());
 
-    AbsoluteDocumentPos absolute_pos = DocumentPos{ page, x_loc.value_or(0), y_loc.value_or(0) }.to_absolute(doc());
+        if (x_loc) {
+            main_document_view->set_offset_x(absolute_pos.x);
+        }
+        main_document_view->set_offset_y(absolute_pos.y);
 
-    if (x_loc) {
-        main_document_view->set_offset_x(absolute_pos.x);
+        if (zoom_level) {
+            main_document_view->set_zoom_level(zoom_level.value(), true);
+        }
     }
-    main_document_view->set_offset_y(absolute_pos.y);
 
-    if (zoom_level) {
-        main_document_view->set_zoom_level(zoom_level.value(), true);
-    }
 
     // reset smart fit when changing documents
     last_smart_fit_page = {};
@@ -4342,16 +4344,43 @@ void MainWidget::handle_link_click(const PdfLink& link) {
     }
 
     if (link.uri.substr(0, 4).compare("file") == 0) {
-        QString path_uri = QString::fromStdString(link.uri.substr(7, link.uri.size() - 7));
+        QString path_uri;
+        if (link.uri.substr(0, 7) == "file://") {
+            path_uri = QString::fromStdString(link.uri.substr(7, link.uri.size() - 7)); // skip file://
+        }
+        else {
+            path_uri = QString::fromStdString(link.uri.substr(5, link.uri.size() - 5)); // skip file:
+        }
         auto parts = path_uri.split('#');
         std::wstring path_part = parts.at(0).toStdWString();
         auto docpath = doc()->get_path();
         Path linked_file_path = Path(doc()->get_path()).file_parent().slash(path_part);
         int page = 0;
         if (parts.size() > 0) {
-            std::string page_string = parts.at(1).toStdString();
-            page_string = page_string.substr(5, page_string.size() - 5);
-            page = QString::fromStdString(page_string).toInt() - 1;
+            if (parts.at(1).startsWith("nameddest")) {
+                QString standard_uri = QString::fromStdString(link.uri);
+                if (standard_uri.startsWith("file:") && !(standard_uri.startsWith("file://"))) {
+                    standard_uri = "file://" + standard_uri.mid(5);
+                }
+
+                Document* linked_doc = document_manager->get_document(linked_file_path.get_path());
+                if (!linked_doc->doc) {
+                    linked_doc->open(nullptr);
+                }
+
+                if (linked_doc && linked_doc->doc) {
+                    ParsedUri parsed_uri = parse_uri(mupdf_context, linked_doc->doc, standard_uri.toStdString());
+                    page = parsed_uri.page - 1;
+                    push_state();
+                    open_document_at_location(linked_file_path, page, parsed_uri.x, parsed_uri.y, {});
+                    return;
+                }
+            }
+            else {
+                std::string page_string = parts.at(1).toStdString();
+                page_string = page_string.substr(5, page_string.size() - 5);
+                page = QString::fromStdString(page_string).toInt() - 1;
+            }
         }
         push_state();
         open_document_at_location(linked_file_path, page, {}, {}, {});
