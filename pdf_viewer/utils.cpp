@@ -328,6 +328,17 @@ void show_error_message(const std::wstring& error_message) {
     msgBox.exec();
 }
 
+bool user_confirms_to_prompt(const std::wstring& prompt_message) {
+    QMessageBox msgBox;
+    int choice;
+    msgBox.setText(QString::fromStdWString(prompt_message));
+    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    choice = msgBox.exec();
+    return (choice == QMessageBox::Ok);
+}
+
+
 std::wstring utf8_decode(const std::string& encoded_str) {
     std::wstring res;
     utf8::utf8to32(encoded_str.begin(), encoded_str.end(), std::back_inserter(res));
