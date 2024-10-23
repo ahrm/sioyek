@@ -11139,3 +11139,63 @@ void MainWidget::set_pending_portal(std::optional<std::pair<std::optional<std::w
         opengl_widget->set_pending_portal_position({});
     }
 }
+
+void MainWidget::set_state(QJsonObject state) {
+
+    if (state.contains("zoom_level")) {
+        float new_zoom_level = state["zoom_level"].toDouble();
+        main_document_view->set_zoom_level(new_zoom_level, true);
+    }
+
+    int new_page_number = -1;
+    if (state.contains("page_number")) {
+        new_page_number = state["page_number"].toInt();
+        main_document_view->goto_page(new_page_number);
+    }
+
+    if (state.contains("document_path")) {
+        main_document_view->open_document(state["document_path"].toString().toStdWString(), &this->is_render_invalidated);
+    }
+
+    if (state.contains("document_checksum")) {
+        std::optional<std::wstring> path = document_manager->get_path_from_hash(state["document_checksum"].toString().toStdString());
+        if (path.has_value()) {
+            main_document_view->open_document(path.value(), &this->is_render_invalidated);
+        }
+    }
+
+    if (state.contains("x_offset")) {
+        float x_offset = state["x_offset"].toDouble();
+        main_document_view->set_offset_x(x_offset);
+    }
+
+    if (state.contains("y_offset")) {
+        float y_offset = state["y_offset"].toDouble();
+        main_document_view->set_offset_y(y_offset);
+    }
+
+    if (state.contains("x_offset_in_page")) {
+        float x_offset = state["x_offset_in_page"].toDouble();
+        main_document_view->set_offset_x(x_offset);
+    }
+
+    if (state.contains("y_offset_in_page")) {
+        float y_offset = state["y_offset_in_page"].toDouble();
+        int page_number = new_page_number >= 0 ? new_page_number : main_document_view->get_center_page_number();
+        main_document_view->goto_offset_within_page(page_number, y_offset);
+    }
+
+    if (state.contains("window_width")) {
+        int new_width = state["window_width"].toInt();
+        resize(new_width, height());
+    }
+
+    if (state.contains("window_height")) {
+        int new_height = state["window_height"].toInt();
+        resize(width(), new_height);
+    }
+
+
+    invalidate_render();
+
+}

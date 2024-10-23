@@ -844,6 +844,7 @@ public:
     void show_custom_option_list(std::vector<std::wstring> option_list);
     void on_socket_deleted(QLocalSocket* deleted_socket);
     Q_INVOKABLE QJsonObject get_json_state();
+    Q_INVOKABLE void set_state(QJsonObject state);
     QJsonObject get_json_annotations();
     QJsonArray get_all_json_states();
     void screenshot(std::wstring file_path);
