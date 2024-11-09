@@ -654,6 +654,15 @@ public:
             if (commands[index]->pushes_state()) {
                 widget->push_state();
             }
+
+            // addresses https://github.com/ahrm/sioyek/issues/1114#issuecomment-2465490589
+            // e.g. when defining a custom command like goto_beginning;fit_to_page_smart we want to pass the num_repeats to goto_beginning
+            // of course since there are multiple commands it is ambiguous which command actually gets the num_repeats, here we just pass
+            // it to the first command
+            if (index == 0 && (num_repeats > 0)) {
+                commands[index]->set_num_repeats(num_repeats);
+            }
+
             commands[index]->run();
             performed[index] = true;
         }
