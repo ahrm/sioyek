@@ -7063,6 +7063,16 @@ InputParseTreeNode* parse_lines(
 
         for (size_t i = 0; i < tokens.size(); i++) {
             InputParseTreeNode node = parse_token(tokens[i]);
+            if ((node.control_modifier || node.command_modifier || node.alt_modifier) && node.shift_modifier) {
+                std::vector<int> special_texts = { '\b', '\u007F', '\t', ' ', '\r', '\n' };
+                bool is_special = (std::find(special_texts.begin(), special_texts.end(), node.command) != special_texts.end()) || (node.command >= 128);
+                if (!is_special) {
+                    LOG(
+                        std::wcerr << L"Warning: keybind: `" << line << "` defined in " << command_file_names[j] << L":" << command_line_numbers[j] << L" for " << command_strings[j] << L" is no longer valid. We now use something like this:\ncommand <C-O>\nInstead of:\ncommand <C-S-O>\n"
+                    );
+                }
+            }
+
             bool existing_node = false;
             for (InputParseTreeNode* child : parent_node->children) {
                 if (child->is_same(&node)) {
