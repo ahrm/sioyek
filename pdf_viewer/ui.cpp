@@ -1520,10 +1520,10 @@ BaseSelectorWidget::BaseSelectorWidget(QAbstractItemView* item_view, bool fuzzy,
         abstract_item_view->setVerticalScrollMode(QAbstractItemView::ScrollMode::ScrollPerPixel);
     }
 
-    QString font_face;
+    QString font_face = get_ui_font_face_name();
     if (font_face.size() > 0) {
-        abstract_item_view->setFont(get_ui_font_face_name());
-        line_edit->setFont(get_ui_font_face_name());
+        abstract_item_view->setFont(font_face);
+        line_edit->setFont(font_face);
     }
 }
 
