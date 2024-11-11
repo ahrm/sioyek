@@ -5449,8 +5449,8 @@ public:
 
 class CollapseMenuCommand : public Command {
 public:
-    inline static const std::string cname = "collapse_menu";
-    inline static const std::string hname = "Collapse all items in menus.";
+    inline static const std::string cname = "toggle_menu_collapse";
+    inline static const std::string hname = "Toggle collapse of tree menus.";
 
     CollapseMenuCommand(MainWidget* w) : Command(cname, w) {};
 
