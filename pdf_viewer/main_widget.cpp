@@ -11199,3 +11199,31 @@ void MainWidget::set_state(QJsonObject state) {
     invalidate_render();
 
 }
+
+void MainWidget::toggle_menu_collapse() {
+    if (current_widget_stack.size() > 0) {
+
+        auto tree_widget = dynamic_cast<FilteredTreeSelect<int>*>(current_widget_stack.back());
+        if (tree_widget) {
+            auto tree_view = dynamic_cast<QTreeView*>(tree_widget->get_view());
+            if (tree_view) {
+                bool is_exanded = false;
+
+                for (int i = 0; i < tree_view->model()->rowCount(); i++) {
+                    QModelIndex index = tree_view->model()->index(i, 0);
+                    if (tree_view->isExpanded(index)) {
+                        is_exanded = true;
+                        break;
+                    }
+                }
+
+                if (is_exanded) {
+                    tree_view->collapseAll();
+                }
+                else {
+                    tree_view->expandAll();
+                }
+            }
+        }
+    }
+}

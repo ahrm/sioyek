@@ -121,7 +121,6 @@ protected:
 
 
 
-    virtual QAbstractItemView* get_view();
 
     QLineEdit* line_edit = nullptr;
     //QSortFilterProxyModel* proxy_model = nullptr;
@@ -146,6 +145,7 @@ protected:
 public:
 
 
+    virtual QAbstractItemView* get_view();
     void set_filter_column_index(int index);
     std::optional<QModelIndex> get_selected_index();
     virtual std::wstring get_selected_text();

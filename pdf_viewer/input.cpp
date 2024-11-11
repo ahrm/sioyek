@@ -5447,6 +5447,19 @@ public:
 
 };
 
+class CollapseMenuCommand : public Command {
+public:
+    inline static const std::string cname = "collapse_menu";
+    inline static const std::string hname = "Collapse all items in menus.";
+
+    CollapseMenuCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->toggle_menu_collapse();
+    }
+
+};
+
 class ShowTouchMainMenu : public Command {
 public:
     static inline const std::string cname = "show_touch_main_menu";
@@ -6755,6 +6768,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<ShowTouchSettingsMenu>();
     register_command<ShowTouchDrawingMenu>();
     register_command<DebugCommand>();
+    register_command<CollapseMenuCommand>();
     register_command<ExportPythonApiCommand>();
     register_command<ExportDefaultConfigFile>();
     register_command<ExportCommandNamesCommand>();

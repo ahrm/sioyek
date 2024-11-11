@@ -461,6 +461,7 @@ public:
     void on_next_text_suggestion();
     void on_prev_text_suggestion();
     void set_current_text_suggestion();
+    void toggle_menu_collapse();
 
     std::wstring get_window_configuration_string();
     std::wstring get_serialized_configuration_string();
