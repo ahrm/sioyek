@@ -3734,7 +3734,12 @@ public:
     GotoEndCommand(MainWidget* w) : Command(cname, w) {};
 public:
     void perform() {
-        widget->main_document_view->goto_end();
+        if (num_repeats == 0) {
+            widget->main_document_view->goto_end();
+        }
+        else {
+            widget->main_document_view->goto_page(num_repeats - 1);
+        }
     }
 
     bool pushes_state() {
