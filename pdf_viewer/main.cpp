@@ -741,6 +741,7 @@ int main(int argc, char* args[]) {
 
     QCoreApplication::setApplicationName(QString::fromStdWString(APPLICATION_NAME));
     QCoreApplication::setApplicationVersion(QString::fromStdString(APPLICATION_VERSION));
+    app.setDesktopFileName(QString::fromStdWString(APPLICATION_NAME));
 
     QStringList positional_args = parser->positionalArguments();
     delete parser;

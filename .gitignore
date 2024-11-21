@@ -384,3 +384,12 @@ CMakeCache.txt
 .qt_plugins/*
 .qt/*
 .DS_STORE
+tutorial/*.blg
+
+#Nix generated
+result
+flake*
+*.nix
+
+# ctags
+tags
