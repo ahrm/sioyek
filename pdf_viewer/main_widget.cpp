@@ -3767,6 +3767,7 @@ void MainWidget::toggle_dark_mode() {
 
     if (helper_opengl_widget_) {
         helper_opengl_widget_->toggle_dark_mode();
+        helper_opengl_widget_->update();
     }
 }
 
@@ -3775,6 +3776,7 @@ void MainWidget::toggle_custom_color_mode() {
 
     if (helper_opengl_widget_) {
         helper_opengl_widget_->toggle_custom_color_mode();
+        helper_opengl_widget_->update();
     }
 }
 
