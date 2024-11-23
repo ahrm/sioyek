@@ -4118,7 +4118,20 @@ void MainWidget::apply_window_params_for_two_window_mode() {
     if (helper_opengl_widget_ != nullptr) {
         helper_window->move(helper_window_move[0], helper_window_move[1]);
         helper_window->resize(helper_window_size[0], helper_window_size[1]);
+
         helper_window->show();
+
+
+        // make sure the colorscheme is correct
+        if (opengl_widget->get_current_color_mode() == PdfViewOpenGLWidget::ColorPalette::Dark) {
+            helper_opengl_widget_->set_dark_mode(true);
+        }
+        else if (opengl_widget->get_current_color_mode() == PdfViewOpenGLWidget::ColorPalette::Custom) {
+            helper_opengl_widget_->set_custom_color_mode(true);
+        }
+        else {
+            helper_opengl_widget_->set_dark_mode(false);
+        }
     }
 
     if (should_maximize) {
