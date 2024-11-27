@@ -101,12 +101,12 @@ bool DocumentView::set_pos(AbsoluteDocumentPos pos) {
     return set_offsets(pos.x, pos.y);
 }
 
-void DocumentView::set_virtual_pos(VirtualPos pos) {
+void DocumentView::set_virtual_pos(VirtualPos pos, bool force) {
     if (!fast_coordinates()) {
         offset = pos;
     }
     else {
-        set_offsets(pos.x, pos.y);
+        set_offsets(pos.x, pos.y, force);
     }
 }
 
@@ -569,7 +569,7 @@ void DocumentView::goto_right() {
     set_offset_x(view_left_offset);
 }
 
-float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode) {
+float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode, bool readjust) {
 #ifdef SIOYEK_ANDROID
     const float max_zoom_level = 6.0f;
 #else
@@ -593,11 +593,13 @@ float DocumentView::set_zoom_level(float zl, bool should_exit_auto_resize_mode) 
         this->is_auto_resize_mode = false;
     }
     zoom_level = zl;
-    this->readjust_to_screen();
+    if (readjust) {
+        this->readjust_to_screen();
+    }
     return zoom_level;
 }
 
-float DocumentView::zoom_in(float zoom_factor) {
+float DocumentView::zoom_in(float zoom_factor, bool readjust) {
 #ifdef SIOYEK_ANDROID
     const float max_zoom_level = 6.0f;
 #else
@@ -609,34 +611,36 @@ float DocumentView::zoom_in(float zoom_factor) {
         new_zoom_level = max_zoom_level;
     }
 
-    return set_zoom_level(new_zoom_level, true);
+    return set_zoom_level(new_zoom_level, true, readjust);
 }
-float DocumentView::zoom_out(float zoom_factor) {
-    return set_zoom_level(zoom_level / zoom_factor, true);
+float DocumentView::zoom_out(float zoom_factor, bool readjust) {
+    return set_zoom_level(zoom_level / zoom_factor, true, readjust);
 }
 
 float DocumentView::zoom_in_cursor(WindowPos mouse_pos, float zoom_factor) {
 
-    AbsoluteDocumentPos prev_doc_pos = window_to_absolute_document_pos(mouse_pos);
+    VirtualPos prev_mouse_abs_pos = window_to_virtual_pos(mouse_pos);
 
-    float res = zoom_in(zoom_factor);
+    VirtualPos prev_document_offset = get_virtual_offset();
+    prev_document_offset.x = -prev_document_offset.x;
 
-    AbsoluteDocumentPos new_doc_pos = window_to_absolute_document_pos(mouse_pos);
+    fvec2 diff = prev_mouse_abs_pos - prev_document_offset;
 
-    move_absolute(-prev_doc_pos.x + new_doc_pos.x, prev_doc_pos.y - new_doc_pos.y);
+    float old_zoom_level = zoom_level;
+    float new_zoom_level = set_zoom_level(zoom_level * zoom_factor, false);
+    float actual_inc = new_zoom_level / old_zoom_level;
 
-    return res;
+    fvec2 new_diff = diff / actual_inc;
+    VirtualPos new_pos = prev_mouse_abs_pos - new_diff;
+    new_pos.x = -new_pos.x;
+
+    set_virtual_pos(new_pos, true);
+    return new_zoom_level;
+
 }
 
 float DocumentView::zoom_out_cursor(WindowPos mouse_pos, float zoom_factor) {
-    auto [prev_doc_x, prev_doc_y] = window_to_absolute_document_pos(mouse_pos);
-
-    float res = zoom_out(zoom_factor);
-
-    auto [new_doc_x, new_doc_y] = window_to_absolute_document_pos(mouse_pos);
-
-    move_absolute(-prev_doc_x + new_doc_x, prev_doc_y - new_doc_y);
-    return res;
+    return zoom_in_cursor(mouse_pos, 1.0f / zoom_factor);
 }
 
 bool DocumentView::move_absolute(float dx, float dy, bool force) {
@@ -1689,7 +1693,7 @@ bool ScratchPad::set_offsets(float new_offset_x, float new_offset_y, bool force)
     return false;
 }
 
-float ScratchPad::set_zoom_level(float zl, bool should_exit_auto_resize_mode) {
+float ScratchPad::set_zoom_level(float zl, bool should_exit_auto_resize_mode, bool readjust) {
     float min_zoom_level = 0.1f;
     float max_zoom_level = 1000.0f;
 
@@ -1704,11 +1708,11 @@ float ScratchPad::set_zoom_level(float zl, bool should_exit_auto_resize_mode) {
     return zoom_level;
 }
 
-float ScratchPad::zoom_in(float zoom_factor) {
+float ScratchPad::zoom_in(float zoom_factor, bool readjust) {
     return set_zoom_level(zoom_level * zoom_factor, true);
 }
 
-float ScratchPad::zoom_out(float zoom_factor) {
+float ScratchPad::zoom_out(float zoom_factor, bool readjust) {
     return set_zoom_level(zoom_level / zoom_factor, true);
 }
 

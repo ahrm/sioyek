@@ -182,6 +182,10 @@ fvec2 operator-(const AbsoluteDocumentPos& lhs, const AbsoluteDocumentPos& rhs) 
     return fvec2( lhs.x - rhs.x, lhs.y - rhs.y );
 }
 
+fvec2 operator-(const VirtualPos& lhs, const VirtualPos& rhs) {
+    return fvec2( lhs.x - rhs.x, lhs.y - rhs.y );
+}
+
 fvec2 operator-(const DocumentPos& lhs, const DocumentPos& rhs) {
     return fvec2( lhs.x - rhs.x, lhs.y - rhs.y );
 }
