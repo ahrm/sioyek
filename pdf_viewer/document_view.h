@@ -71,6 +71,7 @@ public:
     // text selection (depending on `mark_end` value)
     bool should_show_text_selection_marker = false;
     bool mark_end = true;
+    std::wstring last_opened_file_path = L"";
 
     DocumentView(DatabaseManager* db_manager, DocumentManager* document_manager, CachedChecksummer* checksummer);
     ~DocumentView();

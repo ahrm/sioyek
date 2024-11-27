@@ -733,6 +733,7 @@ void DocumentView::open_document(const std::wstring& doc_path,
     bool load_prev_state,
     std::optional<OpenedBookState> prev_state,
     bool force_load_dimensions) {
+    last_opened_file_path = doc_path;
 
     std::wstring canonical_path = get_canonical_path(doc_path);
 
