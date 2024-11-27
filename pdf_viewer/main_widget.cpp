@@ -4371,7 +4371,7 @@ void MainWidget::handle_link_click(const PdfLink& link) {
         auto docpath = doc()->get_path();
         Path linked_file_path = Path(doc()->get_path()).file_parent().slash(path_part);
         int page = 0;
-        if (parts.size() > 0) {
+        if (parts.size() > 1) {
             if (parts.at(1).startsWith("nameddest")) {
                 QString standard_uri = QString::fromStdString(link.uri);
                 if (standard_uri.startsWith("file:") && !(standard_uri.startsWith("file://"))) {
