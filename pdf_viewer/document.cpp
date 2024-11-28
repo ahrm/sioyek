@@ -2733,6 +2733,7 @@ AbsoluteRect Document::get_ith_next_line_from_absolute_y(int page, int line_inde
     }
 
     int new_index = line_index + i;
+
     if ((new_index >= 0) && ((size_t)new_index < line_rects.size())) {
         *out_page = page;
         *out_index = new_index;

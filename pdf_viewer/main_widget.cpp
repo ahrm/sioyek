@@ -214,6 +214,7 @@ extern std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 extern float SMOOTH_MOVE_MAX_VELOCITY;
 
+extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 extern std::wstring RIGHT_CLICK_COMMAND;
 extern std::wstring MIDDLE_CLICK_COMMAND;
 extern int MAX_TAB_COUNT;
@@ -4541,6 +4542,12 @@ std::optional<float> MainWidget::move_visual_mark_next_get_offset(){
 }
 
 void MainWidget::move_visual_mark_next() {
+
+    if (FORCE_CUSTOM_LINE_ALGORITHM) {
+        move_visual_mark(1);
+        return;
+    }
+
     opengl_widget->clear_underline();
 
     int prev_line_index = main_document_view->get_line_index();
@@ -4613,6 +4620,11 @@ void MainWidget::move_visual_mark_next() {
 }
 
 void MainWidget::move_visual_mark_prev() {
+    if (FORCE_CUSTOM_LINE_ALGORITHM) {
+        move_visual_mark(-1);
+        return;
+    }
+
     int prev_line_index = main_document_view->get_line_index();
     int vertical_line_page = main_document_view->get_vertical_line_page();
     int current_line_index, current_page;
