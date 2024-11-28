@@ -8147,6 +8147,12 @@ void MainWidget::handle_goto_loaded_document() {
                 document_manager->remove_tab(*path);
                 free_document(doc_to_delete.value());
             }
+            else if (doc_to_delete) {
+                // removing the current document, close the document
+                main_document_view->set_null_document();
+                document_manager->remove_tab(*path);
+                free_document(doc_to_delete.value());
+            }
         }
         );
     make_current_menu_columns_equal();

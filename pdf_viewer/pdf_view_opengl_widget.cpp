@@ -1334,11 +1334,17 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             }
 
 
-            if (last_opened_file_path.size() > 0) {
-                draw_empty_helper_message(painter, "Document " + QString::fromStdWString(last_opened_file_path) + " does not exist");
+            if (document_view && document_view->was_set_to_null) {
+                draw_empty_helper_message(painter, "No document.");
             }
             else {
-                draw_empty_helper_message(painter, "No document");
+                if (last_opened_file_path.size() > 0) {
+                    draw_empty_helper_message(painter, "Document " + QString::fromStdWString(last_opened_file_path) + " does not exist");
+                }
+                else {
+                    draw_empty_helper_message(painter, "No document");
+                }
+
             }
         }
         return;
