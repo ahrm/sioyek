@@ -4,6 +4,7 @@
 #include <mupdf/fitz.h>
 #include <qopengl.h>
 #include <algorithm>
+#include <cmath>
 
 class Document;
 class DocumentView;
@@ -294,7 +295,7 @@ struct Vec {
         for (int i = 0; i < dim; i++) {
             norm_squared += values[i] * values[i];
         }
-        return sqrt(norm_squared);
+        return std::sqrt<float>(norm_squared);
     }
 
     NormalizedWindowPos to_normalized_window_pos() {
