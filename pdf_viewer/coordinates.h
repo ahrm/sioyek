@@ -295,7 +295,7 @@ struct Vec {
         for (int i = 0; i < dim; i++) {
             norm_squared += values[i] * values[i];
         }
-        return std::sqrt<float>(norm_squared);
+        return std::sqrt(norm_squared);
     }
 
     NormalizedWindowPos to_normalized_window_pos() {
