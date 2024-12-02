@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "qcolordialog.h"
 #include "ui.h"
+#include <qscreen.h>
 
 
 extern float BACKGROUND_COLOR[3];
