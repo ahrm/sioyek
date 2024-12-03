@@ -846,10 +846,17 @@ public:
     void on_socket_deleted(QLocalSocket* deleted_socket);
     Q_INVOKABLE QJsonObject get_json_state();
     Q_INVOKABLE void set_state(QJsonObject state);
-    QJsonObject get_json_annotations();
-    QJsonArray get_all_json_states();
+    Q_INVOKABLE QJsonObject get_json_annotations();
+    Q_INVOKABLE void goto_offset(float x_offset, float y_offset);
+    Q_INVOKABLE QJsonObject absolute_to_window_rect_json(QJsonObject absolute_rect_json);
+
+    Q_INVOKABLE void screenshot_js(QString file_path, QJsonObject window_rect);
+    Q_INVOKABLE void framebuffer_screenshot_js(QString file_path, QJsonObject window_rect);
+
     void screenshot(std::wstring file_path);
     void framebuffer_screenshot(std::wstring file_path);
+
+    QJsonArray get_all_json_states();
     void export_command_names(std::wstring file_path);
     void export_config_names(std::wstring file_path);
     void export_default_config_file(std::wstring file_path);

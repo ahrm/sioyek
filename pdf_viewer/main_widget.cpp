@@ -11260,3 +11260,63 @@ void MainWidget::toggle_menu_collapse() {
         }
     }
 }
+
+void MainWidget::goto_offset(float x_offset, float y_offset) {
+    main_document_view->set_offsets(x_offset, y_offset, true);
+}
+
+Q_INVOKABLE QJsonObject MainWidget::absolute_to_window_rect_json(QJsonObject absolute_rect_json) {
+
+    AbsoluteRect abs_rect;
+    abs_rect.x0 = absolute_rect_json["x0"].toDouble();
+    abs_rect.x1 = absolute_rect_json["x1"].toDouble();
+    abs_rect.y0 = absolute_rect_json["y0"].toDouble();
+    abs_rect.y1 = absolute_rect_json["y1"].toDouble();
+
+    WindowRect wind_rect = abs_rect.to_window(main_document_view);
+    QJsonObject wind_rect_json;
+    wind_rect_json["x0"] = wind_rect.x0;
+    wind_rect_json["x1"] = wind_rect.x1;
+    wind_rect_json["y0"] = wind_rect.y0;
+    wind_rect_json["y1"] = wind_rect.y1;
+    return wind_rect_json;
+}
+
+void MainWidget::screenshot_js(QString file_path, QJsonObject window_rect_js) {
+    WindowRect window_rect;
+    window_rect.x0 = window_rect_js["x0"].toDouble();
+    window_rect.x1 = window_rect_js["x1"].toDouble();
+    window_rect.y0 = window_rect_js["y0"].toDouble();
+    window_rect.y1 = window_rect_js["y1"].toDouble();
+    QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.x1 - window_rect.x0, std::abs(window_rect.y1 - window_rect.y0));
+    
+
+    if (window_qrect.width() > 0 && window_qrect.height() > 0) {
+
+        QPixmap pixmap(size());
+        render(&pixmap, QPoint(), QRegion(rect()));
+        pixmap = pixmap.copy(window_qrect);
+
+        pixmap.save(file_path);
+    }
+
+}
+
+void MainWidget::framebuffer_screenshot_js(QString file_path, QJsonObject window_rect_js) {
+    WindowRect window_rect;
+    window_rect.x0 = window_rect_js["x0"].toDouble();
+    window_rect.x1 = window_rect_js["x1"].toDouble();
+    window_rect.y0 = window_rect_js["y0"].toDouble();
+    window_rect.y1 = window_rect_js["y1"].toDouble();
+    QRect window_qrect = QRect(window_rect.x0, window_rect.y0, window_rect.x1 - window_rect.x0, std::abs(window_rect.y1 - window_rect.y0));
+
+    if (window_qrect.width() > 0 && window_qrect.height() > 0) {
+
+        QImage image = opengl_widget->grabFramebuffer();
+        QPixmap pixmap = QPixmap::fromImage(image);
+        pixmap = pixmap.copy(window_qrect);
+
+        pixmap.save(file_path);
+    }
+}
+
