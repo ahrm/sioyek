@@ -712,7 +712,8 @@ void DocumentView::move_pages(int num_pages) {
     if (current_page == -1) {
         current_page = 0;
     }
-    move_absolute(0, num_pages * (current_document->get_page_height(current_page) + PAGE_PADDINGS));
+
+    move_virtual(0, num_pages * (current_document->get_page_height(current_page) + PAGE_PADDINGS));
 }
 
 void DocumentView::move_screens(int num_screens) {
