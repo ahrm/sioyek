@@ -5115,7 +5115,7 @@ void MainWidget::goto_overview() {
         else {
             std::optional<DocumentPos> maybe_overview_position = get_overview_position();
             if (maybe_overview_position.has_value()) {
-                long_jump_to_destination(maybe_overview_position.value());
+                long_jump_to_destination(maybe_overview_position->page, maybe_overview_position->y);
             }
         }
         set_overview_page({});
