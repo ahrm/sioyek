@@ -825,7 +825,10 @@ void Document::convert_toc_tree(fz_outline* root, std::vector<TocNode*>& output)
         if (root->page.page == -1) {
             float xp, yp;
             fz_location loc = fz_resolve_link(context, doc, root->uri, &xp, &yp);
-            int chapter_page = accum_chapter_pages[loc.chapter];
+            int chapter_page = 0;
+            if (loc.chapter >= 0 && loc.chapter < accum_chapter_pages.size()) {
+                chapter_page = accum_chapter_pages[loc.chapter];
+            }
             current_node->page = chapter_page + loc.page;
         }
         else {
