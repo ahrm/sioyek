@@ -662,6 +662,9 @@ public:
             if (index == 0 && (num_repeats > 0)) {
                 commands[index]->set_num_repeats(num_repeats);
             }
+            else {
+                commands[index]->set_num_repeats(0);
+            }
 
             commands[index]->run();
             performed[index] = true;
