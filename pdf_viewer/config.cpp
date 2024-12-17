@@ -120,6 +120,7 @@ bool DEFAULT_DARK_MODE = false;
 bool USE_SYSTEM_THEME = false;
 bool USE_CUSTOM_COLOR_FOR_DARK_SYSTEM_THEME = false;
 bool SORT_BOOKMARKS_BY_LOCATION = true;
+bool SORT_HIGHLIGHTS_BY_LOCATION = true;
 std::wstring LIBGEN_ADDRESS = L"";
 std::wstring GOOGLE_SCHOLAR_ADDRESS = L"";
 std::wstring INVERSE_SEARCH_COMMAND = L"";
@@ -959,6 +960,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"align_link_dest_to_top", &ALIGN_LINK_DEST_TO_TOP);
     add_bool(L"check_for_updates_on_startup", &SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP);
     add_bool(L"sort_bookmarks_by_location", &SORT_BOOKMARKS_BY_LOCATION);
+    add_bool(L"sort_highlights_by_location", &SORT_HIGHLIGHTS_BY_LOCATION);
     add_bool(L"hover_overview", &HOVER_OVERVIEW);
     add_bool(L"rerender_overview", &RERENDER_OVERVIEW);
     add_bool(L"wheel_zoom_on_cursor", &WHEEL_ZOOM_ON_CURSOR);

@@ -106,6 +106,7 @@ extern int next_window_id;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool MULTILINE_MENUS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
+extern bool SORT_HIGHLIGHTS_BY_LOCATION;
 extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool HOVER_OVERVIEW;
 extern bool WHEEL_ZOOM_ON_CURSOR;
@@ -5712,7 +5713,14 @@ void MainWidget::handle_goto_highlight() {
     std::vector<std::wstring> option_text_annotations;
     std::vector<std::wstring> option_location_strings;
     bool has_text_annotations = false;
-    std::vector<Highlight> highlights = doc()->get_highlights_sorted();
+    std::vector<Highlight> highlights;
+
+    if (SORT_HIGHLIGHTS_BY_LOCATION) {
+        highlights = doc()->get_highlights_sorted();
+    }
+    else {
+        highlights = doc()->get_highlights();
+    }
 
     int closest_highlight_index = doc()->find_closest_highlight_index(highlights, main_document_view->get_offset_y());
 
