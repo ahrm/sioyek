@@ -58,6 +58,7 @@ extern std::wstring SHARED_DATABASE_PATH;
 extern bool DEBUG;
 extern bool EXACT_HIGHLIGHT_SELECT;
 extern std::wstring ANNOTATIONS_DIR_PATH;
+extern bool LIGHTEN_COLORS_WHEN_EMBEDDING_ANNOTATIONS;
 
 int Document::get_mark_index(char symbol) {
     for (size_t i = 0; i < marks.size(); i++) {
@@ -2253,9 +2254,16 @@ void Document::embed_annotations(std::wstring new_file_path) {
         }
         float* color_ = get_highlight_type_color(highlight.type);
         float color[3];
-        // lighten highlight colors before embedding (because we use alpha to make it lighter but
-        // the color doesn't take it into accout). Also see: https://github.com/ahrm/sioyek/issues/667
-        lighten_color(color_, color);
+        if (LIGHTEN_COLORS_WHEN_EMBEDDING_ANNOTATIONS) {
+            // lighten highlight colors before embedding (because we use alpha to make it lighter but
+            // the color doesn't take it into accout). Also see: https://github.com/ahrm/sioyek/issues/667
+            lighten_color(color_, color);
+        }
+        else {
+            color[0] = color_[0];
+            color[1] = color_[1];
+            color[2] = color_[2];
+        }
 
         pdf_set_annot_color(context, highlight_annot, 3, color);
         if (highlight.text_annot.size() > 0) {
