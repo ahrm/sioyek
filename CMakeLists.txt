@@ -42,8 +42,6 @@ qt_add_executable(sioyek WIN32 MACOSX_BUNDLE
     pdf_viewer/pdf_renderer.cpp pdf_viewer/pdf_renderer.h
     pdf_viewer/pdf_view_opengl_widget.cpp pdf_viewer/pdf_view_opengl_widget.h
     pdf_viewer/rapidfuzz_amalgamated.hpp
-    pdf_viewer/sqlite3.c pdf_viewer/sqlite3.h
-    pdf_viewer/sqlite3ext.h
     pdf_viewer/touchui/TouchAudioButtons.cpp pdf_viewer/touchui/TouchAudioButtons.h
     pdf_viewer/touchui/TouchCheckbox.cpp pdf_viewer/touchui/TouchCheckbox.h
     pdf_viewer/touchui/TouchConfigMenu.cpp pdf_viewer/touchui/TouchConfigMenu.h
@@ -71,7 +69,10 @@ qt_add_executable(sioyek WIN32 MACOSX_BUNDLE
     pdf_viewer/utils.cpp pdf_viewer/utils.h
 )
 
-target_include_directories(sioyek PRIVATE pdf_viewer)
+target_include_directories(sioyek PRIVATE 
+    pdf_viewer 
+    ${SQLite3_INCLUDE_DIRS}
+)
 
 target_compile_definitions(sioyek PRIVATE
     QT_OPENGLEXTENSIONS_LIB
@@ -232,6 +233,7 @@ endif()
 
 find_package(ZLIB REQUIRED)
 find_package(HarfBuzz REQUIRED)
+find_package(SQLite3 REQUIRED)
 
 if((QT_VERSION_MAJOR GREATER 5))
   target_compile_definitions(sioyek PRIVATE
@@ -254,6 +256,7 @@ target_link_libraries(sioyek PRIVATE
     ${HARFBUZZ_LIBRARIES}
     ZLIB::ZLIB
     fzf
+    SQLite::SQLite3
 )
 
 if(APPLE)
