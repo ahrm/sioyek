@@ -117,6 +117,12 @@ if(WIN32)
   endif()
 endif()
 
+if(UNIX AND NOT APPLE)
+  target_link_libraries(sioyek PRIVATE
+        LINUX_STANDARD_PATHS
+  )
+endif()
+
 find_package(ZLIB REQUIRED)
 find_package(HarfBuzz REQUIRED)
 find_package(SQLite3 REQUIRED)
