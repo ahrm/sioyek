@@ -2232,13 +2232,13 @@ float PdfViewOpenGLWidget::get_overview_side_pos(int index) {
     if (index == OverviewSide::bottom) {
         return overview_offset_y - overview_half_height;
     }
-    if (index == OverviewSide::top) {
+    else if (index == OverviewSide::top) {
         return overview_offset_y + overview_half_height;
     }
-    if (index == OverviewSide::left) {
+    else if (index == OverviewSide::left) {
         return overview_offset_x - overview_half_width;
     }
-    if (index == OverviewSide::right) {
+    else {
         return overview_offset_x + overview_half_width;
     }
 }

@@ -1383,7 +1383,7 @@ void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_numbe
         }
     }
 
-    std::wregex index_dst_regex(L"(^|\n)[A-Z][a-zA-Z]{2,}\.?[ \t]+[0-9]+(\.[0-9]+)*");
+    std::wregex index_dst_regex(L"(^|\n)[A-Z][a-zA-Z]{2,}\\.?[ \t]+[0-9]+(\\.[0-9]+)*");
     //std::wregex index_dst_regex(L"(^|\n)[A-Z][a-zA-Z]{2,}[ \t]+[0-9]+(\-[0-9]+)*");
     //std::wregex index_src_regex(L"[a-zA-Z]{3,}[ \t]+[0-9]+(\.[0-9]+)*");
     std::wsmatch match;
@@ -3651,7 +3651,7 @@ std::wstring get_paper_name_from_reference_text(std::wstring reference_text) {
 
         QString str = QString::fromStdWString(reference_text);
         //QRegularExpression reference_ending_dot_regex = QRegularExpression("(\.\w*In )|(\.\w*[aA]r[xX]iv )|(\.\w*[aA]r[X]iv )");
-        QRegularExpression reference_ending_dot_regex = QRegularExpression("(\.\w*In )|(\.\w*[aA]r[xX]iv )");
+        QRegularExpression reference_ending_dot_regex = QRegularExpression("(\\.\\w*In )|(\\.\w*[aA]r[xX]iv )");
 
         int ending_index = str.lastIndexOf(reference_ending_dot_regex);
         if (ending_index == -1) {
@@ -3830,7 +3830,7 @@ bool is_text_refernce_rather_than_paper_name(std::wstring text) {
         return true;
     }
 
-    QStringList parts = QString::fromStdWString(text).split(QRegularExpression("[ \(\)]"));
+    QStringList parts = QString::fromStdWString(text).split(QRegularExpression("[ \\(\\)]"));
     for (int i = 0; i < parts.size(); i++) {
         if (is_year(parts[i])) {
             return true;

@@ -1608,7 +1608,7 @@ std::optional<std::pair<std::wstring, std::wstring>> Document::get_generic_link_
     std::pair<int,
     int>* out_range) {
 
-    std::wregex regex(L"[a-zA-Z]{3,}(\.){0,1}[ \t]+[0-9]+(\.[0-9]+)*");
+    std::wregex regex(L"[a-zA-Z]{3,}(\\.){0,1}[ \t]+[0-9]+(\\.[0-9]+)*");
     std::optional<std::wstring> match_string = get_regex_match_at_position(regex, flat_chars, position, out_range);
     if (match_string) {
         std::vector<std::wstring> parts = split_whitespace(match_string.value());
@@ -2843,7 +2843,8 @@ const std::vector<AbsoluteRect>& Document::get_page_lines(
         }
         else {
             fz_pixmap* pixmap = get_small_pixmap(page);
-            if (pixmap == nullptr) return {};
+            static const std::vector<AbsoluteRect> empty = {};
+            if (pixmap == nullptr) return empty;
             std::vector<unsigned int> hist = get_max_width_histogram_from_pixmap(pixmap);
             std::vector<unsigned int> line_locations;
             std::vector<unsigned int> line_locations_begins;
@@ -4040,7 +4041,7 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
 
 int Document::find_reference_page_with_reference_text(std::wstring ref) {
 
-    QStringList parts = QString::fromStdWString(ref).split(QRegularExpression("[ \w\(\);,]"));
+    QStringList parts = QString::fromStdWString(ref).split(QRegularExpression("[ \\w\\(\\);,]"));
     QString largest_part = "";
     for (int i = 0; i < parts.size(); i++) {
         if (parts.at(i).size() > largest_part.size() ) {

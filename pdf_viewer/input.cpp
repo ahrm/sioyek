@@ -152,6 +152,7 @@ struct ParseState {
             }
             return arg;
         }
+        return {};
     }
 
     bool is_valid_command_name_char(QChar c) {
