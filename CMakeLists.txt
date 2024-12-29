@@ -99,6 +99,10 @@ if(NOT ANDROID)
         pdf_viewer/synctex/synctex_parser.c pdf_viewer/synctex/synctex_parser.h
         pdf_viewer/synctex/synctex_parser_utils.c pdf_viewer/synctex/synctex_parser_utils.h
   )
+else()
+  target_compile_definitions(sioyek PRIVATE
+        SIOYEK_ANDROID
+  )
 endif()
 
 if(WIN32)
