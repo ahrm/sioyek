@@ -59,6 +59,7 @@
 #include "database.h"
 #include "book.h"
 #include "utils.h"
+#include "pdf_renderer.h"
 #include "ui.h"
 #include "document.h"
 #include "document_view.h"
@@ -72,6 +73,7 @@
 #include "new_file_checker.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
+#include "fts_fuzzy_match.h"
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
 
 #ifndef MAX_PATH
