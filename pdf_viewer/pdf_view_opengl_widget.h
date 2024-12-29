@@ -1,16 +1,10 @@
 #pragma once
 
-#include <iostream>
 #include <vector>
 #include <string>
-#include <fstream>
-#include <sstream>
-#include <unordered_map>
-#include <thread>
 #include <mutex>
 #include <optional>
 #include <utility>
-#include <memory>
 #include <array>
 
 //#include <qopenglfunctions_3_1.h>

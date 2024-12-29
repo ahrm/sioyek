@@ -17,7 +17,7 @@
 #include <qopenglfunctions.h>
 #include <qopengl.h>
 #include <qwindow.h>
-#include <qkeyevent.h>
+#include <QKeyEvent>
 #include <qinputmethod.h>
 #include <qlineedit.h>
 #include <qtreeview.h>

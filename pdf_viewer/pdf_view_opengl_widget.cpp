@@ -1,7 +1,7 @@
 #include <cmath>
 
 #include <qcolor.h>
-#include <qmouseevent.h>
+#include <QMouseEvent>
 #include <qapplication.h>
 #include <qdatetime.h>
 #include <qfile.h>

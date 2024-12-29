@@ -1,17 +1,11 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <regex>
 #include <fstream>
-#include <sstream>
-#include <unordered_map>
-#include <thread>
 #include <mutex>
 #include <optional>
 #include <utility>
-#include <memory>
 #include <filesystem>
-#include <map>
 
 #ifdef SIOYEK_ANDROID
 #include <QtCore/private/qandroidextras_p.h>
@@ -27,7 +21,7 @@
 #include <qopenglfunctions.h>
 #include <qopengl.h>
 #include <qwindow.h>
-#include <qkeyevent.h>
+#include <QKeyEvent>
 #include <qlineedit.h>
 #include <qtreeview.h>
 #include <qsortfilterproxymodel.h>
@@ -66,12 +60,10 @@
 #include "book.h"
 #include "utils.h"
 #include "ui.h"
-#include "pdf_renderer.h"
 #include "document.h"
 #include "document_view.h"
 #include "pdf_view_opengl_widget.h"
 #include "config.h"
-#include "utf8.h"
 #include "main_widget.h"
 #include "path.h"
 #include "RunGuard.h"
@@ -80,7 +72,6 @@
 #include "new_file_checker.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
-#include "fts_fuzzy_match.h"
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
 
 #ifndef MAX_PATH
@@ -670,7 +661,19 @@ int main(int argc, char* args[]) {
     OpenWithApplication app(argc, args);
 
     int font_id = QFontDatabase::addApplicationFont(":/resources/fonts/JetBrainsMono.ttf");
-    global_font_family = QFontDatabase::applicationFontFamilies(font_id).at(0);
+
+    if (font_id == -1) {
+        qDebug() << "Failed to load font";
+        QFile fontFile(":/resources/fonts/JetBrainsMono.ttf");
+        if (!fontFile.exists()) {
+            qDebug() << "Font file not found in resources!";
+        }
+        // Fallback to a system font
+        global_font_family = "Arial";
+    } else {
+        global_font_family = QFontDatabase::applicationFontFamilies(font_id).at(0);
+    }
+
     if (TAG_FONT_FACE.size() == 0) {
         TAG_FONT_FACE = global_font_family.toStdWString();
     }
