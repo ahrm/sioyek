@@ -5,7 +5,7 @@
 #include <sstream>
 
 #include <qjsondocument.h>
-#include <qkeyevent.h>
+#include <QKeyEvent>
 #include <qstring.h>
 #include <qstringlist.h>
 #include <qlocalsocket.h>
@@ -2799,8 +2799,11 @@ public:
 
 class MoveSmoothCommand : public Command {
     bool was_held = false;
+    float velocity_multiplier = 1.0f;
 public:
-    MoveSmoothCommand(std::string name, MainWidget* w) : Command(name, w) {};
+    MoveSmoothCommand(std::string name, MainWidget* w, float velocity_mult=1.0f) : Command(name, w) {
+        velocity_multiplier = velocity_mult;
+    };
 
     virtual bool is_down() = 0;
 
@@ -2815,7 +2818,7 @@ public:
         }
         else {
             widget->handle_move_smooth_hold(is_down());
-            widget->set_fixed_velocity(is_down() ? -SMOOTH_MOVE_MAX_VELOCITY : SMOOTH_MOVE_MAX_VELOCITY);
+            widget->set_fixed_velocity(is_down() ? -SMOOTH_MOVE_MAX_VELOCITY * velocity_multiplier : SMOOTH_MOVE_MAX_VELOCITY * velocity_multiplier);
         }
     }
 
@@ -2860,6 +2863,28 @@ public:
     static inline const std::string cname = "move_down_smooth";
     static inline const std::string hname = "";
     MoveDownSmoothCommand(MainWidget* w) : MoveSmoothCommand(cname, w) {};
+
+    bool is_down() {
+        return true;
+    }
+};
+
+class ScreenUpSmoothCommand : public MoveSmoothCommand {
+public:
+    static inline const std::string cname = "screen_up_smooth";
+    static inline const std::string hname = "Move screen up smoothly";
+    ScreenUpSmoothCommand(MainWidget* w) : MoveSmoothCommand(cname, w, 3.0f) {};
+
+    bool is_down() {
+        return false;
+    }
+};
+
+class ScreenDownSmoothCommand : public MoveSmoothCommand {
+public:
+    static inline const std::string cname = "screen_down_smooth";
+    static inline const std::string hname = "Move screen down smoothly";
+    ScreenDownSmoothCommand(MainWidget* w) : MoveSmoothCommand(cname, w, 3.0f) {};
 
     bool is_down() {
         return true;
@@ -4484,7 +4509,7 @@ void KeyboardSelectPointCommand::pre_perform() {
 std::string KeyboardSelectPointCommand::get_name() {
     return "keyboard_point_select";
 }
- 
+
 
 void KeyboardSelectPointCommand::set_symbol_requirement(char value) {
     if (text.has_value()) {
@@ -6339,7 +6364,7 @@ public:
 //            if (next_invocation) {
 //                res.push_back(next_invocation.value());
 //            }
-//            
+//
 //        }
 //        return res;
 //    }
@@ -6569,6 +6594,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<MoveRightCommand>();
     register_command<MoveDownSmoothCommand>();
     register_command<MoveUpSmoothCommand>();
+    register_command<ScreenUpSmoothCommand>();
+    register_command<ScreenDownSmoothCommand>();
     register_command<MoveLeftInOverviewCommand>();
     register_command<MoveRightInOverviewCommand>();
     register_command<SaveScratchpadCommand>();
@@ -7260,7 +7287,7 @@ void get_keys_file_lines(const Path& file_path,
         if (last_space_index >= 0){
             std::wstring command_name = line_string.left(last_space_index).trimmed().toStdWString();
             std::wstring command_key = line_string.right(line_string.size() - last_space_index - 1).trimmed().toStdWString();
-            
+
             command_strings.push_back(command_name);
             command_keys.push_back(command_key);
             command_files.push_back(default_path_name);
