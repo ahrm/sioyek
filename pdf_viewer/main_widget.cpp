@@ -1049,12 +1049,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                     if (dynamic_cast<FilteredSelectTableWindowClass<std::wstring>*>(current_widget_stack.back())) {
                         FilteredSelectTableWindowClass<std::wstring>* list_view = dynamic_cast<FilteredSelectTableWindowClass<std::wstring>*>(current_widget_stack.back());
                         list_view->set_value_second_item(url.toStdWString(),
-                            file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toUInt()));
+                            file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toULongLong()));
                     }
                     if (dynamic_cast<TouchFilteredSelectWidget<std::wstring>*>(current_widget_stack.back())) {
                         TouchFilteredSelectWidget<std::wstring>* list_view = dynamic_cast<TouchFilteredSelectWidget<std::wstring>*>(current_widget_stack.back());
                         list_view->set_value_second_item(url.toStdWString(),
-                            file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toUInt()));
+                            file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toULongLong()));
                     }
                     });
 
@@ -3794,7 +3794,7 @@ void MainWidget::execute_command(std::wstring command, std::wstring text, bool w
 
     QString qtext = QString::fromStdWString(command);
 
-    qtext.arg(qfile_path);
+    qtext = qtext.arg(qfile_path);
 
 #ifdef SIOYEK_QT6
     QStringList command_parts_ = qtext.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
@@ -7794,22 +7794,22 @@ void MainWidget::handle_pen_drawing_event(QTabletEvent* te) {
     }
 
     if (te->type() == QEvent::TabletRelease) {
-        finish_drawing(te->pos());
+        finish_drawing(te->position());
         invalidate_render();
     }
 
     if (te->type() == QEvent::TabletMove) {
         if (is_drawing) {
-            handle_drawing_move(te->pos(), te->pressure());
+            handle_drawing_move(te->position(), te->pressure());
             validate_render();
         }
 
     }
 }
 
-void MainWidget::handle_drawing_move(QPoint pos, float pressure) {
+void MainWidget::handle_drawing_move(QPointF pos, float pressure) {
     pressure = 0;
-    WindowPos current_window_pos = { pos.x(), pos.y() };
+    WindowPos current_window_pos = { static_cast<float>(pos.x()), static_cast<float>(pos.y()) };
     AbsoluteDocumentPos mouse_abspos = get_window_abspos(current_window_pos);
     FreehandDrawingPoint fdp;
     fdp.pos = mouse_abspos;
@@ -7835,7 +7835,7 @@ void MainWidget::start_drawing() {
     opengl_widget->current_drawing.alpha = freehand_alpha;
 }
 
-void MainWidget::finish_drawing(QPoint pos) {
+void MainWidget::finish_drawing(QPointF pos) {
     is_drawing = false;
 
     if (opengl_widget->current_drawing.points.size() == 0) {

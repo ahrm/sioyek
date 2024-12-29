@@ -2241,6 +2241,7 @@ float PdfViewOpenGLWidget::get_overview_side_pos(int index) {
     if (index == OverviewSide::right) {
         return overview_offset_x + overview_half_width;
     }
+    return 0.0f;
 }
 
 void PdfViewOpenGLWidget::set_overview_side_pos(OverviewSide index, NormalizedWindowRect original_rect, fvec2 diff) {

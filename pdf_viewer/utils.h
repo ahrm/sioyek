@@ -258,7 +258,7 @@ bool are_rects_same(fz_rect r1, fz_rect r2);
 
 QStringList extract_paper_data_from_json_response(QJsonValue json_object, const std::vector<QString>& path);
 QStringList extract_paper_string_from_json_response(QJsonObject json_object, std::wstring path);
-QString file_size_to_human_readable_string(int file_size);
+QString file_size_to_human_readable_string(long long int file_size);
 
 std::wstring new_uuid();
 std::string new_uuid_utf8();
@@ -448,6 +448,7 @@ bool should_trigger_delete(QKeyEvent *key_event);
 
 class TextToSpeechHandler {
 public:
+    virtual ~TextToSpeechHandler() = default;
     virtual void set_rate(float rate) = 0;
     virtual void say(QString text) = 0;
     virtual void stop() = 0;

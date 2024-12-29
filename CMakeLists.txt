@@ -72,6 +72,8 @@ qt_add_executable(sioyek WIN32 MACOSX_BUNDLE
     pdf_viewer/utils.cpp pdf_viewer/utils.h
 )
 
+target_compile_options(sioyek PRIVATE -Wno-inconsistent-missing-override)
+
 target_include_directories(sioyek PRIVATE 
     pdf_viewer 
     ${SQLite3_INCLUDE_DIRS}

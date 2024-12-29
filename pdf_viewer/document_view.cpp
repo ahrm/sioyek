@@ -405,6 +405,8 @@ NormalizedWindowPos DocumentView::document_to_window_pos(DocumentPos doc_pos) {
         float window_y = static_cast<float>((window_pos.y - halfheight) / halfheight);
         return { window_x, -window_y };
     }
+
+    return { 0, 0 };
 }
 
 WindowPos DocumentView::absolute_to_window_pos_in_pixels(AbsoluteDocumentPos abspos) {
@@ -1337,7 +1339,7 @@ std::vector<SmartViewCandidate> DocumentView::find_line_definitions() {
                 return result;
             }
 
-            std::wstring item_regex(L"[a-zA-Z]{2,}\\.?[ \t]+[0-9]+(\.[0-9]+)*");
+            std::wstring item_regex(L"[a-zA-Z]{2,}\\.?[ \t]+[0-9]+(\\.?[0-9]+)*");
             std::wstring reference_regex(L"\\[[a-zA-Z0-9, ]+\\]");
             std::wstring equation_regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
 

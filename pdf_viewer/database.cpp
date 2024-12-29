@@ -1,4 +1,4 @@
-#include "database.h";
+#include "database.h"
 #include <sstream>
 #include <cassert>
 #include <utility>
@@ -1880,7 +1880,7 @@ std::wstring encode_variant(QVariant var) {
 
 
     std::vector<QString> specials = { "CURRENT_TIMESTAMP", "datetime('now')" };
-    if ((var.type() == QVariant::String) || (var.type() == QVariant::Char)) {
+    if ((var.typeId() == QMetaType::QString) || (var.typeId() == QMetaType::Char)) {
         if (std::find(specials.begin(), specials.end(), var.toString()) != specials.end()) {
             return var.toString().toStdWString();
         }

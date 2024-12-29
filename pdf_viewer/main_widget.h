@@ -718,9 +718,9 @@ public:
     bool is_in_edit_portal_rect(WindowPos pos);
     bool is_in_visual_mark_next_rect(WindowPos pos);
     bool is_in_visual_mark_prev_rect(WindowPos pos);
-    void handle_drawing_move(QPoint pos, float pressure);
+    void handle_drawing_move(QPointF pos, float pressure);
     void start_drawing();
-    void finish_drawing(QPoint pos);
+    void finish_drawing(QPointF pos);
     void handle_pen_drawing_event(QTabletEvent* te);
     void select_freehand_drawings(AbsoluteRect rect);
     void delete_freehand_drawings(AbsoluteRect rect);
