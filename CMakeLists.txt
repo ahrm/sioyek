@@ -22,7 +22,10 @@ endif()
 
 qt_standard_project_setup()
 
+set(CMAKE_AUTORCC ON)
+
 qt_add_executable(sioyek WIN32 MACOSX_BUNDLE
+    resources.qrc
     pdf_viewer/OpenWithApplication.cpp pdf_viewer/OpenWithApplication.h
     pdf_viewer/RunGuard.cpp pdf_viewer/RunGuard.h
     pdf_viewer/book.cpp pdf_viewer/book.h
@@ -90,127 +93,6 @@ target_link_libraries(sioyek PRIVATE
     Qt::TextToSpeech
     Qt::Widgets
 )
-# Resources:
-set(resources_resource_files
-    "begin.png"
-    "data/command_docs.json"
-    "data/config_docs.json"
-    "data/embedding.npy"
-    "data/linear.npy"
-    "end.png"
-    "icons/B.svg"
-    "icons/B_white.svg"
-    "icons/P.svg"
-    "icons/P_white.svg"
-    "icons/adjust.svg"
-    "icons/arrow-begin.svg"
-    "icons/arrow-end.svg"
-    "icons/bookmark-add.svg"
-    "icons/bookmark-g.svg"
-    "icons/bookmark.svg"
-    "icons/close.svg"
-    "icons/copy.svg"
-    "icons/document-page-number.svg"
-    "icons/draw.svg"
-    "icons/erase.svg"
-    "icons/finger-index.svg"
-    "icons/fit-horizontal-enabled.svg"
-    "icons/fit-horizontal.svg"
-    "icons/fullscreen-enabled.svg"
-    "icons/fullscreen.svg"
-    "icons/go-to-file.svg"
-    "icons/google-scholar.svg"
-    "icons/google.svg"
-    "icons/highlight-g.svg"
-    "icons/highlight.svg"
-    "icons/home.svg"
-    "icons/hourglass.svg"
-    "icons/jump-right.svg"
-    "icons/left.svg"
-    "icons/link-enabled.svg"
-    "icons/link.svg"
-    "icons/load.svg"
-    "icons/lock-enabled.svg"
-    "icons/lock.svg"
-    "icons/move.svg"
-    "icons/next.svg"
-    "icons/page.svg"
-    "icons/paper-download.svg"
-    "icons/pause.svg"
-    "icons/pen.svg"
-    "icons/play.svg"
-    "icons/portal-enabled.svg"
-    "icons/portal.svg"
-    "icons/previous.svg"
-    "icons/question.svg"
-    "icons/right.svg"
-    "icons/ruler-enabled.svg"
-    "icons/ruler.svg"
-    "icons/save.svg"
-    "icons/screenshot.svg"
-    "icons/search.svg"
-    "icons/select_text.svg"
-    "icons/selection-begin.svg"
-    "icons/selection-end.svg"
-    "icons/stop.svg"
-    "icons/swap.svg"
-    "icons/table-of-contents.svg"
-    "icons/text-selection.svg"
-    "icons/tts-enabled.svg"
-    "icons/tts.svg"
-    "icons/unlink.svg"
-    "pdf_viewer/keys.config"
-    "pdf_viewer/prefs.config"
-    "pdf_viewer/shaders/compiled_drawing.vertex"
-    "pdf_viewer/shaders/compiled_line.fragment"
-    "pdf_viewer/shaders/custom_colors.fragment"
-    "pdf_viewer/shaders/dark_mode.fragment"
-    "pdf_viewer/shaders/debug.fragment"
-    "pdf_viewer/shaders/dot.fragment"
-    "pdf_viewer/shaders/dot.vertex"
-    "pdf_viewer/shaders/highlight.fragment"
-    "pdf_viewer/shaders/line.fragment"
-    "pdf_viewer/shaders/line.vertex"
-    "pdf_viewer/shaders/separator.fragment"
-    "pdf_viewer/shaders/simple.fragment"
-    "pdf_viewer/shaders/simple.vertex"
-    "pdf_viewer/shaders/stencil.fragment"
-    "pdf_viewer/shaders/stencil.vertex"
-    "pdf_viewer/shaders/unrendered_page.fragment"
-    "pdf_viewer/shaders/vertical_bar.fragment"
-    "pdf_viewer/shaders/vertical_bar_dark.fragment"
-    "pdf_viewer/touchui/TouchAudioButtons.qml"
-    "pdf_viewer/touchui/TouchButtonGroup.qml"
-    "pdf_viewer/touchui/TouchCheckbox.qml"
-    "pdf_viewer/touchui/TouchConfigMenu.qml"
-    "pdf_viewer/touchui/TouchCopyOptions.qml"
-    "pdf_viewer/touchui/TouchDeleteButton.qml"
-    "pdf_viewer/touchui/TouchDrawControls.qml"
-    "pdf_viewer/touchui/TouchGenericButtons.qml"
-    "pdf_viewer/touchui/TouchHighlightButtons.qml"
-    "pdf_viewer/touchui/TouchListView.qml"
-    "pdf_viewer/touchui/TouchMacroEditor.qml"
-    "pdf_viewer/touchui/TouchMainMenu.qml"
-    "pdf_viewer/touchui/TouchMarkSelector.qml"
-    "pdf_viewer/touchui/TouchPageSelector.qml"
-    "pdf_viewer/touchui/TouchRangeSelectUI.qml"
-    "pdf_viewer/touchui/TouchRectangleSelectUI.qml"
-    "pdf_viewer/touchui/TouchSearchButtons.qml"
-    "pdf_viewer/touchui/TouchSettings.qml"
-    "pdf_viewer/touchui/TouchSlider.qml"
-    "pdf_viewer/touchui/TouchSymbolColorSelector.qml"
-    "pdf_viewer/touchui/TouchTextEdit.qml"
-    "pdf_viewer/touchui/TouchTreeView.qml"
-    "tutorial.pdf"
-    "resources/fonts/JetBrainsMono.ttf"
-)
-
-qt_add_resources(sioyek "resources"
-    PREFIX
-        "/"
-    FILES
-        ${resources_resource_files}
-)
 
 if(NOT ANDROID)
   target_sources(sioyek PUBLIC
@@ -268,8 +150,6 @@ if(APPLE)
 else()
   string(REPLACE "-mno-direct-extern-access" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
-
-qt_add_resources(sioyek resources.qrc)
 
 install(TARGETS sioyek
     BUNDLE DESTINATION .
