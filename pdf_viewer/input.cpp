@@ -536,12 +536,12 @@ public:
     bool requires_document() {
         if (is_modal) {
             int current_mode_index = get_current_mode_index();
-            if (current_mode_index >= 0) {
+            if (current_mode_index >= 0 && current_mode_index < commands.size()) {
                 return commands[current_mode_index]->requires_document();
             }
+            return false;
         }
         else {
-
             for (int i = 0; i < commands.size(); i++) {
                 if (commands[i]->requires_document()) {
                     return true;

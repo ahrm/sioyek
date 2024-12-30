@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Find Qt
+# Qt Stuff
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 if(QT_VERSION_MAJOR GREATER_EQUAL 6)
   find_package(Qt6 REQUIRED COMPONENTS
@@ -21,8 +25,6 @@ else()
 endif()
 
 qt_standard_project_setup()
-
-set(CMAKE_AUTORCC ON)
 
 qt_add_executable(sioyek WIN32 MACOSX_BUNDLE
     resources.qrc
@@ -72,6 +74,8 @@ qt_add_executable(sioyek WIN32 MACOSX_BUNDLE
     pdf_viewer/utils.cpp pdf_viewer/utils.h
 )
 
+target_compile_options(sioyek PRIVATE -Wno-inconsistent-missing-override)
+
 target_include_directories(sioyek PRIVATE 
     pdf_viewer 
     ${SQLite3_INCLUDE_DIRS}
@@ -118,7 +122,7 @@ if(WIN32)
 endif()
 
 if(UNIX AND NOT APPLE)
-  target_link_libraries(sioyek PRIVATE
+  target_compile_definitions(sioyek PRIVATE
         LINUX_STANDARD_PATHS
   )
 endif()
