@@ -310,6 +310,7 @@ public:
             table_view->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
         }
 
+        on_config_file_changed();
         if (selected_index != -1) {
             table_view->scrollTo(this->proxy_model->mapFromSource(table_view->currentIndex()), QAbstractItemView::EnsureVisible);
         }
