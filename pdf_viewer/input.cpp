@@ -5589,11 +5589,34 @@ public:
 class SelectRectCommand : public Command {
 public:
     static inline const std::string cname = "select_rect";
-    static inline const std::string hname = "Select a rectangle to be used in other commands";
-    SelectRectCommand(MainWidget* w) : Command(cname, w) {};
+    static inline const std::string hname = "Select a rectangle.";
+    SelectRectCommand (MainWidget* w) : Command(cname, w) {};
+    std::optional<AbsoluteRect> absrect = {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+
+        if (!absrect.has_value()) {
+            Requirement req = { RequirementType::Rect, "Command Rect" };
+            return req;
+        }
+        return {};
+    }
+
+    void set_rect_requirement(AbsoluteRect rect) {
+        absrect = rect;
+    }
 
     void perform() {
-        widget->set_rect_select_mode(true);
+        QJsonDocument doc;
+        QJsonObject rect_json;
+        rect_json["x0"] = absrect->x0;
+        rect_json["y0"] = absrect->y0;
+        rect_json["x1"] = absrect->x1;
+        rect_json["y1"] = absrect->y1;
+        doc.setObject(rect_json);
+        result = utf8_decode(doc.toJson().toStdString());
+        widget->clear_selected_rect();
+        widget->set_rect_select_mode(false);
     }
 
 };
