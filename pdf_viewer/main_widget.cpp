@@ -31,7 +31,7 @@
 #include <qfile.h>
 #include <qdrag.h>
 #include <qmenu.h>
-#include <qthread>
+#include <QThread>
 
 #ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
