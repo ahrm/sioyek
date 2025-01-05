@@ -31,11 +31,7 @@
 #include <qfile.h>
 #include <qdrag.h>
 #include <qmenu.h>
-#if QT_VERSION > QT_VERSION_CHECK(6, 8, 0)
 #include <QThread>
-#else
-#include <qthread>
-#endif
 
 #ifndef SIOYEK_QT6
 #include <qdesktopwidget.h>
