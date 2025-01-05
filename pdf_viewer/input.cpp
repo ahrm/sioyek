@@ -5325,11 +5325,30 @@ public:
     SetWindowRectCommand(MainWidget* w) : TextCommand(cname, w) {};
 
     void perform() {
+        if (!text.has_value()) return;
+
         QStringList parts = QString::fromStdWString(text.value()).split(' ');
-        int x0 = parts[0].toInt();
-        int y0 = parts[1].toInt();
-        int w = parts[2].toInt();
-        int h = parts[3].toInt();
+        if (parts.size() < 4) {
+            show_error_message(L"Invalid format. Expected: x y width height");
+            return;
+        }
+
+        bool ok1, ok2, ok3, ok4;
+        int x0 = parts[0].toInt(&ok1);
+        int y0 = parts[1].toInt(&ok2);
+        int w = parts[2].toInt(&ok3);
+        int h = parts[3].toInt(&ok4);
+
+        if (!ok1 || !ok2 || !ok3 || !ok4) {
+            show_error_message(L"Invalid numbers in input");
+            return;
+        }
+
+        if (w <= 0 || h <= 0) {
+            show_error_message(L"Width and height must be positive");
+            return;
+        }
+
         widget->resize(w, h);
         widget->move(x0, y0);
     }
