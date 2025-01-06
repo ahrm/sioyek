@@ -216,6 +216,7 @@ extern std::wstring CONTEXT_MENU_ITEMS_FOR_BOOKMARKS;
 extern std::wstring CONTEXT_MENU_ITEMS_FOR_OVERVIEW;
 extern bool RIGHT_CLICK_CONTEXT_MENU;
 extern float SMOOTH_MOVE_MAX_VELOCITY;
+extern float PERSISTANCE_PERIOD;
 
 extern bool FORCE_CUSTOM_LINE_ALGORITHM;
 extern std::wstring RIGHT_CLICK_COMMAND;
@@ -950,6 +951,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     // todo: make interval time configurable
     validation_interval_timer = new QTimer(this);
     validation_interval_timer->setInterval(INTERVAL_TIME);
+    last_persistance_datetime = QDateTime::currentDateTime();
 
     QObject::connect(&network_manager, &QNetworkAccessManager::finished, [this](QNetworkReply* reply) {
         reply->deleteLater();
@@ -1124,6 +1126,14 @@ MainWidget::MainWidget(fz_context* mupdf_context,
         });
 
     connect(validation_interval_timer, &QTimer::timeout, [&]() {
+
+        if (PERSISTANCE_PERIOD > 0) {
+            QDateTime now = QDateTime::currentDateTime();
+            if (last_persistance_datetime.secsTo(now) > PERSISTANCE_PERIOD) {
+                last_persistance_datetime = now;
+                persist();
+            }
+        }
 
         cleanup_expired_pending_portals();
         if (TOUCH_MODE && selection_begin_indicator) {
