@@ -4424,3 +4424,14 @@ std::vector<std::wstring> get_last_opened_file_name() {
 
     return res;
 }
+
+bool stext_page_has_lines(fz_stext_page* page) {
+    LL_ITER(block, page->first_block) {
+        if (block->type == FZ_STEXT_BLOCK_TEXT) {
+            LL_ITER(line, block->u.t.first_line) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
