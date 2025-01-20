@@ -2800,7 +2800,6 @@ const std::vector<AbsoluteRect>& Document::get_page_lines(
         fz_stext_page* stext_page = get_stext_with_page_number(page);
         if (stext_page && stext_page_has_lines(stext_page) && (!FORCE_CUSTOM_LINE_ALGORITHM)) {
 
-            bool is_text_block = stext_page->first_block->type == FZ_STEXT_BLOCK_TEXT;
             PagelessDocumentRect bound = get_page_absolute_rect(page);
 
             std::vector<PagelessDocumentRect> line_rects;
