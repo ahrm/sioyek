@@ -160,6 +160,25 @@ void* string_deserializer(std::wstringstream& stream, void* res_) {
 	return res;
 }
 
+void path_serializer(void* string_pointer, std::wstringstream& stream) {
+	string_serializer(string_pointer, stream);
+}
+
+void* path_deserializer(std::wstringstream& stream, void* res_) {
+	assert(res_ != nullptr);
+
+	std::wstring path;
+	std::getline(stream, path);
+	path = strip_string(path);
+	if (path.size() > 0 && path[0] == '~') {
+		path = QDir::homePath().toStdWString() + path.substr(1, path.size() - 1);
+	}
+
+	std::wstring* res = static_cast<std::wstring*>(res_);
+	*res = path;
+	return res;
+}
+
 
 template<int N, typename T>
 void vec_n_serializer(void* vec_n_pointer, std::wstringstream& stream) {
@@ -350,7 +369,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"should_draw_unrendered_pages", &SHOULD_DRAW_UNRENDERED_PAGES, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"check_for_updates_on_startup", &SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"sort_bookmarks_by_location", &SORT_BOOKMARKS_BY_LOCATION, bool_serializer, bool_deserializer, bool_validator });
-	configs.push_back({ L"shared_database_path", &SHARED_DATABASE_PATH, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"shared_database_path", &SHARED_DATABASE_PATH, path_serializer, path_deserializer, nullptr });
 	configs.push_back({ L"hover_overview", &HOVER_OVERVIEW, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"visual_mark_next_page_fraction", &VISUAL_MARK_NEXT_PAGE_FRACTION, float_serializer, float_deserializer, nullptr });
 	configs.push_back({ L"visual_mark_next_page_threshold", &VISUAL_MARK_NEXT_PAGE_THRESHOLD, float_serializer, float_deserializer, nullptr });
@@ -389,7 +408,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"text_summary_should_fill", &TEXT_SUMMARY_HIGHLIGHT_SHOULD_FILL, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"text_summary_context_size", &TEXT_SUMMARY_CONTEXT_SIZE, int_serializer, int_deserializer, nullptr });
 	configs.push_back({ L"use_heuristic_if_text_summary_not_available", &USE_HEURISTIC_IF_TEXT_SUMMARY_NOT_AVAILABLE, bool_serializer, bool_deserializer, bool_validator });
-	configs.push_back({ L"papers_folder_path", &PAPERS_FOLDER_PATH, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"papers_folder_path", &PAPERS_FOLDER_PATH, path_serializer, path_deserializer, nullptr });
 	configs.push_back({ L"enable_experimental_features", &ENABLE_EXPERIMENTAL_FEATURES, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"create_table_of_contents_if_not_exists", &CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"max_created_toc_size", &MAX_CREATED_TABLE_OF_CONTENTS_SIZE, int_serializer, int_deserializer, nullptr });
@@ -435,7 +454,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path ,co
 	configs.push_back({ L"fuzzy_searching", &FUZZY_SEARCHING, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"debug", &DEBUG, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"highlight_delete_threshold", &HIGHLIGHT_DELETE_THRESHOLD, float_serializer, float_deserializer, nullptr });
-	configs.push_back({ L"default_open_file_path", &DEFAULT_OPEN_FILE_PATH, string_serializer, string_deserializer, nullptr });
+	configs.push_back({ L"default_open_file_path", &DEFAULT_OPEN_FILE_PATH, path_serializer, path_deserializer, nullptr });
 	configs.push_back({ L"status_bar_format", &STATUS_BAR_FORMAT, string_serializer, string_deserializer, nullptr });
 	configs.push_back({ L"inverted_horizontal_scrolling", &INVERTED_HORIZONTAL_SCROLLING, bool_serializer, bool_deserializer, bool_validator });
 	configs.push_back({ L"toc_jump_align_top", &TOC_JUMP_ALIGN_TOP, bool_serializer, bool_deserializer, bool_validator });
