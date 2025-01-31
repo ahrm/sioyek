@@ -6327,11 +6327,11 @@ bool MainWidget::event(QEvent* event) {
         // Apparently Qt doesn't send keyPressEvent for tab and backtab anymore, so we have to
         // manually handle them here.
         // todo: make sure this doesn't cause problems on linux and mac
-        if (((ke->key() == Qt::Key_Tab) && (ke->modifiers() == 0)) || ((ke->key() == Qt::Key_Backtab) && (ke->modifiers() == Qt::ShiftModifier))) {
-            if (event->isAccepted()) {
-                key_event(false, ke);
-            }
-        }
+        //if (((ke->key() == Qt::Key_Tab) && (ke->modifiers() == 0)) || ((ke->key() == Qt::Key_Backtab) && (ke->modifiers() == Qt::ShiftModifier))) {
+        //    if (event->isAccepted()) {
+        //        key_event(false, ke);
+        //    }
+        //}
     }
 
     if (event->type() == QEvent::WindowActivate) {
