@@ -78,6 +78,8 @@ public:
 	void delete_highlight_with_index(int index);
 	void delete_highlight(Highlight hl);
 	void delete_closest_bookmark_to_offset(float offset);
+	void expand_highlight_with_index(int index);
+	void expand_all_highlights();
 	float get_offset_x();
 	float get_offset_y();
 	AbsoluteDocumentPos get_offsets();
@@ -91,7 +93,7 @@ public:
 	void get_text_selection(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, std::vector<fz_rect>& selected_characters, std::wstring& text_selection);
 	void add_mark(char symbol);
 	void add_bookmark(std::wstring desc);
-	void add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type);
+	void add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, char type);
 	void on_view_size_change(int new_width, int new_height);
 	void absolute_to_window_pos(float absolute_x, float absolute_y, float* window_x, float* window_y);
 	//void absolute_to_window_pos_pixels(float absolute_x, float absolute_y, float* window_x, float* window_y);

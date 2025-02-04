@@ -5,7 +5,6 @@ extern float MOVE_SCREEN_PERCENTAGE;
 extern float FIT_TO_PAGE_WIDTH_RATIO;
 extern float RULER_PADDING;
 extern float RULER_X_PADDING;
-extern bool EXACT_HIGHLIGHT_SELECT;
 extern bool IGNORE_STATUSBAR_IN_PRESENTATION_MODE;
 
 
@@ -199,6 +198,21 @@ void DocumentView::delete_closest_bookmark_to_offset(float offset) {
 	current_document->delete_closest_bookmark(offset);
 }
 
+void DocumentView::expand_highlight_with_index(int index) {
+	Highlight hl = get_highlight_with_index(index);
+	delete_highlight_with_index(index);
+	add_highlight(hl.selection_begin, hl.selection_end, true, hl.type);
+}
+
+void DocumentView::expand_all_highlights() {
+	std::size_t num_highlights = current_document->get_highlights().size();
+	if (num_highlights > 0) {
+		for (; num_highlights--;) {
+			expand_highlight_with_index(0);
+		}
+	}
+}
+
 float DocumentView::get_offset_x() {
 	return offset_x;
 }
@@ -298,17 +312,19 @@ void DocumentView::add_bookmark(std::wstring desc) {
 	}
 }
 
-void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
+void DocumentView::add_highlight(AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, bool is_word_selection, char type) {
 
 	if (current_document) {
 		std::vector<fz_rect> selected_characters;
 		std::vector<fz_rect> merged_characters;
 		std::wstring selected_text;
 
-		get_text_selection(selection_begin, selection_end, !EXACT_HIGHLIGHT_SELECT, selected_characters, selected_text);
+		get_text_selection(selection_begin, selection_end, is_word_selection, selected_characters, selected_text);
 		merge_selected_character_rects(selected_characters, merged_characters);
 		if (selected_text.size() > 0) {
-			current_document->add_highlight(selected_text, merged_characters, selection_begin, selection_end, type);
+			const fz_point center_begin = rect_get_center(selected_characters.front());
+			const fz_point center_end = rect_get_center(selected_characters.back());
+			current_document->add_highlight(selected_text, merged_characters, { center_begin.x, center_begin.y }, { center_end.x, center_end.y }, type);
 		}
 	}
 }
