@@ -726,8 +726,20 @@ int main(int argc, char* args[]) {
     }
 
 #ifndef SIOYEK_ANDROID
+    std::string instance_name_string = "sioyek";
     char* instance_name = get_argv_value(argc, args, "--instance-name");
-    RunGuard guard(instance_name ? instance_name : "sioyek");
+
+    if (instance_name) {
+        instance_name_string = instance_name;
+    }
+
+    if (instance_name == nullptr && (!use_single_instance)) {
+        std::wstring instance_uuid = new_uuid();
+        instance_name_string = "sioyek_" + utf8_encode(instance_uuid);
+        std::wcout << L"instance name: " << utf8_decode(instance_name_string) << L"\n";
+    }
+
+    RunGuard guard(QString::fromStdString(instance_name_string));
     if (!guard.isPrimary()) {
         QStringList sent_args = convert_arguments(app.arguments());
         bool should_wait = parser->isSet("wait-for-response");

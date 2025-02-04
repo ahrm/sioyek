@@ -1865,9 +1865,9 @@ QCommandLineParser* get_command_line_parser() {
     //reuse_instance_option.setDescription("When opening a new file, reuse the previous instance of sioyek instead of opening a new window.");
     //parser->addOption(reuse_instance_option);
 
-    //QCommandLineOption new_instance_option("new-instance");
-    //new_instance_option.setDescription("When opening a new file, create a new instance of sioyek.");
-    //parser->addOption(new_instance_option);
+    QCommandLineOption new_instance_option("new-instance");
+    new_instance_option.setDescription("When opening a new file, create a new instance of sioyek.");
+    parser->addOption(new_instance_option);
 
     QCommandLineOption instance_name_option("instance-name", "Select a specific sioyek instance by name.", "name");
     parser->addOption(instance_name_option);
