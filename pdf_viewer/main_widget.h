@@ -854,6 +854,9 @@ public:
     Q_INVOKABLE void screenshot_js(QString file_path, QJsonObject window_rect);
     Q_INVOKABLE void framebuffer_screenshot_js(QString file_path, QJsonObject window_rect);
 
+    Q_INVOKABLE QString perform_network_request_with_headers(QString method, QString url, QJsonObject headers, QJsonObject request, bool* is_done=nullptr, QByteArray* response=nullptr);
+    Q_INVOKABLE void copy_text_to_clipboard(QString str);
+
     void screenshot(std::wstring file_path);
     void framebuffer_screenshot(std::wstring file_path);
 
@@ -921,7 +924,7 @@ public:
     void zoom_out_overview();
     Q_INVOKABLE QString run_macro_on_main_thread(QString macro_string, bool wait_for_result=true, int target_window_id=-1);
     Q_INVOKABLE QString perform_network_request(QString url);
-    Q_INVOKABLE QString read_text_file(QString path);
+    Q_INVOKABLE QString read_file(QString path, bool encode_base_64=false);
     Q_INVOKABLE void execute_macro_and_return_result(QString macro_string, bool* is_done, std::wstring* result);
     Q_INVOKABLE QString execute_macro_sync(QString macro);
     Q_INVOKABLE void set_variable(QString name, QVariant var);

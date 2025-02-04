@@ -7096,9 +7096,7 @@ void MainWidget::show_recursive_context_menu(std::unique_ptr<MenuItems> items) {
 }
 
 void MainWidget::handle_debug_command() {
-    // print the version of mupdf header and library
 
-    qDebug() << "mupdf header version: " << FZ_VERSION;
 }
 
 void MainWidget::export_command_names(std::wstring file_path){
@@ -10059,14 +10057,20 @@ QString MainWidget::run_macro_on_main_thread(QString macro_string, bool wait_for
     }
 }
 
-QString MainWidget::read_text_file(QString path) {
+QString MainWidget::read_file(QString path, bool encode_base_64) {
     bool is_done = false;
     QString res;
 
     QMetaObject::invokeMethod(this, [&, path]() {
         QFile file(path);
         if (file.open(QIODeviceBase::ReadOnly)) {
-            res = QString::fromUtf8(file.readAll());
+            if (!encode_base_64) {
+                res = QString::fromUtf8(file.readAll());
+            }
+            else {
+                QByteArray data = file.readAll();
+                res = QString::fromUtf8(data.toBase64());
+            }
         }
         is_done = true;
         });
@@ -11387,3 +11391,86 @@ void MainWidget::framebuffer_screenshot_js(QString file_path, QJsonObject window
     }
 }
 
+
+QString MainWidget::perform_network_request_with_headers(QString method, QString url, QJsonObject headers, QJsonObject request, bool* is_done, QByteArray* response){
+    bool is_on_main_thread = QThread::currentThread() == QApplication::instance()->thread();
+    if (is_on_main_thread) {
+
+        QNetworkRequest req;
+
+        for (auto header : headers.keys()) {
+            QString header_name = header;
+            QString header_value = headers[header].toString();
+            req.setRawHeader(header.toUtf8(), headers[header].toString().toUtf8());
+        }
+
+        req.setUrl(QUrl(url));
+        QString req_content = QJsonDocument(request).toJson();
+        qDebug() << req_content;
+        QNetworkReply* reply = nullptr;
+
+        if (method.toLower() == "post") {
+            reply = network_manager.post(req, QJsonDocument(request).toJson());
+        }
+        else {
+            reply = network_manager.get(req, QJsonDocument(request).toJson());
+        }
+
+        QObject::connect(reply, &QNetworkReply::readyRead, [reply, is_done, response]() {
+            auto content = reply->readAll();
+            if (is_done) {
+                *is_done = true;
+            }
+            if (response) {
+                *response = content;
+            }
+            });
+
+        QObject::connect(reply, &QNetworkReply::finished, [reply, is_done]() {
+            if (is_done) {
+                *is_done = true;
+            }
+            reply->deleteLater();
+            });
+        return "";
+
+    }
+    else {
+
+        bool done = false;
+        QByteArray resp;
+        QMetaObject::invokeMethod(this,
+            "perform_network_request_with_headers",
+            Qt::BlockingQueuedConnection,
+            Q_ARG(QString, method),
+            Q_ARG(QString, url),
+            Q_ARG(QJsonObject, headers),
+            Q_ARG(QJsonObject, request),
+            Q_ARG(bool*, &done),
+            Q_ARG(QByteArray*, &resp)
+        );
+
+        while (!done) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        return QString::fromUtf8(resp);
+
+    }
+
+
+}
+
+void MainWidget::copy_text_to_clipboard(QString str) {
+    bool is_on_main_thread = QThread::currentThread() == QApplication::instance()->thread();
+    if (is_on_main_thread) {
+        copy_to_clipboard(str.toStdWString());
+    }
+    else {
+        QMetaObject::invokeMethod(this,
+            "copy_text_to_clipboard",
+            Qt::BlockingQueuedConnection,
+            Q_ARG(QString, str)
+        );
+    }
+}

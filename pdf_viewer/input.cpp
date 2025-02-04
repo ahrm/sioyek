@@ -6952,6 +6952,9 @@ void CommandManager::handle_new_javascript_command(std::wstring command_name_, J
                 return std::make_unique<JavascriptCommand>(command_name, code.toStdWString(), entry_point, is_async, w);
                 };
         }
+        else {
+            std::wcout << L"Could not open file " << absolute_file_path.toStdWString() << L"\n";
+        }
 }
 
 std::unique_ptr<Command> CommandManager::get_command_with_name(MainWidget* w, std::string name) {
