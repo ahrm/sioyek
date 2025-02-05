@@ -2837,7 +2837,7 @@ TextUnderPointerInfo MainWidget::find_location_of_text_under_pointer(DocumentPos
         }
     }
     else{
-        std::wregex abbr_regex(L"[A-Z]+s?");
+        std::wregex abbr_regex(L"([A-Z]\\.?)+s?");
         std::optional<std::wstring> abbr_under_pointer = doc()->get_regex_match_at_position(abbr_regex, flat_chars, docpos.pageless(), &reference_range);
         if (abbr_under_pointer){
             std::optional<DocumentPos> abbr_definition_location = doc()->find_abbreviation(abbr_under_pointer.value(), res.overview_highlight_rects);

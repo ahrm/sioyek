@@ -4001,22 +4001,41 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
         while (index > 0 && is_in(super_fast_search_index[index], {' ', '(', ')', '\n'})){
             index--;
         }
-        std::wstring remaining_abbr = abbr;
+
+        // remaining_abbr = abbr with dots removed
+        std::wstring remaining_abbr;
+        for (int i = 0; i < abbr.size(); i++) {
+            if (abbr[i] != '.') {
+                remaining_abbr.push_back(abbr[i]);
+            }
+        }
+        // if the abbreviation ends with a plural s, remove it
+        if (remaining_abbr.size() > 0 && remaining_abbr.back() == 's') {
+            remaining_abbr.pop_back();
+        }
 
         std::deque<PagelessDocumentRect> raw_rects;
         std::vector<PagelessDocumentRect> merged_rects;
         CachedPageIndex& abbr_page_index = get_page_index(abbr_page);
 
         while (index > 0 && remaining_abbr.size() > 0){
-            if (super_fast_search_index[index] == ' ' || super_fast_search_index[index] == '\n') {
-                //if (QChar(super_fast_search_index[index+1]).toLower() == QChar(remaining_abbr.back()).toLower()){
+            if (
+                super_fast_search_index[index] == ' ' ||
+                super_fast_search_index[index] == '\n' ||
+                super_fast_search_index[index] == '-' ||
+                (super_fast_search_index[index] > 127)
+                ) {
+                if (QChar(super_fast_search_index[index+1]).toLower() == QChar(remaining_abbr.back()).toLower()){
                     remaining_abbr.pop_back();
                     if (remaining_abbr.size() == 0) {
                         break;
                     }
-                //}
+                }
             }
 
+            if (index - super_fast_page_begin_indices[abbr_page] < 0) {
+                break;
+            }
             PagelessDocumentRect rect = abbr_page_index.rects[index - super_fast_page_begin_indices[abbr_page]];
             /* overview_highlight_rects.push_back(DocumentRect(rect, super_fast_search_index_pages[index])); */
             raw_rects.push_back(rect);
