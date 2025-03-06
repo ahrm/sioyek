@@ -11492,7 +11492,7 @@ QString MainWidget::perform_network_request_with_headers(QString method, QString
             reply = network_manager.post(req, QJsonDocument(request).toJson());
         }
         else {
-            reply = network_manager.get(req, QJsonDocument(request).toJson());
+            reply = network_manager.get(req);
         }
 
         QObject::connect(reply, &QNetworkReply::readyRead, [reply, is_done, response]() {
