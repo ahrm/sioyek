@@ -297,7 +297,6 @@ void Document::fill_highlight_rects(fz_context* ctx, fz_document* doc_) {
     }
 }
 
-
 std::string Document::add_highlight(const std::wstring& annot, AbsoluteDocumentPos selection_begin, AbsoluteDocumentPos selection_end, char type) {
     std::deque<AbsoluteRect> selected_characters;
     std::vector<AbsoluteRect> merged_rects;
@@ -490,6 +489,14 @@ void Document::delete_highlight(Highlight hl) {
             delete_highlight_with_index(i);
             return;
         }
+    }
+}
+
+void Document::clear_all_current_document_highlights() {
+    if (user_confirms_to_prompt(L"This will remove all the highlights in this document. Do you wish to proceed?")) {
+        db_manager->delete_all_current_doc_highlights(get_checksum());
+        highlights.clear();
+        is_annotations_dirty = true;
     }
 }
 

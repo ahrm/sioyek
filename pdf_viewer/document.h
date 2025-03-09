@@ -192,6 +192,8 @@ public:
     void delete_highlight_with_index(int index);
     void delete_bookmark_with_index(int index);
     void delete_highlight(Highlight hl);
+    void delete_all_current_doc_highlights();
+    void clear_all_current_document_highlights();
     int get_bookmark_index_at_pos(AbsoluteDocumentPos abspos);
     int get_portal_index_at_pos(AbsoluteDocumentPos abspos);
     bool should_render_pdf_annotations();

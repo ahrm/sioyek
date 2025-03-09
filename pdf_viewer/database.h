@@ -72,6 +72,7 @@ public:
     bool select_global_mark(char symbol, std::vector<std::pair<std::string, float>>& out_result);
     bool delete_opened_book(const std::string& book_path);
     bool delete_highlight(const std::string& uuid);
+    bool delete_all_current_doc_highlights(const std::string& doc_checksum);
     bool select_highlight(const std::string& checksum, std::vector<Highlight>& out_result);
     bool select_highlight_with_type(const std::string& checksum, char type, std::vector<Highlight>& out_result);
     bool set_actual_document_name(const std::string& checksum, const std::wstring& actual_name);
