@@ -73,6 +73,7 @@ extern "C" {
 }
 
 class MainWidget;
+extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern std::wstring UI_FONT_FACE_NAME;
 extern int FONT_SIZE;
 const int max_select_size = 100;
@@ -626,7 +627,11 @@ public:
         QString root_path;
         QString file_name;
 
-        if (last_path.size() > 0) {
+        if(last_path.size() == 0){
+            root_path = QString::fromStdWString(DEFAULT_OPEN_FILE_PATH);
+            file_name = "";
+        }
+        else if (last_path.size() > 0) {
             split_root_file(last_path, root_path, file_name);
             root_path += QDir::separator();
         }

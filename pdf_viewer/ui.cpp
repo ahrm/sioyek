@@ -15,7 +15,6 @@
 #include "touchui/TouchConfigMenu.h"
 #include "touchui/TouchSettings.h"
 
-extern std::wstring DEFAULT_OPEN_FILE_PATH;
 extern float DARK_MODE_CONTRAST;
 extern float BACKGROUND_COLOR[3];
 extern bool RULER_MODE;
@@ -643,7 +642,7 @@ HighlightButtons::HighlightButtons(MainWidget* parent) : QWidget(parent) {
     //layout = new QHBoxLayout();
 
     //delete_highlight_button = new QPushButton("Delete");
-    //buttons_widget = new 
+    //buttons_widget = new
     highlight_buttons = new TouchHighlightButtons(main_widget->get_current_selected_highlight_type(), this);
 
     QObject::connect(highlight_buttons, &TouchHighlightButtons::deletePressed, [&]() {
