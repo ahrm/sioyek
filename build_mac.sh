@@ -10,9 +10,22 @@ set -e
 if [ -z ${MAKE_PARALLEL+x} ]; then export MAKE_PARALLEL=1; else echo "MAKE_PARALLEL defined"; fi
 echo "MAKE_PARALLEL set to $MAKE_PARALLEL"
 
+# Set the flag based on whether CC and CXX are set
+if [ -n "$CC" ] && [ -n "$CXX" ]; then
+    echo "Using specified compilers: CC=$CC, CXX=$CXX"
+    SPECIFIED_COMPILERS=true
+else
+    echo "Using default compilers."
+    SPECIFIED_COMPILERS=false
+fi
+
 cd mupdf
 #make USE_SYSTEM_HARFBUZZ=yes USE_SYSTEM_GLUT=yes SYS_GLUT_CFLAGS="${sys_glut_clfags}" SYS_GLUT_LIBS="${sys_glut_libs}" SYS_HARFBUZZ_CFLAGS="${sys_harfbuzz_clfags}" SYS_HARFBUZZ_LIBS="${sys_harfbuzz_libs}" -j 4
-make -j$MAKE_PARALLEL
+if $SPECIFIED_COMPILERS; then
+    make -j$MAKE_PARALLEL CC="$CC" CXX="$CXX"
+else
+    make -j$MAKE_PARALLEL
+fi
 cd ..
 
 sed -Ei '' "s/QMAKE_MACOSX_DEPLOYMENT_TARGET.=.[0-9]+/QMAKE_MACOSX_DEPLOYMENT_TARGET = $(sw_vers -productVersion | cut -d. -f1)/" pdf_viewer_build_config.pro
@@ -23,7 +36,11 @@ else
 	qmake "CONFIG+=non_portable" pdf_viewer_build_config.pro
 fi
 
-make -j$MAKE_PARALLEL
+if $SPECIFIED_COMPILERS; then
+    make -j$MAKE_PARALLEL CC="$CC" CXX="$CXX"
+else
+    make -j$MAKE_PARALLEL
+fi
 
 rm -rf build 2> /dev/null
 mkdir build

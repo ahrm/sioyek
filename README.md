@@ -151,10 +151,21 @@ build_windows.bat
 ```
 
 ### Mac
+**Attention:** If you have upgraded to macOS 15.4, please note that the default compiler, Apple Clang 17 (corresponding to LLVM 19), is incompatible with the currently used zlib version (1.2.12). To build sioyek, you will need to install a lower version of LLVM Clang (e.g., 16). You can do this by running the following command:
+```zsh
+brew install llvm@16
+```
+After installation, set the environment variables to use the newly installed version:
+```zsh
+export CC=/opt/homebrew/opt/llvm@16/bin/clang
+export CXX=/opt/homebrew/opt/llvm@16/bin/clang++
+```
+Then you can then proceed with the build instruction.
+
 1. Uninstall previous Qt6 installed by Homebrew
 2. Install Xcode.
 3. Install Qt6.
-```
+```zsh
 pip install aqtinstall
 cd /path/to/qt
 aqt install-qt mac desktop 6.8.2 clang_64 -m all
