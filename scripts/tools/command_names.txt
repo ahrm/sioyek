@@ -466,6 +466,7 @@ synctex_under_ruler
 test_command
 toggle_custom_color
 toggle_dark_mode
+toggle_recto_verso_adjustment
 toggle_drawing_mask
 toggle_fastread
 toggle_freehand_drawing_mode

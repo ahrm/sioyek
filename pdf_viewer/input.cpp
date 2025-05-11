@@ -1366,6 +1366,17 @@ public:
     }
 };
 
+class ToggleRectoVersoAdjustment : public Command {
+public:
+    static inline const std::string cname = "toggle_recto_verso_adjustment";
+    static inline const std::string hname = "Toggle recto verso adjustment";
+
+    ToggleRectoVersoAdjustment(MainWidget* w) : Command(cname, w) {};
+    void perform() {
+        widget->main_document_view->toggle_recto_verso_adjustment();
+    }
+};
+
 class SearchCommand : public TextCommand {
 public:
     static inline const std::string cname = "search";
@@ -6964,6 +6975,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<MoveSelectedBookmarkCommand>();
     register_command<RepeatLastCommandCommnad>();
     register_command<CloseWindowCommand>("q");
+    register_command<ToggleRectoVersoAdjustment>();
 
 
     for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
