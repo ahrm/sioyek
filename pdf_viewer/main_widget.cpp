@@ -2919,7 +2919,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
             execute_macro_if_enabled(CONTROL_CLICK_COMMAND);
         }
         else if (is_command_pressed) {
-            //todo: replace with command click commadn
+            //todo: replace with command click command
             execute_macro_if_enabled(CONTROL_CLICK_COMMAND);
         }
         else if (is_alt_pressed) {
