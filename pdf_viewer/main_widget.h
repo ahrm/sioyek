@@ -552,6 +552,7 @@ public:
     void handle_drawing_ui_visibilty();
 
     void toggle_dark_mode();
+    void toggle_recto_verso_adjustment();
     void toggle_custom_color_mode();
     void do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line, int column);
     //void handle_args(const QStringList &arguments);

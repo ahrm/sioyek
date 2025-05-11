@@ -98,6 +98,7 @@ public:
     Document* get_document();
     bool is_ruler_mode();
     void exit_ruler_mode();
+    void toggle_recto_verso_adjustment();
 
     // find the closest portal to the current position
     // if limit is true, we only search for portals near the current location and not all portals

@@ -641,6 +641,14 @@ Document::Document(fz_context* context, std::wstring file_name, DatabaseManager*
     should_render_annotations = SHOULD_RENDER_PDF_ANNOTATIONS;
 }
 
+bool Document::get_recto_verso_adjustment() {
+    return recto_verso_adjustment;
+}
+
+void Document::toggle_recto_verso_adjustment() {
+    recto_verso_adjustment = !recto_verso_adjustment ;
+}
+
 void Document::count_chapter_pages(std::vector<int>& page_counts) {
     int num_chapters = fz_count_chapters(context, doc);
 

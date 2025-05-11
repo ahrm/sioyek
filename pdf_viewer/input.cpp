@@ -1025,12 +1025,12 @@ public:
 
 };
 
-class GenericPathAndLocationCommadn : public Command {
+class GenericPathAndLocationCommand : public Command {
 public:
 
     std::optional<QVariant> target_location;
     bool is_hash = false;
-    GenericPathAndLocationCommadn(std::string name, MainWidget* w, bool is_hash_ = false) : Command(name, w) { is_hash = is_hash_; };
+    GenericPathAndLocationCommand(std::string name, MainWidget* w, bool is_hash_ = false) : Command(name, w) { is_hash = is_hash_; };
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
         if (target_location) {
@@ -1399,6 +1399,17 @@ public:
 
     void perform() {
         widget->handle_toggle_reading();
+    }
+};
+
+class ToggleRectoVersoAdjustment : public Command {
+public:
+    static inline const std::string cname = "toggle_recto_verso_adjustment";
+    static inline const std::string hname = "Toggle recto verso adjustment";
+
+    ToggleRectoVersoAdjustment(MainWidget* w) : Command(cname, w) {};
+    void perform() {
+        widget->main_document_view->toggle_recto_verso_adjustment();
     }
 };
 
@@ -2352,12 +2363,12 @@ public:
     }
 };
 
-class GotoBookmarkGlobalCommand : public GenericPathAndLocationCommadn {
+class GotoBookmarkGlobalCommand : public GenericPathAndLocationCommand {
 public:
     static inline const std::string cname = "goto_bookmark_g";
     static inline const std::string hname = "Open the bookmark list of all documents";
 
-    GotoBookmarkGlobalCommand(MainWidget* w) : GenericPathAndLocationCommadn(cname, w) {};
+    GotoBookmarkGlobalCommand(MainWidget* w) : GenericPathAndLocationCommand(cname, w) {};
 
     void handle_generic_requirement() {
         widget->handle_goto_bookmark_global();
@@ -2409,12 +2420,12 @@ public:
 };
 
 
-class GotoHighlightGlobalCommand : public GenericPathAndLocationCommadn {
+class GotoHighlightGlobalCommand : public GenericPathAndLocationCommand {
 public:
     static inline const std::string cname = "goto_highlight_g";
     static inline const std::string hname = "Open the highlight list of the all documents";
 
-    GotoHighlightGlobalCommand(MainWidget* w) : GenericPathAndLocationCommadn(cname, w) {};
+    GotoHighlightGlobalCommand(MainWidget* w) : GenericPathAndLocationCommand(cname, w) {};
 
     void handle_generic_requirement() {
         widget->handle_goto_highlight_global();
@@ -3730,11 +3741,11 @@ public:
     }
 };
 
-class OpenPrevDocCommand : public GenericPathAndLocationCommadn {
+class OpenPrevDocCommand : public GenericPathAndLocationCommand {
 public:
     static inline const std::string cname = "open_prev_doc";
     static inline const std::string hname = "Open the list of previously opened documents";
-    OpenPrevDocCommand(MainWidget* w) : GenericPathAndLocationCommadn(cname, w, true) {};
+    OpenPrevDocCommand(MainWidget* w) : GenericPathAndLocationCommand(cname, w, true) {};
 
     void handle_generic_requirement() {
         widget->handle_open_prev_doc();
@@ -3743,11 +3754,11 @@ public:
     bool requires_document() { return false; }
 };
 
-class OpenAllDocsCommand : public GenericPathAndLocationCommadn {
+class OpenAllDocsCommand : public GenericPathAndLocationCommand {
 public:
     static inline const std::string cname = "open_all_docs";
     static inline const std::string hname = "";
-    OpenAllDocsCommand(MainWidget* w) : GenericPathAndLocationCommadn(cname, w, true) {};
+    OpenAllDocsCommand(MainWidget* w) : GenericPathAndLocationCommand(cname, w, true) {};
 
     void handle_generic_requirement() {
         widget->handle_open_all_docs();
@@ -7008,6 +7019,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<MoveSelectedBookmarkCommand>();
     register_command<RepeatLastCommandCommnad>();
     register_command<CloseWindowCommand>("q");
+    register_command<ToggleRectoVersoAdjustment>();
 
 
     for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {

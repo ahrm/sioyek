@@ -155,6 +155,11 @@ bool DocumentView::set_offsets(float new_offset_x, float new_offset_y, bool forc
     return truncated;
 }
 
+void DocumentView::toggle_recto_verso_adjustment () {
+    current_document->toggle_recto_verso_adjustment();
+    this->fit_to_page_width();
+ }
+
 Document* DocumentView::get_document() {
     return current_document;
 }
@@ -2079,7 +2084,7 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
                 page_rect.y1 = cum_offset + page_height;
 
                 float mult = 1.0f;
-                if (i % 2 == 1) {
+                if ((i + current_document->get_recto_verso_adjustment()) % 2 == 1) {
                     cum_offset += page_height + page_space_y;
                 }
                 else {

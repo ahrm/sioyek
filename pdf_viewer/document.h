@@ -147,6 +147,7 @@ private:
     bool are_highlights_loaded = false;
     bool should_render_annotations = true;
     bool should_reload_annotations = false;
+    bool recto_verso_adjustment = false;
 
     QDateTime last_update_time;
     CachedChecksummer* checksummer;
@@ -168,6 +169,7 @@ private:
     void clear_toc_nodes();
     void clear_toc_node(TocNode* node);
     int find_highlight_index_with_uuid(const std::string& uuid);
+
 public:
     fz_document* doc = nullptr;
     std::wstring detected_paper_name = L"";
@@ -197,6 +199,8 @@ public:
     bool should_render_pdf_annotations();
     void set_should_render_pdf_annotations(bool val);
     bool get_should_render_pdf_annotations();
+    bool get_recto_verso_adjustment();
+    void toggle_recto_verso_adjustment();
     std::vector<Portal> get_intersecting_visible_portals(float absrange_begin, float absrange_end);
     CachedPageIndex& get_page_index(int page);
     void fill_search_result(SearchResult* result);

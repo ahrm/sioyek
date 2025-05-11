@@ -2921,7 +2921,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
             execute_macro_if_enabled(CONTROL_CLICK_COMMAND);
         }
         else if (is_command_pressed) {
-            //todo: replace with command click commadn
+            //todo: replace with command click command
             execute_macro_if_enabled(CONTROL_CLICK_COMMAND);
         }
         else if (is_alt_pressed) {
@@ -3859,6 +3859,11 @@ std::optional<std::wstring> MainWidget::get_current_file_name() {
 
 CommandManager* MainWidget::get_command_manager() {
     return command_manager;
+}
+
+void MainWidget::toggle_recto_verso_adjustment() {
+    this->main_document_view->toggle_recto_verso_adjustment();
+    return;
 }
 
 void MainWidget::toggle_dark_mode() {
@@ -11148,6 +11153,7 @@ QMenuBar* MainWidget::create_main_menu_bar(){
             new MenuNode{ "-", "", {} },
             new MenuNode{ "toggle_two_page_mode", "", {} },
             new MenuNode{ "toggle_dark_mode", "", {} },
+            new MenuNode{ "toggle_recto_verso_adjustment", "", {} },
             new MenuNode{ "toggle_custom_color", "", {} },
             new MenuNode{ "toggle_scrollbar", "", {} },
             new MenuNode{ "toggle_statusbar", "", {} },
