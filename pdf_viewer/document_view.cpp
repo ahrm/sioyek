@@ -990,13 +990,19 @@ void DocumentView::fit_to_page_height_width_minimum(int statusbar_height) {
     int page_width = current_document->get_page_width(cp);
     int page_height = current_document->get_page_height(cp);
 
+    if (two_page_mode) {
+        page_space_x = PAGE_SPACE_X;
+        cached_virtual_rects.clear();
+        offset.x = 0;
+        page_width += page_width + page_space_x;
+    }
+
     float x_zoom_level = static_cast<float>(view_width) / page_width;
-    float y_zoom_level;
-    y_zoom_level = (static_cast<float>(view_height) - statusbar_height) / page_height;
+    float y_zoom_level =
+        (static_cast<float>(view_height) - statusbar_height) / page_height;
 
-    set_offset_x(0);
+
     set_zoom_level(std::min(x_zoom_level, y_zoom_level), true);
-
 }
 
 void DocumentView::persist(bool persist_drawings) {
