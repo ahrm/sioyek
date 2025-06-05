@@ -2051,6 +2051,7 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
     }
 
     deselect_document_indices();
+    main_document_view->fit_to_page_height_width_minimum(0);
     invalidate_render();
 
 }
