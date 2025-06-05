@@ -2199,7 +2199,7 @@ float DocumentView::get_page_space_x() {
 }
 
 float DocumentView::get_page_space_y() {
-    return page_space_x;
+    return page_space_y;
 }
 
 bool DocumentView::fast_coordinates() {
