@@ -22,6 +22,8 @@
 #include <unordered_map>
 #include <optional>
 #include <memory>
+#include <algorithm>
+#include <cmath>
 #include <cctype>
 #include <cstdlib>
 #include <qpainterpath.h>
@@ -113,6 +115,11 @@ extern bool FLAT_TABLE_OF_CONTENTS;
 extern bool HOVER_OVERVIEW;
 extern bool WHEEL_ZOOM_ON_CURSOR;
 extern float MOVE_SCREEN_PERCENTAGE;
+extern float MUSIC_READING_SCROLL_SPEED;
+extern float MUSIC_READING_SCROLL_SPEED_STEP;
+extern bool MUSIC_READING_STEP_SCROLL;
+extern float MUSIC_READING_STEP_INTERVAL;
+extern float MUSIC_READING_STEP_AMOUNT;
 extern std::wstring LIBGEN_ADDRESS;
 extern std::wstring INVERSE_SEARCH_COMMAND;
 extern std::wstring PAPER_SEARCH_URL;
@@ -276,6 +283,15 @@ const int MAX_SCROLLBAR = 10000;
 extern int RELOAD_INTERVAL_MILISECONDS;
 
 const unsigned int INTERVAL_TIME = 200;
+const float MUSIC_READING_SPEED_MIN_RATIO = 0.01f;
+const float MUSIC_READING_SPEED_MAX_RATIO = 5.0f;
+const float MUSIC_READING_MIN_PROGRESS_PX = 0.5f;
+const float MUSIC_READING_STALL_TIMEOUT = 0.6f;
+const float MUSIC_READING_STEP_INTERVAL_MIN = 0.1f;
+const float MUSIC_READING_STEP_AMOUNT_MIN = 0.01f;
+const float MUSIC_READING_STEP_AMOUNT_MAX = 3.0f;
+const float MUSIC_READING_STEP_SMOOTH_DURATION = 0.25f;
+const float MUSIC_READING_FALLBACK_FRAME_TIME = 1.0f / 60.0f;
 
 #ifdef Q_OS_MACOS
 extern float MACOS_TITLEBAR_COLOR[3];
@@ -885,6 +901,16 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     window_id = next_window_id;
     next_window_id++;
 
+    float configured_speed = MUSIC_READING_SCROLL_SPEED > 0.0f ? MUSIC_READING_SCROLL_SPEED : 0.3f;
+    music_reading_speed_ratio = std::clamp(configured_speed, MUSIC_READING_SPEED_MIN_RATIO, MUSIC_READING_SPEED_MAX_RATIO);
+
+    float configured_step = MUSIC_READING_SCROLL_SPEED_STEP > 0.0f ? MUSIC_READING_SCROLL_SPEED_STEP : 0.05f;
+    music_reading_speed_step = std::max(configured_step, 0.001f);
+
+    music_reading_step_scroll = MUSIC_READING_STEP_SCROLL;
+    music_reading_step_interval = std::max(MUSIC_READING_STEP_INTERVAL, MUSIC_READING_STEP_INTERVAL_MIN);
+    music_reading_step_amount_ratio = std::clamp(MUSIC_READING_STEP_AMOUNT, MUSIC_READING_STEP_AMOUNT_MIN, MUSIC_READING_STEP_AMOUNT_MAX);
+
 
     setMouseTracking(true);
     setAcceptDrops(true);
@@ -1476,6 +1502,20 @@ std::wstring MainWidget::get_status_string(bool is_right) {
     if (visual_scroll_mode) {
         status_string.replace("%{visual_scroll}", " [ visual scroll ]");
     }
+    if (music_reading_mode_enabled) {
+        if (music_reading_step_scroll) {
+            float amount_pct = music_reading_step_amount_ratio * 100.0f;
+            int amount_precision = amount_pct >= 10.0f ? 0 : 1;
+            int interval_precision = music_reading_step_interval >= 1.0f ? 1 : 2;
+            QString amount_string = QString::number(amount_pct, 'f', amount_precision);
+            QString interval_string = QString::number(music_reading_step_interval, 'f', interval_precision);
+            status_string.replace("%{music_reading}", " [ music step " + amount_string + "% @" + interval_string + "s ]");
+        }
+        else {
+            QString speed_string = QString::number(music_reading_speed_ratio, 'f', 2);
+            status_string.replace("%{music_reading}", " [ music " + speed_string + "x ]");
+        }
+    }
 
     if (horizontal_scroll_locked) {
         status_string.replace("%{locked_scroll}", " [ locked horizontal scroll ]");
@@ -1556,6 +1596,7 @@ std::wstring MainWidget::get_status_string(bool is_right) {
     status_string.replace("%{drag}", "");
     status_string.replace("%{presentation}", "");
     status_string.replace("%{visual_scroll}", "");
+    status_string.replace("%{music_reading}", "");
     status_string.replace("%{locked_scroll}", "");
     status_string.replace("%{highlight}", "");
     status_string.replace("%{closest_bookmark}", "");
@@ -1710,6 +1751,139 @@ void MainWidget::validate_render() {
             last_speed_update_time = QTime::currentTime();
         }
     }
+    if (music_reading_mode_enabled) {
+        if (!main_document_view_has_document()) {
+            stop_music_reading_mode();
+        }
+        else {
+            if (!music_reading_timer.isValid()) {
+                music_reading_timer.start();
+            }
+
+            qint64 elapsed_ms = music_reading_timer.restart();
+            float secs = static_cast<float>(elapsed_ms) / 1000.0f;
+            if (secs > 0.3f) {
+                secs = 0.3f;
+            }
+            if (secs < 0.0f) {
+                secs = 0.0f;
+            }
+            float frame_secs = secs > 0.0f ? secs : MUSIC_READING_FALLBACK_FRAME_TIME;
+
+            auto near_document_end = [&]() -> bool {
+                if (!doc()) {
+                    return false;
+                }
+                float max_offset = doc()->max_y_offset();
+                float current_offset = main_document_view->get_offset_y();
+                float zoom = std::max(main_document_view->get_zoom_level(), 0.01f);
+                float half_screen = static_cast<float>(main_document_view->get_view_height()) / (2.0f * zoom);
+                float tolerance = std::max(5.0f, half_screen * 0.05f);
+                return current_offset + half_screen >= max_offset - tolerance;
+            };
+
+            bool attempted_move = false;
+            bool made_progress = false;
+
+            if (music_reading_step_scroll) {
+                music_reading_step_elapsed += secs;
+                float interval = std::max(music_reading_step_interval, MUSIC_READING_STEP_INTERVAL_MIN);
+                float clamped_amount = std::clamp(music_reading_step_amount_ratio, MUSIC_READING_STEP_AMOUNT_MIN, MUSIC_READING_STEP_AMOUNT_MAX);
+                float step_distance = clamped_amount * static_cast<float>(main_document_view->get_view_height());
+                if (step_distance < 0.0f) {
+                    step_distance = 0.0f;
+                }
+
+                int steps_to_add = (interval > 0.0f) ? static_cast<int>(music_reading_step_elapsed / interval) : 0;
+                if (steps_to_add > 0) {
+                    music_reading_step_elapsed -= interval * steps_to_add;
+                    if (step_distance > 0.0f) {
+                        music_reading_step_pending_distance += step_distance * static_cast<float>(steps_to_add);
+                    }
+                }
+
+                if (music_reading_step_pending_distance > 0.0f && step_distance > 0.0f) {
+                    attempted_move = true;
+
+                    float smooth_duration = std::clamp(interval, MUSIC_READING_FALLBACK_FRAME_TIME, MUSIC_READING_STEP_SMOOTH_DURATION);
+                    float base_speed = step_distance / smooth_duration;
+                    if (base_speed < 0.0f) {
+                        base_speed = 0.0f;
+                    }
+
+                    float pending_steps = std::max(1.0f, music_reading_step_pending_distance / step_distance);
+                    float travel_speed = base_speed * pending_steps;
+                    float requested_travel = travel_speed * frame_secs;
+                    float travel = std::min(music_reading_step_pending_distance, std::max(requested_travel, 0.0f));
+
+                    if (travel > 0.0f) {
+                        float previous_offset = main_document_view->get_offset_y();
+                        music_reading_internal_move = true;
+                        move_document(0.0f, travel);
+                        music_reading_internal_move = false;
+                        float new_offset = main_document_view->get_offset_y();
+                        float delta = std::abs(new_offset - previous_offset);
+                        if (delta >= MUSIC_READING_MIN_PROGRESS_PX) {
+                            made_progress = true;
+                            music_reading_stall_seconds = 0.0f;
+                        }
+                        else {
+                            music_reading_stall_seconds += frame_secs;
+                        }
+
+                        if (delta > 0.0f) {
+                            music_reading_step_pending_distance = std::max(0.0f, music_reading_step_pending_distance - delta);
+                        }
+                    }
+                    else {
+                        music_reading_stall_seconds += frame_secs;
+                    }
+                }
+            }
+            else {
+                float travel = frame_secs * music_reading_speed_ratio * static_cast<float>(main_document_view->get_view_height());
+                if (travel > 0.0f) {
+                    attempted_move = true;
+                    float previous_offset = main_document_view->get_offset_y();
+                    music_reading_internal_move = true;
+                    move_document(0.0f, travel);
+                    music_reading_internal_move = false;
+                    float new_offset = main_document_view->get_offset_y();
+                    float delta = std::abs(new_offset - previous_offset);
+                    if (delta >= MUSIC_READING_MIN_PROGRESS_PX) {
+                        made_progress = true;
+                        music_reading_stall_seconds = 0.0f;
+                    }
+                    else {
+                        music_reading_stall_seconds += frame_secs;
+                    }
+                }
+            }
+
+            if (made_progress) {
+                music_reading_stall_seconds = 0.0f;
+            }
+
+            bool should_stop_music = false;
+            if (music_reading_stall_seconds >= MUSIC_READING_STALL_TIMEOUT) {
+                if (!attempted_move || near_document_end()) {
+                    should_stop_music = true;
+                }
+                else {
+                    music_reading_stall_seconds = 0.0f;
+                }
+            }
+
+            if (should_stop_music) {
+                music_reading_step_elapsed = 0.0f;
+                stop_music_reading_mode();
+            }
+        }
+    }
+    else {
+        music_reading_stall_seconds = 0.0f;
+        music_reading_step_elapsed = 0.0f;
+    }
     if (is_moving()) {
         auto current_time = QTime::currentTime();
         float secs = current_time.msecsTo(last_speed_update_time) / 1000.0f;
@@ -1802,6 +1976,9 @@ void MainWidget::validate_render() {
     if (smooth_scroll_mode && (smooth_scroll_speed != 0)) {
         is_render_invalidated = true;
     }
+    if (music_reading_mode_enabled) {
+        is_render_invalidated = true;
+    }
     if (is_moving()) {
         is_render_invalidated = true;
         if (!hasFocus()) { // stop scrolling if the windows doesn't have focus
@@ -1818,8 +1995,15 @@ void MainWidget::validate_ui() {
 
 bool MainWidget::move_document(float dx, float dy, bool force) {
     if (main_document_view_has_document()) {
-        //return main_document_view->move(dx, dy, force);
-        return dv()->move(dx, dy, force);
+        bool moved = dv()->move(dx, dy, force);
+        if (moved && music_reading_mode_enabled && !music_reading_internal_move) {
+            music_reading_stall_seconds = 0.0f;
+            if (music_reading_step_scroll) {
+                music_reading_step_elapsed = 0.0f;
+                music_reading_step_pending_distance = 0.0f;
+            }
+        }
+        return moved;
     }
     return false;
 }
@@ -6367,11 +6551,125 @@ void MainWidget::handle_toggle_smooth_scroll_mode() {
     smooth_scroll_mode = !smooth_scroll_mode;
 
     if (smooth_scroll_mode) {
-        validation_interval_timer->setInterval(16);
+        if (music_reading_mode_enabled) {
+            stop_music_reading_mode();
+        }
+        last_speed_update_time = QTime::currentTime();
     }
     else {
+        smooth_scroll_speed = 0.0f;
+    }
+
+    update_motion_timer_interval();
+    invalidate_render();
+}
+
+void MainWidget::update_motion_timer_interval() {
+    if (!validation_interval_timer) {
+        return;
+    }
+
+    int current_interval = validation_interval_timer->interval();
+    bool needs_high_refresh = smooth_scroll_mode || music_reading_mode_enabled || is_moving();
+
+    if (needs_high_refresh) {
+        if (current_interval != 0 && current_interval > 16) {
+            validation_interval_timer->setInterval(16);
+        }
+    }
+    else if (current_interval != 0 && current_interval != INTERVAL_TIME) {
         validation_interval_timer->setInterval(INTERVAL_TIME);
     }
+}
+
+void MainWidget::set_music_reading_mode(bool enabled) {
+    if (enabled && !main_document_view_has_document()) {
+        return;
+    }
+
+    if (music_reading_mode_enabled == enabled) {
+        if (enabled && !music_reading_timer.isValid()) {
+            music_reading_timer.start();
+        }
+        update_motion_timer_interval();
+        return;
+    }
+
+    if (enabled) {
+        if (smooth_scroll_mode) {
+            smooth_scroll_mode = false;
+            smooth_scroll_speed = 0.0f;
+        }
+
+        if (music_reading_speed_ratio < MUSIC_READING_SPEED_MIN_RATIO) {
+            music_reading_speed_ratio = MUSIC_READING_SPEED_MIN_RATIO;
+        }
+
+        music_reading_timer.start();
+        music_reading_step_elapsed = 0.0f;
+        music_reading_stall_seconds = 0.0f;
+        music_reading_step_pending_distance = 0.0f;
+        music_reading_internal_move = false;
+    }
+    else {
+        music_reading_timer.invalidate();
+        music_reading_step_elapsed = 0.0f;
+        music_reading_stall_seconds = 0.0f;
+        music_reading_step_pending_distance = 0.0f;
+        music_reading_internal_move = false;
+    }
+
+    music_reading_mode_enabled = enabled;
+    update_motion_timer_interval();
+    invalidate_render();
+}
+
+void MainWidget::stop_music_reading_mode() {
+    set_music_reading_mode(false);
+}
+
+void MainWidget::handle_toggle_music_reading_mode() {
+    set_music_reading_mode(!music_reading_mode_enabled);
+}
+
+void MainWidget::handle_music_reading_speed_up() {
+    float step = music_reading_speed_step > 0.0f ? music_reading_speed_step : MUSIC_READING_SCROLL_SPEED_STEP;
+    if (step <= 0.0f) {
+        step = 0.05f;
+    }
+
+    if (music_reading_step_scroll) {
+        music_reading_step_amount_ratio = std::clamp(music_reading_step_amount_ratio + step, MUSIC_READING_STEP_AMOUNT_MIN, MUSIC_READING_STEP_AMOUNT_MAX);
+        music_reading_step_elapsed = 0.0f;
+        music_reading_step_pending_distance = 0.0f;
+    }
+    else {
+        music_reading_speed_ratio = std::min(music_reading_speed_ratio + step, MUSIC_READING_SPEED_MAX_RATIO);
+        if (music_reading_speed_ratio < MUSIC_READING_SPEED_MIN_RATIO) {
+            music_reading_speed_ratio = MUSIC_READING_SPEED_MIN_RATIO;
+        }
+    }
+
+    update_motion_timer_interval();
+    invalidate_render();
+}
+
+void MainWidget::handle_music_reading_speed_down() {
+    float step = music_reading_speed_step > 0.0f ? music_reading_speed_step : MUSIC_READING_SCROLL_SPEED_STEP;
+    if (step <= 0.0f) {
+        step = 0.05f;
+    }
+
+    if (music_reading_step_scroll) {
+        music_reading_step_amount_ratio = std::clamp(music_reading_step_amount_ratio - step, MUSIC_READING_STEP_AMOUNT_MIN, MUSIC_READING_STEP_AMOUNT_MAX);
+        music_reading_step_elapsed = 0.0f;
+        music_reading_step_pending_distance = 0.0f;
+    }
+    else {
+        music_reading_speed_ratio = std::max(music_reading_speed_ratio - step, MUSIC_READING_SPEED_MIN_RATIO);
+    }
+    update_motion_timer_interval();
+    invalidate_render();
 }
 
 
@@ -7714,6 +8012,28 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         }
         if (confname == "highlight_links") {
             opengl_widget->set_highlight_links(SHOULD_HIGHLIGHT_LINKS, false);
+        }
+        if (confname == "music_reading_scroll_speed") {
+            music_reading_speed_ratio = std::clamp(MUSIC_READING_SCROLL_SPEED, MUSIC_READING_SPEED_MIN_RATIO, MUSIC_READING_SPEED_MAX_RATIO);
+        }
+        if (confname == "music_reading_scroll_speed_step") {
+            music_reading_speed_step = std::max(MUSIC_READING_SCROLL_SPEED_STEP, 0.001f);
+        }
+        if (confname == "music_reading_step_scroll") {
+            music_reading_step_scroll = MUSIC_READING_STEP_SCROLL;
+            music_reading_step_elapsed = 0.0f;
+            music_reading_stall_seconds = 0.0f;
+            music_reading_step_pending_distance = 0.0f;
+        }
+        if (confname == "music_reading_step_interval") {
+            music_reading_step_interval = std::max(MUSIC_READING_STEP_INTERVAL, MUSIC_READING_STEP_INTERVAL_MIN);
+            music_reading_step_elapsed = 0.0f;
+            music_reading_stall_seconds = 0.0f;
+            music_reading_step_pending_distance = 0.0f;
+        }
+        if (confname == "music_reading_step_amount") {
+            music_reading_step_amount_ratio = std::clamp(MUSIC_READING_STEP_AMOUNT, MUSIC_READING_STEP_AMOUNT_MIN, MUSIC_READING_STEP_AMOUNT_MAX);
+            music_reading_step_pending_distance = 0.0f;
         }
         if (confname.startsWith("page_space")) {
             if (confname == "page_space_x") main_document_view->set_page_space_x(PAGE_SPACE_X);

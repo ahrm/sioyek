@@ -161,9 +161,16 @@ if(APPLE)
         mupdf-third
         mupdf-threads
   )
-else()
-  string(REPLACE "-mno-direct-extern-access" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
+
+# Some pkg-config profiles (notably Homebrew's HarfBuzz on macOS) add
+# `-mno-direct-extern-access`, which Apple's Clang front-end rejects. Strip it
+# for every platform so the build works across toolchains.
+foreach(flag_var CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  if(${flag_var} MATCHES "-mno-direct-extern-access")
+    string(REPLACE "-mno-direct-extern-access" "" ${flag_var} "${${flag_var}}")
+  endif()
+endforeach()
 
 install(TARGETS sioyek
     BUNDLE DESTINATION .

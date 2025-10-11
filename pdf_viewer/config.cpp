@@ -73,7 +73,7 @@ std::wstring MIDDLE_CLICK_SEARCH_ENGINE = L"s";
 std::wstring SHIFT_MIDDLE_CLICK_SEARCH_ENGINE = L"l";
 std::wstring PAPERS_FOLDER_PATH = L"";
 #ifndef SIOYEK_MOBILE
-std::wstring STATUS_BAR_FORMAT = L"[ %{current_page} / %{num_pages} ]%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{locked_scroll}%{highlight}%{freehand_drawing}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
+std::wstring STATUS_BAR_FORMAT = L"[ %{current_page} / %{num_pages} ]%{chapter_name}%{search_results}%{search_progress}%{link_status}%{waiting_for_symbol}%{indexing}%{preview_index}%{synctex}%{drag}%{presentation}%{visual_scroll}%{music_reading}%{locked_scroll}%{highlight}%{freehand_drawing}%{closest_bookmark}%{close_portal}%{rect_select}%{custom_message}%{download}";
 std::wstring RIGHT_STATUS_BAR_FORMAT = L"";
 #else
 std::wstring STATUS_BAR_FORMAT = L"# %{current_page} / %{num_pages}%{search_results}%{search_progress}%{link_status}%{indexing}%{current_requirement_desc}";
@@ -217,6 +217,11 @@ bool HIGHLIGHT_MIDDLE_CLICK = false;
 float HYPERDRIVE_SPEED_FACTOR = 10.0f;
 float SMOOTH_SCROLL_SPEED = 3.0f;
 float SMOOTH_SCROLL_DRAG = 3000.0f;
+float MUSIC_READING_SCROLL_SPEED = 0.3f;
+float MUSIC_READING_SCROLL_SPEED_STEP = 0.05f;
+bool MUSIC_READING_STEP_SCROLL = false;
+float MUSIC_READING_STEP_INTERVAL = 2.0f;
+float MUSIC_READING_STEP_AMOUNT = 0.3f;
 int PRERENDERED_PAGE_COUNT = 0;
 bool SHOW_RIGHT_CLICK_CONTEXT_MENU = false;
 bool ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW = false;
@@ -935,6 +940,11 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_float(L"menu_screen_width_ratio", &MENU_SCREEN_WDITH_RATIO, FloatExtras{0.0f, 1.0f});
     add_float(L"smooth_scroll_speed", &SMOOTH_SCROLL_SPEED, FloatExtras{0.0f, 20.0f});
     add_float(L"smooth_scroll_drag", &SMOOTH_SCROLL_DRAG, FloatExtras{10.0f, 10000.0f});
+    add_float(L"music_reading_scroll_speed", &MUSIC_READING_SCROLL_SPEED, FloatExtras{0.01f, 5.0f});
+    add_float(L"music_reading_scroll_speed_step", &MUSIC_READING_SCROLL_SPEED_STEP, FloatExtras{0.01f, 1.0f});
+    add_bool(L"music_reading_step_scroll", &MUSIC_READING_STEP_SCROLL);
+    add_float(L"music_reading_step_interval", &MUSIC_READING_STEP_INTERVAL, FloatExtras{0.1f, 60.0f});
+    add_float(L"music_reading_step_amount", &MUSIC_READING_STEP_AMOUNT, FloatExtras{0.05f, 3.0f});
     add_float(L"gamma", &GAMMA, FloatExtras{0.0f, 1.0f});
     add_float(L"highlight_delete_threshold", &HIGHLIGHT_DELETE_THRESHOLD, FloatExtras{0.0f, 0.1f});
     add_float(L"tts_rate", &TTS_RATE, FloatExtras{-1.0f, 1.0f});

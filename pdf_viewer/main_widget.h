@@ -14,6 +14,7 @@
 #include <qquickwidget.h>
 #include <qjsondocument.h>
 #include <qmainwindow.h>
+#include <qelapsedtimer.h>
 
 #include "book.h"
 #include "input.h"
@@ -269,6 +270,17 @@ public:
     // `smooth_scroll_speed` is used to keep track of our speed in this mode
     bool smooth_scroll_mode = false;
     float smooth_scroll_speed = 0.0f;
+    bool music_reading_mode_enabled = false;
+    float music_reading_speed_ratio = 0.0f;
+    float music_reading_speed_step = 0.0f;
+    bool music_reading_step_scroll = false;
+    float music_reading_step_interval = 0.0f;
+    float music_reading_step_amount_ratio = 0.0f;
+    float music_reading_step_elapsed = 0.0f;
+    float music_reading_stall_seconds = 0.0f;
+    float music_reading_step_pending_distance = 0.0f;
+    bool music_reading_internal_move = false;
+    QElapsedTimer music_reading_timer;
 
     // the timer which periodically checks if the UI/rendering needs updating. Normally the timer value is
     // set to be INTERVAL_TIME (which is 200ms at the time of writing this comment), however, it is set to a much
@@ -483,6 +495,9 @@ public:
     std::wstring get_window_configuration_string();
     std::wstring get_serialized_configuration_string();
     void save_auto_config();
+    void set_music_reading_mode(bool enabled);
+    void update_motion_timer_interval();
+    void stop_music_reading_mode();
 
     void handle_close_event();
     void return_to_last_visual_mark();
@@ -646,6 +661,9 @@ public:
     void handle_focus_text(const std::wstring& text);
     void handle_goto_window();
     void handle_toggle_smooth_scroll_mode();
+    void handle_toggle_music_reading_mode();
+    void handle_music_reading_speed_up();
+    void handle_music_reading_speed_down();
     void handle_overview_to_portal();
     void handle_toggle_typing_mode();
     void handle_delete_highlight_under_cursor();

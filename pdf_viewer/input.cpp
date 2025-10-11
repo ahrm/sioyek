@@ -5649,6 +5649,45 @@ public:
     bool requires_document() { return false; }
 };
 
+class ToggleMusicReadingModeCommand : public Command {
+public:
+    static inline const std::string cname = "toggle_music_reading_mode";
+    static inline const std::string hname = "Toggle music reading auto scroll";
+    ToggleMusicReadingModeCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->handle_toggle_music_reading_mode();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class MusicReadingSpeedUpCommand : public Command {
+public:
+    static inline const std::string cname = "music_reading_speed_up";
+    static inline const std::string hname = "Increase music reading scroll speed";
+    MusicReadingSpeedUpCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->handle_music_reading_speed_up();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class MusicReadingSpeedDownCommand : public Command {
+public:
+    static inline const std::string cname = "music_reading_speed_down";
+    static inline const std::string hname = "Decrease music reading scroll speed";
+    MusicReadingSpeedDownCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->handle_music_reading_speed_down();
+    }
+
+    bool requires_document() { return false; }
+};
+
 class ToggleScrollbarCommand : public Command {
 public:
     static inline const std::string cname = "toggle_scrollbar";
@@ -7015,6 +7054,9 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<DownloadOverviewPaperCommand>();
     register_command<GotoWindowCommand>();
     register_command<ToggleSmoothScrollModeCommand>();
+    register_command<ToggleMusicReadingModeCommand>();
+    register_command<MusicReadingSpeedUpCommand>();
+    register_command<MusicReadingSpeedDownCommand>();
     register_command<GotoBeginningCommand>();
     register_command<ToggleScrollbarCommand>();
     register_command<OverviewToPortalCommand>();
