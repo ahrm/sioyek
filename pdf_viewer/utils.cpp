@@ -1229,11 +1229,37 @@ void open_web_url(const std::wstring& url_string) {
 
 
 void search_custom_engine(const std::wstring& search_string, const std::wstring& custom_engine_url) {
-
-    if (search_string.size() > 0) {
-        QString qurl_string = QString::fromStdWString(custom_engine_url + search_string);
-        open_web_url(qurl_string);
+    if (search_string.empty()) {
+      return;
     }
+
+    const std::wstring placeholder = L"%s";
+    std::wstring result_url = custom_engine_url;
+
+    size_t pos = result_url.find(placeholder);
+    if (pos != std::wstring::npos) {
+      // if the engine url uses the %s placeholder syntax, we replace all occurences with the search string
+      while (pos != std::wstring::npos) {
+        result_url.replace(pos, placeholder.length(), search_string);
+
+        pos = result_url.find(placeholder, pos + placeholder.length());
+        // we escape the placeholder %s by prepending a %; %%s -> %s
+        while (pos <= result_url.length() &&
+              pos != std::wstring::npos &&
+              pos != 0 &&
+              result_url.at(pos - 1) == "%") {
+
+          result_url.replace(pos - 1, placeholder.length() + 1, placeholder);
+          pos = result_url.find(placeholder, pos + placeholder.length());
+        }
+      }
+    } else {
+      // if the engine url does not use the %s placeholder, we append the search string
+      result_url = custom_engine_url + search_string;
+    }
+
+    QString qurl_string = QString::fromStdWString(result_url);
+    open_web_url(qurl_string);
 }
 
 void search_google_scholar(const std::wstring& search_string) {
