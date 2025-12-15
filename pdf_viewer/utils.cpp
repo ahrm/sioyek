@@ -118,8 +118,9 @@ bool rects_intersect(fz_rect rect1, fz_rect rect2) {
 	return range_intersects(rect1.x0, rect1.x1, rect2.x0, rect2.x1) && range_intersects(rect1.y0, rect1.y1, rect2.y0, rect2.y1);
 }
 
-ParsedUri parse_uri(fz_context* mupdf_context, std::string uri) {
-	fz_link_dest dest = pdf_parse_link_uri(mupdf_context, uri.c_str());
+ParsedUri parse_uri(fz_context* mupdf_context, fz_document* fz_doc, std::string uri) {
+	pdf_document* doc = pdf_document_from_fz_document(mupdf_context, fz_doc);
+	fz_link_dest dest = pdf_resolve_link_dest(mupdf_context, doc, uri.c_str());
 	return { dest.loc.page + 1, dest.x, dest.y };
 }
 

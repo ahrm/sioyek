@@ -179,7 +179,7 @@ void MainWidget::set_overview_position(int page, float offset) {
 
 void MainWidget::set_overview_link(PdfLink link) {
 
-    auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
+    auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, link.uri);
     if (page >= 1) {
         set_overview_position(page - 1, offset_y);
     }
@@ -2780,7 +2780,7 @@ void MainWidget::handle_link_click(const PdfLink& link) {
 		return;
 	}
 
-	auto [page, offset_x, offset_y] = parse_uri(mupdf_context, link.uri);
+	auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, link.uri);
 
 	// convert one indexed page to zero indexed page
 	page--;
@@ -3929,7 +3929,7 @@ void MainWidget::handle_portal_to_link(const std::wstring& text) {
         PdfLink pdf_link;
         pdf_link.rect = link->rect;
         pdf_link.uri = link->uri;
-        ParsedUri parsed_uri = parse_uri(mupdf_context, pdf_link.uri);
+        ParsedUri parsed_uri = parse_uri(mupdf_context, doc()->doc, pdf_link.uri);
 
 		//AbsoluteDocumentPos abspos = doc()->document_to_absolute_pos(defpos[0], true);
         DocumentPos link_source_document_pos;
@@ -3968,7 +3968,7 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
 				open_web_url(utf8_decode(selected_link->uri));
 			}
 			else {
-				auto [page, offset_x, offset_y] = parse_uri(mupdf_context, selected_link->uri);
+				auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, selected_link->uri);
 				long_jump_to_destination(page - 1, offset_y);
 			}
 		}
