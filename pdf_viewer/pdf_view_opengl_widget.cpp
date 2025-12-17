@@ -19,6 +19,7 @@ extern bool RERENDER_OVERVIEW;
 extern bool RULER_MODE;
 extern float PAGE_SEPARATOR_WIDTH;
 extern float PAGE_SEPARATOR_COLOR[3];
+extern float DARK_MODE_PAGE_SEPARATOR_COLOR[3];
 extern float RULER_PADDING;
 extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
@@ -724,7 +725,8 @@ void PdfViewOpenGLWidget::render_page(int page_number) {
 			fz_rect separator_window_rect = document_view->document_to_window_rect(page_number, separator_rect);
 			rect_to_quad(separator_window_rect, page_vertices);
 
-			glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, PAGE_SEPARATOR_COLOR);
+			auto &separator_color = color_mode == ColorPalette::Dark ? DARK_MODE_PAGE_SEPARATOR_COLOR : PAGE_SEPARATOR_COLOR;
+			glUniform3fv(shared_gl_objects.separator_background_color_uniform_location, 1, separator_color);
 
 			glBindBuffer(GL_ARRAY_BUFFER, shared_gl_objects.vertex_buffer_object);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
