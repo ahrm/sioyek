@@ -88,7 +88,7 @@ public:
 	// is the user currently selecing text? (happens when we left click and move the cursor)
 	bool is_selecting = false;
 	// is the user in word select mode? (happens when we double left click and move the cursor)
-	bool is_word_selecting = false;
+	bool is_word_selection = false;
 	std::wstring selected_text;
 
 	bool is_select_highlight_mode = false;
