@@ -2703,7 +2703,7 @@ std::vector<std::unique_ptr<Command>> InputHandler::handle_key(QKeyEvent* key_ev
 
 	int key = 0;
 	if (!USE_LEGACY_KEYBINDS){
-		std::vector<QString> special_texts = {"\b", "\t", " ", "\r", "\n"};
+		std::vector<QString> special_texts = {"\b", "\u007F", "\t", " ", "\r", "\n"};
 		if (((key_event->key() >= 'A') && (key_event->key() <= 'Z')) || ((key_event->text().size() > 0) &&
 			(std::find(special_texts.begin(), special_texts.end(), key_event->text()) == special_texts.end()))) {
 			if (!control_pressed && !alt_pressed) {
