@@ -2294,7 +2294,7 @@ std::vector<SearchResult> Document::search_regex(std::wstring query, bool case_s
 	int empty_tolerance = 1000;
 
 
-	while (std::regex_search(search_start, super_fast_search_index.cend(), match, regex)) {
+	while (std::regex_search(search_start, super_fast_search_index.end(), match, regex)) {
 		std::vector<fz_rect> match_rects;
 		std::vector<fz_rect> compressed_match_rects;
 
