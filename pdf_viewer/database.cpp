@@ -1881,7 +1881,7 @@ std::wstring encode_variant(QVariant var) {
 
 
     std::vector<QString> specials = { "CURRENT_TIMESTAMP", "datetime('now')" };
-    if ((var.typeId() == QMetaType::QString) || (var.typeId() == QMetaType::Char)) {
+    if ((var.typeId() == QMetaType::QString) || (var.typeId() == QMetaType::QChar)) {
         if (std::find(specials.begin(), specials.end(), var.toString()) != specials.end()) {
             return var.toString().toStdWString();
         }
