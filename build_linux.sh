@@ -12,6 +12,9 @@ then
     if [ -f "/usr/bin/qmake-qt6" ]; 
     then
         QMAKE="/usr/bin/qmake-qt6"
+    elif [ -f "/usr/bin/qmake6" ]; 
+    then
+        QMAKE="/usr/bin/qmake6"
     elif [ -f "/usr/bin/qmake" ]; 
     then
         QMAKE="/usr/bin/qmake"
