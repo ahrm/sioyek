@@ -54,12 +54,10 @@ void Document::load_document_metadata_from_db() {
 		db_manager->select_links(checksum, portals);
 	}
 	else {
-		auto checksum_thread = std::thread([&]() {
+		checksum_thread = std::thread([&]() {
 				std::string checksum = get_checksum();
 				db_manager->insert_document_hash(get_path(), checksum);
 			});
-		checksum_thread.detach();
-		//checksum_thread.join();
 	}
 }
 
@@ -553,6 +551,10 @@ Document::~Document() {
 	if (document_indexing_thread.has_value()) {
 		stop_indexing();
 		document_indexing_thread.value().join();
+	}
+
+	if (checksum_thread.has_value()) {
+		checksum_thread.value().join();
 	}
 
 	if (doc != nullptr) {

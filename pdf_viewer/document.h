@@ -82,6 +82,7 @@ private:
 
 	std::mutex document_indexing_mutex;
 	std::optional<std::thread> document_indexing_thread = {};
+	std::optional<std::thread> checksum_thread = {};
 	bool is_document_indexing_required = true;
 	bool is_indexing = false;
 	bool are_highlights_loaded = false;
