@@ -497,6 +497,10 @@ void PdfRenderer::add_password(std::wstring path, std::string password) {
 	delete_old_pages(true, false);
 }
 
+void PdfRenderer::set_display_scale(float scale) {
+    display_scale = scale;
+}
+
 bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 	if (rhs.path != lhs.path) {
 		return false;
@@ -509,4 +513,3 @@ bool operator==(const RenderRequest& lhs, const RenderRequest& rhs) {
 	}
 	return true;
 }
-

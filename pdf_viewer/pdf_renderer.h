@@ -119,6 +119,7 @@ public:
 	GLuint find_rendered_page(std::wstring path, int page, float zoom_level, int* page_width, int* page_height);
 	void delete_old_pages(bool force_all=false, bool invalidate_all=false);
 	void add_password(std::wstring path, std::string password);
+    void set_display_scale(float scale);
 
 signals:
 	void render_advance();
