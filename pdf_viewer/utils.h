@@ -84,6 +84,7 @@ std::string utf8_encode(const std::wstring& decoded_str);
 // is the character a right to left character
 bool is_rtl(int c);
 std::wstring reverse_wstring(const std::wstring& inp);
+std::wstring reverse_mixed_rtl(const std::wstring& text);
 bool parse_search_command(const std::wstring& search_command, int* out_begin, int* out_end, std::wstring* search_text);
 QStandardItemModel* get_model_from_toc(const std::vector<TocNode*>& roots);
 

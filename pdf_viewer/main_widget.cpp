@@ -148,19 +148,7 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
 		main_document_view->set_offset_y(main_window_height / 2 / main_document_view->get_zoom_level());
     }
 
-    if (text_command_line_edit_container != nullptr) {
-        text_command_line_edit_container->move(0, 0);
-        text_command_line_edit_container->resize(main_window_width, 30);
-    }
-
-    if (status_label != nullptr) {
-        int status_bar_height = get_status_bar_height();
-        status_label->move(0, main_window_height - status_bar_height);
-        status_label->resize(main_window_width, status_bar_height);
-        if (should_show_status_label) {
-			status_label->show();
-        }
-    }
+    ui_manager->resize_events();
 
     if ((main_document_view->get_document() != nullptr) && (main_document_view->get_zoom_level() == 0)) {
         main_document_view->fit_to_page_width();
@@ -186,125 +174,7 @@ void MainWidget::set_overview_link(PdfLink link) {
 }
 
 void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
-
-    if (is_rotated()) {
-        // we don't handle mouse events while document is rotated becausae proper handling
-        // would increase the code complexity too much to be worth it
-        return;
-    }
-
-    //int x = mouse_event->pos().x();
-    //int y = mouse_event->pos().y();
-    WindowPos mpos = { mouse_event->pos().x(), mouse_event->pos().y() };
-
-    std::optional<PdfLink> link = {};
-
-    NormalizedWindowPos normal_mpos = main_document_view->window_to_normalized_window_pos(mpos);
-
-    if (rect_select_mode) {
-        if (rect_select_begin.has_value()) {
-			AbsoluteDocumentPos abspos = main_document_view->window_to_absolute_document_pos(mpos);
-			rect_select_end = abspos;
-			fz_rect selected_rect;
-			selected_rect.x0 = rect_select_begin.value().x;
-			selected_rect.y0 = rect_select_begin.value().y;
-			selected_rect.x1 = rect_select_end.value().x;
-			selected_rect.y1 = rect_select_end.value().y;
-			opengl_widget->set_selected_rectangle(selected_rect);
-
-			validate_render();
-        }
-        return;
-    }
-
-    if (overview_resize_data) {
-        // if we are resizing overview page, set the selected side of the overview window to the mosue position
-        //float offset_diff_x = normal_x - overview_resize_data.value().original_mouse_pos.first;
-        //float offset_diff_y = normal_y - overview_resize_data.value().original_mouse_pos.second;
-        fvec2 offset_diff = fvec2(normal_mpos) - fvec2(overview_resize_data.value().original_normal_mouse_pos);
-        opengl_widget->set_overview_side_pos(
-            overview_resize_data.value().side_index,
-            overview_resize_data.value().original_rect,
-            offset_diff);
-        validate_render();
-        return;
-    }
-
-    if (overview_move_data) {
-        fvec2 offset_diff = fvec2(normal_mpos) - fvec2(overview_move_data.value().original_normal_mouse_pos);
-        offset_diff[1] = -offset_diff[1];
-        fvec2 new_offsets = overview_move_data.value().original_offsets + offset_diff;
-        opengl_widget->set_overview_offsets(new_offsets);
-        validate_render();
-        return;
-    }
-
-    if (opengl_widget->is_window_point_in_overview(normal_mpos)) {
-        link = doc()->get_link_in_pos(opengl_widget->window_pos_to_overview_pos(normal_mpos));
-        if (link) {
-			setCursor(Qt::PointingHandCursor);
-        }
-        else {
-			setCursor(Qt::ArrowCursor);
-        }
-        return;
-    }
-
-    if (main_document_view && (link = main_document_view->get_link_in_pos(mpos))) {
-        // show hand cursor when hovering over links
-        setCursor(Qt::PointingHandCursor);
-
-        // if hover_overview config is set, we show an overview of links while hovering over them
-        if (HOVER_OVERVIEW) {
-            set_overview_link(link.value());
-        }
-    }
-    else {
-        setCursor(Qt::ArrowCursor);
-        if (HOVER_OVERVIEW) {
-            opengl_widget->set_overview_page({});
-            invalidate_render();
-        }
-    }
-
-    if (is_dragging) {
-        ivec2 diff = ivec2(mpos) - ivec2(last_mouse_down_window_pos);
-
-        fvec2 diff_doc = diff / main_document_view->get_zoom_level();
-        if (horizontal_scroll_locked) {
-            diff_doc.values[0] = 0;
-        }
-
-        main_document_view->set_offsets(last_mouse_down_document_offset.x + diff_doc.x(),
-            last_mouse_down_document_offset.y - diff_doc.y());
-        validate_render();
-    }
-
-    if (is_selecting) {
-
-        // When selecting, we occasionally update selected text
-        //todo: maybe have a timer event that handles this periodically
-	int msecs_since_last_text_select = last_text_select_time.msecsTo(QTime::currentTime());
-	if (msecs_since_last_text_select > 16 || msecs_since_last_text_select < 0) {
-
-            AbsoluteDocumentPos document_pos = main_document_view->window_to_absolute_document_pos(mpos);
-
-            selection_begin = last_mouse_down;
-            selection_end = document_pos;
-            //fz_point selection_begin = { last_mouse_down.x(), last_mouse_down.y()};
-            //fz_point selection_end = { document_x, document_y };
-
-            main_document_view->get_text_selection(selection_begin,
-                selection_end,
-                is_word_selecting,
-                main_document_view->selected_character_rects,
-                selected_text);
-
-            validate_render();
-            last_text_select_time = QTime::currentTime();
-        }
-    }
-
+    input_processor->mouseMoveEvent(mouse_event);
 }
 
 void MainWidget::persist() {
@@ -351,6 +221,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     setAcceptDrops(true);
     setAttribute(Qt::WA_DeleteOnClose);
 
+    ui_manager = new UIManager(this);
+    input_processor = new InputProcessor(this);
 
     inverse_search_command = INVERSE_SEARCH_COMMAND;
     if (DISPLAY_RESOLUTION_SCALE <= 0){
@@ -373,11 +245,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     helper_document_view = new DocumentView(mupdf_context, db_manager, document_manager, config_manager, checksummer);
     helper_opengl_widget = new PdfViewOpenGLWidget(helper_document_view, pdf_renderer, config_manager, true);
 
-    status_label = new QLabel(this);
-    status_label->setStyleSheet(get_status_stylesheet());
-    QFont label_font = QFont(get_font_face_name());
-    label_font.setStyleHint(QFont::TypeWriter);
-    status_label->setFont(label_font);
+    ui_manager->setup_ui();
 
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
@@ -392,27 +260,6 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     helper_opengl_widget->register_on_link_edit_listener([this](OpenedBookState state) {
         this->update_closest_link_with_opened_book_state(state);
         });
-
-    text_command_line_edit_container = new QWidget(this);
-    text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
-
-    QHBoxLayout* text_command_line_edit_container_layout = new QHBoxLayout();
-
-    text_command_line_edit_label = new QLabel();
-    text_command_line_edit = new QLineEdit();
-
-    text_command_line_edit_label->setFont(QFont(get_font_face_name()));
-    text_command_line_edit->setFont(QFont(get_font_face_name()));
-
-    text_command_line_edit_label->setStyleSheet(get_status_stylesheet());
-    text_command_line_edit->setStyleSheet(get_status_stylesheet());
-
-    text_command_line_edit_container_layout->addWidget(text_command_line_edit_label);
-    text_command_line_edit_container_layout->addWidget(text_command_line_edit);
-    text_command_line_edit_container_layout->setContentsMargins(10, 0, 10, 0);
-
-    text_command_line_edit_container->setLayout(text_command_line_edit_container_layout);
-    text_command_line_edit_container->hide();
 
     on_command_done = [&](std::string command_name) {
         bool is_numeric = false;
@@ -473,33 +320,17 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     validation_interval_timer->start();
 
 
-    scroll_bar = new QScrollBar(this);
     QVBoxLayout* layout = new QVBoxLayout;
     QHBoxLayout* hlayout = new QHBoxLayout;
 
     hlayout->addWidget(opengl_widget);
-    hlayout->addWidget(scroll_bar);
+    hlayout->addWidget(ui_manager->scroll_bar);
 
     layout->setSpacing(0);
     layout->setContentsMargins(0, 0, 0, 0);
     opengl_widget->setAttribute(Qt::WA_TransparentForMouseEvents);
     layout->addLayout(hlayout);
     setLayout(layout);
-
-    scroll_bar->setMinimum(0);
-    scroll_bar->setMaximum(MAX_SCROLLBAR);
-
-    scroll_bar->connect(scroll_bar, &QScrollBar::actionTriggered, [this](int action) {
-        int value = scroll_bar->value();
-        if (main_document_view_has_document()) {
-            float offset = doc()->max_y_offset() * value / static_cast<float>(scroll_bar->maximum());
-            main_document_view->set_offset_y(offset);
-            validate_render();
-        }
-        });
-
-
-    scroll_bar->hide();
 
     if (SHOULD_HIGHLIGHT_LINKS) {
         opengl_widget->set_highlight_links(true, false);
@@ -537,6 +368,8 @@ MainWidget::~MainWidget() {
     if (helper_document_view != nullptr && helper_document_view != main_document_view) {
         delete helper_document_view;
     }
+    delete ui_manager;
+    delete input_processor;
 }
 
 bool MainWidget::is_pending_link_source_filled() {
@@ -568,8 +401,8 @@ std::wstring MainWidget::get_status_string() {
     float progress = -1;
     if (opengl_widget->get_is_searching(&progress)) {
         // Make sure statusbar is visible if we are searching
-        if (!status_label->isVisible()) {
-            status_label->show();
+        if (!ui_manager->status_label->isVisible()) {
+            ui_manager->status_label->show();
         }
 
         // show the 0th result if there are no results and the index + 1 otherwise
@@ -581,8 +414,8 @@ std::wstring MainWidget::get_status_string() {
     }
     else {
         // Make sure statusbar is hidden if it should be
-        if (!should_show_status_label) {
-            status_label->hide();
+        if (!ui_manager->should_show_status_label) {
+            ui_manager->status_label->hide();
         }
     }
 
@@ -704,7 +537,7 @@ void MainWidget::handle_escape() {
     }
 
     typing_location = {};
-    text_command_line_edit->setText("");
+    ui_manager->set_textbar_text(L"");
     pending_link = {};
     synchronize_pending_link();
     pending_command_instance = nullptr;
@@ -740,7 +573,7 @@ void MainWidget::handle_escape() {
     }
     //if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
 
-    text_command_line_edit_container->hide();
+    ui_manager->hide_textbar();
 
     clear_selected_rect();
 
@@ -749,11 +582,11 @@ void MainWidget::handle_escape() {
 }
 
 void MainWidget::keyPressEvent(QKeyEvent* kevent) {
-    key_event(false, kevent);
+    input_processor->key_event(false, kevent);
 }
 
 void MainWidget::keyReleaseEvent(QKeyEvent* kevent) {
-    key_event(true, kevent);
+    input_processor->key_event(true, kevent);
 }
 
 void MainWidget::validate_render() {
@@ -852,7 +685,7 @@ void MainWidget::validate_render() {
 }
 
 void MainWidget::validate_ui() {
-    status_label->setText(QString::fromStdWString(get_status_string()));
+    ui_manager->update_status_bar();
     is_ui_invalidated = false;
 }
 
@@ -890,21 +723,7 @@ void MainWidget::move_document_screens(int num_screens) {
 //
 
 void MainWidget::on_config_file_changed(ConfigManager* new_config) {
-
-    status_label->setStyleSheet(get_status_stylesheet());
-    status_label->setFont(QFont(get_font_face_name()));
-    text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
-    text_command_line_edit->setFont(QFont(get_font_face_name()));
-
-    text_command_line_edit_label->setStyleSheet(get_status_stylesheet());
-    text_command_line_edit->setStyleSheet(get_status_stylesheet());
-    //status_label->setStyleSheet(get_status_stylesheet());
-
-    int status_bar_height = get_status_bar_height();
-    status_label->move(0, main_window_height - status_bar_height);
-    status_label->resize(size().width(), status_bar_height);
-
-    //text_command_line_edit_container->setStyleSheet("background-color: black; color: white; border: none;");
+    ui_manager->on_config_file_changed();
 }
 
 //void MainWidget::toggle_dark_mode()
@@ -1094,13 +913,13 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
 
     if (main_document_view_has_document()) {
       if (doc()->num_pages() > 0) {
-        scroll_bar->setSingleStep(std::max(MAX_SCROLLBAR / doc()->num_pages() / 10, 1));
-        scroll_bar->setPageStep(MAX_SCROLLBAR / doc()->num_pages());
+        ui_manager->scroll_bar->setSingleStep(std::max(MAX_SCROLLBAR / doc()->num_pages() / 10, 1));
+        ui_manager->scroll_bar->setPageStep(MAX_SCROLLBAR / doc()->num_pages());
       } else {
-        scroll_bar->setSingleStep(1);
-        scroll_bar->setPageStep(10);
+        ui_manager->scroll_bar->setSingleStep(1);
+        ui_manager->scroll_bar->setPageStep(10);
       }
-      update_scrollbar();
+      ui_manager->update_scrollbar();
     }
 
 
@@ -1177,284 +996,13 @@ void MainWidget::handle_command_types(std::unique_ptr<Command> new_command, int 
 			main_document_view->disable_auto_resize_mode();
 		}
         advance_command(std::move(new_command));
-		update_scrollbar();
+		ui_manager->update_scrollbar();
     }
     return;
 
 }
 
-void MainWidget::key_event(bool released, QKeyEvent* kevent) {
-    validate_render();
 
-    if (typing_location.has_value()) {
-
-        if (released == false) {
-			if (kevent->key() == Qt::Key::Key_Escape) {
-				handle_escape();
-                return;
-			}
-
-            bool should_focus = false;
-			if (kevent->key() == Qt::Key::Key_Return) {
-				typing_location.value().next_char();
-			}
-			else if (kevent->key() == Qt::Key::Key_Backspace) {
-                typing_location.value().backspace();
-			}
-			else if (kevent->text().size() > 0) {
-				char c = kevent->text().at(0).unicode();
-				should_focus = typing_location.value().advance(c);
-			}
-
-			int page = typing_location.value().page;
-			fz_rect character_rect = fz_rect_from_quad(typing_location.value().character->quad);
-			std::optional<fz_rect> wrong_rect = {};
-
-			if (typing_location.value().previous_character) {
-				wrong_rect = fz_rect_from_quad(typing_location.value().previous_character->character->quad);
-			}
-
-			if (should_focus) {
-				main_document_view->set_offset_y(typing_location.value().focus_offset());
-			}
-			opengl_widget->set_typing_rect(page, character_rect, wrong_rect);
-
-		}
-        return;
-
-    }
-
-
-    if (released == false) {
-
-        if (kevent->key() == Qt::Key::Key_Escape) {
-            handle_escape();
-        }
-
-        if (kevent->key() == Qt::Key::Key_Return || kevent->key() == Qt::Key::Key_Enter) {
-            if (text_command_line_edit_container->isVisible()) {
-                text_command_line_edit_container->hide();
-                setFocus();
-                handle_pending_text_command(text_command_line_edit->text().toStdWString());
-                return;
-            }
-        }
-
-        std::vector<int> ignored_codes = {
-            Qt::Key::Key_Shift,
-            Qt::Key::Key_Control,
-            Qt::Key::Key_Alt
-        };
-        if (std::find(ignored_codes.begin(), ignored_codes.end(), kevent->key()) != ignored_codes.end()) {
-            return;
-        }
-        if (is_waiting_for_symbol()) {
-
-            char symb = get_symbol(kevent->key(), kevent->modifiers() & Qt::ShiftModifier, pending_command_instance->special_symbols());
-            if (symb) {
-                pending_command_instance->set_symbol_requirement(symb);
-                advance_command(std::move(pending_command_instance));
-            }
-            return;
-        }
-        int num_repeats = 0;
-        bool is_control_pressed = (kevent->modifiers() & Qt::ControlModifier) || (kevent->modifiers() & Qt::MetaModifier);
-        std::vector<std::unique_ptr<Command>> commands = input_handler->handle_key(
-            kevent,
-            kevent->modifiers() & Qt::ShiftModifier,
-            is_control_pressed,
-            kevent->modifiers() & Qt::AltModifier,
-            &num_repeats);
-
-        for (auto& command : commands) {
-            handle_command_types(std::move(command), num_repeats);
-        }
-    }
-
-}
-
-void MainWidget::handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed) {
-
-    if (is_rotated()) {
-        return;
-    }
-    if (is_shift_pressed || is_control_pressed || is_alt_pressed) {
-        return;
-    }
-
-    if ((down == true) && opengl_widget->get_overview_page()) {
-        opengl_widget->set_overview_page({});
-        //main_document_view->set_line_index(-1);
-        invalidate_render();
-        return;
-    }
-
-    if ((main_document_view->get_document() != nullptr) && (opengl_widget != nullptr)) {
-
-        // disable visual mark and overview window when we are in synctex mode
-        // because we probably don't need them (we are editing our own document after all)
-        // we can always use middle click to jump to a destination which is probably what we
-        // need anyway
-        if (down == true && (!this->synctex_mode)) {
-            if (pending_command_instance && (pending_command_instance->get_name() == "goto_mark")) {
-                return_to_last_visual_mark();
-                return;
-            }
-
-            if (overview_under_pos(click_pos)) {
-                return;
-            }
-
-            visual_mark_under_pos(click_pos);
-
-        }
-        else {
-            if (this->synctex_mode) {
-                if (down == false) {
-					synctex_under_pos(click_pos);
-                }
-            }
-        }
-
-    }
-
-}
-
-void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed) {
-
-    if (is_rotated()) {
-        return;
-    }
-    if (is_shift_pressed || is_control_pressed || is_alt_pressed) {
-        return;
-    }
-
-    AbsoluteDocumentPos abs_doc_pos = main_document_view->window_to_absolute_document_pos(click_pos);
-
-    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(click_pos);
-
-    if (opengl_widget) opengl_widget->set_should_draw_vertical_line(false);
-
-    if (rect_select_mode) {
-        if (down == true) {
-            if (rect_select_end.has_value()) {
-                //clicked again after selecting, we should clear the selected rectangle
-                clear_selected_rect();
-            }
-            else {
-                rect_select_begin = abs_doc_pos;
-            }
-        }
-        else {
-            if (rect_select_begin.has_value() && rect_select_end.has_value()) {
-				rect_select_end = abs_doc_pos;
-				fz_rect selected_rectangle;
-				selected_rectangle.x0 = rect_select_begin.value().x;
-				selected_rectangle.y0 = rect_select_begin.value().y;
-				selected_rectangle.x1 = rect_select_end.value().x;
-				selected_rectangle.y1 = rect_select_end.value().y;
-				opengl_widget->set_selected_rectangle(selected_rectangle);
-
-                // is pending rect command
-                if (pending_command_instance) {
-                    pending_command_instance->set_rect_requirement(selected_rectangle);
-                    advance_command(std::move(pending_command_instance));
-                }
-
-				this->rect_select_mode = false;
-				this->rect_select_begin = {};
-				this->rect_select_end = {};
-            }
-			
-        }
-		return;
-    }
-    else {
-        if (down == true) {
-            clear_selected_rect();
-        }
-    }
-
-    if (down == true) {
-
-        PdfViewOpenGLWidget::OverviewSide border_index = static_cast<PdfViewOpenGLWidget::OverviewSide>(-1);
-        if (opengl_widget->is_window_point_in_overview_border(normal_x, normal_y, &border_index)) {
-            PdfViewOpenGLWidget::OverviewResizeData resize_data;
-            resize_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
-            resize_data.original_rect = opengl_widget->get_overview_rect();
-            resize_data.side_index = border_index;
-            overview_resize_data = resize_data;
-            return;
-        }
-        if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
-            float original_offset_x, original_offset_y;
-
-            PdfViewOpenGLWidget::OverviewMoveData move_data;
-            opengl_widget->get_overview_offsets(&original_offset_x, &original_offset_y);
-            move_data.original_normal_mouse_pos = NormalizedWindowPos{ normal_x, normal_y };
-            move_data.original_offsets = fvec2{ original_offset_x, original_offset_y };
-            overview_move_data = move_data;
-            return;
-        }
-
-        selection_begin = abs_doc_pos;
-        //selection_begin_x = x_;
-        //selection_begin_y = y_;
-
-        last_mouse_down = abs_doc_pos;
-        //last_mouse_down_x = x_;
-        //last_mouse_down_y = y_;
-        last_mouse_down_window_pos = click_pos;
-        last_mouse_down_document_offset = main_document_view->get_offsets();
-        //last_mouse_down_window_x = x;
-        //last_mouse_down_window_y = y;
-
-        main_document_view->selected_character_rects.clear();
-
-        if (!mouse_drag_mode) {
-            is_selecting = true;
-			if (SINGLE_CLICK_SELECTS_WORDS) {
-				is_word_selecting = true;
-			}
-        }
-        else {
-            is_dragging = true;
-        }
-    }
-    else {
-        selection_end = abs_doc_pos;
-
-        is_selecting = false;
-        is_dragging = false;
-
-        bool was_overview_mode = overview_move_data.has_value() || overview_resize_data.has_value();
-
-        overview_move_data = {};
-        overview_resize_data = {};
-
-        //if (was_overview_mode) {
-        //    return;
-        //}
-
-        if ((!was_overview_mode) && (!mouse_drag_mode) && (manhattan_distance(fvec2(last_mouse_down), fvec2(abs_doc_pos)) > 5)) {
-
-            //fz_point selection_begin = { last_mouse_down_x, last_mouse_down_y };
-            //fz_point selection_end = { x_, y_ };
-
-            main_document_view->get_text_selection(last_mouse_down,
-                abs_doc_pos,
-                is_word_selecting,
-                main_document_view->selected_character_rects,
-                selected_text);
-            is_word_selecting = false;
-        }
-        else {
-            handle_click(click_pos);
-            clear_selected_text();
-        }
-        validate_render();
-    }
-}
 
 
 void MainWidget::push_state(bool update) {
@@ -1641,238 +1189,21 @@ bool MainWidget::find_location_of_text_under_pointer(WindowPos pointer_pos, int*
 }
 
 void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
-
-    bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
-    bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
-    bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
-
-	if (is_rotated()) {
-		return;
-	}
-
-    if (mevent->button() == Qt::MouseButton::LeftButton) {
-        if (is_shift_pressed) {
-			auto commands = command_manager->create_macro_command("", SHIFT_CLICK_COMMAND);
-			commands->run(this);
-        }
-        else if (is_control_pressed) {
-			auto commands = command_manager->create_macro_command("", CONTROL_CLICK_COMMAND);
-			commands->run(this);
-        }
-        else if (is_alt_pressed) {
-			auto commands = command_manager->create_macro_command("", ALT_CLICK_COMMAND);
-			commands->run(this);
-        }
-        else {
-			handle_left_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
-			if (is_select_highlight_mode && (main_document_view->selected_character_rects.size() > 0)) {
-				main_document_view->add_highlight(selection_begin, selection_end, select_highlight_type);
-                clear_selected_text();
-			}
-			if (main_document_view->selected_character_rects.size() > 0) {
-				copy_to_clipboard(selected_text, true);
-			}
-        }
-
-    }
-
-    if (mevent->button() == Qt::MouseButton::RightButton) {
-        if (is_shift_pressed) {
-			auto commands = command_manager->create_macro_command("", SHIFT_RIGHT_CLICK_COMMAND);
-			commands->run(this);
-        }
-        else if (is_control_pressed) {
-			auto commands = command_manager->create_macro_command("", CONTROL_RIGHT_CLICK_COMMAND);
-			commands->run(this);
-        }
-        else if (is_alt_pressed) {
-			auto commands = command_manager->create_macro_command("", ALT_RIGHT_CLICK_COMMAND);
-			commands->run(this);
-        }
-        else {
-			handle_right_click({ mevent->pos().x(), mevent->pos().y() }, false, is_shift_pressed, is_control_pressed, is_alt_pressed);
-        }
-    }
-
-    if (mevent->button() == Qt::MouseButton::MiddleButton) {
-        if (HIGHLIGHT_MIDDLE_CLICK
-            && main_document_view->selected_character_rects.size() > 0
-            && !(opengl_widget && opengl_widget->get_overview_page())) {
-            command_manager->get_command_with_name("add_highlight_with_current_type")->run(this);
-            invalidate_render();
-        }
-        else {
-          smart_jump_under_pos({ mevent->pos().x(), mevent->pos().y() });
-        }
-    }
-
+    input_processor->mouseReleaseEvent(mevent);
 }
 
 void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
-	if (mevent->button() == Qt::MouseButton::LeftButton) {
-		is_selecting = true;
-		if (SINGLE_CLICK_SELECTS_WORDS) {
-			is_word_selecting = false;
-		}
-        else {
-			is_word_selecting = true;
-		}
-	}
+    input_processor->mouseDoubleClickEvent(mevent);
 }
 
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
-    bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
-    bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
-    bool is_alt_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::AltModifier);
-
-    if (mevent->button() == Qt::MouseButton::LeftButton) {
-        handle_left_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_alt_pressed);
-    }
-
-    if (mevent->button() == Qt::MouseButton::RightButton) {
-        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_alt_pressed);
-    }
-
-    if (mevent->button() == Qt::MouseButton::XButton1) {
-        handle_command_types(command_manager->get_command_with_name("prev_state"), 0);
-        invalidate_render();
-    }
-
-    if (mevent->button() == Qt::MouseButton::XButton2) {
-        handle_command_types(command_manager->get_command_with_name("next_state"), 0);
-        invalidate_render();
-    }
+    input_processor->mousePressEvent(mevent);
 }
 
 void MainWidget::wheelEvent(QWheelEvent* wevent) {
-
-    std::unique_ptr<Command> command = nullptr;
-    //bool is_touchpad = wevent->source() == Qt::MouseEventSource::MouseEventSynthesizedBySystem;
-    //bool is_touchpad = true;
-    float vertical_move_amount = VERTICAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
-    float horizontal_move_amount = HORIZONTAL_MOVE_AMOUNT * TOUCHPAD_SENSITIVITY;
-
-    //if (is_touchpad) {
-    //	vertical_move_amount *= TOUCHPAD_SENSITIVITY;
-    //	horizontal_move_amount *= TOUCHPAD_SENSITIVITY;
-    //}
-    if (main_document_view_has_document()) {
-        main_document_view->disable_auto_resize_mode();
-    }
-
-    bool is_control_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier) ||
-        QApplication::queryKeyboardModifiers().testFlag(Qt::MetaModifier);
-
-    bool is_shift_pressed = QApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier);
-    bool is_visual_mark_mode = opengl_widget->get_should_draw_vertical_line() && visual_scroll_mode;
-
-
-#ifdef SIOYEK_QT6
-    int x = wevent->position().x();
-    int y = wevent->position().y();
-#else
-    int x = wevent->pos().x();
-    int y = wevent->pos().y();
-#endif
-
-    WindowPos mouse_window_pos = { x, y };
-    auto [normal_x, normal_y] = main_document_view->window_to_normalized_window_pos(mouse_window_pos);
-
-#ifdef SIOYEK_QT6
-	int num_repeats = abs(wevent->angleDelta().y() / 120);
-	float num_repeats_f = abs(wevent->angleDelta().y() / 120.0);
-#else
-	int num_repeats = abs(wevent->delta() / 120);
-	float num_repeats_f = abs(wevent->delta() / 120.0);
-#endif
-
-    if (num_repeats == 0) {
-        num_repeats = 1;
-    }
-
-    if ((!is_control_pressed) && (!is_shift_pressed)) {
-        if (opengl_widget->is_window_point_in_overview({ normal_x, normal_y })) {
-            if (wevent->angleDelta().y() > 0) {
-                scroll_overview(-1);
-            }
-            if (wevent->angleDelta().y() < 0) {
-                scroll_overview(1);
-            }
-            validate_render();
-        }
-        else {
-
-            if (wevent->angleDelta().y() > 0) {
-
-                if (is_visual_mark_mode) {
-                    command = command_manager->get_command_with_name("move_visual_mark_up");
-                }
-                else {
-                    move_vertical(-72.0f * vertical_move_amount * num_repeats_f);
-					update_scrollbar();
-                    return;
-                }
-            }
-            if (wevent->angleDelta().y() < 0) {
-
-                if (is_visual_mark_mode) {
-                    command = command_manager->get_command_with_name("move_visual_mark_down");
-                }
-                else {
-                    move_vertical(72.0f * vertical_move_amount * num_repeats_f);
-					update_scrollbar();
-                    return;
-                }
-            }
-
-			float inverse_factor = INVERTED_HORIZONTAL_SCROLLING ? -1.0f : 1.0f;
-
-            if (wevent->angleDelta().x() > 0) {
-                move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
-                return;
-            }
-            if (wevent->angleDelta().x() < 0) {
-                move_horizontal(72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
-                return;
-            }
-        }
-    }
-
-    if (is_control_pressed) {
-        float zoom_factor = 1.0f + num_repeats_f * (ZOOM_INC_FACTOR - 1.0f);
-        zoom(mouse_window_pos, zoom_factor, wevent->angleDelta().y() > 0);
-        return;
-    }
-    if (is_shift_pressed) {
-        float inverse_factor = INVERTED_HORIZONTAL_SCROLLING ? -1.0f : 1.0f;
-
-        if (wevent->angleDelta().y() > 0) {
-            move_horizontal(-72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
-            return;
-        }
-        if (wevent->angleDelta().y() < 0) {
-            move_horizontal(72.0f * horizontal_move_amount * num_repeats_f * inverse_factor);
-            return;
-        }
-
-    }
-
-    if (command) {
-        //handle_command(command, num_repeats);
-        command->set_num_repeats(num_repeats);
-        command->run(this);
-    }
+    input_processor->wheelEvent(wevent);
 }
 
-void MainWidget::show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text) {
-    text_command_line_edit->clear();
-    if (should_fill_with_selected_text) {
-        text_command_line_edit->setText(QString::fromStdWString(selected_text));
-    }
-    text_command_line_edit_label->setText(QString::fromStdWString(command_name));
-    text_command_line_edit_container->show();
-    text_command_line_edit->setFocus();
-}
 
 bool MainWidget::helper_window_overlaps_main_window() {
 
@@ -2877,6 +2208,16 @@ void MainWidget::changeEvent(QEvent* event) {
             //main_window_height = get_current_monitor_height();
 		}
     }
+    if (event->type() == QEvent::ScreenChangeInternal) {
+        if (pdf_renderer) {
+#ifdef SIOYEK_QT6
+            pdf_renderer->set_display_scale(devicePixelRatio());
+#else
+            pdf_renderer->set_display_scale(devicePixelRatioF());
+#endif
+            invalidate_render();
+        }
+    }
     QWidget::changeEvent(event);
 }
 
@@ -2935,14 +2276,7 @@ void MainWidget::focusInEvent(QFocusEvent* ev) {
 }
 
 void MainWidget::toggle_statusbar() {
-    should_show_status_label = !should_show_status_label;
-
-    if (!should_show_status_label) {
-        status_label->hide();
-    }
-    else {
-        status_label->show();
-    }
+    ui_manager->toggle_statusbar();
 }
 
 void MainWidget::toggle_titlebar() {
@@ -3202,32 +2536,6 @@ void MainWidget::handle_keyboard_select(const std::wstring& text) {
 }
 
 
-void MainWidget::toggle_scrollbar() {
-
-    // dirty hack!
-    // really the content of this closure should be in toggle_scrollbar method, however,
-	// for some unknown reason if we do that, new windows are created very small when 
-	// toggle_scrollbar is in startup_commands. Strangely the culprit seems to be this line:
-    // scroll_bar->show()
-    // todo: figure out why this is the case and fix it
-    QTimer::singleShot(100, [&]() {
-			if (scroll_bar->isVisible()) {
-				scroll_bar->hide();
-			}
-			else {
-				scroll_bar->show();
-			}
-			main_window_width = opengl_widget->width();
-        });
-}
-
-void MainWidget::update_scrollbar() {
-    if (main_document_view_has_document()) {
-        float offset = main_document_view->get_offset_y();
-        int scroll = static_cast<int>(MAX_SCROLLBAR * offset / doc()->max_y_offset());
-        scroll_bar->setValue(scroll);
-    }
-}
 
 void MainWidget::handle_portal_overview_update() {
     std::optional<OverviewState> current_state_ = opengl_widget->get_overview_page();
@@ -3266,14 +2574,6 @@ void MainWidget::goto_overview() {
     }
 }
 
-QString MainWidget::get_font_face_name() {
-    if (UI_FONT_FACE_NAME.empty()) {
-        return "Monaco";
-    }
-    else {
-        return QString::fromStdWString(UI_FONT_FACE_NAME);
-    }
-}
 
 void MainWidget::reset_highlight_links() {
     if (SHOULD_HIGHLIGHT_LINKS) {
@@ -3519,9 +2819,9 @@ void MainWidget::perform_search(std::wstring text, bool is_regex) {
 
    if (search_term.size() > 0) {
 	   // in mupdf RTL documents are reversed, so we reverse the search string
-	   //todo: better (or any!) handling of mixed RTL and LTR text
-	   if ((!SUPER_FAST_SEARCH) && is_rtl(search_term[0])) {
-		   search_term = reverse_wstring(search_term);
+	   // we handle mixed RTL and LTR text by reversing RTL parts
+	   if (!SUPER_FAST_SEARCH) {
+           search_term = reverse_mixed_rtl(search_term);
 	   }
    }
 

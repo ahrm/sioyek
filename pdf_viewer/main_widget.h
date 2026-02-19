@@ -27,6 +27,8 @@
 #include "pdf_view_opengl_widget.h"
 #include "path.h"
 #include "checksum.h"
+#include "ui_manager.h"
+#include "input_processor.h"
 
 extern float VERTICAL_MOVE_AMOUNT;
 extern float HORIZONTAL_MOVE_AMOUNT;
@@ -35,6 +37,9 @@ extern float HORIZONTAL_MOVE_AMOUNT;
 class MainWidget : public QWidget, ConfigFileChangeListener{
 
 public:
+    friend class UIManager;
+    friend class InputProcessor;
+
 	fz_context* mupdf_context = nullptr;
 	DatabaseManager* db_manager = nullptr;
 	DocumentManager* document_manager = nullptr;
@@ -46,7 +51,9 @@ public:
 
 	PdfViewOpenGLWidget* opengl_widget = nullptr;
 	PdfViewOpenGLWidget* helper_opengl_widget = nullptr;
-	QScrollBar* scroll_bar = nullptr;
+
+    UIManager* ui_manager = nullptr;
+    InputProcessor* input_processor = nullptr;
 
 	//sgd::optional<Command> current_pending_command;
 	std::unique_ptr<Command> pending_command_instance = nullptr;
@@ -108,17 +115,10 @@ public:
 	bool synctex_mode = false;
 	bool is_dragging = false;
 
-	bool should_show_status_label = true;
-
 	std::optional<CharacterAddress> typing_location;
 
 	int main_window_width = 0;
 	int main_window_height = 0;
-
-	QWidget* text_command_line_edit_container = nullptr;
-	QLabel* text_command_line_edit_label = nullptr;
-	QLineEdit* text_command_line_edit = nullptr;
-	QLabel* status_label = nullptr;
 
 	bool is_render_invalidated = false;
 	bool is_ui_invalidated = false;
@@ -148,7 +148,6 @@ public:
 
 
 
-	void toggle_statusbar();
 	void toggle_titlebar();
 	void handle_paper_name_on_pointer(std::wstring paper_name, bool is_shift_pressed);
 	//void paintEvent(QPaintEvent* paint_event) override;
@@ -157,9 +156,6 @@ public:
 	std::wstring get_status_string();
 	void handle_escape();
 	bool is_waiting_for_symbol();
-	void key_event(bool released, QKeyEvent* kevent);
-	void handle_left_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
-	void handle_right_click(WindowPos click_pos, bool down, bool is_shift_pressed, bool is_control_pressed, bool is_alt_pressed);
 
 	void next_state();
 	void prev_state();
@@ -169,7 +165,6 @@ public:
 	void handle_click(WindowPos pos);
 
 	//bool eventFilter(QObject* obj, QEvent* event) override;
-	void show_textbar(const std::wstring& command_name, bool should_fill_with_selected_text = false);
 	void toggle_two_window_mode();
 	void toggle_window_configuration();
 	void handle_portal();
@@ -295,8 +290,6 @@ public:
 	void handle_keyboard_select(const std::wstring& text);
 	//void run_multiple_commands(const std::wstring& commands);
 	void push_state(bool update=true);
-	void toggle_scrollbar();
-	void update_scrollbar();
 	void handle_portal_overview_update();
 	void goto_overview();
 	bool is_rect_visible(int page, fz_rect rect);

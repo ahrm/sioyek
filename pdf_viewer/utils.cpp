@@ -52,6 +52,41 @@ std::wstring to_lower(const std::wstring& inp) {
 	return res;
 }
 
+std::wstring reverse_mixed_rtl(const std::wstring& text) {
+    std::wstring result;
+    std::wstring current_chunk;
+    bool is_current_rtl = false;
+
+    for (size_t i = 0; i < text.size(); ++i) {
+        bool char_is_rtl = is_rtl(text[i]);
+        if (current_chunk.empty()) {
+            current_chunk.push_back(text[i]);
+            is_current_rtl = char_is_rtl;
+        } else {
+            if (char_is_rtl == is_current_rtl) {
+                current_chunk.push_back(text[i]);
+            } else {
+                if (is_current_rtl) {
+                    result += reverse_wstring(current_chunk);
+                } else {
+                    result += current_chunk;
+                }
+                current_chunk.clear();
+                current_chunk.push_back(text[i]);
+                is_current_rtl = char_is_rtl;
+            }
+        }
+    }
+    if (!current_chunk.empty()) {
+        if (is_current_rtl) {
+            result += reverse_wstring(current_chunk);
+        } else {
+            result += current_chunk;
+        }
+    }
+    return result;
+}
+
 void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>& output, std::vector<int>& pages) {
 	// Enumerate ToC nodes in DFS order
 
