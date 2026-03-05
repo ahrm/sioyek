@@ -787,12 +787,19 @@ int main(int argc, char* args[]) {
     delete parser;
 
     DatabaseManager db_manager;
+    bool database_opened = false;
     if (local_database_file_path.file_exists() && global_database_file_path.file_exists()) {
-        db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
+        database_opened = db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
     }
     else {
-        db_manager.open(database_file_path.get_path(), database_file_path.get_path());
+        database_opened = db_manager.open(database_file_path.get_path(), database_file_path.get_path());
     }
+
+    if (!database_opened) {
+        std::cerr << "Failed to open database files. Exiting." << std::endl;
+        return -1;
+    }
+
     db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path());
     db_manager.ensure_schema_compatibility();
 
