@@ -34,32 +34,78 @@ std::wstring esc(const std::string& inp) {
     return esc(utf8_decode(inp));
 }
 
+namespace {
+bool ensure_callback_arity(const char* callback_name, int argc, int expected_argc) {
+    if (argc != expected_argc) {
+        qDebug() << "Skipping malformed DB row in" << callback_name
+                 << ": expected" << expected_argc << "columns but got" << argc;
+        return false;
+    }
+    return true;
+}
+
+bool ensure_required_arg(const char* callback_name,
+                         char** argv,
+                         int index,
+                         const char* field_name) {
+    if (!argv || !argv[index]) {
+        qDebug() << "Skipping malformed DB row in" << callback_name
+                 << ": null required field" << field_name;
+        return false;
+    }
+    return true;
+}
+
+std::string safe_string(char* value) {
+    return value ? std::string(value) : std::string();
+}
+
+std::wstring safe_wstring(char* value) {
+    return utf8_decode(safe_string(value));
+}
+
+float safe_float(char* value, float default_value = 0.0f) {
+    return value ? static_cast<float>(atof(value)) : default_value;
+}
+
+std::optional<float> safe_optional_float(char* value) {
+    if (!value) {
+        return {};
+    }
+    return static_cast<float>(atof(value));
+}
+} // namespace
+
 static int null_callback(void* notused, int argc, char** argv, char** col_name) {
     return 0;
 }
 
 static int id_callback(void* res_vector, int argc, char** argv, char** col_name) {
-    std::vector<int>* res = (std::vector<int>*) res_vector;
-
-    if (argc != 1) {
-        std::cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << std::endl;
+    std::vector<int>* res = (std::vector<int>*)res_vector;
+    if (!ensure_callback_arity("id_callback", argc, 1)) {
+        return 0;
     }
-
+    if (!ensure_required_arg("id_callback", argv, 0, "id")) {
+        return 0;
+    }
     res->push_back(atoi(argv[0]));
-
     return 0;
 }
 
 static int opened_book_callback(void* res_vector, int argc, char** argv, char** col_name) {
-    std::vector<OpenedBookState>* res = (std::vector<OpenedBookState>*) res_vector;
-
-    if (argc != 3) {
-        std::cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << std::endl;
+    std::vector<OpenedBookState>* res = (std::vector<OpenedBookState>*)res_vector;
+    if (!ensure_callback_arity("opened_book_callback", argc, 3)) {
+        return 0;
+    }
+    if (!ensure_required_arg("opened_book_callback", argv, 0, "zoom_level") ||
+        !ensure_required_arg("opened_book_callback", argv, 1, "offset_x") ||
+        !ensure_required_arg("opened_book_callback", argv, 2, "offset_y")) {
+        return 0;
     }
 
-    float zoom_level = atof(argv[0]);
-    float offset_x = atof(argv[1]);
-    float offset_y = atof(argv[2]);
+    float zoom_level = safe_float(argv[0]);
+    float offset_x = safe_float(argv[1]);
+    float offset_y = safe_float(argv[2]);
 
     res->push_back(OpenedBookState{ zoom_level, offset_x, offset_y });
     return 0;
@@ -67,44 +113,51 @@ static int opened_book_callback(void* res_vector, int argc, char** argv, char** 
 
 
 static int prev_doc_callback(void* res_vector, int argc, char** argv, char** col_name) {
-    std::vector<std::wstring>* res = (std::vector<std::wstring>*) res_vector;
-
-    if (argc != 1) {
-        std::cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << std::endl;
+    std::vector<std::wstring>* res = (std::vector<std::wstring>*)res_vector;
+    if (!ensure_callback_arity("prev_doc_callback", argc, 1)) {
+        return 0;
+    }
+    if (!ensure_required_arg("prev_doc_callback", argv, 0, "path")) {
+        return 0;
     }
 
-    res->push_back(utf8_decode(argv[0]));
+    res->push_back(safe_wstring(argv[0]));
     return 0;
 }
 
 static int prev_doc_with_name_callback(void* res_vector, int argc, char** argv, char** col_name) {
     std::vector<std::pair<std::wstring, std::wstring>>* res = (std::vector<std::pair<std::wstring, std::wstring>>*) res_vector;
-
-    assert(argc == 2);
-
-    std::wstring path = utf8_decode(argv[0]);
-    std::wstring doc_name = L"";
-    if (argv[1]) {
-        doc_name = utf8_decode(argv[1]);
+    if (!ensure_callback_arity("prev_doc_with_name_callback", argc, 2)) {
+        return 0;
     }
+    if (!ensure_required_arg("prev_doc_with_name_callback", argv, 0, "path")) {
+        return 0;
+    }
+
+    std::wstring path = safe_wstring(argv[0]);
+    std::wstring doc_name = safe_wstring(argv[1]);
     res->push_back(std::make_pair(path, doc_name));
     return 0;
 }
 
 static int mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
-
     std::vector<Mark>* res = (std::vector<Mark>*)res_vector;
-    assert(argc == 7);
+    if (!ensure_callback_arity("mark_select_callback", argc, 7)) {
+        return 0;
+    }
+    if (!ensure_required_arg("mark_select_callback", argv, 0, "symbol") ||
+        !ensure_required_arg("mark_select_callback", argv, 1, "offset_y") ||
+        !ensure_required_arg("mark_select_callback", argv, 4, "uuid")) {
+        return 0;
+    }
 
     char symbol = argv[0][0];
-    float offset_y = atof(argv[1]);
-    std::optional<float> offset_x = {};
-    std::optional<float> zoom_level = {};
-    if (argv[2]) offset_x = atof(argv[2]);
-    if (argv[3]) zoom_level = atof(argv[3]);
-    std::string uuid = argv[4];
-    std::string creation_time = argv[5];
-    std::string modification_time = argv[6];
+    float offset_y = safe_float(argv[1]);
+    std::optional<float> offset_x = safe_optional_float(argv[2]);
+    std::optional<float> zoom_level = safe_optional_float(argv[3]);
+    std::string uuid = safe_string(argv[4]);
+    std::string creation_time = safe_string(argv[5]);
+    std::string modification_time = safe_string(argv[6]);
 
     Mark m;
     m.y_offset = offset_y;
@@ -121,15 +174,17 @@ static int mark_select_callback(void* res_vector, int argc, char** argv, char** 
 
 static int mark_in_database_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
     std::vector<MarkInDatabase>* res = (std::vector<MarkInDatabase>*)res_vector;
-    assert(argc == 6);
+    if (!ensure_callback_arity("mark_in_database_select_callback", argc, 6)) {
+        return 0;
+    }
 
     MarkInDatabase m;
-    m.checksum = argv[0] ? argv[0] : "";
-    m.symbol = argv[1] ? argv[1][0] : 0;
-    m.offset_y = argv[2] ? atof(argv[2]) : 0.0f;
-    if (argv[3]) m.offset_x = atof(argv[3]);
-    if (argv[4]) m.zoom_level = atof(argv[4]);
-    m.uuid = argv[5] ? utf8_decode(argv[5]) : L"";
+    m.checksum = safe_string(argv[0]);
+    m.symbol = (argv[1] && argv[1][0] != '\0') ? argv[1][0] : 0;
+    m.offset_y = safe_float(argv[2], 0.0f);
+    m.offset_x = safe_optional_float(argv[3]);
+    m.zoom_level = safe_optional_float(argv[4]);
+    m.uuid = safe_wstring(argv[5]);
 
     res->push_back(m);
     return 0;
@@ -138,11 +193,16 @@ static int mark_in_database_select_callback(void* res_vector, int argc, char** a
 static int global_mark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<std::pair<std::string, float>>* res = (std::vector<std::pair<std::string, float>>*)res_vector;
-    assert(argc == 2);
+    if (!ensure_callback_arity("global_mark_select_callback", argc, 2)) {
+        return 0;
+    }
+    if (!ensure_required_arg("global_mark_select_callback", argv, 0, "path") ||
+        !ensure_required_arg("global_mark_select_callback", argv, 1, "offset_y")) {
+        return 0;
+    }
 
-    //char symbol = argv[0][0];
-    std::string path = argv[0];
-    float offset_y = atof(argv[1]);
+    std::string path = safe_string(argv[0]);
+    float offset_y = safe_float(argv[1]);
 
     res->push_back(std::make_pair(path, offset_y));
     return 0;
@@ -151,10 +211,17 @@ static int global_mark_select_callback(void* res_vector, int argc, char** argv, 
 static int global_bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<std::pair<std::string, BookMark>>* res = (std::vector<std::pair<std::string, BookMark>>*)res_vector;
-    assert(argc == 10);
+    if (!ensure_callback_arity("global_bookmark_select_callback", argc, 10)) {
+        return 0;
+    }
+    if (!ensure_required_arg("global_bookmark_select_callback", argv, 0, "path") ||
+        !ensure_required_arg("global_bookmark_select_callback", argv, 1, "desc") ||
+        !ensure_required_arg("global_bookmark_select_callback", argv, 7, "uuid")) {
+        return 0;
+    }
 
-    std::string path = argv[0];
-    std::wstring desc = utf8_decode(argv[1]);
+    std::string path = safe_string(argv[0]);
+    std::wstring desc = safe_wstring(argv[1]);
     float offset_y = -1;
     float begin_x = -1;
     float begin_y = -1;
@@ -163,27 +230,27 @@ static int global_bookmark_select_callback(void* res_vector, int argc, char** ar
     bool offset_y_is_set = false;
 
     if (argv[2]) {
-        offset_y = atof(argv[2]);
+        offset_y = safe_float(argv[2]);
         offset_y_is_set = true;
     }
     if (argv[3]) {
-        begin_x = atof(argv[3]);
+        begin_x = safe_float(argv[3]);
     }
     if (argv[4]) {
-        begin_y = atof(argv[4]);
+        begin_y = safe_float(argv[4]);
         if (!offset_y_is_set) {
             offset_y = begin_y;
         }
     }
     if (argv[5]) {
-        end_x = atof(argv[5]);
+        end_x = safe_float(argv[5]);
     }
     if (argv[6]) {
-        end_y = atof(argv[6]);
+        end_y = safe_float(argv[6]);
     }
-    std::string uuid = argv[7];
-    std::string creation_time = argv[8];
-    std::string modification_time = argv[9];
+    std::string uuid = safe_string(argv[7]);
+    std::string creation_time = safe_string(argv[8]);
+    std::string modification_time = safe_string(argv[9]);
 
     BookMark bm;
     bm.description = desc;
@@ -203,24 +270,36 @@ static int global_bookmark_select_callback(void* res_vector, int argc, char** ar
 static int global_highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<std::pair<std::string, Highlight>>* res = (std::vector<std::pair<std::string, Highlight>>*)res_vector;
-    assert(argc == 11);
+    if (!ensure_callback_arity("global_highlight_select_callback", argc, 11)) {
+        return 0;
+    }
+    if (!ensure_required_arg("global_highlight_select_callback", argv, 0, "path") ||
+        !ensure_required_arg("global_highlight_select_callback", argv, 1, "desc") ||
+        !ensure_required_arg("global_highlight_select_callback", argv, 3, "type") ||
+        !ensure_required_arg("global_highlight_select_callback", argv, 4, "begin_x") ||
+        !ensure_required_arg("global_highlight_select_callback", argv, 5, "begin_y") ||
+        !ensure_required_arg("global_highlight_select_callback", argv, 6, "end_x") ||
+        !ensure_required_arg("global_highlight_select_callback", argv, 7, "end_y") ||
+        !ensure_required_arg("global_highlight_select_callback", argv, 8, "uuid")) {
+        return 0;
+    }
 
-    std::string path = argv[0];
-    std::wstring desc = utf8_decode(argv[1]);
+    std::string path = safe_string(argv[0]);
+    std::wstring desc = safe_wstring(argv[1]);
     std::wstring text_annot;
 
     if (argv[2] != nullptr) {
-        text_annot = utf8_decode(argv[2]);
+        text_annot = safe_wstring(argv[2]);
     }
 
     char type = argv[3][0];
-    float begin_x = atof(argv[4]);
-    float begin_y = atof(argv[5]);
-    float end_x = atof(argv[6]);
-    float end_y = atof(argv[7]);
-    std::string uuid = argv[8];
-    std::string creation_time = argv[9];
-    std::string modification_time = argv[10];
+    float begin_x = safe_float(argv[4]);
+    float begin_y = safe_float(argv[5]);
+    float end_x = safe_float(argv[6]);
+    float end_y = safe_float(argv[7]);
+    std::string uuid = safe_string(argv[8]);
+    std::string creation_time = safe_string(argv[9]);
+    std::string modification_time = safe_string(argv[10]);
 
     Highlight highlight;
     highlight.description = desc;
@@ -241,9 +320,15 @@ static int global_highlight_select_callback(void* res_vector, int argc, char** a
 static int bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<BookMark>* res = (std::vector<BookMark>*)res_vector;
-    assert(argc == 14);
+    if (!ensure_callback_arity("bookmark_select_callback", argc, 14)) {
+        return 0;
+    }
+    if (!ensure_required_arg("bookmark_select_callback", argv, 0, "desc") ||
+        !ensure_required_arg("bookmark_select_callback", argv, 11, "uuid")) {
+        return 0;
+    }
 
-    std::wstring desc = utf8_decode(argv[0]);
+    std::wstring desc = safe_wstring(argv[0]);
     float offset_y = -1;
     float begin_x = -1;
     float begin_y = -1;
@@ -256,42 +341,42 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
     std::wstring font_face = L"";
 
     if (argv[1]) {
-        offset_y = atof(argv[1]);
+        offset_y = safe_float(argv[1]);
     }
     if (argv[2]) {
-        begin_x = atof(argv[2]);
+        begin_x = safe_float(argv[2]);
     }
     if (argv[3]) {
-        begin_y = atof(argv[3]);
+        begin_y = safe_float(argv[3]);
         if (begin_y != -1) {
             offset_y = begin_y;
         }
     }
     if (argv[4]) {
-        end_x = atof(argv[4]);
+        end_x = safe_float(argv[4]);
     }
     if (argv[5]) {
-        end_y = atof(argv[5]);
+        end_y = safe_float(argv[5]);
     }
     if (argv[6]) {
-        color_red = atof(argv[6]);
+        color_red = safe_float(argv[6]);
     }
     if (argv[7]) {
-        color_green = atof(argv[7]);
+        color_green = safe_float(argv[7]);
     }
     if (argv[8]) {
-        color_blue = atof(argv[8]);
+        color_blue = safe_float(argv[8]);
     }
 
     if (argv[9]) {
-        font_size = atof(argv[9]);
+        font_size = safe_float(argv[9]);
     }
     if (argv[10]) {
-        font_face = utf8_decode(argv[10]);
+        font_face = safe_wstring(argv[10]);
     }
-    std::string uuid = argv[11];
-    std::string creation_time = argv[12];
-    std::string modification_time = argv[13];
+    std::string uuid = safe_string(argv[11]);
+    std::string creation_time = safe_string(argv[12]);
+    std::string modification_time = safe_string(argv[13]);
 
     BookMark bm;
     bm.y_offset_ = offset_y;
@@ -316,9 +401,14 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
 static int wstring_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<std::wstring>* res = (std::vector<std::wstring>*)res_vector;
-    assert(argc == 1);
+    if (!ensure_callback_arity("wstring_select_callback", argc, 1)) {
+        return 0;
+    }
+    if (!ensure_required_arg("wstring_select_callback", argv, 0, "value")) {
+        return 0;
+    }
 
-    std::wstring desc = utf8_decode(argv[0]);
+    std::wstring desc = safe_wstring(argv[0]);
 
     res->push_back(desc);
     return 0;
@@ -327,9 +417,14 @@ static int wstring_select_callback(void* res_vector, int argc, char** argv, char
 static int string_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<std::string>* res = (std::vector<std::string>*)res_vector;
-    assert(argc == 1);
+    if (!ensure_callback_arity("string_select_callback", argc, 1)) {
+        return 0;
+    }
+    if (!ensure_required_arg("string_select_callback", argv, 0, "value")) {
+        return 0;
+    }
 
-    std::string desc = argv[0];
+    std::string desc = safe_string(argv[0]);
 
     res->push_back(desc);
     return 0;
@@ -338,10 +433,16 @@ static int string_select_callback(void* res_vector, int argc, char** argv, char*
 static int wstring_pair_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<std::pair<std::wstring, std::wstring>>* res = (std::vector<std::pair<std::wstring, std::wstring>>*)res_vector;
-    assert(argc == 2);
+    if (!ensure_callback_arity("wstring_pair_select_callback", argc, 2)) {
+        return 0;
+    }
+    if (!ensure_required_arg("wstring_pair_select_callback", argv, 0, "first") ||
+        !ensure_required_arg("wstring_pair_select_callback", argv, 1, "second")) {
+        return 0;
+    }
 
-    std::wstring first = utf8_decode(argv[0]);
-    std::wstring second = utf8_decode(argv[1]);
+    std::wstring first = safe_wstring(argv[0]);
+    std::wstring second = safe_wstring(argv[1]);
 
     res->push_back(std::make_pair(first, second));
     return 0;
@@ -349,36 +450,81 @@ static int wstring_pair_select_callback(void* res_vector, int argc, char** argv,
 
 static int version_callback(void* res, int argc, char** argv, char** col_name) {
 
-    //std::vector<std::pair<std::wstring, std::wstring>>* res = (std::vector<std::pair<std::wstring, std::wstring>>*)res_vector;
-    assert(argc == 1);
+    if (!ensure_callback_arity("version_callback", argc, 1)) {
+        return 0;
+    }
+    if (!ensure_required_arg("version_callback", argv, 0, "version")) {
+        return 0;
+    }
     *(int*)res = atoi(argv[0]);
-    //std::wstring first = utf8_decode(argv[0]);
-    //std::wstring second = utf8_decode(argv[1]); 
-    //res->push_back(std::make_pair(first, second));
-
     return 0;
 }
 
 static int highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<Highlight>* res = (std::vector<Highlight>*)res_vector;
-    assert(argc == 10);
+    int text_annot_index = -1;
+    int begin_x_index = 0;
+    int begin_y_index = 0;
+    int end_x_index = 0;
+    int end_y_index = 0;
+    int type_index = 0;
+    int uuid_index = 0;
+    int creation_time_index = 0;
+    int modification_time_index = 0;
 
-    std::wstring desc = utf8_decode(argv[0]);
-    std::wstring text_annot = L"";
-
-    if (argv[1] != nullptr) {
-        text_annot = utf8_decode(argv[1]);
+    if (argc == 10) {
+        text_annot_index = 1;
+        begin_x_index = 2;
+        begin_y_index = 3;
+        end_x_index = 4;
+        end_y_index = 5;
+        type_index = 6;
+        uuid_index = 7;
+        creation_time_index = 8;
+        modification_time_index = 9;
+    }
+    else if (argc == 9) {
+        begin_x_index = 1;
+        begin_y_index = 2;
+        end_x_index = 3;
+        end_y_index = 4;
+        type_index = 5;
+        uuid_index = 6;
+        creation_time_index = 7;
+        modification_time_index = 8;
+    }
+    else {
+        qDebug() << "Skipping malformed DB row in highlight_select_callback"
+                 << ": unexpected column count" << argc;
+        return 0;
     }
 
-    float begin_x = atof(argv[2]);
-    float begin_y = atof(argv[3]);
-    float end_x = atof(argv[4]);
-    float end_y = atof(argv[5]);
-    char type = argv[6][0];
-    std::string uuid = argv[7];
-    std::string creation_time = argv[8];
-    std::string modification_time = argv[9];
+    if (!ensure_required_arg("highlight_select_callback", argv, 0, "desc") ||
+        !ensure_required_arg("highlight_select_callback", argv, begin_x_index, "begin_x") ||
+        !ensure_required_arg("highlight_select_callback", argv, begin_y_index, "begin_y") ||
+        !ensure_required_arg("highlight_select_callback", argv, end_x_index, "end_x") ||
+        !ensure_required_arg("highlight_select_callback", argv, end_y_index, "end_y") ||
+        !ensure_required_arg("highlight_select_callback", argv, type_index, "type") ||
+        !ensure_required_arg("highlight_select_callback", argv, uuid_index, "uuid")) {
+        return 0;
+    }
+
+    std::wstring desc = safe_wstring(argv[0]);
+    std::wstring text_annot = L"";
+
+    if (text_annot_index >= 0 && argv[text_annot_index] != nullptr) {
+        text_annot = safe_wstring(argv[text_annot_index]);
+    }
+
+    float begin_x = safe_float(argv[begin_x_index]);
+    float begin_y = safe_float(argv[begin_y_index]);
+    float end_x = safe_float(argv[end_x_index]);
+    float end_y = safe_float(argv[end_y_index]);
+    char type = argv[type_index][0];
+    std::string uuid = safe_string(argv[uuid_index]);
+    std::string creation_time = safe_string(argv[creation_time_index]);
+    std::string modification_time = safe_string(argv[modification_time_index]);
 
     Highlight highlight;
     highlight.description = desc;
@@ -397,24 +543,27 @@ static int highlight_select_callback(void* res_vector, int argc, char** argv, ch
 static int link_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<Portal>* res = (std::vector<Portal>*)res_vector;
-    assert(argc == 9);
-
-    bool is_visible = false;
-
-    std::string dst_path = argv[0];
-    float src_offset_y = atof(argv[1]);
-    std::optional<float> src_offset_x = {};
-
-    if (argv[2]) {
-        src_offset_x = atof(argv[2]);
+    if (!ensure_callback_arity("link_select_callback", argc, 9)) {
+        return 0;
+    }
+    if (!ensure_required_arg("link_select_callback", argv, 0, "dst_document") ||
+        !ensure_required_arg("link_select_callback", argv, 1, "src_offset_y") ||
+        !ensure_required_arg("link_select_callback", argv, 3, "dst_offset_x") ||
+        !ensure_required_arg("link_select_callback", argv, 4, "dst_offset_y") ||
+        !ensure_required_arg("link_select_callback", argv, 5, "dst_zoom_level") ||
+        !ensure_required_arg("link_select_callback", argv, 6, "uuid")) {
+        return 0;
     }
 
-    float dst_offset_x = atof(argv[3]);
-    float dst_offset_y = atof(argv[4]);
-    float dst_zoom_level = atof(argv[5]);
-    std::string uuid = argv[6];
-    std::string creation_time = argv[7];
-    std::string modification_time = argv[8];
+    std::string dst_path = safe_string(argv[0]);
+    float src_offset_y = safe_float(argv[1]);
+    std::optional<float> src_offset_x = safe_optional_float(argv[2]);
+    float dst_offset_x = safe_float(argv[3]);
+    float dst_offset_y = safe_float(argv[4]);
+    float dst_zoom_level = safe_float(argv[5]);
+    std::string uuid = safe_string(argv[6]);
+    std::string creation_time = safe_string(argv[7]);
+    std::string modification_time = safe_string(argv[8]);
 
     Portal link;
     link.dst.document_checksum = dst_path;
