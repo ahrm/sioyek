@@ -655,6 +655,9 @@ bool DatabaseManager::open(const std::wstring& local_db_file_path, const std::ws
 
     if (local_rc) {
         std::cerr << "could not create local database" << sqlite3_errmsg(local_db) << std::endl;
+        if (local_db) {
+            sqlite3_close(local_db);
+        }
         local_db = nullptr;
         global_db = nullptr;
         return false;
@@ -666,6 +669,12 @@ bool DatabaseManager::open(const std::wstring& local_db_file_path, const std::ws
 
         if (global_rc) {
             std::cerr << "could not create global database" << sqlite3_errmsg(global_db) << std::endl;
+            if (global_db) {
+                sqlite3_close(global_db);
+            }
+            if (local_db) {
+                sqlite3_close(local_db);
+            }
             local_db = nullptr;
             global_db = nullptr;
             return false;
@@ -1427,7 +1436,7 @@ void DatabaseManager::upgrade_database_hashes() {
     }
 }
 
-void DatabaseManager::split_database(const std::wstring& local_database_path, const std::wstring& global_database_path, bool was_using_hashes) {
+bool DatabaseManager::split_database(const std::wstring& local_database_path, const std::wstring& global_database_path, bool was_using_hashes) {
 
     //we should only split when we have the same local and global database
     assert(local_db == global_db);
@@ -1497,12 +1506,14 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
         }
     }
     sqlite3_close(local_db);
+    local_db = nullptr;
+    global_db = nullptr;
 
 
     // ---------------------- CREATE NEW DATABASE FILES ----------------------------
 
     if (!open(local_database_path, global_database_path)) {
-        return;
+        return false;
     }
 
     // ---------------------- IMPORT PREVIOUS DATA ----------------------------
@@ -1543,8 +1554,10 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
             new_uuid()
         );
     }
-    set_version();
-
+    if (!set_version()) {
+        return false;
+    }
+    return true;
 }
 
 
@@ -1769,7 +1782,7 @@ std::string create_select_query(std::string table_name,
     return utf8_encode(ss.str());
 }
 
-void DatabaseManager::ensure_database_compatibility(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path) {
+bool DatabaseManager::ensure_database_compatibility(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path) {
     create_tables();
 
     // if the database is still using absolute paths instead of checksums, update all paths to checksums
@@ -1784,8 +1797,11 @@ void DatabaseManager::ensure_database_compatibility(const std::wstring& local_db
 
     //if we are still using a single database file instead of separate local and global database files, split the database.
     if (local_db == global_db) {
-        split_database(local_db_file_path, global_db_file_path, was_using_hashes);
+        if (!split_database(local_db_file_path, global_db_file_path, was_using_hashes)) {
+            return false;
+        }
     }
+    return true;
 }
 
 int DatabaseManager::get_version() {

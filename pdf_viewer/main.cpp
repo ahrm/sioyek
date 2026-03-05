@@ -789,10 +789,16 @@ int main(int argc, char* args[]) {
 
     DatabaseManager db_manager;
     bool database_opened = false;
-    if (has_explicit_shared_db) {
+    bool split_db_files_exist = local_database_file_path.file_exists() && global_database_file_path.file_exists();
+    bool legacy_db_exists = database_file_path.file_exists();
+    bool should_bootstrap_legacy_for_explicit = has_explicit_shared_db && !split_db_files_exist && legacy_db_exists;
+    if (should_bootstrap_legacy_for_explicit) {
+        database_opened = db_manager.open(database_file_path.get_path(), database_file_path.get_path());
+    }
+    else if (has_explicit_shared_db) {
         database_opened = db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
     }
-    else if (local_database_file_path.file_exists() && global_database_file_path.file_exists()) {
+    else if (split_db_files_exist) {
         database_opened = db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
     }
     else {
@@ -804,7 +810,10 @@ int main(int argc, char* args[]) {
         return -1;
     }
 
-    db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path());
+    if (!db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path())) {
+        std::cerr << "Database compatibility/migration failed. Exiting." << std::endl;
+        return -1;
+    }
     db_manager.ensure_schema_compatibility();
 
 
