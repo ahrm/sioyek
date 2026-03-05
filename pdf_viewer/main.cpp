@@ -732,6 +732,7 @@ int main(int argc, char* args[]) {
         global_database_file_path = SHARED_DATABASE_PATH;
     }
     char* shared_database_path_arg = get_argv_value(argc, args, "--shared-database-path");
+    bool has_explicit_shared_db = (SHARED_DATABASE_PATH.size() > 0) || (shared_database_path_arg != nullptr);
     if (shared_database_path_arg) {
         global_database_file_path = utf8_decode(std::string(shared_database_path_arg));
     }
@@ -788,7 +789,10 @@ int main(int argc, char* args[]) {
 
     DatabaseManager db_manager;
     bool database_opened = false;
-    if (local_database_file_path.file_exists() && global_database_file_path.file_exists()) {
+    if (has_explicit_shared_db) {
+        database_opened = db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
+    }
+    else if (local_database_file_path.file_exists() && global_database_file_path.file_exists()) {
         database_opened = db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
     }
     else {
