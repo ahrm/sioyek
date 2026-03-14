@@ -1530,8 +1530,11 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         std::array<float, 3> search_highlight_color = cc3(DEFAULT_SEARCH_HIGHLIGHT_COLOR);
         glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &search_highlight_color[0]);
         glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, 0.3f);
-        for (auto rect : current_search_result.rects) {
-            render_highlight_document(shared_gl_objects.highlight_program, DocumentRect { rect, current_search_result.page });
+        bool current_search_result_is_visible = std::find(visible_pages.begin(), visible_pages.end(), current_search_result.page) != visible_pages.end();
+        if (current_search_result_is_visible) {
+            for (auto rect : current_search_result.rects) {
+                render_highlight_document(shared_gl_objects.highlight_program, DocumentRect { rect, current_search_result.page });
+            }
         }
     }
     search_results_mutex.unlock();
