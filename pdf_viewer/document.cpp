@@ -3639,53 +3639,6 @@ void Document::load_drawings() {
 
 }
 
-void Document::load_png_overlays() {
-    if (png_overlays_loaded) {
-        return;
-    }
-
-    png_overlays_loaded = true;
-    page_png_overlays.clear();
-
-    // Get the PDF path and look for foo.pdf_0.png, foo.pdf_1.png, etc.
-    QString pdf_path = QString::fromStdWString(file_name);
-
-    // Try to load PNG overlays for each page
-    int n_pages = num_pages();
-    for (int page = 0; page < n_pages; page++) {
-        QString png_path = pdf_path + "_" + QString::number(page) + ".png";
-
-        if (QFile::exists(png_path)) {
-            QPixmap pixmap(png_path);
-            if (!pixmap.isNull()) {
-                page_png_overlays[page] = pixmap;
-            }
-        }
-    }
-
-    if (page_png_overlays.size() > 0) {
-        std::cerr << "[sioyek] Loaded " << page_png_overlays.size() << " PNG overlays for " << pdf_path.toStdString() << std::endl;
-    }
-}
-
-bool Document::has_png_overlay(int page) {
-    if (!png_overlays_loaded) {
-        load_png_overlays();
-    }
-    return page_png_overlays.find(page) != page_png_overlays.end();
-}
-
-QPixmap* Document::get_png_overlay(int page) {
-    if (!png_overlays_loaded) {
-        load_png_overlays();
-    }
-    auto it = page_png_overlays.find(page);
-    if (it != page_png_overlays.end()) {
-        return &it->second;
-    }
-    return nullptr;
-}
-
 void Document::load_mark_file() {
     if (mark_file_loaded) {
         return;
@@ -3710,44 +3663,58 @@ void Document::load_mark_file() {
     }
 }
 
-bool Document::has_mark_overlay(int page) {
+const QPixmap* Document::get_supernote_overlay(int page) {
+    // Try .mark file first
     if (!mark_file_loaded) {
         load_mark_file();
     }
-    if (!mark_parser) {
-        return false;
+    if (mark_parser) {
+        QPixmap pixmap = mark_parser->get_page_pixmap(page);
+        if (!pixmap.isNull()) {
+            // Cache it so we can return a stable pointer
+            auto result = page_png_overlays.emplace(page, std::move(pixmap));
+            return &result.first->second;
+        }
     }
-    return mark_parser->has_page(page);
+
+    // Then try PNG overlay (lazy per-page loading)
+    if (png_pages_checked_.find(page) == png_pages_checked_.end()) {
+        png_pages_checked_.insert(page);
+        QString pdf_path = QString::fromStdWString(file_name);
+        QString png_path = pdf_path + "_" + QString::number(page) + ".png";
+        if (QFile::exists(png_path)) {
+            QPixmap pixmap(png_path);
+            if (!pixmap.isNull()) {
+                page_png_overlays[page] = std::move(pixmap);
+            }
+        }
+    }
+
+    auto it = page_png_overlays.find(page);
+    if (it != page_png_overlays.end()) {
+        return &it->second;
+    }
+    return nullptr;
 }
 
-QPixmap Document::get_mark_overlay(int page) {
-    if (!mark_file_loaded) {
-        load_mark_file();
+const QPixmap* Document::get_supernote_overlay_inverted(int page) {
+    // Check inverted cache first
+    auto it = inverted_overlay_cache.find(page);
+    if (it != inverted_overlay_cache.end()) {
+        return &it->second;
     }
-    if (!mark_parser) {
-        return QPixmap();
-    }
-    return mark_parser->get_page_pixmap(page);
-}
 
-bool Document::has_supernote_overlay(int page) {
-    // Try .mark file first, then PNG overlays
-    if (has_mark_overlay(page)) {
-        return true;
+    // Get the normal overlay
+    const QPixmap* overlay = get_supernote_overlay(page);
+    if (!overlay) {
+        return nullptr;
     }
-    return has_png_overlay(page);
-}
 
-QPixmap Document::get_supernote_overlay(int page) {
-    // Try .mark file first, then PNG overlays
-    if (has_mark_overlay(page)) {
-        return get_mark_overlay(page);
-    }
-    QPixmap* png = get_png_overlay(page);
-    if (png) {
-        return *png;
-    }
-    return QPixmap();
+    // Create and cache the inverted version
+    QImage img = overlay->toImage();
+    img.invertPixels(QImage::InvertRgb);  // Invert RGB, preserve alpha
+    inverted_overlay_cache[page] = QPixmap::fromImage(img);
+    return &inverted_overlay_cache[page];
 }
 
 void Document::persist_annotations(bool force) {

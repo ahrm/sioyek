@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <map>
+#include <set>
 #include <vector>
 #include <qfile.h>
 #include <qimage.h>
@@ -55,7 +56,6 @@ struct MarkPageInfo {
     int page_number = 0;
     QString orientation;  // "1000" = portrait, "1090" = horizontal
     std::vector<MarkLayerInfo> layers;
-    uint32_t main_layer_address = 0;
 };
 
 // Parsed .mark file
@@ -79,11 +79,8 @@ public:
     // Get the number of pages with annotations
     int page_count() const;
 
-    // Check if a specific page has annotations
-    bool has_page(int page) const;
-
     // Get the decoded bitmap as a QPixmap for a specific page
-    // Returns null pixmap if page doesn't exist or decoding fails
+    // Returns null QPixmap if page doesn't exist or decoding fails
     QPixmap get_page_pixmap(int page);
 
     // Get page dimensions
@@ -114,5 +111,6 @@ private:
 
     QString file_path_;
     MarkFileData file_data_;
+    std::set<int> page_set_;
     std::map<int, QPixmap> cached_pixmaps_;
 };

@@ -78,6 +78,7 @@ QMap<QString, QVariant> MarkFileParser::parse_metadata_block(QFile& file, uint32
 bool MarkFileParser::load(const QString& mark_file_path) {
     file_path_ = mark_file_path;
     file_data_ = MarkFileData();
+    page_set_.clear();
     cached_pixmaps_.clear();
 
     QFile file(mark_file_path);
@@ -162,11 +163,11 @@ bool MarkFileParser::load(const QString& mark_file_path) {
 
         // Get main layer address
         if (page_meta.contains("MAINLAYER")) {
-            page_info.main_layer_address = page_meta["MAINLAYER"].toString().toUInt();
+            uint32_t main_layer_address = page_meta["MAINLAYER"].toString().toUInt();
 
-            if (page_info.main_layer_address > 0) {
+            if (main_layer_address > 0) {
                 // Parse layer metadata
-                QMap<QString, QVariant> layer_meta = parse_metadata_block(file, page_info.main_layer_address);
+                QMap<QString, QVariant> layer_meta = parse_metadata_block(file, main_layer_address);
 
                 MarkLayerInfo layer;
                 layer.name = "MAINLAYER";
@@ -210,6 +211,7 @@ bool MarkFileParser::load(const QString& mark_file_path) {
             }
         }
 
+        page_set_.insert(page_num);
         file_data_.pages.push_back(page_info);
     }
 
@@ -374,15 +376,6 @@ int MarkFileParser::page_count() const {
     return static_cast<int>(file_data_.pages.size());
 }
 
-bool MarkFileParser::has_page(int page) const {
-    for (const auto& p : file_data_.pages) {
-        if (p.page_number == page) {
-            return true;
-        }
-    }
-    return false;
-}
-
 QPixmap MarkFileParser::get_page_pixmap(int page) {
     // Check cache first
     auto it = cached_pixmaps_.find(page);
@@ -390,7 +383,12 @@ QPixmap MarkFileParser::get_page_pixmap(int page) {
         return it->second;
     }
 
-    // Find the page
+    // Check if page exists using the set for O(log n) lookup
+    if (page_set_.find(page) == page_set_.end()) {
+        return QPixmap();
+    }
+
+    // Find the page info
     const MarkPageInfo* page_info = nullptr;
     for (const auto& p : file_data_.pages) {
         if (p.page_number == page) {

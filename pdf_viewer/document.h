@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <deque>
 #include <regex>
@@ -75,7 +76,10 @@ private:
 
     // PNG overlays for Supernote-style annotations (foo.pdf_0.png, foo.pdf_1.png, etc.)
     std::map<int, QPixmap> page_png_overlays;
-    bool png_overlays_loaded = false;
+    std::set<int> png_pages_checked_;
+
+    // Cached inverted overlays for dark/custom color modes
+    std::map<int, QPixmap> inverted_overlay_cache;
 
     // .mark file parser for direct Supernote annotation support
     std::unique_ptr<MarkFileParser> mark_parser;
@@ -434,19 +438,14 @@ public:
     AbsoluteRect to_absolute(int page, fz_quad quad);
     AbsoluteRect to_absolute(int page, PagelessDocumentRect rect);
 
-    // PNG overlay support for Supernote-style annotations
-    void load_png_overlays();
-    bool has_png_overlay(int page);
-    QPixmap* get_png_overlay(int page);
-
     // .mark file support for direct Supernote annotation loading
     void load_mark_file();
-    bool has_mark_overlay(int page);
-    QPixmap get_mark_overlay(int page);
 
     // Combined overlay support (tries .mark first, then PNG)
-    bool has_supernote_overlay(int page);
-    QPixmap get_supernote_overlay(int page);
+    // Returns nullptr if no overlay exists for this page
+    const QPixmap* get_supernote_overlay(int page);
+    // Returns the inverted version for dark/custom color modes (cached)
+    const QPixmap* get_supernote_overlay_inverted(int page);
 
     bool get_should_reload_annotations();
     void reload_annotations_on_new_checksum();

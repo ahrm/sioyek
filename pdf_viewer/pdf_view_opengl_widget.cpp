@@ -1672,18 +1672,17 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
     // It scales PDFs to fit within the screen while maintaining aspect ratio,
     // centering the content with padding on the shorter dimension.
     for (auto page : visible_pages) {
-        if (!document_view->get_document()->has_supernote_overlay(page)) {
-            continue;
-        }
-
-        QPixmap overlay = document_view->get_document()->get_supernote_overlay(page);
-        if (overlay.isNull()) {
+        bool use_inverted = (color_mode == ColorPalette::Dark || color_mode == ColorPalette::Custom);
+        const QPixmap* overlay = use_inverted
+            ? document_view->get_document()->get_supernote_overlay_inverted(page)
+            : document_view->get_document()->get_supernote_overlay(page);
+        if (!overlay) {
             continue;
         }
 
         // Get overlay dimensions (from the pixmap itself)
-        float supernote_width = static_cast<float>(overlay.width());
-        float supernote_height = static_cast<float>(overlay.height());
+        float supernote_width = static_cast<float>(overlay->width());
+        float supernote_height = static_cast<float>(overlay->height());
 
         // Get the page dimensions
         float page_width = document_view->get_document()->get_page_width(page);
@@ -1700,16 +1699,16 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
             // PDF is relatively wider - scale to fit width, center vertically
             float scaled_pdf_height = supernote_width * pdf_aspect;
             float vertical_padding = (supernote_height - scaled_pdf_height) / 2.0f;
-            source_rect = QRect(0, static_cast<int>(vertical_padding),
-                               overlay.width(),
-                               static_cast<int>(scaled_pdf_height));
+            source_rect = QRect(0, qRound(vertical_padding),
+                               overlay->width(),
+                               qRound(scaled_pdf_height));
         } else {
             // PDF is relatively taller - scale to fit height, center horizontally
             float scaled_pdf_width = supernote_height / pdf_aspect;
             float horizontal_padding = (supernote_width - scaled_pdf_width) / 2.0f;
-            source_rect = QRect(static_cast<int>(horizontal_padding), 0,
-                               static_cast<int>(scaled_pdf_width),
-                               overlay.height());
+            source_rect = QRect(qRound(horizontal_padding), 0,
+                               qRound(scaled_pdf_width),
+                               overlay->height());
         }
 
         // Get the target page rectangle in window coordinates
@@ -1721,17 +1720,9 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                          window_rect.x1 - window_rect.x0,
                          window_rect.y1 - window_rect.y0);
 
-        // Apply color transformation for dark/custom color modes
-        QPixmap overlay_to_draw = overlay;
-        if (color_mode == ColorPalette::Dark || color_mode == ColorPalette::Custom) {
-            QImage img = overlay.toImage();
-            img.invertPixels(QImage::InvertRgb);  // Invert RGB, preserve alpha
-            overlay_to_draw = QPixmap::fromImage(img);
-        }
-
         // Draw the overlay with transparency
         painter->setOpacity(0.8);
-        painter->drawPixmap(target_rect, overlay_to_draw, source_rect);
+        painter->drawPixmap(target_rect, *overlay, source_rect);
         painter->setOpacity(1.0);
     }
 
