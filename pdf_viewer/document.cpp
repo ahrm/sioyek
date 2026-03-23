@@ -3639,6 +3639,117 @@ void Document::load_drawings() {
 
 }
 
+void Document::load_png_overlays() {
+    if (png_overlays_loaded) {
+        return;
+    }
+
+    png_overlays_loaded = true;
+    page_png_overlays.clear();
+
+    // Get the PDF path and look for foo.pdf_0.png, foo.pdf_1.png, etc.
+    QString pdf_path = QString::fromStdWString(file_name);
+
+    // Try to load PNG overlays for each page
+    int n_pages = num_pages();
+    for (int page = 0; page < n_pages; page++) {
+        QString png_path = pdf_path + "_" + QString::number(page) + ".png";
+
+        if (QFile::exists(png_path)) {
+            QPixmap pixmap(png_path);
+            if (!pixmap.isNull()) {
+                page_png_overlays[page] = pixmap;
+            }
+        }
+    }
+
+    if (page_png_overlays.size() > 0) {
+        std::cerr << "[sioyek] Loaded " << page_png_overlays.size() << " PNG overlays for " << pdf_path.toStdString() << std::endl;
+    }
+}
+
+bool Document::has_png_overlay(int page) {
+    if (!png_overlays_loaded) {
+        load_png_overlays();
+    }
+    return page_png_overlays.find(page) != page_png_overlays.end();
+}
+
+QPixmap* Document::get_png_overlay(int page) {
+    if (!png_overlays_loaded) {
+        load_png_overlays();
+    }
+    auto it = page_png_overlays.find(page);
+    if (it != page_png_overlays.end()) {
+        return &it->second;
+    }
+    return nullptr;
+}
+
+void Document::load_mark_file() {
+    if (mark_file_loaded) {
+        return;
+    }
+
+    mark_file_loaded = true;
+
+    // Look for foo.pdf.mark file
+    QString pdf_path = QString::fromStdWString(file_name);
+    QString mark_path = pdf_path + ".mark";
+
+    if (!QFile::exists(mark_path)) {
+        return;
+    }
+
+    mark_parser = std::make_unique<MarkFileParser>();
+    if (mark_parser->load(mark_path)) {
+        std::cerr << "[sioyek] Loaded .mark file: " << mark_path.toStdString() << std::endl;
+    } else {
+        mark_parser.reset();
+        std::cerr << "[sioyek] Failed to load .mark file: " << mark_path.toStdString() << std::endl;
+    }
+}
+
+bool Document::has_mark_overlay(int page) {
+    if (!mark_file_loaded) {
+        load_mark_file();
+    }
+    if (!mark_parser) {
+        return false;
+    }
+    return mark_parser->has_page(page);
+}
+
+QPixmap Document::get_mark_overlay(int page) {
+    if (!mark_file_loaded) {
+        load_mark_file();
+    }
+    if (!mark_parser) {
+        return QPixmap();
+    }
+    return mark_parser->get_page_pixmap(page);
+}
+
+bool Document::has_supernote_overlay(int page) {
+    // Try .mark file first, then PNG overlays
+    if (has_mark_overlay(page)) {
+        return true;
+    }
+    return has_png_overlay(page);
+}
+
+QPixmap Document::get_supernote_overlay(int page) {
+    // Try .mark file first, then PNG overlays
+    if (has_mark_overlay(page)) {
+        return get_mark_overlay(page);
+    }
+    QPixmap* png = get_png_overlay(page);
+    if (png) {
+        return *png;
+    }
+    return QPixmap();
+}
+
 void Document::persist_annotations(bool force) {
 
     if ((!is_annotations_dirty) && (!force)) {

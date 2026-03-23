@@ -37,6 +37,7 @@ qt_add_executable(sioyek WIN32 MACOSX_BUNDLE
     pdf_viewer/database.cpp pdf_viewer/database.h
     pdf_viewer/document.cpp pdf_viewer/document.h
     pdf_viewer/document_view.cpp pdf_viewer/document_view.h
+    pdf_viewer/mark_parser.cpp pdf_viewer/mark_parser.h
     pdf_viewer/fts_fuzzy_match.h
     pdf_viewer/input.cpp pdf_viewer/input.h
     pdf_viewer/main.cpp
