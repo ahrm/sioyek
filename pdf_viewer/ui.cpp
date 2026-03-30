@@ -1596,6 +1596,29 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
             }
         }
 #endif
+        // On macOS, Ctrl+key combos in QLineEdit are consumed by the Cocoa
+        // text input system (e.g. Ctrl+N → moveDown:, Ctrl+P → moveUp:)
+        // before Qt generates a KeyPress event. They do arrive as
+        // ShortcutOverride events, so we intercept here to dispatch
+        // user-configured [m] menu commands (e.g. control_menu).
+        if (event->type() == QEvent::ShortcutOverride) {
+            QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+            bool is_ctrl = is_platform_control_pressed(key_event);
+            bool is_alt = key_event->modifiers() & Qt::AltModifier;
+            bool is_shift = key_event->modifiers() & Qt::ShiftModifier;
+            bool is_meta = is_platform_meta_pressed(key_event);
+            if (is_ctrl || is_alt) {
+                MyLineEdit* mle = dynamic_cast<MyLineEdit*>(line_edit);
+                if (mle && mle->main_widget) {
+                    std::unique_ptr<Command> command = mle->main_widget->input_handler->get_menu_command(
+                        mle->main_widget, key_event, is_shift, is_ctrl, is_meta, is_alt);
+                    if (command && command->is_menu_command()) {
+                        mle->main_widget->handle_command_types(std::move(command), 0);
+                        return true;
+                    }
+                }
+            }
+        }
         if (event->type() == QEvent::InputMethod) {
             if (TOUCH_MODE) {
                 QInputMethodEvent* input_event = static_cast<QInputMethodEvent*>(event);
@@ -1895,8 +1918,7 @@ void MyLineEdit::keyPressEvent(QKeyEvent* event) {
         std::unique_ptr<Command> command = main_widget->input_handler->get_menu_command(main_widget, event, is_shift_pressed, is_control_pressed, is_meta_pressed, is_alt_pressed);
 
         if (command && command->is_menu_command()) {
-            // this command will be handled later by our command manager so we ignore it here.
-            event->ignore();
+            main_widget->handle_command_types(std::move(command), 0);
             return;
         }
     }
