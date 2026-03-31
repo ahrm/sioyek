@@ -6583,15 +6583,21 @@ bool MainWidget::event(QEvent* event) {
 
     QTabletEvent* te = dynamic_cast<QTabletEvent*>(event);
     QKeyEvent* ke = dynamic_cast<QKeyEvent*>(event);
-    if (ke && (ke->type() == QEvent::KeyPress)) {
-        // Apparently Qt doesn't send keyPressEvent for tab and backtab anymore, so we have to
-        // manually handle them here.
-        // todo: make sure this doesn't cause problems on linux and mac
-        //if (((ke->key() == Qt::Key_Tab) && (ke->modifiers() == 0)) || ((ke->key() == Qt::Key_Backtab) && (ke->modifiers() == Qt::ShiftModifier))) {
-        //    if (event->isAccepted()) {
-        //        key_event(false, ke);
-        //    }
-        //}
+    // Qt eats Tab/Backtab KeyPress events for focus-chain navigation before
+    // keyPressEvent() is called. Intercept the ShortcutOverride and dispatch
+    // tab cycling directly — the keybinding matcher's key normalization has
+    // issues with Backtab events from ShortcutOverride.
+    if (ke && ke->type() == QEvent::ShortcutOverride) {
+        if ((ke->key() == Qt::Key_Tab || ke->key() == Qt::Key_Backtab) &&
+            ((ke->modifiers() & Qt::ControlModifier) || (ke->modifiers() & Qt::MetaModifier))) {
+            if (ke->key() == Qt::Key_Backtab) {
+                goto_ith_next_tab(-1);
+            } else {
+                goto_ith_next_tab(1);
+            }
+            event->accept();
+            return true;
+        }
     }
 
     if (event->type() == QEvent::WindowActivate) {

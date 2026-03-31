@@ -1655,7 +1655,7 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
                 //QCoreApplication::postEvent(tree_view, key_event);
                 return true;
             }
-            if (key_event->key() == Qt::Key_Tab) {
+            if (key_event->key() == Qt::Key_Tab && !is_control_pressed && !is_alt_pressed) {
                 QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
                 QCoreApplication::postEvent(get_view(), new_key_event);
                 return true;
@@ -1670,7 +1670,7 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
                 QCoreApplication::postEvent(get_view(), new_key_event);
                 return true;
             }
-            if (key_event->key() == Qt::Key_Backtab) {
+            if (key_event->key() == Qt::Key_Backtab && !is_control_pressed && !is_alt_pressed) {
                 QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
                 QCoreApplication::postEvent(get_view(), new_key_event);
                 return true;
