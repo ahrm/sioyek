@@ -47,12 +47,6 @@ echo "==> Packaging app bundle..."
 rm -rf build 2>/dev/null
 mkdir build
 mv sioyek.app build/
-cp -r pdf_viewer/shaders build/sioyek.app/Contents/MacOS/shaders
-cp pdf_viewer/prefs.config build/sioyek.app/Contents/MacOS/prefs.config
-cp pdf_viewer/prefs_user.config build/sioyek.app/Contents/MacOS/prefs_user.config
-cp pdf_viewer/keys.config build/sioyek.app/Contents/MacOS/keys.config
-cp pdf_viewer/keys_user.config build/sioyek.app/Contents/MacOS/keys_user.config
-cp tutorial.pdf build/sioyek.app/Contents/MacOS/tutorial.pdf
 
 # --- Patch Info.plist with PATH ---
 INFO_PLIST="build/sioyek.app/Contents/Info.plist"
@@ -61,9 +55,18 @@ CURRENT_PATH="$PATH"
 /usr/libexec/PlistBuddy -c "Add :LSEnvironment:PATH string $CURRENT_PATH" "$INFO_PLIST" 2>/dev/null || \
     /usr/libexec/PlistBuddy -c "Set :LSEnvironment:PATH $CURRENT_PATH" "$INFO_PLIST"
 
-# --- Deploy Qt frameworks ---
+# --- Deploy Qt frameworks (before copying non-binary resources to avoid codesign issues) ---
 echo "==> Running macdeployqt..."
 macdeployqt build/sioyek.app
+
+# --- Copy resources after macdeployqt (non-binary files break macdeployqt's codesign) ---
+echo "==> Copying resources..."
+cp -r pdf_viewer/shaders build/sioyek.app/Contents/MacOS/shaders
+cp pdf_viewer/prefs.config build/sioyek.app/Contents/MacOS/prefs.config
+cp pdf_viewer/prefs_user.config build/sioyek.app/Contents/MacOS/prefs_user.config
+cp pdf_viewer/keys.config build/sioyek.app/Contents/MacOS/keys.config
+cp pdf_viewer/keys_user.config build/sioyek.app/Contents/MacOS/keys_user.config
+cp tutorial.pdf build/sioyek.app/Contents/MacOS/tutorial.pdf
 
 # --- Sign ---
 echo "==> Signing..."
