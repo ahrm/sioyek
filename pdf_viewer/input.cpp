@@ -6412,6 +6412,19 @@ public:
     bool requires_document() { return false; }
 };
 
+class ToggleTabBarCommand : public Command {
+public:
+    static inline const std::string cname = "toggle_tab_bar";
+    static inline const std::string hname = "Toggle tab bar";
+    ToggleTabBarCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->toggle_tab_bar();
+    }
+
+    bool requires_document() { return false; }
+};
+
 
 
 class ClearCurrentPageDrawingsCommand : public Command {
@@ -7268,6 +7281,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<ToggleSelectHighlightCommand>();
     register_command<OpenLastDocumentCommand>();
     register_command<ToggleStatusbarCommand>();
+    register_command<ToggleTabBarCommand>();
     register_command<StartReadingCommand>();
     register_command<StopReadingCommand>();
     register_command<ToggleReadingCommand>();

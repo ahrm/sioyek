@@ -16,6 +16,8 @@ float CUSTOM_BACKGROUND_COLOR[3] = { 0.18f, 0.204f, 0.251f };
 float CUSTOM_TEXT_COLOR[3] = { 0.847f, 0.871f, 0.914f };
 float STATUS_BAR_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float STATUS_BAR_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
+bool SHOW_TAB_BAR = true;
+bool TAB_BAR_AT_TOP = true;
 float UI_TEXT_COLOR[3] = { 1.0f, 1.0f, 1.0f };
 float UI_BACKGROUND_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float UI_SELECTED_TEXT_COLOR[3] = { 0.0f, 0.0f, 0.0f };
@@ -1034,6 +1036,8 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"add_newlines_when_copying_text", &ADD_NEWLINES_WHEN_COPYING_TEXT);
     add_bool(L"always_copy_selected_text", &ALWAYS_COPY_SELECTED_TEXT);
     add_bool(L"show_statusbar_only_when_hovered", &SHOW_STATUSBAR_ONLY_WHEN_MOUSE_OVER);
+    add_bool(L"show_tab_bar", &SHOW_TAB_BAR);
+    add_bool(L"tab_bar_at_top", &TAB_BAR_AT_TOP);
     add_bool(L"scroll_past_document_ends", &SCROLL_PAST_DOCUMENT_ENDS);
     add_bool(L"horizontal_scroll_past_page_ends", &HORIZONTAL_SCROLL_PAST_PAGE_ENDS);
     add_bool(L"uniform_page_widths", &SAME_WIDTH);

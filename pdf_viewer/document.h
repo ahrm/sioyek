@@ -7,6 +7,7 @@
 #include <mutex>
 #include <map>
 #include <unordered_map>
+#include <functional>
 #include <deque>
 #include <regex>
 
@@ -451,6 +452,7 @@ private:
     std::unordered_map<std::wstring, Document*> cached_documents;
     std::unordered_map<std::string, std::wstring> hash_to_path;
     std::vector<std::wstring> tabs;
+    std::vector<std::function<void()>> tab_change_listeners;
 public:
 
     DocumentManager(fz_context* mupdf_context, DatabaseManager* db_manager, CachedChecksummer* checksummer);
@@ -459,6 +461,8 @@ public:
     int add_tab(const std::wstring& path);
     void remove_tab(const std::wstring& path);
     std::vector<std::wstring> get_tabs();
+    void add_tab_change_listener(std::function<void()> listener);
+    void notify_tab_changed();
 
     Document* get_document(const std::wstring& path);
     std::optional<std::wstring> get_path_from_hash(const std::string& checksum);

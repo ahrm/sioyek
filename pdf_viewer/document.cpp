@@ -4236,6 +4236,7 @@ int DocumentManager::add_tab(const std::wstring& path) {
     int tab_index = get_tab_index(path);
     if (tab_index == -1) {
         tabs.push_back(path);
+        notify_tab_changed();
     }
     return tab_index;
 }
@@ -4244,11 +4245,22 @@ void DocumentManager::remove_tab(const std::wstring& path) {
     int index = get_tab_index(path);
     if (index != -1) {
         tabs.erase(tabs.begin() + index);
+        notify_tab_changed();
     }
 }
 
 std::vector<std::wstring> DocumentManager::get_tabs() {
     return tabs;
+}
+
+void DocumentManager::add_tab_change_listener(std::function<void()> listener) {
+    tab_change_listeners.push_back(std::move(listener));
+}
+
+void DocumentManager::notify_tab_changed() {
+    for (auto& listener : tab_change_listeners) {
+        listener();
+    }
 }
 
 std::wstring Document::detect_paper_name() {

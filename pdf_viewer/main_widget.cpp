@@ -76,6 +76,7 @@
 #include "book.h"
 #include "utils.h"
 #include "ui.h"
+#include "tab_bar_widget.h"
 #include "pdf_renderer.h"
 #include "document.h"
 #include "document_view.h"
@@ -122,6 +123,8 @@ extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
 extern bool FUZZY_SEARCHING;
 extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
 extern bool SHOW_STATUSBAR_ONLY_WHEN_MOUSE_OVER;
+extern bool SHOW_TAB_BAR;
+extern bool TAB_BAR_AT_TOP;
 
 extern float TEXT_SELECTION_MINIMUM_DISTANCE;
 extern float VISUAL_MARK_NEXT_PAGE_FRACTION;
@@ -489,9 +492,39 @@ void MainWidget::resizeEvent(QResizeEvent* resize_event) {
     }
 
     int status_bar_height = get_status_bar_height();
+    int tab_bar_h = get_tab_bar_height();
+
+    // Position tab bar
+    if (tab_bar_widget != nullptr) {
+        bool show_tabs = should_show_tab_bar() && document_manager->get_tabs().size() > 1;
+        if (show_tabs) {
+            if (TAB_BAR_AT_TOP) {
+                tab_bar_widget->move(0, 0);
+            } else {
+                tab_bar_widget->move(0, main_window_height - status_bar_height - tab_bar_h);
+            }
+            tab_bar_widget->resize(main_window_width, tab_bar_h);
+            tab_bar_widget->show();
+            tab_bar_widget->update_tabs();
+        } else {
+            tab_bar_widget->hide();
+            tab_bar_h = 0;
+        }
+    } else {
+        tab_bar_h = 0;
+    }
+
+    // Adjust layout margins so OpenGL widget doesn't underlap tab bar or status bar
+    QVBoxLayout* vlayout = qobject_cast<QVBoxLayout*>(central_widget->layout());
+    if (vlayout) {
+        int top_margin = TAB_BAR_AT_TOP ? tab_bar_h : 0;
+        int bot_margin = (!TAB_BAR_AT_TOP ? tab_bar_h : 0) + status_bar_height;
+        vlayout->setContentsMargins(0, top_margin, 0, bot_margin);
+    }
 
     if (text_command_line_edit_container != nullptr) {
-        text_command_line_edit_container->move(0, 0);
+        int cmd_y = (TAB_BAR_AT_TOP && tab_bar_h > 0) ? tab_bar_h : 0;
+        text_command_line_edit_container->move(0, cmd_y);
         text_command_line_edit_container->resize(main_window_width, status_bar_height);
     }
 
@@ -937,7 +970,17 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     status_label->setLayout(status_label_layout);
 
-    opengl_widget->stackUnder(status_label);
+    // Create tab bar widget
+    tab_bar_widget = new TabBarWidget(this);
+    tab_bar_widget->setFont(QFont(get_status_font_face_name()));
+    tab_bar_widget->hide(); // hidden until we have >1 tab
+
+    document_manager->add_tab_change_listener([this]() {
+        QMetaObject::invokeMethod(this, [this]() { update_tab_bar(); }, Qt::QueuedConnection);
+    });
+
+    opengl_widget->stackUnder(tab_bar_widget);
+    tab_bar_widget->stackUnder(status_label);
 
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
@@ -4954,6 +4997,44 @@ void MainWidget::toggle_statusbar() {
     else {
         status_label->show();
     }
+}
+
+void MainWidget::toggle_tab_bar() {
+    should_show_tab_bar_ = !should_show_tab_bar_;
+    // Trigger re-layout by faking a resize
+    QResizeEvent event(size(), size());
+    resizeEvent(&event);
+}
+
+bool MainWidget::should_show_tab_bar() {
+    return should_show_tab_bar_ && SHOW_TAB_BAR;
+}
+
+void MainWidget::update_tab_bar() {
+    if (tab_bar_widget) {
+        // Re-layout in case tab count changed (show/hide logic)
+        QResizeEvent event(size(), size());
+        resizeEvent(&event);
+    }
+}
+
+int MainWidget::get_tab_bar_height() {
+    return get_status_bar_height();
+}
+
+void MainWidget::handle_close_tab(const std::wstring& path) {
+    auto tabs = document_manager->get_tabs();
+    if (tabs.size() <= 1) return; // don't close the last tab
+
+    bool is_active = (doc() && doc()->get_path() == path);
+    if (is_active) {
+        // Switch to an adjacent tab before closing
+        int idx = get_current_tab_index();
+        int next = (idx + 1) % (int)tabs.size();
+        if (next == idx && tabs.size() > 1) next = 0;
+        handle_goto_tab(tabs[next]);
+    }
+    document_manager->remove_tab(path);
 }
 
 void MainWidget::toggle_titlebar() {

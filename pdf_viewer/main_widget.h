@@ -329,6 +329,14 @@ public:
     bool should_show_status_label_ = true;
     bool should_show_status_label(bool check_network=true);
 
+    class TabBarWidget* tab_bar_widget = nullptr;
+    bool should_show_tab_bar_ = true;
+    bool should_show_tab_bar();
+    void toggle_tab_bar();
+    void update_tab_bar();
+    int get_tab_bar_height();
+    void handle_close_tab(const std::wstring& path);
+
     // the location of current character in sioyek's typing minigame
     std::optional<CharacterAddress> typing_location;
 
