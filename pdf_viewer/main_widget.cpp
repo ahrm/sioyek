@@ -10172,6 +10172,7 @@ void MainWidget::handle_goto_tab(const std::wstring& path) {
 
     push_state();
     open_document(path);
+    document_manager->notify_tab_changed();
 }
 
 void MainWidget::handle_rename(std::wstring new_name) {
