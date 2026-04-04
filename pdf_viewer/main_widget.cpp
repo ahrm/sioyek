@@ -77,6 +77,7 @@
 #include "utils.h"
 #include "ui.h"
 #include "tab_bar_widget.h"
+#include "color_wheel_widget.h"
 #include "pdf_renderer.h"
 #include "document.h"
 #include "document_view.h"
@@ -981,6 +982,29 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     opengl_widget->stackUnder(tab_bar_widget);
     tab_bar_widget->stackUnder(status_label);
+
+    // Color wheel for highlight type selection on right-click hold
+    color_wheel_widget = new ColorWheelWidget(central_widget);
+    color_wheel_widget->hide();
+    connect(color_wheel_widget, &ColorWheelWidget::type_selected,
+        this, [this](int hl_index, char new_type) {
+            set_selected_highlight_index(hl_index);
+            change_selected_highlight_type(new_type);
+            update_recently_used_highlight_type(new_type);
+            color_wheel_active = false;
+            invalidate_render();
+        });
+
+    right_click_hold_timer = new QTimer(this);
+    right_click_hold_timer->setSingleShot(true);
+    right_click_hold_timer->setInterval(250);
+    connect(right_click_hold_timer, &QTimer::timeout, this, [this]() {
+        if (right_click_highlight_index >= 0) {
+            color_wheel_active = true;
+            color_wheel_widget->show_at(right_click_press_pos,
+                right_click_highlight_index, recently_used_highlight_types);
+        }
+    });
 
     // automatically open the helper window in second monitor
     int num_screens = QGuiApplication::screens().size();
@@ -3078,7 +3102,20 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
-        if (is_shift_pressed) {
+        // Color wheel is active — it handles release via grabMouse
+        if (color_wheel_active) {
+            color_wheel_active = false;
+            right_click_highlight_index = -1;
+        }
+        // Released before hold threshold — do normal right-click
+        else if (right_click_hold_timer->isActive()) {
+            right_click_hold_timer->stop();
+            WindowPos wpos{ mevent->pos().x(), mevent->pos().y() };
+            handle_right_click(wpos, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
+            handle_right_click(wpos, false, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
+            right_click_highlight_index = -1;
+        }
+        else if (is_shift_pressed) {
             execute_macro_if_enabled(SHIFT_RIGHT_CLICK_COMMAND);
         }
         else if (is_control_pressed) {
@@ -3221,7 +3258,18 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
-        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
+        WindowPos wpos{ mevent->pos().x(), mevent->pos().y() };
+        int hl_index = (main_document_view && main_document_view->get_document())
+            ? main_document_view->get_highlight_index_in_pos(wpos) : -1;
+        if (hl_index >= 0) {
+            // Over a highlight — start hold timer for color wheel
+            right_click_highlight_index = hl_index;
+            right_click_press_pos = mevent->pos();
+            right_click_hold_timer->start();
+        } else {
+            right_click_highlight_index = -1;
+            handle_right_click(wpos, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
+        }
     }
 
     if (mevent->button() == Qt::MouseButton::MiddleButton) {
@@ -6042,6 +6090,7 @@ std::wstring MainWidget::handle_add_highlight(char symbol) {
         std::string uuid = main_document_view->add_highlight(selection_begin, selection_end, symbol);
         clear_selected_text();
         selected_highlight_index = doc()->get_highlight_index_with_uuid(uuid);
+        update_recently_used_highlight_type(symbol);
         return utf8_decode(uuid);
     }
     else {
@@ -6053,6 +6102,18 @@ std::wstring MainWidget::handle_add_highlight(char symbol) {
 void MainWidget::change_selected_highlight_type(char new_type) {
     if (selected_highlight_index != -1) {
         doc()->update_highlight_type(selected_highlight_index, new_type);
+        update_recently_used_highlight_type(new_type);
+    }
+}
+
+void MainWidget::update_recently_used_highlight_type(char type) {
+    if (type < 'a' || type > 'z') return;
+    recently_used_highlight_types.erase(
+        std::remove(recently_used_highlight_types.begin(), recently_used_highlight_types.end(), type),
+        recently_used_highlight_types.end());
+    recently_used_highlight_types.push_front(type);
+    if (recently_used_highlight_types.size() > 26) {
+        recently_used_highlight_types.pop_back();
     }
 }
 

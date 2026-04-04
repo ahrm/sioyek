@@ -261,6 +261,17 @@ public:
     bool is_select_highlight_mode = false;
     char select_highlight_type = 'a';
 
+    // recently used highlight types for color wheel (most recent first)
+    std::deque<char> recently_used_highlight_types;
+    void update_recently_used_highlight_type(char type);
+
+    // color wheel for changing highlight type on right-click hold
+    class ColorWheelWidget* color_wheel_widget = nullptr;
+    QTimer* right_click_hold_timer = nullptr;
+    int right_click_highlight_index = -1;
+    QPoint right_click_press_pos;
+    bool color_wheel_active = false;
+
     // color type to use when freehand drawing
     char current_freehand_type = 'r';
 
