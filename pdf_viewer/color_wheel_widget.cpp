@@ -17,6 +17,7 @@ static const float INNER_BUBBLE_RADIUS = 18.0f;
 static const float OUTER_BUBBLE_RADIUS = 15.0f;
 static const int INNER_COUNT = 9;
 static const int OUTER_COUNT = 17;
+static const float DELETE_BUTTON_RADIUS = 16.0f;
 
 static float luminance(float r, float g, float b) {
     return 0.299f * r + 0.587f * g + 0.114f * b;
@@ -115,6 +116,18 @@ void ColorWheelWidget::compute_layout(const std::deque<char>& recently_used) {
 
 int ColorWheelWidget::bubble_at(QPoint pos) const {
     QPointF p(pos);
+
+    // Check delete button in center (only visible for existing highlights)
+    if (delete_button_visible()) {
+        float cx = WIDGET_SIZE / 2.0f;
+        float cy = WIDGET_SIZE / 2.0f;
+        float dx = p.x() - cx;
+        float dy = p.y() - cy;
+        if (std::sqrt(dx * dx + dy * dy) <= DELETE_BUTTON_RADIUS) {
+            return -2;
+        }
+    }
+
     for (int i = 0; i < (int)bubbles.size(); i++) {
         float dx = p.x() - bubbles[i].center.x();
         float dy = p.y() - bubbles[i].center.y();
@@ -124,6 +137,10 @@ int ColorWheelWidget::bubble_at(QPoint pos) const {
         }
     }
     return -1;
+}
+
+bool ColorWheelWidget::delete_button_visible() const {
+    return target_highlight_index >= 0;
 }
 
 char ColorWheelWidget::hovered_type() const {
@@ -186,20 +203,47 @@ void ColorWheelWidget::paintEvent(QPaintEvent*) {
                          b.radius * 2, b.radius * 2);
         painter.drawText(text_rect, Qt::AlignCenter, QString(QChar(b.type)));
     }
+
+    // Draw delete button in center (only for existing highlights)
+    if (delete_button_visible()) {
+        float cx = WIDGET_SIZE / 2.0f;
+        float cy = WIDGET_SIZE / 2.0f;
+        bool del_hovered = (hovered_index == -2);
+
+        // Circle background
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(del_hovered ? QColor(220, 60, 60) : QColor(160, 50, 50));
+        painter.drawEllipse(QPointF(cx, cy), DELETE_BUTTON_RADIUS, DELETE_BUTTON_RADIUS);
+
+        // Hover ring
+        if (del_hovered) {
+            painter.setPen(QPen(Qt::white, 3.0));
+            painter.setBrush(Qt::NoBrush);
+            painter.drawEllipse(QPointF(cx, cy), DELETE_BUTTON_RADIUS + 1.5, DELETE_BUTTON_RADIUS + 1.5);
+        }
+
+        // Draw X
+        painter.setPen(QPen(Qt::white, 2.5, Qt::SolidLine, Qt::RoundCap));
+        float xr = 6.0f;
+        painter.drawLine(QPointF(cx - xr, cy - xr), QPointF(cx + xr, cy + xr));
+        painter.drawLine(QPointF(cx - xr, cy + xr), QPointF(cx + xr, cy - xr));
+    }
 }
 
 void ColorWheelWidget::mouseMoveEvent(QMouseEvent* event) {
     int idx = bubble_at(event->pos());
     if (idx != hovered_index) {
         hovered_index = idx;
-        setCursor(idx >= 0 ? Qt::PointingHandCursor : Qt::ArrowCursor);
+        setCursor((idx >= 0 || idx == -2) ? Qt::PointingHandCursor : Qt::ArrowCursor);
         update();
     }
 }
 
 void ColorWheelWidget::mouseReleaseEvent(QMouseEvent* event) {
     if (event->button() == Qt::RightButton) {
-        if (hovered_index >= 0 && hovered_index < (int)bubbles.size()) {
+        if (hovered_index == -2) {
+            emit delete_selected(target_highlight_index);
+        } else if (hovered_index >= 0 && hovered_index < (int)bubbles.size()) {
             emit type_selected(target_highlight_index, bubbles[hovered_index].type);
         }
     }

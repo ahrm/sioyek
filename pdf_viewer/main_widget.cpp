@@ -999,6 +999,16 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             update_recently_used_highlight_type(new_type);
             invalidate_render();
         });
+    connect(color_wheel_widget, &ColorWheelWidget::delete_selected,
+        this, [this](int hl_index) {
+            if (hl_index >= 0 && main_document_view) {
+                if (selected_highlight_index == hl_index) {
+                    selected_highlight_index = -1;
+                }
+                main_document_view->delete_highlight_with_index(hl_index);
+                invalidate_render();
+            }
+        });
     connect(color_wheel_widget, &ColorWheelWidget::wheel_dismissed,
         this, [this]() {
             color_wheel_active = false;
@@ -1009,11 +1019,11 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     right_click_hold_timer->setSingleShot(true);
     right_click_hold_timer->setInterval(250);
     connect(right_click_hold_timer, &QTimer::timeout, this, [this]() {
-        if (right_click_highlight_index >= 0) {
-            color_wheel_active = true;
-            color_wheel_widget->show_at(right_click_press_pos,
-                right_click_highlight_index, recently_used_highlight_types);
-        }
+        // Timer is only started when there's a valid target (selection or highlight),
+        // so no additional guard needed here
+        color_wheel_active = true;
+        color_wheel_widget->show_at(right_click_press_pos,
+            right_click_highlight_index, recently_used_highlight_types);
     });
 
     // automatically open the helper window in second monitor
