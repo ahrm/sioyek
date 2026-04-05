@@ -96,6 +96,7 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/sqlite3ext.h \
            pdf_viewer/ui.h \
            pdf_viewer/tab_bar_widget.h \
+           pdf_viewer/color_wheel_widget.h \
            pdf_viewer/path.h \
            pdf_viewer/utf8.h \
            pdf_viewer/utils.h \
@@ -124,6 +125,7 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/sqlite3.c \
            pdf_viewer/ui.cpp \
            pdf_viewer/tab_bar_widget.cpp \
+           pdf_viewer/color_wheel_widget.cpp \
            pdf_viewer/path.cpp \
            pdf_viewer/utils.cpp \
            pdf_viewer/mysortfilterproxymodel.cpp \
@@ -215,7 +217,7 @@ mac {
     QMAKE_CXXFLAGS += -std=c++17
     LIBS += -ldl -L$$PWD/mupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lz
     CONFIG+=sdk_no_version_check
-    QMAKE_MACOSX_DEPLOYMENT_TARGET = 15
+    QMAKE_MACOSX_DEPLOYMENT_TARGET = 26
     ICON = pdf_viewer\icon2.ico
     QMAKE_INFO_PLIST = resources/Info.plist
     LIBS += -framework AppKit

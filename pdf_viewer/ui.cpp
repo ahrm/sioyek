@@ -1596,24 +1596,28 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
             }
         }
 #endif
-        // On macOS, Ctrl+key combos in QLineEdit are consumed by the Cocoa
-        // text input system (e.g. Ctrl+N → moveDown:, Ctrl+P → moveUp:)
-        // before Qt generates a KeyPress event. They do arrive as
-        // ShortcutOverride events, so we intercept here to dispatch
-        // user-configured [m] menu commands (e.g. control_menu).
+        // On macOS, Ctrl+N/P in QLineEdit are converted by Cocoa's text
+        // input system to moveDown:/moveUp: which arrive as Key_Down/Key_Up
+        // KeyPress events (handled at line ~1644). We accept the
+        // ShortcutOverride so Qt doesn't consume it as a shortcut, but
+        // do NOT dispatch the command here — Cocoa's synthetic Key_Down/Up
+        // already does the work. Dispatching here too would double-move.
         if (event->type() == QEvent::ShortcutOverride) {
             QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
             bool is_ctrl = is_platform_control_pressed(key_event);
             bool is_alt = key_event->modifiers() & Qt::AltModifier;
-            bool is_shift = key_event->modifiers() & Qt::ShiftModifier;
-            bool is_meta = is_platform_meta_pressed(key_event);
             if (is_ctrl || is_alt) {
                 MyLineEdit* mle = dynamic_cast<MyLineEdit*>(line_edit);
                 if (mle && mle->main_widget) {
+                    bool is_shift = key_event->modifiers() & Qt::ShiftModifier;
+                    bool is_meta = is_platform_meta_pressed(key_event);
                     std::unique_ptr<Command> command = mle->main_widget->input_handler->get_menu_command(
                         mle->main_widget, key_event, is_shift, is_ctrl, is_meta, is_alt);
                     if (command && command->is_menu_command()) {
-                        mle->main_widget->handle_command_types(std::move(command), 0);
+                        // Accept so Qt doesn't eat it; Cocoa will generate
+                        // the equivalent Key_Down/Up which the KeyPress
+                        // handler below forwards to the list view.
+                        event->accept();
                         return true;
                     }
                 }
