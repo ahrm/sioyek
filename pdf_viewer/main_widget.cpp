@@ -3106,17 +3106,14 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
+        // Stop hold timer if still running (quick click)
+        if (right_click_hold_timer->isActive()) {
+            right_click_hold_timer->stop();
+            right_click_highlight_index = -1;
+        }
         // Color wheel is active — it handles release via grabMouse
         if (color_wheel_active) {
             color_wheel_active = false;
-            right_click_highlight_index = -1;
-        }
-        // Released before hold threshold — do normal right-click
-        else if (right_click_hold_timer->isActive()) {
-            right_click_hold_timer->stop();
-            WindowPos wpos{ mevent->pos().x(), mevent->pos().y() };
-            handle_right_click(wpos, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
-            handle_right_click(wpos, false, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
             right_click_highlight_index = -1;
         }
         else if (is_shift_pressed) {
@@ -3262,17 +3259,19 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
+        // Always fire normal right-click behavior (visual mark, etc.)
+        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
+
+        // Additionally, if over a highlight, start hold timer for color wheel
         WindowPos wpos{ mevent->pos().x(), mevent->pos().y() };
         int hl_index = (main_document_view && main_document_view->get_document())
             ? main_document_view->get_highlight_index_in_pos(wpos) : -1;
         if (hl_index >= 0) {
-            // Over a highlight — start hold timer for color wheel
             right_click_highlight_index = hl_index;
             right_click_press_pos = mevent->pos();
             right_click_hold_timer->start();
         } else {
             right_click_highlight_index = -1;
-            handle_right_click(wpos, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
         }
     }
 
