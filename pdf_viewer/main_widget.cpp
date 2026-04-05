@@ -988,8 +988,14 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     color_wheel_widget->hide();
     connect(color_wheel_widget, &ColorWheelWidget::type_selected,
         this, [this](int hl_index, char new_type) {
-            set_selected_highlight_index(hl_index);
-            change_selected_highlight_type(new_type);
+            if (hl_index >= 0) {
+                // Changing an existing highlight's type
+                set_selected_highlight_index(hl_index);
+                change_selected_highlight_type(new_type);
+            } else {
+                // Creating a new highlight from selected text
+                handle_add_highlight(new_type);
+            }
             update_recently_used_highlight_type(new_type);
             invalidate_render();
         });
@@ -3106,14 +3112,17 @@ void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
-        // Stop hold timer if still running (quick click)
-        if (right_click_hold_timer->isActive()) {
-            right_click_hold_timer->stop();
-            right_click_highlight_index = -1;
-        }
         // Color wheel is active — it handles release via grabMouse
         if (color_wheel_active) {
             color_wheel_active = false;
+            right_click_highlight_index = -1;
+        }
+        // Released before hold threshold — fire deferred normal right-click
+        else if (right_click_hold_timer->isActive()) {
+            right_click_hold_timer->stop();
+            WindowPos wpos{ mevent->pos().x(), mevent->pos().y() };
+            handle_right_click(wpos, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
+            handle_right_click(wpos, false, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
             right_click_highlight_index = -1;
         }
         else if (is_shift_pressed) {
@@ -3259,19 +3268,24 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     }
 
     if (mevent->button() == Qt::MouseButton::RightButton) {
-        // Always fire normal right-click behavior (visual mark, etc.)
-        handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
+        bool has_selection = main_document_view && main_document_view->selected_character_rects.size() > 0;
+        bool has_highlight_under = false;
+        int hl_index = -1;
 
-        // Additionally, if over a highlight, start hold timer for color wheel
-        WindowPos wpos{ mevent->pos().x(), mevent->pos().y() };
-        int hl_index = (main_document_view && main_document_view->get_document())
-            ? main_document_view->get_highlight_index_in_pos(wpos) : -1;
-        if (hl_index >= 0) {
-            right_click_highlight_index = hl_index;
+        if (!has_selection && main_document_view && main_document_view->get_document()) {
+            WindowPos wpos{ mevent->pos().x(), mevent->pos().y() };
+            hl_index = main_document_view->get_highlight_index_in_pos(wpos);
+            has_highlight_under = (hl_index >= 0);
+        }
+
+        if (has_selection || has_highlight_under) {
+            // Start hold timer for color wheel (defer normal right-click)
+            right_click_highlight_index = hl_index; // -1 for selection mode, >= 0 for existing highlight
             right_click_press_pos = mevent->pos();
             right_click_hold_timer->start();
         } else {
             right_click_highlight_index = -1;
+            handle_right_click({ mevent->pos().x(), mevent->pos().y() }, true, is_shift_pressed, is_control_pressed, is_command_pressed, is_alt_pressed);
         }
     }
 
