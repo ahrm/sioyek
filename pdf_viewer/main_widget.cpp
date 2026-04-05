@@ -991,8 +991,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
             set_selected_highlight_index(hl_index);
             change_selected_highlight_type(new_type);
             update_recently_used_highlight_type(new_type);
-            color_wheel_active = false;
             invalidate_render();
+        });
+    connect(color_wheel_widget, &ColorWheelWidget::wheel_dismissed,
+        this, [this]() {
+            color_wheel_active = false;
+            right_click_highlight_index = -1;
         });
 
     right_click_hold_timer = new QTimer(this);

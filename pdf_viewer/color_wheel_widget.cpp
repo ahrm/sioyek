@@ -138,6 +138,7 @@ void ColorWheelWidget::cancel() {
     releaseMouse();
     hovered_index = -1;
     target_highlight_index = -1;
+    emit wheel_dismissed();
 }
 
 void ColorWheelWidget::paintEvent(QPaintEvent*) {

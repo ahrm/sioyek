@@ -19,6 +19,7 @@ public:
 
 signals:
     void type_selected(int highlight_index, char new_type);
+    void wheel_dismissed();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
