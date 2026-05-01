@@ -11,70 +11,29 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   upload-release:
     if: ${{ (github.event_name == 'workflow_dispatch') || (github.event_name != 'pull_request') }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [build-mac, build-mac-arm, build-linux, build-windows]
 
     steps:
-    - uses: actions/checkout@v1
-    - name: create release
-      id: create_release
-      uses: actions/create-release@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.sha }}
-        draft: false
-        prerelease: false   
     - name: download artifacts
       uses: actions/download-artifact@v4
-      # with:
-      #   name: uploads     
-    - name: upload mac
-      id: upload-mac
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: publish release
+      uses: softprops/action-gh-release@v2
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./mac-uploads/sioyek-release-mac.zip
-        asset_name: sioyek-release-mac.zip
-        asset_content_type: application/zip   
-
-    - name: upload mac arm
-      id: upload-mac-arm
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./mac-arm-uploads/sioyek-release-mac-arm.zip
-        asset_name: sioyek-release-mac-arm.zip
-        asset_content_type: application/zip   
-
-    - name: upload linux
-      id: upload-linux
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./linux-uploads/sioyek-release-linux.zip
-        asset_name: sioyek-release-linux.zip
-        asset_content_type: application/zip   
-    - name: upload windows
-      id: upload-windows
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./windows-uploads/sioyek-release-windows.zip
-        asset_name: sioyek-release-windows.zip
-        asset_content_type: application/zip
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.sha }}
+        prerelease: false
+        files: |
+          mac-uploads/sioyek-release-mac.zip
+          mac-arm-uploads/sioyek-release-mac-arm.zip
+          linux-uploads/sioyek-release-linux.zip
+          windows-uploads/sioyek-release-windows.zip
 
   build-linux:
 
@@ -170,41 +129,22 @@ jobs:
         
   build-mac:
 
-    runs-on: macos-13
+    runs-on: macos-15-intel
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK: 1
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
 
     steps:
 
     - uses: actions/checkout@v4
-      with:
-            submodules: 'recursive'
-
-    - name: Cache Homebrew packages
-      uses: actions/cache@v4
-      env:
-        cache-name: homebrew
-      with:
-        path: ~/Library/Caches/Homebrew
-        key: ${{ runner.os }}-intel-build-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-intel-build-${{ env.cache-name }}-
-          ${{ runner.os }}-intel-build-
-          ${{ runner.os }}-intel-
 
     - name: Install dependencies
-      run:  brew install freeglut mesa harfbuzz 
-      
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        version: '6.7.2'
-        modules: 'all'
-        cache: true
+      run: brew install cmake mupdf qtspeech
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: |
-        chmod +x build_mac.sh
-        MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) ./build_mac.sh
+      run: MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) bash ./build_mac.sh
         
     - name: upload mac artifact
       uses: actions/upload-artifact@v4
@@ -214,41 +154,23 @@ jobs:
 
   build-mac-arm:
 
-    runs-on: macos-14
+    runs-on: macos-15
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK: 1
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
 
     steps:
 
     - uses: actions/checkout@v4
-      with:
-            submodules: 'recursive'
-
-    - name: Cache Homebrew packages
-      uses: actions/cache@v4
-      env:
-        cache-name: homebrew
-      with:
-        path: ~/Library/Caches/Homebrew
-        key: ${{ runner.os }}-arm-build-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-arm-build-${{ env.cache-name }}-
-          ${{ runner.os }}-arm-build-
-          ${{ runner.os }}-arm-
 
     - name: Install dependencies
-      run:  brew install freeglut mesa harfbuzz 
-      
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        version: '6.7.2'
-        modules: 'all'
-        cache: true
+      run: brew install cmake mupdf qtspeech
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
-        chmod +x build_mac.sh
-        MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) ./build_mac.sh
+        MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) bash ./build_mac.sh
         mv sioyek-release-mac.zip sioyek-release-mac-arm.zip
         
     - name: upload mac artifact

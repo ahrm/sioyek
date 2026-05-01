@@ -224,16 +224,19 @@ void configure_paths() {
 
 
     Path parent_path(QCoreApplication::applicationDirPath().toStdWString());
+    Path app_data_path = parent_path;
     std::string exe_path = utf8_encode(QCoreApplication::applicationFilePath().toStdWString());
 
-    shader_path = parent_path.slash(L"shaders");
-
-
 #ifdef Q_OS_MACOS
+    app_data_path = parent_path.slash(L"..").slash(L"Resources");
+    shader_path = app_data_path.slash(L"shaders");
+
     Path mac_home_path(QDir::homePath().toStdWString());
     Path mac_standard_config_path = mac_home_path.slash(L".config").slash(L"sioyek");
     user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
     user_config_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
+#else
+    shader_path = parent_path.slash(L"shaders");
 #endif
 
 #ifdef Q_OS_LINUX
@@ -304,9 +307,9 @@ void configure_paths() {
 
     standard_data_path.create_directories();
 
-    default_config_path = parent_path.slash(L"prefs.config");
-    default_keys_path = parent_path.slash(L"keys.config");
-    tutorial_path = parent_path.slash(L"tutorial.pdf");
+    default_config_path = app_data_path.slash(L"prefs.config");
+    default_keys_path = app_data_path.slash(L"keys.config");
+    tutorial_path = app_data_path.slash(L"tutorial.pdf");
 
 #if defined(NON_PORTABLE) || defined(Q_OS_MACOS)
     user_config_paths.push_back(standard_data_path.slash(L"prefs_user.config"));
