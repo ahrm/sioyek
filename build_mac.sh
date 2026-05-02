@@ -57,7 +57,8 @@ rm -rf "$package_dir" "$build_dir/sioyek.app" "$build_dir/sioyek.dmg"
 
 "$CMAKE" -S . -B "$build_dir" \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_PREFIX_PATH="$cmake_prefix_path"
+  -DCMAKE_PREFIX_PATH="$cmake_prefix_path" \
+  -DQT_ADDITIONAL_PACKAGES_PREFIX_PATH="$cmake_prefix_path"
 
 "$CMAKE" --build "$build_dir" --parallel "$MAKE_PARALLEL"
 "$CMAKE" --install "$build_dir" --prefix "$package_dir"
