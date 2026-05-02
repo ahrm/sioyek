@@ -11,6 +11,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(APPLE)
   enable_language(OBJCXX)
+  if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum macOS deployment target")
+  endif()
 endif()
 
 set(CMAKE_AUTOMOC ON)
@@ -24,7 +27,6 @@ find_package(Qt6Network 6.7 REQUIRED)
 find_package(Qt6OpenGL 6.7 REQUIRED)
 find_package(Qt6QuickWidgets 6.7 REQUIRED)
 find_package(Qt6Svg 6.7 REQUIRED)
-find_package(Qt6Multimedia 6.7 REQUIRED)
 find_package(Qt6TextToSpeech 6.7 REQUIRED)
 find_package(Qt6OpenGLWidgets 6.7 REQUIRED)
 

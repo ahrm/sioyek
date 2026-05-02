@@ -230,11 +230,6 @@ void configure_paths() {
 #ifdef Q_OS_MACOS
     app_data_path = parent_path.slash(L"..").slash(L"Resources");
     shader_path = app_data_path.slash(L"shaders");
-
-    Path mac_home_path(QDir::homePath().toStdWString());
-    Path mac_standard_config_path = mac_home_path.slash(L".config").slash(L"sioyek");
-    user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
-    user_config_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
 #else
     shader_path = parent_path.slash(L"shaders");
 #endif
@@ -322,6 +317,14 @@ void configure_paths() {
     local_database_file_path = standard_data_path.slash(L"local.db");
     global_database_file_path = standard_data_path.slash(L"shared.db");
     last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
+#ifdef Q_OS_MACOS
+    // XDG-style ~/.config path is pushed last so it is the preferred write location (back())
+    // while AppDataLocation paths above serve as read-only fallbacks
+    Path mac_home_path(QDir::homePath().toStdWString());
+    Path mac_standard_config_path = mac_home_path.slash(L".config").slash(L"sioyek");
+    user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
+    user_config_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
+#endif
 #else
     user_config_paths.push_back(parent_path.slash(L"prefs_user.config"));
     user_keys_paths.push_back(parent_path.slash(L"keys_user.config"));
