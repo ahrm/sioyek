@@ -27,7 +27,7 @@ for formula in qtbase qtdeclarative qtsvg qtspeech mupdf; do
   cmake_prefixes+=("$prefix")
 done
 
-for formula in qtquicktimeline qtquick3d qtshadertools; do
+for formula in qtmultimedia qtquicktimeline qtquick3d qtshadertools; do
   prefix=$(brew --prefix "$formula" 2>/dev/null || true)
   if [[ -n $prefix && -d $prefix ]]; then
     cmake_prefixes+=("$prefix")
