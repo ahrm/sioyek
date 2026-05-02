@@ -17,7 +17,7 @@ fi
 
 required_formulae=(cmake mupdf qtspeech)
 cmake_prefixes=()
-for formula in qtbase qtdeclarative qtsvg qtspeech mupdf; do
+for formula in qtbase qtdeclarative qtsvg qtmultimedia qtspeech mupdf; do
   prefix=$(brew --prefix "$formula" 2>/dev/null || true)
   if [[ -z $prefix || ! -d $prefix ]]; then
     echo "Missing Homebrew formula '$formula'. Install dependencies with:" >&2
@@ -27,7 +27,7 @@ for formula in qtbase qtdeclarative qtsvg qtspeech mupdf; do
   cmake_prefixes+=("$prefix")
 done
 
-for formula in qtmultimedia qtquicktimeline qtquick3d qtshadertools; do
+for formula in qtquicktimeline qtquick3d qtshadertools; do
   prefix=$(brew --prefix "$formula" 2>/dev/null || true)
   if [[ -n $prefix && -d $prefix ]]; then
     cmake_prefixes+=("$prefix")

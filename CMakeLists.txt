@@ -20,15 +20,10 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6Core 6.7 REQUIRED)
-find_package(Qt6Gui 6.7 REQUIRED)
-find_package(Qt6Widgets 6.7 REQUIRED)
-find_package(Qt6Network 6.7 REQUIRED)
-find_package(Qt6OpenGL 6.7 REQUIRED)
-find_package(Qt6QuickWidgets 6.7 REQUIRED)
-find_package(Qt6Svg 6.7 REQUIRED)
-find_package(Qt6TextToSpeech 6.7 REQUIRED)
-find_package(Qt6OpenGLWidgets 6.7 REQUIRED)
+find_package(Qt6 6.7 REQUIRED COMPONENTS
+    Core Gui Widgets Network OpenGL QuickWidgets
+    Svg Multimedia TextToSpeech OpenGLWidgets
+)
 
 find_package(ZLIB REQUIRED)
 find_package(SQLite3 REQUIRED)
