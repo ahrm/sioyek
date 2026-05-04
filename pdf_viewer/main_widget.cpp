@@ -107,6 +107,8 @@ static void set_titlebar_visible(QWidget* widget, bool visible, bool should_show
         return;
     }
 
+    bool was_visible = widget->isVisible();
+    Qt::WindowStates previous_state = widget->windowState();
     Qt::WindowFlags flags = widget->windowFlags();
     if (visible) {
         flags &= ~Qt::CustomizeWindowHint;
@@ -126,8 +128,9 @@ static void set_titlebar_visible(QWidget* widget, bool visible, bool should_show
     }
 
     widget->setWindowFlags(flags);
-    if (should_show) {
+    if (should_show && was_visible) {
         widget->show();
+        widget->setWindowState(previous_state);
     }
 }
 
