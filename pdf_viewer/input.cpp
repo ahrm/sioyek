@@ -23,6 +23,7 @@
 #include "ui.h"
 #include "document.h"
 #include "document_view.h"
+#include "workspace_manager.h"
 
 #ifdef Q_OS_MACOS
 extern "C" void showLookupForString(WId winId, const char* text, double x, double y);
@@ -3205,6 +3206,17 @@ public:
     }
 };
 
+class ToggleBookModeCoverOffsetCommand : public Command {
+public:
+    static inline const std::string cname = "toggle_book_mode_cover_offset";
+    static inline const std::string hname = "Toggle book-mode cover page offset";
+    ToggleBookModeCoverOffsetCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->handle_toggle_book_mode_cover_offset();
+    }
+};
+
 class FitEpubToWindowCommand : public Command {
 public:
     static inline const std::string cname = "fit_epub_to_window";
@@ -3956,6 +3968,2090 @@ public:
     bool requires_document() { return false; }
 };
 
+class LibraryAddCurrentDocumentCommand : public Command {
+public:
+    static inline const std::string cname = "library_add_current_document";
+    static inline const std::string hname = "Add the current document to the library";
+    LibraryAddCurrentDocumentCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_library_add_current_document();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryRemoveCurrentDocumentCommand : public Command {
+public:
+    static inline const std::string cname = "library_remove_current_document";
+    static inline const std::string hname = "Remove the current document from the library";
+    LibraryRemoveCurrentDocumentCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_library_remove_current_document();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryOpenCommand : public GenericPathCommand {
+public:
+    static inline const std::string cname = "library_open";
+    static inline const std::string hname = "Open the library";
+    LibraryOpenCommand(MainWidget* w) : GenericPathCommand(cname, w) {}
+
+    void handle_generic_requirement() {
+        widget->handle_library_open();
+    }
+
+    void perform() {
+        if (selected_path) {
+            widget->open_library_document(selected_path.value());
+        }
+    }
+
+    bool pushes_state() {
+        return true;
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryOpenCollectionCommand : public Command {
+private:
+    std::optional<std::wstring> collection_name = {};
+    std::optional<std::wstring> selected_path = {};
+
+public:
+    static inline const std::string cname = "library_open_collection";
+    static inline const std::string hname = "Open a library collection";
+    LibraryOpenCollectionCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!collection_name.has_value()) {
+            return Requirement{ RequirementType::Generic, "Collection" };
+        }
+        if (!selected_path.has_value()) {
+            return Requirement{ RequirementType::Generic, "File path" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        if (!collection_name.has_value()) {
+            collection_name = value.toString().toStdWString();
+        }
+        else {
+            selected_path = value.toString().toStdWString();
+        }
+    }
+
+    void handle_generic_requirement() {
+        if (!collection_name.has_value()) {
+            widget->handle_library_select_collection(false);
+        }
+        else {
+            widget->handle_library_open_collection(collection_name.value());
+        }
+    }
+
+    void perform() {
+        if (selected_path.has_value()) {
+            widget->open_library_document(selected_path.value());
+        }
+    }
+
+    bool pushes_state() {
+        return true;
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryCreateCollectionCommand : public TextCommand {
+public:
+    static inline const std::string cname = "library_create_collection";
+    static inline const std::string hname = "Create a library collection";
+    LibraryCreateCollectionCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "Collection name";
+    }
+
+    void perform() {
+        widget->handle_library_create_collection(text.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryAddCurrentDocumentToCollectionCommand : public Command {
+private:
+    std::optional<std::wstring> collection_name = {};
+
+public:
+    static inline const std::string cname = "library_add_current_document_to_collection";
+    static inline const std::string hname = "Add the current document to a library collection";
+    LibraryAddCurrentDocumentToCollectionCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (collection_name.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Collection" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        collection_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_library_select_collection(true);
+    }
+
+    void perform() {
+        widget->handle_library_add_current_document_to_collection(collection_name.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryRemoveCurrentDocumentFromCollectionCommand : public Command {
+private:
+    std::optional<std::wstring> collection_name = {};
+
+public:
+    static inline const std::string cname = "library_remove_current_document_from_collection";
+    static inline const std::string hname = "Remove the current document from a library collection";
+    LibraryRemoveCurrentDocumentFromCollectionCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (collection_name.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Collection" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        collection_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_library_select_current_document_collection();
+    }
+
+    void perform() {
+        widget->handle_library_remove_current_document_from_collection(collection_name.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryImportFileCommand : public TextCommand {
+public:
+    static inline const std::string cname = "library_import_file";
+    static inline const std::string hname = "Import a PDF file into the library";
+    LibraryImportFileCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "PDF file path";
+    }
+
+    void perform() {
+        widget->handle_library_import_file(text.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryImportFolderCommand : public TextCommand {
+public:
+    static inline const std::string cname = "library_import_folder";
+    static inline const std::string hname = "Import PDFs from a folder into the library";
+    LibraryImportFolderCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "Folder path";
+    }
+
+    void perform() {
+        widget->handle_library_import_folder(text.value_or(L""), false);
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryImportFolderRecursiveCommand : public TextCommand {
+public:
+    static inline const std::string cname = "library_import_folder_recursive";
+    static inline const std::string hname = "Recursively import PDFs from a folder into the library and group nested PDFs by relative subfolder";
+    LibraryImportFolderRecursiveCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "Folder path";
+    }
+
+    void perform() {
+        widget->handle_library_import_folder(text.value_or(L""), true);
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryImportFolderToCollectionCommandBase : public Command {
+private:
+    std::optional<std::wstring> folder_path = {};
+    std::optional<std::wstring> collection_name = {};
+    bool recursive = false;
+
+public:
+    LibraryImportFolderToCollectionCommandBase(std::string name, MainWidget* w, bool recursive_) : Command(name, w), recursive(recursive_) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!folder_path.has_value()) {
+            return Requirement{ RequirementType::Text, "Folder path" };
+        }
+        if (!collection_name.has_value()) {
+            return Requirement{ RequirementType::Generic, "Collection" };
+        }
+        return {};
+    }
+
+    void set_text_requirement(std::wstring value) {
+        folder_path = value;
+    }
+
+    void set_generic_requirement(QVariant value) {
+        collection_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_library_select_collection(true);
+    }
+
+    void perform() {
+        widget->handle_library_import_folder_to_collection(folder_path.value_or(L""), collection_name.value_or(L""), recursive);
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryImportFolderToCollectionCommand : public LibraryImportFolderToCollectionCommandBase {
+public:
+    static inline const std::string cname = "library_import_folder_to_collection";
+    static inline const std::string hname = "Import PDFs from a folder into a library collection";
+    LibraryImportFolderToCollectionCommand(MainWidget* w) : LibraryImportFolderToCollectionCommandBase(cname, w, false) {}
+};
+
+class LibraryImportFolderRecursiveToCollectionCommand : public LibraryImportFolderToCollectionCommandBase {
+public:
+    static inline const std::string cname = "library_import_folder_recursive_to_collection";
+    static inline const std::string hname = "Recursively import PDFs from a folder into library collections rooted at a chosen collection";
+    LibraryImportFolderRecursiveToCollectionCommand(MainWidget* w) : LibraryImportFolderToCollectionCommandBase(cname, w, true) {}
+};
+
+class LibraryImportGoogleDriveFileCommand : public TextCommand {
+public:
+    static inline const std::string cname = "library_import_google_drive_file";
+    static inline const std::string hname = "Import a Google Drive PDF file into the library";
+    LibraryImportGoogleDriveFileCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "Google Drive file URL or ID";
+    }
+
+    void perform() {
+        widget->handle_library_import_google_drive_file(text.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryImportGoogleDriveFolderCommand : public TextCommand {
+public:
+    static inline const std::string cname = "library_import_google_drive_folder";
+    static inline const std::string hname = "Import PDFs from a Google Drive folder into the library";
+    LibraryImportGoogleDriveFolderCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "Google Drive folder URL or ID";
+    }
+
+    void perform() {
+        widget->handle_library_import_google_drive_folder(text.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryImportGoogleDriveToCollectionCommandBase : public Command {
+private:
+    std::optional<std::wstring> source = {};
+    std::optional<std::wstring> collection_name = {};
+    bool folder = false;
+
+public:
+    LibraryImportGoogleDriveToCollectionCommandBase(std::string name, MainWidget* w, bool folder_) : Command(name, w), folder(folder_) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!source.has_value()) {
+            return Requirement{ RequirementType::Text, folder ? "Google Drive folder URL or ID" : "Google Drive file URL or ID" };
+        }
+        if (!collection_name.has_value()) {
+            return Requirement{ RequirementType::Generic, "Collection" };
+        }
+        return {};
+    }
+
+    void set_text_requirement(std::wstring value) {
+        source = value;
+    }
+
+    void set_generic_requirement(QVariant value) {
+        collection_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_library_select_collection(true);
+    }
+
+    void perform() {
+        if (folder) {
+            widget->handle_library_import_google_drive_folder_to_collection(source.value_or(L""), collection_name.value_or(L""));
+        }
+        else {
+            widget->handle_library_import_google_drive_file_to_collection(source.value_or(L""), collection_name.value_or(L""));
+        }
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryImportGoogleDriveFileToCollectionCommand : public LibraryImportGoogleDriveToCollectionCommandBase {
+public:
+    static inline const std::string cname = "library_import_google_drive_file_to_collection";
+    static inline const std::string hname = "Import a Google Drive PDF file into a library collection";
+    LibraryImportGoogleDriveFileToCollectionCommand(MainWidget* w) : LibraryImportGoogleDriveToCollectionCommandBase(cname, w, false) {}
+};
+
+class LibraryImportGoogleDriveFolderToCollectionCommand : public LibraryImportGoogleDriveToCollectionCommandBase {
+public:
+    static inline const std::string cname = "library_import_google_drive_folder_to_collection";
+    static inline const std::string hname = "Import PDFs from a Google Drive folder into a library collection";
+    LibraryImportGoogleDriveFolderToCollectionCommand(MainWidget* w) : LibraryImportGoogleDriveToCollectionCommandBase(cname, w, true) {}
+};
+
+class LibraryShowCurrentDocumentInfoCommand : public Command {
+public:
+    static inline const std::string cname = "library_show_current_document_info";
+    static inline const std::string hname = "Show current document library info";
+    LibraryShowCurrentDocumentInfoCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_library_show_current_document_info();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class WorkspaceSaveCurrentCommand : public TextCommand {
+public:
+    static inline const std::string cname = "workspace_save_current";
+    static inline const std::string hname = "Save current documents as a workspace";
+    WorkspaceSaveCurrentCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "Workspace name";
+    }
+
+    void perform() {
+        widget->handle_workspace_save_current(text.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class WorkspaceShowActiveCommand : public Command {
+public:
+    static inline const std::string cname = "workspace_show_active";
+    static inline const std::string hname = "Show the active workspace";
+    WorkspaceShowActiveCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_workspace_show_active();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class WorkspaceOpenCommand : public Command {
+private:
+    std::optional<std::wstring> workspace_name = {};
+
+public:
+    static inline const std::string cname = "workspace_open";
+    static inline const std::string hname = "Open a workspace";
+    WorkspaceOpenCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (workspace_name.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Workspace" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        workspace_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_workspace_open();
+    }
+
+    void perform() {
+        widget->handle_workspace_open(workspace_name.value_or(L""));
+    }
+
+    bool pushes_state() {
+        return true;
+    }
+
+    bool requires_document() { return false; }
+};
+
+class WorkspaceUpdateCurrentCommand : public Command {
+private:
+    std::optional<std::wstring> workspace_name = {};
+
+public:
+    static inline const std::string cname = "workspace_update_current";
+    static inline const std::string hname = "Update the active workspace";
+    WorkspaceUpdateCurrentCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (workspace_name.has_value()) {
+            return {};
+        }
+        if (widget->workspace_manager && !widget->workspace_manager->active_workspace().has_value()) {
+            return Requirement{ RequirementType::Generic, "Workspace" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        workspace_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_workspace_open();
+    }
+
+    void perform() {
+        if (workspace_name.has_value()) {
+            widget->handle_workspace_update_current(workspace_name.value());
+        }
+        else {
+            widget->handle_workspace_update_current();
+        }
+    }
+
+    bool requires_document() { return false; }
+};
+
+class WorkspaceAddCurrentDocumentCommand : public Command {
+private:
+    std::optional<std::wstring> workspace_name = {};
+
+public:
+    static inline const std::string cname = "workspace_add_current_document";
+    static inline const std::string hname = "Add current document to a workspace";
+    WorkspaceAddCurrentDocumentCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (workspace_name.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Workspace" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        workspace_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_workspace_add_current_document();
+    }
+
+    void perform() {
+        widget->handle_workspace_add_current_document(workspace_name.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class WorkspaceRemoveCurrentDocumentCommand : public Command {
+private:
+    std::optional<std::wstring> workspace_name = {};
+
+public:
+    static inline const std::string cname = "workspace_remove_current_document";
+    static inline const std::string hname = "Remove current document from a workspace";
+    WorkspaceRemoveCurrentDocumentCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (workspace_name.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Workspace" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        workspace_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_workspace_remove_current_document();
+    }
+
+    void perform() {
+        widget->handle_workspace_remove_current_document(workspace_name.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class WorkspaceRenameCommand : public Command {
+private:
+    std::optional<std::wstring> old_name = {};
+    std::optional<std::wstring> new_name = {};
+
+public:
+    static inline const std::string cname = "workspace_rename";
+    static inline const std::string hname = "Rename a workspace";
+    WorkspaceRenameCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!old_name.has_value()) {
+            return Requirement{ RequirementType::Generic, "Workspace" };
+        }
+        if (!new_name.has_value()) {
+            return Requirement{ RequirementType::Text, "New workspace name" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        old_name = value.toString().toStdWString();
+    }
+
+    void set_text_requirement(std::wstring value) {
+        new_name = value;
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_workspace_rename();
+    }
+
+    void perform() {
+        widget->handle_workspace_rename(old_name.value_or(L""), new_name.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class WorkspaceShowInfoCommand : public Command {
+private:
+    std::optional<std::wstring> workspace_name = {};
+
+public:
+    static inline const std::string cname = "workspace_show_info";
+    static inline const std::string hname = "Show workspace information";
+    WorkspaceShowInfoCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (workspace_name.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Workspace" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        workspace_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_workspace_show_info();
+    }
+
+    void perform() {
+        widget->handle_workspace_show_info(workspace_name.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class WorkspaceDeleteCommand : public Command {
+private:
+    std::optional<std::wstring> workspace_name = {};
+
+public:
+    static inline const std::string cname = "workspace_delete";
+    static inline const std::string hname = "Delete a workspace";
+    WorkspaceDeleteCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (workspace_name.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Workspace" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        workspace_name = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_workspace_delete();
+    }
+
+    void perform() {
+        widget->handle_workspace_delete(workspace_name.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class StudyObjectCreateCommandBase : public Command {
+private:
+    std::optional<std::wstring> type = {};
+    std::optional<std::wstring> title = {};
+    std::optional<std::wstring> note = {};
+
+public:
+    StudyObjectCreateCommandBase(std::string name, MainWidget* w, std::optional<std::wstring> fixed_type = {}) : Command(name, w), type(fixed_type) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!type.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study object type" };
+        }
+        if (!title.has_value()) {
+            return Requirement{ RequirementType::Text, "Study object title" };
+        }
+        if (!note.has_value()) {
+            return Requirement{ RequirementType::Text, "Study object note (optional)" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        type = value.toString().toStdWString();
+    }
+
+    void set_text_requirement(std::wstring value) {
+        if (!title.has_value()) {
+            title = value;
+        }
+        else {
+            note = value;
+        }
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_study_object_select_type();
+    }
+
+    void perform() {
+        widget->handle_study_object_create(type.value_or(L"note"), title.value_or(L""), note.value_or(L""));
+    }
+};
+
+class StudyObjectCreateCommand : public StudyObjectCreateCommandBase {
+public:
+    static inline const std::string cname = "study_object_create";
+    static inline const std::string hname = "Create a study object at the current location";
+    StudyObjectCreateCommand(MainWidget* w) : StudyObjectCreateCommandBase(cname, w) {}
+};
+
+class StudyMarkDefinitionCommand : public StudyObjectCreateCommandBase {
+public:
+    static inline const std::string cname = "study_mark_definition";
+    static inline const std::string hname = "Create a definition study object";
+    StudyMarkDefinitionCommand(MainWidget* w) : StudyObjectCreateCommandBase(cname, w, L"definition") {}
+};
+
+class StudyMarkTheoremCommand : public StudyObjectCreateCommandBase {
+public:
+    static inline const std::string cname = "study_mark_theorem";
+    static inline const std::string hname = "Create a theorem study object";
+    StudyMarkTheoremCommand(MainWidget* w) : StudyObjectCreateCommandBase(cname, w, L"theorem") {}
+};
+
+class StudyMarkEquationCommand : public StudyObjectCreateCommandBase {
+public:
+    static inline const std::string cname = "study_mark_equation";
+    static inline const std::string hname = "Create an equation study object";
+    StudyMarkEquationCommand(MainWidget* w) : StudyObjectCreateCommandBase(cname, w, L"equation") {}
+};
+
+class StudyMarkFigureCommand : public StudyObjectCreateCommandBase {
+public:
+    static inline const std::string cname = "study_mark_figure";
+    static inline const std::string hname = "Create a figure study object";
+    StudyMarkFigureCommand(MainWidget* w) : StudyObjectCreateCommandBase(cname, w, L"figure") {}
+};
+
+class StudyMarkExerciseCommand : public StudyObjectCreateCommandBase {
+public:
+    static inline const std::string cname = "study_mark_exercise";
+    static inline const std::string hname = "Create an exercise study object";
+    StudyMarkExerciseCommand(MainWidget* w) : StudyObjectCreateCommandBase(cname, w, L"exercise") {}
+};
+
+class StudyMarkQuestionCommand : public StudyObjectCreateCommandBase {
+public:
+    static inline const std::string cname = "study_mark_question";
+    static inline const std::string hname = "Create a question study object";
+    StudyMarkQuestionCommand(MainWidget* w) : StudyObjectCreateCommandBase(cname, w, L"question") {}
+};
+
+class StudyMarkIdeaCommand : public StudyObjectCreateCommandBase {
+public:
+    static inline const std::string cname = "study_mark_idea";
+    static inline const std::string hname = "Create an idea study object";
+    StudyMarkIdeaCommand(MainWidget* w) : StudyObjectCreateCommandBase(cname, w, L"idea") {}
+};
+
+class StudyObjectOpenCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "study_object_open";
+    static inline const std::string hname = "Open a study object in the current document";
+    StudyObjectOpenCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Study object" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_study_object_open();
+    }
+
+    void perform() {
+        widget->handle_study_object_open_id(id.value_or(""));
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class StudyObjectOpenWorkspaceCommand : public Command {
+public:
+    static inline const std::string cname = "study_object_open_workspace";
+    static inline const std::string hname = "Open a study object in the active workspace";
+    StudyObjectOpenWorkspaceCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_object_open_workspace();
+    }
+
+    bool pushes_state() { return true; }
+    bool requires_document() { return false; }
+};
+
+class StudyIndexCommand : public Command {
+public:
+    static inline const std::string cname = "study_index";
+    static inline const std::string hname = "Open the grouped study index for the current document";
+    StudyIndexCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_index();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class StudyIndexWorkspaceCommand : public Command {
+public:
+    static inline const std::string cname = "study_index_workspace";
+    static inline const std::string hname = "Open the grouped study index for the active workspace";
+    StudyIndexWorkspaceCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_index_workspace();
+    }
+
+    bool pushes_state() { return true; }
+    bool requires_document() { return false; }
+};
+
+class StudyIndexCurrentPageCommand : public Command {
+public:
+    static inline const std::string cname = "study_index_current_page";
+    static inline const std::string hname = "Open the grouped study index near the current page";
+    StudyIndexCurrentPageCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_index_current_page();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class StudyHudCommand : public Command {
+public:
+    static inline const std::string cname = "study_hud";
+    static inline const std::string hname = "Open the Study HUD overlay";
+    StudyHudCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_hud();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class StudyHudPageCommand : public Command {
+public:
+    static inline const std::string cname = "study_hud_page";
+    static inline const std::string hname = "Open the Study HUD for the current page or spread";
+    StudyHudPageCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_hud_page();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class StudyHudDocumentCommand : public Command {
+public:
+    static inline const std::string cname = "study_hud_document";
+    static inline const std::string hname = "Open the Study HUD for the current document";
+    StudyHudDocumentCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_hud_document();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class StudyHudWorkspaceCommand : public Command {
+public:
+    static inline const std::string cname = "study_hud_workspace";
+    static inline const std::string hname = "Open the Study HUD for the active workspace";
+    StudyHudWorkspaceCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_hud_workspace();
+    }
+
+    bool pushes_state() { return true; }
+    bool requires_document() { return false; }
+};
+
+class StudyHudToggleScopeCommand : public Command {
+public:
+    static inline const std::string cname = "study_hud_toggle_scope";
+    static inline const std::string hname = "Cycle the Study HUD scope";
+    StudyHudToggleScopeCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_hud_toggle_scope();
+    }
+
+    bool pushes_state() { return true; }
+    bool requires_document() { return false; }
+};
+
+class ProblemCreateCommand : public TextCommand {
+public:
+    static inline const std::string cname = "problem_create";
+    static inline const std::string hname = "Create an unsolved problem at the current location";
+    ProblemCreateCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "Problem title";
+    }
+
+    std::wstring get_text_default_value() {
+        if (widget && widget->doc()) {
+            return L"Problem - " + get_page_formatted_string(widget->get_current_page_number() + 1);
+        }
+        return L"Problem";
+    }
+
+    void perform() {
+        widget->handle_problem_create(text.value_or(L""));
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class ProblemSetStatusCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+    std::optional<std::wstring> status = {};
+
+public:
+    static inline const std::string cname = "problem_set_status";
+    static inline const std::string hname = "Set a problem status";
+    ProblemSetStatusCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Problem" };
+        }
+        if (!status.has_value()) {
+            return Requirement{ RequirementType::Generic, "Problem status" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        if (!id.has_value()) {
+            id = value.toString().toStdString();
+        }
+        else {
+            status = value.toString().toStdWString();
+        }
+    }
+
+    void handle_generic_requirement() {
+        if (!id.has_value()) {
+            widget->handle_problem_select_current();
+        }
+        else {
+            widget->handle_problem_select_status();
+        }
+    }
+
+    void perform() {
+        widget->handle_problem_set_status(id.value_or(""), status.value_or(L"unsolved"));
+    }
+};
+
+class ProblemMarkStatusCommandBase : public Command {
+private:
+    std::wstring status;
+
+public:
+    ProblemMarkStatusCommandBase(std::string name, MainWidget* w, std::wstring status_) : Command(name, w), status(status_) {}
+
+    void perform() {
+        widget->handle_problem_mark_status(status);
+    }
+};
+
+class ProblemMarkUnsolvedCommand : public ProblemMarkStatusCommandBase {
+public:
+    static inline const std::string cname = "problem_mark_unsolved";
+    static inline const std::string hname = "Mark a problem unsolved";
+    ProblemMarkUnsolvedCommand(MainWidget* w) : ProblemMarkStatusCommandBase(cname, w, L"unsolved") {}
+};
+
+class ProblemMarkAttemptedCommand : public ProblemMarkStatusCommandBase {
+public:
+    static inline const std::string cname = "problem_mark_attempted";
+    static inline const std::string hname = "Mark a problem attempted";
+    ProblemMarkAttemptedCommand(MainWidget* w) : ProblemMarkStatusCommandBase(cname, w, L"attempted") {}
+};
+
+class ProblemMarkSolvedCommand : public ProblemMarkStatusCommandBase {
+public:
+    static inline const std::string cname = "problem_mark_solved";
+    static inline const std::string hname = "Mark a problem solved";
+    ProblemMarkSolvedCommand(MainWidget* w) : ProblemMarkStatusCommandBase(cname, w, L"solved") {}
+};
+
+class ProblemMarkMasteredCommand : public ProblemMarkStatusCommandBase {
+public:
+    static inline const std::string cname = "problem_mark_mastered";
+    static inline const std::string hname = "Mark a problem mastered";
+    ProblemMarkMasteredCommand(MainWidget* w) : ProblemMarkStatusCommandBase(cname, w, L"mastered") {}
+};
+
+class ProblemMarkRedoCommand : public ProblemMarkStatusCommandBase {
+public:
+    static inline const std::string cname = "problem_mark_redo";
+    static inline const std::string hname = "Mark a problem redo";
+    ProblemMarkRedoCommand(MainWidget* w) : ProblemMarkStatusCommandBase(cname, w, L"redo") {}
+};
+
+class ProblemMarkStuckCommand : public ProblemMarkStatusCommandBase {
+public:
+    static inline const std::string cname = "problem_mark_stuck";
+    static inline const std::string hname = "Mark a problem stuck";
+    ProblemMarkStuckCommand(MainWidget* w) : ProblemMarkStatusCommandBase(cname, w, L"stuck") {}
+};
+
+class ProblemListCommand : public Command {
+public:
+    static inline const std::string cname = "problem_list";
+    static inline const std::string hname = "List problems in the current document";
+    ProblemListCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_problem_list();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class ProblemListByStatusCommand : public Command {
+private:
+    std::optional<std::wstring> status = {};
+
+public:
+    static inline const std::string cname = "problem_list_by_status";
+    static inline const std::string hname = "List problems by status in the current document";
+    ProblemListByStatusCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!status.has_value()) {
+            return Requirement{ RequirementType::Generic, "Problem status" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        status = value.toString().toStdWString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_problem_select_status();
+    }
+
+    void perform() {
+        widget->handle_problem_list_by_status(status.value_or(L"unsolved"));
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class ProblemListWorkspaceCommand : public Command {
+public:
+    static inline const std::string cname = "problem_list_workspace";
+    static inline const std::string hname = "List problems in the active workspace";
+    ProblemListWorkspaceCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_problem_list_workspace();
+    }
+
+    bool pushes_state() { return true; }
+    bool requires_document() { return false; }
+};
+
+class ProblemShowCurrentCommand : public Command {
+public:
+    static inline const std::string cname = "problem_show_current";
+    static inline const std::string hname = "Show problems near the current page or spread";
+    ProblemShowCurrentCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_problem_show_current();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class ProblemAttachSolutionCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+    std::optional<std::wstring> solution_ref = {};
+
+public:
+    static inline const std::string cname = "problem_attach_solution";
+    static inline const std::string hname = "Attach a solution reference to a problem";
+    ProblemAttachSolutionCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Problem" };
+        }
+        if (!solution_ref.has_value()) {
+            return Requirement{ RequirementType::Text, "Solution reference" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void set_text_requirement(std::wstring value) {
+        solution_ref = value;
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_problem_select_current();
+    }
+
+    void perform() {
+        widget->handle_problem_attach_solution(id.value_or(""), solution_ref.value_or(L""));
+    }
+};
+
+class ProblemClearSolutionCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "problem_clear_solution";
+    static inline const std::string hname = "Clear a problem solution reference";
+    ProblemClearSolutionCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Problem" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_problem_select_current();
+    }
+
+    void perform() {
+        widget->handle_problem_clear_solution(id.value_or(""));
+    }
+};
+
+class ShelfAddCurrentLocationCommand : public TextCommand {
+public:
+    static inline const std::string cname = "shelf_add_current_location";
+    static inline const std::string hname = "Add the current location to the Portal Shelf";
+    ShelfAddCurrentLocationCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "Shelf item title";
+    }
+
+    std::wstring get_text_default_value() {
+        if (widget && widget->doc()) {
+            std::wstring path = widget->doc()->get_path();
+            std::wstring document_name = Path(path).filename().value_or(path);
+            return document_name + L" - " + get_page_formatted_string(widget->get_current_page_number() + 1);
+        }
+        return L"Shelf item";
+    }
+
+    void perform() {
+        widget->handle_shelf_add_current_location(text.value_or(L""));
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class ShelfAddStudyObjectCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "shelf_add_study_object";
+    static inline const std::string hname = "Add a study object to the Portal Shelf";
+    ShelfAddStudyObjectCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Study object" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_shelf_select_study_object();
+    }
+
+    void perform() {
+        widget->handle_shelf_add_study_object(id.value_or(""));
+    }
+};
+
+class ShelfAddRegionHighlightCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "shelf_add_region_highlight";
+    static inline const std::string hname = "Add a region highlight to the Portal Shelf";
+    ShelfAddRegionHighlightCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Region highlight" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_shelf_select_region_highlight();
+    }
+
+    void perform() {
+        widget->handle_shelf_add_region_highlight(id.value_or(""));
+    }
+};
+
+class ShelfAddProblemCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "shelf_add_problem";
+    static inline const std::string hname = "Add a problem to the Portal Shelf";
+    ShelfAddProblemCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Problem" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_shelf_select_problem();
+    }
+
+    void perform() {
+        widget->handle_shelf_add_problem(id.value_or(""));
+    }
+};
+
+class ShelfOpenCommand : public Command {
+public:
+    static inline const std::string cname = "shelf_open";
+    static inline const std::string hname = "Open the Portal Shelf";
+    ShelfOpenCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_shelf_open();
+    }
+
+    bool pushes_state() { return true; }
+    bool requires_document() { return false; }
+};
+
+class ShelfRemoveItemCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "shelf_remove_item";
+    static inline const std::string hname = "Remove an item from the Portal Shelf";
+    ShelfRemoveItemCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Shelf item" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_shelf_select_item();
+    }
+
+    void perform() {
+        widget->handle_shelf_remove_item(id.value_or(""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class ShelfClearCommand : public Command {
+public:
+    static inline const std::string cname = "shelf_clear";
+    static inline const std::string hname = "Clear the Portal Shelf";
+    ShelfClearCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_shelf_clear();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class ShelfMoveItemUpCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "shelf_move_item_up";
+    static inline const std::string hname = "Move a Portal Shelf item up";
+    ShelfMoveItemUpCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Shelf item" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_shelf_select_item();
+    }
+
+    void perform() {
+        widget->handle_shelf_move_item_up(id.value_or(""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class ShelfMoveItemDownCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "shelf_move_item_down";
+    static inline const std::string hname = "Move a Portal Shelf item down";
+    ShelfMoveItemDownCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Shelf item" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_shelf_select_item();
+    }
+
+    void perform() {
+        widget->handle_shelf_move_item_down(id.value_or(""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class ShelfShowCurrentPageCommand : public Command {
+public:
+    static inline const std::string cname = "shelf_show_current_page";
+    static inline const std::string hname = "Show Portal Shelf items on the current page or spread";
+    ShelfShowCurrentPageCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_shelf_show_current_page();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class StudyObjectRenameCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+    std::optional<std::wstring> title = {};
+
+public:
+    static inline const std::string cname = "study_object_rename";
+    static inline const std::string hname = "Rename a study object";
+    StudyObjectRenameCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study object" };
+        }
+        if (!title.has_value()) {
+            return Requirement{ RequirementType::Text, "New study object title" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void set_text_requirement(std::wstring value) {
+        title = value;
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_study_object_select_current();
+    }
+
+    void perform() {
+        widget->handle_study_object_rename(id.value_or(""), title.value_or(L""));
+    }
+};
+
+class StudyObjectSetTypeCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+    std::optional<std::wstring> type = {};
+
+public:
+    static inline const std::string cname = "study_object_set_type";
+    static inline const std::string hname = "Set a study object's type";
+    StudyObjectSetTypeCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study object" };
+        }
+        if (!type.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study object type" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        if (!id.has_value()) {
+            id = value.toString().toStdString();
+        }
+        else {
+            type = value.toString().toStdWString();
+        }
+    }
+
+    void handle_generic_requirement() {
+        if (!id.has_value()) {
+            widget->handle_study_object_select_current();
+        }
+        else {
+            widget->handle_study_object_select_type();
+        }
+    }
+
+    void perform() {
+        widget->handle_study_object_set_type(id.value_or(""), type.value_or(L"note"));
+    }
+};
+
+class StudyObjectDeleteCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "study_object_delete";
+    static inline const std::string hname = "Delete a study object";
+    StudyObjectDeleteCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Study object" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_study_object_delete();
+    }
+
+    void perform() {
+        widget->handle_study_object_delete_id(id.value_or(""));
+    }
+};
+
+class StudyObjectShowCurrentCommand : public Command {
+public:
+    static inline const std::string cname = "study_object_show_current";
+    static inline const std::string hname = "Show study objects near the current page";
+    StudyObjectShowCurrentCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_study_object_show_current();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class StudyLinkCreateCommandBase : public Command {
+private:
+    std::optional<std::string> source_id = {};
+    std::optional<std::string> target_id = {};
+    std::optional<std::wstring> relation_type = {};
+    std::optional<std::wstring> note = {};
+    bool infer_source = false;
+    bool prompt_note = true;
+    std::optional<std::wstring> fixed_relation_type = {};
+
+public:
+    StudyLinkCreateCommandBase(
+        std::string name,
+        MainWidget* w,
+        bool infer_source_,
+        std::optional<std::wstring> fixed_relation_type_ = {},
+        bool prompt_note_ = true) : Command(name, w),
+        infer_source(infer_source_),
+        prompt_note(prompt_note_),
+        fixed_relation_type(fixed_relation_type_) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!source_id.has_value() && infer_source) {
+            source_id = widget->infer_current_study_object_id();
+        }
+        if (!source_id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Source study object" };
+        }
+        if (!target_id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Target study object" };
+        }
+        if (!relation_type.has_value()) {
+            if (fixed_relation_type.has_value()) {
+                relation_type = fixed_relation_type.value();
+            }
+            else {
+                return Requirement{ RequirementType::Generic, "Study link relation" };
+            }
+        }
+        if (prompt_note && !note.has_value()) {
+            return Requirement{ RequirementType::Text, "Study link note (optional)" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        if (!source_id.has_value()) {
+            source_id = value.toString().toStdString();
+        }
+        else if (!target_id.has_value()) {
+            target_id = value.toString().toStdString();
+        }
+        else {
+            relation_type = value.toString().toStdWString();
+        }
+    }
+
+    void set_text_requirement(std::wstring value) {
+        note = value;
+    }
+
+    void handle_generic_requirement() {
+        if (!source_id.has_value()) {
+            widget->handle_study_link_select_study_object();
+        }
+        else if (!target_id.has_value()) {
+            widget->handle_study_link_select_study_object(source_id.value());
+        }
+        else {
+            widget->handle_study_link_select_relation_type();
+        }
+    }
+
+    void perform() {
+        widget->handle_study_link_create(
+            source_id.value_or(""),
+            target_id.value_or(""),
+            relation_type.value_or(fixed_relation_type.value_or(L"related_to")),
+            note.value_or(L""));
+    }
+};
+
+class StudyLinkCreateCommand : public StudyLinkCreateCommandBase {
+public:
+    static inline const std::string cname = "study_link_create";
+    static inline const std::string hname = "Create a dependency link between two study objects";
+    StudyLinkCreateCommand(MainWidget* w) : StudyLinkCreateCommandBase(cname, w, false) {}
+};
+
+class StudyLinkFromCurrentCommand : public StudyLinkCreateCommandBase {
+public:
+    static inline const std::string cname = "study_link_from_current";
+    static inline const std::string hname = "Create a dependency link from the current study object";
+    StudyLinkFromCurrentCommand(MainWidget* w) : StudyLinkCreateCommandBase(cname, w, true) {}
+};
+
+class StudyLinkCurrentDependsOnCommand : public StudyLinkCreateCommandBase {
+public:
+    static inline const std::string cname = "study_link_current_depends_on";
+    static inline const std::string hname = "Create a depends_on link from the current study object";
+    StudyLinkCurrentDependsOnCommand(MainWidget* w) : StudyLinkCreateCommandBase(cname, w, true, L"depends_on", false) {}
+};
+
+class StudyLinkObjectCommandBase : public Command {
+private:
+    std::optional<std::string> study_object_id = {};
+
+protected:
+    virtual void perform_for_study_object(const std::string& id) = 0;
+
+public:
+    StudyLinkObjectCommandBase(std::string name, MainWidget* w) : Command(name, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!study_object_id.has_value()) {
+            study_object_id = widget->infer_current_study_object_id();
+        }
+        if (!study_object_id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study object" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        study_object_id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_study_link_select_study_object();
+    }
+
+    void perform() {
+        perform_for_study_object(study_object_id.value_or(""));
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class StudyLinkShowDependenciesCommand : public StudyLinkObjectCommandBase {
+public:
+    static inline const std::string cname = "study_link_show_dependencies";
+    static inline const std::string hname = "Show outgoing dependency links for a study object";
+    StudyLinkShowDependenciesCommand(MainWidget* w) : StudyLinkObjectCommandBase(cname, w) {}
+
+protected:
+    void perform_for_study_object(const std::string& id) {
+        widget->handle_study_link_show_dependencies(id);
+    }
+};
+
+class StudyLinkShowDependentsCommand : public StudyLinkObjectCommandBase {
+public:
+    static inline const std::string cname = "study_link_show_dependents";
+    static inline const std::string hname = "Show incoming dependency links for a study object";
+    StudyLinkShowDependentsCommand(MainWidget* w) : StudyLinkObjectCommandBase(cname, w) {}
+
+protected:
+    void perform_for_study_object(const std::string& id) {
+        widget->handle_study_link_show_dependents(id);
+    }
+};
+
+class StudyLinkOpenGraphLocalCommand : public StudyLinkObjectCommandBase {
+public:
+    static inline const std::string cname = "study_link_open_graph_local";
+    static inline const std::string hname = "Open the local dependency graph for a study object";
+    StudyLinkOpenGraphLocalCommand(MainWidget* w) : StudyLinkObjectCommandBase(cname, w) {}
+
+protected:
+    void perform_for_study_object(const std::string& id) {
+        widget->handle_study_link_open_graph_local(id);
+    }
+};
+
+class StudyLinkDeleteCommand : public Command {
+private:
+    std::optional<std::string> study_object_id = {};
+    std::optional<std::string> link_id = {};
+
+public:
+    static inline const std::string cname = "study_link_delete";
+    static inline const std::string hname = "Delete a dependency link";
+    StudyLinkDeleteCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!study_object_id.has_value()) {
+            study_object_id = widget->infer_current_study_object_id();
+        }
+        if (!study_object_id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study object" };
+        }
+        if (!link_id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Dependency link" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        if (!study_object_id.has_value()) {
+            study_object_id = value.toString().toStdString();
+        }
+        else {
+            link_id = value.toString().toStdString();
+        }
+    }
+
+    void handle_generic_requirement() {
+        if (!study_object_id.has_value()) {
+            widget->handle_study_link_select_study_object();
+        }
+        else {
+            widget->handle_study_link_select_related_link(study_object_id.value());
+        }
+    }
+
+    void perform() {
+        widget->handle_study_link_delete(link_id.value_or(""));
+    }
+};
+
+class StudyLinkSetTypeCommand : public Command {
+private:
+    std::optional<std::string> study_object_id = {};
+    std::optional<std::string> link_id = {};
+    std::optional<std::wstring> relation_type = {};
+
+public:
+    static inline const std::string cname = "study_link_set_type";
+    static inline const std::string hname = "Change a dependency link relation type";
+    StudyLinkSetTypeCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!study_object_id.has_value()) {
+            study_object_id = widget->infer_current_study_object_id();
+        }
+        if (!study_object_id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study object" };
+        }
+        if (!link_id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Dependency link" };
+        }
+        if (!relation_type.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study link relation" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        if (!study_object_id.has_value()) {
+            study_object_id = value.toString().toStdString();
+        }
+        else if (!link_id.has_value()) {
+            link_id = value.toString().toStdString();
+        }
+        else {
+            relation_type = value.toString().toStdWString();
+        }
+    }
+
+    void handle_generic_requirement() {
+        if (!study_object_id.has_value()) {
+            widget->handle_study_link_select_study_object();
+        }
+        else if (!link_id.has_value()) {
+            widget->handle_study_link_select_related_link(study_object_id.value());
+        }
+        else {
+            widget->handle_study_link_select_relation_type();
+        }
+    }
+
+    void perform() {
+        widget->handle_study_link_set_type(link_id.value_or(""), relation_type.value_or(L"related_to"));
+    }
+};
+
+class StudyLinkSetNoteCommand : public Command {
+private:
+    std::optional<std::string> study_object_id = {};
+    std::optional<std::string> link_id = {};
+    std::optional<std::wstring> note = {};
+
+public:
+    static inline const std::string cname = "study_link_set_note";
+    static inline const std::string hname = "Edit a dependency link note";
+    StudyLinkSetNoteCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!study_object_id.has_value()) {
+            study_object_id = widget->infer_current_study_object_id();
+        }
+        if (!study_object_id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study object" };
+        }
+        if (!link_id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Dependency link" };
+        }
+        if (!note.has_value()) {
+            return Requirement{ RequirementType::Text, "Study link note" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        if (!study_object_id.has_value()) {
+            study_object_id = value.toString().toStdString();
+        }
+        else {
+            link_id = value.toString().toStdString();
+        }
+    }
+
+    void set_text_requirement(std::wstring value) {
+        note = value;
+    }
+
+    void handle_generic_requirement() {
+        if (!study_object_id.has_value()) {
+            widget->handle_study_link_select_study_object();
+        }
+        else {
+            widget->handle_study_link_select_related_link(study_object_id.value());
+        }
+    }
+
+    void perform() {
+        widget->handle_study_link_set_note(link_id.value_or(""), note.value_or(L""));
+    }
+};
+
+class RegionHighlightCreateCommand : public Command {
+private:
+    std::optional<AbsoluteRect> rect = {};
+    std::optional<std::wstring> title = {};
+
+public:
+    static inline const std::string cname = "region_highlight_create";
+    static inline const std::string hname = "Create a rectangular region highlight";
+    RegionHighlightCreateCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!rect.has_value()) {
+            return Requirement{ RequirementType::Rect, "Region highlight rect" };
+        }
+        if (!title.has_value()) {
+            return Requirement{ RequirementType::Text, "Region highlight title (optional)" };
+        }
+        return {};
+    }
+
+    void set_rect_requirement(AbsoluteRect value) {
+        rect = value;
+    }
+
+    void set_text_requirement(std::wstring value) {
+        title = value;
+    }
+
+    void perform() {
+        widget->handle_region_highlight_create(rect.value_or(AbsoluteRect()), title.value_or(L""));
+    }
+};
+
+class RegionHighlightOpenCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "region_highlight_open";
+    static inline const std::string hname = "Open a region highlight in the current document";
+    RegionHighlightOpenCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Region highlight" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_region_highlight_open();
+    }
+
+    void perform() {
+        widget->handle_region_highlight_open_id(id.value_or(""));
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class RegionHighlightShowCurrentCommand : public Command {
+public:
+    static inline const std::string cname = "region_highlight_show_current";
+    static inline const std::string hname = "Show region highlights near the current page";
+    RegionHighlightShowCurrentCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_region_highlight_show_current();
+    }
+
+    bool pushes_state() { return true; }
+};
+
+class RegionHighlightRenameCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+    std::optional<std::wstring> title = {};
+
+public:
+    static inline const std::string cname = "region_highlight_rename";
+    static inline const std::string hname = "Rename a region highlight";
+    RegionHighlightRenameCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Region highlight" };
+        }
+        if (!title.has_value()) {
+            return Requirement{ RequirementType::Text, "New region highlight title" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void set_text_requirement(std::wstring value) {
+        title = value;
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_region_highlight_select_current();
+    }
+
+    void perform() {
+        widget->handle_region_highlight_rename(id.value_or(""), title.value_or(L""));
+    }
+};
+
+class RegionHighlightDeleteCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "region_highlight_delete";
+    static inline const std::string hname = "Delete a region highlight";
+    RegionHighlightDeleteCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Region highlight" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_region_highlight_delete();
+    }
+
+    void perform() {
+        widget->handle_region_highlight_delete_id(id.value_or(""));
+    }
+};
+
+class RegionHighlightCopyImageCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+
+public:
+    static inline const std::string cname = "region_highlight_copy_image";
+    static inline const std::string hname = "Copy a region highlight image to the clipboard";
+    RegionHighlightCopyImageCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (id.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Generic, "Region highlight" };
+    }
+
+    void set_generic_requirement(QVariant value) {
+        id = value.toString().toStdString();
+    }
+
+    void handle_generic_requirement() {
+        widget->handle_region_highlight_copy_image();
+    }
+
+    void perform() {
+        widget->handle_region_highlight_copy_image_id(id.value_or(""));
+    }
+};
+
+class RegionHighlightCreateStudyObjectCommand : public Command {
+private:
+    std::optional<std::string> id = {};
+    std::optional<std::wstring> type = {};
+    std::optional<std::wstring> title = {};
+
+public:
+    static inline const std::string cname = "region_highlight_create_study_object";
+    static inline const std::string hname = "Create a study object from a region highlight";
+    RegionHighlightCreateStudyObjectCommand(MainWidget* w) : Command(cname, w) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!id.has_value()) {
+            return Requirement{ RequirementType::Generic, "Region highlight" };
+        }
+        if (!type.has_value()) {
+            return Requirement{ RequirementType::Generic, "Study object type" };
+        }
+        if (!title.has_value()) {
+            return Requirement{ RequirementType::Text, "Study object title" };
+        }
+        return {};
+    }
+
+    void set_generic_requirement(QVariant value) {
+        if (!id.has_value()) {
+            id = value.toString().toStdString();
+        }
+        else {
+            type = value.toString().toStdWString();
+        }
+    }
+
+    void set_text_requirement(std::wstring value) {
+        title = value;
+    }
+
+    void handle_generic_requirement() {
+        if (!id.has_value()) {
+            widget->handle_region_highlight_select_current();
+        }
+        else {
+            widget->handle_study_object_select_type();
+        }
+    }
+
+    void perform() {
+        widget->handle_region_highlight_create_study_object(id.value_or(""), type.value_or(L"figure"), title.value_or(L""));
+    }
+};
+
 class OpenAllDocsCommand : public GenericPathAndLocationCommand {
 public:
     static inline const std::string cname = "open_all_docs";
@@ -4599,6 +6695,19 @@ public:
 
     void perform() {
         widget->toggle_presentation_mode();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class TogglePresentationTwoPageModeCommand : public Command {
+public:
+    static inline const std::string cname = "toggle_presentation_two_page_mode";
+    static inline const std::string hname = "Force two-page layout in presentation mode";
+    TogglePresentationTwoPageModeCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->handle_toggle_presentation_two_page_mode();
     }
 
     bool requires_document() { return false; }
@@ -7057,10 +9166,12 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<ChangeHighlightTypeCommand>();
     register_command<RenameCommand>();
     register_command<SetFreehandThickness>();
+    register_command<TogglePresentationTwoPageModeCommand>();
     register_command<GotoPageWithLabel>();
     register_command<RegexSearchCommand>();
     register_command<ChapterSearchCommand>();
     register_command<ToggleTwoPageModeCommand>();
+    register_command<ToggleBookModeCoverOffsetCommand>();
     register_command<FitEpubToWindowCommand>();
     register_command<MoveDownCommand>();
     register_command<MoveUpCommand>();
@@ -7130,6 +9241,94 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<EditPortalCommand>();
     register_command<EditPortalCommand>();
     register_command<OpenPrevDocCommand>();
+    register_command<LibraryAddCurrentDocumentCommand>();
+    register_command<LibraryRemoveCurrentDocumentCommand>();
+    register_command<LibraryOpenCommand>();
+    register_command<LibraryOpenCollectionCommand>();
+    register_command<LibraryCreateCollectionCommand>();
+    register_command<LibraryAddCurrentDocumentToCollectionCommand>();
+    register_command<LibraryRemoveCurrentDocumentFromCollectionCommand>();
+    register_command<LibraryImportFileCommand>();
+    register_command<LibraryImportFolderCommand>();
+    register_command<LibraryImportFolderRecursiveCommand>();
+    register_command<LibraryImportFolderToCollectionCommand>();
+    register_command<LibraryImportFolderRecursiveToCollectionCommand>();
+    register_command<LibraryImportGoogleDriveFileCommand>();
+    register_command<LibraryImportGoogleDriveFolderCommand>();
+    register_command<LibraryImportGoogleDriveFileToCollectionCommand>();
+    register_command<LibraryImportGoogleDriveFolderToCollectionCommand>();
+    register_command<LibraryShowCurrentDocumentInfoCommand>();
+    register_command<WorkspaceSaveCurrentCommand>();
+    register_command<WorkspaceShowActiveCommand>();
+    register_command<WorkspaceOpenCommand>();
+    register_command<WorkspaceUpdateCurrentCommand>();
+    register_command<WorkspaceAddCurrentDocumentCommand>();
+    register_command<WorkspaceRemoveCurrentDocumentCommand>();
+    register_command<WorkspaceRenameCommand>();
+    register_command<WorkspaceShowInfoCommand>();
+    register_command<WorkspaceDeleteCommand>();
+    register_command<StudyObjectCreateCommand>();
+    register_command<StudyMarkDefinitionCommand>();
+    register_command<StudyMarkTheoremCommand>();
+    register_command<StudyMarkEquationCommand>();
+    register_command<StudyMarkFigureCommand>();
+    register_command<StudyMarkExerciseCommand>();
+    register_command<StudyMarkQuestionCommand>();
+    register_command<StudyMarkIdeaCommand>();
+    register_command<StudyObjectOpenCommand>();
+    register_command<StudyObjectOpenWorkspaceCommand>();
+    register_command<StudyIndexCommand>();
+    register_command<StudyIndexWorkspaceCommand>();
+    register_command<StudyIndexCurrentPageCommand>();
+    register_command<StudyHudCommand>();
+    register_command<StudyHudPageCommand>();
+    register_command<StudyHudDocumentCommand>();
+    register_command<StudyHudWorkspaceCommand>();
+    register_command<StudyHudToggleScopeCommand>();
+    register_command<ProblemCreateCommand>();
+    register_command<ProblemSetStatusCommand>();
+    register_command<ProblemMarkUnsolvedCommand>();
+    register_command<ProblemMarkAttemptedCommand>();
+    register_command<ProblemMarkSolvedCommand>();
+    register_command<ProblemMarkMasteredCommand>();
+    register_command<ProblemMarkRedoCommand>();
+    register_command<ProblemMarkStuckCommand>();
+    register_command<ProblemListCommand>();
+    register_command<ProblemListByStatusCommand>();
+    register_command<ProblemListWorkspaceCommand>();
+    register_command<ProblemShowCurrentCommand>();
+    register_command<ProblemAttachSolutionCommand>();
+    register_command<ProblemClearSolutionCommand>();
+    register_command<ShelfAddCurrentLocationCommand>();
+    register_command<ShelfAddStudyObjectCommand>();
+    register_command<ShelfAddRegionHighlightCommand>();
+    register_command<ShelfAddProblemCommand>();
+    register_command<ShelfOpenCommand>();
+    register_command<ShelfRemoveItemCommand>();
+    register_command<ShelfClearCommand>();
+    register_command<ShelfMoveItemUpCommand>();
+    register_command<ShelfMoveItemDownCommand>();
+    register_command<ShelfShowCurrentPageCommand>();
+    register_command<StudyObjectRenameCommand>();
+    register_command<StudyObjectSetTypeCommand>();
+    register_command<StudyObjectDeleteCommand>();
+    register_command<StudyObjectShowCurrentCommand>();
+    register_command<StudyLinkCreateCommand>();
+    register_command<StudyLinkFromCurrentCommand>();
+    register_command<StudyLinkCurrentDependsOnCommand>();
+    register_command<StudyLinkShowDependenciesCommand>();
+    register_command<StudyLinkShowDependentsCommand>();
+    register_command<StudyLinkOpenGraphLocalCommand>();
+    register_command<StudyLinkDeleteCommand>();
+    register_command<StudyLinkSetTypeCommand>();
+    register_command<StudyLinkSetNoteCommand>();
+    register_command<RegionHighlightCreateCommand>();
+    register_command<RegionHighlightOpenCommand>();
+    register_command<RegionHighlightShowCurrentCommand>();
+    register_command<RegionHighlightRenameCommand>();
+    register_command<RegionHighlightDeleteCommand>();
+    register_command<RegionHighlightCopyImageCommand>();
+    register_command<RegionHighlightCreateStudyObjectCommand>();
     register_command<OpenAllDocsCommand>();
     register_command<OpenDocumentEmbeddedCommand>();
     register_command<OpenDocumentEmbeddedFromCurrentPathCommand>();

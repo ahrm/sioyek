@@ -26,6 +26,36 @@ extern float TTS_RATE;
 extern float MENU_SCREEN_WDITH_RATIO;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 
+namespace {
+bool handle_line_edit_editing_shortcut(QLineEdit* line_edit, QKeyEvent* event) {
+    if (is_paste_shortcut(event)) {
+        line_edit->paste();
+        return true;
+    }
+    if (is_cut_shortcut(event)) {
+        line_edit->cut();
+        return true;
+    }
+    if (is_select_all_shortcut(event)) {
+        line_edit->selectAll();
+        return true;
+    }
+    if (is_undo_shortcut(event)) {
+        line_edit->undo();
+        return true;
+    }
+    if (is_redo_shortcut(event)) {
+        line_edit->redo();
+        return true;
+    }
+    if (is_copy_shortcut(event)) {
+        line_edit->copy();
+        return true;
+    }
+    return false;
+}
+}
+
 std::wstring select_command_file_name(std::string command_name, std::optional<QString> root_dir) {
     if (command_name == "open_document" || command_name == "open_document_in_directory") {
         return select_document_file_name(root_dir);
@@ -1610,7 +1640,6 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
         }
         if ((event->type() == QEvent::KeyPress)) {
             QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
-            bool is_control_pressed = key_event->modifiers().testFlag(Qt::ControlModifier) || key_event->modifiers().testFlag(Qt::MetaModifier);
             bool is_alt_pressed = key_event->modifiers().testFlag(Qt::AltModifier);
 
             if (TOUCH_MODE) {
@@ -1652,7 +1681,16 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
                 QCoreApplication::postEvent(get_view(), new_key_event);
                 return true;
             }
-            if (((key_event->key() == Qt::Key_C) && is_control_pressed)) {
+            if (is_paste_shortcut(key_event) || is_cut_shortcut(key_event) ||
+                is_select_all_shortcut(key_event) || is_undo_shortcut(key_event) ||
+                is_redo_shortcut(key_event)) {
+                return handle_line_edit_editing_shortcut(line_edit, key_event);
+            }
+            if (is_copy_shortcut(key_event)) {
+                if (line_edit->hasSelectedText()) {
+                    line_edit->copy();
+                    return true;
+                }
                 std::wstring text = get_selected_text();
                 if (text.size() > 0) {
                     copy_to_clipboard(text);
@@ -1885,6 +1923,10 @@ int MyLineEdit::get_prev_word_position() {
 }
 
 void MyLineEdit::keyPressEvent(QKeyEvent* event) {
+
+    if (handle_line_edit_editing_shortcut(this, event)) {
+        return;
+    }
 
     bool is_alt_pressed = event->modifiers() & Qt::AltModifier;
     bool is_control_pressed = is_platform_control_pressed(event);

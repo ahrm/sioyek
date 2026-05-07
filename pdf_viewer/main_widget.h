@@ -54,6 +54,8 @@ class PdfViewOpenGLWidget;
 class DatabaseManager;
 class DocumentManager;
 class TextToSpeechHandler;
+class LibraryManager;
+class WorkspaceManager;
 
 enum class DrawingMode {
     Drawing,
@@ -152,6 +154,8 @@ public:
     PdfRenderer* pdf_renderer = nullptr;
     InputHandler* input_handler = nullptr;
     CachedChecksummer* checksummer = nullptr;
+    LibraryManager* library_manager = nullptr;
+    WorkspaceManager* workspace_manager = nullptr;
     QWidget* central_widget = nullptr;
     QMenuBar* menu_bar = nullptr;
     int window_id;
@@ -455,6 +459,8 @@ public:
     void toggle_fullscreen();
     void toggle_presentation_mode();
     void set_presentation_mode(bool mode);
+    void refresh_presentation_layout();
+    void handle_toggle_presentation_two_page_mode();
     void set_synctex_mode(bool mode);
     void toggle_synctex_mode();
     void complete_pending_link(const PortalViewState& destination_view_state);
@@ -515,6 +521,8 @@ public:
         CommandManager* command_manager,
         InputHandler* input_handler,
         CachedChecksummer* checksummer,
+        LibraryManager* library_manager,
+        WorkspaceManager* workspace_manager,
         bool* should_quit_ptr,
         QWidget* parent = nullptr
     );
@@ -606,6 +614,7 @@ public:
     std::optional<std::wstring> get_paper_name_under_cursor(bool use_last_hold_point = false);
     fz_stext_char* get_closest_character_to_cusrsor(QPoint pos);
     void set_status_message(std::wstring new_status_string);
+    void set_temporary_status_message(std::wstring new_status_string);
     void remove_self_from_windows();
     //void handle_additional_command(std::wstring command_name, bool wait=false);
     std::optional<DocumentPos> get_overview_position();
@@ -638,8 +647,108 @@ public:
     std::wstring handle_add_highlight(char symbol);
     void handle_goto_highlight();
     void handle_goto_highlight_global();
+    void handle_study_object_select_type();
+    void handle_study_object_select_current();
+    void handle_study_object_create(const std::wstring& type, const std::wstring& title, const std::wstring& note);
+    void handle_study_object_open();
+    void handle_study_object_open_workspace();
+    void handle_study_object_open_id(const std::string& id);
+    void handle_study_index();
+    void handle_study_index_workspace();
+    void handle_study_index_current_page();
+    void handle_study_hud();
+    void handle_study_hud_page();
+    void handle_study_hud_document();
+    void handle_study_hud_workspace();
+    void handle_study_hud_toggle_scope();
+    void handle_problem_create(const std::wstring& title);
+    void handle_problem_select_current();
+    void handle_problem_select_status();
+    void handle_problem_set_status(const std::string& id, const std::wstring& status);
+    void handle_problem_mark_status(const std::wstring& status);
+    void handle_problem_list();
+    void handle_problem_list_by_status(const std::wstring& status);
+    void handle_problem_list_workspace();
+    void handle_problem_show_current();
+    void handle_problem_attach_solution(const std::string& id, const std::wstring& solution_ref);
+    void handle_problem_clear_solution(const std::string& id);
+    void handle_shelf_add_current_location(const std::wstring& title);
+    void handle_shelf_select_study_object();
+    void handle_shelf_select_region_highlight();
+    void handle_shelf_select_problem();
+    void handle_shelf_select_item();
+    void handle_shelf_add_study_object(const std::string& id);
+    void handle_shelf_add_region_highlight(const std::string& id);
+    void handle_shelf_add_problem(const std::string& id);
+    void handle_shelf_open();
+    void handle_shelf_remove_item(const std::string& id);
+    void handle_shelf_clear();
+    void handle_shelf_move_item_up(const std::string& id);
+    void handle_shelf_move_item_down(const std::string& id);
+    void handle_shelf_show_current_page();
+    void handle_study_object_rename(const std::string& id, const std::wstring& new_title);
+    void handle_study_object_set_type(const std::string& id, const std::wstring& new_type);
+    void handle_study_object_delete();
+    void handle_study_object_delete_id(const std::string& id);
+    void handle_study_object_show_current();
+    std::optional<std::string> infer_current_study_object_id();
+    void handle_study_link_select_study_object(const std::string& excluded_id = "");
+    void handle_study_link_select_relation_type();
+    void handle_study_link_select_related_link(const std::string& study_object_id);
+    void handle_study_link_create(const std::string& source_id, const std::string& target_id, const std::wstring& relation_type, const std::wstring& note);
+    void handle_study_link_show_dependencies(const std::string& study_object_id);
+    void handle_study_link_show_dependents(const std::string& study_object_id);
+    void handle_study_link_open_graph_local(const std::string& study_object_id);
+    void handle_study_link_delete(const std::string& id);
+    void handle_study_link_set_type(const std::string& id, const std::wstring& relation_type);
+    void handle_study_link_set_note(const std::string& id, const std::wstring& note);
+    void handle_region_highlight_select_current();
+    void handle_region_highlight_create(AbsoluteRect rect, const std::wstring& title);
+    void handle_region_highlight_open();
+    void handle_region_highlight_open_id(const std::string& id);
+    void handle_region_highlight_show_current();
+    void handle_region_highlight_rename(const std::string& id, const std::wstring& new_title);
+    void handle_region_highlight_delete();
+    void handle_region_highlight_delete_id(const std::string& id);
+    void handle_region_highlight_copy_image();
+    void handle_region_highlight_copy_image_id(const std::string& id);
+    void handle_region_highlight_create_study_object(const std::string& id, const std::wstring& type, const std::wstring& title);
     void handle_goto_toc();
     void handle_open_prev_doc();
+    void handle_library_add_current_document();
+    void handle_library_remove_current_document();
+    void handle_library_open();
+    void handle_library_open_collection(const std::wstring& collection_name);
+    void open_library_document(const std::wstring& path);
+    void handle_library_import_file(const std::wstring& file_path);
+    void handle_library_import_folder(const std::wstring& folder_path, bool recursive);
+    void handle_library_import_folder_to_collection(const std::wstring& folder_path, const std::wstring& collection_name, bool recursive);
+    void handle_library_import_google_drive_file(const std::wstring& source);
+    void handle_library_import_google_drive_file_to_collection(const std::wstring& source, const std::wstring& collection_name);
+    void handle_library_import_google_drive_folder(const std::wstring& source);
+    void handle_library_import_google_drive_folder_to_collection(const std::wstring& source, const std::wstring& collection_name);
+    void handle_library_show_current_document_info();
+    void handle_workspace_save_current(const std::wstring& workspace_name);
+    void handle_workspace_show_active();
+    void handle_workspace_open();
+    void handle_workspace_open(const std::wstring& workspace_name);
+    void handle_workspace_update_current();
+    void handle_workspace_update_current(const std::wstring& workspace_name);
+    void handle_workspace_add_current_document();
+    void handle_workspace_add_current_document(const std::wstring& workspace_name);
+    void handle_workspace_remove_current_document();
+    void handle_workspace_remove_current_document(const std::wstring& workspace_name);
+    void handle_workspace_rename();
+    void handle_workspace_rename(const std::wstring& old_name, const std::wstring& new_name);
+    void handle_workspace_show_info();
+    void handle_workspace_show_info(const std::wstring& workspace_name);
+    void handle_workspace_delete();
+    void handle_workspace_delete(const std::wstring& workspace_name);
+    void handle_library_create_collection(const std::wstring& collection_name);
+    void handle_library_select_collection(bool allow_new_collection);
+    void handle_library_select_current_document_collection();
+    void handle_library_add_current_document_to_collection(const std::wstring& collection_name);
+    void handle_library_remove_current_document_from_collection(const std::wstring& collection_name);
     void handle_open_all_docs();
     void handle_move_screen(int amount);
     MainWidget* handle_new_window();
@@ -1007,6 +1116,7 @@ public:
     void handle_move_smooth_hold(bool down);
     void handle_move_smooth_horizontal_hold(bool left);
     void handle_toggle_two_page_mode();
+    void handle_toggle_book_mode_cover_offset();
     void ensure_zero_interval_timer();
     void set_last_performed_command(std::unique_ptr<Command> command);
     void make_current_menu_columns_equal();

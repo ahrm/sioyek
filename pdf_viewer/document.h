@@ -75,6 +75,8 @@ private:
     std::vector<BookMark> bookmarks;
     std::vector<Highlight> highlights;
     std::vector<Portal> portals;
+    std::vector<StudyObject> study_objects;
+    std::vector<RegionHighlight> region_highlights;
     DatabaseManager* db_manager = nullptr;
     std::vector<TocNode*> top_level_toc_nodes;
     //bool only_for_portal = true;
@@ -180,6 +182,16 @@ public:
         std::vector<PagelessDocumentRect>& char_rects);
 
     void load_document_metadata_from_db();
+    std::string add_study_object(const std::wstring& type,
+        const std::wstring& title,
+        const std::wstring& note,
+        int page,
+        float offset_x,
+        float offset_y,
+        float page_offset_y,
+        float zoom_level,
+        std::optional<AbsoluteDocumentPos> selection_begin = {},
+        std::optional<AbsoluteDocumentPos> selection_end = {});
     std::string add_bookmark(const std::wstring& desc, float y_offset);
     std::string add_marked_bookmark(const std::wstring& desc, AbsoluteDocumentPos pos);
     int add_incomplete_bookmark(BookMark incomplete_bookmark);
@@ -234,6 +246,23 @@ public:
     std::vector<BookMark> get_sorted_bookmarks() const;
     std::vector<Portal> get_sorted_portals() const;
     const std::vector<Highlight>& get_highlights() const;
+    const std::vector<StudyObject>& get_study_objects() const;
+    std::vector<StudyObject> get_study_objects_sorted() const;
+    int get_study_object_index_with_id(const std::string& id) const;
+    int find_closest_study_object_index(const std::vector<StudyObject>& sorted_study_objects, float to_offset_y) const;
+    bool update_study_object_title(const std::string& id, const std::wstring& new_title);
+    bool update_study_object_type(const std::string& id, const std::wstring& new_type);
+    bool delete_study_object(const std::string& id);
+    std::string add_region_highlight(DocumentRect rect,
+        const std::wstring& title,
+        const std::wstring& note = L"",
+        const std::wstring& type = L"region");
+    const std::vector<RegionHighlight>& get_region_highlights() const;
+    std::vector<RegionHighlight> get_region_highlights_sorted() const;
+    int get_region_highlight_index_with_id(const std::string& id) const;
+    int find_closest_region_highlight_index(const std::vector<RegionHighlight>& sorted_region_highlights, float to_offset_y);
+    bool update_region_highlight_title(const std::string& id, const std::wstring& new_title);
+    bool delete_region_highlight(const std::string& id);
     int get_highlight_index_with_uuid(std::string uuid);
     int get_bookmark_index_with_uuid(std::string uuid);
     const std::vector<Highlight> get_highlights_of_type(char type) const;

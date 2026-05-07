@@ -150,6 +150,7 @@ private:
     bool fastread_mode = false;
     int selected_highlight_index = -1;
     int selected_bookmark_index = -1;
+    std::string selected_region_highlight_id;
 
     int last_mouse_down_window_x = 0;
     int last_mouse_down_window_y = 0;
@@ -331,6 +332,7 @@ public:
     void render_ui_icon_for_current_color_mode(QPainter* painter, const QIcon& icon_black, const QIcon& icon_white, QRect rect, bool is_highlighted=false);
     void render_text_highlights();
     void render_highlight_annotations();
+    void render_region_highlights();
     std::array<float, 3> cc3(const float* input_color);
     std::array<float, 4> cc4(const float* input_color);
     QColor qcc3(const float* input_color);
@@ -360,6 +362,8 @@ public:
     void clear_tag_prefix();
     void set_selected_highlight_index(int index);
     void set_selected_bookmark_index(int index);
+    void set_selected_region_highlight_id(const std::string& id);
+    void clear_selected_region_highlight();
     void set_highlighted_tags(std::vector<std::string> tags);
     bool is_tag_highlighted(const std::string& tag);
     void set_pending_portal_position(std::optional<AbsoluteRect> rect);

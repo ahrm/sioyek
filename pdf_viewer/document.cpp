@@ -157,7 +157,8 @@ void Document::load_document_metadata_from_db() {
     bookmarks.clear();
     highlights.clear();
     portals.clear();
-    portals.clear();
+    study_objects.clear();
+    region_highlights.clear();
 
     std::optional<std::string> checksum_ = get_checksum_fast();
     if (checksum_) {
@@ -166,17 +167,21 @@ void Document::load_document_metadata_from_db() {
         db_manager->select_bookmark(checksum, bookmarks);
         db_manager->select_highlight(checksum, highlights);
         db_manager->select_links(checksum, portals);
+        db_manager->select_study_objects(checksum, study_objects);
+        db_manager->select_region_highlights(checksum, region_highlights);
         should_reload_annotations = false;
     }
     else {
         auto checksum_thread = std::thread([&]() {
             std::string checksum = get_checksum();
             if ((checksummer->num_docs_with_checksum(checksum) > 1) || annotations_file_exists()) {
-                if (marks.size() == 0 && bookmarks.size() == 0 && highlights.size() == 0 && portals.size() == 0) {
+                if (marks.size() == 0 && bookmarks.size() == 0 && highlights.size() == 0 && portals.size() == 0 && study_objects.size() == 0 && region_highlights.size() == 0) {
                     db_manager->select_mark(checksum, marks);
                     db_manager->select_bookmark(checksum, bookmarks);
                     db_manager->select_highlight(checksum, highlights);
                     db_manager->select_links(checksum, portals);
+                    db_manager->select_study_objects(checksum, study_objects);
+                    db_manager->select_region_highlights(checksum, region_highlights);
                 }
                 // we already have a document with the same hash so there might be
                 // annotations that are not loaded
@@ -187,6 +192,47 @@ void Document::load_document_metadata_from_db() {
         checksum_thread.detach();
         //checksum_thread.join();
     }
+}
+
+std::string Document::add_study_object(const std::wstring& type,
+    const std::wstring& title,
+    const std::wstring& note,
+    int page,
+    float offset_x,
+    float offset_y,
+    float page_offset_y,
+    float zoom_level,
+    std::optional<AbsoluteDocumentPos> selection_begin,
+    std::optional<AbsoluteDocumentPos> selection_end) {
+
+    if (!is_valid_study_object_type(type) || title.empty()) {
+        return "";
+    }
+
+    StudyObject study_object;
+    study_object.id = new_uuid_utf8();
+    study_object.document_checksum = get_checksum();
+    study_object.document_path = get_path();
+    study_object.type = type;
+    study_object.title = title;
+    study_object.note = note;
+    study_object.page = page;
+    study_object.offset_x = offset_x;
+    study_object.offset_y = offset_y;
+    study_object.page_offset_y = page_offset_y;
+    study_object.zoom_level = zoom_level;
+    study_object.selection_begin = selection_begin;
+    study_object.selection_end = selection_end;
+    study_object.created_at = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss").toStdString();
+    study_object.updated_at = study_object.created_at;
+
+    db_manager->insert_document_hash(get_path(), study_object.document_checksum);
+    if (!db_manager->insert_study_object(study_object)) {
+        return "";
+    }
+
+    study_objects.push_back(study_object);
+    return study_object.id;
 }
 
 
@@ -560,6 +606,183 @@ std::vector<Portal> Document::get_sorted_portals() const {
 
 const std::vector<Highlight>& Document::get_highlights() const {
     return highlights;
+}
+
+const std::vector<StudyObject>& Document::get_study_objects() const {
+    return study_objects;
+}
+
+std::vector<StudyObject> Document::get_study_objects_sorted() const {
+    std::vector<StudyObject> res = study_objects;
+    std::sort(res.begin(), res.end(), [](const StudyObject& lhs, const StudyObject& rhs) {
+        if (lhs.page != rhs.page) {
+            return lhs.page < rhs.page;
+        }
+        return lhs.offset_y < rhs.offset_y;
+        });
+    return res;
+}
+
+int Document::get_study_object_index_with_id(const std::string& id) const {
+    for (int i = 0; i < study_objects.size(); i++) {
+        if (study_objects[i].id == id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int Document::find_closest_study_object_index(const std::vector<StudyObject>& sorted_study_objects, float to_offset_y) const {
+    return argminf<StudyObject>(sorted_study_objects, [to_offset_y](StudyObject study_object) {
+        return abs(study_object.offset_y - to_offset_y);
+        });
+}
+
+bool Document::update_study_object_title(const std::string& id, const std::wstring& new_title) {
+    if (new_title.empty()) {
+        return false;
+    }
+    int index = get_study_object_index_with_id(id);
+    if (index < 0) {
+        return false;
+    }
+    if (!db_manager->update_study_object_title(id, new_title)) {
+        return false;
+    }
+    study_objects[index].title = new_title;
+    study_objects[index].updated_at = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss").toStdString();
+    return true;
+}
+
+bool Document::update_study_object_type(const std::string& id, const std::wstring& new_type) {
+    if (!is_valid_study_object_type(new_type)) {
+        return false;
+    }
+    int index = get_study_object_index_with_id(id);
+    if (index < 0) {
+        return false;
+    }
+    if (!db_manager->update_study_object_type(id, new_type)) {
+        return false;
+    }
+    study_objects[index].type = new_type;
+    study_objects[index].updated_at = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss").toStdString();
+    return true;
+}
+
+bool Document::delete_study_object(const std::string& id) {
+    int index = get_study_object_index_with_id(id);
+    if (index < 0) {
+        return false;
+    }
+    if (!db_manager->delete_study_object(id)) {
+        return false;
+    }
+    study_objects.erase(study_objects.begin() + index);
+    return true;
+}
+
+static PagelessDocumentRect normalized_pageless_rect(PagelessDocumentRect rect) {
+    if (rect.x0 > rect.x1) {
+        std::swap(rect.x0, rect.x1);
+    }
+    if (rect.y0 > rect.y1) {
+        std::swap(rect.y0, rect.y1);
+    }
+    return rect;
+}
+
+std::string Document::add_region_highlight(DocumentRect rect,
+    const std::wstring& title,
+    const std::wstring& note,
+    const std::wstring& type) {
+
+    rect.rect = normalized_pageless_rect(rect.rect);
+    if (rect.page < 0 || rect.page >= num_pages()) {
+        return "";
+    }
+    if (rect.rect.width() <= 0.0f || rect.rect.height() <= 0.0f) {
+        return "";
+    }
+
+    RegionHighlight region_highlight;
+    region_highlight.id = new_uuid_utf8();
+    region_highlight.document_checksum = get_checksum();
+    region_highlight.document_path = get_path();
+    region_highlight.page = rect.page;
+    region_highlight.rect = rect.rect;
+    region_highlight.title = title;
+    region_highlight.note = note;
+    region_highlight.type = type.empty() ? L"region" : type;
+    region_highlight.created_at = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss").toStdString();
+    region_highlight.updated_at = region_highlight.created_at;
+
+    db_manager->insert_document_hash(get_path(), region_highlight.document_checksum);
+    if (!db_manager->insert_region_highlight(region_highlight)) {
+        return "";
+    }
+
+    region_highlights.push_back(region_highlight);
+    return region_highlight.id;
+}
+
+const std::vector<RegionHighlight>& Document::get_region_highlights() const {
+    return region_highlights;
+}
+
+std::vector<RegionHighlight> Document::get_region_highlights_sorted() const {
+    std::vector<RegionHighlight> res = region_highlights;
+    std::sort(res.begin(), res.end(), [](const RegionHighlight& lhs, const RegionHighlight& rhs) {
+        if (lhs.page != rhs.page) {
+            return lhs.page < rhs.page;
+        }
+        if (lhs.rect.y0 != rhs.rect.y0) {
+            return lhs.rect.y0 < rhs.rect.y0;
+        }
+        return lhs.rect.x0 < rhs.rect.x0;
+        });
+    return res;
+}
+
+int Document::get_region_highlight_index_with_id(const std::string& id) const {
+    for (int i = 0; i < region_highlights.size(); i++) {
+        if (region_highlights[i].id == id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int Document::find_closest_region_highlight_index(const std::vector<RegionHighlight>& sorted_region_highlights, float to_offset_y) {
+    return argminf<RegionHighlight>(sorted_region_highlights, [this, to_offset_y](RegionHighlight region_highlight) {
+        float region_center_y = (region_highlight.rect.y0 + region_highlight.rect.y1) / 2.0f;
+        return abs(document_to_absolute_y(region_highlight.page, region_center_y) - to_offset_y);
+        });
+}
+
+bool Document::update_region_highlight_title(const std::string& id, const std::wstring& new_title) {
+    int index = get_region_highlight_index_with_id(id);
+    if (index < 0) {
+        return false;
+    }
+    if (!db_manager->update_region_highlight_title(id, new_title)) {
+        return false;
+    }
+    region_highlights[index].title = new_title;
+    region_highlights[index].updated_at = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss").toStdString();
+    return true;
+}
+
+bool Document::delete_region_highlight(const std::string& id) {
+    int index = get_region_highlight_index_with_id(id);
+    if (index < 0) {
+        return false;
+    }
+    if (!db_manager->delete_region_highlight(id)) {
+        return false;
+    }
+    region_highlights.erase(region_highlights.begin() + index);
+    return true;
 }
 
 const std::vector<Highlight> Document::get_highlights_of_type(char type) const {

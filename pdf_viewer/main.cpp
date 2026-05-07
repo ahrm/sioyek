@@ -71,6 +71,8 @@
 #include "checksum.h"
 #include "OpenWithApplication.h"
 #include "new_file_checker.h"
+#include "library_manager.h"
+#include "workspace_manager.h"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -84,7 +86,7 @@
 
 
 std::string APPLICATION_VERSION = "2.0.0";
-int DATABASE_VERSION = 2;
+int DATABASE_VERSION = 8;
 std::wstring APPLICATION_NAME = L"sioyek";
 std::string LOG_FILE_NAME = "sioyek_log.txt";
 std::ofstream LOG_FILE;
@@ -837,6 +839,14 @@ int main(int argc, char* args[]) {
     CachedChecksummer checksummer(&prev_path_hash_pairs);
 
     DocumentManager document_manager(mupdf_context, &db_manager, &checksummer);
+    LibraryManager library_manager(standard_data_path.slash(L"sioyek_library.json").get_path());
+    if (!library_manager.load()) {
+        std::wcerr << L"Warning: " << library_manager.last_error() << std::endl;
+    }
+    WorkspaceManager workspace_manager(standard_data_path.slash(L"sioyek_workspaces.json").get_path());
+    if (!workspace_manager.load()) {
+        std::wcerr << L"Warning: " << workspace_manager.last_error() << std::endl;
+    }
 
     QFileSystemWatcher pref_file_watcher;
     add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
@@ -846,7 +856,7 @@ int main(int argc, char* args[]) {
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
 
-    MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, command_manager, &input_handler, &checksummer, &quit);
+    MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, command_manager, &input_handler, &checksummer, &library_manager, &workspace_manager, &quit);
     windows.push_back(main_widget);
 
 #ifndef SIOYEK_ANDROID

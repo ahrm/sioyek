@@ -39,6 +39,10 @@ qt_add_executable(sioyek WIN32 MACOSX_BUNDLE
     pdf_viewer/document_view.cpp pdf_viewer/document_view.h
     pdf_viewer/fts_fuzzy_match.h
     pdf_viewer/input.cpp pdf_viewer/input.h
+    pdf_viewer/page_layout.cpp pdf_viewer/page_layout.h
+    pdf_viewer/google_drive_import.cpp pdf_viewer/google_drive_import.h
+    pdf_viewer/library_manager.cpp pdf_viewer/library_manager.h
+    pdf_viewer/workspace_manager.cpp pdf_viewer/workspace_manager.h
     pdf_viewer/main.cpp
     pdf_viewer/main_widget.cpp pdf_viewer/main_widget.h
     pdf_viewer/mysortfilterproxymodel.cpp pdf_viewer/mysortfilterproxymodel.h
@@ -152,6 +156,71 @@ add_library(fzf STATIC
     fzf/fzf.c
     fzf/fzf.h
 )
+
+include(CTest)
+if(BUILD_TESTING)
+  add_executable(library_manager_test
+      tests/library_manager_test.cpp
+      pdf_viewer/library_manager.cpp
+      pdf_viewer/library_manager.h
+  )
+
+  target_include_directories(library_manager_test PRIVATE
+      pdf_viewer
+  )
+
+  target_link_libraries(library_manager_test PRIVATE
+      Qt::Core
+  )
+
+  add_test(NAME library_manager_test COMMAND library_manager_test)
+
+  add_executable(google_drive_import_test
+      tests/google_drive_import_test.cpp
+      pdf_viewer/google_drive_import.cpp
+      pdf_viewer/google_drive_import.h
+  )
+
+  target_include_directories(google_drive_import_test PRIVATE
+      pdf_viewer
+  )
+
+  target_link_libraries(google_drive_import_test PRIVATE
+      Qt::Core
+  )
+
+  add_test(NAME google_drive_import_test COMMAND google_drive_import_test)
+
+  add_executable(workspace_manager_test
+      tests/workspace_manager_test.cpp
+      pdf_viewer/workspace_manager.cpp
+      pdf_viewer/workspace_manager.h
+      pdf_viewer/library_manager.cpp
+      pdf_viewer/library_manager.h
+  )
+
+  target_include_directories(workspace_manager_test PRIVATE
+      pdf_viewer
+  )
+
+  target_link_libraries(workspace_manager_test PRIVATE
+      Qt::Core
+  )
+
+  add_test(NAME workspace_manager_test COMMAND workspace_manager_test)
+
+  add_executable(page_layout_test
+      tests/page_layout_test.cpp
+      pdf_viewer/page_layout.cpp
+      pdf_viewer/page_layout.h
+  )
+
+  target_include_directories(page_layout_test PRIVATE
+      pdf_viewer
+  )
+
+  add_test(NAME page_layout_test COMMAND page_layout_test)
+endif()
 
 target_link_libraries(sioyek PRIVATE
     ${CMAKE_DL_LIBS}

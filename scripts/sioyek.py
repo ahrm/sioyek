@@ -279,6 +279,90 @@ class Sioyek:
         data = None
         self.run_command("edit_portal", data, focus=focus)
 
+    def library_add_current_document(self, focus=False):
+        data = None
+        self.run_command("library_add_current_document", data, focus=focus)
+
+    def library_add_current_document_to_collection(self, focus=False):
+        data = None
+        self.run_command("library_add_current_document_to_collection", data, focus=focus)
+
+    def library_create_collection(self, focus=False):
+        data = None
+        self.run_command("library_create_collection", data, focus=focus)
+
+    def library_import_file(self, focus=False):
+        data = None
+        self.run_command("library_import_file", data, focus=focus)
+
+    def library_import_folder(self, focus=False):
+        data = None
+        self.run_command("library_import_folder", data, focus=focus)
+
+    def library_import_folder_recursive(self, focus=False):
+        data = None
+        self.run_command("library_import_folder_recursive", data, focus=focus)
+
+    def library_import_folder_recursive_to_collection(self, focus=False):
+        data = None
+        self.run_command("library_import_folder_recursive_to_collection", data, focus=focus)
+
+    def library_import_folder_to_collection(self, focus=False):
+        data = None
+        self.run_command("library_import_folder_to_collection", data, focus=focus)
+
+    def library_import_google_drive_file(self, focus=False):
+        data = None
+        self.run_command("library_import_google_drive_file", data, focus=focus)
+
+    def library_import_google_drive_file_to_collection(self, focus=False):
+        data = None
+        self.run_command("library_import_google_drive_file_to_collection", data, focus=focus)
+
+    def library_import_google_drive_folder(self, focus=False):
+        data = None
+        self.run_command("library_import_google_drive_folder", data, focus=focus)
+
+    def library_import_google_drive_folder_to_collection(self, focus=False):
+        data = None
+        self.run_command("library_import_google_drive_folder_to_collection", data, focus=focus)
+
+    def library_remove_current_document(self, focus=False):
+        data = None
+        self.run_command("library_remove_current_document", data, focus=focus)
+
+    def library_remove_current_document_from_collection(self, focus=False):
+        data = None
+        self.run_command("library_remove_current_document_from_collection", data, focus=focus)
+
+    def library_open(self, focus=False):
+        data = None
+        self.run_command("library_open", data, focus=focus)
+
+    def library_open_collection(self, focus=False):
+        data = None
+        self.run_command("library_open_collection", data, focus=focus)
+
+    def library_show_current_document_info(self, focus=False):
+        data = None
+        self.run_command("library_show_current_document_info", data, focus=focus)
+
+    def workspace_delete(self, focus=False):
+        data = None
+        self.run_command("workspace_delete", data, focus=focus)
+
+    def workspace_open(self, focus=False):
+        data = None
+        self.run_command("workspace_open", data, focus=focus)
+
+    def workspace_save_current(self, focus=False):
+        data = None
+        self.run_command("workspace_save_current", data, focus=focus)
+
+    def workspace_update_current(self, focus=False):
+        data = None
+        self.run_command("workspace_update_current", data, focus=focus)
+
     def open_prev_doc(self, focus=False):
         data = None
         self.run_command("open_prev_doc", data, focus=focus)

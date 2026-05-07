@@ -29,6 +29,11 @@ private:
     void create_tables();
     bool create_document_hash_table();
     bool create_highlights_table();
+    bool create_study_objects_table();
+    bool create_problem_states_table();
+    bool create_dependency_links_table();
+    bool create_shelf_items_table();
+    bool create_region_highlights_table();
 public:
     bool open(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path);
     bool select_opened_book(const std::string& book_path, std::vector<OpenedBookState>& out_result);
@@ -39,7 +44,14 @@ public:
         std::optional<float> offset_x = {},
         std::optional<float> zoom_level = {});
     bool update_mark(const std::string& checksum, char symbol, float offset_y, std::optional<float> offset_x, std::optional<float> zoom_level);
-    bool update_book(const std::string& path, float zoom_level, float offset_x, float offset_y, std::wstring actual_name=L"");
+    bool update_book(
+        const std::string& path,
+        float zoom_level,
+        float offset_x,
+        float offset_y,
+        std::wstring actual_name=L"",
+        bool two_page_mode=false,
+        bool book_mode_cover_offset=false);
     bool select_mark(const std::string& checksum, std::vector<Mark>& out_result);
     bool insert_bookmark(const std::string& checksum, const std::wstring& desc, float offset_y, std::wstring uuid);
     bool insert_bookmark_marked(const std::string& checksum, const std::wstring& desc, float offset_x, float offset_y, std::wstring uuid);
@@ -102,6 +114,35 @@ public:
         float end_y,
         char type,
         std::wstring uuid);
+    bool insert_study_object(const StudyObject& study_object);
+    bool select_study_objects(const std::string& checksum, std::vector<StudyObject>& out_result);
+    bool select_study_objects_for_checksums(const std::vector<std::string>& checksums, std::vector<StudyObject>& out_result);
+    bool select_study_objects_for_documents(const std::vector<std::string>& checksums, const std::vector<std::wstring>& document_paths, std::vector<StudyObject>& out_result);
+    bool select_study_objects_by_ids(const std::vector<std::string>& ids, std::vector<StudyObject>& out_result);
+    bool update_study_object_title(const std::string& id, const std::wstring& new_title);
+    bool update_study_object_type(const std::string& id, const std::wstring& new_type);
+    bool delete_study_object(const std::string& id);
+    bool insert_study_link(const StudyLink& study_link);
+    bool select_study_links_for_study_objects(const std::vector<std::string>& study_object_ids, std::vector<StudyLink>& out_result);
+    bool select_study_links_for_study_object(const std::string& study_object_id, std::vector<StudyLink>& out_result);
+    bool update_study_link_type(const std::string& id, const std::wstring& relation_type);
+    bool update_study_link_note(const std::string& id, const std::wstring& note);
+    bool delete_study_link(const std::string& id);
+    bool insert_problem_state(const ProblemState& problem_state);
+    bool upsert_problem_status(const std::string& study_object_id, const std::wstring& status);
+    bool update_problem_solution_ref(const std::string& study_object_id, const std::wstring& solution_ref);
+    bool clear_problem_solution_ref(const std::string& study_object_id);
+    bool select_problem_states_for_study_objects(const std::vector<std::string>& study_object_ids, std::vector<ProblemState>& out_result);
+    bool insert_shelf_item(const ShelfItem& shelf_item);
+    bool select_shelf_items(std::vector<ShelfItem>& out_result);
+    bool delete_shelf_item(const std::string& id);
+    bool clear_shelf_items();
+    bool update_shelf_item_order(const std::string& id, int item_order);
+    bool insert_region_highlight(const RegionHighlight& region_highlight);
+    bool select_region_highlights(const std::string& checksum, std::vector<RegionHighlight>& out_result);
+    bool select_region_highlights_for_documents(const std::vector<std::string>& checksums, const std::vector<std::wstring>& document_paths, std::vector<RegionHighlight>& out_result);
+    bool update_region_highlight_title(const std::string& id, const std::wstring& new_title);
+    bool delete_region_highlight(const std::string& id);
     bool get_path_from_hash(const std::string& checksum, std::vector<std::wstring>& out_paths);
     bool get_hash_from_path(const std::string& path, std::vector<std::wstring>& out_checksum);
     bool get_prev_path_hash_pairs(std::vector<std::pair<std::wstring, std::wstring>>& out_pairs);
@@ -117,6 +158,12 @@ public:
     bool run_schema_query(const char* query);
     void migrate_version_0_to_1();
     void migrate_version_1_to_2();
+    void migrate_version_2_to_3();
+    void migrate_version_3_to_4();
+    void migrate_version_4_to_5();
+    void migrate_version_5_to_6();
+    void migrate_version_6_to_7();
+    void migrate_version_7_to_8();
     bool select_all_mark_ids(std::vector<int>& mark_ids);
     bool select_all_marks(std::vector<MarkInDatabase>& marks);
     bool select_all_bookmark_ids(std::vector<int>& mark_ids);
@@ -144,5 +191,3 @@ public:
     bool generic_insert_run_query(std::string table_name,
         std::vector<std::pair<std::string, QVariant>> values);
 };
-
-

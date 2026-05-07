@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <optional>
 #include <variant>
 #include <mupdf/fitz.h>
 //#include <gl/glew.h>
@@ -49,6 +50,9 @@ struct OpenedBookState {
     std::optional<AbsoluteRect> ruler_rect = {};
     float ruler_pos = 0;
     int line_index = -1;
+    bool two_page_mode = false;
+    bool book_mode_cover_offset = false;
+    std::optional<int> active_page = {};
 };
 
 struct Annotation {
@@ -132,6 +136,87 @@ struct Highlight : Annotation {
     void from_json(const QJsonObject& json_object);
 
 };
+
+struct StudyObject {
+    std::string id;
+    std::string document_checksum;
+    std::wstring document_path;
+    std::wstring type;
+    std::wstring title;
+    std::wstring note;
+    int page = -1;
+    float offset_x = 0.0f;
+    float offset_y = 0.0f;
+    float page_offset_y = 0.0f;
+    float zoom_level = -1.0f;
+    std::optional<AbsoluteDocumentPos> selection_begin = {};
+    std::optional<AbsoluteDocumentPos> selection_end = {};
+    std::string created_at;
+    std::string updated_at;
+};
+
+struct ProblemState {
+    std::string study_object_id;
+    std::wstring status = L"unsolved";
+    std::wstring difficulty;
+    std::string last_reviewed_at;
+    std::wstring solution_ref;
+    std::string created_at;
+    std::string updated_at;
+};
+
+struct StudyLink {
+    std::string id;
+    std::string source_study_object_id;
+    std::string target_study_object_id;
+    std::wstring relation_type = L"related_to";
+    std::wstring note;
+    std::string created_at;
+    std::string updated_at;
+};
+
+struct ShelfItem {
+    std::string id;
+    std::wstring source_type = L"location";
+    std::wstring display_type = L"location";
+    std::string source_id;
+    std::string document_checksum;
+    std::wstring document_path;
+    std::wstring workspace_name;
+    int page = -1;
+    float offset_x = 0.0f;
+    float offset_y = 0.0f;
+    float page_offset_y = 0.0f;
+    float zoom_level = -1.0f;
+    std::optional<PagelessDocumentRect> rect = {};
+    std::wstring title;
+    std::wstring note;
+    int item_order = 0;
+    std::string created_at;
+    std::string updated_at;
+};
+
+struct RegionHighlight {
+    std::string id;
+    std::string document_checksum;
+    std::wstring document_path;
+    int page = -1;
+    PagelessDocumentRect rect;
+    std::wstring title;
+    std::wstring note;
+    std::wstring type = L"region";
+    std::string created_at;
+    std::string updated_at;
+};
+
+const std::vector<std::wstring>& study_object_types();
+bool is_valid_study_object_type(const std::wstring& type);
+const std::vector<std::wstring>& problem_statuses();
+bool is_valid_problem_status(const std::wstring& status);
+const std::vector<std::wstring>& study_link_relation_types();
+bool is_valid_study_link_relation_type(const std::wstring& relation_type);
+const std::vector<std::wstring>& shelf_item_source_types();
+bool is_valid_shelf_item_source_type(const std::wstring& source_type);
 
 
 struct PdfLink {

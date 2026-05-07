@@ -1,14 +1,93 @@
 #include "book.h"
 #include "utils.h"
 #include "document.h"
+#include <algorithm>
 
 extern float BOOKMARK_RECT_SIZE;
+
+const std::vector<std::wstring>& study_object_types() {
+    static const std::vector<std::wstring> types = {
+        L"definition",
+        L"theorem",
+        L"lemma",
+        L"proposition",
+        L"corollary",
+        L"equation",
+        L"figure",
+        L"proof",
+        L"exercise",
+        L"question",
+        L"confusion",
+        L"idea",
+        L"note",
+    };
+    return types;
+}
+
+bool is_valid_study_object_type(const std::wstring& type) {
+    const auto& types = study_object_types();
+    return std::find(types.begin(), types.end(), type) != types.end();
+}
+
+const std::vector<std::wstring>& problem_statuses() {
+    static const std::vector<std::wstring> statuses = {
+        L"unsolved",
+        L"attempted",
+        L"solved",
+        L"mastered",
+        L"redo",
+        L"stuck",
+    };
+    return statuses;
+}
+
+bool is_valid_problem_status(const std::wstring& status) {
+    const auto& statuses = problem_statuses();
+    return std::find(statuses.begin(), statuses.end(), status) != statuses.end();
+}
+
+const std::vector<std::wstring>& study_link_relation_types() {
+    static const std::vector<std::wstring> relation_types = {
+        L"depends_on",
+        L"uses",
+        L"proves",
+        L"explains",
+        L"related_to",
+        L"question_about",
+        L"prerequisite_for",
+    };
+    return relation_types;
+}
+
+bool is_valid_study_link_relation_type(const std::wstring& relation_type) {
+    const auto& relation_types = study_link_relation_types();
+    return std::find(relation_types.begin(), relation_types.end(), relation_type) != relation_types.end();
+}
+
+const std::vector<std::wstring>& shelf_item_source_types() {
+    static const std::vector<std::wstring> source_types = {
+        L"location",
+        L"study_object",
+        L"region_highlight",
+        L"problem",
+        L"portal",
+    };
+    return source_types;
+}
+
+bool is_valid_shelf_item_source_type(const std::wstring& source_type) {
+    const auto& source_types = shelf_item_source_types();
+    return std::find(source_types.begin(), source_types.end(), source_type) != source_types.end();
+}
 
 bool operator==(const DocumentViewState& lhs, const DocumentViewState& rhs)
 {
     return (lhs.book_state.offset_x == rhs.book_state.offset_x) &&
         (lhs.book_state.offset_y == rhs.book_state.offset_y) &&
         (lhs.book_state.zoom_level == rhs.book_state.zoom_level) &&
+        (lhs.book_state.two_page_mode == rhs.book_state.two_page_mode) &&
+        (lhs.book_state.book_mode_cover_offset == rhs.book_state.book_mode_cover_offset) &&
+        (lhs.book_state.active_page == rhs.book_state.active_page) &&
         (lhs.document_path == rhs.document_path);
 }
 

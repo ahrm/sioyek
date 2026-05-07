@@ -65,6 +65,7 @@ std::wstring SEARCH_URLS[26];
 std::wstring EXECUTE_COMMANDS[26];
 std::wstring TEXT_HIGHLIGHT_URL = L"http://localhost:5000/";
 std::wstring PAPER_SEARCH_URL = L"https://search.fatcat.wiki/fatcat_release/_search?q=%{query}";
+std::wstring GOOGLE_DRIVE_API_KEY = L"";
 
 std::wstring PAPER_SEARCH_URL_PATH = L"hits.hits[]._source.best_pdf_url";
 std::wstring PAPER_SEARCH_TILE_PATH = L"hits.hits[]._source.title";
@@ -196,6 +197,7 @@ bool FORCE_CUSTOM_LINE_ALGORITHM = false;
 float OVERVIEW_SIZE[2] = { 0.8f, 0.4f };
 float OVERVIEW_OFFSET[2] = { 0.0f, 0.0f };
 bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE = false;
+bool PRESENTATION_TWO_PAGE_MODE = false;
 #ifdef SIOYEK_MOBILE
 bool EXACT_HIGHLIGHT_SELECT = true;
 #else
@@ -998,6 +1000,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"create_table_of_contents_if_not_exists", &CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS);
     add_bool(L"force_custom_line_algorithm", &FORCE_CUSTOM_LINE_ALGORITHM);
     add_bool(L"ignore_whitespace_in_presentation_mode", &IGNORE_WHITESPACE_IN_PRESENTATION_MODE);
+    add_bool(L"presentation_two_page_mode", &PRESENTATION_TWO_PAGE_MODE);
     add_bool(L"exact_highlight_select", &EXACT_HIGHLIGHT_SELECT);
     add_bool(L"show_doc_path", &SHOW_DOC_PATH);
     add_bool(L"should_warn_about_user_key_override", &SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE);
@@ -1037,6 +1040,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"scroll_past_document_ends", &SCROLL_PAST_DOCUMENT_ENDS);
     add_bool(L"horizontal_scroll_past_page_ends", &HORIZONTAL_SCROLL_PAST_PAGE_ENDS);
     add_bool(L"uniform_page_widths", &SAME_WIDTH);
+    add_bool(L"book_mode_cover_offset", &RECTO_VERSO_ADJUSTMENT);
     add_bool(L"simplify_freehand_drawings", &SIMPLIFY_FREEHAND_DRAWINGS);
     add_bool(L"recto_verso_adjustment", &RECTO_VERSO_ADJUSTMENT);
     add_bool(L"keyboard_select_inclusive", &KEYBOARD_SELECT_INCLUSIVE);
@@ -1053,6 +1057,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_string(L"shift_middle_click_search_engine", &SHIFT_MIDDLE_CLICK_SEARCH_ENGINE);
     add_string(L"text_summary_url", &TEXT_HIGHLIGHT_URL);
     add_string(L"paper_search_url", &PAPER_SEARCH_URL);
+    add_string(L"google_drive_api_key", &GOOGLE_DRIVE_API_KEY);
     add_string(L"papers_folder_path", &PAPERS_FOLDER_PATH);
     add_string(L"scan_path", &BOOK_SCAN_PATH);
     add_string(L"context_menu_items", &CONTEXT_MENU_ITEMS);

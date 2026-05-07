@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "config.h"
 #include "ui.h"
+#include "page_layout.h"
 
 extern float MOVE_SCREEN_PERCENTAGE;
 extern float FIT_TO_PAGE_WIDTH_RATIO;
@@ -27,6 +28,7 @@ extern bool SAME_WIDTH;
 extern bool SCROLL_PAST_DOCUMENT_ENDS;
 extern bool HORIZONTAL_SCROLL_PAST_PAGE_ENDS;
 extern bool RECTO_VERSO_ADJUSTMENT;
+extern bool PRESENTATION_TWO_PAGE_MODE;
 
 DocumentView::DocumentView(DatabaseManager* db_manager,
     DocumentManager* document_manager,
@@ -37,6 +39,8 @@ DocumentView::DocumentView(DatabaseManager* db_manager,
 {
     page_space_x = PAGE_SPACE_X;
     page_space_y = PAGE_SPACE_Y;
+    book_mode_cover_offset = RECTO_VERSO_ADJUSTMENT;
+    presentation_two_page_mode = PRESENTATION_TWO_PAGE_MODE;
 }
 DocumentView::~DocumentView() {
 }
@@ -58,6 +62,9 @@ DocumentViewState DocumentView::get_state() {
         res.book_state.ruler_rect = ruler_rect;
         res.book_state.line_index = line_index;
         res.book_state.presentation_page = presentation_page_number;
+        res.book_state.two_page_mode = two_page_mode;
+        res.book_state.book_mode_cover_offset = book_mode_cover_offset;
+        res.book_state.active_page = active_page_number;
     }
     return res;
 }
@@ -92,6 +99,10 @@ void DocumentView::exit_ruler_mode() {
 }
 
 void DocumentView::set_book_state(OpenedBookState state) {
+    two_page_mode = state.two_page_mode;
+    book_mode_cover_offset = state.book_mode_cover_offset;
+    set_active_page_number(state.active_page);
+    cached_virtual_rects.clear();
     set_offsets(state.offset_x, state.offset_y);
     set_zoom_level(state.zoom_level, true);
     presentation_page_number = state.presentation_page;
@@ -123,6 +134,31 @@ bool DocumentView::set_offsets(float new_offset_x, float new_offset_y, bool forc
 
     int num_pages = current_document->num_pages();
     if (num_pages == 0) return false;
+
+    if (is_effective_two_page_mode()) {
+        fill_cached_virtual_rects();
+        offset = absolute_to_virtual_pos(AbsoluteDocumentPos{ new_offset_x, new_offset_y });
+
+        if (!force && cached_virtual_rects.size() > 0 && !needs_refill) {
+            float halfwidth = view_width / 2 / zoom_level;
+            float halfheight = !SCROLL_PAST_DOCUMENT_ENDS ? view_height / 2 / zoom_level : 0;
+
+            if (min_virtual_x + halfwidth > 0 && max_virtual_x - halfwidth < 0) {
+                offset.x = 0;
+            }
+            else {
+                offset.x = std::max(min_virtual_x + halfwidth, offset.x);
+                offset.x = std::min(max_virtual_x - halfwidth, offset.x);
+            }
+
+            float prev_y = offset.y;
+            offset.y = std::min(max_virtual_y - halfheight, offset.y);
+            offset.y = std::max(halfheight, offset.y);
+            truncated = prev_y != offset.y;
+        }
+
+        return truncated;
+    }
 
     float halfscreen_offset = !SCROLL_PAST_DOCUMENT_ENDS ? view_height / 2 / zoom_level : 0;
     float max_y_offset = current_document->get_accum_page_height(num_pages - 1) + current_document->get_page_height(num_pages - 1) - halfscreen_offset;
@@ -288,10 +324,9 @@ void DocumentView::set_offset_x(float new_offset_x) {
 }
 
 void DocumentView::set_offset_y(float new_offset_y) {
-    if (is_two_page_mode()) {
-        int num_pages = current_document->num_pages();
+    if (is_effective_two_page_mode()) {
+        fill_cached_virtual_rects();
         float halfscreen_offset = !SCROLL_PAST_DOCUMENT_ENDS ? view_height / 2 / zoom_level : 0;
-        int actual_num_pages = (num_pages + 1) / 2;
         float max_y_offset = max_virtual_y - halfscreen_offset;
 
         AbsoluteDocumentPos current = get_offsets();
@@ -547,6 +582,10 @@ void DocumentView::goto_mark(char symbol) {
 void DocumentView::goto_end() {
     if (current_document) {
         int last_page_index = current_document->num_pages() - 1;
+        if (is_effective_two_page_mode()) {
+            goto_page(last_page_index);
+            return;
+        }
         set_offset_y(current_document->get_accum_page_height(last_page_index) + current_document->get_page_height(last_page_index));
     }
 }
@@ -704,6 +743,33 @@ void DocumentView::get_absolute_delta_from_doc_delta(float dx, float dy, float* 
 
 int DocumentView::get_center_page_number() {
     if (current_document) {
+        if (is_effective_two_page_mode() && active_page_number.has_value()) {
+            int active_page = active_page_number.value();
+            if (active_page >= 0 && active_page < current_document->num_pages()) {
+                fill_cached_virtual_rects();
+                if (active_page < cached_virtual_rects.size() &&
+                    virtual_to_normalized_window_rect(cached_virtual_rects[active_page]).is_visible(0.5f)) {
+                    return active_page;
+                }
+            }
+        }
+        if (is_effective_two_page_mode()) {
+            fill_cached_virtual_rects();
+            int fallback_page = -1;
+            for (int i = 0; i < cached_virtual_rects.size(); i++) {
+                if (cached_virtual_rects[i].y0 <= offset.y && cached_virtual_rects[i].y1 > offset.y) {
+                    if (!is_right_page_in_two_page_spread(i, book_mode_cover_offset)) {
+                        return i;
+                    }
+                    if (fallback_page == -1) {
+                        fallback_page = i;
+                    }
+                }
+            }
+            if (fallback_page != -1) {
+                return fallback_page;
+            }
+        }
         return current_document->get_offset_page_number(get_offset_y());
     }
     else {
@@ -736,9 +802,30 @@ void DocumentView::get_visible_pages(int window_height, std::vector<int>& visibl
 
 void DocumentView::move_pages(int num_pages) {
     if (!current_document) return;
+    if (num_pages == 0) return;
+
     int current_page = get_center_page_number();
     if (current_page == -1) {
         current_page = 0;
+    }
+
+    if (is_effective_two_page_mode()) {
+        int target_spread = two_page_spread_start_for_page(current_page, current_document->num_pages(), book_mode_cover_offset);
+        int steps = std::max(1, std::abs(num_pages));
+
+        for (int i = 0; i < steps; i++) {
+            if (num_pages > 0) {
+                target_spread = next_two_page_spread_start(target_spread, current_document->num_pages(), book_mode_cover_offset);
+            }
+            else {
+                target_spread = previous_two_page_spread_start(target_spread, current_document->num_pages(), book_mode_cover_offset);
+            }
+        }
+
+        if (target_spread >= 0) {
+            goto_page(target_spread);
+        }
+        return;
     }
 
     int padding = two_page_mode ? page_space_y : PAGE_PADDINGS;
@@ -754,10 +841,13 @@ void DocumentView::move_screens(int num_screens) {
 
 void DocumentView::reset_doc_state() {
     zoom_level = 1.0f;
+    two_page_mode = false;
+    book_mode_cover_offset = RECTO_VERSO_ADJUSTMENT;
+    active_page_number = {};
+    cached_virtual_rects.clear();
     set_offsets(0.0f, 0.0f);
     is_ruler_mode_ = false;
     presentation_page_number = {};
-    cached_virtual_rects.clear();
     same_width_mode_first_page_width = {};
 }
 
@@ -796,6 +886,10 @@ void DocumentView::open_document(const std::wstring& doc_path,
 
     if (prev_state) {
         zoom_level = prev_state.value().zoom_level;
+        two_page_mode = prev_state.value().two_page_mode;
+        book_mode_cover_offset = prev_state.value().book_mode_cover_offset;
+        set_active_page_number(prev_state.value().active_page);
+        cached_virtual_rects.clear();
         AbsoluteDocumentPos prev_offset;
         prev_offset.x = prev_state.value().offset_x;
         prev_offset.y = prev_state.value().offset_y;
@@ -814,6 +908,10 @@ void DocumentView::open_document(const std::wstring& doc_path,
         if (prev_state.size() > 0) {
             OpenedBookState previous_state = prev_state[0];
             zoom_level = previous_state.zoom_level;
+            two_page_mode = previous_state.two_page_mode;
+            book_mode_cover_offset = previous_state.book_mode_cover_offset;
+            set_active_page_number(previous_state.active_page);
+            cached_virtual_rects.clear();
             //offset_x = previous_state.offset_x;
             //offset_y = previous_state.offset_y;
             set_offsets(previous_state.offset_x, previous_state.offset_y);
@@ -842,11 +940,19 @@ float DocumentView::get_page_offset(int page) {
 }
 
 void DocumentView::goto_offset_within_page(int page, float offset_y) {
+    page = clamp_page_number(page, current_document ? current_document->num_pages() : 0);
+    if (page < 0) return;
+
     AbsoluteDocumentPos prev_offset = get_offsets();
+    set_active_page_number(page);
     set_offsets(prev_offset.x, get_page_offset(page) + offset_y);
 }
 
 void DocumentView::goto_page(int page) {
+    page = clamp_page_number(page, current_document ? current_document->num_pages() : 0);
+    if (page < 0) return;
+
+    set_active_page_number(page);
     set_offset_y(get_page_offset(page) + view_height_in_document_space() / 2);
 }
 
@@ -923,24 +1029,30 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
     //int page_width = current_document->get_page_width(cp);
     if (smart) {
 
-        if (two_page_mode) {
+        if (is_effective_two_page_mode()) {
             int num_pages = current_document->num_pages();
-            int other_page = cp;
-            if (cp % 2 == 0) {
-                if (cp + 1 < num_pages) {
-                    other_page = cp + 1;
-                }
+            TwoPageSpread spread = two_page_spread_for_page(cp, num_pages, book_mode_cover_offset);
+            int left_page = spread.first_page;
+            int right_page = spread.second_page;
+
+            if (left_page >= 0 && is_right_page_in_two_page_spread(left_page, book_mode_cover_offset)) {
+                right_page = left_page;
+                left_page = -1;
             }
-            else {
-                other_page = cp - 1;
+            if (left_page < 0 && right_page >= 0) {
+                left_page = right_page;
             }
+            if (right_page < 0 && left_page >= 0) {
+                right_page = left_page;
+            }
+
             float left_left_ratio, left_right_ratio;
             int left_normal_page_width;
-            float left_page_width = current_document->get_page_size_smart(true, cp, &left_left_ratio, &left_right_ratio, &left_normal_page_width);
+            float left_page_width = current_document->get_page_size_smart(true, left_page, &left_left_ratio, &left_right_ratio, &left_normal_page_width);
 
             float right_left_ratio, right_right_ratio;
             int right_normal_page_width;
-            float right_page_width = current_document->get_page_size_smart(true, other_page, &right_left_ratio, &right_right_ratio, &right_normal_page_width);
+            float right_page_width = current_document->get_page_size_smart(true, right_page, &right_left_ratio, &right_right_ratio, &right_normal_page_width);
 
             float right_leftover = 1.0f - right_right_ratio;
             float imbalance = left_left_ratio - right_leftover;
@@ -950,8 +1062,9 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
             page_space_x = -(left_normal_page_width * (1 - left_right_ratio) + right_normal_page_width * right_left_ratio) / 2;
             cached_virtual_rects.clear();
 
-            set_zoom_level(static_cast<float>(view_width) / (left_page_width + right_page_width + page_space_x * 2), false);
-            offset.x = -imbalance * (left_normal_page_width + right_normal_page_width + page_space_x * 2) / 4.0f;
+            float inner_gap = get_two_page_inner_gap();
+            set_zoom_level(static_cast<float>(view_width) / (left_page_width + right_page_width + inner_gap * 2), false);
+            offset.x = -imbalance * (left_normal_page_width + right_normal_page_width + inner_gap * 2) / 4.0f;
         }
 
         else {
@@ -976,11 +1089,21 @@ void DocumentView::fit_to_page_width(bool smart, bool ratio) {
             virtual_view_width = static_cast<int>(static_cast<float>(view_width) * FIT_TO_PAGE_WIDTH_RATIO);
         }
 
-        if (two_page_mode) {
+        if (is_effective_two_page_mode()) {
             page_space_x = PAGE_SPACE_X;
             cached_virtual_rects.clear();
             offset.x = 0;
-            page_width += page_width + page_space_x;
+            TwoPageSpread spread = two_page_spread_for_page(cp, current_document->num_pages(), book_mode_cover_offset);
+            if (spread.first_page >= 0) {
+                int first_page_width = current_document->get_page_width(spread.first_page);
+                int second_page_width = spread.second_page >= 0 ?
+                    current_document->get_page_width(spread.second_page) :
+                    first_page_width;
+                page_width = first_page_width + second_page_width + get_two_page_inner_gap();
+            }
+            else {
+                page_width += page_width + get_two_page_inner_gap();
+            }
         }
         else {
             set_offset_x(0);
@@ -1015,7 +1138,14 @@ void DocumentView::persist(bool persist_drawings) {
         abs_offset.x = 0;
     }
 
-    db_manager->update_book(current_document->get_checksum(), zoom_level, abs_offset.x, abs_offset.y, current_document->detect_paper_name());
+    db_manager->update_book(
+        current_document->get_checksum(),
+        zoom_level,
+        abs_offset.x,
+        abs_offset.y,
+        current_document->detect_paper_name(),
+        two_page_mode,
+        book_mode_cover_offset);
     if (persist_drawings) {
         current_document->persist_drawings();
         current_document->persist_annotations();
@@ -1967,6 +2097,15 @@ std::vector<int> DocumentView::get_visible_highlight_indices() {
 }
 
 void DocumentView::set_presentation_page_number(std::optional<int> page) {
+    if (page.has_value()) {
+        int clamped_page = clamp_page_number(page.value(), current_document ? current_document->num_pages() : 0);
+        if (clamped_page < 0) {
+            presentation_page_number = {};
+            return;
+        }
+        page = clamped_page;
+        set_active_page_number(page);
+    }
     presentation_page_number = page;
 }
 
@@ -1976,6 +2115,106 @@ std::optional<int> DocumentView::get_presentation_page_number() {
 
 bool DocumentView::is_presentation_mode() {
     return presentation_page_number.has_value();
+}
+
+void DocumentView::toggle_presentation_two_page_mode() {
+    set_presentation_two_page_mode(!presentation_two_page_mode);
+}
+
+void DocumentView::set_presentation_two_page_mode(bool enabled) {
+    if (presentation_two_page_mode == enabled) {
+        return;
+    }
+
+    int current_page = get_center_page_number();
+    AbsoluteDocumentPos current_abs_offset = get_offsets();
+    if (current_page >= 0) {
+        set_active_page_number(current_page);
+    }
+    presentation_two_page_mode = enabled;
+    cached_virtual_rects.clear();
+    fill_cached_virtual_rects(true);
+    set_offsets(current_abs_offset.x, current_abs_offset.y);
+}
+
+bool DocumentView::is_presentation_two_page_mode() {
+    return presentation_two_page_mode;
+}
+
+void DocumentView::get_presentation_pages(std::vector<int>& pages) {
+    pages.clear();
+    if (!current_document || !is_presentation_mode()) {
+        return;
+    }
+
+    int page = clamp_page_number(presentation_page_number.value(), current_document->num_pages());
+    if (page < 0) {
+        return;
+    }
+
+    if (!presentation_two_page_mode) {
+        pages.push_back(page);
+        return;
+    }
+
+    TwoPageSpread spread = two_page_spread_for_page(page, current_document->num_pages(), book_mode_cover_offset);
+    if (spread.first_page >= 0) {
+        pages.push_back(spread.first_page);
+    }
+    if (spread.second_page >= 0) {
+        pages.push_back(spread.second_page);
+    }
+}
+
+void DocumentView::fit_to_presentation_spread(int statusbar_height) {
+    if (!current_document || !is_presentation_mode() || !presentation_two_page_mode) {
+        return;
+    }
+
+    int page = clamp_page_number(presentation_page_number.value(), current_document->num_pages());
+    if (page < 0) {
+        return;
+    }
+
+    set_presentation_page_number(page);
+    page_space_x = PAGE_SPACE_X;
+    cached_virtual_rects.clear();
+    fill_cached_virtual_rects(true);
+
+    TwoPageSpread spread = two_page_spread_for_page(page, current_document->num_pages(), book_mode_cover_offset);
+    if (spread.first_page < 0) {
+        return;
+    }
+
+    float first_page_width = current_document->get_page_width(spread.first_page);
+    float first_page_height = current_document->get_page_height(spread.first_page);
+    float spread_width = first_page_width * 2 + get_two_page_inner_gap();
+    float spread_height = first_page_height;
+
+    if (spread.second_page >= 0) {
+        float second_page_width = current_document->get_page_width(spread.second_page);
+        float second_page_height = current_document->get_page_height(spread.second_page);
+        spread_width = first_page_width + second_page_width + get_two_page_inner_gap();
+        spread_height = std::max(first_page_height, second_page_height);
+    }
+    if (spread_width <= 0 || spread_height <= 0) {
+        return;
+    }
+
+    float available_height = std::max(1.0f, static_cast<float>(view_height - statusbar_height));
+    float x_zoom_level = static_cast<float>(view_width) / spread_width;
+    float y_zoom_level = available_height / spread_height;
+    set_zoom_level(std::min(x_zoom_level, y_zoom_level), true, false);
+
+    fill_cached_virtual_rects(true);
+    if (spread.first_page >= cached_virtual_rects.size()) {
+        return;
+    }
+    offset.x = 0;
+    offset.y = cached_virtual_rects[spread.first_page].y0 + spread_height / 2.0f;
+    if (statusbar_height > 0) {
+        offset.y += static_cast<float>(statusbar_height) / 2.0f / zoom_level;
+    }
 }
 
 VirtualPos DocumentView::absolute_to_virtual_pos(const AbsoluteDocumentPos& abspos) {
@@ -2031,6 +2270,15 @@ AbsoluteDocumentPos DocumentView::virtual_to_absolute_pos(const VirtualPos& vpos
         }
     }
 
+    if (is_effective_two_page_mode() && active_page_number.has_value()) {
+        int active_page = active_page_number.value();
+        if (active_page >= 0 && active_page < cached_virtual_rects.size() &&
+            cached_virtual_rects[active_page].y0 <= vpos.y &&
+            cached_virtual_rects[active_page].y1 > vpos.y) {
+            page = active_page;
+        }
+    }
+
     for (int i = 0; i < cached_virtual_rects.size(); i++) {
         if (cached_virtual_rects[i].contains(vpos)) {
             page = i;
@@ -2083,38 +2331,66 @@ void DocumentView::fill_cached_virtual_rects(bool force) {
         int num_pages = current_document->num_pages();
         if (num_pages == 0) return;
 
-        if (two_page_mode) {
+        if (is_effective_two_page_mode()) {
 
-            for (int i = 0; i < num_pages; i++) {
-                float page_width = current_document->get_page_width(i);
-                float page_height = current_document->get_page_height(i);
-                VirtualRect page_rect;
-                page_rect.x0 = -page_width / 2;
-                page_rect.x1 = page_width / 2;
-                page_rect.y0 = cum_offset;
-                page_rect.y1 = cum_offset + page_height;
-
-                float mult = 1.0f;
-                if ((i + (int)RECTO_VERSO_ADJUSTMENT) % 2 == 1) {
-                    cum_offset += page_height + page_space_y;
-                }
-                else {
-                    mult = -1.0f;
+            cached_virtual_rects.resize(num_pages);
+            int spread_start = 0;
+            while (spread_start >= 0 && spread_start < num_pages) {
+                TwoPageSpread spread = two_page_spread_for_page(spread_start, num_pages, book_mode_cover_offset);
+                if (spread.first_page < 0) {
+                    break;
                 }
 
-                if (page_space_x >= 0) {
-                    page_rect.x0 += mult * (page_width + page_space_x) / 2;
-                    page_rect.x1 += mult * (page_width + page_space_x) / 2;
-                }
-                else {
-                    page_rect.x0 += mult * (page_width / 2) + mult * page_space_x;
-                    page_rect.x1 += mult * (page_width / 2) + mult * page_space_x;
-
+                float row_height = current_document->get_page_height(spread.first_page);
+                if (spread.second_page >= 0) {
+                    row_height = std::max(row_height, current_document->get_page_height(spread.second_page));
                 }
 
+                int spread_pages[2] = { spread.first_page, spread.second_page };
+                for (int spread_page : spread_pages) {
+                    if (spread_page < 0) {
+                        continue;
+                    }
 
-                cached_virtual_rects.push_back(page_rect);
+                    float page_width = current_document->get_page_width(spread_page);
+                    float page_height = current_document->get_page_height(spread_page);
+                    bool is_right_page = is_right_page_in_two_page_spread(spread_page, book_mode_cover_offset);
 
+                    VirtualRect page_rect;
+                    page_rect.y0 = cum_offset;
+                    page_rect.y1 = cum_offset + page_height;
+
+                    float inner_gap = get_two_page_inner_gap();
+                    if (inner_gap >= 0) {
+                        if (is_right_page) {
+                            page_rect.x0 = inner_gap / 2;
+                            page_rect.x1 = page_rect.x0 + page_width;
+                        }
+                        else {
+                            page_rect.x1 = -inner_gap / 2;
+                            page_rect.x0 = page_rect.x1 - page_width;
+                        }
+                    }
+                    else {
+                        if (is_right_page) {
+                            page_rect.x0 = inner_gap;
+                            page_rect.x1 = page_width + inner_gap;
+                        }
+                        else {
+                            page_rect.x0 = -page_width - inner_gap;
+                            page_rect.x1 = -inner_gap;
+                        }
+                    }
+
+                    cached_virtual_rects[spread_page] = page_rect;
+                }
+
+                cum_offset += row_height + page_space_y;
+                int next_spread = next_two_page_spread_start(spread.first_page, num_pages, book_mode_cover_offset);
+                if (next_spread == spread.first_page) {
+                    break;
+                }
+                spread_start = next_spread;
             }
         }
         else {
@@ -2180,14 +2456,62 @@ WindowPos DocumentView::virtual_to_window_pos(const VirtualPos& vpos) {
 }
 
 void DocumentView::toggle_two_page(){
-    AbsoluteDocumentPos current_abs_offset = get_offsets();
+    set_two_page_mode(!two_page_mode);
+}
 
-    two_page_mode = !two_page_mode;
+void DocumentView::set_two_page_mode(bool enabled) {
+    if (two_page_mode == enabled) {
+        return;
+    }
+
+    int current_page = get_center_page_number();
+    AbsoluteDocumentPos current_abs_offset = get_offsets();
+    if (current_page >= 0) {
+        set_active_page_number(current_page);
+    }
+    two_page_mode = enabled;
     cached_virtual_rects.clear();
-    fill_cached_virtual_rects();
+    fill_cached_virtual_rects(true);
 
     set_offsets(current_abs_offset.x, current_abs_offset.y);
-    fit_to_page_width();
+    if (!is_presentation_mode()) {
+        fit_to_page_width();
+    }
+}
+
+void DocumentView::toggle_book_mode_cover_offset() {
+    set_book_mode_cover_offset(!book_mode_cover_offset);
+}
+
+void DocumentView::set_book_mode_cover_offset(bool enabled) {
+    if (book_mode_cover_offset == enabled) {
+        return;
+    }
+
+    AbsoluteDocumentPos current_abs_offset = get_offsets();
+    book_mode_cover_offset = enabled;
+    cached_virtual_rects.clear();
+    fill_cached_virtual_rects(true);
+    set_offsets(current_abs_offset.x, current_abs_offset.y);
+    if (is_effective_two_page_mode() && !is_presentation_mode()) {
+        fit_to_page_width();
+    }
+}
+
+bool DocumentView::get_book_mode_cover_offset() {
+    return book_mode_cover_offset;
+}
+
+void DocumentView::set_active_page_number(std::optional<int> page) {
+    if (page.has_value()) {
+        int clamped_page = clamp_page_number(page.value(), current_document ? current_document->num_pages() : 0);
+        if (clamped_page < 0) {
+            active_page_number = {};
+            return;
+        }
+        page = clamped_page;
+    }
+    active_page_number = page;
 }
 
 
@@ -2199,6 +2523,10 @@ NormalizedWindowRect DocumentView::virtual_to_normalized_window_rect(const Virtu
 
 bool DocumentView::is_two_page_mode() {
     return two_page_mode;
+}
+
+bool DocumentView::is_effective_two_page_mode() {
+    return two_page_mode || (is_presentation_mode() && presentation_two_page_mode);
 }
 
 void DocumentView::set_page_space_x(float space_x) {
@@ -2214,9 +2542,13 @@ float DocumentView::get_page_space_x() {
 }
 
 float DocumentView::get_page_space_y() {
-    return page_space_x;
+    return page_space_y;
+}
+
+float DocumentView::get_two_page_inner_gap() {
+    return std::min(0.0f, page_space_x);
 }
 
 bool DocumentView::fast_coordinates() {
-    return (!two_page_mode) && (!REAL_PAGE_SEPARATION) && (!SAME_WIDTH);
+    return (!is_effective_two_page_mode()) && (!REAL_PAGE_SEPARATION) && (!SAME_WIDTH);
 }

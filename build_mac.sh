@@ -15,12 +15,12 @@ cd mupdf
 make HAVE_GLUT=no -j$MAKE_PARALLEL
 cd ..
 
-sed -Ei '' "s/QMAKE_MACOSX_DEPLOYMENT_TARGET.=.[0-9]+/QMAKE_MACOSX_DEPLOYMENT_TARGET = $(sw_vers -productVersion | cut -d. -f1)/" pdf_viewer_build_config.pro
+MACOS_DEPLOYMENT_TARGET=$(sw_vers -productVersion | cut -d. -f1)
 
 if [[ $1 == portable ]]; then
-	qmake pdf_viewer_build_config.pro
+	qmake pdf_viewer_build_config.pro -after "QMAKE_MACOSX_DEPLOYMENT_TARGET=$MACOS_DEPLOYMENT_TARGET"
 else
-	qmake "CONFIG+=non_portable" pdf_viewer_build_config.pro
+	qmake "CONFIG+=non_portable" pdf_viewer_build_config.pro -after "QMAKE_MACOSX_DEPLOYMENT_TARGET=$MACOS_DEPLOYMENT_TARGET"
 fi
 
 make -j$MAKE_PARALLEL
@@ -57,8 +57,16 @@ sleep 5
 
 # mac deploys with qml currently don't work due to a qt bug
 # macdeployqt build/sioyek.app -qmldir=./pdf_viewer/touchui -dmg
-macdeployqt build/sioyek.app -dmg
+macdeployqt build/sioyek.app
 
-codesign --force --deep --sign - build/sioyek.app
+SIGNING_DIR=$(mktemp -d /tmp/sioyek-mac-build.XXXXXX)
+trap 'rm -rf "$SIGNING_DIR"' EXIT
+SIGNING_APP="$SIGNING_DIR/sioyek.app"
+ditto --noextattr --norsrc build/sioyek.app "$SIGNING_APP"
+codesign --force --deep --sign - "$SIGNING_APP"
+codesign --verify --deep --strict --verbose=2 "$SIGNING_APP"
 
+rm -f build/sioyek.dmg
+hdiutil create -volname sioyek -srcfolder "$SIGNING_APP" -ov -format UDZO build/sioyek.dmg
+rm -f sioyek-release-mac.zip
 zip -r sioyek-release-mac.zip build/sioyek.dmg

@@ -40,6 +40,8 @@ protected:
     VirtualPos offset = {0, 0};
     std::vector<VirtualRect> cached_virtual_rects;
     bool two_page_mode = false;
+    bool book_mode_cover_offset = false;
+    std::optional<int> active_page_number = {};
 
     // absolute rect of the current ruler if this is {} then ruler_pos is used instead
     std::optional<AbsoluteRect> ruler_rect;
@@ -60,6 +62,7 @@ protected:
     bool is_auto_resize_mode = true;
     bool is_ruler_mode_ = false;
     std::optional<int> presentation_page_number;
+    bool presentation_two_page_mode = false;
 
     float page_space_x = 0;
     float page_space_y = 0;
@@ -239,11 +242,23 @@ public:
     NormalizedWindowRect virtual_to_normalized_window_rect(const VirtualRect& virtual_rect);
     void toggle_two_page();
     bool is_two_page_mode();
+    bool is_effective_two_page_mode();
+    void set_two_page_mode(bool enabled);
+    void toggle_presentation_two_page_mode();
+    void set_presentation_two_page_mode(bool enabled);
+    bool is_presentation_two_page_mode();
+    void fit_to_presentation_spread(int statusbar_height);
+    void get_presentation_pages(std::vector<int>& pages);
+    void toggle_book_mode_cover_offset();
+    void set_book_mode_cover_offset(bool enabled);
+    bool get_book_mode_cover_offset();
+    void set_active_page_number(std::optional<int> page);
     void set_page_space_x(float space_x);
     void set_page_space_y(float space_y);
 
     float get_page_space_x();
     float get_page_space_y();
+    float get_two_page_inner_gap();
     bool fast_coordinates();
 
 };

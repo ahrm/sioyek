@@ -86,6 +86,10 @@ HEADERS += pdf_viewer/book.h \
            pdf_viewer/fts_fuzzy_match.h \
            pdf_viewer/rapidfuzz_amalgamated.hpp \
            pdf_viewer/input.h \
+           pdf_viewer/page_layout.h \
+           pdf_viewer/google_drive_import.h \
+           pdf_viewer/library_manager.h \
+           pdf_viewer/workspace_manager.h \
            pdf_viewer/main_widget.h \
            pdf_viewer/pdf_renderer.h \
            pdf_viewer/pdf_view_opengl_widget.h \
@@ -113,6 +117,10 @@ SOURCES += pdf_viewer/book.cpp \
            pdf_viewer/document.cpp \
            pdf_viewer/document_view.cpp \
            pdf_viewer/input.cpp \
+           pdf_viewer/page_layout.cpp \
+           pdf_viewer/google_drive_import.cpp \
+           pdf_viewer/library_manager.cpp \
+           pdf_viewer/workspace_manager.cpp \
            pdf_viewer/main.cpp \
            pdf_viewer/main_widget.cpp \
            pdf_viewer/pdf_renderer.cpp \
@@ -210,7 +218,7 @@ unix:!mac:!android {
 }
 
 mac {
-    QMAKE_CXXFLAGS += -std=c++17
+    QMAKE_CXXFLAGS += -std=c++17 -include arm_acle.h
     LIBS += -ldl -L$$PWD/mupdf/build/release -lmupdf -lmupdf-third -lmupdf-threads -lz
     CONFIG+=sdk_no_version_check
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 15

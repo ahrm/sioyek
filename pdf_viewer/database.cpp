@@ -23,6 +23,13 @@ extern bool DEBUG;
 extern float HIGHLIGHT_DELETE_THRESHOLD;
 extern int DATABASE_VERSION;
 
+bool handle_error(const QString& func_name, int error_code, char* error_message);
+
+struct ColumnLookupState {
+    std::string column_name;
+    bool found = false;
+};
+
 std::wstring esc(const std::wstring& inp) {
     char* data = sqlite3_mprintf("%q", utf8_encode(inp).c_str());
     std::wstring escaped_string = utf8_decode(data);
@@ -50,18 +57,42 @@ static int id_callback(void* res_vector, int argc, char** argv, char** col_name)
     return 0;
 }
 
+static int table_column_callback(void* lookup_state, int argc, char** argv, char** col_name) {
+    ColumnLookupState* state = (ColumnLookupState*) lookup_state;
+    if (argc > 1 && argv[1] && state->column_name == argv[1]) {
+        state->found = true;
+    }
+    return 0;
+}
+
+static bool table_has_column(sqlite3* db, const char* table_name, const char* column_name) {
+    ColumnLookupState state;
+    state.column_name = column_name;
+
+    std::string query = "PRAGMA table_info(" + std::string(table_name) + ");";
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(db, query.c_str(), table_column_callback, &state, &error_message);
+    handle_error("table_has_column", error_code, error_message);
+    return state.found;
+}
+
 static int opened_book_callback(void* res_vector, int argc, char** argv, char** col_name) {
     std::vector<OpenedBookState>* res = (std::vector<OpenedBookState>*) res_vector;
 
-    if (argc != 3) {
+    if (argc != 3 && argc != 5) {
         std::cerr << "Error in file " << __FILE__ << " " << "Line: " << __LINE__ << std::endl;
     }
 
     float zoom_level = atof(argv[0]);
     float offset_x = atof(argv[1]);
     float offset_y = atof(argv[2]);
+    bool two_page_mode = argc > 3 && argv[3] && atoi(argv[3]) != 0;
+    bool book_mode_cover_offset = argc > 4 && argv[4] && atoi(argv[4]) != 0;
 
-    res->push_back(OpenedBookState{ zoom_level, offset_x, offset_y });
+    OpenedBookState state{ zoom_level, offset_x, offset_y };
+    state.two_page_mode = two_page_mode;
+    state.book_mode_cover_offset = book_mode_cover_offset;
+    res->push_back(state);
     return 0;
 }
 
@@ -394,6 +425,179 @@ static int highlight_select_callback(void* res_vector, int argc, char** argv, ch
     return 0;
 }
 
+static int study_object_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+    std::vector<StudyObject>* res = (std::vector<StudyObject>*)res_vector;
+    if (argc != 17) {
+        qDebug() << "Error: Invalid study object row";
+        return 0;
+    }
+
+    StudyObject study_object;
+    study_object.id = argv[0] ? argv[0] : "";
+    study_object.document_checksum = argv[1] ? argv[1] : "";
+    study_object.document_path = argv[2] ? utf8_decode(argv[2]) : L"";
+    study_object.type = argv[3] ? utf8_decode(argv[3]) : L"note";
+    study_object.title = argv[4] ? utf8_decode(argv[4]) : L"";
+    study_object.note = argv[5] ? utf8_decode(argv[5]) : L"";
+    study_object.page = argv[6] ? atoi(argv[6]) : -1;
+    study_object.offset_x = argv[7] ? static_cast<float>(atof(argv[7])) : 0.0f;
+    study_object.offset_y = argv[8] ? static_cast<float>(atof(argv[8])) : 0.0f;
+    study_object.page_offset_y = argv[9] ? static_cast<float>(atof(argv[9])) : 0.0f;
+    study_object.zoom_level = argv[10] ? static_cast<float>(atof(argv[10])) : -1.0f;
+    if (argv[11] && argv[12]) {
+        study_object.selection_begin = AbsoluteDocumentPos{
+            static_cast<float>(atof(argv[11])),
+            static_cast<float>(atof(argv[12])),
+        };
+    }
+    if (argv[13] && argv[14]) {
+        study_object.selection_end = AbsoluteDocumentPos{
+            static_cast<float>(atof(argv[13])),
+            static_cast<float>(atof(argv[14])),
+        };
+    }
+    study_object.created_at = argv[15] ? argv[15] : "";
+    study_object.updated_at = argv[16] ? argv[16] : "";
+
+    if (!is_valid_study_object_type(study_object.type)) {
+        study_object.type = L"note";
+    }
+    res->push_back(study_object);
+    return 0;
+}
+
+static int study_link_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+    std::vector<StudyLink>* res = (std::vector<StudyLink>*)res_vector;
+    if (argc != 7) {
+        qDebug() << "Error: Invalid study link row";
+        return 0;
+    }
+
+    StudyLink study_link;
+    study_link.id = argv[0] ? argv[0] : "";
+    study_link.source_study_object_id = argv[1] ? argv[1] : "";
+    study_link.target_study_object_id = argv[2] ? argv[2] : "";
+    study_link.relation_type = argv[3] ? utf8_decode(argv[3]) : L"related_to";
+    study_link.note = argv[4] ? utf8_decode(argv[4]) : L"";
+    study_link.created_at = argv[5] ? argv[5] : "";
+    study_link.updated_at = argv[6] ? argv[6] : "";
+
+    if (!is_valid_study_link_relation_type(study_link.relation_type)) {
+        study_link.relation_type = L"related_to";
+    }
+    if (!study_link.id.empty() && !study_link.source_study_object_id.empty() && !study_link.target_study_object_id.empty()) {
+        res->push_back(study_link);
+    }
+    return 0;
+}
+
+static int problem_state_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+    std::vector<ProblemState>* res = (std::vector<ProblemState>*)res_vector;
+    if (argc != 7) {
+        qDebug() << "Error: Invalid problem state row";
+        return 0;
+    }
+
+    ProblemState problem_state;
+    problem_state.study_object_id = argv[0] ? argv[0] : "";
+    problem_state.status = argv[1] ? utf8_decode(argv[1]) : L"unsolved";
+    problem_state.difficulty = argv[2] ? utf8_decode(argv[2]) : L"";
+    problem_state.last_reviewed_at = argv[3] ? argv[3] : "";
+    problem_state.solution_ref = argv[4] ? utf8_decode(argv[4]) : L"";
+    problem_state.created_at = argv[5] ? argv[5] : "";
+    problem_state.updated_at = argv[6] ? argv[6] : "";
+
+    if (problem_state.study_object_id.empty()) {
+        qDebug() << "Skipping problem state with empty study object id";
+        return 0;
+    }
+    if (!is_valid_problem_status(problem_state.status)) {
+        qDebug() << "Skipping problem state with invalid status" << QString::fromStdString(problem_state.study_object_id);
+        return 0;
+    }
+
+    res->push_back(problem_state);
+    return 0;
+}
+
+static int shelf_item_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+    std::vector<ShelfItem>* res = (std::vector<ShelfItem>*)res_vector;
+    if (argc != 21) {
+        qDebug() << "Error: Invalid shelf item row";
+        return 0;
+    }
+
+    ShelfItem shelf_item;
+    shelf_item.id = argv[0] ? argv[0] : "";
+    shelf_item.source_type = argv[1] ? utf8_decode(argv[1]) : L"location";
+    shelf_item.display_type = argv[2] ? utf8_decode(argv[2]) : L"";
+    shelf_item.source_id = argv[3] ? argv[3] : "";
+    shelf_item.document_checksum = argv[4] ? argv[4] : "";
+    shelf_item.document_path = argv[5] ? utf8_decode(argv[5]) : L"";
+    shelf_item.workspace_name = argv[6] ? utf8_decode(argv[6]) : L"";
+    shelf_item.page = argv[7] ? atoi(argv[7]) : -1;
+    shelf_item.offset_x = argv[8] ? static_cast<float>(atof(argv[8])) : 0.0f;
+    shelf_item.offset_y = argv[9] ? static_cast<float>(atof(argv[9])) : 0.0f;
+    shelf_item.page_offset_y = argv[10] ? static_cast<float>(atof(argv[10])) : 0.0f;
+    shelf_item.zoom_level = argv[11] ? static_cast<float>(atof(argv[11])) : -1.0f;
+    if (argv[12] && argv[13] && argv[14] && argv[15]) {
+        PagelessDocumentRect rect;
+        rect.x0 = static_cast<float>(atof(argv[12]));
+        rect.y0 = static_cast<float>(atof(argv[13]));
+        rect.x1 = static_cast<float>(atof(argv[14]));
+        rect.y1 = static_cast<float>(atof(argv[15]));
+        shelf_item.rect = rect;
+    }
+    shelf_item.title = argv[16] ? utf8_decode(argv[16]) : L"";
+    shelf_item.note = argv[17] ? utf8_decode(argv[17]) : L"";
+    shelf_item.item_order = argv[18] ? atoi(argv[18]) : 0;
+    shelf_item.created_at = argv[19] ? argv[19] : "";
+    shelf_item.updated_at = argv[20] ? argv[20] : "";
+    if (shelf_item.display_type.empty()) {
+        shelf_item.display_type = shelf_item.source_type;
+    }
+
+    if (shelf_item.id.empty() || !is_valid_shelf_item_source_type(shelf_item.source_type)) {
+        qDebug() << "Skipping invalid shelf item row";
+        return 0;
+    }
+    res->push_back(shelf_item);
+    return 0;
+}
+
+static int region_highlight_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
+    std::vector<RegionHighlight>* res = (std::vector<RegionHighlight>*)res_vector;
+    if (argc != 13) {
+        qDebug() << "Error: Invalid region highlight row";
+        return 0;
+    }
+
+    RegionHighlight region_highlight;
+    region_highlight.id = argv[0] ? argv[0] : "";
+    region_highlight.document_checksum = argv[1] ? argv[1] : "";
+    region_highlight.document_path = argv[2] ? utf8_decode(argv[2]) : L"";
+    region_highlight.page = argv[3] ? atoi(argv[3]) : -1;
+    region_highlight.rect.x0 = argv[4] ? static_cast<float>(atof(argv[4])) : 0.0f;
+    region_highlight.rect.y0 = argv[5] ? static_cast<float>(atof(argv[5])) : 0.0f;
+    region_highlight.rect.x1 = argv[6] ? static_cast<float>(atof(argv[6])) : 0.0f;
+    region_highlight.rect.y1 = argv[7] ? static_cast<float>(atof(argv[7])) : 0.0f;
+    region_highlight.title = argv[8] ? utf8_decode(argv[8]) : L"";
+    region_highlight.note = argv[9] ? utf8_decode(argv[9]) : L"";
+    region_highlight.type = argv[10] ? utf8_decode(argv[10]) : L"region";
+    region_highlight.created_at = argv[11] ? argv[11] : "";
+    region_highlight.updated_at = argv[12] ? argv[12] : "";
+
+    if (region_highlight.id.empty() || region_highlight.page < 0) {
+        qDebug() << "Error: Invalid region highlight row";
+        return 0;
+    }
+    if (region_highlight.type.empty()) {
+        region_highlight.type = L"region";
+    }
+    res->push_back(region_highlight);
+    return 0;
+}
+
 static int link_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<Portal>* res = (std::vector<Portal>*)res_vector;
@@ -502,7 +706,8 @@ bool handle_error(const QString& func_name, int error_code, char* error_message)
 bool DatabaseManager::open(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path) {
 
     std::string local_database_file_path_utf8 = utf8_encode(local_db_file_path);
-    int local_rc = sqlite3_open(local_database_file_path_utf8.c_str(), &local_db);
+    constexpr int open_flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX;
+    int local_rc = sqlite3_open_v2(local_database_file_path_utf8.c_str(), &local_db, open_flags, nullptr);
 
     if (local_rc) {
         std::cerr << "could not create local database" << sqlite3_errmsg(local_db) << std::endl;
@@ -513,7 +718,7 @@ bool DatabaseManager::open(const std::wstring& local_db_file_path, const std::ws
 
     if (local_db_file_path != global_db_file_path) {
         std::string global_database_file_path_utf8 = utf8_encode(global_db_file_path);
-        int global_rc = sqlite3_open(global_database_file_path_utf8.c_str(), &global_db);
+        int global_rc = sqlite3_open_v2(global_database_file_path_utf8.c_str(), &global_db, open_flags, nullptr);
 
         if (global_rc) {
             std::cerr << "could not create global database" << sqlite3_errmsg(global_db) << std::endl;
@@ -538,6 +743,8 @@ bool DatabaseManager::create_opened_books_table() {
         "zoom_level REAL,"\
         "offset_x REAL,"\
         "offset_y REAL,"\
+        "two_page_mode INTEGER DEFAULT 0,"\
+        "book_mode_cover_offset INTEGER DEFAULT 0,"\
         "last_access_time TEXT);";
 
     char* error_message = nullptr;
@@ -612,6 +819,143 @@ bool DatabaseManager::create_highlights_table() {
     int error_code = sqlite3_exec(global_db, create_highlights_sql, null_callback, 0, &error_message);
     return handle_error(
         "create_highlights_table",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::create_study_objects_table() {
+    const char* create_study_objects_sql =
+        "CREATE TABLE IF NOT EXISTS study_objects ("
+        "id TEXT PRIMARY KEY,"
+        "document_checksum TEXT NOT NULL,"
+        "document_path TEXT,"
+        "type TEXT NOT NULL,"
+        "title TEXT NOT NULL,"
+        "note TEXT,"
+        "page INTEGER NOT NULL,"
+        "offset_x REAL NOT NULL,"
+        "offset_y REAL NOT NULL,"
+        "page_offset_y REAL NOT NULL,"
+        "zoom_level REAL,"
+        "selection_begin_x REAL,"
+        "selection_begin_y REAL,"
+        "selection_end_x REAL,"
+        "selection_end_y REAL,"
+        "created_at timestamp,"
+        "updated_at timestamp);"
+        "CREATE INDEX IF NOT EXISTS study_objects_checksum_idx ON study_objects(document_checksum);"
+        "CREATE INDEX IF NOT EXISTS study_objects_path_idx ON study_objects(document_path);"
+        "CREATE INDEX IF NOT EXISTS study_objects_checksum_page_idx ON study_objects(document_checksum, page);";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, create_study_objects_sql, null_callback, 0, &error_message);
+    return handle_error(
+        "create_study_objects_table",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::create_problem_states_table() {
+    const char* create_problem_states_sql =
+        "CREATE TABLE IF NOT EXISTS problem_states ("
+        "study_object_id TEXT PRIMARY KEY,"
+        "status TEXT NOT NULL DEFAULT 'unsolved',"
+        "difficulty TEXT,"
+        "last_reviewed_at timestamp,"
+        "solution_ref TEXT,"
+        "created_at timestamp,"
+        "updated_at timestamp);"
+        "CREATE INDEX IF NOT EXISTS problem_states_status_idx ON problem_states(status);";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, create_problem_states_sql, null_callback, 0, &error_message);
+    return handle_error(
+        "create_problem_states_table",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::create_dependency_links_table() {
+    const char* create_dependency_links_sql =
+        "CREATE TABLE IF NOT EXISTS dependency_links ("
+        "id TEXT PRIMARY KEY,"
+        "source_study_object_id TEXT NOT NULL,"
+        "target_study_object_id TEXT NOT NULL,"
+        "relation_type TEXT NOT NULL,"
+        "note TEXT,"
+        "created_at timestamp,"
+        "updated_at timestamp,"
+        "UNIQUE(source_study_object_id, target_study_object_id, relation_type));"
+        "CREATE INDEX IF NOT EXISTS dependency_links_source_idx ON dependency_links(source_study_object_id);"
+        "CREATE INDEX IF NOT EXISTS dependency_links_target_idx ON dependency_links(target_study_object_id);";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, create_dependency_links_sql, null_callback, 0, &error_message);
+    return handle_error(
+        "create_dependency_links_table",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::create_shelf_items_table() {
+    const char* create_shelf_items_sql =
+        "CREATE TABLE IF NOT EXISTS shelf_items ("
+        "id TEXT PRIMARY KEY,"
+        "source_type TEXT NOT NULL,"
+        "display_type TEXT,"
+        "source_id TEXT,"
+        "document_checksum TEXT,"
+        "document_path TEXT,"
+        "workspace_name TEXT,"
+        "page INTEGER NOT NULL,"
+        "offset_x REAL,"
+        "offset_y REAL,"
+        "page_offset_y REAL,"
+        "zoom_level REAL,"
+        "rect_x0 REAL,"
+        "rect_y0 REAL,"
+        "rect_x1 REAL,"
+        "rect_y1 REAL,"
+        "title TEXT,"
+        "note TEXT,"
+        "item_order INTEGER,"
+        "created_at timestamp,"
+        "updated_at timestamp);"
+        "CREATE INDEX IF NOT EXISTS shelf_items_order_idx ON shelf_items(workspace_name, item_order);"
+        "CREATE INDEX IF NOT EXISTS shelf_items_source_idx ON shelf_items(source_type, source_id);";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, create_shelf_items_sql, null_callback, 0, &error_message);
+    return handle_error(
+        "create_shelf_items_table",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::create_region_highlights_table() {
+    const char* create_region_highlights_sql =
+        "CREATE TABLE IF NOT EXISTS region_highlights ("
+        "id TEXT PRIMARY KEY,"
+        "document_checksum TEXT NOT NULL,"
+        "document_path TEXT,"
+        "page INTEGER NOT NULL,"
+        "x0 REAL NOT NULL,"
+        "y0 REAL NOT NULL,"
+        "x1 REAL NOT NULL,"
+        "y1 REAL NOT NULL,"
+        "title TEXT,"
+        "note TEXT,"
+        "type TEXT DEFAULT 'region',"
+        "created_at timestamp,"
+        "updated_at timestamp);"
+        "CREATE INDEX IF NOT EXISTS region_highlights_checksum_idx ON region_highlights(document_checksum);"
+        "CREATE INDEX IF NOT EXISTS region_highlights_path_idx ON region_highlights(document_path);"
+        "CREATE INDEX IF NOT EXISTS region_highlights_checksum_page_idx ON region_highlights(document_checksum, page);";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, create_region_highlights_sql, null_callback, 0, &error_message);
+    return handle_error(
+        "create_region_highlights_table",
         error_code,
         error_message);
 }
@@ -692,11 +1036,20 @@ bool DatabaseManager::insert_document_hash(const std::wstring& path, const std::
     return handle_error("insert_document_hash", insert_error_code, insert_error_message);
 }
 
-bool DatabaseManager::update_book(const std::string& path, float zoom_level, float offset_x, float offset_y, std::wstring actual_name) {
+bool DatabaseManager::update_book(
+    const std::string& path,
+    float zoom_level,
+    float offset_x,
+    float offset_y,
+    std::wstring actual_name,
+    bool two_page_mode,
+    bool book_mode_cover_offset) {
 
     std::wstringstream ss;
-    ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, last_access_time, document_name) values ('" <<
-        esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", datetime('now'), '" << esc(actual_name) << "');";
+    ss << "insert or replace into opened_books(path, zoom_level, offset_x, offset_y, two_page_mode, book_mode_cover_offset, last_access_time, document_name) values ('" <<
+        esc(path) << "', " << zoom_level << ", " << offset_x << ", " << offset_y << ", " <<
+        (two_page_mode ? 1 : 0) << ", " << (book_mode_cover_offset ? 1 : 0) <<
+        ", datetime('now'), '" << esc(actual_name) << "');";
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
@@ -871,6 +1224,551 @@ bool DatabaseManager::insert_highlight_with_annotation(const std::string& docume
         error_message);
 }
 
+bool DatabaseManager::insert_study_object(const StudyObject& study_object) {
+    std::vector<std::pair<std::string, QVariant>> values = {
+        { "id", QString::fromStdString(study_object.id) },
+        { "document_checksum", QString::fromStdString(study_object.document_checksum) },
+        { "document_path", QString::fromStdWString(study_object.document_path) },
+        { "type", QString::fromStdWString(study_object.type) },
+        { "title", QString::fromStdWString(study_object.title) },
+        { "note", QString::fromStdWString(study_object.note) },
+        { "page", study_object.page },
+        { "offset_x", study_object.offset_x },
+        { "offset_y", study_object.offset_y },
+        { "page_offset_y", study_object.page_offset_y },
+        { "zoom_level", study_object.zoom_level },
+        { "created_at", "CURRENT_TIMESTAMP" },
+        { "updated_at", "CURRENT_TIMESTAMP" },
+    };
+    if (study_object.selection_begin.has_value()) {
+        values.push_back({ "selection_begin_x", study_object.selection_begin->x });
+        values.push_back({ "selection_begin_y", study_object.selection_begin->y });
+    }
+    if (study_object.selection_end.has_value()) {
+        values.push_back({ "selection_end_x", study_object.selection_end->x });
+        values.push_back({ "selection_end_y", study_object.selection_end->y });
+    }
+    return generic_insert_run_query("study_objects", values);
+}
+
+static std::string study_object_select_columns() {
+    return "id, document_checksum, document_path, type, title, note, page, offset_x, offset_y, page_offset_y, zoom_level, "
+        "selection_begin_x, selection_begin_y, selection_end_x, selection_end_y, created_at, updated_at";
+}
+
+bool DatabaseManager::select_study_objects(const std::string& checksum, std::vector<StudyObject>& out_result) {
+    std::wstringstream ss;
+    ss << "select " << utf8_decode(study_object_select_columns()) << " from study_objects where document_checksum='" << esc(checksum) << "' order by page, offset_y, created_at;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), study_object_select_callback, &out_result, &error_message);
+    return handle_error(
+        "select_study_objects",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::select_study_objects_for_checksums(const std::vector<std::string>& checksums, std::vector<StudyObject>& out_result) {
+    if (checksums.empty()) {
+        return true;
+    }
+
+    std::wstringstream ss;
+    ss << "select " << utf8_decode(study_object_select_columns()) << " from study_objects where document_checksum in (";
+    for (size_t i = 0; i < checksums.size(); i++) {
+        ss << "'" << esc(checksums[i]) << "'";
+        if (i + 1 < checksums.size()) {
+            ss << ", ";
+        }
+    }
+    ss << ") order by document_path, page, offset_y, created_at;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), study_object_select_callback, &out_result, &error_message);
+    return handle_error(
+        "select_study_objects_for_checksums",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::select_study_objects_for_documents(const std::vector<std::string>& checksums, const std::vector<std::wstring>& document_paths, std::vector<StudyObject>& out_result) {
+    if (checksums.empty() && document_paths.empty()) {
+        return true;
+    }
+
+    std::wstringstream ss;
+    ss << "select " << utf8_decode(study_object_select_columns()) << " from study_objects where ";
+    bool has_previous_clause = false;
+    if (!checksums.empty()) {
+        ss << "document_checksum in (";
+        for (size_t i = 0; i < checksums.size(); i++) {
+            ss << "'" << esc(checksums[i]) << "'";
+            if (i + 1 < checksums.size()) {
+                ss << ", ";
+            }
+        }
+        ss << ")";
+        has_previous_clause = true;
+    }
+    if (!document_paths.empty()) {
+        if (has_previous_clause) {
+            ss << " or ";
+        }
+        ss << "document_path in (";
+        for (size_t i = 0; i < document_paths.size(); i++) {
+            ss << "'" << esc(document_paths[i]) << "'";
+            if (i + 1 < document_paths.size()) {
+                ss << ", ";
+            }
+        }
+        ss << ")";
+    }
+    ss << " order by document_path, page, offset_y, created_at;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), study_object_select_callback, &out_result, &error_message);
+    return handle_error(
+        "select_study_objects_for_documents",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::select_study_objects_by_ids(const std::vector<std::string>& ids, std::vector<StudyObject>& out_result) {
+    if (ids.empty()) {
+        return true;
+    }
+
+    std::wstringstream ss;
+    ss << "select " << utf8_decode(study_object_select_columns()) << " from study_objects where id in (";
+    for (size_t i = 0; i < ids.size(); i++) {
+        ss << "'" << esc(ids[i]) << "'";
+        if (i + 1 < ids.size()) {
+            ss << ", ";
+        }
+    }
+    ss << ") order by document_path, page, offset_y, created_at;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), study_object_select_callback, &out_result, &error_message);
+    return handle_error(
+        "select_study_objects_by_ids",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::update_study_object_title(const std::string& id, const std::wstring& new_title) {
+    return generic_update_run_query("study_objects",
+        {
+            {"id", QString::fromStdString(id)},
+        },
+        {
+            {"title", QString::fromStdWString(new_title)},
+            {"updated_at", "CURRENT_TIMESTAMP"},
+        });
+}
+
+bool DatabaseManager::update_study_object_type(const std::string& id, const std::wstring& new_type) {
+    return generic_update_run_query("study_objects",
+        {
+            {"id", QString::fromStdString(id)},
+        },
+        {
+            {"type", QString::fromStdWString(new_type)},
+            {"updated_at", "CURRENT_TIMESTAMP"},
+        });
+}
+
+bool DatabaseManager::delete_study_object(const std::string& id) {
+    std::wstringstream ss;
+    ss << "DELETE FROM dependency_links where source_study_object_id='" << esc(id) << "' or target_study_object_id='" << esc(id) << "';";
+    ss << "DELETE FROM problem_states where study_object_id='" << esc(id) << "';";
+    ss << "DELETE FROM study_objects where id='" << esc(id) << "';";
+    char* error_message = nullptr;
+
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        "delete_study_object",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::insert_study_link(const StudyLink& study_link) {
+    if (study_link.id.empty()
+        || study_link.source_study_object_id.empty()
+        || study_link.target_study_object_id.empty()
+        || study_link.source_study_object_id == study_link.target_study_object_id
+        || !is_valid_study_link_relation_type(study_link.relation_type)) {
+        return false;
+    }
+
+    std::wstringstream ss;
+    ss << "INSERT OR IGNORE INTO dependency_links "
+        << "(id, source_study_object_id, target_study_object_id, relation_type, note, created_at, updated_at) VALUES ('"
+        << esc(study_link.id) << "', '"
+        << esc(study_link.source_study_object_id) << "', '"
+        << esc(study_link.target_study_object_id) << "', '"
+        << esc(study_link.relation_type) << "', '"
+        << esc(study_link.note) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        "insert_study_link",
+        error_code,
+        error_message);
+}
+
+static std::string study_link_select_columns() {
+    return "id, source_study_object_id, target_study_object_id, relation_type, note, created_at, updated_at";
+}
+
+bool DatabaseManager::select_study_links_for_study_objects(const std::vector<std::string>& study_object_ids, std::vector<StudyLink>& out_result) {
+    if (study_object_ids.empty()) {
+        return true;
+    }
+
+    std::wstringstream ids_clause;
+    ids_clause << "(";
+    for (size_t i = 0; i < study_object_ids.size(); i++) {
+        ids_clause << "'" << esc(study_object_ids[i]) << "'";
+        if (i + 1 < study_object_ids.size()) {
+            ids_clause << ", ";
+        }
+    }
+    ids_clause << ")";
+
+    std::wstringstream ss;
+    ss << "select " << utf8_decode(study_link_select_columns())
+        << " from dependency_links where source_study_object_id in " << ids_clause.str()
+        << " or target_study_object_id in " << ids_clause.str()
+        << " order by relation_type, created_at;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), study_link_select_callback, &out_result, &error_message);
+    return handle_error(
+        "select_study_links_for_study_objects",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::select_study_links_for_study_object(const std::string& study_object_id, std::vector<StudyLink>& out_result) {
+    if (study_object_id.empty()) {
+        return true;
+    }
+    return select_study_links_for_study_objects({ study_object_id }, out_result);
+}
+
+bool DatabaseManager::update_study_link_type(const std::string& id, const std::wstring& relation_type) {
+    if (id.empty() || !is_valid_study_link_relation_type(relation_type)) {
+        return false;
+    }
+
+    return generic_update_run_query("dependency_links",
+        {
+            {"id", QString::fromStdString(id)},
+        },
+        {
+            {"relation_type", QString::fromStdWString(relation_type)},
+            {"updated_at", "CURRENT_TIMESTAMP"},
+        });
+}
+
+bool DatabaseManager::update_study_link_note(const std::string& id, const std::wstring& note) {
+    if (id.empty()) {
+        return false;
+    }
+
+    return generic_update_run_query("dependency_links",
+        {
+            {"id", QString::fromStdString(id)},
+        },
+        {
+            {"note", QString::fromStdWString(note)},
+            {"updated_at", "CURRENT_TIMESTAMP"},
+        });
+}
+
+bool DatabaseManager::delete_study_link(const std::string& id) {
+    if (id.empty()) {
+        return false;
+    }
+
+    std::wstringstream ss;
+    ss << "DELETE FROM dependency_links where id='" << esc(id) << "';";
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        "delete_study_link",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::insert_problem_state(const ProblemState& problem_state) {
+    if (problem_state.study_object_id.empty() || !is_valid_problem_status(problem_state.status)) {
+        return false;
+    }
+
+    return generic_insert_run_query("problem_states", {
+        { "study_object_id", QString::fromStdString(problem_state.study_object_id) },
+        { "status", QString::fromStdWString(problem_state.status) },
+        { "difficulty", QString::fromStdWString(problem_state.difficulty) },
+        { "solution_ref", QString::fromStdWString(problem_state.solution_ref) },
+        { "created_at", "CURRENT_TIMESTAMP" },
+        { "updated_at", "CURRENT_TIMESTAMP" },
+        });
+}
+
+bool DatabaseManager::upsert_problem_status(const std::string& study_object_id, const std::wstring& status) {
+    if (study_object_id.empty() || !is_valid_problem_status(status)) {
+        return false;
+    }
+
+    std::wstringstream ss;
+    ss << "INSERT INTO problem_states (study_object_id, status, last_reviewed_at, created_at, updated_at) VALUES ('"
+        << esc(study_object_id) << "', '" << esc(status) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) "
+        << "ON CONFLICT(study_object_id) DO UPDATE SET status=excluded.status, "
+        << "last_reviewed_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        "upsert_problem_status",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::update_problem_solution_ref(const std::string& study_object_id, const std::wstring& solution_ref) {
+    if (study_object_id.empty()) {
+        return false;
+    }
+
+    std::wstringstream ss;
+    ss << "INSERT INTO problem_states (study_object_id, status, solution_ref, created_at, updated_at) VALUES ('"
+        << esc(study_object_id) << "', 'unsolved', '" << esc(solution_ref) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) "
+        << "ON CONFLICT(study_object_id) DO UPDATE SET solution_ref=excluded.solution_ref, updated_at=CURRENT_TIMESTAMP;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        "update_problem_solution_ref",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::clear_problem_solution_ref(const std::string& study_object_id) {
+    return update_problem_solution_ref(study_object_id, L"");
+}
+
+static std::string problem_state_select_columns() {
+    return "study_object_id, status, difficulty, last_reviewed_at, solution_ref, created_at, updated_at";
+}
+
+bool DatabaseManager::select_problem_states_for_study_objects(const std::vector<std::string>& study_object_ids, std::vector<ProblemState>& out_result) {
+    if (study_object_ids.empty()) {
+        return true;
+    }
+
+    std::wstringstream ss;
+    ss << "select " << utf8_decode(problem_state_select_columns()) << " from problem_states where study_object_id in (";
+    for (size_t i = 0; i < study_object_ids.size(); i++) {
+        ss << "'" << esc(study_object_ids[i]) << "'";
+        if (i + 1 < study_object_ids.size()) {
+            ss << ", ";
+        }
+    }
+    ss << ");";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), problem_state_select_callback, &out_result, &error_message);
+    return handle_error(
+        "select_problem_states_for_study_objects",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::insert_shelf_item(const ShelfItem& shelf_item) {
+    if (shelf_item.id.empty() || !is_valid_shelf_item_source_type(shelf_item.source_type) || shelf_item.title.empty()) {
+        return false;
+    }
+
+    std::vector<std::pair<std::string, QVariant>> values = {
+        { "id", QString::fromStdString(shelf_item.id) },
+        { "source_type", QString::fromStdWString(shelf_item.source_type) },
+        { "display_type", QString::fromStdWString(shelf_item.display_type.empty() ? shelf_item.source_type : shelf_item.display_type) },
+        { "source_id", QString::fromStdString(shelf_item.source_id) },
+        { "document_checksum", QString::fromStdString(shelf_item.document_checksum) },
+        { "document_path", QString::fromStdWString(shelf_item.document_path) },
+        { "workspace_name", QString::fromStdWString(shelf_item.workspace_name) },
+        { "page", shelf_item.page },
+        { "offset_x", shelf_item.offset_x },
+        { "offset_y", shelf_item.offset_y },
+        { "page_offset_y", shelf_item.page_offset_y },
+        { "zoom_level", shelf_item.zoom_level },
+        { "title", QString::fromStdWString(shelf_item.title) },
+        { "note", QString::fromStdWString(shelf_item.note) },
+        { "item_order", shelf_item.item_order },
+        { "created_at", "CURRENT_TIMESTAMP" },
+        { "updated_at", "CURRENT_TIMESTAMP" },
+    };
+    if (shelf_item.rect.has_value()) {
+        values.push_back({ "rect_x0", shelf_item.rect->x0 });
+        values.push_back({ "rect_y0", shelf_item.rect->y0 });
+        values.push_back({ "rect_x1", shelf_item.rect->x1 });
+        values.push_back({ "rect_y1", shelf_item.rect->y1 });
+    }
+    return generic_insert_run_query("shelf_items", values);
+}
+
+static std::string shelf_item_select_columns() {
+    return "id, source_type, display_type, source_id, document_checksum, document_path, workspace_name, page, offset_x, offset_y, page_offset_y, zoom_level, "
+        "rect_x0, rect_y0, rect_x1, rect_y1, title, note, item_order, created_at, updated_at";
+}
+
+bool DatabaseManager::select_shelf_items(std::vector<ShelfItem>& out_result) {
+    std::wstringstream ss;
+    ss << "select " << utf8_decode(shelf_item_select_columns())
+        << " from shelf_items where workspace_name is null or workspace_name='' order by item_order, created_at;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), shelf_item_select_callback, &out_result, &error_message);
+    return handle_error(
+        "select_shelf_items",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::delete_shelf_item(const std::string& id) {
+    std::wstringstream ss;
+    ss << "DELETE FROM shelf_items where id='" << esc(id) << "';";
+    char* error_message = nullptr;
+
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        "delete_shelf_item",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::clear_shelf_items() {
+    const char* query = "DELETE FROM shelf_items where workspace_name is null or workspace_name='';";
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, query, null_callback, 0, &error_message);
+    return handle_error(
+        "clear_shelf_items",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::update_shelf_item_order(const std::string& id, int item_order) {
+    return generic_update_run_query("shelf_items",
+        {
+            {"id", QString::fromStdString(id)},
+        },
+        {
+            {"item_order", item_order},
+            {"updated_at", "CURRENT_TIMESTAMP"},
+        });
+}
+
+bool DatabaseManager::insert_region_highlight(const RegionHighlight& region_highlight) {
+    return generic_insert_run_query("region_highlights", {
+        { "id", QString::fromStdString(region_highlight.id) },
+        { "document_checksum", QString::fromStdString(region_highlight.document_checksum) },
+        { "document_path", QString::fromStdWString(region_highlight.document_path) },
+        { "page", region_highlight.page },
+        { "x0", region_highlight.rect.x0 },
+        { "y0", region_highlight.rect.y0 },
+        { "x1", region_highlight.rect.x1 },
+        { "y1", region_highlight.rect.y1 },
+        { "title", QString::fromStdWString(region_highlight.title) },
+        { "note", QString::fromStdWString(region_highlight.note) },
+        { "type", QString::fromStdWString(region_highlight.type.empty() ? L"region" : region_highlight.type) },
+        { "created_at", "CURRENT_TIMESTAMP" },
+        { "updated_at", "CURRENT_TIMESTAMP" },
+        });
+}
+
+static std::string region_highlight_select_columns() {
+    return "id, document_checksum, document_path, page, x0, y0, x1, y1, title, note, type, created_at, updated_at";
+}
+
+bool DatabaseManager::select_region_highlights(const std::string& checksum, std::vector<RegionHighlight>& out_result) {
+    std::wstringstream ss;
+    ss << "select " << utf8_decode(region_highlight_select_columns()) << " from region_highlights where document_checksum='" << esc(checksum) << "' order by page, y0, created_at;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), region_highlight_select_callback, &out_result, &error_message);
+    return handle_error(
+        "select_region_highlights",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::select_region_highlights_for_documents(const std::vector<std::string>& checksums, const std::vector<std::wstring>& document_paths, std::vector<RegionHighlight>& out_result) {
+    if (checksums.empty() && document_paths.empty()) {
+        return true;
+    }
+
+    std::wstringstream ss;
+    ss << "select " << utf8_decode(region_highlight_select_columns()) << " from region_highlights where ";
+    bool has_previous_clause = false;
+    if (!checksums.empty()) {
+        ss << "document_checksum in (";
+        for (size_t i = 0; i < checksums.size(); i++) {
+            ss << "'" << esc(checksums[i]) << "'";
+            if (i + 1 < checksums.size()) {
+                ss << ", ";
+            }
+        }
+        ss << ")";
+        has_previous_clause = true;
+    }
+    if (!document_paths.empty()) {
+        if (has_previous_clause) {
+            ss << " or ";
+        }
+        ss << "document_path in (";
+        for (size_t i = 0; i < document_paths.size(); i++) {
+            ss << "'" << esc(document_paths[i]) << "'";
+            if (i + 1 < document_paths.size()) {
+                ss << ", ";
+            }
+        }
+        ss << ")";
+    }
+    ss << " order by document_path, page, y0, created_at;";
+
+    char* error_message = nullptr;
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), region_highlight_select_callback, &out_result, &error_message);
+    return handle_error(
+        "select_region_highlights_for_documents",
+        error_code,
+        error_message);
+}
+
+bool DatabaseManager::update_region_highlight_title(const std::string& id, const std::wstring& new_title) {
+    return generic_update_run_query("region_highlights",
+        {
+            {"id", QString::fromStdString(id)},
+        },
+        {
+            {"title", QString::fromStdWString(new_title)},
+            {"updated_at", "CURRENT_TIMESTAMP"},
+        });
+}
+
+bool DatabaseManager::delete_region_highlight(const std::string& id) {
+    std::wstringstream ss;
+    ss << "DELETE FROM region_highlights where id='" << esc(id) << "';";
+    char* error_message = nullptr;
+
+    int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), null_callback, 0, &error_message);
+    return handle_error(
+        "delete_region_highlight",
+        error_code,
+        error_message);
+}
+
 bool DatabaseManager::insert_portal(const std::string& src_document_path,
     const std::string& dst_document_path,
     float dst_offset_x,
@@ -1003,7 +1901,13 @@ bool DatabaseManager::set_actual_document_name(const std::string& checksum, cons
 
 bool DatabaseManager::select_opened_book(const std::string& book_path, std::vector<OpenedBookState>& out_result) {
     std::wstringstream ss;
-    ss << "select zoom_level, offset_x, offset_y from opened_books where path='" << esc(book_path) << "'";
+    if (table_has_column(global_db, "opened_books", "two_page_mode") &&
+        table_has_column(global_db, "opened_books", "book_mode_cover_offset")) {
+        ss << "select zoom_level, offset_x, offset_y, two_page_mode, book_mode_cover_offset from opened_books where path='" << esc(book_path) << "'";
+    }
+    else {
+        ss << "select zoom_level, offset_x, offset_y from opened_books where path='" << esc(book_path) << "'";
+    }
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), opened_book_callback, &out_result, &error_message);
     return handle_error(
@@ -1216,6 +2120,11 @@ void DatabaseManager::create_tables() {
     create_marks_table();
     create_bookmarks_table();
     create_highlights_table();
+    create_study_objects_table();
+    create_problem_states_table();
+    create_dependency_links_table();
+    create_shelf_items_table();
+    create_region_highlights_table();
     create_links_table();
     create_document_hash_table();
 }
@@ -1363,7 +2272,14 @@ void DatabaseManager::split_database(const std::wstring& local_database_path, co
     }
 
     for (const auto& [hash, book_state] : opened_book_states) {
-        update_book(hash, book_state.zoom_level, book_state.offset_x, book_state.offset_y);
+        update_book(
+            hash,
+            book_state.zoom_level,
+            book_state.offset_x,
+            book_state.offset_y,
+            L"",
+            book_state.two_page_mode,
+            book_state.book_mode_cover_offset);
     }
     for (const auto& [hash, mark] : marks) {
         insert_mark(hash, mark.symbol, mark.y_offset, new_uuid());
@@ -1661,6 +2577,12 @@ void DatabaseManager::ensure_schema_compatibility() {
     std::vector<std::function<void()>> migrations;
     migrations.push_back([this]() { migrate_version_0_to_1(); });
     migrations.push_back([this]() { migrate_version_1_to_2(); });
+    migrations.push_back([this]() { migrate_version_2_to_3(); });
+    migrations.push_back([this]() { migrate_version_3_to_4(); });
+    migrations.push_back([this]() { migrate_version_4_to_5(); });
+    migrations.push_back([this]() { migrate_version_5_to_6(); });
+    migrations.push_back([this]() { migrate_version_6_to_7(); });
+    migrations.push_back([this]() { migrate_version_7_to_8(); });
 
     assert(migrations.size() == DATABASE_VERSION);
 
@@ -1682,6 +2604,68 @@ bool DatabaseManager::run_schema_query(const char* query) {
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, query, null_callback, 0, &error_message);
     return handle_error("run_schema_query", error_code, error_message);
+}
+
+void DatabaseManager::migrate_version_2_to_3() {
+    qDebug() << "Migrating database from version 2 to 3";
+
+    std::vector<std::string> queries_to_run;
+    if (!table_has_column(global_db, "opened_books", "two_page_mode")) {
+        queries_to_run.push_back("ALTER TABLE opened_books ADD COLUMN two_page_mode INTEGER DEFAULT 0;");
+    }
+    if (!table_has_column(global_db, "opened_books", "book_mode_cover_offset")) {
+        queries_to_run.push_back("ALTER TABLE opened_books ADD COLUMN book_mode_cover_offset INTEGER DEFAULT 0;");
+    }
+    if (queries_to_run.size() == 0) {
+        return;
+    }
+
+    std::string transaction = "BEGIN TRANSACTION;\n";
+    for (auto q : queries_to_run) {
+        transaction += q + "\n";
+    }
+
+    transaction += "COMMIT;";
+
+    if (!run_schema_query(transaction.c_str())) {
+        qDebug() << "Error: Could not migrate database from version 2 to version 3, rolling back ...";
+        run_schema_query("ROLLBACK;");
+    }
+}
+
+void DatabaseManager::migrate_version_3_to_4() {
+    qDebug() << "Migrating database from version 3 to 4";
+    if (!create_study_objects_table()) {
+        qDebug() << "Error: Could not migrate database from version 3 to version 4";
+    }
+}
+
+void DatabaseManager::migrate_version_4_to_5() {
+    qDebug() << "Migrating database from version 4 to 5";
+    if (!create_region_highlights_table()) {
+        qDebug() << "Error: Could not migrate database from version 4 to version 5";
+    }
+}
+
+void DatabaseManager::migrate_version_5_to_6() {
+    qDebug() << "Migrating database from version 5 to 6";
+    if (!create_problem_states_table()) {
+        qDebug() << "Error: Could not migrate database from version 5 to version 6";
+    }
+}
+
+void DatabaseManager::migrate_version_6_to_7() {
+    qDebug() << "Migrating database from version 6 to 7";
+    if (!create_shelf_items_table()) {
+        qDebug() << "Error: Could not migrate database from version 6 to version 7";
+    }
+}
+
+void DatabaseManager::migrate_version_7_to_8() {
+    qDebug() << "Migrating database from version 7 to 8";
+    if (!create_dependency_links_table()) {
+        qDebug() << "Error: Could not migrate database from version 7 to version 8";
+    }
 }
 
 void DatabaseManager::migrate_version_1_to_2() {

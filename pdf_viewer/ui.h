@@ -80,6 +80,9 @@ extern bool SMALL_TOC;
 extern bool MULTILINE_MENUS;
 extern bool TOUCH_MODE;
 
+constexpr int SELECTOR_VALUE_INDEX_ROLE = Qt::UserRole + 1;
+constexpr int SELECTOR_GROUP_ROLE = Qt::UserRole + 2;
+
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
 protected:
@@ -364,6 +367,7 @@ public:
     }
 
     virtual void on_edit(const QModelIndex& source_index, const QModelIndex& selected_index) override {
+        (void)selected_index;
         if (on_edit_function) {
             on_edit_function(&values[source_index.row()]);
         }
@@ -374,6 +378,197 @@ public:
         this->parentWidget()->setFocus();
         auto source_index = this->proxy_model->mapToSource(index);
         on_done(&values[source_index.row()]);
+    }
+};
+
+class FilteredSelectWithInputWindowClass : public BaseSelectorWidget {
+private:
+    QStringListModel* string_list_model = nullptr;
+    std::vector<std::wstring> options;
+    std::vector<std::wstring> row_values;
+    std::function<void(std::wstring)> on_done = nullptr;
+    bool allow_custom_value = false;
+    std::wstring custom_value_prefix;
+
+    bool has_exact_option(const QString& text) const {
+        std::wstring value = text.trimmed().toStdWString();
+        for (const std::wstring& option : options) {
+            if (option == value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void rebuild_model(const QString& text) {
+        QStringList display_values;
+        row_values.clear();
+
+        QString trimmed_text = text.trimmed();
+        if (allow_custom_value && !trimmed_text.isEmpty() && !has_exact_option(trimmed_text)) {
+            display_values.push_back(QString::fromStdWString(custom_value_prefix) + trimmed_text);
+            row_values.push_back(trimmed_text.toStdWString());
+        }
+
+        for (const std::wstring& option : options) {
+            display_values.push_back(QString::fromStdWString(option));
+            row_values.push_back(option);
+        }
+
+        QStringListModel* new_model = new QStringListModel(display_values);
+        this->proxy_model->setSourceModel(new_model);
+        delete string_list_model;
+        string_list_model = new_model;
+    }
+
+public:
+    QString get_view_stylesheet_type_name() override {
+        return "QListView";
+    }
+
+    FilteredSelectWithInputWindowClass(
+        bool fuzzy,
+        const std::vector<std::wstring>& options,
+        bool allow_custom_value,
+        const std::wstring& custom_value_prefix,
+        std::function<void(std::wstring)> on_done,
+        MainWidget* parent) : BaseSelectorWidget(new QListView(), fuzzy, nullptr, parent),
+        options(options),
+        on_done(on_done),
+        allow_custom_value(allow_custom_value),
+        custom_value_prefix(custom_value_prefix)
+    {
+        rebuild_model("");
+        dynamic_cast<QListView*>(this->get_view())->setCurrentIndex(this->proxy_model->index(0, 0));
+    }
+
+    bool on_text_change(const QString& text) override {
+        rebuild_model(text);
+        return false;
+    }
+
+    void on_return_no_select(const QString& text) override {
+        QString trimmed_text = text.trimmed();
+        if (allow_custom_value && !trimmed_text.isEmpty()) {
+            this->hide();
+            this->parentWidget()->setFocus();
+            on_done(trimmed_text.toStdWString());
+        }
+        else {
+            BaseSelectorWidget::on_return_no_select(text);
+        }
+    }
+
+    void on_select(const QModelIndex& index) override {
+        auto source_index = this->proxy_model->mapToSource(index);
+        if (!source_index.isValid()) {
+            on_return_no_select(line_edit->text());
+            return;
+        }
+
+        int row = source_index.row();
+        if (row < 0 || static_cast<size_t>(row) >= row_values.size()) {
+            return;
+        }
+
+        this->hide();
+        this->parentWidget()->setFocus();
+        on_done(row_values[row]);
+    }
+};
+
+template<typename T>
+class FilteredTreeSelectWindowClass : public BaseSelectorWidget {
+private:
+    std::vector<T> values;
+    std::function<void(T*)> on_done = nullptr;
+
+    bool toggle_group_index(const QModelIndex& index) {
+        if (!index.isValid()) {
+            return false;
+        }
+
+        auto source_index = this->proxy_model->mapToSource(index);
+        if (!source_index.isValid() || !source_index.data(SELECTOR_GROUP_ROLE).toBool()) {
+            return false;
+        }
+
+        QTreeView* tree_view = dynamic_cast<QTreeView*>(this->get_view());
+        tree_view->setExpanded(index, !tree_view->isExpanded(index));
+        return true;
+    }
+
+public:
+    QString get_view_stylesheet_type_name() override {
+        return "QTreeView";
+    }
+
+    FilteredTreeSelectWindowClass(
+        bool fuzzy,
+        QStandardItemModel* item_model,
+        std::vector<T> values,
+        int selected_index,
+        std::function<void(T*)> on_done,
+        MainWidget* parent) : BaseSelectorWidget(new QTreeView(), fuzzy, item_model, parent),
+        values(values),
+        on_done(on_done)
+    {
+        QTreeView* tree_view = dynamic_cast<QTreeView*>(this->get_view());
+        tree_view->setSelectionMode(QAbstractItemView::SingleSelection);
+        tree_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+        tree_view->expandAll();
+
+        int n_columns = item_model->columnCount();
+        if (n_columns > 0) {
+            for (int i = 0; i < n_columns - 1; i++) {
+                tree_view->header()->setSectionResizeMode(i, QHeaderView::Stretch);
+            }
+            tree_view->header()->setSectionResizeMode(n_columns - 1, QHeaderView::ResizeToContents);
+        }
+
+        QModelIndex initial_index = this->proxy_model->index(0, 0);
+        if (selected_index >= 0) {
+            QModelIndexList matches = this->proxy_model->match(
+                this->proxy_model->index(0, 0),
+                SELECTOR_VALUE_INDEX_ROLE,
+                selected_index,
+                1,
+                Qt::MatchRecursive);
+            if (!matches.empty()) {
+                initial_index = matches[0];
+            }
+        }
+        tree_view->setCurrentIndex(initial_index);
+    }
+
+    bool eventFilter(QObject* obj, QEvent* event) override {
+        if (obj == line_edit && event->type() == QEvent::KeyPress) {
+            QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+            if (key_event->key() == Qt::Key_Space && line_edit->text().isEmpty()) {
+                std::optional<QModelIndex> selected_index = get_selected_index();
+                if (selected_index && toggle_group_index(selected_index.value())) {
+                    return true;
+                }
+            }
+        }
+        return BaseSelectorWidget::eventFilter(obj, event);
+    }
+
+    void on_select(const QModelIndex& index) override {
+        if (toggle_group_index(index)) {
+            return;
+        }
+
+        auto source_index = this->proxy_model->mapToSource(index);
+        bool ok = false;
+        int value_index = source_index.data(SELECTOR_VALUE_INDEX_ROLE).toInt(&ok);
+        if (!ok || value_index < 0 || static_cast<size_t>(value_index) >= values.size()) {
+            return;
+        }
+
+        this->hide();
+        this->parentWidget()->setFocus();
+        on_done(&values[value_index]);
     }
 };
 

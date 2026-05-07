@@ -1,4 +1,5 @@
 #include <cmath>
+#include <algorithm>
 
 #include <qcolor.h>
 #include <QMouseEvent>
@@ -561,6 +562,11 @@ void PdfViewOpenGLWidget::render_highlight_window(GLuint program, NormalizedWind
     if (flags & HighlightRenderFlags::HRF_INVERTED) {
         glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_ZERO, GL_ONE, GL_ZERO);
     }
+    else if ((flags & HRF_FILL) &&
+             ((color_mode == ColorPalette::Dark) ||
+              (color_mode == ColorPalette::Custom && !is_bright(CUSTOM_BACKGROUND_COLOR)))) {
+        glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_COLOR, GL_ONE, GL_ONE);
+    }
     else {
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
     }
@@ -897,6 +903,7 @@ void PdfViewOpenGLWidget::goto_search_result(int offset, bool overview) {
             set_overview_page(state);
         }
         else {
+            document_view->set_active_page_number(result.page);
             document_view->set_offset_y(new_offset_y);
             float normalized_center_x = (result_normalized_rect.x0 + result_normalized_rect.x1) / 2;
             if (normalized_center_x < -1 || normalized_center_x > 1) {
@@ -1111,7 +1118,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, ColorPa
             }
         }
 
-        if (BACKGROUND_PIXEL_FIX || (document_view->is_two_page_mode() && (stencils_allowed))) {
+        if (BACKGROUND_PIXEL_FIX || (document_view->is_effective_two_page_mode() && (stencils_allowed))) {
             if (BACKGROUND_PIXEL_FIX) {
                 page_content.x1 -= 1.0f / zoom_level;
                 page_content.y1 -= 1.0f / zoom_level;
@@ -1218,7 +1225,7 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, ColorPa
         glBufferData(GL_ARRAY_BUFFER, sizeof(page_vertices), page_vertices, GL_DYNAMIC_DRAW);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
-        if (document_view->is_two_page_mode() && (stencils_allowed)) {
+        if (document_view->is_effective_two_page_mode() && (stencils_allowed)) {
             disable_stencil();
         }
 
@@ -1371,6 +1378,9 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
     if (document_view->is_presentation_mode()) {
         int presentation_page_number = document_view->get_presentation_page_number().value();
+        std::vector<int> presentation_pages;
+        document_view->get_presentation_pages(presentation_pages);
+        visible_pages = presentation_pages;
         if (PRERENDER_NEXT_PAGE) {
             // request the next page so it is scheduled for rendering in the background thread
 
@@ -1405,7 +1415,15 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                 }
             }
         }
-        render_page(presentation_page_number);
+        is_helper_waiting_for_render = false;
+        if (presentation_pages.size() == 0) {
+            render_page(presentation_page_number);
+        }
+        else {
+            for (int page : presentation_pages) {
+                render_page(page);
+            }
+        }
     }
     else {
         is_helper_waiting_for_render = false;
@@ -1901,6 +1919,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
     render_text_highlights();
     render_highlight_annotations();
+    render_region_highlights();
 
     if (overview_page) {
         glDisable(GL_CULL_FACE);
@@ -3662,6 +3681,42 @@ void PdfViewOpenGLWidget::render_highlight_annotations(){
     }
 }
 
+void PdfViewOpenGLWidget::render_region_highlights() {
+    Document* current_document = document_view->get_document();
+    if (!current_document) {
+        return;
+    }
+
+    const std::vector<RegionHighlight>& region_highlights = current_document->get_region_highlights();
+    if (region_highlights.empty()) {
+        return;
+    }
+
+    std::vector<int> visible_pages;
+    document_view->get_visible_pages(document_view->get_view_height(), visible_pages);
+    if (visible_pages.empty()) {
+        return;
+    }
+
+    auto adjusted_region_color = cc3(get_highlight_type_color('r'));
+    glUniform3fv(shared_gl_objects.highlight_color_uniform_location, 1, &adjusted_region_color[0]);
+
+    for (const RegionHighlight& region_highlight : region_highlights) {
+        if (std::find(visible_pages.begin(), visible_pages.end(), region_highlight.page) == visible_pages.end()) {
+            continue;
+        }
+        if (region_highlight.page < 0 || region_highlight.page >= current_document->num_pages()) {
+            continue;
+        }
+
+        bool is_selected = region_highlight.id == selected_region_highlight_id;
+        glUniform1f(shared_gl_objects.highlight_opacity_uniform_location, is_selected ? 0.24f : 0.14f);
+        render_highlight_document(shared_gl_objects.highlight_program,
+            DocumentRect(region_highlight.rect, region_highlight.page),
+            HRF_FILL | HRF_BORDER);
+    }
+}
+
 bool PdfViewOpenGLWidget::on_vertical_scroll(){
 
     // returns true if the scroll even caused some change
@@ -3786,6 +3841,14 @@ void PdfViewOpenGLWidget::set_selected_highlight_index(int index) {
 
 void PdfViewOpenGLWidget::set_selected_bookmark_index(int index) {
     selected_bookmark_index = index;
+}
+
+void PdfViewOpenGLWidget::set_selected_region_highlight_id(const std::string& id) {
+    selected_region_highlight_id = id;
+}
+
+void PdfViewOpenGLWidget::clear_selected_region_highlight() {
+    selected_region_highlight_id = "";
 }
 
 void PdfViewOpenGLWidget::set_highlighted_tags(std::vector<std::string> tags) {

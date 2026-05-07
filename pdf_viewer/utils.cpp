@@ -4445,6 +4445,53 @@ bool is_platform_control_pressed(QKeyEvent* kevent){
 #endif
 }
 
+namespace {
+bool has_control_or_command_shortcut_modifier(QKeyEvent* kevent, bool allow_shift = false) {
+    if (!kevent) {
+        return false;
+    }
+
+    Qt::KeyboardModifiers modifiers = kevent->modifiers();
+    bool has_control_or_command = modifiers.testFlag(Qt::ControlModifier) || modifiers.testFlag(Qt::MetaModifier);
+    bool has_alt = modifiers.testFlag(Qt::AltModifier);
+    bool has_shift = modifiers.testFlag(Qt::ShiftModifier);
+
+    return has_control_or_command && !has_alt && (allow_shift || !has_shift);
+}
+}
+
+bool is_copy_shortcut(QKeyEvent* kevent) {
+    return kevent && kevent->key() == Qt::Key_C && has_control_or_command_shortcut_modifier(kevent);
+}
+
+bool is_paste_shortcut(QKeyEvent* kevent) {
+    return kevent && kevent->key() == Qt::Key_V && has_control_or_command_shortcut_modifier(kevent);
+}
+
+bool is_cut_shortcut(QKeyEvent* kevent) {
+    return kevent && kevent->key() == Qt::Key_X && has_control_or_command_shortcut_modifier(kevent);
+}
+
+bool is_select_all_shortcut(QKeyEvent* kevent) {
+    return kevent && kevent->key() == Qt::Key_A && has_control_or_command_shortcut_modifier(kevent);
+}
+
+bool is_undo_shortcut(QKeyEvent* kevent) {
+    return kevent && kevent->key() == Qt::Key_Z && has_control_or_command_shortcut_modifier(kevent);
+}
+
+bool is_redo_shortcut(QKeyEvent* kevent) {
+    if (!kevent) {
+        return false;
+    }
+
+    bool key_y_redo = kevent->key() == Qt::Key_Y && has_control_or_command_shortcut_modifier(kevent);
+    bool shifted_key_z_redo = kevent->key() == Qt::Key_Z &&
+        kevent->modifiers().testFlag(Qt::ShiftModifier) &&
+        has_control_or_command_shortcut_modifier(kevent, true);
+    return key_y_redo || shifted_key_z_redo;
+}
+
 std::vector<std::wstring> get_last_opened_file_name() {
     if (!OPEN_LAST_FILE_ON_STARTUP) return {};
 

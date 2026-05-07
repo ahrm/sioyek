@@ -24,12 +24,15 @@
 #include <memory>
 #include <cctype>
 #include <cstdlib>
+#include <algorithm>
 #include <qpainterpath.h>
 #include <qabstractitemmodel.h>
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qdatetime.h>
+#include <qdir.h>
 #include <qfile.h>
+#include <qfileinfo.h>
 #include <qdrag.h>
 #include <qmenu.h>
 #include <QThread>
@@ -60,10 +63,12 @@
 #include <qjsonobject.h>
 #include <qlocalsocket.h>
 #include <qbytearray.h>
+#include <qclipboard.h>
 #include <qscrollbar.h>
 #include <qtexttospeech.h>
 #include <qwidget.h>
 #include <qjsengine.h>
+#include <qnetworkreply.h>
 #include <qqmlengine.h>
 #include <qtextdocumentfragment.h>
 #include <qmenubar.h>
@@ -87,6 +92,10 @@
 #include "touchui/TouchMarkSelector.h"
 #include "checksum.h"
 #include "touchui/TouchSettings.h"
+#include "library_manager.h"
+#include "google_drive_import.h"
+#include "workspace_manager.h"
+#include "page_layout.h"
 
 #include "main_widget.h"
 
@@ -119,6 +128,7 @@ extern std::wstring PAPER_SEARCH_URL;
 extern std::wstring PAPER_SEARCH_URL_PATH;
 extern std::wstring PAPER_SEARCH_TILE_PATH;
 extern std::wstring PAPER_SEARCH_CONTRIB_PATH;
+extern std::wstring GOOGLE_DRIVE_API_KEY;
 extern bool FUZZY_SEARCHING;
 extern bool AUTO_RENAME_DOWNLOADED_PAPERS;
 extern bool SHOW_STATUSBAR_ONLY_WHEN_MOUSE_OVER;
@@ -155,6 +165,7 @@ extern int SINGLE_MAIN_WINDOW_MOVE[2];
 extern float OVERVIEW_SIZE[2];
 extern float OVERVIEW_OFFSET[2];
 extern bool IGNORE_WHITESPACE_IN_PRESENTATION_MODE;
+extern bool PRESENTATION_TWO_PAGE_MODE;
 extern std::vector<MainWidget*> windows;
 extern bool SHOW_DOC_PATH;
 extern bool SINGLE_CLICK_SELECTS_WORDS;
@@ -248,6 +259,7 @@ extern std::wstring TABLET_PEN_DOUBLE_CLICK_COMMAND;
 extern bool ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL;
 extern float PAGE_SPACE_X;
 extern float PAGE_SPACE_Y;
+extern bool RECTO_VERSO_ADJUSTMENT;
 
 extern std::wstring MIDDLE_LEFT_RECT_TAP_COMMAND;
 extern std::wstring MIDDLE_LEFT_RECT_HOLD_COMMAND;
@@ -860,7 +872,7 @@ void MainWidget::closeEvent(QCloseEvent* close_event) {
     handle_close_event();
 }
 
-MainWidget::MainWidget(MainWidget* other) : MainWidget(other->mupdf_context, other->db_manager, other->document_manager, other->config_manager, other->command_manager, other->input_handler, other->checksummer, other->should_quit) {
+MainWidget::MainWidget(MainWidget* other) : MainWidget(other->mupdf_context, other->db_manager, other->document_manager, other->config_manager, other->command_manager, other->input_handler, other->checksummer, other->library_manager, other->workspace_manager, other->should_quit) {
 
 }
 
@@ -871,6 +883,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     CommandManager* command_manager,
     InputHandler* input_handler,
     CachedChecksummer* checksummer,
+    LibraryManager* library_manager,
+    WorkspaceManager* workspace_manager,
     bool* should_quit_ptr,
     QWidget* parent) :
 #ifdef SIOYEK_ANDROID
@@ -884,6 +898,8 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     config_manager(config_manager),
     input_handler(input_handler),
     checksummer(checksummer),
+    library_manager(library_manager),
+    workspace_manager(workspace_manager),
     should_quit(should_quit_ptr),
     command_manager(command_manager)
 {
@@ -1786,27 +1802,7 @@ void MainWidget::validate_render() {
         }
     }
     if (main_document_view->is_presentation_mode()) {
-        int current_page = get_current_page_number();
-        if (current_page >= 0) {
-            main_document_view->set_presentation_page_number(current_page);
-            if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
-                main_document_view->set_offset_y(
-                    main_document_view->get_document()->get_accum_page_height(current_page) +
-                    main_document_view->get_document()->get_page_height(current_page) / 2);
-            }
-            else {
-                float statusbar_factor = status_label->isVisible() ? static_cast<float>(status_label->height() / 2 / main_document_view->get_zoom_level()) : 0;
-                main_document_view->set_offset_y(
-                    main_document_view->get_document()->get_accum_page_height(current_page) +
-                    main_document_view->get_document()->get_page_height(current_page) / 2 + statusbar_factor);
-            }
-            if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
-                main_document_view->fit_to_page_height(true);
-            }
-            else {
-                main_document_view->fit_to_page_height_width_minimum(status_label->isVisible() ? status_label->height() : 0);
-            }
-        }
+        refresh_presentation_layout();
     }
 
     bool should_update_portal = false;
@@ -2165,6 +2161,7 @@ void MainWidget::open_document_at_location(const Path& path_,
 void MainWidget::open_document(const DocumentViewState& state)
 {
     open_document(state.document_path, state.book_state.offset_x, state.book_state.offset_y, state.book_state.zoom_level);
+    main_document_view->set_book_state(state.book_state);
 }
 
 
@@ -2196,6 +2193,11 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
 
     if (released && (!is_auto_repeat)) {
         set_last_performed_command({});
+    }
+    if (!released && is_copy_shortcut(kevent)) {
+        handle_command_types(command_manager->get_command_with_name(this, "copy"), 0);
+        validate_render();
+        return;
     }
     if (typing_location.has_value()) {
 
@@ -2783,6 +2785,8 @@ void MainWidget::handle_click(WindowPos click_pos) {
         return;
     }
 
+    main_document_view->set_active_page_number(main_document_view->window_to_document_pos(click_pos).page);
+
     auto link = main_document_view->get_link_in_pos(click_pos);
     set_selected_highlight_index(main_document_view->get_highlight_index_in_pos(click_pos));
     set_selected_bookmark_index(doc()->get_bookmark_index_at_pos(mouse_abspos));
@@ -3356,7 +3360,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
 
                 }
                 else if (main_document_view->is_presentation_mode()) {
-                    main_document_view->goto_page(main_document_view->get_center_page_number() - num_repeats);
+                    main_document_view->move_pages(-num_repeats);
                     invalidate_render();
                 }
                 else {
@@ -3382,7 +3386,7 @@ void MainWidget::wheelEvent(QWheelEvent* wevent) {
                     }
                 }
                 else if (main_document_view->is_presentation_mode()) {
-                    main_document_view->goto_page(main_document_view->get_center_page_number() + num_repeats);
+                    main_document_view->move_pages(num_repeats);
                     invalidate_render();
                 }
                 else {
@@ -3837,10 +3841,53 @@ void MainWidget::toggle_presentation_mode() {
 void MainWidget::set_presentation_mode(bool mode) {
     if (mode) {
         main_document_view->set_presentation_page_number(get_current_page_number());
+        main_document_view->set_presentation_two_page_mode(PRESENTATION_TWO_PAGE_MODE || main_document_view->is_two_page_mode());
+        refresh_presentation_layout();
     }
     else {
         main_document_view->set_presentation_page_number({});
     }
+}
+
+void MainWidget::refresh_presentation_layout() {
+    if (!main_document_view->is_presentation_mode()) {
+        return;
+    }
+
+    int current_page = get_current_page_number();
+    if (current_page < 0) {
+        return;
+    }
+
+    int statusbar_height = status_label->isVisible() ? status_label->height() : 0;
+    main_document_view->set_presentation_page_number(current_page);
+    if (main_document_view->is_presentation_two_page_mode()) {
+        main_document_view->fit_to_presentation_spread(statusbar_height);
+        return;
+    }
+
+    if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
+        main_document_view->set_offset_y(
+            main_document_view->get_document()->get_accum_page_height(current_page) +
+            main_document_view->get_document()->get_page_height(current_page) / 2);
+        main_document_view->fit_to_page_height(true);
+    }
+    else {
+        float statusbar_factor = status_label->isVisible() ?
+            static_cast<float>(status_label->height() / 2 / main_document_view->get_zoom_level()) :
+            0;
+        main_document_view->set_offset_y(
+            main_document_view->get_document()->get_accum_page_height(current_page) +
+            main_document_view->get_document()->get_page_height(current_page) / 2 + statusbar_factor);
+        main_document_view->fit_to_page_height_width_minimum(statusbar_height);
+    }
+}
+
+void MainWidget::handle_toggle_presentation_two_page_mode() {
+    PRESENTATION_TWO_PAGE_MODE = !PRESENTATION_TWO_PAGE_MODE;
+    main_document_view->set_presentation_two_page_mode(PRESENTATION_TWO_PAGE_MODE || main_document_view->is_two_page_mode());
+    refresh_presentation_layout();
+    invalidate_render();
 }
 
 void MainWidget::complete_pending_link(const PortalViewState& destination_view_state) {
@@ -3867,6 +3914,7 @@ void MainWidget::long_jump_to_destination(DocumentPos pos) {
 
     if (!is_pending_link_source_filled()) {
         push_state();
+        main_document_view->set_active_page_number(pos.page);
         main_document_view->set_offsets(pos.x, abs_pos.y);
         //main_document_view->goto_offset_within_page({ pos.page, pos.x, pos.y });
     }
@@ -5147,6 +5195,17 @@ void MainWidget::set_status_message(std::wstring new_status_string) {
     custom_status_message = new_status_string;
 }
 
+void MainWidget::set_temporary_status_message(std::wstring new_status_string) {
+    set_status_message(new_status_string);
+    invalidate_ui();
+    QTimer::singleShot(3000, this, [this, new_status_string]() {
+        if (custom_status_message == new_status_string) {
+            set_status_message(L"");
+            invalidate_ui();
+        }
+        });
+}
+
 void MainWidget::remove_self_from_windows() {
     for (size_t i = 0; i < windows.size(); i++) {
         if (windows[i] == this) {
@@ -6100,6 +6159,2840 @@ void MainWidget::handle_goto_highlight_global() {
     show_current_widget();
 }
 
+static std::wstring study_object_main_text(const StudyObject& study_object) {
+    return L"[" + study_object.type + L"] " + study_object.title;
+}
+
+static std::vector<std::vector<std::wstring>> study_object_table_columns(
+    const std::vector<StudyObject>& study_objects,
+    bool include_document_name) {
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> notes;
+    std::vector<std::wstring> pages;
+    std::vector<std::wstring> documents;
+    bool has_notes = false;
+
+    for (const StudyObject& study_object : study_objects) {
+        names.push_back(study_object_main_text(study_object));
+        notes.push_back(study_object.note);
+        if (!study_object.note.empty()) {
+            has_notes = true;
+        }
+        pages.push_back(get_page_formatted_string(study_object.page + 1));
+        if (include_document_name) {
+            std::wstring document_name = study_object.document_path.empty()
+                ? utf8_decode(study_object.document_checksum)
+                : Path(study_object.document_path).filename().value_or(study_object.document_path);
+            documents.push_back(truncate_string(document_name, 50));
+        }
+    }
+
+    std::vector<std::vector<std::wstring>> table = { names };
+    if (has_notes) {
+        table.push_back(notes);
+    }
+    table.push_back(pages);
+    if (include_document_name) {
+        table.push_back(documents);
+    }
+    return table;
+}
+
+static void open_study_object(MainWidget* widget, const StudyObject& study_object) {
+    std::wstring document_path = study_object.document_path;
+    if (document_path.empty()) {
+        document_path = widget->checksummer->get_path(study_object.document_checksum).value_or(L"");
+    }
+
+    bool already_open = false;
+    if (widget->doc()) {
+        std::optional<std::string> current_checksum = widget->doc()->get_checksum_fast();
+        already_open = (current_checksum.has_value() && current_checksum.value() == study_object.document_checksum)
+            || (!document_path.empty() && widget->doc()->get_path() == document_path);
+    }
+
+    if (!already_open) {
+        if (document_path.empty()) {
+            show_error_message(L"Could not open study object: document path is unavailable");
+            return;
+        }
+        widget->open_document(document_path, {}, {}, study_object.zoom_level > 0.0f ? std::optional<float>{ study_object.zoom_level } : std::optional<float>{});
+    }
+
+    if (!widget->doc()) {
+        show_error_message(L"Could not open study object: document is unavailable");
+        return;
+    }
+    std::optional<std::string> opened_checksum = widget->doc()->get_checksum_fast();
+    if (!document_path.empty() && widget->doc()->get_path() != document_path
+        && (!opened_checksum.has_value() || opened_checksum.value() != study_object.document_checksum)) {
+        show_error_message(L"Could not open study object: document is unavailable");
+        return;
+    }
+
+    int page = study_object.page;
+    if (page < 0 || page >= widget->doc()->num_pages()) {
+        show_error_message(L"Could not open study object: saved page is outside the document");
+        return;
+    }
+
+    float target_offset_y = widget->main_document_view->get_page_offset(page) + study_object.page_offset_y;
+    if (study_object.zoom_level > 0.0f) {
+        widget->main_document_view->set_zoom_level(study_object.zoom_level, true);
+    }
+    widget->main_document_view->set_active_page_number(page);
+    if (widget->main_document_view->is_presentation_mode()) {
+        widget->main_document_view->set_presentation_page_number(page);
+    }
+    else {
+        widget->main_document_view->set_offsets(study_object.offset_x, target_offset_y, true);
+    }
+    widget->validate_render();
+}
+
+void MainWidget::handle_study_object_select_type() {
+    std::vector<std::wstring> types = study_object_types();
+    set_filtered_select_menu<std::wstring>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { types }, types, -1,
+        [&](std::wstring* type) {
+            if (type && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdWString(*type));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [](std::wstring*) {});
+    show_current_widget();
+}
+
+void MainWidget::handle_study_object_select_current() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::vector<StudyObject> study_objects = doc()->get_study_objects_sorted();
+    if (study_objects.empty()) {
+        set_temporary_status_message(L"No study objects in current document");
+        return;
+    }
+
+    int closest_index = doc()->find_closest_study_object_index(study_objects, main_document_view->get_offset_y());
+    set_filtered_select_menu<StudyObject>(this, FUZZY_SEARCHING, MULTILINE_MENUS,
+        study_object_table_columns(study_objects, false), study_objects, closest_index,
+        [&](StudyObject* study_object) {
+            if (study_object && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdString(study_object->id));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [&](StudyObject* study_object) {
+            if (study_object) {
+                handle_study_object_delete_id(study_object->id);
+            }
+        });
+    show_current_widget();
+}
+
+void MainWidget::handle_study_object_create(const std::wstring& type, const std::wstring& title, const std::wstring& note) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (!is_valid_study_object_type(type)) {
+        show_error_message(L"Invalid study object type");
+        return;
+    }
+    if (title.empty()) {
+        set_temporary_status_message(L"Study object was not created: empty title");
+        return;
+    }
+
+    int page = get_current_page_number();
+    float offset_x = main_document_view->get_offset_x();
+    float offset_y = main_document_view->get_offset_y();
+    float page_offset_y = offset_y - main_document_view->get_page_offset(page);
+    std::optional<AbsoluteDocumentPos> selected_begin = {};
+    std::optional<AbsoluteDocumentPos> selected_end = {};
+    if (main_document_view->selected_character_rects.size() > 0) {
+        selected_begin = selection_begin;
+        selected_end = selection_end;
+    }
+
+    std::string id = doc()->add_study_object(type,
+        title,
+        note,
+        page,
+        offset_x,
+        offset_y,
+        page_offset_y,
+        main_document_view->get_zoom_level(),
+        selected_begin,
+        selected_end);
+    if (id.empty()) {
+        show_error_message(L"Could not create study object");
+        return;
+    }
+
+    set_temporary_status_message(L"Created study object: " + study_object_main_text(doc()->get_study_objects().back()) + L" - " + get_page_formatted_string(page + 1));
+}
+
+void MainWidget::handle_study_object_open() {
+    handle_study_object_select_current();
+}
+
+void MainWidget::handle_study_object_open_workspace() {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    std::optional<std::wstring> active_workspace = workspace_manager->active_workspace();
+    if (!active_workspace.has_value()) {
+        set_temporary_status_message(L"No active workspace");
+        return;
+    }
+
+    std::optional<WorkspaceEntry> workspace = workspace_manager->get_workspace(active_workspace.value());
+    if (!workspace.has_value()) {
+        set_temporary_status_message(L"Active workspace is missing: " + active_workspace.value());
+        return;
+    }
+
+    std::set<std::string> seen_checksums;
+    std::vector<std::string> checksums;
+    std::vector<std::wstring> document_paths;
+    for (const WorkspaceDocumentEntry& workspace_document : workspace->documents) {
+        std::wstring path = WorkspaceManager::normalize_workspace_path(workspace_document.path);
+        if (!path.empty()) {
+            document_paths.push_back(path);
+        }
+        std::vector<std::wstring> hash_results;
+        db_manager->get_hash_from_path(utf8_encode(path), hash_results);
+        for (const std::wstring& hash : hash_results) {
+            std::string checksum = utf8_encode(hash);
+            if (!checksum.empty() && seen_checksums.insert(checksum).second) {
+                checksums.push_back(checksum);
+            }
+        }
+    }
+
+    std::vector<StudyObject> study_objects;
+    db_manager->select_study_objects_for_documents(checksums, document_paths, study_objects);
+    for (StudyObject& study_object : study_objects) {
+        if (study_object.document_path.empty()) {
+            study_object.document_path = checksummer->get_path(study_object.document_checksum).value_or(L"");
+        }
+    }
+
+    if (study_objects.empty()) {
+        set_temporary_status_message(L"No study objects in active workspace");
+        return;
+    }
+
+    set_filtered_select_menu<StudyObject>(this, FUZZY_SEARCHING, MULTILINE_MENUS,
+        study_object_table_columns(study_objects, true), study_objects, -1,
+        [&](StudyObject* study_object) {
+            if (study_object) {
+                open_study_object(this, *study_object);
+            }
+        },
+        [](StudyObject*) {});
+    show_current_widget();
+}
+
+void MainWidget::handle_study_object_open_id(const std::string& id) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    int index = doc()->get_study_object_index_with_id(id);
+    if (index < 0) {
+        set_temporary_status_message(L"Study object no longer exists");
+        return;
+    }
+    open_study_object(this, doc()->get_study_objects()[index]);
+}
+
+void MainWidget::handle_study_object_rename(const std::string& id, const std::wstring& new_title) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (doc()->update_study_object_title(id, new_title)) {
+        set_temporary_status_message(L"Renamed study object");
+    }
+    else {
+        show_error_message(L"Could not rename study object");
+    }
+}
+
+void MainWidget::handle_study_object_set_type(const std::string& id, const std::wstring& new_type) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (doc()->update_study_object_type(id, new_type)) {
+        set_temporary_status_message(L"Updated study object type");
+    }
+    else {
+        show_error_message(L"Could not update study object type");
+    }
+}
+
+void MainWidget::handle_study_object_delete() {
+    handle_study_object_select_current();
+}
+
+void MainWidget::handle_study_object_delete_id(const std::string& id) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (doc()->delete_study_object(id)) {
+        set_temporary_status_message(L"Deleted study object");
+    }
+    else {
+        show_error_message(L"Could not delete study object");
+    }
+}
+
+void MainWidget::handle_study_object_show_current() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    int current_page = get_current_page_number();
+    std::vector<StudyObject> nearby_study_objects;
+    for (const StudyObject& study_object : doc()->get_study_objects_sorted()) {
+        if (std::abs(study_object.page - current_page) <= 1) {
+            nearby_study_objects.push_back(study_object);
+        }
+    }
+
+    if (nearby_study_objects.empty()) {
+        set_temporary_status_message(L"No study objects on nearby pages");
+        return;
+    }
+
+    int closest_index = doc()->find_closest_study_object_index(nearby_study_objects, main_document_view->get_offset_y());
+    set_filtered_select_menu<StudyObject>(this, FUZZY_SEARCHING, MULTILINE_MENUS,
+        study_object_table_columns(nearby_study_objects, false), nearby_study_objects, closest_index,
+        [&](StudyObject* study_object) {
+            if (study_object) {
+                open_study_object(this, *study_object);
+            }
+        },
+        [](StudyObject*) {});
+    show_current_widget();
+}
+
+static std::wstring region_highlight_display_title(const RegionHighlight& region_highlight) {
+    return region_highlight.title.empty() ? L"Region highlight" : region_highlight.title;
+}
+
+static std::wstring region_highlight_page_text(const RegionHighlight& region_highlight) {
+    return L"page " + std::to_wstring(region_highlight.page + 1);
+}
+
+static std::wstring region_highlight_main_text(const RegionHighlight& region_highlight) {
+    std::wstring type = region_highlight.type.empty() ? L"region" : region_highlight.type;
+    return L"[" + type + L"] " + region_highlight_display_title(region_highlight) + L" - " + region_highlight_page_text(region_highlight);
+}
+
+static std::vector<std::vector<std::wstring>> region_highlight_table_columns(const std::vector<RegionHighlight>& region_highlights) {
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> notes;
+    bool has_notes = false;
+
+    for (const RegionHighlight& region_highlight : region_highlights) {
+        names.push_back(region_highlight_main_text(region_highlight));
+        notes.push_back(region_highlight.note);
+        if (!region_highlight.note.empty()) {
+            has_notes = true;
+        }
+    }
+
+    std::vector<std::vector<std::wstring>> table = { names };
+    if (has_notes) {
+        table.push_back(notes);
+    }
+    return table;
+}
+
+static PagelessDocumentRect normalized_pageless_region_rect(PagelessDocumentRect rect) {
+    if (rect.x0 > rect.x1) {
+        std::swap(rect.x0, rect.x1);
+    }
+    if (rect.y0 > rect.y1) {
+        std::swap(rect.y0, rect.y1);
+    }
+    return rect;
+}
+
+static AbsoluteRect normalized_absolute_region_rect(AbsoluteRect rect) {
+    if (rect.x0 > rect.x1) {
+        std::swap(rect.x0, rect.x1);
+    }
+    if (rect.y0 > rect.y1) {
+        std::swap(rect.y0, rect.y1);
+    }
+    return rect;
+}
+
+static bool region_document_rect_from_absolute(Document* document, AbsoluteRect absolute_rect, DocumentRect& out_rect) {
+    if (!document) {
+        return false;
+    }
+
+    AbsoluteRect normalized_rect = normalized_absolute_region_rect(absolute_rect);
+    DocumentPos top_left = normalized_rect.top_left().to_document(document);
+    DocumentPos bottom_right = normalized_rect.bottom_right().to_document(document);
+    if (top_left.page < 0 || bottom_right.page < 0 || top_left.page != bottom_right.page) {
+        return false;
+    }
+
+    out_rect = DocumentRect(top_left, bottom_right, top_left.page);
+    out_rect.rect = normalized_pageless_region_rect(out_rect.rect);
+    return out_rect.rect.width() > 0.0f && out_rect.rect.height() > 0.0f;
+}
+
+static QRect normalized_qrect_from_window_rect(WindowRect window_rect) {
+    int x0 = std::min(window_rect.x0, window_rect.x1);
+    int y0 = std::min(window_rect.y0, window_rect.y1);
+    int x1 = std::max(window_rect.x0, window_rect.x1);
+    int y1 = std::max(window_rect.y0, window_rect.y1);
+    return QRect(QPoint(x0, y0), QPoint(x1, y1)).normalized();
+}
+
+static void open_region_highlight(MainWidget* widget, const RegionHighlight& region_highlight) {
+    if (!widget->doc()) {
+        widget->set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (region_highlight.page < 0 || region_highlight.page >= widget->doc()->num_pages()) {
+        show_error_message(L"Could not open region highlight: saved page is outside the document");
+        return;
+    }
+
+    widget->main_document_view->set_active_page_number(region_highlight.page);
+    if (widget->main_document_view->is_presentation_mode()) {
+        widget->main_document_view->set_presentation_page_number(region_highlight.page);
+    }
+    else {
+        AbsoluteRect absolute_rect = widget->doc()->document_to_absolute_rect(DocumentRect(region_highlight.rect, region_highlight.page));
+        AbsoluteDocumentPos center = absolute_rect.center();
+        widget->main_document_view->set_offsets(center.x, center.y, true);
+    }
+    widget->opengl_widget->set_selected_region_highlight_id(region_highlight.id);
+    widget->validate_render();
+}
+
+enum class StudyIndexEntryKind {
+    StudyObject,
+    RegionHighlight,
+};
+
+enum class StudyHudScope {
+    Page,
+    Document,
+    Workspace,
+};
+
+struct StudyIndexEntry {
+    StudyIndexEntryKind kind = StudyIndexEntryKind::StudyObject;
+    StudyObject study_object;
+    RegionHighlight region_highlight;
+    std::wstring group;
+    std::wstring row_text;
+    std::wstring note;
+    std::wstring context;
+    int page = -1;
+    float sort_y = 0.0f;
+    float sort_x = 0.0f;
+    std::string created_at;
+};
+
+static std::wstring study_index_page_text(int page) {
+    return L"page " + std::to_wstring(page + 1);
+}
+
+static std::wstring study_index_document_name(const std::wstring& document_path, const std::string& checksum) {
+    if (!document_path.empty()) {
+        return Path(document_path).filename().value_or(document_path);
+    }
+    return checksum.empty() ? L"Unknown document" : utf8_decode(checksum);
+}
+
+static std::wstring study_index_type_label(const std::wstring& type) {
+    return type.empty() ? L"other" : type;
+}
+
+static std::wstring study_index_group_for_type(const std::wstring& type) {
+    if (type == L"definition") return L"Definitions";
+    if (type == L"theorem") return L"Theorems";
+    if (type == L"lemma") return L"Lemmas";
+    if (type == L"proposition") return L"Propositions";
+    if (type == L"corollary") return L"Corollaries";
+    if (type == L"equation") return L"Equations";
+    if (type == L"figure" || type == L"region") return L"Figures / Regions";
+    if (type == L"proof") return L"Proofs";
+    if (type == L"exercise") return L"Exercises";
+    if (type == L"question") return L"Questions";
+    if (type == L"confusion") return L"Confusions";
+    if (type == L"idea") return L"Ideas";
+    if (type == L"note") return L"Notes";
+    return L"Other";
+}
+
+static const std::vector<std::wstring>& study_index_group_order() {
+    static const std::vector<std::wstring> groups = {
+        L"Definitions",
+        L"Theorems",
+        L"Lemmas",
+        L"Propositions",
+        L"Corollaries",
+        L"Equations",
+        L"Figures / Regions",
+        L"Proofs",
+        L"Exercises",
+        L"Questions",
+        L"Confusions",
+        L"Ideas",
+        L"Notes",
+        L"Other",
+    };
+    return groups;
+}
+
+static int study_index_group_order_index(const std::wstring& group) {
+    const auto& groups = study_index_group_order();
+    auto it = std::find(groups.begin(), groups.end(), group);
+    if (it == groups.end()) {
+        return static_cast<int>(groups.size());
+    }
+    return static_cast<int>(std::distance(groups.begin(), it));
+}
+
+static std::wstring study_index_study_object_title(const StudyObject& study_object) {
+    if (!study_object.title.empty()) {
+        return study_object.title;
+    }
+    return L"Untitled " + study_index_type_label(study_object.type);
+}
+
+static std::wstring study_index_region_title(const RegionHighlight& region_highlight) {
+    return region_highlight.title.empty() ? L"Region highlight" : region_highlight.title;
+}
+
+static bool study_index_valid_region_rect(PagelessDocumentRect rect) {
+    return rect.width() > 0.0f && rect.height() > 0.0f;
+}
+
+static StudyIndexEntry study_index_entry_from_study_object(const StudyObject& study_object, bool include_document_name) {
+    StudyIndexEntry entry;
+    entry.kind = StudyIndexEntryKind::StudyObject;
+    entry.study_object = study_object;
+    entry.page = study_object.page;
+    entry.sort_y = study_object.offset_y;
+    entry.sort_x = study_object.offset_x;
+    entry.created_at = study_object.created_at;
+    std::wstring type = study_index_type_label(study_object.type);
+    entry.group = study_index_group_for_type(type);
+    entry.note = study_object.note;
+    std::wstring page_text = study_index_page_text(study_object.page);
+    entry.row_text = L"[" + type + L"] " + study_index_study_object_title(study_object) + L" - " + page_text;
+    entry.context = include_document_name
+        ? truncate_string(study_index_document_name(study_object.document_path, study_object.document_checksum), 50)
+        : page_text;
+    return entry;
+}
+
+static StudyIndexEntry study_index_entry_from_region_highlight(const RegionHighlight& region_highlight, bool include_document_name) {
+    StudyIndexEntry entry;
+    entry.kind = StudyIndexEntryKind::RegionHighlight;
+    entry.region_highlight = region_highlight;
+    entry.page = region_highlight.page;
+    entry.sort_y = region_highlight.rect.y0;
+    entry.sort_x = region_highlight.rect.x0;
+    entry.created_at = region_highlight.created_at;
+    std::wstring type = study_index_type_label(region_highlight.type.empty() ? L"region" : region_highlight.type);
+    entry.group = study_index_group_for_type(type);
+    entry.note = region_highlight.note;
+    std::wstring page_text = study_index_page_text(region_highlight.page);
+    entry.row_text = L"[" + type + L"] " + study_index_region_title(region_highlight) + L" - " + page_text;
+    entry.context = include_document_name
+        ? truncate_string(study_index_document_name(region_highlight.document_path, region_highlight.document_checksum), 50)
+        : page_text;
+    return entry;
+}
+
+static bool is_problem_study_object(const StudyObject& study_object) {
+    return study_object.type == L"exercise";
+}
+
+static std::unordered_map<std::string, ProblemState> problem_state_map_for_study_objects(
+    MainWidget* widget,
+    const std::vector<StudyObject>& study_objects) {
+    std::unordered_map<std::string, ProblemState> result;
+    if (!widget || !widget->db_manager || study_objects.empty()) {
+        return result;
+    }
+
+    std::vector<std::string> ids;
+    std::set<std::string> seen_ids;
+    for (const StudyObject& study_object : study_objects) {
+        if (study_object.id.empty() || !is_problem_study_object(study_object)) {
+            continue;
+        }
+        if (seen_ids.insert(study_object.id).second) {
+            ids.push_back(study_object.id);
+        }
+    }
+
+    std::vector<ProblemState> states;
+    if (!widget->db_manager->select_problem_states_for_study_objects(ids, states)) {
+        qDebug() << "Could not load problem states";
+        return result;
+    }
+
+    for (const ProblemState& state : states) {
+        if (is_valid_problem_status(state.status)) {
+            result[state.study_object_id] = state;
+        }
+    }
+    return result;
+}
+
+static std::wstring problem_row_text(const StudyObject& study_object, const std::wstring& status) {
+    return L"[" + status + L"] " + study_index_study_object_title(study_object) + L" - " + study_index_page_text(study_object.page);
+}
+
+static void apply_problem_states_to_study_index_entries(MainWidget* widget, std::vector<StudyIndexEntry>& entries) {
+    std::vector<StudyObject> problem_objects;
+    for (const StudyIndexEntry& entry : entries) {
+        if (entry.kind == StudyIndexEntryKind::StudyObject && is_problem_study_object(entry.study_object)) {
+            problem_objects.push_back(entry.study_object);
+        }
+    }
+    std::unordered_map<std::string, ProblemState> problem_states = problem_state_map_for_study_objects(widget, problem_objects);
+    if (problem_states.empty()) {
+        return;
+    }
+
+    for (StudyIndexEntry& entry : entries) {
+        if (entry.kind != StudyIndexEntryKind::StudyObject || !is_problem_study_object(entry.study_object)) {
+            continue;
+        }
+        auto it = problem_states.find(entry.study_object.id);
+        if (it != problem_states.end()) {
+            entry.row_text = problem_row_text(entry.study_object, it->second.status);
+        }
+    }
+}
+
+static void sort_study_index_entries(std::vector<StudyIndexEntry>& entries) {
+    std::stable_sort(entries.begin(), entries.end(), [](const StudyIndexEntry& lhs, const StudyIndexEntry& rhs) {
+        int lhs_group = study_index_group_order_index(lhs.group);
+        int rhs_group = study_index_group_order_index(rhs.group);
+        if (lhs_group != rhs_group) return lhs_group < rhs_group;
+        if (lhs.page != rhs.page) return lhs.page < rhs.page;
+        if (lhs.sort_y != rhs.sort_y) return lhs.sort_y < rhs.sort_y;
+        if (lhs.sort_x != rhs.sort_x) return lhs.sort_x < rhs.sort_x;
+        return lhs.created_at < rhs.created_at;
+        });
+}
+
+static void append_study_index_entries_for_document(
+    Document* document,
+    std::vector<StudyIndexEntry>& entries,
+    const std::set<int>* page_filter,
+    bool include_document_name,
+    const QString& debug_context) {
+    if (!document) {
+        return;
+    }
+
+    for (const StudyObject& study_object : document->get_study_objects()) {
+        if (study_object.page < 0 || study_object.page >= document->num_pages()) {
+            qDebug() << "Skipping" << debug_context << "study object with invalid page" << QString::fromStdString(study_object.id);
+            continue;
+        }
+        if (page_filter && page_filter->find(study_object.page) == page_filter->end()) {
+            continue;
+        }
+        entries.push_back(study_index_entry_from_study_object(study_object, include_document_name));
+    }
+
+    for (const RegionHighlight& region_highlight : document->get_region_highlights()) {
+        if (region_highlight.page < 0 || region_highlight.page >= document->num_pages() || !study_index_valid_region_rect(region_highlight.rect)) {
+            qDebug() << "Skipping" << debug_context << "region highlight with invalid location" << QString::fromStdString(region_highlight.id);
+            continue;
+        }
+        if (page_filter && page_filter->find(region_highlight.page) == page_filter->end()) {
+            continue;
+        }
+        entries.push_back(study_index_entry_from_region_highlight(region_highlight, include_document_name));
+    }
+}
+
+static std::vector<StudyIndexEntry> study_index_entries_for_current_document(
+    MainWidget* widget,
+    const std::set<int>* page_filter = nullptr,
+    bool include_document_name = false) {
+    std::vector<StudyIndexEntry> entries;
+    if (!widget || !widget->doc()) {
+        return entries;
+    }
+
+    append_study_index_entries_for_document(widget->doc(), entries, page_filter, include_document_name, "study index");
+    apply_problem_states_to_study_index_entries(widget, entries);
+    sort_study_index_entries(entries);
+    return entries;
+}
+
+static std::set<int> study_index_nearby_pages(MainWidget* widget) {
+    std::set<int> pages;
+    if (!widget || !widget->doc()) {
+        return pages;
+    }
+
+    int current_page = widget->get_current_page_number();
+    for (int page = current_page - 1; page <= current_page + 1; page++) {
+        if (page >= 0 && page < widget->doc()->num_pages()) {
+            pages.insert(page);
+        }
+    }
+    return pages;
+}
+
+static std::set<int> study_hud_page_scope_pages(MainWidget* widget) {
+    std::set<int> pages;
+    if (!widget || !widget->doc() || !widget->main_document_view) {
+        return pages;
+    }
+
+    std::vector<int> visible_scope_pages;
+    if (widget->main_document_view->is_presentation_mode()) {
+        widget->main_document_view->get_presentation_pages(visible_scope_pages);
+    }
+    else if (widget->main_document_view->is_effective_two_page_mode()) {
+        int current_page = widget->get_current_page_number();
+        TwoPageSpread spread = two_page_spread_for_page(
+            current_page,
+            widget->doc()->num_pages(),
+            widget->main_document_view->get_book_mode_cover_offset());
+        if (spread.first_page >= 0) {
+            visible_scope_pages.push_back(spread.first_page);
+        }
+        if (spread.second_page >= 0) {
+            visible_scope_pages.push_back(spread.second_page);
+        }
+    }
+
+    if (visible_scope_pages.empty()) {
+        visible_scope_pages.push_back(widget->get_current_page_number());
+    }
+
+    for (int page : visible_scope_pages) {
+        if (page >= 0 && page < widget->doc()->num_pages()) {
+            pages.insert(page);
+        }
+    }
+    return pages;
+}
+
+static bool study_index_get_active_workspace(MainWidget* widget, WorkspaceEntry& out_workspace, std::wstring& out_error) {
+    if (!widget || !widget->workspace_manager) {
+        out_error = L"Workspaces are not available";
+        return false;
+    }
+
+    std::optional<std::wstring> active_workspace = widget->workspace_manager->active_workspace();
+    if (!active_workspace.has_value()) {
+        out_error = L"No active workspace";
+        return false;
+    }
+
+    std::optional<WorkspaceEntry> workspace = widget->workspace_manager->get_workspace(active_workspace.value());
+    if (!workspace.has_value()) {
+        out_error = L"Active workspace is missing: " + active_workspace.value();
+        return false;
+    }
+
+    out_workspace = workspace.value();
+    return true;
+}
+
+static bool study_hud_workspace_scope_available(MainWidget* widget) {
+    WorkspaceEntry workspace;
+    std::wstring error;
+    return study_index_get_active_workspace(widget, workspace, error);
+}
+
+static std::vector<StudyIndexEntry> study_index_entries_for_workspace(MainWidget* widget, std::wstring* out_error = nullptr) {
+    std::vector<StudyIndexEntry> entries;
+    WorkspaceEntry workspace;
+    std::wstring error;
+    if (!study_index_get_active_workspace(widget, workspace, error)) {
+        if (out_error) {
+            *out_error = error;
+        }
+        return entries;
+    }
+
+    std::set<std::string> seen_checksums;
+    std::set<std::wstring> seen_document_paths;
+    std::vector<std::string> checksums;
+    std::vector<std::wstring> document_paths;
+    for (const WorkspaceDocumentEntry& workspace_document : workspace.documents) {
+        std::wstring path = WorkspaceManager::normalize_workspace_path(workspace_document.path);
+        if (path.empty()) {
+            continue;
+        }
+        if (seen_document_paths.insert(path).second) {
+            document_paths.push_back(path);
+        }
+        std::vector<std::wstring> hash_results;
+        widget->db_manager->get_hash_from_path(utf8_encode(path), hash_results);
+        for (const std::wstring& hash : hash_results) {
+            std::string checksum = utf8_encode(hash);
+            if (!checksum.empty() && seen_checksums.insert(checksum).second) {
+                checksums.push_back(checksum);
+            }
+        }
+    }
+
+    std::vector<StudyObject> study_objects;
+    std::vector<RegionHighlight> region_highlights;
+    widget->db_manager->select_study_objects_for_documents(checksums, document_paths, study_objects);
+    widget->db_manager->select_region_highlights_for_documents(checksums, document_paths, region_highlights);
+
+    for (StudyObject& study_object : study_objects) {
+        if (study_object.page < 0) {
+            qDebug() << "Skipping workspace study index object with invalid page" << QString::fromStdString(study_object.id);
+            continue;
+        }
+        if (study_object.document_path.empty()) {
+            study_object.document_path = widget->checksummer->get_path(study_object.document_checksum).value_or(L"");
+        }
+        entries.push_back(study_index_entry_from_study_object(study_object, true));
+    }
+    for (RegionHighlight& region_highlight : region_highlights) {
+        if (region_highlight.page < 0 || !study_index_valid_region_rect(region_highlight.rect)) {
+            qDebug() << "Skipping workspace study index region with invalid location" << QString::fromStdString(region_highlight.id);
+            continue;
+        }
+        if (region_highlight.document_path.empty()) {
+            region_highlight.document_path = widget->checksummer->get_path(region_highlight.document_checksum).value_or(L"");
+        }
+        entries.push_back(study_index_entry_from_region_highlight(region_highlight, true));
+    }
+
+    apply_problem_states_to_study_index_entries(widget, entries);
+    sort_study_index_entries(entries);
+    return entries;
+}
+
+static QList<QStandardItem*> make_study_index_tree_row(const std::vector<std::wstring>& columns, bool is_group, int value_index) {
+    QList<QStandardItem*> row;
+    for (const std::wstring& column : columns) {
+        QStandardItem* item = new QStandardItem(QString::fromStdWString(column));
+        item->setData(is_group, SELECTOR_GROUP_ROLE);
+        if (value_index >= 0) {
+            item->setData(value_index, SELECTOR_VALUE_INDEX_ROLE);
+        }
+        row << item;
+    }
+    return row;
+}
+
+static QStandardItemModel* make_study_index_tree_model(
+    const std::vector<StudyIndexEntry>& entries,
+    std::vector<StudyIndexEntry>& out_values) {
+    QStandardItemModel* model = new QStandardItemModel();
+    model->setColumnCount(3);
+
+    out_values.clear();
+    std::vector<QStandardItem*> group_items(study_index_group_order().size(), nullptr);
+    std::vector<int> group_counts(study_index_group_order().size(), 0);
+
+    for (const StudyIndexEntry& entry : entries) {
+        int group_index = study_index_group_order_index(entry.group);
+        if (group_index < 0 || group_index >= static_cast<int>(study_index_group_order().size())) {
+            group_index = study_index_group_order_index(L"Other");
+        }
+        if (!group_items[group_index]) {
+            QList<QStandardItem*> group_row = make_study_index_tree_row({ entry.group, L"", L"" }, true, -1);
+            model->appendRow(group_row);
+            group_items[group_index] = group_row[0];
+        }
+
+        int value_index = static_cast<int>(out_values.size());
+        out_values.push_back(entry);
+        group_counts[group_index]++;
+        group_items[group_index]->appendRow(make_study_index_tree_row({ entry.row_text, entry.note, entry.context }, false, value_index));
+    }
+
+    for (int i = 0; i < static_cast<int>(group_items.size()); i++) {
+        if (group_items[i]) {
+            std::wstring count_text = std::to_wstring(group_counts[i]);
+            count_text += group_counts[i] == 1 ? L" item" : L" items";
+            model->setData(model->index(group_items[i]->row(), 2), QString::fromStdWString(count_text));
+        }
+    }
+
+    return model;
+}
+
+static int closest_study_index_entry_index(Document* document, const std::vector<StudyIndexEntry>& entries, float offset_y) {
+    if (!document || entries.empty()) {
+        return -1;
+    }
+    return argminf<StudyIndexEntry>(entries, [document, offset_y](StudyIndexEntry entry) {
+        float entry_y = entry.sort_y;
+        if (entry.kind == StudyIndexEntryKind::RegionHighlight) {
+            float region_center_y = (entry.region_highlight.rect.y0 + entry.region_highlight.rect.y1) / 2.0f;
+            entry_y = document->document_to_absolute_y(entry.region_highlight.page, region_center_y);
+        }
+        return abs(entry_y - offset_y);
+        });
+}
+
+static void open_region_highlight_document(MainWidget* widget, const RegionHighlight& region_highlight) {
+    std::wstring document_path = region_highlight.document_path;
+    if (document_path.empty()) {
+        document_path = widget->checksummer->get_path(region_highlight.document_checksum).value_or(L"");
+    }
+
+    bool already_open = false;
+    if (widget->doc()) {
+        std::optional<std::string> current_checksum = widget->doc()->get_checksum_fast();
+        already_open = (current_checksum.has_value() && current_checksum.value() == region_highlight.document_checksum)
+            || (!document_path.empty() && widget->doc()->get_path() == document_path);
+    }
+
+    if (!already_open) {
+        if (document_path.empty()) {
+            show_error_message(L"Could not open region highlight: document path is unavailable");
+            return;
+        }
+        widget->open_document(document_path);
+    }
+
+    if (!widget->doc()) {
+        show_error_message(L"Could not open region highlight: document is unavailable");
+        return;
+    }
+    std::optional<std::string> opened_checksum = widget->doc()->get_checksum_fast();
+    if (!document_path.empty() && widget->doc()->get_path() != document_path
+        && (!opened_checksum.has_value() || opened_checksum.value() != region_highlight.document_checksum)) {
+        show_error_message(L"Could not open region highlight: document is unavailable");
+        return;
+    }
+
+    open_region_highlight(widget, region_highlight);
+}
+
+static void open_study_index_entry(MainWidget* widget, const StudyIndexEntry& entry) {
+    if (entry.kind == StudyIndexEntryKind::StudyObject) {
+        open_study_object(widget, entry.study_object);
+    }
+    else {
+        open_region_highlight_document(widget, entry.region_highlight);
+    }
+}
+
+static void show_study_index_entries(MainWidget* widget, std::vector<StudyIndexEntry> entries, int selected_index) {
+    std::vector<StudyIndexEntry> values;
+    QStandardItemModel* model = make_study_index_tree_model(entries, values);
+
+    FilteredTreeSelectWindowClass<StudyIndexEntry>* selector = new FilteredTreeSelectWindowClass<StudyIndexEntry>(
+        FUZZY_SEARCHING,
+        model,
+        values,
+        selected_index,
+        [widget](StudyIndexEntry* entry) {
+            if (entry) {
+                open_study_index_entry(widget, *entry);
+            }
+        },
+        widget);
+    selector->set_filter_column_index(-1);
+    if (QTreeView* tree_view = dynamic_cast<QTreeView*>(selector->get_view())) {
+        tree_view->header()->hide();
+    }
+    widget->set_current_widget(selector);
+    widget->show_current_widget();
+}
+
+static std::wstring study_hud_scope_label(StudyHudScope scope) {
+    switch (scope) {
+    case StudyHudScope::Page:
+        return L"Page";
+    case StudyHudScope::Document:
+        return L"Document";
+    case StudyHudScope::Workspace:
+        return L"Workspace";
+    }
+    return L"Document";
+}
+
+class StudyHudSelectWindow : public FilteredTreeSelectWindowClass<StudyIndexEntry> {
+private:
+    StudyHudScope scope_;
+    MainWidget* main_widget_ = nullptr;
+    QLabel* title_label_ = nullptr;
+
+public:
+    StudyHudSelectWindow(
+        StudyHudScope scope,
+        const std::wstring& title,
+        QStandardItemModel* item_model,
+        std::vector<StudyIndexEntry> values,
+        int selected_index,
+        std::function<void(StudyIndexEntry*)> on_done,
+        MainWidget* parent) : FilteredTreeSelectWindowClass<StudyIndexEntry>(
+            FUZZY_SEARCHING,
+            item_model,
+            values,
+            selected_index,
+            on_done,
+            parent),
+        scope_(scope),
+        main_widget_(parent) {
+        title_label_ = new QLabel(QString::fromStdWString(title), this);
+        title_label_->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        title_label_->setContentsMargins(4, 0, 4, 2);
+        title_label_->setFont(QFont(get_ui_font_face_name()));
+        if (line_edit) {
+            line_edit->setPlaceholderText("Filter study entries");
+        }
+
+        if (QVBoxLayout* box = dynamic_cast<QVBoxLayout*>(layout())) {
+            box->insertWidget(0, title_label_);
+            box->setContentsMargins(10, 10, 10, 10);
+            box->setSpacing(6);
+        }
+    }
+
+    StudyHudScope scope() const {
+        return scope_;
+    }
+
+    bool eventFilter(QObject* obj, QEvent* event) override {
+        if (obj == line_edit && event->type() == QEvent::KeyPress) {
+            QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+            if (key_event->key() == Qt::Key_Tab || key_event->key() == Qt::Key_Backtab) {
+                if (main_widget_) {
+                    main_widget_->handle_study_hud_toggle_scope();
+                }
+                return true;
+            }
+        }
+        return FilteredTreeSelectWindowClass<StudyIndexEntry>::eventFilter(obj, event);
+    }
+
+    void resizeEvent(QResizeEvent* resize_event) override {
+        QWidget::resizeEvent(resize_event);
+        int parent_width = parentWidget()->width();
+        int parent_height = parentWidget()->height();
+        int available_width = std::max(260, parent_width - 32);
+        int available_height = std::max(260, parent_height - 96);
+        int target_width = std::max(480, static_cast<int>(parent_width * 0.48f));
+        int target_height = std::max(320, static_cast<int>(parent_height * 0.58f));
+        int hud_width = std::min(available_width, target_width);
+        int hud_height = std::min(available_height, target_height);
+        setFixedSize(hud_width, hud_height);
+        int x = parent_width >= 900
+            ? std::max(16, parent_width - hud_width - 24)
+            : std::max(16, (parent_width - hud_width) / 2);
+        int y = std::max(16, (parent_height - hud_height) / 2);
+        move(x, y);
+        on_config_file_changed();
+    }
+};
+
+static void show_study_hud_entries(MainWidget* widget, StudyHudScope scope, std::vector<StudyIndexEntry> entries, int selected_index) {
+    std::vector<StudyIndexEntry> values;
+    QStandardItemModel* model = make_study_index_tree_model(entries, values);
+    std::wstring title = L"Study HUD - " + study_hud_scope_label(scope);
+
+    StudyHudSelectWindow* selector = new StudyHudSelectWindow(
+        scope,
+        title,
+        model,
+        values,
+        selected_index,
+        [widget](StudyIndexEntry* entry) {
+            if (entry) {
+                open_study_index_entry(widget, *entry);
+                widget->pop_current_widget();
+            }
+        },
+        widget);
+    selector->set_filter_column_index(-1);
+    if (QTreeView* tree_view = dynamic_cast<QTreeView*>(selector->get_view())) {
+        tree_view->header()->hide();
+    }
+    widget->set_current_widget(selector);
+    widget->show_current_widget();
+}
+
+static bool show_study_hud_for_scope(MainWidget* widget, StudyHudScope scope, bool show_empty_message) {
+    if (!widget) {
+        return false;
+    }
+
+    std::vector<StudyIndexEntry> entries;
+    int selected_index = -1;
+    std::wstring empty_message;
+
+    if (scope == StudyHudScope::Page) {
+        if (!widget->doc()) {
+            if (show_empty_message) {
+                widget->set_temporary_status_message(L"No current document");
+            }
+            return false;
+        }
+        std::set<int> pages = study_hud_page_scope_pages(widget);
+        entries = study_index_entries_for_current_document(widget, &pages, false);
+        selected_index = closest_study_index_entry_index(widget->doc(), entries, widget->main_document_view->get_offset_y());
+        empty_message = widget->main_document_view->is_effective_two_page_mode()
+            ? L"No study HUD entries on current spread"
+            : L"No study HUD entries on current page";
+    }
+    else if (scope == StudyHudScope::Document) {
+        if (!widget->doc()) {
+            if (show_empty_message) {
+                widget->set_temporary_status_message(L"No current document");
+            }
+            return false;
+        }
+        entries = study_index_entries_for_current_document(widget);
+        selected_index = closest_study_index_entry_index(widget->doc(), entries, widget->main_document_view->get_offset_y());
+        empty_message = L"No study HUD entries in current document";
+    }
+    else if (scope == StudyHudScope::Workspace) {
+        std::wstring error;
+        entries = study_index_entries_for_workspace(widget, &error);
+        if (!error.empty()) {
+            if (show_empty_message) {
+                widget->set_temporary_status_message(error);
+            }
+            return false;
+        }
+        empty_message = L"No study HUD entries in active workspace";
+    }
+
+    if (entries.empty()) {
+        if (show_empty_message) {
+            widget->set_temporary_status_message(empty_message);
+        }
+        return false;
+    }
+
+    show_study_hud_entries(widget, scope, entries, selected_index);
+    return true;
+}
+
+static StudyHudScope next_study_hud_scope(StudyHudScope scope, bool include_workspace) {
+    if (scope == StudyHudScope::Page) {
+        return StudyHudScope::Document;
+    }
+    if (scope == StudyHudScope::Document) {
+        return include_workspace ? StudyHudScope::Workspace : StudyHudScope::Page;
+    }
+    return StudyHudScope::Page;
+}
+
+void MainWidget::handle_study_index() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::vector<StudyIndexEntry> entries = study_index_entries_for_current_document(this);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No study index entries in current document");
+        return;
+    }
+
+    int selected_index = closest_study_index_entry_index(doc(), entries, main_document_view->get_offset_y());
+    show_study_index_entries(this, entries, selected_index);
+}
+
+void MainWidget::handle_study_index_current_page() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::set<int> nearby_pages = study_index_nearby_pages(this);
+    std::vector<StudyIndexEntry> entries = study_index_entries_for_current_document(this, &nearby_pages, false);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No study index entries on nearby pages");
+        return;
+    }
+
+    int selected_index = closest_study_index_entry_index(doc(), entries, main_document_view->get_offset_y());
+    show_study_index_entries(this, entries, selected_index);
+}
+
+void MainWidget::handle_study_index_workspace() {
+    std::wstring error;
+    std::vector<StudyIndexEntry> entries = study_index_entries_for_workspace(this, &error);
+    if (!error.empty()) {
+        if (error == L"Workspaces are not available") {
+            show_error_message(error);
+        }
+        else {
+            set_temporary_status_message(error);
+        }
+        return;
+    }
+
+    if (entries.empty()) {
+        set_temporary_status_message(L"No study index entries in active workspace");
+        return;
+    }
+
+    show_study_index_entries(this, entries, -1);
+}
+
+void MainWidget::handle_study_hud() {
+    if (show_study_hud_for_scope(this, StudyHudScope::Page, false)) {
+        return;
+    }
+    show_study_hud_for_scope(this, StudyHudScope::Document, true);
+}
+
+void MainWidget::handle_study_hud_page() {
+    show_study_hud_for_scope(this, StudyHudScope::Page, true);
+}
+
+void MainWidget::handle_study_hud_document() {
+    show_study_hud_for_scope(this, StudyHudScope::Document, true);
+}
+
+void MainWidget::handle_study_hud_workspace() {
+    show_study_hud_for_scope(this, StudyHudScope::Workspace, true);
+}
+
+void MainWidget::handle_study_hud_toggle_scope() {
+    StudyHudScope current_scope = StudyHudScope::Page;
+    bool had_hud = false;
+    if (!current_widget_stack.empty()) {
+        if (StudyHudSelectWindow* hud = dynamic_cast<StudyHudSelectWindow*>(current_widget_stack.back())) {
+            current_scope = hud->scope();
+            had_hud = true;
+        }
+    }
+
+    if (!had_hud) {
+        handle_study_hud();
+        return;
+    }
+
+    bool include_workspace = study_hud_workspace_scope_available(this);
+    StudyHudScope candidate = current_scope;
+    for (int i = 0; i < 3; i++) {
+        candidate = next_study_hud_scope(candidate, include_workspace);
+        if (show_study_hud_for_scope(this, candidate, false)) {
+            return;
+        }
+    }
+
+    set_temporary_status_message(L"No study HUD entries in available scopes");
+}
+
+std::optional<std::string> MainWidget::infer_current_study_object_id() {
+    if (!doc() || !main_document_view) {
+        return {};
+    }
+
+    std::vector<StudyObject> study_objects = doc()->get_study_objects_sorted();
+    if (study_objects.empty()) {
+        return {};
+    }
+    if (study_objects.size() == 1) {
+        return study_objects.front().id;
+    }
+
+    std::set<int> scope_pages;
+    if (main_document_view->is_presentation_mode() || main_document_view->is_effective_two_page_mode()) {
+        scope_pages = study_hud_page_scope_pages(this);
+    }
+    else {
+        scope_pages.insert(get_current_page_number());
+    }
+
+    std::vector<StudyObject> scoped_objects;
+    for (const StudyObject& study_object : study_objects) {
+        if (scope_pages.find(study_object.page) != scope_pages.end()) {
+            scoped_objects.push_back(study_object);
+        }
+    }
+
+    if (scoped_objects.size() == 1) {
+        return scoped_objects.front().id;
+    }
+    return {};
+}
+
+void MainWidget::handle_study_link_select_study_object(const std::string& excluded_id) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::vector<StudyObject> study_objects;
+    for (const StudyObject& study_object : doc()->get_study_objects_sorted()) {
+        if (study_object.id != excluded_id) {
+            study_objects.push_back(study_object);
+        }
+    }
+
+    if (study_objects.empty()) {
+        set_temporary_status_message(excluded_id.empty()
+            ? L"No study objects in current document"
+            : L"No other study objects in current document");
+        return;
+    }
+
+    int closest_index = doc()->find_closest_study_object_index(study_objects, main_document_view->get_offset_y());
+    set_filtered_select_menu<StudyObject>(this, FUZZY_SEARCHING, MULTILINE_MENUS,
+        study_object_table_columns(study_objects, false), study_objects, closest_index,
+        [&](StudyObject* study_object) {
+            if (study_object && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdString(study_object->id));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [](StudyObject*) {});
+    show_current_widget();
+}
+
+void MainWidget::handle_study_link_select_relation_type() {
+    std::vector<std::wstring> relation_types = study_link_relation_types();
+    set_filtered_select_menu<std::wstring>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { relation_types }, relation_types, -1,
+        [&](std::wstring* relation_type) {
+            if (relation_type && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdWString(*relation_type));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [](std::wstring*) {});
+    show_current_widget();
+}
+
+struct StudyLinkDisplayEntry {
+    StudyLink link;
+    StudyObject source;
+    StudyObject target;
+    bool has_source = false;
+    bool has_target = false;
+    bool select_target = true;
+    std::wstring group;
+    std::wstring row_text;
+    std::wstring note;
+    std::wstring context;
+};
+
+enum class StudyLinkDisplayMode {
+    Outgoing,
+    Incoming,
+    Both,
+};
+
+static std::wstring study_link_short_id(const std::string& id) {
+    if (id.empty()) {
+        return L"unknown";
+    }
+    return utf8_decode(id.substr(0, std::min<size_t>(8, id.size())));
+}
+
+static std::unordered_map<std::string, StudyObject> study_link_object_map(MainWidget* widget, const std::vector<StudyLink>& links) {
+    std::unordered_map<std::string, StudyObject> result;
+    if (!widget || !widget->db_manager || links.empty()) {
+        return result;
+    }
+
+    std::set<std::string> seen_ids;
+    std::vector<std::string> ids;
+    for (const StudyLink& link : links) {
+        if (!link.source_study_object_id.empty() && seen_ids.insert(link.source_study_object_id).second) {
+            ids.push_back(link.source_study_object_id);
+        }
+        if (!link.target_study_object_id.empty() && seen_ids.insert(link.target_study_object_id).second) {
+            ids.push_back(link.target_study_object_id);
+        }
+    }
+
+    std::vector<StudyObject> study_objects;
+    if (!widget->db_manager->select_study_objects_by_ids(ids, study_objects)) {
+        qDebug() << "Could not resolve dependency link study objects";
+        return result;
+    }
+    for (StudyObject& study_object : study_objects) {
+        if (study_object.document_path.empty() && widget->checksummer) {
+            study_object.document_path = widget->checksummer->get_path(study_object.document_checksum).value_or(L"");
+        }
+        result[study_object.id] = study_object;
+    }
+    return result;
+}
+
+static std::wstring study_link_object_row_label(const StudyObject& study_object) {
+    std::wstring type = study_index_type_label(study_object.type);
+    return L"[" + type + L"] " + study_index_study_object_title(study_object);
+}
+
+static std::wstring study_link_object_row_label(const std::string& id) {
+    return L"[missing] " + study_link_short_id(id);
+}
+
+static std::wstring study_link_object_context(const StudyObject& study_object) {
+    std::wstring context = study_index_page_text(study_object.page);
+    std::wstring document_name = study_index_document_name(study_object.document_path, study_object.document_checksum);
+    if (!document_name.empty()) {
+        context += L" - " + truncate_string(document_name, 50);
+    }
+    return context;
+}
+
+static std::vector<StudyLinkDisplayEntry> study_link_entries_for_object(
+    MainWidget* widget,
+    const std::string& study_object_id,
+    StudyLinkDisplayMode mode) {
+
+    std::vector<StudyLink> links;
+    if (!widget || !widget->db_manager || study_object_id.empty()) {
+        return {};
+    }
+    if (!widget->db_manager->select_study_links_for_study_object(study_object_id, links)) {
+        return {};
+    }
+
+    std::unordered_map<std::string, StudyObject> object_map = study_link_object_map(widget, links);
+    std::vector<StudyLinkDisplayEntry> entries;
+    for (const StudyLink& link : links) {
+        bool is_outgoing = link.source_study_object_id == study_object_id;
+        bool is_incoming = link.target_study_object_id == study_object_id;
+        if ((mode == StudyLinkDisplayMode::Outgoing && !is_outgoing)
+            || (mode == StudyLinkDisplayMode::Incoming && !is_incoming)
+            || (mode == StudyLinkDisplayMode::Both && !is_outgoing && !is_incoming)) {
+            continue;
+        }
+
+        StudyLinkDisplayEntry entry;
+        entry.link = link;
+        entry.select_target = is_outgoing;
+        entry.group = is_outgoing ? L"Outgoing" : L"Incoming";
+        entry.note = link.note;
+
+        auto source_it = object_map.find(link.source_study_object_id);
+        if (source_it != object_map.end()) {
+            entry.source = source_it->second;
+            entry.has_source = true;
+        }
+        auto target_it = object_map.find(link.target_study_object_id);
+        if (target_it != object_map.end()) {
+            entry.target = target_it->second;
+            entry.has_target = true;
+        }
+
+        std::wstring source_label = entry.has_source
+            ? study_link_object_row_label(entry.source)
+            : study_link_object_row_label(link.source_study_object_id);
+        std::wstring target_label = entry.has_target
+            ? study_link_object_row_label(entry.target)
+            : study_link_object_row_label(link.target_study_object_id);
+
+        entry.row_text = L"[" + link.relation_type + L"] " + source_label + L" -> " + target_label;
+        if (entry.select_target && entry.has_target) {
+            entry.context = study_link_object_context(entry.target);
+        }
+        else if (!entry.select_target && entry.has_source) {
+            entry.context = study_link_object_context(entry.source);
+        }
+        else {
+            entry.context = L"Missing study object";
+        }
+        entries.push_back(entry);
+    }
+
+    std::stable_sort(entries.begin(), entries.end(), [](const StudyLinkDisplayEntry& lhs, const StudyLinkDisplayEntry& rhs) {
+        if (lhs.group != rhs.group) return lhs.group < rhs.group;
+        if (lhs.link.relation_type != rhs.link.relation_type) return lhs.link.relation_type < rhs.link.relation_type;
+        return lhs.row_text < rhs.row_text;
+    });
+    return entries;
+}
+
+static std::vector<std::vector<std::wstring>> study_link_table_columns(const std::vector<StudyLinkDisplayEntry>& entries, bool include_group) {
+    std::vector<std::wstring> rows;
+    std::vector<std::wstring> groups;
+    std::vector<std::wstring> notes;
+    std::vector<std::wstring> contexts;
+    bool has_notes = false;
+
+    for (const StudyLinkDisplayEntry& entry : entries) {
+        rows.push_back(entry.row_text);
+        groups.push_back(entry.group);
+        notes.push_back(entry.note);
+        contexts.push_back(entry.context);
+        if (!entry.note.empty()) {
+            has_notes = true;
+        }
+    }
+
+    std::vector<std::vector<std::wstring>> table = { rows };
+    if (include_group) {
+        table.push_back(groups);
+    }
+    table.push_back(contexts);
+    if (has_notes) {
+        table.push_back(notes);
+    }
+    return table;
+}
+
+static void open_study_link_entry(MainWidget* widget, const StudyLinkDisplayEntry& entry) {
+    if (entry.select_target) {
+        if (entry.has_target) {
+            open_study_object(widget, entry.target);
+        }
+        else {
+            widget->set_temporary_status_message(L"Linked study object is missing");
+        }
+    }
+    else {
+        if (entry.has_source) {
+            open_study_object(widget, entry.source);
+        }
+        else {
+            widget->set_temporary_status_message(L"Linked study object is missing");
+        }
+    }
+}
+
+static void show_study_link_entries(MainWidget* widget, std::vector<StudyLinkDisplayEntry> entries, bool include_group) {
+    set_filtered_select_menu<StudyLinkDisplayEntry>(widget, FUZZY_SEARCHING, MULTILINE_MENUS,
+        study_link_table_columns(entries, include_group), entries, -1,
+        [widget](StudyLinkDisplayEntry* entry) {
+            if (entry) {
+                open_study_link_entry(widget, *entry);
+            }
+        },
+        [](StudyLinkDisplayEntry*) {});
+    widget->show_current_widget();
+}
+
+void MainWidget::handle_study_link_select_related_link(const std::string& study_object_id) {
+    std::vector<StudyLinkDisplayEntry> entries = study_link_entries_for_object(this, study_object_id, StudyLinkDisplayMode::Both);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No dependency links for selected study object");
+        return;
+    }
+
+    set_filtered_select_menu<StudyLinkDisplayEntry>(this, FUZZY_SEARCHING, MULTILINE_MENUS,
+        study_link_table_columns(entries, true), entries, -1,
+        [&](StudyLinkDisplayEntry* entry) {
+            if (entry && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdString(entry->link.id));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [](StudyLinkDisplayEntry*) {});
+    show_current_widget();
+}
+
+static bool study_link_object_exists(MainWidget* widget, const std::string& id, StudyObject* out_object = nullptr) {
+    if (!widget || !widget->db_manager || id.empty()) {
+        return false;
+    }
+    std::vector<StudyObject> objects;
+    if (!widget->db_manager->select_study_objects_by_ids({ id }, objects) || objects.empty()) {
+        return false;
+    }
+    if (out_object) {
+        *out_object = objects.front();
+        if (out_object->document_path.empty() && widget->checksummer) {
+            out_object->document_path = widget->checksummer->get_path(out_object->document_checksum).value_or(L"");
+        }
+    }
+    return true;
+}
+
+void MainWidget::handle_study_link_create(
+    const std::string& source_id,
+    const std::string& target_id,
+    const std::wstring& relation_type,
+    const std::wstring& note) {
+
+    if (source_id.empty() || target_id.empty()) {
+        set_temporary_status_message(L"Study link was not created: missing study object");
+        return;
+    }
+    if (source_id == target_id) {
+        set_temporary_status_message(L"Study link was not created: source and target are the same");
+        return;
+    }
+
+    std::wstring normalized_relation_type = QString::fromStdWString(relation_type).trimmed().toStdWString();
+    if (!is_valid_study_link_relation_type(normalized_relation_type)) {
+        normalized_relation_type = L"related_to";
+    }
+
+    StudyObject source;
+    StudyObject target;
+    if (!study_link_object_exists(this, source_id, &source) || !study_link_object_exists(this, target_id, &target)) {
+        set_temporary_status_message(L"Study link was not created: linked study object is missing");
+        return;
+    }
+
+    std::vector<StudyLink> existing_links;
+    db_manager->select_study_links_for_study_object(source_id, existing_links);
+    for (const StudyLink& link : existing_links) {
+        if (link.source_study_object_id == source_id
+            && link.target_study_object_id == target_id
+            && link.relation_type == normalized_relation_type) {
+            set_temporary_status_message(L"Dependency link already exists");
+            return;
+        }
+    }
+
+    StudyLink link;
+    link.id = new_uuid_utf8();
+    link.source_study_object_id = source_id;
+    link.target_study_object_id = target_id;
+    link.relation_type = normalized_relation_type;
+    link.note = QString::fromStdWString(note).trimmed().toStdWString();
+
+    if (!db_manager->insert_study_link(link)) {
+        show_error_message(L"Could not create dependency link");
+        return;
+    }
+
+    set_temporary_status_message(L"Created dependency link: [" + normalized_relation_type + L"] "
+        + study_link_object_row_label(source) + L" -> " + study_link_object_row_label(target));
+}
+
+void MainWidget::handle_study_link_show_dependencies(const std::string& study_object_id) {
+    std::vector<StudyLinkDisplayEntry> entries = study_link_entries_for_object(this, study_object_id, StudyLinkDisplayMode::Outgoing);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No outgoing dependency links");
+        return;
+    }
+    show_study_link_entries(this, entries, false);
+}
+
+void MainWidget::handle_study_link_show_dependents(const std::string& study_object_id) {
+    std::vector<StudyLinkDisplayEntry> entries = study_link_entries_for_object(this, study_object_id, StudyLinkDisplayMode::Incoming);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No incoming dependency links");
+        return;
+    }
+    show_study_link_entries(this, entries, false);
+}
+
+void MainWidget::handle_study_link_open_graph_local(const std::string& study_object_id) {
+    std::vector<StudyLinkDisplayEntry> entries = study_link_entries_for_object(this, study_object_id, StudyLinkDisplayMode::Both);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No local dependency graph for selected study object");
+        return;
+    }
+    show_study_link_entries(this, entries, true);
+}
+
+void MainWidget::handle_study_link_delete(const std::string& id) {
+    if (id.empty()) {
+        set_temporary_status_message(L"No dependency link selected");
+        return;
+    }
+    if (!db_manager->delete_study_link(id)) {
+        show_error_message(L"Could not delete dependency link");
+        return;
+    }
+    set_temporary_status_message(L"Deleted dependency link");
+}
+
+void MainWidget::handle_study_link_set_type(const std::string& id, const std::wstring& relation_type) {
+    std::wstring normalized_relation_type = QString::fromStdWString(relation_type).trimmed().toStdWString();
+    if (!is_valid_study_link_relation_type(normalized_relation_type)) {
+        normalized_relation_type = L"related_to";
+    }
+    if (!db_manager->update_study_link_type(id, normalized_relation_type)) {
+        show_error_message(L"Could not update dependency link type");
+        return;
+    }
+    set_temporary_status_message(L"Updated dependency link type");
+}
+
+void MainWidget::handle_study_link_set_note(const std::string& id, const std::wstring& note) {
+    if (!db_manager->update_study_link_note(id, QString::fromStdWString(note).trimmed().toStdWString())) {
+        show_error_message(L"Could not update dependency link note");
+        return;
+    }
+    set_temporary_status_message(L"Updated dependency link note");
+}
+
+struct ProblemListEntry {
+    StudyObject study_object;
+    ProblemState state;
+    bool has_state = false;
+    std::wstring document_name;
+};
+
+static std::vector<ProblemListEntry> problem_entries_from_study_objects(
+    MainWidget* widget,
+    const std::vector<StudyObject>& study_objects,
+    bool include_document_name) {
+    std::vector<ProblemListEntry> entries;
+    std::unordered_map<std::string, ProblemState> problem_states = problem_state_map_for_study_objects(widget, study_objects);
+
+    for (const StudyObject& study_object : study_objects) {
+        if (!is_problem_study_object(study_object)) {
+            continue;
+        }
+
+        ProblemListEntry entry;
+        entry.study_object = study_object;
+        auto state_it = problem_states.find(study_object.id);
+        if (state_it != problem_states.end()) {
+            entry.state = state_it->second;
+            entry.has_state = true;
+        }
+        else {
+            entry.state.study_object_id = study_object.id;
+            entry.state.status = L"unsolved";
+        }
+        if (include_document_name) {
+            entry.document_name = study_index_document_name(study_object.document_path, study_object.document_checksum);
+        }
+        entries.push_back(entry);
+    }
+
+    std::stable_sort(entries.begin(), entries.end(), [](const ProblemListEntry& lhs, const ProblemListEntry& rhs) {
+        if (lhs.document_name != rhs.document_name) return lhs.document_name < rhs.document_name;
+        if (lhs.study_object.page != rhs.study_object.page) return lhs.study_object.page < rhs.study_object.page;
+        if (lhs.study_object.offset_y != rhs.study_object.offset_y) return lhs.study_object.offset_y < rhs.study_object.offset_y;
+        return lhs.study_object.created_at < rhs.study_object.created_at;
+        });
+
+    return entries;
+}
+
+static std::vector<ProblemListEntry> problem_entries_for_current_document(MainWidget* widget, const std::set<int>* page_filter = nullptr) {
+    std::vector<StudyObject> study_objects;
+    if (!widget || !widget->doc()) {
+        return {};
+    }
+
+    for (const StudyObject& study_object : widget->doc()->get_study_objects_sorted()) {
+        if (!is_problem_study_object(study_object)) {
+            continue;
+        }
+        if (study_object.page < 0 || study_object.page >= widget->doc()->num_pages()) {
+            qDebug() << "Skipping problem with invalid page" << QString::fromStdString(study_object.id);
+            continue;
+        }
+        if (page_filter && page_filter->find(study_object.page) == page_filter->end()) {
+            continue;
+        }
+        study_objects.push_back(study_object);
+    }
+    return problem_entries_from_study_objects(widget, study_objects, false);
+}
+
+static std::vector<ProblemListEntry> problem_entries_for_workspace(MainWidget* widget, std::wstring* out_error) {
+    std::vector<StudyIndexEntry> study_entries = study_index_entries_for_workspace(widget, out_error);
+    std::vector<StudyObject> study_objects;
+    for (const StudyIndexEntry& entry : study_entries) {
+        if (entry.kind == StudyIndexEntryKind::StudyObject && is_problem_study_object(entry.study_object)) {
+            study_objects.push_back(entry.study_object);
+        }
+    }
+    return problem_entries_from_study_objects(widget, study_objects, true);
+}
+
+static std::wstring problem_entry_row_text(const ProblemListEntry& entry) {
+    return problem_row_text(entry.study_object, entry.state.status);
+}
+
+static std::vector<std::vector<std::wstring>> problem_table_columns(
+    const std::vector<ProblemListEntry>& entries,
+    bool include_document_name) {
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> notes;
+    std::vector<std::wstring> statuses;
+    std::vector<std::wstring> pages;
+    std::vector<std::wstring> documents;
+    bool has_notes = false;
+
+    for (const ProblemListEntry& entry : entries) {
+        names.push_back(problem_entry_row_text(entry));
+        notes.push_back(entry.study_object.note);
+        statuses.push_back(entry.state.status);
+        pages.push_back(study_index_page_text(entry.study_object.page));
+        documents.push_back(truncate_string(entry.document_name, 50));
+        if (!entry.study_object.note.empty()) {
+            has_notes = true;
+        }
+    }
+
+    std::vector<std::vector<std::wstring>> table = { names, statuses, pages };
+    if (include_document_name) {
+        table.push_back(documents);
+    }
+    if (has_notes) {
+        table.push_back(notes);
+    }
+    return table;
+}
+
+static int closest_problem_entry_index(Document* document, const std::vector<ProblemListEntry>& entries, float offset_y) {
+    if (!document || entries.empty()) {
+        return -1;
+    }
+    return argminf<ProblemListEntry>(entries, [document, offset_y](ProblemListEntry entry) {
+        float target_y = document->document_to_absolute_y(entry.study_object.page, entry.study_object.page_offset_y);
+        if (target_y == 0.0f) {
+            target_y = entry.study_object.offset_y;
+        }
+        return abs(target_y - offset_y);
+        });
+}
+
+static void show_problem_entries(
+    MainWidget* widget,
+    std::vector<ProblemListEntry> entries,
+    bool include_document_name,
+    int selected_index,
+    std::function<void(ProblemListEntry*)> on_select) {
+    set_filtered_select_menu<ProblemListEntry>(widget, FUZZY_SEARCHING, MULTILINE_MENUS,
+        problem_table_columns(entries, include_document_name), entries, selected_index,
+        std::move(on_select),
+        [](ProblemListEntry*) {});
+    widget->show_current_widget();
+}
+
+static std::set<int> problem_current_scope_pages(MainWidget* widget) {
+    if (!widget || !widget->doc() || !widget->main_document_view) {
+        return {};
+    }
+    if (widget->main_document_view->is_presentation_mode() || widget->main_document_view->is_effective_two_page_mode()) {
+        return study_hud_page_scope_pages(widget);
+    }
+    return study_index_nearby_pages(widget);
+}
+
+void MainWidget::handle_problem_create(const std::wstring& title) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    int page = get_current_page_number();
+    std::wstring normalized_title = QString::fromStdWString(title).trimmed().toStdWString();
+    if (normalized_title.empty()) {
+        normalized_title = L"Problem - " + get_page_formatted_string(page + 1);
+    }
+
+    float offset_x = main_document_view->get_offset_x();
+    float offset_y = main_document_view->get_offset_y();
+    float page_offset_y = offset_y - main_document_view->get_page_offset(page);
+    std::optional<AbsoluteDocumentPos> selected_begin = {};
+    std::optional<AbsoluteDocumentPos> selected_end = {};
+    if (main_document_view->selected_character_rects.size() > 0) {
+        selected_begin = selection_begin;
+        selected_end = selection_end;
+    }
+
+    std::string id = doc()->add_study_object(L"exercise",
+        normalized_title,
+        L"",
+        page,
+        offset_x,
+        offset_y,
+        page_offset_y,
+        main_document_view->get_zoom_level(),
+        selected_begin,
+        selected_end);
+    if (id.empty()) {
+        show_error_message(L"Could not create problem");
+        return;
+    }
+
+    ProblemState state;
+    state.study_object_id = id;
+    state.status = L"unsolved";
+    if (!db_manager->insert_problem_state(state)) {
+        show_error_message(L"Created problem, but could not save problem status");
+        return;
+    }
+
+    set_temporary_status_message(L"Created problem: [unsolved] " + normalized_title + L" - " + get_page_formatted_string(page + 1));
+}
+
+void MainWidget::handle_problem_select_current() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::vector<ProblemListEntry> entries = problem_entries_for_current_document(this);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No problems in current document");
+        return;
+    }
+
+    int selected_index = closest_problem_entry_index(doc(), entries, main_document_view->get_offset_y());
+    show_problem_entries(this, entries, false, selected_index,
+        [&](ProblemListEntry* entry) {
+            if (entry && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdString(entry->study_object.id));
+                advance_command(std::move(pending_command_instance));
+            }
+        });
+}
+
+void MainWidget::handle_problem_select_status() {
+    std::vector<std::wstring> statuses = problem_statuses();
+    set_filtered_select_menu<std::wstring>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { statuses }, statuses, -1,
+        [&](std::wstring* status) {
+            if (status && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdWString(*status));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [](std::wstring*) {});
+    show_current_widget();
+}
+
+void MainWidget::handle_problem_set_status(const std::string& id, const std::wstring& status) {
+    if (!is_valid_problem_status(status)) {
+        show_error_message(L"Invalid problem status");
+        return;
+    }
+    if (id.empty()) {
+        set_temporary_status_message(L"No problem selected");
+        return;
+    }
+    if (!db_manager->upsert_problem_status(id, status)) {
+        show_error_message(L"Could not update problem status");
+        return;
+    }
+    set_temporary_status_message(L"Problem marked " + status);
+}
+
+void MainWidget::handle_problem_mark_status(const std::wstring& status) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (!is_valid_problem_status(status)) {
+        show_error_message(L"Invalid problem status");
+        return;
+    }
+
+    std::set<int> scope_pages = problem_current_scope_pages(this);
+    std::vector<ProblemListEntry> scoped_entries = problem_entries_for_current_document(this, &scope_pages);
+    if (scoped_entries.size() == 1) {
+        handle_problem_set_status(scoped_entries.front().study_object.id, status);
+        return;
+    }
+
+    std::vector<ProblemListEntry> entries = problem_entries_for_current_document(this);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No problems in current document");
+        return;
+    }
+
+    int selected_index = closest_problem_entry_index(doc(), entries, main_document_view->get_offset_y());
+    show_problem_entries(this, entries, false, selected_index,
+        [this, status](ProblemListEntry* entry) {
+            if (entry) {
+                handle_problem_set_status(entry->study_object.id, status);
+            }
+        });
+}
+
+void MainWidget::handle_problem_list() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::vector<ProblemListEntry> entries = problem_entries_for_current_document(this);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No problems in current document");
+        return;
+    }
+
+    int selected_index = closest_problem_entry_index(doc(), entries, main_document_view->get_offset_y());
+    show_problem_entries(this, entries, false, selected_index,
+        [this](ProblemListEntry* entry) {
+            if (entry) {
+                open_study_object(this, entry->study_object);
+            }
+        });
+}
+
+void MainWidget::handle_problem_list_by_status(const std::wstring& status) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (!is_valid_problem_status(status)) {
+        show_error_message(L"Invalid problem status");
+        return;
+    }
+
+    std::vector<ProblemListEntry> entries = problem_entries_for_current_document(this);
+    entries.erase(std::remove_if(entries.begin(), entries.end(), [&](const ProblemListEntry& entry) {
+        return entry.state.status != status;
+        }), entries.end());
+    if (entries.empty()) {
+        set_temporary_status_message(L"No " + status + L" problems in current document");
+        return;
+    }
+
+    int selected_index = closest_problem_entry_index(doc(), entries, main_document_view->get_offset_y());
+    show_problem_entries(this, entries, false, selected_index,
+        [this](ProblemListEntry* entry) {
+            if (entry) {
+                open_study_object(this, entry->study_object);
+            }
+        });
+}
+
+void MainWidget::handle_problem_list_workspace() {
+    std::wstring error;
+    std::vector<ProblemListEntry> entries = problem_entries_for_workspace(this, &error);
+    if (!error.empty()) {
+        if (error == L"Workspaces are not available") {
+            show_error_message(error);
+        }
+        else {
+            set_temporary_status_message(error);
+        }
+        return;
+    }
+    if (entries.empty()) {
+        set_temporary_status_message(L"No problems in active workspace");
+        return;
+    }
+
+    show_problem_entries(this, entries, true, -1,
+        [this](ProblemListEntry* entry) {
+            if (entry) {
+                open_study_object(this, entry->study_object);
+            }
+        });
+}
+
+void MainWidget::handle_problem_show_current() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::set<int> scope_pages = problem_current_scope_pages(this);
+    std::vector<ProblemListEntry> entries = problem_entries_for_current_document(this, &scope_pages);
+    if (entries.empty()) {
+        set_temporary_status_message(main_document_view->is_effective_two_page_mode()
+            ? L"No problems on current spread"
+            : L"No problems on nearby pages");
+        return;
+    }
+
+    int selected_index = closest_problem_entry_index(doc(), entries, main_document_view->get_offset_y());
+    show_problem_entries(this, entries, false, selected_index,
+        [this](ProblemListEntry* entry) {
+            if (entry) {
+                open_study_object(this, entry->study_object);
+            }
+        });
+}
+
+void MainWidget::handle_problem_attach_solution(const std::string& id, const std::wstring& solution_ref) {
+    if (id.empty()) {
+        set_temporary_status_message(L"No problem selected");
+        return;
+    }
+    std::wstring normalized_ref = QString::fromStdWString(solution_ref).trimmed().toStdWString();
+    if (normalized_ref.empty()) {
+        set_temporary_status_message(L"No solution reference provided");
+        return;
+    }
+    if (!db_manager->update_problem_solution_ref(id, normalized_ref)) {
+        show_error_message(L"Could not attach solution reference");
+        return;
+    }
+    set_temporary_status_message(L"Attached solution reference");
+}
+
+void MainWidget::handle_problem_clear_solution(const std::string& id) {
+    if (id.empty()) {
+        set_temporary_status_message(L"No problem selected");
+        return;
+    }
+    if (!db_manager->clear_problem_solution_ref(id)) {
+        show_error_message(L"Could not clear solution reference");
+        return;
+    }
+    set_temporary_status_message(L"Cleared solution reference");
+}
+
+static std::wstring shelf_item_page_text(const ShelfItem& item) {
+    return L"page " + std::to_wstring(item.page + 1);
+}
+
+static std::wstring shelf_item_row_text(const ShelfItem& item) {
+    std::wstring display_type = item.display_type.empty() ? item.source_type : item.display_type;
+    std::wstring title = item.title.empty() ? L"Untitled shelf item" : item.title;
+    return L"[" + display_type + L"] " + title + L" - " + shelf_item_page_text(item);
+}
+
+static std::wstring shelf_item_document_name(MainWidget* widget, const ShelfItem& item) {
+    if (!item.document_path.empty()) {
+        return Path(item.document_path).filename().value_or(item.document_path);
+    }
+    if (widget && widget->checksummer && !item.document_checksum.empty()) {
+        std::optional<std::wstring> path = widget->checksummer->get_path(item.document_checksum);
+        if (path.has_value()) {
+            return Path(path.value()).filename().value_or(path.value());
+        }
+    }
+    return item.document_checksum.empty() ? L"Unknown document" : utf8_decode(item.document_checksum);
+}
+
+static std::vector<std::vector<std::wstring>> shelf_item_table_columns(MainWidget* widget, const std::vector<ShelfItem>& items) {
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> notes;
+    std::vector<std::wstring> types;
+    std::vector<std::wstring> documents;
+    std::vector<std::wstring> pages;
+    bool has_notes = false;
+
+    for (const ShelfItem& item : items) {
+        names.push_back(shelf_item_row_text(item));
+        notes.push_back(item.note);
+        types.push_back(item.display_type.empty() ? item.source_type : item.display_type);
+        documents.push_back(truncate_string(shelf_item_document_name(widget, item), 50));
+        pages.push_back(shelf_item_page_text(item));
+        if (!item.note.empty()) {
+            has_notes = true;
+        }
+    }
+
+    std::vector<std::vector<std::wstring>> table = { names, types, documents, pages };
+    if (has_notes) {
+        table.push_back(notes);
+    }
+    return table;
+}
+
+static int next_shelf_item_order(const std::vector<ShelfItem>& items) {
+    int result = 0;
+    for (const ShelfItem& item : items) {
+        result = std::max(result, item.item_order + 1);
+    }
+    return result;
+}
+
+static bool shelf_items_same_document(const ShelfItem& lhs, const ShelfItem& rhs) {
+    if (!lhs.document_path.empty() && !rhs.document_path.empty()) {
+        return lhs.document_path == rhs.document_path;
+    }
+    if (!lhs.document_checksum.empty() && !rhs.document_checksum.empty()) {
+        return lhs.document_checksum == rhs.document_checksum;
+    }
+    return false;
+}
+
+static bool shelf_item_is_duplicate(const ShelfItem& candidate, const ShelfItem& existing) {
+    if (!candidate.source_id.empty() && candidate.source_id == existing.source_id) {
+        if (candidate.source_type == existing.source_type) {
+            return true;
+        }
+        bool candidate_is_exercise_ref = candidate.source_type == L"study_object" || candidate.source_type == L"problem";
+        bool existing_is_exercise_ref = existing.source_type == L"study_object" || existing.source_type == L"problem";
+        if (candidate_is_exercise_ref && existing_is_exercise_ref) {
+            return true;
+        }
+    }
+
+    if (!shelf_items_same_document(candidate, existing)) {
+        return false;
+    }
+    return candidate.source_type == existing.source_type
+        && candidate.title == existing.title
+        && candidate.page == existing.page
+        && std::abs(candidate.offset_x - existing.offset_x) < 0.01f
+        && std::abs(candidate.offset_y - existing.offset_y) < 0.01f;
+}
+
+static bool add_shelf_item(MainWidget* widget, ShelfItem item) {
+    if (!widget || !widget->db_manager) {
+        return false;
+    }
+
+    std::vector<ShelfItem> existing_items;
+    if (!widget->db_manager->select_shelf_items(existing_items)) {
+        show_error_message(L"Could not load portal shelf");
+        return false;
+    }
+    for (const ShelfItem& existing_item : existing_items) {
+        if (shelf_item_is_duplicate(item, existing_item)) {
+            widget->set_temporary_status_message(L"Portal shelf already contains this item");
+            return true;
+        }
+    }
+
+    item.id = new_uuid_utf8();
+    item.item_order = next_shelf_item_order(existing_items);
+    if (!widget->db_manager->insert_shelf_item(item)) {
+        show_error_message(L"Could not add item to portal shelf");
+        return false;
+    }
+    widget->set_temporary_status_message(L"Added to Portal Shelf: " + shelf_item_row_text(item));
+    return true;
+}
+
+static std::string current_document_checksum_fast(MainWidget* widget) {
+    if (!widget || !widget->doc()) {
+        return "";
+    }
+    std::optional<std::string> checksum = widget->doc()->get_checksum_fast();
+    return checksum.value_or("");
+}
+
+static ShelfItem shelf_item_from_current_location(MainWidget* widget, const std::wstring& title) {
+    ShelfItem item;
+    item.source_type = L"location";
+    item.display_type = L"location";
+    item.document_checksum = current_document_checksum_fast(widget);
+    item.document_path = widget->doc()->get_path();
+    item.page = widget->get_current_page_number();
+    item.offset_x = widget->main_document_view->get_offset_x();
+    item.offset_y = widget->main_document_view->get_offset_y();
+    item.page_offset_y = item.offset_y - widget->main_document_view->get_page_offset(item.page);
+    item.zoom_level = widget->main_document_view->get_zoom_level();
+
+    std::wstring normalized_title = QString::fromStdWString(title).trimmed().toStdWString();
+    if (normalized_title.empty()) {
+        std::wstring document_name = Path(item.document_path).filename().value_or(item.document_path);
+        normalized_title = document_name + L" - " + get_page_formatted_string(item.page + 1);
+    }
+    item.title = normalized_title;
+    return item;
+}
+
+static ShelfItem shelf_item_from_study_object(const StudyObject& study_object, bool as_problem) {
+    ShelfItem item;
+    item.source_type = as_problem ? L"problem" : L"study_object";
+    item.display_type = as_problem ? L"problem" : study_index_type_label(study_object.type);
+    item.source_id = study_object.id;
+    item.document_checksum = study_object.document_checksum;
+    item.document_path = study_object.document_path;
+    item.page = study_object.page;
+    item.offset_x = study_object.offset_x;
+    item.offset_y = study_object.offset_y;
+    item.page_offset_y = study_object.page_offset_y;
+    item.zoom_level = study_object.zoom_level;
+    item.title = study_index_study_object_title(study_object);
+    item.note = study_object.note;
+    return item;
+}
+
+static ShelfItem shelf_item_from_region_highlight(MainWidget* widget, const RegionHighlight& region_highlight) {
+    ShelfItem item;
+    item.source_type = L"region_highlight";
+    item.display_type = region_highlight.type.empty() ? L"region" : region_highlight.type;
+    item.source_id = region_highlight.id;
+    item.document_checksum = region_highlight.document_checksum;
+    item.document_path = region_highlight.document_path;
+    item.page = region_highlight.page;
+    item.rect = region_highlight.rect;
+    item.title = study_index_region_title(region_highlight);
+    item.note = region_highlight.note;
+    item.zoom_level = widget->main_document_view->get_zoom_level();
+    if (widget && widget->doc() && region_highlight.page >= 0 && region_highlight.page < widget->doc()->num_pages()) {
+        AbsoluteRect absolute_rect = widget->doc()->document_to_absolute_rect(DocumentRect(region_highlight.rect, region_highlight.page));
+        AbsoluteDocumentPos center = absolute_rect.center();
+        item.offset_x = center.x;
+        item.offset_y = center.y;
+        item.page_offset_y = center.y - widget->main_document_view->get_page_offset(region_highlight.page);
+    }
+    return item;
+}
+
+static bool open_shelf_item_document(MainWidget* widget, const ShelfItem& item) {
+    std::wstring document_path = item.document_path;
+    if (document_path.empty() && widget->checksummer && !item.document_checksum.empty()) {
+        document_path = widget->checksummer->get_path(item.document_checksum).value_or(L"");
+    }
+
+    bool already_open = false;
+    if (widget->doc()) {
+        std::optional<std::string> current_checksum = widget->doc()->get_checksum_fast();
+        already_open = (current_checksum.has_value() && current_checksum.value() == item.document_checksum)
+            || (!document_path.empty() && widget->doc()->get_path() == document_path);
+    }
+
+    if (!already_open) {
+        if (document_path.empty()) {
+            show_error_message(L"Could not open shelf item: document path is unavailable");
+            return false;
+        }
+        widget->open_document(document_path, {}, {}, item.zoom_level > 0.0f ? std::optional<float>{ item.zoom_level } : std::optional<float>{});
+    }
+
+    if (!widget->doc()) {
+        show_error_message(L"Could not open shelf item: document is unavailable");
+        return false;
+    }
+    std::optional<std::string> opened_checksum = widget->doc()->get_checksum_fast();
+    if (!document_path.empty() && widget->doc()->get_path() != document_path
+        && (!opened_checksum.has_value() || opened_checksum.value() != item.document_checksum)) {
+        show_error_message(L"Could not open shelf item: document is unavailable");
+        return false;
+    }
+    return true;
+}
+
+static void open_shelf_item(MainWidget* widget, const ShelfItem& item) {
+    if (!open_shelf_item_document(widget, item)) {
+        return;
+    }
+    if (item.page < 0 || item.page >= widget->doc()->num_pages()) {
+        show_error_message(L"Could not open shelf item: saved page is outside the document");
+        return;
+    }
+
+    if (item.zoom_level > 0.0f) {
+        widget->main_document_view->set_zoom_level(item.zoom_level, true);
+    }
+    widget->main_document_view->set_active_page_number(item.page);
+    if (widget->main_document_view->is_presentation_mode()) {
+        widget->main_document_view->set_presentation_page_number(item.page);
+    }
+    else if (item.rect.has_value() && study_index_valid_region_rect(item.rect.value())) {
+        AbsoluteRect absolute_rect = widget->doc()->document_to_absolute_rect(DocumentRect(item.rect.value(), item.page));
+        AbsoluteDocumentPos center = absolute_rect.center();
+        widget->main_document_view->set_offsets(center.x, center.y, true);
+        if (item.source_type == L"region_highlight" && !item.source_id.empty()) {
+            widget->opengl_widget->set_selected_region_highlight_id(item.source_id);
+        }
+    }
+    else {
+        float target_offset_y = widget->main_document_view->get_page_offset(item.page) + item.page_offset_y;
+        widget->main_document_view->set_offsets(item.offset_x, target_offset_y, true);
+    }
+    widget->validate_render();
+}
+
+static void show_shelf_items(
+    MainWidget* widget,
+    std::vector<ShelfItem> items,
+    int selected_index,
+    std::function<void(ShelfItem*)> on_select,
+    std::function<void(ShelfItem*)> on_delete = nullptr) {
+    std::function<void(ShelfItem*)> delete_handler = on_delete ? std::move(on_delete) : [](ShelfItem*) {};
+    set_filtered_select_menu<ShelfItem>(widget, FUZZY_SEARCHING, MULTILINE_MENUS,
+        shelf_item_table_columns(widget, items), items, selected_index,
+        std::move(on_select),
+        std::move(delete_handler));
+    widget->show_current_widget();
+}
+
+void MainWidget::handle_shelf_add_current_location(const std::wstring& title) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    add_shelf_item(this, shelf_item_from_current_location(this, title));
+}
+
+void MainWidget::handle_shelf_select_study_object() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::vector<StudyObject> study_objects = doc()->get_study_objects_sorted();
+    if (study_objects.empty()) {
+        set_temporary_status_message(L"No study objects in current document");
+        return;
+    }
+
+    int selected_index = doc()->find_closest_study_object_index(study_objects, main_document_view->get_offset_y());
+    set_filtered_select_menu<StudyObject>(this, FUZZY_SEARCHING, MULTILINE_MENUS,
+        study_object_table_columns(study_objects, false), study_objects, selected_index,
+        [&](StudyObject* study_object) {
+            if (study_object && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdString(study_object->id));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [](StudyObject*) {});
+    show_current_widget();
+}
+
+void MainWidget::handle_shelf_select_region_highlight() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::vector<RegionHighlight> region_highlights = doc()->get_region_highlights_sorted();
+    if (region_highlights.empty()) {
+        set_temporary_status_message(L"No region highlights in current document");
+        return;
+    }
+
+    int selected_index = doc()->find_closest_region_highlight_index(region_highlights, main_document_view->get_offset_y());
+    set_filtered_select_menu<RegionHighlight>(this, FUZZY_SEARCHING, MULTILINE_MENUS,
+        region_highlight_table_columns(region_highlights), region_highlights, selected_index,
+        [&](RegionHighlight* region_highlight) {
+            if (region_highlight && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdString(region_highlight->id));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [](RegionHighlight*) {});
+    show_current_widget();
+}
+
+void MainWidget::handle_shelf_select_problem() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::vector<ProblemListEntry> entries = problem_entries_for_current_document(this);
+    if (entries.empty()) {
+        set_temporary_status_message(L"No problems in current document");
+        return;
+    }
+
+    int selected_index = closest_problem_entry_index(doc(), entries, main_document_view->get_offset_y());
+    show_problem_entries(this, entries, false, selected_index,
+        [&](ProblemListEntry* entry) {
+            if (entry && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdString(entry->study_object.id));
+                advance_command(std::move(pending_command_instance));
+            }
+        });
+}
+
+void MainWidget::handle_shelf_select_item() {
+    std::vector<ShelfItem> items;
+    if (!db_manager->select_shelf_items(items)) {
+        show_error_message(L"Could not load portal shelf");
+        return;
+    }
+    if (items.empty()) {
+        set_temporary_status_message(L"Portal Shelf is empty");
+        return;
+    }
+
+    show_shelf_items(this, items, -1,
+        [&](ShelfItem* item) {
+            if (item && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdString(item->id));
+                advance_command(std::move(pending_command_instance));
+            }
+        });
+}
+
+void MainWidget::handle_shelf_add_study_object(const std::string& id) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    int index = doc()->get_study_object_index_with_id(id);
+    if (index < 0) {
+        set_temporary_status_message(L"Study object no longer exists");
+        return;
+    }
+    add_shelf_item(this, shelf_item_from_study_object(doc()->get_study_objects()[index], false));
+}
+
+void MainWidget::handle_shelf_add_region_highlight(const std::string& id) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    int index = doc()->get_region_highlight_index_with_id(id);
+    if (index < 0) {
+        set_temporary_status_message(L"Region highlight no longer exists");
+        return;
+    }
+    add_shelf_item(this, shelf_item_from_region_highlight(this, doc()->get_region_highlights()[index]));
+}
+
+void MainWidget::handle_shelf_add_problem(const std::string& id) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    int index = doc()->get_study_object_index_with_id(id);
+    if (index < 0 || !is_problem_study_object(doc()->get_study_objects()[index])) {
+        set_temporary_status_message(L"Problem no longer exists");
+        return;
+    }
+    add_shelf_item(this, shelf_item_from_study_object(doc()->get_study_objects()[index], true));
+}
+
+void MainWidget::handle_shelf_open() {
+    std::vector<ShelfItem> items;
+    if (!db_manager->select_shelf_items(items)) {
+        show_error_message(L"Could not load portal shelf");
+        return;
+    }
+    if (items.empty()) {
+        set_temporary_status_message(L"Portal Shelf is empty");
+        return;
+    }
+
+    show_shelf_items(this, items, -1,
+        [this](ShelfItem* item) {
+            if (item) {
+                open_shelf_item(this, *item);
+            }
+        },
+        [this](ShelfItem* item) {
+            if (item) {
+                handle_shelf_remove_item(item->id);
+            }
+        });
+}
+
+void MainWidget::handle_shelf_remove_item(const std::string& id) {
+    if (id.empty()) {
+        set_temporary_status_message(L"No shelf item selected");
+        return;
+    }
+    if (!db_manager->delete_shelf_item(id)) {
+        show_error_message(L"Could not remove shelf item");
+        return;
+    }
+    set_temporary_status_message(L"Removed shelf item");
+}
+
+void MainWidget::handle_shelf_clear() {
+    std::vector<ShelfItem> items;
+    if (!db_manager->select_shelf_items(items)) {
+        show_error_message(L"Could not load portal shelf");
+        return;
+    }
+    if (items.empty()) {
+        set_temporary_status_message(L"Portal Shelf is already empty");
+        return;
+    }
+    if (!db_manager->clear_shelf_items()) {
+        show_error_message(L"Could not clear portal shelf");
+        return;
+    }
+    set_temporary_status_message(L"Cleared Portal Shelf");
+}
+
+static void persist_shelf_item_order(MainWidget* widget, std::vector<ShelfItem>& items) {
+    for (size_t i = 0; i < items.size(); i++) {
+        widget->db_manager->update_shelf_item_order(items[i].id, static_cast<int>(i));
+    }
+}
+
+void MainWidget::handle_shelf_move_item_up(const std::string& id) {
+    std::vector<ShelfItem> items;
+    if (!db_manager->select_shelf_items(items)) {
+        show_error_message(L"Could not load portal shelf");
+        return;
+    }
+    auto it = std::find_if(items.begin(), items.end(), [&](const ShelfItem& item) { return item.id == id; });
+    if (it == items.end()) {
+        set_temporary_status_message(L"Shelf item no longer exists");
+        return;
+    }
+    size_t index = static_cast<size_t>(std::distance(items.begin(), it));
+    if (index == 0) {
+        set_temporary_status_message(L"Shelf item is already first");
+        return;
+    }
+    std::swap(items[index - 1], items[index]);
+    persist_shelf_item_order(this, items);
+    set_temporary_status_message(L"Moved shelf item up");
+}
+
+void MainWidget::handle_shelf_move_item_down(const std::string& id) {
+    std::vector<ShelfItem> items;
+    if (!db_manager->select_shelf_items(items)) {
+        show_error_message(L"Could not load portal shelf");
+        return;
+    }
+    auto it = std::find_if(items.begin(), items.end(), [&](const ShelfItem& item) { return item.id == id; });
+    if (it == items.end()) {
+        set_temporary_status_message(L"Shelf item no longer exists");
+        return;
+    }
+    size_t index = static_cast<size_t>(std::distance(items.begin(), it));
+    if (index + 1 >= items.size()) {
+        set_temporary_status_message(L"Shelf item is already last");
+        return;
+    }
+    std::swap(items[index], items[index + 1]);
+    persist_shelf_item_order(this, items);
+    set_temporary_status_message(L"Moved shelf item down");
+}
+
+void MainWidget::handle_shelf_show_current_page() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    std::vector<ShelfItem> items;
+    if (!db_manager->select_shelf_items(items)) {
+        show_error_message(L"Could not load portal shelf");
+        return;
+    }
+
+    std::set<int> pages = study_hud_page_scope_pages(this);
+    std::string current_checksum = current_document_checksum_fast(this);
+    std::wstring current_path = doc()->get_path();
+    items.erase(std::remove_if(items.begin(), items.end(), [&](const ShelfItem& item) {
+        bool same_document = (!current_checksum.empty() && item.document_checksum == current_checksum)
+            || (!current_path.empty() && item.document_path == current_path);
+        return !same_document || pages.find(item.page) == pages.end();
+        }), items.end());
+    if (items.empty()) {
+        set_temporary_status_message(main_document_view->is_effective_two_page_mode()
+            ? L"No shelf items on current spread"
+            : L"No shelf items on current page");
+        return;
+    }
+
+    show_shelf_items(this, items, -1,
+        [this](ShelfItem* item) {
+            if (item) {
+                open_shelf_item(this, *item);
+            }
+        });
+}
+
+void MainWidget::handle_region_highlight_select_current() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    std::vector<RegionHighlight> region_highlights = doc()->get_region_highlights_sorted();
+    if (region_highlights.empty()) {
+        set_temporary_status_message(L"No region highlights in current document");
+        return;
+    }
+
+    int closest_index = doc()->find_closest_region_highlight_index(region_highlights, main_document_view->get_offset_y());
+    set_filtered_select_menu<RegionHighlight>(this, FUZZY_SEARCHING, MULTILINE_MENUS,
+        region_highlight_table_columns(region_highlights), region_highlights, closest_index,
+        [&](RegionHighlight* region_highlight) {
+            if (region_highlight && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdString(region_highlight->id));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [&](RegionHighlight* region_highlight) {
+            if (region_highlight) {
+                handle_region_highlight_delete_id(region_highlight->id);
+            }
+        });
+    show_current_widget();
+}
+
+void MainWidget::handle_region_highlight_create(AbsoluteRect rect, const std::wstring& title) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    DocumentRect document_rect;
+    if (!region_document_rect_from_absolute(doc(), rect, document_rect)) {
+        show_error_message(L"Region highlight must be inside a single page");
+        clear_selected_rect();
+        return;
+    }
+
+    std::string id = doc()->add_region_highlight(document_rect, title, L"", L"region");
+    clear_selected_rect();
+    if (id.empty()) {
+        show_error_message(L"Could not create region highlight");
+        return;
+    }
+
+    opengl_widget->set_selected_region_highlight_id(id);
+    validate_render();
+    set_temporary_status_message(L"Created region highlight - " + region_highlight_page_text(doc()->get_region_highlights().back()));
+}
+
+void MainWidget::handle_region_highlight_open() {
+    handle_region_highlight_select_current();
+}
+
+void MainWidget::handle_region_highlight_open_id(const std::string& id) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    int index = doc()->get_region_highlight_index_with_id(id);
+    if (index < 0) {
+        set_temporary_status_message(L"Region highlight no longer exists");
+        return;
+    }
+    open_region_highlight(this, doc()->get_region_highlights()[index]);
+}
+
+void MainWidget::handle_region_highlight_show_current() {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    int current_page = get_current_page_number();
+    std::vector<RegionHighlight> nearby_region_highlights;
+    for (const RegionHighlight& region_highlight : doc()->get_region_highlights_sorted()) {
+        if (std::abs(region_highlight.page - current_page) <= 1) {
+            nearby_region_highlights.push_back(region_highlight);
+        }
+    }
+
+    if (nearby_region_highlights.empty()) {
+        set_temporary_status_message(L"No region highlights on nearby pages");
+        return;
+    }
+
+    int closest_index = doc()->find_closest_region_highlight_index(nearby_region_highlights, main_document_view->get_offset_y());
+    set_filtered_select_menu<RegionHighlight>(this, FUZZY_SEARCHING, MULTILINE_MENUS,
+        region_highlight_table_columns(nearby_region_highlights), nearby_region_highlights, closest_index,
+        [&](RegionHighlight* region_highlight) {
+            if (region_highlight) {
+                open_region_highlight(this, *region_highlight);
+            }
+        },
+        [](RegionHighlight*) {});
+    show_current_widget();
+}
+
+void MainWidget::handle_region_highlight_rename(const std::string& id, const std::wstring& new_title) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (doc()->update_region_highlight_title(id, new_title)) {
+        set_temporary_status_message(L"Renamed region highlight");
+        validate_render();
+    }
+    else {
+        show_error_message(L"Could not rename region highlight");
+    }
+}
+
+void MainWidget::handle_region_highlight_delete() {
+    handle_region_highlight_select_current();
+}
+
+void MainWidget::handle_region_highlight_delete_id(const std::string& id) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (doc()->delete_region_highlight(id)) {
+        opengl_widget->clear_selected_region_highlight();
+        set_temporary_status_message(L"Deleted region highlight");
+        validate_render();
+    }
+    else {
+        show_error_message(L"Could not delete region highlight");
+    }
+}
+
+void MainWidget::handle_region_highlight_copy_image() {
+    handle_region_highlight_select_current();
+}
+
+void MainWidget::handle_region_highlight_copy_image_id(const std::string& id) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+
+    int index = doc()->get_region_highlight_index_with_id(id);
+    if (index < 0) {
+        set_temporary_status_message(L"Region highlight no longer exists");
+        return;
+    }
+
+    const RegionHighlight& region_highlight = doc()->get_region_highlights()[index];
+    open_region_highlight(this, region_highlight);
+    AbsoluteRect absolute_rect = doc()->document_to_absolute_rect(DocumentRect(region_highlight.rect, region_highlight.page));
+    QRect window_qrect = normalized_qrect_from_window_rect(absolute_rect.to_window(main_document_view)).intersected(opengl_widget->rect());
+    if (window_qrect.width() <= 0 || window_qrect.height() <= 0) {
+        show_error_message(L"Could not copy region highlight image");
+        return;
+    }
+
+    float ratio = QGuiApplication::primaryScreen()->devicePixelRatio();
+    QPixmap pixmap(static_cast<int>(window_qrect.width() * ratio), static_cast<int>(window_qrect.height() * ratio));
+    pixmap.setDevicePixelRatio(ratio);
+    pixmap.fill(Qt::transparent);
+    opengl_widget->render(&pixmap, QPoint(-window_qrect.x(), -window_qrect.y()), QRegion(window_qrect));
+    QApplication::clipboard()->setPixmap(pixmap);
+    set_temporary_status_message(L"Copied region highlight image");
+}
+
+void MainWidget::handle_region_highlight_create_study_object(const std::string& id, const std::wstring& type, const std::wstring& title) {
+    if (!doc()) {
+        set_temporary_status_message(L"No current document");
+        return;
+    }
+    if (!is_valid_study_object_type(type)) {
+        show_error_message(L"Invalid study object type");
+        return;
+    }
+    if (title.empty()) {
+        set_temporary_status_message(L"Study object was not created: empty title");
+        return;
+    }
+
+    int index = doc()->get_region_highlight_index_with_id(id);
+    if (index < 0) {
+        set_temporary_status_message(L"Region highlight no longer exists");
+        return;
+    }
+
+    const RegionHighlight& region_highlight = doc()->get_region_highlights()[index];
+    AbsoluteRect absolute_rect = doc()->document_to_absolute_rect(DocumentRect(region_highlight.rect, region_highlight.page));
+    AbsoluteDocumentPos center = absolute_rect.center();
+    float page_offset_y = (region_highlight.rect.y0 + region_highlight.rect.y1) / 2.0f;
+    std::string study_object_id = doc()->add_study_object(type,
+        title,
+        region_highlight.note,
+        region_highlight.page,
+        center.x,
+        center.y,
+        page_offset_y,
+        main_document_view->get_zoom_level(),
+        absolute_rect.top_left(),
+        absolute_rect.bottom_right());
+    if (study_object_id.empty()) {
+        show_error_message(L"Could not create study object from region highlight");
+        return;
+    }
+
+    set_temporary_status_message(L"Created study object from region highlight");
+}
+
 void MainWidget::handle_goto_toc() {
 
     if (main_document_view->get_document()->has_toc()) {
@@ -6184,7 +9077,7 @@ void MainWidget::handle_open_all_docs() {
     std::vector<std::pair<std::wstring, std::wstring>> pairs;
     db_manager->get_prev_path_hash_pairs(pairs);
 
-    // show the most recent files first 
+    // show the most recent files first
     std::reverse(pairs.begin(), pairs.end());
 
     std::vector<std::string> hashes;
@@ -6267,6 +9160,1446 @@ void MainWidget::handle_open_prev_doc() {
     show_current_widget();
 }
 
+void MainWidget::handle_library_add_current_document() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"Library: no current document");
+        return;
+    }
+
+    const std::wstring current_path = doc()->get_path();
+    LibraryAddResult result = library_manager->add_document(current_path);
+    std::wstring display_name = Path(current_path).filename().value_or(current_path);
+
+    if (result == LibraryAddResult::Added) {
+        set_temporary_status_message(L"Added to library: " + display_name);
+    }
+    else if (result == LibraryAddResult::AlreadyExists) {
+        set_temporary_status_message(L"Already in library: " + display_name);
+    }
+    else if (result == LibraryAddResult::InvalidPath) {
+        show_error_message(L"Could not add document to library: invalid path");
+    }
+    else if (result == LibraryAddResult::SaveFailed) {
+        show_error_message(L"Could not save library: " + library_manager->last_error());
+    }
+}
+
+void MainWidget::handle_library_remove_current_document() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"Library: no current document");
+        return;
+    }
+
+    const std::wstring current_path = doc()->get_path();
+    LibraryRemoveResult result = library_manager->remove_document(current_path);
+    std::wstring display_name = Path(current_path).filename().value_or(current_path);
+
+    if (result == LibraryRemoveResult::Removed) {
+        set_temporary_status_message(L"Removed from library: " + display_name);
+    }
+    else if (result == LibraryRemoveResult::NotFound) {
+        set_temporary_status_message(L"Document is not in library: " + display_name);
+    }
+    else if (result == LibraryRemoveResult::InvalidPath) {
+        show_error_message(L"Could not remove document from library: invalid path");
+    }
+    else if (result == LibraryRemoveResult::SaveFailed) {
+        show_error_message(L"Could not save library: " + library_manager->last_error());
+    }
+}
+
+static std::wstring library_import_summary_message(const std::wstring& prefix, const LibraryImportSummary& summary, bool include_collection_counts) {
+    std::wstring message = prefix + L": " +
+        std::to_wstring(summary.files_found) + L" PDFs found, " +
+        std::to_wstring(summary.files_added) + L" added, " +
+        std::to_wstring(summary.files_already_present) + L" duplicates";
+
+    if (include_collection_counts) {
+        message += L", " + std::to_wstring(summary.files_added_to_collection) + L" added to collections";
+        message += L", " + std::to_wstring(summary.files_already_in_collection) + L" already in collections";
+        if (summary.collections_created > 0) {
+            message += L", " + std::to_wstring(summary.collections_created) + L" collections created";
+        }
+    }
+    if (summary.files_skipped_not_pdf > 0) {
+        message += L", " + std::to_wstring(summary.files_skipped_not_pdf) + L" non-PDF ignored";
+    }
+
+    int error_count = summary.files_skipped_invalid + summary.files_skipped_error;
+    message += L", " + std::to_wstring(error_count) + L" errors";
+    return message;
+}
+
+static std::wstring library_import_source_error_message(LibraryImportSourceStatus status, const std::wstring& source_path) {
+    if (status == LibraryImportSourceStatus::InvalidPath) {
+        return L"Library import failed: invalid folder path";
+    }
+    if (status == LibraryImportSourceStatus::NotFound) {
+        return L"Library import failed: folder not found: " + source_path;
+    }
+    if (status == LibraryImportSourceStatus::NotDirectory) {
+        return L"Library import failed: not a folder: " + source_path;
+    }
+    if (status == LibraryImportSourceStatus::InvalidCollectionName) {
+        return L"Library import failed: empty collection name";
+    }
+    return L"";
+}
+
+struct GoogleDriveLibraryImportBatch {
+    LibraryImportSummary summary;
+    bool add_to_collection = false;
+    std::wstring collection_name;
+    std::wstring status_prefix;
+    std::wstring fatal_error;
+    int pending_requests = 0;
+};
+
+static void count_main_library_import_file_result(LibraryImportSummary& summary, LibraryImportFileResult result) {
+    if (result == LibraryImportFileResult::Added) {
+        summary.files_added++;
+    }
+    else if (result == LibraryImportFileResult::AlreadyExists) {
+        summary.files_already_present++;
+    }
+    else if (result == LibraryImportFileResult::InvalidPath) {
+        summary.files_skipped_invalid++;
+    }
+    else if (result == LibraryImportFileResult::NotPdf) {
+        summary.files_skipped_not_pdf++;
+    }
+    else {
+        summary.files_skipped_error++;
+    }
+}
+
+static bool google_drive_payload_is_pdf(const QByteArray& data, const QString& content_type) {
+    return content_type.toLower().startsWith("application/pdf") || data.startsWith("%PDF");
+}
+
+static QString google_drive_import_directory_path() {
+    QString import_path = QString::fromStdWString(downloaded_papers_path.slash(L"google_drive").get_path());
+    QDir().mkpath(import_path);
+    return import_path;
+}
+
+static QString google_drive_import_target_path(const QString& preferred_name, const QString& file_id) {
+    QDir import_dir(google_drive_import_directory_path());
+    return import_dir.filePath(google_drive_file_name_for_import(preferred_name, file_id));
+}
+
+static bool google_drive_import_file_into_library(MainWidget* widget, const std::wstring& file_path, const std::shared_ptr<GoogleDriveLibraryImportBatch>& batch) {
+    if (!widget || !widget->library_manager) {
+        if (batch) {
+            batch->summary.files_skipped_error++;
+        }
+        return false;
+    }
+
+    LibraryImportFileResult import_result = widget->library_manager->import_file(file_path);
+    count_main_library_import_file_result(batch->summary, import_result);
+    if (import_result != LibraryImportFileResult::Added && import_result != LibraryImportFileResult::AlreadyExists) {
+        if (import_result == LibraryImportFileResult::SaveFailed && batch->fatal_error.empty()) {
+            batch->fatal_error = L"Could not save library: " + widget->library_manager->last_error();
+        }
+        return false;
+    }
+
+    if (!batch->add_to_collection) {
+        return true;
+    }
+
+    bool collection_already_exists = widget->library_manager->collection_exists(batch->collection_name);
+    LibraryAddToCollectionResult collection_result = widget->library_manager->add_document_to_collection(file_path, batch->collection_name);
+    if (collection_result == LibraryAddToCollectionResult::Added) {
+        batch->summary.files_added_to_collection++;
+        if (!collection_already_exists) {
+            batch->summary.collections_created++;
+            batch->summary.collection_created = true;
+        }
+    }
+    else if (collection_result == LibraryAddToCollectionResult::AlreadyInCollection) {
+        batch->summary.files_already_in_collection++;
+    }
+    else {
+        batch->summary.files_skipped_error++;
+        if (collection_result == LibraryAddToCollectionResult::SaveFailed && batch->fatal_error.empty()) {
+            batch->fatal_error = L"Could not save library: " + widget->library_manager->last_error();
+        }
+    }
+    return true;
+}
+
+static void finish_google_drive_import_if_done(MainWidget* widget, const std::shared_ptr<GoogleDriveLibraryImportBatch>& batch) {
+    if (!widget || !batch || batch->pending_requests > 0) {
+        return;
+    }
+
+    if (!batch->fatal_error.empty() && batch->summary.files_added == 0 && batch->summary.files_already_present == 0) {
+        show_error_message(batch->fatal_error);
+        return;
+    }
+
+    widget->set_temporary_status_message(library_import_summary_message(batch->status_prefix, batch->summary, batch->add_to_collection));
+}
+
+static void complete_google_drive_request(MainWidget* widget, const std::shared_ptr<GoogleDriveLibraryImportBatch>& batch) {
+    if (batch) {
+        batch->pending_requests--;
+    }
+    finish_google_drive_import_if_done(widget, batch);
+}
+
+static void start_google_drive_file_download(MainWidget* widget, const GoogleDriveSource& source, const QString& preferred_name, const std::shared_ptr<GoogleDriveLibraryImportBatch>& batch) {
+    if (!widget || !batch) {
+        return;
+    }
+
+    QString target_path = google_drive_import_target_path(preferred_name, source.id);
+    if (QFileInfo(target_path).exists()) {
+        google_drive_import_file_into_library(widget, target_path.toStdWString(), batch);
+        return;
+    }
+
+    QNetworkRequest request(google_drive_file_download_url(source, QString::fromStdWString(GOOGLE_DRIVE_API_KEY)));
+    QByteArray resource_key_header = google_drive_resource_key_header(source);
+    if (!resource_key_header.isEmpty()) {
+        request.setRawHeader("X-Goog-Drive-Resource-Keys", resource_key_header);
+    }
+
+    QNetworkReply* reply = widget->network_manager.get(request);
+    reply->setProperty("sioyek_network_request_type", QString("google_drive_library_import"));
+    batch->pending_requests++;
+
+    QObject::connect(reply, &QNetworkReply::finished, [widget, reply, source, preferred_name, batch]() {
+        QByteArray data = reply->readAll();
+        QString content_type = reply->header(QNetworkRequest::ContentTypeHeader).toString();
+        if (reply->error() != QNetworkReply::NoError || !google_drive_payload_is_pdf(data, content_type)) {
+            batch->summary.files_skipped_error++;
+            if (batch->fatal_error.empty()) {
+                batch->fatal_error = L"Google Drive import failed: Drive did not return a PDF. Check sharing permissions or set google_drive_api_key.";
+            }
+            complete_google_drive_request(widget, batch);
+            return;
+        }
+
+        QString response_file_name = google_drive_file_name_from_content_disposition(
+            QString::fromUtf8(reply->rawHeader("Content-Disposition")));
+        QString target_path = google_drive_import_target_path(response_file_name.isEmpty() ? preferred_name : response_file_name, source.id);
+        if (!QFileInfo(target_path).exists()) {
+            QFile file(target_path);
+            if (!file.open(QIODevice::WriteOnly)) {
+                batch->summary.files_skipped_error++;
+                if (batch->fatal_error.empty()) {
+                    batch->fatal_error = L"Google Drive import failed: could not write downloaded PDF";
+                }
+                complete_google_drive_request(widget, batch);
+                return;
+            }
+            file.write(data);
+            file.close();
+        }
+
+        google_drive_import_file_into_library(widget, target_path.toStdWString(), batch);
+        complete_google_drive_request(widget, batch);
+    });
+}
+
+static bool prepare_google_drive_collection_import(MainWidget* widget, const std::wstring& collection_name, const std::shared_ptr<GoogleDriveLibraryImportBatch>& batch) {
+    (void)widget;
+    batch->add_to_collection = true;
+    batch->collection_name = LibraryManager::normalize_collection_name(collection_name);
+    if (batch->collection_name.empty()) {
+        show_error_message(L"Google Drive import failed: empty collection name");
+        return false;
+    }
+    return true;
+}
+
+static std::shared_ptr<GoogleDriveLibraryImportBatch> make_google_drive_import_batch(const std::wstring& status_prefix) {
+    auto batch = std::make_shared<GoogleDriveLibraryImportBatch>();
+    batch->summary.source_status = LibraryImportSourceStatus::Ok;
+    batch->status_prefix = status_prefix;
+    return batch;
+}
+
+static void request_google_drive_folder_list_page(MainWidget* widget, const GoogleDriveSource& folder_source, const std::shared_ptr<GoogleDriveLibraryImportBatch>& batch, const QString& page_token = QString()) {
+    if (!widget || !batch) {
+        return;
+    }
+
+    QNetworkRequest request(google_drive_folder_list_url(folder_source, QString::fromStdWString(GOOGLE_DRIVE_API_KEY), page_token));
+    QByteArray resource_key_header = google_drive_resource_key_header(folder_source);
+    if (!resource_key_header.isEmpty()) {
+        request.setRawHeader("X-Goog-Drive-Resource-Keys", resource_key_header);
+    }
+
+    QNetworkReply* reply = widget->network_manager.get(request);
+    reply->setProperty("sioyek_network_request_type", QString("google_drive_library_import"));
+    batch->pending_requests++;
+
+    QObject::connect(reply, &QNetworkReply::finished, [widget, reply, folder_source, batch]() {
+        QByteArray response_data = reply->readAll();
+        if (reply->error() != QNetworkReply::NoError) {
+            batch->summary.files_skipped_error++;
+            if (batch->fatal_error.empty()) {
+                batch->fatal_error = L"Google Drive folder import failed: " + reply->errorString().toStdWString();
+            }
+            complete_google_drive_request(widget, batch);
+            return;
+        }
+
+        QJsonParseError parse_error;
+        QJsonDocument document = QJsonDocument::fromJson(response_data, &parse_error);
+        if (parse_error.error != QJsonParseError::NoError || !document.isObject()) {
+            batch->summary.files_skipped_error++;
+            if (batch->fatal_error.empty()) {
+                batch->fatal_error = L"Google Drive folder import failed: could not parse Drive API response";
+            }
+            complete_google_drive_request(widget, batch);
+            return;
+        }
+
+        QJsonArray files = document.object().value("files").toArray();
+        for (const QJsonValue& value : files) {
+            if (!value.isObject()) {
+                batch->summary.files_skipped_invalid++;
+                continue;
+            }
+
+            QJsonObject file_object = value.toObject();
+            QString file_id = file_object.value("id").toString();
+            QString file_name = file_object.value("name").toString();
+            QString mime_type = file_object.value("mimeType").toString();
+            if (file_id.isEmpty()) {
+                batch->summary.files_skipped_invalid++;
+                continue;
+            }
+            if (mime_type.compare("application/pdf", Qt::CaseInsensitive) != 0 && !file_name.endsWith(".pdf", Qt::CaseInsensitive)) {
+                batch->summary.files_skipped_not_pdf++;
+                continue;
+            }
+
+            GoogleDriveSource file_source;
+            file_source.kind = GoogleDriveSourceKind::File;
+            file_source.id = file_id;
+            file_source.resource_key = file_object.value("resourceKey").toString();
+            batch->summary.files_found++;
+            start_google_drive_file_download(widget, file_source, file_name, batch);
+        }
+
+        QString next_page_token = document.object().value("nextPageToken").toString();
+        if (!next_page_token.isEmpty()) {
+            request_google_drive_folder_list_page(widget, folder_source, batch, next_page_token);
+        }
+
+        complete_google_drive_request(widget, batch);
+    });
+}
+
+void MainWidget::handle_library_import_file(const std::wstring& file_path) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::wstring normalized_path = LibraryManager::normalize_library_path(file_path);
+    std::wstring display_name = normalized_path.empty() ? file_path : Path(normalized_path).filename().value_or(normalized_path);
+    LibraryImportFileResult result = library_manager->import_file(file_path);
+    if (result == LibraryImportFileResult::Added) {
+        set_temporary_status_message(L"Added to library: " + display_name);
+    }
+    else if (result == LibraryImportFileResult::AlreadyExists) {
+        set_temporary_status_message(L"Already in library: " + display_name);
+    }
+    else if (result == LibraryImportFileResult::InvalidPath) {
+        show_error_message(L"Library import failed: invalid file path");
+    }
+    else if (result == LibraryImportFileResult::FileNotFound) {
+        show_error_message(L"Library import failed: file not found: " + normalized_path);
+    }
+    else if (result == LibraryImportFileResult::NotAFile) {
+        show_error_message(L"Library import failed: not a file: " + normalized_path);
+    }
+    else if (result == LibraryImportFileResult::NotPdf) {
+        show_error_message(L"Library import failed: not a PDF: " + normalized_path);
+    }
+    else if (result == LibraryImportFileResult::SaveFailed) {
+        show_error_message(L"Could not save library: " + library_manager->last_error());
+    }
+}
+
+void MainWidget::handle_library_import_folder(const std::wstring& folder_path, bool recursive) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    LibraryImportSummary summary = library_manager->import_folder(folder_path, recursive);
+    if (summary.source_status == LibraryImportSourceStatus::SaveFailed) {
+        show_error_message(L"Could not save library: " + library_manager->last_error());
+        return;
+    }
+    if (summary.source_status != LibraryImportSourceStatus::Ok) {
+        show_error_message(library_import_source_error_message(summary.source_status, LibraryManager::normalize_library_path(folder_path)));
+        return;
+    }
+
+    set_temporary_status_message(library_import_summary_message(recursive ? L"Recursive library import" : L"Library import", summary, recursive));
+}
+
+void MainWidget::handle_library_import_folder_to_collection(const std::wstring& folder_path, const std::wstring& collection_name, bool recursive) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::wstring normalized_collection = LibraryManager::normalize_collection_name(collection_name);
+    LibraryImportSummary summary = library_manager->import_folder_to_collection(folder_path, normalized_collection, recursive);
+    if (summary.source_status == LibraryImportSourceStatus::SaveFailed) {
+        show_error_message(L"Could not save library: " + library_manager->last_error());
+        return;
+    }
+    if (summary.source_status != LibraryImportSourceStatus::Ok) {
+        show_error_message(library_import_source_error_message(summary.source_status, LibraryManager::normalize_library_path(folder_path)));
+        return;
+    }
+
+    std::wstring prefix = recursive ? L"Recursive library import to " : L"Library import to ";
+    set_temporary_status_message(library_import_summary_message(prefix + normalized_collection, summary, true));
+}
+
+void MainWidget::handle_library_import_google_drive_file(const std::wstring& source) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::wstring normalized_path = LibraryManager::normalize_library_path(source);
+    QFileInfo local_file(QString::fromStdWString(normalized_path));
+    if (local_file.exists() && local_file.isFile()) {
+        handle_library_import_file(source);
+        return;
+    }
+
+    std::optional<GoogleDriveSource> drive_source = parse_google_drive_source(source, GoogleDriveSourceKind::File);
+    if (!drive_source.has_value()) {
+        show_error_message(L"Google Drive import failed: invalid file URL or ID");
+        return;
+    }
+
+    auto batch = make_google_drive_import_batch(L"Google Drive import");
+    batch->summary.files_found = 1;
+    set_temporary_status_message(L"Google Drive import started");
+    start_google_drive_file_download(this, drive_source.value(), QString(), batch);
+    finish_google_drive_import_if_done(this, batch);
+}
+
+void MainWidget::handle_library_import_google_drive_file_to_collection(const std::wstring& source, const std::wstring& collection_name) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::wstring normalized_path = LibraryManager::normalize_library_path(source);
+    QFileInfo local_file(QString::fromStdWString(normalized_path));
+    if (local_file.exists() && local_file.isFile()) {
+        auto batch = make_google_drive_import_batch(L"Google Drive import");
+        if (!prepare_google_drive_collection_import(this, collection_name, batch)) {
+            return;
+        }
+        batch->status_prefix = L"Google Drive import to " + batch->collection_name;
+        batch->summary.files_found = 1;
+        google_drive_import_file_into_library(this, normalized_path, batch);
+        finish_google_drive_import_if_done(this, batch);
+        return;
+    }
+
+    std::optional<GoogleDriveSource> drive_source = parse_google_drive_source(source, GoogleDriveSourceKind::File);
+    if (!drive_source.has_value()) {
+        show_error_message(L"Google Drive import failed: invalid file URL or ID");
+        return;
+    }
+
+    auto batch = make_google_drive_import_batch(L"Google Drive import");
+    if (!prepare_google_drive_collection_import(this, collection_name, batch)) {
+        return;
+    }
+    batch->status_prefix = L"Google Drive import to " + batch->collection_name;
+    batch->summary.files_found = 1;
+    set_temporary_status_message(L"Google Drive import started");
+    start_google_drive_file_download(this, drive_source.value(), QString(), batch);
+    finish_google_drive_import_if_done(this, batch);
+}
+
+void MainWidget::handle_library_import_google_drive_folder(const std::wstring& source) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::wstring normalized_path = LibraryManager::normalize_library_path(source);
+    QFileInfo local_folder(QString::fromStdWString(normalized_path));
+    if (local_folder.exists() && local_folder.isDir()) {
+        handle_library_import_folder(source, false);
+        return;
+    }
+
+    std::optional<GoogleDriveSource> drive_source = parse_google_drive_source(source, GoogleDriveSourceKind::Folder);
+    if (!drive_source.has_value()) {
+        show_error_message(L"Google Drive folder import failed: invalid folder URL or ID");
+        return;
+    }
+    if (QString::fromStdWString(GOOGLE_DRIVE_API_KEY).trimmed().isEmpty()) {
+        show_error_message(L"Google Drive folder import requires google_drive_api_key, or a synced local Drive folder path");
+        return;
+    }
+
+    auto batch = make_google_drive_import_batch(L"Google Drive folder import");
+    set_temporary_status_message(L"Google Drive folder import started");
+    request_google_drive_folder_list_page(this, drive_source.value(), batch);
+}
+
+void MainWidget::handle_library_import_google_drive_folder_to_collection(const std::wstring& source, const std::wstring& collection_name) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::wstring normalized_path = LibraryManager::normalize_library_path(source);
+    QFileInfo local_folder(QString::fromStdWString(normalized_path));
+    if (local_folder.exists() && local_folder.isDir()) {
+        handle_library_import_folder_to_collection(source, collection_name, false);
+        return;
+    }
+
+    std::optional<GoogleDriveSource> drive_source = parse_google_drive_source(source, GoogleDriveSourceKind::Folder);
+    if (!drive_source.has_value()) {
+        show_error_message(L"Google Drive folder import failed: invalid folder URL or ID");
+        return;
+    }
+    if (QString::fromStdWString(GOOGLE_DRIVE_API_KEY).trimmed().isEmpty()) {
+        show_error_message(L"Google Drive folder import requires google_drive_api_key, or a synced local Drive folder path");
+        return;
+    }
+
+    auto batch = make_google_drive_import_batch(L"Google Drive folder import");
+    if (!prepare_google_drive_collection_import(this, collection_name, batch)) {
+        return;
+    }
+    batch->status_prefix = L"Google Drive folder import to " + batch->collection_name;
+    set_temporary_status_message(L"Google Drive folder import started");
+    request_google_drive_folder_list_page(this, drive_source.value(), batch);
+}
+
+static std::wstring join_library_values(const std::vector<std::wstring>& values) {
+    if (values.empty()) {
+        return L"none";
+    }
+
+    std::wstring result;
+    for (size_t i = 0; i < values.size(); i++) {
+        if (i > 0) {
+            result += L", ";
+        }
+        result += values[i];
+    }
+    return result;
+}
+
+static std::wstring library_entry_display_name(const LibraryEntry& entry);
+
+void MainWidget::handle_library_show_current_document_info() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"Library: no current document");
+        return;
+    }
+
+    std::optional<LibraryEntry> entry = library_manager->get_document_info(doc()->get_path());
+    if (!entry.has_value()) {
+        set_temporary_status_message(L"Current document is not in the library");
+        return;
+    }
+
+    std::wstring last_opened = entry->last_opened.has_value()
+        ? QString::fromStdString(entry->last_opened.value()).toStdWString()
+        : L"never";
+    set_temporary_status_message(
+        L"Library: " + library_entry_display_name(entry.value()) +
+        L" | collections: " + join_library_values(entry->collections) +
+        L" | added: " + QString::fromStdString(entry->date_added).toStdWString() +
+        L" | last opened: " + last_opened);
+}
+
+static WorkspaceDocumentEntry make_workspace_document_entry(MainWidget* window, int window_index) {
+    WorkspaceDocumentEntry entry;
+    if (!window || !window->doc()) {
+        return entry;
+    }
+
+    entry.path = WorkspaceManager::normalize_workspace_path(window->doc()->get_path());
+    entry.display_name = Path(entry.path).filename().value_or(entry.path);
+    entry.page = window->get_current_page_number();
+    entry.zoom_level = window->main_document_view->get_zoom_level();
+    entry.offset_x = window->main_document_view->get_offset_x();
+    entry.offset_y = window->main_document_view->get_offset_y();
+    entry.window_index = window_index;
+    return entry;
+}
+
+static std::vector<WorkspaceDocumentEntry> collect_open_workspace_documents() {
+    std::vector<WorkspaceDocumentEntry> documents;
+    for (int i = 0; i < static_cast<int>(windows.size()); i++) {
+        MainWidget* window = windows[i];
+        if (!window || !window->doc()) {
+            continue;
+        }
+
+        WorkspaceDocumentEntry entry = make_workspace_document_entry(window, i);
+        if (!entry.path.empty()) {
+            documents.push_back(entry);
+        }
+    }
+    return documents;
+}
+
+static std::wstring workspace_document_display_name(const WorkspaceDocumentEntry& entry) {
+    if (!entry.display_name.empty()) {
+        return entry.display_name;
+    }
+    return Path(entry.path).filename().value_or(entry.path);
+}
+
+static std::wstring workspace_detail_text(const WorkspaceEntry& workspace) {
+    std::wstring detail = std::to_wstring(workspace.documents.size());
+    detail += workspace.documents.size() == 1 ? L" document" : L" documents";
+    if (!workspace.updated_at.empty()) {
+        detail += L" | updated ";
+        detail += QString::fromStdString(workspace.updated_at).toStdWString();
+    }
+    return detail;
+}
+
+static void show_workspace_selector(MainWidget* widget, const std::vector<WorkspaceEntry>& workspaces, int selected_index = -1) {
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> details;
+    std::vector<std::wstring> values;
+    for (const WorkspaceEntry& workspace : workspaces) {
+        names.push_back(workspace.name);
+        details.push_back(workspace_detail_text(workspace));
+        values.push_back(workspace.name);
+    }
+
+    set_filtered_select_menu<std::wstring>(widget, FUZZY_SEARCHING, MULTILINE_MENUS, { names, details }, values, selected_index,
+        [widget](std::wstring* workspace_name) {
+            if ((workspace_name->size() > 0) && widget->pending_command_instance) {
+                widget->pending_command_instance->set_generic_requirement(QString::fromStdWString(*workspace_name));
+                widget->advance_command(std::move(widget->pending_command_instance));
+            }
+        },
+        [](std::wstring*) {});
+    widget->show_current_widget();
+}
+
+void MainWidget::handle_workspace_save_current(const std::wstring& workspace_name) {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    std::wstring normalized_name = WorkspaceManager::normalize_workspace_name(workspace_name);
+    bool existed = workspace_manager->workspace_exists(normalized_name);
+    std::vector<WorkspaceDocumentEntry> documents = collect_open_workspace_documents();
+    WorkspaceSaveResult result = workspace_manager->save_workspace(normalized_name, documents);
+    if (result == WorkspaceSaveResult::Saved) {
+        std::wstring action = existed ? L"Updated workspace: " : L"Saved workspace: ";
+        set_temporary_status_message(action + normalized_name + L" (" + std::to_wstring(documents.size()) + L" open documents)");
+    }
+    else if (result == WorkspaceSaveResult::InvalidName) {
+        show_error_message(L"Could not save workspace: empty name");
+    }
+    else if (result == WorkspaceSaveResult::EmptyWorkspace) {
+        set_temporary_status_message(L"Workspace was not saved: no open documents");
+    }
+    else if (result == WorkspaceSaveResult::SaveFailed) {
+        show_error_message(L"Could not save workspace: " + workspace_manager->last_error());
+    }
+}
+
+void MainWidget::handle_workspace_show_active() {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    std::optional<std::wstring> active_workspace = workspace_manager->active_workspace();
+    if (!active_workspace.has_value()) {
+        set_temporary_status_message(L"No active workspace");
+        return;
+    }
+
+    if (workspace_manager->workspace_exists(active_workspace.value())) {
+        set_temporary_status_message(L"Active workspace: " + active_workspace.value());
+    }
+    else {
+        set_temporary_status_message(L"Active workspace is missing: " + active_workspace.value());
+    }
+}
+
+void MainWidget::handle_workspace_open() {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    const std::vector<WorkspaceEntry>& workspaces = workspace_manager->list_workspaces();
+    if (workspaces.empty()) {
+        if (!workspace_manager->last_error().empty()) {
+            show_error_message(L"Workspace list is empty because it could not be loaded: " + workspace_manager->last_error());
+        }
+        else {
+            set_temporary_status_message(L"No saved workspaces");
+        }
+        return;
+    }
+
+    show_workspace_selector(this, workspaces);
+}
+
+bool restore_workspace_document_in_widget(MainWidget* target, const WorkspaceDocumentEntry& document) {
+    if (!target) {
+        return false;
+    }
+
+    target->open_document(document.path, {}, {}, document.zoom_level > 0.0f ? std::optional<float>{ document.zoom_level } : std::optional<float>{});
+    if (!target->doc()) {
+        return false;
+    }
+    if (document.offset_x != 0.0f || document.offset_y != 0.0f) {
+        target->main_document_view->set_offsets(document.offset_x, document.offset_y, true);
+    }
+    else if (document.page >= 0 && document.page < target->doc()->num_pages()) {
+        target->main_document_view->set_offset_y(target->main_document_view->get_page_offset(document.page));
+    }
+    target->validate_render();
+    return true;
+}
+
+MainWidget* create_workspace_restore_window(MainWidget* source, const WorkspaceDocumentEntry& document) {
+    MainWidget* new_widget = new MainWidget(source->mupdf_context,
+        source->db_manager,
+        source->document_manager,
+        source->config_manager,
+        source->command_manager,
+        source->input_handler,
+        source->checksummer,
+        source->library_manager,
+        source->workspace_manager,
+        source->should_quit);
+    if (!restore_workspace_document_in_widget(new_widget, document)) {
+        delete new_widget;
+        return nullptr;
+    }
+
+    new_widget->show();
+    new_widget->apply_window_params_for_one_window_mode();
+    auto color_mode = source->opengl_widget->get_current_color_mode();
+    if (color_mode == PdfViewOpenGLWidget::ColorPalette::Dark) {
+        new_widget->opengl_widget->set_dark_mode(true);
+    }
+    else if (color_mode == PdfViewOpenGLWidget::ColorPalette::Custom) {
+        new_widget->opengl_widget->set_custom_color_mode(true);
+    }
+    windows.push_back(new_widget);
+    return new_widget;
+}
+
+void MainWidget::handle_workspace_open(const std::wstring& workspace_name) {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    std::optional<WorkspaceEntry> workspace = workspace_manager->get_workspace(workspace_name);
+    if (!workspace.has_value()) {
+        set_temporary_status_message(L"Workspace does not exist: " + WorkspaceManager::normalize_workspace_name(workspace_name));
+        return;
+    }
+    if (workspace->documents.empty()) {
+        set_temporary_status_message(L"Workspace is empty: " + workspace->name);
+        return;
+    }
+
+    int opened_count = 0;
+    int missing_count = 0;
+    std::wstring first_missing_path;
+    for (const WorkspaceDocumentEntry& document : workspace->documents) {
+        std::wstring path = WorkspaceManager::normalize_workspace_path(document.path);
+#ifndef SIOYEK_ANDROID
+        QFileInfo file_info(QString::fromStdWString(path));
+        if (!file_info.exists() || !file_info.isFile()) {
+            missing_count++;
+            if (first_missing_path.empty()) {
+                first_missing_path = path;
+            }
+            continue;
+        }
+#endif
+
+        WorkspaceDocumentEntry normalized_document = document;
+        normalized_document.path = path;
+        bool restored = false;
+        if (opened_count == 0) {
+            restored = restore_workspace_document_in_widget(this, normalized_document);
+        }
+        else {
+            restored = create_workspace_restore_window(this, normalized_document) != nullptr;
+        }
+
+        if (restored) {
+            opened_count++;
+        }
+        else {
+            missing_count++;
+            if (first_missing_path.empty()) {
+                first_missing_path = path;
+            }
+        }
+    }
+
+    if (opened_count == 0) {
+        show_error_message(first_missing_path.empty()
+            ? L"Could not restore workspace: " + workspace->name
+            : L"Workspace document no longer exists: " + first_missing_path);
+        return;
+    }
+
+    workspace_manager->set_active_workspace(workspace->name);
+    std::wstring active_save_error = workspace_manager->last_error();
+    std::wstring message = L"Opened workspace: " + workspace->name + L" (" + std::to_wstring(opened_count) + L" documents)";
+    if (missing_count > 0) {
+        message += L"; " + std::to_wstring(missing_count) + L" missing";
+    }
+    if (!active_save_error.empty()) {
+        message += L"; active workspace was not persisted: " + active_save_error;
+    }
+    set_temporary_status_message(message);
+}
+
+void MainWidget::handle_workspace_update_current() {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    std::optional<std::wstring> active_workspace = workspace_manager->active_workspace();
+    if (!active_workspace.has_value()) {
+        if (pending_command_instance) {
+            handle_workspace_open();
+        }
+        else {
+            set_temporary_status_message(L"No active workspace; use workspace_save_current or choose a workspace to update");
+        }
+        return;
+    }
+    handle_workspace_update_current(active_workspace.value());
+}
+
+void MainWidget::handle_workspace_update_current(const std::wstring& workspace_name) {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    std::wstring normalized_name = WorkspaceManager::normalize_workspace_name(workspace_name);
+    if (!workspace_manager->workspace_exists(normalized_name)) {
+        set_temporary_status_message(L"Workspace does not exist: " + normalized_name);
+        return;
+    }
+
+    std::vector<WorkspaceDocumentEntry> documents = collect_open_workspace_documents();
+    WorkspaceSaveResult result = workspace_manager->update_workspace_from_current_session(normalized_name, documents);
+    if (result == WorkspaceSaveResult::Saved) {
+        std::wstring scope = documents.size() == 1 ? L"current document" : std::to_wstring(documents.size()) + L" open documents";
+        set_temporary_status_message(L"Updated workspace: " + normalized_name + L" (" + scope + L")");
+    }
+    else if (result == WorkspaceSaveResult::EmptyWorkspace) {
+        set_temporary_status_message(L"Workspace was not updated: no open documents");
+    }
+    else if (result == WorkspaceSaveResult::InvalidName) {
+        show_error_message(L"Could not update workspace: empty or missing workspace");
+    }
+    else if (result == WorkspaceSaveResult::SaveFailed) {
+        show_error_message(L"Could not update workspace: " + workspace_manager->last_error());
+    }
+}
+
+void MainWidget::handle_workspace_add_current_document() {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"No current document to add to a workspace");
+        return;
+    }
+    if (workspace_manager->list_workspaces().empty()) {
+        set_temporary_status_message(L"No saved workspaces");
+        return;
+    }
+
+    show_workspace_selector(this, workspace_manager->list_workspaces());
+}
+
+void MainWidget::handle_workspace_add_current_document(const std::wstring& workspace_name) {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"No current document to add to a workspace");
+        return;
+    }
+
+    WorkspaceDocumentEntry entry = make_workspace_document_entry(this, get_current_tab_index());
+    WorkspaceDocumentChangeResult result = workspace_manager->add_current_document_to_workspace(workspace_name, entry);
+    std::wstring normalized_name = WorkspaceManager::normalize_workspace_name(workspace_name);
+    if (result == WorkspaceDocumentChangeResult::Added) {
+        set_temporary_status_message(L"Added current document to workspace: " + normalized_name);
+    }
+    else if (result == WorkspaceDocumentChangeResult::Updated) {
+        set_temporary_status_message(L"Updated current document in workspace: " + normalized_name);
+    }
+    else if (result == WorkspaceDocumentChangeResult::WorkspaceNotFound) {
+        set_temporary_status_message(L"Workspace does not exist: " + normalized_name);
+    }
+    else if (result == WorkspaceDocumentChangeResult::InvalidWorkspaceName || result == WorkspaceDocumentChangeResult::InvalidPath) {
+        show_error_message(L"Could not add current document to workspace");
+    }
+    else if (result == WorkspaceDocumentChangeResult::SaveFailed) {
+        show_error_message(L"Could not save workspace: " + workspace_manager->last_error());
+    }
+}
+
+void MainWidget::handle_workspace_remove_current_document() {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"No current document to remove from a workspace");
+        return;
+    }
+
+    std::wstring current_path = WorkspaceManager::normalize_workspace_path(doc()->get_path());
+    std::vector<WorkspaceEntry> containing_workspaces;
+    for (const std::wstring& workspace_name : workspace_manager->workspaces_containing_document(current_path)) {
+        std::optional<WorkspaceEntry> workspace = workspace_manager->get_workspace(workspace_name);
+        if (workspace.has_value()) {
+            containing_workspaces.push_back(workspace.value());
+        }
+    }
+
+    if (containing_workspaces.empty()) {
+        set_temporary_status_message(L"Current document is not in any workspace");
+        return;
+    }
+    show_workspace_selector(this, containing_workspaces);
+}
+
+void MainWidget::handle_workspace_remove_current_document(const std::wstring& workspace_name) {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"No current document to remove from a workspace");
+        return;
+    }
+
+    std::wstring normalized_name = WorkspaceManager::normalize_workspace_name(workspace_name);
+    WorkspaceDocumentChangeResult result = workspace_manager->remove_document_from_workspace(normalized_name, doc()->get_path());
+    if (result == WorkspaceDocumentChangeResult::Removed) {
+        set_temporary_status_message(L"Removed current document from workspace: " + normalized_name);
+    }
+    else if (result == WorkspaceDocumentChangeResult::DocumentNotFound) {
+        set_temporary_status_message(L"Current document is not in workspace: " + normalized_name);
+    }
+    else if (result == WorkspaceDocumentChangeResult::WorkspaceNotFound) {
+        set_temporary_status_message(L"Workspace does not exist: " + normalized_name);
+    }
+    else if (result == WorkspaceDocumentChangeResult::SaveFailed) {
+        show_error_message(L"Could not save workspace: " + workspace_manager->last_error());
+    }
+    else {
+        show_error_message(L"Could not remove current document from workspace");
+    }
+}
+
+void MainWidget::handle_workspace_rename() {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+    if (workspace_manager->list_workspaces().empty()) {
+        set_temporary_status_message(L"No saved workspaces");
+        return;
+    }
+    show_workspace_selector(this, workspace_manager->list_workspaces());
+}
+
+void MainWidget::handle_workspace_rename(const std::wstring& old_name, const std::wstring& new_name) {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    std::wstring normalized_old_name = WorkspaceManager::normalize_workspace_name(old_name);
+    std::wstring normalized_new_name = WorkspaceManager::normalize_workspace_name(new_name);
+    WorkspaceRenameResult result = workspace_manager->rename_workspace(normalized_old_name, normalized_new_name);
+    if (result == WorkspaceRenameResult::Renamed) {
+        set_temporary_status_message(L"Renamed workspace: " + normalized_old_name + L" -> " + normalized_new_name);
+    }
+    else if (result == WorkspaceRenameResult::AlreadyExists) {
+        show_error_message(L"Workspace already exists: " + normalized_new_name);
+    }
+    else if (result == WorkspaceRenameResult::NotFound) {
+        set_temporary_status_message(L"Workspace does not exist: " + normalized_old_name);
+    }
+    else if (result == WorkspaceRenameResult::InvalidName) {
+        show_error_message(L"Could not rename workspace: empty name");
+    }
+    else if (result == WorkspaceRenameResult::SaveFailed) {
+        show_error_message(L"Could not save workspace: " + workspace_manager->last_error());
+    }
+}
+
+void MainWidget::handle_workspace_show_info() {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+    if (workspace_manager->list_workspaces().empty()) {
+        set_temporary_status_message(L"No saved workspaces");
+        return;
+    }
+    show_workspace_selector(this, workspace_manager->list_workspaces());
+}
+
+void MainWidget::handle_workspace_show_info(const std::wstring& workspace_name) {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    std::optional<WorkspaceEntry> workspace = workspace_manager->get_workspace(workspace_name);
+    if (!workspace.has_value()) {
+        set_temporary_status_message(L"Workspace does not exist: " + WorkspaceManager::normalize_workspace_name(workspace_name));
+        return;
+    }
+
+    WorkspacePathValidationResult validation = workspace_manager->validate_workspace_paths(workspace->name);
+    set_temporary_status_message(
+        L"Workspace: " + workspace->name +
+        L" | documents: " + std::to_wstring(workspace->documents.size()) +
+        L" | created: " + QString::fromStdString(workspace->created_at).toStdWString() +
+        L" | updated: " + QString::fromStdString(workspace->updated_at).toStdWString() +
+        L" | missing: " + std::to_wstring(validation.missing));
+}
+
+void MainWidget::handle_workspace_delete() {
+    handle_workspace_open();
+}
+
+void MainWidget::handle_workspace_delete(const std::wstring& workspace_name) {
+    if (!workspace_manager) {
+        show_error_message(L"Workspaces are not available");
+        return;
+    }
+
+    std::wstring normalized_name = WorkspaceManager::normalize_workspace_name(workspace_name);
+    WorkspaceDeleteResult result = workspace_manager->delete_workspace(normalized_name);
+    if (result == WorkspaceDeleteResult::Deleted) {
+        set_temporary_status_message(L"Deleted workspace: " + normalized_name);
+    }
+    else if (result == WorkspaceDeleteResult::NotFound) {
+        set_temporary_status_message(L"Workspace does not exist: " + normalized_name);
+    }
+    else if (result == WorkspaceDeleteResult::InvalidName) {
+        show_error_message(L"Could not delete workspace: empty name");
+    }
+    else if (result == WorkspaceDeleteResult::SaveFailed) {
+        show_error_message(L"Could not save workspaces: " + workspace_manager->last_error());
+    }
+}
+
+static QList<QStandardItem*> make_library_tree_row(const std::wstring& title, const std::wstring& detail, bool is_group, int value_index) {
+    QStandardItem* title_item = new QStandardItem(QString::fromStdWString(title));
+    QStandardItem* detail_item = new QStandardItem(QString::fromStdWString(detail));
+    for (QStandardItem* item : { title_item, detail_item }) {
+        item->setData(is_group, SELECTOR_GROUP_ROLE);
+        if (value_index >= 0) {
+            item->setData(value_index, SELECTOR_VALUE_INDEX_ROLE);
+        }
+    }
+    return QList<QStandardItem*>() << title_item << detail_item;
+}
+
+static std::wstring library_entry_display_name(const LibraryEntry& entry) {
+    if (!entry.display_name.empty()) {
+        return entry.display_name;
+    }
+    return Path(entry.path).filename().value_or(entry.path);
+}
+
+static void append_library_collection_rows(
+    QStandardItemModel* model,
+    const std::wstring& collection_name,
+    const std::vector<LibraryEntry>& documents,
+    std::vector<std::wstring>& values,
+    const std::wstring& current_path,
+    int& selected_index
+) {
+    std::wstring count_text = std::to_wstring(documents.size());
+    count_text += documents.size() == 1 ? L" document" : L" documents";
+
+    QList<QStandardItem*> group_row = make_library_tree_row(collection_name, count_text, true, -1);
+    model->appendRow(group_row);
+    QStandardItem* group_item = group_row[0];
+
+    for (const LibraryEntry& entry : documents) {
+        int value_index = static_cast<int>(values.size());
+        values.push_back(entry.path);
+        if (entry.path == current_path && selected_index == -1) {
+            selected_index = value_index;
+        }
+        group_item->appendRow(make_library_tree_row(library_entry_display_name(entry), entry.path, false, value_index));
+    }
+}
+
+void MainWidget::handle_library_open() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    const std::vector<LibraryEntry>& entries = library_manager->entries();
+    const std::vector<std::wstring>& collections = library_manager->list_collections();
+    if (entries.empty() && collections.empty()) {
+        if (!library_manager->last_error().empty()) {
+            show_error_message(L"Library is empty because it could not be loaded: " + library_manager->last_error());
+        }
+        else {
+            set_temporary_status_message(L"Library is empty");
+        }
+        return;
+    }
+
+    std::vector<std::wstring> values;
+    int selected_index = -1;
+    std::wstring current_path = doc() ? LibraryManager::canonicalize_path(doc()->get_path()) : L"";
+
+    QStandardItemModel* model = new QStandardItemModel();
+    model->setColumnCount(2);
+
+    for (const std::wstring& collection_name : collections) {
+        append_library_collection_rows(
+            model,
+            collection_name,
+            library_manager->documents_in_collection(collection_name),
+            values,
+            current_path,
+            selected_index);
+    }
+
+    std::vector<LibraryEntry> uncategorized_documents = library_manager->uncategorized_documents();
+    if (!uncategorized_documents.empty()) {
+        append_library_collection_rows(
+            model,
+            L"Uncategorized",
+            uncategorized_documents,
+            values,
+            current_path,
+            selected_index);
+    }
+
+    if (model->rowCount() == 0) {
+        set_temporary_status_message(L"Library is empty");
+        return;
+    }
+
+    FilteredTreeSelectWindowClass<std::wstring>* selector = new FilteredTreeSelectWindowClass<std::wstring>(
+        FUZZY_SEARCHING,
+        model,
+        values,
+        selected_index,
+        [&](std::wstring* path) {
+            if ((path->size() > 0) && (pending_command_instance)) {
+                pending_command_instance->set_generic_requirement(QString::fromStdWString(*path));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        this);
+
+    selector->set_filter_column_index(-1);
+    set_current_widget(selector);
+    show_current_widget();
+}
+
+void MainWidget::handle_library_open_collection(const std::wstring& collection_name) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::wstring normalized_name = LibraryManager::normalize_collection_name(collection_name);
+    if (normalized_name.empty()) {
+        show_error_message(L"Could not open library collection: empty collection name");
+        return;
+    }
+    if (!library_manager->collection_exists(normalized_name)) {
+        set_temporary_status_message(L"Library collection does not exist: " + normalized_name);
+        return;
+    }
+
+    std::vector<LibraryEntry> documents = library_manager->documents_in_collection(normalized_name);
+    if (documents.empty()) {
+        set_temporary_status_message(L"Library collection is empty: " + normalized_name);
+        return;
+    }
+
+    std::vector<std::wstring> document_names;
+    std::vector<std::wstring> document_paths;
+    std::vector<std::wstring> values;
+    int selected_index = -1;
+    std::wstring current_path = doc() ? LibraryManager::canonicalize_path(doc()->get_path()) : L"";
+    for (const LibraryEntry& entry : documents) {
+        if (entry.path == current_path && selected_index == -1) {
+            selected_index = static_cast<int>(values.size());
+        }
+        document_names.push_back(library_entry_display_name(entry));
+        document_paths.push_back(entry.path);
+        values.push_back(entry.path);
+    }
+
+    set_filtered_select_menu<std::wstring>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { document_names, document_paths }, values, selected_index,
+        [&](std::wstring* path) {
+            if ((path->size() > 0) && (pending_command_instance)) {
+                pending_command_instance->set_generic_requirement(QString::fromStdWString(*path));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        [](std::wstring*) {});
+
+    show_current_widget();
+}
+
+void MainWidget::handle_library_create_collection(const std::wstring& collection_name) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::wstring normalized_name = LibraryManager::normalize_collection_name(collection_name);
+    LibraryCreateCollectionResult result = library_manager->create_collection(normalized_name);
+    if (result == LibraryCreateCollectionResult::Created) {
+        set_temporary_status_message(L"Created library collection: " + normalized_name);
+    }
+    else if (result == LibraryCreateCollectionResult::AlreadyExists) {
+        set_temporary_status_message(L"Library collection already exists: " + normalized_name);
+    }
+    else if (result == LibraryCreateCollectionResult::InvalidName) {
+        show_error_message(L"Could not create library collection: empty name");
+    }
+    else if (result == LibraryCreateCollectionResult::SaveFailed) {
+        show_error_message(L"Could not save library: " + library_manager->last_error());
+    }
+}
+
+void MainWidget::handle_library_select_collection(bool allow_new_collection) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    const std::vector<std::wstring>& collections = library_manager->list_collections();
+    if (collections.empty() && !allow_new_collection) {
+        set_temporary_status_message(L"Library has no collections");
+        return;
+    }
+
+    FilteredSelectWithInputWindowClass* selector = new FilteredSelectWithInputWindowClass(
+        FUZZY_SEARCHING,
+        collections,
+        allow_new_collection,
+        L"Create collection: ",
+        [this](std::wstring collection_name) {
+            if (!collection_name.empty() && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdWString(collection_name));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        this);
+    set_current_widget(selector);
+    show_current_widget();
+}
+
+void MainWidget::handle_library_select_current_document_collection() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"Library: no current document");
+        return;
+    }
+
+    std::wstring current_path = LibraryManager::canonicalize_path(doc()->get_path());
+    std::vector<std::wstring> document_collections;
+    for (const LibraryEntry& entry : library_manager->entries()) {
+        if (entry.path == current_path) {
+            document_collections = entry.collections;
+            break;
+        }
+    }
+
+    if (document_collections.empty()) {
+        set_temporary_status_message(L"Current document is not in any library collection");
+        return;
+    }
+
+    FilteredSelectWithInputWindowClass* selector = new FilteredSelectWithInputWindowClass(
+        FUZZY_SEARCHING,
+        document_collections,
+        false,
+        L"",
+        [this](std::wstring collection_name) {
+            if (!collection_name.empty() && pending_command_instance) {
+                pending_command_instance->set_generic_requirement(QString::fromStdWString(collection_name));
+                advance_command(std::move(pending_command_instance));
+            }
+        },
+        this);
+    set_current_widget(selector);
+    show_current_widget();
+}
+
+void MainWidget::handle_library_add_current_document_to_collection(const std::wstring& collection_name) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"Library: no current document");
+        return;
+    }
+
+    std::wstring current_path = doc()->get_path();
+    if (!library_manager->contains(current_path)) {
+        LibraryAddResult add_result = library_manager->add_document(current_path);
+        if (add_result == LibraryAddResult::InvalidPath) {
+            show_error_message(L"Could not add document to library: invalid path");
+            return;
+        }
+        if (add_result == LibraryAddResult::SaveFailed) {
+            show_error_message(L"Could not save library: " + library_manager->last_error());
+            return;
+        }
+    }
+
+    std::wstring normalized_name = LibraryManager::normalize_collection_name(collection_name);
+    LibraryAddToCollectionResult result = library_manager->add_document_to_collection(current_path, normalized_name);
+    std::wstring display_name = Path(current_path).filename().value_or(current_path);
+
+    if (result == LibraryAddToCollectionResult::Added) {
+        set_temporary_status_message(L"Added " + display_name + L" to collection: " + normalized_name);
+    }
+    else if (result == LibraryAddToCollectionResult::AlreadyInCollection) {
+        set_temporary_status_message(display_name + L" is already in collection: " + normalized_name);
+    }
+    else if (result == LibraryAddToCollectionResult::InvalidCollectionName) {
+        show_error_message(L"Could not add document to collection: empty collection name");
+    }
+    else if (result == LibraryAddToCollectionResult::DocumentNotFound) {
+        show_error_message(L"Could not add document to collection: document is not in the library");
+    }
+    else if (result == LibraryAddToCollectionResult::SaveFailed) {
+        show_error_message(L"Could not save library: " + library_manager->last_error());
+    }
+}
+
+void MainWidget::handle_library_remove_current_document_from_collection(const std::wstring& collection_name) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (!doc()) {
+        set_temporary_status_message(L"Library: no current document");
+        return;
+    }
+
+    std::wstring current_path = doc()->get_path();
+    std::wstring normalized_name = LibraryManager::normalize_collection_name(collection_name);
+    LibraryRemoveFromCollectionResult result = library_manager->remove_document_from_collection(current_path, normalized_name);
+    std::wstring display_name = Path(current_path).filename().value_or(current_path);
+
+    if (result == LibraryRemoveFromCollectionResult::Removed) {
+        set_temporary_status_message(L"Removed " + display_name + L" from collection: " + normalized_name);
+    }
+    else if (result == LibraryRemoveFromCollectionResult::NotInCollection) {
+        set_temporary_status_message(display_name + L" is not in collection: " + normalized_name);
+    }
+    else if (result == LibraryRemoveFromCollectionResult::DocumentNotFound) {
+        set_temporary_status_message(L"Current document is not in the library");
+    }
+    else if (result == LibraryRemoveFromCollectionResult::CollectionNotFound) {
+        set_temporary_status_message(L"Library collection does not exist: " + normalized_name);
+    }
+    else if (result == LibraryRemoveFromCollectionResult::InvalidCollectionName) {
+        show_error_message(L"Could not remove document from collection: empty collection name");
+    }
+    else if (result == LibraryRemoveFromCollectionResult::SaveFailed) {
+        show_error_message(L"Could not save library: " + library_manager->last_error());
+    }
+}
+
+void MainWidget::open_library_document(const std::wstring& path) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::wstring canonical_path = LibraryManager::canonicalize_path(path);
+    if (canonical_path.empty()) {
+        show_error_message(L"Could not open library document: invalid path");
+        return;
+    }
+
+#ifndef SIOYEK_ANDROID
+    if (!QFileInfo(QString::fromStdWString(canonical_path)).exists()) {
+        show_error_message(L"Library document no longer exists: " + canonical_path);
+        return;
+    }
+#endif
+
+    if (!library_manager->update_last_opened(canonical_path) && !library_manager->last_error().empty()) {
+        show_error_message(L"Could not update library metadata: " + library_manager->last_error());
+    }
+    open_document(canonical_path);
+}
+
 void MainWidget::handle_move_screen(int amount) {
     if (!main_document_view->is_presentation_mode()) {
         move_document_screens(amount);
@@ -6284,6 +10617,8 @@ MainWidget* MainWidget::handle_new_window() {
         command_manager,
         input_handler,
         checksummer,
+        library_manager,
+        workspace_manager,
         should_quit);
     new_widget->open_document(main_document_view->get_state());
     new_widget->show();
@@ -7857,7 +12192,17 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
             should_invalidate_render = true;
         }
         if (confname == "recto_verso_adjustment") {
+            dv()->set_book_mode_cover_offset(RECTO_VERSO_ADJUSTMENT);
             dv()->fill_cached_virtual_rects(true);
+        }
+        if (confname == "book_mode_cover_offset") {
+            dv()->set_book_mode_cover_offset(RECTO_VERSO_ADJUSTMENT);
+            dv()->fill_cached_virtual_rects(true);
+        }
+        if (confname == "presentation_two_page_mode") {
+            dv()->set_presentation_two_page_mode(PRESENTATION_TWO_PAGE_MODE || dv()->is_two_page_mode());
+            refresh_presentation_layout();
+            should_invalidate_render = true;
         }
         if (confname == "highlight_links") {
             opengl_widget->set_highlight_links(SHOULD_HIGHLIGHT_LINKS, false);
@@ -11093,6 +15438,10 @@ void MainWidget::handle_move_smooth_hold(bool down) {
 
 void MainWidget::handle_toggle_two_page_mode() {
     main_document_view->toggle_two_page();
+    if (main_document_view->is_presentation_mode()) {
+        main_document_view->set_presentation_two_page_mode(PRESENTATION_TWO_PAGE_MODE || main_document_view->is_two_page_mode());
+        refresh_presentation_layout();
+    }
     if (NUM_CACHED_PAGES < 6) {
         if (main_document_view->is_two_page_mode()) {
             pdf_renderer->set_num_cached_pages(NUM_CACHED_PAGES * 2);
@@ -11101,6 +15450,13 @@ void MainWidget::handle_toggle_two_page_mode() {
             pdf_renderer->set_num_cached_pages(NUM_CACHED_PAGES);
         }
     }
+    invalidate_render();
+}
+
+void MainWidget::handle_toggle_book_mode_cover_offset() {
+    main_document_view->toggle_book_mode_cover_offset();
+    refresh_presentation_layout();
+    invalidate_render();
 }
 
 
@@ -11389,6 +15745,7 @@ QMenuBar* MainWidget::create_main_menu_bar(){
             new MenuNode{ "toggle_presentation_mode", "", {} },
             new MenuNode{ "-", "", {} },
             new MenuNode{ "toggle_two_page_mode", "", {} },
+            new MenuNode{ "toggle_book_mode_cover_offset", "", {} },
             new MenuNode{ "toggle_dark_mode", "", {} },
             new MenuNode{ "toggle_custom_color", "", {} },
             new MenuNode{ "toggle_scrollbar", "", {} },

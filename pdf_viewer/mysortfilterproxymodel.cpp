@@ -1,4 +1,5 @@
 #include "mysortfilterproxymodel.h"
+#include <algorithm>
 #include <string>
 
 #include "rapidfuzz_amalgamated.hpp"
@@ -8,7 +9,7 @@ bool MySortFilterProxyModel::filter_accepts_row_column(int row, int col, const Q
 
     ensure_scores();
     if (is_tree) {
-        QModelIndex current_index = sourceModel()->index(row, col, source_parent);
+        QModelIndex current_index = sourceModel()->index(row, 0, source_parent);
         return scores[index_map[current_index]];
     }
     else {
@@ -102,7 +103,7 @@ int MySortFilterProxyModel::update_scores_for_index(fzf_pattern_t* pattern, cons
     int max_child_score = 0;
 
     for (int i = 0; i < n_children; i++) {
-        QModelIndex child_index = sourceModel()->index(i, col, index);
+        QModelIndex child_index = sourceModel()->index(i, 0, index);
         int child_score = update_scores_for_index(pattern, child_index, col);
         if (child_score > max_child_score) {
             max_child_score = child_score;
@@ -110,10 +111,26 @@ int MySortFilterProxyModel::update_scores_for_index(fzf_pattern_t* pattern, cons
 
     }
 
-    int score = compute_score(pattern, sourceModel()->data(index).toString());
-    scores.push_back(score);
+    int score = 0;
+    if (col >= 0) {
+        QModelIndex column_index = sourceModel()->index(index.row(), col, index.parent());
+        score = compute_score(pattern, sourceModel()->data(column_index).toString());
+    }
+    else {
+        int n_cols = sourceModel()->columnCount(index.parent());
+        for (int col_index = 0; col_index < n_cols; col_index++) {
+            QModelIndex column_index = sourceModel()->index(index.row(), col_index, index.parent());
+            int col_score = compute_score(pattern, sourceModel()->data(column_index).toString());
+            if (col_score > score) {
+                score = col_score;
+            }
+        }
+    }
+
+    int index_score = std::max(score, max_child_score);
+    scores.push_back(index_score);
     index_map[index] = scores.size() - 1;
-    return std::max(score, max_child_score);
+    return index_score;
 }
 
 
@@ -126,6 +143,7 @@ void MySortFilterProxyModel::ensure_scores() const {
 
 void MySortFilterProxyModel::update_scores() const{
     scores.clear();
+    index_map.clear();
 
     int n_rows = sourceModel()->rowCount();
     int n_cols = sourceModel()->columnCount();
