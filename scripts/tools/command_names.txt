@@ -83,6 +83,7 @@ goto_link
 goto_mark
 goto_next_highlight
 goto_next_highlight_of_type
+goto_next_tab
 goto_overview
 goto_page_with_label
 goto_page_with_page_number
@@ -90,6 +91,7 @@ goto_portal
 goto_portal_list
 goto_prev_highlight
 goto_prev_highlight_of_type
+goto_prev_tab
 goto_random_page
 goto_right
 goto_right_smart
@@ -112,7 +114,9 @@ keys_user
 keys_user_all
 library_add_current_document
 library_add_current_document_to_collection
+library_browse_metadata
 library_create_collection
+library_find_duplicates
 library_import_file
 library_import_folder
 library_import_folder_recursive
@@ -124,8 +128,12 @@ library_import_google_drive_folder
 library_import_google_drive_folder_to_collection
 library_open
 library_open_collection
+library_rebuild_text_index
+library_recently_added
+library_recently_opened
 library_remove_current_document
 library_remove_current_document_from_collection
+library_search_text
 library_show_current_document_info
 link
 load_annotations_file

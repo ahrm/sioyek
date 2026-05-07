@@ -728,6 +728,12 @@ public:
     void handle_library_import_google_drive_folder(const std::wstring& source);
     void handle_library_import_google_drive_folder_to_collection(const std::wstring& source, const std::wstring& collection_name);
     void handle_library_show_current_document_info();
+    void handle_library_search_text(const std::wstring& query);
+    void handle_library_rebuild_text_index();
+    void handle_library_browse_metadata();
+    void handle_library_recently_added();
+    void handle_library_recently_opened();
+    void handle_library_find_duplicates();
     void handle_workspace_save_current(const std::wstring& workspace_name);
     void handle_workspace_show_active();
     void handle_workspace_open();

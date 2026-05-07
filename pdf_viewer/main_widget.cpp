@@ -60,7 +60,10 @@
 #include <qscreen.h>
 #include <QGestureEvent>
 #include <qjsonarray.h>
+#include <qjsondocument.h>
 #include <qjsonobject.h>
+#include <qjsonparseerror.h>
+#include <qjsonvalue.h>
 #include <qlocalsocket.h>
 #include <qbytearray.h>
 #include <qclipboard.h>
@@ -72,6 +75,7 @@
 #include <qqmlengine.h>
 #include <qtextdocumentfragment.h>
 #include <qmenubar.h>
+#include <qsavefile.h>
 #include <qstylehints.h>
 
 #include <mupdf/fitz.h>
@@ -9741,6 +9745,671 @@ void MainWidget::handle_library_show_current_document_info() {
         L" | collections: " + join_library_values(entry->collections) +
         L" | added: " + QString::fromStdString(entry->date_added).toStdWString() +
         L" | last opened: " + last_opened);
+}
+
+struct LibraryTextIndexDocument {
+    std::wstring path;
+    std::wstring display_name;
+    std::wstring title;
+    std::wstring author;
+    std::wstring text;
+    std::wstring error;
+    std::string checksum;
+    qint64 file_size = 0;
+    qint64 modified_msecs = 0;
+    int page_count = 0;
+    std::vector<int> page_begin_indices;
+    bool is_indexed = false;
+};
+
+struct LibraryTextIndexRefreshResult {
+    std::unordered_map<std::wstring, LibraryTextIndexDocument> documents;
+    int rebuilt = 0;
+    int reused = 0;
+    int failed = 0;
+    std::wstring save_error;
+};
+
+struct LibrarySearchResult {
+    std::wstring path;
+    std::wstring display_name;
+    std::wstring snippet;
+    int page = 0;
+};
+
+static qint64 json_int64_value(const QJsonValue& value) {
+    if (value.isString()) {
+        return value.toString().toLongLong();
+    }
+    if (value.isDouble()) {
+        return static_cast<qint64>(value.toDouble());
+    }
+    return 0;
+}
+
+static QJsonArray int_vector_to_json_array(const std::vector<int>& values) {
+    QJsonArray array;
+    for (int value : values) {
+        array.append(value);
+    }
+    return array;
+}
+
+static std::vector<int> json_array_to_int_vector(const QJsonValue& value) {
+    std::vector<int> result;
+    if (!value.isArray()) {
+        return result;
+    }
+    QJsonArray array = value.toArray();
+    for (const QJsonValue& item : array) {
+        if (item.isDouble()) {
+            result.push_back(item.toInt());
+        }
+    }
+    return result;
+}
+
+static std::wstring library_text_index_path(LibraryManager* manager) {
+    if (!manager) {
+        return L"";
+    }
+    QFileInfo library_file(QString::fromStdWString(manager->storage_path()));
+    QString base_name = library_file.completeBaseName();
+    if (base_name.isEmpty()) {
+        base_name = "library";
+    }
+    return library_file.absoluteDir().filePath(base_name + "_text_index.json").toStdWString();
+}
+
+static qint64 library_file_modified_msecs(const QFileInfo& file_info) {
+    return file_info.lastModified().toUTC().toMSecsSinceEpoch();
+}
+
+static bool library_index_document_matches_file(const LibraryTextIndexDocument& document, const LibraryEntry& entry) {
+    QFileInfo file_info(QString::fromStdWString(entry.path));
+    if (!file_info.exists() || !file_info.isFile()) {
+        return false;
+    }
+    return document.path == entry.path &&
+        document.file_size == file_info.size() &&
+        document.modified_msecs == library_file_modified_msecs(file_info);
+}
+
+static LibraryTextIndexDocument library_index_document_from_json(const QJsonValue& value) {
+    LibraryTextIndexDocument document;
+    if (!value.isObject()) {
+        return document;
+    }
+
+    QJsonObject object = value.toObject();
+    document.path = object.value("path").toString().toStdWString();
+    document.display_name = object.value("display_name").toString().toStdWString();
+    document.title = object.value("title").toString().toStdWString();
+    document.author = object.value("author").toString().toStdWString();
+    document.text = object.value("text").toString().toStdWString();
+    document.error = object.value("error").toString().toStdWString();
+    document.checksum = object.value("checksum").toString().toStdString();
+    document.file_size = json_int64_value(object.value("file_size"));
+    document.modified_msecs = json_int64_value(object.value("modified_msecs"));
+    document.page_count = object.value("page_count").toInt();
+    document.page_begin_indices = json_array_to_int_vector(object.value("page_begin_indices"));
+    document.is_indexed = object.value("is_indexed").toBool(!document.text.empty());
+    return document;
+}
+
+static QJsonObject library_index_document_to_json(const LibraryTextIndexDocument& document) {
+    QJsonObject object;
+    object["path"] = QString::fromStdWString(document.path);
+    object["display_name"] = QString::fromStdWString(document.display_name);
+    object["title"] = QString::fromStdWString(document.title);
+    object["author"] = QString::fromStdWString(document.author);
+    object["text"] = QString::fromStdWString(document.text);
+    object["error"] = QString::fromStdWString(document.error);
+    object["checksum"] = QString::fromStdString(document.checksum);
+    object["file_size"] = QString::number(document.file_size);
+    object["modified_msecs"] = QString::number(document.modified_msecs);
+    object["page_count"] = document.page_count;
+    object["page_begin_indices"] = int_vector_to_json_array(document.page_begin_indices);
+    object["is_indexed"] = document.is_indexed;
+    return object;
+}
+
+static std::unordered_map<std::wstring, LibraryTextIndexDocument> load_library_text_index(const std::wstring& path, std::wstring& error) {
+    std::unordered_map<std::wstring, LibraryTextIndexDocument> documents;
+    QFile file(QString::fromStdWString(path));
+    if (!file.exists()) {
+        return documents;
+    }
+    if (!file.open(QIODevice::ReadOnly)) {
+        error = L"Could not read library text index: " + path;
+        return documents;
+    }
+
+    QJsonParseError parse_error;
+    QJsonDocument json_document = QJsonDocument::fromJson(file.readAll(), &parse_error);
+    if (parse_error.error != QJsonParseError::NoError || !json_document.isObject()) {
+        error = L"Could not parse library text index: " + path;
+        return documents;
+    }
+
+    QJsonArray array = json_document.object().value("documents").toArray();
+    for (const QJsonValue& value : array) {
+        LibraryTextIndexDocument document = library_index_document_from_json(value);
+        if (!document.path.empty()) {
+            documents[document.path] = std::move(document);
+        }
+    }
+    return documents;
+}
+
+static bool save_library_text_index(const std::wstring& path, const std::unordered_map<std::wstring, LibraryTextIndexDocument>& documents) {
+    QJsonArray array;
+    std::vector<std::wstring> paths;
+    for (const auto& [path_key, document] : documents) {
+        paths.push_back(path_key);
+    }
+    std::sort(paths.begin(), paths.end());
+    for (const std::wstring& path_key : paths) {
+        array.append(library_index_document_to_json(documents.at(path_key)));
+    }
+
+    QJsonObject root;
+    root["version"] = 1;
+    root["documents"] = array;
+
+    QSaveFile file(QString::fromStdWString(path));
+    if (!file.open(QIODevice::WriteOnly)) {
+        return false;
+    }
+    file.write(QJsonDocument(root).toJson(QJsonDocument::Compact));
+    return file.commit();
+}
+
+static std::wstring metadata_value_to_wstring(const char* value) {
+    if (!value || value[0] == '\0') {
+        return L"";
+    }
+    return utf8_decode(value);
+}
+
+static LibraryTextIndexDocument build_library_text_index_document(fz_context* context, const LibraryEntry& entry, CachedChecksummer* checksummer) {
+    LibraryTextIndexDocument result;
+    result.path = entry.path;
+    result.display_name = library_entry_display_name(entry);
+
+    QFileInfo file_info(QString::fromStdWString(entry.path));
+    if (!file_info.exists() || !file_info.isFile()) {
+        result.error = L"file is missing";
+        return result;
+    }
+    result.file_size = file_info.size();
+    result.modified_msecs = library_file_modified_msecs(file_info);
+    if (checksummer) {
+        result.checksum = checksummer->get_checksum(entry.path);
+    }
+
+    fz_context* local_context = fz_clone_context(context);
+    if (!local_context) {
+        result.error = L"could not create PDF extraction context";
+        return result;
+    }
+
+    fz_document* local_document = nullptr;
+    fz_stext_page* stext_page = nullptr;
+    std::vector<fz_stext_char*> flat_chars;
+    bool failed = false;
+
+    fz_try(local_context) {
+        local_document = open_document_with_file_name(local_context, entry.path);
+        result.page_count = fz_count_pages(local_context, local_document);
+
+        char title_buffer[2048] = {};
+        if (fz_lookup_metadata(local_context, local_document, FZ_META_INFO_TITLE, title_buffer, sizeof(title_buffer)) > 0) {
+            result.title = metadata_value_to_wstring(title_buffer);
+        }
+
+#ifdef FZ_META_INFO_AUTHOR
+        char author_buffer[2048] = {};
+        if (fz_lookup_metadata(local_context, local_document, FZ_META_INFO_AUTHOR, author_buffer, sizeof(author_buffer)) > 0) {
+            result.author = metadata_value_to_wstring(author_buffer);
+        }
+#endif
+
+        for (int page = 0; page < result.page_count; page++) {
+            stext_page = fz_new_stext_page_from_page_number(local_context, local_document, page, nullptr);
+            flat_chars.clear();
+            get_flat_chars_from_stext_page(stext_page, flat_chars);
+            flat_char_prism2(flat_chars, page, result.text, result.page_begin_indices);
+            fz_drop_stext_page(local_context, stext_page);
+            stext_page = nullptr;
+        }
+    }
+    fz_catch(local_context) {
+        failed = true;
+        result.error = metadata_value_to_wstring(fz_caught_message(local_context));
+        if (result.error.empty()) {
+            result.error = L"could not extract PDF text";
+        }
+    }
+
+    if (stext_page) {
+        fz_drop_stext_page(local_context, stext_page);
+    }
+    if (local_document) {
+        fz_drop_document(local_context, local_document);
+    }
+    fz_drop_context(local_context);
+
+    if (failed) {
+        result.text.clear();
+        result.page_begin_indices.clear();
+        result.is_indexed = false;
+    }
+    else {
+        result.is_indexed = true;
+    }
+    return result;
+}
+
+static LibraryTextIndexRefreshResult refresh_library_text_index(MainWidget* widget, bool force_rebuild) {
+    LibraryTextIndexRefreshResult result;
+    if (!widget || !widget->library_manager) {
+        return result;
+    }
+
+    std::wstring index_path = library_text_index_path(widget->library_manager);
+    std::wstring load_error;
+    std::unordered_map<std::wstring, LibraryTextIndexDocument> loaded_documents = load_library_text_index(index_path, load_error);
+    bool changed = force_rebuild || !load_error.empty() || (loaded_documents.size() != widget->library_manager->entries().size());
+
+    for (const LibraryEntry& entry : widget->library_manager->entries()) {
+        auto existing = loaded_documents.find(entry.path);
+        if (!force_rebuild && existing != loaded_documents.end() && library_index_document_matches_file(existing->second, entry)) {
+            LibraryTextIndexDocument document = existing->second;
+            document.display_name = library_entry_display_name(entry);
+            result.reused++;
+            if (document.error.size() > 0) {
+                result.failed++;
+            }
+            result.documents[entry.path] = std::move(document);
+            continue;
+        }
+
+        LibraryTextIndexDocument document = build_library_text_index_document(widget->mupdf_context, entry, widget->checksummer);
+        if (document.error.size() > 0) {
+            result.failed++;
+        }
+        result.rebuilt++;
+        result.documents[entry.path] = std::move(document);
+        changed = true;
+    }
+
+    if (changed && !save_library_text_index(index_path, result.documents)) {
+        result.save_error = L"Could not save library text index: " + index_path;
+    }
+    return result;
+}
+
+static int library_page_for_text_offset(const std::vector<int>& page_begin_indices, int offset) {
+    if (page_begin_indices.empty()) {
+        return 0;
+    }
+    auto page_begin = std::upper_bound(page_begin_indices.begin(), page_begin_indices.end(), offset);
+    if (page_begin == page_begin_indices.begin()) {
+        return 0;
+    }
+    return static_cast<int>(std::distance(page_begin_indices.begin(), page_begin) - 1);
+}
+
+static std::wstring library_search_snippet(const std::wstring& text, int match_offset, int query_length) {
+    int prefix_length = 90;
+    int suffix_length = 130;
+    int safe_match_offset = std::max(0, match_offset);
+    int start = std::max(0, safe_match_offset - prefix_length);
+    int end = std::min(static_cast<int>(text.size()), safe_match_offset + std::max(1, query_length) + suffix_length);
+
+    QString snippet = QString::fromStdWString(text.substr(start, end - start)).simplified();
+    if (start > 0) {
+        snippet.prepend("...");
+    }
+    if (end < static_cast<int>(text.size())) {
+        snippet.append("...");
+    }
+    return snippet.toStdWString();
+}
+
+static std::wstring library_date_string(const std::string& date) {
+    if (date.empty()) {
+        return L"never";
+    }
+    return QString::fromStdString(date).toStdWString();
+}
+
+static std::wstring library_optional_date_string(const std::optional<std::string>& date) {
+    if (!date.has_value()) {
+        return L"never";
+    }
+    return library_date_string(date.value());
+}
+
+static std::wstring library_metadata_summary(const LibraryEntry& entry, const LibraryTextIndexDocument* index_document) {
+    std::wstring summary = L"collections: " + join_library_values(entry.collections);
+    if (!index_document) {
+        return summary;
+    }
+    summary += L" | pages: " + std::to_wstring(index_document->page_count);
+    if (!index_document->title.empty()) {
+        summary += L" | title: " + index_document->title;
+    }
+    if (!index_document->author.empty()) {
+        summary += L" | author: " + index_document->author;
+    }
+    if (!index_document->error.empty()) {
+        summary += L" | index error: " + index_document->error;
+    }
+    return summary;
+}
+
+static void open_library_document_from_selector(MainWidget* widget, const std::wstring& path, std::optional<int> page = {}) {
+    if (!widget) {
+        return;
+    }
+    widget->push_state();
+    widget->open_library_document(path);
+    if (page.has_value() && widget->doc() && widget->main_document_view) {
+        int max_page = std::max(0, widget->doc()->num_pages() - 1);
+        widget->main_document_view->goto_page(std::min(std::max(page.value(), 0), max_page));
+    }
+}
+
+void MainWidget::handle_library_search_text(const std::wstring& query) {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (library_manager->entries().empty()) {
+        set_temporary_status_message(L"Library is empty");
+        return;
+    }
+
+    QString query_text = QString::fromStdWString(query).simplified();
+    if (query_text.isEmpty()) {
+        show_error_message(L"Library search failed: empty search text");
+        return;
+    }
+
+    set_temporary_status_message(L"Library search: preparing text index");
+    LibraryTextIndexRefreshResult index_result = refresh_library_text_index(this, false);
+
+    std::vector<LibrarySearchResult> results;
+    constexpr int max_results = 200;
+    constexpr int max_results_per_document = 20;
+    int query_length = static_cast<int>(query_text.size());
+    for (const LibraryEntry& entry : library_manager->entries()) {
+        auto index_document = index_result.documents.find(entry.path);
+        if (index_document == index_result.documents.end() || !index_document->second.is_indexed) {
+            continue;
+        }
+
+        QString searchable_text = QString::fromStdWString(index_document->second.text);
+        int match_offset = searchable_text.indexOf(query_text, 0, Qt::CaseInsensitive);
+        int results_in_document = 0;
+        while (match_offset >= 0 && static_cast<int>(results.size()) < max_results && results_in_document < max_results_per_document) {
+            LibrarySearchResult result;
+            result.path = entry.path;
+            result.display_name = library_entry_display_name(entry);
+            result.page = library_page_for_text_offset(index_document->second.page_begin_indices, match_offset);
+            result.snippet = library_search_snippet(index_document->second.text, match_offset, query_length);
+            results.push_back(std::move(result));
+            results_in_document++;
+            match_offset = searchable_text.indexOf(query_text, match_offset + std::max(1, query_length), Qt::CaseInsensitive);
+        }
+        if (static_cast<int>(results.size()) >= max_results) {
+            break;
+        }
+    }
+
+    if (results.empty()) {
+        std::wstring message = L"No library search results for: " + query_text.toStdWString();
+        if (index_result.failed > 0) {
+            message += L" | index failures: " + std::to_wstring(index_result.failed);
+        }
+        set_temporary_status_message(message);
+        return;
+    }
+
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> pages;
+    std::vector<std::wstring> snippets;
+    std::vector<std::wstring> paths;
+    for (const LibrarySearchResult& result : results) {
+        names.push_back(result.display_name);
+        pages.push_back(L"page " + std::to_wstring(result.page + 1));
+        snippets.push_back(result.snippet);
+        paths.push_back(result.path);
+    }
+
+    set_filtered_select_menu<LibrarySearchResult>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { names, pages, snippets, paths }, results, -1,
+        [this](LibrarySearchResult* result) {
+            if (result) {
+                open_library_document_from_selector(this, result->path, result->page);
+            }
+        },
+        [](LibrarySearchResult*) {});
+
+    show_current_widget();
+}
+
+void MainWidget::handle_library_rebuild_text_index() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (library_manager->entries().empty()) {
+        set_temporary_status_message(L"Library is empty");
+        return;
+    }
+
+    set_temporary_status_message(L"Library text index rebuild started");
+    LibraryTextIndexRefreshResult index_result = refresh_library_text_index(this, true);
+    if (!index_result.save_error.empty()) {
+        show_error_message(index_result.save_error);
+        return;
+    }
+
+    set_temporary_status_message(
+        L"Library text index rebuilt: " + std::to_wstring(index_result.rebuilt) +
+        L" PDFs | failures: " + std::to_wstring(index_result.failed));
+}
+
+void MainWidget::handle_library_browse_metadata() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (library_manager->entries().empty()) {
+        set_temporary_status_message(L"Library is empty");
+        return;
+    }
+
+    LibraryTextIndexRefreshResult index_result = refresh_library_text_index(this, false);
+
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> metadata;
+    std::vector<std::wstring> dates;
+    std::vector<std::wstring> paths;
+    std::vector<std::wstring> values;
+    int selected_index = -1;
+    std::wstring current_path = doc() ? LibraryManager::canonicalize_path(doc()->get_path()) : L"";
+    for (const LibraryEntry& entry : library_manager->entries()) {
+        if (entry.path == current_path && selected_index == -1) {
+            selected_index = static_cast<int>(values.size());
+        }
+        const LibraryTextIndexDocument* index_document = nullptr;
+        auto index_location = index_result.documents.find(entry.path);
+        if (index_location != index_result.documents.end()) {
+            index_document = &index_location->second;
+        }
+        names.push_back(library_entry_display_name(entry));
+        metadata.push_back(library_metadata_summary(entry, index_document));
+        dates.push_back(L"added: " + library_date_string(entry.date_added) + L" | last opened: " + library_optional_date_string(entry.last_opened));
+        paths.push_back(entry.path);
+        values.push_back(entry.path);
+    }
+
+    set_filtered_select_menu<std::wstring>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { names, metadata, dates, paths }, values, selected_index,
+        [this](std::wstring* path) {
+            if (path) {
+                open_library_document_from_selector(this, *path);
+            }
+        },
+        [](std::wstring*) {});
+
+    show_current_widget();
+}
+
+void MainWidget::handle_library_recently_added() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::vector<LibraryEntry> entries = library_manager->entries();
+    if (entries.empty()) {
+        set_temporary_status_message(L"Library is empty");
+        return;
+    }
+    std::sort(entries.begin(), entries.end(), [](const LibraryEntry& a, const LibraryEntry& b) {
+        return a.date_added > b.date_added;
+    });
+
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> dates;
+    std::vector<std::wstring> collections;
+    std::vector<std::wstring> paths;
+    std::vector<std::wstring> values;
+    for (const LibraryEntry& entry : entries) {
+        names.push_back(library_entry_display_name(entry));
+        dates.push_back(L"added: " + library_date_string(entry.date_added));
+        collections.push_back(L"collections: " + join_library_values(entry.collections));
+        paths.push_back(entry.path);
+        values.push_back(entry.path);
+    }
+
+    set_filtered_select_menu<std::wstring>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { names, dates, collections, paths }, values, -1,
+        [this](std::wstring* path) {
+            if (path) {
+                open_library_document_from_selector(this, *path);
+            }
+        },
+        [](std::wstring*) {});
+
+    show_current_widget();
+}
+
+void MainWidget::handle_library_recently_opened() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+
+    std::vector<LibraryEntry> entries;
+    for (const LibraryEntry& entry : library_manager->entries()) {
+        if (entry.last_opened.has_value()) {
+            entries.push_back(entry);
+        }
+    }
+    if (entries.empty()) {
+        set_temporary_status_message(L"No library documents have been opened yet");
+        return;
+    }
+    std::sort(entries.begin(), entries.end(), [](const LibraryEntry& a, const LibraryEntry& b) {
+        return library_optional_date_string(a.last_opened) > library_optional_date_string(b.last_opened);
+    });
+
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> dates;
+    std::vector<std::wstring> collections;
+    std::vector<std::wstring> paths;
+    std::vector<std::wstring> values;
+    for (const LibraryEntry& entry : entries) {
+        names.push_back(library_entry_display_name(entry));
+        dates.push_back(L"last opened: " + library_optional_date_string(entry.last_opened));
+        collections.push_back(L"collections: " + join_library_values(entry.collections));
+        paths.push_back(entry.path);
+        values.push_back(entry.path);
+    }
+
+    set_filtered_select_menu<std::wstring>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { names, dates, collections, paths }, values, -1,
+        [this](std::wstring* path) {
+            if (path) {
+                open_library_document_from_selector(this, *path);
+            }
+        },
+        [](std::wstring*) {});
+
+    show_current_widget();
+}
+
+void MainWidget::handle_library_find_duplicates() {
+    if (!library_manager) {
+        show_error_message(L"Library is not available");
+        return;
+    }
+    if (library_manager->entries().empty()) {
+        set_temporary_status_message(L"Library is empty");
+        return;
+    }
+
+    std::unordered_map<std::string, std::vector<LibraryEntry>> documents_by_checksum;
+    for (const LibraryEntry& entry : library_manager->entries()) {
+        QFileInfo file_info(QString::fromStdWString(entry.path));
+        if (!file_info.exists() || !file_info.isFile()) {
+            continue;
+        }
+        std::string checksum = checksummer ? checksummer->get_checksum(entry.path) : compute_checksum(QString::fromStdWString(entry.path), QCryptographicHash::Md5);
+        if (!checksum.empty()) {
+            documents_by_checksum[checksum].push_back(entry);
+        }
+    }
+
+    std::vector<std::wstring> names;
+    std::vector<std::wstring> duplicate_groups;
+    std::vector<std::wstring> collections;
+    std::vector<std::wstring> paths;
+    std::vector<std::wstring> values;
+    for (auto& [checksum, entries] : documents_by_checksum) {
+        if (entries.size() < 2) {
+            continue;
+        }
+        std::sort(entries.begin(), entries.end(), [](const LibraryEntry& a, const LibraryEntry& b) {
+            return library_entry_display_name(a) < library_entry_display_name(b);
+        });
+        std::wstring group_label = QString::fromStdString(checksum.substr(0, 12)).toStdWString() +
+            L" | " + std::to_wstring(entries.size()) + L" duplicate files";
+        for (const LibraryEntry& entry : entries) {
+            names.push_back(library_entry_display_name(entry));
+            duplicate_groups.push_back(group_label);
+            collections.push_back(L"collections: " + join_library_values(entry.collections));
+            paths.push_back(entry.path);
+            values.push_back(entry.path);
+        }
+    }
+
+    if (values.empty()) {
+        set_temporary_status_message(L"No duplicate PDFs found in the library");
+        return;
+    }
+
+    set_filtered_select_menu<std::wstring>(this, FUZZY_SEARCHING, MULTILINE_MENUS, { names, duplicate_groups, collections, paths }, values, -1,
+        [this](std::wstring* path) {
+            if (path) {
+                open_library_document_from_selector(this, *path);
+            }
+        },
+        [](std::wstring*) {});
+
+    show_current_widget();
 }
 
 static WorkspaceDocumentEntry make_workspace_document_entry(MainWidget* window, int window_index) {

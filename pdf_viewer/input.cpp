@@ -4354,6 +4354,88 @@ public:
     bool requires_document() { return false; }
 };
 
+class LibrarySearchTextCommand : public TextCommand {
+public:
+    static inline const std::string cname = "library_search_text";
+    static inline const std::string hname = "Search full text across library PDFs";
+    LibrarySearchTextCommand(MainWidget* w) : TextCommand(cname, w) {}
+
+    std::string text_requirement_name() {
+        return "Library search text";
+    }
+
+    void perform() {
+        widget->handle_library_search_text(text.value_or(L""));
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryRebuildTextIndexCommand : public Command {
+public:
+    static inline const std::string cname = "library_rebuild_text_index";
+    static inline const std::string hname = "Rebuild the library full text index";
+    LibraryRebuildTextIndexCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_library_rebuild_text_index();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryBrowseMetadataCommand : public Command {
+public:
+    static inline const std::string cname = "library_browse_metadata";
+    static inline const std::string hname = "Browse library documents with metadata";
+    LibraryBrowseMetadataCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_library_browse_metadata();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryRecentlyAddedCommand : public Command {
+public:
+    static inline const std::string cname = "library_recently_added";
+    static inline const std::string hname = "Browse recently added library documents";
+    LibraryRecentlyAddedCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_library_recently_added();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryRecentlyOpenedCommand : public Command {
+public:
+    static inline const std::string cname = "library_recently_opened";
+    static inline const std::string hname = "Browse recently opened library documents";
+    LibraryRecentlyOpenedCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_library_recently_opened();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryFindDuplicatesCommand : public Command {
+public:
+    static inline const std::string cname = "library_find_duplicates";
+    static inline const std::string hname = "Find duplicate PDFs in the library";
+    LibraryFindDuplicatesCommand(MainWidget* w) : Command(cname, w) {}
+
+    void perform() {
+        widget->handle_library_find_duplicates();
+    }
+
+    bool requires_document() { return false; }
+};
+
 class WorkspaceSaveCurrentCommand : public TextCommand {
 public:
     static inline const std::string cname = "workspace_save_current";
@@ -9258,6 +9340,12 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<LibraryImportGoogleDriveFileToCollectionCommand>();
     register_command<LibraryImportGoogleDriveFolderToCollectionCommand>();
     register_command<LibraryShowCurrentDocumentInfoCommand>();
+    register_command<LibrarySearchTextCommand>();
+    register_command<LibraryRebuildTextIndexCommand>();
+    register_command<LibraryBrowseMetadataCommand>();
+    register_command<LibraryRecentlyAddedCommand>();
+    register_command<LibraryRecentlyOpenedCommand>();
+    register_command<LibraryFindDuplicatesCommand>();
     register_command<WorkspaceSaveCurrentCommand>();
     register_command<WorkspaceShowActiveCommand>();
     register_command<WorkspaceOpenCommand>();
