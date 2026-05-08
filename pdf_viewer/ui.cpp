@@ -1661,11 +1661,6 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
                 //QCoreApplication::postEvent(tree_view, key_event);
                 return true;
             }
-            if (key_event->key() == Qt::Key_Tab) {
-                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Down, key_event->modifiers());
-                QCoreApplication::postEvent(get_view(), new_key_event);
-                return true;
-            }
             if ((key_event->key() == Qt::Key_PageDown)) {
                 QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_PageDown, key_event->modifiers());
                 QCoreApplication::postEvent(get_view(), new_key_event);
@@ -1676,9 +1671,13 @@ bool BaseSelectorWidget::eventFilter(QObject* obj, QEvent* event) {
                 QCoreApplication::postEvent(get_view(), new_key_event);
                 return true;
             }
-            if (key_event->key() == Qt::Key_Backtab) {
-                QKeyEvent* new_key_event = new QKeyEvent(key_event->type(), Qt::Key_Up, key_event->modifiers());
-                QCoreApplication::postEvent(get_view(), new_key_event);
+            if (key_event->key() == Qt::Key_Backtab ||
+                (key_event->key() == Qt::Key_Tab && key_event->modifiers().testFlag(Qt::ShiftModifier))) {
+                simulate_move_up();
+                return true;
+            }
+            if (key_event->key() == Qt::Key_Tab) {
+                simulate_move_down();
                 return true;
             }
             if (is_paste_shortcut(key_event) || is_cut_shortcut(key_event) ||

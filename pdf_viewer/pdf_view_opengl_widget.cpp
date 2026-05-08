@@ -1453,30 +1453,44 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                 //}
             }
         }
-        // prerender pages
+        // prerender nearby pages so page-step navigation does not flash blank
         if (visible_pages.size() > 0) {
             int num_pages = document_view->get_document()->num_pages();
+            int min_page = visible_pages[0];
             int max_page = visible_pages[visible_pages.size() - 1];
-            for (int i = 0; i < (PRERENDERED_PAGE_COUNT + 1); i++) {
-                if (max_page + i < num_pages) {
-                    float page_width = document_view->get_document()->get_page_width(max_page + i);
-                    float page_height = document_view->get_document()->get_page_height(max_page + i);
+            for (int i = 1; i <= PRERENDERED_PAGE_COUNT; i++) {
+                int next_page = max_page + i;
+                int previous_page = min_page - i;
+                int first_page = previous_page;
+                int second_page = next_page;
+                if (document_view->get_last_page_move_direction() < 0) {
+                    first_page = next_page;
+                    second_page = previous_page;
+                }
+                int pages_to_prerender[2] = { first_page, second_page };
+                for (int page : pages_to_prerender) {
+                    if ((page < 0) || (page >= num_pages)) {
+                        continue;
+                    }
+                    float page_width = document_view->get_document()->get_page_width(page);
+                    float page_height = document_view->get_document()->get_page_height(page);
                     PagelessDocumentRect page_rect({ 0, 0, page_width, page_height });
                     int nh, nv;
-                    num_slices_for_page_rect(page_rect, &nh, &nv);
+                    bool is_sliced = num_slices_for_page_rect(page_rect, &nh, &nv);
 
                     for (int k = 0; k < nh * nv; k++) {
                         pdf_renderer->find_rendered_page(
                             document_view->get_document()->get_path(),
-                            max_page + i,
+                            page,
                             document_view->get_document()->should_render_pdf_annotations(),
-                            k,
+                            is_sliced ? k : -1,
                             nh,
                             nv,
                             document_view->get_zoom_level(),
                             devicePixelRatioF(),
                             nullptr,
-                            nullptr);
+                            nullptr,
+                            true);
                     }
                 }
             }

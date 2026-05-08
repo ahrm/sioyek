@@ -17,6 +17,8 @@
 #include <qdir.h>
 #include <qstandardpaths.h>
 #include <set>
+#include <cwctype>
+#include <tuple>
 
 #include <mupdf/pdf.h>
 
@@ -60,6 +62,1626 @@ extern bool DEBUG;
 extern bool EXACT_HIGHLIGHT_SELECT;
 extern std::wstring ANNOTATIONS_DIR_PATH;
 extern bool LIGHTEN_COLORS_WHEN_EMBEDDING_ANNOTATIONS;
+
+namespace {
+
+struct TocTextLine {
+    std::wstring text;
+    fz_rect rect;
+    float font_size = 0.0f;
+    bool bold = false;
+};
+
+struct CreatedTocCandidate {
+    std::wstring title;
+    int page = -1;
+    float x = 0.0f;
+    float y = 0.0f;
+    float page_height = 0.0f;
+    int level = 0;
+    float score = 0.0f;
+    bool structural = false;
+    bool margin = false;
+};
+
+struct PrintedTocCandidate {
+    std::wstring title;
+    std::wstring page_label;
+    int source_page = -1;
+    fz_rect rect = fz_empty_rect;
+    float x = 0.0f;
+    float y = 0.0f;
+    int level = 0;
+    bool has_dot_leader = false;
+    bool has_link_target = false;
+    int link_target_page = -1;
+    float link_target_x = 0.0f;
+    float link_target_y = 0.0f;
+};
+
+struct ResolvedPrintedTocEntry {
+    PrintedTocCandidate printed;
+    int target_page = -1;
+    float target_x = 0.0f;
+    float target_y = 0.0f;
+};
+
+static bool toc_is_space(wchar_t c) {
+    return c == L' ' || c == L'\t' || c == L'\n' || c == L'\r' || c == L'\f' || c == L'\v';
+}
+
+static std::wstring toc_trim(const std::wstring& str) {
+    size_t begin = 0;
+    while (begin < str.size() && toc_is_space(str[begin])) {
+        begin++;
+    }
+
+    size_t end = str.size();
+    while (end > begin && toc_is_space(str[end - 1])) {
+        end--;
+    }
+    return str.substr(begin, end - begin);
+}
+
+static std::wstring toc_to_lower(const std::wstring& str) {
+    std::wstring res;
+    res.reserve(str.size());
+    for (wchar_t c : str) {
+        res.push_back(std::towlower(c));
+    }
+    return res;
+}
+
+static std::wstring toc_normalize_spaces(const std::wstring& str) {
+    std::wstring res;
+    bool last_was_space = true;
+    for (wchar_t c : str) {
+        if (toc_is_space(c)) {
+            if (!last_was_space) {
+                res.push_back(L' ');
+            }
+            last_was_space = true;
+        }
+        else {
+            res.push_back(c);
+            last_was_space = false;
+        }
+    }
+    return toc_trim(res);
+}
+
+static bool toc_has_alpha(const std::wstring& str) {
+    for (wchar_t c : str) {
+        if (std::iswalpha(c)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool toc_is_all_digits(const std::wstring& str) {
+    if (str.empty()) {
+        return false;
+    }
+    for (wchar_t c : str) {
+        if (!std::iswdigit(c)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool toc_is_roman_numeral(const std::wstring& str) {
+    if (str.empty() || str.size() > 12) {
+        return false;
+    }
+    for (wchar_t c : toc_to_lower(str)) {
+        if (c != L'i' && c != L'v' && c != L'x' && c != L'l' && c != L'c' && c != L'd' && c != L'm') {
+            return false;
+        }
+    }
+    return true;
+}
+
+static int toc_roman_value(wchar_t c) {
+    switch (std::towlower(c)) {
+    case L'i': return 1;
+    case L'v': return 5;
+    case L'x': return 10;
+    case L'l': return 50;
+    case L'c': return 100;
+    case L'd': return 500;
+    case L'm': return 1000;
+    default: return 0;
+    }
+}
+
+static int toc_parse_roman(const std::wstring& str) {
+    if (!toc_is_roman_numeral(str)) {
+        return -1;
+    }
+
+    int res = 0;
+    int prev = 0;
+    for (int i = static_cast<int>(str.size()) - 1; i >= 0; i--) {
+        int val = toc_roman_value(str[i]);
+        if (val < prev) {
+            res -= val;
+        }
+        else {
+            res += val;
+            prev = val;
+        }
+    }
+    return res;
+}
+
+static int toc_parse_int(const std::wstring& str) {
+    if (!toc_is_all_digits(str)) {
+        return -1;
+    }
+
+    bool ok = false;
+    int val = QString::fromStdWString(str).toInt(&ok);
+    return ok ? val : -1;
+}
+
+static int toc_count_words(const std::wstring& str) {
+    return static_cast<int>(split_whitespace(str).size());
+}
+
+static bool toc_is_plain_page_label_sequence(const std::vector<std::wstring>& page_labels) {
+    if (page_labels.empty()) {
+        return true;
+    }
+    for (int i = 0; i < static_cast<int>(page_labels.size()); i++) {
+        if (toc_normalize_spaces(page_labels[i]) != QString::number(i + 1).toStdWString()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool toc_starts_with(const std::wstring& str, const std::wstring& prefix) {
+    return str.size() >= prefix.size() && str.compare(0, prefix.size(), prefix) == 0;
+}
+
+static bool toc_contains(const std::wstring& str, const std::wstring& needle) {
+    return str.find(needle) != std::wstring::npos;
+}
+
+static std::wstring toc_strip_edge_punctuation(const std::wstring& str) {
+    int begin = 0;
+    int end = static_cast<int>(str.size());
+    while (begin < end && !std::iswalnum(str[begin]) && str[begin] != L'§') {
+        begin++;
+    }
+    while (end > begin && !std::iswalnum(str[end - 1]) && str[end - 1] != L'§') {
+        end--;
+    }
+    return str.substr(begin, end - begin);
+}
+
+static int toc_count_outline_components(std::wstring label) {
+    label = toc_strip_edge_punctuation(label);
+    if (label.empty()) {
+        return 0;
+    }
+
+    int components = 0;
+    int i = 0;
+    while (i < static_cast<int>(label.size())) {
+        bool saw_digit = false;
+        while (i < static_cast<int>(label.size()) && std::iswdigit(label[i])) {
+            saw_digit = true;
+            i++;
+        }
+        if (!saw_digit) {
+            break;
+        }
+        components++;
+        if (i >= static_cast<int>(label.size()) || label[i] != L'.') {
+            break;
+        }
+        i++;
+    }
+    return components;
+}
+
+static bool toc_match_prefix_regex(
+    const std::wstring& text,
+    const std::wregex& regex,
+    int level,
+    int* out_level,
+    int* out_prefix_end,
+    bool* out_bare_marker) {
+
+    std::wsmatch match;
+    if (!std::regex_search(text, match, regex) || match.position() != 0) {
+        return false;
+    }
+
+    int prefix_end = static_cast<int>(match.length());
+    std::wstring rest = toc_trim(text.substr(prefix_end));
+    *out_level = level;
+    *out_prefix_end = prefix_end;
+    *out_bare_marker = !toc_has_alpha(rest);
+    return true;
+}
+
+static bool toc_match_structured_heading_prefix(
+    const std::wstring& raw_text,
+    int* out_level,
+    int* out_prefix_end,
+    bool* out_bare_marker) {
+
+    std::wstring text = toc_normalize_spaces(raw_text);
+    if (text.empty()) {
+        return false;
+    }
+
+    static const std::wregex chapter_regex(
+        L"^(chapter|chap\\.?|ch\\.?|part|book|lecture)\\s+([0-9]+|[ivxlcdm]+)\\b\\s*[:\\.\\-–—]?\\s*",
+        std::regex_constants::icase);
+    static const std::wregex appendix_regex(
+        L"^(appendix)\\s+([a-z]|[0-9]+|[ivxlcdm]+)\\b\\s*[:\\.\\-–—]?\\s*",
+        std::regex_constants::icase);
+    static const std::wregex section_regex(
+        L"^(§+|section|sec\\.?)\\s*([0-9]+(\\.[0-9]+)*\\.?|[ivxlcdm]+\\b\\.?)\\s*[:\\.\\-–—]?\\s*",
+        std::regex_constants::icase);
+    static const std::wregex arabic_outline_regex(
+        L"^([0-9]+(\\.[0-9]+)*\\.?)\\s+",
+        std::regex_constants::icase);
+    static const std::wregex roman_outline_regex(
+        L"^([ivxlcdm]+)\\.\\s+",
+        std::regex_constants::icase);
+
+    if (toc_match_prefix_regex(text, chapter_regex, 0, out_level, out_prefix_end, out_bare_marker) ||
+        toc_match_prefix_regex(text, appendix_regex, 0, out_level, out_prefix_end, out_bare_marker)) {
+        return true;
+    }
+
+    std::wsmatch match;
+    if (std::regex_search(text, match, section_regex) && match.position() == 0) {
+        int components = toc_count_outline_components(match.str(2));
+        *out_level = std::max(1, components);
+        *out_prefix_end = static_cast<int>(match.length());
+        *out_bare_marker = !toc_has_alpha(toc_trim(text.substr(*out_prefix_end)));
+        return true;
+    }
+
+    if (std::regex_search(text, match, arabic_outline_regex) && match.position() == 0) {
+        int components = toc_count_outline_components(match.str(1));
+        if (components > 0) {
+            *out_level = std::min(components - 1, 5);
+            *out_prefix_end = static_cast<int>(match.length());
+            *out_bare_marker = !toc_has_alpha(toc_trim(text.substr(*out_prefix_end)));
+            return true;
+        }
+    }
+
+    if (std::regex_search(text, match, roman_outline_regex) && match.position() == 0) {
+        std::wstring roman = toc_strip_edge_punctuation(match.str(1));
+        if (toc_parse_roman(roman) > 0) {
+            *out_level = 0;
+            *out_prefix_end = static_cast<int>(match.length());
+            *out_bare_marker = !toc_has_alpha(toc_trim(text.substr(*out_prefix_end)));
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool toc_is_contents_heading(const std::wstring& text) {
+    std::wstring lower = toc_to_lower(toc_normalize_spaces(text));
+    return lower == L"contents" ||
+        lower == L"table of contents" ||
+        lower == L"toc" ||
+        lower == L"detailed contents";
+}
+
+static bool toc_is_unhelpful_heading(const std::wstring& text) {
+    std::wstring lower = toc_to_lower(toc_normalize_spaces(text));
+    return lower == L"contents" ||
+        lower == L"table of contents" ||
+        lower == L"list of figures" ||
+        lower == L"list of tables";
+}
+
+static std::wstring toc_strip_leading_number(const std::wstring& text) {
+    std::wstring str = toc_normalize_spaces(text);
+    int level = 0;
+    int prefix_end = 0;
+    bool bare_marker = false;
+    if (toc_match_structured_heading_prefix(str, &level, &prefix_end, &bare_marker) && prefix_end < static_cast<int>(str.size())) {
+        std::wstring stripped = toc_trim(str.substr(prefix_end));
+        if (!stripped.empty()) {
+            return stripped;
+        }
+    }
+
+    return str;
+}
+
+static std::wstring toc_title_match_key(const std::wstring& text) {
+    std::wstring stripped = toc_strip_leading_number(text);
+    std::wstring lower = toc_to_lower(stripped);
+    std::wstring res;
+    bool last_was_space = true;
+
+    for (wchar_t c : lower) {
+        if (std::iswalnum(c)) {
+            res.push_back(c);
+            last_was_space = false;
+        }
+        else if (!last_was_space) {
+            res.push_back(L' ');
+            last_was_space = true;
+        }
+    }
+    return toc_trim(res);
+}
+
+static float toc_lcs_similarity(const std::wstring& lhs, const std::wstring& rhs) {
+    if (lhs.empty() || rhs.empty()) {
+        return 0.0f;
+    }
+
+    std::vector<int> prev(rhs.size() + 1, 0);
+    std::vector<int> cur(rhs.size() + 1, 0);
+    for (size_t i = 1; i <= lhs.size(); i++) {
+        for (size_t j = 1; j <= rhs.size(); j++) {
+            if (lhs[i - 1] == rhs[j - 1]) {
+                cur[j] = prev[j - 1] + 1;
+            }
+            else {
+                cur[j] = std::max(prev[j], cur[j - 1]);
+            }
+        }
+        std::swap(prev, cur);
+        std::fill(cur.begin(), cur.end(), 0);
+    }
+
+    return static_cast<float>(prev[rhs.size()]) / static_cast<float>(std::max(lhs.size(), rhs.size()));
+}
+
+static float toc_token_similarity(const std::wstring& lhs, const std::wstring& rhs) {
+    std::set<std::wstring> lhs_tokens;
+    std::set<std::wstring> rhs_tokens;
+
+    for (const auto& token : split_whitespace(lhs)) {
+        if (token.size() > 1) {
+            lhs_tokens.insert(token);
+        }
+    }
+    for (const auto& token : split_whitespace(rhs)) {
+        if (token.size() > 1) {
+            rhs_tokens.insert(token);
+        }
+    }
+
+    if (lhs_tokens.empty() || rhs_tokens.empty()) {
+        return 0.0f;
+    }
+
+    int intersection = 0;
+    for (const auto& token : lhs_tokens) {
+        if (rhs_tokens.find(token) != rhs_tokens.end()) {
+            intersection++;
+        }
+    }
+    return static_cast<float>(intersection) / static_cast<float>(std::max(lhs_tokens.size(), rhs_tokens.size()));
+}
+
+static float toc_title_similarity(const std::wstring& lhs_title, const std::wstring& rhs_title) {
+    std::wstring lhs = toc_title_match_key(lhs_title);
+    std::wstring rhs = toc_title_match_key(rhs_title);
+    if (lhs.empty() || rhs.empty()) {
+        return 0.0f;
+    }
+    if (lhs == rhs) {
+        return 1.0f;
+    }
+    if ((lhs.size() > 5 && toc_contains(rhs, lhs)) || (rhs.size() > 5 && toc_contains(lhs, rhs))) {
+        return 0.9f;
+    }
+    return 0.65f * toc_lcs_similarity(lhs, rhs) + 0.35f * toc_token_similarity(lhs, rhs);
+}
+
+static fz_rect toc_line_rect(fz_stext_line* line) {
+    fz_rect rect = fz_empty_rect;
+    bool has_rect = false;
+    LL_ITER(ch, line->first_char) {
+        fz_rect ch_rect = fz_rect_from_quad(ch->quad);
+        if (!has_rect) {
+            rect = ch_rect;
+            has_rect = true;
+        }
+        else {
+            rect = fz_union_rect(rect, ch_rect);
+        }
+    }
+    return has_rect ? rect : line->bbox;
+}
+
+static std::vector<TocTextLine> toc_extract_text_lines(fz_stext_page* stext_page) {
+    std::vector<TocTextLine> lines;
+    if (!stext_page) {
+        return lines;
+    }
+
+    LL_ITER(block, stext_page->first_block) {
+        if (block->type != FZ_STEXT_BLOCK_TEXT) {
+            continue;
+        }
+
+        LL_ITER(line, block->u.t.first_line) {
+            TocTextLine toc_line;
+            toc_line.text = toc_normalize_spaces(get_string_from_stext_line(line, true));
+            if (toc_line.text.empty()) {
+                continue;
+            }
+
+            toc_line.rect = toc_line_rect(line);
+
+            float size_sum = 0.0f;
+            int size_count = 0;
+            int bold_count = 0;
+            LL_ITER(ch, line->first_char) {
+                size_sum += ch->size;
+                size_count++;
+                if ((ch->flags & FZ_STEXT_BOLD) != 0) {
+                    bold_count++;
+                }
+            }
+            if (size_count > 0) {
+                toc_line.font_size = size_sum / size_count;
+                toc_line.bold = bold_count > (size_count / 3);
+            }
+            lines.push_back(toc_line);
+        }
+    }
+
+    std::sort(lines.begin(), lines.end(), [](const TocTextLine& lhs, const TocTextLine& rhs) {
+        if (std::abs(lhs.rect.y0 - rhs.rect.y0) > 2.0f) {
+            return lhs.rect.y0 < rhs.rect.y0;
+        }
+        return lhs.rect.x0 < rhs.rect.x0;
+    });
+
+    return lines;
+}
+
+static float toc_estimate_body_font_size(const std::vector<TocTextLine>& lines) {
+    std::vector<float> sizes;
+    for (const auto& line : lines) {
+        if (line.font_size > 0.0f && line.text.size() >= 20 && toc_count_words(line.text) >= 4) {
+            sizes.push_back(line.font_size);
+        }
+    }
+    if (sizes.empty()) {
+        for (const auto& line : lines) {
+            if (line.font_size > 0.0f) {
+                sizes.push_back(line.font_size);
+            }
+        }
+    }
+    if (sizes.empty()) {
+        return 10.0f;
+    }
+
+    std::nth_element(sizes.begin(), sizes.begin() + sizes.size() / 2, sizes.end());
+    return sizes[sizes.size() / 2];
+}
+
+static bool toc_get_numbered_level(const std::wstring& text, int* out_level) {
+    int prefix_end = 0;
+    bool bare_marker = false;
+    if (toc_match_structured_heading_prefix(text, out_level, &prefix_end, &bare_marker)) {
+        return true;
+    }
+
+    return false;
+}
+
+static bool toc_is_major_heading_keyword(const std::wstring& text) {
+    std::wstring lower = toc_to_lower(toc_normalize_spaces(text));
+    return toc_starts_with(lower, L"chapter ") ||
+        toc_starts_with(lower, L"chap. ") ||
+        toc_starts_with(lower, L"ch. ") ||
+        toc_starts_with(lower, L"part ") ||
+        toc_starts_with(lower, L"book ") ||
+        toc_starts_with(lower, L"lecture ") ||
+        toc_starts_with(lower, L"appendix ") ||
+        lower == L"preface" ||
+        lower == L"foreword" ||
+        lower == L"introduction" ||
+        lower == L"conclusion" ||
+        lower == L"references" ||
+        lower == L"bibliography" ||
+        lower == L"index" ||
+        lower == L"acknowledgments" ||
+        lower == L"acknowledgements";
+}
+
+static int toc_infer_level(const std::wstring& title, float x, float min_x) {
+    int numbered_level = 0;
+    if (toc_get_numbered_level(title, &numbered_level)) {
+        return std::max(0, numbered_level);
+    }
+
+    std::wstring lower = toc_to_lower(toc_normalize_spaces(title));
+    if (toc_starts_with(lower, L"part ") || toc_starts_with(lower, L"book ") || toc_starts_with(lower, L"lecture ")) {
+        return 0;
+    }
+    if (toc_is_major_heading_keyword(title)) {
+        return 0;
+    }
+
+    float indent = x - min_x;
+    if (indent > 60.0f) {
+        return 2;
+    }
+    if (indent > 25.0f) {
+        return 1;
+    }
+    return 0;
+}
+
+static bool toc_looks_like_sentence(const std::wstring& text) {
+    std::wstring trimmed = toc_trim(text);
+    if (trimmed.empty()) {
+        return false;
+    }
+    int words = toc_count_words(trimmed);
+    wchar_t last = trimmed.back();
+    return words > 8 && (last == L'.' || last == L',' || last == L';' || last == L':');
+}
+
+static bool toc_is_bare_structural_heading(const std::wstring& text) {
+    int level = 0;
+    int prefix_end = 0;
+    bool bare_marker = false;
+    return toc_match_structured_heading_prefix(text, &level, &prefix_end, &bare_marker) && bare_marker;
+}
+
+static bool toc_line_is_title_fragment(const TocTextLine& line) {
+    std::wstring title = toc_normalize_spaces(line.text);
+    if (title.size() < 3 || title.size() > 110 || !toc_has_alpha(title)) {
+        return false;
+    }
+    if (toc_is_unhelpful_heading(title) || toc_looks_like_sentence(title)) {
+        return false;
+    }
+    if (toc_is_all_digits(title) || toc_is_roman_numeral(title)) {
+        return false;
+    }
+    return toc_count_words(title) <= 14;
+}
+
+static fz_rect toc_union_line_rects(fz_rect lhs, fz_rect rhs) {
+    if (fz_is_empty_rect(lhs)) {
+        return rhs;
+    }
+    if (fz_is_empty_rect(rhs)) {
+        return lhs;
+    }
+    return fz_union_rect(lhs, rhs);
+}
+
+static std::vector<TocTextLine> toc_add_combined_heading_lines(
+    const std::vector<TocTextLine>& lines,
+    float page_height) {
+
+    std::vector<TocTextLine> augmented = lines;
+    for (int i = 0; i + 1 < static_cast<int>(lines.size()); i++) {
+        const TocTextLine& first = lines[i];
+        if (!toc_is_bare_structural_heading(first.text)) {
+            continue;
+        }
+
+        int next_index = i + 1;
+        while (next_index < static_cast<int>(lines.size()) && toc_trim(lines[next_index].text).empty()) {
+            next_index++;
+        }
+        if (next_index >= static_cast<int>(lines.size())) {
+            continue;
+        }
+
+        const TocTextLine& second = lines[next_index];
+        if (!toc_line_is_title_fragment(second)) {
+            continue;
+        }
+
+        float gap = second.rect.y0 - first.rect.y1;
+        float font = std::max(first.font_size, second.font_size);
+        if (font <= 0.0f) {
+            font = 12.0f;
+        }
+        if (gap < -2.0f || gap > std::max(36.0f, font * 3.0f)) {
+            continue;
+        }
+        if (page_height > 0.0f && first.rect.y0 > page_height * 0.55f) {
+            continue;
+        }
+        if (std::abs(first.rect.x0 - second.rect.x0) > 90.0f && second.rect.x0 < first.rect.x0) {
+            continue;
+        }
+
+        TocTextLine combined;
+        std::wstring separator = first.text.find(L'.') == std::wstring::npos ? L". " : L" ";
+        combined.text = toc_normalize_spaces(first.text + separator + second.text);
+        combined.rect = toc_union_line_rects(first.rect, second.rect);
+        combined.font_size = std::max(first.font_size, second.font_size);
+        combined.bold = first.bold || second.bold;
+        augmented.push_back(combined);
+    }
+
+    std::sort(augmented.begin(), augmented.end(), [](const TocTextLine& lhs, const TocTextLine& rhs) {
+        if (std::abs(lhs.rect.y0 - rhs.rect.y0) > 2.0f) {
+            return lhs.rect.y0 < rhs.rect.y0;
+        }
+        if (std::abs(lhs.rect.x0 - rhs.rect.x0) > 2.0f) {
+            return lhs.rect.x0 < rhs.rect.x0;
+        }
+        return lhs.text.size() > rhs.text.size();
+    });
+    return augmented;
+}
+
+static std::vector<CreatedTocCandidate> toc_detect_heading_candidates(
+    const std::vector<TocTextLine>& lines,
+    int page_number,
+    float page_height) {
+
+    std::vector<CreatedTocCandidate> candidates;
+    std::vector<TocTextLine> heading_lines = toc_add_combined_heading_lines(lines, page_height);
+    float body_size = toc_estimate_body_font_size(lines);
+
+    for (const auto& line : heading_lines) {
+        std::wstring title = toc_normalize_spaces(line.text);
+        if (title.size() < 3 || title.size() > 140 || !toc_has_alpha(title)) {
+            continue;
+        }
+        if (toc_is_unhelpful_heading(title) || toc_looks_like_sentence(title)) {
+            continue;
+        }
+        if (toc_is_all_digits(title) || toc_is_roman_numeral(title)) {
+            continue;
+        }
+
+        int numbered_level = 0;
+        bool structured = toc_get_numbered_level(title, &numbered_level);
+        bool numbered = structured || is_string_titlish(title);
+        bool keyword = toc_is_major_heading_keyword(title);
+        bool bare_structural = toc_is_bare_structural_heading(title);
+        if (bare_structural) {
+            continue;
+        }
+
+        float score = 0.0f;
+        if (numbered) {
+            score += 3.0f;
+        }
+        if (keyword) {
+            score += 3.0f;
+        }
+        if (line.font_size >= body_size * 1.25f) {
+            score += 3.0f;
+        }
+        else if (line.font_size >= body_size * 1.12f) {
+            score += 2.0f;
+        }
+        else if (line.font_size >= body_size * 1.05f) {
+            score += 1.0f;
+        }
+        if (line.bold) {
+            score += 1.0f;
+        }
+        if (line.rect.y0 < page_height * 0.30f) {
+            score += 1.0f;
+        }
+        if (toc_count_words(title) <= 8) {
+            score += 1.0f;
+        }
+        if (!numbered && !keyword && title.size() > 90) {
+            score -= 1.0f;
+        }
+        if (!numbered && !keyword && toc_to_lower(title) == title) {
+            score -= 1.0f;
+        }
+
+        if (score < 3.0f) {
+            continue;
+        }
+
+        CreatedTocCandidate candidate;
+        candidate.title = title;
+        candidate.page = page_number;
+        candidate.x = line.rect.x0;
+        candidate.y = line.rect.y0;
+        candidate.page_height = page_height;
+        candidate.level = numbered ? numbered_level : toc_infer_level(title, line.rect.x0, 0.0f);
+        candidate.score = score;
+        candidate.structural = structured || keyword;
+        candidate.margin = page_height > 0.0f && (line.rect.y0 < page_height * 0.09f || line.rect.y0 > page_height * 0.92f);
+        candidates.push_back(candidate);
+    }
+
+    return candidates;
+}
+
+static bool toc_is_page_label_char(wchar_t c) {
+    return std::iswalnum(c) || c == L'-';
+}
+
+static bool toc_is_page_label_text(const std::wstring& text) {
+    std::wstring label = toc_strip_edge_punctuation(toc_normalize_spaces(text));
+    return toc_is_all_digits(label) || toc_is_roman_numeral(label);
+}
+
+static bool toc_parse_printed_toc_line(const TocTextLine& line, PrintedTocCandidate* out_candidate) {
+    std::wstring text = toc_normalize_spaces(line.text);
+    if (text.size() < 6 || text.size() > 180 || !toc_has_alpha(text)) {
+        return false;
+    }
+    if (toc_is_contents_heading(text)) {
+        return false;
+    }
+
+    int end = static_cast<int>(text.size()) - 1;
+    while (end >= 0 && toc_is_space(text[end])) {
+        end--;
+    }
+    int start = end;
+    while (start >= 0 && toc_is_page_label_char(text[start])) {
+        start--;
+    }
+
+    if (start == end) {
+        return false;
+    }
+
+    std::wstring page_label = toc_strip_edge_punctuation(text.substr(start + 1, end - start));
+    if (!toc_is_page_label_text(page_label)) {
+        return false;
+    }
+
+    std::wstring title = text.substr(0, start + 1);
+    bool has_dot_leader = false;
+    int trailing_dots = 0;
+    while (!title.empty()) {
+        wchar_t c = title.back();
+        if (c == L'.' || c == L'·' || c == L'•' || c == L'…') {
+            trailing_dots++;
+            has_dot_leader = true;
+            title.pop_back();
+        }
+        else if (toc_is_space(c)) {
+            title.pop_back();
+        }
+        else {
+            break;
+        }
+    }
+
+    title = toc_normalize_spaces(title);
+    if (title.size() < 3 || title.size() > 140 || !toc_has_alpha(title)) {
+        return false;
+    }
+    if (toc_is_unhelpful_heading(title)) {
+        return false;
+    }
+    if (!has_dot_leader && trailing_dots < 2 && toc_count_words(title) < 2 && !toc_is_major_heading_keyword(title)) {
+        return false;
+    }
+
+    PrintedTocCandidate candidate;
+    candidate.title = title;
+    candidate.page_label = page_label;
+    candidate.rect = line.rect;
+    candidate.x = line.rect.x0;
+    candidate.y = line.rect.y0;
+    candidate.has_dot_leader = has_dot_leader;
+    candidate.level = toc_infer_level(title, line.rect.x0, 0.0f);
+    *out_candidate = candidate;
+    return true;
+}
+
+static float toc_line_center_y(const TocTextLine& line) {
+    return (line.rect.y0 + line.rect.y1) * 0.5f;
+}
+
+static TocTextLine toc_merge_printed_row_window(const std::vector<TocTextLine>& row_lines, int begin, int end) {
+    TocTextLine merged = row_lines[begin];
+    for (int i = begin + 1; i <= end; i++) {
+        merged.text = toc_normalize_spaces(merged.text + L" " + row_lines[i].text);
+        merged.rect = toc_union_line_rects(merged.rect, row_lines[i].rect);
+        merged.font_size = std::max(merged.font_size, row_lines[i].font_size);
+        merged.bold = merged.bold || row_lines[i].bold;
+    }
+    return merged;
+}
+
+static bool toc_parse_printed_toc_row(const std::vector<TocTextLine>& row_lines, TocTextLine* out_probe_line) {
+    if (row_lines.size() < 2) {
+        return false;
+    }
+
+    int label_index = static_cast<int>(row_lines.size()) - 1;
+    if (!toc_is_page_label_text(row_lines[label_index].text)) {
+        return false;
+    }
+
+    TocTextLine title_line = toc_merge_printed_row_window(row_lines, 0, label_index - 1);
+    std::wstring title = toc_normalize_spaces(title_line.text);
+    if (title.size() < 3 || !toc_has_alpha(title) || toc_is_unhelpful_heading(title)) {
+        return false;
+    }
+
+    TocTextLine probe_line = title_line;
+    probe_line.text = toc_normalize_spaces(title + L" " + toc_strip_edge_punctuation(row_lines[label_index].text));
+    probe_line.rect = toc_union_line_rects(title_line.rect, row_lines[label_index].rect);
+    probe_line.font_size = std::max(title_line.font_size, row_lines[label_index].font_size);
+    probe_line.bold = title_line.bold || row_lines[label_index].bold;
+
+    PrintedTocCandidate ignored;
+    if (!toc_parse_printed_toc_line(probe_line, &ignored)) {
+        return false;
+    }
+
+    *out_probe_line = probe_line;
+    return true;
+}
+
+static std::vector<TocTextLine> toc_build_printed_toc_probe_lines(const std::vector<TocTextLine>& lines) {
+    std::vector<TocTextLine> probes = lines;
+    if (lines.empty()) {
+        return probes;
+    }
+
+    std::vector<std::vector<TocTextLine>> rows;
+    for (const auto& line : lines) {
+        bool inserted = false;
+        float center_y = toc_line_center_y(line);
+        for (auto& row : rows) {
+            float row_y = toc_line_center_y(row.front());
+            float tolerance = std::max(3.0f, std::max(row.front().font_size, line.font_size) * 0.65f);
+            if (std::abs(center_y - row_y) <= tolerance) {
+                row.push_back(line);
+                inserted = true;
+                break;
+            }
+        }
+        if (!inserted) {
+            rows.push_back({ line });
+        }
+    }
+
+    std::sort(rows.begin(), rows.end(), [](const std::vector<TocTextLine>& lhs, const std::vector<TocTextLine>& rhs) {
+        return toc_line_center_y(lhs.front()) < toc_line_center_y(rhs.front());
+    });
+
+    for (auto& row : rows) {
+        std::sort(row.begin(), row.end(), [](const TocTextLine& lhs, const TocTextLine& rhs) {
+            return lhs.rect.x0 < rhs.rect.x0;
+        });
+
+        TocTextLine row_probe;
+        if (toc_parse_printed_toc_row(row, &row_probe)) {
+            probes.push_back(row_probe);
+        }
+    }
+
+    for (int i = 0; i + 1 < static_cast<int>(rows.size()); i++) {
+        if (toc_is_page_label_text(rows[i].back().text) || !toc_is_page_label_text(rows[i + 1].back().text)) {
+            continue;
+        }
+        float row_gap = rows[i + 1].front().rect.y0 - rows[i].front().rect.y1;
+        float font = std::max(rows[i].front().font_size, rows[i + 1].front().font_size);
+        if (row_gap < -2.0f || row_gap > std::max(18.0f, font * 2.0f)) {
+            continue;
+        }
+        if (std::abs(rows[i].front().rect.x0 - rows[i + 1].front().rect.x0) > 35.0f) {
+            continue;
+        }
+
+        std::vector<TocTextLine> wrapped_row = rows[i];
+        wrapped_row.insert(wrapped_row.end(), rows[i + 1].begin(), rows[i + 1].end());
+        std::sort(wrapped_row.begin(), wrapped_row.end(), [](const TocTextLine& lhs, const TocTextLine& rhs) {
+            if (std::abs(toc_line_center_y(lhs) - toc_line_center_y(rhs)) > 2.0f) {
+                return toc_line_center_y(lhs) < toc_line_center_y(rhs);
+            }
+            return lhs.rect.x0 < rhs.rect.x0;
+        });
+
+        TocTextLine wrapped_probe;
+        if (toc_parse_printed_toc_row(wrapped_row, &wrapped_probe)) {
+            probes.push_back(wrapped_probe);
+        }
+    }
+
+    for (int i = 0; i + 1 < static_cast<int>(rows.size()); i++) {
+        if (!toc_is_page_label_text(rows[i].back().text) || toc_is_page_label_text(rows[i + 1].back().text)) {
+            continue;
+        }
+        if (rows[i].size() < 2) {
+            continue;
+        }
+
+        TocTextLine first_title = toc_merge_printed_row_window(rows[i], 0, static_cast<int>(rows[i].size()) - 2);
+        TocTextLine second_title = toc_merge_printed_row_window(rows[i + 1], 0, static_cast<int>(rows[i + 1].size()) - 1);
+        if (!toc_is_bare_structural_heading(first_title.text) || !toc_line_is_title_fragment(second_title)) {
+            continue;
+        }
+
+        float row_gap = rows[i + 1].front().rect.y0 - rows[i].front().rect.y1;
+        float font = std::max(rows[i].front().font_size, rows[i + 1].front().font_size);
+        if (row_gap < -2.0f || row_gap > std::max(18.0f, font * 2.0f)) {
+            continue;
+        }
+        if (std::abs(rows[i].front().rect.x0 - rows[i + 1].front().rect.x0) > 45.0f) {
+            continue;
+        }
+
+        std::vector<TocTextLine> expanded_row;
+        expanded_row.insert(expanded_row.end(), rows[i].begin(), rows[i].end() - 1);
+        expanded_row.insert(expanded_row.end(), rows[i + 1].begin(), rows[i + 1].end());
+        expanded_row.push_back(rows[i].back());
+
+        TocTextLine expanded_probe;
+        if (toc_parse_printed_toc_row(expanded_row, &expanded_probe)) {
+            probes.push_back(expanded_probe);
+        }
+    }
+
+    return probes;
+}
+
+static std::vector<PrintedTocCandidate> toc_detect_printed_toc_candidates(
+    const std::vector<TocTextLine>& lines,
+    int page_number,
+    bool printed_toc_already_started,
+    bool* out_page_looks_like_toc) {
+
+    std::vector<PrintedTocCandidate> candidates;
+    std::vector<TocTextLine> probe_lines = toc_build_printed_toc_probe_lines(lines);
+    bool has_contents_title = false;
+    int dot_leader_count = 0;
+    float min_x = 1000000.0f;
+
+    for (const auto& line : lines) {
+        if (toc_is_contents_heading(line.text)) {
+            has_contents_title = true;
+        }
+        min_x = std::min(min_x, line.rect.x0);
+    }
+    if (min_x == 1000000.0f) {
+        min_x = 0.0f;
+    }
+
+    std::set<std::tuple<std::wstring, std::wstring, int>> seen_candidates;
+    for (const auto& line : probe_lines) {
+        PrintedTocCandidate candidate;
+        if (toc_parse_printed_toc_line(line, &candidate)) {
+            if (toc_is_bare_structural_heading(candidate.title)) {
+                continue;
+            }
+            candidate.source_page = page_number;
+            candidate.level = toc_infer_level(candidate.title, candidate.x, min_x);
+            auto key = std::make_tuple(toc_title_match_key(candidate.title), toc_to_lower(candidate.page_label), candidate.source_page);
+            if (seen_candidates.find(key) != seen_candidates.end()) {
+                continue;
+            }
+            seen_candidates.insert(key);
+            if (candidate.has_dot_leader) {
+                dot_leader_count++;
+            }
+            candidates.push_back(candidate);
+        }
+    }
+
+    bool looks_like_toc = has_contents_title ||
+        candidates.size() >= 5 ||
+        (printed_toc_already_started && candidates.size() >= 2) ||
+        (candidates.size() >= 3 && dot_leader_count >= 2);
+
+    *out_page_looks_like_toc = looks_like_toc;
+    if (!looks_like_toc) {
+        candidates.clear();
+    }
+    return candidates;
+}
+
+static fz_rect toc_expand_rect(fz_rect rect, float amount) {
+    rect.x0 -= amount;
+    rect.x1 += amount;
+    rect.y0 -= amount;
+    rect.y1 += amount;
+    return rect;
+}
+
+static float toc_intersection_area(fz_rect lhs, fz_rect rhs) {
+    fz_rect intersection = fz_intersect_rect(lhs, rhs);
+    if (fz_is_empty_rect(intersection)) {
+        return 0.0f;
+    }
+    return std::max(0.0f, intersection.x1 - intersection.x0) *
+        std::max(0.0f, intersection.y1 - intersection.y0);
+}
+
+static void toc_attach_link_targets_to_printed_candidates(
+    fz_context* context,
+    fz_document* document,
+    fz_link* links,
+    std::vector<PrintedTocCandidate>& candidates,
+    int num_pages) {
+
+    for (auto& candidate : candidates) {
+        fz_rect candidate_rect = toc_expand_rect(candidate.rect, 3.0f);
+        fz_link* best_link = nullptr;
+        float best_overlap = 0.0f;
+
+        for (fz_link* link = links; link; link = link->next) {
+            if (!link->uri || fz_is_empty_rect(link->rect)) {
+                continue;
+            }
+            float overlap = toc_intersection_area(candidate_rect, link->rect);
+            if (overlap > best_overlap) {
+                best_overlap = overlap;
+                best_link = link;
+            }
+        }
+
+        if (!best_link || best_overlap <= 0.0f) {
+            continue;
+        }
+
+        float target_x = 0.0f;
+        float target_y = 0.0f;
+        fz_try(context) {
+            fz_location loc = fz_resolve_link(context, document, best_link->uri, &target_x, &target_y);
+            int target_page = fz_page_number_from_location(context, document, loc);
+            if (target_page >= 0 && target_page < num_pages) {
+                candidate.has_link_target = true;
+                candidate.link_target_page = target_page;
+                candidate.link_target_x = std::isnan(target_x) ? 0.0f : target_x;
+                candidate.link_target_y = std::isnan(target_y) ? 0.0f : target_y;
+            }
+        }
+        fz_catch(context) {
+        }
+    }
+}
+
+static int toc_resolve_page_label(const std::vector<std::wstring>& page_labels, const std::wstring& label, int num_pages) {
+    std::wstring normalized_label = toc_to_lower(toc_normalize_spaces(label));
+    for (int i = 0; i < static_cast<int>(page_labels.size()); i++) {
+        if (toc_to_lower(toc_normalize_spaces(page_labels[i])) == normalized_label) {
+            return i;
+        }
+    }
+
+    int numeric = toc_parse_int(label);
+    if (numeric > 0) {
+        int page = numeric - 1;
+        if (page >= 0 && page < num_pages) {
+            return page;
+        }
+    }
+
+    int roman = toc_parse_roman(label);
+    if (roman > 0) {
+        int page = roman - 1;
+        if (page >= 0 && page < num_pages) {
+            return page;
+        }
+    }
+
+    return -1;
+}
+
+static void toc_clear_nodes(std::vector<TocNode*>& nodes) {
+    for (auto node : nodes) {
+        if (!node) {
+            continue;
+        }
+        toc_clear_nodes(node->children);
+        delete node;
+    }
+    nodes.clear();
+}
+
+static int toc_count_nodes(const std::vector<TocNode*>& nodes) {
+    int count = 0;
+    for (auto node : nodes) {
+        if (!node) {
+            continue;
+        }
+        count += 1 + toc_count_nodes(node->children);
+    }
+    return count;
+}
+
+static void toc_flatten_nodes(const std::vector<TocNode*>& nodes, std::vector<TocNode*>& output) {
+    for (auto node : nodes) {
+        if (!node) {
+            continue;
+        }
+        output.push_back(node);
+        toc_flatten_nodes(node->children, output);
+    }
+}
+
+static float toc_quality_score(const std::vector<TocNode*>& nodes, int num_pages) {
+    std::vector<TocNode*> flat;
+    toc_flatten_nodes(nodes, flat);
+    if (flat.empty() || num_pages <= 0) {
+        return 0.0f;
+    }
+
+    std::set<int> unique_pages;
+    int valid_pages = 0;
+    int nonmonotonic = 0;
+    int previous_page = -1;
+    int min_page = num_pages;
+    int max_page = 0;
+    int useful_titles = 0;
+
+    for (auto node : flat) {
+        if (!node) {
+            continue;
+        }
+        if (node->page >= 0 && node->page < num_pages) {
+            valid_pages++;
+            unique_pages.insert(node->page);
+            min_page = std::min(min_page, node->page);
+            max_page = std::max(max_page, node->page);
+            if (previous_page > node->page) {
+                nonmonotonic++;
+            }
+            previous_page = node->page;
+        }
+        std::wstring title_key = toc_title_match_key(node->title);
+        if (title_key.size() >= 3 && toc_has_alpha(title_key)) {
+            useful_titles++;
+        }
+    }
+
+    if (valid_pages == 0 || useful_titles == 0) {
+        return 0.0f;
+    }
+
+    float coverage = static_cast<float>(max_page - min_page + 1) / static_cast<float>(num_pages);
+    float monotonic_penalty = static_cast<float>(nonmonotonic) / static_cast<float>(std::max(1, valid_pages - 1));
+    float unique_ratio = static_cast<float>(unique_pages.size()) / static_cast<float>(valid_pages);
+
+    return static_cast<float>(flat.size()) * 1.5f +
+        static_cast<float>(unique_pages.size()) * 1.25f +
+        coverage * 12.0f +
+        unique_ratio * 8.0f -
+        monotonic_penalty * 12.0f;
+}
+
+static int toc_nonmonotonic_count(const std::vector<TocNode*>& nodes) {
+    std::vector<TocNode*> flat;
+    toc_flatten_nodes(nodes, flat);
+
+    int nonmonotonic = 0;
+    int previous_page = -1;
+    for (auto node : flat) {
+        if (!node || node->page < 0) {
+            continue;
+        }
+        if (previous_page > node->page) {
+            nonmonotonic++;
+        }
+        previous_page = node->page;
+    }
+    return nonmonotonic;
+}
+
+static bool toc_nodes_are_printed_sensible(const std::vector<TocNode*>& nodes, int num_pages) {
+    std::vector<TocNode*> flat;
+    toc_flatten_nodes(nodes, flat);
+    int count = static_cast<int>(flat.size());
+    if (count < 3 || num_pages <= 0) {
+        return false;
+    }
+
+    std::set<int> unique_pages;
+    int valid_pages = 0;
+    int useful_titles = 0;
+    for (auto node : flat) {
+        if (!node) {
+            continue;
+        }
+        if (node->page >= 0 && node->page < num_pages) {
+            valid_pages++;
+            unique_pages.insert(node->page);
+        }
+        std::wstring title_key = toc_title_match_key(node->title);
+        if (title_key.size() >= 3 && toc_has_alpha(title_key)) {
+            useful_titles++;
+        }
+    }
+
+    if (valid_pages < std::max(3, count * 2 / 3) || useful_titles < std::max(3, count * 2 / 3)) {
+        return false;
+    }
+    if (unique_pages.size() < static_cast<size_t>(std::max(2, count / 4))) {
+        return false;
+    }
+    if (toc_nonmonotonic_count(nodes) > std::max(1, count / 5)) {
+        return false;
+    }
+    return toc_quality_score(nodes, num_pages) > static_cast<float>(count) * 2.0f;
+}
+
+static bool toc_is_scrappy(const std::vector<TocNode*>& nodes, int num_pages) {
+    std::vector<TocNode*> flat;
+    toc_flatten_nodes(nodes, flat);
+    if (flat.empty()) {
+        return true;
+    }
+
+    std::set<int> unique_pages;
+    int valid_pages = 0;
+    int min_page = num_pages;
+    int max_page = 0;
+    int nonmonotonic = 0;
+    int previous_page = -1;
+
+    for (auto node : flat) {
+        if (!node) {
+            continue;
+        }
+        if (node->page >= 0 && node->page < num_pages) {
+            valid_pages++;
+            unique_pages.insert(node->page);
+            min_page = std::min(min_page, node->page);
+            max_page = std::max(max_page, node->page);
+            if (previous_page > node->page) {
+                nonmonotonic++;
+            }
+            previous_page = node->page;
+        }
+    }
+
+    if (valid_pages == 0) {
+        return true;
+    }
+    if (num_pages >= 80 && flat.size() <= 2) {
+        return true;
+    }
+    if (flat.size() > 1 && unique_pages.size() <= 1) {
+        return true;
+    }
+
+    float coverage = static_cast<float>(max_page - min_page + 1) / static_cast<float>(std::max(1, num_pages));
+    if (num_pages >= 100 && flat.size() < 5 && coverage < 0.20f) {
+        return true;
+    }
+    if (flat.size() >= 5 && nonmonotonic > static_cast<int>(flat.size() / 3)) {
+        return true;
+    }
+
+    return false;
+}
+
+static void toc_filter_heading_candidates(std::vector<CreatedTocCandidate>& candidates, int num_pages) {
+    std::map<std::wstring, int> title_counts;
+    std::map<std::wstring, int> margin_title_counts;
+    for (const auto& candidate : candidates) {
+        std::wstring key = toc_title_match_key(candidate.title);
+        title_counts[key]++;
+        if (candidate.margin) {
+            margin_title_counts[key]++;
+        }
+    }
+
+    int repeat_threshold = std::max(3, num_pages / 30);
+    std::vector<CreatedTocCandidate> filtered;
+    std::set<std::pair<int, std::wstring>> seen_on_page;
+    std::set<std::wstring> emitted_repeated_titles;
+    for (size_t i = 0; i < candidates.size(); i++) {
+        const auto& candidate = candidates[i];
+        std::wstring key = toc_title_match_key(candidate.title);
+        if (key.empty()) {
+            continue;
+        }
+        if (candidate.margin && title_counts[key] > repeat_threshold && margin_title_counts[key] >= title_counts[key] / 2) {
+            continue;
+        }
+        if (toc_is_bare_structural_heading(candidate.title)) {
+            bool has_richer_heading_nearby = false;
+            for (size_t j = 0; j < candidates.size(); j++) {
+                if (i == j || candidates[j].page != candidate.page) {
+                    continue;
+                }
+                if (std::abs(candidates[j].y - candidate.y) > 90.0f) {
+                    continue;
+                }
+                if (!toc_is_bare_structural_heading(candidates[j].title) && toc_contains(toc_to_lower(candidates[j].title), toc_to_lower(candidate.title))) {
+                    has_richer_heading_nearby = true;
+                    break;
+                }
+            }
+            if (has_richer_heading_nearby) {
+                continue;
+            }
+        }
+        if (title_counts[key] > repeat_threshold) {
+            if (emitted_repeated_titles.find(key) != emitted_repeated_titles.end()) {
+                continue;
+            }
+            emitted_repeated_titles.insert(key);
+        }
+        auto page_key = std::make_pair(candidate.page, key);
+        if (seen_on_page.find(page_key) != seen_on_page.end()) {
+            continue;
+        }
+        seen_on_page.insert(page_key);
+        filtered.push_back(candidate);
+    }
+    candidates = std::move(filtered);
+}
+
+static TocNode* toc_node_from_candidate(const CreatedTocCandidate& candidate) {
+    TocNode* node = new TocNode;
+    node->title = candidate.title;
+    node->page = candidate.page;
+    node->x = candidate.x;
+    node->y = candidate.y;
+    return node;
+}
+
+static void toc_append_node_by_level(std::vector<TocNode*>& top_level_nodes, std::vector<std::pair<int, TocNode*>>& stack, int level, TocNode* node) {
+    level = std::max(0, level);
+    while (!stack.empty() && stack.back().first >= level) {
+        stack.pop_back();
+    }
+
+    if (stack.empty()) {
+        top_level_nodes.push_back(node);
+    }
+    else {
+        stack.back().second->children.push_back(node);
+    }
+    stack.push_back(std::make_pair(level, node));
+}
+
+static std::vector<TocNode*> toc_build_heading_tree(std::vector<CreatedTocCandidate> candidates, int max_entries) {
+    std::vector<TocNode*> top_level_nodes;
+    std::vector<std::pair<int, TocNode*>> stack;
+    std::sort(candidates.begin(), candidates.end(), [](const CreatedTocCandidate& lhs, const CreatedTocCandidate& rhs) {
+        if (lhs.page != rhs.page) {
+            return lhs.page < rhs.page;
+        }
+        return lhs.y < rhs.y;
+    });
+
+    int added = 0;
+    for (const auto& candidate : candidates) {
+        if (added >= max_entries) {
+            break;
+        }
+        TocNode* node = toc_node_from_candidate(candidate);
+        toc_append_node_by_level(top_level_nodes, stack, candidate.level, node);
+        added++;
+    }
+    return top_level_nodes;
+}
+
+static std::optional<CreatedTocCandidate> toc_find_best_heading_match(
+    const PrintedTocCandidate& printed,
+    const std::vector<CreatedTocCandidate>& headings,
+    int label_page,
+    int num_pages) {
+
+    float best_score = 0.0f;
+    float best_similarity = 0.0f;
+    std::optional<CreatedTocCandidate> best = {};
+    for (const auto& heading : headings) {
+        if (heading.page <= printed.source_page) {
+            continue;
+        }
+        float similarity = toc_title_similarity(printed.title, heading.title);
+        if (similarity < 0.58f) {
+            continue;
+        }
+
+        float score = similarity;
+        if (label_page >= 0) {
+            int offset = heading.page - label_page;
+            int max_reasonable_offset = std::max(80, num_pages / 3);
+            if (offset < -3 || offset > max_reasonable_offset) {
+                continue;
+            }
+            score -= static_cast<float>(std::min(std::abs(offset), 80)) * 0.001f;
+        }
+
+        if (score > best_score) {
+            best_score = score;
+            best_similarity = similarity;
+            best = heading;
+        }
+    }
+
+    if (best && best_similarity >= 0.72f) {
+        return best;
+    }
+    return {};
+}
+
+static int toc_median_offset(std::vector<int> offsets) {
+    if (offsets.empty()) {
+        return 0;
+    }
+    std::nth_element(offsets.begin(), offsets.begin() + offsets.size() / 2, offsets.end());
+    return offsets[offsets.size() / 2];
+}
+
+static std::string toc_make_internal_link_uri(int page, float x, float y) {
+    (void)x;
+    if (std::isnan(y) || y < 0.0f) {
+        return QString("#page=%1").arg(page + 1).toStdString();
+    }
+    return QString("#page=%1&view=FitH,%2")
+        .arg(page + 1)
+        .arg(static_cast<double>(y))
+        .toStdString();
+}
+
+static std::vector<ResolvedPrintedTocEntry> toc_resolve_printed_toc_entries(
+    const std::vector<PrintedTocCandidate>& printed_candidates,
+    const std::vector<CreatedTocCandidate>& headings,
+    const std::vector<std::wstring>& page_labels,
+    int num_pages) {
+
+    std::vector<std::optional<CreatedTocCandidate>> matched_headings;
+    std::vector<int> label_pages;
+    std::vector<int> offsets;
+    matched_headings.reserve(printed_candidates.size());
+    label_pages.reserve(printed_candidates.size());
+
+    for (const auto& printed : printed_candidates) {
+        int label_page = toc_resolve_page_label(page_labels, printed.page_label, num_pages);
+        label_pages.push_back(label_page);
+        std::optional<CreatedTocCandidate> match = {};
+        if (!printed.has_link_target) {
+            match = toc_find_best_heading_match(printed, headings, label_page, num_pages);
+        }
+        matched_headings.push_back(match);
+        if (match && label_page >= 0) {
+            offsets.push_back(match->page - label_page);
+        }
+    }
+
+    int page_offset = 0;
+    if (!offsets.empty()) {
+        page_offset = toc_median_offset(offsets);
+    }
+    else if (toc_is_plain_page_label_sequence(page_labels)) {
+        int max_source_page = -1;
+        int min_printed_arabic_label = num_pages + 1;
+        for (const auto& printed : printed_candidates) {
+            max_source_page = std::max(max_source_page, printed.source_page);
+            int printed_label = toc_parse_int(toc_strip_edge_punctuation(printed.page_label));
+            if (printed_label > 0) {
+                min_printed_arabic_label = std::min(min_printed_arabic_label, printed_label);
+            }
+        }
+        if (max_source_page >= 0 && min_printed_arabic_label <= max_source_page + 1) {
+            page_offset = max_source_page + 1;
+        }
+    }
+
+    std::vector<ResolvedPrintedTocEntry> resolved;
+    std::set<std::pair<std::wstring, std::wstring>> seen_entries;
+
+    for (size_t i = 0; i < printed_candidates.size(); i++) {
+        const auto& printed = printed_candidates[i];
+        std::wstring key = toc_title_match_key(printed.title);
+        std::wstring entry_key_page = toc_to_lower(toc_normalize_spaces(printed.page_label));
+        auto entry_key = std::make_pair(key, entry_key_page);
+        if (key.empty() || seen_entries.find(entry_key) != seen_entries.end()) {
+            continue;
+        }
+
+        int target_page = -1;
+        float target_x = 0.0f;
+        float target_y = 0.0f;
+        if (printed.has_link_target) {
+            target_page = printed.link_target_page;
+            target_x = printed.link_target_x;
+            target_y = printed.link_target_y;
+        }
+        else if (matched_headings[i]) {
+            target_page = matched_headings[i]->page;
+            target_x = matched_headings[i]->x;
+            target_y = matched_headings[i]->y;
+        }
+        else {
+            int label_page = label_pages[i];
+            if (label_page >= 0) {
+                target_page = label_page + page_offset;
+            }
+        }
+
+        if (target_page < 0 || target_page >= num_pages) {
+            continue;
+        }
+
+        seen_entries.insert(entry_key);
+        ResolvedPrintedTocEntry entry;
+        entry.printed = printed;
+        entry.target_page = target_page;
+        entry.target_x = target_x;
+        entry.target_y = target_y;
+        resolved.push_back(entry);
+    }
+
+    return resolved;
+}
+
+static std::vector<TocNode*> toc_build_printed_tree(
+    const std::vector<ResolvedPrintedTocEntry>& resolved_entries,
+    int max_entries) {
+
+    std::vector<TocNode*> top_level_nodes;
+    std::vector<std::pair<int, TocNode*>> stack;
+
+    int added = 0;
+    for (const auto& entry : resolved_entries) {
+        if (added >= max_entries) {
+            break;
+        }
+
+        TocNode* node = new TocNode;
+        node->title = entry.printed.title;
+        node->page = entry.target_page;
+        node->x = entry.target_x;
+        node->y = entry.target_y;
+        toc_append_node_by_level(top_level_nodes, stack, entry.printed.level, node);
+        added++;
+    }
+
+    return top_level_nodes;
+}
+
+static std::map<int, std::vector<PdfLink>> toc_build_printed_toc_links(
+    const std::vector<ResolvedPrintedTocEntry>& resolved_entries,
+    int max_entries) {
+
+    std::map<int, std::vector<PdfLink>> links_by_page;
+    int added = 0;
+    for (const auto& entry : resolved_entries) {
+        if (added >= max_entries) {
+            break;
+        }
+        if (entry.printed.source_page < 0 || entry.target_page < 0 || fz_is_empty_rect(entry.printed.rect)) {
+            continue;
+        }
+
+        fz_rect rect = entry.printed.rect;
+        rect.x0 -= 2.0f;
+        rect.x1 += 2.0f;
+        rect.y0 -= 2.0f;
+        rect.y1 += 2.0f;
+
+        PdfLink link;
+        link.source_page = entry.printed.source_page;
+        link.rects.push_back(rect);
+        link.uri = toc_make_internal_link_uri(entry.target_page, entry.target_x, entry.target_y);
+        links_by_page[entry.printed.source_page].push_back(link);
+        added++;
+    }
+    return links_by_page;
+}
+
+}
 
 int Document::get_mark_index(char symbol) {
     for (size_t i = 0; i < marks.size(); i++) {
@@ -887,11 +2509,11 @@ void Document::count_chapter_pages_accum(std::vector<int>& accum_page_counts) {
 }
 
 const std::vector<TocNode*>& Document::get_toc() {
-    if (top_level_toc_nodes.size() > 0) {
-        return top_level_toc_nodes;
+    if (created_top_level_toc_nodes.size() > 0 && (should_use_created_toc || top_level_toc_nodes.size() == 0)) {
+        return created_top_level_toc_nodes;
     }
     else {
-        return created_top_level_toc_nodes;
+        return top_level_toc_nodes;
     }
 }
 
@@ -1150,6 +2772,32 @@ const std::vector<PdfLink>& Document::get_page_merged_pdf_links(int page_number)
 
     if (links_to_merge.size() > 0) {
         res.push_back(merge_links(links_to_merge));
+    }
+
+    auto generated_it = generated_page_links.find(page_number);
+    if (generated_it != generated_page_links.end()) {
+        for (const auto& generated_link : generated_it->second) {
+            bool overlaps_existing_link = false;
+            for (const auto& existing_link : res) {
+                for (const auto& existing_rect : existing_link.rects) {
+                    for (const auto& generated_rect : generated_link.rects) {
+                        if (rects_intersect(existing_rect, generated_rect)) {
+                            overlaps_existing_link = true;
+                            break;
+                        }
+                    }
+                    if (overlaps_existing_link) {
+                        break;
+                    }
+                }
+                if (overlaps_existing_link) {
+                    break;
+                }
+            }
+            if (!overlaps_existing_link) {
+                res.push_back(generated_link);
+            }
+        }
     }
 
     cached_merged_pdf_links[page_number] = res;
@@ -1566,8 +3214,13 @@ DocumentPos Document::absolute_to_page_pos_uncentered(AbsoluteDocumentPos absolu
 }
 
 QStandardItemModel* Document::get_toc_model() {
+    if (cached_toc_model && cached_toc_model_generation != toc_model_generation) {
+        delete cached_toc_model;
+        cached_toc_model = nullptr;
+    }
     if (!cached_toc_model) {
         cached_toc_model = get_model_from_toc(get_toc());
+        cached_toc_model_generation = toc_model_generation;
     }
     return cached_toc_model;
 }
@@ -1610,9 +3263,19 @@ void Document::index_document(bool* invalid_flag) {
         std::wstring local_super_fast_search_index;
         std::vector<int> local_page_begin_indices;
 
-        std::vector<TocNode*> toc_stack;
-        std::vector<TocNode*> top_level_nodes;
-        int num_added_toc_entries = 0;
+        const bool native_toc_is_scrappy = toc_is_scrappy(top_level_toc_nodes, n);
+        const bool should_build_created_toc = CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS && (native_toc_is_scrappy || n >= 20);
+        const int printed_toc_scan_limit = std::min(n, std::max(24, std::min(90, n / 5 + 20)));
+        const size_t heading_candidate_limit = static_cast<size_t>(std::max(MAX_CREATED_TABLE_OF_CONTENTS_SIZE * 8, 2000));
+        bool printed_toc_started = false;
+        int last_printed_toc_page = -1;
+        std::vector<PrintedTocCandidate> printed_toc_candidates;
+        std::vector<CreatedTocCandidate> heading_toc_candidates;
+        std::vector<std::wstring> indexed_page_labels;
+        std::map<int, std::vector<PdfLink>> local_generated_page_links;
+        if (should_build_created_toc) {
+            indexed_page_labels.reserve(n);
+        }
 
         fz_context* context_ = fz_clone_context(context);
         fz_try(context_) {
@@ -1643,10 +3306,64 @@ void Document::index_document(bool* invalid_flag) {
                 index_equations(flat_chars, i, local_equation_data);
                 index_generic(flat_chars, i, local_generic_data);
 
-                // if the document doesn't have table of contents, try to create one
-                if (CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS && (top_level_toc_nodes.size() == 0)) {
-                    if (num_added_toc_entries < MAX_CREATED_TABLE_OF_CONTENTS_SIZE) {
-                        num_added_toc_entries += add_stext_page_to_created_toc(stext_page, i, toc_stack, top_level_nodes);
+                if (should_build_created_toc) {
+                    const int label_buffer_size = 20;
+                    char label_buffer[label_buffer_size];
+                    label_buffer[0] = '\0';
+                    fz_page* label_page = fz_load_page(context_, doc_, i);
+                    fz_page_label(context_, label_page, label_buffer, label_buffer_size);
+                    fz_drop_page(context_, label_page);
+
+                    std::wstring current_page_label = utf8_decode(label_buffer);
+                    if (current_page_label.empty()) {
+                        current_page_label = QString::number(i + 1).toStdWString();
+                    }
+                    indexed_page_labels.push_back(current_page_label);
+
+                    std::vector<TocTextLine> page_lines = toc_extract_text_lines(stext_page);
+                    float page_height = stext_page->mediabox.y1 - stext_page->mediabox.y0;
+                    if (page_height <= 0.0f) {
+                        page_height = 800.0f;
+                    }
+
+                    if (heading_toc_candidates.size() < heading_candidate_limit) {
+                        std::vector<CreatedTocCandidate> page_heading_candidates = toc_detect_heading_candidates(page_lines, i, page_height);
+                        heading_toc_candidates.insert(
+                            heading_toc_candidates.end(),
+                            page_heading_candidates.begin(),
+                            page_heading_candidates.end());
+                    }
+
+                    bool should_try_printed_toc =
+                        i < printed_toc_scan_limit ||
+                        (printed_toc_started && i <= last_printed_toc_page + 2);
+
+                    if (should_try_printed_toc) {
+                        bool page_looks_like_toc = false;
+                        std::vector<PrintedTocCandidate> page_printed_candidates =
+                            toc_detect_printed_toc_candidates(page_lines, i, printed_toc_started, &page_looks_like_toc);
+
+                        if (page_looks_like_toc) {
+                            fz_link* page_links = nullptr;
+                            fz_page* link_page = fz_load_page(context_, doc_, i);
+                            page_links = fz_load_links(context_, link_page);
+                            fz_drop_page(context_, link_page);
+                            if (page_links) {
+                                toc_attach_link_targets_to_printed_candidates(
+                                    context_,
+                                    doc_,
+                                    page_links,
+                                    page_printed_candidates,
+                                    n);
+                                fz_drop_link(context_, page_links);
+                            }
+                            printed_toc_started = true;
+                            last_printed_toc_page = i;
+                            printed_toc_candidates.insert(
+                                printed_toc_candidates.end(),
+                                page_printed_candidates.begin(),
+                                page_printed_candidates.end());
+                        }
                     }
                 }
 
@@ -1674,7 +3391,76 @@ void Document::index_document(bool* invalid_flag) {
             super_fast_search_index_ready = true;
         }
 
-        created_top_level_toc_nodes = std::move(top_level_nodes);
+        std::vector<TocNode*> selected_created_toc_nodes;
+        bool prefer_created_toc = false;
+
+        if (should_build_created_toc) {
+            std::vector<std::wstring> local_page_labels;
+            {
+                std::lock_guard guard(page_dims_mutex);
+                local_page_labels = page_labels;
+            }
+            if (local_page_labels.size() != static_cast<size_t>(n) && indexed_page_labels.size() == static_cast<size_t>(n)) {
+                local_page_labels = indexed_page_labels;
+            }
+
+            toc_filter_heading_candidates(heading_toc_candidates, n);
+
+            std::vector<TocNode*> heading_nodes = toc_build_heading_tree(
+                heading_toc_candidates,
+                MAX_CREATED_TABLE_OF_CONTENTS_SIZE);
+            std::vector<ResolvedPrintedTocEntry> resolved_printed_entries = toc_resolve_printed_toc_entries(
+                printed_toc_candidates,
+                heading_toc_candidates,
+                local_page_labels,
+                n);
+            std::vector<TocNode*> printed_nodes = toc_build_printed_tree(
+                resolved_printed_entries,
+                MAX_CREATED_TABLE_OF_CONTENTS_SIZE);
+
+            int heading_count = toc_count_nodes(heading_nodes);
+            int printed_count = toc_count_nodes(printed_nodes);
+            bool printed_is_sensible = toc_nodes_are_printed_sensible(printed_nodes, n);
+
+            if (printed_is_sensible) {
+                selected_created_toc_nodes = std::move(printed_nodes);
+                toc_clear_nodes(heading_nodes);
+            }
+            else if (heading_count >= 2) {
+                selected_created_toc_nodes = std::move(heading_nodes);
+                toc_clear_nodes(printed_nodes);
+            }
+            else if (printed_count > 0) {
+                selected_created_toc_nodes = std::move(printed_nodes);
+                toc_clear_nodes(heading_nodes);
+            }
+            else {
+                toc_clear_nodes(heading_nodes);
+                toc_clear_nodes(printed_nodes);
+            }
+            if (printed_is_sensible) {
+                local_generated_page_links = toc_build_printed_toc_links(
+                    resolved_printed_entries,
+                    MAX_CREATED_TABLE_OF_CONTENTS_SIZE);
+            }
+
+            float generated_quality = toc_quality_score(selected_created_toc_nodes, n);
+            float native_quality = toc_quality_score(top_level_toc_nodes, n);
+            int generated_count = toc_count_nodes(selected_created_toc_nodes);
+            bool generated_is_useful = generated_count >= 2 && generated_quality > 0.0f;
+            prefer_created_toc = generated_is_useful &&
+                (top_level_toc_nodes.size() == 0 || native_toc_is_scrappy || generated_quality > native_quality + 4.0f);
+        }
+
+        toc_clear_nodes(created_top_level_toc_nodes);
+        created_top_level_toc_nodes = std::move(selected_created_toc_nodes);
+        should_use_created_toc = prefer_created_toc;
+        generated_page_links = std::move(local_generated_page_links);
+        cached_merged_pdf_links.clear();
+        flat_toc_names.clear();
+        flat_toc_pages.clear();
+        get_flat_toc(get_toc(), flat_toc_names, flat_toc_pages);
+        toc_model_generation++;
 
         document_indexing_mutex.unlock();
         is_indexing = false;
@@ -3170,6 +4956,14 @@ void Document::clear_toc_nodes() {
         clear_toc_node(node);
     }
     top_level_toc_nodes.clear();
+    for (auto node : created_top_level_toc_nodes) {
+        clear_toc_node(node);
+    }
+    created_top_level_toc_nodes.clear();
+    should_use_created_toc = false;
+    generated_page_links.clear();
+    cached_merged_pdf_links.clear();
+    toc_model_generation++;
 }
 
 void Document::clear_toc_node(TocNode* node) {
@@ -3276,16 +5070,20 @@ void Document::clear_document_caches() {
         fz_drop_link(context, page_link_pair.second);
     }
     cached_page_links.clear();
+    generated_page_links.clear();
     cached_merged_pdf_links.clear();
 
     delete cached_toc_model;
     cached_toc_model = nullptr;
+    cached_toc_model_generation = -1;
 
     super_fast_search_index.clear();
     super_fast_page_begin_indices.clear();
     super_fast_search_index_ready = false;
 
     clear_toc_nodes();
+    flat_toc_names.clear();
+    flat_toc_pages.clear();
 }
 
 

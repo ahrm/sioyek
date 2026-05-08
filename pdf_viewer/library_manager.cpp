@@ -82,6 +82,10 @@ void append_pdf_path_if_importable(const QFileInfo& file_info, std::vector<std::
         return;
     }
 
+    if (file_info.fileName().startsWith(".")) {
+        return;
+    }
+
     std::wstring file_path = file_info.absoluteFilePath().toStdWString();
     if (!LibraryManager::is_pdf_file(file_path)) {
         summary.files_skipped_not_pdf++;

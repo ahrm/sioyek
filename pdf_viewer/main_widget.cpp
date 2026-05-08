@@ -123,6 +123,7 @@ extern bool MULTILINE_MENUS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
 extern bool SORT_HIGHLIGHTS_BY_LOCATION;
 extern bool FLAT_TABLE_OF_CONTENTS;
+extern bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS;
 extern bool HOVER_OVERVIEW;
 extern bool WHEEL_ZOOM_ON_CURSOR;
 extern float MOVE_SCREEN_PERCENTAGE;
@@ -9071,6 +9072,11 @@ void MainWidget::handle_goto_toc() {
 
     }
     else {
+        Document* current_document = main_document_view->get_document();
+        if (current_document && current_document->get_is_indexing() && CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS) {
+            set_temporary_status_message(L"Generating table of contents; try again when indexing finishes");
+            return;
+        }
         show_error_message(L"This document doesn't have a table of contents");
     }
 }
@@ -11591,11 +11597,11 @@ bool MainWidget::event(QEvent* event) {
         // Apparently Qt doesn't send keyPressEvent for tab and backtab anymore, so we have to
         // manually handle them here.
         // todo: make sure this doesn't cause problems on linux and mac
-        //if (((ke->key() == Qt::Key_Tab) && (ke->modifiers() == 0)) || ((ke->key() == Qt::Key_Backtab) && (ke->modifiers() == Qt::ShiftModifier))) {
-        //    if (event->isAccepted()) {
-        //        key_event(false, ke);
-        //    }
-        //}
+        if (ke->key() == Qt::Key_Tab || ke->key() == Qt::Key_Backtab) {
+            key_event(false, ke, ke->isAutoRepeat());
+            event->accept();
+            return true;
+        }
     }
 
     if (event->type() == QEvent::WindowActivate) {

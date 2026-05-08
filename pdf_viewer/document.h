@@ -83,6 +83,7 @@ private:
 
     // automatically generated table of contents entries
     std::vector<TocNode*> created_top_level_toc_nodes;
+    bool should_use_created_toc = false;
     // flattened table of contents entries when we don't want to (or can't)
     // show a tree view (e.g. due to performance reasons on PC and lack of availablity on mobile)
     std::vector<std::wstring> flat_toc_names;
@@ -117,10 +118,13 @@ private:
     fz_context* context = nullptr;
     std::wstring file_name;
     std::unordered_map<int, fz_link*> cached_page_links;
+    std::map<int, std::vector<PdfLink>> generated_page_links;
     std::unordered_map<int, std::vector<PdfLink>> cached_merged_pdf_links;
     std::unordered_map<int, std::vector<PagelessDocumentRect>> cached_flat_words;
     std::unordered_map<int, std::vector<std::vector<PagelessDocumentRect>>> cached_flat_word_chars;
     QStandardItemModel* cached_toc_model = nullptr;
+    int toc_model_generation = 0;
+    int cached_toc_model_generation = -1;
 
     // accumulated page heights (i.e. the height of the page plus the height of all the pages before it)
     std::vector<float> accum_page_heights;

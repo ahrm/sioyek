@@ -63,6 +63,7 @@ protected:
     bool is_ruler_mode_ = false;
     std::optional<int> presentation_page_number;
     bool presentation_two_page_mode = false;
+    int last_page_move_direction = 1;
 
     float page_space_x = 0;
     float page_space_y = 0;
@@ -173,6 +174,7 @@ public:
     int get_center_page_number();
     void get_visible_pages(int window_height, std::vector<int>& visible_pages);
     void move_pages(int num_pages);
+    int get_last_page_move_direction() const;
     void move_screens(int num_screens);
     void reset_doc_state();
     void open_document(const std::wstring& doc_path, bool* invalid_flag, bool load_prev_state = true, std::optional<OpenedBookState> prev_state = {}, bool foce_load_dimensions = false);

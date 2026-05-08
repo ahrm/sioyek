@@ -86,7 +86,7 @@ std::wstring RIGHT_STATUS_BAR_FORMAT = L"%{auto_name}";
 
 float BLACK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float HIGHLIGHT_COLORS[26 * 3] = { \
-0.94, 0.64, 1.00, \
+1.00, 1.00, 0.00, \
 0.00, 0.46, 0.86, \
 0.60, 0.25, 0.00, \
 0.30, 0.00, 0.36, \
@@ -120,6 +120,7 @@ float SCROLL_ZOOM_INC_FACTOR = 1.2f;
 float VERTICAL_MOVE_AMOUNT = 1.0f;
 float HORIZONTAL_MOVE_AMOUNT = 1.0f;
 float MOVE_SCREEN_PERCENTAGE = 0.5f;
+bool ARROW_KEYS_NAVIGATE_PAGES = true;
 unsigned int CACHE_INVALID_MILIES = 1000;
 int PERSIST_MILIES = 1000 * 60;
 int PAGE_PADDINGS = 0;
@@ -223,7 +224,7 @@ bool HIGHLIGHT_MIDDLE_CLICK = false;
 float HYPERDRIVE_SPEED_FACTOR = 10.0f;
 float SMOOTH_SCROLL_SPEED = 3.0f;
 float SMOOTH_SCROLL_DRAG = 3000.0f;
-int PRERENDERED_PAGE_COUNT = 0;
+int PRERENDERED_PAGE_COUNT = 1;
 bool SHOW_RIGHT_CLICK_CONTEXT_MENU = false;
 bool ALLOW_MAIN_VIEW_SCROLL_WHILE_IN_OVERVIEW = false;
 std::wstring CONTEXT_MENU_ITEMS = L"";
@@ -966,6 +967,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"invert_selected_text", &INVERT_SELECTED_TEXT);
     add_bool(L"ignore_scroll_events", &IGNORE_SCROLL_EVENTS);
     add_bool(L"dont_center_if_synctex_rect_is_visible", &DONT_FOCUS_IF_SYNCTEX_RECT_IS_VISIBLE);
+    add_bool(L"arrow_keys_navigate_pages", &ARROW_KEYS_NAVIGATE_PAGES);
     add_bool(L"gg_uses_labels", &GG_USES_LABELS);
     add_bool(L"should_use_multiple_monitors", &SHOULD_USE_MULTIPLE_MONITORS);
     add_bool(L"paper_download_should_create_portal", &PAPER_DOWNLOAD_CREATE_PORTAL);

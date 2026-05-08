@@ -803,6 +803,7 @@ void DocumentView::get_visible_pages(int window_height, std::vector<int>& visibl
 void DocumentView::move_pages(int num_pages) {
     if (!current_document) return;
     if (num_pages == 0) return;
+    last_page_move_direction = num_pages > 0 ? 1 : -1;
 
     int current_page = get_center_page_number();
     if (current_page == -1) {
@@ -831,6 +832,10 @@ void DocumentView::move_pages(int num_pages) {
     int padding = two_page_mode ? page_space_y : PAGE_PADDINGS;
 
     move_virtual(0, num_pages * (current_document->get_page_height(current_page) + padding));
+}
+
+int DocumentView::get_last_page_move_direction() const {
+    return last_page_move_direction;
 }
 
 void DocumentView::move_screens(int num_screens) {

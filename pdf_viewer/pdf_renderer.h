@@ -71,6 +71,7 @@ class PdfRenderer : public QObject {
     std::map<std::pair<int, std::wstring>, fz_document*> opened_documents;
 
     std::vector<RenderRequest> pending_render_requests;
+    std::vector<RenderRequest> pending_prerender_requests;
     std::optional<SearchRequest> pending_search_request;
     std::vector<RenderResponse> cached_responses;
     std::vector<std::thread> worker_threads;
@@ -120,7 +121,7 @@ public:
     bool is_busy();
     bool is_search_busy();
     //should only be called from the main thread
-    void add_request(std::wstring document_path, int page, bool should_render_annotations, float zoom_level, float display_scale, int index, int num_h_slices, int num_v_slices);
+    void add_request(std::wstring document_path, int page, bool should_render_annotations, float zoom_level, float display_scale, int index, int num_h_slices, int num_v_slices, bool is_prerender_request = false);
     void add_request(std::wstring document_path,
         int page,
         std::wstring term,
@@ -132,7 +133,7 @@ public:
         std::optional<std::pair<int,
         int>> range = {});
 
-    GLuint find_rendered_page(std::wstring path, int page, bool should_render_annotations, int index, int num_h_slices, int num_v_slices, float zoom_level, float display_scale, int* page_width, int* page_height);
+    GLuint find_rendered_page(std::wstring path, int page, bool should_render_annotations, int index, int num_h_slices, int num_v_slices, float zoom_level, float display_scale, int* page_width, int* page_height, bool is_prerender_request = false);
     void delete_old_pages(bool force_all = false, bool invalidate_all = false);
     void add_password(std::wstring path, std::string password);
     void debug();

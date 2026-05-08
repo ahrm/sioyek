@@ -58,6 +58,7 @@ extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
 extern bool SHOW_MOST_RECENT_COMMANDS_FIRST;
 extern bool INCREMENTAL_SEARCH;
 extern bool GG_USES_LABELS;
+extern bool ARROW_KEYS_NAVIGATE_PAGES;
 
 extern float SMOOTH_MOVE_MAX_VELOCITY;
 bool is_command_string_modal(const std::wstring& command_name) {
@@ -4164,39 +4165,50 @@ public:
     bool requires_document() { return false; }
 };
 
-class LibraryImportFolderCommand : public TextCommand {
+class LibraryImportFolderCommandBase : public Command {
+private:
+    std::optional<std::wstring> folder_path = {};
+    bool recursive = false;
+
+public:
+    LibraryImportFolderCommandBase(std::string name, MainWidget* w, bool recursive_) : Command(name, w), recursive(recursive_) {}
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (folder_path.has_value()) {
+            return {};
+        }
+        return Requirement{ RequirementType::Folder, "Folder path" };
+    }
+
+    void set_file_requirement(std::wstring value) {
+        folder_path = value;
+    }
+
+    void set_text_requirement(std::wstring value) {
+        folder_path = value;
+    }
+
+    void perform() {
+        widget->handle_library_import_folder(folder_path.value_or(L""), recursive);
+    }
+
+    bool requires_document() { return false; }
+};
+
+class LibraryImportFolderCommand : public LibraryImportFolderCommandBase {
 public:
     static inline const std::string cname = "library_import_folder";
     static inline const std::string hname = "Import PDFs from a folder into the library";
-    LibraryImportFolderCommand(MainWidget* w) : TextCommand(cname, w) {}
-
-    std::string text_requirement_name() {
-        return "Folder path";
-    }
-
-    void perform() {
-        widget->handle_library_import_folder(text.value_or(L""), false);
-    }
-
-    bool requires_document() { return false; }
+    LibraryImportFolderCommand(MainWidget* w) : LibraryImportFolderCommandBase(cname, w, false) {}
 };
 
-class LibraryImportFolderRecursiveCommand : public TextCommand {
+class LibraryImportFolderRecursiveCommand : public LibraryImportFolderCommandBase {
 public:
     static inline const std::string cname = "library_import_folder_recursive";
     static inline const std::string hname = "Recursively import PDFs from a folder into the library and group nested PDFs by relative subfolder";
-    LibraryImportFolderRecursiveCommand(MainWidget* w) : TextCommand(cname, w) {}
-
-    std::string text_requirement_name() {
-        return "Folder path";
-    }
-
-    void perform() {
-        widget->handle_library_import_folder(text.value_or(L""), true);
-    }
-
-    bool requires_document() { return false; }
+    LibraryImportFolderRecursiveCommand(MainWidget* w) : LibraryImportFolderCommandBase(cname, w, true) {}
 };
+
 
 class LibraryImportFolderToCollectionCommandBase : public Command {
 private:
@@ -4209,7 +4221,7 @@ public:
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
         if (!folder_path.has_value()) {
-            return Requirement{ RequirementType::Text, "Folder path" };
+            return Requirement{ RequirementType::Folder, "Folder path" };
         }
         if (!collection_name.has_value()) {
             return Requirement{ RequirementType::Generic, "Collection" };
@@ -4218,6 +4230,10 @@ public:
     }
 
     void set_text_requirement(std::wstring value) {
+        folder_path = value;
+    }
+
+    void set_file_requirement(std::wstring value) {
         folder_path = value;
     }
 
@@ -10189,6 +10205,16 @@ std::unique_ptr<Command> InputHandler::handle_key(MainWidget* w, QKeyEvent* key_
             number_stack.push_back('0' + key - Qt::Key::Key_0);
             return nullptr;
         }
+    }
+    if (ARROW_KEYS_NAVIGATE_PAGES && current_node == root &&
+        !shift_pressed && !control_pressed && !alt_pressed && !command_pressed &&
+        (key == Qt::Key::Key_Left || key == Qt::Key::Key_Right)) {
+        *num_repeats = 0;
+        if (number_stack.size() > 0) {
+            *num_repeats = atoi(number_stack.c_str());
+            number_stack.clear();
+        }
+        return command_manager->get_command_with_name(w, key == Qt::Key::Key_Right ? "next_page" : "previous_page");
     }
 
     for (InputParseTreeNode* child : current_node->children) {
