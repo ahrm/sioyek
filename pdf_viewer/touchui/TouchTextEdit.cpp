@@ -2,7 +2,7 @@
 #include "utils.h"
 
 
-TouchTextEdit::TouchTextEdit(QString name, QString initial_value, QWidget* parent) : QWidget(parent) {
+TouchTextEdit::TouchTextEdit(QString name, QString initial_value, bool is_password, QWidget* parent) : QWidget(parent) {
 
 
     setAttribute(Qt::WA_NoMousePropagation);
@@ -15,6 +15,7 @@ TouchTextEdit::TouchTextEdit(QString name, QString initial_value, QWidget* paren
 
     quick_widget->rootContext()->setContextProperty("_initialValue", initial_value);
     quick_widget->rootContext()->setContextProperty("_name", name);
+    quick_widget->rootContext()->setContextProperty("_isPassword", is_password);
 
     quick_widget->setSource(QUrl("qrc:/pdf_viewer/touchui/TouchTextEdit.qml"));
 

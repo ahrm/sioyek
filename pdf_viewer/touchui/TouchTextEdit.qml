@@ -21,6 +21,7 @@ Rectangle {
         color: "white"
         text: _initialValue
         focus: true
+        echoMode: _isPassword ? TextInput.Password : TextInput.Normal
         wrapMode: TextInput.WrapAnywhere
         onAccepted:{
             root.confirmed(edit.text);

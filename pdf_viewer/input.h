@@ -74,6 +74,7 @@ public:
     virtual void on_key_hold();
     virtual void on_text_change(const QString& new_text);
     virtual std::optional<QString> get_file_path_requirement_root_dir();
+    virtual bool masks_text();
 
     void set_next_requirement_with_string(std::wstring str);
 

@@ -947,6 +947,10 @@ std::optional<QString> Command::get_file_path_requirement_root_dir(){
     return {};
 }
 
+bool Command::masks_text() {
+    return false;
+}
+
 void Command::perform_up() {
 }
 
@@ -5526,6 +5530,10 @@ public:
 
     std::string text_requirement_name() {
         return "Password";
+    }
+
+    bool masks_text() override {
+        return true;
     }
 };
 

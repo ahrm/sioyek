@@ -3571,7 +3571,7 @@ void MainWidget::show_mark_selector() {
         });
 }
 
-void MainWidget::show_textbar(const std::wstring& command_name, const std::wstring& initial_value) {
+void MainWidget::show_textbar(const std::wstring& command_name, const std::wstring& initial_value, bool mask_input) {
     QString init = "";
     text_suggestion_index = 0;
 
@@ -3580,7 +3580,7 @@ void MainWidget::show_textbar(const std::wstring& command_name, const std::wstri
     }
     if (TOUCH_MODE) {
 
-        TouchTextEdit* edit_widget = new TouchTextEdit(QString::fromStdWString(command_name), init, this);
+        TouchTextEdit* edit_widget = new TouchTextEdit(QString::fromStdWString(command_name), init, mask_input, this);
 
         QObject::connect(edit_widget, &TouchTextEdit::confirmed, [&](QString text) {
             pop_current_widget();
@@ -3603,6 +3603,11 @@ void MainWidget::show_textbar(const std::wstring& command_name, const std::wstri
             text_command_line_edit->setText(init);
         }
         text_command_line_edit_label->setText(QString::fromStdWString(command_name));
+        if (mask_input) {
+            text_command_line_edit->setEchoMode(QLineEdit::Password);
+        } else {
+            text_command_line_edit->setEchoMode(QLineEdit::Normal);
+        }
         text_command_line_edit_container->show();
         text_command_line_edit->setFocus();
         if (initial_value.size() > 0) {
@@ -5730,7 +5735,7 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
 
             Requirement next_requirement = pending_command_instance->next_requirement(this).value();
             if (next_requirement.type == RequirementType::Text) {
-                show_textbar(utf8_decode(next_requirement.name), pending_command_instance->get_text_default_value());
+                show_textbar(utf8_decode(next_requirement.name), pending_command_instance->get_text_default_value(), pending_command_instance->masks_text());
             }
             else if (next_requirement.type == RequirementType::Symbol) {
                 if (TOUCH_MODE) {
@@ -10467,6 +10472,7 @@ DocumentView* MainWidget::helper_document_view(){
 
 void MainWidget::hide_command_line_edit(){
     text_command_line_edit->setText("");
+    text_command_line_edit->setEchoMode(QLineEdit::Normal);
     text_command_line_edit_container->hide();
     hide_command_hints();
     text_suggestion_index = 0;
