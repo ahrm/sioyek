@@ -64,7 +64,8 @@ enum class DrawingMode {
 enum class SelectionMode {
     Character,
     Word,
-    Line
+    Line,
+    Label
 };
 
 struct MenuNode {
@@ -134,6 +135,12 @@ enum class PaperDownloadFinishedAction {
     Portal
 };
 
+struct SelectionInfo{
+    DocumentView* doc_view;
+    AbsoluteDocumentPos begin;
+    AbsoluteDocumentPos end;
+    SelectionMode selection_mode;
+};
 
 // if we inherit from QWidget there are problems on high refresh rate smartphone displays
 struct WindowState;
@@ -227,6 +234,9 @@ public:
     // begin/end position of the current text selection
     AbsoluteDocumentPos selection_begin;
     AbsoluteDocumentPos selection_end;
+
+    SelectionInfo prev_selection; 
+    SelectionInfo current_selection; 
 
     // when moving the text selection using keyboard, `selection_begin` and `selection_end`
     // might be out of sync with `selected_text_`. `selected_text_is_dirty` is true when this
@@ -645,6 +655,7 @@ public:
     void handle_show_marks();
     void handle_goto_bookmark_global();
     std::wstring handle_add_highlight(char symbol);
+				void select_previous_selection();
     void handle_goto_highlight();
     void handle_goto_highlight_global();
     void handle_goto_toc();
@@ -701,6 +712,8 @@ public:
     // Text selection indicators in touch mode
     SelectionIndicator* selection_begin_indicator = nullptr;
     SelectionIndicator* selection_end_indicator = nullptr;
+    SelectionIndicator* prev_selection_begin_indicator = nullptr;
+    SelectionIndicator* prev_selection_end_indicator = nullptr;
 
     // When in touch mode, sometimes we use the last touch hold point for some commands
     // for example, if select text button is pressed, we select the text under the last touch hold point
@@ -1045,6 +1058,7 @@ public:
     void select_next_char();
     void unselect_last_char();
     void select_word_under_cursor();
+    void set_selection_info(struct SelectionInfo* select1, struct SelectionInfo select2);
 };
 
 MainWidget* get_window_with_window_id(int window_id);

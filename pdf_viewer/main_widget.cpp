@@ -105,6 +105,7 @@ extern "C" void hideWindowTitleBar(WId);
 
 extern int next_window_id;
 
+extern bool VERBOSE;
 extern bool SHOULD_USE_MULTIPLE_MONITORS;
 extern bool MULTILINE_MENUS;
 extern bool SORT_BOOKMARKS_BY_LOCATION;
@@ -2723,6 +2724,12 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
     else {
         selection_end = abs_doc_pos;
 
+        if( main_document_view->selected_character_rects.size()>0 || selection_mode==SelectionMode::Label){
+        
+            set_selection_info(&prev_selection, current_selection);
+            set_selection_info(&current_selection, SelectionInfo{main_document_view, selection_begin, selection_end, selection_mode});
+
+        }
         is_selecting = false;
         is_dragging = false;
 
@@ -5361,6 +5368,7 @@ void MainWidget::add_portal(std::wstring source_path, Portal new_link) {
 }
 
 void MainWidget::handle_keyboard_select(const std::wstring& text) {
+    selection_mode = SelectionMode::Label;
     if (text[0] == '#') {
         // we can select text using window-space coordinates.
         // this is not something that the user should be able to do, but it's useful for scripts.
@@ -5567,7 +5575,11 @@ void MainWidget::set_point_select_mode(bool mode) {
 }
 
 void MainWidget::clear_selected_rect() {
+
+    std::optional<AbsoluteRect> _rect =  opengl_widget->get_selected_rectangle();
     opengl_widget->clear_selected_rectangle();
+
+    set_selection_info(&prev_selection, current_selection);
     //rect_select_mode = false;
     //rect_select_begin = {};
     //rect_select_end = {};
@@ -6129,6 +6141,23 @@ std::wstring MainWidget::handle_add_highlight(char symbol) {
         change_selected_highlight_type(symbol);
         return utf8_decode(doc()->get_highlight_index_uuid(selected_highlight_index));
     }
+}
+
+void MainWidget::select_previous_selection(){
+    if(prev_selection.doc_view != main_document_view)return;
+
+    if(prev_selection.selection_mode != SelectionMode::Line)
+        main_document_view->get_text_selection(prev_selection.begin,
+                prev_selection.end,
+                prev_selection.selection_mode == SelectionMode::Word,
+                main_document_view->selected_character_rects,
+                selected_text);
+    else
+        main_document_view->get_line_selection(prev_selection.begin,
+                prev_selection.end,
+                main_document_view->selected_character_rects,
+                selected_text);
+
 }
 
 void MainWidget::change_selected_highlight_type(char new_type) {
@@ -7068,11 +7097,14 @@ void MainWidget::clear_selection_indicators() {
         selection_begin_indicator->hide();
         selection_end_indicator->hide();
         get_text_selection_buttons()->hide();
-        delete selection_begin_indicator;
-        delete selection_end_indicator;
-        //delete text_selection_buttons;
-        selection_begin_indicator = nullptr;
-        selection_end_indicator = nullptr;
+
+								if(prev_selection_begin_indicator != selection_begin_indicator)
+										delete prev_selection_begin_indicator;
+								if(prev_selection_end_indicator != selection_end_indicator)
+										delete prev_selection_end_indicator;
+
+        prev_selection_begin_indicator = selection_begin_indicator;
+								prev_selection_end_indicator = selection_end_indicator;
         //text_selection_buttons = nullptr;
     }
 }
@@ -12113,4 +12145,11 @@ void MainWidget::select_word_under_cursor() {
         true,
         main_document_view->selected_character_rects,
         selected_text);
+}
+
+void MainWidget::set_selection_info(struct SelectionInfo* select1, struct SelectionInfo select2){
+    select1->doc_view = select2.doc_view;
+    select1->selection_mode = select2.selection_mode;
+    select1->begin = select2.begin;
+    select1->end =select2.end;
 }
