@@ -757,6 +757,7 @@ int main(int argc, char* args[]) {
         global_database_file_path = SHARED_DATABASE_PATH;
     }
     char* shared_database_path_arg = get_argv_value(argc, args, "--shared-database-path");
+    bool has_explicit_shared_db = (SHARED_DATABASE_PATH.size() > 0) || (shared_database_path_arg != nullptr);
     if (shared_database_path_arg) {
         global_database_file_path = utf8_decode(std::string(shared_database_path_arg));
     }
@@ -812,13 +813,32 @@ int main(int argc, char* args[]) {
     delete parser;
 
     DatabaseManager db_manager;
-    if (local_database_file_path.file_exists() && global_database_file_path.file_exists()) {
-        db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
+    bool database_opened = false;
+    bool split_db_files_exist = local_database_file_path.file_exists() && global_database_file_path.file_exists();
+    bool legacy_db_exists = database_file_path.file_exists();
+    bool should_bootstrap_legacy_for_explicit = has_explicit_shared_db && !split_db_files_exist && legacy_db_exists;
+    if (should_bootstrap_legacy_for_explicit) {
+        database_opened = db_manager.open(database_file_path.get_path(), database_file_path.get_path());
+    }
+    else if (has_explicit_shared_db) {
+        database_opened = db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
+    }
+    else if (split_db_files_exist) {
+        database_opened = db_manager.open(local_database_file_path.get_path(), global_database_file_path.get_path());
     }
     else {
-        db_manager.open(database_file_path.get_path(), database_file_path.get_path());
+        database_opened = db_manager.open(database_file_path.get_path(), database_file_path.get_path());
     }
-    db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path());
+
+    if (!database_opened) {
+        std::cerr << "Failed to open database files. Exiting." << std::endl;
+        return -1;
+    }
+
+    if (!db_manager.ensure_database_compatibility(local_database_file_path.get_path(), global_database_file_path.get_path())) {
+        std::cerr << "Database compatibility/migration failed. Exiting." << std::endl;
+        return -1;
+    }
     db_manager.ensure_schema_compatibility();
 
 

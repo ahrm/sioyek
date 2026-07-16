@@ -108,10 +108,10 @@ public:
     bool get_prev_path_hash_pairs(std::vector<std::pair<std::wstring, std::wstring>>& out_pairs);
     bool insert_document_hash(const std::wstring& path, const std::string& checksum);
     void upgrade_database_hashes();
-    void split_database(const std::wstring& local_database_path, const std::wstring& global_database_path, bool was_using_hashes);
+    bool split_database(const std::wstring& local_database_path, const std::wstring& global_database_path, bool was_using_hashes);
     void export_json(std::wstring json_file_path, CachedChecksummer* checksummer);
     void import_json(std::wstring json_file_path, CachedChecksummer* checksummer);
-    void ensure_database_compatibility(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path);
+    bool ensure_database_compatibility(const std::wstring& local_db_file_path, const std::wstring& global_db_file_path);
     void ensure_schema_compatibility();
     int get_version();
     int set_version();
@@ -145,5 +145,4 @@ public:
     bool generic_insert_run_query(std::string table_name,
         std::vector<std::pair<std::string, QVariant>> values);
 };
-
 
