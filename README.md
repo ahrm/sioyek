@@ -162,29 +162,18 @@ build_windows.bat
 ```
 
 ### Mac
-1. Uninstall previous Qt6 installed by Homebrew
-2. Install Xcode.
-3. Install Qt6.
+1. Install Xcode command line tools.
+2. Install the Homebrew dependencies. The macOS build uses Homebrew bottles for Qt and MuPDF instead of building the vendored submodules.
 ```
-pip install aqtinstall
-cd /path/to/qt
-aqt install-qt mac desktop 6.8.2 clang_64 -m all
-export Qt6_DIR=/path/to/qt/6.8.2/macos/
-export QT_PLUGIN_PATH=/path/to/qt/6.8.2/macos/plugins
-export PKG_CONFIG_PATH=/path/to/qt/6.8.2/macos/lib/pkgconfig
-export QML2_IMPORT_PATH=/path/to/qt/6.8.2/macos/qml
-export PATH="/path/to/qt/6.8.2/macos/bin:$PATH"
+brew install cmake mupdf qtspeech
 ```
-4. Clone the repository, build and install:
+3. Clone the repository, build and install:
 ```
-git clone --recursive --branch development https://github.com/ahrm/sioyek
+git clone --branch development https://github.com/ahrm/sioyek
 cd sioyek
-chmod +x build_mac.sh
-setopt PIPE_FAIL PRINT_EXIT_VALUE ERR_RETURN SOURCE_TRACE XTRACE
 MAKE_PARALLEL=8 ./build_mac.sh
 
-mv build/sioyek.app /Applications/
-sudo codesign --force --sign - --deep /Applications/sioyek.app
+mv build/package/sioyek.app /Applications/
 ```
 
 ## Donation
