@@ -18,6 +18,7 @@ jobs:
         version: '6.11.*'
         modules: 'all'
         cache: true
+        aqtsource: 'git+https://github.com/miurahr/aqtinstall.git'
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v3
