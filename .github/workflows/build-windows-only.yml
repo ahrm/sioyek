@@ -26,6 +26,20 @@ jobs:
         git fetch --depth 1 origin tag ${{ steps.mupdf-tag.outputs.tag }}
         git checkout ${{ steps.mupdf-tag.outputs.tag }}
 
+    - name: Determine latest 1.x zlib tag
+      id: zlib-tag
+      working-directory: zlib
+      shell: bash
+      run: |
+        TAG=$(git ls-remote --tags origin 'v1.*' | grep -v '\^{}' | awk -F/ '{print $NF}' | sort -V | tail -n1)
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+    - name: Pin zlib to latest 1.x
+      working-directory: zlib
+      run: |
+        git fetch --depth 1 origin tag ${{ steps.zlib-tag.outputs.tag }}
+        git checkout ${{ steps.zlib-tag.outputs.tag }}
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
