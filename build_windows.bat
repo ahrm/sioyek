@@ -17,11 +17,17 @@ cp pdf_viewer\keys.config sioyek-release-windows\keys.config
 cp pdf_viewer\prefs.config sioyek-release-windows\prefs.config
 cp -r pdf_viewer\shaders sioyek-release-windows\shaders
 cp tutorial.pdf sioyek-release-windows\tutorial.pdf
+
 windeployqt --qmldir ./pdf_viewer/touchui --release sioyek-release-windows\sioyek.exe
 REM windeployqt sioyek-release-windows\sioyek.exe
+
+REM Overwrite Qt's default vcruntime with the secure ones pulled from System32
+cp windows_runtime\vcruntime140.dll sioyek-release-windows\vcruntime140.dll
 cp windows_runtime\vcruntime140_1.dll sioyek-release-windows\vcruntime140_1.dll
-cp windows_runtime\libssl-1_1-x64.dll sioyek-release-windows\libssl-1_1-x64.dll
-cp windows_runtime\libcrypto-1_1-x64.dll sioyek-release-windows\libcrypto-1_1-x64.dll
+
+REM Feed Qt6 the OpenSSL 3 DLLs it expects to find at runtime
+cp openssl_build\bin\libssl-3-x64.dll sioyek-release-windows\libssl-3-x64.dll
+cp openssl_build\bin\libcrypto-3-x64.dll sioyek-release-windows\libcrypto-3-x64.dll
 
 if %1 == portable (
     cp pdf_viewer\keys_user.config sioyek-release-windows\keys_user.config
