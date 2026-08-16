@@ -42,13 +42,12 @@ jobs:
       with:
         arch: x64
 
-    - name: Get Latest OpenSSL Version
+    - name: Get Latest OpenSSL 3.x Version
       id: get-openssl
-      shell: pwsh
+      shell: bash
       run: |
-        $release = Invoke-RestMethod "https://api.github.com/repos/openssl/openssl/releases/latest"
-        $version = $release.tag_name
-        echo "version=$version" >> $env:GITHUB_OUTPUT
+        VERSION=$(git ls-remote --tags https://github.com/openssl/openssl.git 'openssl-3.*' | grep -v '\^{}' | awk -F/ '{print $NF}' | sort -V | tail -n1)
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
     - name: Cache OpenSSL
       id: openssl-cache
