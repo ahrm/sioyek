@@ -1,0 +1,106 @@
+name: Build Windows Portable
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        submodules: 'recursive'
+
+    - name: Determine latest 1.26.x MuPDF tag
+      id: mupdf-tag
+      working-directory: mupdf
+      shell: bash
+      run: |
+        TAG=$(git ls-remote --tags origin '1.26.*' | grep -v '\^{}' | awk -F/ '{print $NF}' | sort -V | tail -n1)
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+    - name: Pin MuPDF to latest 1.26.x
+      working-directory: mupdf
+      run: |
+        git fetch --depth 1 origin tag ${{ steps.mupdf-tag.outputs.tag }}
+        git checkout ${{ steps.mupdf-tag.outputs.tag }}
+
+    - name: Determine latest 1.x zlib tag
+      id: zlib-tag
+      working-directory: zlib
+      shell: bash
+      run: |
+        TAG=$(git ls-remote --tags origin 'v1.*' | grep -v '\^{}' | awk -F/ '{print $NF}' | sort -V | tail -n1)
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+    - name: Pin zlib to latest 1.x
+      working-directory: zlib
+      run: |
+        git fetch --depth 1 origin tag ${{ steps.zlib-tag.outputs.tag }}
+        git checkout ${{ steps.zlib-tag.outputs.tag }}
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.11.*'
+        modules: 'all'
+        cache: true
+        aqtsource: 'git+https://github.com/miurahr/aqtinstall.git'
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v3
+
+    - name: Add msvc-dev-cmd
+      uses: TheMrMilchmann/setup-msvc-dev@v4
+      with:
+        arch: x64
+
+    - name: Get Latest OpenSSL 3.x Version
+      id: get-openssl
+      shell: bash
+      run: |
+        VERSION=$(git ls-remote --tags https://github.com/openssl/openssl.git 'openssl-3.*' | grep -v '\^{}' | awk -F/ '{print $NF}' | sort -V | tail -n1)
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Cache OpenSSL
+      id: openssl-cache
+      uses: actions/cache@v6
+      with:
+        path: openssl_build
+        key: ${{ runner.os }}-openssl-${{ steps.get-openssl.outputs.version }}
+
+    - name: Build OpenSSL
+      if: steps.openssl-cache.outputs.cache-hit != 'true'
+      shell: cmd
+      run: |
+        curl -sLO https://github.com/openssl/openssl/releases/download/${{ steps.get-openssl.outputs.version }}/${{ steps.get-openssl.outputs.version }}.tar.gz
+        tar -xzf ${{ steps.get-openssl.outputs.version }}.tar.gz
+        cd ${{ steps.get-openssl.outputs.version }}
+        perl Configure VC-WIN64A no-asm --prefix=%GITHUB_WORKSPACE%\openssl_build
+        nmake
+        nmake install_sw
+
+    - name: Cache MuPDF build
+      uses: actions/cache@v6
+      with:
+        path: mupdf\platform\win32\x64
+        key: ${{ runner.os }}-mupdf-${{ steps.mupdf-tag.outputs.tag }}
+
+    - name: Update VC Runtime DLLs
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path "windows_runtime"
+        Copy-Item "C:\Windows\System32\vcruntime140.dll" -Destination "windows_runtime\vcruntime140.dll" -Force
+        Copy-Item "C:\Windows\System32\vcruntime140_1.dll" -Destination "windows_runtime\vcruntime140_1.dll" -Force
+
+    - name: Build Sioyek (portable)
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: .\build_windows.bat portable
+
+    - name: Upload Windows portable artifact
+      uses: actions/upload-artifact@v7
+      with:
+        path: sioyek-release-windows-portable.zip
+        archive: false
+        retention-days: 7
