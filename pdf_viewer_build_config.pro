@@ -153,10 +153,6 @@ win32{
     # enable multiprocessor compilation
     QMAKE_CXXFLAGS += /MP
 
-    # enable C++20 for designated initializers
-    CONFIG -= c++17
-    CONFIG += c++20
-
     DEFINES += _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE NOMINMAX
     RC_ICONS = pdf_viewer\icon2.ico
 
