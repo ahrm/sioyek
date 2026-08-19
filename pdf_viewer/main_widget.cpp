@@ -101,8 +101,36 @@ extern "C" {
 
 #ifdef Q_OS_MACOS
 extern "C" void changeTitlebarColor(WId, double, double, double, double);
-extern "C" void hideWindowTitleBar(WId);
 #endif
+
+static void set_titlebar_visible(QWidget* widget, bool visible, bool should_show) {
+    if (widget == nullptr) {
+        return;
+    }
+
+    Qt::WindowFlags flags = widget->windowFlags();
+    if (visible) {
+        flags &= ~Qt::CustomizeWindowHint;
+        flags |= Qt::WindowContextHelpButtonHint;
+        flags |= Qt::WindowSystemMenuHint;
+        flags |= Qt::WindowMinMaxButtonsHint;
+        flags |= Qt::WindowCloseButtonHint;
+        flags |= Qt::WindowTitleHint;
+    }
+    else {
+        flags |= Qt::CustomizeWindowHint;
+        flags &= ~Qt::WindowContextHelpButtonHint;
+        flags &= ~Qt::WindowSystemMenuHint;
+        flags &= ~Qt::WindowMinMaxButtonsHint;
+        flags &= ~Qt::WindowCloseButtonHint;
+        flags &= ~Qt::WindowTitleHint;
+    }
+
+    widget->setWindowFlags(flags);
+    if (should_show) {
+        widget->show();
+    }
+}
 
 extern int next_window_id;
 
@@ -1363,7 +1391,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     }
 
     if (MACOS_HIDE_TITLEBAR) {
-        hideWindowTitleBar(winId());
+        set_titlebar_visible(this, false, false);
     }
     menu_bar = create_main_menu_bar();
     setMenuBar(menu_bar);
@@ -4461,7 +4489,7 @@ void MainWidget::apply_window_params_for_two_window_mode() {
 
 #ifdef Q_OS_MACOS
     if (MACOS_HIDE_TITLEBAR) {
-        hideWindowTitleBar(helper_window->winId());
+        set_titlebar_visible(helper_window, false, false);
     }
 #endif
     //int main_window_width = QApplication::desktop()->screenGeometry(0).width();
@@ -5106,28 +5134,7 @@ void MainWidget::toggle_statusbar() {
 }
 
 void MainWidget::toggle_titlebar() {
-
-    Qt::WindowFlags flags = windowFlags();
-    if (flags.testFlag(Qt::WindowTitleHint)) {
-        flags |= Qt::CustomizeWindowHint;
-        flags &= ~Qt::WindowContextHelpButtonHint;
-        flags &= ~Qt::WindowSystemMenuHint;
-        flags &= ~Qt::WindowMinMaxButtonsHint;
-        flags &= ~Qt::WindowCloseButtonHint;
-        flags &= ~Qt::WindowTitleHint;
-        setWindowFlags(flags);
-
-    }
-    else {
-        flags &= ~Qt::CustomizeWindowHint;
-        flags |= Qt::WindowContextHelpButtonHint;
-        flags |= Qt::WindowSystemMenuHint;
-        flags |= Qt::WindowMinMaxButtonsHint;
-        flags |= Qt::WindowCloseButtonHint;
-        flags |= Qt::WindowTitleHint;
-        setWindowFlags(flags);
-    }
-    show();
+    set_titlebar_visible(this, !windowFlags().testFlag(Qt::WindowTitleHint), true);
 }
 
 
@@ -8058,6 +8065,13 @@ void MainWidget::on_configs_changed(std::vector<std::string>* config_names) {
         if (confname == "macos_titlebar_color"){
             changeTitlebarColor(winId(), MACOS_TITLEBAR_COLOR[0], MACOS_TITLEBAR_COLOR[1], MACOS_TITLEBAR_COLOR[2], 1.0f);
         }
+        if (confname == "macos_hide_titlebar") {
+            set_titlebar_visible(this, !MACOS_HIDE_TITLEBAR, true);
+            if (helper_opengl_widget_ != nullptr) {
+                QWidget* helper_window = get_top_level_widget(helper_opengl_widget_);
+                set_titlebar_visible(helper_window, !MACOS_HIDE_TITLEBAR, helper_window->isVisible());
+            }
+        }
 #endif
         if (confname == "use_system_theme") {
             set_color_mode_to_system_theme();
@@ -10520,7 +10534,7 @@ void MainWidget::initialize_helper(){
 #ifdef Q_OS_MACOS
     QWidget* helper_window = get_top_level_widget(helper_opengl_widget_);
     if (MACOS_HIDE_TITLEBAR) {
-        hideWindowTitleBar(helper_window->winId());
+        set_titlebar_visible(helper_window, false, false);
     }
     helper_opengl_widget_->show();
     helper_opengl_widget_->hide();
