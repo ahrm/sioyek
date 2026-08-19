@@ -932,9 +932,9 @@ void PdfViewOpenGLWidget::render_overview(OverviewState overview) {
     draw_overview_background();
 
 
-    render_page(page, true, ColorPalette::None, false);
-    render_page(page-1, true, ColorPalette::None, false);
-    render_page(page+1, true, ColorPalette::None, false);
+    render_page(page, true, ColorPalette::None, true);
+    render_page(page-1, true, ColorPalette::None, true);
+    render_page(page+1, true, ColorPalette::None, true);
 
     std::optional<SearchResult> highlighted_result = get_current_search_result();
     // highlight the overview search result
@@ -1222,37 +1222,65 @@ void PdfViewOpenGLWidget::render_page(int page_number, bool in_overview, ColorPa
             disable_stencil();
         }
 
-        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (!in_overview) && (forced_color_palette == ColorPalette::None) && (stencils_allowed)) {
+        if ((get_current_color_mode() != Normal) && (PRESERVE_IMAGE_COLORS) && (forced_color_palette == ColorPalette::None) && (stencils_allowed)) {
             // render images in forced palette mode
-            fz_stext_page * stext_page = document_view->get_document()->get_stext_with_page_number(page_number);
+            fz_stext_page * stext_page = doc(in_overview)->get_stext_with_page_number(page_number);
             std::vector<PagelessDocumentRect> image_rects;
-            for (fz_stext_block* blk = stext_page->first_block; blk != nullptr; blk = blk->next) {
-                if (blk->type == FZ_STEXT_BLOCK_IMAGE) {
-                        float im_x = blk->u.i.transform.e;
-                        float im_y = blk->u.i.transform.f;
-                        float im_w = blk->u.i.transform.a;
-                        float im_h = blk->u.i.transform.d;
-                        PagelessDocumentRect image_rect;
-                        image_rect.x0 = im_x;
-                        image_rect.x1 = im_x + im_w;
-                        image_rect.y0 = im_y;
-                        image_rect.y1 = im_y + im_h;
-                        image_rects.push_back(image_rect);
+            if (stext_page) {
+                for (fz_stext_block* blk = stext_page->first_block; blk != nullptr; blk = blk->next) {
+                    if (blk->type == FZ_STEXT_BLOCK_IMAGE) {
+                            float im_x = blk->u.i.transform.e;
+                            float im_y = blk->u.i.transform.f;
+                            float im_w = blk->u.i.transform.a;
+                            float im_h = blk->u.i.transform.d;
+                            PagelessDocumentRect image_rect;
+                            image_rect.x0 = im_x;
+                            image_rect.x1 = im_x + im_w;
+                            image_rect.y0 = im_y;
+                            image_rect.y1 = im_y + im_h;
+                            image_rects.push_back(image_rect);
+                    }
                 }
             }
 
-            glClear(GL_STENCIL_BUFFER_BIT);
-            enable_stencil();
-            write_to_stencil();
-            draw_stencil_rects(page_number, image_rects);
-            use_stencil_to_write(true);
-            ColorPalette target_palette = ColorPalette::Normal;
-            if (color_mode == ColorPalette::Custom && INVERTED_PRESERVED_IMAGE_COLORS) {
-                target_palette = ColorPalette::Dark;
-            }
+            if (!image_rects.empty()) {
+                ColorPalette target_palette = ColorPalette::Normal;
+                if (color_mode == ColorPalette::Custom && INVERTED_PRESERVED_IMAGE_COLORS) {
+                    target_palette = ColorPalette::Dark;
+                }
 
-            render_page(page_number, in_overview, target_palette, false);
-            disable_stencil();
+                if (in_overview) {
+                    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                    glStencilFunc(GL_EQUAL, 1, 0xFF);
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+                    draw_stencil_rects(page_number, image_rects, true);
+                    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+                    glStencilFunc(GL_EQUAL, 2, 0xFF);
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+                    render_page(page_number, in_overview, target_palette, false);
+
+                    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                    glStencilFunc(GL_EQUAL, 2, 0xFF);
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+                    draw_stencil_rects(page_number, image_rects, true);
+                    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+                    glStencilFunc(GL_EQUAL, 1, 0xFF);
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+                }
+                else {
+                    glClear(GL_STENCIL_BUFFER_BIT);
+                    enable_stencil();
+                    write_to_stencil();
+                    draw_stencil_rects(page_number, image_rects, false);
+                    use_stencil_to_write(true);
+
+                    render_page(page_number, in_overview, target_palette, false);
+                    disable_stencil();
+                }
+            }
         }
 
         if (!document_view->is_presentation_mode() && (!in_overview) && (!document_view->is_two_page_mode())){
@@ -2492,10 +2520,15 @@ void PdfViewOpenGLWidget::draw_stencil_rects(const std::vector<NormalizedWindowR
 
 }
 
-void PdfViewOpenGLWidget::draw_stencil_rects(int page, const std::vector<PagelessDocumentRect>& rects) {
+void PdfViewOpenGLWidget::draw_stencil_rects(int page, const std::vector<PagelessDocumentRect>& rects, bool in_overview) {
     std::vector<NormalizedWindowRect> normalized_rects;
     for (auto rect : rects) {
-        normalized_rects.push_back(DocumentRect(rect, page).to_window_normalized(document_view));
+        if (in_overview) {
+            normalized_rects.push_back(document_to_overview_rect(DocumentRect(rect, page)));
+        }
+        else {
+            normalized_rects.push_back(DocumentRect(rect, page).to_window_normalized(document_view));
+        }
     }
     draw_stencil_rects(normalized_rects);
 }
@@ -3684,7 +3717,7 @@ void PdfViewOpenGLWidget::set_overview_highlights(const std::vector<DocumentRect
 }
 
 bool PdfViewOpenGLWidget::needs_stencil_buffer() {
-    return fastread_mode || selected_rectangle.has_value() || overview_page.has_value();
+    return fastread_mode || selected_rectangle.has_value() || overview_page.has_value() || (PRESERVE_IMAGE_COLORS && color_mode != ColorPalette::Normal);
 }
 
 void PdfViewOpenGLWidget::zoom_overview(float scale){

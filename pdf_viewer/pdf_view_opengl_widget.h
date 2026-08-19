@@ -193,7 +193,7 @@ protected:
     void enable_stencil();
     void write_to_stencil();
     void draw_stencil_rects(const std::vector<NormalizedWindowRect>& window_rects);
-    void draw_stencil_rects(int page, const std::vector<PagelessDocumentRect>& rects);
+    void draw_stencil_rects(int page, const std::vector<PagelessDocumentRect>& rects, bool in_overview = false);
     void use_stencil_to_write(bool eq);
     void disable_stencil();
 
