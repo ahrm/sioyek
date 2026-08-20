@@ -79,6 +79,7 @@ const int max_select_size = 100;
 extern bool SMALL_TOC;
 extern bool MULTILINE_MENUS;
 extern bool TOUCH_MODE;
+extern int TOC_SCROLL_MARGIN;
 
 
 class HierarchialSortFilterProxyModel : public QSortFilterProxyModel {
@@ -173,6 +174,51 @@ public:
 
 };
 
+// QTreeView (and QAbstractItemView in general) only scrolls the bare minimum
+// needed to bring the current row into view (ScrollHint::EnsureVisible with no
+// margin). That means keyboard navigation can push the selection all the way to
+// the last visible row with no look-ahead, and when reversing direction the
+// viewport doesn't budge until the selection reaches the edge of whatever is
+// already on screen.
+//
+// This subclass keeps exactly `TOC_SCROLL_MARGIN` rows of context visible
+// above/below the current row at all times, by additionally requesting
+// visibility for an index that many steps above/below the target before
+// scrolling to the target itself. Because this re-asserts the same fixed
+// margin on every single step, continuous movement toward an edge ends up
+// scrolling the view exactly one row per keypress -- the selection stays
+// pinned at a fixed screen offset while the list moves underneath it. The
+// margin size itself never varies, unlike a recentering/chunked approach.
+class SioyekTreeView : public QTreeView {
+public:
+    using QTreeView::QTreeView;
+
+protected:
+    QModelIndex step_index(const QModelIndex& from, int n, bool down) const {
+        QModelIndex cur = from;
+        for (int i = 0; i < n; i++) {
+            QModelIndex next = down ? indexBelow(cur) : indexAbove(cur);
+            if (!next.isValid()) break;
+            cur = next;
+        }
+        return cur;
+    }
+
+    void scrollTo(const QModelIndex& index, ScrollHint hint = EnsureVisible) override {
+        if (!index.isValid() || TOC_SCROLL_MARGIN <= 0) {
+            QTreeView::scrollTo(index, hint);
+            return;
+        }
+
+        QModelIndex above = step_index(index, TOC_SCROLL_MARGIN, false);
+        QModelIndex below = step_index(index, TOC_SCROLL_MARGIN, true);
+
+        QTreeView::scrollTo(below, EnsureVisible);
+        QTreeView::scrollTo(above, EnsureVisible);
+        QTreeView::scrollTo(index, hint);
+    }
+};
+
 template<typename T>
 class FilteredTreeSelect : public BaseSelectorWidget {
 private:
@@ -189,7 +235,7 @@ public:
     FilteredTreeSelect(bool fuzzy, QStandardItemModel* item_model,
         std::function<void(const std::vector<int>&)> on_done,
         MainWidget* parent,
-        std::vector<int> selected_index) : BaseSelectorWidget(new QTreeView(), fuzzy, item_model, parent),
+        std::vector<int> selected_index) : BaseSelectorWidget(new SioyekTreeView(), fuzzy, item_model, parent),
         on_done(on_done)
     {
         auto index = QModelIndex();
