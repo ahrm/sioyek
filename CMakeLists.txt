@@ -78,6 +78,25 @@ qt_add_executable(sioyek WIN32 MACOSX_BUNDLE
     pdf_viewer/utils.cpp pdf_viewer/utils.h
 )
 
+option(SIOYEK_DJVU_SUPPORT "Enable native DjVu support" ON)
+if(SIOYEK_DJVU_SUPPORT)
+  find_package(PkgConfig QUIET)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(DJVU QUIET IMPORTED_TARGET ddjvuapi)
+  endif()
+
+  if(TARGET PkgConfig::DJVU)
+    target_sources(sioyek PRIVATE
+      pdf_viewer/djvu_document.cpp
+      pdf_viewer/djvu_document.h
+    )
+    target_compile_definitions(sioyek PRIVATE SIOYEK_DJVU_SUPPORT)
+    target_link_libraries(sioyek PRIVATE PkgConfig::DJVU)
+  else()
+    message(STATUS "DjVuLibre not found; native DjVu support disabled")
+  endif()
+endif()
+
 if(APPLE)
     file(GLOB_RECURSE SIOYEK_SHADER_FILES CONFIGURE_DEPENDS
       "${CMAKE_CURRENT_SOURCE_DIR}/pdf_viewer/shaders/*"

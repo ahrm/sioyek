@@ -100,6 +100,8 @@ void get_flat_chars_from_stext_page(fz_stext_page* stext_page, std::vector<fz_st
 int find_best_vertical_line_location(fz_pixmap* pixmap, int relative_click_x, int relative_click_y);
 //void get_flat_chars_from_stext_page_with_space(fz_stext_page* stext_page, std::vector<fz_stext_char*>& flat_chars, fz_stext_char* space);
 void index_equations(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::map<std::wstring, std::vector<IndexedData>>& indices);
+const std::wregex& get_equation_identifier_regex();
+std::wstring normalize_equation_identifier(const std::wstring& identifier);
 void find_regex_matches_in_stext_page(const std::vector<fz_stext_char*>& flat_chars,
     const std::wregex& regex,
     std::vector<std::pair<int, int>>& match_ranges, std::vector<std::wstring>& match_texts);

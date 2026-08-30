@@ -2972,6 +2972,19 @@ ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* o
             }
         }
         else{
+            std::wsmatch equation_match;
+            if (std::regex_search(query, equation_match, get_equation_identifier_regex())) {
+                std::wstring equation_name = normalize_equation_identifier(equation_match.str());
+                std::vector<IndexedData> equations = doc()->find_equation_with_string(
+                    equation_name, get_current_page_number());
+                if (!equations.empty()) {
+                    *out_page = equations[0].page;
+                    *out_offset = equations[0].y_offset;
+                    *out_source_text = equation_name;
+                    return ReferenceType::Equation;
+                }
+            }
+
             int page = doc()->find_reference_page_with_reference_text(query);
             if (page < 0) return ReferenceType::None;
             auto res = doc()->get_page_bib_with_reference(page, query);
