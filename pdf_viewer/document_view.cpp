@@ -714,6 +714,14 @@ int DocumentView::get_center_page_number() {
 void DocumentView::get_visible_pages(int window_height, std::vector<int>& visible_pages) {
     if (!current_document) return;
 
+    if (is_presentation_mode()) {
+        int presentation_page = presentation_page_number.value();
+        if ((presentation_page >= 0) && (presentation_page < current_document->num_pages())) {
+            visible_pages.push_back(presentation_page);
+        }
+        return;
+    }
+
     AbsoluteDocumentPos abs_offset = virtual_to_absolute_pos(offset);
     float window_y_range_begin = abs_offset.y - window_height / (1.5 * zoom_level);
     float window_y_range_end = abs_offset.y + window_height / (1.5 * zoom_level);
@@ -1944,6 +1952,33 @@ std::vector<int> DocumentView::get_visible_highlight_indices() {
     const std::vector<Highlight>& highlights = get_document()->get_highlights();
 
     std::vector<int> res;
+
+    if (is_presentation_mode()) {
+        int presentation_page = presentation_page_number.value();
+
+        for (size_t i = 0; i < highlights.size(); i++) {
+            bool is_visible = false;
+
+            for (const auto& rect : highlights[i].highlight_rects) {
+                if (get_document()->absolute_to_page_rect(rect).page == presentation_page) {
+                    is_visible = true;
+                    break;
+                }
+            }
+
+            if ((!is_visible) && (highlights[i].highlight_rects.size() == 0)) {
+                int begin_page = get_document()->get_offset_page_number(highlights[i].selection_begin.y);
+                int end_page = get_document()->get_offset_page_number(highlights[i].selection_end.y);
+                is_visible = (begin_page == presentation_page) || (end_page == presentation_page);
+            }
+
+            if (is_visible) {
+                res.push_back(i);
+            }
+        }
+
+        return res;
+    }
 
     for (size_t i = 0; i < highlights.size(); i++) {
 
