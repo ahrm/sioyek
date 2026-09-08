@@ -189,7 +189,7 @@ GLuint PdfRenderer::find_rendered_page(std::wstring path, int page, bool should_
 
 
                     // OpenGL usually expects powers of two textures and since our pixmaps dimensions are
-                    // often not powers of two, we set the unpack alignment to 1 (no alignment) 
+                    // often not powers of two, we set the unpack alignment to 1 (no alignment)
 
                     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cached_resp.pixmap->w, cached_resp.pixmap->h, 0, GL_RGB, GL_UNSIGNED_BYTE, cached_resp.pixmap->samples);
@@ -449,6 +449,12 @@ void PdfRenderer::run_search(int thread_index)
 }
 
 PdfRenderer::~PdfRenderer() {
+    for (auto response : cached_responses) {
+        fz_drop_pixmap(thread_contexts[response.thread], response.pixmap);
+    }
+    for (auto thread_context : thread_contexts) {
+        fz_drop_context(thread_context);
+    }
 }
 
 fz_document* PdfRenderer::get_document_with_path(int thread_index, fz_context* mupdf_context, std::wstring path) {
@@ -699,7 +705,7 @@ void PdfRenderer::free_all_resources_for_document(std::wstring doc_path) {
     for (int i = 0; i < num_threads; i++) {
         thread_rendering_mutex[i].lock();
     }
-    
+
     delete_old_pages(true, true); // todo: this is overkill, just delete the pixmaps for the document
 
     for (int i = 0; i < num_threads; i++) {
