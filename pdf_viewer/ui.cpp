@@ -46,12 +46,12 @@ std::wstring select_command_folder_name(std::optional<QString> root_dir) {
 std::wstring select_document_file_name(std::optional<QString> root_dir) {
     if (DEFAULT_OPEN_FILE_PATH.size() == 0) {
 
-        QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", root_dir.value_or(""), "Documents (*.pdf *.epub *.cbz)");
+        QString file_name = QFileDialog::getOpenFileName(nullptr, "Select Document", root_dir.value_or(""), "Documents (*.pdf *.epub *.cbz *.djvu *.djv)");
         return file_name.toStdWString();
     }
     else {
 
-        QFileDialog fd = QFileDialog(nullptr, "Select Document", root_dir.value_or(""), "Documents (*.pdf *.epub *.cbz)");
+        QFileDialog fd = QFileDialog(nullptr, "Select Document", root_dir.value_or(""), "Documents (*.pdf *.epub *.cbz *.djvu *.djv)");
         fd.setDirectory(QString::fromStdWString(DEFAULT_OPEN_FILE_PATH));
         if (fd.exec()) {
 

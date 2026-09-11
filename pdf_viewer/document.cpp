@@ -1545,11 +1545,11 @@ std::optional<std::wstring> Document::get_equation_text_at_position(
     int>* out_range) {
 
 
-    std::wregex regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
-    std::optional<std::wstring> match = get_regex_match_at_position(regex, flat_chars, position, out_range);
+    std::optional<std::wstring> match = get_regex_match_at_position(
+        get_equation_identifier_regex(), flat_chars, position, out_range);
 
     if (match) {
-        return match.value().substr(1, match.value().size() - 2);
+        return normalize_equation_identifier(match.value());
     }
     else {
         return {};
@@ -4321,7 +4321,8 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
 
 int Document::find_reference_page_with_reference_text(std::wstring ref) {
 
-    QStringList parts = QString::fromStdWString(ref).split(QRegularExpression("[ \\w\\(\\);,]"));
+    QStringList parts = QString::fromStdWString(ref).split(
+        QRegularExpression("[\\s\\(\\);,]+"), Qt::SkipEmptyParts);
     QString largest_part = "";
     for (int i = 0; i < parts.size(); i++) {
         if (parts.at(i).size() > largest_part.size() ) {
@@ -4331,6 +4332,9 @@ int Document::find_reference_page_with_reference_text(std::wstring ref) {
 
 
     std::wstring query = largest_part.toStdWString();
+    if (query.empty()) {
+        return -1;
+    }
     auto searcher = std::default_searcher(query.begin(), query.end(), pred_case_sensitive);
 
     std::vector<int> found_indices;

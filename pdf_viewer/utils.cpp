@@ -1381,6 +1381,27 @@ bool are_stext_chars_far_enough_for_equation(fz_stext_char* first, fz_stext_char
     return (second->origin.x - first->origin.x) > (5 * second_width);
 }
 
+const std::wregex& get_equation_identifier_regex() {
+    // Some OCR engines combine an opening parenthesis and a digit into a
+    // letter-shaped glyph, for example rendering visible "(2.1)" as "B.1)".
+    // Keep that literal identifier as an alternate form so a reference and
+    // its margin label still resolve to one another.
+    static const std::wregex regex(L"(\\([0-9]+(\\.[0-9]+)*\\)|[A-Z]\\.[0-9]+(\\.[0-9]+)*\\))");
+    return regex;
+}
+
+std::wstring normalize_equation_identifier(const std::wstring& identifier) {
+    if (identifier.size() < 2 || identifier.back() != L')') {
+        return identifier;
+    }
+
+    if (identifier.front() == L'(') {
+        return identifier.substr(1, identifier.size() - 2);
+    }
+
+    return identifier.substr(0, identifier.size() - 1);
+}
+
 bool is_whitespace(int chr) {
     if ((chr == ' ') || (chr == '\n') || (chr == '\t')) {
         return true;
@@ -1457,11 +1478,10 @@ void index_generic(const std::vector<fz_stext_char*>& flat_chars, int page_numbe
 }
 
 void index_equations(const std::vector<fz_stext_char*>& flat_chars, int page_number, std::map<std::wstring, std::vector<IndexedData>>& indices) {
-    std::wregex regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
     std::vector<std::pair<int, int>> match_ranges;
     std::vector<std::wstring> match_texts;
 
-    find_regex_matches_in_stext_page(flat_chars, regex, match_ranges, match_texts);
+    find_regex_matches_in_stext_page(flat_chars, get_equation_identifier_regex(), match_ranges, match_texts);
 
     for (size_t i = 0; i < match_ranges.size(); i++) {
         auto [start_index, end_index] = match_ranges[i];
@@ -1473,7 +1493,7 @@ void index_equations(const std::vector<fz_stext_char*>& flat_chars, int page_num
         // we expect the equation reference to be sufficiently separated from the rest of the text
         if (((start_index > 0) && are_stext_chars_far_enough_for_equation(flat_chars[start_index - 1], flat_chars[start_index]))) {
 
-            std::wstring match_text = match_texts[i].substr(1, match_texts[i].size() - 2);
+            std::wstring match_text = normalize_equation_identifier(match_texts[i]);
             IndexedData indexed_equation;
             indexed_equation.page = page_number;
             indexed_equation.text = match_text;

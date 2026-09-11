@@ -400,8 +400,18 @@ NormalizedWindowPos DocumentView::absolute_to_window_pos(AbsoluteDocumentPos abs
 }
 
 NormalizedWindowRect DocumentView::absolute_to_window_rect(AbsoluteRect doc_rect) {
+    // An absolute rectangle may have endpoints on different pages in two-page
+    // mode.  Converting both endpoints independently can then select the
+    // wrong virtual page (the pages share a virtual y range but are separated
+    // horizontally).  Keep the top-left anchor and apply the rectangle's
+    // absolute dimensions so the selection follows the drag direction.
+    float abs_width = doc_rect.width();
+    float abs_height = doc_rect.height();
+
     NormalizedWindowPos top_left = doc_rect.top_left().to_window_normalized(this);
-    NormalizedWindowPos bottom_right = doc_rect.bottom_right().to_window_normalized(this);
+    NormalizedWindowPos bottom_right;
+    bottom_right.x = top_left.x + abs_width * zoom_level / view_width * 2;
+    bottom_right.y = top_left.y - abs_height * zoom_level / view_height * 2;
 
     return NormalizedWindowRect(top_left, bottom_right);
 }
