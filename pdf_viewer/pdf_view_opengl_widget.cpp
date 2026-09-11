@@ -3749,6 +3749,10 @@ ScratchPad* PdfViewOpenGLWidget::get_scratchpad() {
 void PdfViewOpenGLWidget::render_selected_rectangle() {
 
     if (selected_rectangle) {
+        // Two-page rendering leaves the last page mask in the stencil buffer.
+        // Rectangle selection owns the whole-window mask, so start it clean;
+        // otherwise one page is treated as part of the selected rectangle.
+        glClear(GL_STENCIL_BUFFER_BIT);
         enable_stencil();
 
         write_to_stencil();
