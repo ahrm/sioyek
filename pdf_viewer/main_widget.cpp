@@ -5190,6 +5190,10 @@ void MainWidget::focus_rect(DocumentRect rect) {
 }
 
 void MainWidget::focus_text(int page, const std::wstring& text) {
+    if (page < 0 || page >= doc()->num_pages()) {
+        return;
+    }
+
     std::vector<std::wstring> line_texts;
     std::vector<AbsoluteRect> line_rects;
     line_rects = main_document_view->get_document()->get_page_lines(page, &line_texts);
