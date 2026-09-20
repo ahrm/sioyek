@@ -1908,6 +1908,15 @@ void MainWidget::on_config_file_changed(ConfigManager* new_config) {
 
     status_label->setStyleSheet(get_status_stylesheet());
     status_label->setFont(QFont(get_status_font_face_name()));
+    // The visible status text lives in two child labels that were given
+    // their own stylesheet in the constructor. A widget's own stylesheet
+    // takes precedence over its parent's, so without restyling them here a
+    // live change to status_bar_color, status_bar_text_color or status_font
+    // (config file watcher or `reload_config`) never reaches the screen.
+    status_label_left->setStyleSheet(get_status_stylesheet());
+    status_label_left->setFont(QFont(get_status_font_face_name()));
+    status_label_right->setStyleSheet(get_status_stylesheet());
+    status_label_right->setFont(QFont(get_status_font_face_name()));
     text_command_line_edit_container->setStyleSheet(get_status_stylesheet());
     text_command_line_edit->setFont(QFont(get_status_font_face_name()));
 
