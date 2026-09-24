@@ -995,6 +995,17 @@ void DocumentView::fit_to_page_height_width_minimum(int statusbar_height) {
     int cp = get_center_page_number();
     if (cp == -1) return;
 
+    if (two_page_mode) {
+        fill_cached_virtual_rects();
+        int other_page = cp + ((cp + static_cast<int>(RECTO_VERSO_ADJUSTMENT)) % 2 ? -1 : 1);
+        VirtualRect bounds = cached_virtual_rects[cp];
+        if (other_page >= 0 && other_page < current_document->num_pages())
+            bounds = bounds.union_rect(cached_virtual_rects[other_page]);
+        set_zoom_level(std::min(view_width / bounds.width(), (view_height - statusbar_height) / bounds.height()), true);
+        offset.x = -bounds.center().x;
+        offset.y = bounds.center().y + statusbar_height / (2.0f * zoom_level);
+        return;
+    }
     int page_width = current_document->get_page_width(cp);
     int page_height = current_document->get_page_height(cp);
 

@@ -1837,7 +1837,7 @@ void MainWidget::validate_render() {
                     main_document_view->get_document()->get_accum_page_height(current_page) +
                     main_document_view->get_document()->get_page_height(current_page) / 2 + statusbar_factor);
             }
-            if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
+            if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE && !main_document_view->is_two_page_mode()) {
                 main_document_view->fit_to_page_height(true);
             }
             else {
