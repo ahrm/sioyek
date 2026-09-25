@@ -40,6 +40,7 @@ donate
 download_overview_paper
 download_paper_under_cursor
 download_paper_with_name
+draw_rectangle
 edit_link
 edit_portal
 edit_selected_bookmark

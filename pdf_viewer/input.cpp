@@ -6157,6 +6157,29 @@ public:
 
 };
 
+class DrawRectangleCommand : public Command {
+public:
+    static inline const std::string cname = "draw_rectangle";
+    static inline const std::string hname = "Draw a persistent rectangle annotation";
+    DrawRectangleCommand(MainWidget* w) : Command(cname, w) {};
+    std::optional<AbsoluteRect> rect = {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!rect.has_value()) {
+            return Requirement{ RequirementType::Rect, "Rectangle" };
+        }
+        return {};
+    }
+
+    void set_rect_requirement(AbsoluteRect value) {
+        rect = value;
+    }
+
+    void perform() {
+        widget->draw_rectangle(rect.value());
+    }
+};
+
 class ToggleTypingModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_typing_mode";
@@ -7435,6 +7458,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<OverviewRulerPortalCommand>();
     register_command<GotoRulerPortalCommand>();
     register_command<SelectRectCommand>();
+    register_command<DrawRectangleCommand>();
     register_command<ToggleTypingModeCommand>();
     register_command<DonateCommand>();
     register_command<OverviewNextItemCommand>();

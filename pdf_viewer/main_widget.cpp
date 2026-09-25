@@ -8432,6 +8432,60 @@ void MainWidget::finish_drawing(QPoint pos) {
     
 }
 
+void MainWidget::draw_rectangle(AbsoluteRect rect) {
+    if (rect.x0 > rect.x1) {
+        std::swap(rect.x0, rect.x1);
+    }
+    if (rect.y0 > rect.y1) {
+        std::swap(rect.y0, rect.y1);
+    }
+
+    if (rect.width() <= 0 || rect.height() <= 0) {
+        clear_selected_rect();
+        invalidate_render();
+        show_error_message(L"The rectangle must have a non-zero width and height");
+        return;
+    }
+
+    if (!opengl_widget->get_scratchpad()) {
+        DocumentPos top_left = doc()->absolute_to_page_pos_uncentered(rect.top_left());
+        DocumentPos bottom_right = doc()->absolute_to_page_pos_uncentered(rect.bottom_right());
+        if (top_left.page != bottom_right.page) {
+            clear_selected_rect();
+            invalidate_render();
+            show_error_message(L"Rectangle annotations must stay within one page");
+            return;
+        }
+    }
+
+    float thickness = freehand_thickness;
+    if (opengl_widget->get_scratchpad()) {
+        thickness = freehand_thickness / dv()->get_zoom_level() * 3;
+    }
+
+    FreehandDrawing rectangle;
+    rectangle.type = current_freehand_type;
+    rectangle.alpha = freehand_alpha;
+    rectangle.creattion_time = QDateTime::currentDateTime();
+    rectangle.points = {
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x0, rect.y0 }, thickness },
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x1, rect.y0 }, thickness },
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x1, rect.y1 }, thickness },
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x0, rect.y1 }, thickness },
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x0, rect.y0 }, thickness },
+    };
+
+    if (opengl_widget->get_scratchpad()) {
+        scratchpad->add_drawing(rectangle);
+    }
+    else {
+        doc()->add_freehand_drawing(rectangle);
+    }
+
+    clear_selected_rect();
+    invalidate_render();
+}
+
 
 void MainWidget::delete_freehand_drawings(AbsoluteRect rect) {
     if (opengl_widget->get_scratchpad()) {
