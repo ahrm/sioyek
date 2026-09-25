@@ -420,6 +420,7 @@ public:
     std::vector<SearchResult> search_regex(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page);
     float max_y_offset();
     void add_freehand_drawing(FreehandDrawing new_drawing);
+    bool delete_rectangle_at(AbsoluteDocumentPos point);
     void get_page_freehand_drawings_with_indices(int page, const std::vector<SelectedObjectIndex>& indices, std::vector<FreehandDrawing>& freehand_drawings, std::vector<PixmapDrawing>& pixmap_drawings);
     void undo_freehand_drawing();
     const std::vector<FreehandDrawing>& get_page_drawings(int page);

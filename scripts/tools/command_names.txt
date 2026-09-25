@@ -36,6 +36,7 @@ delete_highlight
 delete_highlight_under_cursor
 delete_link
 delete_portal
+delete_rectangle
 donate
 download_overview_paper
 download_paper_under_cursor

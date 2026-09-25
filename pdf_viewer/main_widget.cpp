@@ -8486,6 +8486,21 @@ void MainWidget::draw_rectangle(AbsoluteRect rect) {
     invalidate_render();
 }
 
+void MainWidget::delete_rectangle(AbsoluteDocumentPos point) {
+    bool deleted;
+    if (opengl_widget->get_scratchpad()) {
+        deleted = scratchpad->delete_rectangle_at(point);
+    }
+    else {
+        deleted = doc()->delete_rectangle_at(point);
+    }
+
+    if (!deleted) {
+        show_error_message(L"No rectangle annotation found at that point");
+    }
+    invalidate_render();
+}
+
 
 void MainWidget::delete_freehand_drawings(AbsoluteRect rect) {
     if (opengl_widget->get_scratchpad()) {

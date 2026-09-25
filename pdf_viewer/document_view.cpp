@@ -1788,6 +1788,10 @@ std::vector<int> ScratchPad::get_intersecting_drawing_indices(AbsoluteRect selec
     std::vector<int> res;
 
     for (int i = 0; i < all_drawings.size(); i++) {
+        if (all_drawings[i].is_rectangle() && all_drawings[i].bbox().intersects(selection)) {
+            res.push_back(i);
+            continue;
+        }
         for (auto p : all_drawings[i].points) {
             if (selection.contains(p.pos)) {
                 res.push_back(i);
@@ -1827,6 +1831,17 @@ void ScratchPad::delete_intersecting_pixmaps(AbsoluteRect selection) {
 void ScratchPad::delete_intersecting_objects(AbsoluteRect selection) {
     delete_intersecting_drawings(selection);
     delete_intersecting_pixmaps(selection);
+}
+
+bool ScratchPad::delete_rectangle_at(AbsoluteDocumentPos point) {
+    for (int i = static_cast<int>(all_drawings.size()) - 1; i >= 0; i--) {
+        if (all_drawings[i].is_rectangle() && all_drawings[i].bbox().contains(point)) {
+            all_drawings.erase(all_drawings.begin() + i);
+            invalidate_compile(true);
+            return true;
+        }
+    }
+    return false;
 }
 
 void ScratchPad::get_selected_objects_with_indices(const std::vector<SelectedObjectIndex>&indices, std::vector<FreehandDrawing>&freehand_drawings, std::vector<PixmapDrawing>&pixmap_drawings){
