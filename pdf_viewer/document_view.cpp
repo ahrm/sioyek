@@ -400,8 +400,18 @@ NormalizedWindowPos DocumentView::absolute_to_window_pos(AbsoluteDocumentPos abs
 }
 
 NormalizedWindowRect DocumentView::absolute_to_window_rect(AbsoluteRect doc_rect) {
+    // An absolute rectangle may have endpoints on different pages in two-page
+    // mode.  Converting both endpoints independently can then select the
+    // wrong virtual page (the pages share a virtual y range but are separated
+    // horizontally).  Keep the top-left anchor and apply the rectangle's
+    // absolute dimensions so the selection follows the drag direction.
+    float abs_width = doc_rect.width();
+    float abs_height = doc_rect.height();
+
     NormalizedWindowPos top_left = doc_rect.top_left().to_window_normalized(this);
-    NormalizedWindowPos bottom_right = doc_rect.bottom_right().to_window_normalized(this);
+    NormalizedWindowPos bottom_right;
+    bottom_right.x = top_left.x + abs_width * zoom_level / view_width * 2;
+    bottom_right.y = top_left.y - abs_height * zoom_level / view_height * 2;
 
     return NormalizedWindowRect(top_left, bottom_right);
 }
@@ -1778,6 +1788,10 @@ std::vector<int> ScratchPad::get_intersecting_drawing_indices(AbsoluteRect selec
     std::vector<int> res;
 
     for (int i = 0; i < all_drawings.size(); i++) {
+        if (all_drawings[i].is_rectangle() && all_drawings[i].bbox().intersects(selection)) {
+            res.push_back(i);
+            continue;
+        }
         for (auto p : all_drawings[i].points) {
             if (selection.contains(p.pos)) {
                 res.push_back(i);
@@ -1817,6 +1831,17 @@ void ScratchPad::delete_intersecting_pixmaps(AbsoluteRect selection) {
 void ScratchPad::delete_intersecting_objects(AbsoluteRect selection) {
     delete_intersecting_drawings(selection);
     delete_intersecting_pixmaps(selection);
+}
+
+bool ScratchPad::delete_rectangle_at(AbsoluteDocumentPos point) {
+    for (int i = static_cast<int>(all_drawings.size()) - 1; i >= 0; i--) {
+        if (all_drawings[i].is_rectangle() && all_drawings[i].bbox().contains(point)) {
+            all_drawings.erase(all_drawings.begin() + i);
+            invalidate_compile(true);
+            return true;
+        }
+    }
+    return false;
 }
 
 void ScratchPad::get_selected_objects_with_indices(const std::vector<SelectedObjectIndex>&indices, std::vector<FreehandDrawing>&freehand_drawings, std::vector<PixmapDrawing>&pixmap_drawings){

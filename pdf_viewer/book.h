@@ -180,7 +180,8 @@ struct FreehandDrawing {
     char type;
     float alpha = 1;
     QDateTime creattion_time;
-    AbsoluteRect bbox();
+    AbsoluteRect bbox() const;
+    bool is_rectangle() const;
 };
 
 struct PixmapDrawing {

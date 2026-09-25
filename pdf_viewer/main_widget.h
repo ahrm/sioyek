@@ -776,6 +776,8 @@ public:
     void handle_drawing_move(QPoint pos, float pressure);
     void start_drawing();
     void finish_drawing(QPoint pos);
+    void draw_rectangle(AbsoluteRect rect);
+    void delete_rectangle(AbsoluteDocumentPos point);
     void handle_pen_drawing_event(QTabletEvent* te);
     void select_freehand_drawings(AbsoluteRect rect);
     void delete_freehand_drawings(AbsoluteRect rect);

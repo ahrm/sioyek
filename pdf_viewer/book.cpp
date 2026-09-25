@@ -2,6 +2,8 @@
 #include "utils.h"
 #include "document.h"
 
+#include <cmath>
+
 extern float BOOKMARK_RECT_SIZE;
 
 bool operator==(const DocumentViewState& lhs, const DocumentViewState& rhs)
@@ -341,7 +343,7 @@ AbsoluteRect BookMark::rect() {
     return AbsoluteRect(begin_pos(), end_pos());
 }
 
-AbsoluteRect FreehandDrawing::bbox(){
+AbsoluteRect FreehandDrawing::bbox() const {
     AbsoluteRect res;
     if (points.size() > 0) {
         res.x0 = points[0].pos.x;
@@ -356,6 +358,25 @@ AbsoluteRect FreehandDrawing::bbox(){
         }
     }
     return res;
+}
+
+bool FreehandDrawing::is_rectangle() const {
+    if (points.size() != 5) {
+        return false;
+    }
+
+    auto equal = [](float lhs, float rhs) {
+        return std::fabs(lhs - rhs) < 0.001f;
+    };
+
+    return equal(points[0].pos.x, points[4].pos.x)
+        && equal(points[0].pos.y, points[4].pos.y)
+        && equal(points[0].pos.y, points[1].pos.y)
+        && equal(points[1].pos.x, points[2].pos.x)
+        && equal(points[2].pos.y, points[3].pos.y)
+        && equal(points[3].pos.x, points[0].pos.x)
+        && !equal(points[0].pos.x, points[1].pos.x)
+        && !equal(points[0].pos.y, points[3].pos.y);
 }
 
 void SearchResult::fill(Document* doc) {

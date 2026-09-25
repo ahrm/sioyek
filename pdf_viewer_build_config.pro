@@ -26,6 +26,14 @@ DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
 
 RESOURCES += resources.qrc
 
+packagesExist(ddjvuapi) {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += ddjvuapi
+    DEFINES += SIOYEK_DJVU_SUPPORT
+    HEADERS += pdf_viewer/djvu_document.h
+    SOURCES += pdf_viewer/djvu_document.cpp
+}
+
 SOURCES += \
         pdf_viewer/touchui/TouchSlider.cpp \
         pdf_viewer/touchui/TouchCheckbox.cpp \

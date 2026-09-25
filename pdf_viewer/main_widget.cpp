@@ -2972,6 +2972,19 @@ ReferenceType MainWidget::find_location_of_selected_text(int* out_page, float* o
             }
         }
         else{
+            std::wsmatch equation_match;
+            if (std::regex_search(query, equation_match, get_equation_identifier_regex())) {
+                std::wstring equation_name = normalize_equation_identifier(equation_match.str());
+                std::vector<IndexedData> equations = doc()->find_equation_with_string(
+                    equation_name, get_current_page_number());
+                if (!equations.empty()) {
+                    *out_page = equations[0].page;
+                    *out_offset = equations[0].y_offset;
+                    *out_source_text = equation_name;
+                    return ReferenceType::Equation;
+                }
+            }
+
             int page = doc()->find_reference_page_with_reference_text(query);
             if (page < 0) return ReferenceType::None;
             auto res = doc()->get_page_bib_with_reference(page, query);
@@ -8417,6 +8430,75 @@ void MainWidget::finish_drawing(QPoint pos) {
         doc()->add_freehand_drawing(pruned_drawing);
     }
     
+}
+
+void MainWidget::draw_rectangle(AbsoluteRect rect) {
+    if (rect.x0 > rect.x1) {
+        std::swap(rect.x0, rect.x1);
+    }
+    if (rect.y0 > rect.y1) {
+        std::swap(rect.y0, rect.y1);
+    }
+
+    if (rect.width() <= 0 || rect.height() <= 0) {
+        clear_selected_rect();
+        invalidate_render();
+        show_error_message(L"The rectangle must have a non-zero width and height");
+        return;
+    }
+
+    if (!opengl_widget->get_scratchpad()) {
+        DocumentPos top_left = doc()->absolute_to_page_pos_uncentered(rect.top_left());
+        DocumentPos bottom_right = doc()->absolute_to_page_pos_uncentered(rect.bottom_right());
+        if (top_left.page != bottom_right.page) {
+            clear_selected_rect();
+            invalidate_render();
+            show_error_message(L"Rectangle annotations must stay within one page");
+            return;
+        }
+    }
+
+    float thickness = freehand_thickness;
+    if (opengl_widget->get_scratchpad()) {
+        thickness = freehand_thickness / dv()->get_zoom_level() * 3;
+    }
+
+    FreehandDrawing rectangle;
+    rectangle.type = current_freehand_type;
+    rectangle.alpha = freehand_alpha;
+    rectangle.creattion_time = QDateTime::currentDateTime();
+    rectangle.points = {
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x0, rect.y0 }, thickness },
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x1, rect.y0 }, thickness },
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x1, rect.y1 }, thickness },
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x0, rect.y1 }, thickness },
+        FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x0, rect.y0 }, thickness },
+    };
+
+    if (opengl_widget->get_scratchpad()) {
+        scratchpad->add_drawing(rectangle);
+    }
+    else {
+        doc()->add_freehand_drawing(rectangle);
+    }
+
+    clear_selected_rect();
+    invalidate_render();
+}
+
+void MainWidget::delete_rectangle(AbsoluteDocumentPos point) {
+    bool deleted;
+    if (opengl_widget->get_scratchpad()) {
+        deleted = scratchpad->delete_rectangle_at(point);
+    }
+    else {
+        deleted = doc()->delete_rectangle_at(point);
+    }
+
+    if (!deleted) {
+        show_error_message(L"No rectangle annotation found at that point");
+    }
+    invalidate_render();
 }
 
 

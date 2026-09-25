@@ -717,7 +717,8 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
      render_compiled_drawings();
      glEnableVertexAttribArray(0);
      glUseProgram(shared_gl_objects.line_program);
-     render_drawings(scratchpad, scratchpad->get_non_compiled_drawings());
+     render_rectangle_drawings(scratchpad, scratchpad->get_all_drawings());
+     render_freehand_drawings(scratchpad, scratchpad->get_non_compiled_drawings());
      render_drawings(scratchpad, moving_drawings, true);
      render_drawings(scratchpad, moving_drawings, false);
      render_drawings(scratchpad, pending_drawing);
@@ -3008,6 +3009,9 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
         if (!visible_drawing_mask[drawing.type - 'a']) {
             continue;
         }
+        if (drawing.is_rectangle()) {
+            continue;
+        }
         if (drawing.points.size() == 1) {
             add_point_coords(drawing.points[0], drawing.type - 'a');
 
@@ -3251,6 +3255,79 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
 }
 
 void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
+    render_rectangle_drawings(dv, drawings, highlighted);
+    render_freehand_drawings(dv, drawings, highlighted);
+}
+
+void PdfViewOpenGLWidget::render_rectangle_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
+    if (drawings.empty()) {
+        return;
+    }
+
+    glEnable(GL_BLEND);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    glEnable(GL_DEPTH_TEST);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glUseProgram(shared_gl_objects.line_program);
+    glEnableVertexAttribArray(0);
+
+    for (int i = static_cast<int>(drawings.size()) - 1; i >= 0; i--) {
+        const FreehandDrawing& drawing = drawings[i];
+        if (!drawing.is_rectangle() || drawing.points.empty()) {
+            continue;
+        }
+        if (drawing.type < 'a' || drawing.type > 'z' || !visible_drawing_mask[drawing.type - 'a']) {
+            continue;
+        }
+
+        float source_color[4] = {
+            HIGHLIGHT_COLORS[(drawing.type - 'a') * 3],
+            HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 1],
+            HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 2],
+            drawing.alpha,
+        };
+        float color[4] = { 0 };
+        get_color_for_current_mode(source_color, color);
+        color[3] = drawing.alpha;
+        if (highlighted) {
+            color[0] = 1.0f;
+            color[1] = 1.0f;
+            color[2] = 0.0f;
+        }
+        glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, color);
+
+        NormalizedWindowRect window_rect = drawing.bbox().to_window_normalized(dv);
+        float left = std::min(window_rect.x0, window_rect.x1);
+        float right = std::max(window_rect.x0, window_rect.x1);
+        float bottom = std::min(window_rect.y0, window_rect.y1);
+        float top = std::max(window_rect.y0, window_rect.y1);
+        float highlight_factor = highlighted ? 3.0f : 1.0f;
+        float half_width_x = drawing.points[0].thickness * dv->get_zoom_level() / width() * highlight_factor;
+        float half_width_y = drawing.points[0].thickness * dv->get_zoom_level() / height() * highlight_factor;
+
+        std::vector<float> coordinates;
+        coordinates.reserve(48);
+        auto add_quad = [&coordinates](float x0, float y0, float x1, float y1) {
+            coordinates.insert(coordinates.end(), {
+                x0, y0, x1, y0, x0, y1,
+                x0, y1, x1, y0, x1, y1,
+            });
+        };
+
+        add_quad(left - half_width_x, top - half_width_y, right + half_width_x, top + half_width_y);
+        add_quad(left - half_width_x, bottom - half_width_y, right + half_width_x, bottom + half_width_y);
+        add_quad(left - half_width_x, bottom + half_width_y, left + half_width_x, top - half_width_y);
+        add_quad(right - half_width_x, bottom + half_width_y, right + half_width_x, top - half_width_y);
+
+        bind_points(coordinates);
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(coordinates.size() / 2));
+    }
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+}
+
+void PdfViewOpenGLWidget::render_freehand_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
 
     if (drawings.size() == 0) return;
 
@@ -3270,6 +3347,9 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
     for (int i = drawings.size() - 1; i >= 0; i--) {
         auto drawing = drawings[i];
 
+        if (drawing.is_rectangle()) {
+            continue;
+        }
         if (DEBUG_SMOOTH_FREEHAND_DRAWINGS) {
             drawing = smoothen_drawing(drawing);
         }
@@ -3755,6 +3835,10 @@ ScratchPad* PdfViewOpenGLWidget::get_scratchpad() {
 void PdfViewOpenGLWidget::render_selected_rectangle() {
 
     if (selected_rectangle) {
+        // Two-page rendering leaves the last page mask in the stencil buffer.
+        // Rectangle selection owns the whole-window mask, so start it clean;
+        // otherwise one page is treated as part of the selected rectangle.
+        glClear(GL_STENCIL_BUFFER_BIT);
         enable_stencil();
 
         write_to_stencil();
