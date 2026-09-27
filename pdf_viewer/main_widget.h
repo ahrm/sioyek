@@ -304,6 +304,7 @@ public:
     // the index of highlight in doc()->get_highlights() that is selected. This is used to
     // delete/edit highlights e.g. by selecting a highlight by clicking on it and then executing `delete_highlight`
     int selected_highlight_index = -1;
+    std::optional<AbsoluteDocumentPos> selected_rectangle_point = {};
     int selected_bookmark_index = -1;
     int selected_portal_index = -1;
 
@@ -778,6 +779,7 @@ public:
     void finish_drawing(QPoint pos);
     void draw_rectangle(AbsoluteRect rect);
     void delete_rectangle(AbsoluteDocumentPos point);
+    void select_rectangle_at(AbsoluteDocumentPos point);
     void handle_pen_drawing_event(QTabletEvent* te);
     void select_freehand_drawings(AbsoluteRect rect);
     void delete_freehand_drawings(AbsoluteRect rect);

@@ -3985,8 +3985,13 @@ class DeleteHighlightCommand : public GenericHighlightCommand {
 
 public:
     static inline const std::string cname = "delete_highlight";
-    static inline const std::string hname = "Delete the selected highlight";
+    static inline const std::string hname = "Delete the selected highlight or rectangle";
     DeleteHighlightCommand(MainWidget* w) : GenericHighlightCommand(cname, w) {};
+
+    int get_selected_item_index() override {
+        // A clicked rectangle needs no highlight tag prompt.
+        return widget->selected_rectangle_point ? 0 : GenericHighlightCommand::get_selected_item_index();
+    }
 
     void perform_with_highlight_selected() override {
         widget->handle_delete_selected_highlight();

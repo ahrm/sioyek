@@ -2916,6 +2916,10 @@ void MainWidget::handle_click(WindowPos click_pos) {
     set_selected_bookmark_index(doc()->get_bookmark_index_at_pos(mouse_abspos));
     selected_portal_index = doc()->get_portal_index_at_pos(mouse_abspos);
 
+    if (selected_highlight_index == -1 && selected_bookmark_index == -1 && selected_portal_index == -1 && !link) {
+        select_rectangle_at(mouse_abspos);
+    }
+
     if (selected_portal_index >= 0) {
         Portal portal = doc()->get_portals()[selected_portal_index];
 
@@ -6490,9 +6494,8 @@ MainWidget* MainWidget::create_restored_window(MainWidget* sibling, const Window
 }
 
 void MainWidget::handle_delete_selected_annotation() {
-    if (selected_highlight_index != -1) {
-        doc()->delete_highlight_with_index(selected_highlight_index);
-        set_selected_highlight_index(-1);
+    if (selected_highlight_index != -1 || selected_rectangle_point) {
+        handle_delete_selected_highlight();
         return;
     }
     if (selected_bookmark_index != -1){
@@ -6780,6 +6783,9 @@ void MainWidget::handle_delete_selected_highlight() {
     if (selected_highlight_index != -1) {
         main_document_view->delete_highlight_with_index(selected_highlight_index);
         set_selected_highlight_index(-1);
+    }
+    else if (selected_rectangle_point) {
+        delete_rectangle(selected_rectangle_point.value());
     }
     validate_render();
 }
@@ -8433,6 +8439,7 @@ void MainWidget::finish_drawing(QPoint pos) {
 }
 
 void MainWidget::draw_rectangle(AbsoluteRect rect) {
+    selected_rectangle_point = {};
     if (rect.x0 > rect.x1) {
         std::swap(rect.x0, rect.x1);
     }
@@ -8486,7 +8493,23 @@ void MainWidget::draw_rectangle(AbsoluteRect rect) {
     invalidate_render();
 }
 
+void MainWidget::select_rectangle_at(AbsoluteDocumentPos point) {
+    selected_rectangle_point = {};
+    const auto& drawings = doc()->get_page_drawings(doc()->absolute_to_page_pos_uncentered(point).page);
+
+    for (auto it = drawings.rbegin(); it != drawings.rend(); ++it) {
+        if (it->is_rectangle() && it->bbox().contains(point)) {
+            // Match delete_rectangle_at's choice when rectangles overlap.
+            if (it->type >= 'a' && it->type <= 'z' && opengl_widget->visible_drawing_mask[it->type - 'a']) {
+                selected_rectangle_point = point;
+            }
+            return;
+        }
+    }
+}
+
 void MainWidget::delete_rectangle(AbsoluteDocumentPos point) {
+    selected_rectangle_point = {};
     bool deleted;
     if (opengl_widget->get_scratchpad()) {
         deleted = scratchpad->delete_rectangle_at(point);
@@ -11002,6 +11025,7 @@ bool MainWidget::is_scratchpad_mode(){
 }
 
 void MainWidget::toggle_scratchpad_mode(){
+    deselect_document_indices();
     if (opengl_widget->get_scratchpad()) {
         opengl_widget->set_scratchpad(nullptr);
     }
@@ -11178,11 +11202,15 @@ void MainWidget::clear_current_document_drawings() {
 }
 
 void MainWidget::set_selected_highlight_index(int index) {
+    selected_rectangle_point = {};
     selected_highlight_index = index;
     opengl_widget->set_selected_highlight_index(index);
 }
 
 void MainWidget::set_selected_bookmark_index(int index) {
+    if (index != -1) {
+        selected_rectangle_point = {};
+    }
     selected_bookmark_index = index;
     opengl_widget->set_selected_bookmark_index(index);
 }
