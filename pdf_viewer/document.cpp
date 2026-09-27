@@ -55,6 +55,7 @@ extern Path standard_data_path;
 extern bool VERBOSE;
 extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern std::wstring FREETEXT_BOOKMARK_FONT_FACE;
 extern std::wstring SHARED_DATABASE_PATH;
 extern bool DEBUG;
 extern bool EXACT_HIGHLIGHT_SELECT;
@@ -228,7 +229,9 @@ int Document::add_incomplete_bookmark(BookMark incomplete_bookmark){
 std::string Document::add_pending_bookmark(int index, const std::wstring& desc) {
     BookMark& bookmark = bookmarks[index];
     bookmark.description = desc;
-    bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+    if (bookmark.font_size < 0) bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+    if (bookmark.font_face.empty()) bookmark.font_face = FREETEXT_BOOKMARK_FONT_FACE;
+    bookmark.y_offset_ = bookmark.begin_y;
     bookmark.update_creation_time();
 
     if (!db_manager->insert_bookmark_freetext(get_checksum(), bookmark)) {
@@ -260,6 +263,7 @@ void Document::add_freetext_bookmark_with_color(const std::wstring& desc, Absolu
     bookmark.color[1] = color[1];
     bookmark.color[2] = color[2];
     bookmark.font_size = font_size < 0 ? FREETEXT_BOOKMARK_FONT_SIZE : font_size;
+    bookmark.font_face = FREETEXT_BOOKMARK_FONT_FACE;
     bookmark.uuid = new_uuid_utf8();
     bookmark.update_creation_time();
 
@@ -3963,26 +3967,11 @@ int Document::get_portal_index_at_pos(AbsoluteDocumentPos abspos) {
 }
 
 int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
-    for (int i = 0; i < bookmarks.size(); i++) {
-        if (bookmarks[i].begin_y != -1) {
-            if (bookmarks[i].end_y == -1) {
-
-                //if (fz_is_point_inside_rect({abspos.x, abspos.y}, bookmarks[i].get_rectangle())) {
-                if (bookmarks[i].get_rectangle().contains(abspos)) {
-                    return i;
-                }
-            }
-            else {
-                AbsoluteRect bookmark_rect;
-                bookmark_rect.x0 = bookmarks[i].begin_x;
-                bookmark_rect.y0 = bookmarks[i].begin_y;
-                bookmark_rect.x1 = bookmarks[i].end_x;
-                bookmark_rect.y1 = bookmarks[i].end_y;
-
-                if (fz_is_point_inside_rect({ abspos.x, abspos.y }, bookmark_rect)) {
-                    return i;
-                }
-            }
+    // Newer notes are painted last and should receive clicks first. Normalize
+    // legacy rectangles too: older builds stored reverse drags with flipped ends.
+    for (int i = static_cast<int>(bookmarks.size()) - 1; i >= 0; --i) {
+        if (bookmarks[i].begin_y != -1 && bookmarks[i].get_rectangle().contains(abspos)) {
+            return i;
         }
     }
     return -1;
@@ -3992,6 +3981,7 @@ void Document::update_bookmark_text(int index, const std::wstring& new_text, flo
     if ((index >= 0) && (index < bookmarks.size())) {
         if (db_manager->update_bookmark_change_text(bookmarks[index].uuid, new_text, new_font_size)) {
             bookmarks[index].description = new_text;
+            bookmarks[index].font_size = new_font_size;
             bookmarks[index].update_modification_time();
             is_annotations_dirty = true;
         }

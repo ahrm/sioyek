@@ -26,6 +26,7 @@ class SelectionIndicator;
 class QLocalSocket;
 class QLineEdit;
 class QTextEdit;
+class QPlainTextEdit;
 class QTimer;
 class QDragEvent;
 class QDropEvent;
@@ -93,6 +94,7 @@ struct TextUnderPointerInfo{
 
 struct BookmarkMoveData {
     int index;
+    int resize_edges = 0; // left, right, top, bottom
     AbsoluteDocumentPos initial_begin_position;
     AbsoluteDocumentPos initial_end_position;
     AbsoluteDocumentPos initial_mouse_position;
@@ -353,6 +355,7 @@ public:
     QWidget* text_command_line_edit_container = nullptr;
     QLabel* text_command_line_edit_label = nullptr;
     QLineEdit* text_command_line_edit = nullptr;
+    QPlainTextEdit* freetext_editor = nullptr;
     QLabel* command_hints_label = nullptr;
     QLabel* status_label_left = nullptr;
     QLabel* status_label_right = nullptr;
@@ -456,7 +459,12 @@ public:
     void set_main_document_view_state(DocumentViewState new_view_state);
     void handle_click(WindowPos pos);
 
-    void update_selected_bookmark_font_size();
+    void update_selected_bookmark_font_size(float factor);
+    bool eventFilter(QObject* obj, QEvent* event) override;
+    void show_freetext_editor();
+    void update_freetext_editor_geometry();
+    void finish_freetext_edit();
+    int freetext_resize_edges_at(WindowPos pos);
     //bool eventFilter(QObject* obj, QEvent* event) override;
     void set_command_textbox_text(const std::wstring& txt);
     void change_selected_highlight_type(char new_type);

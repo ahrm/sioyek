@@ -64,6 +64,7 @@ extern bool SLICED_RENDERING;
 //extern float BOOKMARK_RECT_SIZE;
 extern bool RENDER_FREETEXT_BORDERS;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern std::wstring FREETEXT_BOOKMARK_FONT_FACE;
 extern float STRIKE_LINE_WIDTH;
 extern std::wstring RULER_DISPLAY_MODE;
 extern float RULER_COLOR[3];
@@ -1744,6 +1745,8 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                     QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
                     QFont font = painter->font();
+                    const std::wstring& family = bookmarks[i].font_face.empty() ? FREETEXT_BOOKMARK_FONT_FACE : bookmarks[i].font_face;
+                    if (!family.empty()) font.setFamily(QString::fromStdWString(family));
                     float font_size = bookmarks[i].font_size == -1 ? FREETEXT_BOOKMARK_FONT_SIZE : bookmarks[i].font_size;
                     font.setPointSizeF(font_size * document_view->get_zoom_level() * 0.75);
                     painter->setFont(font);
@@ -1762,7 +1765,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                         flags |= Qt::AlignLeft;
                     }
 
-                    if (bookmarks[i].description[0] == '#') {
+                    if (bookmarks[i].is_box()) {
 
                         QString box_text = QString::fromStdWString(bookmarks[i].description).split(' ')[0];
                         std::optional<char> bm_type = bookmarks[i].get_type();
@@ -1794,7 +1797,19 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                             painter->fillRect(fill_rect, QColor(255, 255, 0, 128));
                             painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
                         }
-                        painter->drawText(window_qrect, flags, QString::fromStdWString(bookmarks[i].description));
+                        painter->setPen(convert_float3_to_qcolor(&bookmark_color[0]));
+                        painter->drawText(window_qrect.adjusted(5, 5, -5, -5), flags, QString::fromStdWString(bookmarks[i].description));
+                        if (i == selected_bookmark_index) {
+                            painter->setPen(QColor(55, 122, 196));
+                            for (int x : {window_qrect.left(), window_qrect.center().x(), window_qrect.right()}) {
+                                for (int y : {window_qrect.top(), window_qrect.center().y(), window_qrect.bottom()}) {
+                                    if (x == window_qrect.center().x() && y == window_qrect.center().y()) continue;
+                                    QRect handle(x - 3, y - 3, 6, 6);
+                                    painter->fillRect(handle, Qt::white);
+                                    painter->drawRect(handle);
+                                }
+                            }
+                        }
                     }
 
                 }
