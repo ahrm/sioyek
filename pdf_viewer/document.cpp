@@ -4049,6 +4049,17 @@ void Document::update_bookmark_text(int index, const std::wstring& new_text, flo
     }
 }
 
+void Document::update_bookmark_color(int index, const float color[3]) {
+    if (index >= 0 && index < bookmarks.size() &&
+        db_manager->update_bookmark_change_color(bookmarks[index].uuid, color)) {
+        for (int component = 0; component < 3; ++component) {
+            bookmarks[index].color[component] = color[component];
+        }
+        bookmarks[index].update_modification_time();
+        is_annotations_dirty = true;
+    }
+}
+
 void Document::update_bookmark_position(int index, AbsoluteDocumentPos new_begin_position, AbsoluteDocumentPos new_end_position) {
     if ((index >= 0) && (index < bookmarks.size())) {
         if (db_manager->update_bookmark_change_position(bookmarks[index].uuid, new_begin_position, new_end_position)) {

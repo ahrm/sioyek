@@ -3645,6 +3645,16 @@ public:
     }
 };
 
+class ChangeSelectedBookmarkColorCommand : public Command {
+public:
+    static inline const std::string cname = "change_selected_bookmark_color";
+    static inline const std::string hname = "Choose the selected note's text color";
+    ChangeSelectedBookmarkColorCommand(MainWidget* w) : Command(cname, w) {};
+    void perform() override {
+        widget->change_selected_bookmark_color();
+    }
+};
+
 class EditSelectedBookmarkCommand : public TextCommand {
 public:
     static inline const std::string cname = "edit_selected_bookmark";
@@ -7282,6 +7292,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<GotoPageWithPageNumberCommand>();
     register_command<EditSelectedBookmarkCommand>();
     register_command<DeleteSelectedBookmarkCommand>();
+    register_command<ChangeSelectedBookmarkColorCommand>();
     register_command<EditSelectedHighlightCommand>();
     register_command<SearchCommand>();
     register_command<DownloadPaperWithUrlCommand>();
