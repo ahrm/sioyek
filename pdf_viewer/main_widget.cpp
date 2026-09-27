@@ -14,6 +14,8 @@
 
 
 #include "coordinates.h"
+#include <QPlainTextEdit>
+#include <QTextDocument>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -203,6 +205,7 @@ extern std::wstring RIGHT_CLICK_SCROLL_DOWN_COMMAND;
 extern std::wstring LEFT_CLICK_SCROLL_UP_COMMAND;
 extern std::wstring LEFT_CLICK_SCROLL_DOWN_COMMAND;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern std::wstring FREETEXT_BOOKMARK_FONT_FACE;
 extern std::wstring BOOK_SCAN_PATH;
 extern bool USE_RULER_TO_HIGHLIGHT_SYNCTEX_LINE;
 extern std::wstring VOLUME_DOWN_COMMAND;
@@ -698,6 +701,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
     if (bookmark_move_data) {
         handle_bookmark_move();
         validate_render();
+        return;
     }
     if (portal_move_data) {
         handle_portal_move();
@@ -759,6 +763,21 @@ void MainWidget::mouseMoveEvent(QMouseEvent* mouse_event) {
         set_overview_page(new_overview_state);
         validate_render();
 
+    }
+
+    if (!TOUCH_MODE && doc() && !pending_command_instance && !is_selecting &&
+        !opengl_widget->is_window_point_in_overview(normal_mpos)) {
+        int edges = freetext_resize_edges_at(mpos);
+        int index = doc()->get_bookmark_index_at_pos(abs_mpos);
+        if (edges) {
+            if ((edges & 3) && (edges & 12)) setCursor((edges == 5 || edges == 10) ? Qt::SizeFDiagCursor : Qt::SizeBDiagCursor);
+            else setCursor((edges & 3) ? Qt::SizeHorCursor : Qt::SizeVerCursor);
+            return;
+        }
+        if (index >= 0 && doc()->get_bookmarks()[index].is_freetext() && !doc()->get_bookmarks()[index].is_box()) {
+            setCursor(Qt::SizeAllCursor);
+            return;
+        }
     }
 
     if (!is_scratchpad_mode()){
@@ -977,6 +996,20 @@ MainWidget::MainWidget(fz_context* mupdf_context,
 
     text_command_line_edit_label = new QLabel(this);
     text_command_line_edit = new MyLineEdit(this);
+    text_command_line_edit->setCursor(Qt::IBeamCursor);
+    freetext_editor = new QPlainTextEdit(this);
+    freetext_editor->hide();
+    freetext_editor->setCursorWidth(2);
+    freetext_editor->viewport()->setCursor(Qt::IBeamCursor);
+    freetext_editor->setStyleSheet("QPlainTextEdit { background: #fffde7; color: #111111; border: 1px solid #377ac4; selection-background-color: #377ac4; selection-color: white; }");
+    freetext_editor->setWordWrapMode(QTextOption::WordWrap);
+    freetext_editor->setToolTip("Enter: save · Shift+Enter: new line · Escape: cancel · Ctrl +/-: text size");
+    freetext_editor->installEventFilter(this);
+    QObject::connect(freetext_editor, &QPlainTextEdit::textChanged, this, [this]() {
+        if (freetext_editor->isVisible()) {
+            handle_command_text_change(freetext_editor->toPlainText());
+        }
+    });
     command_hints_label = new QLabel(this);
 
     text_command_line_edit_label->setFont(label_font);
@@ -1653,6 +1686,14 @@ void MainWidget::handle_escape() {
         }
     }
 
+    if (bookmark_move_data && doc()) {
+        BookMark& bookmark = doc()->get_bookmarks()[bookmark_move_data->index];
+        bookmark.begin_x = bookmark_move_data->initial_begin_position.x;
+        bookmark.begin_y = bookmark_move_data->initial_begin_position.y;
+        bookmark.end_x = bookmark_move_data->initial_end_position.x;
+        bookmark.end_y = bookmark_move_data->initial_end_position.y;
+        bookmark_move_data = {};
+    }
     smooth_y_move_amount = {};
     hide_command_hints();
     clear_selection_indicators();
@@ -1734,6 +1775,7 @@ void MainWidget::keyReleaseEvent(QKeyEvent* kevent) {
 }
 
 void MainWidget::validate_render() {
+    update_freetext_editor_geometry();
 
     if (smooth_scroll_mode) {
         if (main_document_view_has_document()) {
@@ -2079,6 +2121,8 @@ void MainWidget::open_document(const Path& path, std::optional<float> offset_x, 
 }
 
 void MainWidget::open_document(const std::wstring& path, std::optional<float> offset_x, std::optional<float> offset_y, std::optional<float> zoom_level) {
+    finish_freetext_edit();
+    bookmark_move_data = {};
     opengl_widget->clear_all_selections();
 
     //save the previous document state
@@ -3125,6 +3169,8 @@ TextUnderPointerInfo MainWidget::find_location_of_text_under_pointer(DocumentPos
 }
 
 void MainWidget::mouseReleaseEvent(QMouseEvent* mevent) {
+    // Double-clicking opened the editor; its release must not change the selection.
+    if (freetext_editor->isVisible()) return;
 
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
@@ -3253,6 +3299,16 @@ int MainWidget::update_recent_clicks(AbsoluteDocumentPos mouse_abspos) {
 }
 
 void MainWidget::mouseDoubleClickEvent(QMouseEvent* mevent) {
+    if (!TOUCH_MODE && doc() && mevent->button() == Qt::LeftButton) {
+        int index = doc()->get_bookmark_index_at_pos(WindowPos(mevent->pos()).to_absolute(main_document_view));
+        if (index >= 0 && doc()->get_bookmarks()[index].is_freetext() && !doc()->get_bookmarks()[index].is_box()) {
+            clear_selected_text();
+            set_selected_highlight_index(-1);
+            set_selected_bookmark_index(index);
+            handle_command_types(command_manager->get_command_with_name(this, "edit_selected_bookmark"), 0);
+            return;
+        }
+    }
     if (!TOUCH_MODE) {
         WindowPos click_pos = { mevent->pos().x(), mevent->pos().y() };
         AbsoluteDocumentPos mouse_abspos = main_document_view->window_to_absolute_document_pos(click_pos);
@@ -3297,6 +3353,7 @@ void MainWidget::handle_triple_click(AbsoluteDocumentPos mouse_abspos) {
 }
 
 void MainWidget::mousePressEvent(QMouseEvent* mevent) {
+    if (freetext_editor->isVisible()) finish_freetext_edit();
     bool is_shift_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier);
     bool is_control_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ControlModifier);
     bool is_command_pressed = QGuiApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::MetaModifier);
@@ -3305,6 +3362,27 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
     if (should_draw(false) && (mevent->button() == Qt::MouseButton::LeftButton)) {
         start_drawing();
         return;
+    }
+
+    if (!TOUCH_MODE && doc() && !is_rotated() && !rect_select_mode && !point_select_mode && !pending_command_instance &&
+        mevent->button() == Qt::LeftButton && mevent->modifiers() == Qt::NoModifier) {
+        WindowPos pos(mevent->pos());
+        if (!opengl_widget->is_window_point_in_overview(pos.to_window_normalized(main_document_view))) {
+            int edges = freetext_resize_edges_at(pos);
+            int index = edges ? selected_bookmark_index : doc()->get_bookmark_index_at_pos(pos.to_absolute(main_document_view));
+            if (index >= 0 && doc()->get_bookmarks()[index].is_freetext() && !doc()->get_bookmarks()[index].is_box()) {
+                set_selected_highlight_index(-1);
+                set_selected_bookmark_index(index);
+                selected_portal_index = -1;
+                clear_selected_text();
+                setFocus();
+                begin_bookmark_move(index, pos.to_absolute(main_document_view));
+                bookmark_move_data->resize_edges = edges;
+                is_selecting = false;
+                validate_render();
+                return;
+            }
+        }
     }
 
     if (!TOUCH_MODE && mevent->button() == Qt::MouseButton::LeftButton) {
@@ -4867,6 +4945,7 @@ std::wstring MainWidget::get_window_configuration_string() {
 }
 
 void MainWidget::handle_close_event() {
+    finish_freetext_edit();
     save_auto_config();
 #ifndef SIOYEK_ANDROID
     persist(true);
@@ -5833,6 +5912,10 @@ void MainWidget::advance_command(std::unique_ptr<Command> new_command, std::wstr
 
             if (pending_command_instance) {
                 pending_command_instance->pre_perform();
+                if (next_requirement.type == RequirementType::Text &&
+                    (command_name == "add_freetext_bookmark" || command_name == "edit_selected_bookmark")) {
+                    show_freetext_editor();
+                }
             }
 
         }
@@ -6791,6 +6874,7 @@ void MainWidget::handle_delete_selected_highlight() {
 }
 
 void MainWidget::handle_delete_selected_bookmark() {
+    bookmark_move_data = {};
     if (selected_bookmark_index != -1) {
         main_document_view->delete_bookmark_with_index(selected_bookmark_index);
         set_selected_bookmark_index(-1);
@@ -8898,6 +8982,7 @@ void MainWidget::change_selected_bookmark_text(const std::wstring& new_text) {
         }
         else {
             doc()->delete_bookmark(selected_bookmark_index);
+            set_selected_bookmark_index(-1);
         }
     }
 }
@@ -8944,14 +9029,94 @@ void MainWidget::handle_command_text_change(const QString& new_text) {
     }
 }
 
-void MainWidget::update_selected_bookmark_font_size() {
+void MainWidget::update_selected_bookmark_font_size(float factor) {
+    if (doc() && selected_bookmark_index >= 0 && selected_bookmark_index < doc()->get_bookmarks().size()) {
+        BookMark& bookmark = doc()->get_bookmarks()[selected_bookmark_index];
+        if (!bookmark.is_freetext()) return;
+        float size = bookmark.font_size > 0 ? bookmark.font_size : FREETEXT_BOOKMARK_FONT_SIZE;
+        bookmark.font_size = std::clamp(size * factor, 1.0f, 100.0f);
+        // Pending edits are saved on Enter and restored on Escape.
+        if (!pending_command_instance) {
+            doc()->update_bookmark_text(selected_bookmark_index, bookmark.description, bookmark.font_size);
+        }
+        update_freetext_editor_geometry();
+    }
+    else {
+        FREETEXT_BOOKMARK_FONT_SIZE = std::clamp(FREETEXT_BOOKMARK_FONT_SIZE * factor, 1.0f, 100.0f);
+    }
+    invalidate_render();
+}
 
-    if (selected_bookmark_index != -1) {
-        BookMark& selected_bookmark = doc()->get_bookmarks()[selected_bookmark_index];
-        if (selected_bookmark.font_size != -1) {
-            selected_bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+bool MainWidget::eventFilter(QObject* obj, QEvent* event) {
+    if (obj == freetext_editor && event->type() == QEvent::KeyPress) {
+        auto* key = static_cast<QKeyEvent*>(event);
+        if (key->key() == Qt::Key_Escape) {
+            handle_escape();
+            return true;
+        }
+        if ((key->key() == Qt::Key_Return || key->key() == Qt::Key_Enter) && !(key->modifiers() & Qt::ShiftModifier)) {
+            finish_freetext_edit();
+            return true;
+        }
+        if (key->modifiers() & (Qt::ControlModifier | Qt::MetaModifier)) {
+            if (key->key() == Qt::Key_Plus || key->key() == Qt::Key_Equal || key->key() == Qt::Key_Minus) {
+                update_selected_bookmark_font_size(key->key() == Qt::Key_Minus ? 1.0f / 1.1f : 1.1f);
+                return true;
+            }
         }
     }
+    return QWidget::eventFilter(obj, event);
+}
+
+void MainWidget::show_freetext_editor() {
+    if (TOUCH_MODE || !doc() || selected_bookmark_index < 0 || selected_bookmark_index >= doc()->get_bookmarks().size()) return;
+    const BookMark& bookmark = doc()->get_bookmarks()[selected_bookmark_index];
+    if (!bookmark.is_freetext() || bookmark.is_box()) return;
+    text_command_line_edit_container->hide();
+    freetext_editor->setPlainText(text_command_line_edit->text());
+    freetext_editor->show();
+    update_freetext_editor_geometry();
+    freetext_editor->raise();
+    freetext_editor->setFocus();
+    freetext_editor->moveCursor(QTextCursor::End);
+    is_selecting = false;
+}
+
+void MainWidget::update_freetext_editor_geometry() {
+    if (!freetext_editor || !freetext_editor->isVisible() || !doc() || selected_bookmark_index < 0 || selected_bookmark_index >= doc()->get_bookmarks().size()) return;
+    const BookMark& bookmark = doc()->get_bookmarks()[selected_bookmark_index];
+    WindowRect rect = bookmark.get_rectangle().to_window(main_document_view);
+    freetext_editor->setGeometry(rect.x0, rect.y0, std::max(32, rect.x1 - rect.x0), std::max(24, rect.y1 - rect.y0));
+    QFont font = text_command_line_edit->font();
+    const std::wstring& family = bookmark.font_face.empty() ? FREETEXT_BOOKMARK_FONT_FACE : bookmark.font_face;
+    if (!family.empty()) font.setFamily(QString::fromStdWString(family));
+    float size = bookmark.font_size > 0 ? bookmark.font_size : FREETEXT_BOOKMARK_FONT_SIZE;
+    font.setPointSizeF(size * main_document_view->get_zoom_level() * 0.75f);
+    freetext_editor->setFont(font);
+}
+
+void MainWidget::finish_freetext_edit() {
+    if (!freetext_editor || !freetext_editor->isVisible()) return;
+    std::wstring text = freetext_editor->toPlainText().toStdWString();
+    freetext_editor->hide();
+    setFocus();
+    handle_pending_text_command(text);
+    invalidate_render();
+}
+
+int MainWidget::freetext_resize_edges_at(WindowPos pos) {
+    if (!doc() || selected_bookmark_index < 0 || selected_bookmark_index >= doc()->get_bookmarks().size()) return 0;
+    const BookMark& bookmark = doc()->get_bookmarks()[selected_bookmark_index];
+    if (!bookmark.is_freetext() || bookmark.is_box()) return 0;
+    WindowRect rect = bookmark.get_rectangle().to_window(main_document_view);
+    const int margin = 7;
+    if (pos.x < rect.x0 - margin || pos.x > rect.x1 + margin || pos.y < rect.y0 - margin || pos.y > rect.y1 + margin) return 0;
+    int edges = 0;
+    if (std::abs(pos.x - rect.x0) <= margin) edges |= 1;
+    else if (std::abs(pos.x - rect.x1) <= margin) edges |= 2;
+    if (std::abs(pos.y - rect.y0) <= margin) edges |= 4;
+    else if (std::abs(pos.y - rect.y1) <= margin) edges |= 8;
+    return edges;
 }
 
 TextToSpeechHandler* MainWidget::get_tts() {
@@ -9115,6 +9280,16 @@ void MainWidget::handle_bookmark_move() {
 
     BookMark& bookmark = doc()->get_bookmarks()[bookmark_move_data->index];
 
+    int edges = bookmark_move_data->resize_edges;
+    if (edges) {
+        const float min_size = 24.0f / main_document_view->get_zoom_level();
+        if (edges & 1) bookmark.begin_x = std::min(bookmark_move_data->initial_begin_position.x + diff_x, bookmark.end_x - min_size);
+        if (edges & 2) bookmark.end_x = std::max(bookmark_move_data->initial_end_position.x + diff_x, bookmark.begin_x + min_size);
+        if (edges & 4) bookmark.begin_y = std::max(0.0f, std::min(bookmark_move_data->initial_begin_position.y + diff_y, bookmark.end_y - min_size));
+        if (edges & 8) bookmark.end_y = std::max(bookmark_move_data->initial_end_position.y + diff_y, bookmark.begin_y + min_size);
+        return;
+    }
+    diff_y = std::max(diff_y, -bookmark_move_data->initial_begin_position.y);
     bookmark.begin_x = bookmark_move_data->initial_begin_position.x + diff_x;
     bookmark.begin_y = bookmark_move_data->initial_begin_position.y + diff_y;
 
@@ -9150,6 +9325,14 @@ bool MainWidget::is_middle_click_being_used() {
 }
 
 void MainWidget::begin_bookmark_move(int index, AbsoluteDocumentPos begin_cursor_pos) {
+    BookMark& bookmark = doc()->get_bookmarks()[index];
+    if (bookmark.is_freetext()) {
+        AbsoluteRect rect = bookmark.get_rectangle();
+        bookmark.begin_x = rect.x0;
+        bookmark.begin_y = rect.y0;
+        bookmark.end_x = rect.x1;
+        bookmark.end_y = rect.y1;
+    }
     BookmarkMoveData move_data;
     move_data.index = index;
 
@@ -10662,6 +10845,7 @@ DocumentView* MainWidget::helper_document_view(){
 }
 
 void MainWidget::hide_command_line_edit(){
+    freetext_editor->hide();
     text_command_line_edit->setText("");
     text_command_line_edit_container->hide();
     hide_command_hints();
