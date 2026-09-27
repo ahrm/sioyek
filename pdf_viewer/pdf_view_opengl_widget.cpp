@@ -5,6 +5,7 @@
 #include <qapplication.h>
 #include <qdatetime.h>
 #include <qfile.h>
+#include <QPainterPath>
 
 #include "pdf_view_opengl_widget.h"
 #include "path.h"
@@ -1790,6 +1791,51 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                         }
                     }
                     else {
+                        if (bookmarks[i].arrow) {
+                            const NoteArrow& arrow = *bookmarks[i].arrow;
+                            WindowPos anchor = note_arrow_anchor(bookmarks[i], arrow.control1).to_window(document_view);
+                            WindowPos control1 = arrow.control1.to_window(document_view);
+                            WindowPos control2 = arrow.control2.to_window(document_view);
+                            WindowPos tip = arrow.tip.to_window(document_view);
+                            QPointF start_point(anchor.x, anchor.y);
+                            QPointF control1_point(control1.x, control1.y);
+                            QPointF control2_point(control2.x, control2.y);
+                            QPointF tip_point(tip.x, tip.y);
+
+                            painter->save();
+                            painter->setRenderHint(QPainter::Antialiasing, true);
+                            QColor arrow_color = convert_float3_to_qcolor(&bookmark_color[0]);
+                            painter->setPen(QPen(arrow_color, 2.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+                            QPainterPath curve(start_point);
+                            curve.cubicTo(control1_point, control2_point, tip_point);
+                            painter->drawPath(curve);
+
+                            QPointF tangent = tip_point - control2_point;
+                            float tangent_length = std::hypot(tangent.x(), tangent.y());
+                            if (tangent_length < 1.0f) {
+                                tangent = tip_point - start_point;
+                                tangent_length = std::hypot(tangent.x(), tangent.y());
+                            }
+                            if (tangent_length >= 1.0f) {
+                                QPointF direction = tangent / tangent_length;
+                                QPointF normal(-direction.y(), direction.x());
+                                QPointF base = tip_point - direction * 12.0;
+                                painter->drawLine(tip_point, base + normal * 5.0);
+                                painter->drawLine(tip_point, base - normal * 5.0);
+                            }
+
+                            if (i == selected_bookmark_index) {
+                                painter->setPen(QPen(QColor(55, 122, 196), 1, Qt::DashLine));
+                                painter->drawLine(start_point, control1_point);
+                                painter->drawLine(control2_point, tip_point);
+                                painter->setPen(QColor(55, 122, 196));
+                                painter->setBrush(Qt::white);
+                                painter->drawEllipse(control1_point, 5, 5);
+                                painter->drawEllipse(control2_point, 5, 5);
+                                painter->drawEllipse(tip_point, 5, 5);
+                            }
+                            painter->restore();
+                        }
                         painter->setPen(convert_float3_to_qcolor(&bookmark_color[0]));
                         painter->drawText(window_qrect.adjusted(5, 5, -5, -5), flags, QString::fromStdWString(bookmarks[i].description));
                         if (i == selected_bookmark_index) {

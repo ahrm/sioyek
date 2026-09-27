@@ -3655,6 +3655,22 @@ public:
     }
 };
 
+class AddNoteArrowCommand : public Command {
+public:
+    static inline const std::string cname = "add_note_arrow";
+    static inline const std::string hname = "Attach a curved arrow to the selected note";
+    AddNoteArrowCommand(MainWidget* w) : Command(cname, w) {};
+    void perform() override { widget->begin_note_arrow(); }
+};
+
+class DeleteNoteArrowCommand : public Command {
+public:
+    static inline const std::string cname = "delete_note_arrow";
+    static inline const std::string hname = "Remove the arrow from the selected note";
+    DeleteNoteArrowCommand(MainWidget* w) : Command(cname, w) {};
+    void perform() override { widget->delete_selected_note_arrow(); }
+};
+
 class EditSelectedBookmarkCommand : public TextCommand {
 public:
     static inline const std::string cname = "edit_selected_bookmark";
@@ -7293,6 +7309,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<EditSelectedBookmarkCommand>();
     register_command<DeleteSelectedBookmarkCommand>();
     register_command<ChangeSelectedBookmarkColorCommand>();
+    register_command<AddNoteArrowCommand>();
+    register_command<DeleteNoteArrowCommand>();
     register_command<EditSelectedHighlightCommand>();
     register_command<SearchCommand>();
     register_command<DownloadPaperWithUrlCommand>();

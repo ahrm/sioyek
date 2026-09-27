@@ -2,9 +2,53 @@
 #include "utils.h"
 #include "document.h"
 
+#include <algorithm>
 #include <cmath>
+#include <QJsonDocument>
 
 extern float BOOKMARK_RECT_SIZE;
+
+QJsonObject NoteArrow::to_json() const {
+    return {{"tip_x", tip.x}, {"tip_y", tip.y},
+            {"control1_x", control1.x}, {"control1_y", control1.y},
+            {"control2_x", control2.x}, {"control2_y", control2.y}};
+}
+
+std::optional<NoteArrow> NoteArrow::from_json(const QJsonValue& value) {
+    if (!value.isObject()) return {};
+    QJsonObject object = value.toObject();
+    for (const char* field : {"tip_x", "tip_y", "control1_x", "control1_y", "control2_x", "control2_y"}) {
+        if (!object[field].isDouble() || !std::isfinite(object[field].toDouble())) return {};
+    }
+    NoteArrow arrow;
+    arrow.tip = {static_cast<float>(object["tip_x"].toDouble()), static_cast<float>(object["tip_y"].toDouble())};
+    arrow.control1 = {static_cast<float>(object["control1_x"].toDouble()), static_cast<float>(object["control1_y"].toDouble())};
+    arrow.control2 = {static_cast<float>(object["control2_x"].toDouble()), static_cast<float>(object["control2_y"].toDouble())};
+    return arrow;
+}
+
+QString note_arrow_to_db_string(const std::optional<NoteArrow>& arrow) {
+    if (!arrow) return {};
+    return QString::fromUtf8(QJsonDocument(arrow->to_json()).toJson(QJsonDocument::Compact));
+}
+
+std::optional<NoteArrow> note_arrow_from_db_string(const QString& value) {
+    if (value.isEmpty()) return {};
+    return NoteArrow::from_json(QJsonDocument::fromJson(value.toUtf8()).object());
+}
+
+AbsoluteDocumentPos note_arrow_anchor(const BookMark& bookmark, AbsoluteDocumentPos toward) {
+    AbsoluteRect rect = bookmark.get_rectangle();
+    float cx = (rect.x0 + rect.x1) * 0.5f;
+    float cy = (rect.y0 + rect.y1) * 0.5f;
+    float dx = toward.x - cx;
+    float dy = toward.y - cy;
+    float half_width = std::max((rect.x1 - rect.x0) * 0.5f, 1.0f);
+    float half_height = std::max((rect.y1 - rect.y0) * 0.5f, 1.0f);
+    float scale = std::max(std::abs(dx) / half_width, std::abs(dy) / half_height);
+    if (scale < 0.001f) return {rect.x1, cy};
+    return {cx + dx / scale, cy + dy / scale};
+}
 
 bool operator==(const DocumentViewState& lhs, const DocumentViewState& rhs)
 {
@@ -117,6 +161,7 @@ QJsonObject BookMark::to_json(std::string doc_checksum) const
         res["color_blue"] = color[2];
         res["font_size"] = font_size;
         res["font_face"] = QString::fromStdWString(font_face);
+        if (arrow) res["note_arrow"] = arrow->to_json();
     }
 
     add_metadata_to_json(res);
@@ -137,6 +182,7 @@ void BookMark::add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tupl
     tuples.push_back({ "color_blue", color[2] });
     tuples.push_back({ "font_size", font_size });
     tuples.push_back({ "font_face", QString::fromStdWString(font_face) });
+    tuples.push_back({ "arrow_json", note_arrow_to_db_string(arrow) });
 }
 
 void BookMark::from_json(const QJsonObject& json_object)
@@ -155,6 +201,7 @@ void BookMark::from_json(const QJsonObject& json_object)
         font_size = json_object["font_size"].toDouble();
         font_face = json_object["font_face"].toString().toStdWString();
     }
+    arrow = NoteArrow::from_json(json_object["note_arrow"]);
 
     load_metadata_from_json(json_object);
 }

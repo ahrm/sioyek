@@ -98,6 +98,15 @@ struct BookmarkMoveData {
     AbsoluteDocumentPos initial_begin_position;
     AbsoluteDocumentPos initial_end_position;
     AbsoluteDocumentPos initial_mouse_position;
+    std::optional<NoteArrow> initial_arrow;
+};
+
+enum class NoteArrowDragPart { Tip, Control1, Control2, PlacingTip };
+
+struct NoteArrowDragData {
+    int bookmark_index;
+    NoteArrowDragPart part;
+    std::optional<NoteArrow> original_arrow;
 };
 
 struct FixedVelocityState {
@@ -258,6 +267,8 @@ public:
     std::optional<AbsoluteDocumentPos> rect_select_end = {};
 
     std::optional<BookmarkMoveData> bookmark_move_data = {};
+    int placing_note_arrow_index = -1;
+    std::optional<NoteArrowDragData> note_arrow_drag;
     std::optional<PortalMoveData> portal_move_data = {};
 
     // when set, mouse wheel moves the ruler
@@ -471,6 +482,11 @@ public:
     void change_selected_highlight_type(char new_type);
     void change_selected_bookmark_text(const std::wstring& new_text);
     void change_selected_bookmark_color();
+    void begin_note_arrow();
+    void delete_selected_note_arrow();
+    int note_arrow_handle_at(WindowPos pos);
+    int note_arrow_tip_at(WindowPos pos);
+    void move_note_arrow_handle(AbsoluteDocumentPos pos);
     void change_selected_highlight_text_annot(const std::wstring& new_text);
     char get_current_selected_highlight_type();
     void show_textbar(const std::wstring& command_name, const std::wstring& initial_value = L"", bool is_password = false);
