@@ -95,6 +95,10 @@ struct TextUnderPointerInfo{
 struct BookmarkMoveData {
     int index;
     int resize_edges = 0; // left, right, top, bottom
+    // Set once the cursor has travelled past the drag threshold. Until then the
+    // gesture is still just a click, so the bookmark is left untouched and no
+    // position update is written.
+    bool has_moved = false;
     AbsoluteDocumentPos initial_begin_position;
     AbsoluteDocumentPos initial_end_position;
     AbsoluteDocumentPos initial_mouse_position;

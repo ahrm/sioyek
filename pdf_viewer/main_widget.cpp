@@ -3352,8 +3352,15 @@ void MainWidget::mousePressEvent(QMouseEvent* mevent) {
         mevent->button() == Qt::LeftButton && mevent->modifiers() == Qt::NoModifier) {
         WindowPos pos(mevent->pos());
         if (!opengl_widget->is_window_point_in_overview(pos.to_window_normalized(main_document_view))) {
+            int index_under_cursor = doc()->get_bookmark_index_at_pos(pos.to_absolute(main_document_view));
             int edges = freetext_resize_edges_at(pos);
-            int index = edges ? selected_bookmark_index : doc()->get_bookmark_index_at_pos(pos.to_absolute(main_document_view));
+            // The resize margin reaches outside the selected note, so a click that
+            // lands inside a different note must select that note rather than
+            // resize this one -- otherwise an abutting note is unselectable.
+            if (edges && index_under_cursor >= 0 && index_under_cursor != selected_bookmark_index) {
+                edges = 0;
+            }
+            int index = edges ? selected_bookmark_index : index_under_cursor;
             if (index >= 0 && doc()->get_bookmarks()[index].is_freetext() && !doc()->get_bookmarks()[index].is_box()) {
                 set_selected_highlight_index(-1);
                 set_selected_bookmark_index(index);
@@ -9188,6 +9195,11 @@ TextToSpeechHandler* MainWidget::get_tts() {
 }
 
 void MainWidget::handle_bookmark_move_finish() {
+    if (!bookmark_move_data->has_moved) {
+        // The gesture never left the drag threshold, so nothing changed and the
+        // bookmark's modification time must not be bumped.
+        return;
+    }
     BookMark& bm = doc()->get_bookmarks()[bookmark_move_data->index];
     doc()->update_bookmark_position(bookmark_move_data->index, { bm.begin_x, bm.begin_y }, { bm.end_x, bm.end_y });
 }
@@ -9204,6 +9216,17 @@ void MainWidget::handle_bookmark_move() {
 
     float diff_x = current_mouse_abspos.x - bookmark_move_data->initial_mouse_position.x;
     float diff_y = current_mouse_abspos.y - bookmark_move_data->initial_mouse_position.y;
+
+    // A plain left click on a note selects it, so a move must not begin until the
+    // cursor has actually travelled. Otherwise a click with a pixel of jitter
+    // permanently relocates the note.
+    if (!bookmark_move_data->has_moved) {
+        const float drag_threshold = 4.0f / main_document_view->get_zoom_level();
+        if (std::abs(diff_x) < drag_threshold && std::abs(diff_y) < drag_threshold) {
+            return;
+        }
+        bookmark_move_data->has_moved = true;
+    }
 
     BookMark& bookmark = doc()->get_bookmarks()[bookmark_move_data->index];
 
