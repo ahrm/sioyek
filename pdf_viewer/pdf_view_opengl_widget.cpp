@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 
 #include <qcolor.h>
@@ -6,6 +7,10 @@
 #include <qdatetime.h>
 #include <qfile.h>
 #include <QPainterPath>
+
+#ifdef SIOYEK_JKQT_MATHTEXT_SUPPORT
+#include <jkqtmathtext/jkqtmathtext.h>
+#endif
 
 #include "pdf_view_opengl_widget.h"
 #include "path.h"
@@ -757,6 +762,286 @@ void PdfViewOpenGLWidget::paintGL() {
     }
 
     //painter.drawText(-100, -100, "1234567890");
+}
+
+#ifdef SIOYEK_JKQT_MATHTEXT_SUPPORT
+namespace {
+
+enum class NoteTextSegmentType {
+    PlainText,
+    InlineMath,
+    DisplayMath,
+    LineBreak,
+};
+
+struct NoteTextSegment {
+    NoteTextSegmentType type;
+    QString text;
+};
+
+bool is_escaped_dollar(const QString& text, int index) {
+    int preceding_backslashes = 0;
+    for (int i = index - 1; i >= 0 && text[i] == '\\'; --i) {
+        preceding_backslashes++;
+    }
+    return preceding_backslashes % 2 == 1;
+}
+
+void append_plain_note_segments(std::vector<NoteTextSegment>& segments, const QString& text) {
+    int line_start = 0;
+    for (int i = 0; i < text.size(); i++) {
+        if (text[i] != '\n') continue;
+        if (i > line_start) {
+            segments.push_back({NoteTextSegmentType::PlainText, text.mid(line_start, i - line_start)});
+        }
+        segments.push_back({NoteTextSegmentType::LineBreak, {}});
+        line_start = i + 1;
+    }
+    if (line_start < text.size()) {
+        segments.push_back({NoteTextSegmentType::PlainText, text.mid(line_start)});
+    }
+}
+
+std::vector<NoteTextSegment> parse_note_text_segments(const QString& text, bool& has_math) {
+    std::vector<NoteTextSegment> segments;
+    has_math = false;
+    int plain_start = 0;
+    int index = 0;
+
+    while (index < text.size()) {
+        if (text[index] != '$' || is_escaped_dollar(text, index)) {
+            index++;
+            continue;
+        }
+
+        const bool is_display = index + 1 < text.size() && text[index + 1] == '$';
+        const int delimiter_size = is_display ? 2 : 1;
+        int closing = -1;
+        for (int i = index + delimiter_size; i < text.size(); i++) {
+            if (text[i] != '$' || is_escaped_dollar(text, i)) continue;
+            if (is_display) {
+                if (i + 1 < text.size() && text[i + 1] == '$') {
+                    closing = i;
+                    break;
+                }
+            }
+            else if (i + 1 >= text.size() || text[i + 1] != '$') {
+                closing = i;
+                break;
+            }
+        }
+
+        if (closing < 0) {
+            index += delimiter_size;
+            continue;
+        }
+
+        append_plain_note_segments(segments, text.mid(plain_start, index - plain_start));
+        segments.push_back({
+            is_display ? NoteTextSegmentType::DisplayMath : NoteTextSegmentType::InlineMath,
+            text.mid(index + delimiter_size, closing - index - delimiter_size),
+        });
+        has_math = true;
+        index = closing + delimiter_size;
+        plain_start = index;
+    }
+
+    append_plain_note_segments(segments, text.mid(plain_start));
+    return segments;
+}
+
+struct NoteLayoutItem {
+    QString text;
+    JKQTMathText* math = nullptr;
+    double width = 0.0;
+    double ascent = 0.0;
+    double descent = 0.0;
+    double scale = 1.0;
+    bool whitespace = false;
+};
+
+struct NoteLayoutLine {
+    std::vector<NoteLayoutItem> items;
+    double width = 0.0;
+    double ascent = 0.0;
+    double descent = 0.0;
+    bool centered = false;
+};
+
+}
+
+JKQTMathText* PdfViewOpenGLWidget::get_note_math_renderer(const QString& latex) {
+    const std::string key = latex.toUtf8().toStdString();
+    auto [entry, inserted] = note_math_cache.try_emplace(key);
+    if (inserted) {
+        auto renderer = std::make_unique<JKQTMathText>();
+        renderer->useXITS();
+        const auto options = JKQTMathText::ParseOptions(JKQTMathText::StartWithMathMode);
+        if (renderer->parse(latex, JKQTMathText::DefaultParser, options)) {
+            entry->second = std::move(renderer);
+        }
+    }
+    return entry->second.get();
+}
+#endif
+
+void PdfViewOpenGLWidget::render_note_text(
+    QPainter* painter,
+    const QRect& rect,
+    int flags,
+    const QString& text) {
+#ifndef SIOYEK_JKQT_MATHTEXT_SUPPORT
+    painter->drawText(rect, flags, text);
+#else
+    bool has_math = false;
+    const std::vector<NoteTextSegment> segments = parse_note_text_segments(text, has_math);
+    if (!has_math) {
+        painter->drawText(rect, flags, text);
+        return;
+    }
+
+    // Bound stale entries created while a note is edited without invalidating
+    // renderers referenced by the layout currently being assembled.
+    if (note_math_cache.size() > 128) note_math_cache.clear();
+
+    const QFontMetricsF metrics(painter->font(), painter->device());
+    const double available_width = std::max(1, rect.width());
+    const double normal_ascent = metrics.ascent();
+    const double normal_descent = metrics.descent();
+    const double math_font_size = std::max(1.0, normal_ascent + normal_descent);
+    std::vector<NoteLayoutLine> lines;
+    NoteLayoutLine current_line;
+
+    auto finish_line = [&](bool force_empty_line = false) {
+        while (!current_line.items.empty() && current_line.items.back().whitespace) {
+            current_line.width -= current_line.items.back().width;
+            current_line.items.pop_back();
+        }
+        if (!current_line.items.empty() || force_empty_line) {
+            if (current_line.items.empty()) {
+                current_line.ascent = normal_ascent;
+                current_line.descent = normal_descent;
+            }
+            lines.push_back(std::move(current_line));
+            current_line = {};
+        }
+    };
+
+    auto add_item = [&](NoteLayoutItem item) {
+        if (item.whitespace && current_line.items.empty()) return;
+        if (!current_line.items.empty() && current_line.width + item.width > available_width) {
+            finish_line();
+            if (item.whitespace) return;
+        }
+        if (item.math != nullptr && item.width > available_width) {
+            item.scale = available_width / item.width;
+            item.width *= item.scale;
+            item.ascent *= item.scale;
+            item.descent *= item.scale;
+        }
+        current_line.width += item.width;
+        current_line.ascent = std::max(current_line.ascent, item.ascent);
+        current_line.descent = std::max(current_line.descent, item.descent);
+        current_line.items.push_back(std::move(item));
+    };
+
+    auto add_plain_text = [&](const QString& plain_text) {
+        int token_start = 0;
+        while (token_start < plain_text.size()) {
+            const bool whitespace = plain_text[token_start].isSpace();
+            int token_end = token_start + 1;
+            while (token_end < plain_text.size() && plain_text[token_end].isSpace() == whitespace) {
+                token_end++;
+            }
+            QString token = plain_text.mid(token_start, token_end - token_start);
+            token.replace('\t', "    ");
+            add_item({
+                token,
+                nullptr,
+                metrics.horizontalAdvance(token),
+                normal_ascent,
+                normal_descent,
+                1.0,
+                whitespace,
+            });
+            token_start = token_end;
+        }
+    };
+
+    for (const NoteTextSegment& segment : segments) {
+        if (segment.type == NoteTextSegmentType::PlainText) {
+            add_plain_text(segment.text);
+            continue;
+        }
+        if (segment.type == NoteTextSegmentType::LineBreak) {
+            finish_line(true);
+            continue;
+        }
+
+        JKQTMathText* math = get_note_math_renderer(segment.text);
+        if (math == nullptr) {
+            const QString delimiter = segment.type == NoteTextSegmentType::DisplayMath ? "$$" : "$";
+            add_plain_text(delimiter + segment.text + delimiter);
+            continue;
+        }
+        math->setFontSizePixels(math_font_size);
+        math->setFontColor(painter->pen().color());
+        const JKQTMathTextNodeSize size = math->getSizeDetail(*painter);
+        NoteLayoutItem item {
+            {},
+            math,
+            size.width,
+            size.getAscent(),
+            size.getDescent(),
+            1.0,
+            false,
+        };
+
+        if (segment.type == NoteTextSegmentType::DisplayMath) {
+            finish_line();
+            add_item(std::move(item));
+            current_line.centered = true;
+            finish_line();
+        }
+        else {
+            add_item(std::move(item));
+        }
+    }
+    finish_line();
+
+    painter->save();
+    painter->setClipRect(rect);
+    double line_top = rect.top();
+    const double line_spacing = std::max(1.0, metrics.leading());
+    const bool align_right = flags & Qt::AlignRight;
+    for (const NoteLayoutLine& line : lines) {
+        if (line_top >= rect.bottom()) break;
+        const double baseline = line_top + line.ascent;
+        double x = rect.left();
+        if (line.centered) {
+            x += (available_width - line.width) / 2.0;
+        }
+        else if (align_right) {
+            x += available_width - line.width;
+        }
+
+        for (const NoteLayoutItem& item : line.items) {
+            if (item.math == nullptr) {
+                painter->drawText(QPointF(x, baseline), item.text);
+            }
+            else {
+                painter->save();
+                painter->translate(x, baseline);
+                painter->scale(item.scale, item.scale);
+                item.math->draw(*painter, 0.0, 0.0, false);
+                painter->restore();
+            }
+            x += item.width;
+        }
+        line_top += line.ascent + line.descent + line_spacing;
+    }
+    painter->restore();
+#endif
 }
 
 PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent) :
@@ -1837,7 +2122,11 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                             painter->restore();
                         }
                         painter->setPen(convert_float3_to_qcolor(&bookmark_color[0]));
-                        painter->drawText(window_qrect.adjusted(5, 5, -5, -5), flags, QString::fromStdWString(bookmarks[i].description));
+                        render_note_text(
+                            painter,
+                            window_qrect.adjusted(5, 5, -5, -5),
+                            flags,
+                            QString::fromStdWString(bookmarks[i].description));
                         if (i == selected_bookmark_index) {
                             painter->setPen(QColor(55, 122, 196));
                             for (int x : {window_qrect.left(), window_qrect.center().x(), window_qrect.right()}) {

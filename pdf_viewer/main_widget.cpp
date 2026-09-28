@@ -1012,7 +1012,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     freetext_editor->viewport()->setCursor(Qt::IBeamCursor);
     freetext_editor->setStyleSheet("QPlainTextEdit { background: #fffde7; border: none; selection-background-color: #377ac4; selection-color: white; }");
     freetext_editor->setWordWrapMode(QTextOption::WordWrap);
-    freetext_editor->setToolTip("Enter: save · Shift+Enter: new line · Escape: cancel · Ctrl +/-: text size · Ctrl+Shift+C: color palette · Ctrl+Shift+A: arrow");
+    freetext_editor->setToolTip("Enter: save · Shift+Enter: new line · Escape: cancel · $...$: inline math · $$...$$: display math · Ctrl +/-: text size · Ctrl+Shift+C: color palette · Ctrl+Shift+A: arrow");
     freetext_editor->installEventFilter(this);
     QObject::connect(freetext_editor, &QPlainTextEdit::textChanged, this, [this]() {
         if (freetext_editor->isVisible()) {

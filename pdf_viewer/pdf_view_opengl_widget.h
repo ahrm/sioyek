@@ -6,6 +6,8 @@
 #include <optional>
 #include <utility>
 #include <array>
+#include <memory>
+#include <unordered_map>
 
 //#include <qopenglfunctions_3_1.h>
 #include <qopenglwidget.h>
@@ -29,6 +31,9 @@ class DocumentView;
 class PdfRenderer;
 class ConfigManager;
 class ScratchPad;
+#ifdef SIOYEK_JKQT_MATHTEXT_SUPPORT
+class JKQTMathText;
+#endif
 
 struct MarkedDataRect {
     DocumentRect rect;
@@ -172,6 +177,12 @@ private:
     float overview_offset_y = 0.0f;
 
     std::optional<AbsoluteRect> selected_rectangle = {};
+
+#ifdef SIOYEK_JKQT_MATHTEXT_SUPPORT
+    std::unordered_map<std::string, std::unique_ptr<JKQTMathText>> note_math_cache;
+    JKQTMathText* get_note_math_renderer(const QString& latex);
+#endif
+    void render_note_text(QPainter* painter, const QRect& rect, int flags, const QString& text);
 
     GLuint LoadShaders(Path vertex_file_path_, Path fragment_file_path_);
 protected:

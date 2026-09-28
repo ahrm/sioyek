@@ -34,6 +34,14 @@ packagesExist(ddjvuapi) {
     SOURCES += pdf_viewer/djvu_document.cpp
 }
 
+contains(DEFINES, SIOYEK_JKQT_MATHTEXT_SUPPORT) {
+    greaterThan(QT_MAJOR_VERSION, 5) {
+        LIBS += -lJKQTMathText6_Release -lJKQTCommon6_Release
+    } else {
+        LIBS += -lJKQTMathText5_Release -lJKQTCommon5_Release
+    }
+}
+
 SOURCES += \
         pdf_viewer/touchui/TouchSlider.cpp \
         pdf_viewer/touchui/TouchCheckbox.cpp \
